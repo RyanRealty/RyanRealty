@@ -17,21 +17,37 @@
  * The article HTML is an island on purpose: V3Quiet items are strings, and
  * the CMS body is markup. Do not flatten it into a figure. The island still
  * uses the v3 measure/gutter (V3ArticleIsland.css). Current months-of-supply
- * claims rewrite through publishBlogCurrentMos + getMarketPulse.
+ * claims rewrite through publishBlogCurrentMos + getMarketPulse. Place-about
+ * posts render related homes through matchBlogPlace + publishBlogRelatedHomes.
+ * Intra-page drive/median claims rewrite through publishBlogPlaceFigures.
  */
 
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getBlogPostBySlug, getRelatedBlogPosts, getMarketPulse } from '@/lib/data'
+import {
+  getBlogPostBySlug,
+  getRelatedBlogPosts,
+  getMarketPulse,
+  getCityListings,
+  getCommunityListings,
+} from '@/lib/data'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
+import { matchBlogPlace } from '@/lib/blog/match-blog-place'
+import { publishBlogRelatedHomes } from '@/lib/blog/publish-blog-related-homes'
+import {
+  blogClaimsPlaceFigures,
+  publishBlogMedianGap,
+  rewriteBlogPlaceFigures,
+} from '@/lib/blog/publish-blog-place-figures'
 import {
   BLOG_CURRENT_MOS_PLACES,
   blogClaimsCurrentMos,
   publishBlogCurrentMos,
   rewriteBlogCurrentMos,
 } from '@/lib/blog/publish-blog-current-mos'
+import { BlogRelatedHomes } from './_v3/BlogRelatedHomes'
 import '@/components/site/v3/V3ArticleIsland.css'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
@@ -130,19 +146,45 @@ export default async function BlogPostPage({ params }: PageProps) {
     author_name: post.author_name,
   })
   const rawBody = post.content?.trim() || post.excerpt?.trim() || ''
-  const articleBody = blogClaimsCurrentMos(rawBody)
-    ? rewriteBlogCurrentMos(
-        rawBody,
-        publishBlogCurrentMos(
-          BLOG_CURRENT_MOS_PLACES,
-          await Promise.all(
-            BLOG_CURRENT_MOS_PLACES.map((place) =>
-              getMarketPulse({ geoType: place.geoType, geoSlug: place.geoSlug }),
-            ),
+  const place = matchBlogPlace(post)
+  const claimsPlaceFigures = blogClaimsPlaceFigures(rawBody)
+  const [mosPulses, placeTiles, redmondPulse, bendPulse] = await Promise.all([
+    blogClaimsCurrentMos(rawBody)
+      ? Promise.all(
+          BLOG_CURRENT_MOS_PLACES.map((row) =>
+            getMarketPulse({ geoType: row.geoType, geoSlug: row.geoSlug }),
           ),
-        ),
-      )
+        )
+      : Promise.resolve(null),
+    place
+      ? Promise.all(
+          place.queryNames.slice(0, 4).map((name) =>
+            place.kind === 'community'
+              ? getCommunityListings(name, {
+                  status: 'active',
+                  propertyType: 'A',
+                  sort: 'newest',
+                  limit: 8,
+                })
+              : getCityListings(name, {
+                  status: 'active',
+                  propertyType: 'A',
+                  sort: 'newest',
+                  limit: 8,
+                }),
+          ),
+        ).then((batches) => batches.flat())
+      : Promise.resolve([]),
+    claimsPlaceFigures ? getMarketPulse({ geoType: 'city', geoSlug: 'redmond' }) : Promise.resolve(null),
+    claimsPlaceFigures ? getMarketPulse({ geoType: 'city', geoSlug: 'bend' }) : Promise.resolve(null),
+  ])
+  const mosBody = mosPulses
+    ? rewriteBlogCurrentMos(rawBody, publishBlogCurrentMos(BLOG_CURRENT_MOS_PLACES, mosPulses))
     : rawBody
+  const articleBody = claimsPlaceFigures
+    ? rewriteBlogPlaceFigures(mosBody, publishBlogMedianGap(redmondPulse, bendPulse))
+    : mosBody
+  const relatedHomes = place ? publishBlogRelatedHomes(place, placeTiles) : null
   const title = post.title.trim()
   if (!title) notFound()
   const category = post.category?.trim()
@@ -166,6 +208,9 @@ export default async function BlogPostPage({ params }: PageProps) {
     label: `${geo.label}, ${geo.city}`,
     href: geo.href,
   }))
+  if (place && !geoItems.some((item) => 'href' in item && item.href === place.href)) {
+    geoItems.unshift({ label: `${place.label} homes for sale`, href: place.href })
+  }
 
   const tagBody = post.tags && post.tags.length > 0 ? post.tags.filter((t) => t.trim()).join(' · ') : null
 
@@ -267,6 +312,8 @@ export default async function BlogPostPage({ params }: PageProps) {
             ) : null}
           </div>
         </article>
+
+        {relatedHomes ? <BlogRelatedHomes homes={relatedHomes} /> : null}
 
         {firstRelated ? (
           <V3Ledger
