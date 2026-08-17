@@ -91,6 +91,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { formatPriceExact } from '@/lib/format/money'
 import { kbMoneyFull } from '@/components/site/kb/types'
 import type { KbTownItem, KbMarketData } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
@@ -266,7 +267,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const aboutFacts: { label: string; value: string }[] = [
     // Omitted, never "0", when the count is unknown (§0).
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
-    ...(medianListPrice != null ? [{ label: 'Median list', value: kbMoneyFull(medianListPrice) ?? '—' }] : []),
+    ...(medianListPrice != null ? [{ label: 'Median list', value: formatPriceExact(medianListPrice) }] : []),
     ...(daysFact
       ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: daysFact }]
       : []),

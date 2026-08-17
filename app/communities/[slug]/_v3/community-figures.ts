@@ -19,7 +19,7 @@
  */
 
 import { v3Text, type V3InstrumentFigure, type V3QuietItem } from '@/components/site/v3'
-import { formatPrice } from '@/lib/format/money'
+import { formatPrice, formatPriceExact } from '@/lib/format/money'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { homesForSalePath } from '@/lib/slug'
@@ -161,7 +161,7 @@ export function buildLiveFigures(input: {
   }
   if (input.medianListPrice != null) {
     figures.push({
-      value: v3Text(formatPrice(input.medianListPrice)),
+      value: v3Text(formatPriceExact(input.medianListPrice)),
       label: v3Text('median list price'),
       href: input.countHref,
     })

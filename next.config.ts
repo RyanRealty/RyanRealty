@@ -196,11 +196,10 @@ const nextConfig: NextConfig = {
   // SEO: canonical URLs use /homes-for-sale (keyword-rich). Old /search links redirect.
   async redirects() {
     return [
-      // /cities/tumalo has no geo_snapshot_mv market-data row (Tumalo is a Bend
-      // submarket, not a standalone city in the MLS aggregation) so the page
-      // 404'd. Send it to Bend rather than dead-end. Temporary (307) in case
-      // Tumalo gets its own data + page later.
-      { source: '/cities/tumalo', destination: '/cities/bend', permanent: false },
+      // /cities/tumalo is a pulse-only city door (not an MLS City). Do not
+      // send it to Bend — that published Bend's inventory under a Tumalo
+      // label (fleet 68e429f53384684f4bff707cec907db9). getGeoSnapshot
+      // synthesizes the page from market_pulse_live when the MV row is absent.
       // /cities/crooked-river-ranch likewise has no geo_snapshot_mv row (CRR is
       // not a distinct MLS city — its listings file under Terrebonne by
       // SubdivisionName) so the page 404'd. Send it to its real, live community

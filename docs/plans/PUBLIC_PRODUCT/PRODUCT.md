@@ -53,7 +53,7 @@ Locked Matt 2026-08-14 (his words, not a canvas):
 |---|---|---|---|
 | Google, ad, email, text, shared listing | Does not matter | The page they clicked. No quiz. | Inferred from the URL |
 | Any source | Yes — `rr_vid`, person, Google email, prior session | **Welcome back · the thing they left.** No quiz. | Last intent. Resume. |
-| Typed the name / bookmark / blank `/` | No — first browser, no person | Three words **in the page**: **Buy · Sell · Look** | Whatever they tap. Look is the site. |
+| Typed the name / bookmark / blank `/` | No — first browser, no person | V3Chrome only. No Buy/Sell/Look bar. Intent is left for Google sign-on. | Not asked on first paint. |
 | Continue with Google | Always try | Identity, not a quiz. Map email → `crm_people` + this `rr_vid`. | Keep what we had. Full circle. |
 
 Look / just browsing kicks them into the site. We still count it. We do not invent a second workflow.
@@ -214,7 +214,7 @@ Scoreboard we actually watch: resume rate (returner opened last house), stitch r
 - City map impl exists. First paint is an empty cream box until Google paints.
 - `/llms.txt`, sitemaps, GSC ingest, dual-objective inventory. Three citation queries mapped.
 - Valuation spine, 3% plan, written-CMA process. Address-only save on `/sell` is a no-op.
-- Arrival island on `/`. Google comms on the same card as Continue with Google.
+- Arrival quiz unmounted from `/` (Matt CHANGE 2026-08-16 / R-218). Google comms on the same card as Continue with Google.
 - Looking-at ask helpers in `lib/crm/looking-at.ts`. Composer preload only. Never a send.
 
 ---
@@ -223,9 +223,9 @@ Scoreboard we actually watch: resume rate (returner opened last house), stitch r
 
 After every public-UI step: recapture home, browse, city, neighborhood, Tetherow, a plat, a listing, sell, market, about at 390 and 1280. Shared `V3Field` is how the last flatten spread. Worse on any of those → revert that step.
 
-### 1. Arrival and memory — LIVE `292abf9b` / production READY on `4cfc1a9e`
+### 1. Arrival and memory — LIVE (quiz unmounted; Matt CHANGE 2026-08-16)
 
-Buy · Sell · Look only on blank unknown direct. Welcome back names the last thing. Stitch Google email / `rr_vid` / person before any ask. Fire `intent_declared` and `welcome_back` to first-party + GA4. No modal. Walk 2026-08-15: direct Buy/Sell/Look = 1; Google Referer Buy = 0.
+V3Chrome is the one public header. Buy/Sell/Look is not a nav and does not render on `/`. Intent declaration is left for Google sign-on. Do not remount a second bar. Stitch Google email / `rr_vid` / person before any ask. No modal.
 
 ### 2. Field cards and maps (Buy) — LIVE (Field earlier; sentence `65d22965`)
 
@@ -263,7 +263,7 @@ Three citation queries mapped in `lib/seo/ai-query-map.json`; `ci:ai-query-batte
 
 ## Done
 
-A stranger who types the name sees Buy · Sell · Look and can start. A Google click is not interrupted. A returner is welcomed with the house they left. A buyer sees houses and facts. A seller sees an address field. A listing tells them what the number means. Analytics can say buyer vs seller vs look, new vs returning, inbound vs direct. Google and ChatGPT can cite a real page. You would text the URL.
+A stranger who types the name sees one header (Homes / Places / Market / Sell / About) and the hero. A Google click is not interrupted. A returner is not blocked by a quiz. A buyer sees houses and facts. A seller sees an address field. A listing tells them what the number means. Analytics can still infer inbound vs direct. Google and ChatGPT can cite a real page. You would text the URL.
 
 A green ledger does not count.
 
@@ -275,7 +275,7 @@ The argument is PRODUCT.md. Done means a real person can walk the site and do th
 
 **When finished, a stranger can:**
 
-1. Type ryan-realty.com with no cookie and see Buy · Sell · Look in the page, not a modal. Google / ad / email land is not interrupted.
+1. Type ryan-realty.com with no cookie and see one V3Chrome row, not a Buy/Sell/Look bar and not a modal. Google / ad / email land is not interrupted.
 2. Come back and see the last house or last search named. Analytics records `intent_declared` and `welcome_back`.
 3. Buy: houses fill the fold (photo + price + beds/baths/sqft + street). Map and list are the same homes. A sentence writes the same filter params the chips already understand.
 4. Open a place and stay in that place: Homes and Market keep the filter. Master-plan shows the owned photo, membership number, child plats, and every home on the page. Plat lists its homes.

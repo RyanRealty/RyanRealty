@@ -32,7 +32,7 @@
  */
 import type { SchemaInput, StatValue } from '@/lib/site/json-ld'
 import type { MarketFaqResult } from '@/lib/site/market-faq'
-import { formatPrice } from '@/lib/format/money'
+import { formatPrice, formatPriceExact } from '@/lib/format/money'
 import { A_BUCKET_PROSE, fmtK, SFR_SUB_TYPE } from './neighborhood-sections'
 
 /** What the no-pulse branch counts, in the words every sentence about it uses. */
@@ -187,7 +187,7 @@ export function fallbackFaqSet(placeName: string, cityName: string, place: Place
   if (place.medianPrice != null && place.medianPrice > 0) {
     faqs.push({
       question: `What is the median home price in ${placeName}?`,
-      answer: `The median list price across the ${RESIDENTIAL_SET} in ${placeName}, ${cityName} is ${formatPrice(place.medianPrice)}.`,
+      answer: `The median list price across the ${RESIDENTIAL_SET} in ${placeName}, ${cityName} is ${formatPriceExact(place.medianPrice)}.`,
     })
     datasetVariables.push({ name: 'Median List Price', value: Math.round(place.medianPrice), unitText: 'USD' })
   }

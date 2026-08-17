@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   isDisplayablePlatName,
+  platCityAliases,
   platInventoryKey,
   registryChildPlats,
   rollupPlatPublicInventory,
+  rowMatchesPlat,
   type RegistryPlat,
 } from './plat-public-inventory'
 
@@ -99,6 +101,55 @@ describe('plat public inventory rollup', () => {
     )
     expect(rows.find((r) => r.slug === 'ridge-at-eagle-crest')?.activeCount).toBe(1)
     expect(rows.find((r) => r.slug === 'the-ridge')?.activeCount).toBe(1)
+  })
+
+  it('counts South Meadow under Sisters when MLS City is Black Butte Ranch', () => {
+    const bbr: RegistryPlat = {
+      slug: 'south-meadow',
+      name: 'South Meadow',
+      parent: 'Black Butte Ranch',
+      parentSlug: 'black-butte-ranch',
+      city: 'Sisters',
+      citySlug: 'sisters',
+    }
+    expect(platCityAliases(bbr).has('black-butte-ranch')).toBe(true)
+    expect(
+      rowMatchesPlat(
+        {
+          listing_key: 'sm1',
+          list_price: 795_000,
+          subdivision_lower: 'south meadow',
+          city_lower: 'black butte ranch',
+        },
+        bbr,
+      ),
+    ).toBe(true)
+    const rows = rollupPlatPublicInventory(
+      [
+        {
+          listing_key: 'sm1',
+          list_price: 695_000,
+          subdivision_lower: 'south meadow',
+          city_lower: 'black butte ranch',
+        },
+        {
+          listing_key: 'sm2',
+          list_price: 795_000,
+          subdivision_lower: 'south meadow',
+          city_lower: 'black butte ranch',
+        },
+        {
+          listing_key: 'sm3',
+          list_price: 1_395_000,
+          subdivision_lower: 'south meadow',
+          city_lower: 'black butte ranch',
+        },
+      ],
+      [bbr],
+    )
+    expect(rows[0]?.activeCount).toBe(3)
+    expect(rows[0]?.medianListPrice).toBe(795_000)
+    expect(rows[0]?.key).toBe('sisters:south-meadow')
   })
 
   it('drops short MLS codes from the registry catalog', () => {

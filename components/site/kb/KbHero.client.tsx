@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { gsap } from 'gsap'
-import { kbMoneyFull, type KbHeroData } from './types'
+import { formatPriceExact } from '@/lib/format/money'
+import { type KbHeroData } from './types'
 import { searchHrefForQuery } from '@/lib/parse-search-query'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
@@ -162,7 +163,7 @@ export function KbHero({
     routeFor(q)
   }
 
-  const median = kbMoneyFull(data.medianListPrice)
+  const median = formatPriceExact(data.medianListPrice) === '—' ? null : formatPriceExact(data.medianListPrice)
   const pendingDays = publishDaysLabel(data.medianDaysToPending)
   const activeDom = publishDaysLabel(data.medianDomActive)
   const showVideo = Boolean(videoSrc) && reduceMotion === false

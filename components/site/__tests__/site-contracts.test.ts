@@ -546,7 +546,9 @@ describe('design directive contracts', () => {
 
   it('D103 — homepage opens on photographed homes, towns, and the region map', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/<ArrivalIntent/)
+    expect(page).not.toMatch(/from ['"]@\/components\/site\/v3\/ArrivalIntent/)
+    expect(page).not.toMatch(/<ArrivalIntent/)
+    expect(page).not.toMatch(/What are you trying to do/)
     expect(page).toMatch(/<KbHero/)
     expect(page).toMatch(/<KbExploreTowns/)
     expect(page).toMatch(/<KbFeatured/)

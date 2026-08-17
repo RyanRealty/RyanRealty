@@ -5,10 +5,8 @@
  * built by two different mappers can disagree about that id, about the door they
  * open, or about the price they print. One mapper removes the possibility.
  *
- * NOTHING HERE FETCHES OR ROUNDS ON ITS OWN. `formatPrice` is the canonical
- * money formatter (lib/format/money, nearest thousand) and it is called in one
- * place, so the price a visitor reads on a pin is the same string the row shows
- * and the same string the page trace covers (CLAUDE.md section 0).
+ * NOTHING HERE FETCHES OR ROUNDS ON ITS OWN. Listing cards print the exact
+ * ListPrice through `formatPublishedAsk` (same string as the listing H1).
  *
  * A listing with no coordinates is dropped rather than placed at a guessed
  * point. That matches what the KB dual-pane listed and keeps the map honest.
@@ -17,7 +15,7 @@
 import type { ListingRow } from '@/app/actions/communities'
 import type { ListingTile } from '@/lib/data'
 import { v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
-import { formatPrice } from '@/lib/format/money'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { listingDetailPath } from '@/lib/slug'
 
 /** Pins at or above this count are a map. Below it, the plat is a list. */
@@ -57,7 +55,7 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
       { city: tile.city, subdivision: tile.subdivisionName },
       { mlsNumber: tile.listNumber },
     ),
-    priceLabel: tile.listPrice == null ? NO_PRICE : formatPrice(tile.listPrice),
+    priceLabel: formatPublishedAsk(tile.listPrice) ?? NO_PRICE,
     title: street || 'Listing',
     meta: metaLine(tile.beds, tile.baths, hasVideo),
     photoSrc: tile.photoUrl?.trim() || undefined,
@@ -90,7 +88,7 @@ export function fallbackFieldRows(
         { city: row.City, subdivision: row.SubdivisionName },
         { mlsNumber: row.ListNumber },
       ),
-      priceLabel: row.ListPrice == null ? NO_PRICE : formatPrice(row.ListPrice),
+      priceLabel: formatPublishedAsk(row.ListPrice) ?? NO_PRICE,
       title: street || 'Listing',
       meta: metaLine(row.BedroomsTotal, row.BathroomsTotal, videoKeys.has(key)),
       photoSrc: row.PhotoURL?.trim() || undefined,

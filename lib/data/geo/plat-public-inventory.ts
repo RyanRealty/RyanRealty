@@ -10,7 +10,10 @@
  *   C  getListingTiles propertyType A       SFR + townhouse + null     (list)
  *
  * This module is the public inventory SoR for recorded registry plats.
- * Geography is MLS SubdivisionName (the plat's identity) in the parent city.
+ * Geography is MLS SubdivisionName (the plat's identity). The registry
+ * parent city is an alias set (city slug + parent community slug), not a
+ * required `listings.City` spelling. South Meadow files as City="Black
+ * Butte Ranch" while the registry city is Sisters.
  * Property is SFR (`property_type='A'` AND
  * `property_sub_type='Single Family Residence'`). Status is
  * PUBLIC_ACTIVE_STATUSES (Active + Active Under Contract). Coming Soon is
@@ -75,6 +78,20 @@ export function platInventoryKey(citySlug: string, platSlug: string): string {
   return `${citySlug}:${platSlug}`
 }
 
+/** City spellings that may own a registry plat's MLS rows. */
+export function platCityAliases(plat: RegistryPlat): Set<string> {
+  return new Set(
+    [plat.citySlug, slugify(plat.city), plat.parentSlug, slugify(plat.parent)].filter(Boolean),
+  )
+}
+
+/** SubdivisionName match plus a city alias. Same slug in two cities stays split. */
+export function rowMatchesPlat(row: PlatInventoryRow, plat: RegistryPlat): boolean {
+  if (!row.subdivision_lower || !row.city_lower) return false
+  if (slugify(row.subdivision_lower) !== plat.slug) return false
+  return platCityAliases(plat).has(slugify(row.city_lower))
+}
+
 export function isDisplayablePlatName(alias: string): boolean {
   const t = alias.trim()
   if (t.length < 6) return false
@@ -116,11 +133,17 @@ export function rollupPlatPublicInventory(
   plats: readonly RegistryPlat[] = registryChildPlats(),
 ): PlatPublicInventory[] {
   const byKey = new Map<string, { keys: string[]; prices: number[] }>()
+  for (const plat of plats) {
+    byKey.set(platInventoryKey(plat.citySlug, plat.slug), { keys: [], prices: [] })
+  }
   for (const row of rows) {
-    if (!row.listing_key || !row.subdivision_lower || !row.city_lower) continue
-    const slug = slugify(row.subdivision_lower)
-    const citySlug = slugify(row.city_lower)
-    const key = platInventoryKey(citySlug, slug)
+    const cityLower = row.city_lower
+    if (!row.listing_key || !row.subdivision_lower || !cityLower) continue
+    const matches = plats.filter((plat) => rowMatchesPlat(row, plat))
+    const plat =
+      matches.find((p) => p.citySlug === slugify(cityLower)) ?? matches[0] ?? null
+    if (!plat) continue
+    const key = platInventoryKey(plat.citySlug, plat.slug)
     const bucket = byKey.get(key) ?? { keys: [], prices: [] }
     bucket.keys.push(row.listing_key)
     if (row.list_price != null && Number.isFinite(Number(row.list_price)) && Number(row.list_price) > 0) {
@@ -153,7 +176,9 @@ async function fetchRegistryPlatPublicInventory(): Promise<PlatPublicInventory[]
   const plats = registryChildPlats()
   const names = [...new Set(plats.map((p) => p.name.toLowerCase().trim()))]
   const sb = supabaseAnon()
-  if (!sb) return []
+  if (!sb) {
+    throw new Error('[fetchRegistryPlatPublicInventory] supabase anon client missing')
+  }
 
   const rows: PlatInventoryRow[] = []
   for (let i = 0; i < names.length; i += NAME_CHUNK) {
@@ -188,7 +213,7 @@ async function fetchRegistryPlatPublicInventory(): Promise<PlatPublicInventory[]
  */
 export const getRegistryPlatPublicInventory = makeResilientCached(
   fetchRegistryPlatPublicInventory,
-  ['registry-plat-public-inventory-v1'],
+  ['registry-plat-public-inventory-v3'],
   {
     revalidate: 900,
     tags: [cacheTag.market, cacheTag.listings],

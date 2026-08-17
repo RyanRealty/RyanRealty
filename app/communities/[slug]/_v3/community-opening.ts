@@ -6,7 +6,7 @@
 
 import { v3Text, type V3FieldItem, type V3InstrumentFigure } from '@/components/site/v3'
 import { communityImage } from '@/lib/geo-images'
-import { formatPrice } from '@/lib/format/money'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { listingTileHref } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { ListingTile } from '@/lib/data/types/listing'
@@ -86,7 +86,7 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
         {
           id: tile.listingKey,
           href: listingTileHref(tile),
-          priceLabel: formatPrice(tile.listPrice),
+          priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price not published',
           title: street || 'Listing',
           photoSrc: tile.photoUrl?.trim() || undefined,
           meta: meta || undefined,

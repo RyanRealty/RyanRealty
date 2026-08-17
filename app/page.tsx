@@ -14,7 +14,7 @@ import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { V3SectionTracker } from '@/components/site/v3/V3SectionTracker.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
@@ -27,7 +27,6 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { ArrivalIntent } from '@/components/site/v3/ArrivalIntent.client'
 import { formatDate } from '@/lib/format/date'
 import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
@@ -41,8 +40,9 @@ const ogImage = `${siteUrl}/api/og?type=default`
  * Homepage — the kinetic-brutalist design (navy + cream, Amboqia + Geist, GSAP +
  * Lenis motion). CHROME: Global PublicNav in app/layout.tsx owns the top bar
  * (KbNav from lib/site-nav.ts). This page owns KbFooter only — do not re-mount
- * KbNav. HideChrome is only for the not-found footer edge case / CSS hide if
- * still used. Global JSON-LD, VisitTracker, and auth bridges still run. Every
+ * KbNav. Do not remount a second intent bar. HideChrome is only for the
+ * not-found footer edge case / CSS hide if still used. Global JSON-LD,
+ * VisitTracker, and auth bridges still run. Every
  * figure is live from the DAL (§0). ISR cache at 60s.
  *
  * Promoted from the /concept/kb preview 2026-06-17 (Matt-approved design).
@@ -192,8 +192,7 @@ export default async function Home() {
 
   return (
     <main className="kb-root">
-      <KbSectionTracker pageType="homepage" />
-      <ArrivalIntent />
+      <V3SectionTracker pageType="homepage" />
       <SmoothScrollProvider>
         {/* Hero Layer A (Matt 2026-08-10 exact-match discovery home):
             H1 matches money queries. Live count + median stay in the sub-line. */}
