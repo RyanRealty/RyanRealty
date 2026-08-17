@@ -4,6 +4,7 @@
  */
 
 import { dec, escapeHtml, int, usd, usdSigned } from '@/lib/cma/render-blocks'
+import { clientFacingNotes, whyThisListPrice } from '@/lib/cma/client-facing'
 import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -20,7 +21,7 @@ function adjustmentRows(comps: CmaAdjustedComp[]): string {
   if (comps.length === 0) return ''
   const rows = comps
     .map((c) => {
-      const close = c.closePrice != null ? usd(c.closePrice) : 'n/a'
+      const close = c.closePrice != null ? usd(c.closePrice) : ''
       return `<tr>
       <td>${esc(c.address)}</td>
       <td class="num">${close}</td>
@@ -47,8 +48,8 @@ function sellerNetBlock(p: CmaPricing): string {
   <p>The list tiers above are contract prices. Seller concessions come off the close before commission and closing costs.</p>
   <div class="stat-strip is-3">
     <div class="stat"><div class="lbl">Close / list estimate</div><div class="val">${usd(p.recommended)}</div></div>
-    <div class="stat"><div class="lbl">Expected concessions</div><div class="val">${n.expectedConcessions != null ? usd(n.expectedConcessions) : 'n/a'}</div></div>
-    <div class="stat"><div class="lbl">Seller net from price</div><div class="val">${n.predictedSellerNet != null ? usd(n.predictedSellerNet) : 'n/a'}</div></div>
+    ${n.expectedConcessions != null ? `<div class="stat"><div class="lbl">Expected concessions</div><div class="val">${usd(n.expectedConcessions)}</div></div>` : ''}
+    ${n.predictedSellerNet != null ? `<div class="stat"><div class="lbl">Seller net from price</div><div class="val">${usd(n.predictedSellerNet)}</div></div>` : ''}
   </div>
   <p class="small">${n.givenCount} of ${n.knownCount} comparable sales reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
 }
@@ -82,6 +83,8 @@ export function pricingPage(input: {
   const range = pricingRangeDisplay(p)
   const sqft = s.sqft && s.sqft > 0 ? s.sqft : null
   const recPpsf = sqft ? usd(Math.round(p.recommended / sqft)) : null
+  const why = whyThisListPrice({ subject: s, comps: input.comps, market: input.market, pricing: p })
+  const notes = clientFacingNotes(p.notes, p)
   return {
     meta: `${esc(s.streetAddress)} · How this home is priced`,
     toc: 'How this home is priced',
@@ -105,7 +108,7 @@ export function pricingPage(input: {
     <div class="tier featured">
       <div class="t-lbl">Recommended list</div>
       <div class="t-val">${usd(p.recommended)}</div>
-      <div class="t-note">${p.priceOverride != null ? 'Broker-adjusted on review, anchored to the data-supported reconciliation.' : 'The reconciled value of the adjusted sales. Leaves room to negotiate inside the supported range.'}</div>
+      <div class="t-note">${why.strategy ?? (p.priceOverride != null ? 'A strategic list, anchored to the adjusted sales.' : 'The reconciled value of the adjusted sales. Leaves room to negotiate inside the supported range.')}</div>
     </div>
     <div class="tier">
       <div class="t-lbl">High end</div>
@@ -122,7 +125,7 @@ export function pricingPage(input: {
       : ''
   }
   <p>The similarity-weighted average of every fully adjusted sale lands at ${usd(p.method3)}. That check carries the market-conditions correction, so it anchors the recommendation.</p>
-  ${p.notes.length > 0 ? `<ul class="note-list">${p.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+  ${notes.length > 0 ? `<ul class="note-list">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
   <p class="small">Confidence: <strong>${esc(displayConfidence(p))}</strong>. ${esc(p.confidenceReason)}</p>`,
   }
 }

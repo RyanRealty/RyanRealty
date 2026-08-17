@@ -59,7 +59,7 @@ export function CmaCard({
   const menuItems: AdminMenuItem[] = [
     { label: 'Review', href: `/admin/cmas/${row.slug}` },
     ...(row.hasDocument
-      ? [{ label: 'Open report', href: `/cma/${row.slug}`, target: '_blank' as const }]
+      ? [{ label: 'Open report', href: `/admin/cmas/${row.slug}/view`, target: '_blank' as const }]
       : []),
     ...(row.status === 'delivered' || row.status === 'archived'
       ? [{ label: 'Send again', onSelect: () => onSend(row.slug) }]
@@ -132,7 +132,7 @@ export function CmaCard({
           </Button>
         ) : row.hasDocument ? (
           <Link
-            href={`/cma/${row.slug}`}
+            href={`/admin/cmas/${row.slug}/view`}
             target="_blank"
             rel="noreferrer"
             className="av2-btn av2-btn--quiet av2-btn--touch w-full"

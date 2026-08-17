@@ -92,6 +92,8 @@ export interface CmaComp {
   photosCount?: number | null
 }
 
+export type CmaCompKeepTier = 'strong' | 'weak'
+
 export interface CmaAdjustedComp extends CmaComp {
   monthsSinceClose: number
   timeAdjustment: number
@@ -100,6 +102,10 @@ export interface CmaAdjustedComp extends CmaComp {
   sizeAdjustment: number
   adjustedPrice: number
   weight: number
+  /** Display-only judge tier. Does not change pricing math. */
+  keepTier?: CmaCompKeepTier | null
+  /** Display-only judge reason. Does not change pricing math. */
+  keepReason?: string | null
 }
 
 export interface CmaMarketTrendPoint {

@@ -109,13 +109,16 @@ export function chunk<T>(items: readonly T[], max: number): T[][] {
 /**
  * MLS placeholder scrubber. Subdivision, view, and remark fields arrive carrying
  * literal 'N/A' / 'None' strings, which then print as "the N/A subdivision".
- * A placeholder is missing data, so it renders as missing.
+ * A placeholder is missing data, so it renders as missing. Aligned with
+ * `realSubdivision` sentinels in lib/cma/comp-tiers.ts.
  */
 export function cleanText(v: string | null | undefined): string | null {
   if (!v) return null
   const t = v.trim()
   if (!t) return null
-  return /^(n\/?a|none|null|unknown|tbd|not applicable)$/i.test(t) ? null : t
+  return /^(n\.?\/?a\.?|none|no|null|other|unknown|tbd|not\s+applicable|not\s+(in\s+)?(a\s+)?(sub)?division|[-–—.*]+)$/i.test(t)
+    ? null
+    : t
 }
 
 /** Host of a URL, for a compact printed source line. */

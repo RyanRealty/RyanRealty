@@ -37,6 +37,12 @@ import {
   usdSigned,
   verifyResourcesBlock,
 } from '@/lib/cma/render-blocks'
+import {
+  clientPlaceClause,
+  clientSourceLine,
+  formatClientMlsField,
+  whyThisListPrice,
+} from '@/lib/cma/client-facing'
 import type {
   CmaAdjustedComp,
   CmaBroker,
@@ -58,6 +64,9 @@ import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { propertyUsePage } from '@/lib/cma/render-use-of-property'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
 import { marketPage as marketBoardPage } from '@/lib/cma/render-market-page'
+import { printMarketAreaPages } from '@/lib/cma/market-area-chapters'
+import { whyPage } from '@/lib/cma/render-why-page'
+import { renderCompMapKeyHtml, renderCompStripHtml } from '@/lib/cma/comp-strip'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -180,7 +189,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
     </div>
     <div class="vb-range">${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}</div>
     ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
-    <div class="vb-detail">${a.comps.length} closed MLS sales, each adjusted for when it sold and how its size compares to yours. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}, not the ZIP.` : ''} ${esc(p.confidenceReason)}</div>
+    <div class="vb-detail">${esc(whyThisListPrice(a).coverSentence)} ${a.comps.length} closed MLS sales, each adjusted for when it sold and how its size compares to yours. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}, not the ZIP.` : ''}</div>
   </div>
   ${subjectStatStrip(a.subject)}
   <div class="presented-by">
@@ -210,7 +219,8 @@ function subjectPage(a: RenderCmaArgs): PageDef {
   facts.push(`${int(s.beds)} bedrooms · ${dec(s.baths, 0)} bathrooms · ${int(s.sqft)} sqft${s.mlsNumber ? ` (MLS ${esc(s.mlsNumber)})` : ''}`)
   if (s.lotAcres != null) facts.push(`${dec(s.lotAcres, 2)}-acre parcel${s.garageSpaces ? ` · ${int(s.garageSpaces)}-car garage` : ''}`)
   if (s.yearBuilt) facts.push(`Built ${s.yearBuilt}`)
-  if (s.viewDescription) facts.push(`View: ${esc(s.viewDescription)}`)
+  const view = formatClientMlsField(s.viewDescription)
+  if (view) facts.push(`View: ${esc(view)}`)
   if (s.taxAnnual) facts.push(`Annual property tax ${usd(s.taxAnnual)}`)
   const remarks = trimRemarks(s.publicRemarks, 1100)
   const yoy = a.market?.yoyMedianPriceDeltaPct
@@ -239,22 +249,15 @@ function subjectPage(a: RenderCmaArgs): PageDef {
 
 function mapPage(a: RenderCmaArgs): PageDef | null {
   if (!a.mapDataUri) return null
-  const keyItems = [
-    `<div class="k"><span class="pin subject">S</span><div class="txt"><strong>Subject</strong><br/>${esc(a.subject.streetAddress)}</div></div>`,
-    ...a.comps.map(
-      (c, i) =>
-        `<div class="k"><span class="pin">${i + 1}</span><div class="txt"><strong>${esc(c.address)}</strong><br/>${usd(c.closePrice)} · ${monthYear(c.closeDate)}${c.proximity ? ` · ${esc(c.proximity)}` : ''}</div></div>`,
-    ),
-  ]
   return {
     meta: `Comparable Sales Map · ${esc(a.subject.city)}`,
     toc: 'Where the comps sit',
     body: `
   <h2 class="section">Where the comps sit</h2>
-  <p style="margin-bottom:14px;">Pin positions come from each listing's recorded MLS coordinates. The subject is marked S, and the comp numbers match the order used through the rest of the report.</p>
+  <p style="margin-bottom:14px;">Pin numbers match the comparison strip. Each marker carries the sold price, the adjusted price to the subject, and why that sale stayed in the set.</p>
   <img class="map-img" src="${a.mapDataUri}" alt="Comparable sales map" />
   <h3 class="subhead" style="margin-top:0;">Marker key</h3>
-  <div class="map-key">${keyItems.join('')}</div>`,
+  ${renderCompMapKeyHtml(a.subject, a.comps)}`,
   }
 }
 
@@ -265,86 +268,14 @@ function soldVsList(c: CmaAdjustedComp): string | null {
 }
 
 function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
-  const s = a.subject
   const competing = a.comps.filter((c) => c.competingArea).length
-  const cards = a.comps
-    .slice(0, 8)
-    .map((c, i) => {
-      const ph = sparkPhotoAt(c.photoUrl, '640x480')
-      const vsList = soldVsList(c)
-      return `
-    <div class="comp-card">
-      <div class="ph-wrap">
-        ${ph ? `<img class="ph" src="${esc(ph)}" alt="${esc(c.address)}" />` : '<div class="ph-missing">No MLS photo on file</div>'}
-        <span class="num-chip">${i + 1}</span>
-        ${c.proximity ? `<span class="prox-chip">${esc(c.proximity)}</span>` : ''}
-      </div>
-      <div class="body">
-        <div class="addr">${esc(c.address)}</div>
-        <div class="stats">${int(c.beds)} bd · ${dec(c.baths, 0)} ba · ${int(c.sqft)} sf${c.lotAcres != null ? ` · ${dec(c.lotAcres, 2)} ac` : ''}${c.yearBuilt ? ` · ${c.yearBuilt}` : ''}</div>
-        <div class="price">${usd(c.closePrice)}</div>
-        <div class="when">${monthYear(c.closeDate)}${vsList ? ` · ${esc(vsList)}` : ''}${
-          c.concessionsAmount != null && c.concessionsAmount > 0
-            ? ` · concessions ${usd(c.concessionsAmount)}${c.sellerNet != null ? ` · net ${usd(c.sellerNet)}` : ''}`
-            : ''
-        }</div>
-        ${c.competingArea ? `<div class="area-tag">Competing area · ${esc(c.competingArea)}</div>` : ''}
-      </div>
-    </div>`
-    })
-    .join('')
-
-  const subjectPpsf = s.sqft ? a.pricing.recommended / s.sqft : null
-  const rows = a.comps
-    .map(
-      (c, i) => `
-    <tr>
-      <td>${i + 1}. ${esc(c.address)}${c.proximity || c.competingArea ? `<div class="sub-cell">${c.proximity ? esc(c.proximity) : ''}${c.proximity && c.competingArea ? ' · ' : ''}${c.competingArea ? `competing area: ${esc(c.competingArea)}` : ''}</div>` : ''}</td>
-      <td class="num">${dateLong(c.closeDate)}</td>
-      <td class="num">${usd(c.listPrice)}</td>
-      <td class="num">${usd(c.closePrice)}</td>
-      <td class="num">${c.concessionsAmount != null ? usd(c.concessionsAmount) : '—'}</td>
-      <td class="num">${c.sellerNet != null ? usd(c.sellerNet) : '—'}</td>
-      <td class="num">${usd(Math.round(c.closePrice / c.sqft))}</td>
-      <td class="num">${int(c.beds)}/${dec(c.baths, 0)}</td>
-      <td class="num">${int(c.sqft)}</td>
-      <td class="num">${c.lotAcres != null ? dec(c.lotAcres, 2) : '—'}</td>
-      <td class="num">${c.yearBuilt ?? '—'}</td>
-      <td class="num">${c.daysToOffer != null ? int(c.daysToOffer) : '—'} (${c.domTotal != null ? int(c.domTotal) : '—'})</td>
-    </tr>`,
-    )
-    .join('')
-
   return {
-    meta: `${esc(s.streetAddress)} · Comparable Sales`,
+    meta: `${esc(a.subject.streetAddress)} · Comparable Sales`,
     toc: 'The comparable sales',
     body: `
   <h2 class="section">Comparable Closed Sales</h2>
-  <p>${a.comps.length} closed single-family sales, selected for similarity to the subject in size, lot character, location, and recency. Each card carries the straight-line distance and direction from your home. ${competing > 0 ? `${competing} of them come from a competing market area and are labeled as such, per Fannie Mae B4-1.3-08.` : 'All of them sit in the subject\'s own market area.'} DTO is days to offer, the active-marketing read. DOM includes time under contract.</p>
-  <div class="comp-grid">${cards}</div>
-  <table class="comps">
-    <thead>
-      <tr><th>Property</th><th class="num">Closed</th><th class="num">List $</th><th class="num">Close $</th><th class="num">Conc $</th><th class="num">Net $</th><th class="num">$/sqft</th><th class="num">Bd/Ba</th><th class="num">Sqft</th><th class="num">Lot ac</th><th class="num">Year</th><th class="num">DTO (DOM)</th></tr>
-    </thead>
-    <tbody>
-      <tr class="subject">
-        <td>Subject · ${esc(s.streetAddress)}</td>
-        <td class="num">—</td>
-        <td class="num">${usd(a.pricing.recommended)}</td>
-        <td class="num">—</td>
-        <td class="num">${a.pricing.sellerNet?.expectedConcessions != null ? usd(a.pricing.sellerNet.expectedConcessions) : '—'}</td>
-        <td class="num">${a.pricing.sellerNet?.predictedSellerNet != null ? usd(a.pricing.sellerNet.predictedSellerNet) : '—'}</td>
-        <td class="num">${subjectPpsf != null ? usd(Math.round(subjectPpsf)) : '—'}</td>
-        <td class="num">${int(s.beds)}/${dec(s.baths, 0)}</td>
-        <td class="num">${int(s.sqft)}</td>
-        <td class="num">${s.lotAcres != null ? dec(s.lotAcres, 2) : '—'}</td>
-        <td class="num">${s.yearBuilt ?? '—'}</td>
-        <td class="num">—</td>
-      </tr>
-      ${rows}
-    </tbody>
-  </table>
-  <p class="small" style="margin-top:8px;">Close $ is the contract price. Conc $ is seller concessions. Net $ is close minus those concessions, before commission and closing costs. The subject List $ column shows the recommended list price for context. An em dash marks a value that does not apply or is unavailable.</p>`,
+  <p>${a.comps.length} closed single-family sales, selected for similarity to the subject in size, lot character, location, and recency. Pin numbers match the map. ${competing > 0 ? `${competing} of them come from a competing market area.` : 'All of them sit in the subject\'s own market area.'} One-page flyers after this strip are the print drill-in, not the comparison.</p>
+  ${renderCompStripHtml(a.comps)}`,
   }
 }
 
@@ -392,7 +323,7 @@ function compFlyerPage(a: RenderCmaArgs, comp: CmaAdjustedComp, index: number): 
   const ppsf = Math.round(comp.closePrice / comp.sqft)
   const vsList = soldVsList(comp)
   return {
-    meta: `Comparable Sale ${index + 1} of ${a.comps.length} · ${esc(cleanText(comp.subdivision) ?? comp.city)}`,
+    meta: `Comparable Sale ${index + 1} of ${a.comps.length}${clientPlaceClause(comp.subdivision, comp.city) ? ` · ${esc(clientPlaceClause(comp.subdivision, comp.city)!)}` : ''}`,
     toc: index === 0 ? 'Comparable sale detail, one page each' : undefined,
     body: `
   <div class="flyer-badge">Closed ${monthYear(comp.closeDate)}${comp.daysToOffer != null ? ` · ${int(comp.daysToOffer)}d to offer` : ''} · ${esc(comp.selectionTier)} comp</div>
@@ -417,7 +348,7 @@ function compFlyerPage(a: RenderCmaArgs, comp: CmaAdjustedComp, index: number): 
     <div class="f"><div class="fl">Close Date</div><div class="fv">${dateLong(comp.closeDate)}</div></div>
     <div class="f"><div class="fl">Days on Market</div><div class="fv">${comp.daysToOffer != null ? `${int(comp.daysToOffer)} to offer` : '—'}${comp.domTotal != null ? ` · DOM ${int(comp.domTotal)}` : ''}</div></div>
     <div class="f"><div class="fl">Distance from Subject</div><div class="fv">${comp.proximity ? esc(comp.proximity) : '—'}</div></div>
-    <div class="f"><div class="fl">View</div><div class="fv">${esc(cleanText(comp.viewDescription) ?? '—')}</div></div>
+    ${formatClientMlsField(comp.viewDescription) ? `<div class="f"><div class="fl">View</div><div class="fv">${esc(formatClientMlsField(comp.viewDescription)!)}</div></div>` : ''}
     <div class="f"><div class="fl">Adjusted to Subject</div><div class="fv">${usd(comp.adjustedPrice)}</div></div>
   </div>
   ${remarks ? '<p class="small">Description quoted from the MLS listing record.</p>' : ''}`,
@@ -438,21 +369,7 @@ function pricedPage(a: RenderCmaArgs): PageDef {
 }
 
 function rationalePage(a: RenderCmaArgs): PageDef {
-  const traceLines = [a.subjectTrace, ...a.compTrace]
-  const outliers = a.excludedOutliers
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Verification Trace`,
-    toc: 'Verification trace',
-    body: `
-  <h2 class="section">Verification Trace</h2>
-  <p>Every figure in this report is auditable. Below is the exact query path that produced the subject record and the comparable set, printed so you or an appraiser can reproduce it.</p>
-  <div class="trace">
-    <div class="t-hd">Data sources (audit trail)</div>
-    Every figure in this report traces to the Oregon Data Share MLS via the Ryan Realty data platform, pulled ${dateLong(a.generatedAtIso)}.<br/><br/>
-    ${traceLines.map((t) => esc(t)).join('<br/>')}
-  </div>
-  ${outliers.length > 0 ? `<h3 class="subhead">Sales that were pulled and then excluded</h3><ul class="note-list">${outliers.map((o) => `<li>${esc(o.address)} (${usd(o.closePrice)}): ${esc(o.reason)}.</li>`).join('')}</ul>` : ''}`,
-  }
+  return whyPage(a)
 }
 
 // ── What the comp grid does not price ───────────────────────────────────────
@@ -471,7 +388,7 @@ function rationalePage(a: RenderCmaArgs): PageDef {
 function whatWeLikePage(a: RenderCmaArgs): PageDef | null {
   const s = a.subject
   const items: Array<{ headline: string; detail: string | null }> = []
-  const view = cleanText(s.viewDescription)
+  const view = formatClientMlsField(s.viewDescription)
   if (view) items.push({ headline: `The view: ${view.replace(/\s*,\s*/g, ', ')}`, detail: 'From the MLS record for this parcel.' })
   if (s.lotAcres != null && s.lotAcres >= 0.5) {
     items.push({ headline: `${dec(s.lotAcres, 2)} acres of ground`, detail: 'Lot size from the county record on the listing.' })
@@ -590,7 +507,7 @@ function listingPlanPage(a: RenderCmaArgs): PageDef | null {
   <h2 class="section">${esc(heading)}</h2>
   <p>Every line below comes from a number in this report, measured on your home.</p>
   <ul class="note-list">${rows}</ul>
-  <div class="trace"><div class="t-hd">Source</div>${esc(p.source)}</div>`,
+  <div class="trace"><div class="t-hd">Source</div>${esc(clientSourceLine(p.source, 'Figures already computed in this report.'))}</div>`,
   }
 }
 
@@ -634,7 +551,7 @@ function subdivisionStoryPage(a: RenderCmaArgs): PageDef | null {
   ${sections}
   ${notable ? `<h3 class="subhead">Recent sales, one line each</h3><ul class="note-list">${notable}</ul>` : ''}
   ${position ? `<p><strong>${position}</strong></p>` : ''}
-  <div class="trace"><div class="t-hd">Source</div>${esc(f.source)}${st.model ? ` · Narrative written by ${esc(st.model)} from these rows, the listing remarks, and the hero photos of the ${st.photoSalesReviewed} most recent sales. Every number in it appears in the table above.` : ''}</div>`,
+  <div class="trace"><div class="t-hd">Source</div>${esc(clientSourceLine(f.source, `Closed single-family sales in ${f.name}.`))}</div>`,
   }
 }
 
@@ -653,7 +570,7 @@ function whenToListPage(a: RenderCmaArgs): PageDef | null {
   <p>${int(x.totalClosed)} single-family sales closed in ${esc(a.subject.city)} over the last ${dec(x.yearsCovered, 1)} years, grouped by close month. Each bar is the median days those homes took to go pending.</p>
   <div class="chart-block" data-anim="chart">${seasonalityChartSvg(x)}</div>
   <p>Fastest: ${fmtList(fastRow)}. Slowest: ${fmtList(slowRow)}. Months with fewer than 12 sales make no claim.</p>
-  <div class="trace"><div class="t-hd">Source</div>${esc(x.source)}</div>`,
+  <div class="trace"><div class="t-hd">Source</div>${esc(clientSourceLine(x.source, `Closed single-family sales in ${a.subject.city}, grouped by close month.`))}</div>`,
   }
 }
 
@@ -673,13 +590,13 @@ function competitionPage(a: RenderCmaArgs): PageDef | null {
     <div class="stat"><div class="lbl">Pending in Band</div><div class="val" data-count>${int(b.pendingCount)}</div></div>
     <div class="stat"><div class="lbl">Median Days on Market</div><div class="val">${b.activeMedianDom != null ? `${int(b.activeMedianDom)} days` : '—'}</div></div>
   </div>
-  <div class="trace"><div class="t-hd">Source</div>${esc(b.source)}</div>`)
+  <div class="trace"><div class="t-hd">Source</div>${esc(clientSourceLine(b.source, `Active and pending listings in ${a.subject.city} in this price band.`))}</div>`)
   }
   if (sub) {
     blocks.push(`
   <h3 class="subhead">${esc(sub.name)}, the last ${int(sub.months)} months</h3>
   <p>${int(sub.closedCount)} home${sub.closedCount === 1 ? '' : 's'} in your subdivision closed in the last ${int(sub.months)} months, from ${usd(sub.low)} to ${usd(sub.high)}${sub.medianClose != null ? `, median ${usd(Math.round(sub.medianClose))}` : ''}.</p>
-  <div class="trace"><div class="t-hd">Source</div>${esc(sub.source)}</div>`)
+  <div class="trace"><div class="t-hd">Source</div>${esc(clientSourceLine(sub.source, `Closed sales in ${sub.name}.`))}</div>`)
   }
   if (fin) {
     blocks.push(`
@@ -690,13 +607,13 @@ function competitionPage(a: RenderCmaArgs): PageDef | null {
     <div class="stat"><div class="lbl">Conventional</div><div class="val">${dec(fin.conventionalPct, 1)}%</div></div>
     <div class="stat"><div class="lbl">FHA / VA</div><div class="val">${dec(fin.fhaVaPct, 1)}%</div></div>
   </div>
-  <div class="trace"><div class="t-hd">Source</div>${esc(fin.source)}</div>`)
+  <div class="trace"><div class="t-hd">Source</div>${esc(clientSourceLine(fin.source, `${a.subject.city} sales in the last 12 months that reported financing.`))}</div>`)
   }
   if (bench) {
     blocks.push(`
   <h3 class="subhead">Presentation bench</h3>
   <p>The sold comps in this report marketed with a median of ${int(bench.compMedianPhotos)} photos. Your last listing carried ${int(bench.subjectPhotos)}.</p>
-  <div class="trace"><div class="t-hd">Source</div>${esc(bench.source)}</div>`)
+  <div class="trace"><div class="t-hd">Source</div>${esc(clientSourceLine(bench.source, 'Photo counts on the subject listing and the sold comps in this report.'))}</div>`)
   }
   return {
     meta: `${esc(a.subject.streetAddress)} · Your Competition`,
@@ -804,7 +721,7 @@ function disclosurePage(a: RenderCmaArgs): PageDef {
   <p><strong>Property description.</strong> ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')} · ${int(a.subject.beds)} bedrooms · ${dec(a.subject.baths, 0)} bathrooms · ${int(a.subject.sqft)} sqft${a.subject.lotAcres != null ? ` · ${dec(a.subject.lotAcres, 2)} acres` : ''}${a.subject.yearBuilt ? ` · built ${a.subject.yearBuilt}` : ''}.</p>
   <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size as shown in the adjustment grid, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
   ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
-  <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date in the verification trace and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be independently confirmed.</p>
+  <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date on this report and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be independently confirmed.</p>
   <p><strong>Licensee interest.</strong> Neither ${esc(b.displayName)} nor Ryan Realty holds any existing or contemplated interest in the subject property. Any such interest, should one arise, will be disclosed in writing.</p>
   <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
   <div class="signature-page">
@@ -834,9 +751,10 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (likes) rest.push(likes)
   const thisHome = thisHomePlanPage(a)
   if (thisHome) rest.push(thisHome)
+  rest.push(...printMarketAreaPages(a))
+  rest.push(compCardsAndTablePage(a))
   const map = mapPage(a)
   if (map) rest.push(map)
-  rest.push(compCardsAndTablePage(a))
   rest.push(adjustmentPage(a))
   a.comps.forEach((c, i) => rest.push(compFlyerPage(a, c, i)))
   const market = marketPage(a)

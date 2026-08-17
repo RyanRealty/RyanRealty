@@ -46,12 +46,14 @@ export async function getCmaHtmlBySlug(slug: string): Promise<{
   /** Persisted renderCmaHtml input — the immersive web view renders from it. */
   render_args: Record<string, unknown> | null
   broker_slug: string | null
+  /** Used only to hydrate keep-reasons on an already-built draft. */
+  build_summary: Record<string, unknown> | null
 } | null> {
   const sb = client()
   if (!sb) return null
   const { data } = await sb
     .from('cmas')
-    .select('html_content, html_path, status, render_args, broker_slug')
+    .select('html_content, html_path, status, render_args, broker_slug, build_summary')
     .eq('slug', slug.trim().toLowerCase())
     .maybeSingle()
   return (data ?? null) as {
@@ -60,6 +62,7 @@ export async function getCmaHtmlBySlug(slug: string): Promise<{
     status: string
     render_args: Record<string, unknown> | null
     broker_slug: string | null
+    build_summary: Record<string, unknown> | null
   } | null
 }
 

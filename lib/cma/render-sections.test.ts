@@ -190,11 +190,13 @@ describe('render helpers', () => {
   it('scrubs MLS placeholder values instead of printing them', () => {
     expect(cleanText('N/A')).toBeNull()
     expect(cleanText('none')).toBeNull()
+    expect(cleanText('Other')).toBeNull()
     expect(cleanText('  ')).toBeNull()
     expect(cleanText('Stone Creek')).toBe('Stone Creek')
     // The subject's subdivision is the literal string 'N/A' above, so it must
     // not reach the cover as "· N/A".
     expect(renderCmaHtml(bareArgs).html).not.toContain('· N/A')
+    expect(renderCmaHtml(bareArgs).html).not.toMatch(/\bN\/A\b/)
   })
 
   it('balances chunks so a section never ends on a one-item page', () => {

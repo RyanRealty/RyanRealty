@@ -12,6 +12,11 @@
  * the document to draft for a fresh review. It cannot send anything.
  *
  *   npx tsx scripts/_rebuild-cma.ts cma-20513-byron
+ *   npx tsx scripts/_rebuild-cma.ts --dry-run cma-20513-byron
+ *
+ * --dry-run prints the row Matt would rebuild and exits without writing.
+ * Live rebuild of production rows is Matt's step after the client-document
+ * render fix lands. Do not auto-send.
  */
 import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
@@ -45,9 +50,11 @@ async function main() {
   const { getCmaAdminRowBySlug } = await import('@/lib/data')
   const { buildCma } = await import('@/lib/cma/build')
 
-  const slug = (process.argv[2] ?? '').trim().toLowerCase()
+  const argv = process.argv.slice(2)
+  const dryRun = argv.includes('--dry-run')
+  const slug = (argv.find((a) => a !== '--dry-run') ?? '').trim().toLowerCase()
   if (!slug) {
-    console.error('usage: npx tsx scripts/_rebuild-cma.ts <slug>')
+    console.error('usage: npx tsx scripts/_rebuild-cma.ts [--dry-run] <slug>')
     process.exit(1)
   }
 
@@ -55,6 +62,28 @@ async function main() {
   if (!row) {
     console.error(`✖ no cmas row for slug "${slug}"`)
     process.exit(1)
+  }
+
+  if (dryRun) {
+    console.log(
+      JSON.stringify(
+        {
+          dryRun: true,
+          slug,
+          address: row.subject_address ?? null,
+          status: row.status ?? null,
+          recommended: row.recommended_list ?? null,
+          docType: row.doc_type ?? 'cma',
+          wouldCall: 'buildCma',
+          writes: false,
+          sends: false,
+          note: 'Matt runs this without --dry-run after the client-document render fix lands. Same path as rebuildCmaAction / buildNewVersion.',
+        },
+        null,
+        2,
+      ),
+    )
+    return
   }
 
   console.log(`Rebuilding ${slug} — ${String(row.subject_address ?? '(no address)')}`)
