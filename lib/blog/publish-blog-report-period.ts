@@ -54,13 +54,25 @@ export function extractTitlePeriod(title: string): BlogReportMonth | null {
   return { month, year }
 }
 
-export function extractDataPeriod(html: string, fallbackYear: string | null): BlogReportMonth | null {
-  const heading = html.match(new RegExp(`The\\s+(${MONTH_RE})\\s+numbers`, 'i'))
+export function inferDataYear(
+  dataMonth: (typeof MONTHS)[number],
+  titlePeriod: BlogReportMonth | null,
+  headingYear: string | null,
+): string | null {
+  if (headingYear) return headingYear
+  if (!titlePeriod) return null
+  const dataIdx = MONTHS.indexOf(dataMonth)
+  const titleIdx = MONTHS.indexOf(titlePeriod.month)
+  if (dataIdx > titleIdx) return String(Number(titlePeriod.year) - 1)
+  return titlePeriod.year
+}
+
+export function extractDataPeriod(html: string, titlePeriod: BlogReportMonth | null): BlogReportMonth | null {
+  const heading = html.match(new RegExp(`The\\s+(${MONTH_RE})(?:\\s+(20\\d{2}))?\\s+numbers`, 'i'))
   if (!heading) return null
   const month = titleCaseMonth(heading[1] ?? '')
   if (!month) return null
-  const yearMatch = html.match(new RegExp(`\\b${month}\\s+(20\\d{2})\\b`, 'i'))
-  const year = yearMatch?.[1] ?? fallbackYear
+  const year = inferDataYear(month, titlePeriod, heading[2] ?? null)
   if (!year) return null
   return { month, year }
 }
@@ -76,7 +88,7 @@ export function publishBlogReportPeriod(input: {
 }): PublishedBlogReportPeriod {
   const title = input.title.trim()
   const titlePeriod = extractTitlePeriod(title)
-  const dataPeriod = extractDataPeriod(input.html, titlePeriod?.year ?? null)
+  const dataPeriod = extractDataPeriod(input.html, titlePeriod)
   const defaultMeta = input.seoTitle?.trim() || (title ? `${title} | Ryan Realty Blog` : 'Ryan Realty Blog')
 
   if (!titlePeriod || !dataPeriod) {

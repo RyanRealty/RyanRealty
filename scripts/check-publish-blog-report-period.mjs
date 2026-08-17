@@ -23,7 +23,8 @@ checks.push({
     /export function publishBlogReportPeriod/.test(helper) &&
     /export function extractTitlePeriod/.test(helper) &&
     /export function extractDataPeriod/.test(helper) &&
-    helper.includes('The\\\\s+(${MONTH_RE})\\\\s+numbers') &&
+    helper.includes('The\\\\s+(${MONTH_RE})(?:\\\\s+(20\\\\d{2}))?\\\\s+numbers') &&
+    helper.includes('inferDataYear') &&
     helper.includes('closings. Published'),
 })
 
