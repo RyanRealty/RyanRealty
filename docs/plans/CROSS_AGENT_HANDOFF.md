@@ -2,7 +2,26 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — blog gutter + live MOS slice
+# Current — 2026-08-17 (cursor-loop-chain) — blog related homes + place-figure SoR
+
+**Surface:** Cursor cloud `bc-9668bbb2` (`cursor/loop-chain-2026-08-17t02-06-ac3d`). **Time:** 2026-08-17 ~02:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 495). Claimed parent only. Product **`8564b6d73`** + excerpt/JSON-LD follow-up on this branch. Draft PR **https://github.com/RyanRealty/RyanRealty/pull/64**. Cloud rule: do not push `main` or merge. Production READY for this SHA is **blocked on merge**. Prior production READY remains **`main` @ `18bb59e02`**. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (487 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 blog lines) at 390+1280: eagle/arts gutter **rejected** (already shipped; firstChar.left = H1 20/84). Eagle URL flip and surprise tab **rejected** (URL/title unchanged; popupCount was about:blank from context.newPage). Preparing-home-for-sale related homes **rejected** (checklist is not a buyable-place post).
+- Reproduced: moving-to-redmond, eagle-crest, and hb-2001 had related posts only. Redmond body printed 15 vs 18-22 vs 20, airport 5 vs 5-10, and $100k-$150k below next to the mid-2025 table.
+- Class: `matchBlogPlace` + `publishBlogRelatedHomes` (Active SFR tiles, cap 6, withhold empty). Drive/median rewrite through `publishBlogPlaceFigures` (18-22 min Redmond-Bend, 5-10 airport, live pulse gap). Excerpt + JSON-LD + meta use the same rewrite. Gates `ci:publish-blog-related-homes` and `ci:publish-blog-place-figures`.
+- Local accept on `127.0.0.1:3017` (verify worktree @ `8564b6d73`): `movingHasHomes` `eagleHasHomes` `hbHasHomes` true; `preparingHasHomes` false; gutter ok. Pulse 2026-08-17T02:18Z `market_pulse_live` city A: Redmond $537,000 / Bend $756,000 / gap $219,000. Body: "The median list price in Redmond is $537,000, $219,000 below Bend's $756,000." OSU-Cascades "18- to 22-minute drive."
+- Punch dispositions appended (parent not completed): 3 fixed + 5 rejected. Leftover blog + other families stay on the inbox.
+- Screenshots `/opt/cursor/artifacts/after_moving_to_redmond_oregon_{1280,390}_homes.png`, `after_eagle_1280_homes.png`, `after_moving_to_redmond_oregon_1280_body.png`.
+
+**Next**
+- Merge PR 64 onto `main` (not this session) then `deploy:verify` for the product SHA. Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, git-commit, DATABASE_FOR_AI_AGENTS lookup (pulse only).
+
+# Prior — 2026-08-17 (cursor-loop-chain) — blog gutter + live MOS slice
 
 **Surface:** Cursor cloud `bc-1d79681c` (`cursor/loop-chain-2026-08-17t01-20-78f6`). **Time:** 2026-08-17 ~02:05 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 503). Claimed parent only. Product **`a17c3f4c0`** (accept probe `a58402a54`) landed on **`main` @ `18bb59e02`**. Vercel Production **READY** (`G8nDqmYjyuKXPXDmq59hbPm7LVEi`). `npm run deploy:verify` exit 0 in 734s. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (495 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
