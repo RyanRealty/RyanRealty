@@ -4,16 +4,17 @@
 
 # Current — 2026-08-17 (cursor-loop-sentinel) — one published place days-to-pending
 
-**Surface:** Cursor cloud (`cursor/loop-sentinel-2026-08-17t00-40-3f01`). **Time:** 2026-08-17 ~00:55 UTC. Brief served **SHIP CLASS `fleet:public-ux:place-pages`** — FLEET-PUNCH node `3a6198cd` (193 place-pages lines). Claimed. Product **`6899359a6`**. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**. FLEET-PUNCH stays open with leftover lines.
+**Surface:** Cursor cloud `bc-85cd8b79` (`cursor/loop-sentinel-2026-08-17t00-40-3f01`). **Time:** 2026-08-17 ~01:17 UTC. Brief served **SHIP CLASS `fleet:public-ux:place-pages`** — FLEET-PUNCH node `3a6198cd`. Product **`6899359a6`**. Draft PR **https://github.com/RyanRealty/RyanRealty/pull/60**. Isolated `npm run push` exit 0 on this branch. **Not on production** — this SHA is not on `origin/main`, so `deploy:verify` cannot reach READY (hung waiting for a production deploy of `7c6c8ec`; killed). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**. FLEET-PUNCH released to **open** for the next place-pages slice. Do not `completeWorkNode` — leftovers remain.
 
 **Done**
-- FIRST STEP reproduce: Black Butte / NWX / Broken Top / Brasada / Redmond / Larkspur print the pulse half-day on hero+FAQ and a rounded integer on the market card (39.5 vs 40, 10.5 vs 11, 8.5 vs 9, 15.5 vs 16, 19.5 vs 20, 6.5 vs 7). Class of one display rule.
-- Class: SoR `publishPlaceDays` keeps the pulse median at one decimal. Glance, KbMarketHud, FAQ/Dataset, DaysCount, expired LP strip, and CRM `formatDays` share it. Gate `ci:publish-place-days`. R-024 coverage note only (still LOCKED).
-- Rejected (does not reproduce): Ridge 12 vs 14/$535k/19.5, Southern Crossing 1 vs 23, Tetherow HOA $1,464 vs $2,244, Tetherow Regional median, Golden Butte / River Meadows / Skyliner city $756k, Sunriver 19.5 vs 20, La Pine 50.5 vs 51. 16 punch lines removed. 507 remain.
-- Local accept: `publish-place-days` tests + `ci:publish-place-days` 9/9. Probe `scripts/probe-place-days-prod.mjs` after READY.
+- FIRST STEP reproduce: Black Butte / NWX / Broken Top / Brasada / Redmond / Larkspur print the pulse half-day on hero+FAQ and a rounded integer on the market card (39.5 vs 40, 10.5 vs 11, 8.5 vs 9, 15.5 vs 16, 19.5 vs 20, 6.5 vs 7). Homepage hero 23.5 vs HUD 24 is the same SoR (KbMarketHud). Class of one display rule.
+- Class: SoR `publishPlaceDays` keeps the pulse median at one decimal. Glance, KbMarketHud, FAQ/Dataset, DaysCount, expired LP strip, CRM `formatDays`, and neighborhood v3 `liveFigures` share it. Gate `ci:publish-place-days` 10/10. R-024 coverage note only (still LOCKED).
+- Rejected (does not reproduce): Ridge 12 vs 14/$535k/19.5, Southern Crossing 1 vs 23, Tetherow HOA $1,464 vs $2,244, Tetherow Regional median, Golden Butte / River Meadows / Skyliner city $756k, Sunriver 19.5 vs 20, La Pine 50.5 vs 51.
+- Same-class punch lines removed: founding place-page half-day mismatches + leftover Redmond `ebfe0927` + homepage 23.5 vs 24 (`29a15306`, `d16410fe`, `55b64dd7`). 20 lines removed this class. **503 remain**. Larkspur `209b00a2` kept (days + $1,238,000 vs $1,238,136).
+- Local accept: `publish-place-days` tests + `ci:publish-place-days` 10/10. Production probe not run — code is not live. Artifacts `/opt/cursor/artifacts/place_days_{gate,tests}.txt`.
 
 **Next**
-- One `npm run push`, one `deploy:verify` to READY, then production probe. Release FLEET-PUNCH to open for the next place-pages slice.
+- Merge PR 60 to `main` (or push `main`) so production can READY, then `node scripts/probe-place-days-prod.mjs`. Next `loop-brief` serves the next place-pages slice from the leftover 503.
 
 **Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
 
