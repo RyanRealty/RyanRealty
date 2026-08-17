@@ -9,6 +9,7 @@
  */
 
 import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
+import { GOLF_COMMUNITY_IMAGES } from '@/lib/geo-images'
 
 type VideoManifestEntry = { scope?: string; video?: string; poster?: string }
 
@@ -42,6 +43,22 @@ export const CITY_MARQUEE_COMMUNITIES: Record<string, { match: string; img: stri
     { match: 'northwest crossing', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
   ],
   sunriver: [{ match: 'caldera', img: '/images/kb/caldera-springs.jpg', videoSlug: 'caldera-springs' }],
+}
+
+/** Hover photo for each resort in the city-page master-planned ledger. */
+export const CITY_RESORT_LEDGER_IMG: Record<string, string> = {
+  tetherow: '/images/kb/tetherow-golf-aerial.jpg',
+  'broken-top': '/images/kb/broken-top.jpg',
+  'northwest-crossing': '/images/kb/northwest-crossing.jpg',
+  'vandevert-ranch': '/images/kb/vandevert-ranch.jpg',
+  'three-rivers': '/images/kb/three-rivers.jpg',
+  'caldera-springs': '/images/kb/caldera-springs.jpg',
+  pronghorn: GOLF_COMMUNITY_IMAGES.pronghorn,
+  'awbrey-glen': GOLF_COMMUNITY_IMAGES['awbrey-glen'],
+  'widgi-creek': GOLF_COMMUNITY_IMAGES['widgi-creek'],
+  crosswater: GOLF_COMMUNITY_IMAGES.crosswater,
+  'eagle-crest': GOLF_COMMUNITY_IMAGES['eagle-crest'],
+  'brasada-ranch': GOLF_COMMUNITY_IMAGES['brasada-ranch'],
 }
 
 /** Resolved Area Guide clip URL for a manifest slug, or null when it has none. */

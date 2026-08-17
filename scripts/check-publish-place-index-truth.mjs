@@ -72,7 +72,7 @@ checks.push({
   label: 'neighborhood page gates the hero through publishPlaceHeroUrl',
   ok:
     /from ['"]@\/lib\/market\/publish-place-hero['"]/.test(nbh) &&
-    /publishPlaceHeroUrl\(/.test(nbh),
+    /publishNeighborhoodHero\(/.test(nbh),
 })
 
 const method = src('lib/market/publish-public-methodology.ts')

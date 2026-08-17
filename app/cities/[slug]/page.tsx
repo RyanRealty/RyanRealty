@@ -53,7 +53,7 @@ import { getCityMetadataByName } from '@/lib/data/cities/getCityMetadata'
 import { getCityContent, buildDataDrivenCityAbout } from '@/lib/city-content'
 import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
-import { cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-images'
+import { cityHero } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
@@ -61,7 +61,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
-import { CITY_HERO_VIDEO, CITY_MARQUEE_COMMUNITIES, communityVideoUrl } from '@/lib/kb/city-page-config'
+import { CITY_HERO_VIDEO, CITY_MARQUEE_COMMUNITIES, CITY_RESORT_LEDGER_IMG, communityVideoUrl } from '@/lib/kb/city-page-config'
 // Row-to-prop shaping shared with the neighborhood + community place pages —
 // one copy, so a fix cannot land on one of the three and drift on the others.
 import {
@@ -122,27 +122,6 @@ export const dynamicParams = true
 export const revalidate = 60
 
 type Props = { params: Promise<{ slug: string }> }
-
-// Hover photo for each resort/golf community in the master-planned ledger, keyed by
-// the resort-registry slug. The literal-name image lookups miss for resorts (their
-// banner rows are tagged under alias subdivisions), so this curated map is the
-// primary source. Every path is a verified file under public/.
-const RESORT_IMG: Record<string, string> = {
-  // KB hero imagery (non-golf-lp slugs) stays as KB literals.
-  tetherow: '/images/kb/tetherow-golf-aerial.jpg',
-  'broken-top': '/images/kb/broken-top.jpg',
-  'northwest-crossing': '/images/kb/northwest-crossing.jpg',
-  'vandevert-ranch': '/images/kb/vandevert-ranch.jpg',
-  'three-rivers': '/images/kb/three-rivers.jpg',
-  'caldera-springs': '/images/kb/caldera-springs.jpg',
-  // Golf/master-community tile imagery from the canonical source (D86 / G30).
-  pronghorn: GOLF_COMMUNITY_IMAGES.pronghorn,
-  'awbrey-glen': GOLF_COMMUNITY_IMAGES['awbrey-glen'],
-  'widgi-creek': GOLF_COMMUNITY_IMAGES['widgi-creek'],
-  crosswater: GOLF_COMMUNITY_IMAGES.crosswater,
-  'eagle-crest': GOLF_COMMUNITY_IMAGES['eagle-crest'],
-  'brasada-ranch': GOLF_COMMUNITY_IMAGES['brasada-ranch'],
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
@@ -351,7 +330,7 @@ export default async function CityDetailPage({ params }: Props) {
       href: getPlaceLinks({ type: 'community', slug: c.slug, citySlug: slug }).placeUrl,
       activeCount: resortSfrCounts.get(c.slug) ?? communitySfrBySlug.get(c.slug) ?? 0,
       medianPrice: null,
-      img: RESORT_IMG[c.slug] ?? commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()) ?? '',
+      img: CITY_RESORT_LEDGER_IMG[c.slug] ?? commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()) ?? '',
     }))
 
   // Communities rail — EVERY community in the city that has a banner photo, with

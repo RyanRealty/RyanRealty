@@ -324,7 +324,7 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/golfCommunityItems: KbTownItem\[\] = cityResorts\(slug\)/)
     expect(src).toMatch(/resortSfrCounts = resortActiveSfrCounts\(slug, resortTiles\)/)
     // golf/master-planned hover photos resolve from the curated resort image map
-    expect(src).toMatch(/RESORT_IMG\[c\.slug\]/)
+    expect(src).toMatch(/CITY_RESORT_LEDGER_IMG\[c\.slug\]/)
   })
 
   it('D93 — activity section is "Latest market activity" with per-row listing thumbnails', () => {

@@ -31,3 +31,17 @@ export function publishPlaceHeroUrl(
   }
   return null
 }
+
+export function publishNeighborhoodHero(input: {
+  curated: string | null | undefined
+  dbUrl: string | null | undefined
+  cityFallbackSrc: string
+}): { src: string; verified: boolean } {
+  const src =
+    publishPlaceHeroUrl([input.curated, input.dbUrl, input.cityFallbackSrc]) ?? input.cityFallbackSrc
+  const verified = Boolean(
+    (input.curated && !isStockPlaceHeroUrl(input.curated)) ||
+      (input.dbUrl && !isStockPlaceHeroUrl(input.dbUrl)),
+  )
+  return { src, verified }
+}
