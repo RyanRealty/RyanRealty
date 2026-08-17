@@ -22,6 +22,7 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import type { MarketStats } from '@/lib/data'
 import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
+import { currentYearSalesRow, publishPlatYtdStats } from '@/lib/market/publish-plat-year-sales'
 import {
   HISTORY_MAX_YEAR,
   HISTORY_MIN_YEAR,
@@ -58,8 +59,14 @@ interface Props {
 }
 
 export function SubdivisionSalesHistory({ displayName, history, stats, cityName }: Props) {
+  const publishedStats = publishPlatYtdStats({
+    stats,
+    currentYear: currentYearSalesRow(history),
+  })
   const hasHistory = history.length > 0
-  const hasStats = Boolean(stats && (stats.medianSalePrice != null || stats.soldCount != null))
+  const hasStats = Boolean(
+    publishedStats && (publishedStats.medianSalePrice != null || publishedStats.soldCount != null),
+  )
   if (!hasHistory && !hasStats) return null
 
   const { openable, outsideClosed, outsideYears } = splitByExplorerRange(history)
@@ -71,21 +78,21 @@ export function SubdivisionSalesHistory({ displayName, history, stats, cityName 
   const outsideYearBit = outsideYears === 1 ? 'one year' : `${outsideYears} years`
 
   const statCells: Array<{ label: string; value: string }> = []
-  if (stats) {
-    if (stats.medianSalePrice != null) {
-      statCells.push({ label: 'Median sale price', value: currencyRounded(stats.medianSalePrice) })
+  if (publishedStats) {
+    if (publishedStats.medianSalePrice != null) {
+      statCells.push({ label: 'Median sale price', value: currencyRounded(publishedStats.medianSalePrice) })
     }
-    if (stats.medianDaysOnMarket != null) {
+    if (publishedStats.medianDaysOnMarket != null) {
       statCells.push({
         label: 'Median days on market',
-        value: `${Math.round(stats.medianDaysOnMarket)} days`,
+        value: `${Math.round(publishedStats.medianDaysOnMarket)} days`,
       })
     }
-    if (stats.soldCount != null) {
-      statCells.push({ label: 'Homes sold', value: String(stats.soldCount) })
+    if (publishedStats.soldCount != null) {
+      statCells.push({ label: 'Homes sold', value: String(publishedStats.soldCount) })
     }
-    if (stats.yoyChangePct != null) {
-      statCells.push({ label: 'Median price', value: yoyText(stats.yoyChangePct) })
+    if (publishedStats.yoyChangePct != null) {
+      statCells.push({ label: 'Median price', value: yoyText(publishedStats.yoyChangePct) })
     }
   }
 
@@ -112,10 +119,10 @@ export function SubdivisionSalesHistory({ displayName, history, stats, cityName 
           </p>
         ) : null}
 
-        {hasStats && stats && statCells.length > 0 ? (
+        {hasStats && publishedStats && statCells.length > 0 ? (
           <div style={{ margin: '0 0 2rem' }}>
             <p className="eyebrow" style={{ margin: '0 0 .75rem' }}>
-              {PERIOD_LABEL[stats.periodType]}
+              {PERIOD_LABEL[publishedStats.periodType]}
             </p>
             <dl
               style={{

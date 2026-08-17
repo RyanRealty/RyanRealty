@@ -10,7 +10,7 @@
  * by MLS city (`is_central_oregon_city`), city rows clip to the TIGER
  * incorporated-place polygon when one exists.
  *
- * reachability: housing-market hub, central-oregon region report, annual review
+ * reachability: housing-market hub, central-oregon region report, annual review, /cities
  */
 
 export type PulseCityCount = {

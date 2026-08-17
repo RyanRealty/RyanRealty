@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — listing-detail HOA / ask / contact slice
+# Current — 2026-08-17 (cursor-loop-sentinel) — place-pages YTD / index-count slice
+
+**Surface:** Cursor cloud `bc-b3bba897` (`cursor/loop-sentinel-2026-08-17t06-20-9b6c`). **Time:** 2026-08-17 ~07:00 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 490). Claimed parent only. Product **`69401699a`** on this branch. Draft PR **#76**. `npm run push` gates + build green. **Production is not this SHA** — cloud run stays off `main`; `deploy:verify` timed out after 300s with no production deploy for `6940169`. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (482 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280 on production: Tetherow MOS 4.6 **rejected** (withheld). Tetherow 35 vs 19 hrefs vs 24 pins **rejected** (hero/map 35). Brookside $1,199,500 vs $1,200,000 **rejected** (live $1,370,000 / $1,150,000). Ridge 0 / $535k / 19.5 **rejected** (12 / $910,000). Ridge 14 vs 26 vs 12 **rejected** (all 12). Ridge YTD 9 / $850k / 26 vs year table 2026 17 / $575k **reproduced**. `/communities` featured vs A-Z **reproduced**. `/cities` hero vs featured-card sum **reproduced**.
+- Class: `publishPlatYtdStats` withholds cache YTD when sold count or nearest-thousand median disagrees with the current-year sales-history row. Communities A-Z uses `publishCommunityIndexCount` (snapshot wins). `/cities` reads `getMarketPulseAllCitySnapshots` and names remainder (`#city-remainder`). Gates `ci:publish-plat-year-sales` 3/3, `ci:publish-community-index-count` 2/2, `ci:pulse-city-remainder` 9/9.
+- Local accept on isolated-verify `next start :4317` (SHA `69401699a`): Ridge YTD strip **gone**, year table 2026 still **17 / $575,000**. Communities A-Z Tetherow **19 homes** = featured 19. Cities remainder **648 more in the region pulse sit outside a city-boundary row**. Shots `/opt/cursor/artifacts/after_ridge_{1280,390}_target.png`, `after_communities_1280_az_tetherow.png`, `after_cities_{1280,390}_remainder_el.png`.
+- Punch dispositions appended (parent not completed): 3 fixed + 5 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Merge PR 76 so production picks up the YTD withhold and index-count publishers. Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, git-commit, DATABASE_FOR_AI_AGENTS lookup (plat YTD withhold, community index count, city remainder).
+
+# Prior — 2026-08-17 (cursor-loop-chain) — listing-detail HOA / ask / contact slice
 
 **Surface:** Cursor cloud `bc-42b57373` (`cursor/loop-chain-2026-08-17t04-57-75e4`). **Time:** 2026-08-17 ~05:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 506). Claimed parent only. Product **`cf90a3c2e`** landed on **`main`**. Vercel Production **READY** (`F3jT3EERo8nwXtMpMdLnfUZ4jK73`). `npm run deploy:verify` exit 0 in 448s. Draft PR **#72** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (498 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 

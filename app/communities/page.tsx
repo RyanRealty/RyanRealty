@@ -38,6 +38,10 @@ import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { communityImage, cityHero } from '@/lib/geo-images'
 import { getSurfaceImages, pickSurfaceImage } from '@/lib/data'
 import { subdivisionEntityKey } from '@/lib/slug'
+import {
+  communityIndexNameKey,
+  publishCommunityIndexCount,
+} from '@/lib/market/publish-community-index-count'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -162,7 +166,10 @@ export default async function CommunitiesPage() {
         // Registry resorts are permanent fixtures: no snapshot row means zero
         // current inventory (the shared fetch drops 0-count rows), and "0
         // active" is the honest ledger — an em-dash read as broken data.
-        activeCount: snap?.activeSfrCount ?? idx?.activeCount ?? 0,
+        activeCount: publishCommunityIndexCount({
+          snapshotCount: snap?.activeSfrCount,
+          indexCount: idx?.activeCount,
+        }),
         pendingCount: snap?.pendingCount ?? null,
         medianPrice: snap?.medianListPrice ?? idx?.medianPrice ?? null,
       }
@@ -172,11 +179,16 @@ export default async function CommunitiesPage() {
   // Long tail: every community the index knows, alphabetical (already sorted
   // by getCommunitiesForIndex). Resorts stay in the index too so the A-to-Z
   // list is complete and every community URL is in the DOM.
+  const publishedByName = new Map(
+    resorts.map((r) => [communityIndexNameKey(r.name), r.activeCount] as const),
+  )
   const indexItems = allCommunities.map((c) => ({
     slug: c.slug,
     name: c.subdivision,
     city: c.city,
-    activeCount: c.activeCount,
+    activeCount:
+      publishedByName.get(communityIndexNameKey(c.subdivision)) ??
+      publishCommunityIndexCount({ indexCount: c.activeCount }),
   }))
 
   const totalActive = allCommunities.reduce((sum, c) => sum + c.activeCount, 0)

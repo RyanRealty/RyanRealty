@@ -40,6 +40,10 @@ const surfaces = [
     path: 'app/housing-market/annual-review/page.tsx',
     label: 'annual-review fetches all city pulse rows and passes regionActive',
   },
+  {
+    path: 'app/cities/page.tsx',
+    label: 'cities index fetches all city pulse rows and passes regionActive',
+  },
 ]
 
 for (const surface of surfaces) {
@@ -57,6 +61,7 @@ const builders = [
   'app/housing-market/_v3/hub-sections.ts',
   'app/housing-market/central-oregon/_v3/region-sections.ts',
   'app/housing-market/annual-review/_v3/annual-sections.ts',
+  'app/cities/city-index-remainder.ts',
 ]
 for (const path of builders) {
   const text = src(path)
