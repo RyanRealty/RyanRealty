@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbTownItem } from './types'
+import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 
 /**
  * KB Explore ledger (01) — the page leads with place. Editorial row-list; each
@@ -20,7 +21,7 @@ export function KbExploreTowns({
   sectionId = 'towns',
   // "See homes for sale" is the one verb pair for every /homes-for-sale CTA on a
   // page (design-audit P3: six different labels read as six different destinations).
-  cta = { href: '/homes-for-sale', label: 'See homes for sale' },
+  cta = { href: publishRegionalSearchHref(), label: 'See homes for sale' },
 }: {
   towns: KbTownItem[]
   /** Required: a placeholder default here shipped a naked-verb heading for months (C-07). */

@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — blog gutter + live MOS slice
+# Current — 2026-08-17 (cursor-loop-sentinel) — site regional See homes slice
+
+**Surface:** Cursor cloud `bc-a505260a` (`cursor/loop-sentinel-2026-08-17t02-40-c49f`). **Time:** 2026-08-17 ~03:20 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:site` (8 of 518). Claimed parent only. Product **`ebd0d0279`** on this branch. Draft PR **#69**. `npm run push` gates + build green. **Production is not this SHA** — cloud run stays off `main`; `deploy:verify` found no production deploy for `ebd0d02` (vercel ls hung). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (510 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 site lines) at 390+1280 on production: Bend 484 vs city 483 **does not reproduce** (both 483 / $756,000). Get-alerts silent revert **does not reproduce** (1280 Set). Hero vs map 1,835 **does not reproduce** (both settle 1,836; mid-count is animation). Three hero CTAs **reproduced, rejected** (product lock). Two headers **reproduced, rejected** (ArrivalIntent). Town doors no photos **does not reproduce** (town-fill opacity 1). SEE HOMES → Bend **reproduced**.
+- Class: `publishRegionalSearchHref` → `/homes-for-sale?view=list` on homepage See homes, towns CTA, map Browse homes, featured view-all, footer. Gate `ci:publish-regional-search-href` 8/8.
+- Prod probe `scripts/probe-site-punch-prod.mjs`: `showingBendOnly: true` on live `/homes-for-sale`. Screenshots `/opt/cursor/artifacts/site_home_{390,1280}_top.png`, `site_see_homes_{390,1280}.png`, `site_bend_{390,1280}_top.png`.
+- Punch dispositions appended (parent not completed): 1 fixed + 7 rejected. Leftover site + other families stay on the inbox.
+
+**Next**
+- Merge PR 69 so production picks up `?view=list`. Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-002/R-024/R-095, git-commit, DATABASE_FOR_AI_AGENTS lookup (regional href).
+
+# Prior — 2026-08-17 (cursor-loop-chain) — blog gutter + live MOS slice
 
 **Surface:** Cursor cloud `bc-1d79681c` (`cursor/loop-chain-2026-08-17t01-20-78f6`). **Time:** 2026-08-17 ~02:05 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 503). Claimed parent only. Product **`a17c3f4c0`** (accept probe `a58402a54`) landed on **`main` @ `18bb59e02`**. Vercel Production **READY** (`G8nDqmYjyuKXPXDmq59hbPm7LVEi`). `npm run deploy:verify` exit 0 in 734s. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (495 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 

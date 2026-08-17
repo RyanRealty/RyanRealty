@@ -8,6 +8,7 @@ import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions } from '@/lib/maps/markers'
 import { PHOTO_STAMP_MIN_ZOOM } from '@/lib/maps/photo-stamp'
 import { kbMoneyFull } from './types'
+import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 
 export type KbMapFeature = {
   type: 'Feature'
@@ -100,6 +101,7 @@ export function KbListingMapImpl({
   activeKey = null as string | null,
   /** Pin click → parent list highlight (dual-pane). */
   onActiveKeyChange,
+  browseHref = publishRegionalSearchHref(),
 }: {
   geojson: KbMapGeo
   totalActive: number
@@ -113,6 +115,7 @@ export function KbListingMapImpl({
   countNoun?: string
   activeKey?: string | null
   onActiveKeyChange?: (key: string | null) => void
+  browseHref?: string
 }) {
   const { ready } = useGoogleMapsReady()
   const countEl = useRef<HTMLElement>(null)
@@ -311,7 +314,7 @@ export function KbListingMapImpl({
         })
       } catch (err) {
         // Fail open: still show unclustered markers if clusterer throws.
-        console.warn('[KbListingMap] clusterer failed; showing unclustered markers', err)
+        console.warn('[KbListingMap] clusterer failed. showing unclustered markers', err)
         for (const m of markers) m.setMap(map)
       }
 
@@ -409,7 +412,7 @@ export function KbListingMapImpl({
           </div>
         </div>
         <div className="sec-cta">
-          <a href="/homes-for-sale" className="btn">
+          <a href={browseHref} className="btn">
             Browse homes <span className="arr">→</span>
           </a>
         </div>

@@ -220,6 +220,9 @@ export default async function SearchPage({
   const view = (sp.view === 'list' || sp.view === 'map' ? sp.view : 'split') as 'split' | 'list' | 'map'
 
   const defaultCity = 'Bend'
+  // List view skips the silent Bend inject. Homepage regional CTAs use
+  // publishRegionalSearchHref() → ?view=list so "See homes" next to the
+  // region count does not land on Showing Bend only.
   const effectiveFilters = {
     ...filters,
     city: filters.city || (view !== 'list' ? defaultCity : undefined),
