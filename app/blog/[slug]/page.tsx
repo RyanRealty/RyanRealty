@@ -2,8 +2,9 @@
  * /blog/[slug] — one published article, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Quiet (the article answer) -> article-body island -> Ledger (related posts)
- * -> Quiet (geo doors and the valuation edge). Three of the six patterns.
+ * Quiet (the article answer) -> article-body island -> Ledger (related homes
+ * when the post names a buyable place) -> Ledger (related posts) -> Quiet
+ * (contextual CTA, geo doors, valuation). Four of the six patterns.
  *
  * THE PAGE CONTRACT: generateMetadata (seo_title, seo_description, OG image
  * rules unchanged), Article JSON-LD via generateBlogSchema, BreadcrumbList,
@@ -25,7 +26,14 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getBlogPostBySlug, getRelatedBlogPosts, getMarketPulse } from '@/lib/data'
+import { getBlogRelatedHomes } from '@/lib/data/blog/getBlogRelatedHomes'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
+import {
+  matchBuyablePlaceForPost,
+  publishBlogContextualCta,
+  publishBlogRelatedHomes,
+} from '@/lib/blog/publish-blog-related-homes'
+import { blogRelatedHomeRows } from './_v3/blog-related-homes'
 import {
   BLOG_CURRENT_MOS_PLACES,
   blogClaimsCurrentMos,
@@ -49,6 +57,7 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
+  type V3LedgerFigureRow,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
@@ -116,6 +125,19 @@ export default async function BlogPostPage({ params }: PageProps) {
   if (!post) notFound()
 
   const relatedPosts = await getRelatedBlogPosts(post.slug, post.category, 3)
+  const buyablePlace = matchBuyablePlaceForPost(post)
+  const relatedHomeTiles = buyablePlace ? await getBlogRelatedHomes(buyablePlace, 8) : []
+  const publishedHomes = publishBlogRelatedHomes({
+    place: buyablePlace,
+    listingKeys: relatedHomeTiles.map((tile) => tile.listingKey),
+  })
+  const relatedHomeRows: V3LedgerFigureRow[] = publishedHomes
+    ? blogRelatedHomeRows(
+        relatedHomeTiles.filter((tile) => publishedHomes.listingKeys.includes(tile.listingKey)),
+      )
+    : []
+  const [firstRelatedHome, ...restRelatedHomes] = relatedHomeRows
+  const contextualCta = publishBlogContextualCta(buyablePlace)
   const pageUrl = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
   const readMinutes = estimateReadTime(post.content)
   const articleSchema = generateBlogSchema({
@@ -166,6 +188,7 @@ export default async function BlogPostPage({ params }: PageProps) {
     label: `${geo.label}, ${geo.city}`,
     href: geo.href,
   }))
+  const exploreHrefs = new Set<string>([contextualCta.href])
 
   const tagBody = post.tags && post.tags.length > 0 ? post.tags.filter((t) => t.trim()).join(' · ') : null
 
@@ -268,6 +291,17 @@ export default async function BlogPostPage({ params }: PageProps) {
           </div>
         </article>
 
+        {firstRelatedHome && buyablePlace ? (
+          <V3Ledger
+            id="related-homes"
+            eyebrow={v3Text('On the market now')}
+            heading={v3Text(`${buyablePlace.label} homes`)}
+            rows={[firstRelatedHome, ...restRelatedHomes]}
+            source={v3Text(`Active SFR in ${buyablePlace.label}. Same inventory as ${buyablePlace.href}.`)}
+            action={{ label: v3Text(contextualCta.label), href: contextualCta.href }}
+          />
+        ) : null}
+
         {firstRelated ? (
           <V3Ledger
             id="related"
@@ -283,7 +317,8 @@ export default async function BlogPostPage({ params }: PageProps) {
           eyebrow="More resources"
           heading="Keep reading"
           items={[
-            ...geoItems,
+            { label: contextualCta.label, href: contextualCta.href },
+            ...geoItems.filter((item) => !('href' in item) || !exploreHrefs.has(item.href)),
             ...(tagBody ? [{ kind: 'prose' as const, term: 'Tags', body: tagBody }] : []),
             { label: 'All posts', href: '/blog' },
             ...(category

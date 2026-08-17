@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-sentinel) — place-pages resort index 12-vs-35 slice
+# Current — 2026-08-17 (cursor-loop-chain) — blog related-homes / CTA slice
+
+**Surface:** Cursor cloud `bc-e459ecbb` (`cursor/loop-chain-2026-08-17t10-35-b6a3`). **Time:** 2026-08-17 ~11:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 442). Claimed parent only. Product **`10a8a7a77`** landed on **`main`**. Vercel Production **READY** (`PKBGTWs5K9Bcdg7SdpsVyvLfSarC`, `npm run deploy:verify` exit 0). Draft PR **#82** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (434 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 blog lines) at 390+1280: Brasada / Bend-retirees / Caldera related-homes **reproduced** (no `#related-homes` before). Arts + retirement related-homes **rejected** (lifestyle tags, no buyable place). Arts + retirement missing CTA **reproduced**. Retirement numbers-disagree **rejected** (CMS ranges; no same-label pair).
+- Class: `publishBlogRelatedHomes` + `matchBuyablePlaceForPost` (community via geo links; city only with buy-intent). `publishBlogContextualCta` → See {place} homes vs Talk to a broker `/contact`. Gate `ci:publish-blog-related-homes` 6/6.
+- Prod probe after READY `10a8a7a77`: Brasada **#related-homes** $1,425,000 / See Brasada Ranch homes. Bend retirees **Bend homes** $750,000 / See Bend homes. Caldera **$3,400,000** / See Caldera Springs homes. Arts + retirement: no related-homes, **Talk to a broker → /contact**. After shots `/opt/cursor/artifacts/after_{brasada,caldera,bend_retirees}_1280_homes_clear.png`, `after_{arts,retirement}_1280_cta_clear.png`.
+- Punch dispositions appended (parent not completed): 5 fixed + 3 rejected. Leftover blog + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, SITE_PAGE_STANDARD §7, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-sentinel) — place-pages resort index 12-vs-35 slice
 
 **Surface:** Cursor cloud `bc-99eda833` (`cursor/loop-sentinel-2026-08-17t09-40-82e4`). **Time:** 2026-08-17 ~10:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 450). Claimed parent only. Product **`f76383e76`** landed on **`main`**. Vercel Production **READY** (`GRTMbTeioUET9JxfiSDTY4MyPL3y`, `npm run deploy:verify` exit 0). Draft PR **#81** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (442 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
