@@ -176,7 +176,9 @@ async function fetchRegistryPlatPublicInventory(): Promise<PlatPublicInventory[]
   const plats = registryChildPlats()
   const names = [...new Set(plats.map((p) => p.name.toLowerCase().trim()))]
   const sb = supabaseAnon()
-  if (!sb) return []
+  if (!sb) {
+    throw new Error('[fetchRegistryPlatPublicInventory] supabase anon client missing')
+  }
 
   const rows: PlatInventoryRow[] = []
   for (let i = 0; i < names.length; i += NAME_CHUNK) {
@@ -211,7 +213,7 @@ async function fetchRegistryPlatPublicInventory(): Promise<PlatPublicInventory[]
  */
 export const getRegistryPlatPublicInventory = makeResilientCached(
   fetchRegistryPlatPublicInventory,
-  ['registry-plat-public-inventory-v2'],
+  ['registry-plat-public-inventory-v3'],
   {
     revalidate: 900,
     tags: [cacheTag.market, cacheTag.listings],
