@@ -206,7 +206,7 @@ function FilterDropdown({
           size="sm"
           aria-haspopup="dialog"
           className={cn(
-            'shrink-0 gap-1 whitespace-nowrap rounded-full px-3.5 tabular-nums',
+            'min-h-11 min-w-11 shrink-0 gap-1 whitespace-nowrap rounded-full px-3.5 tabular-nums',
             open && !active && 'ring-2 ring-primary/30',
           )}
         >
@@ -666,7 +666,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
 
         {/* Beds — min + max (URL: beds / maxBeds) */}
         <FilterDropdown
-          label={activeBedsLabel ?? 'Beds'}
+          label={activeBedsLabel ? `Beds: ${activeBedsLabel}` : 'Beds'}
           active={!!activeBedsLabel}
           open={openPanel === 'beds'}
           onOpenChange={panelOpenHandler('beds')}
@@ -709,7 +709,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
 
         {/* Baths — min + max (URL: baths / maxBaths) */}
         <FilterDropdown
-          label={activeBathsLabel ?? 'Baths'}
+          label={activeBathsLabel ? `Baths: ${activeBathsLabel}` : 'Baths'}
           active={!!activeBathsLabel}
           open={openPanel === 'baths'}
           onOpenChange={panelOpenHandler('baths')}

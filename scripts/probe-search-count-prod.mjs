@@ -8,9 +8,10 @@ import { copyFileSync, mkdirSync } from 'node:fs'
 import { chromium } from 'playwright'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
-const FILTERED = 'https://ryan-realty.com/homes-for-sale?maxPrice=800000&beds=3'
-const CITY = 'https://ryan-realty.com/homes-for-sale/bend'
-const HOME = 'https://ryan-realty.com/homes-for-sale'
+const BASE = (process.env.BASE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
+const FILTERED = `${BASE}/homes-for-sale?maxPrice=800000&beds=3`
+const CITY = `${BASE}/homes-for-sale/bend`
+const HOME = `${BASE}/homes-for-sale`
 const ART = '/opt/cursor/artifacts'
 
 function textish(html) {
@@ -47,9 +48,10 @@ async function main() {
   const chipBoxes = await page.evaluate(() => {
     const labels = ['Price', 'Beds', 'Baths', 'Home type', 'For sale']
     return labels.map((label) => {
-      const el = [...document.querySelectorAll('button')].find((b) =>
-        (b.textContent || '').trim().toLowerCase().startsWith(label.toLowerCase()),
-      )
+      const el = [...document.querySelectorAll('button')].find((b) => {
+        const t = (b.textContent || '').trim().toLowerCase()
+        return t === label.toLowerCase() || t.startsWith(`${label.toLowerCase()}:`)
+      })
       if (!el) return { label, w: 0, h: 0, found: false }
       const r = el.getBoundingClientRect()
       return { label, w: Math.round(r.width), h: Math.round(r.height), found: true }
@@ -82,6 +84,15 @@ async function main() {
     return btn ? btn.textContent.trim() : null
   })
   await page.screenshot({ path: `${ART}/search_filters_390_sheet.png` })
+
+  const applyBtn = page.getByRole('button', { name: /^Show\s+[\d,]+\s+homes?$/i })
+  let firstClickClosed = false
+  if (await applyBtn.count()) {
+    await applyBtn.first().click({ timeout: 8_000 })
+    await page.waitForTimeout(900)
+    firstClickClosed = !(await page.getByRole('heading', { name: /all filters/i }).isVisible().catch(() => false))
+  }
+  await page.screenshot({ path: `${ART}/search_filters_390_after_apply.png` })
 
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto(FILTERED, { waitUntil: 'domcontentloaded', timeout: 90_000 })
@@ -116,6 +127,8 @@ async function main() {
     showLabel,
     countsAgree,
     countInFold,
+    firstClickClosed,
+    base: BASE,
   }
   console.log(JSON.stringify(report, null, 2))
 
@@ -126,7 +139,8 @@ async function main() {
     faqQuestion &&
     usableChips >= 3 &&
     countsAgree &&
-    countInFold.visible
+    countInFold.visible &&
+    firstClickClosed
 
   if (!ok) {
     console.error('probe-search-count-prod: FAIL')
