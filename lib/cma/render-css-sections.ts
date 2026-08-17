@@ -102,6 +102,7 @@ export function cmaSectionStyles(): string {
     border: 1px solid var(--navy-line);
     background: #fff;
     overflow: hidden;
+    border-radius: 0;
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -189,7 +190,7 @@ export function cmaSectionStyles(): string {
   .hl {
     border: 1px solid var(--navy-line);
     border-left: 3px solid var(--navy);
-    border-radius: 8px;
+    border-radius: 0;
     padding: 11px 13px;
     background: white;
   }
@@ -242,7 +243,7 @@ export function cmaSectionStyles(): string {
   table.kv.compare-board th.v, table.kv.compare-board td.v { width: 18%; text-align: right; }
   .trend-svg { width: 100%; height: auto; display: block; }
   .photo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-  .photo-tile { margin: 0; overflow: hidden; }
+  .photo-tile { margin: 0; overflow: hidden; border-radius: 0; }
   .photo-tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0; display: block; }
   table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
@@ -259,7 +260,7 @@ export function cmaSectionStyles(): string {
     background: var(--navy);
     color: var(--cream);
     padding: 16px 18px 14px;
-    border-radius: 10px;
+    border-radius: 0;
     margin: 8px 0 14px 0;
     break-inside: avoid;
     page-break-inside: avoid;
@@ -289,7 +290,7 @@ export function cmaSectionStyles(): string {
     gap: 0;
     margin: 0 0 16px 0;
     border: 1px solid var(--navy-line);
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
     break-inside: avoid;
     page-break-inside: avoid;
@@ -324,7 +325,7 @@ export function cmaSectionStyles(): string {
   .use-card {
     border: 1px solid var(--navy-line);
     border-left: 3px solid var(--navy);
-    border-radius: 8px;
+    border-radius: 0;
     padding: 11px 13px;
     background: #fff;
     margin-bottom: 9px;

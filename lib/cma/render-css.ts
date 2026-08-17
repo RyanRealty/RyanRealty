@@ -32,6 +32,7 @@ export function cmaStylesheet(siteUrl: string): string {
   }
 
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  img { border-radius: 0; }
 
   html, body {
     margin: 0;
@@ -181,7 +182,7 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--cream);
     padding: 24px 28px;
     margin: 0 0 18px 0;
-    border-radius: 10px;
+    border-radius: 0;
   }
   .value-block .vb-top {
     display: flex;
@@ -407,7 +408,7 @@ export function cmaStylesheet(siteUrl: string): string {
   }
   .tier {
     border: 1px solid var(--navy-line);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 16px 14px;
     background: white;
   }
