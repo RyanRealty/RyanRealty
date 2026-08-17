@@ -1,5 +1,5 @@
 /**
- * Claim FLEET-PUNCH parent for the served fleet:public-ux:place-pages slice.
+ * Claim FLEET-PUNCH parent for the served fleet:public-ux:blog slice.
  *
  *   npx tsx scripts/loop-claim-fleet-punch.ts
  */
@@ -9,7 +9,7 @@ import { isLegalTransition } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
 
-const OWNER = 'cursor-loop-sentinel-bc-99eda833-2026-08-17t09-40'
+const OWNER = 'cursor-loop-chain-bc-791e34a1-2026-08-17t12-16'
 const ID = '3a6198cd-fcd5-4aa2-b51a-3b62c2c0e437'
 
 async function main() {

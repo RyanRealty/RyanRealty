@@ -77,6 +77,9 @@ async function _getPublishedBlogPostsUncached(options: {
     .eq('status', 'published')
     .not('published_at', 'is', null)
     .order('published_at', { ascending: false })
+    // id ASC is the pagination tie-break. published_at ties made OFFSET
+    // return the same slug on two pages (fleet b75fc748ac2130f76a109a6f045121a9).
+    .order('id', { ascending: true })
 
   if (options.category && options.category !== 'All') {
     query = query.eq('category', options.category)
@@ -121,9 +124,8 @@ async function _getPublishedBlogPostsUncached(options: {
 // independently. TTL matches the existing blog window (CACHE_WINDOWS.blog = 600s).
 export const getPublishedBlogPosts = makeResilientCached(
   _getPublishedBlogPostsUncached,
-  // v3 (design-audit #126): adds read_time_min computed from the full body,
-  // not the excerpt — evicts v2 rows that don't carry the field.
-  ['published-blog-posts-v3'],
+  // v4: published_at DESC, id ASC so OFFSET pages cannot overlap on ties.
+  ['published-blog-posts-v4'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
   { posts: [], total: 0 },
 )
