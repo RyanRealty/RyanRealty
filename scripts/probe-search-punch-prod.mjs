@@ -135,11 +135,13 @@ async function main() {
     await mobile.waitForTimeout(1800)
   }
   report.sheet390 = await mobile.evaluate(() => {
-    const sheet = document.querySelector('[role="dialog"]')
+    const sheet =
+      document.querySelector('[data-slot="sheet-content"]') ||
+      document.querySelector('[role="dialog"]')
     if (!sheet) return { open: false }
     const r = sheet.getBoundingClientRect()
     const overflowX = sheet.scrollWidth > sheet.clientWidth + 2
-    const inputs = [...sheet.querySelectorAll('input')].map((el) => {
+    const inputs = [...sheet.querySelectorAll('input:not([type="search"])')].map((el) => {
       const ir = el.getBoundingClientRect()
       return {
         clipped: ir.right > r.right + 2 || ir.left < r.left - 2,
@@ -148,17 +150,22 @@ async function main() {
         sheetRight: Math.round(r.right),
       }
     })
-    const owner = [...sheet.querySelectorAll('label, span, p, button')].find((n) =>
-      /owner finan/i.test(n.textContent || ''),
+    const owner = [...sheet.querySelectorAll('label, span')].find((n) =>
+      /^Owner financing$/i.test((n.textContent || '').trim()),
     )
+    const ownerBox = owner ? owner.getBoundingClientRect() : null
     const find = sheet.querySelector('input[placeholder*="Find a filter" i], input[aria-label*="Find a filter" i]')
     return {
       open: true,
       w: Math.round(r.width),
+      fullWidth: Math.abs(r.width - window.innerWidth) <= 2,
       overflowX,
       inputClipped: inputs.some((i) => i.clipped),
       inputs: inputs.slice(0, 6),
-      ownerText: owner ? (owner.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80) : null,
+      ownerText: owner ? (owner.textContent || '').replace(/\s+/g, ' ').trim() : null,
+      ownerClipped: ownerBox
+        ? ownerBox.right > r.right + 1 || owner.scrollWidth > owner.clientWidth + 1
+        : null,
       findPresent: !!find,
     }
   })
