@@ -33,6 +33,7 @@ import {
   publishBlogContextualCta,
   publishBlogRelatedHomes,
 } from '@/lib/blog/publish-blog-related-homes'
+import { publishBlogReportPeriod } from '@/lib/blog/publish-blog-report-period'
 import { blogRelatedHomeRows } from './_v3/blog-related-homes'
 import {
   BLOG_CURRENT_MOS_PLACES,
@@ -82,7 +83,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const post = await getBlogPostBySlug(slug)
   if (!post) return { title: 'Post Not Found | Ryan Realty', robots: { index: false, follow: true } }
 
-  const title = post.seo_title?.trim() || `${post.title} | Ryan Realty Blog`
+  const period = publishBlogReportPeriod({
+    title: post.title,
+    html: post.content?.trim() || post.excerpt?.trim() || '',
+    seoTitle: post.seo_title,
+  })
+  const title = period.metaTitle
   const description =
     post.seo_description?.trim() ||
     post.excerpt?.trim() ||
@@ -103,7 +109,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: canonical,
       type: 'article',
       siteName: 'Ryan Realty',
-      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: post.title }],
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: period.displayTitle }],
       ...(post.published_at ? { publishedTime: post.published_at } : {}),
     },
     twitter: {
@@ -140,8 +146,14 @@ export default async function BlogPostPage({ params }: PageProps) {
   const contextualCta = publishBlogContextualCta(buyablePlace)
   const pageUrl = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
   const readMinutes = estimateReadTime(post.content)
-  const articleSchema = generateBlogSchema({
+  const rawBody = post.content?.trim() || post.excerpt?.trim() || ''
+  const period = publishBlogReportPeriod({
     title: post.title,
+    html: rawBody,
+    seoTitle: post.seo_title,
+  })
+  const articleSchema = generateBlogSchema({
+    title: period.displayTitle,
     slug: post.slug,
     excerpt: post.excerpt,
     published_at: post.published_at,
@@ -151,7 +163,6 @@ export default async function BlogPostPage({ params }: PageProps) {
       : undefined,
     author_name: post.author_name,
   })
-  const rawBody = post.content?.trim() || post.excerpt?.trim() || ''
   const articleBody = blogClaimsCurrentMos(rawBody)
     ? rewriteBlogCurrentMos(
         rawBody,
@@ -165,7 +176,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         ),
       )
     : rawBody
-  const title = post.title.trim()
+  const title = period.displayTitle.trim()
   if (!title) notFound()
   const category = post.category?.trim()
   const publishedLabel = post.published_at ? formatDate(post.published_at) : null
@@ -204,7 +215,7 @@ export default async function BlogPostPage({ params }: PageProps) {
               items: [
                 { name: 'Home', url: '/' },
                 { name: 'Blog', url: '/blog' },
-                { name: post.title, url: `/blog/${encodeURIComponent(post.slug)}` },
+                { name: period.displayTitle, url: `/blog/${encodeURIComponent(post.slug)}` },
               ],
             },
           ]}
@@ -233,6 +244,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                 `${readMinutes} min read`,
               ].join(' · '),
             },
+            ...(period.periodNote ? [{ kind: 'prose' as const, body: period.periodNote }] : []),
           ]}
         />
 
@@ -260,7 +272,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             <div className="mt-8">
               <ShareButton
                 url={pageUrl}
-                title={post.title}
+                title={period.displayTitle}
                 text={post.excerpt ?? undefined}
                 trackContext="blog_post"
                 variant="default"

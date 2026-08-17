@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — blog related-homes / CTA slice
+# Current — 2026-08-17 (cursor-loop-sentinel) — blog NW Crossing alias slice
+
+**Surface:** Cursor cloud `bc-b9425f1f` (`cursor/loop-sentinel-2026-08-17t11-40-d87e`). **Time:** 2026-08-17 ~12:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 426). Claimed parent only. Product **`f29d930dd`** landed on **`main`**. Vercel Production **READY** (`FwWvpPVpzcSGr7eMH7m5H7xs2ktx`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (418 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 blog lines) at 390+1280: June-vs-May **rejected** (report month vs May closings). NW Crossing related-homes **reproduced** as Bend rail. $475k vs $500k **rejected** (attached floor vs overall). Schools scroll **rejected** (ids unchanged). Eagle Crest related-homes **rejected** (already Eagle Crest). Buyers related-homes / blank MORE RESOURCES **rejected** (Bend homes + explore populated). Buyers vs 3.6 months **rejected** (body already not-a-full-buyer). Dining related-homes / Value my home **rejected** (lifestyle withhold + Talk to a broker).
+- Class: `matchGeoLinksForPost` accepts registry slugs + `COMMUNITY_ALIASES` (`nw crossing`, `nwx`) so a neighborhood short name wins over city Bend. Gate `ci:publish-blog-related-homes` 7/7.
+- Prod probe after READY `f29d930dd`: NW Crossing **#related-homes NorthWest Crossing homes** / See NorthWest Crossing homes / $1,549,500. Eagle Crest still Eagle Crest. Dining: no related-homes, Talk to a broker. After shots `/opt/cursor/artifacts/after_nwx_{390,1280}_nwx_homes.png`.
+- Punch dispositions appended (parent not completed): 1 fixed + 7 rejected. Leftover blog + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, SITE_PAGE_STANDARD §7, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — blog related-homes / CTA slice
 
 **Surface:** Cursor cloud `bc-e459ecbb` (`cursor/loop-chain-2026-08-17t10-35-b6a3`). **Time:** 2026-08-17 ~11:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 442). Claimed parent only. Product **`10a8a7a77`** landed on **`main`**. Vercel Production **READY** (`PKBGTWs5K9Bcdg7SdpsVyvLfSarC`, `npm run deploy:verify` exit 0). Draft PR **#82** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (434 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 

@@ -38,6 +38,15 @@ describe('matchBuyablePlaceForPost', () => {
         title: 'Retiring in Central Oregon',
       }),
     ).toBeNull()
+    expect(matchBuyablePlaceForPost({ slug: 'dining-craft-beer-bend' })).toBeNull()
+  })
+
+  it('prefers a community alias over a city fallback', () => {
+    expect(matchBuyablePlaceForPost({ slug: 'living-in-nw-crossing-bend' })).toMatchObject({
+      kind: 'community',
+      slug: 'northwest-crossing',
+      href: '/communities/northwest-crossing',
+    })
   })
 })
 
