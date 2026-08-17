@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — homepage ArrivalIntent quiz unmount
+# Current — 2026-08-17 (cursor-loop-chain) — place-pages hero-empty / regional / ask slice
+
+**Surface:** Cursor cloud `bc-2843f15f` (`cursor/loop-chain-2026-08-17t09-06-ba29`). **Time:** 2026-08-17 ~09:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 458). Claimed parent only. No product change (all 8 rejected). Handoff + probe scripts on this branch. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open**. Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: Calaveras / Blakley / Aspenwood / Canyon Breeze / Aubrey Heights hero-count vs empty list **rejected** (hero silent; lists 5 / 8 / 1 / 1 / 1). 1925 Townhomes 155 Closed + $756k/18 days **rejected** (sales history 33 SFR; 1 card $999,000). Bend Park $756k/18 days **rejected** (hero silent; 4 cards). Summit West $2,035,000 vs $2,034,500 **rejected** (list + ticker both $2,034,500 / $1,999,900).
+- No class-fix. Prior plat-inventory + publishPlatFigures + formatPublishedAsk already hold. Probe `scripts/probe-place-pages-punch-v5.mjs` + shots.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024/R-110/R-020, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — homepage ArrivalIntent quiz unmount
 
 **Surface:** Cursor cloud `bc-8f43d00f` (`cursor/loop-chain-2026-08-17t08-22-7277`). **Time:** 2026-08-17 ~09:05 UTC. Brief served **solo Matt CHANGE** `08152acc` (class of one). Claimed that node. Product **`df1a8bfd8`** landed on **`main`**. Vercel Production **READY** (`3doPtMka2BFtvCg7uLj2c8GbthAS`, `npm run deploy:verify` exit 0). Draft PR **#80** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Node **`08152acc` done**. FLEET-PUNCH parent stays open (other session). Loop stays **ARMED**. Do not start a new ship class from this session.
 
