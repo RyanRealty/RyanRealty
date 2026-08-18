@@ -211,6 +211,7 @@ function toSearchFilters(f: SearchFiltersInitial): SearchFilters {
     ...(registry as Partial<SearchFilters>),
     city: f.city || undefined,
     subdivision: f.subdivision || undefined,
+    neighborhood: f.neighborhood || undefined,
     minPrice: f.minPrice ? Number(f.minPrice) : undefined,
     maxPrice: f.maxPrice ? Number(f.maxPrice) : undefined,
     beds: f.beds ? Number(f.beds) : undefined,

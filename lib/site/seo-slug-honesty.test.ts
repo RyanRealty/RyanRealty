@@ -93,6 +93,7 @@ describe('SEO search honesty contracts', () => {
     expect(map).toMatch(/subdivision: neighborhoodName \? undefined : decodedSubdivision/)
     expect(map).toMatch(/getListingsWithAdvanced\(\{/)
     expect(map).toMatch(/neighborhood: neighborhoodName/)
+    expect(map).toMatch(/neighborhood: neighborhoodName \?\? ''/)
   })
 
   it('does not coerce empty (active+pending) map status to Active', () => {
@@ -115,5 +116,34 @@ describe('SEO search honesty contracts', () => {
       listings.indexOf("kind === 'empty'"),
     )
     expect(degradedBlock).not.toMatch(/No homes match/)
+  })
+})
+
+describe('GTM and gtag do not both configure GA4', () => {
+  const ga = read('components/GoogleAnalytics.tsx')
+  const gtm = read('components/GTMHead.tsx')
+
+  it('skips gtag GA4 config when the GTM container id is set', () => {
+    expect(ga).toMatch(/const hasGTM = !!GTM_ID/)
+    expect(ga).toMatch(/const hasGA4 = !!GA4_ID && !hasGTM/)
+  })
+
+  it('loads GTM without waiting on the cookie banner', () => {
+    expect(gtm).toMatch(/if \(!GTM_ID\) return null/)
+    expect(gtm).not.toMatch(/hasAnalyticsConsent/)
+  })
+})
+
+describe('map pan keeps neighborhood scope', () => {
+  const search = read('app/actions/search.ts')
+  const mapView = read('components/search/MapSearchView.tsx')
+
+  it('SearchFilters and viewport mapping carry neighborhood', () => {
+    expect(search).toMatch(/neighborhood\?: string/)
+    expect(search).toMatch(/neighborhood: f\.neighborhood\?\.trim\(\) \|\| undefined/)
+  })
+
+  it('client viewport refetch passes neighborhood through', () => {
+    expect(mapView).toMatch(/neighborhood: f\.neighborhood \|\| undefined/)
   })
 })

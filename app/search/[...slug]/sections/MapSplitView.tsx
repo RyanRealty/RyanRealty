@@ -256,6 +256,7 @@ export async function renderMapSplitView(props: {
     ...registryParamsFromUrl,
     city: city ?? '',
     subdivision: neighborhoodName ? '' : decodedSubdivision ?? '',
+    neighborhood: neighborhoodName ?? '',
     minPrice: sp.minPrice ?? '',
     maxPrice: sp.maxPrice ?? '',
     beds: sp.beds ?? '',

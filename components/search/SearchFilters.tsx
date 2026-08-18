@@ -46,6 +46,7 @@ import { cn } from '@/lib/utils'
 export type SearchFiltersInitial = {
   city?: string
   subdivision?: string
+  neighborhood?: string
   minPrice?: string
   maxPrice?: string
   beds?: string
