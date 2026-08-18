@@ -307,21 +307,19 @@ Apply in this order. Stop at the first bucket that needs a second human look.
 
 ### P1 — users already feel / jobs that lie
 
-1. Nightly E2E failing (GitHub).
-2. `quality.yml` LH/a11y without a server.
-3. `TriggerDeltaSyncButton` → Inngest with no worker (broken admin).
-4. Dual GTM + gtag if both env ids set (needs container — Grok Bot).
-5. Widgetbe still required in CSP after FUB pixel deletion.
-6. `release.yml` tags every docs push.
+1. Nightly E2E “No tests found” + quality.yml no server + docs-only releases — **APPLIED** (`1bbece98`). Live-site feature-spec assertions still fail on prod (not workflow).
+2. `TriggerDeltaSyncButton` → live `runDeltaSync` — **APPLIED**. Retired `POST /api/admin/sync` Inngest send (`410`).
+3. Dual GTM + gtag if both env ids set — **still needs container / Grok Bot**.
+4. Widgetbe CSP after FUB pixel deletion — **APPLIED** (`f33fdc93`).
+5. Search timeout-as-empty + remaining search honesty bugs — **APPLIED** (`50646b6a`, `fa04ae24`, `6a684025`). Neighborhood pan still has no `neighborhood` field on `getViewportSearch`.
 
 ### P2 — unused code, one class at a time
 
-1. Kill unused API shells after skeptic (spark-status, sync-spark, unused CMA JSON, unused marketing-brain HTTP).
-2. Mark or delete dark crons that are not manuals.
-3. Unused REGISTRY producers: tombstone SKILL, do not delete TS product that already shipped.
-4. Unused components (showcase + old geo heroes) behind `ci:dead-ui`.
-5. Unused deps: `@dnd-kit/core`, `isomorphic-dompurify`, `@types/dompurify`.
-6. Park leftover Vercel secrets (`FOLLOWUPBOSS_*`, `INNGEST_*`) after confirm.
+1. Unused API shells + dark crons — **APPLIED** (`2e00ac6b`).
+2. Unused REGISTRY / automation theater — **APPLIED** (`a37ee8cf`).
+3. Named leftover UI (showcase, ExitIntent, PageCTA, BrokerContactForm) — **APPLIED**. ~165 other G55 orphans still parked.
+4. Unused deps — **APPLIED** (`8d7dc654`).
+5. Leftover Vercel secrets (`FOLLOWUPBOSS_*`, `INNGEST_*`) — **still parked** (do not delete from Vercel this pass).
 
 ### Do not touch this pass
 
