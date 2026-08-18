@@ -1,4 +1,5 @@
 // @no-parity — redirect-only alias; live report is /cities/bend/{slug}
+// @no-breadcrumb — never renders UI; middleware 308s districts to /cities/bend/{slug}
 /**
  * Bend-district alias. Live reports live at /cities/bend/{slug}.
  * Founding case: all 13 /neighborhoods/{slug} URLs 404ed (fleet

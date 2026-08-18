@@ -31,7 +31,7 @@ export function peerPlatsForResort(
   if (!entry) return []
   return entry.subdivision_aliases
     .filter((a) => slugify(a) !== selfSlug)
-    .map((a) => {
+    .map((a): KbTownItem | null => {
       const name = publishPlatDisplayName(a)
       if (!name) return null
       return {
