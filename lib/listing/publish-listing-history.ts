@@ -1,3 +1,4 @@
+import { formatPriceCompact } from '@/lib/format/money'
 import { zonedDateKey } from '@/lib/format/date'
 
 /**
@@ -15,6 +16,11 @@ import { zonedDateKey } from '@/lib/format/date'
  *
  * The published timeline is the merge. Do not invent a price. Listed uses
  * OnMarketDate + ListPrice when no listed/newlisting row already exists.
+ *
+ * Buyer-facing copy never prints a raw MLS field dump
+ * (`ListPrice: 14900000.00 → 11900000.00`). Price and the dollar delta
+ * already sit on the row. Founding case: 65255 Swalley (220207865)
+ * fleet:7e278bfeb28c9806649154eeb32c5567.
  */
 
 export type PublishedListingHistoryEvent = {
@@ -60,6 +66,30 @@ function normalizeEvent(raw: string | null | undefined): string {
 function asPositivePrice(value: number | null | undefined): number | null {
   if (value == null || !Number.isFinite(value) || value <= 0) return null
   return Math.round(value)
+}
+
+/**
+ * Withhold MLS change-log dumps. Keep human prose. Do not rewrite
+ * `ListPrice: 14900000.00 → 11900000.00` into a second price line.
+ */
+export function publishListingHistoryDescription(
+  description: string | null | undefined,
+): string | null {
+  const raw = (description ?? '').trim()
+  if (!raw) return null
+  if (/^[A-Z][A-Za-z0-9]*:\s*[\d.,]+/.test(raw)) return null
+  if (/\bListPrice:\s*[\d.,]+/.test(raw)) return null
+  return raw
+}
+
+/** Dollar delta for the history rail. `$3.0M down`, never `3,000,000 down`. */
+export function publishListingHistoryDeltaLabel(
+  amount: number | null | undefined,
+  direction: 'down' | 'up',
+): string | null {
+  const n = asPositivePrice(amount)
+  if (n == null) return null
+  return `${formatPriceCompact(n)} ${direction}`
 }
 
 const STATUS_EVENT: Record<string, string> = {
@@ -115,7 +145,7 @@ export function publishListingHistory(input: {
       event_date: date,
       price,
       price_change: row.price_change ?? null,
-      description: row.description ?? null,
+      description: publishListingHistoryDescription(row.description),
     })
   }
 
