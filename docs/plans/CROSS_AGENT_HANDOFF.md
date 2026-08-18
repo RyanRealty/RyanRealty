@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-sentinel) — listing-detail TIC/empty/navy/history reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — newsletter subscribe door
+
+**Surface:** Cursor cloud `bc-39f11247` (`cursor/loop-chain-2026-08-18t14-13-46fa`). **Time:** 2026-08-18 ~15:00 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:newsletter` (2 of 164). Parent was held by concurrent `cursor-loop-sentinel-bc-063b1400-2026-08-18t14-10` (setup only, no product). This session shipped the class. Product **`f6e29988f`** landed on **`main`**. Vercel Production **READY** for `f6e29988f` (`CGedqTqhL1HQzSTHtaEikzAcZGmB`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (162 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (2 newsletter lines) at 390+1280: GET `/newsletter` 404 **reproduced** then class-fixed. Dedicated `/newsletter` 404 while footer form works **reproduced** then class-fixed. Hex-only fingerprints (2 fixed + 0 rejected): `71e7816c6d1dd62201a57fa480d7fd39` / `c650b38778f7a41487262a461a617d6f`.
+- Class: `publishNewsletterSubscribeHref` publishes `/newsletter`. `publishNewsletterSubscribeDestination` withholds `/lp/buyer-listing-alerts` (listing alerts, not the briefing). `app/newsletter/page.tsx` mounts `NewsletterSheet` → `subscribeNewsletterAction` (no send). Footer Market column + sitemap + `G-publish-newsletter-href`. Do not 301 the door to listing alerts. Do not send a newsletter.
+- Prod probe on live `f6e29988f`: `/newsletter` **200**, `x-matched-path: /newsletter`, H1 **Bend real estate, monthly**, Subscribe sheet. After shots `/opt/cursor/artifacts/prod_newsletter_{390,1280}.png`. Before 404 shots `/opt/cursor/artifacts/before_newsletter_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 2 fixed. Leftover families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not send a newsletter. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — listing-detail TIC/empty/navy/history reject slice
 
 **Surface:** Cursor cloud `bc-26cdbbff` (`cursor/loop-sentinel-2026-08-18t13-10-b8d6`). **Time:** 2026-08-18 ~13:25 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 180). Claimed parent only as `cursor-loop-sentinel-bc-26cdbbff-2026-08-18t13-10`. **No product change from this session.** Production stays on last product **`af9e9308d`** (READY `HVMX96aLeSPgLGnGdkfGGExAkjfK`; concurrent listing-history dump class). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (164 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
