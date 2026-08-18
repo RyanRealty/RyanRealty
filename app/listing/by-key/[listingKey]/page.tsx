@@ -51,5 +51,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!row) return { title: 'Listing', robots: { index: false, follow: false } }
   const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ')
   const title = [street, row.City].filter(Boolean).join(', ') || 'Listing'
-  return { title, robots: { index: false, follow: true } }
+  const canonical = canonicalPathFromFields(row)
+  return {
+    title,
+    robots: { index: false, follow: true },
+    alternates: { canonical },
+  }
 }

@@ -10,6 +10,7 @@ import {
   Stack,
 } from '@/components/site/primitives'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
 import { CONTACT } from '@/lib/brand/contact'
 
@@ -51,7 +52,7 @@ export function GolfHomesGrid({ homes, totalHomes, allHomesHref, homesDegraded =
         </div>
 
         {homesDegraded && homes.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card px-6 py-12 text-center">
+          <Card className="px-6 py-12 text-center">
             <Eyebrow>Search delayed</Eyebrow>
             <H3 className="mt-2">We could not load golf homes in time</H3>
             <Body className="mx-auto mt-2 max-w-md" tone="muted">
@@ -62,7 +63,7 @@ export function GolfHomesGrid({ homes, totalHomes, allHomesHref, homesDegraded =
                 Reload page
               </Button>
             </form>
-          </div>
+          </Card>
         ) : homes.length > 0 ? (
           <>
             <Grid cols={3} gap="default">
