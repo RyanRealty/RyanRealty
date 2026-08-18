@@ -333,7 +333,7 @@ export type {
 
 // Market (real impls — no MV dependency, usable today)
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
-export { getCityMarketDetail, getCityMarketDetailByTimeframe } from '@/lib/data/market/getCityMarketDetail'
+export { getCityMarketDetail, getCityMarketDetailByTimeframe, getCompleteMonthlyMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 export {
   getMarketStatsCacheRowForGeo,
   getMarketStatsCacheRowsForGeos,

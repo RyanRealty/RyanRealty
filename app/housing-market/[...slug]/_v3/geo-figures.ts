@@ -27,6 +27,7 @@ import {
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
+import { publishCompleteMonthMedian } from '@/lib/market/publish-complete-month-median'
 import { COMPARISON_CITY_LABELS, COMPARISON_CITY_SLUG, HISTORY_PATH } from './geo-constants'
 
 const MONTH_TICK = [
@@ -60,7 +61,7 @@ export type CityLedger = {
 /**
  * Active single-family inventory for this geo. Days to pending and 30-day
  * closings are a different population and do not belong on this trace. City
- * scope adds YTD / this-month / 12-month closed medians via
+ * scope adds YTD / this-month-or-last-complete / 12-month closed medians via
  * buildCityPeriodFigures, and the monthly median series via Instrument.chart.
  */
 export function buildLiveFigures(pulse: MarketPulse | null, mosText: string | null, geoName: string): LiveSection {
@@ -105,10 +106,30 @@ export function buildLiveFigures(pulse: MarketPulse | null, mosText: string | nu
  * marketHealthLabel. No door: nothing on the site shows this exact monthly
  * closed window, and a wrong door is worse than none.
  */
-export function buildClosedFigures(detail: MarketDetail | null): V3InstrumentFigure[] {
-  if (!detail) return []
+export function buildClosedFigures(
+  detail: MarketDetail | null,
+  lastComplete?: MarketDetail | null,
+  currentMonthKey?: string,
+): V3InstrumentFigure[] {
+  if (!detail && !lastComplete) return []
   const figures: V3InstrumentFigure[] = []
-  if (detail.medianSalePrice != null && detail.medianSalePrice > 0) {
+  const publishedMonth =
+    currentMonthKey != null
+      ? publishCompleteMonthMedian({
+          monthly: detail,
+          lastComplete,
+          currentMonthKey,
+        })
+      : null
+  if (publishedMonth) {
+    const formatted = formatPrice(publishedMonth.value)
+    if (formatted && formatted !== '\u2014') {
+      figures.push({
+        value: v3Text(formatted),
+        label: v3Text(publishedMonth.label),
+      })
+    }
+  } else if (detail?.medianSalePrice != null && detail.medianSalePrice > 0) {
     figures.push({
       value: v3Text(formatPrice(detail.medianSalePrice)),
       label: v3Text('median sale price'),
@@ -300,14 +321,16 @@ function priceFigure(
 }
 
 /**
- * YTD / this month / last-12-month closed medians for the city Instrument.
- * These are period snapshots, not a series. The monthly median line is the
- * chart. Do not print marketHealthLabel.
+ * YTD / this month or last complete month / last-12-month closed medians
+ * for the city Instrument. These are period snapshots, not a series. The
+ * monthly median line is the chart. Do not print marketHealthLabel.
  */
 export function buildCityPeriodFigures(args: {
   ytd: MarketDetail | null
   monthly: MarketDetail | null
+  lastComplete?: MarketDetail | null
   rolling: MarketDetail | null
+  currentMonthKey: string
 }): { figures: V3InstrumentFigure[]; trace: string | null } {
   const figures: V3InstrumentFigure[] = []
   const ytdPrice = priceFigure(args.ytd?.medianSalePrice, 'YTD median sale', HISTORY_PATH)
@@ -319,15 +342,29 @@ export function buildCityPeriodFigures(args: {
       href: HISTORY_PATH,
     })
   }
-  const monthPrice = priceFigure(args.monthly?.medianSalePrice, 'this month median sale')
+  const publishedMonth = publishCompleteMonthMedian({
+    monthly: args.monthly,
+    lastComplete: args.lastComplete,
+    currentMonthKey: args.currentMonthKey,
+  })
+  const monthPrice = publishedMonth
+    ? priceFigure(publishedMonth.value, publishedMonth.label)
+    : null
   if (monthPrice) figures.push(monthPrice)
   const rollingPrice = priceFigure(args.rolling?.medianSalePrice, '12-month median sale', HISTORY_PATH)
   if (rollingPrice) figures.push(rollingPrice)
   if (figures.length === 0) return { figures, trace: null }
+  const monthClause =
+    publishedMonth?.grain === 'complete'
+      ? publishedMonth.label.replace(/ median sale$/, '')
+      : publishedMonth
+        ? 'the current month'
+        : null
+  const closedBits = ['year-to-date', monthClause, 'the last 12 months'].filter(Boolean)
   return {
     figures,
     trace:
-      'Closed-sale figures are year-to-date, the current month, and the last 12 months from market_stats_cache. They are a different population from the live list-price figures',
+      `Closed-sale figures are ${closedBits.join(', ')} from market_stats_cache. They are a different population from the live list-price figures`,
   }
 }
 
