@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tier 1 chart set. Ryan Realty</title>
+<link rel="icon" href="../../assets/favicon.ico">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="../_shared/site-mockup.css">
+<style>
+  body { background: var(--rr-cream); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+  @media (min-width: 760px) { .wrap { padding: 0 32px; } }
+
+  .kit-hero { background: var(--primary); color: #fff; padding: 40px 0 36px; }
+  .kit-hero h1 { font-family: var(--font-display); color: #fff; font-size: clamp(2rem, 6vw, 3.25rem); line-height: 1.05; margin: 10px 0 0; font-weight: 700; letter-spacing: -0.02em; }
+  .kit-hero p { color: rgba(255,255,255,0.82); font-size: 15px; line-height: 1.6; max-width: 62ch; margin: 14px 0 0; }
+  .kit-hero .eye { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.72); }
+
+  section.sec { padding: 44px 0; border-top: 1px solid rgba(16,39,66,0.10); }
+  section.sec:first-of-type { border-top: 0; }
+  .sec-num { font-family: var(--font-mono); font-size: 12px; color: rgba(16,39,66,0.5); letter-spacing: 0.08em; }
+  .sec h2 { font-family: var(--font-display); font-size: clamp(1.6rem, 4.4vw, 2.4rem); line-height: 1.12; letter-spacing: -0.015em; margin: 8px 0 0; max-width: 20ch; }
+  .sec .metric { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(16,39,66,0.55); margin-top: 14px; }
+  .sec .stand { font-size: 15px; line-height: 1.65; color: rgba(16,39,66,0.78); max-width: 64ch; margin: 12px 0 0; }
+
+  .card { background: #fff; border: 1px solid rgba(16,39,66,0.10); border-radius: 14px; padding: 18px 16px 14px; box-shadow: var(--shadow-sm); margin-top: 20px; }
+  @media (min-width: 760px) { .card { padding: 24px 24px 18px; } }
+  .card h3 { font-size: 15px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.005em; }
+  .card .sub { font-size: 13px; color: rgba(16,39,66,0.6); margin: 0 0 14px; line-height: 1.5; }
+  .duo { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 900px) { .duo { grid-template-columns: 1fr 1fr; gap: 20px; } .duo .card { margin-top: 0; } }
+
+  svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .grid { stroke: rgba(16,39,66,0.11); stroke-width: 1; }
+  text { font-family: var(--font-sans); fill: #102742; }
+  /* Sized so the smallest label still clears ~10px at a 390px viewport. */
+  .ax { font-size: 18px; fill: rgba(16,39,66,0.5); font-variant-numeric: tabular-nums; }
+  .ax.lg { font-size: 26px; }
+  .lbl { font-size: 19px; font-weight: 500; }
+  .lbl.thin { fill: rgba(16,39,66,0.55); }
+  .val { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .val.sm { font-size: 18px; font-weight: 600; }
+  .anno { font-size: 17px; fill: rgba(16,39,66,0.72); font-weight: 500; }
+  .anno.lg { font-size: 24px; }
+  .dim { fill: rgba(16,39,66,0.5); font-weight: 400; }
+  .exc { fill: var(--rr-exception); }
+  .inv { fill: #fff; }
+  .mid { text-anchor: middle; }
+  .ar { text-anchor: end; }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(16,39,66,0.10); border: 1px solid rgba(16,39,66,0.10); border-radius: 14px; overflow: hidden; margin-top: 20px; }
+  @media (min-width: 760px) { .stats.four { grid-template-columns: repeat(4, 1fr); } }
+  .stats .s { background: #fff; padding: 16px 14px; }
+  .stats .s .k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: rgba(16,39,66,0.55); line-height: 1.35; }
+  .stats .s .v { font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: -0.01em; margin-top: 8px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .stats .s .v.exc { color: var(--rr-exception); }
+  .stats .s .n { font-size: 12px; color: rgba(16,39,66,0.55); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+  .src { font-family: var(--font-mono); font-size: 11px; line-height: 1.6; color: rgba(16,39,66,0.55); margin: 12px 0 0; padding-top: 10px; border-top: 1px solid rgba(16,39,66,0.09); word-break: break-word; }
+  .n-chip { font-family: var(--font-mono); font-size: 11px; padding: 1px 6px; border-radius: 9999px; background: rgba(16,39,66,0.07); color: rgba(16,39,66,0.6); }
+  .n-chip.thin { background: rgba(168,69,43,0.10); color: var(--rr-exception); }
+  .caveat { font-size: 13px; line-height: 1.6; color: rgba(16,39,66,0.72); background: rgba(16,39,66,0.04); border-left: 2px solid var(--rr-exception); border-radius: 0 8px 8px 0; padding: 12px 14px; margin-top: 16px; }
+  .caveat b { font-weight: 600; }
+
+  footer.kit-foot { background: var(--primary); color: rgba(255,255,255,0.72); font-size: 12px; line-height: 1.7; padding: 28px 0; margin-top: 24px; }
+  footer.kit-foot b { color: #fff; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="kit-hero">
+  <div class="wrap">
+    <div class="eye">Section mockups · Tier 1 chart set</div>
+    <h1>Four charts nobody else in this market publishes.</h1>
+    <p>Concessions, sale-to-original-ask, time-to-offer, and price-cut behaviour — each drawn from the closed-sale record rather than a headline median. Every figure carries its query. Sample sizes under 30 are marked, not dropped.</p>
+  </div>
+</div>
+
+<!-- ══ 1 ══ -->
+<section class="sec"><div class="wrap">
+  <div class="sec-num">01</div>
+  <div class="metric">Seller concessions</div>
+  <h2>The concession didn't get bigger. It got normal.</h2>
+  <p class="stand">Ten thousand dollars has been the median concession for seven straight quarters. What changed is how many sellers pay one: 37.0% of closings in 2024 Q1, 47.9% so far in 2026 Q3. A seller pricing off gross comps is budgeting for a cost that now lands on roughly half of all sales.</p>
+
+  <div class="stats four">
+    <div class="s"><div class="k">Sales with a concession</div><div class="v">45.1%</div><div class="n">2026 Q2 · <span class="n-chip">n=968</span></div></div>
+    <div class="s"><div class="k">Median concession</div><div class="v">$10,000</div><div class="n">of those who paid · <span class="n-chip">n=437</span></div></div>
+    <div class="s"><div class="k">Median gross close</div><div class="v">$658K</div><div class="n">all 968 closings</div></div>
+    <div class="s"><div class="k">Median seller net</div><div class="v">$655K</div><div class="n">same 968 closings</div></div>
+  </div>
+
+  <div class="duo">
+    <div class="card">
+      <h3>Gross price vs what the seller kept</h3>
+      <p class="sub">Sellers who paid a concession. The shaded wedge is the money that never reached them; terracotta marks the widest quarter of the run.</p>
+      <svg viewBox="0 0 560 300" role="img" aria-label="Median gross price versus median seller net among sellers who paid a concession, by quarter">
+  <line x1="66" y1="219.44" x2="544" y2="219.44" class="grid"/>
+     <text x="58" y="225.44" class="ax ar">$575K</text><line x1="66" y1="169.59" x2="544" y2="169.59" class="grid"/>
+     <text x="58" y="175.59" class="ax ar">$590K</text><line x1="66" y1="119.74" x2="544" y2="119.74" class="grid"/>
+     <text x="58" y="125.74" class="ax ar">$605K</text><line x1="66" y1="69.88" x2="544" y2="69.88" class="grid"/>
+     <text x="58" y="75.88" class="ax ar">$620K</text>
+  <path d="M66.00 169.59 L113.80 73.21 L161.60 136.52 L209.40 144.83 L257.20 136.35 L305.00 155.50 L352.80 136.37 L400.60 174.57 L448.40 138.18 L496.20 136.37 L544.00 84.84 L544.00 112.42 L496.20 156.31 L448.40 182.88 L400.60 214.37 L352.80 165.77 L305.00 188.73 L257.20 156.96 L209.40 181.22 L161.60 154.63 L113.80 106.61 L66.00 202.82 Z" fill="#102742" fill-opacity="0.13"/>
+  <path d="M66.00 169.59 L113.80 73.21 L161.60 136.52 L209.40 144.83 L257.20 136.35 L305.00 155.50 L352.80 136.37 L400.60 174.57 L448.40 138.18 L496.20 136.37 L544.00 84.84" fill="none" stroke="#102742" stroke-width="2.5"/>
+  <path d="M66.00 202.82 L113.80 106.61 L161.60 154.63 L209.40 181.22 L257.20 156.96 L305.00 188.73 L352.80 165.77 L400.60 214.37 L448.40 182.88 L496.20 156.31 L544.00 112.42" fill="none" stroke="#102742" stroke-width="2.5" stroke-dasharray="5 4" opacity="0.75"/>
+  <line x1="448.40" y1="138.18" x2="448.40" y2="182.88" stroke="var(--rr-exception)" stroke-width="3"/>
+  <circle cx="448.40" cy="138.18" r="4" fill="var(--rr-exception)"/>
+  <circle cx="448.40" cy="182.88" r="4" fill="var(--rr-exception)"/>
+  <text x="448.40" y="127.18" class="anno exc mid">$13,450</text>
+  <text x="122.80" y="62.21" class="anno">gross close price</text>
+  <text x="396.60" y="239.37" class="anno dim mid">seller net after concession</text>
+  <text x="66.00" y="278" class="ax mid">'24Q1</text><text x="161.60" y="278" class="ax mid">'24Q3</text><text x="257.20" y="278" class="ax mid">'25Q1</text><text x="352.80" y="278" class="ax mid">'25Q3</text><text x="448.40" y="278" class="ax mid">'26Q1</text><text x="544.00" y="278" class="ax mid">'26Q3</text>
+</svg>
+      <p class="src">sale_pricing_seller_net · product_class='detached', concessions_yn='Yes', concessions_amount&gt;0 · close_date 2024-01-01..2026-08-13 · median(close_price) vs median(seller_net) by quarter · 4,448 rows · fetched 2026-08-17</p>
+    </div>
+    <div class="card">
+      <h3>Share of closings carrying a concession</h3>
+      <p class="sub">All detached closings, conceding and not. The dashed tail is a quarter still in progress.</p>
+      <svg viewBox="0 0 560 250" role="img" aria-label="Share of closed sales carrying a seller concession, by quarter">
+  <line x1="50" y1="189.82" x2="544" y2="189.82" class="grid"/>
+     <text x="42" y="195.82" class="ax ar">35%</text><line x1="50" y1="149.36" x2="544" y2="149.36" class="grid"/>
+     <text x="42" y="155.36" class="ax ar">40%</text><line x1="50" y1="108.91" x2="544" y2="108.91" class="grid"/>
+     <text x="42" y="114.91" class="ax ar">45%</text><line x1="50" y1="68.45" x2="544" y2="68.45" class="grid"/>
+     <text x="42" y="74.45" class="ax ar">50%</text>
+  <path d="M50.00 173.64 L99.40 162.31 L148.80 127.52 L198.20 107.29 L247.60 122.66 L297.00 129.95 L346.40 142.89 L395.80 78.16 L445.20 114.57 L494.60 108.10" fill="none" stroke="#102742" stroke-width="2.5"/>
+  <path d="M494.60 108.10 L544.00 85.45" fill="none" stroke="#102742" stroke-width="2.5" stroke-dasharray="4 3" opacity="0.55"/>
+  <circle cx="50.00" cy="173.64" r="3" fill="#102742" /><circle cx="99.40" cy="162.31" r="3" fill="#102742" /><circle cx="148.80" cy="127.52" r="3" fill="#102742" /><circle cx="198.20" cy="107.29" r="3" fill="#102742" /><circle cx="247.60" cy="122.66" r="3" fill="#102742" /><circle cx="297.00" cy="129.95" r="3" fill="#102742" /><circle cx="346.40" cy="142.89" r="3" fill="#102742" /><circle cx="395.80" cy="78.16" r="3" fill="#102742" /><circle cx="445.20" cy="114.57" r="3" fill="#102742" /><circle cx="494.60" cy="108.10" r="3" fill="#102742" /><circle cx="544.00" cy="85.45" r="3.5" fill="#fff" stroke="#102742" stroke-width="2"/>
+  <text x="53.00" y="194.64" class="anno">37.0% of sales</text>
+  <text x="538.00" y="48.45" class="anno ar">47.9%</text>
+  <text x="538.00" y="71.45" class="anno dim ar">quarter in progress</text>
+  <text x="50.00" y="228" class="ax mid">'24Q1</text><text x="148.80" y="228" class="ax mid">'24Q3</text><text x="247.60" y="228" class="ax mid">'25Q1</text><text x="346.40" y="228" class="ax mid">'25Q3</text><text x="445.20" y="228" class="ax mid">'26Q1</text><text x="544.00" y="228" class="ax mid">'26Q3</text>
+</svg>
+      <p class="src">sale_pricing_seller_net · product_class='detached' · close_date 2024-01-01..2026-08-13 · count(concessions_yn='Yes') / count(*) by quarter · 10,341 rows · fetched 2026-08-17</p>
+    </div>
+  </div>
+
+  <div class="caveat"><b>Why this starts at 2024.</b> The concessions flag is only fully populated from 2024-01-01: 2024, 2025, 2026 all carry it on 100% of closings, against 73.7% in 2023 and nothing usable before. An earlier start would read as a rising trend that is really rising <em>reporting</em>. Gross and net medians are taken over the same 968-row set — seller net is non-null for every row in this window, which is not true of the pre-2024 data.</div>
+</div></section>
+
+<!-- ══ 2 ══ -->
+<section class="sec"><div class="wrap">
+  <div class="sec-num">02</div>
+  <div class="metric">Sale to original ask</div>
+  <h2>Redmond gave back a point. Bend picked one up.</h2>
+  <p class="stand">Measured against the <em>original</em> asking price, not the last one — so every price cut along the way stays in the number. Redmond sellers closed at 98.76% of their opening ask last quarter, down 1.15 points from 99.91% a year earlier. Bend went the other way, 97.79% to 98.46%.</p>
+
+  <div class="card">
+    <h3>Every month since 2015</h3>
+    <p class="sub">Bend solid, Redmond dashed, and the band behind them is the high-to-low spread across every other city with at least five sales that month.</p>
+    <svg viewBox="0 0 680 400" role="img" aria-label="Median sale-to-original-ask by month since 2015, Bend and Redmond against the full cross-city range">
+  <line x1="56" y1="339.62" x2="666" y2="339.62" class="grid"/>
+     <text x="48" y="347.62" class="ax lg ar">85%</text><line x1="56" y1="277.69" x2="666" y2="277.69" class="grid"/>
+     <text x="48" y="285.69" class="ax lg ar">90%</text><line x1="56" y1="215.77" x2="666" y2="215.77" class="grid"/>
+     <text x="48" y="223.77" class="ax lg ar">95%</text><line x1="56" y1="153.85" x2="666" y2="153.85" class="grid"/>
+     <text x="48" y="161.85" class="ax lg ar">100%</text><line x1="56" y1="91.92" x2="666" y2="91.92" class="grid"/>
+     <text x="48" y="99.92" class="ax lg ar">105%</text><line x1="56" y1="30.00" x2="666" y2="30.00" class="grid"/>
+     <text x="48" y="38.00" class="ax lg ar">110%</text>
+  <path d="M56.00 183.07 L60.42 173.17 L64.84 165.12 L69.26 154.47 L73.68 153.85 L78.10 162.39 L82.52 157.56 L86.94 156.32 L91.36 153.85 L95.78 153.85 L100.20 175.02 L104.62 181.22 L109.04 167.35 L113.46 153.85 L117.88 168.71 L122.30 159.79 L126.72 153.85 L131.14 153.85 L135.57 153.85 L139.99 153.85 L144.41 160.41 L148.83 153.85 L153.25 172.05 L157.67 176.76 L162.09 178.37 L166.51 153.85 L170.93 158.80 L175.35 153.85 L179.77 153.85 L184.19 153.85 L188.61 164.13 L193.03 166.60 L197.45 169.45 L201.87 153.85 L206.29 147.65 L210.71 179.23 L215.13 172.30 L219.55 165.98 L223.97 153.85 L228.39 153.85 L232.81 153.85 L237.23 153.85 L241.65 153.85 L246.07 153.85 L250.49 139.23 L254.91 174.53 L259.33 153.85 L263.75 153.85 L268.17 178.12 L272.59 160.16 L277.01 153.85 L281.43 101.34 L285.86 129.57 L290.28 153.85 L294.70 155.46 L299.12 153.85 L303.54 165.98 L307.96 167.22 L312.38 167.22 L316.80 177.62 L321.22 175.15 L325.64 156.32 L330.06 154.09 L334.48 153.85 L338.90 153.85 L343.32 153.85 L347.74 153.85 L352.16 151.49 L356.58 153.85 L361.00 153.85 L365.42 153.85 L369.84 147.65 L374.26 150.01 L378.68 139.85 L383.10 132.30 L387.52 125.86 L391.94 114.71 L396.36 106.17 L400.78 136.14 L405.20 142.33 L409.62 135.89 L414.04 120.78 L418.46 153.85 L422.88 153.85 L427.30 153.85 L431.72 144.19 L436.14 104.31 L440.57 130.93 L444.99 142.70 L449.41 136.51 L453.83 153.85 L458.25 153.85 L462.67 160.16 L467.09 174.16 L471.51 206.60 L475.93 196.08 L480.35 203.51 L484.77 200.78 L489.19 128.09 L493.61 153.85 L498.03 153.85 L502.45 49.94 L506.87 151.12 L511.29 172.05 L515.71 156.69 L520.13 180.60 L524.55 153.85 L528.97 179.23 L533.39 153.85 L537.81 153.85 L542.23 153.85 L546.65 153.85 L551.07 153.85 L555.49 153.85 L559.91 163.75 L564.33 154.84 L568.75 180.84 L573.17 186.42 L577.59 169.57 L582.01 186.05 L586.43 153.85 L590.86 153.85 L595.28 154.71 L599.70 155.08 L604.12 153.85 L608.54 153.85 L612.96 180.47 L617.38 158.55 L621.80 186.54 L626.22 153.85 L630.64 182.83 L635.06 170.57 L639.48 184.93 L643.90 161.28 L648.32 153.85 L652.74 153.85 L657.16 162.14 L661.58 153.85 L666.00 153.85 L666.00 252.06 L661.58 272.86 L657.16 200.66 L652.74 284.01 L648.32 206.73 L643.90 238.56 L639.48 238.19 L635.06 323.89 L630.64 253.17 L626.22 269.77 L621.80 285.87 L617.38 251.81 L612.96 232.12 L608.54 212.92 L604.12 246.85 L599.70 227.04 L595.28 230.88 L590.86 248.84 L586.43 241.41 L582.01 311.38 L577.59 237.07 L573.17 230.38 L568.75 246.73 L564.33 242.89 L559.91 229.76 L555.49 244.87 L551.07 207.97 L546.65 280.54 L542.23 233.11 L537.81 198.93 L533.39 233.36 L528.97 237.94 L524.55 273.11 L520.13 255.28 L515.71 210.20 L511.29 248.71 L506.87 244.87 L502.45 222.33 L498.03 255.03 L493.61 207.60 L489.19 227.16 L484.77 276.45 L480.35 258.25 L475.93 292.31 L471.51 255.65 L467.09 279.80 L462.67 237.57 L458.25 217.38 L453.83 266.42 L449.41 193.35 L444.99 161.03 L440.57 157.44 L436.14 181.96 L431.72 169.45 L427.30 206.11 L422.88 260.48 L418.46 213.66 L414.04 185.55 L409.62 169.45 L405.20 160.41 L400.78 153.85 L396.36 153.85 L391.94 153.85 L387.52 153.85 L383.10 220.23 L378.68 181.09 L374.26 182.08 L369.84 175.27 L365.42 178.62 L361.00 188.40 L356.58 216.26 L352.16 205.37 L347.74 224.69 L343.32 214.04 L338.90 258.99 L334.48 183.82 L330.06 214.78 L325.64 232.36 L321.22 317.94 L316.80 263.33 L312.38 260.60 L307.96 238.31 L303.54 225.06 L299.12 253.79 L294.70 239.55 L290.28 250.69 L285.86 194.47 L281.43 204.75 L277.01 206.60 L272.59 216.51 L268.17 261.59 L263.75 275.46 L259.33 240.54 L254.91 218.49 L250.49 233.48 L246.07 239.05 L241.65 184.31 L237.23 202.39 L232.81 201.03 L228.39 221.34 L223.97 241.16 L219.55 227.66 L215.13 263.33 L210.71 221.22 L206.29 234.47 L201.87 206.11 L197.45 204.50 L193.03 208.34 L188.61 199.05 L184.19 235.34 L179.77 192.49 L175.35 198.43 L170.93 215.15 L166.51 228.90 L162.09 225.92 L157.67 301.35 L153.25 268.16 L148.83 226.67 L144.41 339.62 L139.99 233.73 L135.57 223.45 L131.14 238.06 L126.72 222.70 L122.30 290.32 L117.88 264.56 L113.46 253.79 L109.04 257.38 L104.62 269.39 L100.20 246.11 L95.78 321.66 L91.36 248.22 L86.94 251.31 L82.52 252.92 L78.10 237.69 L73.68 231.50 L69.26 318.56 L64.84 228.40 L60.42 249.08 L56.00 272.99 Z" fill="#102742" fill-opacity="0.10"/>
+  <line x1="56" y1="153.85" x2="666" y2="153.85" stroke="#102742" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.55"/>
+    <text x="662" y="143.85" class="anno lg ar">100% = sold at the original ask</text>
+  <path d="M56.00 206.36 L60.42 194.34 L64.84 165.12 L69.26 157.31 L73.68 175.52 L78.10 162.39 L82.52 172.42 L86.94 156.32 L91.36 153.85 L95.78 175.64 L100.20 175.02 L104.62 183.82 L109.04 167.35 L113.46 166.85 L117.88 170.19 L122.30 162.39 L126.72 153.85 L131.14 153.85 L135.57 164.87 L139.99 175.27 L144.41 160.41 L148.83 177.62 L153.25 179.61 L157.67 176.76 L162.09 178.37 L166.51 179.36 L170.93 174.28 L175.35 153.85 L179.77 153.85 L184.19 153.85 L188.61 170.44 L193.03 166.60 L197.45 176.01 L201.87 178.62 L206.29 197.07 L210.71 193.23 L215.13 182.83 L219.55 165.98 L223.97 175.27 L228.39 153.85 L232.81 153.85 L237.23 155.33 L241.65 158.55 L246.07 157.56 L250.49 180.47 L254.91 175.52 L259.33 179.85 L263.75 172.18 L268.17 178.12 L272.59 160.16 L277.01 167.22 L281.43 172.79 L285.86 156.69 L290.28 166.11 L294.70 155.46 L299.12 181.22 L303.54 174.90 L307.96 173.54 L312.38 167.22 L316.80 182.70 L321.22 175.15 L325.64 160.78 L330.06 154.09 L334.48 153.85 L338.90 153.85 L343.32 153.85 L347.74 153.85 L352.16 155.08 L356.58 153.85 L361.00 153.85 L365.42 153.85 L369.84 153.85 L374.26 150.01 L378.68 144.31 L383.10 137.25 L387.52 133.91 L391.94 132.42 L396.36 137.50 L400.78 136.14 L405.20 153.85 L409.62 153.85 L414.04 153.85 L418.46 153.85 L422.88 153.85 L427.30 153.85 L431.72 153.85 L436.14 150.87 L440.57 153.60 L444.99 153.85 L449.41 153.85 L453.83 153.85 L458.25 189.76 L462.67 185.30 L467.09 175.40 L471.51 232.98 L475.93 242.15 L480.35 207.60 L484.77 236.20 L489.19 196.82 L493.61 162.39 L498.03 174.53 L502.45 166.97 L506.87 153.85 L511.29 180.47 L515.71 156.69 L520.13 193.97 L524.55 189.76 L528.97 215.52 L533.39 175.89 L537.81 162.52 L542.23 189.39 L546.65 170.32 L551.07 153.85 L555.49 175.77 L559.91 164.87 L564.33 183.82 L568.75 186.91 L573.17 188.40 L577.59 169.57 L582.01 186.05 L586.43 179.23 L590.86 179.36 L595.28 154.71 L599.70 164.74 L604.12 153.85 L608.54 154.96 L612.96 180.47 L617.38 190.63 L621.80 195.21 L626.22 197.56 L630.64 186.79 L635.06 190.13 L639.48 198.55 L643.90 174.78 L648.32 175.64 L652.74 178.62 L657.16 162.14 L661.58 181.59 L666.00 186.42" fill="none" stroke="#102742" stroke-width="2" stroke-dasharray="5 4" opacity="0.72"/>
+  <path d="M56.00 200.78 L60.42 186.42 L64.84 171.80 L69.26 154.47 L73.68 153.85 L78.10 172.18 L82.52 164.62 L86.94 169.45 L91.36 172.92 L95.78 182.70 L100.20 185.55 L104.62 181.22 L109.04 176.88 L113.46 172.42 L117.88 168.71 L122.30 159.79 L126.72 161.77 L131.14 160.91 L135.57 164.25 L139.99 171.80 L144.41 175.27 L148.83 178.86 L153.25 183.94 L157.67 182.33 L162.09 189.64 L166.51 174.90 L170.93 168.71 L175.35 163.38 L179.77 153.85 L184.19 158.80 L188.61 164.13 L193.03 173.17 L197.45 178.99 L201.87 181.84 L206.29 184.44 L210.71 179.23 L215.13 181.46 L219.55 180.10 L223.97 170.19 L228.39 166.11 L232.81 160.53 L237.23 160.91 L241.65 172.79 L246.07 181.96 L250.49 177.62 L254.91 187.16 L259.33 198.06 L263.75 190.38 L268.17 191.99 L272.59 187.90 L277.01 176.26 L281.43 173.29 L285.86 164.25 L290.28 159.91 L294.70 163.75 L299.12 173.41 L303.54 185.18 L307.96 189.89 L312.38 186.67 L316.80 186.05 L321.22 180.84 L325.64 176.76 L330.06 170.94 L334.48 153.85 L338.90 170.81 L343.32 178.62 L347.74 159.30 L352.16 153.85 L356.58 153.85 L361.00 153.85 L365.42 153.85 L369.84 153.85 L374.26 153.85 L378.68 141.96 L383.10 132.30 L387.52 125.86 L391.94 114.71 L396.36 121.65 L400.78 147.16 L405.20 153.85 L409.62 153.85 L414.04 153.85 L418.46 161.28 L422.88 164.00 L427.30 153.85 L431.72 153.85 L436.14 136.76 L440.57 130.93 L444.99 153.85 L449.41 153.85 L453.83 162.89 L458.25 168.34 L462.67 188.28 L467.09 199.67 L471.51 210.69 L475.93 219.73 L480.35 203.51 L484.77 203.51 L489.19 176.26 L493.61 165.12 L498.03 158.68 L502.45 170.07 L506.87 153.85 L511.29 172.05 L515.71 185.43 L520.13 180.60 L524.55 201.77 L528.97 189.51 L533.39 192.61 L537.81 185.06 L542.23 153.85 L546.65 153.85 L551.07 159.91 L555.49 153.85 L559.91 176.14 L564.33 173.66 L568.75 187.66 L573.17 202.64 L577.59 200.54 L582.01 205.24 L586.43 206.73 L590.86 186.05 L595.28 178.49 L599.70 182.95 L604.12 175.77 L608.54 187.53 L612.96 183.20 L617.38 206.23 L621.80 211.19 L626.22 220.85 L630.64 221.71 L635.06 210.82 L639.48 238.19 L643.90 214.41 L648.32 166.23 L652.74 164.25 L657.16 174.65 L661.58 176.39 L666.00 180.72" fill="none" stroke="#102742" stroke-width="2.6"/>
+  <circle cx="391.94" cy="114.71" r="4.5" fill="#102742"/>
+  <text x="391.94" y="99.71" class="anno lg mid">Bend peaked at 103.16% — May 2021</text>
+  <circle cx="475.93" cy="219.73" r="4.5" fill="var(--rr-exception)"/>
+  <text x="465.93" y="224.73" class="anno exc lg ar">94.68% — Dec 2022</text>
+  <text x="638.64" y="175.79" class="anno dim lg ar">Redmond</text>
+  <text x="638.64" y="243.71" class="anno lg ar">Bend</text>
+  <text x="62" y="34" class="anno dim lg">shaded band = every other city, high to low</text>
+  <text x="56.00" y="386" class="ax lg mid">2015</text><text x="162.09" y="386" class="ax lg mid">2017</text><text x="268.17" y="386" class="ax lg mid">2019</text><text x="374.26" y="386" class="ax lg mid">2021</text><text x="480.35" y="386" class="ax lg mid">2023</text><text x="586.43" y="386" class="ax lg mid">2025</text>
+</svg>
+    <p class="src">pricing_market_index.median_sale_to_original · monthly by city_slug, n&gt;=5 · 2015-01..2026-07 · 139 months drawn · Aug 2026 excluded, month in progress · fetched 2026-08-17</p>
+  </div>
+
+  <div class="card">
+    <h3>Last complete quarter, ranked</h3>
+    <p class="sub">Hollow dot Q2 2025, filled dot Q2 2026. Terracotta marks a city that gave ground.</p>
+    <svg viewBox="0 0 560 398" role="img" aria-label="Median sale-to-original-ask by city, Q2 2025 hollow dot to Q2 2026 filled dot">
+  <line x1="181.17" y1="18" x2="181.17" y2="362" class="grid"/>
+     <text x="181.17" y="380" class="ax mid">90%</text><line x1="268.67" y1="18" x2="268.67" y2="362" class="grid"/>
+     <text x="268.67" y="380" class="ax mid">93%</text><line x1="356.17" y1="18" x2="356.17" y2="362" class="grid"/>
+     <text x="356.17" y="380" class="ax mid">96%</text><line x1="443.67" y1="18" x2="443.67" y2="362" class="grid"/>
+     <text x="443.67" y="380" class="ax mid">99%</text><text x="142" y="54" class="lbl ar">Redmond</text>
+    <line x1="470.21" y1="50" x2="436.67" y2="50" stroke="var(--rr-exception)" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="470.21" cy="50" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="436.67" cy="50" r="5" fill="var(--rr-exception)"/>
+    <text x="510" y="54" class="val exc">-1.15</text><text x="142" y="84" class="lbl ar">Bend</text>
+    <line x1="408.38" y1="80" x2="427.92" y2="80" stroke="#102742" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="408.38" cy="80" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="427.92" cy="80" r="5" fill="#102742"/>
+    <text x="510" y="84" class="val ">+0.67</text><text x="142" y="114" class="lbl ar">Madras</text>
+    <line x1="412.17" y1="110" x2="426.46" y2="110" stroke="#102742" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="412.17" cy="110" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="426.46" cy="110" r="5" fill="#102742"/>
+    <text x="510" y="114" class="val ">+0.49</text><text x="142" y="144" class="lbl ar">Sisters</text>
+    <line x1="434.33" y1="140" x2="420.04" y2="140" stroke="var(--rr-exception)" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="434.33" cy="140" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="420.04" cy="140" r="5" fill="var(--rr-exception)"/>
+    <text x="510" y="144" class="val exc">-0.49</text><text x="142" y="174" class="lbl ar thin">Culver</text>
+    <line x1="436.96" y1="170" x2="414.79" y2="170" stroke="var(--rr-exception)" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="436.96" cy="170" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="414.79" cy="170" r="5" fill="var(--rr-exception)"/>
+    <text x="510" y="174" class="val exc">-0.76</text><text x="142" y="204" class="lbl ar">Prineville</text>
+    <line x1="420.33" y1="200" x2="414.50" y2="200" stroke="var(--rr-exception)" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="420.33" cy="200" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="414.50" cy="200" r="5" fill="var(--rr-exception)"/>
+    <text x="510" y="204" class="val exc">-0.20</text><text x="142" y="234" class="lbl ar thin">Sunriver</text>
+    <line x1="399.33" y1="230" x2="402.83" y2="230" stroke="#102742" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="399.33" cy="230" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="402.83" cy="230" r="5" fill="#102742"/>
+    <text x="510" y="234" class="val ">+0.12</text><text x="142" y="264" class="lbl ar">La Pine</text>
+    <line x1="389.42" y1="260" x2="391.17" y2="260" stroke="#102742" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="389.42" cy="260" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="391.17" cy="260" r="5" fill="#102742"/>
+    <text x="510" y="264" class="val ">+0.06</text><text x="142" y="294" class="lbl ar thin">Terrebonne</text>
+    <line x1="399.04" y1="290" x2="390.00" y2="290" stroke="var(--rr-exception)" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="399.04" cy="290" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="390.00" cy="290" r="5" fill="var(--rr-exception)"/>
+    <text x="510" y="294" class="val exc">-0.31</text><text x="142" y="324" class="lbl ar thin">Powell Butte</text>
+    <line x1="329.04" y1="320" x2="369.00" y2="320" stroke="#102742" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="329.04" cy="320" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="369.00" cy="320" r="5" fill="#102742"/>
+    <text x="510" y="324" class="val ">+1.37</text><text x="142" y="354" class="lbl ar thin">Black Butte Ranch</text>
+    <line x1="356.17" y1="350" x2="185.54" y2="350" stroke="var(--rr-exception)" stroke-width="2.5" opacity="0.5"/>
+    <circle cx="356.17" cy="350" r="4" fill="#fff" stroke="#102742" stroke-width="1.8" opacity="0.75"/>
+    <circle cx="185.54" cy="350" r="5" fill="var(--rr-exception)"/>
+    <text x="510" y="354" class="val exc">-5.85</text>
+  <text x="142" y="24" class="anno dim ar">city</text>
+  <text x="510" y="24" class="anno dim">YoY pts</text>
+</svg>
+    <p class="src">sale_pricing_facts.sale_to_original · product_class='detached' · close_date 2026-04-01..2026-06-30 vs 2025-04-01..2025-06-30 · median by city_slug, n&gt;=5 · fetched 2026-08-17</p>
+  </div>
+
+  <div class="caveat"><b>Black Butte Ranch is the outlier and it stays on the chart.</b> 90.15% is a 5.85-point fall, far past anything else here — but it rests on 12 sales against 7 a year earlier. At that size one heavily discounted cabin moves the median several points. Read it as a flag to go look, not as a measurement. The same caution applies to Culver, Sunriver, Terrebonne and Powell Butte, all under 30 sales and all marked. <b>Q3 2026 is deliberately not ranked here</b> — it is six weeks old, 286 Bend closings against 514 in Q2.</div>
+</div></section>
+
+<!-- ══ 3 ══ -->
+<section class="sec"><div class="wrap">
+  <div class="sec-num">03</div>
+  <div class="metric">Days to offer</div>
+  <h2>The MLS clock says 59 days. The offer came on day 23.</h2>
+  <p class="stand">Days-on-market keeps counting through inspection, appraisal and financing — work that happens after a buyer has already committed. Time-to-offer stops the clock the day the listing goes pending, which is the only date a seller can actually influence. In Bend the two differ by 36 days, so the number the market quotes is 2.6× the real wait.</p>
+
+  <div class="stats four">
+    <div class="s"><div class="k">Bend · days to offer</div><div class="v">23</div><div class="n">Jul 2026 · <span class="n-chip">n=217</span></div></div>
+    <div class="s"><div class="k">Bend · CDOM</div><div class="v">59</div><div class="n">same 217 sales</div></div>
+    <div class="s"><div class="k">Gap the seller never waits</div><div class="v">36d</div><div class="n">escrow, not marketing</div></div>
+    <div class="s"><div class="k">Bend vs Jul 2025</div><div class="v exc">+3d</div><div class="n">20d a year ago</div></div>
+  </div>
+
+  <div class="card">
+    <h3>July 2026, by city</h3>
+    <p class="sub">Solid bar is time to offer. The tint behind it runs out to CDOM. Terracotta on the right marks a city that slowed year over year.</p>
+    <svg viewBox="0 0 560 500" role="img" aria-label="Median days to offer against median CDOM by city, July 2026">
+  <line x1="118.00" y1="34" x2="118.00" y2="456" class="grid"/>
+     <text x="118.00" y="474" class="ax mid">0d</text><line x1="202.00" y1="34" x2="202.00" y2="456" class="grid"/>
+     <text x="202.00" y="474" class="ax mid">30d</text><line x1="286.00" y1="34" x2="286.00" y2="456" class="grid"/>
+     <text x="286.00" y="474" class="ax mid">60d</text><line x1="370.00" y1="34" x2="370.00" y2="456" class="grid"/>
+     <text x="370.00" y="474" class="ax mid">90d</text><line x1="454.00" y1="34" x2="454.00" y2="456" class="grid"/>
+     <text x="454.00" y="474" class="ax mid">120d</text><text x="108" y="66" class="lbl ar thin">Powell Butte</text>
+    <rect x="118" y="52" width="344.40" height="17" rx="3" fill="#102742" fill-opacity="0.15"/>
+    <rect x="118" y="52" width="228.20" height="17" rx="3" fill="#102742"/>
+    <text x="455.40" y="65" class="val sm dim ar">123</text>
+    <text x="353.20" y="65" class="val sm">81.5</text>
+    <text x="492" y="65" class="val sm ">-1.5d</text><text x="108" y="110" class="lbl ar thin">Terrebonne</text>
+    <rect x="118" y="96" width="326.20" height="17" rx="3" fill="#102742" fill-opacity="0.15"/>
+    <rect x="118" y="96" width="226.80" height="17" rx="3" fill="#102742"/>
+    <text x="437.20" y="109" class="val sm dim ar">116.5</text>
+    <text x="351.80" y="109" class="val sm">81</text>
+    <text x="492" y="109" class="val sm exc">+68d</text><text x="108" y="154" class="lbl ar thin">Madras</text>
+    <rect x="118" y="140" width="336.00" height="17" rx="3" fill="#102742" fill-opacity="0.15"/>
+    <rect x="118" y="140" width="173.60" height="17" rx="3" fill="#102742"/>
+    <text x="447.00" y="153" class="val sm dim ar">120</text>
+    <text x="298.60" y="153" class="val sm">62</text>
+    <text x="492" y="153" class="val sm exc">+13.5d</text><text x="108" y="198" class="lbl ar thin">Prineville</text>
+    <rect x="118" y="184" width="263.20" height="17" rx="3" fill="#102742" fill-opacity="0.15"/>
+    <rect x="118" y="184" width="159.60" height="17" rx="3" fill="#102742"/>
+    <text x="388.20" y="197" class="val sm dim">94</text>
+    <text x="284.60" y="197" class="val sm">57</text>
+    <text x="492" y="197" class="val sm exc">+21d</text><text x="108" y="242" class="lbl ar thin">La Pine</text>
+    <rect x="118" y="228" width="231.00" height="17" rx="3" fill="#102742" fill-opacity="0.15"/>
+    <rect x="118" y="228" width="144.20" height="17" rx="3" fill="#102742"/>
+    <text x="356.00" y="241" class="val sm dim">82.5</text>
+    <text x="269.20" y="241" class="val sm">51.5</text>
+    <text x="492" y="241" class="val sm ">0d</text><text x="108" y="286" class="lbl ar">Redmond</text>
+    <rect x="118" y="272" width="186.20" height="17" rx="3" fill="#102742" fill-opacity="0.15"/>
+    <rect x="118" y="272" width="99.40" height="17" rx="3" fill="#102742"/>
+    <text x="311.20" y="285" class="val sm dim">66.5</text>
+    <text x="224.40" y="285" class="val sm">35.5</text>
+    <text x="492" y="285" class="val sm exc">+12.5d</text><text x="108" y="330" class="lbl ar">Bend</text>
+    <rect x="118" y="316" width="165.20" height="17" rx="3" fill="#102742" fill-opacity="0.15"/>
+    <rect x="118" y="316" width="64.40" height="17" rx="3" fill="#102742"/>
+    <text x="290.20" y="329" class="val sm dim">59</text>
+    <text x="189.40" y="329" class="val sm">23</text>
+    <text x="492" y="329" class="val sm exc">+3d</text><text x="108" y="400" class="lbl ar thin">Sunriver</text>
+    <rect x="118" y="386" width="123.20" height="17" rx="3" fill="#102742" fill-opacity="0.15"/>
+    <rect x="118" y="386" width="37.80" height="17" rx="3" fill="#102742"/>
+    <text x="248.20" y="399" class="val sm dim">44</text>
+    <text x="162.80" y="399" class="val sm">13.5</text>
+    <text x="492" y="399" class="val sm ">-21.5d</text><text x="108" y="444" class="lbl ar thin">Sisters</text>
+    <rect x="118" y="430" width="131.60" height="17" rx="3" fill="#102742" fill-opacity="0.15"/>
+    <rect x="118" y="430" width="19.60" height="17" rx="3" fill="#102742"/>
+    <text x="256.60" y="443" class="val sm dim">47</text>
+    <text x="144.60" y="443" class="val sm">7</text>
+    <text x="492" y="443" class="val sm ">-25d</text><line x1="182.40" y1="338" x2="283.20" y2="338" stroke="#102742" stroke-width="1" opacity="0.45"/>
+    <line x1="182.40" y1="334" x2="182.40" y2="342" stroke="#102742" stroke-width="1" opacity="0.45"/>
+    <line x1="283.20" y1="334" x2="283.20" y2="342" stroke="#102742" stroke-width="1" opacity="0.45"/>
+    <text x="232.80" y="358" class="anno mid">36 days of escrow, not marketing</text>
+  <text x="118" y="28" class="anno">solid = days to offer</text>
+  <text x="482.00" y="28" class="anno dim ar">tint = CDOM</text>
+  <text x="492" y="28" class="anno dim">vs Jul '25</text>
+</svg>
+    <p class="src">sale_pricing_facts · days_to_offer = on_market_date → pending_date · cdom = MLS cumulative days on market · product_class='detached', both columns non-null · close_date 2026-07-01..2026-07-31 vs 2025-07-01..2025-07-31 · median by city_slug, n&gt;=5 · fetched 2026-08-17</p>
+  </div>
+
+  <div class="caveat"><b>Read the small cities as direction, not measurement.</b> Sisters shows the sharpest improvement on the board, 32 days to 7 — but on 27 sales this July against 12 last July. Terrebonne's jump from 13 to 81 days rests on 5 prior-year sales. Only Bend and Redmond clear 30 sales in both months. <b>July is used because August is a stub</b> — closed data runs to 2026-08-13.</div>
+</div></section>
+
+<!-- ══ 4 ══ -->
+<section class="sec"><div class="wrap">
+  <div class="sec-num">04</div>
+  <div class="metric">Price-cut behaviour</div>
+  <h2>Cutting is a resort-community habit, not a Bend one.</h2>
+  <p class="stand">6.63% of Bend's 472 active listings are carrying a price cut, the second-lowest rate in the region. Black Butte Ranch runs at 19.35%, nearly three times the regional rate, on 31 actives and 11.6 months of supply. This is a live snapshot of what is on the market right now, a different population from the closed sales in the three sections above.</p>
+
+  <div class="card">
+    <h3>Share of actives carrying at least one cut</h3>
+    <p class="sub">Dashed line is the regional rate. Terracotta marks a city cutting at more than half again that rate — a hair over 8.49% is noise, not a signal.</p>
+    <svg viewBox="0 0 560 496" role="img" aria-label="Share of active listings carrying at least one price cut, by city, against the regional rate">
+  <line x1="158.00" y1="36" x2="158.00" y2="458" class="grid"/>
+     <text x="158.00" y="476" class="ax mid">0%</text><line x1="234.50" y1="36" x2="234.50" y2="458" class="grid"/>
+     <text x="234.50" y="476" class="ax mid">5%</text><line x1="311.00" y1="36" x2="311.00" y2="458" class="grid"/>
+     <text x="311.00" y="476" class="ax mid">10%</text><line x1="387.50" y1="36" x2="387.50" y2="458" class="grid"/>
+     <text x="387.50" y="476" class="ax mid">15%</text><line x1="464.00" y1="36" x2="464.00" y2="458" class="grid"/>
+     <text x="464.00" y="476" class="ax mid">20%</text><line x1="287.90" y1="36" x2="287.90" y2="458" stroke="#102742" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.6"/>
+    <text x="280.90" y="32" class="anno ar">Central Oregon 8.49%</text><text x="148" y="65" class="lbl ar">Black Butte Ranch</text>
+    <rect x="158" y="52" width="296.06" height="16" rx="3" fill="var(--rr-exception)" fill-opacity="1"/>
+    <text x="446.06" y="65" class="val sm inv ar">19.35%</text>
+    <text x="510" y="65" class="val sm dim ar">0.35</text><text x="148" y="97" class="lbl ar thin">Terrebonne</text>
+    <rect x="158" y="84" width="255.05" height="16" rx="3" fill="var(--rr-exception)" fill-opacity="1"/>
+    <text x="405.05" y="97" class="val sm inv ar">16.67%</text>
+    <text x="510" y="97" class="val sm dim ar">0.33</text><text x="148" y="129" class="lbl ar">Powell Butte</text>
+    <rect x="158" y="116" width="185.44" height="16" rx="3" fill="#102742" fill-opacity="0.88"/>
+    <text x="335.44" y="129" class="val sm inv ar">12.12%</text>
+    <text x="510" y="129" class="val sm dim ar">0.23</text><text x="148" y="161" class="lbl ar">La Pine</text>
+    <rect x="158" y="148" width="130.36" height="16" rx="3" fill="#102742" fill-opacity="0.88"/>
+    <text x="280.36" y="161" class="val sm inv ar">8.52%</text>
+    <text x="510" y="161" class="val sm dim ar">0.11</text><text x="148" y="193" class="lbl ar">Prineville</text>
+    <rect x="158" y="180" width="128.98" height="16" rx="3" fill="#102742" fill-opacity="0.88"/>
+    <text x="278.98" y="193" class="val sm inv ar">8.43%</text>
+    <text x="510" y="193" class="val sm dim ar">0.14</text><text x="148" y="225" class="lbl ar">Redmond</text>
+    <rect x="158" y="212" width="124.08" height="16" rx="3" fill="#102742" fill-opacity="0.88"/>
+    <text x="274.08" y="225" class="val sm inv ar">8.11%</text>
+    <text x="510" y="225" class="val sm dim ar">0.15</text><text x="148" y="257" class="lbl ar">Madras</text>
+    <rect x="158" y="244" width="122.40" height="16" rx="3" fill="#102742" fill-opacity="0.88"/>
+    <text x="272.40" y="257" class="val sm inv ar">8.00%</text>
+    <text x="510" y="257" class="val sm dim ar">0.16</text><text x="148" y="289" class="lbl ar">Sunriver</text>
+    <rect x="158" y="276" width="119.95" height="16" rx="3" fill="#102742" fill-opacity="0.88"/>
+    <text x="269.95" y="289" class="val sm inv ar">7.84%</text>
+    <text x="510" y="289" class="val sm dim ar">0.10</text><text x="148" y="321" class="lbl ar">Bend</text>
+    <rect x="158" y="308" width="101.44" height="16" rx="3" fill="#102742" fill-opacity="0.88"/>
+    <text x="251.44" y="321" class="val sm inv ar">6.63%</text>
+    <text x="510" y="321" class="val sm dim ar">0.09</text><text x="148" y="353" class="lbl ar">Sisters</text>
+    <rect x="158" y="340" width="82.77" height="16" rx="3" fill="#102742" fill-opacity="0.88"/>
+    <text x="232.77" y="353" class="val sm inv ar">5.41%</text>
+    <text x="510" y="353" class="val sm dim ar">0.11</text><text x="148" y="385" class="lbl ar thin">Culver</text>
+    <line x1="158" y1="373" x2="158" y2="387" stroke="#102742" stroke-width="2.5" opacity="0.4"/>
+    <text x="167.00" y="385" class="val sm ">0.00%</text>
+    <text x="510" y="385" class="val sm dim ar">0.00</text><text x="148" y="417" class="lbl ar thin">Metolius</text>
+    <line x1="158" y1="405" x2="158" y2="419" stroke="#102742" stroke-width="2.5" opacity="0.4"/>
+    <text x="167.00" y="417" class="val sm ">0.00%</text>
+    <text x="510" y="417" class="val sm dim ar">0.00</text><text x="148" y="449" class="lbl ar thin">Camp Sherman</text>
+    <line x1="158" y1="437" x2="158" y2="451" stroke="#102742" stroke-width="2.5" opacity="0.4"/>
+    <text x="167.00" y="449" class="val sm ">0.00%</text>
+    <text x="510" y="449" class="val sm dim ar">0.00</text>
+  <text x="510" y="12" class="anno dim ar">avg cuts</text>
+  <text x="510" y="36" class="anno dim ar">per listing</text>
+</svg>
+    <p class="src">market_pulse_live.price_reduction_share, avg_price_drops_active · listings StandardStatus IN ('Active','Coming Soon','Active Under Contract') · SFR sub-type, PropertyType='A' · stored as percent 0-100, not a fraction · methodology v3-2026-05-07 · snapshot 2026-08-18 05:33:20+00</p>
+  </div>
+
+  <div class="caveat"><b>Three cities show 0% and the denominators say why.</b> Culver has 11 actives, Metolius has 7 actives, Camp Sherman has 4 actives. Those are true zeros, not missing data — but on 4 listings, a single price cut would move the rate to 25%. They are drawn as a tick at zero rather than an absent bar so the thin sample stays visible instead of implied. Terrebonne's 16.67% is 1 cut out of 6.</div>
+</div></section>
+
+<footer class="kit-foot"><div class="wrap">
+  <b>Tier 1 chart set</b> · section mockups for review, not a shipped page.<br>
+  Sources: <b>sale_pricing_facts</b> (149,402 closings, 1996-08-20 to 2026-08-13) · <b>sale_pricing_seller_net</b> · <b>pricing_market_index</b> (4,013 city-months) · <b>market_pulse_live</b> (45 geographies, 2026-08-18).<br>
+  All closed-sale figures are detached single-family. Queried live 2026-08-17; every query is printed in <b>data.mjs</b> beside the rows it returned.
+</div></footer>
+
+</body>
+</html>

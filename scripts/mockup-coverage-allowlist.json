@@ -1,8 +1,9 @@
 {
-  "generatedAt": "2026-07-07T01:06:31.571Z",
+  "generatedAt": "2026-08-18T06:08:03.082Z",
   "reason": "Mockup directories that intentionally lack a parity.json (e.g. legacy mockups not yet ported to the contract format). Each entry should disappear once the parity contract is authored.",
   "allowed": [
     "buyer-alerts-lp",
+    "charts-tier-1",
     "expired-lp",
     "homepage-v3",
     "newsletter",
