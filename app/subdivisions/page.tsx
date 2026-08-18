@@ -18,6 +18,7 @@ import {
   registryChildPlats,
 } from '@/lib/data/geo/plat-public-inventory'
 import { communityImage, cityHero } from '@/lib/geo-images'
+import { publishFeaturedPlats } from '@/lib/market/publish-featured-plat-inventory'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
@@ -41,38 +42,12 @@ export const metadata: Metadata = pageMetadata({
   path: '/subdivisions',
 })
 
-type FeaturedPlat = {
-  slug: string
-  name: string
-  parent: string
-  parentSlug: string
-  city: string
-  citySlug: string
-}
-
 function fmtPrice(n: number | null | undefined): string | null {
   return formatIndexMedianUsd(n)
 }
 
-function pickFeaturedPlats(children: FeaturedPlat[], cap = 12): FeaturedPlat[] {
-  const picked: FeaturedPlat[] = []
-  const seenParent = new Set<string>()
-  for (const c of children) {
-    if (seenParent.has(c.parentSlug)) continue
-    seenParent.add(c.parentSlug)
-    picked.push(c)
-  }
-  for (const c of children) {
-    if (picked.length >= cap) break
-    if (picked.some((p) => p.slug === c.slug)) continue
-    picked.push(c)
-  }
-  return picked.slice(0, cap)
-}
-
 export default async function SubdivisionsPage() {
   const childPlats = registryChildPlats()
-  const featuredSeeds = pickFeaturedPlats(childPlats)
 
   const [inventory, heroPhotoPool] = await Promise.all([
     getRegistryPlatPublicInventory(),
@@ -80,6 +55,11 @@ export default async function SubdivisionsPage() {
   ])
   const inventoryOk = inventory.length > 0
   const invByKey = new Map(inventory.map((row) => [row.key, row]))
+  const countByKey = new Map(inventory.map((row) => [row.key, row.activeCount]))
+  const featuredSeeds = publishFeaturedPlats(childPlats, countByKey, {
+    inventoryOk,
+    cap: 12,
+  })
 
   const featured = featuredSeeds.map((p) => {
     const inv = invByKey.get(`${p.citySlug}:${p.slug}`) ?? null
