@@ -676,6 +676,37 @@ describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
   })
 })
 
+describe('flagship map timeout + city honesty (runtime crosswalk 2026-08-18)', () => {
+  const page = readSrc('app/search/page.tsx')
+  const view = readSrc('components/search/MapSearchView.tsx')
+
+  it('view=map uses withTimeoutSettled and passes degraded into HideAwareSearchMap', () => {
+    expect(page).toMatch(/view === 'map' \? await withTimeoutSettled\(getSearchMapListings/)
+    expect(page).toMatch(/degraded=\{mapDegraded\}/)
+    expect(page).not.toMatch(/view === 'map' \? await withTimeout\(getSearchMapListings/)
+  })
+
+  it('does not invent filters.city = Bend for split/map', () => {
+    expect(page).toMatch(/city: filters\.city,/)
+    expect(page).toMatch(/city: sp\.city \?\? '',/)
+    expect(page).not.toMatch(/city: filters\.city \|\| \(view !== 'list' \? defaultCity/)
+    expect(page).not.toMatch(/city: sp\.city \?\? \(view !== 'list' \? defaultCity/)
+    expect(page).not.toMatch(/getCityBoundary\(effectiveFilters\.city \|\| defaultCity\)/)
+    expect(page).toMatch(/defaultCity=\{effectiveFilters\.city \?\? ''\}/)
+  })
+
+  it('does not say No homes while filter-match is still in flight', () => {
+    expect(view).toMatch(/const \[matchCountReady, setMatchCountReady\] = useState\(false\)/)
+    expect(view).toMatch(/!matchCountReady && totalCount === 0\s*\n\s*\? 'Updating…'/)
+    expect(view).not.toMatch(/totalCount === 0 && matchCount == null\s*\n\s*\? 'No homes'/)
+  })
+
+  it('keeps empty status as active+pending (does not coerce \'\' to Active)', () => {
+    expect(view).toMatch(/status: f\.status \?\? 'Active'/)
+    expect(view).not.toMatch(/status: f\.status \|\| 'Active'/)
+  })
+})
+
 describe('no mojibake in the search surface', () => {
   // The "Â·" sequence (UTF-8 decoded as Latin-1) shipped here for months. Pin it
   // dead at the file level in addition to the repo-wide ci:no-mojibake gate.

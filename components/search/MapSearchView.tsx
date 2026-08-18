@@ -215,7 +215,11 @@ function toSearchFilters(f: SearchFiltersInitial): SearchFilters {
     maxPrice: f.maxPrice ? Number(f.maxPrice) : undefined,
     beds: f.beds ? Number(f.beds) : undefined,
     baths: f.baths ? Number(f.baths) : undefined,
-    status: f.status || 'Active',
+    maxBeds: f.maxBeds ? Number(f.maxBeds) : undefined,
+    maxBaths: f.maxBaths ? Number(f.maxBaths) : undefined,
+    // Empty string is active+pending (SEO map / getViewportSearch). Do not
+    // coerce '' to Active — only default when status is actually missing.
+    status: f.status ?? 'Active',
     sort: f.sort || 'newest',
     minSqFt: f.minSqFt ? Number(f.minSqFt) : undefined,
     maxSqFt: f.maxSqFt ? Number(f.maxSqFt) : undefined,
@@ -388,6 +392,7 @@ export default function MapSearchView({
   // a city are the common case).
   const [beyondViewportCount, setBeyondViewportCount] = useState<number | null>(null)
   const [matchCount, setMatchCount] = useState<number | null>(null)
+  const [matchCountReady, setMatchCountReady] = useState(false)
   const hasDrawnShapes = drawnShapes.length > 0
   useEffect(() => {
     if (totalCount !== 0 || !hasNarrowingFilters || hasDrawnShapes) {
@@ -419,6 +424,7 @@ export default function MapSearchView({
   // Viewport totalCount is a different population and may only print labeled.
   useEffect(() => {
     let cancelled = false
+    setMatchCountReady(false)
     const params: Record<string, string> = {}
     for (const [k, v] of Object.entries(filters as Record<string, string | undefined>)) {
       if (scopeDropped && (GEO_SCOPE_KEYS as readonly string[]).includes(k)) continue
@@ -426,10 +432,16 @@ export default function MapSearchView({
     }
     countSearchListings(params)
       .then((n) => {
-        if (!cancelled) setMatchCount(n)
+        if (!cancelled) {
+          setMatchCount(n)
+          setMatchCountReady(true)
+        }
       })
       .catch(() => {
-        if (!cancelled) setMatchCount(null)
+        if (!cancelled) {
+          setMatchCount(null)
+          setMatchCountReady(true)
+        }
       })
     return () => {
       cancelled = true
@@ -710,8 +722,8 @@ export default function MapSearchView({
   // Filter-match is the coherent number for the URL filters. Viewport prints
   // only when it differs, labeled "in this map view".
   const listCountPhrase =
-    totalCount === 0 && matchCount == null
-      ? 'No homes'
+    !matchCountReady && totalCount === 0
+      ? 'Updating…'
       : (publishedCounts.match?.phrase ?? publishedCounts.viewport?.phrase ?? 'Homes')
   const mapCountPhrase =
     publishedCounts.viewport?.phrase ??
@@ -782,6 +794,14 @@ export default function MapSearchView({
               Reload page
             </Button>
           </div>
+        </div>
+      ) : !matchCountReady && listings.length === 0 ? (
+        <div className="p-8 text-center">
+          <Eyebrow>Updating</Eyebrow>
+          <H3 className="mt-2">Checking homes for this view</H3>
+          <Body className="mt-2 text-muted-foreground">
+            The filter-match count is still loading. This is not an empty market.
+          </Body>
         </div>
       ) : listings.length === 0 ? (
         hasNarrowingFilters ? (

@@ -219,13 +219,14 @@ export default async function SearchPage({
   const filters = parseFilters(sp)
   const view = (sp.view === 'list' || sp.view === 'map' ? sp.view : 'split') as 'split' | 'list' | 'map'
 
+  // Camera default only — never a city filter. List already skipped the silent
+  // Bend inject (`view !== 'list' ? defaultCity`). Split/map now match that
+  // honesty: no `filters.city = 'Bend'` unless the URL asked. Regional
+  // inventory + Bend-centered camera is correct; a silent city filter is not.
   const defaultCity = 'Bend'
-  // List view skips the silent Bend inject. Homepage regional CTAs use
-  // publishRegionalSearchHref() → ?view=list so "See homes" next to the
-  // region count does not land on Showing Bend only.
   const effectiveFilters = {
     ...filters,
-    city: filters.city || (view !== 'list' ? defaultCity : undefined),
+    city: filters.city,
     subdivision: filters.subdivision,
   }
 
@@ -301,26 +302,46 @@ export default async function SearchPage({
   const totalCount = listSettled?.data.totalCount ?? 0
   const listDegraded = listSettled?.degraded ?? false
 
-  // MAP: legacy full-screen marker set (unchanged).
-  const mapListings = view === 'map' ? await withTimeout(getSearchMapListings(effectiveFilters), []) : []
+  // MAP: settled timeout so empty pins are not invented zero inventory.
+  const mapSettled =
+    view === 'map' ? await withTimeoutSettled(getSearchMapListings(effectiveFilters), []) : null
+  const mapListings = mapSettled?.data ?? []
+  const mapDegraded = mapSettled?.degraded ?? false
   const mapListingsWithCoords =
-    mapListings.length > 0 ? await withTimeout(getGeocodedListings(mapListings), mapListings) : mapListings
+    !mapDegraded && mapListings.length > 0
+      ? await withTimeout(getGeocodedListings(mapListings), mapListings)
+      : mapListings
 
   // Boundary polygon for the map, shared by split + map views. Prefer the
-  // authoritative boundaries-table geojson; fall back to the cities action.
+  // authoritative boundaries-table geojson; fall back to the cities action
+  // only when the user actually scoped a city (never invent Bend).
   const boundaryGeojson =
     view !== 'list'
-      ? (cityBoundaryGeo ?? (await withTimeout(getCityBoundary(effectiveFilters.city || defaultCity), null, 2000)))
+      ? (cityBoundaryGeo ??
+          (effectiveFilters.city
+            ? await withTimeout(getCityBoundary(effectiveFilters.city), null, 2000)
+            : null))
       : null
 
-  const resultsCount = view === 'split' ? (viewport?.totalCount ?? 0) : view === 'map' ? mapListings.length : totalCount
+  const resultsCount =
+    view === 'split'
+      ? viewportDegraded
+        ? undefined
+        : (viewport?.totalCount ?? 0)
+      : view === 'map'
+        ? mapDegraded
+          ? undefined
+          : mapListings.length
+        : listDegraded
+          ? undefined
+          : totalCount
 
   const placeQuery =
     filters.city && filters.subdivision
       ? `${filters.subdivision} ${filters.city} Oregon`
       : filters.city
         ? `${filters.city} Oregon`
-        : 'Bend Oregon'
+        : `${defaultCity} Oregon`
 
   // Registry passthrough: every field-registry URL param present rides along
   // to the client filter bar / All-filters sheet as its raw string, so a new
@@ -333,7 +354,7 @@ export default async function SearchPage({
 
   const initialFiltersFromUrl = {
     ...registryParamsFromUrl,
-    city: sp.city ?? (view !== 'list' ? defaultCity : ''),
+    city: sp.city ?? '',
     subdivision: sp.subdivision ?? '',
     minPrice: sp.minPrice ?? '',
     maxPrice: sp.maxPrice ?? '',
@@ -419,6 +440,7 @@ export default async function SearchPage({
               likedListingKeys={likedKeys}
               placeQuery={placeQuery}
               className="h-full w-full"
+              degraded={mapDegraded}
             />
           </div>
         )}
