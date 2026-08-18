@@ -135,31 +135,31 @@ export function buildClosedFigures(
       label: v3Text('median sale price'),
     })
   }
-  if (detail.soldCount != null && detail.soldCount > 0) {
+  if (detail?.soldCount != null && detail.soldCount > 0) {
     figures.push({
       value: v3Text(detail.soldCount.toLocaleString('en-US')),
       label: v3Text('homes sold'),
     })
   }
-  if (detail.avgSaleToListRatio != null && Number.isFinite(detail.avgSaleToListRatio)) {
+  if (detail?.avgSaleToListRatio != null && Number.isFinite(detail.avgSaleToListRatio)) {
     figures.push({
       value: v3Text(`${(detail.avgSaleToListRatio * 100).toFixed(1)}%`),
       label: v3Text('sale to list'),
     })
   }
-  if (detail.medianDom != null && detail.medianDom > 0) {
+  if (detail?.medianDom != null && detail.medianDom > 0) {
     figures.push({
       value: v3Text(`${Math.round(detail.medianDom)} days`),
       label: v3Text('median days on market'),
     })
   }
-  if (detail.medianPricePerSqft != null && detail.medianPricePerSqft > 0) {
+  if (detail?.medianPricePerSqft != null && detail.medianPricePerSqft > 0) {
     figures.push({
       value: v3Text(`$${Math.round(detail.medianPricePerSqft).toLocaleString('en-US')} per sq ft`),
       label: v3Text('price per sq ft'),
     })
   }
-  if (detail.totalVolume != null && detail.totalVolume > 0) {
+  if (detail?.totalVolume != null && detail.totalVolume > 0) {
     figures.push({
       value: v3Text(formatPriceExact(detail.totalVolume)),
       label: v3Text('closed volume'),
