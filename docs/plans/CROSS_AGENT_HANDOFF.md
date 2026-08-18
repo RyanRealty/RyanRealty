@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — listing-detail TIC share label + withhold ppsf
+# Current — 2026-08-18 (cursor) — Origin dual-remote helper (no detach)
+
+**Surface:** Cursor cloud `bc-276a7e45` (`cursor/origin-dual-remote-260d`). **Time:** 2026-08-18 ~14:50 UTC. Not a loop ship class. GitHub `origin` stays canonical. Origin CLI on this VM is installed and **not logged in**. Did not Detach from GitHub. Did not rewrite remotes. Did not disconnect Vercel GitHub.
+
+**Done**
+- Runbook `docs/ORIGIN_CUTOVER.md`. Helper `scripts/origin-dual-remote.mjs` (`npm run origin:dual-remote`) adds a `cursor` remote only; refuses if `origin` is not GitHub `RyanRealty/RyanRealty`.
+- Blocked on Matt browser / `CURSOR_API_KEY`: Origin login, then the helper fetch, then Origin Apps → Vercel on the existing project.
+
+**Next**
+- Matt: `origin auth login` (or set `CURSOR_API_KEY`) and `npm run origin:dual-remote` on Cursor + Claude machines.
+- Matt: Origin repo **Apps → Vercel** (same project). Leave GitHub↔Vercel connected.
+- Do **not** Detach from GitHub until an Origin-triggered production deploy is READY.
+
+**Do not:** detach; delete GitHub; point `origin` at Origin yet; start a loop ship class from this branch.
+
+**Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, Origin docs (mirror / settings / CLI / API), git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail TIC share label + withhold ppsf
 
 **Surface:** Cursor cloud `bc-a0c77b4b` (`cursor/loop-chain-2026-08-18t12-00-4d91`). **Time:** 2026-08-18 ~13:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 188). Claimed parent only as `cursor-loop-chain-bc-a0c77b4b-2026-08-18t12-00`. Product **`cdb35fb11`** landed on **`main`**. Vercel Production **READY** for `cdb35fb11` (`CxViDz2vpqBeLEYN8NsTuDcypKwD`; GitHub Vercel success + Production deployment). First `npm run deploy:verify` hit READY on the prior product SHA `05bbb31`; the HouseMe follow-up SHA verified via GitHub Production status after the CLI login stall. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (180 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
