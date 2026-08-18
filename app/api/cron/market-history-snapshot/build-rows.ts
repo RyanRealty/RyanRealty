@@ -8,7 +8,16 @@
 
 import type { NationalSeriesPoint } from '@/lib/market-national-series'
 
-/** One upsert row for public.market_history_weekly. */
+/**
+ * One upsert row for public.market_history_weekly.
+ *
+ * `source` names WHERE the number came from and `observation_date` names WHEN
+ * the source says it was observed — §0 needs both, and they are not the same
+ * as `captured_at` (when this cron wrote the row). Freddie publishes the 30yr
+ * rate for a week-ending Thursday; this cron runs the following Monday, so
+ * captured_at overstates the number's freshness by days. Null only when the
+ * source publishes no date.
+ */
 export type MarketHistoryRow = {
   week_start: string // YYYY-MM-DD, Monday UTC
   geo_type: string
@@ -16,6 +25,7 @@ export type MarketHistoryRow = {
   metric: string
   value: number
   source: string
+  observation_date: string | null // YYYY-MM-DD, as stamped by the source
 }
 
 /** The slice of a market_pulse_live row the snapshot reads. */
@@ -28,12 +38,14 @@ export type PulseSnapshotSource = {
   price_reduction_share: number | null
   months_of_supply: number | null
   median_list_price: number | null
+  /** Pulse refresh timestamp — the pulse row's own vintage. */
+  updated_at: string | null
 }
 
 /** Columns the route selects from market_pulse_live — keep in sync with PulseSnapshotSource. */
 export const PULSE_SELECT_COLUMNS =
   'geo_type, geo_slug, active_count, new_count_7d, pending_count, ' +
-  'price_reduction_share, months_of_supply, median_list_price'
+  'price_reduction_share, months_of_supply, median_list_price, updated_at'
 
 /** Metric keys captured per geo, mapped from their pulse column. */
 export const PULSE_METRICS = [
@@ -78,14 +90,32 @@ function toFiniteNumber(v: unknown): number | null {
 }
 
 /**
+ * Date part of a source-supplied timestamp, or null when it is missing or
+ * unparseable. Never substitutes today's date — an invented vintage is worse
+ * than an absent one (§0).
+ */
+export function toObservationDate(v: unknown): string | null {
+  if (typeof v !== 'string' || v.length === 0) return null
+  const parsed = new Date(v)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.toISOString().slice(0, 10)
+}
+
+/**
  * One row per (geo, metric) from the live pulse rows. Null/non-finite metric
  * values are skipped (value is NOT NULL in the table — a metric the pulse
  * cannot provide this week is simply absent, never zero-filled, per §0).
+ *
+ * The pulse row's own `updated_at` is the vintage of every metric taken from
+ * it — the pulse refreshes every 10-15 minutes, so it is normally same-day as
+ * the run, but recording it means a stalled pulse shows up as a stale
+ * observation_date instead of hiding behind a fresh captured_at.
  */
 export function buildPulseSnapshotRows(weekStart: string, pulseRows: PulseSnapshotSource[]): MarketHistoryRow[] {
   const rows: MarketHistoryRow[] = []
   for (const pulse of pulseRows) {
     if (!pulse.geo_type || !pulse.geo_slug) continue
+    const observationDate = toObservationDate(pulse.updated_at)
     for (const metric of PULSE_METRICS) {
       const value = toFiniteNumber(pulse[metric])
       if (value === null) continue
@@ -96,6 +126,7 @@ export function buildPulseSnapshotRows(weekStart: string, pulseRows: PulseSnapsh
         metric,
         value,
         source: 'market_pulse_live',
+        observation_date: observationDate,
       })
     }
   }
@@ -106,6 +137,12 @@ export function buildPulseSnapshotRows(weekStart: string, pulseRows: PulseSnapsh
  * National context rows: 30yr mortgage, 10Y treasury, and the computed
  * spread (mortgage30 - dgs10). Each series degrades independently; the
  * spread only exists when both inputs do.
+ *
+ * Each row keeps the PROVIDER's observation date, not the run date. FRED
+ * reports the date of the observation it returns; Freddie's PMMS row is dated
+ * to its week-ending Thursday. week_start is the Monday this cron ran, which
+ * is a different (later) day — publishing that as the rate's date would
+ * overstate its freshness, so it is never used as the vintage.
  */
 export function buildNationalRows(
   weekStart: string,
@@ -120,6 +157,7 @@ export function buildNationalRows(
       metric: NATIONAL_METRICS.mortgage30,
       value: mortgage30.value,
       source: mortgage30.source,
+      observation_date: toObservationDate(mortgage30.observationDate),
     })
   }
   if (treasury10 && Number.isFinite(treasury10.value)) {
@@ -129,9 +167,12 @@ export function buildNationalRows(
       metric: NATIONAL_METRICS.treasury10,
       value: treasury10.value,
       source: treasury10.source,
+      observation_date: toObservationDate(treasury10.observationDate),
     })
   }
   if (mortgage30 && treasury10 && Number.isFinite(mortgage30.value) && Number.isFinite(treasury10.value)) {
+    const mortgageObserved = toObservationDate(mortgage30.observationDate)
+    const treasuryObserved = toObservationDate(treasury10.observationDate)
     rows.push({
       week_start: weekStart,
       ...NATIONAL_GEO,
@@ -139,6 +180,16 @@ export function buildNationalRows(
       // Round to 2dp to avoid float dust (6.78 - 4.42 = 2.3599999...).
       value: Math.round((mortgage30.value - treasury10.value) * 100) / 100,
       source: 'computed:mortgage30-dgs10',
+      // The weekly mortgage rate and the daily treasury rarely share an
+      // observation date. A composite is only as current as its OLDEST input,
+      // so the spread is dated to the earlier of the two — dating it to the
+      // newer one would claim a freshness the mortgage leg does not have.
+      // Null if either leg has no usable date: a half-known vintage is not a
+      // vintage.
+      observation_date:
+        mortgageObserved && treasuryObserved
+          ? (mortgageObserved < treasuryObserved ? mortgageObserved : treasuryObserved)
+          : null,
     })
   }
   return rows

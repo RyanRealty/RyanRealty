@@ -79,7 +79,6 @@ const EXEMPT = [
   /^app\/pulse\/page\.tsx$/, // E-CUT redirect-only into /activity
   /^app\/reports\/\[slug\]\/\[geoName\]\//, // redirect-only (consolidated to /housing-market/<city>)
   /^app\/motivated-sellers\//, // redirect-only (IA lock: 308 into /price-drops)
-  /^app\/neighborhoods\/\[slug\]\/page\.tsx$/, // redirect-only (Bend-district alias: 301 into /cities/bend/[slug])
   /^app\/search\/page\.tsx$/, // search index: only possible trail is Home > self (C-16, 2026-08-06)
 ]
 

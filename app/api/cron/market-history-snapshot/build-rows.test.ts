@@ -21,6 +21,7 @@ const bendPulse: PulseSnapshotSource = {
   price_reduction_share: 0.312,
   months_of_supply: 4.3,
   median_list_price: 849000,
+  updated_at: '2026-07-20T12:48:11.204+00:00',
 }
 
 describe('weekStartUtc', () => {
@@ -58,7 +59,18 @@ describe('buildPulseSnapshotRows', () => {
       expect(r.geo_type).toBe('city')
       expect(r.geo_slug).toBe('bend')
       expect(r.source).toBe('market_pulse_live')
+      // Vintage is the pulse row's own refresh timestamp, not the run date.
+      expect(r.observation_date).toBe('2026-07-20')
     }
+  })
+
+  it('leaves observation_date null when the pulse row has no usable updated_at', () => {
+    const undated = buildPulseSnapshotRows('2026-07-20', [{ ...bendPulse, updated_at: null }])
+    const garbage = buildPulseSnapshotRows('2026-07-20', [{ ...bendPulse, updated_at: 'not-a-date' }])
+    // Never substitutes week_start or today — an invented vintage is worse
+    // than an absent one (§0).
+    for (const r of [...undated, ...garbage]) expect(r.observation_date).toBeNull()
+    expect(undated).toHaveLength(PULSE_METRICS.length)
   })
 
   it('skips null metrics instead of zero-filling them', () => {
@@ -139,6 +151,36 @@ describe('buildNationalRows', () => {
 
   it('returns nothing when both series degraded', () => {
     expect(buildNationalRows('2026-07-20', null, null)).toEqual([])
+  })
+
+  it("keeps each provider's own observation date instead of the run's week_start", () => {
+    const rows = buildNationalRows('2026-07-20', mortgage, treasury)
+    const byMetric = Object.fromEntries(rows.map((r) => [r.metric, r]))
+    // week_start is the Monday the cron ran; the rate was observed the prior
+    // Thursday. Publishing 2026-07-20 as the rate's date would overstate it.
+    expect(byMetric[NATIONAL_METRICS.mortgage30].observation_date).toBe('2026-07-16')
+    expect(byMetric[NATIONAL_METRICS.treasury10].observation_date).toBe('2026-07-17')
+  })
+
+  it('dates the spread to the OLDER of its two legs', () => {
+    const rows = buildNationalRows('2026-07-20', mortgage, treasury)
+    const spread = rows.find((r) => r.metric === NATIONAL_METRICS.spread)
+    // A composite is only as current as its oldest input (mortgage 07-16).
+    expect(spread?.observation_date).toBe('2026-07-16')
+
+    // Order of freshness reversed — still the older leg, now the treasury.
+    const staleTreasury = buildNationalRows('2026-07-20', mortgage, { ...treasury, observationDate: '2026-07-10' })
+    expect(staleTreasury.find((r) => r.metric === NATIONAL_METRICS.spread)?.observation_date).toBe('2026-07-10')
+  })
+
+  it('nulls the spread vintage when either leg has no usable date', () => {
+    const rows = buildNationalRows('2026-07-20', { ...mortgage, observationDate: '' }, treasury)
+    const byMetric = Object.fromEntries(rows.map((r) => [r.metric, r]))
+    expect(byMetric[NATIONAL_METRICS.mortgage30].observation_date).toBeNull()
+    // A half-known vintage is not a vintage — never fall back to the good leg.
+    expect(byMetric[NATIONAL_METRICS.spread].observation_date).toBeNull()
+    // The value itself still lands.
+    expect(byMetric[NATIONAL_METRICS.spread].value).toBe(2.36)
   })
 })
 

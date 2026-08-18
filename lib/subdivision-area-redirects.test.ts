@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  resolveNeighborhoodAliasRedirect,
   resolveSubdivisionAreaRedirect,
   subdivisionAreaRedirectEntries,
 } from './subdivision-area-redirects'
@@ -110,5 +111,27 @@ describe('resolveSubdivisionAreaRedirect', () => {
     it('covers both named examples + at least the full registry & city set', () => {
       expect(entries.length).toBeGreaterThanOrEqual(registrySlugs.length + cityNeighborhoods.length)
     })
+  })
+})
+
+describe('resolveNeighborhoodAliasRedirect', () => {
+  it('Awbrey Butte 308s to the live city report', () => {
+    expect(resolveNeighborhoodAliasRedirect('awbrey-butte')).toBe('/cities/bend/awbrey-butte')
+  })
+
+  it('every City-of-Bend district maps to /cities/bend/{slug}', () => {
+    for (const e of cityNeighborhoods) {
+      expect(resolveNeighborhoodAliasRedirect(e.route_slug)).toBe(`/cities/bend/${e.route_slug}`)
+    }
+  })
+
+  it('tetherow stays null — it is a resort, not a neighborhood', () => {
+    expect(resolveNeighborhoodAliasRedirect('tetherow')).toBeNull()
+    expect(resolveNeighborhoodAliasRedirect('bend-tetherow')).toBeNull()
+  })
+
+  it('junk stays null', () => {
+    expect(resolveNeighborhoodAliasRedirect('not-a-real-place-xyz')).toBeNull()
+    expect(resolveNeighborhoodAliasRedirect('')).toBeNull()
   })
 })

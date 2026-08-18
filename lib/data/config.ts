@@ -17,9 +17,31 @@
  * Tax and insurance rates have no ingested equivalent yet and still read
  * app_config.
  *
- * STILL ON THE OLD PATH: the SQL generated column `estimated_monthly_piti`
- * reads app_config through `get_mortgage_rate()`. Repointing it needs a
- * migration and is tracked separately — this change does not touch it.
+ * WHO STILL DEPENDS ON app_config.mortgage_rate (audited 2026-08-17 against
+ * the live DB catalog — routine bodies, view defs, column defaults/generation
+ * expressions, check constraints, triggers, RLS policies, index expressions):
+ *   - THIS function, and only this function, in the whole JS tree. It is the
+ *     floor under the ingested rate, so the row is NOT dead and must not be
+ *     removed: delete the read and a dark history series drops the calculators
+ *     straight to the 7% hardcoded FALLBACK instead of the last hand-entered
+ *     value.
+ *   - `public.compute_and_cache_period_stats()` — reads the row directly (NOT
+ *     via get_mortgage_rate()), defaults to 0.065, and writes
+ *     `market_stats_cache.affordability_monthly_piti`. Still on the stale row.
+ *   - `public.build_cache_methodology()` — stamps the row's value into the
+ *     methodology JSONB on cache rows. Still on the stale row.
+ *   - NOT `get_mortgage_rate()`. It still exists and still reads this row, but
+ *     it has zero callers anywhere: nothing in the catalog references it and no
+ *     code calls it as an RPC. It is left in place only because PostgREST
+ *     exposes it publicly (EXECUTE granted to anon/authenticated/public), so an
+ *     unseen external caller cannot be ruled out from inside the repo.
+ *
+ * A previous version of this comment claimed `listings.estimated_monthly_piti`
+ * was a SQL generated column fed by `get_mortgage_rate()`. It is neither: the
+ * column is plain (no default, no generation expression) and is written by
+ * `lib/listing-mapper.ts`, which hardcodes its own 0.065 rate at sync time.
+ * Those three — the two cache routines and the mapper constant — are separate
+ * divergent rate paths and are NOT touched here.
  *
  * Cached 6 hours; the underlying series moves weekly.
  */

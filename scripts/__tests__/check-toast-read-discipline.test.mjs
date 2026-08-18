@@ -24,10 +24,13 @@ import { execFileSync } from 'node:child_process'
  */
 
 const REPO = resolve(new URL('.', import.meta.url).pathname, '../..')
-// Per-process path. A fixed name races when two vitest workers (or a leftover
+// Per-run path. A fixed name races when two vitest workers (or a leftover
 // hook run) reset the same /tmp dir — the next run() then sees a missing
 // baseline or a deleted gate script (2026-08-15 pre-commit: 8 false fails).
-const SANDBOX = join(tmpdir(), `rr-toast-gate-sandbox-${process.pid}`)
+// pid alone is not enough: this file runs under BOTH the `unit` and `gates`
+// projects, which can share a worker process, so the random suffix is what
+// actually separates them.
+const SANDBOX = join(tmpdir(), `rr-toast-gate-sandbox-${process.pid}-${Math.random().toString(16).slice(2)}`)
 const GATE = join(SANDBOX, 'scripts/check-toast-read-discipline.mjs')
 
 /**
