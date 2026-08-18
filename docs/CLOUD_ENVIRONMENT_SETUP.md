@@ -42,6 +42,7 @@ api.anthropic.com
 api.elevenlabs.io
 api.apify.com
 api.x.ai
+x.ai
 api.replicate.com
 *.upstash.io
 graph.facebook.com
@@ -119,7 +120,8 @@ the script or the allowed hosts, and after roughly seven days.
 `sudo` degrades to "no ffmpeg" rather than a dead session. If ffmpeg turns out
 to be missing in a session, drop the `sudo` prefix.
 
-Installs ffmpeg, the brand fonts (Amboqia + AzoSans, shipped in-repo), and node
+Installs ffmpeg, the Grok Build CLI (`grok` / `agent` via https://x.ai/cli/install.sh),
+the brand fonts (Amboqia + AzoSans, shipped in-repo), and node
 dependencies, then runs the parity gate. Chromium is **skipped by default** —
 the environment has roughly a five-minute build budget and most sessions never
 drive a browser. When a session needs one:

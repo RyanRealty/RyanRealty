@@ -35,6 +35,23 @@ if command -v apt-get >/dev/null 2>&1; then
 fi
 command -v ffmpeg >/dev/null 2>&1 && echo "  ffmpeg $(ffmpeg -version 2>/dev/null | head -1 | cut -d' ' -f3)" || echo "  ! ffmpeg missing"
 
+# ── Grok Build CLI ──────────────────────────────────────────────────────────
+# Official installer: https://docs.x.ai/build/overview
+# Binary lands in ~/.grok/bin. XAI_API_KEY (already in cloud secrets) is enough
+# for headless use; interactive login is not required.
+log "grok build cli"
+export PATH="$HOME/.grok/bin:$PATH"
+if [ -x "$HOME/.grok/bin/grok" ]; then
+  echo "  already installed: $("$HOME/.grok/bin/grok" --version 2>/dev/null || echo grok)"
+else
+  if curl -fsSL https://x.ai/cli/install.sh | bash; then
+    export PATH="$HOME/.grok/bin:$PATH"
+    command -v grok >/dev/null 2>&1 && echo "  $(grok --version)" || echo "  ! grok binary missing after install"
+  else
+    echo "  ! grok install failed (non-fatal)"
+  fi
+fi
+
 # ── brand fonts ─────────────────────────────────────────────────────────────
 # Shipped in-repo, so this is a copy, not a download. Amboqia is the display
 # and caption face; a render without it is a ship-blocker (CLAUDE.md captions
@@ -78,6 +95,7 @@ log "ready"
 echo "Node        $(node --version)"
 echo "npm         $(npm --version)"
 command -v ffmpeg >/dev/null 2>&1 && echo "ffmpeg      present" || echo "ffmpeg      MISSING"
+command -v grok >/dev/null 2>&1 && echo "grok        $(grok --version)" || echo "grok        MISSING"
 echo
 echo "Next:"
 echo "  npm run setup:browsers   # if this session needs to drive a browser"
