@@ -49,7 +49,7 @@ const community = src('app/communities/[slug]/page.tsx')
 checks.push({
   label: 'community PlaceInventoryMap opens the community listings path',
   ok:
-    /browseHref=\{homesForSalePath\(cityName, community.subdivision\)\}/.test(community) &&
+    /viewAllHref=\{homesForSalePath\(cityName, community.subdivision\)\}/.test(community) &&
     /<PlaceInventoryMap/.test(community),
 })
 

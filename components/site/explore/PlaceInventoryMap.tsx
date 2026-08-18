@@ -36,7 +36,7 @@ export function PlaceInventoryMap({
   totalActive,
   centerLonLat,
   viewAllHref,
-  viewAllLabel,
+  viewAllLabel = `See every ${placeName} home for sale`,
   browseHref,
   dualPaneSubtitle,
   mapOnlySubtitle,
