@@ -30,7 +30,8 @@
  * FOUR REAL DEFECTS MOTIVATE THE CHECKS BELOW. None of them failed anything.
  *
  *   1. `const rate = 0.065` in lib/listing-mapper.ts drove the PITI figure
- *      written onto 7,581 live listing rows.
+ *      written onto ~7,581 live ACTIVE listing rows (the count as recorded in
+ *      lib/listing-mapper.test.ts; the trigger fix repriced 7,561).
  *   2. `const DEFAULT_RATE = 6.5` in components/listing/PaymentCalculator.tsx —
  *      a client component, so the number is typed into the bundle a visitor
  *      downloads and no server read can correct it.
@@ -128,19 +129,31 @@
  * 12:30 UTC), which emails Matt one consolidated alert when a pipeline goes
  * dark. Same mechanism that already watches market_stats_cache.
  *
- * THE LEDGERS ARE FROZEN, NOT AN EXEMPTION. A file not listed may not hardcode
- * a macro constant at all, and a listed file may not grow. The count only
- * shrinks; a file that reaches zero comes off the list.
+ * THE LEDGER IS FROZEN, NOT AN EXEMPTION — scripts/stat-source-baseline.json.
+ * A file not listed may not hardcode a macro constant at all, and a listed file
+ * may not grow. The count only shrinks; a file that reaches zero comes off the
+ * list, and a listed file that improved without lowering its row fails as a
+ * stale row.
+ *
+ * `--write` exists because this gate lands onto a tree that keeps moving: a
+ * rebase can bring in someone else's fix that empties a row, and the ratchet
+ * then correctly fails until the row is lowered. `--write` is the one command
+ * that re-syncs it, and it is deliberately incapable of the opposite move: it
+ * only LOWERS counts and drops cleared rows, and it REFUSES to add a file or
+ * raise a count. New debt cannot be laundered into the baseline; it has to be
+ * fixed, or added by hand with a reason a reviewer reads.
  *
  * Usage:
  *   node scripts/check-stat-source.mjs
  *   node scripts/check-stat-source.mjs --detector   # fixtures only, no scan
+ *   node scripts/check-stat-source.mjs --write      # shrink-only ledger re-sync
  */
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import ts from 'typescript'
 import { walkFiles } from './lib/walk.mjs'
 
 const DETECTOR_ONLY = process.argv.includes('--detector')
+const WRITE = process.argv.includes('--write')
 
 /* ════════════════════════════ the detector ════════════════════════════════ */
 
@@ -597,68 +610,28 @@ const PROVIDER_HOSTS = [
 /** A host inside a quoted string — a comment naming the provider is not a fetch. */
 const quotedHost = (host) => new RegExp(`['"\`][^'"\`\\n]*${host.replace(/\./g, '\\.')}`)
 
-/* ────────────────────────── the frozen ledgers ───────────────────────────── */
+/* ────────────────────────── the frozen ledger ────────────────────────────── */
 
 /**
- * Macro constants living inside a compounding model, measured 2026-08-17.
- * Each row is a number that is wrong the day the market moves and stays wrong
- * until a human notices. May only SHRINK.
+ * scripts/stat-source-baseline.json holds the pre-existing debt, measured
+ * 2026-08-17: TS/TSX modules under `modules`, live SQL routines under
+ * `sqlRoutines`, each row `{ allowed, reason }`. The reason is not decoration —
+ * it is why the engine cannot serve that figure YET, which is the only thing
+ * that tells a later reader whether the row is a bug or a gap.
  *
- * Fixing one means taking the figure from getCalculatorDefaults() — on a
- * server component directly, on a client component as a prop threaded from
- * the server — and lowering (or deleting) the row in the same commit.
- *
- *   app/tools/mortgage-calculator/MortgageCalculator.tsx already shows the
- *   shape: it takes initialInterestRate / initialPropertyTaxYear /
- *   initialInsuranceYear as props and its page.tsx fills them from the engine,
- *   which is why it carries only its PMI row here.
+ * It lives in JSON rather than in this file so `--write` can re-sync it after a
+ * rebase without rewriting the gate's own source, the same shape as
+ * gates-wired-baseline.json and email-send-gated-baseline.json.
  */
-const MACRO_CONSTANT_LEDGER = {
-  // `loan * 0.005` — a 0.5%/yr PMI rate. This file takes its mortgage rate, tax
-  // and insurance from the engine through props (see its page.tsx); PMI is the
-  // one figure it still invents, and no ingested PMI series exists.
-  'app/tools/mortgage-calculator/MortgageCalculator.tsx': 1,
-  // Founding defect 1, after two fixes and one file split. `const rate = 0.065`
-  // used to sit inline in lib/listing-mapper.ts and implied 6.50% on every
-  // `listings.estimated_monthly_piti` row; the sync now resolves the live rate
-  // once per run (lib/data/market/getLiveMortgageRate.ts) and hands it in, and
-  // the DB trigger that actually WON that write was repointed at
-  // get_current_mortgage_rate() by migration 20260817190000. What is left here
-  // is DEFAULT_PITI_RATE = 0.065 (the fallback when a caller passes nothing,
-  // kept so an un-passed call reproduces a pre-2026-08-17 row byte for byte),
-  // INSURANCE_RATE = 0.0035 and TAX_FALLBACK_RATE = 0.012. No ingested
-  // insurance or tax series exists, so the engine cannot serve those two yet.
-  'lib/listing-tier1.ts': 3,
-  // DEFAULT_RATE = 6.5 and INSURANCE_RATE = 0.0035, shipped in a client bundle.
-  'components/listing/PaymentCalculator.tsx': 2,
-  // DEFAULT_RATE_PCT = 7.0, TAX_FALLBACK_PCT = 0.85, INSURANCE_PER_300K = 1000.
-  'components/site/listing-detail/MortgageCalculator.tsx': 3,
-  // DEFAULT_DISPLAY_RATE — an env var with a 7% floor, inlined at build time.
-  'lib/mortgage.ts': 1,
-  // DEFAULT_APPRECIATION_RATE_PCT = 4.5. No ingested appreciation series exists
-  // yet, so the engine has nothing to hand it — this row is the tracking of
-  // that gap, and the file's own comment already calls the staleness risk out.
-  'components/tools/AppreciationCalculator.tsx': 1,
-  // DSCR_DEFAULTS: ratePct 6.875 / taxRatePct 1.2 / insuranceRatePct 0.35. The
-  // investor rate is a different series from the 30-yr conforming rate, so the
-  // engine cannot serve it today; the tax and insurance rates it can.
-  'lib/data/dscr/screen.ts': 3,
-}
+const BASELINE_PATH = 'scripts/stat-source-baseline.json'
+const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
+const MACRO_CONSTANT_LEDGER = Object.fromEntries(
+  Object.entries(baseline.modules ?? {}).map(([k, v]) => [k, v.allowed]),
+)
+const SQL_CONSTANT_LEDGER = Object.fromEntries(
+  Object.entries(baseline.sqlRoutines ?? {}).map(([k, v]) => [k, v.allowed]),
+)
 
-/**
- * Live SQL routines that still hold a macro number, measured 2026-08-17
- * against the migration record. May only SHRINK, and it shrinks by shipping a
- * NEW migration — editing an applied one changes nothing in the database.
- */
-const SQL_CONSTANT_LEDGER = {
-  // `SELECT (value)::numeric FROM app_config WHERE key = 'mortgage_rate'`
-  // (migration 20260414210000). ZERO callers: nothing in the catalog references
-  // it and no code calls it as an RPC — but PostgREST grants EXECUTE to anon,
-  // so an unseen external caller cannot be ruled out from inside the repo, and
-  // whoever calls it gets whatever a human last typed. Retire it, or repoint it
-  // at get_current_mortgage_rate(), in a new migration.
-  'public.get_mortgage_rate': 1,
-}
 
 /* ───────────────────────── one pass, one read ────────────────────────────── */
 
@@ -751,6 +724,54 @@ const staleSqlLedgerRows = Object.keys(SQL_CONSTANT_LEDGER)
   .filter((n) => (sqlByRoutine.get(n)?.sites.length ?? 0) < (SQL_CONSTANT_LEDGER[n] ?? 0))
   .sort()
 
+/* ──────────────────────── --write · the shrink-only re-sync ──────────────── */
+
+if (WRITE) {
+  // The one asymmetry that makes this safe: --write may only move a count DOWN.
+  // Anything that would raise a count or introduce a row is refused, printed,
+  // and left for a human — a ratchet with a "just re-baseline it" escape hatch
+  // is not a ratchet.
+  const wouldGrow = [
+    ...macroFailures.map((m) => `modules.${m.file}: ledger ${m.allowed} → measured ${m.sites.length}`),
+    ...sqlFailures.map((s) => `sqlRoutines.${s.name}: ledger ${s.allowed} → measured ${s.sites.length}`),
+  ]
+  if (wouldGrow.length) {
+    console.error('--write refuses to raise a count or add a row. New macro debt is fixed, not baselined:\n')
+    for (const w of wouldGrow) console.error(`  ✗ ${w}`)
+    console.error('\n  Take the figure from getCalculatorDefaults() (TS) or get_current_mortgage_rate()')
+    console.error('  in a NEW migration (SQL). If it genuinely cannot be served yet, add the row by hand')
+    console.error(`  in ${BASELINE_PATH} with a reason that says why.`)
+    process.exit(1)
+  }
+
+  const next = { ...baseline, modules: {}, sqlRoutines: {} }
+  const changes = []
+  for (const [file, row] of Object.entries(baseline.modules ?? {})) {
+    const measured = byFile.get(file)?.length ?? 0
+    if (measured === 0) {
+      changes.push(`dropped modules.${file} (was ${row.allowed}, now clean)`)
+      continue
+    }
+    if (measured < row.allowed) changes.push(`lowered modules.${file} ${row.allowed} → ${measured}`)
+    next.modules[file] = { ...row, allowed: measured }
+  }
+  for (const [name, row] of Object.entries(baseline.sqlRoutines ?? {})) {
+    const measured = sqlByRoutine.get(name)?.sites.length ?? 0
+    if (measured === 0) {
+      changes.push(`dropped sqlRoutines.${name} (was ${row.allowed}, now clean)`)
+      continue
+    }
+    if (measured < row.allowed) changes.push(`lowered sqlRoutines.${name} ${row.allowed} → ${measured}`)
+    next.sqlRoutines[name] = { ...row, allowed: measured }
+  }
+
+  writeFileSync(BASELINE_PATH, JSON.stringify(next, null, 2) + '\n')
+  console.log(`${BASELINE_PATH} re-synced.`)
+  if (!changes.length) console.log('  no change — the ledger already matches the tree.')
+  for (const c of changes) console.log(`  · ${c}`)
+  process.exit(0)
+}
+
 /* ─────────────────── CHECK 2a · the engine's own shape ───────────────────── */
 
 const engineFailures = []
@@ -825,6 +846,7 @@ if (staleLedgerRows.length) {
   for (const f of staleLedgerRows) {
     console.error(`  ✗ ${f} — ledger says ${MACRO_CONSTANT_LEDGER[f]}, found ${byFile.get(f)?.length ?? 0}`)
   }
+  console.error('\n  Re-sync with: node scripts/check-stat-source.mjs --write  (it can only lower a count).')
 }
 
 if (sqlFailures.length) {
@@ -848,6 +870,7 @@ if (staleSqlLedgerRows.length) {
   for (const n of staleSqlLedgerRows) {
     console.error(`  ✗ ${n} — ledger says ${SQL_CONSTANT_LEDGER[n]}, found ${sqlByRoutine.get(n)?.sites.length ?? 0}`)
   }
+  console.error('\n  Re-sync with: node scripts/check-stat-source.mjs --write  (it can only lower a count).')
 }
 
 if (engineFailures.length) {
@@ -872,7 +895,10 @@ const sqlDebt = Object.values(SQL_CONSTANT_LEDGER).reduce((a, n) => a + n, 0)
 console.log('✓ getCalculatorDefaults is the single macro read, sourced from the ingested weekly series.')
 console.log(`✓ ${SQL_ENGINE_FN}() is the database-side read of the same series.`)
 console.log(`✓ ${PROVIDER_HOSTS.length} provider endpoint(s) reachable only from ${INGEST_FILE}.`)
-console.log(`  ${debt} hardcoded macro constant(s) on the frozen TS ledger; ${sqlDebt} on the SQL ledger. Both only shrink.`)
+console.log(
+  `  ${debt} hardcoded macro constant(s) on the frozen TS ledger; ${sqlDebt} on the SQL ledger ` +
+    `(${BASELINE_PATH}). Both only shrink.`,
+)
 console.log('  Freshness of the series itself is watched by evalMacroSeries in lib/pipeline-heartbeat.ts')
 console.log('  (/api/cron/loop-health-check, daily 12:30 UTC) — no on-disk gate can see a stale table.')
 process.exit(0)
