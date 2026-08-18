@@ -16,7 +16,8 @@
  *     PROGRESS section is manual; the SHIPPED list here is the machine truth).
  *
  * Plan: docs/plans/CRM_BUILD_MISSION.md — MOBILE DELIVERY TRACK (M1–M9).
- * Spec: docs/fub-crm-spec/§23–§30 + mobile-screens/mob-NN analyses.
+ * Spec: docs/fub-crm-spec/§23–§30 + mobile-screens/mob-NN analyses
+ * (in-house CRM rebuild spec; not a live third-party CRM).
  */
 import { readFileSync } from 'node:fs'
 
@@ -63,10 +64,10 @@ const SHIPPED = [
     must: [/export async function addCrmContactPointAction/],
   },
   // Matt directive 2026-07-02 (mobile punch list #1) SUPERSEDES the earlier
-  // mob-02 "suppress tab bar on pushed detail" contract: "I do not have the
-  // bottom bar like in follow up boss" — the bar renders on EVERY mobile CRM
-  // route, including the lead detail. The FAB always sits above it (bottom-20
-  // below lg). isPushedDetailPath was deleted with the suppression.
+  // mob-02 "suppress tab bar on pushed detail" contract: the bar renders on
+  // EVERY mobile CRM route, including the lead detail. The FAB always sits
+  // above it (bottom-20 below lg). isPushedDetailPath was deleted with the
+  // suppression.
   {
     id: 'M2 shell — tab bar renders on every route incl. pushed detail (Matt 2026-07-02)',
     file: 'components/console/CrmMobileTabBar.tsx',

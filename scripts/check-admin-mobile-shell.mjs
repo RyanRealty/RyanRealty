@@ -5,7 +5,7 @@
  * Escape 2026-06-10 (Matt report): the admin shell rendered a fixed always-on
  * w-56 sidebar with no mobile breakpoint, the public SiteHeader stacked above
  * the admin header (double chrome, two hamburgers), and the dashboard's live
- * third-party API calls (GA4 / Meta / FUB / GSC) ran uncached per render
+ * third-party API calls (GA4 / Meta / GSC) ran uncached per render
  * (28-49s — reads as "down" on a phone).
  *
  * Updated 2026-06-16: the whole admin migrated to the neutral ConsoleShell
@@ -25,7 +25,7 @@
  * trigger, avatar, contacts-list scope switch). The gate now also asserts the
  * wordmark can never come back into ConsoleShell (mustNot).
  * Updated Phase 11B B5: the desktop chrome migrated to the LOCKED §5 Option A
- * left rail (ADMIN_UI.md, Matt 2026-08-05). The FUB-style navy top bar
+ * left rail (ADMIN_UI.md, Matt 2026-08-05). The legacy navy top bar
  * (components/console/ConsoleTopNav.tsx — a navy #102742 bar carrying the white
  * public wordmark) is DELETED; the gate asserts it stays gone and that the
  * DESKTOP path carries no wordmark / brand-navy bar either (mustNot on the
@@ -90,7 +90,7 @@ if (existsSync('app/admin/console/layout.tsx')) {
   )
 }
 
-// B5: the FUB-style navy top bar is RETIRED (deleted, Phase 11B). Desktop chrome
+// B5: the legacy navy top bar is RETIRED (deleted, Phase 11B). Desktop chrome
 // is the §5 Option A left rail. A resurrected file here is the navy wordmark bar
 // coming back.
 if (existsSync('components/console/ConsoleTopNav.tsx')) {

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * check-rental-lead-wiring.mjs — static gate: the rental-calculator lead path is
- * wired end to end (form -> action -> FUB canonical tagging).
+ * wired end to end (form -> action -> native CRM canonical tagging).
  *
- * The lead capture writes a real person to Follow Up Boss, so it can't be
+ * The lead capture writes a real person to crm_people, so it can't be
  * smoke-tested with a fake submission. This asserts the wiring statically so the
  * lead path can't silently break: the action exists and tags the lead, the form
  * calls it, and the calculator renders the form.
@@ -25,7 +25,7 @@ const check = (label, ok) => checks.push({ label, ok })
 
 const action = read('app/actions/lead-capture.ts')
 check('submitRentalLead action exists', /export async function submitRentalLead/.test(action))
-check('rental lead sends a FUB event', /sendEvent\(/.test(action) && /submitRentalLead/.test(action))
+check('rental lead sends a CRM event', /sendEvent\(/.test(action) && /submitRentalLead/.test(action))
 check('rental lead applies canonical tags + rental-calculator tag', /canonicallyTagLead/.test(action) && /'rental-calculator'/.test(action))
 check('rental lead fires Meta CAPI + GA4', /rental_calculator_lead/.test(action) && /fireLeadGenerated/.test(action))
 

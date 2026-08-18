@@ -28,7 +28,6 @@ for (const line of fs.readFileSync(path.join(ROOT, '.env.local'), 'utf8').split(
 const SITE = LOCAL ? 'http://localhost:3000' : 'https://ryan-realty.com';
 const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const CRON_AUTH = { Authorization: `Bearer ${env.CRON_SECRET}` };
-const FUB_HEADERS = { Authorization: 'Basic ' + Buffer.from(env.FOLLOWUPBOSS_API_KEY + ':').toString('base64'), 'X-System': 'RyanRealtyPlatform', 'X-System-Key': env.FOLLOWUPBOSS_SYSTEM_KEY ?? '' };
 const TW_AUTH = { Authorization: 'Basic ' + Buffer.from(`${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`).toString('base64') };
 
 const results = [];
@@ -153,26 +152,6 @@ await tryCheck('coverage.owner-resolution', async () => {
     .gte('fub_created_at', new Date(Date.now() - 24 * 3600e3).toISOString());
   check('coverage.owner-resolution', (count ?? 0) === 0 ? 'PASS' : 'WARN', `${count} fresh placeholder names in last 24h (non-Deschutes counties land here)`);
 });
-await tryCheck('sync.fub-spot', async () => {
-  // Race-tolerant reconciliation: a person updated in FUB seconds ago is
-  // EXPECTED to be unmirrored until the next sync tick. Unhealthy = a FUB
-  // update that has gone unmirrored for longer than the 45m grace window.
-  const res = await fetch('https://api.followupboss.com/v1/people?sort=-updated&limit=5&fields=id,updated', { headers: FUB_HEADERS });
-  const d = await res.json();
-  const people = d.people ?? [];
-  if (!people.length) return check('sync.fub-spot', 'WARN', 'no FUB people returned');
-  const { data: mirrors } = await sb.from('crm_people').select('fub_legacy_id,fub_updated_at').in('fub_legacy_id', people.map((p) => p.id));
-  const byId = new Map((mirrors ?? []).map((m) => [m.fub_legacy_id, m]));
-  const stale = [];
-  for (const p of people) {
-    const m = byId.get(p.id);
-    const synced = m && new Date(m.fub_updated_at) >= new Date(p.updated);
-    const graceMin = (Date.now() - new Date(p.updated)) / 60000;
-    if (!synced && graceMin > 45) stale.push(`FUB #${p.id} unsynced ${Math.round(graceMin)}m after its FUB update${m ? '' : ' (missing from mirror)'}`);
-  }
-  check('sync.fub-spot', stale.length ? 'FAIL' : 'PASS', stale.length ? stale.join('; ') : `${people.length} freshest FUB people reconciled (45m grace)`);
-});
-
 // ── 4. WEB SURFACE (site wiring) ───────────────────────────────────────────
 await tryCheck('web.home', async () => {
   const res = await fetch('https://ryan-realty.com/', { redirect: 'manual', signal: AbortSignal.timeout(20000) });
@@ -306,8 +285,8 @@ await tryCheck('compliance.gate', async () => {
 // ── 8. ENTRY-POINT WIRING (static, from repo) ──────────────────────────────
 await tryCheck('wiring.static', async () => {
   const greps = [
-    ['lib/canonical-lead-tagger.ts', 'autoEnrollByFubId', true],
-    ['lib/followupboss.ts', 'mirrorPersonFromFub', true],
+    ['lib/data/crm/ensureNativeLead.ts', 'ensureNativeLead', true],
+    ['lib/crm/enroll.ts', 'autoEnrollPerson', true],
     ['lib/expired-listing-processor.ts', 'applyActionPlan(', false],
     ['app/api/cron/detect-fsbo-listings/route.ts', 'applyActionPlan(', false],
   ];
@@ -379,16 +358,6 @@ await tryCheck('external.anthropic-credits', async () => {
   const body = await res.text();
   check('external.anthropic-credits', 'WARN', /credit balance/i.test(body) ? 'OUT OF CREDITS — affects marketing producer-runtime only (smart follow-ups run on-plan via LaunchAgent)' : `HTTP ${res.status}`);
 });
-await tryCheck('external.fub-port-reply', async () => {
-  const { google } = await import('googleapis');
-  const key = env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/^"|"$/g, '');
-  const jwt = new google.auth.JWT({ email: env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL, key, scopes: ['https://www.googleapis.com/auth/gmail.readonly'], subject: 'matt@ryan-realty.com' });
-  const gmail = google.gmail({ version: 'v1', auth: jwt });
-  const r = await gmail.users.messages.list({ userId: 'me', q: '(from:followupboss.com OR from:twilio.com) subject:(port OR transfer) -subject:"Missed Call" newer_than:7d', maxResults: 3 });
-  const n = (r.data.messages ?? []).length;
-  check('external.fub-port-reply', n > 1 ? 'WARN' : 'PASS', n > 1 ? `${n} port/transfer message(s) — check for Twilio approval` : 'transfer submitted by FUB 2026-06-10; awaiting Twilio approval email');
-});
-
 // ── summary ────────────────────────────────────────────────────────────────
 const fails = results.filter((r) => r.status === 'FAIL');
 const warns = results.filter((r) => r.status === 'WARN');

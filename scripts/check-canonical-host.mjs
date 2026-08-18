@@ -8,7 +8,7 @@
  * visitor starts on, but Supabase Auth always redirects the OAuth callback to
  * the host in its Site URL. Start on the alias, get the callback on the apex,
  * and exchangeCodeForSession throws "code verifier could not be found" — the
- * user bounces to /auth-error and NO Follow Up Boss lead is created. This broke
+ * user bounces to /auth-error and no native CRM lead is created. This broke
  * every Google/Facebook sign-in that initiated on the alias (root-caused
  * 2026-06-02; www added 2026-06-03).
  *

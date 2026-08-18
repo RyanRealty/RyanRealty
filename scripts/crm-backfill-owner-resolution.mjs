@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Backfill owner resolution for every "Owner of X" placeholder lead
 // (Matt directive 2026-06-09). County records name them, BatchData finds
-// their phones/emails, compliance flags land as tags, FUB + CRM both update.
+// their phones/emails, compliance flags land as tags, native CRM updates.
 //
 //   node scripts/crm-backfill-owner-resolution.mjs --limit=3   # smoke
 //   node scripts/crm-backfill-owner-resolution.mjs             # full run
@@ -23,8 +23,6 @@ for (const [k, v] of Object.entries(env)) if (process.env[k] === undefined) proc
 
 const { resolveOwnerContact } = await import('../lib/owner-resolution.mjs');
 const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-const FUB_AUTH = 'Basic ' + Buffer.from(env.FOLLOWUPBOSS_API_KEY + ':').toString('base64');
-const FUB_HEADERS = { Authorization: FUB_AUTH, 'X-System': 'RyanRealtyPlatform', 'X-System-Key': env.FOLLOWUPBOSS_SYSTEM_KEY ?? '', 'Content-Type': 'application/json' };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Pull the property address out of custom fields or the placeholder name.
@@ -43,11 +41,11 @@ function addressOf(person) {
   return null;
 }
 
-const counts = { scanned: 0, resolved: 0, named: 0, contactAdded: 0, compliance: 0, noCounty: 0, noAddress: 0, fubUpdated: 0, errors: 0 };
+const counts = { scanned: 0, resolved: 0, named: 0, contactAdded: 0, compliance: 0, noCounty: 0, noAddress: 0, errors: 0 };
 
 const { data: people, error } = await sb
   .from('crm_people')
-  .select('id,fub_legacy_id,name,emails,phones,tags,custom')
+  .select('id,name,emails,phones,tags,custom')
   .ilike('name', 'owner of %')
   .order('id', { ascending: false })
   .limit(2000);
@@ -86,31 +84,6 @@ for (const p of people.slice(0, Number.isFinite(LIMIT) ? LIMIT : people.length))
       ...r.complianceTags,
     ])].filter((t) => t !== 'owner-lookup:pending');
 
-    // FUB first (source of truth during parallel run), then CRM mirror fields
-    if (p.fub_legacy_id) {
-      const firstName = c.isEntity ? fullName : (c.firstName ?? '');
-      const lastName = c.isEntity ? '' : (c.lastName ?? '');
-      const body = { firstName, lastName, emails, phones, tags: newTags };
-      const res = await fetch(`https://api.followupboss.com/v1/people/${p.fub_legacy_id}`, {
-        method: 'PUT', headers: FUB_HEADERS, body: JSON.stringify(body),
-      });
-      if (res.ok) counts.fubUpdated++;
-      else console.warn(`  FUB update ${p.fub_legacy_id} → ${res.status}`);
-      // resolution note for the record
-      await fetch('https://api.followupboss.com/v1/notes', {
-        method: 'POST', headers: FUB_HEADERS,
-        body: JSON.stringify({ personId: p.fub_legacy_id, isHtml: false, body:
-          `Owner resolved from Deschutes County records (taxlot ${c.taxlot ?? 'unknown'}): ${c.ownerRaw}. ` +
-          `Mailing: ${[c.mailingStreet, c.mailingCity, c.mailingState].filter(Boolean).join(', ') || 'unknown'}. ` +
-          `${c.absentee ? 'ABSENTEE owner. ' : ''}${c.outOfState ? 'OUT-OF-STATE. ' : ''}` +
-          `Skip trace: ${r.trace ? `${r.trace.phones.length} phone(s), ${r.trace.emails.length} email(s)` : 'unavailable'}.` +
-          `${r.complianceTags.length ? ` Compliance: ${r.complianceTags.join(', ')}.` : ''}`,
-        }),
-      }).catch(() => {});
-      await sleep(150);
-    }
-
-    // CRM row
     await sb.from('crm_people').update({
       name: fullName,
       first_name: c.isEntity ? null : c.firstName,

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Normalize the 3 paused nurture sequences (FUB raw → engine schema), audit
-// backlog 2026-06-10. Distinct from crm-normalize-sequences.mjs (the masters):
+// Normalize the 3 paused nurture sequences (legacy action-plan shape → engine
+// schema), audit backlog 2026-06-10. Distinct from the already-normalized
+// master sequences.
 //
-// FUB's runAfterDays is CUMULATIVE from enrollment (verified 2026-05-29 audit).
-// Read that way, these three plans are misconfigured IN FUB — e.g. all 12
+// The imported runAfterDays is CUMULATIVE from enrollment (verified 2026-05-29
+// audit). Read that way, these three plans are misconfigured — e.g. all 12
 // "monthly" neighborhood emails land at day ~30, and the "quarterly" OOS
-// emails at days 90/91/92. They never had a single enrollment in FUB, so the
+// emails at days 90/91/92. They never had a single enrollment, so the
 // misconfiguration never surfaced. The template names (nhd january..december,
 // sphere bimonthly, oos quarterly) make the authored INTENT unambiguous:
 // relative gaps. So here delayDays = runAfterDays read as RELATIVE deltas.
