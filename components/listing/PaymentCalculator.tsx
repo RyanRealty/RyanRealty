@@ -12,15 +12,25 @@ type Props = {
   listPrice: number
   taxAmount?: number
   associationFee?: number
+  /**
+   * Seed rate in PERCENT (6.67 = 6.67%). A server parent resolves it from
+   * getCalculatorDefaults() so the field opens on the live 30-yr rate instead
+   * of a constant typed into this file. Omitted / null keeps DEFAULT_RATE, so
+   * the component renders identically without a parent that can fetch.
+   */
+  ratePct?: number | null
 }
 
+/** Last-resort seed only — the rate a parent should be passing is the live one. */
 const DEFAULT_RATE = 6.5
 const INSURANCE_RATE = 0.0035
 
-export default function PaymentCalculator({ listPrice, taxAmount, associationFee }: Props) {
+export default function PaymentCalculator({ listPrice, taxAmount, associationFee, ratePct }: Props) {
   const [price, setPrice] = useState(listPrice)
   const [downPct, setDownPct] = useState(20)
-  const [rate, setRate] = useState(DEFAULT_RATE)
+  const [rate, setRate] = useState(
+    typeof ratePct === 'number' && Number.isFinite(ratePct) && ratePct > 0 ? ratePct : DEFAULT_RATE,
+  )
   const [termYears, setTermYears] = useState(30)
 
   const { monthlyPandI, monthlyTax, monthlyHoa, monthlyInsurance, total } = useMemo(() => {

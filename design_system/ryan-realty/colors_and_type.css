@@ -34,6 +34,15 @@
   --rr-navy:          #102742;   /* Ryan Realty navy — primary brand color */
   --rr-cream:         #faf8f4;   /* Warm off-white — primary background */
 
+  /* INDICATION ACCENT — approved by Matt 2026-08-17, amends the two-color lock.
+     ONE job: mark an exception in data. A drawdown, a decline, a breached
+     threshold, a figure that contradicts its neighbour. It is never decoration,
+     never a brand color, never a CTA, never a section background, and never
+     appears on a surface that is not showing data.
+     If you are reaching for it and nothing is wrong, use navy. */
+  --rr-exception:      #A8452B;  /* on cream — deep terracotta */
+  --rr-exception-dark: #E08163;  /* on navy — lifted so it holds contrast */
+
   /* RETIRED 2026-05-13 by Matt's directive. Do not reintroduce.
      --rr-navy-deep   was #0a1a2e (hover/pressed navy) — replaced with rgba(navy, 0.85)
      --rr-sand        was #e8e2d4 (stone neutral)      — replaced with rgba(navy, 0.08) for borders

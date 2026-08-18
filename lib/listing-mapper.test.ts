@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { computeTier1, type Tier1Input } from './listing-mapper'
+import {
+  computeTier1,
+  normalizePitiRate,
+  DEFAULT_PITI_RATE,
+  type Tier1Input,
+} from './listing-mapper'
 
 const FULL: Tier1Input = {
   listPrice: 500000,
@@ -56,6 +61,82 @@ describe('computeTier1 (sync derived fields, audit p3.2)', () => {
     expect(n.estimated_monthly_piti).toBeNull()
     expect(n.property_age).toBeNull()
     expect(n.hoa_annual_cost).toBeNull()
+  })
+})
+
+/**
+ * The rate used to be `const rate = 0.065` inside computeTier1, so every one of
+ * the ~7,581 ACTIVE rows carried a payment implying exactly 6.50% no matter
+ * when it synced. It is now an input. These pin BOTH halves of that: the
+ * default must reproduce the old number exactly (no silent change), and a
+ * supplied rate must actually move the payment.
+ */
+describe('computeTier1 PITI rate input (live rate, 2026-08-17)', () => {
+  // $500K list, 20% down, 30yr, $6,000/yr tax, $100/mo HOA, 0.35% insurance.
+  const PITI_AT_6_5 = 3274.11
+  const PITI_AT_6_67 = 3318.99
+
+  it('omitting the rate reproduces the historical 6.50% figure', () => {
+    expect(computeTier1(FULL).estimated_monthly_piti).toBe(PITI_AT_6_5)
+  })
+
+  it('null / undefined rate is identical to omitting it', () => {
+    const omitted = computeTier1(FULL).estimated_monthly_piti
+    expect(computeTier1({ ...FULL, mortgageRate: null }).estimated_monthly_piti).toBe(omitted)
+    expect(computeTier1({ ...FULL, mortgageRate: undefined }).estimated_monthly_piti).toBe(omitted)
+    expect(computeTier1({ ...FULL, mortgageRate: DEFAULT_PITI_RATE }).estimated_monthly_piti).toBe(omitted)
+  })
+
+  it('a live rate moves the payment, and percent == fraction', () => {
+    const asPercent = computeTier1({ ...FULL, mortgageRate: 6.67 }).estimated_monthly_piti
+    const asFraction = computeTier1({ ...FULL, mortgageRate: 0.0667 }).estimated_monthly_piti
+    expect(asPercent).toBe(PITI_AT_6_67)
+    expect(asFraction).toBe(PITI_AT_6_67)
+    expect(asPercent as number).toBeGreaterThan(PITI_AT_6_5)
+  })
+
+  it('a rate outside 2–20% is not a rate — falls back, never fabricates', () => {
+    for (const bad of [0, -6.67, 0.001, 0.5, 45, 1e6, NaN, Infinity]) {
+      expect(computeTier1({ ...FULL, mortgageRate: bad }).estimated_monthly_piti).toBe(PITI_AT_6_5)
+    }
+  })
+
+  it('a rate cannot resurrect PITI on a row with no price', () => {
+    expect(computeTier1({ ...NULLS, mortgageRate: 6.67 }).estimated_monthly_piti).toBeNull()
+  })
+
+  it('normalizePitiRate is the one coercion both shapes go through', () => {
+    expect(normalizePitiRate(6.67)).toBeCloseTo(0.0667, 10)
+    expect(normalizePitiRate(0.0667)).toBeCloseTo(0.0667, 10)
+    expect(normalizePitiRate(null)).toBe(DEFAULT_PITI_RATE)
+    expect(normalizePitiRate(undefined)).toBe(DEFAULT_PITI_RATE)
+    expect(normalizePitiRate(0.5)).toBe(DEFAULT_PITI_RATE)
+    // Exactly 1 reads as 1% written as a percent — under the 2% floor, so it
+    // falls back rather than being treated as a 100% fraction.
+    expect(normalizePitiRate(1)).toBe(DEFAULT_PITI_RATE)
+    expect(normalizePitiRate(2)).toBeCloseTo(0.02, 10)
+    expect(normalizePitiRate(20)).toBeCloseTo(0.2, 10)
+  })
+
+  it('sparkToListingRow threads the rate through to the written column', async () => {
+    const { sparkToListingRow } = await import('./listing-mapper')
+    const fields = {
+      ListingKey: '777', ListNumber: '220000777', StandardStatus: 'Active',
+      ListPrice: 500_000, TaxAmount: 6_000, AssociationFee: 100,
+      AssociationFeeFrequency: 'Monthly',
+    } as Record<string, unknown>
+
+    // No options argument — the pre-change call shape stays byte-identical.
+    expect(sparkToListingRow(fields).estimated_monthly_piti).toBe(PITI_AT_6_5)
+    // Options present but empty, and an explicitly null rate, both no-op.
+    expect(sparkToListingRow(fields, undefined, undefined, {}).estimated_monthly_piti).toBe(PITI_AT_6_5)
+    expect(
+      sparkToListingRow(fields, undefined, undefined, { mortgageRate: null }).estimated_monthly_piti,
+    ).toBe(PITI_AT_6_5)
+    // A live rate reaches the column.
+    expect(
+      sparkToListingRow(fields, undefined, undefined, { mortgageRate: 6.67 }).estimated_monthly_piti,
+    ).toBe(PITI_AT_6_67)
   })
 })
 

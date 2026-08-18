@@ -35,8 +35,16 @@ export {
 
 import { toNum, toInt, toTimestamp, toDate, toBool, toText } from '@/lib/listing-scalars'
 import { clampListingNumericBounds } from '@/lib/listing-numeric-bounds'
+import { computeTier1 } from '@/lib/listing-tier1'
 
 export { toNum, toInt, toTimestamp, toDate, toBool, toText } from '@/lib/listing-scalars'
+
+// Tier 1 derived metrics + the PITI rate policy live in lib/listing-tier1.ts
+// (file-size budget split); re-exported so existing importers are unchanged.
+export {
+  computeTier1, computeMonthlyPiti, normalizePitiRate, DEFAULT_PITI_RATE,
+} from '@/lib/listing-tier1'
+export type { Tier1Input, MonthlyPitiInput } from '@/lib/listing-tier1'
 
 
 // ---------------------------------------------------------------------------
@@ -193,85 +201,6 @@ function extractPhotoUrl(photos: unknown): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Tier 1 computations — pricing ratios and derived metrics
-// ---------------------------------------------------------------------------
-
-function safeDiv(a: number | null, b: number | null, decimals: number): number | null {
-  if (a == null || b == null || b === 0) return null
-  return Math.round((a / b) * Math.pow(10, decimals)) / Math.pow(10, decimals)
-}
-
-export interface Tier1Input {
-  listPrice: number | null
-  closePrice: number | null
-  originalListPrice: number | null
-  sqft: number | null
-  lotAcres: number | null
-  lotSqft: number | null
-  bedrooms: number | null
-  bathrooms: number | null
-  rooms: number | null
-  yearBuilt: number | null
-  aboveGrade: number | null
-  buildingTotal: number | null
-  hoaMonthly: number | null
-  taxAnnual: number | null
-  taxAssessed: number | null
-}
-
-export function computeTier1(input: Tier1Input) {
-  const {
-    listPrice, closePrice, originalListPrice, sqft, lotAcres, lotSqft,
-    bedrooms, bathrooms, rooms, yearBuilt, aboveGrade, buildingTotal,
-    hoaMonthly, taxAnnual, taxAssessed
-  } = input
-
-  const currentYear = new Date().getFullYear()
-
-  // PITI calculation: 6.5% rate, 20% down, 30yr, insurance 0.35%
-  let piti: number | null = null
-  if (listPrice != null && listPrice > 0) {
-    const rate = 0.065
-    const monthlyRate = rate / 12
-    const months = 360
-    const principal = listPrice * 0.80
-    const pi = principal * monthlyRate * Math.pow(1 + monthlyRate, months)
-      / (Math.pow(1 + monthlyRate, months) - 1)
-    const taxMonthly = (taxAnnual ?? listPrice * 0.012) / 12
-    const insuranceMonthly = listPrice * 0.0035 / 12
-    piti = Math.round((pi + taxMonthly + insuranceMonthly + (hoaMonthly ?? 0)) * 100) / 100
-  }
-
-  return {
-    price_per_sqft: safeDiv(listPrice, sqft, 2),
-    close_price_per_sqft: safeDiv(closePrice, sqft, 2),
-    sale_to_list_ratio: safeDiv(closePrice, originalListPrice, 4),
-    sale_to_final_list_ratio: safeDiv(closePrice, listPrice, 4),
-    total_price_change_pct: originalListPrice && listPrice
-      ? Math.round(((listPrice - originalListPrice) / originalListPrice) * 10000) / 100
-      : null,
-    total_price_change_amt: originalListPrice != null && listPrice != null
-      ? listPrice - originalListPrice
-      : null,
-    price_per_acre: safeDiv(listPrice, lotAcres, 2),
-    price_per_bedroom: safeDiv(listPrice, bedrooms, 2),
-    price_per_room: safeDiv(listPrice, rooms, 2),
-    property_age: yearBuilt != null ? currentYear - yearBuilt : null,
-    sqft_efficiency: safeDiv(sqft, lotSqft, 4),
-    bed_bath_ratio: safeDiv(bedrooms, bathrooms, 2),
-    above_grade_pct: safeDiv(aboveGrade, buildingTotal, 4),
-    hoa_annual_cost: hoaMonthly != null ? hoaMonthly * 12 : null,
-    hoa_pct_of_price: hoaMonthly != null && listPrice
-      ? Math.round((hoaMonthly * 12 / listPrice) * 10000) / 100
-      : null,
-    tax_rate: safeDiv(taxAnnual, taxAssessed, 4) != null
-      ? safeDiv(taxAnnual, taxAssessed, 4)! * 100
-      : null,
-    estimated_monthly_piti: piti,
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Listing quality score
 // ---------------------------------------------------------------------------
 
@@ -305,6 +234,20 @@ export interface SparkStandardFields {
 }
 
 /**
+ * Per-run inputs that are the same for every listing in a sync window, so the
+ * caller resolves them ONCE and hands them down rather than the mapper reading
+ * them per row.
+ */
+export interface ListingMapperOptions {
+  /**
+   * Live 30-yr mortgage rate for `estimated_monthly_piti`. Fraction (0.0667) or
+   * percent (6.67). Omit / null and the mapper uses DEFAULT_PITI_RATE, so a
+   * caller that cannot resolve a rate still writes a row.
+   */
+  mortgageRate?: number | null
+}
+
+/**
  * Maps Spark StandardFields to a complete listing row.
  * Used by delta sync, full sync, and terminal finalization.
  *
@@ -314,12 +257,15 @@ export interface SparkStandardFields {
  *   `_expand=CustomFields`). Public CF fields merge into `details` (collision
  *   policy in mergeCustomFieldsIntoDetails); confidential CF fields are
  *   stripped here and diverted via extractPrivateDetails in the sync route.
+ * @param options - Per-run inputs (currently the live mortgage rate). Omitting
+ *   this argument reproduces the pre-2026-08-17 output exactly.
  * @returns A flat object matching the listings table schema
  */
 export function sparkToListingRow(
   rawFields: SparkStandardFields,
   resultId?: string,
-  customFields?: unknown
+  customFields?: unknown,
+  options?: ListingMapperOptions
 ): Record<string, unknown> {
   // Spark masks unlicensed fields as "********". Strip them at the door so
   // neither the typed columns (toText would store the mask — school_district
@@ -405,6 +351,7 @@ export function sparkToListingRow(
     hoaMonthly,
     taxAnnual,
     taxAssessed,
+    mortgageRate: options?.mortgageRate ?? null,
   })
 
   // --- Listing quality score ---

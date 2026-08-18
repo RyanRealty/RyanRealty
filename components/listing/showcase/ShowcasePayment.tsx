@@ -6,9 +6,11 @@ type Props = {
   taxAmount?: number
   associationFee?: number
   associationYn?: boolean | null
+  /** Live 30-yr rate in PERCENT, from a server parent's getCalculatorDefaults(). */
+  ratePct?: number | null
 }
 
-export default function ShowcasePayment({ listPrice, taxAmount, associationFee, associationYn }: Props) {
+export default function ShowcasePayment({ listPrice, taxAmount, associationFee, associationYn, ratePct }: Props) {
   const hoa = associationYn ? (associationFee ?? 0) : undefined
   return (
     <Card className="border-border bg-card">
@@ -17,6 +19,7 @@ export default function ShowcasePayment({ listPrice, taxAmount, associationFee, 
           listPrice={listPrice}
           taxAmount={taxAmount}
           associationFee={hoa}
+          ratePct={ratePct}
         />
       </CardContent>
     </Card>

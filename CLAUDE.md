@@ -210,6 +210,11 @@ focus intent, end cards) and `--rr-cream` `#faf8f4` (primary background). White 
 black `#000000` are allowed only for text-on-photo legibility and scrim layers. Off-brand hex
 is banned.
 
+**One exception accent** (Matt 2026-08-17): `--rr-exception` marks a data exception —
+a drawdown, a decline, a breached threshold — and nothing else. Never decoration, never a
+CTA, never a background, never on a surface that is not showing data. If nothing is wrong,
+use navy.
+
 Retired, do not reintroduce: `--rr-navy-deep` (use `rgba(16,39,66,0.85)` for hover/pressed),
 `--rr-sand` (use `rgba(16,39,66,0.08)` for borders/dividers), `--rr-fir`, `--rr-sky`, and both
 retired golds plus the retired v1 cream — see the migration table below.
