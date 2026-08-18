@@ -5,6 +5,7 @@ import {
   Eyebrow,
   Grid,
   H2,
+  H3,
   Section,
   Stack,
 } from '@/components/site/primitives'
@@ -29,9 +30,10 @@ type Props = {
   homes: ListingCardData[]
   totalHomes: number
   allHomesHref: string
+  homesDegraded?: boolean
 }
 
-export function GolfHomesGrid({ homes, totalHomes, allHomesHref }: Props) {
+export function GolfHomesGrid({ homes, totalHomes, allHomesHref, homesDegraded = false }: Props) {
   return (
     <Section tone="default" divider>
       <Container>
@@ -48,7 +50,20 @@ export function GolfHomesGrid({ homes, totalHomes, allHomesHref }: Props) {
           </Link>
         </div>
 
-        {homes.length > 0 ? (
+        {homesDegraded && homes.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card px-6 py-12 text-center">
+            <Eyebrow>Search delayed</Eyebrow>
+            <H3 className="mt-2">We could not load golf homes in time</H3>
+            <Body className="mx-auto mt-2 max-w-md" tone="muted">
+              This is a connection or timeout problem, not an empty market. Try again.
+            </Body>
+            <form>
+              <Button type="submit" variant="outline" className="mt-6">
+                Reload page
+              </Button>
+            </form>
+          </div>
+        ) : homes.length > 0 ? (
           <>
             <Grid cols={3} gap="default">
               {homes.map((listing) => (

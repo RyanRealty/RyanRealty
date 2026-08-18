@@ -10,6 +10,43 @@ export async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs
 }
 
 /**
+ * Settled timeout for inventory reads. Distinguishes a true empty result
+ * from timeout/error so callers can render retry honesty instead of
+ * inventing "0 homes" (§0: unknown is not zero).
+ *
+ *   - promise resolves → `{ data, degraded: false }` (empty is a real zero)
+ *   - promise rejects OR times out → `{ data: fallback, degraded: true }`
+ */
+export async function withTimeoutSettled<T>(
+  promise: Promise<T>,
+  fallback: T,
+  timeoutMs = 4000,
+): Promise<{ data: T; degraded: boolean }> {
+  let settled = false
+  return new Promise((resolve) => {
+    const t = setTimeout(() => {
+      if (settled) return
+      settled = true
+      resolve({ data: fallback, degraded: true })
+    }, timeoutMs)
+    promise.then(
+      (data) => {
+        if (settled) return
+        settled = true
+        clearTimeout(t)
+        resolve({ data, degraded: false })
+      },
+      () => {
+        if (settled) return
+        settled = true
+        clearTimeout(t)
+        resolve({ data: fallback, degraded: true })
+      },
+    )
+  })
+}
+
+/**
  * Timeout for the primary listings fetch. The common case resolves from the
  * slim MV in well under a second; this ceiling exists only to cover the heavy
  * search_listings_advanced RPC fallback (jsonb feature filters / deep pages),

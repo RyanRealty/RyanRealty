@@ -1,13 +1,17 @@
 import { type ListingCardData } from '@/components/site/ListingCard'
 import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
 import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
+import { Body, CTAButton, Eyebrow, H3 } from '@/components/site/primitives'
 import SearchListingsToolbar from '../../../../components/SearchListingsToolbar'
 import { listingTileHref } from '../../../../lib/slug'
 import { type getListingsWithAdvanced } from '../../../actions/listings'
 import { type SearchParams } from '../page-filters'
+import { listingsResultsKind } from './listings-results-kind'
+
+export { listingsResultsKind } from './listings-results-kind'
 
 /** Listings grid (design-system ListingCard) + sort/pagination toolbar, with
- *  the no-scope / zero-result empty states (see page.tsx call site). */
+ *  the no-scope / timeout / zero-result empty states (see page.tsx call site). */
 export function ListingsResults({
   city,
   hasFilterOnly,
@@ -20,6 +24,7 @@ export function ListingsResults({
   sp,
   searchPagePath,
   priceChangeKeys,
+  degraded = false,
 }: {
   city: string | undefined
   hasFilterOnly: boolean
@@ -32,12 +37,40 @@ export function ListingsResults({
   sp: SearchParams
   searchPagePath: string
   priceChangeKeys: Set<string>
+  /** Timeout or data-layer error — do not paint as an empty market. */
+  degraded?: boolean
 }) {
-  return !city && !hasFilterOnly ? (
-    <p className="mt-10">Select a city or subdivision to see listings.</p>
-  ) : listings.length === 0 ? (
-    <p className="mt-10">No homes match this search right now. Adjust the filters or try a related search below.</p>
-  ) : (
+  const kind = listingsResultsKind({
+    city,
+    hasFilterOnly,
+    listingCount: listings.length,
+    degraded,
+  })
+  if (kind === 'no-scope') {
+    return <p className="mt-10">Select a city or subdivision to see listings.</p>
+  }
+  if (kind === 'degraded') {
+    return (
+      <div className="mt-10 rounded-xl border border-border bg-card p-8 text-center">
+        <Eyebrow>Search delayed</Eyebrow>
+        <H3 className="mt-2">We could not load listings in time</H3>
+        <Body className="mx-auto mt-2 max-w-md text-muted-foreground">
+          This is a connection or timeout problem, not an empty market. Try again.
+        </Body>
+        <form>
+          <CTAButton type="submit" tone="outline" className="mt-6">
+            Reload page
+          </CTAButton>
+        </form>
+      </div>
+    )
+  }
+  if (kind === 'empty') {
+    return (
+      <p className="mt-10">No homes match this search right now. Adjust the filters or try a related search below.</p>
+    )
+  }
+  return (
     <div className="mt-6">
       <SearchListingsToolbar
         pathname={searchPagePath}

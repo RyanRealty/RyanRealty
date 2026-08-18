@@ -27,9 +27,10 @@ import type { ListingCardData } from '@/components/site/ListingCard'
  *   city         — city name for the hero headline, null = Central Oregon
  *   heroImage    — hero photo URL, null = default brand hero
  *   communities  — GolfCommunity[] for the community cards section
- *   homes        — ListingCardData[] for the active homes grid
- *   totalHomes   — total count of golf-course homes (may exceed homes.length if paginated)
- *   allHomesHref — href for "View all X golf homes" button and CTA band
+ *   homes         — ListingCardData[] for the active homes grid
+ *   totalHomes    — total count of golf-course homes (may exceed homes.length if paginated)
+ *   allHomesHref  — href for "View all X golf homes" button and CTA band
+ *   homesDegraded — golf-homes fetch timed out or failed; do not treat [] as zero inventory
  */
 
 type Props = {
@@ -39,6 +40,7 @@ type Props = {
   homes: ListingCardData[]
   totalHomes: number
   allHomesHref: string
+  homesDegraded?: boolean
 }
 
 /** Community chips for the hero chip nav row. */
@@ -54,12 +56,15 @@ export function GolfLanding({
   homes,
   totalHomes,
   allHomesHref,
+  homesDegraded = false,
 }: Props) {
   const cityLabel = city ?? 'Central Oregon'
 
   const headline = `Golf homes in ${cityLabel}`
 
-  const lede = `${totalHomes > 0 ? `${totalHomes} active golf homes across Central Oregon golf communities.` : 'Golf-course and golf-view homes across Central Oregon golf communities.'} Eleven communities, from Bend to Sisters to Sunriver.`
+  // Timeout/error is not a known zero. Never publish `0` as a market count.
+  const knownCount = !homesDegraded && totalHomes > 0 ? totalHomes : null
+  const lede = `${knownCount != null ? `${knownCount} active golf homes across Central Oregon golf communities.` : 'Golf-course and golf-view homes across Central Oregon golf communities.'} Eleven communities, from Bend to Sisters to Sunriver.`
 
   const heroPhoto = heroImage
     ? { src: heroImage, alt: `Golf course fairway in ${cityLabel}`, priority: true as const }
@@ -86,15 +91,16 @@ export function GolfLanding({
       {/* 4. Active golf homes grid */}
       <GolfHomesGrid
         homes={homes}
-        totalHomes={totalHomes}
+        totalHomes={knownCount ?? 0}
         allHomesHref={allHomesHref}
+        homesDegraded={homesDegraded}
       />
 
       {/* 5. FAQ with FAQPage JSON-LD */}
       <GolfFaq items={GOLF_FAQ} />
 
       {/* 6. Closing CTA band */}
-      <GolfCtaBand allHomesHref={allHomesHref} totalHomes={totalHomes} />
+      <GolfCtaBand allHomesHref={allHomesHref} totalHomes={knownCount ?? 0} />
     </>
   )
 }
