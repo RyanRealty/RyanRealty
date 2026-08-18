@@ -20,6 +20,13 @@ describe('formatPriceCompact (one agreed rounding rule)', () => {
     expect(formatPriceCompact(895_000)).toBe('$895K')
     expect(formatPriceCompact(950)).toBe('$950')
   })
+  it('never prints $1000K when thousands-round crosses a million (Roosevelt $999,900)', () => {
+    expect(formatPriceCompact(999_900)).toBe('$1.0M')
+    expect(formatPriceCompact(999_500)).toBe('$1.0M')
+    expect(formatPriceCompact(1_000_000)).toBe('$1.0M')
+    expect(formatPriceCompact(999_900)).not.toBe('$1000K')
+    expect(formatPriceCompact(999_499)).toBe('$999K')
+  })
   it('handles null', () => {
     expect(formatPriceCompact(null)).toBe('—')
   })

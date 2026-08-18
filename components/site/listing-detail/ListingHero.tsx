@@ -9,6 +9,10 @@ import type { VideoEmbed } from '@/lib/data/types/video'
 import { PhotoGalleryLightbox } from '@/components/site/PhotoGalleryLightbox'
 import { Button } from '@/components/ui/button'
 import { buildListingHeroStaticMapUrl } from '@/lib/listing-hero-static-map'
+import {
+  publishListingHeroCompactPrice,
+  publishListingHeroKeyStats,
+} from '@/lib/listing/publish-listing-hero-stats'
 import { publishListingHeroUnmute, publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
@@ -53,6 +57,7 @@ type Props = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  acres?: number | null
   /** Listing coordinates — enables the bottom-left map thumb + expand toggle. */
   lat?: number | null
   lng?: number | null
@@ -92,12 +97,6 @@ function getAutoplayEmbedUrl(video: VideoEmbed): string {
   }
 }
 
-function formatPrice(p: number): string {
-  if (p >= 1_000_000) return `$${(p / 1_000_000).toFixed(p % 1_000_000 === 0 ? 0 : 1)}M`
-  if (p >= 1_000) return `$${Math.round(p / 1_000)}K`
-  return `$${p.toLocaleString('en-US')}`
-}
-
 export function ListingHero({
   photos,
   videos,
@@ -106,6 +105,7 @@ export function ListingHero({
   beds,
   baths,
   sqft,
+  acres = null,
   lat = null,
   lng = null,
   className,
@@ -172,10 +172,8 @@ export function ListingHero({
     }
   }
 
-  const keyStats: string[] = []
-  if (beds != null) keyStats.push(`${beds} bd`)
-  if (baths != null) keyStats.push(`${baths} ba`)
-  if (sqft != null) keyStats.push(`${sqft.toLocaleString('en-US')} sqft`)
+  const compactPrice = publishListingHeroCompactPrice(price)
+  const keyStats = publishListingHeroKeyStats({ beds, baths, sqft, acres })
 
   return (
     <div className={cn('flex flex-col', className)}>
@@ -290,7 +288,7 @@ export function ListingHero({
               paddingTop: '12px',
             }}
           >
-            {price != null ? (
+            {compactPrice ? (
               <span
                 style={{
                   fontFamily: 'var(--font-amboqia-safe, serif)',
@@ -302,7 +300,7 @@ export function ListingHero({
                   overflow: 'visible',
                 }}
               >
-                {formatPrice(price)}
+                {compactPrice}
               </span>
             ) : null}
             {keyStats.length > 0 ? (
