@@ -49,7 +49,7 @@ export function NewsletterSheet({ source = 'newsletter-page' }: { source?: strin
         formData.set('email', answers.email ?? '')
         formData.set('source', source)
         formData.set('company', answers.company ?? '')
-        const sessionId = readRrSessionId()
+        const sessionId = readRrSessionId() // hydration-safe
         if (sessionId) formData.set('sessionId', sessionId)
 
         const result = await subscribeNewsletterAction(formData)
