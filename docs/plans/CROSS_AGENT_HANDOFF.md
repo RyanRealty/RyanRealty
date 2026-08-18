@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — place-pages Crr aliases + chrome-only reject slice
+
+**Surface:** Cursor cloud `bc-59aff8be` (`cursor/loop-chain-2026-08-18t04-00-f821`). **Time:** 2026-08-18 ~04:45 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 316). Claimed parent only as `cursor-loop-chain-bc-59aff8be-2026-08-18t04-00`. Product **`2f30232a7`** is on that branch (class `b1fa031a0` + file-size `6a58e21de` + gate `2f30232a7`). Draft PR **#96**. Local `npm run push` gates + production build passed. **Production READY for this SHA: no** — cloud agent ships the designated branch, not `main`; `deploy:verify` cannot see a production deploy of `2f30232a7`. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open**. Do not `completeWorkNode`. Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: seven `/subdivisions/{slug}` chrome-only lines (awbrey-view, bella-sera, breckenridge, ayres-acres, bear-springs-acres, brier-ridge, cascade-meadow-ranch) **rejected** — H1 + empty-state or cards + sales history. `/communities/crooked-river-ranch` empty title/h1 **rejected** — title and H1 present.
+- Real class on the served CRR URL: hero published **0 homes** while Terrebonne `listing_tile_mv` held **40** Active/AUC type-A `Crr*` rows (0 tagged `Crooked River Ranch`). `cityResorts()` stays `is_resort === true`.
+- Class: `publishCommunityMlsAliases` + registry `Crr*` aliases + `getSubdivisionMatchNames` merge + community page / index / `getCommunityBySlug` overlay. Plat chrome still withholds `Crr`. Gate `ci:publish-community-mls-aliases` 8/8.
+- Punch dispositions appended (parent not completed): 8 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list. Merge PR #96 to `main` before calling production READY for `2f30232a7`.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not add CRR to `cityResorts()`. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4, git-commit, database-canonical-reference + DATABASE_FOR_AI_AGENTS.md §0/§3a.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
 
 **Surface:** Cursor cloud `bc-812b6297` (`cursor/loop-chain-2026-08-18t02-04-a235`). **Time:** 2026-08-18 ~02:42 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 340). Claimed parent only as `cursor-loop-chain-bc-812b6297-2026-08-18t02-04`. Product **`c2c6c0fb0`** landed on **`main`** (class `0ed74366e` + compile follow-up). Vercel Production **READY** for `c2c6c0fb0` (`7dQpSydh4ZJfEFAGnPrVgttrkuZ8`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open** (332 leftover lines). Release skipped: another session (`cursor-loop-chain-2026-08-18-bc-0a79e0c8`) holds the parent `in_progress`. Do not steal. Do not `completeWorkNode`. Loop stays **ARMED**. Do not start a new ship class from this session.
 
