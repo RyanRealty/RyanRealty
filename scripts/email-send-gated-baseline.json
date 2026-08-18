@@ -9,7 +9,7 @@
       "kind": "internal",
       "reason": "Internal: inbox note @mention notification to the mentioned BROKER's own ryan-realty.com mailbox (spec 08 paragraph 10.2). Never to a lead — the CRM_MAILBOXES lookup only resolves broker addresses. Client-facing sends on this page route through the gated sendCrmEmailAction. Permanently allowlisted. Line re-keyed 409->411 when the RC5 requireAdminPage('inbox.view') guard added 2 lines above it (2026-07-17)."
     },
-    "app/api/cma/[slug]/gmail-draft/route.ts:167": {
+    "app/api/cma/[slug]/gmail-draft/route.ts:163": {
       "kind": "internal",
       "reason": "Internal: Resend fallback to the BROKER (impersonateAs) when the Gmail draft cannot be created. Never to the lead. The lead recipient is gated by isSuppressedByEmail earlier in handleDraft before any draft/fallback runs."
     },
@@ -29,7 +29,7 @@
       "kind": "internal",
       "reason": "Internal: draft-ready notification to matt@ryan-realty.com (MATT only) after the monthly auto-draft cron writes a newsletter DRAFT. Never a lead or subscriber — the draft itself sends nothing until Matt approves and schedules it on the review page. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5). Line re-synced in the audit cron-auth consolidation."
     },
-    "app/api/cron/weekly-pipeline-digest/route.ts:183": {
+    "app/api/cron/weekly-pipeline-digest/route.ts:180": {
       "kind": "internal",
       "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings — staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (§15 slice). Line re-synced in the audit cron-auth consolidation."
     },
@@ -37,11 +37,11 @@
       "kind": "internal",
       "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted. Line re-keyed 201->245 when the seller-facing hang fix moved the post-response work (broker alert, auto-CMA, acknowledgment) out of the request path into runValuationFollowUp + after() (buyer-journey audit 2026-07-29). Same internal ADMIN_EMAIL send, same recipient; the two LEAD-facing sends in that function remain gated by isSuppressedByEmail. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal. Line shifted +1 by the 2026-08-03 page-contract assertion import. Line re-keyed 247->257 when G2 identity stitch was added above runValuationFollowUp (2026-08-16)."
     },
-    "lib/cma-deliver.ts:356": {
+    "lib/cma-deliver.ts:354": {
       "kind": "internal",
       "reason": "Internal: Resend fallback to the BROKER when the Gmail draft fails (preserves the human-review gate). Never to the lead. The lead is gated by isSuppressed/isSuppressedByEmail earlier in finalizeAndDeliverCma. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
     },
-    "lib/cma-deliver.ts:415": {
+    "lib/cma-deliver.ts:413": {
       "kind": "internal",
       "reason": "Internal: notifies Matt (MATT_ALERT_EMAIL) that a CMA is ready for review, not the client. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5)."
     },
@@ -53,7 +53,7 @@
       "kind": "internal",
       "reason": "Internal: expired-listing alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted. Line shifted +21 when resolveAlertFrom() + its doc block were added to fix the unverified-sender bug (expired-workflow audit 2026-07-03)."
     },
-    "lib/fsbo-alert.ts:113": {
+    "lib/fsbo-alert.ts:114": {
       "kind": "internal",
       "reason": "Internal: FSBO alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted."
     },
@@ -65,7 +65,7 @@
       "kind": "internal",
       "reason": "Internal: marketing-brain daily digest to Matt's inbox (MATT_ALERT_EMAIL), not a lead. Permanently allowlisted."
     },
-    "lib/seller-lead-alert.ts:109": {
+    "lib/seller-lead-alert.ts:110": {
       "kind": "internal",
       "reason": "Internal: new seller-lead alert to Matt's inbox (MATT_ALERT_EMAIL), not the lead. Permanently allowlisted."
     },

@@ -93,7 +93,7 @@ describe('listing by-key page uses the slim lookup', () => {
   const src = readFileSync(resolve('app/listing/by-key/[listingKey]/page.tsx'), 'utf8')
 
   it('imports getListingCanonicalPathFields from the DAL', () => {
-    expect(src).toMatch(/import \{ getListingCanonicalPathFields \} from '@\/lib\/data'/)
+    expect(src).toMatch(/import \{ getListingCanonicalPathFields \} from '@\/lib\/data\/listings\/getListingCanonicalPathFields'/)
     expect(src).toMatch(/getListingCanonicalPathFields\(/)
   })
 

@@ -1,4 +1,4 @@
-import { getListingCanonicalPathFields } from '@/lib/data'
+import { getListingCanonicalPathFields } from '@/lib/data/listings/getListingCanonicalPathFields'
 import { listingDetailPath, listingKeyFromSlug } from '@/lib/slug'
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
