@@ -42,7 +42,7 @@ const SOURCE_LABELS: Record<string, string> = {
   'open_house': 'Open house',
   'zillow': 'Zillow',
   'realtor': 'Realtor.com',
-  'fub': 'Follow Up Boss',
+  'fub': 'Imported',
   'import': 'Imported',
   'manual': 'Added by broker',
 }

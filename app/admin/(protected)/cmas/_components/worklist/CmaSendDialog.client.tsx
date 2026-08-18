@@ -206,7 +206,7 @@ function CmaSendDialogBody({
           </Button>
         </div>
         <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-          Sends from your own mailbox with the PDF attached, FUB BCC&apos;d. Your edits above are what sends.
+          Sends from your own mailbox with the PDF attached. Your edits above are what sends.
         </p>
       </div>
     </div>

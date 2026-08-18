@@ -280,8 +280,8 @@ export default async function LiveVisitorsPage({
         engaged 20–49, warm 50–99, hot 100 and up. A session at 100 or more is picked up by the
         hot-lead escalation cron, which runs every 15 minutes: it opens a five-minute call task on
         the contact in the CRM when the session is identified, and emails the alert either way.
-        Follow Up Boss was decommissioned 2026-06-24, so nothing is sent there. &ldquo;Today&rdquo;
-        counts from midnight UTC — that is the window the query uses, not midnight Pacific.
+        &ldquo;Today&rdquo; counts from midnight UTC — that is the window the query uses, not midnight
+        Pacific.
       </p>
     </div>
   )

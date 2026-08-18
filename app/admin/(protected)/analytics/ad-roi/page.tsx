@@ -307,8 +307,8 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
               : <>No site visitors recorded ({windowLabel}).</>}
             {' '}
             {identityWorking
-              ? <><b style={{ color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>{formatInt(totalIdentified)}</b> of them have been matched to a real person in Follow Up Boss.</>
-              : <><span style={{ color: 'var(--a-danger)' }}>None have been matched to a name yet.</span> The matching that ties an ad click to a person in Follow Up Boss is not live on the site yet. Once it ships, the Identified column below starts filling in.</>}
+              ? <><b style={{ color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>{formatInt(totalIdentified)}</b> of them have been matched to a real person in the CRM.</>
+              : <><span style={{ color: 'var(--a-danger)' }}>None have been matched to a name yet.</span> The matching that ties an ad click to a person in the CRM is not live on the site yet. Once it ships, the Identified column below starts filling in.</>}
           </li>
           <li className="av2-quiet" style={{ display: 'block' }}>
             {leadFormWorking
@@ -341,7 +341,7 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
         <SectionHead>Where your visitors come from</SectionHead>
         <LaneNote>
           Every site session ({windowLabel}), grouped by the channel that sent it. &quot;Matched to a name&quot; is the
-          count we tied to a real person in Follow Up Boss. That column is the heart of putting a name to a number.
+          count we tied to a real person in the CRM. That column is the heart of putting a name to a number.
         </LaneNote>
         {sessionsCapped && (
           <StatePanel tone="error">
@@ -469,7 +469,7 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
         <SectionHead>How to read this page</SectionHead>
         <LaneNote>
           <b style={{ color: 'var(--a-text)' }}>Cost per lead</b> here is blended. It divides all paid spend by all new
-          Follow Up Boss leads, including leads that came from word of mouth or organic search, not just ads. So it is a
+          CRM leads, including leads that came from word of mouth or organic search, not just ads. So it is a
           rough floor, not a precise per-channel number. A precise &quot;cost per Facebook lead&quot; needs every lead
           tagged with the channel that produced it, which happens automatically once identity matching is live.
         </LaneNote>

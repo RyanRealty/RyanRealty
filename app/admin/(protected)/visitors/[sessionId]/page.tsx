@@ -334,9 +334,7 @@ export default async function VisitorSessionPage({
 
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
         Oldest event first, capped at 500. Attached marks an event that was rolled up to the
-        contact when this session identified — it reads visitor_events.pushed_to_fub_at, a column
-        named for the Follow Up Boss push that was retired with FUB on 2026-06-24. Nothing is sent
-        to FUB.
+        contact when this session identified.
       </p>
     </div>
   )

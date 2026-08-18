@@ -442,7 +442,7 @@ function EventCard({ item }: { item: TimelineItem }) {
         ) : contentHidden ? (
           <p className="mt-1 inline-flex items-center gap-1 text-xs italic" style={MUTED}>
             <EyeOff className="h-3 w-3" aria-hidden />
-            Content not synced from Follow Up Boss
+            Content not imported
           </p>
         ) : null}
         {/* MMS media + stored outbound attachments (sent email files / MMS). */}

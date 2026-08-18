@@ -11,6 +11,7 @@ test('resolveSourceLabel maps known slugs to friendly labels', () => {
   expect(resolveSourceLabel('seller-lp')).toBe('Seller landing page')
   expect(resolveSourceLabel('inbound-sms')).toBe('Inbound text')
   expect(resolveSourceLabel('inbound-call')).toBe('Inbound call')
+  expect(resolveSourceLabel('fub')).toBe('Imported')
   // underscore variants too
   expect(resolveSourceLabel('seller_lp')).toBe('Seller landing page')
   // case-insensitive

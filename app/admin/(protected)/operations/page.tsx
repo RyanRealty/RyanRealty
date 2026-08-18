@@ -202,7 +202,7 @@ export default async function AdminDashboardPage() {
           />
         </DashboardPanel>
 
-        <DashboardPanel id="marketing" title="Marketing command center (Meta + GA4 + FUB)" defaultOpen={false}>
+        <DashboardPanel id="marketing" title="Marketing command center (Meta + GA4 + CRM)" defaultOpen={false}>
           <DashboardMarketingCommandCenterPanel data={marketingData} />
         </DashboardPanel>
 

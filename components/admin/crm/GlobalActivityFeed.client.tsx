@@ -395,7 +395,7 @@ export default function GlobalActivityFeed({
                         ) : item.contentHidden ? (
                           <p className="mt-0.5 inline-flex items-center gap-1 text-xs italic" style={QUIET}>
                             <EyeOff className="h-3 w-3" aria-hidden />
-                            Content not synced from Follow Up Boss
+                            Content not imported
                           </p>
                         ) : null}
 

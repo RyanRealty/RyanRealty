@@ -19,6 +19,7 @@
  * colour is a reserved status vocabulary and never decorates a label.
  */
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
@@ -235,9 +236,9 @@ async function LiveSocialFeed() {
 
   const identifiedCell = (r: FeedRow) =>
     r.fub_person_id ? (
-      <a href={`https://app.followupboss.com/2/people/view/${r.fub_person_id}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--a-accent)' }}>
-        {r.identified_email ?? `FUB #${r.fub_person_id}`}
-      </a>
+      <Link href={`/admin/people/${r.fub_person_id}`} style={{ color: 'var(--a-accent)' }}>
+        {r.identified_email ?? `Legacy #${r.fub_person_id}`}
+      </Link>
     ) : (
       <span style={{ color: 'var(--a-text-2)' }}>anonymous</span>
     )

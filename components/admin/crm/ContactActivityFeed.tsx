@@ -129,7 +129,7 @@ export default function ContactActivityFeed({ items }: { items: ActivityFeedItem
                     ) : item.contentHidden ? (
                       <p className="mt-0.5 inline-flex items-center gap-1 text-xs italic text-muted-foreground">
                         <EyeOff className="h-3 w-3" aria-hidden />
-                        Content not synced from Follow Up Boss
+                        Content not imported
                       </p>
                     ) : null}
 

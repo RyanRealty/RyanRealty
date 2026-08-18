@@ -451,7 +451,7 @@ async function FunnelContent({ range }: { range: { startDate: string; endDate: s
         />
         <Stamp>
           Stage rules: Engaged = score ≥ 20. Intent = visitor hit a seller_intent or buyer_intent page. Identified =
-          signed in via One-Tap, FB, or form. Hot lead = score crossed 100 and the FUB hot-lead task fired.
+          signed in via One-Tap, FB, or form. Hot lead = score crossed 100 and the hot-lead task fired.
         </Stamp>
       </section>
     </>
