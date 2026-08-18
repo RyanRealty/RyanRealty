@@ -11,8 +11,8 @@
  * Boss API path no-ops — each FUB client function guards `if (!apiKey) return`
  * (the codebase's supported keyless state from before the key was ever
  * provisioned), so this single switch stops ALL outbound FUB traffic. Lead
- * capture is native (see lib/followupboss.sendEvent → ensureNativeLead and
- * lib/crm/lead-router). Re-enabling FUB is intentionally not a config flip.
+ * capture is native (see lib/followupboss.sendEvent → ensureNativeLead).
+ * Re-enabling FUB is intentionally not a config flip.
  */
 export function getFubApiKey(): string | undefined {
   return undefined

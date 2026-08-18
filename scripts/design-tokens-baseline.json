@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-15T06:13:14.915Z",
+  "generatedAt": "2026-08-18T19:31:48.502Z",
   "total": 201,
   "byFile": {
     "app/actions/auto-response.ts": 3,
@@ -39,7 +39,6 @@
     "components/CommunityTile.tsx": 1,
     "components/HomeCitySelector.tsx": 1,
     "components/HomeListingsSlider.tsx": 1,
-    "components/ListingFilters.tsx": 1,
     "components/RecentlySoldRow.tsx": 1,
     "components/SearchListingsToolbar.tsx": 1,
     "components/ShareButton.tsx": 2,
@@ -89,6 +88,7 @@
     "components/reports/PredictiveInsights.tsx": 1,
     "components/reports/ReportsByCityView.tsx": 2,
     "components/reports/SalesReportCard.tsx": 1,
+    "components/search/HideAwareSearchMap.tsx": 1,
     "components/search/SearchResults.tsx": 1,
     "components/seller-lp/SoldStoryCard.tsx": 5,
     "components/site/ActivityFeed.tsx": 1,

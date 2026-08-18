@@ -22,10 +22,8 @@
     "components/listing/ListingCommunitySection.tsx",
     "components/listing/ListingSimilarListings.tsx",
     "components/listing/SimilarListings.tsx",
-    "components/listing/showcase/ShowcaseSimilar.tsx",
     "components/neighborhood/NeighborhoodListings.tsx",
     "components/open-houses/OpenHouseSection.tsx",
-    "components/search/HotCommunitiesSection.tsx",
     "components/sliders/CommunitiesSlider.tsx",
     "components/videos/VideoToursRow.tsx"
   ]

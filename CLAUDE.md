@@ -454,8 +454,7 @@ A different model or different settings is a different-sounding voice and a reje
 **Never fall back to the old 0.50/0.75/0.35 values.** Override per-script via `voice_settings`
 in `script.json`.
 
-**Every VO call goes through [`scripts/_voice_lib.py`](scripts/_voice_lib.py) (Python) or
-[`lib/voice/alignment.ts`](lib/voice/alignment.ts) (Node) — no inline ElevenLabs API calls.**
+**Every VO call goes through [`scripts/_voice_lib.py`](scripts/_voice_lib.py) — no inline ElevenLabs API calls.**
 Env: `ELEVENLABS_VOICE_ID`, `ELEVENLABS_VOICE_ID_VICTORIA`, `ELEVENLABS_API_KEY`.
 
 Delivery: sentences short, two clauses max, no commas where Matt wouldn't pause. Split long

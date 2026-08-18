@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-18T05:54:00.351Z",
+  "generatedAt": "2026-08-18T19:31:48.504Z",
   "format": "file:line:ruleId — each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
-  "total": 65,
+  "total": 61,
   "violations": [
     "app/admin/(protected)/crm/reporting/agent-goals/AgentGoalsYearSelect.tsx:24:clock-new-date",
     "app/components/admin/AdminUsersList.tsx:131:locale-date",
@@ -53,10 +53,6 @@
     "components/listing/OpenHouseBanner.tsx:22:locale-date",
     "components/listing/PriceHistory.tsx:13:locale-date",
     "components/listing/SaveListingButton.tsx:75:impure-helper",
-    "components/listing/showcase/ShowcaseAgent.tsx:57:impure-helper",
-    "components/listing/showcase/ShowcaseAgent.tsx:66:impure-helper",
-    "components/listing/showcase/ShowcaseOpenHouse.tsx:23:locale-date",
-    "components/listing/showcase/ShowcaseStickyBar.tsx:168:impure-helper",
     "components/neighborhood/NeighborhoodCTA.tsx:16:impure-helper",
     "components/neighborhood/NeighborhoodCTA.tsx:24:impure-helper",
     "components/neighborhood/NeighborhoodCTA.tsx:64:impure-helper",
