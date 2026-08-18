@@ -11,8 +11,8 @@
  *
  * The rule: nothing in the server-rendered tree (app/ + lib/ + components/) may
  * import jsdom or isomorphic-dompurify. HTML sanitizing happens in lib/sanitize
- * with a DOM-free sanitizer. isomorphic-dompurify stays out of the graph even
- * though it's still in package.json — a gate is cheaper than re-learning the 500.
+ * with a DOM-free sanitizer. Do not re-add isomorphic-dompurify — a gate is
+ * cheaper than re-learning the 500.
  *
  * Companion memory: ryanrealty-serverless-gotchas.md ("never reintroduce a
  * jsdom-backed lib into a server-rendered path"). This is that invariant as a
