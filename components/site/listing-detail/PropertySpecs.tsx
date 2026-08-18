@@ -4,6 +4,7 @@ import {
 } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingHoa } from '@/lib/listing/publish-listing-hoa'
+import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { cn } from '@/lib/utils'
 
 /**
@@ -212,10 +213,15 @@ function buildGroups(listing: Props['listing']): Group[] {
 
   // ── Financial ───────────────────────────────────────────────────────────────
   const financial: Spec[] = []
-  if (num(listing.pricePerSqft))
-    financial.push({ label: 'Price / sq ft', value: <Price value={listing.pricePerSqft} exact /> })
-  if (num(listing.closePricePerSqft))
-    financial.push({ label: 'Sold / sq ft', value: <Price value={listing.closePricePerSqft} exact /> })
+  const publishedPpsf = publishListingSharePricePerSqft(listing.propertySubType, listing.pricePerSqft)
+  const publishedClosePpsf = publishListingSharePricePerSqft(
+    listing.propertySubType,
+    listing.closePricePerSqft,
+  )
+  if (num(publishedPpsf))
+    financial.push({ label: 'Price / sq ft', value: <Price value={publishedPpsf} exact /> })
+  if (num(publishedClosePpsf))
+    financial.push({ label: 'Sold / sq ft', value: <Price value={publishedClosePpsf} exact /> })
   if (num(listing.saleToListRatio))
     financial.push({
       label: 'Sale to list',

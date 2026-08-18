@@ -13,6 +13,7 @@ import {
   publishListingHeroCompactPrice,
   publishListingHeroKeyStats,
 } from '@/lib/listing/publish-listing-hero-stats'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishListingHeroUnmute, publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
@@ -58,6 +59,8 @@ type Props = {
   baths?: number | null
   sqft?: number | null
   acres?: number | null
+  /** MLS PropertySubType. Share kinds print next to the ask. */
+  propertySubType?: string | null
   /** Listing coordinates — enables the bottom-left map thumb + expand toggle. */
   lat?: number | null
   lng?: number | null
@@ -106,6 +109,7 @@ export function ListingHero({
   baths,
   sqft,
   acres = null,
+  propertySubType = null,
   lat = null,
   lng = null,
   className,
@@ -174,6 +178,7 @@ export function ListingHero({
 
   const compactPrice = publishListingHeroCompactPrice(price)
   const keyStats = publishListingHeroKeyStats({ beds, baths, sqft, acres })
+  const shareKind = publishListingShareKind(propertySubType)
 
   return (
     <div className={cn('flex flex-col', className)}>
@@ -301,6 +306,19 @@ export function ListingHero({
                 }}
               >
                 {compactPrice}
+              </span>
+            ) : null}
+            {shareKind ? (
+              <span
+                style={{
+                  fontSize: 'clamp(0.78rem,1.6vw,1rem)',
+                  fontWeight: 600,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(250,248,244,0.78)',
+                }}
+              >
+                {shareKind}
               </span>
             ) : null}
             {keyStats.length > 0 ? (

@@ -33,6 +33,8 @@ function tileToCard(tile: ListingTile): ListingCardData {
     beds: tile.beds,
     baths: tile.baths,
     sqft: tile.sqft,
+    pricePerSqft: tile.pricePerSqft,
+    propertySubType: tile.propertySubType,
   }
 }
 

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -29,6 +30,7 @@ export type ListingCardData = {
    *  the card opts in via `showPricePerSqft` — search results show it to match
    *  the search mockup; other surfaces stay on the leaner bd/ba/sqft meta. */
   pricePerSqft?: number | null
+  propertySubType?: string | null
   badge?: { kind: ListingBadge; label: string }
   /** Scalar virtual-tour / video URL. When present and embeddable, the
    *  VideoListingCard plays it inline; otherwise the card links to detail. */
@@ -144,7 +146,11 @@ export default function ListingCard({
           beds={listing.beds}
           baths={listing.baths}
           sqft={listing.sqft}
-          pricePerSqft={showPricePerSqft ? listing.pricePerSqft : null}
+          pricePerSqft={
+            showPricePerSqft
+              ? publishListingSharePricePerSqft(listing.propertySubType, listing.pricePerSqft)
+              : null
+          }
         />
       </div>
     </Link>

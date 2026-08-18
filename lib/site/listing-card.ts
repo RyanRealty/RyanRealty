@@ -46,6 +46,8 @@ export function tileToCardData(
     beds: t.beds ?? null,
     baths: t.baths ?? null,
     sqft: t.sqft ?? null,
+    pricePerSqft: t.pricePerSqft ?? null,
+    propertySubType: t.propertySubType ?? null,
     badge,
     tourUrl: t.tourUrl ?? null,
   }
