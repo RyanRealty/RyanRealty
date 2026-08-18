@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — listing-detail unmute + Aw Snap reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — listing-detail TIC share label + withhold ppsf
+
+**Surface:** Cursor cloud `bc-a0c77b4b` (`cursor/loop-chain-2026-08-18t12-00-4d91`). **Time:** 2026-08-18 ~13:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 188). Claimed parent only as `cursor-loop-chain-bc-a0c77b4b-2026-08-18t12-00`. Product **`cdb35fb11`** landed on **`main`**. Vercel Production **READY** for `cdb35fb11` (`CxViDz2vpqBeLEYN8NsTuDcypKwD`; GitHub Vercel success + Production deployment). First `npm run deploy:verify` hit READY on the prior product SHA `05bbb31`; the HouseMe follow-up SHA verified via GitHub Production status after the CLI login stall. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (180 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Old Farm under-300k auto-nav **rejected**. Dick George missing-spec **rejected** (`$380K` 6.34 ACRES). River Bend blank UNMUTE **rejected** (live photo + `$1.9M`). 2390 Snowgoose share ask **reproduced** then class-fixed. Black Canyon Aw Snap **rejected** (`$25K` 20 ACRES). Gerig blank navy **rejected** (`$1.9M` 190.69 ACRES). 2250 Snowgoose share ask **reproduced** then class-fixed. Surveyor missing photo **rejected** (`$698K` VIEW ALL 54). Hex-only fingerprints (2 fixed + 6 rejected).
+- Class: MLS `PropertySubType` Tenancy in Common / Timeshare prints that label on the hero and strip. `publishListingSharePricePerSqft` withholds living-area `$/sqft` on hero, strip, PriceBlock, PropertySpecs, ListingCard, and HouseMe. Do not invent fractional or timeshare when the feed says Tenancy in Common. Do not parse PublicRemarks. Gate `ci:publish-listing-share` 9/9. Founding fingerprints `ae66a0f065d3affe2713352b2f71e1b5` / `41fed0ac49bcf207696a8c1990faf07f`.
+- Prod probe on live `cdb35fb11`: 2390 Snowgoose hero **`$5K TENANCY IN COMMON`**, HouseMe no `$4 per sq ft`. 2250 Snowgoose hero **`$3K TENANCY IN COMMON`**, HouseMe no `$3 per sq ft`. After shots `/opt/cursor/artifacts/after_snowgoose2390_{390,1280}.png`, `/opt/cursor/artifacts/after_snowgoose2250_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 2 fixed + 6 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail unmute + Aw Snap reject slice
 
 **Surface:** Cursor cloud `bc-74d9bae3` (`cursor/loop-chain-2026-08-18t11-45-fffc`). **Time:** 2026-08-18 ~11:52 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 196). Claimed parent only as `cursor-loop-chain-bc-74d9bae3-2026-08-18t11-45`. **No product change.** Production stays on last product **`0bcfc7110`** (already READY; dpl `GnLoMc7NzMfxLcNPabcorWJx2qvP`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (188 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
