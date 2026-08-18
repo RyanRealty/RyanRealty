@@ -60,7 +60,7 @@ describe('getListingCanonicalPathFields', () => {
     const row = await getListingCanonicalPathFields('220189422')
     expect(resolveCanonicalListingKey).toHaveBeenCalledWith('220189422')
     expect(sb.from).toHaveBeenCalledWith('listings')
-    const selectArg = sb.select.mock.calls[0]?.[0] as string
+    const selectArg = String(sb.select.mock.calls[0]?.[0] ?? '')
     expect(selectArg).toContain('ListingKey')
     expect(selectArg).toContain('ListNumber')
     expect(selectArg).toContain('StreetNumber')

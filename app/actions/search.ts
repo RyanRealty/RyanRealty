@@ -91,7 +91,13 @@ function domFromPreset(daysOnMarket: string | undefined): number | undefined {
 function toAdvancedFilters(
   f: SearchFilters,
   overrides?: { limit?: number; offset?: number }
-): AdvancedListingsFilters & { city?: string; subdivision?: string; limit?: number; offset?: number } {
+): AdvancedListingsFilters & {
+  city?: string
+  subdivision?: string
+  neighborhood?: string
+  limit?: number
+  offset?: number
+} {
   const statusFilter: AdvancedListingsFilters['statusFilter'] =
     f.status === 'Sold' ? 'closed'
     : f.status === 'Pending' ? 'pending'
