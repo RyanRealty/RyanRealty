@@ -97,6 +97,12 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     }
   })
 
+  it('footer Market column opens the monthly briefing door', () => {
+    const market = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Market')
+    const hrefs = market?.links.map((l) => l.href) ?? []
+    expect(hrefs).toContain('/newsletter')
+  })
+
   it('no group lists the same href twice', () => {
     for (const g of KB_TOP_NAV) {
       const hrefs = g.children.map((c) => c.href)

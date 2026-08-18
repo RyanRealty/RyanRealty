@@ -15,6 +15,8 @@
  * Gate: scripts/check-nav-reachability.mjs
  */
 
+import { publishNewsletterSubscribeHref } from '@/lib/site/publish-newsletter-href'
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type NavLink = {
@@ -32,6 +34,11 @@ export type NavGroup = {
 export type FooterGroup = {
   heading: string
   links: NavLink[]
+}
+
+const NEWSLETTER_SUBSCRIBE: NavLink = {
+  href: publishNewsletterSubscribeHref(),
+  label: 'Monthly briefing',
 }
 
 /** A top-bar group. `href` is required — every top-level item is a real destination. */
@@ -313,6 +320,7 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       { href: '/activity', label: 'Recent activity' },
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/blog', label: 'Blog' },
+      NEWSLETTER_SUBSCRIBE,
       { href: '/faq', label: 'FAQ' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
       { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
@@ -376,6 +384,7 @@ export const FOOTER_NAV: FooterGroup[] = [
       { href: '/housing-market/reports', label: 'Market reports' },
       { href: '/activity', label: 'Recent activity' },
       { href: '/blog', label: 'Blog' },
+      NEWSLETTER_SUBSCRIBE,
       { href: '/faq', label: 'FAQ' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
     ],

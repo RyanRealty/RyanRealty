@@ -29,7 +29,7 @@ export default function SiteFooter() {
     <footer data-default-chrome className="bg-primary text-white/85">
       <Container className="pt-14 pb-8">
         {/* Newsletter signup band — above the nav grid */}
-        <div className="mb-10 border-b border-white/15 pb-10">
+        <div id="newsletter" className="mb-10 border-b border-white/15 pb-10">
           <NewsletterSignup source="site-footer" />
         </div>
 
