@@ -59,6 +59,7 @@ const REDIRECT_ONLY = new Set([
   'app/listing/by-key/[listingKey]/page.tsx', // permanentRedirect to canonical listing URL
   'app/motivated-sellers/page.tsx', // IA lock: 308 into /price-drops
   'app/motivated-sellers/[city]/page.tsx', // IA lock: 308 into /price-drops/[city]
+  'app/neighborhoods/[slug]/page.tsx', // middleware 308 into /cities/bend/{slug}
 ])
 
 /** Pages that legitimately render BOTH KbFooter and SiteFooter (one per branch). */
