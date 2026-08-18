@@ -14,6 +14,7 @@
 import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 
 /**
@@ -38,10 +39,11 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
     if (items.length >= cap) break
     if (tile.listPrice == null || !Number.isFinite(tile.listPrice) || tile.listPrice <= 0) continue
 
-    const street = [tile.streetNumber, tile.streetName, tile.streetSuffix]
-      .filter((part) => typeof part === 'string' && part.trim().length > 0)
-      .join(' ')
-      .trim()
+    const street = publishStreetLine({
+      streetNumber: tile.streetNumber,
+      streetName: tile.streetName,
+      streetSuffix: tile.streetSuffix,
+    })
     if (!street) continue
 
     const meta = [

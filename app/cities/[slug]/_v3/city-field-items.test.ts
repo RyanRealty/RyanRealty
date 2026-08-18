@@ -30,6 +30,13 @@ describe('cityFieldItems', () => {
     expect(items[0]?.title).toBe('100 Main St')
   })
 
+  it('prints Moonshadow Court without a leading 0', () => {
+    const items = cityFieldItems([
+      tile({ listingKey: 'moon', streetNumber: '0', streetName: 'Moonshadow', streetSuffix: 'Court' }),
+    ])
+    expect(items[0]?.title).toBe('Moonshadow Court')
+  })
+
   it('drops a home with no list price or no street', () => {
     expect(cityFieldItems([tile({ listingKey: 'a', listPrice: null })])).toEqual([])
     expect(cityFieldItems([tile({ listingKey: 'b', streetNumber: null, streetName: null, streetSuffix: null })])).toEqual(

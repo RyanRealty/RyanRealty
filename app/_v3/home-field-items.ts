@@ -9,6 +9,7 @@
 
 import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 import { livePrice } from './live-format'
 
@@ -20,10 +21,11 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3
     const priceLabel = livePrice(tile.listPrice)
     if (!priceLabel) continue
 
-    const street = [tile.streetNumber, tile.streetName, tile.streetSuffix]
-      .filter((part) => typeof part === 'string' && part.trim().length > 0)
-      .join(' ')
-      .trim()
+    const street = publishStreetLine({
+      streetNumber: tile.streetNumber,
+      streetName: tile.streetName,
+      streetSuffix: tile.streetSuffix,
+    })
     if (!street) continue
     if (!tile.photoUrl || tile.photoUrl.trim().length === 0) continue
 

@@ -39,6 +39,7 @@ import {
   type SchoolLevel,
 } from '@/data/co-schools'
 import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /**
  * Safety ceiling on rows scanned. Real feeding-home counts top out around ~360
@@ -116,7 +117,7 @@ function escapeIlike(value: string): string {
 }
 
 function rowToHome(row: RawRow): SchoolHomeTile {
-  const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
+  const street = publishStreetLine({ streetNumber: row.StreetNumber, streetName: row.StreetName })
   const cityLine = [
     [row.City, 'OR'].filter(Boolean).join(', '),
     row.PostalCode,

@@ -172,6 +172,13 @@ describe('formatLookingAtAddress', () => {
     expect(formatLookingAtAddress({})).toBeNull()
     expect(formatLookingAtAddress({ street: '  ' })).toBeNull()
   })
+
+  it('withholds a placeholder house number 0', () => {
+    expect(formatLookingAtAddress({ streetNumber: '0', streetName: 'Moonshadow Court' })).toBe(
+      'Moonshadow Court',
+    )
+    expect(formatLookingAtAddress({ street: '0 Moonshadow Court' })).toBe('Moonshadow Court')
+  })
 })
 
 describe('listingKeyFromPageUrl / addressFromListingUrl', () => {

@@ -32,6 +32,7 @@ import {
 } from '@/components/site/v3'
 import { formatPrice, formatPriceExact } from '@/lib/format/money'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishDaysFigure, publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { listingDetailPath } from '@/lib/slug'
@@ -414,7 +415,11 @@ export function fieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
       const key = t.listingKey?.trim()
       const photo = t.photoUrl?.trim()
       if (!key || !photo) return []
-      const street = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
+      const street = publishStreetLine({
+        streetNumber: t.streetNumber,
+        streetName: t.streetName,
+        streetSuffix: t.streetSuffix,
+      })
       const meta = [
         t.beds != null ? `${t.beds} bd` : null,
         t.baths != null ? `${t.baths} ba` : null,

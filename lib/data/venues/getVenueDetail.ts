@@ -23,6 +23,7 @@ import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
 import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /** A silent, chrome-less MLS background loop that autoplays in a featured tile. */
 export type TileVideo = { url: string; embedType: 'iframe' | 'video-tag' } | null
@@ -88,7 +89,7 @@ const PROJECTION = [
 
 
 function rowToHome(row: RawRow): VenueHomeTile {
-  const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
+  const street = publishStreetLine({ streetNumber: row.StreetNumber, streetName: row.StreetName })
   const cityLine = [[row.City, 'OR'].filter(Boolean).join(', '), row.PostalCode]
     .filter(Boolean)
     .join(' ')

@@ -28,6 +28,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getParkBySlug, CO_PARKS, type CoPark } from '@/data/co-parks'
 import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /** Half-width of the bounding box in degrees. ~1.5 mi N/S, ~1.4 mi E/W at 44° N. */
 const LAT_PAD = 0.022
@@ -91,7 +92,7 @@ const PROJECTION = [
 
 
 function rowToHome(row: RawRow): ParkHomeTile {
-  const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
+  const street = publishStreetLine({ streetNumber: row.StreetNumber, streetName: row.StreetName })
   const cityLine = [
     [row.City, 'OR'].filter(Boolean).join(', '),
     row.PostalCode,
