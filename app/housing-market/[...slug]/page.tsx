@@ -43,6 +43,7 @@ import {
   getPriceHistory,
   getMarketPulseCitySnapshots,
   getCityMarketDetailByTimeframe,
+  getCompleteMonthlyMarketDetail,
   getRecentBlogPosts,
 } from '@/lib/data'
 import { buildMarketFaq } from '@/lib/site/market-faq'
@@ -120,11 +121,13 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   // is resilient-cached and answers a transient failure with its own documented
   // fallback, so a `.catch(() => null)` here would only hide a real outage
   // behind a confident empty page.
-  const [pulse, priceHistory, citySnapshots, timeframes, blogPosts] = await Promise.all([
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
+  const [pulse, priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts] = await Promise.all([
     getMarketPulse({ geoType, geoSlug }),
     getPriceHistory(geoType, geoSlug, 'monthly', priceHistoryLimit),
     getMarketPulseCitySnapshots([...COMPARISON_CITY_LABELS]),
     getCityMarketDetailByTimeframe(geoType, geoSlug),
+    getCompleteMonthlyMarketDetail({ geoType, geoSlug, currentMonthKey }),
     isCity ? getRecentBlogPosts({ limit: 3 }) : Promise.resolve([] as Awaited<ReturnType<typeof getRecentBlogPosts>>),
   ])
   const detailYtd = timeframes?.ytd ?? null
@@ -136,7 +139,6 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   // infinite thin-page space.
   if (!pulse && priceHistory.length === 0) notFound()
 
-  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const completePriceMonths = priceHistory.filter((p) => p.periodStart.slice(0, 7) !== currentMonthKey)
 
   const mosRaw = publishMonthsOfSupply({
@@ -213,7 +215,9 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   const cityClosed = buildCityPeriodFigures({
     ytd: detailYtd,
     monthly: detail,
+    lastComplete: lastCompleteMonthly,
     rolling: detailRolling,
+    currentMonthKey,
   })
   const sheet = <GeoInquirySheet geoName={geoName} />
 
@@ -263,6 +267,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             refreshedAt={refreshedAt}
             valuationHrefValue={valuationHrefValue}
             detail={detail}
+            lastComplete={lastCompleteMonthly}
+            currentMonthKey={currentMonthKey}
             snapshots={citySnapshots}
             faqs={faqs}
             chart={communityChart}

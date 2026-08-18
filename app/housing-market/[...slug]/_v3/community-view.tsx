@@ -44,6 +44,8 @@ type Props = {
   refreshedAt: string | null
   valuationHrefValue: string
   detail: MarketDetail | null
+  lastComplete?: MarketDetail | null
+  currentMonthKey?: string
   snapshots: MarketPulseSnapshot[]
   faqs: ReadonlyArray<{ question: string; answer: string }>
   chart?: V3ChartProps
@@ -60,13 +62,15 @@ export function CommunityMarketView({
   refreshedAt,
   valuationHrefValue,
   detail,
+  lastComplete,
+  currentMonthKey,
   snapshots,
   faqs,
   chart,
   sheet,
 }: Props) {
   const live = buildLiveFigures(pulse, mosText, geoName)
-  const closed = buildClosedFigures(detail)
+  const closed = buildClosedFigures(detail, lastComplete, currentMonthKey)
   const figures = [...live.figures, ...closed]
   const [firstFigure, ...restFigures] = figures
   const closedLine = closedTrace(geoName, closed)
@@ -82,7 +86,7 @@ export function CommunityMarketView({
     {
       kind: 'prose',
       term: 'How these numbers are built',
-      body: 'Active inventory is the live single-family row. Closed-sale figures are the most recent monthly market_stats_cache row.',
+      body: 'Active inventory is the live single-family row. Closed-sale figures are the current month when that median is published, otherwise the last complete month.',
     },
   ])
   const exploreItems = buildExploreItems({

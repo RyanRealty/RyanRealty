@@ -2818,7 +2818,7 @@ Companion files:
 
 ### `lib/data/market/getCityMarketDetail.ts`
 
-**Exports:** `getCityMarketDetail`, `getCityMarketDetailByTimeframe`
+**Exports:** `getCityMarketDetail`, `getCityMarketDetailByTimeframe`, `getCompleteMonthlyMarketDetail`
 
 **Tables:** `market_stats_cache`
 

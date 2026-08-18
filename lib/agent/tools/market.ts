@@ -9,8 +9,10 @@
  * both reads — zero new query paths, matching R2.2's tool-set contract.
  */
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
-import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
+import { getCityMarketDetail, getCompleteMonthlyMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { publishCompleteMonthMedian } from '@/lib/market/publish-complete-month-median'
+import { zonedDateKey } from '@/lib/format/date'
 import type { GeoType } from '@/lib/data/types/shared'
 import type { AgentContext, AgentCitation, AgentTool, ToolOutcome } from '@/lib/agent/types'
 
@@ -43,9 +45,11 @@ async function marketStatsHandler(input: Record<string, unknown>, _ctx: AgentCon
   const geoType: GeoType = isGeoType(input.geoType) ? input.geoType : 'city'
   const geoSlug = geoType === 'city' ? canonicalCityCacheSlug(cityRaw) : toGeoSlug(cityRaw)
 
-  const [pulse, detail] = await Promise.all([
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
+  const [pulse, detail, lastComplete] = await Promise.all([
     getMarketPulse({ geoType, geoSlug }),
     getCityMarketDetail({ geoType, geoSlug, periodType: 'monthly' }),
+    getCompleteMonthlyMarketDetail({ geoType, geoSlug, currentMonthKey }),
   ])
 
   if (!pulse && !detail) {
@@ -83,26 +87,31 @@ async function marketStatsHandler(input: Record<string, unknown>, _ctx: AgentCon
     })
   }
 
-  if (detail) {
-    if (detail.medianSalePrice != null) {
+  if (detail || lastComplete) {
+    const publishedMonth = publishCompleteMonthMedian({
+      monthly: detail,
+      lastComplete,
+      currentMonthKey,
+    })
+    if (publishedMonth) {
       citations.push({
-        figure: fmtUsd(detail.medianSalePrice) ?? String(detail.medianSalePrice),
-        source: `market_stats_cache geo_type=${geoType} geo_slug=${geoSlug} period=${detail.periodType} median_sale_price=${detail.medianSalePrice}, methodology ${detail.methodologyVersion ?? 'unknown'}`,
+        figure: fmtUsd(publishedMonth.value) ?? String(publishedMonth.value),
+        source: `market_stats_cache geo_type=${geoType} geo_slug=${geoSlug} period=monthly period_start=${publishedMonth.periodStart} ${publishedMonth.label}=${publishedMonth.value}`,
       })
     }
-    if (detail.soldCount != null) {
+    if (detail?.soldCount != null) {
       citations.push({
         figure: `${detail.soldCount} sold`,
         source: `market_stats_cache geo_type=${geoType} geo_slug=${geoSlug} period=${detail.periodType} sold_count=${detail.soldCount}`,
       })
     }
-    if (detail.medianDom != null) {
+    if (detail?.medianDom != null) {
       citations.push({
         figure: `${detail.medianDom} median DOM`,
         source: `market_stats_cache geo_type=${geoType} geo_slug=${geoSlug} period=${detail.periodType} median_dom=${detail.medianDom}`,
       })
     }
-    if (detail.yoyMedianPriceDeltaPct != null) {
+    if (detail?.yoyMedianPriceDeltaPct != null) {
       citations.push({
         figure: `${detail.yoyMedianPriceDeltaPct}% YoY`,
         source: `market_stats_cache geo_type=${geoType} geo_slug=${geoSlug} period=${detail.periodType} yoy_median_price_delta_pct=${detail.yoyMedianPriceDeltaPct}`,
