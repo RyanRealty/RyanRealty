@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + Troon/Bryant reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — listing-detail $1000K + land-acres slice
+
+**Surface:** Cursor cloud `bc-146bbab6` (`cursor/loop-chain-2026-08-18t10-55-4a7c`). **Time:** 2026-08-18 ~11:42 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 204). Claimed parent only as `cursor-loop-chain-bc-146bbab6-2026-08-18t10-55`. Product **`0bcfc7110`** landed on **`main`**. Vercel Production **READY** for `0bcfc7110` (`GnLoMc7NzMfxLcNPabcorWJx2qvP`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (196 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Roosevelt `$1000K` **reproduced** then class-fixed. Columbus / Kouns missing acres on hero **reproduced** then class-fixed. Bryant missing photo **rejected** (photo + `$1.1M` / H1 `$1,073,000`). Columbus Aw Snap **rejected** (200, live hero). Rogue “make numbers match” 220208750 **rejected** (hero 4,021 SQFT is MLS 220208751; do not invent 23/22). Bryant Next / Violet blank navy video **rejected** (real photos, no `<video>` / UNMUTE). Hex-only fingerprints (3 fixed + 5 rejected).
+- Class: `formatPriceCompact` / `publishListingHeroCompactPrice` emit `$1.0M` when thousands-round ≥ 1000 (never `$1000K`). `publishListingHeroKeyStats` publishes lot acres only when beds/baths/sqft are absent. Wired ListingHero + listing-detail page. Gate `ci:publish-listing-hero-stats` 4/4. Founding fingerprints `2ceabe03a3cc759cc09d94d2bd1e442a` / `639e24f1d222997d0f59f2e137981de8` / `57b38d188f133fe2c93c05ca6150d5d9`. Do not invent beds or a second MLS row.
+- Prod probe after READY `0bcfc7110`: Roosevelt hero **`$1.0M`** (no `$1000K`); Columbus hero **19.77 ACRES**; Kouns hero **1.35 ACRES** at 390+1280. After shots `/opt/cursor/artifacts/after_roosevelt_{390,1280}.png`, `/opt/cursor/artifacts/after_columbus_{390,1280}.png`, `/opt/cursor/artifacts/after_kouns_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 3 fixed + 5 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + Troon/Bryant reject slice
 
 **Surface:** Cursor cloud `bc-1668f809` (`cursor/loop-chain-2026-08-18t10-39-67fd`). **Time:** 2026-08-18 ~10:55 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 212). Claimed parent only as `cursor-loop-chain-bc-1668f809-2026-08-18t10-39`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (204 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
