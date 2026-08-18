@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   ageHours,
   evalAudienceSync,
+  evalMacroSeries,
   evalMetaAudienceHold,
   evalSkySlopeMirror,
   evalExpired,
@@ -209,6 +210,70 @@ describe('evalSkySlopeMirror (36h threshold on skyslope_transactions.synced_at)'
     const founding = evalSkySlopeMirror('2026-06-10T00:35:10.142Z', NOW)
     expect(founding.status).toBe('red')
     expect(founding.note).toMatch(/skyslope-mirror-refresh/i)
+  })
+})
+
+describe('evalMacroSeries (192h threshold on market_history_weekly mortgage_rate_30yr)', () => {
+  const moving = [6.67, 6.72, 6.58, 6.61, 6.55, 6.63]
+
+  it('green the morning after Monday ingest and on the Monday just before it', () => {
+    expect(
+      evalMacroSeries(
+        { latestCapturedAt: hoursAgo(23.5), latestWeekStart: '2026-07-20', recentValues: moving },
+        NOW,
+      ).status,
+    ).toBe('green')
+    // The oldest healthy reading: Monday 12:30 UTC, 30 minutes before the week's run.
+    expect(
+      evalMacroSeries(
+        { latestCapturedAt: hoursAgo(167.5), latestWeekStart: '2026-07-13', recentValues: moving },
+        NOW,
+      ).status,
+    ).toBe('green')
+  })
+
+  it('red at 192h, naming the cron and the drift it prevents', () => {
+    const stale = evalMacroSeries(
+      { latestCapturedAt: hoursAgo(192), latestWeekStart: '2026-07-07', recentValues: moving },
+      NOW,
+    )
+    expect(stale.status).toBe('red')
+    expect(stale.note).toMatch(/market-history-snapshot/)
+    expect(stale.value).toContain('6.67%')
+  })
+
+  it('red when the series has never been captured, pointing at the fallback', () => {
+    const never = evalMacroSeries({ latestCapturedAt: null, latestWeekStart: null, recentValues: [] }, NOW)
+    expect(never.status).toBe('red')
+    expect(never.note).toMatch(/has ever been captured/i)
+    expect(never.note).toMatch(/hardcoded fallback/i)
+  })
+
+  it('yellow when fresh rows carry one unchanged value for four weeks', () => {
+    const flat = evalMacroSeries(
+      { latestCapturedAt: hoursAgo(20), latestWeekStart: '2026-07-20', recentValues: [6.5, 6.5, 6.5, 6.5, 6.4] },
+      NOW,
+    )
+    expect(flat.status).toBe('yellow')
+    expect(flat.value).toContain('unchanged 4 weeks')
+  })
+
+  it('stays green when only three weeks match — a flat run is not yet a frozen series', () => {
+    expect(
+      evalMacroSeries(
+        { latestCapturedAt: hoursAgo(20), latestWeekStart: '2026-07-20', recentValues: [6.5, 6.5, 6.5, 6.4] },
+        NOW,
+      ).status,
+    ).toBe('green')
+  })
+
+  it('a stale series is stale even when its values are moving — recency is judged first', () => {
+    expect(
+      evalMacroSeries(
+        { latestCapturedAt: daysAgo(30), latestWeekStart: '2026-06-22', recentValues: moving },
+        NOW,
+      ).status,
+    ).toBe('red')
   })
 })
 
