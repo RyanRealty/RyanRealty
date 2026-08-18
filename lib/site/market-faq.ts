@@ -126,7 +126,7 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   if (sfrPublished && sfrPublished.value > 0) {
     faqs.push({
       question: `How many single-family homes are for sale in ${geoName}?`,
-      answer: `There are ${sfrPublished.phrase} in ${geoName}${asOf}.`,
+      answer: `There are ${sfrPublished.value.toLocaleString('en-US')} active single-family listings in ${geoName}${asOf}.`,
     })
     datasetVariables.push({ name: 'Active Listings', value: sfrPublished.value })
   }
