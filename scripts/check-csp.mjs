@@ -33,9 +33,6 @@ const REQUIRED = {
     'https://www.google-analytics.com',
     'https://*.adtrafficquality.google',
     'https://connect.facebook.net',
-    // Follow Up Boss tracking pixel (components/FollowUpBossPixel.tsx) loads
-    // its agent script from widgetbe.com. Drop it and FUB lead attribution dies.
-    'https://widgetbe.com',
   ],
   'connect-src': [
     'https://*.google-analytics.com',
@@ -49,8 +46,6 @@ const REQUIRED = {
     'https://*.adtrafficquality.google',
     'https://connect.facebook.net',
     'https://www.facebook.com',
-    // Follow Up Boss tracking pixel beacons back to widgetbe.com.
-    'https://widgetbe.com',
     // Google Maps JS. maps.gstatic.com does NOT match www.gstatic.com, where the
     // vector basemap style set lives, and maps.googleapis.com does not cover the
     // tile hosts. Without these the search map draws pins on a grey pane and
