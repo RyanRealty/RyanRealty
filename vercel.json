@@ -74,6 +74,10 @@
       "schedule": "35 9 * * *"
     },
     {
+      "path": "/api/cron/fred-ingest",
+      "schedule": "47 22 * * *"
+    },
+    {
       "path": "/api/cron/gbp-health-check",
       "schedule": "0 9 * * *"
     },

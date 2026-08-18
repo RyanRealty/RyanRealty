@@ -4,7 +4,9 @@
  * Sources (primary sources per CLAUDE.md §0 — never LLM recall):
  *   - FRED observations API (api.stlouisfed.org) — series MORTGAGE30US
  *     (Freddie Mac 30yr fixed, weekly) and DGS10 (10Y treasury constant
- *     maturity, daily). Requires FRED_API_KEY.
+ *     maturity, daily). Requires FRED_API_KEY. The request goes through
+ *     lib/stats/fred.ts, the one FRED client in this repo, under an explicit
+ *     budget — see fetchFredSeries below for why that budget is load-bearing.
  *   - Freddie Mac PMMS history CSV
  *     (https://www.freddiemac.com/pmms/docs/PMMS_history.csv, verified live
  *     2026-07-21; the /pmms/docs/pmms.json path 404s) — keyless fallback for
@@ -19,6 +21,8 @@
  * unit tests; the fetch wrappers stay thin.
  */
 
+import { fredRequest } from '@/lib/stats/fred'
+
 export type NationalSeriesPoint = {
   /** Observation value (percent, e.g. 6.78). */
   value: number
@@ -28,9 +32,14 @@ export type NationalSeriesPoint = {
   source: string
 }
 
-const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations'
 const PMMS_HISTORY_CSV_URL = 'https://www.freddiemac.com/pmms/docs/PMMS_history.csv'
 const FETCH_TIMEOUT_MS = 15_000
+/**
+ * Per-FRED-call ceiling for this file only. Tighter than the 15s this file used
+ * to allow itself, so routing through the shared client cannot make the
+ * 60-second snapshot cron slower than it already was.
+ */
+const SNAPSHOT_FRED_TIMEOUT_MS = 12_000
 
 /* ------------------------------------------------------------------ */
 /* Pure parsers (unit-tested)                                          */
@@ -106,35 +115,35 @@ async function fetchWithTimeout(url: string): Promise<Response> {
 }
 
 async function fetchFredSeries(seriesId: string): Promise<NationalSeriesPoint | null> {
-  const apiKey = process.env.FRED_API_KEY
-  if (!apiKey?.trim()) {
+  // The HTTP call goes through lib/stats/fred.ts so the repo has ONE rate
+  // limiter, ONE retry policy, and ONE reader of FRED_API_KEY.
+  //
+  // THE BUDGET IS NOT OPTIONAL HERE. This runs inside market-history-snapshot,
+  // which is capped at maxDuration 60, and the whole design of that cron is
+  // that a dark national series degrades to null while the local rows still
+  // land. The ingest's default budget — four attempts at a 20s timeout with
+  // backoff — could spend more than the cron has and convert a graceful
+  // degrade into a function timeout that loses the local snapshot too. One
+  // attempt at 12s keeps the worst case strictly under what this function cost
+  // before it shared a client: two series at 12.6s (12s plus the client's
+  // 600ms request spacing) against the 15s-per-series it used to allow.
+  const res = await fredRequest(
+    'series/observations',
+    { series_id: seriesId, sort_order: 'desc', limit: '10' },
+    { maxAttempts: 1, timeoutMs: SNAPSHOT_FRED_TIMEOUT_MS },
+  )
+  if (!res.ok) {
     console.warn(
-      `[market-national-series] FRED_API_KEY is not set — skipping FRED series ${seriesId}. ` +
-        'Add FRED_API_KEY to the environment to capture this series.',
+      `[market-national-series] FRED ${seriesId} unavailable (${res.error.kind}: ${res.error.message}) — series skipped this week.`,
     )
     return null
   }
-  const url =
-    `${FRED_BASE}?series_id=${encodeURIComponent(seriesId)}` +
-    `&api_key=${encodeURIComponent(apiKey)}&file_type=json&sort_order=desc&limit=10`
-  try {
-    const res = await fetchWithTimeout(url)
-    if (!res.ok) {
-      console.warn(`[market-national-series] FRED ${seriesId} responded ${res.status} — series skipped this week.`)
-      return null
-    }
-    const parsed = parseFredObservations(await res.json())
-    if (!parsed) {
-      console.warn(`[market-national-series] FRED ${seriesId} returned no valid observations — series skipped.`)
-      return null
-    }
-    return { value: parsed.value, observationDate: parsed.date, source: `fred:${seriesId}` }
-  } catch (err) {
-    console.warn(
-      `[market-national-series] FRED ${seriesId} fetch failed (${err instanceof Error ? err.message : String(err)}) — series skipped this week.`,
-    )
+  const parsed = parseFredObservations(res.data)
+  if (!parsed) {
+    console.warn(`[market-national-series] FRED ${seriesId} returned no valid observations — series skipped.`)
     return null
   }
+  return { value: parsed.value, observationDate: parsed.date, source: `fred:${seriesId}` }
 }
 
 async function fetchFreddiePmms30(): Promise<NationalSeriesPoint | null> {
