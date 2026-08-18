@@ -273,7 +273,7 @@ jobs:
       - name: E2E — feature specs against live site
         env:
           BASE_URL: ${{ env.SITE_URL }}
-        run: npx playwright test e2e/features/ --project=chromium --reporter=github
+        run: npx playwright test features --project=chromium
         continue-on-error: true  # report individually; don't block artifact upload
         id: e2e_features
 
@@ -281,7 +281,7 @@ jobs:
         env:
           BASE_URL: ${{ env.SITE_URL }}
           CRAWL_LIMIT: "60"
-        run: npx playwright test e2e/full-crawl.spec.ts --project=chromium --reporter=github
+        run: npx playwright test full-crawl --project=chromium
         continue-on-error: true
         id: e2e_crawl
 

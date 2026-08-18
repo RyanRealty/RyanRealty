@@ -9,6 +9,7 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
@@ -17,6 +18,10 @@ jobs:
       SKYSLOPE_ACCESS_SECRET: ${{ secrets.SKYSLOPE_ACCESS_SECRET }}
       SKYSLOPE_CLIENT_ID: ${{ secrets.SKYSLOPE_CLIENT_ID }}
       SKYSLOPE_CLIENT_SECRET: ${{ secrets.SKYSLOPE_CLIENT_SECRET }}
+      # lib/env.ts requiredForRuntime enforces SPARK_API_KEY at server BOOT.
+      # Without it `next start` dies and Lighthouse records Chrome interstitials
+      # against a dead :3000 (quality.yml 2026-08-18: CHROME_INTERSTITIAL_ERROR).
+      SPARK_API_KEY: ${{ secrets.SPARK_API_KEY || 'ci-e2e-dummy-not-a-real-key' }}
       # Full-access Resend key for the webhook-registration check (the account
       # RESEND_API_KEY is send-only). Until this secret is set, ci:resend-webhook
       # SKIPS (exit 0) — the step is safe to run before the key is provisioned.
@@ -32,6 +37,24 @@ jobs:
       - run: npm ci
 
       - run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+
+      # lighthouserc.cjs and .pa11yci.json both hit 127.0.0.1:3000 and set no
+      # startServerCommand (ci.yml leaves its smoke server running for the same
+      # reason). Nightly used to run LH/pa11y against a dead port.
+      # Same explicit start / wait as ci.yml — do not wrap in start-server-and-test
+      # (wait-on's axios UA is blocked by middleware; the wait script logs probes).
+      # No explicit teardown: killing the process group takes the runner down
+      # (ci.yml 2026-08-02). The runner reaps next-server at job end.
+      - name: Start production server
+        run: |
+          npm run start:ci > /tmp/quality-server.log 2>&1 &
+          if ! node scripts/wait-for-server.mjs http://127.0.0.1:3000 180; then
+            echo "----- server log -----"
+            cat /tmp/quality-server.log || true
+            exit 1
+          fi
 
       # Lighthouse CI
       - name: Lighthouse CI
