@@ -1,11 +1,11 @@
 /**
- * POST: trigger initial full sync (super_admin only).
- * Sends Inngest event sync/initial-full-sync.
+ * POST /api/admin/sync used to send an Inngest event (`sync/initial-full-sync`).
+ * There is no in-repo Inngest worker, so that call returned success and did
+ * nothing. Live operator start is GET /api/cron/start-sync (CRON_SECRET).
  */
 
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
-import { inngest } from '@/lib/inngest'
 import { isSuperuserAdmin } from '@/lib/admin'
 
 export async function POST() {
@@ -18,11 +18,14 @@ export async function POST() {
     if (!isSuperuserAdmin(user.email)) {
       return NextResponse.json({ error: 'Forbidden: super_admin only' }, { status: 403 })
     }
-    await inngest.send({
-      name: 'sync/initial-full-sync',
-      data: {},
-    })
-    return NextResponse.json({ ok: true, message: 'Initial sync triggered' })
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          'This path is retired. Kick the live full/terminal/delta lanes with GET /api/cron/start-sync (CRON_SECRET).',
+      },
+      { status: 410 },
+    )
   } catch (e) {
     console.error('POST /api/admin/sync', e)
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Internal error' }, { status: 500 })

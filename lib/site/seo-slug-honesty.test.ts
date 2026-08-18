@@ -95,6 +95,11 @@ describe('SEO search honesty contracts', () => {
     expect(map).toMatch(/neighborhood: neighborhoodName/)
   })
 
+  it('does not coerce empty (active+pending) map status to Active', () => {
+    expect(map).toMatch(/status: status,/)
+    expect(map).not.toMatch(/status: status \|\| 'Active'/)
+  })
+
   it('golf landing uses a settled timeout and a degraded empty, not a fake zero market', () => {
     expect(golf).toMatch(/withTimeoutSettled\(getGolfHomesForLanding/)
     expect(golf).toMatch(/homesDegraded=\{homesDegraded\}/)

@@ -262,7 +262,8 @@ export async function renderMapSplitView(props: {
     baths: sp.baths ?? '',
     maxBeds: sp.maxBeds ?? '',
     maxBaths: sp.maxBaths ?? '',
-    status: status || 'Active',
+    // '' is active+pending (statusForMapSearch). Do not coerce to Active.
+    status: status,
     sort: sp.sort ?? 'newest',
     view: sp.view ?? 'map',
     minSqFt: sp.minSqFt ?? '',
