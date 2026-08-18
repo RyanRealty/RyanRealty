@@ -8,7 +8,7 @@ import { test, expect, type Page } from '@playwright/test'
  *   - Submit button state
  *
  * CRITICAL SAFETY RULE:
- *   Real form submissions create Follow Up Boss leads.
+ *   Real form submissions create CRM leads (`public.crm_people`).
  *   DO NOT submit on production.
  *   Actual submission is gated behind BASE_URL containing localhost/127.0.0.1.
  *   In all environments, validation behavior is tested WITHOUT submitting.
@@ -89,7 +89,7 @@ test.describe('Contact form (/contact)', () => {
       // Production / staging: do not submit — just verified the state
       return
     }
-    // Local only: submitting would hit local server, no real FUB lead
+    // Local only: submitting would hit local server, no production CRM lead
   })
 })
 
@@ -100,7 +100,7 @@ test.describe('Seller LP form (/lp/seller-home-value)', () => {
    * Helper: navigate to the seller LP page and advance from step 1 (address)
    * to step 2 (qualify / email capture).
    *
-   * Step 1 advances purely in React state — no API call, no FUB lead.
+   * Step 1 advances purely in React state — no API call, no CRM lead.
    * Safe to run on production. We fill a dummy 5+ char address string.
    */
   async function advanceToQualifyStep(page: Page) {

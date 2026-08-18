@@ -129,6 +129,6 @@ test.describe('Save search / listing alerts', () => {
     }
     await expect(submitBtn.first()).toBeVisible()
 
-    // DO NOT click submit — that would create a FUB lead
+    // DO NOT click submit — that would create a CRM lead
   })
 })

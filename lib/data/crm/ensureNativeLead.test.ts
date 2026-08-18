@@ -2,12 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { decideNativeLeadAction, nativeLeadName } from './ensureNativeLead'
 import { normalizeEmail, normalizePhone } from './resolvePersonIdentity'
 
-// CONTACT360 Phase 0.2 native-capture fallback: when a FUB push fails AND the
-// person cannot be resolved back out of FUB, the lead would vanish. ensureNativeLead
-// find-or-creates a native crm_* row so the lead is never dropped. These tests
-// lock the pure find-or-create DECISION + the email/phone normalization that
-// drives it (email-first match, phone fallback, create-on-miss, skip-on-no-key)
-// without standing up Supabase. The .from() side stays in the DAL module.
+// Native CRM capture: ensureNativeLead find-or-creates a crm_* row so a lead
+// is never dropped. These tests lock the pure find-or-create DECISION + the
+// email/phone normalization that drives it (email-first match, phone fallback,
+// create-on-miss, skip-on-no-key) without standing up Supabase. The .from()
+// side stays in the DAL module.
 
 describe('ensureNativeLead decision helpers', () => {
   describe('decideNativeLeadAction (email-first match, phone fallback, create-on-miss)', () => {

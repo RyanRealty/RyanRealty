@@ -459,13 +459,13 @@ describe('SearchMapClustered map primitive', () => {
 describe('slug search page: guest save + reachable map-move (2026-06-09)', () => {
   // The high-traffic /homes-for-sale/[...slug] route (every city/preset/community
   // link lands here) must carry BOTH affordances Matt reported missing:
-  //   1. a guest save/alert path (anonymous email -> FUB buyer lead), and
+  //   1. a guest save/alert path (anonymous email -> CRM buyer lead), and
   //   2. a link into the search-as-you-move map (the split view).
   // Pinned at the source level so a future edit that unwires either fails CI
   // instead of silently regressing to "no save + no map" for anonymous buyers.
   const slug = readSrc('app/search/[...slug]/page.tsx')
 
-  it('renders SearchAlertCapture for the guest email -> FUB buyer-lead path', () => {
+  it('renders SearchAlertCapture for the guest email -> CRM buyer-lead path', () => {
     expect(slug).toMatch(/import \{ SearchAlertCapture \}/)
     expect(slug).toMatch(/<SearchAlertCapture/)
     // It must be told the signed-in state (guests only) and the path-derived city.

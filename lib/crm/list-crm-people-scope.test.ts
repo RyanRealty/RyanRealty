@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * A restricted broker must be constrained to their OWN assigned_broker no matter
  * what filters.broker the page passes; a superuser sees the requested book.
  *
- * The action's heavy dependencies (auth, admin-roles, followupboss, supabase,
+ * The action's heavy dependencies (auth, admin-roles, send-event, supabase,
  * meta) are mocked so the test exercises only the scope logic. The supabase
  * double captures every .eq(column,value) applied to crm_people so the test can
  * assert which assigned_broker filter was enforced.

@@ -3,7 +3,7 @@ import {
   normalizeAgentSlug,
   brokerSlugFromText,
   parseAgentAttributionCookie,
-  FUB_USER_ID_BY_BROKER,
+  CRM_DESK_ID_BY_BROKER,
   BROKER_EMAIL_BY_SLUG,
 } from './agent-attribution'
 
@@ -56,7 +56,7 @@ describe('agent attribution (lead routing)', () => {
     })
   })
 
-  it('FUB user-id + email maps are correct', () => {
+  it('broker user-id + email maps are correct', () => {
     expect(FUB_USER_ID_BY_BROKER).toEqual({ matt: 1, rebecca: 2, paul: 3 })
     expect(BROKER_EMAIL_BY_SLUG.matt).toBe('matt@ryan-realty.com')
     expect(BROKER_EMAIL_BY_SLUG.rebecca).toBe('rebeccapeterson@ryan-realty.com')
