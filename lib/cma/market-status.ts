@@ -6,6 +6,12 @@
 
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
+import {
+  matchesProductClass,
+  similarProductClass,
+  widenProductClass,
+  type ProductClass,
+} from '@/lib/cma/product-class'
 
 export type CmaStatusBucket = {
   key: 'selected' | 'active' | 'pending' | 'expired' | 'closed'
@@ -65,9 +71,10 @@ export function marketAreaPriceBand(anchor: number): { lo: number; hi: number } 
   }
 }
 
+/** Beds only. Prefer similarProductClass — beds ± 1 is a city dump. */
 export function similarBedRange(beds: number | null): { lo: number; hi: number } | null {
-  if (beds == null || !Number.isFinite(beds) || beds < 1) return null
-  return { lo: Math.max(1, beds - 1), hi: beds + 1 }
+  const cls = similarProductClass(beds, null)
+  return cls ? { lo: cls.bedsLo, hi: cls.bedsHi } : null
 }
 
 function num(v: unknown): number | null {
@@ -79,9 +86,9 @@ function inBand(price: number | null, lo: number, hi: number): boolean {
   return price != null && price >= lo && price <= hi
 }
 
-function inBeds(beds: number | null, range: { lo: number; hi: number } | null): boolean {
-  if (!range) return true
-  return beds != null && beds >= range.lo && beds <= range.hi
+function inClass(row: CmaMarketAreaRow, cls: ProductClass | null): boolean {
+  if (!cls) return true
+  return matchesProductClass(cls, num(row.BedroomsTotal), num(row.BathroomsTotal))
 }
 
 function rowPrice(row: CmaMarketAreaRow): number | null {
@@ -165,21 +172,27 @@ export function computeMarketArea(input: {
   const anchor = input.pricing.recommended || input.subject.lastListPrice
   const band = marketAreaPriceBand(anchor ?? 0)
   if (!band) return null
-  const beds = similarBedRange(input.subject.beds)
+  const tight = similarProductClass(input.subject.beds, input.subject.baths)
   const subdivision = input.subject.subdivision?.trim() ?? ''
   const since90 = new Date(asOf.getTime() - 90 * 24 * 3600e3).toISOString().slice(0, 10)
 
-  const inPriceAndBeds = (row: CmaMarketAreaRow) =>
-    inBand(rowPrice(row), band.lo, band.hi) && inBeds(num(row.BedroomsTotal), beds)
+  const pick = (cls: ProductClass | null) =>
+    input.rows.filter((row) => inBand(rowPrice(row), band.lo, band.hi) && inClass(row, cls))
 
-  const comparable = input.rows.filter(inPriceAndBeds)
+  let product = tight
+  let comparable = pick(product)
+  const sold90Count = (rows: CmaMarketAreaRow[]) =>
+    rows.filter((r) => r.StandardStatus === 'Closed' && (r.CloseDate ?? '') >= since90).length
+  if (product && sold90Count(comparable) < 3) {
+    product = widenProductClass(product)
+    comparable = pick(product)
+  }
   const subRows = subdivision ? comparable.filter((r) => (r.SubdivisionName ?? '').trim() === subdivision) : []
   const subClosed = subRows.filter((r) => r.StandardStatus === 'Closed')
   const useSub = Boolean(subdivision) && subClosed.length >= 5
   const scoped = useSub ? subRows : comparable
   const grain: CmaMarketArea['grain'] = useSub ? 'subdivision' : 'city-similar'
-  const bedsLabel =
-    beds != null ? `${beds.lo === beds.hi ? beds.lo : `${beds.lo} to ${beds.hi}`} bedroom` : 'similar'
+  const bedsLabel = product?.label ?? 'similar'
   const label = useSub ? `${subdivision}` : `${bedsLabel} homes in ${input.subject.city}`
 
   const live = (status: string) => scoped.filter((r) => r.StandardStatus === status)

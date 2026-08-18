@@ -86,7 +86,7 @@ export function renderCompMapKeyHtml(subject: CmaSubject, comps: readonly CmaAdj
       const time = marketTime(c)
       const money = joinFacts([usd(c.closePrice), ppsf, `adj ${usd(c.adjustedPrice)}`])
       const meta = joinFacts([c.proximity, time])
-      return `<div class="k"><span class="pin">${i + 1}</span><div class="txt"><strong>${esc(c.address)}</strong>${money ? `<br/>${esc(money)}` : ''}${facts ? `<br/>${esc(facts)}` : ''}${meta ? `<br/>${esc(meta)}` : ''}<br/>${esc(why.sentence)}</div></div>`
+      return `<div class="k" data-comp="${i + 1}"><span class="pin">${i + 1}</span><div class="txt"><strong>${esc(c.address)}</strong>${money ? `<br/>${esc(money)}` : ''}${facts ? `<br/>${esc(facts)}` : ''}${meta ? `<br/>${esc(meta)}` : ''}<br/>${esc(why.sentence)}</div></div>`
     }),
   ]
   return `<div class="map-key">${items.join('')}</div>`

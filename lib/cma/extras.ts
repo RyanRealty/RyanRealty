@@ -11,14 +11,37 @@ import {
   getCmaCityClosedSkinny,
   getCmaBandInventory,
   getCmaSubdivisionClosed,
+  findCmaListingsByMlsNumbers,
   type CmaBandListingRow,
   type CmaClosedSkinnyRow,
+  type CmaListingRow,
   type CmaSubdivisionSaleRow,
 } from '@/lib/data/cma/builderReads'
 import { pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaAdjustedComp, CmaSubject, CmaPricing } from '@/lib/cma/types'
 import { getCmaMarketAreaRows } from '@/lib/data/cma/marketAreaReads'
+import { getPricingSubdivisionCells } from '@/lib/data/pricing/facts'
 import { computeMarketArea, type CmaMarketArea } from '@/lib/cma/market-status'
+import { resolveParcelRecord, type ParcelRecord } from '@/lib/cma/parcel-record'
+import { resolvePurchaseMortgageAssumption } from '@/lib/cma/mortgage-assumption'
+import { buildSellerProceeds, type SellerProceeds } from '@/lib/cma/seller-proceeds'
+import { parseOwnerNotes } from '@/lib/cma/owner-notes'
+import {
+  bustZestimate,
+  mergeMlsFacts,
+  mlsFactsFromPricedComps,
+  type ZestimateBust,
+  type ZillowSnapshot,
+  type MlsCompFact,
+} from '@/lib/cma/zestimate-buster'
+import {
+  liveListingToSale,
+  livePassesUsedRungs,
+  liveRivalSearchLabel,
+  tiersFromUsedNames,
+} from '@/lib/pricing/live-rivals'
+import { cmaSubjectToPricing } from '@/lib/pricing/subject'
+import type { PricingSubject, SubdivisionCell } from '@/lib/pricing/match'
 
 export const MONTH_NAMES = [
   'January',
@@ -62,6 +85,8 @@ export interface CmaBandPosition {
   source: string
   /** Named houses in the band. Optional on older rows and listing-plan fixtures. */
   rivals?: CmaBandRival[]
+  /** Same pricing search as the priced set. Absent on older rows. */
+  productLabel?: string | null
 }
 
 export interface CmaSubdivisionPulse {
@@ -96,8 +121,16 @@ export interface CmaExtras {
   subdivisionPulse: CmaSubdivisionPulse | null
   financing: CmaFinancingProfile | null
   photoBench: CmaPhotoBench | null
-  /** Status grid, 90-day sold band, listing trend. Optional on older rows. */
+  /** Status grid and listing trend for admin. Seller HTML does not use the 90-day sold band. */
   marketArea?: CmaMarketArea | null
+  /** County deed chain + permits. Optional on older rows. */
+  parcel?: ParcelRecord | null
+  /** Seller net sheet defaults. Optional on older rows. */
+  proceeds?: SellerProceeds | null
+  /** Zillow's printed number, graded against closed MLS sales. */
+  zillow?: ZestimateBust | null
+  /** Owner-reported work on this house. */
+  ownerNotes?: string[]
 }
 
 function median(values: number[]): number | null {
@@ -195,7 +228,39 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
     photoUrl: row.PhotoURL,
     latitude: row.Latitude,
     longitude: row.Longitude,
+    beds: row.BedroomsTotal ?? null,
+    baths: row.BathroomsTotal ?? null,
   }
+}
+
+function rowToLiveSale(row: CmaBandListingRow, city: string) {
+  const address = rivalAddress(row)
+  const sqft = Number(row.TotalLivingAreaSqFt)
+  const listPrice = Number(row.ListPrice)
+  if (!address || !Number.isFinite(sqft) || sqft < 300 || !Number.isFinite(listPrice) || listPrice <= 0) {
+    return null
+  }
+  return liveListingToSale({
+    listingKey: row.ListingKey,
+    address,
+    city,
+    subdivision: row.SubdivisionName,
+    latitude: row.Latitude,
+    longitude: row.Longitude,
+    beds: row.BedroomsTotal,
+    baths: row.BathroomsTotal,
+    sqft,
+    listPrice,
+    lotAcres: row.lot_size_acres != null ? Number(row.lot_size_acres) : null,
+    yearBuilt: row.year_built != null ? Number(row.year_built) : null,
+    levels: row.levels,
+    propertySubType: row.property_sub_type,
+    water: row.water,
+    sewer: row.sewer,
+    associationYn: row.association_yn,
+    associationFee: row.association_fee ?? row.hoa_monthly,
+    newConstruction: row.new_construction_yn,
+  })
 }
 
 export function computeBandPosition(
@@ -209,22 +274,48 @@ export function computeBandPosition(
   city: string,
   lo: number,
   hi: number,
-  subject?: { latitude: number | null; longitude: number | null } | null,
+  opts?: {
+    subject?: PricingSubject | null
+    tiersUsed?: readonly string[]
+    cells?: Map<string, SubdivisionCell>
+    asOf?: string
+  } | null,
 ): CmaBandPosition | null {
   if (!inv) return null
-  const raw = [
-    ...(inv.activeRows ?? []).map((r) => rowToRival(r, 'Active')),
-    ...(inv.pendingRows ?? []).map((r) => rowToRival(r, 'Pending')),
-  ].filter((r): r is CmaBandRival => r != null)
+  const subject = opts?.subject ?? null
+  const tiers = tiersFromUsedNames(opts?.tiersUsed ?? [])
+  const asOf = (opts?.asOf ?? new Date().toISOString()).slice(0, 10)
+  const cells = opts?.cells ?? new Map()
+  const canFilter = Boolean(subject && tiers.length > 0)
+  let activeRows = inv.activeRows ?? []
+  let pendingRows = inv.pendingRows ?? []
+  if (canFilter && subject) {
+    const keep = (r: CmaBandListingRow) => {
+      const sale = rowToLiveSale(r, city)
+      return sale != null && livePassesUsedRungs(subject, sale, tiers, asOf, cells)
+    }
+    activeRows = activeRows.filter(keep)
+    pendingRows = pendingRows.filter(keep)
+  }
+  const raw = activeRows.map((r) => rowToRival(r, 'Active')).filter((r): r is CmaBandRival => r != null)
+  const asks = canFilter
+    ? activeRows.map((r) => Number(r.ListPrice)).filter((n) => Number.isFinite(n) && n > 0)
+    : inv.activeAsks
+  const doms = canFilter
+    ? activeRows.map((r) => Number(r.DaysOnMarket)).filter((n) => Number.isFinite(n) && n >= 0)
+    : inv.activeDaysOnMarket
+  const productLabel = canFilter ? liveRivalSearchLabel(subject?.subdivision, opts?.tiersUsed ?? []) : null
+  const rungs = canFilter ? `, pricing rungs ${tiers.map((t) => t.name).join(', ')}` : ''
   return {
     lo,
     hi,
-    activeCount: inv.activeAsks.length,
-    pendingCount: inv.pendingCount,
-    activeMedianAsk: median(inv.activeAsks),
-    activeMedianDom: median(inv.activeDaysOnMarket),
+    activeCount: asks.length,
+    pendingCount: canFilter ? pendingRows.length : inv.pendingCount,
+    activeMedianAsk: median(asks),
+    activeMedianDom: median(doms),
     rivals: pickBandRivals(raw, subject),
-    source: `Supabase listings, City='${city}', PropertyType='A', Active + Pending, ListPrice ${lo}..${hi}, pulled at build time`,
+    productLabel,
+    source: `Supabase listings, City='${city}', PropertyType='A', Active${rungs}, pulled at build time`,
   }
 }
 
@@ -273,30 +364,90 @@ function monthsAgoIso(months: number, asOf: Date): string {
  * Orchestrator: pulls the three DAL reads in parallel and computes every
  * block. Never throws — a failed block is a null block (§0: cut, don't guess).
  */
+export function listingToMlsFact(row: CmaListingRow): MlsCompFact {
+  const mlsNumber = String(row.ListNumber ?? '').trim()
+  const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ')
+  return {
+    mlsNumber,
+    address: street,
+    closePrice: row.ClosePrice != null ? Number(row.ClosePrice) : null,
+    closeDate: row.CloseDate != null ? String(row.CloseDate).slice(0, 10) : null,
+    status: String(row.StandardStatus ?? ''),
+    beds: row.BedroomsTotal != null ? Number(row.BedroomsTotal) : null,
+    baths: row.BathroomsTotal != null ? Number(row.BathroomsTotal) : null,
+    sqft: row.TotalLivingAreaSqFt != null ? Number(row.TotalLivingAreaSqFt) : null,
+    yearBuilt: row.year_built != null ? Number(row.year_built) : null,
+    subdivision: row.SubdivisionName != null ? String(row.SubdivisionName) : null,
+  }
+}
+
 export async function buildCmaExtras(args: {
   subject: CmaSubject
   comps: CmaAdjustedComp[]
   pricing: CmaPricing
   subjectPhotosCount: number | null
   asOf?: Date
+  tiersUsed?: readonly string[]
+  zillow?: ZillowSnapshot | null
+  ownerNotes?: readonly string[] | null
+  sellerImprovementsText?: string | null
 }): Promise<CmaExtras> {
   const asOf = args.asOf ?? new Date()
   const since36 = monthsAgoIso(SEASONALITY_MONTHS, asOf)
   const since12 = monthsAgoIso(SUBDIVISION_MONTHS, asOf)
   const lo = Math.round((args.pricing.recommended * (1 - BAND_HALF_WIDTH_PCT)) / 1000) * 1000
   const hi = Math.round((args.pricing.recommended * (1 + BAND_HALF_WIDTH_PCT)) / 1000) * 1000
+  const fetchLo = Math.round((args.pricing.recommended * 0.4) / 1000) * 1000
+  const fetchHi = Math.round((args.pricing.recommended * 2.5) / 1000) * 1000
+  const pricingSubject = cmaSubjectToPricing(args.subject)
+  const sqft = pricingSubject.sqft
   const subdivision = args.subject.subdivision?.trim() ?? ''
 
-  const [skinny, bandInv, subRows, areaRows] = await Promise.all([
+  const zillowMls = (args.zillow?.publishedComps ?? [])
+    .map((c) => c.mlsNumber?.trim())
+    .filter((n): n is string => Boolean(n))
+
+  const [skinny, bandInv, subRows, areaRows, parcel, cells, zillowRows] = await Promise.all([
     getCmaCityClosedSkinny(args.subject.city, since36).catch(() => []),
-    getCmaBandInventory(args.subject.city, lo, hi).catch(() => null),
+    getCmaBandInventory(args.subject.city, fetchLo, fetchHi, {
+      sqftMin: sqft > 0 ? Math.round(sqft * 0.65) : undefined,
+      sqftMax: sqft > 0 ? Math.round(sqft * 1.4) : undefined,
+    }).catch(() => null),
     subdivision ? getCmaSubdivisionClosed(subdivision, since12).catch(() => []) : Promise.resolve([]),
     getCmaMarketAreaRows(args.subject.city, since12).catch(() => []),
+    resolveParcelRecord(args.subject).catch(() => null),
+    getPricingSubdivisionCells(pricingSubject.citySlug).catch(() => new Map()),
+    zillowMls.length > 0 ? findCmaListingsByMlsNumbers(zillowMls).catch(() => []) : Promise.resolve([]),
   ])
+
+  const ownerNotes = parseOwnerNotes(args.sellerImprovementsText, args.ownerNotes)
+  const zillow =
+    args.zillow != null
+      ? bustZestimate({
+          snapshot: args.zillow,
+          mls: mergeMlsFacts(mlsFactsFromPricedComps(args.comps), zillowRows.map(listingToMlsFact)),
+          subject: {
+            beds: args.subject.beds,
+            baths: args.subject.baths,
+            sqft: args.subject.sqft,
+            yearBuilt: args.subject.yearBuilt,
+          },
+          recommended: args.pricing.recommended,
+          conservative: args.pricing.conservative,
+          highEnd: args.pricing.highEnd,
+          asOf: asOf.toISOString().slice(0, 10),
+          ownerNotes,
+        })
+      : null
 
   return {
     seasonality: computeSeasonality(skinny, args.subject.city, since36),
-    band: computeBandPosition(bandInv, args.subject.city, lo, hi, args.subject),
+    band: computeBandPosition(bandInv, args.subject.city, lo, hi, {
+      subject: pricingSubject,
+      tiersUsed: args.tiersUsed ?? [],
+      cells,
+      asOf: asOf.toISOString().slice(0, 10),
+    }),
     subdivisionPulse: subdivision ? computeSubdivisionPulse(subRows, subdivision, SUBDIVISION_MONTHS, since12) : null,
     financing: computeFinancing(skinny, args.subject.city, since12),
     photoBench: computePhotoBench(args.subjectPhotosCount, args.comps),
@@ -306,6 +457,21 @@ export async function buildCmaExtras(args: {
       comps: args.comps,
       pricing: args.pricing,
       asOf,
+    }),
+    parcel,
+    zillow,
+    ownerNotes,
+    proceeds: buildSellerProceeds({
+      pricing: args.pricing,
+      parcel,
+      mortgage:
+        parcel?.acquiredAt != null && parcel.ownedSince
+          ? await resolvePurchaseMortgageAssumption({
+              purchasePrice: parcel.acquiredAt,
+              purchaseDate: parcel.ownedSince,
+              asOf,
+            })
+          : null,
     }),
   }
 }

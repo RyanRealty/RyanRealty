@@ -8,7 +8,8 @@
  * $218 to $414/sqft prices cleanly and wrongly. This module gives one Claude
  * pass the subject + the candidate comp pool and asks it to classify each comp
  * (strong / weak / exclude) with a reason, exactly as SKILL Step 5 + Step 9 +
- * Step 11.5 require. buildCma prices on the vetted set.
+ * Step 11.5 require. The judge may down-weight. It may not shrink a four- or
+ * five-sale search to three unless a sale is a different structure type.
  *
  * SELF-CONSISTENCY (2026-07-30). The auditor's most frequent real catch was the
  * judge applying its own exclusion criteria unevenly (922 Ogden: excluded
@@ -29,6 +30,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
+import { PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import {
   EXCLUSION_BASES,
@@ -51,9 +53,52 @@ const MODEL = 'claude-sonnet-4-5'
 const INPUT_COST_PER_TOKEN = 0.000003
 const OUTPUT_COST_PER_TOKEN = 0.000015
 
-/** Below this many kept comps the deterministic resolver stops pruning —
- *  buildCma's own MIN_COMPS floor would discard the whole judgment anyway. */
-const RESOLVE_KEEP_FLOOR = 3
+/** Band-pruning cannot shrink a filled search. Three is only the floor when
+ *  the search itself did not find five. */
+function resolveKeepFloor(candidateCount: number): number {
+  return Math.min(PRICING_TARGET_COMPS, Math.max(3, candidateCount))
+}
+
+/** Only a different building type is a hard drop. Location, lot, vintage,
+ *  condition, and "different market segment" become weak when we are short. */
+const HARD_EXCLUDE_BASES = new Set<ExclusionBasis>(['structure-type'])
+
+/** Soft excludes cannot shrink a four-sale search to three when five is the target. */
+export function restoreSoftExcludesToTarget(verdicts: CompVerdict[]): string[] {
+  const notes: string[] = []
+  const target = Math.min(PRICING_TARGET_COMPS, verdicts.length)
+  let keptN = verdicts.filter((v) => v.tier !== 'exclude').length
+  if (keptN >= target) return notes
+  for (const v of verdicts) {
+    if (v.tier !== 'exclude') continue
+    if (v.basis && HARD_EXCLUDE_BASES.has(v.basis)) continue
+    v.tier = 'weak'
+    v.reason = `${v.reason.replace(/\s*[.]?\s*$/, '')}. Carried at half weight so the priced set holds the sales the search already found.`
+    notes.push(`${v.listingKey}: restored to weak, under the five-sale target`)
+    keptN++
+    if (keptN >= target) break
+  }
+  return notes
+}
+
+/**
+ * Keys to price on. The judge may down-weight. It may not throw out a sale
+ * the search already found unless that sale is a different structure type.
+ */
+export function pricingKeysFromJudgment(searchKeys: string[], verdicts: CompVerdict[]): string[] {
+  const target = Math.min(PRICING_TARGET_COMPS, searchKeys.length)
+  const hard = new Set(
+    verdicts
+      .filter((v) => v.tier === 'exclude' && v.basis === 'structure-type')
+      .map((v) => v.listingKey),
+  )
+  const withoutHard = searchKeys.filter((k) => !hard.has(k))
+  const kept = verdicts.filter((v) => v.tier !== 'exclude').map((v) => v.listingKey)
+  const keptInSearch = kept.filter((k) => withoutHard.includes(k))
+  if (keptInSearch.length >= target) return keptInSearch.slice(0, PRICING_TARGET_COMPS)
+  const fill = withoutHard.filter((k) => !keptInSearch.includes(k))
+  return [...keptInSearch, ...fill].slice(0, target)
+}
 
 export interface CompJudgment {
   verdicts: CompVerdict[]
@@ -330,6 +375,7 @@ function buildJudgeUserPrompt(
   subject: CmaSubject,
   comps: CmaComp[],
   market: CmaMarketContext | null,
+  ownerNotes: readonly string[] = [],
 ): string {
   const subjectParts = [
     `${subject.streetAddress}, ${subject.city}`,
@@ -350,9 +396,16 @@ function buildJudgeUserPrompt(
     (subject.listingHistoryLine ? `\n  listing history: ${subject.listingHistoryLine}` : '')
 
   // Named explicitly so the narrative cannot quietly assume condition parity.
+  const ownerWork = ownerNotes.map((n) => n.trim()).filter(Boolean)
+  const ownerLine =
+    ownerWork.length > 0
+      ? `OWNER-REPORTED WORK (not MLS remarks, not inspected): ${ownerWork.join('; ')}.`
+      : ''
   const conditionEvidence = subjectRemarks
-    ? 'SUBJECT CONDITION EVIDENCE: the subject remarks above are the ONLY condition evidence on file. Do not claim finish level, renovation status, or quality beyond what they state.'
-    : 'SUBJECT CONDITION EVIDENCE: none. No remarks, photos, or condition fields are on file for the subject. Any claim about its condition, finish level, or quality would be invented. State that the analysis assumes average condition for its vintage and that condition is unverified.'
+    ? `SUBJECT CONDITION EVIDENCE: the subject remarks above are the ONLY MLS condition evidence on file.${ownerLine ? ` ${ownerLine}` : ''} Do not claim finish level, renovation status, or quality beyond what they state.`
+    : ownerLine
+      ? `SUBJECT CONDITION EVIDENCE: no MLS remarks. ${ownerLine} Treat that list as unverified owner report, not as inspected condition.`
+      : 'SUBJECT CONDITION EVIDENCE: none. No remarks, photos, or condition fields are on file for the subject. Any claim about its condition, finish level, or quality would be invented. State that the analysis assumes average condition for its vintage and that condition is unverified.'
 
   const marketLine = market
     ? `Market: ${market.geoLabel}, ${market.marketVerdict}, ${market.monthsOfSupply} months supply, median $${market.medianPpsf ?? '?'}/sqft, ${market.yoyMedianPriceDeltaPct ?? '?'}% YoY.`
@@ -374,11 +427,12 @@ export async function judgeComps(
   subject: CmaSubject,
   comps: CmaComp[],
   market: CmaMarketContext | null,
+  ownerNotes: readonly string[] = [],
 ): Promise<CompJudgment | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey || comps.length === 0) return null
 
-  const user = buildJudgeUserPrompt(subject, comps, market)
+  const user = buildJudgeUserPrompt(subject, comps, market, ownerNotes)
 
   try {
     const client = new Anthropic({ apiKey })
@@ -463,7 +517,8 @@ export async function judgeComps(
     if (check.offendingKeptKeys.length > 0) {
       const keptCount = judged.verdicts.filter((v) => v.tier !== 'exclude').length
       const wouldRemain = keptCount - check.offendingKeptKeys.length
-      if (wouldRemain >= RESOLVE_KEEP_FLOOR) {
+      const keepFloor = resolveKeepFloor(comps.length)
+      if (wouldRemain >= keepFloor) {
         for (const key of check.offendingKeptKeys) {
           const v = judged.verdicts.find((x) => x.listingKey === key)
           if (!v || v.tier === 'exclude' || !byKey.has(key)) continue
@@ -475,7 +530,7 @@ export async function judgeComps(
         }
       } else {
         resolvedByCode.push(
-          `${check.offendingKeptKeys.length} band violation(s) left in place: excluding them would leave fewer than ${RESOLVE_KEEP_FLOOR} comps.`,
+          `${check.offendingKeptKeys.length} band violation(s) left in place: excluding them would leave fewer than ${keepFloor} comps.`,
         )
       }
     }
@@ -531,7 +586,12 @@ export async function judgeComps(
       narrative = `${narrative} ${judged.exclusionRule}`.trim()
     }
 
-    const keptKeys = judged.verdicts.filter((v) => v.tier !== 'exclude').map((v) => v.listingKey)
+    resolvedByCode.push(...restoreSoftExcludesToTarget(judged.verdicts))
+
+    const keptKeys = pricingKeysFromJudgment(
+      comps.map((c) => c.listingKey),
+      judged.verdicts,
+    )
     // Brand-voice sanitize: the model can emit em/en-dashes and semicolons,
     // which are banned in client prose. Numeric ranges become "to"; other
     // dashes become commas; semicolons become periods.

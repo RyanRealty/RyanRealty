@@ -166,20 +166,23 @@ function cellFor(
   return cells.get(`${citySlug}:${subdivisionNorm}`) ?? null
 }
 
-function passesTier(
+export function passesPricingTier(
   subject: PricingSubject,
   sale: PricingSale,
   tier: PricingTier,
   asOf: string,
   cells: Map<string, SubdivisionCell>,
+  opts?: { ignoreCloseTiming?: boolean },
 ): { ok: boolean; miles: number | null } {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
     return { ok: false, miles: null }
   }
-  if (sale.closeDate >= asOf) return { ok: false, miles: null }
-  if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return { ok: false, miles: null }
-  if (monthsBetween(asOf, sale.closeDate) > tier.monthsBack) return { ok: false, miles: null }
+  if (!opts?.ignoreCloseTiming) {
+    if (sale.closeDate >= asOf) return { ok: false, miles: null }
+    if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return { ok: false, miles: null }
+    if (monthsBetween(asOf, sale.closeDate) > tier.monthsBack) return { ok: false, miles: null }
+  }
   if (!tier.ignoreCity && sale.citySlug !== subject.citySlug) return { ok: false, miles: null }
   if (tier.sameSubdivision) {
     if (!subject.subdivisionNorm || sale.subdivisionNorm !== subject.subdivisionNorm) {
@@ -288,7 +291,7 @@ export function walkPricingLadder(
     let added = 0
     for (const sale of pool) {
       if (byKey.has(sale.listingKey)) continue
-      const { ok, miles } = passesTier(subject, sale, tier, asOf, cells)
+      const { ok, miles } = passesPricingTier(subject, sale, tier, asOf, cells)
       if (!ok) continue
       byKey.set(sale.listingKey, {
         ...sale,
@@ -312,7 +315,7 @@ export function walkPricingLadder(
     }
     if (isPricingQualityRung(tier) && byKey.size >= PRICING_QUALITY_STOP) {
       trace.push(
-        `Stopped at ${byKey.size} apples on ${tier.name}. Three tight sales beat a wider mix.`,
+        `Stopped at ${byKey.size} apples on ${tier.name}. Five tight sales fill the set.`,
       )
       break
     }

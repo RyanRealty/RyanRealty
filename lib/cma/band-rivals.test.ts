@@ -16,6 +16,8 @@ function rival(over: Partial<CmaBandRival> = {}): CmaBandRival {
     photoUrl: over.photoUrl ?? null,
     latitude: over.latitude ?? 44.27,
     longitude: over.longitude ?? -121.17,
+    beds: over.beds,
+    baths: over.baths,
   }
 }
 
@@ -28,7 +30,7 @@ describe('rivalAddress', () => {
 })
 
 describe('pickBandRivals', () => {
-  it('keeps eight actives and eight pendings, nearest first', () => {
+  it('keeps eight actives, nearest first, and drops pendings', () => {
     const actives = Array.from({ length: 12 }, (_, i) =>
       rival({
         listingKey: `A${i}`,
@@ -49,7 +51,7 @@ describe('pickBandRivals', () => {
     )
     const picked = pickBandRivals([...actives, ...pendings], { latitude: 44.27, longitude: -121.17 })
     expect(picked.filter((r) => r.status === 'Active')).toHaveLength(8)
-    expect(picked.filter((r) => r.status === 'Pending')).toHaveLength(8)
+    expect(picked.filter((r) => r.status === 'Pending')).toHaveLength(0)
     expect(picked[0]?.address).toBe('100 Active')
   })
 
@@ -73,8 +75,25 @@ describe('renderBandRivalsHtml', () => {
     })
     expect(html).toContain('Who you are competing with at this price')
     expect(html).toContain('123 Heritage')
-    expect(html).toContain('88 Ranch')
+    expect(html).not.toContain('88 Ranch')
     expect(html).toContain('$469,000')
     expect(html).not.toMatch(/Supabase|not the ZIP|confidence/i)
+    expect(html).not.toContain('Under contract')
+  })
+
+  it('names the same pricing search, not a 2-to-4 bedroom dump', () => {
+    const html = renderBandRivalsHtml({
+      city: 'Bend',
+      lo: 400000,
+      hi: 480000,
+      activeCount: 1,
+      pendingCount: 0,
+      productLabel: 'same 2-mile search as the sales that set the number',
+      rivals: [rival({ address: '648 Douglas', listPrice: 438000, beds: 3, baths: 1 })],
+    })
+    expect(html).toContain('same 2-mile search as the sales that set the number')
+    expect(html).toContain('3 bed · 1 bath')
+    expect(html).not.toMatch(/2 to 4 bedroom/)
+    expect(html).not.toMatch(/3-bedroom, 1-bath set/)
   })
 })

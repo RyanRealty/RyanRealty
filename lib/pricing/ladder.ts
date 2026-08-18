@@ -80,6 +80,10 @@ export function pricingTierLadder(): PricingTier[] {
     sub(3),
     sub(6),
     sub(9),
+    // Same subdivision, 13 months, before leaving the street. A matching
+    // floorplan from last August cannot miss because today is two days past
+    // a 12-month fence. 13 months is a year plus the calendar remainder.
+    sub(13),
     // Same street, different floorplan, before the next tract. Hayloft 2500 vs
     // 1927 is 23% — inside 30%, outside the tight 15% band.
     sub(3, 0.3, '-wide'),
@@ -150,8 +154,8 @@ export const PRICING_TARGET_COMPS = 5
 export const PRICING_MIN_COMPS = 3
 /** Never price on more than five apples. Extra comps dilute the median. */
 export const PRICING_MAX_COMPS = 5
-/** Three same-subdivision (or 1-mile strict) sales are enough. Do not open distance. */
-export const PRICING_QUALITY_STOP = 3
+/** Stop opening the search only once five tight sales are in hand. Three is the floor, not the target. */
+export const PRICING_QUALITY_STOP = 5
 /** Tight GLA only. ±30% same-street rungs are a size concession, not a quality stop. */
 export const PRICING_TIGHT_SQFT_BAND = 0.15
 

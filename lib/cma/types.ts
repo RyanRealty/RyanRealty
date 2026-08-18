@@ -8,6 +8,7 @@
  */
 
 import type { CmaMartYearFigure } from '@/lib/cma/market-board-mart'
+import type { ZillowSnapshot } from '@/lib/cma/zestimate-buster'
 
 export interface CmaSubject {
   listingKey: string | null
@@ -219,6 +220,10 @@ export interface CmaBuildInput {
   /** Seller-reported improvements spend (Method 2 value-add input). */
   sellerImprovementsTotal?: number | null
   sellerImprovementsText?: string | null
+  /** One line per owner-reported update. Preferred over a pasted blob. */
+  ownerNotes?: string[] | null
+  /** Zillow snapshot to grade against this list. Omit when we do not have one. */
+  zillow?: ZillowSnapshot | null
   /** Broker-adjusted recommended list price (rebuild path). */
   priceOverride?: number | null
   /**

@@ -131,7 +131,6 @@ export function renderPhotoSetHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps
 export function immersiveMarketChapters(a: MarketChapterArgs): string {
   const area = a.extras?.marketArea
   const status = renderStatusGridHtml(area)
-  const sold90 = renderSold90Html(area)
   const inventory = renderInventoryBoardHtml(a.market)
   const trend = renderListingTrendHtml(area)
   const facts = propertyIntelligenceBlock(a.site)
@@ -144,15 +143,6 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
         <h2 class="h r">${esc(area!.label)}</h2>
         <p class="lede r">The sales we kept, against what is for sale, under contract, expired, and closed. Same product class.</p>
         <div class="r">${status}</div>
-      </div>
-    </section>`)
-  }
-  if (sold90) {
-    parts.push(`<section class="sc sc-navy" id="sold-90">
-      <div class="in">
-        <div class="kick r">Last 90 days</div>
-        <h2 class="h r">What ${esc(area!.sold90!.bedsLabel)} homes sold for</h2>
-        <div class="r">${sold90}</div>
       </div>
     </section>`)
   }
@@ -208,14 +198,6 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
       ${status}`,
     })
   }
-  const sold90 = renderSold90Html(area)
-  if (sold90 && area?.sold90) {
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · 90-day solds`,
-      toc: 'Last 90 days',
-      body: `<h2 class="section">What ${esc(area.sold90.bedsLabel)} homes sold for</h2>${sold90}`,
-    })
-  }
   const inventory = renderInventoryBoardHtml(a.market)
   if (inventory) {
     pages.push({
@@ -243,69 +225,28 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
   return pages
 }
 
-/** Wider market only: 90-day sold, months of supply, new-list trend. */
+/** Wider market: citywide cache only. Not a second sold set. */
 export function immersiveWiderMarketChapters(a: MarketChapterArgs): string {
-  const area = a.extras?.marketArea
-  const sold90 = renderSold90Html(area)
   const inventory = renderInventoryBoardHtml(a.market)
-  const trend = renderListingTrendHtml(area)
-  const parts: string[] = []
-  if (sold90) {
-    parts.push(`<section class="sc sc-navy" id="sold-90">
+  if (!inventory) return ''
+  return `<section class="sc sc-cream" id="wider-market">
       <div class="in">
-        <div class="kick r">Last 90 days</div>
-        <h2 class="h r">What ${esc(area!.sold90!.bedsLabel)} homes sold for</h2>
-        <div class="r">${sold90}</div>
-      </div>
-    </section>`)
-  }
-  if (inventory) {
-    parts.push(`<section class="sc sc-cream" id="inventory">
-      <div class="in">
-        <div class="kick r">${esc(a.market?.geoLabel ?? a.subject.city)}</div>
-        <h2 class="h r">How fast this market is moving</h2>
+        <div class="kick r">The wider market</div>
+        <h2 class="h r">${esc(a.market?.geoLabel ?? a.subject.city)}</h2>
+        <h3 class="sub r">How fast ${esc(a.market?.geoLabel ?? a.subject.city)} is moving</h3>
         <div class="r">${inventory}</div>
       </div>
-    </section>`)
-  }
-  if (trend) {
-    parts.push(`<section class="sc sc-cream tight" id="listing-trend">
-      <div class="in">
-        <div class="kick r">Listings over time</div>
-        <h2 class="h r">New listings and asking prices</h2>
-        <div class="r">${trend}</div>
-      </div>
-    </section>`)
-  }
-  return parts.join('\n')
+    </section>`
 }
 
 export function printWiderMarketPages(a: MarketChapterArgs): CmaPageDef[] {
-  const area = a.extras?.marketArea
-  const pages: CmaPageDef[] = []
-  const sold90 = renderSold90Html(area)
-  if (sold90 && area?.sold90) {
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · 90-day solds`,
-      toc: 'Last 90 days',
-      body: `<h2 class="section">What ${esc(area.sold90.bedsLabel)} homes sold for</h2>${sold90}`,
-    })
-  }
   const inventory = renderInventoryBoardHtml(a.market)
-  if (inventory) {
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · Inventory`,
-      toc: 'How fast this market is moving',
+  if (!inventory) return []
+  return [
+    {
+      meta: `${esc(a.subject.streetAddress)} · Wider market`,
+      toc: 'The wider market',
       body: `<h2 class="section">How fast this market is moving</h2>${inventory}`,
-    })
-  }
-  const trend = renderListingTrendHtml(area)
-  if (trend) {
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · Listing trend`,
-      toc: 'New listings over time',
-      body: `<h2 class="section">New listings and asking prices</h2>${trend}`,
-    })
-  }
-  return pages
+    },
+  ]
 }

@@ -28,22 +28,29 @@ export function expectedSale(p: CmaPricing): number {
   return p.predictedClose != null && p.predictedClose > 0 ? p.predictedClose : p.recommended
 }
 
+/** Close estimate sitting under the list low is a sale-to-list haircut, not a cheaper list. */
+export function closeSitsUnderList(p: CmaPricing): boolean {
+  return p.predictedClose != null && p.predictedClose > 0 && p.predictedClose < p.conservative
+}
+
 export function coverValueBlockHtml(a: CoverArgs): string {
   const p = a.pricing
-  const range = pricingRangeDisplay(p)
   const sale = expectedSale(p)
   const hasClose = p.predictedClose != null && p.predictedClose > 0
-  const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
+  const closeUnder = closeSitsUnderList(p)
+  const leadIsClose = hasClose && !closeUnder
+  const closeLine = closeUnder
+    ? ` Expected sale from that list is ${usd(p.predictedClose!)}. That is the typical close after sale-to-list, not a list below the sales.`
+    : ''
   return `
     <div class="vb-top">
       <div>
-        <div class="vb-label">${hasClose ? 'Expected sale' : 'Recommended list price'}</div>
-        <p class="vb-price">${usd(sale)}</p>
+        <div class="vb-label">${leadIsClose ? 'Expected sale' : 'Recommended list price'}</div>
+        <p class="vb-price">${usd(leadIsClose ? sale : p.recommended)}</p>
       </div>
     </div>
-    <div class="vb-range">${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}. List this home ${usd(p.conservative)} to ${usd(p.highEnd)}. Recommended list ${usd(p.recommended)}.</div>
-    ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
-    <div class="vb-detail">${esc(whyThisListPrice(a).coverSentence)} ${a.comps.length} closed MLS sales, each adjusted for when it sold and how its size compares to yours. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}.` : ''} ${esc(story.body)}</div>`
+    <div class="vb-range">List this home ${usd(p.conservative)} to ${usd(p.highEnd)}. Recommended list ${usd(p.recommended)}.${closeLine}</div>
+`
 }
 
 export function immersiveAnswerHtml(a: CoverArgs): string {
@@ -51,12 +58,17 @@ export function immersiveAnswerHtml(a: CoverArgs): string {
   const range = pricingRangeDisplay(p)
   const sale = expectedSale(p)
   const hasClose = p.predictedClose != null && p.predictedClose > 0
+  const closeUnder = closeSitsUnderList(p)
+  const leadIsClose = hasClose && !closeUnder
   const evLo = p.conservative
   const evHi = p.highEnd
   const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
+  const closeLine = closeUnder
+    ? ` Expected sale from that list is ${usd(p.predictedClose!)}. That is the typical close after sale-to-list, not a list below the sales.`
+    : ''
   return `
-    <div class="ans-l r">${hasClose ? 'Expected sale' : 'Recommended list price'}</div>
-    <div class="ans-n r" data-count>${usd(sale)}</div>
+    <div class="ans-l r">${leadIsClose ? 'Expected sale' : 'Recommended list price'}</div>
+    <div class="ans-n r" data-count>${usd(leadIsClose ? sale : p.recommended)}</div>
     <div class="range r">
       <div class="range-track"><div class="range-fill" style="--w:100%"></div></div>
       <div class="range-marks">
@@ -65,5 +77,6 @@ export function immersiveAnswerHtml(a: CoverArgs): string {
         <div class="rm" style="text-align:right"><div class="rm-v">${usd(p.highEnd)}</div><div class="rm-l">List high</div></div>
       </div>
     </div>
-    <p class="body r">${esc(whyThisListPrice(a).coverSentence)} List this home from ${usd(evLo)} to ${usd(evHi)}${range.outOfRange ? `. The comp-supported range is ${usd(p.valueLow)} to ${usd(p.valueHigh)}` : ''}${p.convergenceSpreadPct != null ? `. The pricing checks land within ${dec(p.convergenceSpreadPct, 1)}% of each other` : ''}.${range.note ? ` ${esc(range.note)}` : ''} ${esc(story.body)}</p>`
+    <p class="body r">${esc(whyThisListPrice(a).coverSentence)} List this home from ${usd(evLo)} to ${usd(evHi)}${range.outOfRange ? `. The comp-supported range is ${usd(p.valueLow)} to ${usd(p.valueHigh)}` : ''}${p.convergenceSpreadPct != null ? `. The pricing checks land within ${dec(p.convergenceSpreadPct, 1)}% of each other` : ''}.${range.note ? ` ${esc(range.note)}` : ''}${closeLine} ${esc(story.body)}</p>
+`
 }

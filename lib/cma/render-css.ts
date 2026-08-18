@@ -64,24 +64,35 @@ export function cmaStylesheet(siteUrl: string): string {
   .page:first-child { break-before: auto; page-break-before: auto; }
 
   @media screen {
-    /* Screen only: show sheets on a desk. Print takes its box from @page. */
+    /* Screen only: show sheets on a desk. Print takes its box from @page.
+       Do not force 11in — short chapters were empty cream. */
     .page {
       width: 8.5in;
-      min-height: 11in;
-      margin: 0.4in auto;
-      padding: 0.4in 0.6in 0.7in 0.6in;
+      min-height: 0;
+      margin: 0.28in auto;
+      padding: 0.28in 0.48in 0.36in 0.48in;
       box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
     }
   }
 
   @media screen and (max-width: 700px) {
-    html, body { background: var(--cream); }
+    html, body { background: var(--cream); overflow-x: clip; }
     .page {
       width: 100%;
       min-height: 0;
       margin: 0;
       padding: 20px 16px 32px;
       box-shadow: none;
+    }
+    .stat-strip, .stat-strip.is-3, .stat-strip.is-4, .tier-grid, .tier-grid.is-2,
+    .signature-page, .map-key, .comp-strip {
+      grid-template-columns: 1fr;
+    }
+    .flyer-stats, .flyer-features { grid-template-columns: repeat(2, 1fr); }
+    .comp-row { grid-template-columns: 1fr; }
+    .signature-page { gap: 16px; }
+    .chart-caption, .vb-range, .vb-detail, table.comps-adjust td.num, table.comps-adjust th.v {
+      white-space: normal;
     }
   }
 
@@ -282,7 +293,7 @@ export function cmaStylesheet(siteUrl: string): string {
   table.comps thead th {
     text-align: left;
     font-weight: 600;
-    font-size: 8.5px;
+    font-size: 10px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--navy);
@@ -311,7 +322,7 @@ export function cmaStylesheet(siteUrl: string): string {
     border: 1px solid var(--navy-line);
     border-radius: 0;
     overflow: hidden;
-    background: white;
+    background: var(--cream);
   }
   .comp-card .ph-wrap { position: relative; }
   .comp-card .ph {
@@ -405,11 +416,12 @@ export function cmaStylesheet(siteUrl: string): string {
     gap: 10px;
     margin-top: 14px;
   }
+  .tier-grid.is-2 { grid-template-columns: repeat(2, 1fr); }
   .tier {
     border: 1px solid var(--navy-line);
     border-radius: 10px;
     padding: 16px 14px;
-    background: white;
+    background: var(--cream);
   }
   .tier.featured { background: var(--navy); color: var(--cream); border-color: var(--navy); }
   .tier .t-lbl {
@@ -494,7 +506,7 @@ export function cmaStylesheet(siteUrl: string): string {
 
   .trace {
     background: var(--navy-fill);
-    border-left: 3px solid var(--navy);
+    border: 1px solid var(--navy-line);
     padding: 12px 14px;
     margin-top: 14px;
     font-size: 9.5px;
@@ -516,8 +528,8 @@ export function cmaStylesheet(siteUrl: string): string {
     border-radius: 3px;
   }
 
-  .note-list { margin: 5px 0 8px 16px; padding: 0; }
-  .note-list li { font-size: 10.5px; line-height: 1.4; margin-bottom: 3px; }
+  .note-list { margin: 10px 0 12px 18px; padding: 0; }
+  .note-list li { font-size: 11px; line-height: 1.5; margin-bottom: 7px; }
 
   /* The page box now comes from @page in the contract at the top of this
      stylesheet (CMA_MARGIN_IN: 0.4in top for the in-body section header, 0.7in
@@ -532,7 +544,7 @@ export function cmaStylesheet(siteUrl: string): string {
      web view is the same document without them. */
   @media screen {
     .pg-header, .pg-footer { display: none; }
-    ol.toc li .p { display: none; }
+    ol.toc li .p { display: inline; }
   }
 
   @media print {
@@ -545,6 +557,7 @@ export function cmaStylesheet(siteUrl: string): string {
       min-height: 9.9in;
       padding: 0;
     }
+    .page.is-short { min-height: 0; }
     /* NO height, NO max-height, NO overflow:hidden — all three delete content.
        A clipped row is never drawn, so it leaves no trace in the PDF for any
        downstream check to find. That is how 77 CMAs in the library were losing

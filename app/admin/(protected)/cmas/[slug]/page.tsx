@@ -116,6 +116,9 @@ export default async function AdminCmaReviewPage({
   // own words rather than summarised into a flag.
   const concerns = cmaPublishConcerns(row)
 
+  const extras = (row.render_args as { extras?: { parcel?: { agentNotes?: string[] } } } | null)?.extras
+  const agentNotes = extras?.parcel?.agentNotes?.filter((n) => n.trim()) ?? []
+
   const previewSrc = hasStoredHtml || Boolean(row.render_args)
     ? brokerCmaViewHref(safeSlug)
     : isLegacyFile
@@ -224,6 +227,17 @@ export default async function AdminCmaReviewPage({
         blockers={blockers}
         concerns={concerns}
       />
+
+      {agentNotes.length > 0 ? (
+        <>
+          <SectionHead>Notes for the listing agent</SectionHead>
+          <ul style={{ margin: '0 0 18px', paddingLeft: 18, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-1)' }}>
+            {agentNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
 
       <SectionHead>Document preview</SectionHead>
       {previewSrc ? (

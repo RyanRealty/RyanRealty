@@ -16,7 +16,9 @@ export function canBrokerReviewCma(opts: {
   return isCmaClientReady(opts.status)
 }
 
-/** Admin iframe + Open report. Does not depend on the public /cma gate. */
+/** Admin iframe + Open report. Print HTML is the seller document of record.
+ *  Live immersive can drift (production still rendered the marketing pitch
+ *  from render_args). `print=1` serves the stored spine. */
 export function brokerCmaViewHref(slug: string): string {
-  return `/admin/cmas/${slug.trim().toLowerCase()}/view`
+  return `/admin/cmas/${slug.trim().toLowerCase()}/view?print=1`
 }

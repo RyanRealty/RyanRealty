@@ -43,6 +43,7 @@ export type LinePlot = {
   xEnd: string
   vbW: number
   vbH: number
+  pad: { l: number; r: number; t: number; b: number }
 }
 
 export type BarRect = {
@@ -107,7 +108,10 @@ export function linePath(points: readonly PlottedPoint[]): string {
 }
 
 /** Straight segments. The line lifts across a gap. No spline. */
-export function buildLinePlot(series: readonly PlotSeriesIn[]): LinePlot | null {
+export function buildLinePlot(
+  series: readonly PlotSeriesIn[],
+  opts?: { pad?: Partial<typeof PAD> },
+): LinePlot | null {
   const useAt = series.some((s) => s.points.some((p) => p.at != null && isFiniteNumber(p.at)))
 
   const finite: { point: PlotPointIn; order: number }[] = []
@@ -160,11 +164,12 @@ export function buildLinePlot(series: readonly PlotSeriesIn[]): LinePlot | null 
   const y1 = yMax + yPad
   const yRange = y1 - y0 || 1
   const xSpan = xMax - xMin || 1
-  const plotW = VB_W - PAD.l - PAD.r
-  const plotH = VB_H - PAD.t - PAD.b
+  const pad = { ...PAD, ...opts?.pad }
+  const plotW = VB_W - pad.l - pad.r
+  const plotH = VB_H - pad.t - pad.b
 
-  const xOf = (xKey: number) => PAD.l + ((xKey - xMin) / xSpan) * plotW
-  const yOf = (value: number) => PAD.t + (1 - (value - y0) / yRange) * plotH
+  const xOf = (xKey: number) => pad.l + ((xKey - xMin) / xSpan) * plotW
+  const yOf = (value: number) => pad.t + (1 - (value - y0) / yRange) * plotH
 
   const lines: LinePlot['lines'] = []
   series.forEach((s) => {
@@ -198,6 +203,7 @@ export function buildLinePlot(series: readonly PlotSeriesIn[]): LinePlot | null 
     xEnd,
     vbW: VB_W,
     vbH: VB_H,
+    pad,
   }
 }
 

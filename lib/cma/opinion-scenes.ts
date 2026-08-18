@@ -9,6 +9,10 @@ import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { compsPriceChartSvg } from '@/lib/cma/comps-price-chart'
 import { whyThisListPrice } from '@/lib/cma/client-facing'
 import { immersiveWiderMarketChapters } from '@/lib/cma/market-area-chapters'
+import { renderParcelRecordScene } from '@/lib/cma/parcel-record'
+import { renderOwnerNotesSceneHtml } from '@/lib/cma/owner-notes'
+import { buildSellerProceeds, renderSellerProceedsSceneHtml } from '@/lib/cma/seller-proceeds'
+import { renderZestimateBustSceneHtml } from '@/lib/cma/zestimate-buster'
 import { dateLong, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
@@ -67,6 +71,7 @@ function competitionScene(a: OpinionSceneArgs): string {
     activeCount: b.activeCount,
     pendingCount: b.pendingCount,
     rivals: b.rivals ?? [],
+    productLabel: b.productLabel,
   })
 }
 
@@ -76,7 +81,7 @@ function salesScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream" id="evidence">
     <div class="in wide">
       <div class="kick r">The sales that set it</div>
-      <h2 class="h r">The three sales that set the number</h2>
+      <h2 class="h r">The sales that set the number</h2>
       <p class="lede r">Tap a house. The pin lights up.</p>
       ${pinMap ? `<div class="pin-map-wrap r">${pinMap}</div>` : ''}
       <div class="r">${renderCompStripHtml(a.comps)}</div>
@@ -133,7 +138,7 @@ function subdivisionScene(a: OpinionSceneArgs): string {
       <div class="kick r">This subdivision</div>
       <h2 class="h r">${esc(f.name)}</h2>
       ${a.mapDataUri ? `<img class="map-img is-plat r" src="${a.mapDataUri}" alt="${esc(f.name)}"/>` : ''}
-      <p class="lede r">${int(f.totalSales)} homes have sold in ${esc(f.name)}.</p>
+      <p class="lede r">${int(f.totalSales)} homes have sold on this street. This is the street, not the sales that set the number.</p>
       ${sections ? `<div class="sty-grid">${sections}</div>` : ''}
       <div class="yr r" role="img" aria-label="Median close price by year in ${esc(f.name)}">${yearBars}</div>
       ${notable ? `<h3 class="sub r">The most recent sales</h3><div class="nb-grid">${notable}</div>` : ''}
@@ -200,9 +205,15 @@ function nextScene(a: OpinionSceneArgs): string {
 export function assembleOpinionScenes(a: OpinionSceneArgs): string {
   return [
     whyScene(a),
+    renderZestimateBustSceneHtml(a.extras?.zillow),
     competitionScene(a),
     salesScene(a),
     subdivisionScene(a),
+    renderParcelRecordScene(a.extras?.parcel),
+    renderOwnerNotesSceneHtml(a.extras?.ownerNotes ?? []),
+    renderSellerProceedsSceneHtml(
+      a.extras?.proceeds ?? buildSellerProceeds({ pricing: a.pricing, parcel: a.extras?.parcel }),
+    ),
     immersiveWiderMarketChapters(a),
     expiredScene(a),
     nextScene(a),

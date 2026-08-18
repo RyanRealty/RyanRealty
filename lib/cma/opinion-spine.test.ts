@@ -157,6 +157,43 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
       financing: null,
       photoBench: null,
       marketArea: null,
+      zillow: {
+        zestimate: 474100,
+        rangeLow: 450000,
+        rangeHigh: 498000,
+        ourList: 475000,
+        gapToList: -900,
+        stickerMean: 472300,
+        grades: [],
+        usableCount: 2,
+        dirtyCount: 0,
+        verdict: 'supports' as const,
+        heading: "Zillow's number sits in this range",
+        lede: 'Zillow prints $474,100. The list on this report is $475,000.',
+        reasons: ['Two of the houses they showed are closed sales that match this home.'],
+        source: 'Zillow home details page, 2026-08-17. Each printed sale checked against Oregon Datashare MLS.',
+        url: 'https://www.zillow.com/homedetails/test/1_zpid/',
+        fetchedAt: '2026-08-17',
+      },
+      ownerNotes: ['Interior and exterior repainted', 'Bathroom remodel'],
+      parcel: {
+        taxAccount: '129007',
+        currentOwner: 'JONES, PAT',
+        ownedSince: '2021-07-29',
+        acquiredAt: 445000,
+        sales: [
+          {
+            date: '2021-07-29',
+            seller: 'SMITH, ANN',
+            buyer: 'JONES, PAT',
+            amount: 445000,
+            instrument: '2021-123',
+          },
+        ],
+        permits: [{ type: 'Building', permit: '247-B12345' }],
+        source: 'Deschutes County DIAL account 129007',
+        agentNotes: ['Owner of record: JONES, PAT.'],
+      },
     },
     subdivisionStory: {
       facts: {
@@ -190,21 +227,36 @@ describe('print CMA price-opinion spine', () => {
     expect(html).toContain('Expected sale')
     expect(html).toContain('Who you are competing with at this price')
     expect(html).toContain('123 Heritage')
-    expect(html).toContain('The three sales that set the number')
+    expect(html).toContain('The sales that set the number')
     expect(html).toContain('12 Pine')
     expect(html).toContain('data-comp="1"')
     expect(html).toContain('Heritage Ranch')
+    expect(html).toContain('What Zillow says')
+    expect(html).toContain('Zillow&#39;s number sits in this range')
+    expect(html).toContain('Who has owned this house')
+    expect(html).toContain('What you have done to this house')
+    expect(html).toContain('Interior and exterior repainted')
+    expect(html).toContain('What you would net')
+    expect(html).toContain('247-B12345')
     expect(html).not.toMatch(BANNED)
     const priceAt = html.indexOf('$465,000')
     const whyAt = html.indexOf('Why $')
+    const zillowAt = html.indexOf('What Zillow says')
     const rivalAt = html.indexOf('Who you are competing with at this price')
-    const salesAt = html.indexOf('The three sales that set the number')
+    const salesAt = html.indexOf('The sales that set the number')
     const subAt = html.indexOf('This subdivision, Heritage Ranch')
+    const ownAt = html.indexOf('Who has owned this house')
+    const notesAt = html.indexOf('What you have done to this house')
+    const netAt = html.indexOf('What you would net')
     expect(priceAt).toBeGreaterThan(0)
     expect(whyAt).toBeGreaterThan(priceAt)
-    expect(rivalAt).toBeGreaterThan(whyAt)
+    expect(zillowAt).toBeGreaterThan(whyAt)
+    expect(rivalAt).toBeGreaterThan(zillowAt)
     expect(salesAt).toBeGreaterThan(rivalAt)
     expect(subAt).toBeGreaterThan(salesAt)
+    expect(ownAt).toBeGreaterThan(subAt)
+    expect(notesAt).toBeGreaterThan(ownAt)
+    expect(netAt).toBeGreaterThan(notesAt)
   })
 })
 
@@ -214,12 +266,17 @@ describe('immersive CMA price-opinion spine', () => {
     expect(html).toContain('Price opinion · 850 Quince')
     expect(html).toContain('$465,000')
     expect(html).toContain('id="why-this-price"')
+    expect(html).toContain('id="zillow"')
+    expect(html).toContain('id="owner-notes"')
     expect(html).toContain('id="competition"')
     expect(html).toContain('123 Heritage')
     expect(html).toContain('id="evidence"')
     expect(html).toContain('data-comp="1"')
     expect(html).toContain('data-pin="1"')
     expect(html).toContain('id="your-street"')
+    expect(html).toContain('id="ownership"')
+    expect(html).toContain('id="net"')
+    expect(html).toContain('id="proceeds-seed"')
     expect(html).not.toMatch(BANNED)
     expect(html).not.toContain('id="how-we-would-market"')
     expect(html).not.toContain('id="status-grid"')

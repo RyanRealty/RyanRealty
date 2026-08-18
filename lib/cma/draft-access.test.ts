@@ -22,7 +22,7 @@ describe('CMA draft review access', () => {
 
   it('sends broker review through the admin view, not the public slug', () => {
     expect(brokerCmaViewHref('cma-850-quince-redmond-97756')).toBe(
-      '/admin/cmas/cma-850-quince-redmond-97756/view',
+      '/admin/cmas/cma-850-quince-redmond-97756/view?print=1',
     )
   })
 })

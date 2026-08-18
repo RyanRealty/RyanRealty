@@ -18,6 +18,8 @@ export type CmaBandRival = {
   photoUrl: string | null
   latitude: number | null
   longitude: number | null
+  beds?: number | null
+  baths?: number | null
 }
 
 export type BandStreetRow = {
@@ -55,9 +57,7 @@ export function pickBandRivals(
     slat != null && slng != null && Number.isFinite(slat) && Number.isFinite(slng)
       ? [...named].sort((a, b) => dist2(a, slat, slng) - dist2(b, slat, slng))
       : [...named]
-  const actives = ranked.filter((r) => r.status === 'Active').slice(0, cap)
-  const pendings = ranked.filter((r) => r.status === 'Pending').slice(0, cap)
-  return [...actives, ...pendings]
+  return ranked.filter((r) => r.status === 'Active').slice(0, cap)
 }
 
 function rivalCard(r: CmaBandRival): string {
@@ -67,14 +67,40 @@ function rivalCard(r: CmaBandRival): string {
     : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
   const days =
     r.daysOnMarket != null && r.daysOnMarket >= 0 ? `${int(r.daysOnMarket)} days on market` : null
+  const rooms = [
+    r.beds != null && r.beds > 0 ? `${int(r.beds)} bed` : null,
+    r.baths != null && r.baths > 0 ? `${r.baths} bath` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  const meta = [rooms, days].filter(Boolean).join(' · ')
   return `<article class="rival-card">
     ${img}
     <div class="rival-body">
       <div class="rival-addr">${esc(r.address)}</div>
       <div class="rival-ask">${usd(r.listPrice)}</div>
-      ${days ? `<div class="rival-meta">${esc(days)}</div>` : ''}
+      ${meta ? `<div class="rival-meta">${esc(meta)}</div>` : ''}
     </div>
   </article>`
+}
+
+function rivalLead(input: {
+  activeCount: number
+  productLabel?: string | null
+  hasNamedActives: boolean
+}): string {
+  const cls = input.productLabel?.trim()
+  const noun = input.activeCount === 1 ? 'home' : 'homes'
+  const set = cls ? ` in the ${cls}` : ''
+  if (input.activeCount === 0) {
+    return cls
+      ? `No homes for sale right now in the ${cls}.`
+      : 'No homes for sale right now in the same search as the sales that set the number.'
+  }
+  if (input.hasNamedActives) {
+    return `${int(input.activeCount)} ${noun} for sale${set}.`
+  }
+  return `${int(input.activeCount)} ${noun} for sale${set}.`
 }
 
 export function renderBandRivalsHtml(input: {
@@ -84,30 +110,21 @@ export function renderBandRivalsHtml(input: {
   activeCount: number
   pendingCount: number
   rivals: readonly CmaBandRival[]
+  productLabel?: string | null
 }): string {
   const actives = input.rivals.filter((r) => r.status === 'Active')
-  const pendings = input.rivals.filter((r) => r.status === 'Pending')
   const activeCards = actives.map(rivalCard).join('')
-  const pendingCards = pendings.map(rivalCard).join('')
-  const activeLead =
-    actives.length > 0
-      ? `${int(input.activeCount)} home${input.activeCount === 1 ? '' : 's'} for sale between ${usd(input.lo)} and ${usd(input.hi)}.`
-      : `${int(input.activeCount)} home${input.activeCount === 1 ? '' : 's'} for sale in that band.`
-  const pendingLead =
-    input.pendingCount > 0
-      ? `${int(input.pendingCount)} under contract in the same band.`
-      : 'None under contract in this band right now.'
+  const activeLead = rivalLead({
+    activeCount: input.activeCount,
+    productLabel: input.productLabel,
+    hasNamedActives: actives.length > 0,
+  })
   return `
   <h2 class="section">Who you are competing with at this price</h2>
-  <p>${esc(activeLead)} ${esc(pendingLead)}</p>
+  <p>${esc(activeLead)}</p>
   ${
     actives.length > 0
       ? `<h3 class="subhead">For sale now</h3><div class="rival-grid">${activeCards}</div>`
-      : ''
-  }
-  ${
-    pendings.length > 0
-      ? `<h3 class="subhead">Under contract</h3><div class="rival-grid">${pendingCards}</div>`
       : ''
   }`
 }
@@ -119,22 +136,27 @@ export function renderBandRivalsSceneHtml(input: {
   activeCount: number
   pendingCount: number
   rivals: readonly CmaBandRival[]
+  productLabel?: string | null
 }): string {
   const actives = input.rivals.filter((r) => r.status === 'Active')
-  const pendings = input.rivals.filter((r) => r.status === 'Pending')
   const cards = (rows: readonly CmaBandRival[]) => rows.map(rivalCard).join('')
+  const cls = input.productLabel?.trim()
   const headline =
     actives.length > 0
-      ? `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}`
+      ? `${int(input.activeCount)} ${input.activeCount === 1 ? 'home is' : 'homes are'} for sale in the same search`
       : `Who you are competing with at this price`
+  const lede = rivalLead({
+    activeCount: input.activeCount,
+    productLabel: cls,
+    hasNamedActives: actives.length > 0,
+  })
   return `
   <section class="sc sc-navy" id="competition">
     <div class="in wide">
       <div class="kick r">At this price</div>
       <h2 class="h r">${esc(headline)}</h2>
-      <p class="lede r">${int(input.pendingCount)} under contract in the same band.</p>
+      <p class="lede r">${esc(lede)}</p>
       ${actives.length ? `<h3 class="sub r">For sale now</h3><div class="rival-grid r">${cards(actives)}</div>` : ''}
-      ${pendings.length ? `<h3 class="sub r">Under contract</h3><div class="rival-grid r">${cards(pendings)}</div>` : ''}
     </div>
   </section>`
 }

@@ -6,17 +6,7 @@
 import { isRuralAcreage } from '@/lib/cma/comp-tiers'
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import type { CmaSubject } from '@/lib/cma/types'
-import {
-  classifyHoa,
-  classifyLot,
-  classifyProduct,
-  classifySewer,
-  classifyStory,
-  classifyWater,
-  citySlug,
-  normSubdivision,
-  type StoryClass,
-} from '@/lib/pricing/classes'
+import { cmaSubjectToPricing } from '@/lib/pricing/subject'
 import {
   countSalePricingFacts,
   getListingWaterSource,
@@ -29,40 +19,11 @@ import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
 import { emptyExclusions } from '@/lib/cma/comp-trace'
 import { PRICING_MIN_COMPS, PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
-import { walkPricingLadder, type PricingMatchResult, type PricingSubject } from '@/lib/pricing/match'
+import { walkPricingLadder, type PricingMatchResult } from '@/lib/pricing/match'
 import type { CmaMarketContext, CmaPricing } from '@/lib/cma/types'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 
-export function cmaSubjectToPricing(
-  subject: CmaSubject,
-  extras: { waterRaw?: unknown; sewerRaw?: unknown; levelsRaw?: unknown; storyClass?: StoryClass } = {},
-): PricingSubject {
-  const area = resolveMarketArea(subject.latitude, subject.longitude)
-  return {
-    listingKey: subject.listingKey,
-    streetAddress: subject.streetAddress,
-    city: subject.city,
-    citySlug: citySlug(subject.city),
-    subdivision: subject.subdivision,
-    subdivisionNorm: normSubdivision(subject.subdivision),
-    latitude: subject.latitude,
-    longitude: subject.longitude,
-    beds: subject.beds,
-    baths: subject.baths,
-    sqft: subject.sqft ?? 0,
-    lotAcres: subject.lotAcres,
-    yearBuilt: subject.yearBuilt,
-    storyClass: extras.storyClass ?? classifyStory(extras.levelsRaw ?? subject.levelsRaw, null),
-    productClass: classifyProduct(subject.propertySubType),
-    waterClass: classifyWater(extras.waterRaw ?? subject.waterRaw),
-    sewerClass: classifySewer(extras.sewerRaw ?? subject.sewerRaw),
-    hoaClass: classifyHoa(subject.associationYn ?? null, subject.associationFee ?? subject.hoaMonthly ?? null),
-    lotClass: classifyLot(subject.lotAcres),
-    ruralAcreage: isRuralAcreage(subject, area),
-    marketArea: area,
-    newConstruction: subject.newConstructionYn ?? null,
-  }
-}
+export { cmaSubjectToPricing } from '@/lib/pricing/subject'
 
 export async function selectPricingComps(
   subject: CmaSubject,

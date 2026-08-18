@@ -81,8 +81,9 @@ interface PageDef {
 }
 
 function wrapPage(page: PageDef): string {
+  const tight = page.toc === 'What you have done to this house'
   return `
-<section class="page">
+<section class="page${tight ? ' is-short' : ''}">
   <header class="pg-header">
     <img src="${SITE_URL}/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
     <div class="pg-meta">${page.meta}</div>
@@ -112,8 +113,8 @@ function subjectStatStrip(subject: CmaSubject): string {
     <div class="stat"><div class="lbl">Living Sqft</div><div class="val">${int(subject.sqft)}</div></div>
     <div class="stat"><div class="lbl">Lot</div><div class="val">${subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} ac` : '—'}</div></div>
     <div class="stat"><div class="lbl">Year Built</div><div class="val">${subject.yearBuilt ?? '—'}</div></div>
-    ${view ? `<div class="stat"><div class="lbl">View</div><div class="val">${esc(view)}</div></div>` : ''}
-  </div>`
+  </div>
+  ${view ? `<p class="small">View: ${esc(view)}</p>` : ''}`
 }
 
 function coverPage(a: RenderCmaArgs): PageDef {
@@ -133,7 +134,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
   </div>
   ${subjectStatStrip(a.subject)}
   <div class="presented-by">
-    Presented by <strong>${esc(a.broker.displayName)}</strong> · ${esc(a.broker.title)} · Ryan Realty${a.broker.phone ? ` · ${esc(a.broker.phone)}` : ''}
+    Presented by <strong>${esc(a.broker.displayName)}</strong> · ${esc(a.broker.title)} · Ryan Realty${a.broker.phone ? ` · ${esc(dottedPhone(a.broker.phone) ?? a.broker.phone)}` : ''}
   </div>`,
   }
 }

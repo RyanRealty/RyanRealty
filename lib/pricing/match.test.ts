@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
+import { passesPricingTier, walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
+import { pricingTierLadder } from '@/lib/pricing/ladder'
 
 function subject(over: Partial<PricingSubject> = {}): PricingSubject {
   return {
@@ -101,6 +102,23 @@ describe('walkPricingLadder', () => {
     const out = walkPricingLadder(subject(), pool, { asOf })
     expect(out.comps.map((c) => c.listingKey)).toContain('OLDER')
     expect(out.tiersUsed[0]).toBe('subdivision-6mo')
+  })
+
+  it('keeps a same-subdivision sale from 12 months ago before opening distance', () => {
+    const yearAgo = '2026-08-17'
+    const pool = [
+      sale({ listingKey: 'YEAR', closeDate: '2025-08-15', address: '10 Kenwood' }),
+      sale({
+        listingKey: 'NEAR_OTHER',
+        closeDate: '2026-07-01',
+        subdivision: 'Aubrey',
+        subdivisionNorm: 'aubrey',
+        address: '2 Aubrey',
+      }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf: yearAgo })
+    expect(out.comps.map((c) => c.listingKey)).toContain('YEAR')
+    expect(out.tiersUsed).toContain('subdivision-13mo')
   })
 
   it('never mixes a well house with city water when both are known', () => {
@@ -270,7 +288,7 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).toContain('RURAL')
   })
 
-  it('stops at three same-subdivision apples and does not dilute with a 1-mile sale', () => {
+  it('keeps walking toward five when only three same-subdivision apples exist', () => {
     const pool = [
       sale({ listingKey: 'A', closeDate: '2026-07-01', address: '10 Kenwood' }),
       sale({ listingKey: 'B', closeDate: '2026-06-20', address: '11 Kenwood' }),
@@ -283,11 +301,13 @@ describe('walkPricingLadder', () => {
         address: '2 Aubrey',
         latitude: 44.07,
         longitude: -121.33,
+        marketArea: 'test-area',
       }),
     ]
-    const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C'])
-    expect(out.tiersUsed).toEqual(['subdivision-3mo'])
+    const out = walkPricingLadder(subject({ marketArea: 'test-area' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(expect.arrayContaining(['A', 'B', 'C', 'FAR']))
+    expect(out.comps).toHaveLength(4)
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(true)
   })
 
   it('does not treat three wide-GLA same-subdivision sales as a quality stop', () => {
@@ -385,5 +405,49 @@ describe('walkPricingLadder', () => {
       { asOf },
     )
     expect(out.comps.map((c) => c.listingKey)).not.toContain('HWY20')
+  })
+})
+
+describe('passesPricingTier live actives', () => {
+  const sub3 = pricingTierLadder().find((t) => t.name === 'subdivision-3mo')!
+  const nearby2 = pricingTierLadder().find((t) => t.name === 'nearby-2mi-3mo')!
+
+  it('keeps a current listing that matches GLA even with no close date', () => {
+    const live = sale({
+      listingKey: 'LIVE',
+      address: '20 Pine',
+      closeDate: '1970-01-01',
+      closePrice: 449000,
+      lastAsk: 449000,
+    })
+    const closed = passesPricingTier(subject(), live, sub3, asOf, new Map())
+    expect(closed.ok).toBe(false)
+    const open = passesPricingTier(subject(), live, sub3, asOf, new Map(), { ignoreCloseTiming: true })
+    expect(open.ok).toBe(true)
+  })
+
+  it('still drops a house outside the rung GLA or mile cap', () => {
+    const far = sale({
+      listingKey: 'FAR',
+      address: '1 Distant',
+      subdivision: 'Other',
+      subdivisionNorm: 'other',
+      latitude: 44.12,
+      longitude: -121.26,
+      marketArea: 'other-area',
+      closeDate: '1970-01-01',
+    })
+    const big = sale({
+      listingKey: 'BIG',
+      address: '2 Huge',
+      sqft: 3200,
+      closeDate: '1970-01-01',
+    })
+    expect(
+      passesPricingTier(subject({ marketArea: 'test-area' }), far, nearby2, asOf, new Map(), {
+        ignoreCloseTiming: true,
+      }).ok,
+    ).toBe(false)
+    expect(passesPricingTier(subject(), big, sub3, asOf, new Map(), { ignoreCloseTiming: true }).ok).toBe(false)
   })
 })

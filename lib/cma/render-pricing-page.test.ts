@@ -61,6 +61,7 @@ describe('pricingPage', () => {
     expect(html).toContain('$640,000')
     expect(html).toContain('$655,000')
     expect(html).toContain('We stayed inside the Cascade Vista subdivision')
+    expect(html).toContain('The search keeps going until five tight sales are in hand.')
     expect(html).toContain('The close is the contract price.')
     expect(html).toContain('Closed MLS sales only. Automated estimates are not used.')
     expect(html).toContain('The market read is Redmond.')

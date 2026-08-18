@@ -29,11 +29,13 @@ import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext, yearMartCite } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
-import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
+import { judgeComps, pricingKeysFromJudgment, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
+import { PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { resolveCmaSiteData } from '@/lib/cma/county'
 import { buildCmaExtras } from '@/lib/cma/extras'
+import { parseOwnerNotes } from '@/lib/cma/owner-notes'
 import { computeEquityPosition } from '@/lib/cma/equity'
 import { buildListingPlan } from '@/lib/cma/listing-plan'
 import { getCmaPriorSaleAtAddress } from '@/lib/data/cma/builderReads'
@@ -215,21 +217,21 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // are genuinely comparable and drops the different-tier sales before the
     // math runs. Falls back to the full set + the dispersion guard when the
     // key is absent or the call fails — never blocks a build.
-    const judgment = await judgeComps(subject, selection.comps, market)
+    const ownerNotes = parseOwnerNotes(input.sellerImprovementsText, input.ownerNotes)
+    const judgment = await judgeComps(subject, selection.comps, market, ownerNotes)
     const isCurated = curatedKeys.length > 0
     let compsForPricing = selection.comps
     if (judgment && !isCurated) {
-      const keep = new Set(judgment.keptKeys)
+      const keep = new Set(pricingKeysFromJudgment(
+        selection.comps.map((c) => c.listingKey),
+        judgment.verdicts,
+      ))
       const vetted = selection.comps.filter((c) => keep.has(c.listingKey))
-      // Never prune below the comp floor — if judgment would leave too few,
-      // keep the full set (the dispersion guard still flags it).
-      if (vetted.length >= MIN_COMPS) compsForPricing = vetted
-      // The judgment step must appear in the rendered verification trace —
-      // otherwise the trace says "N comps" while the report prices on fewer.
+      // The judge may down-weight. It may not shrink a four- or five-sale
+      // search to three. Three is the floor only when five do not exist.
+      compsForPricing = vetted.length >= MIN_COMPS ? vetted : selection.comps
       selection.trace.push(
-        compsForPricing.length === vetted.length
-          ? `Comparability judgment (${judgment.model}): kept ${vetted.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}. Priced on the ${vetted.length}-comp vetted set.`
-          : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${MIN_COMPS}-comp floor, so the full ${selection.comps.length}-comp set was priced instead.`,
+        `Comparability judgment (${judgment.model}): search found ${selection.comps.length}, priced on ${compsForPricing.length}. Excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as a different structure, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}. Five is the target. Three is the floor when five do not exist.`,
       )
     } else if (judgment && isCurated) {
       // Broker-curated set: the broker already vetted these, so every curated
@@ -278,7 +280,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
       })
       const p = priceCmaSet({ subject, adjusted: adj, market, input, selection, marketIndex, asOf, computePricing })
-      attachSellerNet(p, selection.pricingSales ?? set, p?.predictedClose ?? p?.recommended ?? null)
+      attachSellerNet(
+        p,
+        (() => {
+          const keys = new Set(set.map((c) => c.listingKey))
+          const fromSales = (selection.pricingSales ?? []).filter((s) => keys.has(s.listingKey))
+          return fromSales.length > 0 ? fromSales : set
+        })(),
+        p?.predictedClose ?? p?.recommended ?? null,
+      )
       if (p && usePath) {
         p.notes.unshift(
           `Time adjustment follows the monthly ${subject.city} sale-price path between each comparable close and ${asOf}.`,
@@ -338,7 +348,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         ),
       ]
       const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
-      if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
+      if (flagged.length > 0 && remaining.length >= Math.min(PRICING_TARGET_COMPS, compsForPricing.length)) {
         const repriced = priceSet(remaining)
         if (repriced.p) {
           firstRoundAudit = audit
@@ -552,7 +562,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // AFTER the failed-ask cap so the band centers on the final recommended
     // price. Each block is independently nullable (§0: cut, don't guess).
     const subjectPhotosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
-    const extras = await buildCmaExtras({ subject, comps: adjusted, pricing, subjectPhotosCount })
+    const extras = await buildCmaExtras({
+      subject,
+      comps: adjusted,
+      pricing,
+      subjectPhotosCount,
+      tiersUsed: selection.tiersUsed,
+      zillow: input.zillow ?? null,
+      ownerNotes,
+      sellerImprovementsText: input.sellerImprovementsText ?? null,
+    })
 
     // 4.76. What they own: the prior purchase at this address, and what the
     // recommendation says it has done since. Honest in both directions; a loss

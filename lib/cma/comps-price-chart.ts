@@ -8,6 +8,13 @@ import { buildBarPlot } from '@/lib/charts/plot'
 import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
 import { formatPriceExact } from '@/lib/format/money'
 
+function streetTick(address: string): string {
+  const t = address.replace(/\s+/g, ' ').trim()
+  if (t.length <= 16) return t
+  const parts = t.split(' ')
+  return parts.length <= 2 ? t.slice(0, 16) : `${parts[0]} ${parts[parts.length - 1]}`
+}
+
 function shortUsd(n: number): string {
   if (n >= 1_000_000) {
     const m = n / 1_000_000
@@ -24,9 +31,9 @@ export function compsPriceChartSvg(input: {
   const sales = input.comps.filter((c) => Number.isFinite(c.adjustedPrice) && c.adjustedPrice > 0)
   if (sales.length === 0) return ''
   const points = [
-    ...sales.map((c, i) => ({
+    ...sales.map((c) => ({
       value: c.adjustedPrice,
-      tick: String(i + 1),
+      tick: streetTick(c.address),
       label: shortUsd(c.adjustedPrice),
     })),
     {
@@ -35,7 +42,10 @@ export function compsPriceChartSvg(input: {
       label: shortUsd(input.recommended),
     },
   ]
-  const plot = buildBarPlot([{ name: 'Adjusted close', points }], { highlightTicks: ['List'] })
+  const plot = buildBarPlot([{ name: 'Adjusted close', points }], {
+    layout: 'horizontal',
+    highlightTicks: ['List'],
+  })
   if (!plot) return ''
   return renderPrintChartSvg(plot, {
     caption: `Adjusted comparable sales against the ${formatPriceExact(input.recommended)} recommended list`,

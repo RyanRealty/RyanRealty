@@ -13,6 +13,7 @@ import { cleanText } from '@/lib/cma/render-blocks'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
 import { assembleOpinionScenes } from '@/lib/cma/opinion-scenes'
 import { renderCompPinMapScript } from '@/lib/cma/comp-pin-map'
+import { renderSellerProceedsScript } from '@/lib/cma/seller-proceeds'
 
 type ImmersiveArgs = RenderCmaArgs & { broker: CmaBroker }
 
@@ -109,6 +110,7 @@ ${assembleOpinionScenes(a)}
   }catch(e){}
 })();
 ${renderCompPinMapScript()}
+${renderSellerProceedsScript()}
 </script>
 </body>
 </html>`

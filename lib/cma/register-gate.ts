@@ -114,8 +114,10 @@ export function renderRegisterShell(params: { slug: string; address: string | nu
     <p>One quick sign-in confirms it reaches the right person.</p>
     <ul class="benefits">
       <li>The recommended list for ${addr}, and why</li>
+      <li>What Zillow says, and whether that number holds</li>
       <li>Who you are competing with at that price</li>
-      <li>The three sales that set the number</li>
+      <li>The sales that set the number</li>
+      <li>What you would net, with numbers you can change</li>
     </ul>
     <a class="cta" href="${startHref}"><span class="g">G</span> Continue with Google</a>
     ${params.clientName ? `<p class="who">Prepared for ${escapeHtml(params.clientName)}. Sign in to confirm it is you.</p>` : ''}

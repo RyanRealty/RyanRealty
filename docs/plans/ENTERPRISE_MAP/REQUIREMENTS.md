@@ -251,7 +251,7 @@
 | R-181 | Twilio: per-broker business numbers public + forwarding, recording, transcription, click-to-call; one A2P campaign | twilio-cutover | PARTIAL | CAP residual |
 | R-182 | /admin home is what-needs-attention-now; lead hub shows one person's everything | ADMIN_CONSOLIDATION | VERIFIED | — |
 | R-183 | Restyle send chokepoints without touching the send path | P11 (2026-08-07) | LOCKED | — |
-| R-218 | Every seller CMA is one price-opinion spine: price first, why, named band rivals, three sales with tap-pin, subdivision, wider-market charts. No marketing pitch, confidence pills, ZIP lines, or query traces. Numbers from `lib/pricing/` only. Applies to inbound, expired, FSBO, and rebuild — not a one-off | Matt 2026-08-17 ADD | PARTIAL | G16; gate `ci:cma-opinion-spine` |
+| R-218 | Every seller CMA is one price-opinion spine: price first, why, named band rivals, three sales with tap-pin, subdivision, county ownership/permits, labeled wider-market charts. No marketing pitch, confidence pills, ZIP lines, or query traces. Numbers from `lib/pricing/` only. Market stats from the cache. Applies to inbound, expired, FSBO, and rebuild — not a one-off | Matt 2026-08-17 ADD | PARTIAL | G16; gate `ci:cma-opinion-spine` |
 
 ## social-presence
 

@@ -213,7 +213,9 @@ export function whyThisListPrice(input: {
   }
 
   const sale =
-    input.pricing.predictedClose != null && input.pricing.predictedClose > 0
+    input.pricing.predictedClose != null &&
+    input.pricing.predictedClose > 0 &&
+    input.pricing.predictedClose >= input.pricing.conservative
       ? input.pricing.predictedClose
       : input.pricing.recommended
   return {

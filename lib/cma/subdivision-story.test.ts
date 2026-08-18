@@ -73,4 +73,18 @@ describe('computeSubdivisionFacts', () => {
     expect(f.saleToListRecentPct).toBe(98.3)
     expect(f.medianDomRecent).toBe(20)
   })
+
+  it('does not treat a zero CDOM as a median of zero days', () => {
+    const now = new Date()
+    const recentIso = new Date(now.getTime() - 40 * 24 * 3600e3).toISOString().slice(0, 10)
+    const rows = [
+      sale({ CloseDate: recentIso, CumulativeDaysOnMarket: 0 }),
+      sale({ CloseDate: recentIso, CumulativeDaysOnMarket: 0 }),
+      sale({ CloseDate: recentIso, CumulativeDaysOnMarket: 0 }),
+      sale({ CloseDate: recentIso, CumulativeDaysOnMarket: 0 }),
+      sale({ CloseDate: recentIso, CumulativeDaysOnMarket: 0 }),
+    ]
+    const f = computeSubdivisionFacts(rows, 'Clear Sky', subject, '2016-08-05')!
+    expect(f.medianDomRecent).toBeNull()
+  })
 })

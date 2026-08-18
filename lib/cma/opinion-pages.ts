@@ -4,13 +4,17 @@
  */
 
 import { buildLinePlot } from '@/lib/charts/plot'
-import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
+import { PRINT_LINE_PAD, PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
 import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
-import { renderCompMapKeyHtml, renderCompStripHtml } from '@/lib/cma/comp-strip'
+import { renderCompMapKeyHtml } from '@/lib/cma/comp-strip'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { dateLong, dec, escapeHtml, int, usd, usdSigned } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import { printWiderMarketPages } from '@/lib/cma/market-area-chapters'
+import { renderParcelRecordHtml } from '@/lib/cma/parcel-record'
+import { renderOwnerNotesPrintHtml } from '@/lib/cma/owner-notes'
+import { buildSellerProceeds, renderSellerProceedsPrintHtml } from '@/lib/cma/seller-proceeds'
+import { renderZestimateBustPrintHtml } from '@/lib/cma/zestimate-buster'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
@@ -40,19 +44,22 @@ export type OpinionPageArgs = {
 }
 
 function subdivisionYearChartSvg(years: readonly { year: number; count: number }[]): string {
-  const plot = buildLinePlot([
-    {
-      name: 'Closed sales',
-      points: years
-        .filter((y) => y.year > 0 && y.count > 0)
-        .map((y) => ({
-          value: y.count,
-          tick: String(y.year),
-          label: String(y.count),
-          at: y.year,
-        })),
-    },
-  ])
+  const plot = buildLinePlot(
+    [
+      {
+        name: 'Closed sales',
+        points: years
+          .filter((y) => y.year > 0 && y.count > 0)
+          .map((y) => ({
+            value: y.count,
+            tick: String(y.year),
+            label: String(y.count),
+            at: y.year,
+          })),
+      },
+    ],
+    { pad: PRINT_LINE_PAD },
+  )
   if (!plot) return ''
   return renderPrintChartSvg(plot, {
     caption: 'Closed sales by year',
@@ -74,6 +81,7 @@ export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
       activeCount: b.activeCount,
       pendingCount: b.pendingCount,
       rivals,
+      productLabel: b.productLabel,
     }),
   }
 }
@@ -81,22 +89,21 @@ export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
 export function salesAndMapPage(a: OpinionPageArgs): CmaPageDef {
   const pinMap = renderCompPinMapHtml(a.subject, a.comps)
   const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
-  const strip = renderCompStripHtml(a.comps)
   return {
     meta: `${esc(a.subject.streetAddress)} · The sales that set the number`,
-    toc: 'The three sales that set the number',
+    toc: 'The sales that set the number',
     body: `
-  <h2 class="section">The three sales that set the number</h2>
+  <h2 class="section">The sales that set the number</h2>
   <p>${esc(story.body)} Tap a house on the web view to see its pin.</p>
-  ${pinMap ? `<div class="pin-map-wrap">${pinMap}</div>` : ''}
   ${
     a.mapDataUri
       ? `<h3 class="subhead">Where the comps sit</h3>
   <img class="map-img" src="${a.mapDataUri}" alt="${esc(story.headline)}" />
   <h3 class="subhead">Marker key</h3>${renderCompMapKeyHtml(a.subject, a.comps)}`
-      : ''
+      : pinMap
+        ? `<div class="pin-map-wrap">${pinMap}</div><h3 class="subhead">Marker key</h3>${renderCompMapKeyHtml(a.subject, a.comps)}`
+        : ''
   }
-  ${strip}
   <h3 class="subhead">What each sale becomes on your house</h3>
   <table class="comps">
     <thead><tr><th>Sale</th><th class="num">Close $</th><th class="num">Time</th><th class="num">Size</th><th class="num">Adjusted $</th></tr></thead>
@@ -149,7 +156,7 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
     body: `
   <h2 class="section">${esc(f.name)}</h2>
   ${a.mapDataUri ? `<img class="map-img is-plat" src="${a.mapDataUri}" alt="${esc(f.name)} subdivision" />` : ''}
-  <p>${int(f.totalSales)} closed single-family sales in ${esc(f.name)}.</p>
+  <p>${int(f.totalSales)} closed single-family sales on this street. This is the street, not the sales that set the number.</p>
   ${sections}
   ${yearChart ? `<div class="chart-block" data-anim="chart">${yearChart}</div>` : ''}
   <table class="comp-table">
@@ -184,12 +191,42 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
       tiersUsed: a.tiersUsed,
     }),
   )
+  const zillow = renderZestimateBustPrintHtml(a.extras?.zillow)
+  if (zillow) {
+    rest.push({
+      meta: `${esc(a.subject.streetAddress)} · Zillow`,
+      toc: 'What Zillow says',
+      body: zillow,
+    })
+  }
   const competition = competitionPage(a)
   if (competition) rest.push(competition)
   rest.push(salesAndMapPage(a))
   rest.push(...assembleCompFlyerPages(a.comps))
   const subdivision = subdivisionChapterPage(a)
   if (subdivision) rest.push(subdivision)
+  const parcel = renderParcelRecordHtml(a.extras?.parcel)
+  if (parcel) {
+    rest.push({
+      meta: `${esc(a.subject.streetAddress)} · Ownership`,
+      toc: 'Who has owned this house',
+      body: parcel,
+    })
+  }
+  const notes = renderOwnerNotesPrintHtml(a.extras?.ownerNotes ?? [])
+  if (notes) {
+    rest.push({
+      meta: `${esc(a.subject.streetAddress)} · Notes from you`,
+      toc: 'What you have done to this house',
+      body: notes,
+    })
+  }
+  const proceeds = a.extras?.proceeds ?? buildSellerProceeds({ pricing: a.pricing, parcel: a.extras?.parcel })
+  rest.push({
+    meta: `${esc(a.subject.streetAddress)} · Seller net`,
+    toc: 'What you would net',
+    body: renderSellerProceedsPrintHtml(proceeds),
+  })
   rest.push(...printWiderMarketPages(a))
   return rest
 }

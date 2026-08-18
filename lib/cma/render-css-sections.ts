@@ -52,7 +52,7 @@ export function cmaSectionStyles(): string {
   }
   .flyer-stats {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     border-top: 1px solid var(--navy-line);
     border-bottom: 1px solid var(--navy-line);
     margin-bottom: 9px;
@@ -60,7 +60,7 @@ export function cmaSectionStyles(): string {
   .flyer-stats .s { padding: 7px 6px; text-align: center; border-right: 1px solid var(--navy-line); }
   .flyer-stats .s:last-child { border-right: 0; }
   .flyer-stats .s .l {
-    font-size: 8px;
+    font-size: 9px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted);
@@ -71,19 +71,19 @@ export function cmaSectionStyles(): string {
   .flyer-desc { font-size: 9.5px; line-height: 1.45; color: var(--navy); margin: 0 0 9px 0; }
   .flyer-features {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 5px;
     margin-bottom: 9px;
     font-size: 9px;
   }
   .flyer-features .f { background: var(--navy-fill); padding: 4px 8px; border-radius: 5px; color: var(--navy); }
   .flyer-features .f .fl {
-    font-size: 7.5px;
+    font-size: 9px;
     letter-spacing: 0.10em;
     text-transform: uppercase;
     color: var(--muted);
   }
-  .flyer-features .f .fv { font-size: 9px; line-height: 1.2; }
+  .flyer-features .f .fv { font-size: 11px; line-height: 1.3; }
 
   .map-img {
     width: 100%;
@@ -100,7 +100,7 @@ export function cmaSectionStyles(): string {
     grid-template-columns: 1.15in 1fr;
     gap: 12px;
     border: 1px solid var(--navy-line);
-    background: #fff;
+    background: var(--cream);
     overflow: hidden;
     break-inside: avoid;
     page-break-inside: avoid;
@@ -191,7 +191,7 @@ export function cmaSectionStyles(): string {
     border-left: 3px solid var(--navy);
     border-radius: 8px;
     padding: 11px 13px;
-    background: white;
+    background: var(--cream);
   }
   .hl .hl-head { font-size: 12px; font-weight: 600; line-height: 1.3; color: var(--navy); }
   .hl .hl-basis { margin-top: 5px; font-size: 9.5px; line-height: 1.45; color: var(--muted); }
@@ -246,8 +246,8 @@ export function cmaSectionStyles(): string {
   .photo-tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0; display: block; }
   .photo-lead { grid-column: 1 / -1; }
   .photo-lead img { aspect-ratio: 16 / 9; }
-  .status-hero, .sold-hero, .inv-hero { margin: 4px 0 14px; }
-  .status-hero-n, .sold-hero-n, .inv-hero-n { font-family: var(--display); font-size: 42px; line-height: 1; }
+  .status-hero, .sold-hero, .inv-hero { margin: 2px 0 8px; }
+  .status-hero-n, .sold-hero-n, .inv-hero-n { font-family: var(--display); font-size: 28px; line-height: 1; }
   .status-hero-l, .sold-hero-l, .inv-hero-l { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
   .status-hero-m, .status-tile-m { font-size: 11px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; }
   .status-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 8px 0; }
@@ -257,7 +257,7 @@ export function cmaSectionStyles(): string {
   .inv-verdict { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 600; }
   .stat2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
   table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
-  table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
+  table.kv thead th { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
 
   table.comps .sub-cell { font-size: 8px; color: var(--muted); margin-top: 1px; }
   table.comps-adjust td.num, table.comps-adjust th.v {
@@ -338,7 +338,7 @@ export function cmaSectionStyles(): string {
     border-left: 3px solid var(--navy);
     border-radius: 8px;
     padding: 11px 13px;
-    background: #fff;
+    background: var(--cream);
     margin-bottom: 9px;
     break-inside: avoid;
     page-break-inside: avoid;
@@ -373,9 +373,9 @@ export function cmaSectionStyles(): string {
   }
 
   .rival-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 12px; }
-  .rival-card { border: 1px solid var(--navy-line); background: #fff; overflow: hidden; break-inside: avoid; }
+  .rival-card { border: 1px solid var(--navy-line); background: var(--cream); overflow: hidden; break-inside: avoid; }
   .rival-ph { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--navy-fill); }
-  .rival-ph.is-empty { min-height: 72px; }
+  .rival-ph.is-empty { min-height: 96px; background: var(--navy-fill); }
   .rival-body { padding: 8px 10px 10px; }
   .rival-addr { font-size: 12px; font-weight: 600; }
   .rival-ask { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 4px; }

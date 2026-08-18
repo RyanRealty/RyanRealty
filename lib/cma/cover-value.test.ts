@@ -47,7 +47,7 @@ describe('cover and immersive value blocks', () => {
     expect(html).toContain('$495,000')
     expect(html).toContain('List this home $470,000 to $515,000')
     expect(html).toContain('Recommended list $505,000')
-    expect(html).toContain('opened to 1 mile')
+    expect(html).not.toContain('opened to 1 mile')
     expect(html).not.toMatch(/[—;]/)
     expect(html).not.toMatch(/confidence|not the ZIP/i)
   })
@@ -61,6 +61,17 @@ describe('cover and immersive value blocks', () => {
     expect(html).toContain('Recommended list price')
     expect(html).toContain('$505,000')
     expect(html).not.toMatch(/stayed inside/)
+  })
+
+  it('leads with recommended list when expected sale sits under the list low', () => {
+    const html = coverValueBlockHtml({
+      ...args,
+      pricing: { ...pricing, predictedClose: 420000, conservative: 438000, recommended: 438000, highEnd: 465000 },
+    })
+    expect(html).toContain('Recommended list price')
+    expect(html).toContain('$438,000')
+    expect(html).toContain('Expected sale from that list is $420,000')
+    expect(html).not.toMatch(/<p class="vb-price">\$420,000<\/p>/)
   })
 
   it('names the comp-supported range when the list sits outside it', () => {

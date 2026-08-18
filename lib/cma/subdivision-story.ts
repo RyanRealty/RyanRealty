@@ -114,7 +114,7 @@ export function computeSubdivisionFacts(
 
   const twoYearsAgo = new Date(Date.now() - 2 * 365.25 * 24 * 3600e3).toISOString().slice(0, 10)
   const recent = sales.filter((r) => r.CloseDate >= twoYearsAgo)
-  const domRecent = median(recent.map((r) => Number(r.CumulativeDaysOnMarket)).filter((n) => Number.isFinite(n) && n >= 0))
+  const domRecent = median(recent.map((r) => Number(r.CumulativeDaysOnMarket)).filter((n) => Number.isFinite(n) && n > 0))
   const stl = recent
     .filter((r) => Number(r.ListPrice) > 0)
     .map((r) => Number(r.ClosePrice) / Number(r.ListPrice))

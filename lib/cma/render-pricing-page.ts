@@ -62,7 +62,7 @@ function howWePriced(n: number, market: CmaMarketContext | null, searchBody: str
     `${n} closed ${n === 1 ? 'sale' : 'sales'}, each brought to today and to your living area.`,
     'Closed MLS sales only. Automated estimates are not used.',
     'The close is the contract price. Concessions come off after that.',
-    'A wide size match on the same street does not stop the search. A tight size match or a sale inside one mile does.',
+    'The search keeps going until five tight sales are in hand. Three is the floor when five do not exist.',
     'In the same neighborhood we drop a subdivision whose typical dollar per foot is more than 15 percent off yours. Across the city that cut is 30 percent.',
   ]
   if (market?.geoLabel) {
@@ -106,12 +106,16 @@ export function pricingPage(input: {
   <h3 class="subhead">How we priced this</h3>
   ${howWePriced(input.comps.length, input.market, search.body)}
   ${adjustmentRows(input.comps)}
-  <div class="tier-grid">
-    <div class="tier">
+  <div class="tier-grid${p.conservative === p.recommended ? ' is-2' : ''}">
+    ${
+      p.conservative === p.recommended
+        ? ''
+        : `<div class="tier">
       <div class="t-lbl">Conservative</div>
       <div class="t-val">${usd(p.conservative)}</div>
       <div class="t-note">Quick-sale entry. Use when a fast, certain close is the priority.</div>
-    </div>
+    </div>`
+    }
     <div class="tier featured">
       <div class="t-lbl">Recommended list</div>
       <div class="t-val">${usd(p.recommended)}</div>

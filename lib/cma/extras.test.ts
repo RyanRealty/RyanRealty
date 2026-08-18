@@ -112,6 +112,95 @@ describe('computeBandPosition', () => {
   it('a failed inventory pull ships nothing', () => {
     expect(computeBandPosition(null, 'Bend', 1, 2)).toBeNull()
   })
+
+  it('keeps actives that pass the priced rungs and drops a house outside that search', () => {
+    const row = (
+      over: Partial<{
+        ListingKey: string
+        StreetNumber: string
+        StreetName: string
+        ListPrice: number
+        BedroomsTotal: number
+        BathroomsTotal: number
+        TotalLivingAreaSqFt: number
+        Latitude: number
+        Longitude: number
+        SubdivisionName: string
+      }>,
+    ) => ({
+      ListingKey: over.ListingKey ?? 'A',
+      StreetNumber: over.StreetNumber ?? '10',
+      StreetName: over.StreetName ?? 'Pine',
+      ListPrice: over.ListPrice ?? 410000,
+      StandardStatus: 'Active',
+      DaysOnMarket: 10,
+      PhotoURL: null,
+      Latitude: over.Latitude ?? 44.05,
+      Longitude: over.Longitude ?? -121.3,
+      BedroomsTotal: over.BedroomsTotal ?? 3,
+      BathroomsTotal: over.BathroomsTotal ?? 1,
+      TotalLivingAreaSqFt: over.TotalLivingAreaSqFt ?? 1056,
+      SubdivisionName: over.SubdivisionName ?? 'Other',
+      year_built: 1978,
+      lot_size_acres: 0.2,
+      property_sub_type: 'Single Family Residence',
+    })
+    const b = computeBandPosition(
+      {
+        activeAsks: [410000, 449000, 520000],
+        activeDaysOnMarket: [10, 12, 20],
+        pendingCount: 0,
+        activeRows: [
+          row({ ListingKey: 'A', StreetNumber: '10', StreetName: 'Pine', ListPrice: 410000, BathroomsTotal: 2 }),
+          row({
+            ListingKey: 'FAR',
+            StreetNumber: '1',
+            StreetName: 'Distant',
+            ListPrice: 449000,
+            BathroomsTotal: 1,
+            Latitude: 44.12,
+            Longitude: -121.26,
+          }),
+        ],
+        pendingRows: [],
+      },
+      'Bend',
+      200000,
+      800000,
+      {
+        subject: {
+          listingKey: 'SUBJ',
+          streetAddress: '648 Douglas',
+          city: 'Bend',
+          citySlug: 'bend',
+          subdivision: 'Clear Sky Estates',
+          subdivisionNorm: 'clear sky estates',
+          latitude: 44.05,
+          longitude: -121.3,
+          beds: 3,
+          baths: 1,
+          sqft: 1056,
+          lotAcres: 0.2,
+          yearBuilt: 1978,
+          storyClass: 'one',
+          productClass: 'detached',
+          waterClass: 'unknown',
+          sewerClass: 'unknown',
+          hoaClass: 'unknown',
+          lotClass: 'in_town',
+          ruralAcreage: false,
+          marketArea: null,
+        },
+        tiersUsed: ['nearby-2mi-3mo'],
+        asOf: '2026-08-17',
+      },
+    )
+    expect(b!.activeCount).toBe(1)
+    expect(b!.rivals?.map((r) => r.address)).toEqual(['10 Pine'])
+    expect(b!.productLabel).toMatch(/2-mile search/)
+    expect(b!.source).toMatch(/nearby-2mi-3mo/)
+    expect(b!.source).not.toMatch(/3-bedroom, 1-bath/)
+  })
 })
 
 describe('computeSubdivisionPulse', () => {

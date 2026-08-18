@@ -183,6 +183,27 @@ describe('market status grain', () => {
     expect(html).not.toContain('Expired or withdrawn')
   })
 
+  it('keeps a 3-bed 1-bath out of 2-bath stock', () => {
+    const oneBath: CmaSubject = { ...subject, beds: 3, baths: 1, subdivision: 'Clear Sky Estates' }
+    const area = computeMarketArea({
+      subject: oneBath,
+      comps: [comp({ beds: 3, baths: 1 })],
+      pricing: { ...pricing, recommended: 438000, conservative: 420000, highEnd: 460000 },
+      asOf: new Date('2026-08-17T00:00:00Z'),
+      rows: [
+        row({ BedroomsTotal: 3, BathroomsTotal: 1, ClosePrice: 420000, CloseDate: '2026-07-20', SubdivisionName: 'Other' }),
+        row({ BedroomsTotal: 3, BathroomsTotal: 1, ClosePrice: 410000, CloseDate: '2026-06-20', SubdivisionName: 'Other' }),
+        row({ BedroomsTotal: 3, BathroomsTotal: 1, ClosePrice: 430000, CloseDate: '2026-06-01', SubdivisionName: 'Other' }),
+        row({ BedroomsTotal: 3, BathroomsTotal: 2, ClosePrice: 520000, CloseDate: '2026-07-10', SubdivisionName: 'Other' }),
+        row({ BedroomsTotal: 4, BathroomsTotal: 2, ClosePrice: 610000, CloseDate: '2026-07-12', SubdivisionName: 'Other' }),
+      ],
+    })
+    expect(area!.sold90?.count).toBe(3)
+    expect(area!.sold90?.high).toBe(430000)
+    expect(area!.sold90?.bedsLabel).toBe('3-bedroom, 1-bath')
+    expect(area!.label).toMatch(/3-bedroom, 1-bath/)
+  })
+
   it('builds a 90-day sold band for similar beds', () => {
     const area = computeMarketArea({
       subject,
@@ -198,8 +219,8 @@ describe('market status grain', () => {
       ],
     })
     expect(area!.sold90?.count).toBe(3)
-    expect(similarBedRange(4)).toEqual({ lo: 3, hi: 5 })
-    expect(area!.sold90?.source).toMatch(/Closed 3 to 5 bedroom sales in Tetherow/)
+    expect(similarBedRange(4)).toEqual({ lo: 4, hi: 4 })
+    expect(area!.sold90?.source).toMatch(/Closed 4-bedroom, 2\.5 to 3\.5 bath sales in Tetherow/)
     expect(area!.sold90?.source).not.toMatch(/bedroom sales in 3 to 5 bedroom homes/)
     expect(area!.source).toMatch(/Tetherow, priced/)
     expect(area!.source).not.toMatch(/Single-family homes in 3 to 5 bedroom homes/)
@@ -248,7 +269,7 @@ describe('market charts', () => {
       { month: '2025-12', newListings: 5, medianAsk: 2_080_000 },
     ])
     expect(svg).toContain('<path')
-    expect(svg).toContain('new listings')
+    expect(svg).toContain('New listings')
   })
 })
 
@@ -333,12 +354,10 @@ describe('chapter order', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
     const why = html.indexOf('id="why-this-price"')
     const evidence = html.indexOf('id="evidence"')
-    const sold = html.indexOf('id="sold-90"')
-    const inv = html.indexOf('id="inventory"')
+    const wider = html.indexOf('id="wider-market"')
     expect(why).toBeGreaterThan(0)
     expect(evidence).toBeGreaterThan(why)
-    expect(sold).toBeGreaterThan(evidence)
-    expect(inv).toBeGreaterThan(sold)
+    expect(wider).toBeGreaterThan(evidence)
     expect(html).not.toContain('id="status-grid"')
     expect(html).not.toContain('id="photo-set"')
     expect(html).toContain('Same community and living area')
@@ -350,18 +369,18 @@ describe('chapter order', () => {
   it('omits empty chapter HTML when extras are missing', () => {
     const html = immersiveWiderMarketChapters(args({ extras: null }))
     expect(html).not.toContain('id="status-grid"')
-    expect(html).toContain('id="inventory"')
+    expect(html).toContain('id="wider-market"')
     expect(html).not.toContain('id="photo-set"')
   })
 
-  it('leads the wider market with a sold hero and a supply punch, not a status dump', () => {
+  it('leads the wider market with the citywide cache, not a second sold set', () => {
     const html = immersiveWiderMarketChapters(args())
     expect(html).not.toContain('status-hero')
     expect(html).not.toContain('status-tiles')
     expect(html).not.toContain('compare-board')
-    expect(html).toContain('sold-hero')
-    expect(html).toContain('id="sold-90"')
-    expect(html).toContain('sc-navy')
+    expect(html).not.toContain('sold-hero')
+    expect(html).not.toContain('What 3-bedroom')
+    expect(html).toContain('id="wider-market"')
     expect(html).toMatch(/Seller(&#39;|')s market/)
     expect(html).toContain('inv-hero')
     expect(html).not.toContain('photo-lead')

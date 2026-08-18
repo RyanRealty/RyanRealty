@@ -22,6 +22,10 @@ const PATHS = [
   'lib/cma/market-area-chapters.ts',
   'lib/cma/render-pricing-page.ts',
   'lib/cma/band-rivals.ts',
+  'lib/cma/parcel-record.ts',
+  'lib/cma/seller-proceeds.ts',
+  'lib/cma/mortgage-assumption.ts',
+  'lib/cma/market-charts.ts',
 ]
 
 const BANNED = [
@@ -37,6 +41,18 @@ const REQUIRED = [
   { path: 'lib/cma/build.ts', needle: "from '@/lib/cma/pricing'" },
   { path: 'lib/cma/build.ts', needle: 'computePricing' },
   { path: 'docs/plans/CMA_PRICE_OPINION_SPINE.md', needle: 'lib/pricing/' },
+  { path: 'lib/cma/opinion-pages.ts', needle: 'renderParcelRecordHtml' },
+  { path: 'lib/cma/opinion-scenes.ts', needle: 'renderParcelRecordScene' },
+  { path: 'lib/cma/market-charts.ts', needle: "from '@/lib/charts/plot'" },
+  { path: 'lib/cma/extras.ts', needle: 'resolveParcelRecord' },
+  { path: 'lib/cma/market-status.ts', needle: 'similarProductClass' },
+  { path: 'lib/cma/product-class.ts', needle: 'bathWindow' },
+  { path: 'lib/pricing/match.ts', needle: 'ignoreCloseTiming' },
+  { path: 'lib/cma/extras.ts', needle: 'tiersUsed' },
+  { path: 'lib/cma/market-area-chapters.ts', needle: 'citywide cache only' },
+  { path: 'lib/cma/opinion-pages.ts', needle: 'renderSellerProceedsPrintHtml' },
+  { path: 'lib/cma/opinion-scenes.ts', needle: 'renderSellerProceedsSceneHtml' },
+  { path: 'lib/cma/extras.ts', needle: 'buildSellerProceeds' },
 ]
 
 const fails = []

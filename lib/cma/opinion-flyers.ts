@@ -31,7 +31,7 @@ export function compFlyerPage(
   index: number,
 ): CmaPageDef {
   const hero = sparkPhotoAt(comp.photoUrl, '1024x768')
-  const remarks = trimRemarks(comp.publicRemarks, 800)
+  const remarks = trimRemarks(comp.publicRemarks, 360)
   const ppsf = comp.sqft > 0 ? Math.round(comp.closePrice / comp.sqft) : null
   const vsList = soldVsList(comp)
   const place = clientPlaceClause(comp.subdivision, comp.city)
@@ -47,9 +47,8 @@ export function compFlyerPage(
     <div class="s"><div class="l">Beds</div><div class="v">${int(comp.beds)}</div></div>
     <div class="s"><div class="l">Baths</div><div class="v">${dec(comp.baths, 0)}</div></div>
     <div class="s"><div class="l">Sqft</div><div class="v">${int(comp.sqft)}</div></div>
-    <div class="s"><div class="l">Lot</div><div class="v">${comp.lotAcres != null ? `${dec(comp.lotAcres, 2)} ac` : '—'}</div></div>
     <div class="s"><div class="l">Year</div><div class="v">${comp.yearBuilt ?? '—'}</div></div>
-    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">${ppsf != null ? usd(ppsf) : '—'}</div></div>
+    <div class="s featured"><div class="l">Adjusted to subject</div><div class="v">${usd(comp.adjustedPrice)}</div></div>
   </div>
   ${remarks ? `<p class="flyer-desc">${esc(remarks)}</p>` : ''}
   <div class="flyer-features">
@@ -61,8 +60,9 @@ export function compFlyerPage(
     <div class="f"><div class="fl">Close Date</div><div class="fv">${dateLong(comp.closeDate)}</div></div>
     <div class="f"><div class="fl">Days on Market</div><div class="fv">${comp.daysToOffer != null ? `${int(comp.daysToOffer)} to offer` : '—'}${comp.domTotal != null ? ` · DOM ${int(comp.domTotal)}` : ''}</div></div>
     <div class="f"><div class="fl">Distance from Subject</div><div class="fv">${comp.proximity ? esc(comp.proximity) : '—'}</div></div>
+    ${ppsf != null ? `<div class="f"><div class="fl">Sold $/sqft</div><div class="fv">${usd(ppsf)}</div></div>` : ''}
+    ${comp.lotAcres != null ? `<div class="f"><div class="fl">Lot</div><div class="fv">${dec(comp.lotAcres, 2)} ac</div></div>` : ''}
     ${formatClientMlsField(comp.viewDescription) ? `<div class="f"><div class="fl">View</div><div class="fv">${esc(formatClientMlsField(comp.viewDescription)!)}</div></div>` : ''}
-    <div class="f"><div class="fl">Adjusted to Subject</div><div class="fv">${usd(comp.adjustedPrice)}</div></div>
   </div>
   ${remarks ? '<p class="small">Description quoted from the MLS listing record.</p>' : ''}`,
   }

@@ -7,8 +7,31 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 
-const BAND_SELECT =
-  'ListingKey, StreetNumber, StreetName, ListPrice, StandardStatus, DaysOnMarket, PhotoURL, Latitude, Longitude'
+const BAND_SELECT = [
+  'ListingKey',
+  'StreetNumber',
+  'StreetName',
+  'ListPrice',
+  'StandardStatus',
+  'DaysOnMarket',
+  'PhotoURL',
+  'Latitude',
+  'Longitude',
+  'BedroomsTotal',
+  'BathroomsTotal',
+  'TotalLivingAreaSqFt',
+  'SubdivisionName',
+  'year_built',
+  'lot_size_acres',
+  'property_sub_type',
+  'association_yn',
+  'association_fee',
+  'hoa_monthly',
+  'water',
+  'sewer',
+  'levels',
+  'new_construction_yn',
+].join(', ')
 
 export type CmaBandListingRow = {
   ListingKey: string
@@ -20,6 +43,20 @@ export type CmaBandListingRow = {
   PhotoURL: string | null
   Latitude: number | null
   Longitude: number | null
+  BedroomsTotal?: number | null
+  BathroomsTotal?: number | null
+  TotalLivingAreaSqFt?: number | null
+  SubdivisionName?: string | null
+  year_built?: number | null
+  lot_size_acres?: number | null
+  property_sub_type?: string | null
+  association_yn?: boolean | null
+  association_fee?: number | null
+  hoa_monthly?: number | null
+  water?: unknown
+  sewer?: unknown
+  levels?: unknown
+  new_construction_yn?: boolean | null
 }
 
 export type CmaBandInventory = {
@@ -45,11 +82,13 @@ export async function getCmaBandInventory(
   city: string,
   lo: number,
   hi: number,
+  opts?: { sqftMin?: number; sqftMax?: number; limit?: number },
 ): Promise<CmaBandInventory | null> {
   const sb = client()
   if (!sb) return null
-  const scoped = (status: 'Active' | 'Pending') =>
-    sb
+  const limit = Math.min(opts?.limit ?? 200, 400)
+  const scoped = (status: 'Active' | 'Pending') => {
+    let q = sb
       .from('listings')
       .select(BAND_SELECT, { count: 'exact' })
       .eq('City', city)
@@ -57,7 +96,10 @@ export async function getCmaBandInventory(
       .eq('StandardStatus', status)
       .gte('ListPrice', lo)
       .lte('ListPrice', hi)
-      .limit(40)
+    if (opts?.sqftMin != null) q = q.gte('TotalLivingAreaSqFt', opts.sqftMin)
+    if (opts?.sqftMax != null) q = q.lte('TotalLivingAreaSqFt', opts.sqftMax)
+    return q.limit(limit)
+  }
   const [actives, pendings] = await Promise.all([scoped('Active'), scoped('Pending')])
   if (actives.error || pendings.error) {
     console.error('[getCmaBandInventory]', actives.error?.message ?? pendings.error?.message)

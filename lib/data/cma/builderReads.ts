@@ -96,6 +96,20 @@ export async function findCmaSubjectByMls(mls: string): Promise<CmaListingRow[]>
   return (data ?? []) as unknown as CmaListingRow[]
 }
 
+/** Closed and live rows for Zillow cards we can match by MLS number. */
+export async function findCmaListingsByMlsNumbers(mlsNumbers: string[]): Promise<CmaListingRow[]> {
+  const sb = client()
+  if (!sb) return []
+  const keys = [...new Set(mlsNumbers.map((n) => n.trim()).filter(Boolean))].slice(0, 20)
+  if (keys.length === 0) return []
+  const { data, error } = await sb.from('listings').select(LISTING_CMA_COLUMNS).in('ListNumber', keys)
+  if (error) {
+    console.error('[findCmaListingsByMlsNumbers]', error.message)
+    return []
+  }
+  return (data ?? []) as unknown as CmaListingRow[]
+}
+
 /** Resolve candidate subject rows by street number + street-name prefix + city. */
 export async function findCmaSubjectByAddress(opts: {
   streetNumber: string

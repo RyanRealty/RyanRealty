@@ -164,6 +164,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   .next-in{flex-direction:column;align-items:flex-start}
   .fin-l,.bench-l{width:120px}
   .sc{padding:72px 18px}
+  .net-grid{grid-template-columns:1fr}
   .status-tiles{grid-template-columns:1fr 1fr}
 }
 .status-hero{margin:8px 0 40px}
@@ -186,6 +187,13 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
 .photo-lead img{aspect-ratio:16/9}
 .facts-block ul{margin:0 0 16px 18px}
 .facts-block li{margin:6px 0}
+.net-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px 22px;margin:8px 0 28px}
+.net-field{display:flex;flex-direction:column;gap:6px}
+.net-k{font-size:13px;font-weight:600;letter-spacing:.04em}
+.net-in{width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--ink12);background:#fff;color:var(--navy);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.net-in:focus{outline:3px solid rgba(16,39,66,.18);border-color:var(--navy)}
+.net-hint{font-size:12.5px;opacity:.65;line-height:1.4}
+@media print{.net-grid,.net-in{display:none}}
 @media (max-width:560px){.stat2,.stat3,.stat4{grid-template-columns:1fr}.photo-set{grid-template-columns:1fr 1fr}.status-tiles{grid-template-columns:1fr}}
 @media print{
   .sc{min-height:0;padding:24px}
