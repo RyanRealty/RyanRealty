@@ -12,6 +12,7 @@
 
 import { getPlaceLinks } from '@/lib/place-links'
 import { getResortCommunityBySubdivisionName } from '@/lib/data/communities/registry'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { slugify } from '@/lib/slug'
 
 /** MLS / GIS noise that must never become a place node. */
@@ -116,16 +117,16 @@ export function resolvePlaceContextFromListing(input: PlaceContextListingInput):
         }
       : null
 
-  const subSlug =
-    cleanSlug(input.subdivisionSlug) ??
-    (input.subdivisionName ? cleanSlug(slugify(input.subdivisionName)) : null)
-  const subLabel = cleanLabel(input.subdivisionName, subSlug)
+  const publishedSub = publishPlatDisplayName(input.subdivisionName)
+  const subSlug = publishedSub
+    ? cleanSlug(input.subdivisionSlug) ?? cleanSlug(slugify(publishedSub))
+    : null
   const subdivision: PlaceNode | null =
-    subSlug && subLabel
+    publishedSub && subSlug
       ? {
           type: 'subdivision',
           slug: subSlug,
-          label: subLabel,
+          label: publishedSub,
           href: `/subdivisions/${subSlug}`,
         }
       : null
@@ -133,7 +134,7 @@ export function resolvePlaceContextFromListing(input: PlaceContextListingInput):
   // Curated Community: registry match on MLS name (aliases), not every plat.
   const resort =
     getResortCommunityBySubdivisionName(input.subdivisionName) ??
-    getResortCommunityBySubdivisionName(subLabel) ??
+    getResortCommunityBySubdivisionName(publishedSub) ??
     getResortCommunityBySubdivisionName(subSlug)
   const curatedCommunity: PlaceNode | null = resort
     ? {

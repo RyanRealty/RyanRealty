@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { placeListShowingLabel } from './place-list-showing'
 import {
   CITY_PLACE_LIST_CAP,
+  peerPlatsForResort,
   splitRowsFromTiles,
 } from './subdivision-page-extras'
 
@@ -46,6 +47,16 @@ describe('splitRowsFromTiles', () => {
   it('sorts highest price first so a city preview is the top of the set', () => {
     const rows = splitRowsFromTiles([tile('low', 100), tile('high', 900)])
     expect(rows.map((r) => r.key)).toEqual(['high', 'low'])
+  })
+})
+
+describe('peerPlatsForResort', () => {
+  it('withholds MLS abbreviations from More areas', () => {
+    const peers = peerPlatsForResort('three-rivers', 'river-meadows')
+    const names = peers.map((p) => p.name)
+    expect(names).toContain('Sun Dance')
+    expect(names).toContain('Deschutes River Recreation Homesites')
+    expect(names.some((n) => /oww|drrh|bbr|stoneth/i.test(n))).toBe(false)
   })
 })
 
