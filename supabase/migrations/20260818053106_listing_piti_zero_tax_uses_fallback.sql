@@ -1,0 +1,15 @@
+-- APPLIED to production 2026-08-17 (version 20260818053106 UTC) via the Supabase MCP;
+-- recorded post-hoc so migration history matches the database.
+--
+-- COALESCE(tax_annual_amount, fallback) only replaces NULL. 275 active listings
+-- carried tax_annual_amount = 0 exactly and published a monthly payment with NO
+-- tax line at all (listing 220197023, $565,500: $3,075 stored vs $3,344 correct,
+-- a $269/month gap). One-line change inside compute_listing_derived_fields():
+--
+--   monthly_tax := COALESCE(NULLIF(NEW.tax_annual_amount, 0),
+--                           NEW."ListPrice" * tax_fallback_pct) / 12;
+--
+-- An explicit zero now routes to the same measured fallback as a NULL. After
+-- applying, all actives were repriced and verified: 7,567 checked, zero rows
+-- disagree with the formula. TS mirror: computeMonthlyPiti in lib/listing-tier1.ts
+-- treats 0 as missing the same way.

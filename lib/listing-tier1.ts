@@ -65,7 +65,8 @@ export function computeMonthlyPiti(input: MonthlyPitiInput): number | null {
   const principal = listPrice * DOWN_PAYMENT_FRACTION
   const growth = Math.pow(1 + monthlyRate, TERM_MONTHS)
   const pi = (principal * monthlyRate * growth) / (growth - 1)
-  const taxMonthly = (taxAnnual ?? listPrice * PROPERTY_TAX_RATE_FRACTION) / 12
+  // 0 is treated as missing, matching the trigger: COALESCE(NULLIF(tax,0), fallback)
+  const taxMonthly = (taxAnnual != null && taxAnnual > 0 ? taxAnnual : listPrice * PROPERTY_TAX_RATE_FRACTION) / 12
   const insuranceMonthly = (listPrice * INSURANCE_RATE) / 12
   return Math.round((pi + taxMonthly + insuranceMonthly + (hoaMonthly ?? 0)) * 100) / 100
 }

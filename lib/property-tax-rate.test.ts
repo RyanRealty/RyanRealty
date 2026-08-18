@@ -39,12 +39,16 @@ describe('property tax rate — one measured constant', () => {
   })
 
   it('agrees with the SQL trigger that writes listings.estimated_monthly_piti', () => {
-    // public.compute_listing_derived_fields() declares
-    //   tax_fallback_pct constant numeric := 0.0057;
-    // It is the authoritative writer of that column and cannot import this file,
-    // so the two are kept equal by hand. Read from the live catalog 2026-08-17.
-    const TRIGGER_TAX_FALLBACK_PCT = 0.0057
-    expect(PROPERTY_TAX_RATE_FRACTION).toBe(TRIGGER_TAX_FALLBACK_PCT)
+    // The trigger cannot import this file, so the lock reads the RECORDED
+    // migration (20260818052949) and extracts the declared constant. Editing
+    // either side without the other fails here.
+    const sql = readFileSync(
+      path.join(process.cwd(), 'supabase/migrations/20260818052949_listing_piti_measured_tax_fallback.sql'),
+      'utf8',
+    )
+    const m = sql.match(/tax_fallback_pct constant numeric := ([0-9.]+)/)
+    expect(m).not.toBeNull()
+    expect(Number(m![1])).toBe(PROPERTY_TAX_RATE_FRACTION)
   })
 })
 

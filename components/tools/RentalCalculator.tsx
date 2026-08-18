@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -225,7 +226,7 @@ export default function RentalCalculator({
   const [propertyTaxesYear, setPropertyTaxesYear] = useState(
     initialPropertyTaxesYear && initialPropertyTaxesYear > 0
       ? Math.round(initialPropertyTaxesYear)
-      : roundTo(price0 * 0.0075, 50)
+      : roundTo(price0 * PROPERTY_TAX_RATE_FRACTION, 50)
   )
   const [insuranceYear, setInsuranceYear] = useState(1400)
   const [mgmtPct, setMgmtPct] = useState(8)
