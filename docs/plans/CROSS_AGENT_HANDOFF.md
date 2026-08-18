@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — listing-detail $1000K + land-acres slice
+# Current — 2026-08-18 (cursor-loop-chain) — listing-detail unmute + Aw Snap reject slice
+
+**Surface:** Cursor cloud `bc-74d9bae3` (`cursor/loop-chain-2026-08-18t11-45-fffc`). **Time:** 2026-08-18 ~11:52 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 196). Claimed parent only as `cursor-loop-chain-bc-74d9bae3-2026-08-18t11-45`. **No product change.** Production stays on last product **`0bcfc7110`** (already READY; dpl `GnLoMc7NzMfxLcNPabcorWJx2qvP`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (188 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Albany Gerig blank navy UNMUTE **rejected** (Spark aerial, `$1.9M`, 190.69 ACRES, +9 more, video=0). Strawberry missing photo **rejected** (View all 12 + Spark field). Strawberry missing specs **rejected** (hero `$435K` + 0.51 ACRES; MLS 220215800 type D, beds/baths/sqft null). Old Farm under-1.5m auto-nav **rejected** (same URL after 8 scrolls; 1-9 of 53). Conestoga / Galium / Cassidy / Black Canyon Aw Snap **rejected** (each 200 + live hero; Black Canyon still same URL after scroll). Hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet UNMUTE-on-still / missing photo / invented beds / auto-nav / Aw Snap did not reproduce. Do not invent a listing or beds.
+- Prod probe on live `0bcfc7110`: Gerig H1 `$1,875,000`; Strawberry H1 `$435,000` + 0.51 ACRES; Conestoga `$739K` 3/2/1798; Galium `$2.1M` 4/4/3318; Cassidy `$320K` 3/2/1462; Black Canyon `$25K` 20 ACRES. After shots `/opt/cursor/artifacts/after_gerig_{390,1280}.png`, `/opt/cursor/artifacts/after_strawberry_{390,1280}.png`, `/opt/cursor/artifacts/after_oldfarm_{390,1280}.png`, `/opt/cursor/artifacts/after_conestoga_390.png`, `/opt/cursor/artifacts/after_galium_390.png`, `/opt/cursor/artifacts/after_cassidy_390.png`, `/opt/cursor/artifacts/after_blackcanyon_390.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail $1000K + land-acres slice
 
 **Surface:** Cursor cloud `bc-146bbab6` (`cursor/loop-chain-2026-08-18t10-55-4a7c`). **Time:** 2026-08-18 ~11:42 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 204). Claimed parent only as `cursor-loop-chain-bc-146bbab6-2026-08-18t10-55`. Product **`0bcfc7110`** landed on **`main`**. Vercel Production **READY** for `0bcfc7110` (`GnLoMc7NzMfxLcNPabcorWJx2qvP`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (196 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
