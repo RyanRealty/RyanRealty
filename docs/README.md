@@ -63,6 +63,7 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 ### Deployment
 - `VERCEL_DEPLOY.md` — Vercel deploy steps + env checklist
 - `ORIGIN_CUTOVER.md` — Cursor Origin dual-remote + detach rules (GitHub stays canonical until Vercel on Origin is proven)
+- `ORIGIN_LOCAL_SESSION.md` — paste-ready brief for a local Mac agent to add the `cursor` remote
 - `DOMAIN_SETUP.md` — custom domain setup
 
 ### Content engine

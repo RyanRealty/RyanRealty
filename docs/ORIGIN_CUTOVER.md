@@ -8,6 +8,9 @@ Official product: [Cursor Origin](https://cursor.com/docs/origin). Browse UI:
 [cursor.com/codebase](https://cursor.com/codebase). Git remote host:
 `https://origin.cursor.com/{owner}/{repo}.git`.
 
+**Local agent brief (paste into a new Mac session):**
+[`docs/ORIGIN_LOCAL_SESSION.md`](ORIGIN_LOCAL_SESSION.md).
+
 ## Current state (do not skip)
 
 | Layer | State | Do not |

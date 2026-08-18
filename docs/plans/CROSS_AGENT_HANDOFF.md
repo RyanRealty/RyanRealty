@@ -11,7 +11,7 @@
 - Matt connected Vercel to Origin (2026-08-18). GitHub↔Vercel left in place.
 
 **Next**
-- Remaining human step: either paste `CURSOR_API_KEY` into the cloud agent secret box (`cursor.com/dashboard/api` → New API Key → paste `crsr_…` once, not in chat) so this VM can run the helper, **or** on the Mac: `origin auth login` then `npm run origin:dual-remote`.
+- Local Mac session: paste `docs/ORIGIN_LOCAL_SESSION.md` (the fenced prompt) into a new Cursor/Claude chat on the laptop. That session runs `origin auth login` + `npm run origin:dual-remote`. Cloud VMs cannot finish Origin login as Matt.
 - Do **not** Detach from GitHub until an Origin-triggered production deploy is READY.
 
 **Do not:** detach; delete GitHub; point `origin` at Origin yet; start a loop ship class from this branch.
