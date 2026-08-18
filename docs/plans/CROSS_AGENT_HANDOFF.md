@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — place-pages alias 308 + MLS plat names slice
+# Current — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
+
+**Surface:** Cursor cloud `bc-812b6297` (`cursor/loop-chain-2026-08-18t02-04-a235`). **Time:** 2026-08-18 ~02:42 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 340). Claimed parent only as `cursor-loop-chain-bc-812b6297-2026-08-18t02-04`. Product **`c2c6c0fb0`** landed on **`main`** (class `0ed74366e` + compile follow-up). Vercel Production **READY** for `c2c6c0fb0` (`7dQpSydh4ZJfEFAGnPrVgttrkuZ8`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open** (332 leftover lines). Release skipped: another session (`cursor-loop-chain-2026-08-18-bc-0a79e0c8`) holds the parent `in_progress`. Do not steal. Do not `completeWorkNode`. Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: `/housing-market/powell-butte` this-month median absent **reproduced** then class-fixed. Cache city `powell butte` methodology `v3-2026-05-07` August monthly `sold_count=1` `median_sale_price=null`; July complete `$1,262,500` / 6; YTD `$1,200,000` / 35; rolling 365d `$1,334,500` / 52. Seven `/subdivisions/{slug}` chrome-only lines (altura, american-west, antler-crossing, arborwood, awbrey-meadows, big-sky-country, arrowdale) **rejected** — H1 + “No active listings…” + sales history at 390/1280.
+- Class: `publishCompleteMonthMedian` publishes this-month median only when the current-month cache row has a verified median; otherwise last complete month as `{Month} median sale`. Wired DAL `getCompleteMonthlyMarketDetail` + public housing-market + `_v3` figures + broker SMS `market_stats` + G-publish-complete-month-median (6/6).
+- Prod probe after READY `c2c6c0fb0`: Powell Butte **July median sale `$1,263,000`** (`formatPrice` nearest-thousand of `$1,262,500`); 0× “this month median”. After shots `/opt/cursor/artifacts/after_powell-butte_{390,1280}.png`, `/opt/cursor/artifacts/after_altura_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 1 fixed + 7 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list. Leave the parent claim with `cursor-loop-chain-2026-08-18-bc-0a79e0c8`.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages alias 308 + MLS plat names slice
 
 **Surface:** Cursor cloud `bc-1d730b67` (`cursor/loop-chain-2026-08-18t00-28-e09f`). **Time:** 2026-08-18 ~01:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 364). Claimed parent only. Product **`aa4c62d67`** landed on **`main`**. Vercel Production **READY** for `aa4c62d67` (`3nZFnPSbtSAVLzWquxqMkfvJG7q2`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (356 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
