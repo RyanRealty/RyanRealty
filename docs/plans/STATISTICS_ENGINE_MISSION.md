@@ -40,7 +40,24 @@ say keep or kill.
 - Verified against the live database or a real browser, not against unit tests alone.
 - Nothing lands that an adversarial reader can show is untrue.
 
-## Explicitly out of scope
+## Scope expanded 2026-08-17 (Matt: "do all of the remaining items")
 
-The remaining four page mockups, the freshness alarm, and the one-source gate. Those follow
-once the calibration piece is approved and the ingest is proven in production.
+Everything below is now in scope, not deferred:
+- FRED ingest landed and flowing; `is_public` true on all five series once verified.
+- Freshness alarm and the one-source gate.
+- Tier 1 chart set from the indicator catalog — sale-to-original-ask, days-to-offer,
+  seller concessions, price-cut behavior, financing mix. Eight of the 24 indicators are
+  marked exclusive: they need retained original-ask and pending dates across 28 years,
+  which no competitor warehouses.
+- Live-site defects: dead map on /homes-for-sale, the homepage hero printing a regional
+  total under a six-town label, raw status_canceled on /activity, card price rounding.
+- Tax fallback reconciled across all three implementations to the measured 0.569%.
+- The two parked worktrees reconciled and landed.
+
+## Closed since opening
+
+- PITI: the authoritative writer was a BEFORE-UPDATE trigger, not TypeScript. Fixed at the
+  trigger; 7,567 actives verified against an independently computed formula, zero disagree.
+- Tax fallback measured (median 0.569%, n=6,213) and a COALESCE-vs-zero defect fixed that
+  had 275 listings publishing a payment with no tax line at all.
+- `--rr-exception` accent named and written into canon.
