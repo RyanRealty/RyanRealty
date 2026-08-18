@@ -16,6 +16,7 @@ type Props = {
   associationFeeFrequency?: string | null
   taxAnnualAmount?: number | null
   monthlyRent?: number | null
+  propertySubType?: string | null
   hideCmaRequest?: boolean
   className?: string
 }
@@ -34,6 +35,7 @@ export function LivePricingRead({
   associationFeeFrequency = null,
   taxAnnualAmount = null,
   monthlyRent = null,
+  propertySubType = null,
   hideCmaRequest,
   className,
 }: Props) {
@@ -49,6 +51,7 @@ export function LivePricingRead({
     associationFeeFrequency,
     taxAnnualAmount,
     monthlyRent,
+    propertySubType,
   }
   if (buildHouseMeRows(facts).length === 0) return null
   return (

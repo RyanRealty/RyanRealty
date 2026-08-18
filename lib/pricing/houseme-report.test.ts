@@ -125,6 +125,11 @@ describe('buildHouseMeRows', () => {
     expect(withBoth.find((r) => r.id === 'ppsf')?.label).toBe(HOUSEME_LABEL_PPSF)
     expect(buildHouseMeRows(emptyFacts({ listPrice: 500_000, sqft: null })).find((r) => r.id === 'ppsf')).toBeUndefined()
     expect(buildHouseMeRows(emptyFacts({ listPrice: null, sqft: 2_000 })).find((r) => r.id === 'ppsf')).toBeUndefined()
+    expect(
+      buildHouseMeRows(
+        emptyFacts({ listPrice: 5_000, sqft: 1_405, propertySubType: 'Tenancy in Common' }),
+      ).find((r) => r.id === 'ppsf'),
+    ).toBeUndefined()
   })
 
   it('omits DOM unless listing days and place median both exist', () => {

@@ -77,6 +77,20 @@ checks.push({
     /publishListingSharePricePerSqft\(listing\.propertySubType/.test(card),
 })
 
+const houseme = src('components/site/listing-detail/HouseMeReport.tsx')
+checks.push({
+  label: 'HouseMeReport withholds share ppsf',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-share['"]/.test(houseme) &&
+    /publishListingSharePricePerSqft\(/.test(houseme),
+})
+
+const live = src('app/listing/[listingKey]/page.tsx')
+checks.push({
+  label: 'listing detail passes propertySubType into LivePricingRead',
+  ok: /propertySubType=\{listing\.propertySubType\}/.test(live),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)

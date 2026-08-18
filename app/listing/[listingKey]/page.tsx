@@ -383,7 +383,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         hoaMonthly={listing.hoaMonthly}
         associationFee={listing.associationFee}
         associationFeeFrequency={listing.associationFeeFrequency}
-        taxAnnualAmount={listing.taxAnnualAmount}
+        taxAnnualAmount={listing.taxAnnualAmount} propertySubType={listing.propertySubType}
         hideCmaRequest={Boolean(publishedCma)}
       />
       {openHouses.length > 0 ? (
