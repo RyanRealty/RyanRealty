@@ -154,6 +154,8 @@ describe('plat public inventory rollup', () => {
 
   it('drops short MLS codes from the registry catalog', () => {
     expect(isDisplayablePlatName('BBR')).toBe(false)
+    expect(isDisplayablePlatName('Crr 10')).toBe(false)
+    expect(isDisplayablePlatName('Crr3_C')).toBe(false)
     expect(isDisplayablePlatName('Ridge At Eagle Crest')).toBe(true)
     expect(registryChildPlats().some((p) => p.slug === 'ridge-at-eagle-crest')).toBe(true)
     expect(registryChildPlats().some((p) => p.slug === 'bbr')).toBe(false)

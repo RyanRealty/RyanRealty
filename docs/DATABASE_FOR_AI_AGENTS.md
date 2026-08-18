@@ -23,7 +23,7 @@
 | **Market report for a Bend neighborhood** (Awbrey Butte, Larkspur, …) | `market_stats_cache WHERE geo_type='neighborhood' AND geo_slug='bend-<slug>'` | same | ≤ 6h |
 | **Live active/pending inventory** for cities + region + neighborhoods | `market_pulse_live WHERE geo_type IN ('city','region','neighborhood') AND property_type='A'` | `active_count`, `pending_count`, `months_of_supply` | ≤ 10–15 min |
 | **Property details for one listing** | `listings WHERE "ListingKey" = ?` (note: PascalCase columns MUST be double-quoted — see §4) | every Spark MLS field | ≤ 10 min |
-| **Active listings in a community** | `listings WHERE "SubdivisionName" = ANY(<aliases from neighborhood_subdivisions>) AND "StandardStatus" IN ('Active','Coming Soon','Active Under Contract')` | see §3a for the aliases | ≤ 10 min |
+| **Active listings in a community** | `listings WHERE "SubdivisionName" = ANY(<aliases from neighborhood_subdivisions>) AND "StandardStatus" IN ('Active','Coming Soon','Active Under Contract')` | see §3a for the aliases. **Crooked River Ranch** is MLS-tagged `Crr*` (not the display name) — use registry `subdivision_aliases` / `publishCommunityMlsAliases`, never a literal-name count | ≤ 10 min |
 | **Comparable sales (CMA)** | **`sale_pricing_facts`** (all years, Central Oregon closed A) via `selectPricingFactsPool` / `selectPricingComps`. Fallback: `listings WHERE "StandardStatus"='Closed'` | close_price, concessions_amount, concessions_yn, seller_net (view `sale_pricing_seller_net`), close_ppsf, water/sewer/hoa/lot/story classes, original_ask, drop_count | facts refresh 6h; listings ≤ 10 min |
 | **Listing-page market read** | **`listing_pricing_reads`** via `getListingPricingRead`. Do not walk the matcher on the request. Published CMA wins when present. | kind, range_low/high, delta_pct, n, refuse_reason | stamped on the facts cron, 6h stale |
 | **Market-path time adjustment** | **`pricing_market_index`** (monthly median $/sqft per city, 1996+) | `month`, `n`, `median_ppsf`, `median_sale_to_original` | rebuilt after facts refresh |
@@ -338,6 +338,7 @@ These are registered as `geo_type='neighborhood'` in `public.boundaries`. **Thei
 | **Widgi Creek** | `widgi-creek` | Bend | 6 (+ Inn Of The 7th + 7th Mtn Golf Village + PointsWest + Elkai Woods + Milepost 1) | 6 | |
 | **Vandevert Ranch** | `vandevert-ranch` | Bend | 1 (single MLS name) | 0 | Tiny private community. Last SFR sale Jan 2025. |
 | **Three Rivers** | `three-rivers` | Bend | 11 (Oww + DrrhTrs + River Meadows + Sun Dance + Deschutes River Recreation Homesites + Drrh Trs + Deschutes Pines + Blissful Acres + Fountainbleau + Swarens Fancher + OWW2) | 39 | South Deschutes residential area. `is_resort=false`. |
+| **Crooked River Ranch** | `crooked-river-ranch` | Terrebonne | `Crr` family (`Crr`, `Crr 1`, `Crr 2`, `Crr 3`, `Crr 7`, `Crr 8`, `Crr 10`, `Crr3_C`, `Crr9_C`, `Crr10_C`, `Crr12_C`) + literal `Crooked River Ranch` | live type-A on `listing_tile_mv` | Planned community. `is_resort=false`. MLS tags `Crr*`, not the display name. Count via `lib/market/publish-community-mls-aliases.ts` — **do not add to `cityResorts()`**. Visitor plat chrome still withholds `Crr` abbreviations (`publishPlatDisplayName`). |
 
 **Pattern for querying a resort community market report:**
 
