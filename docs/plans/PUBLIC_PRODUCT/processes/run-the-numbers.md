@@ -78,7 +78,8 @@ not deep-link to the tool either (grep of `components/site/listing-detail/*.tsx`
 | Artifact | SoR | Evidence |
 |---|---|---|
 | Calculator default — 30-yr rate | `public.market_history_weekly` (`geo_type='national'`, `geo_slug='us'`, metric `mortgage_rate_30yr`), ingested every Monday by `/api/cron/market-history-snapshot` from FRED `MORTGAGE30US` / Freddie PMMS. Read through `getCalculatorDefaults`, which takes the newest point of the last 12 weeks. `app_config.mortgage_rate` is the floor beneath it (hand-entered, last written 2026-04-14), then the 7% hardcoded FALLBACK | `lib/data/config.ts:77-91,132-137`; `lib/market-national-series.ts`; `app/api/cron/market-history-snapshot/build-rows.ts` |
-| Calculator defaults — tax %, insurance % | `public.app_config` keys `default_tax_rate_pct` / `insurance_rate_pct` (no ingested equivalent exists yet), read through the DAL's `getCalculatorDefaults` (6h `unstable_cache`, tag `app_config`), with hardcoded floor fallbacks and a fraction-vs-percent sanity clamp | `lib/data/config.ts:93-144`; table documented at `docs/DATABASE_FOR_AI_AGENTS.md:301` |
+| Calculator default — property tax % | `lib/property-tax-rate.ts` — one measured constant, 0.57%, the median of `tax_annual_amount / "ListPrice"` across 6,213 active listings (measured 2026-08-17; the file carries the query, sample size and quartiles). Read directly by `getCalculatorDefaults`, the listing-detail mortgage + rental modules, the sync mapper and the DSCR screen; matched by `compute_listing_derived_fields()` in SQL. `app_config.default_tax_rate_pct` holds 1.2% and is no longer read by any JS | `lib/property-tax-rate.ts`; `lib/data/config.ts` (`taxRatePct`) |
+| Calculator default — insurance % | `public.app_config` key `insurance_rate_pct` (no ingested equivalent exists yet), read through the DAL's `getCalculatorDefaults` (6h `unstable_cache`, tag `app_config`), with a hardcoded floor fallback and a fraction-vs-percent sanity clamp | `lib/data/config.ts`; table documented at `docs/DATABASE_FOR_AI_AGENTS.md:301` |
 | Behavioral trail | `public.visitor_sessions` + `public.visitor_events` via `POST /api/visitors/track`, dual-sunk with GA4 (`trackEvent`) | `app/api/visitors/track/route.ts:365-367,403-405`; `components/site/kb/KbSectionTracker.client.tsx:7-28,38-77` |
 | CRM intent signal | `crm_people` behavior events → derived `'mortgage-calculator user'` flag in the contact behavior summary | `lib/data/crm/getContactBehaviorSummary.ts:133-138,196,208-215` |
 | Rental lead (optional path) | `public.crm_people` via `sendEvent` → native lead, + Meta CAPI Lead + GA4 `lead_generated` mirror | `app/actions/lead-capture.ts:407-419,421-427,451-456` |
@@ -388,11 +389,16 @@ Prove the process end-to-end. Persist; never delete.
      `20260817120000` is not applied yet) → the newest value must equal the rate the calculator
      renders by default. `app_config.mortgage_rate` is only the floor and is expected to
      disagree (it is hand-entered and has no writer) — a mismatch there is not a defect.
-   - Tax + insurance: `select key, value from app_config where key in
-     ('default_tax_rate_pct','insurance_rate_pct');` → must agree with the rendered defaults
-     after the percent normalization in `lib/data/config.ts:123-126`.
-   - With the series dark AND the rows absent, the rendered defaults must equal the documented
-     fallbacks (7 / 0.75 / 0.30, `lib/data/config.ts:66-70`).
+   - Insurance: `select key, value from app_config where key = 'insurance_rate_pct';` → must
+     agree with the rendered default after the percent normalization in `lib/data/config.ts`.
+   - Tax: the rendered default must equal `PROPERTY_TAX_RATE_PCT` (0.57). It does not come from
+     `app_config` — the `default_tax_rate_pct` row still holds 1.2% and is expected to disagree.
+     To re-measure: `select count(*), percentile_cont(0.5) within group (order by
+     tax_annual_amount / "ListPrice") from listings where "StandardStatus"='Active' and
+     tax_annual_amount > 0 and "ListPrice" > 50000 and tax_annual_amount / "ListPrice" < 0.05;`
+     A material move against the 0.569% recorded in `lib/property-tax-rate.ts` is a defect there.
+   - With the series dark AND the insurance row absent, the rendered defaults must equal the
+     documented fallbacks (7 / 0.57 / 0.30) — tax is a constant and is unaffected either way.
 6. **Completion telemetry**: load a tool page, scroll past the calculator, then:
    `select event_type, page_url, created_at from visitor_events where page_url like '%/tools/%' order by created_at desc limit 5;`
    → fresh `section_view` + `scroll_depth` rows (sink `app/api/visitors/track/route.ts:403-405`).

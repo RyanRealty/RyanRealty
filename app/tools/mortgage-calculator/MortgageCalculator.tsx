@@ -22,7 +22,7 @@ type Props = {
   initialDownPaymentPct?: number
   initialInterestRate?: number
   initialLoanTermYears?: number
-  /** Annual property tax estimate (dollars). Sourced from app_config default_tax_rate_pct × default home price. */
+  /** Annual property tax estimate (dollars). PROPERTY_TAX_RATE_PCT × default home price. */
   initialPropertyTaxYear?: number
   /** Annual homeowners insurance estimate (dollars). Sourced from app_config insurance_rate_pct × default home price. */
   initialInsuranceYear?: number

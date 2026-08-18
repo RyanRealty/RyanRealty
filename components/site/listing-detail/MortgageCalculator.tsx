@@ -6,6 +6,7 @@ import {
   Price,
 } from '@/components/site/primitives'
 import { publishFinancingSplit } from '@/lib/finance/publish-down-payment'
+import { PROPERTY_TAX_RATE_PCT } from '@/lib/property-tax-rate'
 
 /**
  * Listing-detail MortgageCalculator — KB section style.
@@ -31,7 +32,6 @@ type Props = {
 const DEFAULT_RATE_PCT = 7.0
 const DEFAULT_DOWN_PCT = 20
 const DEFAULT_TERM_YEARS = 30
-const TAX_FALLBACK_PCT = 0.85
 const INSURANCE_PER_300K = 1000
 
 function monthlyPI(principal: number, ratePct: number, termYears: number): number {
@@ -78,7 +78,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
     const down = split?.downPayment ?? 0
     const principal = split?.loanAmount ?? 0
     const pi = monthlyPI(principal, ratePct, termYears)
-    const taxesPerYear = taxAnnualAmount ?? price * (TAX_FALLBACK_PCT / 100)
+    const taxesPerYear = taxAnnualAmount ?? price * (PROPERTY_TAX_RATE_PCT / 100)
     const insurancePerYear = (price / 300_000) * INSURANCE_PER_300K
     const taxesMonthly = taxesPerYear / 12
     const insuranceMonthly = insurancePerYear / 12

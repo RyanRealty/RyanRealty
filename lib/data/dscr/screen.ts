@@ -21,13 +21,22 @@ import 'server-only'
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { PROPERTY_TAX_RATE_PCT } from '@/lib/property-tax-rate'
 
 export interface DscrAssumptions {
   /** DSCR investor rate. Market is 6.125–7.5% (Aug 2026); 6.875% is mid-band at 75–80% LTV. */
   ratePct: number
   downPct: number
   termYears: number
-  /** Fallbacks only, used when the property has no measured figure. */
+  /**
+   * Fallbacks only, used when the property has no measured figure.
+   * `taxRatePct` is not a local judgement call — it is the repo-wide measured
+   * constant from lib/property-tax-rate.ts (median tax/list-price across 6,213
+   * actives, 2026-08-17). It used to read 1.2% — more than double the measured
+   * figure, worth $367.50/mo of modelled PITIA on a $700K property, all of it
+   * counting against DSCR and cash flow on exactly the listings that report no
+   * tax bill.
+   */
   taxRatePct: number
   insuranceRatePct: number
   closingCostPct: number
@@ -41,7 +50,7 @@ export const DSCR_DEFAULTS: DscrAssumptions = {
   ratePct: 6.875,
   downPct: 25,
   termYears: 30,
-  taxRatePct: 1.2,
+  taxRatePct: PROPERTY_TAX_RATE_PCT,
   insuranceRatePct: 0.35,
   closingCostPct: 1.5,
   vacancyPct: 5,

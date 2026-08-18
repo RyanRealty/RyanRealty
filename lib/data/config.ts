@@ -14,8 +14,24 @@
  *   2. app_config             — legacy hand-entered row, kept only as a floor
  *   3. FALLBACKS              — last resort so a calculator always renders
  *
- * Tax and insurance rates have no ingested equivalent yet and still read
- * app_config.
+ * THE TAX RATE NO LONGER READS app_config EITHER (2026-08-17). The same drift
+ * had a second instance: `default_tax_rate_pct` holds 0.012 — 1.2% — seeded by
+ * migration 20260414210000 and untouched since, while the actual median of
+ * `tax_annual_amount / "ListPrice"` across 6,213 active listings is 0.569%. The
+ * hand-typed row was more than double the measured figure, so the mortgage
+ * calculator opened with a property-tax default roughly twice what a Central
+ * Oregon buyer pays. Oregon Measure 5/50 keeps assessed value far under market
+ * price, which is why the honest number is this low.
+ *
+ * The measured constant lives in lib/property-tax-rate.ts with its query, its
+ * sample size and its date, and is imported here. The app_config key is no
+ * longer read by any JS: a stale hand-entered row cannot be the "floor" under a
+ * measured value the way a stale rate can sit under an ingested series, because
+ * there is no series to fall back FROM — reading the row would simply reinstate
+ * 1.2%. The row itself is left alone (two SQL routines still read it; see the
+ * audit note in lib/property-tax-rate.ts).
+ *
+ * Insurance still reads app_config and is unchanged here.
  *
  * WHO STILL DEPENDS ON app_config.mortgage_rate (audited 2026-08-17 against
  * the live DB catalog — routine bodies, view defs, column defaults/generation
@@ -50,22 +66,27 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/data/client'
 import { getMarketHistoryWeekly } from '@/lib/data/market/getMarketHistoryWeekly'
+import { PROPERTY_TAX_RATE_PCT } from '@/lib/property-tax-rate'
 
 export type CalculatorDefaults = {
   /** 30-yr fixed mortgage rate, e.g. 6.875 */
   mortgageRate: number
-  /** Property tax rate as percent of purchase price, e.g. 0.75 */
+  /**
+   * Property tax rate as percent of purchase price, e.g. 0.57.
+   * Always PROPERTY_TAX_RATE_PCT — measured, not configured. It stays on this
+   * type so callers keep one shape for the three calculator seeds.
+   */
   taxRatePct: number
   /** Homeowners insurance as percent of purchase price per year, e.g. 0.30 */
   insuranceRatePct: number
 }
 
-// Hardcoded fallbacks used when app_config rows are absent.
+// Hardcoded fallbacks used when the app_config rows behind them are absent.
 // Keep these in sync with the actual current values by updating app_config;
-// these are the last-resort floor, not a display default.
-const FALLBACKS: CalculatorDefaults = {
+// these are the last-resort floor, not a display default. Tax is deliberately
+// not here — it has no app_config input left to fall back from.
+const FALLBACKS: Omit<CalculatorDefaults, 'taxRatePct'> = {
   mortgageRate: 7,
-  taxRatePct: 0.75,
   insuranceRatePct: 0.30,
 }
 
@@ -96,12 +117,17 @@ async function _getCalculatorDefaults(): Promise<CalculatorDefaults> {
   const { data, error } = await sb
     .from('app_config')
     .select('key, value')
-    .in('key', ['mortgage_rate', 'default_tax_rate_pct', 'insurance_rate_pct'])
+    .in('key', ['mortgage_rate', 'insurance_rate_pct'])
 
   if (error || !data) { // poison-null-ok — deliberate fallback; calculators still render
     // app_config is unreachable, but an ingested rate is independent of it and
-    // is the better number anyway — do not discard it here.
-    return { ...FALLBACKS, mortgageRate: ingestedRate ?? FALLBACKS.mortgageRate }
+    // is the better number anyway — do not discard it here. The tax rate is a
+    // measured constant and is unaffected by app_config being down at all.
+    return {
+      ...FALLBACKS,
+      mortgageRate: ingestedRate ?? FALLBACKS.mortgageRate,
+      taxRatePct: PROPERTY_TAX_RATE_PCT,
+    }
   }
 
   const byKey: Record<string, unknown> = {}
@@ -136,8 +162,9 @@ async function _getCalculatorDefaults(): Promise<CalculatorDefaults> {
       20,
       FALLBACKS.mortgageRate,
     ),
-    // Property tax runs ~0.3–2.5% of value; stored fractions land below 0.1.
-    taxRatePct: asPercent(numOrFallback('default_tax_rate_pct', FALLBACKS.taxRatePct), 0.1, 0.1, 3, FALLBACKS.taxRatePct),
+    // Measured across the live active set, not configured. No clamp: there is
+    // no external input left to sanity-check.
+    taxRatePct: PROPERTY_TAX_RATE_PCT,
     // Homeowners insurance runs ~0.1–1% of value per year.
     insuranceRatePct: asPercent(numOrFallback('insurance_rate_pct', FALLBACKS.insuranceRatePct), 0.1, 0.1, 1.5, FALLBACKS.insuranceRatePct),
   }

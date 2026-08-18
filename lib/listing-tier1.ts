@@ -12,9 +12,15 @@
  * market_history_weekly / freddie:pmms30) and hands it down.
  *
  * The rest of the payment assumptions — 20% down, 30-yr term, 0.35%/yr
- * insurance, and a 1.2% tax fallback when the row has no tax figure — are
- * unchanged and are disclosed wherever the number is displayed.
+ * insurance — are unchanged and are disclosed wherever the number is displayed.
+ *
+ * The tax fallback used to be a local `0.012` (1.2%). It is now the measured
+ * repo-wide constant in lib/property-tax-rate.ts, 0.57% of list price, which is
+ * also what the `compute_listing_derived_fields()` trigger uses. The two write
+ * the same column and now agree.
  */
+
+import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
 
 /**
  * Rate used when the caller supplies none: 6.5%, the value every row written
@@ -26,7 +32,6 @@ export const DEFAULT_PITI_RATE = 0.065
 const DOWN_PAYMENT_FRACTION = 0.8 // financed share, i.e. 20% down
 const TERM_MONTHS = 360
 const INSURANCE_RATE = 0.0035 // of price, per year
-const TAX_FALLBACK_RATE = 0.012 // of price, per year, when the row has no tax
 
 /**
  * Coerce a caller-supplied rate to the decimal fraction the math wants.
@@ -60,7 +65,7 @@ export function computeMonthlyPiti(input: MonthlyPitiInput): number | null {
   const principal = listPrice * DOWN_PAYMENT_FRACTION
   const growth = Math.pow(1 + monthlyRate, TERM_MONTHS)
   const pi = (principal * monthlyRate * growth) / (growth - 1)
-  const taxMonthly = (taxAnnual ?? listPrice * TAX_FALLBACK_RATE) / 12
+  const taxMonthly = (taxAnnual ?? listPrice * PROPERTY_TAX_RATE_FRACTION) / 12
   const insuranceMonthly = (listPrice * INSURANCE_RATE) / 12
   return Math.round((pi + taxMonthly + insuranceMonthly + (hoaMonthly ?? 0)) * 100) / 100
 }
