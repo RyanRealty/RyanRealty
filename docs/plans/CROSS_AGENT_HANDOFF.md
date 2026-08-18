@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — place-pages street-0 + venue-city slice
+# Current — 2026-08-18 (cursor-loop-sentinel) — place-pages featured-inventory + reject slice
+
+**Surface:** Cursor cloud `bc-028b80c5` (`cursor/loop-sentinel-2026-08-18t07-30-da07`). **Time:** 2026-08-18 ~08:30 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 268). Claimed parent only as `cursor-loop-sentinel-bc-028b80c5-2026-08-18t07-30`. Product **`9f207c4cc`** landed on **`main`**. Vercel Production **READY** for `9f207c4cc` (`CqDNRaMXqjCVQsqZ6ToXpf74UwFV`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (260 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: `/subdivisions` featured strip zeros **reproduced** then class-fixed. Before: `featuredActive [0,2,12,0,0,5,0,3,0,0,8,0]`, **7 zeros**. After READY: `[14,12,12,11,8,7,6,5,3,3,2,9]`, **0 zeros**. `/subdivisions/brookswood-crossing` 404 **rejected** (200 + H1 + empty-state + sales history). `/subdivisions/brooktree` 404 **rejected** (200 + H1 + listing cards + sales history). `/schools/summit-high` empty map **rejected** (`.v3-field__map` 350×263 / 586×440; 6/9 Google tiles). `/oregon/portland` out-of-area **rejected** (`outsideMarket=true`; 19 all-type / 12 SFR / $505k from `geo_snapshot_mv`). `/housing-market` 5707 vs 5691 **rejected** (ALL-TYPE 5,707; eight type cards including Farm/ranch 11 + Other 5 sum to 5,707). Mix chart slivers **rejected** (8 segments + ordered list). `/communities/tetherow` 35/28 **rejected** (hero **34** homes; **See all 34 Tetherow homes for sale**).
+- Class: `publishFeaturedPlats` prefers the highest verified SFR count per community and does not pad featured tiles with 0 ACTIVE sibling aliases. Wired `/subdivisions` after inventory fetch. Gate `ci:publish-featured-plat-inventory`. Zeros stay on the A-Z index. Do not invent inventory.
+- Prod probe after READY `9f207c4cc`: featured strip **0 zeros** at 390 and 1280 (`[14,12,12,11,8,7,6,5,3,3,2,9]`). Tile shots `/opt/cursor/artifacts/after_subdivisions_{390,1280}_featured_tiles.png`. Also `/opt/cursor/artifacts/after_brookswood-crossing_{390,1280}.png`, `/opt/cursor/artifacts/after_tetherow_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 1 fixed + 7 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4+§6, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages street-0 + venue-city slice
 
 **Surface:** Cursor cloud `bc-d14c774b` (`cursor/loop-chain-2026-08-18t06-04-137f`). **Time:** 2026-08-18 ~07:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 284). Claimed parent only as `cursor-loop-chain-bc-d14c774b-2026-08-18t06-04`. Product **`c3b968afb`** landed on **`main`** (class `cef36790f` + founding-list follow-up). Vercel Production **READY** for `c3b968afb` (`4AmF8K5eMUkDDCffWa43wWd2yYK8`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (276 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
