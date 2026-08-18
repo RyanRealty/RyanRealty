@@ -14,6 +14,7 @@ import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/sit
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { submitContactForm } from '../actions'
+import { CONTACT_FIELD_IDS } from './contact-constants'
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
 
@@ -99,6 +100,7 @@ export function ContactSheet({
         id: 'name',
         label: 'Who should the broker reply to?',
         field: {
+          id: CONTACT_FIELD_IDS.name,
           name: 'name',
           label: 'Name',
           autoComplete: 'name',
@@ -110,6 +112,7 @@ export function ContactSheet({
         id: 'email',
         label: 'Where should the answer go?',
         field: {
+          id: CONTACT_FIELD_IDS.email,
           kind: 'email',
           name: 'email',
           label: 'Email',
@@ -125,6 +128,7 @@ export function ContactSheet({
         id: 'phone',
         label: 'A number to call or text, if you want one.',
         field: {
+          id: CONTACT_FIELD_IDS.phone,
           kind: 'tel',
           name: 'phone',
           label: 'Phone',
@@ -137,6 +141,7 @@ export function ContactSheet({
         id: 'message',
         label: isTour ? 'Anything else?' : 'What should the broker know?',
         field: {
+          id: CONTACT_FIELD_IDS.message,
           kind: 'textarea',
           name: 'message',
           label: 'Message',

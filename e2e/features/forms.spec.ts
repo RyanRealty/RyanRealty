@@ -29,67 +29,71 @@ function isLocalEnv(): boolean {
   return base.includes('localhost') || base.includes('127.0.0.1') || base.includes('0.0.0.0')
 }
 
+/**
+ * /contact is a one-question V3Sheet. Inquiry is step 1 (defaulted), name
+ * is step 2, email is step 3 (`#contact-email`). Never submit the last step
+ * on production — that writes `crm_people`.
+ */
+async function reachContactEmail(page: Page) {
+  const res = await page.goto('/contact', { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
+  expect(res?.status()).toBe(200)
+  await expect(page.locator('main').first()).toBeVisible()
+  await expect(page.getByRole('heading', { name: /send a message/i })).toBeVisible({
+    timeout: 20_000,
+  })
+
+  const continueBtn = page.getByRole('button', { name: /^continue$/i })
+  await expect(continueBtn).toBeVisible()
+  await continueBtn.click()
+
+  const nameInput = page.locator('#contact-name')
+  await expect(nameInput).toBeVisible({ timeout: 10_000 })
+  await expect(nameInput).toHaveCount(1)
+  await nameInput.fill(E2E_NAME)
+  await continueBtn.click()
+
+  const emailInput = page.locator('#contact-email')
+  await expect(emailInput).toBeVisible({ timeout: 10_000 })
+  await expect(emailInput).toHaveCount(1)
+  return { nameInput, emailInput }
+}
+
 test.describe('Contact form (/contact)', () => {
   test.setTimeout(DATA_TIMEOUT)
 
   test('contact form renders with required email field', async ({ page }) => {
-    const res = await page.goto('/contact', { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
-    expect(res?.status()).toBe(200)
-    // Use first() — some pages render two <main> elements (layout + page body)
-    await expect(page.locator('main').first()).toBeVisible()
-
-    // Contact form email field — id="contact-email" from ContactForm.tsx
-    // NOTE: Production renders ContactForm twice (duplicate IDs — real bug).
-    // Use .first() to target the primary visible form in the page grid.
-    const emailInput = page.locator('#contact-email').first()
-    await expect(emailInput).toBeVisible({ timeout: 20_000 })
+    const { emailInput } = await reachContactEmail(page)
     expect(await emailInput.getAttribute('required')).not.toBeNull()
     expect(await emailInput.getAttribute('type')).toBe('email')
   })
 
   test('contact form: invalid email prevents submission (HTML5 validation)', async ({ page }) => {
-    await page.goto('/contact', { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
-    await expect(page.locator('main').first()).toBeVisible()
+    const { emailInput } = await reachContactEmail(page)
 
-    // NOTE: Production has duplicate #contact-email — use .first()
-    const emailInput = page.locator('#contact-email').first()
-    await expect(emailInput).toBeVisible({ timeout: 20_000 })
-
-    // Fill invalid email
     await emailInput.fill(INVALID_EMAIL)
 
-    // Check HTML5 validity API — invalid email should fail validation
     const isValid = await emailInput.evaluate((el: HTMLInputElement) => el.checkValidity())
     expect(isValid, 'Invalid email should fail HTML5 email validation').toBe(false)
+
+    await page.getByRole('button', { name: /^continue$/i }).click()
+    await expect(page.getByRole('alert')).toContainText(/does not look complete/i)
+    await expect(page.locator('#contact-email')).toBeVisible()
   })
 
   test('contact form: valid email passes HTML5 validation', async ({ page }) => {
-    await page.goto('/contact', { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
-    await expect(page.locator('main').first()).toBeVisible()
+    const { emailInput } = await reachContactEmail(page)
 
-    // NOTE: Production has duplicate #contact-email — use .first()
-    const nameInput = page.locator('#contact-name').first()
-    const emailInput = page.locator('#contact-email').first()
-    await expect(emailInput).toBeVisible({ timeout: 20_000 })
-
-    await nameInput.fill(E2E_NAME)
     await emailInput.fill(E2E_EMAIL)
 
     const isValid = await emailInput.evaluate((el: HTMLInputElement) => el.checkValidity())
     expect(isValid, 'Valid canary email should pass HTML5 validation').toBe(true)
 
-    // Submit button should be enabled (form is valid)
-    const submitBtn = page.getByRole('button', { name: /send|submit|contact/i }).first()
-    await expect(submitBtn).toBeVisible()
-    const isDisabled = await submitBtn.isDisabled()
-    expect(isDisabled, 'Submit button should be enabled with valid email').toBe(false)
+    const continueBtn = page.getByRole('button', { name: /^continue$/i })
+    await expect(continueBtn).toBeVisible()
+    await expect(continueBtn).toBeEnabled()
 
-    // DO NOT click submit unless local environment
-    if (!isLocalEnv()) {
-      // Production / staging: do not submit — just verified the state
-      return
-    }
-    // Local only: submitting would hit local server, no production CRM lead
+    // DO NOT advance to Send message / submit — that writes crm_people.
+    if (!isLocalEnv()) return
   })
 })
 

@@ -475,20 +475,24 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                   Bedrooms
                 </p>
                 <div className="flex flex-nowrap gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  {BEDS_OPTIONS.map(({ value, label }) => (
-                    <Label key={value || 'any'} className="cursor-pointer">
-                      <Input
-                        type="radio"
-                        name="beds"
-                        value={value}
-                        defaultChecked={(props.beds ?? '') === value}
-                        className="peer sr-only"
-                      />
-                      <span className="block rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium text-foreground peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-primary hover:border-primary/30">
-                        {label}
-                      </span>
-                    </Label>
-                  ))}
+                  {BEDS_OPTIONS.map(({ value, label }) => {
+                    const id = `filter-beds-${value || 'any'}`
+                    return (
+                      <Label key={id} htmlFor={id} className="cursor-pointer">
+                        <Input
+                          type="radio"
+                          id={id}
+                          name="beds"
+                          value={value}
+                          defaultChecked={(props.beds ?? '') === value}
+                          className="peer sr-only"
+                        />
+                        <span className="block rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium text-foreground peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-primary hover:border-primary/30">
+                          {label}
+                        </span>
+                      </Label>
+                    )
+                  })}
                 </div>
               </div>
               <div>
@@ -496,20 +500,24 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                   Bathrooms
                 </p>
                 <div className="flex flex-nowrap gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  {BATHS_OPTIONS.map(({ value, label }) => (
-                    <Label key={value || 'any'} className="cursor-pointer">
-                      <Input
-                        type="radio"
-                        name="baths"
-                        value={value}
-                        defaultChecked={(props.baths ?? '') === value}
-                        className="peer sr-only"
-                      />
-                      <span className="block rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium text-foreground peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-primary hover:border-primary/30">
-                        {label}
-                      </span>
-                    </Label>
-                  ))}
+                  {BATHS_OPTIONS.map(({ value, label }) => {
+                    const id = `filter-baths-${value || 'any'}`
+                    return (
+                      <Label key={id} htmlFor={id} className="cursor-pointer">
+                        <Input
+                          type="radio"
+                          id={id}
+                          name="baths"
+                          value={value}
+                          defaultChecked={(props.baths ?? '') === value}
+                          className="peer sr-only"
+                        />
+                        <span className="block rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium text-foreground peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-primary hover:border-primary/30">
+                          {label}
+                        </span>
+                      </Label>
+                    )
+                  })}
                 </div>
               </div>
               <Button type="submit" disabled={isPending} className="w-full">

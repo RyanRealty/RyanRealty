@@ -28,8 +28,8 @@ test.describe('Map search', () => {
     // Wait up to DATA_TIMEOUT for body to appear
     await page.waitForSelector('body', { timeout: DATA_TIMEOUT })
 
-    // Page should have a heading
-    const heading = page.locator('h1, h2, [role="heading"]').first()
+    // Closed chrome menu titles are hidden <h2>s; the page heading is the H1.
+    const heading = page.getByRole('heading', { level: 1 })
     await expect(heading).toBeVisible({ timeout: DATA_TIMEOUT })
 
     // No application error
@@ -86,8 +86,7 @@ test.describe('Map search', () => {
     // to distinguish layout bugs (wider overflow) from Maps chrome artifacts.
     expect(overflow, `Mobile map search overflows by ${overflow}px — check for CSS overflow bug`).toBeLessThanOrEqual(20)
 
-    // A heading is present
-    const heading = page.locator('h1, h2, [role="heading"]').first()
+    const heading = page.getByRole('heading', { level: 1 })
     await expect(heading).toBeVisible({ timeout: DATA_TIMEOUT })
   })
 })

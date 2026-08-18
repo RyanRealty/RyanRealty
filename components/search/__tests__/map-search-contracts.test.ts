@@ -645,6 +645,13 @@ describe('Home type two-layer filter (class + MLS sub type)', () => {
     expect(types).toMatch(/SUBTYPE_DISPLAY_LABELS/)
     expect(types).toMatch(/Manufactured On Land/)
   })
+
+  it('beds/baths chips have unique control ids (nightly locators)', () => {
+    const bar = readSrc('components/SearchFilterBar.tsx')
+    expect(bar).toMatch(/filter-beds-\$\{value \|\| 'any'\}/)
+    expect(bar).toMatch(/filter-baths-\$\{value \|\| 'any'\}/)
+    expect(bar).toMatch(/htmlFor=\{id\}/)
+  })
 })
 
 describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {

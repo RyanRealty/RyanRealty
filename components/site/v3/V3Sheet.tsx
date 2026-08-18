@@ -134,6 +134,12 @@ type V3SheetFieldBase = {
    */
   name: string
   /**
+   * Stable control id. Use when a public page needs one unique locator
+   * (`contact-email`). Omit and the sheet generates `${uid}-${step.id}-${name}`.
+   * A duplicate id in the same sheet is dropped.
+   */
+  id?: string
+  /**
    * The visible label, and therefore the accessible name. A field with a blank label
    * is dropped rather than rendered nameless.
    */
@@ -399,6 +405,7 @@ type ReadyOption = {
 type ReadyField = {
   name: string
   label: string
+  controlId?: string
   kind: 'text' | 'email' | 'tel' | 'number' | 'textarea' | 'select' | 'choice'
   hint?: string
   placeholder?: string
@@ -508,6 +515,7 @@ function normalizeField(
   raw: V3SheetField | undefined,
   stepId: string,
   usedNames: Set<string>,
+  usedControlIds: Set<string>,
 ): ReadyField | undefined {
   if (!raw || typeof raw !== 'object') return undefined
 
@@ -521,6 +529,13 @@ function normalizeField(
   }
   if (usedNames.has(name)) {
     warn(`step "${stepId}" dropped field "${name}", a name already used in this sheet.`)
+    return undefined
+  }
+  const controlId = text(raw.id)
+  if (controlId && usedControlIds.has(controlId)) {
+    warn(
+      `step "${stepId}" dropped field "${name}", control id "${controlId}" already used in this sheet.`,
+    )
     return undefined
   }
 
@@ -539,6 +554,7 @@ function normalizeField(
   }
 
   usedNames.add(name)
+  if (controlId) usedControlIds.add(controlId)
 
   const rows =
     kind === 'textarea'
@@ -548,6 +564,7 @@ function normalizeField(
   return {
     name,
     label,
+    controlId,
     kind,
     hint: text(raw.hint),
     placeholder: text(raw.placeholder),
@@ -643,6 +660,7 @@ function normalizeSteps(steps: readonly V3SheetStep[]): ReadyStep[] {
   const out: ReadyStep[] = []
   const usedIds = new Set<string>()
   const usedNames = new Set<string>()
+  const usedControlIds = new Set<string>()
 
   for (const step of steps ?? []) {
     // A hole is dropped, never dereferenced. This repo's tsconfig has no
@@ -665,7 +683,7 @@ function normalizeSteps(steps: readonly V3SheetStep[]): ReadyStep[] {
     out.push({
       id,
       label,
-      field: normalizeField(step.field, id, usedNames),
+      field: normalizeField(step.field, id, usedNames, usedControlIds),
       prose: paragraphs(step.children),
       blocks: normalizeBlocks(step.blocks, id),
       advanceLabel: text(step.advanceLabel),
@@ -1102,7 +1120,7 @@ export function V3Sheet({
   const error = errorState && errorState.stepId === step.id ? errorState.message : null
 
   const questionId = `${uid}-${step.id}-question`
-  const fieldId = field ? `${uid}-${step.id}-${field.name}` : ''
+  const fieldId = field ? (field.controlId ?? `${uid}-${step.id}-${field.name}`) : ''
   const labelId = `${fieldId}-label`
   const hintId = field?.hint ? `${fieldId}-hint` : undefined
   const errorId = field && error ? `${fieldId}-error` : undefined

@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test'
  *
  * Selectors are grounded in components/SearchFilterBar.tsx:
  *   - Price:   <Button>Price</Button> → dropdown form with <Input name="maxPrice" />
- *   - Beds:    <Button>Beds & Baths</Button> → sr-only radios name="beds"
+ *   - Beds:    <Button>Beds & Baths</Button> → #filter-beds-N chip radios
  *   - Apply:   each dropdown form's <Button type="submit">Apply</Button>
  *
  * Note: /homes-for-sale/bend is rewritten to /search/bend in next.config.ts,
@@ -51,20 +51,22 @@ test.describe('Search filters', () => {
       page.getByRole('button', { name: /^apply/i }).first().click(),
     ])
 
-    // Open Beds & Baths and pick 3+ bedrooms (sr-only peer radio).
+    // Open Beds & Baths and pick 3+ via the labeled chip (sr-only radio).
     const bedsButton = page.getByRole('button', { name: /beds & baths/i })
     await expect(bedsButton).toBeVisible({ timeout: DATA_TIMEOUT })
     await bedsButton.click()
 
-    const bedsRadio = page.locator('input[name="beds"][value="3"]')
+    const bedsRadio = page.locator('#filter-beds-3')
     await bedsRadio.waitFor({ state: 'attached', timeout: 10_000 })
-    await bedsRadio.check({ force: true })
+    await page.locator('label[for="filter-beds-3"]').click()
+    await expect(bedsRadio).toBeChecked()
 
+    const bedsForm = page.locator('form').filter({ has: bedsRadio })
     await Promise.all([
       page.waitForURL((url) => url.searchParams.has('beds') && url.searchParams.has('maxPrice'), {
         timeout: DATA_TIMEOUT,
       }),
-      page.getByRole('button', { name: /^apply/i }).first().click(),
+      bedsForm.getByRole('button', { name: /^apply/i }).click(),
     ])
 
     // Assert URL params are set correctly (buildParams carries maxPrice forward).
