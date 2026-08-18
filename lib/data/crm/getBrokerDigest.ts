@@ -1,6 +1,6 @@
 /**
  * getBrokerDigest — assembles a single broker's daily/weekly digest entirely
- * from the self-owned crm_* tables, replacing the Follow Up Boss People API the
+ * from the self-owned crm_* tables, replacing the retired vendor People API the
  * digest crons used to read (CONTACT360 Phase 10.4 — broker reporting repoint).
  *
  * Before this, /api/cron/daily-broker-digest pulled every new lead from the FUB

@@ -341,7 +341,7 @@ function EventCard({ item }: { item: TimelineItem }) {
   const isLeadOrigin = item.kind === 'lead_created'
   const preview = (item.body ?? '').trim()
   const long = preview.length > 220
-  // Legacy Follow Up Boss texts/emails came in with their content redacted at
+  // Legacy imported texts/emails came in with their content redacted at
   // import (payload.contentHidden === true, body null). Show a labeled
   // placeholder instead of a confusingly blank card.
   const contentHidden = !preview && (item.payload as { contentHidden?: unknown } | null)?.contentHidden === true

@@ -6,10 +6,10 @@
 
 | Claim | Where to verify it |
 |---|---|
-| No FUB API call can authenticate | `lib/crm/fub-env.ts` — `getFubApiKey()` is `return undefined`. Every FUB client function guards `if (!apiKey) return`, so one switch stops all outbound FUB traffic. |
-| Lead capture writes natively | `lib/followupboss.ts` — `sendEvent()` no longer POSTs to Follow Up Boss; it calls `ensureNativeLead` and creates/reuses a `public.crm_people` row. |
+| No vendor CRM client remains | `lib/crm/fub-env.ts` and `lib/followupboss.ts` were deleted. |
+| Lead capture writes natively | `lib/crm/send-event.ts` — `sendEvent()` calls `ensureNativeLead` and creates/reuses a `public.crm_people` row. |
 | The live CRM is in-house | `/admin/crm` (app/admin/(protected)/crm), `lib/crm/*`, and the `crm-*` crons registered in `vercel.json` (`crm-auto-enroll`, `crm-sequence-engine`, `crm-scheduled-sends`, `crm-gmail-sync`, and the rest). |
-| Follow-up sequences replaced action plans | `lib/crm/enroll.ts` (`autoEnrollPerson`, `autoEnrollByFubId`, `manualEnrollPerson`); sequence definitions live in Supabase `crm_sequences`; they are edited at `/admin/crm/sequences`. |
+| Follow-up sequences replaced action plans | `lib/crm/enroll.ts` (`autoEnrollPerson`, `autoEnrollByPersonId`, `manualEnrollPerson`); sequence definitions live in Supabase `crm_sequences`; they are edited at `/admin/crm/sequences`. |
 
 ## Why the files are still at their original paths
 

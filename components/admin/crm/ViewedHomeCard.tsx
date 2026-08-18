@@ -4,7 +4,7 @@
  * FUB-clone property card for the contact-360 Homes tab. Renders one home the
  * lead is shopping as a vertical card — photo with an activity badge overlay,
  * price + live MLS status, beds/baths, linked address, MLS#, and view count —
- * matching the Follow Up Boss iOS Homes tab (screen ui1_5835).
+ * matching the CRM Homes tab (screen ui1_5835).
  *
  * Buyer-side BPO: a compact "Draft BPO" action starts a broker price opinion
  * against THIS listing (the home the lead is shopping), pre-linked to the

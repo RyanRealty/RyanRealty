@@ -30,9 +30,7 @@ The in-house CRM is the system of record:
 | Meta audiences | `/api/cron/meta-audience-sync` → `syncCrmAudience()` over consent-gated `crm_people` |
 | Lead capture | Every public form + Meta Lead Ads webhook → `sendEvent` |
 
-`getFubApiKey()` in `lib/crm/fub-env.ts` is hardcoded `undefined`. Every
-former third-party CRM HTTP path no-ops. Re-enabling that vendor is not a
-config flip.
+There is no vendor CRM client in the tree. Capture is `sendEvent` only.
 
 ---
 

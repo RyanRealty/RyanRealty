@@ -3,7 +3,7 @@
 /**
  * FUB-clone Comms feed for a CRM person. Renders the contact's messages as a
  * chronological row list — one row per message, newest first — matching the
- * Follow Up Boss iOS Comms tab (channel icon · subject/descriptor · participant ·
+ * Comms tab (channel icon · subject/descriptor · participant ·
  * 2-line preview · date · email open-count). Rows collapse to the FUB anatomy at
  * rest and expand on tap to reveal the full body, MMS attachments, and call
  * recordings (features FUB's collapsed rows don't carry, surfaced on demand).
@@ -146,7 +146,7 @@ export default function ConversationFeed({
       {items.map((e) => {
         const { Icon, title, participant } = rowMeta(e, personName)
         const preview = (e.body ? timelineEmailBody(e.body) : '') || ''
-        // Legacy Follow Up Boss messages imported with content redacted
+        // Legacy imported messages with content redacted
         // (payload.contentHidden === true, body null) — show a labeled
         // placeholder rather than a blank row.
         const contentHidden = !preview && e.payload?.contentHidden === true

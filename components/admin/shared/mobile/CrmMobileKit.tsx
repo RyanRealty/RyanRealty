@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * CrmMobileKit — the shared Follow Up Boss–style mobile primitives.
+ * CrmMobileKit — shared mobile CRM primitives.
  *
  * Matt directive 2026-06-26: the CRM must look + behave like the FUB iOS app on
  * phones. Every CRM list/detail screen composes these so the look lives in ONE
