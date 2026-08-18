@@ -233,13 +233,28 @@ Unused CRM modules: `lib/crm/lead-router.ts` (`captureLead` zero callers), `lib/
 
 ## Database (code vs photograph)
 
-**483** migrations. Newest: `get_current_mortgage_rate` / listing PITI (`20260817190000`). Snapshot + DAL index stamped **2026-08-18T01:27Z**. No live `information_schema` this pass.
+**484** migrations. Newest unused-object drop: `20260818210000_drop_unused_runtime_crosswalk_objects.sql` (not applied to hosted this pass). Snapshot + DAL index stamped **2026-08-18T01:27Z**. Hosted probed **2026-08-18** via service-role supabase-js (`dwvlophlbvvygjfxcrhm`). No `information_schema` this pass.
 
 **In use from `app/`/`lib/`:** `sale_pricing_facts`, `listing_pricing_reads`, analytics marts, `fleet_findings`, `loop_work_nodes`, `tc_deal_people` / form catalog, plus ~50 SECURITY DEFINER RPCs (`search_listings_advanced`, `search_listing_keys_in_shapes`, CRM claim/lease, market refresh, CMA comps).
 
-**Unused in code (live unknown — do not drop):** `sale_pricing_seller_net` view, `sale_pricing_price_steps`, `analytics_dim_agent`, `analytics_inventory_snapshot`, backfill cursor tables, `listing_detail_mv` (DAL uses tile/search MVs), `get_beacon_metrics` / `get_homepage_market_stats` (types only). Snapshot still lists `trending_scores` after a drop migration — photograph conflict.
+### Unused-object disposition (hosted 2026-08-18)
 
-**Not seen:** whether all 483 files are applied; RLS/GRANT state; leftover backfill-queue rows.
+| Object | Hosted | Code | Verdict |
+|---|---|---|---|
+| `listing_detail_mv` | exists · **589,940** rows · `refreshed_at` max **2026-05-27** | DAL comments only; `refresh-mvs` + pg_cron refresh tile/search/xref, not this. `refresh_listing_detail_mv` still in OpenAPI, no TS caller | **park** — stale 590k MV; refresh RPC still hosted |
+| `sale_pricing_seller_net` | view · **149,402** rows (= facts) | JS `lib/pricing/seller-net.ts`; no `.from('sale_pricing_seller_net')` | **park** — documented projection over live facts |
+| `sale_pricing_price_steps` | **160,448** rows · latest `event_date` 2026-07-24 | written by live `refresh_sale_pricing_facts_batch` | **keep** |
+| `analytics_dim_agent` | exists · **0** rows | no reader/writer; sibling `analytics_dim_office` is live | **park** — reserved empty dim |
+| `analytics_inventory_snapshot` | **24** rows · last `as_of` **2026-08-10** | `/api/cron/snapshot-active-inventory` | **keep** |
+| `trending_scores` | exists · **0** rows (drop `20260330100006` did not stick) | none; Trending Homes uses `get_trending_listing_keys` / `listing_views` | **drop** (migration written, not applied) |
+| `cache_backfill_progress` | **1** row · `co-history` completed **2026-05-07** (1320 runs) | no repo CREATE/reader; OpenAPI still has `backfill_central_oregon_history_tick` | **park** — leftover cursor while RPC remains |
+| `_lss_backfill_cursor` | **6** shards · all `done=true` · last write **2026-08-01** | no TS; one-shot street-suffix pg_cron (self-unschedule). `cron.job` not readable via PostgREST | **park** — completed cursor; confirm cron jobs gone before drop |
+| `listing_backfill_cursors` | **1** row · job `sale_pricing_facts` · **2026-08-18 18:21Z** | live facts refresh | **keep** |
+| `sync_year_cursor` | **1** row · `phase=idle` since **2026-04-14** | `scripts/sync-status-report.mjs` + `/api/admin/sync/backfill-health` | **keep** |
+| `get_beacon_metrics` | OpenAPI yes | `get_city_period_metrics` wrapper → `getReportMetrics` (admin reports + `market-stat-consistency` cron) | **keep** |
+| `get_homepage_market_stats` | OpenAPI yes | types only | **drop** (migration written, not applied) |
+
+**Not seen:** whether all 484 files are applied; RLS/GRANT state; `cron.job` contents (schema not exposed on PostgREST).
 
 ### Unused `lib/` modules (high confidence, do not mass-delete)
 
@@ -271,7 +286,7 @@ Unused CRM modules: `lib/crm/lead-router.ts` (`captureLead` zero callers), `lib/
 | Gmail labels | connected |
 | Grok Tasks | empty |
 | Voice MCP | Grok voices only — **not** product ElevenLabs |
-| Hosted Postgres | **not seen** (no query this pass). Snapshot photograph `2026-08-18T01:27Z`. 483 migration files on disk. |
+| Hosted Postgres | probed 2026-08-18 (service-role supabase-js). Snapshot photograph `2026-08-18T01:27Z`. 484 migration files on disk. |
 | Meta/Google Ads/GSC consoles | **not seen** |
 | Spark live inventory | **not seen** |
 
