@@ -2,8 +2,8 @@
 
 **Status:** COMPLETE. Follow Up Boss was decommissioned 2026-06-24. This file
 used to be a go/no-go plan. Do not execute the old dual-write / FUB-API
-phases. Do not call `api.followupboss.com`. Do not treat leftover
-`FOLLOWUPBOSS_*` Vercel names as a live integration.
+phases. Do not call `api.followupboss.com`. Unused `FOLLOWUPBOSS_*` Vercel
+names were removed 2026-08-18; they were not a live integration.
 
 **Live CRM:** `public.crm_people` + `lib/crm/` + `/admin/crm`. Capture:
 `sendEvent()` in `lib/crm/send-event.ts` → `ensureNativeLead()`.

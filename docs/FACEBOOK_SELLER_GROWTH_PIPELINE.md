@@ -460,7 +460,7 @@ gantt
 
 ## 9. Production env vars (live state)
 
-Names that matter for this pipeline. Leftover `FOLLOWUPBOSS_*` / `NEXT_PUBLIC_FUB_*` keys may still exist in Vercel; **`getFubApiKey()` returns undefined** and they are not a CRM.
+Names that matter for this pipeline. Unused `FOLLOWUPBOSS_*` / `NEXT_PUBLIC_FUB_*` names were removed from Vercel (2026-08-18). They were not a CRM.
 
 | Var | Purpose |
 |---|---|

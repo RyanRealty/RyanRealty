@@ -2,8 +2,9 @@
 
 **Status 2026-08-18.** Authoritative spec for how leads enter the in-house
 CRM (`public.crm_people`). Follow Up Boss is decommissioned (2026-06-24).
-Do not POST to a third-party people or events API. Do not treat leftover
-`FOLLOWUPBOSS_*` Vercel names as a live integration.
+Do not POST to a third-party people or events API. Unused `FOLLOWUPBOSS_*`
+Vercel names were removed 2026-08-18; they were never a live integration after
+the 2026-06-24 cutover.
 
 Load-bearing invariants are **locked by `ci:crm-lead-integrity` (G49)**.
 

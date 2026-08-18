@@ -33,7 +33,7 @@ Hunters: 25 explore agents + parent probes. Skeptics try to kill unused claims b
 | Vercel project | `prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA` / team `team_zwYQPapH0CpleD7RzJ7WctGO` / name `ryanrealty` |
 | Latest READY production | `f6e29988` — newsletter subscribe hydration (`dpl_CGedqTqh…`). Tip `1d2e52ea` docs-stamp deploy was **CANCELED** |
 | Extra Vercel projects | `ryan-realty-lps` (stale READY, no custom domain) · `tmp` (empty) |
-| Production env keys | **106** names (CLI). Includes live vendors **and** leftover `FOLLOWUPBOSS_*`, `INNGEST_*`, `NEXT_PUBLIC_FUB_*` |
+| Production env keys | **100** unique names (CLI, 2026-08-18 second pass). Live vendors kept. Unused `FOLLOWUPBOSS_*` / `NEXT_PUBLIC_FUB_*` / `INNGEST_EVENT_KEY` removed. **`INNGEST_SIGNING_KEY` kept** — `/api/revalidate` still reads it and Vercel has no `REVALIDATE_SECRET` |
 | `LOOP_SENTINEL` | set on production |
 | `PRODUCER_RUNTIME_ENABLED` | set on production |
 | Gmail MCP | connected (labels exist). Did not read mail. |
@@ -54,15 +54,18 @@ Supabase, Spark, Twilio, Resend, Meta (pixel + CAPI + ads + page), GA4/GTM/Ads/A
 
 ### Unused (key exists in Vercel; runtime accessor dead or only scripts)
 
-| Name | Why unused |
-|---|---|
-| `FOLLOWUPBOSS_API_KEY` | `getFubApiKey()` hardcoded `undefined` (`lib/crm/fub-env.ts:17`) |
-| `FOLLOWUPBOSS_EXECUTION_ENABLED` | FUB HTTP off |
-| `NEXT_PUBLIC_FUB_PIXEL_ID` | pixel component gone |
-| `NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM` | leftover identity param |
-| `INNGEST_EVENT_KEY` / `INNGEST_SIGNING_KEY` | send-only client; no in-repo worker |
+None of the parked FUB / Inngest leftovers remain except the one that is still read:
 
-**Park, do not delete from Vercel until a second pass confirms no dashboard job.** Removing a secret is irreversible for any hidden caller.
+| Name | Status (2026-08-18 second pass) |
+|---|---|
+| `FOLLOWUPBOSS_API_KEY` | **Removed** from Production, Preview, Development |
+| `FOLLOWUPBOSS_EXECUTION_ENABLED` | **Removed** from Production, Development (not on Preview) |
+| `NEXT_PUBLIC_FUB_PIXEL_ID` | **Removed** from Production, Preview, Development |
+| `NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM` | **Removed** from Production, Preview, Development |
+| `INNGEST_EVENT_KEY` | **Removed** from Production, Preview, Development (`lib/inngest.ts` deleted; no worker) |
+| `INNGEST_SIGNING_KEY` | **Kept** on Production, Preview, Development — `app/api/revalidate/route.ts` uses it as `REVALIDATE_SECRET` fallback, and `REVALIDATE_SECRET` is not set |
+
+Never present on this project: `FOLLOWUPBOSS_SYSTEM`, `FOLLOWUPBOSS_SYSTEM_KEY`, `FOLLOWUPBOSS_BROKER_USER_MAP`, `FOLLOWUPBOSS_REQUIRE_BROKER_ASSIGNMENT`, `FUB_API_KEY`, `FUB_BCC_ADDRESS`.
 
 ### Not seen
 
@@ -319,7 +322,7 @@ Apply in this order. Stop at the first bucket that needs a second human look.
 2. Unused REGISTRY / automation theater — **APPLIED** (`a37ee8cf`).
 3. Named leftover UI (showcase, ExitIntent, PageCTA, BrokerContactForm) — **APPLIED**. ~165 other G55 orphans still parked.
 4. Unused deps — **APPLIED** (`8d7dc654`).
-5. Leftover Vercel secrets (`FOLLOWUPBOSS_*`, `INNGEST_*`) — **still parked** (do not delete from Vercel this pass).
+5. Leftover Vercel secrets (`FOLLOWUPBOSS_*`, `INNGEST_*`) — **second pass done 2026-08-18.** Unused FUB / `INNGEST_EVENT_KEY` names removed from Vercel. `INNGEST_SIGNING_KEY` kept (revalidate fallback).
 
 ### Do not touch this pass
 
