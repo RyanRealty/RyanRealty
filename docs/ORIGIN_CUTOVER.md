@@ -23,16 +23,40 @@ Depot / Buildkite only run on Origin-hosted (detached) repos.
 
 ## Dual-remote (safe, now)
 
-On every machine that edits this repo (Cursor desktop, Claude IDE, worktrees):
+On every machine that edits this repo (Cursor desktop, Claude IDE, worktrees).
+This is the remaining local step after Vercel is connected.
+
+1. Open **Terminal** (or the Claude IDE terminal).
+2. Go to the checkout:
 
 ```bash
-# once per machine
-curl -fsSL https://downloads.cursor.com/origin/install.sh | sh
-origin auth login
+cd /path/to/RyanRealty
+git pull
+```
 
-# in the checkout (GitHub origin is left alone)
+3. Install the Origin CLI once (skip if `origin --version` already works):
+
+```bash
+curl -fsSL https://downloads.cursor.com/origin/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+4. Sign in. A browser window opens. Click **Allow** / **Sign in** for your
+   Cursor account. When the terminal says you are logged in, you are done
+   with this part.
+
+```bash
+origin auth login
+```
+
+5. Add the second remote. GitHub `origin` stays as-is.
+
+```bash
 npm run origin:dual-remote
 ```
+
+Done looks like: `git remote -v` shows `origin` → GitHub and `cursor` →
+`origin.cursor.com`.
 
 The script adds a `cursor` remote and fetches it. It refuses to run if `origin`
 is not GitHub `RyanRealty/RyanRealty`. Override the Origin slug with
@@ -45,19 +69,56 @@ git remote add cursor https://origin.cursor.com/{owner}/RyanRealty.git
 git fetch cursor
 ```
 
-## Vercel (before any detach)
+## CURSOR_API_KEY (only if a cloud agent asks)
 
-1. Open the Origin repo → **Apps** → connect **Vercel**.
-2. Link the existing project (`prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA`, team
-   `team_zwYQPapH0CpleD7RzJ7WctGO`), not a new project.
-3. Leave the GitHub↔Vercel integration connected.
-4. Prove one Origin-visible push reaches Production **READY**, then
-   `npm run deploy:verify` (needs `VERCEL_TOKEN`; the `gh` commit-status
-   fallback dies after detach).
+This key is so a **cloud agent** can run `origin auth login` without a browser.
+You do not need it on your Mac. Do not paste the key into chat.
 
-Origin API apps cannot install on an inbound GitHub mirror. The first-party
-Vercel app is connected from the repo Apps tab, not by inventing a second
-Vercel project.
+1. Open [cursor.com/dashboard/api](https://cursor.com/dashboard/api) while
+   signed into the same Cursor account.
+2. Click **New API Key**.
+3. Name it `origin-cutover` (any name is fine).
+4. Copy the full secret immediately. It starts with `crsr_` and is shown once.
+   The table later only shows a mask — that mask will not work.
+5. Paste it into the cloud agent's **CURSOR_API_KEY** secret box (the setup
+   prompt on the agent page). Not into Slack, email, or this chat.
+6. Reply in the agent thread: `key is in`. The agent then runs
+   `npm run origin:dual-remote` from the VM.
+
+If you would rather skip the key, dismiss that prompt and use **Dual-remote**
+on your Mac instead (`origin auth login` opens a browser; no key required).
+
+## Vercel Apps (click by click)
+
+Do this in Chrome, signed into the same Cursor account you used to Sync from
+GitHub. Do **not** click **Detach from GitHub** (Settings → General → Danger
+Zone).
+
+1. Open [cursor.com/codebase](https://cursor.com/codebase).
+2. Click the **RyanRealty** repo (GitHub-sync icon, not a repo you created from
+   scratch).
+3. Click **Settings**.
+4. Click **Apps**.
+5. Click **Manage Apps** if you only see a list and no Connect button. That
+   opens [cursor.com/codebase/settings/apps](https://cursor.com/codebase/settings/apps).
+6. On **Vercel**, click **Install** / **Connect** / **Add**.
+7. A Vercel window opens. Sign in as the account that already owns
+   [ryanrealty.vercel.app](https://ryanrealty.vercel.app) (the Ryan Realty
+   team, not a personal hobby team).
+8. When it asks which project, pick the **existing** Ryan Realty project. Do
+   not create a new project. The live one is `prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA`
+   (team `team_zwYQPapH0CpleD7RzJ7WctGO`).
+9. Finish the OAuth. Leave the old GitHub↔Vercel connection in the Vercel
+   dashboard alone.
+
+If **Apps** or **Vercel** is missing, Origin is still in early beta for that
+account. Stay on GitHub. Do not detach.
+
+Done looks like: the repo **Apps** tab shows Vercel as connected, and
+GitHub still shows as the sync source under **Settings → General**.
+
+Matt connected Vercel to Origin on 2026-08-18. Leave the GitHub↔Vercel
+integration in place until an Origin-triggered production deploy is READY.
 
 ## Claude Code
 

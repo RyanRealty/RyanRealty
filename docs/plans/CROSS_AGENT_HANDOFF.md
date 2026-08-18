@@ -8,11 +8,10 @@
 
 **Done**
 - Runbook `docs/ORIGIN_CUTOVER.md`. Helper `scripts/origin-dual-remote.mjs` (`npm run origin:dual-remote`) adds a `cursor` remote only; refuses if `origin` is not GitHub `RyanRealty/RyanRealty`.
-- Blocked on Matt browser / `CURSOR_API_KEY`: Origin login, then the helper fetch, then Origin Apps → Vercel on the existing project.
+- Matt connected Vercel to Origin (2026-08-18). GitHub↔Vercel left in place.
 
 **Next**
-- Matt: `origin auth login` (or set `CURSOR_API_KEY`) and `npm run origin:dual-remote` on Cursor + Claude machines.
-- Matt: Origin repo **Apps → Vercel** (same project). Leave GitHub↔Vercel connected.
+- Remaining human step: either paste `CURSOR_API_KEY` into the cloud agent secret box (`cursor.com/dashboard/api` → New API Key → paste `crsr_…` once, not in chat) so this VM can run the helper, **or** on the Mac: `origin auth login` then `npm run origin:dual-remote`.
 - Do **not** Detach from GitHub until an Origin-triggered production deploy is READY.
 
 **Do not:** detach; delete GitHub; point `origin` at Origin yet; start a loop ship class from this branch.
