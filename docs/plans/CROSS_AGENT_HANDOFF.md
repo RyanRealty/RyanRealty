@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — place-pages chrome-only reject slice
+
+**Surface:** Cursor cloud `bc-de0e0460` (`cursor/loop-chain-2026-08-18t03-21-446b`). **Time:** 2026-08-18 ~03:54 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 324). Claimed parent only as `cursor-loop-chain-bc-de0e0460-2026-08-18t03-21`. No product change. Production stays **READY** at **`c2c6c0fb0`**. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (316 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: all eight `/subdivisions/{slug}` chrome-only claims **rejected**. SSR + Chrome at 390/1280 show H1 + either a live listing or “No active listings…” + sales history. aspenwood $719,000 / 353 Aspenwood Avenue / 12 closes since 2008. canyon-breeze $749,900 / 19658 Harvard Place / 49 since 2008. awbrey-point $2,195,000 / 2580 Awbrey Point Cir / 42 since 2005. Empty-state plats: badlands-ranch (1 close 2024 $2,200,000), awbrey-highlands (22 since 1998), banta-acres (5 since 1999), canyon-park (155 since 1997), chaparral-estates (171 since 1997).
+- No class-fix. Same chrome-only false-positive family as the prior altura / american-west slice. No gate, no DAL, no ledger insert.
+- After shots `/opt/cursor/artifacts/reject_{aspenwood,badlands-ranch,canyon-breeze,awbrey-highlands,banta-acres,canyon-park,awbrey-point,chaparral-estates}_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
 
 **Surface:** Cursor cloud `bc-812b6297` (`cursor/loop-chain-2026-08-18t02-04-a235`). **Time:** 2026-08-18 ~02:42 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 340). Claimed parent only as `cursor-loop-chain-bc-812b6297-2026-08-18t02-04`. Product **`c2c6c0fb0`** landed on **`main`** (class `0ed74366e` + compile follow-up). Vercel Production **READY** for `c2c6c0fb0` (`7dQpSydh4ZJfEFAGnPrVgttrkuZ8`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open** (332 leftover lines). Release skipped: another session (`cursor-loop-chain-2026-08-18-bc-0a79e0c8`) holds the parent `in_progress`. Do not steal. Do not `completeWorkNode`. Loop stays **ARMED**. Do not start a new ship class from this session.
 
