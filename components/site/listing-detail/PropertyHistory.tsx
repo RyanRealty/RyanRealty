@@ -2,6 +2,7 @@ import {
   Price,
   TabularNumber,
 } from '@/components/site/primitives'
+import { publishHistoryDay } from '@/lib/listing/publish-calendar-day'
 
 /**
  * Listing-detail PropertyHistory — KB section style.
@@ -62,17 +63,7 @@ const EVENT_LABEL: Record<string, string> = {
 const MEANINGFUL_EVENTS = new Set(Object.keys(EVENT_LABEL))
 
 function formatDate(iso: string | null | undefined): string {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'America/Los_Angeles',
-    })
-  } catch {
-    return iso
-  }
+  return publishHistoryDay(iso)
 }
 
 function eventLabel(raw: string | undefined): string {

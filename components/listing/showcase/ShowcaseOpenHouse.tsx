@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { trackEvent } from '@/lib/tracking'
+import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 
 type OpenHouse = {
   id: string
@@ -19,11 +20,7 @@ type Props = {
 }
 
 function formatDate(d: string): string {
-  try {
-    return new Date(d + 'Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return d
-  }
+  return publishCalendarDay(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function formatTime(t: string | null): string {

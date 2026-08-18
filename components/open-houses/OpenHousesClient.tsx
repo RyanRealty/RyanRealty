@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { trackEvent } from '@/lib/tracking'
+import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 import type { OpenHouseWithListing } from '@/app/actions/open-houses'
 import type { OpenHousesFilters } from '@/app/actions/open-houses'
 import dynamic from 'next/dynamic'
@@ -42,7 +43,7 @@ function formatTime(t: string | null): string {
 }
 
 function formatDate(d: string): string {
-  return new Date(d + 'Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  return publishCalendarDay(d, { weekday: 'short', month: 'short', day: 'numeric', year: undefined })
 }
 
 type Props = {

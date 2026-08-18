@@ -36,6 +36,7 @@
  */
 
 import { formatDate } from '@/lib/format/date'
+import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 import { cityHero } from '@/lib/geo-images'
 import { publishStreetLine, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
 import { listingTileHref } from '@/lib/slug'
@@ -155,8 +156,8 @@ export function monthLabel(iso?: string): string {
  * anchors the day so no rounding can walk it across a date boundary.
  */
 export function formatOpenHouseWhen(eventDate: string, start: string | null, end: string | null): string {
-  const day = formatDate(eventDate + 'T12:00:00Z', {
-    weekday: 'short', month: 'short', day: 'numeric', year: undefined, timeZone: 'UTC',
+  const day = publishCalendarDay(eventDate, {
+    weekday: 'short', month: 'short', day: 'numeric', year: undefined,
   })
   const t = (s: string | null) => {
     if (!s) return ''

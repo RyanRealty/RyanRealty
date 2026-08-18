@@ -4,6 +4,7 @@ import TilesSlider, { TilesSliderItem } from '@/components/TilesSlider'
 import { Card, CardContent } from '@/components/ui/card'
 import type { OpenHouseWithListing } from '@/app/actions/open-houses'
 import { listingDetailPath } from '@/lib/slug'
+import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 
 type Props = {
   title: string
@@ -13,11 +14,7 @@ type Props = {
 }
 
 function formatDate(date: string): string {
-  return new Date(date + 'Z').toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
+  return publishCalendarDay(date, { weekday: 'short', month: 'short', day: 'numeric', year: undefined })
 }
 
 function formatTime(t: string | null): string {

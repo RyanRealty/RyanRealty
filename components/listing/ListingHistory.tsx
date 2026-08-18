@@ -1,18 +1,13 @@
 import type { SparkListingHistoryItem } from '../../lib/spark'
 import { H3 } from '@/components/site/primitives'
+import { publishHistoryDay } from '@/lib/listing/publish-calendar-day'
 
 type Props = {
   items: SparkListingHistoryItem[] | null
 }
 
 function formatDate(s: string | undefined): string {
-  if (!s) return ''
-  try {
-    const d = new Date(s)
-    return isNaN(d.getTime()) ? s : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-  } catch {
-    return s ?? ''
-  }
+  return publishHistoryDay(s)
 }
 
 export default function ListingHistory({ items }: Props) {

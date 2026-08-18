@@ -4,6 +4,7 @@ import type { ListingDetailOpenHouse } from '@/app/actions/listing-detail'
 import { Button } from '@/components/ui/button'
 import { trackEvent } from '@/lib/tracking'
 import { listingDetailPath } from '@/lib/slug'
+import { publishOpenHouseDay } from '@/lib/listing/publish-calendar-day'
 
 function formatTime(t: string | null): string {
   if (!t) return ''
@@ -17,10 +18,7 @@ function formatTime(t: string | null): string {
 }
 
 function formatDate(d: string): string {
-  const date = new Date(d + 'Z')
-  const day = date.toLocaleDateString('en-US', { weekday: 'long' })
-  const monthDay = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
-  return `${day}, ${monthDay}`
+  return publishOpenHouseDay(d)
 }
 
 type Props = {

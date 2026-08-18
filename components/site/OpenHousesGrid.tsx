@@ -2,6 +2,7 @@ import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import type { OpenHouseWithListing } from '@/app/actions/open-houses'
 import ListingCard, { type ListingCardData, type ListingBadge } from './ListingCard'
 import { listingTileHref } from '@/lib/slug'
+import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 import {
   Body,
   Container,
@@ -53,10 +54,7 @@ function buildCityLine(o: OpenHouseWithListing): string {
 }
 
 function formatOpenHouseBadge(o: OpenHouseWithListing): { kind: ListingBadge; label: string } {
-  // event_date is a bare Pacific calendar date ("2026-05-30"). Read it as UTC
-  // so the weekday matches that date (Pacific would shift midnight back a day).
-  const date = new Date(o.event_date)
-  const weekday = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
+  const weekday = publishCalendarDay(o.event_date, { weekday: 'short', month: undefined, day: undefined, year: undefined })
   const time =
     o.start_time && o.end_time
       ? ` · ${formatTime(o.start_time)}-${formatTime(o.end_time)}`
