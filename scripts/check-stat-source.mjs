@@ -473,7 +473,7 @@ const APP_CONFIG_RATE_KEY = /['"`]mortgage_rate['"`]/
  * `conversion_rate` is not what this is about.
  */
 const SQL_RATE_CONST =
-  /\b([a-z_][\w]*)\s+(?:numeric|decimal|real|double\s+precision)[^;:=]*(?::=|\bDEFAULT\b)\s*([0-9]*\.?[0-9]+)/gi
+  /\b([a-z_][\w]*)\s+(?:constant\s+)?(?:numeric|decimal|real|double\s+precision)[^;:=]*(?::=|\bDEFAULT\b)\s*([0-9]*\.?[0-9]+)/gi
 
 export function sqlMacroSitesIn(name, body) {
   const sites = []
@@ -539,6 +539,11 @@ const SQL_FIXTURES = [
   [
     'trigger with a hardcoded rate (defect 4)',
     [{ file: '1.sql', text: 'CREATE FUNCTION public.t() RETURNS trigger AS $fn$ DECLARE monthly_rate numeric := 0.065 / 12; BEGIN RETURN NEW; END; $fn$;' }],
+    1,
+  ],
+  [
+    'constant-qualified macro rate is still a macro rate',
+    [{ file: '1.sql', text: 'CREATE FUNCTION public.t() RETURNS trigger AS $fn$ DECLARE mortgage_rate constant numeric := 0.065; BEGIN RETURN NEW; END; $fn$;' }],
     1,
   ],
   [
