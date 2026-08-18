@@ -50,6 +50,7 @@ checks.push({
   ok:
     /from ['"]@\/app\/actions\/newsletter-subscribe['"]/.test(sheet) &&
     /subscribeNewsletterAction\(formData\)/.test(sheet) &&
+    /readRrSessionId\(\) \/\/ hydration-safe/.test(sheet) &&
     /id="newsletter"/.test(sheet) &&
     /trap=\{\{ name: 'company'/.test(sheet) &&
     !/sendNewsletter|adminSendNewsletter/.test(sheet),
