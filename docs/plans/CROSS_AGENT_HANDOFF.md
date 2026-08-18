@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — listing-detail TIC share label + withhold ppsf
+# Current — 2026-08-18 (cursor-loop-chain) — listing-detail share/empty/navy/history reject slice
+
+**Surface:** Cursor cloud `bc-859e1a7d` (`cursor/loop-chain-2026-08-18t13-12-df95`). **Time:** 2026-08-18 ~13:25 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 180). First claim lost to hung sibling `cursor-loop-sentinel-bc-26cdbbff-2026-08-18t13-10` (node `updated_at` frozen at 13:14:45; cloud agent last activity frozen). Took over parent as `cursor-loop-chain-bc-859e1a7d-2026-08-18t13-12`. **No product change.** Production stays on last product **`cdb35fb11`** (already READY; dpl `CxViDz2vpqBeLEYN8NsTuDcypKwD`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (172 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: 1936 Redtail Hawk missing share label **rejected** (hero `$5K TENANCY IN COMMON`, H1 `$4,900`, VIEW ALL 47, no living-area `$/sqft`; prior class on `cdb35fb11`). Awbrey Butte `/under-400k` empty state **rejected** (H1 matches; **7 homes**; 1-7 of 7; `/under-300k` still 3). Monta Vista blank navy **rejected** (Spark field + `$119K` 7.44 ACRES + VIEW ALL 6). 151 Roosevelt intermittent navy **rejected** (`$989K` 5/2/1092 + VIEW ALL 50). 61055 Borden missing history **rejected** twice (LISTED Jul 22, 2026 `$487,000`). Borden missing listing-agent attribution **rejected** (`Listing courtesy of eXp Realty, LLC, agent Molly McInelly, 888-814-9613`). 20556 Empire missing history **rejected** (LISTED Aug 10, 2026 `$455,000`; courtesy Cascade Hasson SIR, Jenna Raanes). Hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet missing-share-label / empty under-400k / blank-UNMUTE / missing history / missing listing-agent did not reproduce. Do not invent a listing. Do not invent fractional when the feed already prints Tenancy in Common.
+- Prod probe on live `cdb35fb11`: Redtail hero **`$5K TENANCY IN COMMON`**; Awbrey 400k **7 homes**; Monta Vista H1 `$119,000`; Roosevelt H1 `$989,000`; Borden H1 `$487,000` + LISTED Jul 22; Empire H1 `$455,000` + LISTED Aug 10. After shots `/opt/cursor/artifacts/after_redtail_{390,1280}.png`, `/opt/cursor/artifacts/after_awbrey400_{390,1280}.png`, `/opt/cursor/artifacts/after_montavista_390.png`, `/opt/cursor/artifacts/after_roosevelt_390.png`, `/opt/cursor/artifacts/after_borden_{390,1280}_history_precise.png`, `/opt/cursor/artifacts/after_empire_390_history.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail TIC share label + withhold ppsf
 
 **Surface:** Cursor cloud `bc-a0c77b4b` (`cursor/loop-chain-2026-08-18t12-00-4d91`). **Time:** 2026-08-18 ~13:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 188). Claimed parent only as `cursor-loop-chain-bc-a0c77b4b-2026-08-18t12-00`. Product **`cdb35fb11`** landed on **`main`**. Vercel Production **READY** for `cdb35fb11` (`CxViDz2vpqBeLEYN8NsTuDcypKwD`; GitHub Vercel success + Production deployment). First `npm run deploy:verify` hit READY on the prior product SHA `05bbb31`; the HouseMe follow-up SHA verified via GitHub Production status after the CLI login stall. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (180 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
