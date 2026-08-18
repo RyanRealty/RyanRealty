@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { placeListShowingLabel } from '@/lib/explore/place-list-showing'
+import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
 
 export type PlaceMapListRow = {
   key: string
@@ -36,6 +37,8 @@ type Props = {
   totalActive: number
   viewAllHref?: string
   viewAllLabel?: string
+  /** Place-filtered /homes-for-sale/{city}/… path. Regional inventory is withheld. */
+  browseHref?: string
   /** Empty-map center when pins exist but dual-pane still wants a registry fallback. */
   centerLonLat?: [number, number]
   /** In-page jump target for the hero / featured "see these homes" doors. */
@@ -52,12 +55,14 @@ export function PlaceMapListSplit({
   totalActive,
   viewAllHref,
   viewAllLabel,
+  browseHref,
   centerLonLat,
   sectionId = 'homes',
 }: Props) {
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const list = rows
   const showingLabel = placeListShowingLabel(list.length, totalActive)
+  const mapBrowseHref = publishPlaceBrowseHref(browseHref ?? viewAllHref)
   const listScrollRef = useRef<HTMLDivElement>(null)
   const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map())
 
@@ -168,6 +173,7 @@ export function PlaceMapListSplit({
                 showRegionMarkers={false}
                 polygons={polygons}
                 centerLonLat={centerLonLat}
+                browseHref={mapBrowseHref}
                 eyebrow={eyebrow}
                 title={title.includes('\n') ? title : `Map\n${title}`}
                 subtitle={

@@ -100,7 +100,7 @@ export function KbListingMapImpl({
   activeKey = null as string | null,
   /** Pin click → parent list highlight (dual-pane). */
   onActiveKeyChange,
-  browseHref = publishRegionalSearchHref(),
+  browseHref,
 }: {
   geojson: KbMapGeo
   totalActive: number
@@ -114,8 +114,10 @@ export function KbListingMapImpl({
   countNoun?: string
   activeKey?: string | null
   onActiveKeyChange?: (key: string | null) => void
-  browseHref?: string
+  /** Place-filtered path, regional inventory, or null to withhold the door. */
+  browseHref?: string | null
 }) {
+  const mapBrowseHref = browseHref === undefined ? publishRegionalSearchHref() : browseHref
   const { ready } = useGoogleMapsReady()
   const countEl = useRef<HTMLElement>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -410,11 +412,13 @@ export function KbListingMapImpl({
             </span>
           </div>
         </div>
-        <div className="sec-cta">
-          <a href={browseHref} className="btn">
-            Browse homes <span className="arr">→</span>
-          </a>
-        </div>
+        {mapBrowseHref ? (
+          <div className="sec-cta">
+            <a href={mapBrowseHref} className="btn">
+              Browse homes <span className="arr">→</span>
+            </a>
+          </div>
+        ) : null}
       </div>
     </section>
   )

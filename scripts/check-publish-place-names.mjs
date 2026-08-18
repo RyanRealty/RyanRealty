@@ -33,6 +33,15 @@ checks.push({
     helper.includes('stoneth'),
 })
 
+const catalog = src('lib/data/geo/plat-public-inventory.ts')
+checks.push({
+  label: 'registry A-Z catalog withholds MLS abbreviations via looksLikeMlsAbbreviation',
+  ok:
+    /from ['"]@\/lib\/market\/publish-plat-display-name['"]/.test(catalog) &&
+    /looksLikeMlsAbbreviation\(t\)/.test(catalog) &&
+    /export function isDisplayablePlatName/.test(catalog),
+})
+
 const extras = src('lib/explore/subdivision-page-extras.ts')
 checks.push({
   label: 'peerPlatsForResort gates names through publishPlatDisplayName',

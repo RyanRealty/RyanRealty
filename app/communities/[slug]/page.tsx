@@ -817,6 +817,9 @@ export default async function CommunityDetailPage({ params }: Props) {
           placeName={community.name}
           totalActive={activeCount ?? mapFeatures.length}
           centerLonLat={registryEntry?.center_lon_lat ?? undefined}
+          browseHref={homesForSalePath(cityName, community.subdivision)}
+          viewAllHref={homesForSalePath(cityName, community.subdivision)}
+          viewAllLabel={`See every ${community.name} home for sale`}
         />
         {/* ONE market section (Matt 2026-07-29): core charts render INSIDE the
             HUD section, not a second stacked headed section. */}

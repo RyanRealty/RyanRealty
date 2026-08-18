@@ -35,6 +35,7 @@ export function looksLikeMlsAbbreviation(name: string): boolean {
   if (KNOWN_MLS_ABBREVIATIONS.has(trimmed.toLowerCase())) return true
   if (/^[A-Z]{2,5}\d{0,2}$/.test(trimmed)) return true
   if (/^[A-Za-z]{2,4}\s+\d+$/.test(trimmed)) return true
+  if (/\bVill\b/i.test(trimmed)) return true
   if (!/\s/.test(trimmed) && trimmed.length <= 8) {
     const vowels = (trimmed.match(/[aeiouAEIOU]/g) ?? []).length
     const hasInternalCap = /[a-z][A-Z]/.test(trimmed)

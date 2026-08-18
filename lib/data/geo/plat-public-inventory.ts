@@ -32,6 +32,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { looksLikeMlsAbbreviation } from '@/lib/market/publish-plat-display-name'
 import { slugify } from '@/lib/slug'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { medianListPrice } from '@/lib/data/geo/neighborhood-public-inventory'
@@ -97,6 +98,7 @@ export function isDisplayablePlatName(alias: string): boolean {
   if (t.length < 6) return false
   if (/^[A-Za-z]{2,5}$/.test(t)) return false
   if (/^(drrh|oww|bbr|stoneth)/i.test(t)) return false
+  if (looksLikeMlsAbbreviation(t)) return false
   return true
 }
 

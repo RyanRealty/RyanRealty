@@ -109,6 +109,7 @@ import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
+import { publishInstrumentStamp } from '@/lib/market/publish-mixed-instrument-stamp'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -387,13 +388,13 @@ export default async function CentralOregonRegionPage() {
             )}
             figures={[firstLeadFigure, ...restLeadFigures]}
             source={v3Text(lead.source)}
-            updated={
-              lead.latest?.computedAt
-                ? v3Text(formatDate(lead.latest.computedAt))
-                : refreshedAt
-                  ? v3Text(formatDate(refreshedAt))
-                  : undefined
-            }
+            updated={(() => {
+              const stamp = publishInstrumentStamp([
+                lead.latest?.computedAt,
+                mosText ? refreshedAt : null,
+              ])
+              return stamp ? v3Text(formatDate(stamp)) : undefined
+            })()}
             action={{
               label: v3Text('Value my home'),
               href: VALUATION_HREF,

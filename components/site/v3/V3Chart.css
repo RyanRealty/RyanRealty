@@ -153,6 +153,8 @@
 }
 
 .v3 .v3-chart__x {
+  grid-column: 2;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   gap: var(--v3-space-sm);
