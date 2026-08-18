@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homepage calibration. Ryan Realty</title>
+<link rel="icon" href="../../assets/favicon.ico">
+<style>
+@font-face{font-family:'Amboqia';src:url('../../fonts/Amboqia_Boriango.otf') format('opentype');font-display:swap}
+@font-face{font-family:'Geist';src:url('../../fonts/geist/Geist-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Geist';src:url('../../fonts/geist/Geist-Medium.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Geist';src:url('../../fonts/geist/Geist-SemiBold.woff2') format('woff2');font-weight:600;font-display:swap}
+@font-face{font-family:'Geist';src:url('../../fonts/geist/Geist-Bold.woff2') format('woff2');font-weight:700;font-display:swap}
+
+:root{
+  --navy:#102742;
+  --cream:#faf8f4;
+  --exc:#A8452B;        /* exception accent on cream */
+  --exc-dark:#E08163;   /* exception accent on navy */
+  --hair:rgba(16,39,66,.12);
+  --hair-light:rgba(250,248,244,.16);
+  --mute:rgba(16,39,66,.62);
+  --mute-light:rgba(250,248,244,.66);
+  --ring:oklch(0.709 0.01 56.259);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--cream);color:var(--navy);font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--ring);outline-offset:2px;border-radius:4px}
+.display{font-family:'Amboqia',Georgia,serif;font-weight:400;letter-spacing:-.01em;line-height:.96}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.mono{font-family:'Geist Mono',ui-monospace,Menlo,monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+@media(min-width:760px){.wrap{padding:0 48px}}
+
+/* ── NAV ──────────────────────────────────────────────────────── */
+.nav{position:absolute;top:0;left:0;right:0;z-index:5;padding:14px 20px}
+.nav__in{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.nav__logo img{height:22px;width:auto;display:block}
+.nav__links{display:flex;gap:16px;margin-left:0;width:100%;order:3}
+.nav__links a{color:#fff;text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.92}
+.nav__links a:hover{opacity:1;text-decoration:underline;text-underline-offset:4px}
+.nav__cta{margin-left:auto;background:var(--cream);color:var(--navy);text-decoration:none;font-size:12.5px;font-weight:600;
+  padding:9px 16px;border-radius:10px;white-space:nowrap}
+.nav__cta:hover{background:#fff}
+@media(min-width:760px){
+  .nav{padding:22px 48px}
+  .nav__logo img{height:26px}
+  .nav__links{width:auto;order:0;margin-left:26px;gap:22px}
+  .nav__links a{font-size:12.5px}
+}
+
+/* ── 1. STAGE ─────────────────────────────────────────────────── */
+.stage{position:relative;min-height:min(88svh,760px);display:flex;align-items:flex-end;
+  background:url('../../assets/hero/hero-old-mill-master-4k.jpg') center 28%/cover no-repeat;
+  padding:96px 20px clamp(88px,10vw,120px)}
+.stage::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(178deg,rgba(16,39,66,.34) 0%,rgba(16,39,66,.18) 34%,rgba(16,39,66,.88) 100%)}
+.stage__in{position:relative;z-index:1;max-width:1180px;margin:0 auto;width:100%}
+@media(min-width:760px){.stage{padding-left:48px;padding-right:48px}}
+
+.live{display:inline-flex;align-items:center;gap:9px;padding:7px 15px 7px 13px;border-radius:999px;
+  background:rgba(250,248,244,.13);border:1px solid var(--hair-light);backdrop-filter:blur(10px);
+  color:#fff;font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase}
+.dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:ping 2.4s ease-out infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}70%{box-shadow:0 0 0 11px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+
+.hook{margin-top:20px;color:#fff;font-size:clamp(36px,6.4vw,80px);max-width:16ch;
+  text-shadow:0 2px 26px rgba(16,39,66,.45)}
+.hook em{font-style:normal;display:block;opacity:.62}
+
+.search{margin-top:26px;display:flex;max-width:560px;border-radius:14px;overflow:hidden;
+  background:rgba(250,248,244,.96);box-shadow:0 14px 40px -14px rgba(16,39,66,.6)}
+.search input{flex:1;min-width:0;border:0;background:transparent;padding:15px 18px;font-family:inherit;
+  font-size:15px;color:var(--navy)}
+.search input::placeholder{color:var(--mute)}
+.search button{border:0;background:var(--navy);color:var(--cream);font-family:inherit;font-size:14px;
+  font-weight:600;padding:0 22px;cursor:pointer}
+.search button:hover{background:rgba(16,39,66,.85)}
+
+/* ── 2. INSTRUMENT ────────────────────────────────────────────── */
+.instrument{position:relative;z-index:2;max-width:1180px;margin:-64px auto 0;
+  background:var(--navy);color:var(--cream);border-radius:16px;
+  padding:clamp(24px,3.4vw,40px) clamp(20px,3.4vw,44px);
+  box-shadow:0 26px 70px -22px rgba(16,39,66,.55)}
+.inst__wrap{padding:0 20px}
+@media(min-width:760px){.inst__wrap{padding:0 48px}.instrument{border-radius:20px;margin-top:-72px}}
+.inst__grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px 18px}
+@media(min-width:760px){.inst__grid{grid-template-columns:repeat(4,1fr);gap:40px}}
+.fig__v{font-family:'Amboqia',Georgia,serif;font-size:clamp(32px,4.4vw,56px);line-height:1;letter-spacing:-.015em}
+.fig__v small{font-family:'Geist',sans-serif;font-size:.38em;letter-spacing:0;opacity:.66;margin-left:2px}
+.fig__l{margin-top:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute-light);font-weight:500}
+.src{margin-top:22px;padding-top:14px;border-top:1px solid var(--hair-light);
+  font-family:'Geist Mono',ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--mute-light);line-height:1.7;word-break:break-word}
+.src--cream{border-top:1px solid var(--hair);color:var(--mute)}
+
+/* ── 3. STORY CHART ───────────────────────────────────────────── */
+.chart{padding:clamp(56px,8vw,104px) 0 clamp(44px,6vw,72px)}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.h2{margin-top:10px;font-size:clamp(28px,4.2vw,52px);max-width:22ch}
+.legend{display:flex;flex-wrap:wrap;gap:12px 20px;margin-top:22px}
+.legend span{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute);font-weight:500}
+.swatch{width:22px;height:9px;border-radius:2px}
+.s-sell{background:var(--navy)}
+.s-bal{background:rgba(16,39,66,.34)}
+.s-buy{background:rgba(16,39,66,.15);border:1px solid rgba(16,39,66,.22)}
+
+.plot{position:relative;margin-top:26px;--col-l:96px;--col-r:56px;--gap:10px}
+@media(min-width:760px){.plot{--col-l:150px;--col-r:80px;--gap:14px}}
+.bands{position:absolute;top:0;bottom:0;left:calc(var(--col-l) + var(--gap));right:calc(var(--col-r) + var(--gap));
+  display:flex;pointer-events:none}
+.band{position:relative;height:100%}
+.band--sell{width:33.33%;background:rgba(16,39,66,.055);border-right:1px solid var(--hair)}
+.band--bal{width:16.67%;background:rgba(16,39,66,.028);border-right:1px solid var(--hair)}
+.band--buy{flex:1}
+.band__tag{display:none;position:absolute;top:-20px;left:0;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mute);font-weight:600;white-space:nowrap}
+@media(min-width:760px){.band__tag{display:block}}
+
+.rows{position:relative;z-index:1}
+.row{display:grid;grid-template-columns:var(--col-l) 1fr var(--col-r);align-items:center;gap:var(--gap);
+  padding:9px 0;border-bottom:1px solid var(--hair);text-decoration:none;color:inherit;transition:background .2s ease}
+.row:hover{background:rgba(16,39,66,.045)}
+.row__name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+@media(min-width:760px){.row__name{font-size:14.5px}}
+.thin{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);
+  border:1px solid var(--hair);border-radius:999px;padding:1px 6px;font-weight:600}
+.track{position:relative;height:26px}
+.bar{position:absolute;left:0;top:3px;height:20px;border-radius:3px;
+  transform-origin:left center;transform:scaleX(0);animation:grow 1.05s cubic-bezier(.22,.75,.3,1) forwards}
+@keyframes grow{to{transform:scaleX(1)}}
+.bar--sell{background:var(--navy)}
+.bar--bal{background:rgba(16,39,66,.34)}
+.bar--buy{background:rgba(16,39,66,.15);border:1px solid rgba(16,39,66,.22)}
+.clip{position:absolute;top:0;height:26px;display:none;align-items:center;gap:5px;
+  font-size:10px;font-weight:600;color:var(--mute);white-space:nowrap}
+@media(min-width:760px){.clip{display:flex}}
+.row__v{text-align:right;font-family:'Amboqia',Georgia,serif;font-size:19px;letter-spacing:-.01em}
+.row__v small{font-family:'Geist',sans-serif;font-size:10.5px;color:var(--mute);margin-left:3px;letter-spacing:0}
+
+.note{margin-top:20px;font-size:12.5px;color:var(--mute);line-height:1.7;max-width:72ch}
+
+.more{border:0}
+.more summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
+  padding:14px 0 4px;font-size:12px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--mute)}
+.more summary::-webkit-details-marker{display:none}
+.more summary::after{content:'';width:7px;height:7px;border-right:1.5px solid currentColor;
+  border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .2s ease}
+.more[open] summary::after{transform:rotate(-135deg) translateY(-2px)}
+.more summary:hover{color:var(--navy)}
+.more summary .n{font-family:'Amboqia',Georgia,serif;font-size:16px;letter-spacing:0;text-transform:none}
+
+/* ── 4. THE 28-YEAR LINE ──────────────────────────────────────── */
+.ts-sec{background:var(--navy);color:var(--cream);padding:clamp(52px,7.5vw,96px) 0}
+.ts-sec .eyebrow{color:var(--mute-light)}
+.ts-sec .h2{color:var(--cream)}
+.ts-key{display:grid;grid-template-columns:repeat(2,1fr);gap:20px 16px;margin-top:24px}
+@media(min-width:760px){.ts-key{display:flex;flex-wrap:wrap;gap:26px}.ts-key div{min-width:132px}}
+.ts-key b{display:block;font-family:'Amboqia',Georgia,serif;font-weight:400;font-size:clamp(24px,3.2vw,38px);letter-spacing:-.015em}
+.ts-key span{display:block;margin-top:6px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute-light)}
+.ts-key .accent{color:var(--exc-dark)}
+.ts{width:100%;height:auto;margin-top:30px;overflow:visible}
+.ts .grid line{stroke:rgba(250,248,244,.14);stroke-width:1}
+/* Sized so the smallest label still clears ~10px at a 390px viewport. */
+.ts .ax{fill:rgba(250,248,244,.5);font-family:'Geist',sans-serif;font-size:30px;font-variant-numeric:tabular-nums}
+@media(min-width:760px){.ts .ax{font-size:15px}}
+.ts .vb{fill:rgba(250,248,244,.16)}
+.ts .line{fill:none;stroke:var(--cream);stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}
+.ts .line--draw{stroke:var(--exc-dark);stroke-width:3.2}
+.ts .d{fill:var(--cream)}
+.ts .d--draw{fill:var(--exc-dark)}
+.ts-note{margin-top:22px;font-size:12.5px;color:var(--mute-light);line-height:1.7;max-width:78ch}
+.ts-note code{font-family:'Geist Mono',ui-monospace,Menlo,monospace;font-size:.92em}
+
+/* ── 5. LEDGER ────────────────────────────────────────────────── */
+.ledger{padding:clamp(56px,8vw,104px) 0 clamp(56px,7vw,96px)}
+.lrows{margin-top:26px}
+.lrow{display:grid;grid-template-columns:1fr auto;gap:8px 14px;align-items:baseline;
+  padding:15px 0;border-bottom:1px solid var(--hair);text-decoration:none;color:inherit;transition:padding .18s ease}
+.lrow:hover{padding-left:8px}
+.lrow--h{display:none}
+.lname{font-family:'Amboqia',Georgia,serif;font-size:20px;letter-spacing:-.01em}
+.lval{font-size:13px;font-weight:600}
+.lval small{display:block;font-size:10.5px;color:var(--mute);font-weight:500;margin-top:2px;letter-spacing:.04em}
+.pill{font-size:10.5px;font-weight:600;letter-spacing:.05em;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.p-sell{background:var(--navy);color:var(--cream)}
+.p-bal{background:rgba(16,39,66,.11);color:var(--navy)}
+.p-buy{background:transparent;color:var(--mute);border:1px solid var(--hair)}
+.arrow{font-size:14px;color:var(--mute)}
+@media(min-width:760px){
+  .lrow{grid-template-columns:1.3fr .9fr .9fr .8fr auto;gap:16px;padding:17px 0}
+  .lrow--h{display:grid;border-bottom:1px solid var(--navy);padding-bottom:9px}
+  .lrow--h div{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:600}
+  .lname{font-size:24px}
+  .lval{font-size:15px}
+}
+
+/* ── 6. QUIET CLOSE ───────────────────────────────────────────── */
+.close{background:var(--navy);color:var(--cream);padding:clamp(56px,8vw,104px) 0}
+.close .h2{color:var(--cream);max-width:24ch}
+.close .eyebrow{color:var(--mute-light)}
+.cta{display:inline-block;margin-top:26px;background:var(--cream);color:var(--navy);text-decoration:none;
+  font-size:15px;font-weight:600;padding:14px 26px;border-radius:10px}
+.cta:hover{background:#fff}
+
+/* ── FOOTER ───────────────────────────────────────────────────── */
+.foot{background:var(--navy);color:var(--mute-light);padding:0 0 40px}
+.foot__in{border-top:1px solid var(--hair-light);padding-top:26px;display:flex;flex-wrap:wrap;gap:16px 26px;align-items:center}
+.foot img{height:18px;width:auto;display:block;opacity:.9}
+.foot nav{display:flex;flex-wrap:wrap;gap:14px 18px}
+.foot nav a{color:var(--mute-light);text-decoration:none;font-size:12px;font-weight:500}
+.foot nav a:hover{color:var(--cream)}
+.foot__note{width:100%;font-family:'Geist Mono',ui-monospace,Menlo,monospace;font-size:10.5px;line-height:1.7}
+
+@media (prefers-reduced-motion:reduce){
+  .bar{animation:none;transform:scaleX(1)}
+  .dot{animation:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV — locked IA: Homes · Places · Market · Sell · About + Value my home -->
+<header class="nav">
+  <div class="nav__in">
+    <a class="nav__logo" href="#" aria-label="Ryan Realty">
+      <img src="../../assets/brand/logo-horizontal-white-transparent.png" alt="Ryan Realty" width="2271" height="454">
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#">Homes</a>
+      <a href="#">Places</a>
+      <a href="#">Market</a>
+      <a href="#">Sell</a>
+      <a href="#">About</a>
+    </nav>
+    <a class="nav__cta" href="#">Value my home</a>
+  </div>
+</header>
+
+<!-- 1. STAGE -->
+<section class="stage">
+  <div class="stage__in">
+    <span class="live"><span class="dot"></span>Live · Oregon Data Share · 22:45 UTC</span>
+    <h1 class="hook display">1,801 homes are for sale in Central Oregon.<em>472 of them are in Bend.</em></h1>
+    <form class="search" action="#" role="search">
+      <label for="q" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search</label>
+      <input id="q" type="search" placeholder="Search a town, neighborhood, or address" autocomplete="off">
+      <button type="submit">Search</button>
+    </form>
+  </div>
+</section>
+
+<!-- 2. INSTRUMENT -->
+<div class="inst__wrap">
+  <section class="instrument" aria-label="Central Oregon market instrument">
+    <div class="inst__grid">
+      <div><div class="fig__v num">1,801</div><div class="fig__l">Active listings</div></div>
+      <div><div class="fig__v num">$729,425</div><div class="fig__l">Median list</div></div>
+      <div><div class="fig__v num">24<small>days</small></div><div class="fig__l">Days to pending</div></div>
+      <div><div class="fig__v num">5.7<small>mo</small></div><div class="fig__l">Months of supply</div></div>
+    </div>
+    <p class="src">
+      Central Oregon region · market_pulse_live · active single-family listings, PropertyType A ·
+      months of supply = active ÷ (closed last 6 months ÷ 6) · ≤ 4 seller's · 4 to 6 balanced · ≥ 6 buyer's ·
+      methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC
+    </p>
+  </section>
+</div>
+
+<!-- 3. STORY CHART -->
+<section class="chart">
+  <div class="wrap">
+    <p class="eyebrow">Months of supply by town</p>
+    <h2 class="h2 display">Thirteen towns, three kinds of market.</h2>
+
+    <div class="legend">
+      <span><i class="swatch s-sell"></i>Seller's · ≤ 4 months</span>
+      <span><i class="swatch s-bal"></i>Balanced · 4 to 6</span>
+      <span><i class="swatch s-buy"></i>Buyer's · ≥ 6</span>
+    </div>
+
+    <div class="plot">
+      <div class="bands" aria-hidden="true">
+        <div class="band band--sell"><span class="band__tag">Seller's</span></div>
+        <div class="band band--bal"><span class="band__tag">Balanced</span></div>
+        <div class="band band--buy"><span class="band__tag">Buyer's</span></div>
+      </div>
+
+      <div class="rows">
+        <a class="row" href="#"><div class="row__name">Bend</div>
+          <div class="track"><div class="bar bar--sell" style="width:28.8%;animation-delay:.04s"></div></div>
+          <div class="row__v num">3.5<small>mo</small></div></a>
+
+        <a class="row" href="#"><div class="row__name">Redmond</div>
+          <div class="track"><div class="bar bar--bal" style="width:36.1%;animation-delay:.08s"></div></div>
+          <div class="row__v num">4.3<small>mo</small></div></a>
+
+        <a class="row" href="#"><div class="row__name">La&nbsp;Pine</div>
+          <div class="track"><div class="bar bar--buy" style="width:94.5%;animation-delay:.12s"></div></div>
+          <div class="row__v num">11.3<small>mo</small></div></a>
+
+        <details class="more">
+          <summary>Show <span class="n">10</span> more towns</summary>
+
+          <a class="row" href="#"><div class="row__name">Camp&nbsp;Sherman <i class="thin">thin</i></div>
+            <div class="track"><div class="bar bar--sell" style="width:33.3%;animation-delay:.04s"></div></div>
+            <div class="row__v num">4.0<small>mo</small></div></a>
+
+          <a class="row" href="#"><div class="row__name">Sisters</div>
+            <div class="track"><div class="bar bar--bal" style="width:36.9%;animation-delay:.08s"></div></div>
+            <div class="row__v num">4.4<small>mo</small></div></a>
+
+          <a class="row" href="#"><div class="row__name">Prineville</div>
+            <div class="track"><div class="bar bar--bal" style="width:40%;animation-delay:.12s"></div></div>
+            <div class="row__v num">4.8<small>mo</small></div></a>
+
+          <a class="row" href="#"><div class="row__name">Madras</div>
+            <div class="track"><div class="bar bar--bal" style="width:42.3%;animation-delay:.16s"></div></div>
+            <div class="row__v num">5.1<small>mo</small></div></a>
+
+          <a class="row" href="#"><div class="row__name">Sunriver</div>
+            <div class="track"><div class="bar bar--buy" style="width:55.4%;animation-delay:.2s"></div></div>
+            <div class="row__v num">6.7<small>mo</small></div></a>
+
+          <a class="row" href="#"><div class="row__name">Metolius <i class="thin">thin</i></div>
+            <div class="track"><div class="bar bar--buy" style="width:58.3%;animation-delay:.24s"></div></div>
+            <div class="row__v num">7.0<small>mo</small></div></a>
+
+          <a class="row" href="#"><div class="row__name">Culver <i class="thin">thin</i></div>
+            <div class="track"><div class="bar bar--buy" style="width:60%;animation-delay:.28s"></div></div>
+            <div class="row__v num">7.2<small>mo</small></div></a>
+
+          <a class="row" href="#"><div class="row__name">Black&nbsp;Butte&nbsp;Ranch <i class="thin">thin</i></div>
+            <div class="track"><div class="bar bar--buy" style="width:93.8%;animation-delay:.32s"></div></div>
+            <div class="row__v num">11.3<small>mo</small></div></a>
+
+          <a class="row" href="#"><div class="row__name">Powell&nbsp;Butte <i class="thin">thin</i></div>
+            <div class="track"><div class="bar bar--buy" style="width:100%;animation-delay:.36s"></div>
+              <div class="clip" style="left:calc(100% + 8px)">▸</div></div>
+            <div class="row__v num">12.2<small>mo</small></div></a>
+
+          <a class="row" href="#"><div class="row__name">Terrebonne <i class="thin">thin</i></div>
+            <div class="track"><div class="bar bar--buy" style="width:100%;animation-delay:.4s"></div>
+              <div class="clip" style="left:calc(100% + 8px)">▸ off scale</div></div>
+            <div class="row__v num">36<small>mo</small></div></a>
+        </details>
+      </div>
+    </div>
+
+    <p class="note">
+      The scale runs to 12 months. Powell Butte and Terrebonne extend past it.
+      <strong>Thin</strong> marks a town with fewer than five closed sales in the last 30 days.
+      The ratio is real, the sample is small. Terrebonne shows 6 actives and 0 closed in 30 days.
+    </p>
+    <p class="src src--cream">
+      market_pulse_live · geo_type city · active single-family listings, PropertyType A ·
+      months of supply = active ÷ (closed last 6 months ÷ 6) · methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC
+    </p>
+  </div>
+</section>
+
+<!-- 4. THE 28-YEAR LINE -->
+<section class="ts-sec">
+  <div class="wrap">
+    <p class="eyebrow">Central Oregon · 1998 to 2025 · closed single-family sales</p>
+    <h2 class="h2 display">The median halved from 2007 to 2011.</h2>
+
+    <div class="ts-key">
+      <div><b class="num">$123,000</b><span>1998 median</span></div>
+      <div><b class="num">$310,000</b><span>2007 peak</span></div>
+      <div><b class="accent num">$155,000</b><span class="accent">2011 trough · down 50%</span></div>
+      <div><b class="num">$615,000</b><span>2025 median</span></div>
+    </div>
+
+    <svg class="ts" viewBox="0 0 1000 330" role="img" aria-label="Central Oregon median close price and closed sales by year, 1998 to 2025">
+      <defs>
+        <linearGradient id="gnavy" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#102742" stop-opacity=".22"/><stop offset="100%" stop-color="#102742" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="gdraw" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#E08163" stop-opacity=".28"/><stop offset="100%" stop-color="#E08163" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <g class="grid"><line x1="8" x2="992" y1="213.0" y2="213.0"/><text class="ax" x="8" y="206.0">$200K</text><line x1="8" x2="992" y1="130.0" y2="130.0"/><text class="ax" x="8" y="123.0">$400K</text><line x1="8" x2="992" y1="47.0" y2="47.0"/><text class="ax" x="8" y="40.0">$600K</text></g>
+      <g><rect class="vb" x="-1.1" y="281.1" width="18.2" height="20.9" rx="1"/><rect class="vb" x="35.3" y="280.1" width="18.2" height="21.9" rx="1"/><rect class="vb" x="71.8" y="280.3" width="18.2" height="21.7" rx="1"/><rect class="vb" x="108.2" y="279.3" width="18.2" height="22.7" rx="1"/><rect class="vb" x="144.7" y="277.2" width="18.2" height="24.8" rx="1"/><rect class="vb" x="181.1" y="273.5" width="18.2" height="28.5" rx="1"/><rect class="vb" x="217.6" y="265.1" width="18.2" height="36.9" rx="1"/><rect class="vb" x="254.0" y="256.0" width="18.2" height="46.0" rx="1"/><rect class="vb" x="290.5" y="267.2" width="18.2" height="34.8" rx="1"/><rect class="vb" x="326.9" y="279.6" width="18.2" height="22.4" rx="1"/><rect class="vb" x="363.3" y="285.7" width="18.2" height="16.3" rx="1"/><rect class="vb" x="399.8" y="280.3" width="18.2" height="21.7" rx="1"/><rect class="vb" x="436.2" y="276.1" width="18.2" height="25.9" rx="1"/><rect class="vb" x="472.7" y="276.3" width="18.2" height="25.7" rx="1"/><rect class="vb" x="509.1" y="272.9" width="18.2" height="29.1" rx="1"/><rect class="vb" x="545.6" y="270.5" width="18.2" height="31.5" rx="1"/><rect class="vb" x="582.0" y="269.2" width="18.2" height="32.8" rx="1"/><rect class="vb" x="618.5" y="264.6" width="18.2" height="37.4" rx="1"/><rect class="vb" x="654.9" y="263.2" width="18.2" height="38.8" rx="1"/><rect class="vb" x="691.3" y="264.4" width="18.2" height="37.6" rx="1"/><rect class="vb" x="727.8" y="263.3" width="18.2" height="38.7" rx="1"/><rect class="vb" x="764.2" y="264.0" width="18.2" height="38.0" rx="1"/><rect class="vb" x="800.7" y="257.7" width="18.2" height="44.3" rx="1"/><rect class="vb" x="837.1" y="257.1" width="18.2" height="44.9" rx="1"/><rect class="vb" x="873.6" y="266.9" width="18.2" height="35.1" rx="1"/><rect class="vb" x="910.0" y="275.2" width="18.2" height="26.8" rx="1"/><rect class="vb" x="946.5" y="273.3" width="18.2" height="28.7" rx="1"/><rect class="vb" x="982.9" y="272.3" width="18.2" height="29.7" rx="1"/></g>
+      <path d="M8.0,296 L8.0,245.0 L44.4,242.9 L80.9,235.9 L117.3,233.8 L153.8,229.6 L190.2,223.6 L226.7,216.3 L263.1,198.5 L299.6,172.1 L336.0,167.3 L372.4,189.1 L408.9,221.3 L445.3,230.6 L481.8,231.7 L518.2,222.1 L554.7,202.1 L591.1,194.3 L627.6,181.9 L664.0,169.8 L700.4,154.9 L736.9,146.6 L773.3,138.3 L809.8,121.7 L846.2,76.1 L882.7,47.0 L919.1,51.6 L955.6,43.7 L992.0,40.8 L992.0,296 Z" fill="url(#gnavy)"/>
+      <path d="M336.0,296 L336.0,167.3 L372.4,189.1 L408.9,221.3 L445.3,230.6 L481.8,231.7 L481.8,296 Z" fill="url(#gdraw)"/>
+      <path class="line" d="M8.0,245.0 L44.4,242.9 L80.9,235.9 L117.3,233.8 L153.8,229.6 L190.2,223.6 L226.7,216.3 L263.1,198.5 L299.6,172.1 L336.0,167.3 L372.4,189.1 L408.9,221.3 L445.3,230.6 L481.8,231.7 L518.2,222.1 L554.7,202.1 L591.1,194.3 L627.6,181.9 L664.0,169.8 L700.4,154.9 L736.9,146.6 L773.3,138.3 L809.8,121.7 L846.2,76.1 L882.7,47.0 L919.1,51.6 L955.6,43.7 L992.0,40.8"/>
+      <path class="line line--draw" d="M336.0,167.3 L372.4,189.1 L408.9,221.3 L445.3,230.6 L481.8,231.7"/>
+      <circle class="d d--draw" cx="336.0" cy="167.3" r="4.5"/>
+      <circle class="d d--draw" cx="481.8" cy="231.7" r="4.5"/>
+      <circle class="d" cx="992.0" cy="40.8" r="4.5"/>
+      <text class="ax" x="8.0" y="324" text-anchor="middle">1998</text><text class="ax" x="263.1" y="324" text-anchor="middle">2005</text><text class="ax" x="481.8" y="324" text-anchor="middle">2011</text><text class="ax" x="700.4" y="324" text-anchor="middle">2017</text><text class="ax" x="846.2" y="324" text-anchor="middle">2021</text><text class="ax" x="992.0" y="324" text-anchor="middle">2025</text>
+    </svg>
+
+    <p class="ts-note">
+      Bars are closed sales per year, peaking at 7,769 in 2005 and 7,575 in 2021.
+      The line is the median close price. The highlighted span is the 2007 to 2011 drawdown,
+      $310,000 to $155,000, exactly half.
+      Source: <code>analytics_mart_market_annual</code>, <code>geo_type='region'</code>,
+      <code>type_scope='sfr'</code>, methodology <code>closed_cte+service_area_v1</code>,
+      computed Aug 10 and 15, 2026. 28 years of closed sales, no forecast.
+    </p>
+  </div>
+</section>
+
+<!-- 5. LEDGER -->
+<section class="ledger">
+  <div class="wrap">
+    <p class="eyebrow">13 towns · 1,162 active listings</p>
+    <h2 class="h2 display">Pick a town.</h2>
+
+    <div class="lrows">
+      <div class="lrow lrow--h" aria-hidden="true"><div>Town</div><div>Active</div><div>Median list</div><div>Days to pending</div><div></div></div>
+
+      <a class="lrow" href="#"><div class="lname">Bend</div>
+        <div class="lval num">472<small>listings</small></div>
+        <div class="lval num">$757,950<small>median list</small></div>
+        <div class="lval num">18<small>days</small></div>
+        <div><span class="pill p-sell">Seller's</span> <span class="arrow">→</span></div></a>
+
+      <a class="lrow" href="#"><div class="lname">Redmond</div>
+        <div class="lval num">182<small>listings</small></div>
+        <div class="lval num">$535,000<small>median list</small></div>
+        <div class="lval num">19<small>days</small></div>
+        <div><span class="pill p-bal">Balanced</span> <span class="arrow">→</span></div></a>
+
+      <a class="lrow" href="#"><div class="lname">La Pine</div>
+        <div class="lval num">172<small>listings</small></div>
+        <div class="lval num">$499,000<small>median list</small></div>
+        <div class="lval num">52<small>days</small></div>
+        <div><span class="pill p-buy">Buyer's</span> <span class="arrow">→</span></div></a>
+
+      <details class="more">
+        <summary>Show <span class="n">10</span> more towns</summary>
+
+        <a class="lrow" href="#"><div class="lname">Prineville</div>
+          <div class="lval num">80<small>listings</small></div>
+          <div class="lval num">$450,000<small>median list</small></div>
+          <div class="lval num">60<small>days</small></div>
+          <div><span class="pill p-bal">Balanced</span> <span class="arrow">→</span></div></a>
+
+        <a class="lrow" href="#"><div class="lname">Powell Butte</div>
+          <div class="lval num">63<small>listings</small></div>
+          <div class="lval num">$1,360,000<small>median list</small></div>
+          <div class="lval num">38<small>days</small></div>
+          <div><span class="pill p-buy">Buyer's</span> <span class="arrow">→</span></div></a>
+
+        <a class="lrow" href="#"><div class="lname">Sunriver</div>
+          <div class="lval num">51<small>listings</small></div>
+          <div class="lval num">$899,450<small>median list</small></div>
+          <div class="lval num">17<small>days</small></div>
+          <div><span class="pill p-buy">Buyer's</span> <span class="arrow">→</span></div></a>
+
+        <a class="lrow" href="#"><div class="lname">Madras</div>
+          <div class="lval num">49<small>listings</small></div>
+          <div class="lval num">$399,900<small>median list</small></div>
+          <div class="lval num">34<small>days</small></div>
+          <div><span class="pill p-bal">Balanced</span> <span class="arrow">→</span></div></a>
+
+        <a class="lrow" href="#"><div class="lname">Sisters</div>
+          <div class="lval num">34<small>listings</small></div>
+          <div class="lval num">$699,000<small>median list</small></div>
+          <div class="lval num">10<small>days</small></div>
+          <div><span class="pill p-bal">Balanced</span> <span class="arrow">→</span></div></a>
+
+        <a class="lrow" href="#"><div class="lname">Black Butte Ranch</div>
+          <div class="lval num">30<small>listings</small></div>
+          <div class="lval num">$995,000<small>median list</small></div>
+          <div class="lval num">31<small>days</small></div>
+          <div><span class="pill p-buy">Buyer's</span> <span class="arrow">→</span></div></a>
+
+        <a class="lrow" href="#"><div class="lname">Culver</div>
+          <div class="lval num">12<small>listings</small></div>
+          <div class="lval num">$414,925<small>median list</small></div>
+          <div class="lval num">47<small>days</small></div>
+          <div><span class="pill p-buy">Buyer's</span> <span class="arrow">→</span></div></a>
+
+        <a class="lrow" href="#"><div class="lname">Metolius</div>
+          <div class="lval num">7<small>listings</small></div>
+          <div class="lval num">$346,950<small>median list</small></div>
+          <div class="lval">n/a<small>days</small></div>
+          <div><span class="pill p-buy">Buyer's</span> <span class="arrow">→</span></div></a>
+
+        <a class="lrow" href="#"><div class="lname">Terrebonne</div>
+          <div class="lval num">6<small>listings</small></div>
+          <div class="lval num">$685,000<small>median list</small></div>
+          <div class="lval">n/a<small>days</small></div>
+          <div><span class="pill p-buy">Buyer's</span> <span class="arrow">→</span></div></a>
+
+        <a class="lrow" href="#"><div class="lname">Camp Sherman</div>
+          <div class="lval num">4<small>listings</small></div>
+          <div class="lval num">$945,000<small>median list</small></div>
+          <div class="lval num">18<small>days</small></div>
+          <div><span class="pill p-sell">Seller's</span> <span class="arrow">→</span></div></a>
+      </details>
+    </div>
+
+    <p class="note">
+      These 13 towns hold 1,162 of the region's 1,801 active single-family listings.
+      The other 639 sit outside a tracked town boundary.
+    </p>
+    <p class="src src--cream">
+      market_pulse_live · geo_type city · active_count, median_list_price, median_days_to_pending ·
+      single-family, PropertyType A · methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC
+    </p>
+  </div>
+</section>
+
+<!-- 6. QUIET CLOSE -->
+<section class="close">
+  <div class="wrap">
+    <p class="eyebrow">Sell</p>
+    <h2 class="h2 display">1,164 homes closed in the last 90 days. Median $675,000.</h2>
+    <a class="cta" href="#">Value my home</a>
+    <p class="src">
+      Central Oregon region · market_pulse_live · sold_count_90d, median_close_price_90d ·
+      closed single-family, PropertyType A · methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC
+    </p>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot__in">
+      <img src="../../assets/brand/logo-horizontal-white-transparent.png" alt="Ryan Realty">
+      <nav aria-label="Footer">
+        <a href="#">Homes</a>
+        <a href="#">Places</a>
+        <a href="#">Market</a>
+        <a href="#">Sell</a>
+        <a href="#">About</a>
+      </nav>
+      <p class="foot__note">
+        Homepage calibration mockup · every figure on this page is in data.mjs beside its query ·
+        market_pulse_live snapshot 2026-08-18 22:45 UTC · analytics_mart_market_annual computed 2026-08-15
+      </p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
