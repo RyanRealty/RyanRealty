@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — listing-detail calendar-day slice
+# Current — 2026-08-18 (cursor-loop-sentinel) — listing-detail not-found + tour-key + history reject slice
+
+**Surface:** Cursor cloud `bc-5b7dd86a` (`cursor/loop-sentinel-2026-08-18t09-50-2db8`). **Time:** 2026-08-18 ~10:05 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 244). Claimed parent only as `cursor-loop-sentinel-bc-5b7dd86a-2026-08-18t09-50`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (236 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Hilmer mismatched Spark tour keys **rejected** (all Schedule a tour hrefs `listingKey=220222626`; contact MLS tile loads 61172 Hilmer Creek `$755,000`). Bly Ivory Pine / Albany Columbus / Highway 34 / Bryant / Kamph 200 not-found homepage shells **rejected** (each 200 + address title/H1 + list price). Sprague River Tableland SSL timeout **rejected** (200 in 1570ms; `0 Tableland Road` `$590,000`). Foley missing price/status history **rejected** (reduction line plus Listing history: Listed Aug 16, Pending Aug 2, two price changes). First resolve pass wrote `fleet:fleet:` tags; second pass used hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet not-found shell / SSL fail / missing history / mismatched tour keys did not reproduce. Do not invent a fix. Do not invent a listing.
+- Prod probe on live `de3733b74`: Albany Columbus H1 `$1,495,000`; Foley Listing history visible at 390; Hilmer tour key is MLS only. After shots `/opt/cursor/artifacts/after_columbus_{390,1280}.png`, `/opt/cursor/artifacts/after_foley_390_history.png`, `/opt/cursor/artifacts/after_hilmer_390.png`, `/opt/cursor/artifacts/after_tableland_390.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail calendar-day slice
 
 **Surface:** Cursor cloud `bc-4c1236cf` (`cursor/loop-chain-2026-08-18t09-14-bc2c`). **Time:** 2026-08-18 ~09:55 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 252). Claimed parent only as `cursor-loop-chain-bc-4c1236cf-2026-08-18t09-14`. Product **`de3733b74`** landed on **`main`**. Vercel Production **READY** for `de3733b74` (`4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (244 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
