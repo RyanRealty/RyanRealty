@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + SSL reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + Troon/Bryant reject slice
+
+**Surface:** Cursor cloud `bc-1668f809` (`cursor/loop-chain-2026-08-18t10-39-67fd`). **Time:** 2026-08-18 ~10:55 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 212). Claimed parent only as `cursor-loop-chain-bc-1668f809-2026-08-18t10-39`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (204 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Medford Table Rock / Cave Junction Pinewood / Medford Gayety / Williams Powell Creek 200 not-found homepage shells **rejected** (each 200 + address title/H1 + list price). Troon missing listing history **rejected** (Listing history: Listed Jun 25, 2026 `$1,425,000`). Troon scroll-jump past Rental analysis **rejected** (rental y=9840/9717; scroll 9840→15366 / 9717→12896, no Financial snap). Troon hero-wheel lightbox **rejected** (`Photo lightbox` count 0). Albany Bryant placeholder heading **rejected** (H1 `Bryant Way, Albany, OR 97321 $1,073,000`). Hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet not-found shell / missing history / scroll jump / lightbox-on-wheel / placeholder H1 did not reproduce. Do not invent a fix. Do not invent a listing.
+- Prod probe on live `de3733b74`: Table Rock H1 `$39,900`; Pinewood H1 `$429,000`; Gayety H1 `$389,900`; Powell Creek H1 `$320,000`; Troon H1 `$1,425,000` + history; Bryant H1 `$1,073,000`. After shots `/opt/cursor/artifacts/after_table-rock_{390,1280}.png`, `/opt/cursor/artifacts/after_pinewood_390.png`, `/opt/cursor/artifacts/after_gayety_390.png`, `/opt/cursor/artifacts/after_troon_390_history.png`, `/opt/cursor/artifacts/after_troon_390_rental_precise.png`, `/opt/cursor/artifacts/after_bryant_390.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + SSL reject slice
 
 **Surface:** Cursor cloud `bc-5bc17e51` (`cursor/loop-chain-2026-08-18t10-16-1314`). **Time:** 2026-08-18 ~10:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 228). Claimed parent only as `cursor-loop-chain-bc-5bc17e51-2026-08-18t10-16`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (220 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
