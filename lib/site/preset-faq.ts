@@ -6,6 +6,7 @@ import { getCityContent } from '@/lib/city-content'
 import { homesForSalePath } from '@/lib/slug'
 import type { MarketFaqInput, MarketFaqItem } from '@/lib/site/market-faq'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
+import { publishPulseAsOfLabel } from '@/lib/market/publish-pulse-freshness'
 
 /**
  * Preset-scoped editorial depth for the indexable search-preset pages
@@ -259,16 +260,8 @@ const PRESET_COPY: Record<string, PresetCopy> = {
   'lake-view': viewCopy('lake', 'Lake'),
 }
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
-
 function asOfLabel(refreshedAt: string | null | undefined): string | null {
-  if (!refreshedAt) return null
-  const d = new Date(refreshedAt)
-  if (Number.isNaN(d.getTime())) return null
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+  return publishPulseAsOfLabel(refreshedAt)
 }
 
 /** Currency rounded to the nearest thousand, e.g. 894750 -> "$895,000". */
