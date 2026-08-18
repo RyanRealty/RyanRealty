@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — place-pages subdivision chrome-only reject slice
+
+**Surface:** Cursor cloud `bc-e3dbb660` (`cursor/loop-chain-2026-08-18t04-58-faa9`). **Time:** 2026-08-18 ~05:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 308). Claimed parent only as `cursor-loop-chain-bc-e3dbb660-2026-08-18t04-58`. **No product change.** Production stays on **`ab140f397`** (already READY). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (300 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: all eight `/subdivisions/{slug}` chrome-only lines **rejected**. Bella Vista / Blue Ridge / Brookside / Buena Ventura: H1 + “No active listings…” + sales history. Big Sky / Brier Ridge / Black Bear Meadows / Boyd Crossing: H1 + 2 listing cards + sales history. HTML + Playwright (system Chrome) at 390 and 1280; `chromeOnly=false` on every row.
+- Class: none. Fleet chrome-only did not reproduce. Do not invent a fix.
+- Prod probe on live `ab140f397`: H1 visible in-viewport (390 h1Top 486–527; 1280 h1Top 329–381). After shots `/opt/cursor/artifacts/after_bella-vista_{390,1280}.png`, `/opt/cursor/artifacts/after_boyd-crossing_{390,1280}.png`, `/opt/cursor/artifacts/after_big-sky_390.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
 
 **Surface:** Cursor cloud `bc-812b6297` (`cursor/loop-chain-2026-08-18t02-04-a235`). **Time:** 2026-08-18 ~02:42 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 340). Claimed parent only as `cursor-loop-chain-bc-812b6297-2026-08-18t02-04`. Product **`c2c6c0fb0`** landed on **`main`** (class `0ed74366e` + compile follow-up). Vercel Production **READY** for `c2c6c0fb0` (`7dQpSydh4ZJfEFAGnPrVgttrkuZ8`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open** (332 leftover lines). Release skipped: another session (`cursor-loop-chain-2026-08-18-bc-0a79e0c8`) holds the parent `in_progress`. Do not steal. Do not `completeWorkNode`. Loop stays **ARMED**. Do not start a new ship class from this session.
 
