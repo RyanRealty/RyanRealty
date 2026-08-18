@@ -68,8 +68,9 @@ async function fetchPathFields(listingKey: string): Promise<ListingCanonicalPath
   const sb = supabaseAnon()
   if (!sb) return null
   // @canonical-key — listingKey is already resolveCanonicalListingKey output.
-  const { data } = await sb.from('listings').select(PATH_SELECT).eq('ListingKey', listingKey).maybeSingle()
-  if (!data || typeof data !== 'object') return null
+  const { data, error } = await sb.from('listings').select(PATH_SELECT).eq('ListingKey', listingKey).maybeSingle()
+  if (error) throw error
+  if (!data || typeof data !== 'object') return null // poison-null-ok — genuine miss
   return mapRow(data as Record<string, unknown>)
 }
 

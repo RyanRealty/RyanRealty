@@ -86,7 +86,7 @@ export default function GoogleAnalytics() {
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
+          gtag('js', new Date()); // hydration-safe — injected gtag bootstrap, not React render clock
           // Default every advertising + analytics category to DENIED. The
           // useEffect above re-applies the stored cookie consent via
           // gtag('consent', 'update', ...) as soon as gtag is ready.
