@@ -149,6 +149,24 @@ SendGrid, Mailgun, Posthog, Vercel Analytics/Speed Insights, Slack, Zapier, Clou
 
 Search (`/search`, `/search/[...slug]`), listing-by-address, home, contact, sell, cities, subdivisions, blog, videos, activity, compare, account, open-houses, our-homes, tools (mortgage + rental), housing-market/reports.
 
+**Search/listing (last hunter).** Two live stacks: flagship `app/search/page.tsx` (`SearchFilters` + `MapSearchView`) vs SEO `app/search/[...slug]/page.tsx` (`SearchFilterBar` + grid; map only on `?view=map|split`). Pretty listing URLs rewrite to `app/listing/by-address` → `app/listing/[listingKey]`. Count SoR is `publishSearchCount` / `publishSearchCountPair`.
+
+Bottlenecks still in code (not cleaned this pass):
+
+| Issue | Where |
+|---|---|
+| Timeout paints empty / “No homes match” | SEO non-bare grid `ListingsResults.tsx:38`; flagship `view=map` `search/page.tsx:72-76`; golf `GolfBranch.tsx:15` |
+| SEO map/split waits on 12s grid fetch first | `search/[...slug]/page.tsx:138-271` |
+| SSR map is active+pending; client pan is Active-only | `MapSplitView.tsx:90-104` vs client filters |
+| Neighborhood on grid; map sends subdivision name | `page.tsx:103-107` vs `MapSplitView.tsx:184-186` |
+| Infinite-scroll drops registry / max beds-baths | `SearchResults.tsx:87-110` |
+| “No homes” while filter-match still in flight | `MapSearchView.tsx:712-715` |
+| Header all-types vs FAQ SFR | `search/[...slug]/page.tsx:278-336` |
+| Split/map silently injects city Bend | `search/page.tsx:222-229` |
+| by-key redirect pays full photo/agent fetch | `listing/by-key/[listingKey]/page.tsx:14-19` |
+
+Unused leftover search UI: `HotCommunitiesSection`, `InFeedAdCard`, `ListingFilters`, old `components/listing/showcase/*`.
+
 ### In use — APIs
 
 **210** `app/api/**/route.ts`. ~155 in use (68+10 crons + webhooks + OAuth callbacks + admin UI + product).
