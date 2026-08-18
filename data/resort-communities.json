@@ -860,10 +860,21 @@
     44.4268
    ],
    "subdivision_aliases": [
-    "Crooked River Ranch"
+    "Crooked River Ranch",
+    "Crr",
+    "Crr 1",
+    "Crr 2",
+    "Crr 3",
+    "Crr 7",
+    "Crr 8",
+    "Crr 10",
+    "Crr3_C",
+    "Crr9_C",
+    "Crr10_C",
+    "Crr12_C"
    ],
    "verification": {
-    "method": "Exact MLS SubdivisionName match; centroid from listing coords (live MLS 2026-06-27). Large rural planned community (Terrebonne), not a resort (is_resort=false)."
+    "method": "Live listing_tile_mv 2026-08-18: Terrebonne Active + Active Under Contract PropertyType A tags Crr / Crr 1 / Crr 2 / Crr 3 / Crr 7 / Crr 8 / Crr 10 / Crr3_C / Crr9_C / Crr10_C / Crr12_C. Zero rows tagged Crooked River Ranch. is_resort=false — do not add to cityResorts(). Visitor plat chrome still withholds Crr abbreviations."
    }
   }
  ]

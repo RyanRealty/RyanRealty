@@ -46,13 +46,15 @@ checks.push({
 })
 
 const index = src('app/actions/communities.ts')
+const lookup = src('lib/kb/lookup-published-community-figures.ts')
 checks.push({
   label: 'getCommunitiesForIndex overlays registry resort figures via lookupRegistryResortFigures',
   ok:
-    /getRegistryResortPublicFigures/.test(index) &&
-    /lookupRegistryResortFigures/.test(index) &&
+    /lookupPublishedCommunityFigures/.test(index) &&
     /published\.activeCount/.test(index) &&
-    /published\.medianListPrice/.test(index),
+    /published\.medianListPrice/.test(index) &&
+    /getRegistryResortPublicFigures/.test(lookup) &&
+    /lookupRegistryResortFigures/.test(lookup),
 })
 
 checks.push({

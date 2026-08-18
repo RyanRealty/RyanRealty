@@ -101,11 +101,14 @@ for (const surface of [
 }
 
 const communities = src('app/actions/communities.ts')
+const lookup = src('lib/kb/lookup-published-community-figures.ts')
 checks.push({
   label: 'getCommunitiesForIndex looks up overlay via lookupRegistryResortFigures',
   ok:
-    /lookupRegistryResortFigures/.test(communities) &&
-    /entityKey: row.entityKey/.test(communities),
+    /lookupPublishedCommunityFigures/.test(communities) &&
+    /indexOverlayRow/.test(communities) &&
+    /lookupRegistryResortFigures/.test(lookup) &&
+    /entityKey: row.entityKey/.test(lookup),
 })
 
 const failed = checks.filter((c) => !c.ok)

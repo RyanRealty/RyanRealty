@@ -97,6 +97,7 @@ export function isDisplayablePlatName(alias: string): boolean {
   if (t.length < 6) return false
   if (/^[A-Za-z]{2,5}$/.test(t)) return false
   if (/^(drrh|oww|bbr|stoneth)/i.test(t)) return false
+  if (/^crr(?:$|[\s\d_])/i.test(t)) return false
   return true
 }
 

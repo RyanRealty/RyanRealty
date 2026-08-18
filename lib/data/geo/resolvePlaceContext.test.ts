@@ -93,11 +93,24 @@ describe('resolvePlaceContextFromListing', () => {
     const ctx = resolvePlaceContextFromListing({
       city: 'Bend',
       citySlug: 'bend',
+      subdivisionName: 'Qzz 1',
+      subdivisionSlug: 'qzz-1',
+    })
+    expect(ctx.subdivision).toBeNull()
+    expect(ctx.identityLine).toBe('Bend')
+    expect(ctx.breadcrumb.map((b) => b.label).join(' ')).not.toMatch(/Qzz/i)
+  })
+
+  it('climbs a Crr family tag to Crooked River Ranch without printing Crr', () => {
+    const ctx = resolvePlaceContextFromListing({
+      city: 'Terrebonne',
+      citySlug: 'terrebonne',
       subdivisionName: 'Crr 1',
       subdivisionSlug: 'crr-1',
     })
     expect(ctx.subdivision).toBeNull()
-    expect(ctx.identityLine).toBe('Bend')
+    expect(ctx.curatedCommunity?.label).toBe('Crooked River Ranch')
+    expect(ctx.identityLine).toBe('Crooked River Ranch · Terrebonne')
     expect(ctx.breadcrumb.map((b) => b.label).join(' ')).not.toMatch(/Crr/i)
   })
 

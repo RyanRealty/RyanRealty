@@ -14,6 +14,10 @@ import type { CommunityForIndex, CommunityDetail } from '@/lib/communities'
 import { entityKeyToSlug } from '@/lib/community-slug'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
+import {
+  isOrphanCrrIndexSubdivision,
+  publishCanonicalCommunityName,
+} from '@/lib/market/publish-community-mls-aliases'
 import { isCentralOregonCity } from '@/lib/central-oregon'
 import { getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
@@ -84,15 +88,16 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
   for (const row of listingRows) {
     if (!isResidentialInventoryType(row.PropertyType ?? null)) continue
     const rawCity = (row.City ?? '').toString().trim()
-    const sub = (row.SubdivisionName ?? '').toString().trim()
-    if (!rawCity || !sub) continue
+    const rawSub = (row.SubdivisionName ?? '').toString().trim()
+    if (!rawCity || !rawSub) continue
+    const sub = publishCanonicalCommunityName(rawSub)
     // design-audit #131: resolve through the registry so listings whose raw
     // MLS City field disagrees with a known community's verified city (e.g.
     // hundreds of Crosswater listings say "Bend" though Crosswater is a
     // Sunriver-area resort) still aggregate under the ONE canonical entry —
     // matching listSubdivisionsWithFlags()'s same override, or this index
     // row would silently undercount that community's real inventory.
-    const city = getCanonicalCityForSubdivision(sub) ?? rawCity
+    const city = getCanonicalCityForSubdivision(sub) ?? getCanonicalCityForSubdivision(rawSub) ?? rawCity
     const key = subdivisionEntityKey(city, sub)
     const rec = byKey.get(key) ?? { city, subdivision: sub, prices: [] }
     const p = Number(row.ListPrice)
@@ -106,6 +111,7 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
     // Central Oregon only — drop out-of-area subdivisions (Medford, Ashland,
     // Grants Pass, Klamath Falls, ...) that flood the index with 404'ing links.
     if (!isCentralOregonCity(r.city)) continue
+    if (isOrphanCrrIndexSubdivision(r.subdivision)) continue
     const entityKey = r.entity_key
     if (seen.has(entityKey)) continue
     seen.add(entityKey)
@@ -148,23 +154,18 @@ const getCommunitiesForIndexRaw = unstable_cache(
   // listSubdivisionsWithFlags() now normalizes ALL THREE sources' output
   // through the canonical registry in one final pass — evicts v4, which is
   // cached with the still-duplicated result.
-  ['communities-index-v5'],
+  ['communities-index-v6'],
   { revalidate: 1800, tags: ['communities-index'] }
 )
 
-/** Index rows overlay alias-aware resort figures so homepage / A-Z match /communities/{slug}. */
+/** Index rows overlay alias-aware figures so homepage / A-Z match /communities/{slug}. */
 export const getCommunitiesForIndex = cache(async (): Promise<CommunityForIndex[]> => {
-  const { getRegistryResortPublicFigures } = await import('@/lib/kb/registry-resort-public-figures')
-  const { lookupRegistryResortFigures } = await import('@/lib/market/publish-resort-index-figures')
-  const [rows, overlay] = await Promise.all([getCommunitiesForIndexRaw(), getRegistryResortPublicFigures()])
-  if (overlay.size === 0) return rows
+  const { loadPublishedCommunityFigureMaps, lookupPublishedCommunityFigures, indexOverlayRow } =
+    await import('@/lib/kb/lookup-published-community-figures')
+  const [rows, maps] = await Promise.all([getCommunitiesForIndexRaw(), loadPublishedCommunityFigureMaps()])
+  if (maps.resort.size === 0 && maps.alias.size === 0) return rows
   return rows.map((row) => {
-    const published = lookupRegistryResortFigures(overlay, {
-      slug: row.slug,
-      citySlug: slugify(row.city),
-      name: row.subdivision,
-      entityKey: row.entityKey,
-    })
+    const published = lookupPublishedCommunityFigures(maps, indexOverlayRow(row))
     if (!published) return row
     return { ...row, activeCount: published.activeCount, medianPrice: published.medianListPrice }
   })
@@ -234,17 +235,14 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
     bannerUrl = created.url ?? null
   }
   const citySlug = slugify(city)
-  const { getRegistryResortPublicFigures } = await import('@/lib/kb/registry-resort-public-figures')
-  const resortFigureMap = isResort ? await getRegistryResortPublicFigures() : null
-  const { lookupRegistryResortFigures } = await import('@/lib/market/publish-resort-index-figures')
-  const resortFigures = resortFigureMap
-    ? lookupRegistryResortFigures(resortFigureMap, {
-        slug,
-        citySlug,
-        name: comm?.name ?? subdivision,
-        entityKey,
-      })
-    : null
+  const { loadPublishedCommunityFigureMaps, lookupPublishedCommunityFigures } =
+    await import('@/lib/kb/lookup-published-community-figures')
+  const resortFigures = lookupPublishedCommunityFigures(await loadPublishedCommunityFigureMaps(), {
+    slug,
+    citySlug,
+    name: comm?.name ?? subdivision,
+    entityKey,
+  })
   return {
     slug,
     entityKey,
@@ -278,7 +276,7 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
 export const getCommunityBySlug = cache(
   unstable_cache(
     _getCommunityBySlugUncached,
-    ['community-by-slug-v1'],
+    ['community-by-slug-v2'],
     { revalidate: 300, tags: ['community-detail'] }
   )
 )

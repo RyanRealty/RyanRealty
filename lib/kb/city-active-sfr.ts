@@ -26,3 +26,9 @@ export async function fetchAllCityActiveSfr(cityName: string): Promise<ListingTi
   }
   return [...byKey.values()]
 }
+
+/** Registry city plus mls_cities so alias matching sees every door a community lists under. */
+export async function fetchCommunityCitySfr(cityName: string, extraCities: string[] = []): Promise<ListingTile[]> {
+  const sets = await Promise.all([...new Set([cityName, ...extraCities])].map((c) => fetchAllCityActiveSfr(c)))
+  return sets.flat()
+}

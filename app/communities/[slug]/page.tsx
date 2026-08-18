@@ -60,7 +60,8 @@ import { communityImage, cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-image
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
-import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
+import { communityMlsAliasInventory, publishedAliasAwareSet, registryEntryUsesMlsAliasScan, topPricedTiles } from '@/lib/market/publish-community-mls-aliases'
+import { fetchCommunityCitySfr } from '@/lib/kb/city-active-sfr'
 // Row-to-prop shaping shared with the city + neighborhood place pages — one
 // copy, so a fix cannot land on one of the three and drift on the others.
 import {
@@ -264,7 +265,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const registryEntry = getResortCommunityBySlug(resortSlug)
   const isResort = registryEntry?.is_resort === true || community.isResort
   const isResortInCity = Boolean(resortMatch)
-
+  const hasMlsAliasScan = !isResortInCity && registryEntryUsesMlsAliasScan(registryEntry)
   // community geo snapshot keys are stored as "city:subdivision" lowercase.
   const communityGeoKey = `${cityName.toLowerCase().trim()}:${community.subdivision.toLowerCase().trim()}`
   // market_stats_cache + market_pulse_live neighborhood rows are keyed by the
@@ -295,16 +296,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     withTimeoutFallback(getOpenHousesWithListings({ city: cityName }), [], 3500, 'comm:openHouses'),
     withTimeoutFallback(getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'comm:activity'),
     withTimeoutFallback(getCommunityListings(cityName, community.subdivision, 14), [], 4500, 'comm:featured'),
-    // Uncapped active SFR tiles for EVERY MLS city this community lists under
-    // (registry mls_cities): Caldera lists under Bend, BBR under its own name —
-    // the registry-city-only pull rendered 0 of 31 real homes (2026-07-29). (§0)
-    isResortInCity
-      ? withTimeoutFallback(
-          Promise.all(
-            [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])].map((c) => fetchAllCityActiveSfr(c)),
-          ).then((sets) => sets.flat()),
-          [], 9000, 'comm:citySfr',
-        )
+    // Uncapped active SFR tiles for every MLS city this community lists under (§0).
+    isResortInCity || hasMlsAliasScan
+      ? withTimeoutFallback(fetchCommunityCitySfr(cityName, registryEntry?.mls_cities ?? []), [], 9000, 'comm:citySfr')
       : Promise.resolve([] as Awaited<ReturnType<typeof getListingTiles>>),
     // Rich, verified resort/golf/master-planned content (amenities, drive times,
     // golf course, membership, builders) from data/resort-community-<slug>.json —
@@ -365,12 +359,15 @@ export default async function CommunityDetailPage({ params }: Props) {
   // featured / ticker / count all agree and are non-empty. (§0)
   const resortTiles = isResortInCity ? resortTilesForSlug(citySlug, resortSlug, citySfrTiles) : []
   const useResortTiles = resortTiles.length > 0
+  const { tiles: aliasTiles, useAliasTiles } = communityMlsAliasInventory(hasMlsAliasScan ? registryEntry : null, citySfrTiles)
 
   // The community's own listing tiles (lat/lng/photo for the map + featured + ticker).
   // Resort -> alias-matched; reliable boundary -> in-polygon; oversized -> MLS sub name.
   // propertyType:'A': the map subtitle claims SFR, listings_in_boundary filters status only (§0).
   let communityTiles: Awaited<ReturnType<typeof getListingTiles>> = useResortTiles
     ? resortTiles
+    : useAliasTiles
+      ? aliasTiles
     : boundaryReliable && boundaryListingKeys.length > 0
       ? await withTimeoutFallback(
           getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 200 }),
@@ -386,7 +383,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         )
   // For the oversized-boundary fallback (non-resort), narrow the city pull to the
   // real community by MLS subdivision name (the authoritative source for those slugs).
-  if (!useResortTiles && (!boundaryReliable || boundaryListingKeys.length === 0)) {
+  if (!useResortTiles && !useAliasTiles && (!boundaryReliable || boundaryListingKeys.length === 0)) {
     const subListings = await withTimeoutFallback(
       getCommunityListings(cityName, community.subdivision, 200),
       [],
@@ -406,7 +403,11 @@ export default async function CommunityDetailPage({ params }: Props) {
   // publish a 0 alias count — fall through to the boundary / community count. (review HIGH)
   const haveCityTiles = isResortInCity && citySfrTiles.length > 0
   const resortSfrCounts = haveCityTiles ? resortActiveSfrCounts(citySlug, citySfrTiles) : new Map<string, number>()
-  const aliasAwareCount = haveCityTiles ? resortSfrCounts.get(resortSlug) ?? null : null
+  const publishedAlias = publishedAliasAwareSet({
+    resortTiles, aliasTiles,
+    resortCount: haveCityTiles ? resortSfrCounts.get(resortSlug) ?? null : null,
+  })
+  const aliasAwareCount = publishedAlias.count
 
   // Honest active count, in priority order:
   //   1. resort -> alias-aware count (matches the city ledger)
@@ -423,7 +424,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const reliableBoundaryCount = boundaryReliable ? boundaryMapData.pins.length : null
   const activeSet: { count: number | null; tiles: typeof communityTiles | null; median: number | null } =
     aliasAwareCount != null
-      ? { count: aliasAwareCount, tiles: resortTiles, median: null }
+      ? { count: aliasAwareCount, tiles: publishedAlias.tiles, median: null }
       : reliableBoundaryCount != null && reliableBoundaryCount > 0
       ? { count: reliableBoundaryCount, tiles: communityTiles, median: null }
       : communityTiles.length > 0
@@ -515,11 +516,11 @@ export default async function CommunityDetailPage({ params }: Props) {
     .filter((t) => t.listingKey)
   // A resort's featured rail comes from its alias-matched tiles (top by price),
   // so Widgi Creek shows its real homes, not the empty literal-name set. (§0)
-  const featuredItems: KbFeaturedItem[] = useResortTiles
-    ? await resolveFeaturedItems(
-        [...resortTiles].sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0)).slice(0, 14),
-      )
-    : await resolveFeaturedItems(featuredCommunityTiles as unknown as Parameters<typeof resolveFeaturedItems>[0])
+  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(
+    useResortTiles || useAliasTiles
+      ? topPricedTiles(useResortTiles ? resortTiles : aliasTiles)
+      : (featuredCommunityTiles as unknown as Parameters<typeof resolveFeaturedItems>[0]),
+  )
 
   // Map: only the REAL community pins. Reliable boundary -> all in-polygon homes;
   // oversized boundary -> only the subdivision homes we resolved (already
