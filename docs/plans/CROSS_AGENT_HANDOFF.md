@@ -2,17 +2,16 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (grok-build) — runtime crosswalk land
+# Current — 2026-08-18 (grok-build) — runtime crosswalk LIVE
 
-**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. **Time:** 2026-08-18 evening PT. Landed `wt/runtime-crosswalk-20260818` onto `main` (tip `4fe39c85` + this handoff). CMA dirty checkout `cursor/cma-client-document-7fc3` was not touched.
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. **Time:** 2026-08-18 evening PT. Product **`0afc2335`** is on **`origin/main`**. Vercel Production **READY** `dpl_DPCpYf6F9pUGq6BZ1niVEKpTH1dB` (`npm run deploy:verify` exit 0). Aliases include `ryan-realty.com` and `ryanrealty.vercel.app`. CMA dirty checkout `cursor/cma-client-document-7fc3` was not touched.
 
 **Done**
 - Runtime photograph + unused cleanup + Follow Up Boss purge + search honesty (timeout ≠ 0 homes, neighborhood pan) + GTM/gtag dual-tag stop + nightly E2E locators + G55 orphan delete (166→17) + Vercel FUB/`INNGEST_EVENT_KEY` removed (`INNGEST_SIGNING_KEY` kept as revalidate secret).
 - Capture is `lib/crm/send-event.ts` → `crm_people`. No `lib/followupboss.ts`.
-- Migration `20260818210000_drop_unused_runtime_crosswalk_objects.sql` ships with this push (empty `trending_scores` + unused `get_homepage_market_stats`).
+- Hosted drop recorded: `20260818210000` (`trending_scores` gone, `get_homepage_market_stats` gone).
 
 **Next**
-- After deploy READY: confirm `/contact` has one `#contact-email`, `/homes-for-sale` does not fire gtag GA4 config beside GTM, neighborhood map pan stays scoped.
 - Leftover punch families stay on FLEET-PUNCH. Do not start a new ship class from this land.
 - CMA work stays on `cursor/cma-client-document-7fc3` in the primary checkout.
 
