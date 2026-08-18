@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — newsletter subscribe door
+# Current — 2026-08-18 (cursor-loop-chain) — sitemap.xml 500 reject slice
+
+**Surface:** Cursor cloud `bc-f4e9d63b` (`cursor/loop-chain-2026-08-18t15-03-ab02`). **Time:** 2026-08-18 ~15:25 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:sitemap.xml` (4 of 162). Claimed parent only as `cursor-loop-chain-bc-f4e9d63b-2026-08-18t15-03`. **No product change from this session.** Production stays on last product **`f6e29988f`** (already READY; dpl `CGedqTqhL1HQzSTHtaEikzAcZGmB`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (158 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (4 sitemap.xml lines) at 390+1280: GET `/sitemap.xml` 500 twice **rejected** (200 sitemapindex, `x-matched-path: /sitemaps/index.xml`, children listed). GET `/sitemap.xml` 500 **rejected** (same 200 index; core/geo/listings/matrix/content all 200). Children could not be opened **rejected** (listings 7,597 locs, geo 1,542, core 155). Index 200 but listings.xml /sit fail **rejected** (listings.xml 200 urlset 7,597 `homes-for-sale` locs; `/sit` is 403 truncated path, not a child). Hex-only fingerprints (0 fixed + 4 rejected): `fe303e01b3c306991850ccddd8298b6e` / `af2543a434cf52d68801d9e948bbaf7f` / `76d8247a2d0efce402db514ecbe22769` / `cbf99bdeee95ba5a59bfe0f8ad9a7a87`.
+- Class: none. Fleet sitemap 500 / unopenable children did not reproduce. R-121 already VERIFIED. Do not invent a second sitemap index. Do not send a newsletter.
+- Prod probe on live `f6e29988f`: `/sitemap.xml` **200** sitemapindex; `/sitemaps/listings.xml` **200** 7,597 locs. After shots `/opt/cursor/artifacts/sitemap_index_{390,1280}.webp`, `/opt/cursor/artifacts/sitemap_listings_{390,1280}.webp`, `/opt/cursor/artifacts/sitemap_core_390.webp`. Probe `/opt/cursor/artifacts/sitemap_probe_2026-08-18.txt`.
+- Punch dispositions appended (parent not completed): 0 fixed + 4 rejected. Leftover families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not send a newsletter. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-121/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — newsletter subscribe door
 
 **Surface:** Cursor cloud `bc-39f11247` (`cursor/loop-chain-2026-08-18t14-13-46fa`). **Time:** 2026-08-18 ~15:00 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:newsletter` (2 of 164). Parent was held by concurrent `cursor-loop-sentinel-bc-063b1400-2026-08-18t14-10` (setup only, no product). This session shipped the class. Product **`f6e29988f`** landed on **`main`**. Vercel Production **READY** for `f6e29988f` (`CGedqTqhL1HQzSTHtaEikzAcZGmB`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (162 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
