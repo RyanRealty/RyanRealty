@@ -53,7 +53,7 @@ export interface SingleWordCaptionProps {
    * Vertical center pixel of the caption row. Defaults to CAPTION_PORTRAIT.centerY
    * (1370) — inside the portrait safe zone. For landscape pass CAPTION_LANDSCAPE.centerY
    * (940). For square pass CAPTION_SQUARE.centerY (930). All from
-   * `video_production_skills/safe-zones/canonical/safe-zones.ts`.
+   * `video_production_skills/captions/canonical/safe-zones.ts`.
    */
   centerY?: number
   /** Font size in px. Defaults to CAPTION_PORTRAIT.fontSizePx (120). Landscape: 96. */

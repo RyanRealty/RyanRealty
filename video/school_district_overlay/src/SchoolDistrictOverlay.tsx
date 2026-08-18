@@ -43,7 +43,7 @@ import { SingleWordCaption, CaptionWord } from '../../../video_production_skills
 import {
   PORTRAIT_SAFE,
   CAPTION_PORTRAIT,
-} from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+} from '../../../video_production_skills/captions/canonical/safe-zones'
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const NAVY = '#102742'

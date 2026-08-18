@@ -43,7 +43,7 @@ import {
   useVideoConfig,
 } from 'remotion'
 import { SingleWordCaption as SingleWordCaptionBase, type CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
-import { PORTRAIT_SAFE, CAPTION_PORTRAIT } from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+import { PORTRAIT_SAFE, CAPTION_PORTRAIT } from '../../../video_production_skills/captions/canonical/safe-zones'
 
 type SWCProps = {
   words: CaptionWord[]

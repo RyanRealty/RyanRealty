@@ -97,11 +97,36 @@ Full preview/development key set vs production. Whether `GA4_API_SECRET` is the 
 
 ### Unused leftovers
 
-Follow Up Boss HTTP, OpenAI photo-classify (zero callers of `classifyListingPhoto`), Stripe (no SDK), Mapbox (probe CSS only), Calendly (tag union only), Remotion (not imported by Next app).
+Follow Up Boss HTTP, OpenAI photo-classify (zero callers of `classifyListingPhoto`), Stripe (no SDK), Mapbox (probe CSS only), Calendly (tag union only). Remotion is **not** imported by the Next app — see **Video** below (offline factory, not unused).
 
 ### Not seen
 
 SendGrid, Mailgun, Posthog, Vercel Analytics/Speed Insights, Slack, Zapier, Cloudinary, Mux.
+
+---
+
+## Video — offline factory, not unused
+
+Remotion is the offline render factory. Next never imports it (`app/`, `components/`, `lib/` have zero remotion imports; root `tsconfig` excludes `video/` and `listing_video_v4`). Do not delete `listing_video_v4`, `video/market-report`, or `scripts/` render wrappers.
+`listing_video_v4` still has remotion render scripts and `scripts/preflight.ts` prints the render command. `video/market-report` is the YouTube short factory (`studio`/`render` in its package.json) and the type source for `lib/youtube-market-report`.
+`lib/youtube-market-report/` is that factory’s data layer (Vitest + `ci:market-formula` + `VideoProps` import). Not a Next importer. Keep.
+Root `package.json` keeps `remotion` as a devDependency so G46 can typecheck `video/market-report/src`. Satellite comps (`video:cascade-peaks:*`, `video:listing-tour:*`, `scripts/build_*.py`) are the same factory.
+Dead `video_production_skills/safe-zones/canonical/safe-zones` imports (11) now point at `video_production_skills/captions/canonical/safe-zones`. No remotion package deleted this pass (every broken-import package has a script caller).
+`video/walkability_overlay` is missing `WalkabilityOverlay.tsx` / `index.ts` but `scripts/build_walkability_overlay.py` still names it — keep, do not invent the comp.
+`video/avatar_market_update` and `video/news_video_avatar` are README stubs (Synthesia blocked). `video/earnest` and `video/shared` have no script caller — parked, they compile.
+`public/v5_library` and `public/videos/flyovers/tetherow` are parked binaries. Next does not embed them. Remotion comps read `listing_video_v4/public/v5_library`. Live site video is `public/videos/cities|communities` via `data/city-hero-videos.resolved.json`.
+Do not invent a listing. Do not render or publish a video from this pass.
+
+| Class | What | Why |
+|---|---|---|
+| **In use (offline factory)** | `listing_video_v4/`, `video/market-report/`, `lib/youtube-market-report/`, `scripts/preflight.ts`, `scripts/build_*.py` remotion wrappers, `video:cascade-peaks:*`, `video:listing-tour:*` | Scripts still render / typecheck / wrap these comps. Next does not import Remotion. |
+| **In use (Next, not Remotion)** | `public/videos/cities/*`, `public/videos/communities/*` via `data/city-hero-videos.resolved.json` | KbHero / city marquee. Includes `/videos/communities/tetherow.mp4` (not the flyover). |
+| **Fixed this pass** | 11 satellite comps importing deleted `video_production_skills/safe-zones/canonical/safe-zones` | Retargeted to `video_production_skills/captions/canonical/safe-zones`. Callers exist; do not delete. |
+| **Parked (broken, has caller)** | `video/walkability_overlay` (no `index.ts` / `WalkabilityOverlay.tsx`) | `scripts/build_walkability_overlay.py` still points here. Do not invent the missing comp. |
+| **Parked (README / blocked)** | `video/avatar_market_update`, `video/news_video_avatar` | Synthesia avatar not configured. |
+| **Parked (compiles, no script caller)** | `video/earnest`, `video/shared` | Leave on disk. |
+| **Parked binaries** | `public/v5_library/**`, `public/videos/flyovers/tetherow/{hero.mp4,poster.jpg}` | Unreferenced by Next and by remotion comps. Social publish scripts still name `/v5_library/` URLs. Factory assets live under `listing_video_v4/public/v5_library`. |
+| **Deleted** | none | Prefer document in-use offline vs delete. |
 
 ---
 
@@ -231,7 +256,7 @@ Unused CRM modules: `lib/crm/lead-router.ts` (`captureLead` zero callers), `lib/
 | `lib/voice/alignment.ts` | tests only; scripts copy the voice ID |
 | `lib/crm/saved-view-seeds.ts` | tests lock AST vs SQL — keep |
 
-`lib/youtube-market-report/` has no Next importer. **Park** (possible offline CLI). Do not delete this pass.
+`lib/youtube-market-report/` has no Next importer. **Offline factory** (YouTube market-report data layer). Keep. See **Video**.
 
 ---
 
