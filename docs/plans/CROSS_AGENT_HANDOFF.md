@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-sentinel) — listing-detail not-found + tour-key + history reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + SSL reject slice
+
+**Surface:** Cursor cloud `bc-5bc17e51` (`cursor/loop-chain-2026-08-18t10-16-1314`). **Time:** 2026-08-18 ~10:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 228). Claimed parent only as `cursor-loop-chain-bc-5bc17e51-2026-08-18t10-16`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (220 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Ashland McCall / Phoenix Main / Ashland Strawberry / Chiloquin River Bend / Cave Junction Dick George / Christmas Valley Arrowhead / Prineville High Desert 200 not-found homepage shells **rejected** (each 200 + address title/H1 + list price). Brookings Byrtus SSL timeout **rejected** (200 in 720ms HTML / 1632ms 390; `1101 Byrtus Place` `$1,100,000`). Hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet not-found shell / SSL fail did not reproduce. Do not invent a fix. Do not invent a listing.
+- Prod probe on live `de3733b74`: McCall H1 `$315,000`; Phoenix Main H1 `$1,695,000`; Byrtus H1 `$1,100,000`; High Desert H1 `$1` (MLS ask, not a homepage). After shots `/opt/cursor/artifacts/after_mccall_{390,1280}.png`, `/opt/cursor/artifacts/after_phoenix-main_390.png`, `/opt/cursor/artifacts/after_byrtus_390.png`, `/opt/cursor/artifacts/after_high-desert_390.png`, `/opt/cursor/artifacts/after_strawberry_1280.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — listing-detail not-found + tour-key + history reject slice
 
 **Surface:** Cursor cloud `bc-5b7dd86a` (`cursor/loop-sentinel-2026-08-18t09-50-2db8`). **Time:** 2026-08-18 ~10:05 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 244). Claimed parent only as `cursor-loop-sentinel-bc-5b7dd86a-2026-08-18t09-50`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (236 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
