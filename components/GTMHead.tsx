@@ -1,15 +1,31 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import { hasAnalyticsConsent } from './CookieConsentBanner'
+
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
 
 /**
- * GTM container. Loads whenever NEXT_PUBLIC_GTM_CONTAINER_ID is set.
- * Consent Mode v2 defaults (denied) are injected by GoogleAnalytics before
- * this script; do not wait for the cookie banner or GA4 never sees denied
- * visitors and GTM's own GA4 tag double-counts the accepted ones.
+ * GTM container. Loads only after analytics consent (ci:tracking-policy).
+ * GA4 is configured inside this container (gaawc). GoogleAnalytics must not
+ * also gtag('config', G-…) or page_view doubles.
  */
 export default function GTMHead() {
-  if (!GTM_ID) return null
+  const [consent, setConsent] = useState(false)
+
+  useEffect(() => {
+    if (hasAnalyticsConsent()) setConsent(true)
+  }, [])
+
+  useEffect(() => {
+    const onConsent = () => {
+      if (hasAnalyticsConsent()) setConsent(true)
+    }
+    window.addEventListener('cookie-consent', onConsent)
+    return () => window.removeEventListener('cookie-consent', onConsent)
+  }, [])
+
+  if (!GTM_ID || !consent) return null
 
   return (
     <script

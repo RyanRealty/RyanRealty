@@ -128,9 +128,9 @@ describe('GTM and gtag do not both configure GA4', () => {
     expect(ga).toMatch(/const hasGA4 = !!GA4_ID && !hasGTM/)
   })
 
-  it('loads GTM without waiting on the cookie banner', () => {
-    expect(gtm).toMatch(/if \(!GTM_ID\) return null/)
-    expect(gtm).not.toMatch(/hasAnalyticsConsent/)
+  it('loads GTM only after analytics consent', () => {
+    expect(gtm).toMatch(/hasAnalyticsConsent/)
+    expect(gtm).toMatch(/if \(!GTM_ID \|\| !consent\) return null/)
   })
 })
 
