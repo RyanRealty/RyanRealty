@@ -70,3 +70,30 @@ export function isOrphanCrrIndexSubdivision(name: string): boolean {
   if (trimmed.toLowerCase() === 'crooked river ranch') return false
   return isCrrFamilySubdivisionName(trimmed)
 }
+
+/** Non-resort Crr-family tiles from a city pull. Empty on timeout / no match. */
+export function communityMlsAliasInventory<T extends CommunityAliasTile>(
+  entry: CommunityAliasEntry | null | undefined,
+  citySfrTiles: T[],
+): { tiles: T[]; useAliasTiles: boolean } {
+  if (!registryEntryUsesMlsAliasScan(entry) || !entry || citySfrTiles.length === 0) {
+    return { tiles: [], useAliasTiles: false }
+  }
+  const tiles = communityAliasTilesForEntry(entry, citySfrTiles)
+  return { tiles, useAliasTiles: tiles.length > 0 }
+}
+
+export function topPricedTiles<T extends { listPrice?: number | null }>(tiles: T[], limit = 14): T[] {
+  return [...tiles].sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0)).slice(0, limit)
+}
+
+/** Count + tiles that must stay paired for the hero median. */
+export function publishedAliasAwareSet<T>(input: {
+  resortTiles: T[]
+  aliasTiles: T[]
+  resortCount: number | null
+}): { count: number | null; tiles: T[] } {
+  if (input.resortCount != null) return { count: input.resortCount, tiles: input.resortTiles }
+  if (input.aliasTiles.length > 0) return { count: input.aliasTiles.length, tiles: input.aliasTiles }
+  return { count: null, tiles: [] }
+}

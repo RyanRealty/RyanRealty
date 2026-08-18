@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   communityAliasTilesForEntry,
+  communityMlsAliasInventory,
   isCrrFamilySubdivisionName,
   isOrphanCrrIndexSubdivision,
   publishCanonicalCommunityName,
+  publishedAliasAwareSet,
   registryEntryUsesMlsAliasScan,
   subdivisionMatchesCommunityAlias,
 } from './publish-community-mls-aliases'
@@ -66,6 +68,30 @@ describe('registryEntryUsesMlsAliasScan', () => {
         subdivision_aliases: ['Oww', 'DrrhTrs'],
       }),
     ).toBe(false)
+  })
+})
+
+describe('publishedAliasAwareSet', () => {
+  it('pairs Crr-family tiles with the alias count, not an empty resort set', () => {
+    const aliasTiles = [{ listPrice: 425_000 }, { listPrice: 399_000 }]
+    expect(
+      publishedAliasAwareSet({
+        resortTiles: [],
+        aliasTiles,
+        resortCount: null,
+      }),
+    ).toEqual({ count: 2, tiles: aliasTiles })
+  })
+})
+
+describe('communityMlsAliasInventory', () => {
+  it('returns tiles for a non-resort Crr registry row', () => {
+    const { tiles, useAliasTiles } = communityMlsAliasInventory(
+      { is_resort: false, subdivision_aliases: ['Crr'] },
+      [{ subdivisionName: 'Crr3_C' }, { subdivisionName: 'Tetherow' }],
+    )
+    expect(useAliasTiles).toBe(true)
+    expect(tiles).toEqual([{ subdivisionName: 'Crr3_C' }])
   })
 })
 

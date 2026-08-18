@@ -50,9 +50,9 @@ checks.push({
   ok:
     /from ['"]@\/lib\/market\/publish-community-mls-aliases['"]/.test(page) &&
     /registryEntryUsesMlsAliasScan/.test(page) &&
-    /communityAliasTilesForEntry/.test(page) &&
-    /hasMlsAliasScan/.test(page) &&
-    /useAliasTiles/.test(page),
+    /communityMlsAliasInventory/.test(page) &&
+    /publishedAliasAwareSet/.test(page) &&
+    /hasMlsAliasScan/.test(page),
 })
 
 const cityResorts = src('lib/kb/resort-active-counts.ts')
@@ -76,12 +76,14 @@ checks.push({
 })
 
 const actions = src('app/actions/communities.ts')
+const lookup = src('lib/kb/lookup-published-community-figures.ts')
 checks.push({
   label: 'index + getCommunityBySlug overlay registry alias figures',
   ok:
-    /getRegistryAliasPublicFigures/.test(actions) &&
+    /lookupPublishedCommunityFigures/.test(actions) &&
     /publishCanonicalCommunityName/.test(actions) &&
-    /isOrphanCrrIndexSubdivision/.test(actions),
+    /isOrphanCrrIndexSubdivision/.test(actions) &&
+    /getRegistryAliasPublicFigures/.test(lookup),
 })
 
 const plat = src('lib/data/geo/plat-public-inventory.ts')
