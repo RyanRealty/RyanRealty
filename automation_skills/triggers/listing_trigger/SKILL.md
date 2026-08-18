@@ -1,9 +1,13 @@
 ---
 name: listing_trigger
-description: Use this skill whenever a new listing is inserted into Supabase, when the user says "trigger the listing pipeline", "fire the listing content automation", "run listing trigger for [MLS number]", "kick off content for this new listing", "new listing came in — start the pipeline", or when debugging why content wasn't auto-generated for a new active listing. New listing INSERT in Supabase fires a full content suite — video, 8 platform variants, scheduled posts, and thumbnail generation.
+description: KILLED as a live pipeline. The claimed routes (/api/cron/listing-watch, /api/webhooks/listing-new, supabase/functions/listing-trigger) do not exist. Do not run this. New listings land via sync-delta. Content is queued through marketing_brain_actions + producer-runtime, not this skill.
 ---
 
-# Listing Trigger
+# STOP — this pipeline is not wired
+
+There is no `/api/cron/listing-watch`, no `/api/webhooks/listing-new`, no `listing-trigger` Edge Function, and no `repurpose_engine` / `thumbnail_generator` on disk. If you loaded this file, stop. Do not invent those routes.
+
+# Listing Trigger (fossil — do not execute)
 
 ## What it is
 

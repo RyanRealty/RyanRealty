@@ -190,13 +190,11 @@ Then merge new paths into this file under the right heading.
 
 ---
 
-## F — Repo `video_production_skills` (if present)
+## F — Video producer skills (DELETED)
 
-- `/Users/matthewryan/RyanRealty/video_production_skills/development-showcase/SKILL.md`
-- `/Users/matthewryan/RyanRealty/video_production_skills/lifestyle-community/SKILL.md`
-- `/Users/matthewryan/RyanRealty/video_production_skills/listing-tour-video/SKILL.md`
-- `/Users/matthewryan/RyanRealty/video_production_skills/market-data-video/SKILL.md`
-- `/Users/matthewryan/RyanRealty/video_production_skills/neighborhood-overview/SKILL.md`
-- `/Users/matthewryan/RyanRealty/video_production_skills/publisher/SKILL.md` *(stub → canonical: `automation_skills/automation/publish/SKILL.md`)*
-- `/Users/matthewryan/RyanRealty/automation_skills/automation/publish/SKILL.md` *(canonical: `/api/social/publish`, gates, platform matrix)*
-- `/Users/matthewryan/RyanRealty/social_media_skills/blog-post/SKILL.md` *(AgentFire WordPress publish)*
+All `video_production_skills/**/SKILL.md` files were removed 2026-06-15. Do not load them. What remains:
+
+- `video_production_skills/captions/canonical/{SingleWordCaption.tsx,safe-zones.ts,load-amboqia.ts}` — Remotion caption helpers, not skills
+- Video hard rules: `CLAUDE.md` §4
+- Live publish path: `/api/cron/publisher-sweep` → `/api/social/publish` (see `automation_skills/automation/publish/SKILL.md`)
+- Still-live social SKILL: `social_media_skills/blog-post/SKILL.md` (site `blog_posts`, not AgentFire WordPress)

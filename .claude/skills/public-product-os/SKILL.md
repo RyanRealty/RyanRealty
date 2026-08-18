@@ -1,6 +1,6 @@
 ---
 name: public-product-os
-description: Run ONE unit (or grind until blocked) of the Public Product OS — the process→data→IA→visual→roll rebuild of the public site with filesystem memory, design amnesia, dual page objectives (visitor + machine), and Matt locks. Use when Matt says "run public product", "continue public OS", "public product loop", or "/public-product-os".
+description: FOLDED. Do not grind P0–P10. Page-grade is killed. If this skill loaded, STOP. Product of record is docs/plans/PUBLIC_PRODUCT/PRODUCT.md. Next work is loop-brief.
 ---
 
 # Public Product OS — runner

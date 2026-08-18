@@ -1,9 +1,13 @@
 ---
 name: market_trigger
-description: Use this skill whenever the user says "trigger the market pipeline", "fire the market data automation", "rerun market trigger for [city]", "run the nightly market check", "why didn't the market video fire?", "force a market trigger for Bend", or when investigating why a significant market movement didn't produce a content video. Nightly cron compares market_pulse_live stats vs prior 7 days; if any tracked metric moves >5% fires a data_viz_video and avatar_market_update with full data verification trace.
+description: KILLED as a live pipeline. /api/cron/market-trigger does not exist and is not in vercel.json. Do not run this. Market content is not auto-fired from this skill.
 ---
 
-# Market Trigger
+# STOP — this pipeline is not wired
+
+There is no `/api/cron/market-trigger`. Live market jobs are `refresh-market-stats`, `generate-market-narratives`, `market-report`. Video producer SKILLs are deleted.
+
+# Market Trigger (fossil — do not execute)
 
 ## What it is
 

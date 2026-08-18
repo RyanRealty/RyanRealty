@@ -1,10 +1,10 @@
-# SESSION HANDOFF — Enterprise Map (automatic bootstrap)
+# SESSION HANDOFF — Enterprise Map (photograph, not a second backlog)
 
-**Read this first** in any new Claude Code or Grok session continuing the enterprise map.  
-**Company start ritual (THE LOOP v1.6.0):** run `npx tsx scripts/loop-brief.ts` — it assembles handoff Current, the scoreboard headline, stranded windows, the durable work graph (`loop_work_nodes`), and the next ship class (same-category fleet findings share one rebuild). Deep context: [`docs/plans/COMPANY_SCOREBOARD.md`](../COMPANY_SCOREBOARD.md) + [`docs/plans/COMPANY_IMPROVEMENT.md`](../COMPANY_IMPROVEMENT.md). The map is still the universe. **The version target is [`VERSION-1.md`](VERSION-1.md)**; a domain with expired unlearned ledger windows is frozen until Learn closes them; G56 forbids silent manifest shrinkage.  
-**Do not ask Matt whether to continue.** Execute until closed or blocked on Matt-only gates.  
-**Parallel admin work is IN SCOPE of the map — always.**  
-Claude (or anyone) may *edit* admin files in another session. That does **not** leave admin out of comprehensive coverage. CAP-011/024/025, ADMIN_PRODUCT, and all admin routes stay on the universe and advancement plan.
+**Do not start a session by executing ALL-OPEN.** Next work is `npx tsx scripts/loop-brief.ts` plus `CROSS_AGENT_HANDOFF.md` Current.
+
+This file + `ALL-OPEN-ITEMS.md` + `inventories/` are a **2026-08-08 photograph**. Gates still require `VERSION-1.md` / `REQUIREMENTS.md` to exist. They do not require you to grind map residuals.
+
+Runtime photograph: [`docs/audits/RUNTIME_CROSSWALK_2026-08-18.md`](../../audits/RUNTIME_CROSSWALK_2026-08-18.md).
 
 **Collision rule only (not scope):** while `git status` shows dirty `app/admin/**/crm/inbox/**` or in-flight admin v2 islands owned by another session, **do not edit those same paths** from this session. Still **inventory, disposition, evidence, and plan** admin fully. When their work lands, re-census and promote cells.
 

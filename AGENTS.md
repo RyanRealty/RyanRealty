@@ -8,20 +8,15 @@ This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to au
 
 **Deliver Ryan Realty website to acceptance-criteria-passing state.** The site must be the best real estate website in Central Oregon, with listing detail pages that beat Zillow Showcase, sub-second LCP on every route, and a canonical Data Access Layer that prevents regression.
 
-Every session — Claude Code, Cursor, or Grok — starts by reading these files in order:
+Every session — Claude Code, Cursor, or Grok — starts here:
 
-0. **`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`** + **`docs/plans/CROSS_AGENT_HANDOFF.md`** (Fleet Sense) — whole-system map, concurrent agents, open residual. Do not start a subject tunnel without this.
-1. **`docs/EXECUTION_PLAN.md`** — the wave-by-wave build plan (~6,000 words, every step listed)
-2. **`docs/SITE_SPEC.md`** — the per-route checklist with machine-checkable acceptance criteria
-3. **`docs/DATA_ACCESS_LAYER.md`** — the canonical DAL contract (every page calls `@/lib/data/*` functions; raw `.from('listings')` etc. outside `lib/data/` is banned by ESLint + CI)
-4. **`docs/architecture/ADR_001_DATA_LAYER.md`** — 4 materialized views + 5 indexes + ILIKE→EQ rewrite plan
+0. **`docs/plans/CROSS_AGENT_HANDOFF.md` Current block** (≤18 lines) — what the other surface left. Do not read the Prior novel unless you need a named SHA.
+1. **`npx tsx scripts/loop-brief.ts`** — durable work graph + ship class. That is next work. Not `orchestrate.ts`. Not `docs/SITE_SPEC.md`.
+2. **`docs/DATA_ACCESS_LAYER.md`** when the task touches listings/stats — every page calls `@/lib/data/*`; raw `.from('listings')` outside `lib/data/` is banned.
 
-Then run the bootstrap checks (per the goal):
-- `npm run build && npm run lint && npm run test && npm run ci:design-tokens && npm run ci:dal-boundary && npm run ci:brand-voice && npm run ci:seo-routes` — note every failure
-- `lhci autorun --config=./lighthouserc.cjs` on LP routes — note every assertion below threshold
-- Work the lowest-numbered unchecked item in `docs/SITE_SPEC.md`
+`docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
 
-**Done = every acceptance criterion in `docs/SITE_SPEC.md` passes. No phases. No audits between. Continuous push until production at ryan-realty.com is live and meeting all gates.**
+**Done = the served ship class is locally accepted, then one `npm run push` + `deploy:verify` when the app changed.**
 
 Out of scope: `marketing_brain_skills/`, `video_production_skills/`, social posting automation, transaction coordination. Only the public LP website and the CI guardrails that protect it.
 
@@ -79,7 +74,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 | Layer | Source |
 |-------|--------|
 | What actually shipped | `git log origin/main` |
-| Backlog / next task | `docs/plans/task-registry.json` and `npx tsx scripts/orchestrate.ts next` |
+| Backlog / next task | `npx tsx scripts/loop-brief.ts` (work graph). `task-registry.json` / `orchestrate.ts` are complete (49/49) — do not pick work from them. |
 | Optional handoff notes | `~/.claude/plans/HANDOFF-*.md` — add or update when switching tools with context the repo does not carry |
 | **Cross-agent continuity (required when switching)** | **`docs/plans/CROSS_AGENT_HANDOFF.md`** — update the **Current** table before you stop or when Matt moves to the other tool. The other agent must **read it after `git pull`** before deep work. |
 | **Global skill index (Cursor + Claude)** | **`~/.claude/GLOBAL_SKILLS_REGISTRY.md`** — full path list of every `SKILL.md` on this machine (plugins, repo, TC, Cowork notes). **Git mirror:** `docs/plans/GLOBAL_SKILLS_REGISTRY.md`. **Cursor stub:** `~/.cursor/GLOBAL_SKILLS_REGISTRY.md`. |
@@ -102,8 +97,8 @@ If a workspace **skill** might apply—even slightly—**read its `SKILL.md` fir
 - **Master index:** `~/.claude/GLOBAL_SKILLS_REGISTRY.md` or **`docs/plans/GLOBAL_SKILLS_REGISTRY.md`** (same content) — scan here first so you do not miss a plugin or TC-only skill.
 - **This repo:** `.cursor/skills/**/SKILL.md` (e.g. Oregon OREF, OREA PB, SkySlope, professional Word, etc.)
 - **Cursor-bundled / plugin skills:** paths under `~/.cursor/plugins/.../skills/**/SKILL.md` when the task matches their description (Next.js, Vercel, Supabase, TDD, debugging, etc.)
-- **Repo `video_production_skills/**/SKILL.md`** when the task is video production
-- **Publishing trigger:** if Matt says "go ahead and publish it" after approving content, load `video_production_skills/publisher/SKILL.md`
+- **Video:** no producer `SKILL.md` remains. Rules live in `CLAUDE.md` §4. Caption modules only: `video_production_skills/captions/canonical/`.
+- **Publishing trigger:** if Matt says "go ahead and publish it" after approving content, load `automation_skills/automation/publish/SKILL.md` (and know the live path is `/api/cron/publisher-sweep` → `/api/social/publish`)
 - **Cowork-only skills** (e.g. mounted **docx** under `mnt/.claude/skills/`): see section **E** in the global registry; copy into `~/.claude/skills/` if you need the same skill in Claude Code CLI.
 - **Marketing, advertising, paid social, Meta or Facebook or Instagram ads, lead generation, seller acquisition, CPL or CAPI, weekly optimization packets, `agent_insights` marketing rows:** Read **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** first (canonical end-to-end system map). For **how each path creates a lead** (webhooks, forms, dedup, sinks), read **`docs/MARKETING_LEAD_FLOW.md`**. Then **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** for launch checklist and budgets. For the recurring optimization routine load **`.cursor/skills/facebook-seller-growth/SKILL.md`** (and append learnings to **`docs/marketing/facebook-seller-growth-LEARNINGS.md`**). Cursor surfaces **`.cursor/rules/marketing-advertising-workflow.mdc`** when the task matches these topics.
 
@@ -114,18 +109,8 @@ If a workspace **skill** might apply—even slightly—**read its `SKILL.md` fir
 ## Quick Start
 
 ```bash
-# See what needs doing
-npx tsx scripts/orchestrate.ts status
-
-# Get the next task with full specification
-npx tsx scripts/orchestrate.ts next
-
-# Start working on a task
-npx tsx scripts/orchestrate.ts start <taskId>
-
-# When done, validate and complete
-npx tsx scripts/orchestrate.ts validate <taskId>
-npx tsx scripts/orchestrate.ts complete <taskId>
+# See what the work graph wants next
+npx tsx scripts/loop-brief.ts
 ```
 
 ## Sync Status Handoff (Mandatory for sync questions)
@@ -200,7 +185,7 @@ Required details:
 | Styling | Tailwind v4, shadcn/ui components only |
 | Testing | Vitest (unit), Playwright (E2E + visual), Lighthouse CI (perf), pa11y-ci (a11y) |
 | Deployment | Vercel |
-| CRM | Follow Up Boss |
+| CRM | In-house (`public.crm_people`). Follow Up Boss is decommissioned. |
 | Data Feed | Spark/MLS API |
 
 ### Running Locally
@@ -222,10 +207,9 @@ npm run docs:check           # Check documentation freshness
 
 ## How to Pick Up Work
 
-1. Run `npx tsx scripts/orchestrate.ts next` to get the next prioritized, unblocked task
-2. Read the full task specification output carefully
-3. Check the file ownership matrix in `docs/plans/master-plan.md`
-4. Run `npx tsx scripts/orchestrate.ts start <taskId>` to mark it in-progress
+1. Run `npx tsx scripts/loop-brief.ts` and take the printed ship class (or the named task Matt gave you)
+2. Discover the live path from `app/` + `vercel.json`, not from ENTERPRISE_MAP inventories
+3. Do not start `orchestrate.ts` or walk `docs/SITE_SPEC.md` checkboxes
 
 ### Priority Order
 
@@ -343,45 +327,33 @@ On merge to `main`:
 17. **Preview deploy testing** — Smoke tests on Vercel preview URLs
 
 Scheduled:
-18. **Dependency updates** — Weekly (Monday 9am UTC)
-19. **Security scan** — Weekly (Tuesday 8am UTC)
-20. **Optimization loop** — Weekly (Monday 6am UTC)
-21. **Stale branch cleanup** — Monthly (1st of month)
-22. **Saved search alerts** — Daily (2pm UTC)
-23. **Market report** — Weekly Saturday (2pm UTC)
+18. **Dependency updates** — GHA `dependency-updates.yml` Monday 09:00 UTC
+19. **Security scan** — GHA `security.yml` Tuesday 08:00 UTC
+20. **Marketing optimization report** — Vercel `/api/cron/marketing-optimization-report` Monday 06:30 UTC (not a GHA “optimization loop”)
+21. **Stale branch cleanup** — GHA `cleanup-branches.yml` 1st of month
+22. **Saved search alerts** — Vercel `/api/cron/saved-search-alerts` **hourly**, not daily 2pm GHA
+23. **Market report** — Vercel `/api/cron/market-report` **Sunday** 14:00 UTC, not Saturday GHA
 
 ---
 
 ## How to Validate
 
-After implementing a task:
-
 ```bash
-npx tsx scripts/orchestrate.ts validate <taskId>
+npm run ci:gates
+npm test
 ```
 
-This runs:
-- File existence checks for the task's listed files
-- `npm run build`
-- `npm run test`
-- `npm run lint:design-tokens` (if UI files changed)
-- `npm run lint:seo-routes` (if page files changed)
-
-All checks must pass before marking a task complete.
+If UI or routes changed, the matching `ci:*` members are already in `ci:gates`. Do not invent a second orchestrator validate step.
 
 ---
 
 ## How to Complete
 
 ```bash
-# After validation passes
-npx tsx scripts/orchestrate.ts complete <taskId>
-
-# Commit with conventional format and push to main
-git add -A
-git commit -m "feat: <short description of what was done>"
-git push origin main
+NODE_OPTIONS=--max-old-space-size=8192 npm run push   # from main
 ```
+
+`orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
 
 ## CRITICAL: Ship on `main` (worktrees are temporary)
 
@@ -406,42 +378,11 @@ git worktree add -b wt/crm-mobile-20260726 ../RyanRealty-wt-crm-mobile main
 
 **https://ryanrealty.vercel.app** reflects “everything current” only when **`main` is on Vercel production** and **hosted Supabase** has **all migrations applied** that the shipped code needs. SQL under `supabase/migrations/` is not live until it runs against the production database. See `.cursor/rules/production-parity.mdc` and `.cursor/rules/supabase-migrations-auto.mdc`.
 
-The orchestrator automatically:
-- Updates the task status in the registry
-- Checks if the parent phase is now fully complete
-- Updates phase status if all tasks are done
-
 ---
 
 ## Adding New Work
 
-```bash
-# Add a bug
-npx tsx scripts/orchestrate.ts add '{"title":"Fix broken avatar on mobile","priority":"high","category":"bug","owner":"engagement","files":["components/Avatar.tsx"],"acceptanceCriteria":["Avatar renders on mobile viewport","No layout shift"]}'
-
-# Add a feature request
-npx tsx scripts/orchestrate.ts add '{"title":"Add dark mode toggle","priority":"low","category":"feature","owner":"shared"}'
-
-# Add tech debt
-npx tsx scripts/orchestrate.ts add '{"title":"Refactor sync pipeline to use streams","priority":"medium","category":"tech-debt","owner":"reporting"}'
-```
-
----
-
-## Generating Reports
-
-```bash
-npx tsx scripts/orchestrate.ts report
-```
-
-Generates `docs/plans/continuous-improvement.md` with:
-- Overall progress (complete/in-progress/open/blocked)
-- Phase-by-phase progress with percentages
-- Work breakdown by owner
-- Current priorities sorted by urgency
-- Blocked task list with reasons
-- Backlog by category
-- Recommended next actions
+Put it on the work graph (`loop_work_nodes` / `/admin/loop`), not `orchestrate.ts add`. If Matt named the outcome in chat, that is the ticket.
 
 ---
 
@@ -491,10 +432,9 @@ Always idempotent: use `IF NOT EXISTS`, `IF EXISTS`, `ON CONFLICT DO NOTHING`.
 
 ## Reference
 
-- **Task Registry**: `docs/plans/task-registry.json` — all tasks and their status
-- **Master Plan**: `docs/plans/master-plan.md` — phases, ownership matrix, conflict resolutions
-- **Phase Briefs**: `docs/plans/phase-N-brief.md` — detailed specs per phase
-- **Features**: `docs/FEATURES.md` — what's currently implemented
-- **Design System**: `CLAUDE.md` — component mapping and color tokens
-- **Cursor Rules**: `.cursor/rules/` — enforced coding standards
-- **Continuous Improvement**: `docs/plans/continuous-improvement.md` — auto-generated progress report
+- **Next work**: `npx tsx scripts/loop-brief.ts` + `docs/plans/CROSS_AGENT_HANDOFF.md` Current
+- **Runtime photograph**: `docs/audits/RUNTIME_CROSSWALK_2026-08-18.md`
+- **DAL**: `docs/DATA_ACCESS_LAYER.md` + `docs/DATABASE_FOR_AI_AGENTS.md`
+- **Design System**: `CLAUDE.md` + `design_system/ryan-realty/`
+- **Cursor Rules**: `.cursor/rules/`
+- Fossils (do not execute): `docs/plans/task-registry.json`, `docs/plans/phase-N-brief.md` (deleted), `docs/EXECUTION_PLAN.md`, `docs/SITE_SPEC.md`
