@@ -30,10 +30,15 @@ const slimRow = {
   boundary_subdivision: 'Westside',
 }
 
+let lastSelect = ''
+
 function mockSb(data: unknown) {
-  const maybeSingle = vi.fn(async () => ({ data }))
+  const maybeSingle = vi.fn(async () => ({ data, error: null }))
   const eq = vi.fn(() => ({ maybeSingle }))
-  const select = vi.fn(() => ({ eq }))
+  const select = vi.fn((cols: string) => {
+    lastSelect = cols
+    return { eq }
+  })
   const from = vi.fn(() => ({ select }))
   return { from, select, eq, maybeSingle }
 }
@@ -42,6 +47,7 @@ const setSb = (v: unknown) => (supabaseAnon as unknown as ReturnType<typeof vi.f
 
 describe('getListingCanonicalPathFields', () => {
   beforeEach(() => {
+    lastSelect = ''
     vi.clearAllMocks()
     ;(resolveCanonicalListingKey as unknown as ReturnType<typeof vi.fn>).mockImplementation(
       async (k: string) => k.trim()
@@ -60,7 +66,7 @@ describe('getListingCanonicalPathFields', () => {
     const row = await getListingCanonicalPathFields('220189422')
     expect(resolveCanonicalListingKey).toHaveBeenCalledWith('220189422')
     expect(sb.from).toHaveBeenCalledWith('listings')
-    const selectArg = String(sb.select.mock.calls[0]?.[0] ?? '')
+    const selectArg = lastSelect
     expect(selectArg).toContain('ListingKey')
     expect(selectArg).toContain('ListNumber')
     expect(selectArg).toContain('StreetNumber')
