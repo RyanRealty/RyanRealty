@@ -147,8 +147,8 @@
 
   <div class="card">
     <h3>Every month since 2015</h3>
-    <p class="sub">Bend solid, Redmond dashed, and the band behind them is the high-to-low spread across every other city with at least five sales that month.</p>
-    <svg viewBox="0 0 680 400" role="img" aria-label="Median sale-to-original-ask by month since 2015, Bend and Redmond against the full cross-city range">
+    <p class="sub">Bend solid, Redmond dashed, and the band behind them is the full min-to-max range across all seven cities with at least five sales that month, Bend and Redmond included.</p>
+    <svg viewBox="0 0 680 400" role="img" aria-label="Median sale-to-original-ask by month since 2015, Bend and Redmond against the full range across all seven cities">
   <line x1="56" y1="339.62" x2="666" y2="339.62" class="grid"/>
      <text x="48" y="347.62" class="ax lg ar">85%</text><line x1="56" y1="277.69" x2="666" y2="277.69" class="grid"/>
      <text x="48" y="285.69" class="ax lg ar">90%</text><line x1="56" y1="215.77" x2="666" y2="215.77" class="grid"/>
@@ -167,7 +167,7 @@
   <text x="465.93" y="224.73" class="anno exc lg ar">94.68% — Dec 2022</text>
   <text x="638.64" y="175.79" class="anno dim lg ar">Redmond</text>
   <text x="638.64" y="243.71" class="anno lg ar">Bend</text>
-  <text x="62" y="34" class="anno dim lg">shaded band = every other city, high to low</text>
+  <text x="62" y="34" class="anno dim lg">shaded band = full range across all seven cities</text>
   <text x="56.00" y="386" class="ax lg mid">2015</text><text x="162.09" y="386" class="ax lg mid">2017</text><text x="268.17" y="386" class="ax lg mid">2019</text><text x="374.26" y="386" class="ax lg mid">2021</text><text x="480.35" y="386" class="ax lg mid">2023</text><text x="586.43" y="386" class="ax lg mid">2025</text>
 </svg>
     <p class="src">pricing_market_index.median_sale_to_original · monthly by city_slug, n&gt;=5 · 2015-01..2026-07 · 139 months drawn · Aug 2026 excluded, month in progress · fetched 2026-08-17</p>
@@ -245,14 +245,14 @@
   <div class="stats four">
     <div class="s"><div class="k">Bend · days to offer</div><div class="v">23</div><div class="n">Jul 2026 · <span class="n-chip">n=217</span></div></div>
     <div class="s"><div class="k">Bend · CDOM</div><div class="v">59</div><div class="n">same 217 sales</div></div>
-    <div class="s"><div class="k">Gap the seller never waits</div><div class="v">36d</div><div class="n">escrow, not marketing</div></div>
+    <div class="s"><div class="k">Median DOM minus median days-to-offer</div><div class="v">36d</div><div class="n">difference of medians, not a per-sale wait</div></div>
     <div class="s"><div class="k">Bend vs Jul 2025</div><div class="v exc">+3d</div><div class="n">20d a year ago</div></div>
   </div>
 
   <div class="card">
     <h3>July 2026, by city</h3>
-    <p class="sub">Solid bar is time to offer. The tint behind it runs out to CDOM. Terracotta on the right marks a city that slowed year over year.</p>
-    <svg viewBox="0 0 560 500" role="img" aria-label="Median days to offer against median CDOM by city, July 2026">
+    <p class="sub">Solid bar is time to offer. The tint behind it runs out to days on market at close (the MLS cumulative field is empty on these closings, so this is the plain DOM figure). Terracotta on the right marks a city that slowed year over year.</p>
+    <svg viewBox="0 0 560 500" role="img" aria-label="Median days to offer against median days-on-market-at-close by city, July 2026">
   <line x1="118.00" y1="34" x2="118.00" y2="456" class="grid"/>
      <text x="118.00" y="474" class="ax mid">0d</text><line x1="202.00" y1="34" x2="202.00" y2="456" class="grid"/>
      <text x="202.00" y="474" class="ax mid">30d</text><line x1="286.00" y1="34" x2="286.00" y2="456" class="grid"/>
@@ -306,9 +306,9 @@
     <text x="492" y="443" class="val sm ">-25d</text><line x1="182.40" y1="338" x2="283.20" y2="338" stroke="#102742" stroke-width="1" opacity="0.45"/>
     <line x1="182.40" y1="334" x2="182.40" y2="342" stroke="#102742" stroke-width="1" opacity="0.45"/>
     <line x1="283.20" y1="334" x2="283.20" y2="342" stroke="#102742" stroke-width="1" opacity="0.45"/>
-    <text x="232.80" y="358" class="anno mid">36 days of escrow, not marketing</text>
+    <text x="232.80" y="358" class="anno mid">36 — the two medians differ by this much</text>
   <text x="118" y="28" class="anno">solid = days to offer</text>
-  <text x="482.00" y="28" class="anno dim ar">tint = CDOM</text>
+  <text x="482.00" y="28" class="anno dim ar">tint = days on market at close</text>
   <text x="492" y="28" class="anno dim">vs Jul '25</text>
 </svg>
     <p class="src">sale_pricing_facts · days_to_offer = on_market_date → pending_date · cdom = MLS cumulative days on market · product_class='detached', both columns non-null · close_date 2026-07-01..2026-07-31 vs 2025-07-01..2025-07-31 · median by city_slug, n&gt;=5 · fetched 2026-08-17</p>
@@ -322,7 +322,7 @@
   <div class="sec-num">04</div>
   <div class="metric">Price-cut behaviour</div>
   <h2>Cutting is a resort-community habit, not a Bend one.</h2>
-  <p class="stand">6.63% of Bend's 472 active listings are carrying a price cut, the second-lowest rate in the region. Black Butte Ranch runs at 19.35%, nearly three times the regional rate, on 31 actives and 11.6 months of supply. This is a live snapshot of what is on the market right now, a different population from the closed sales in the three sections above.</p>
+  <p class="stand">6.63% of Bend's 472 active listings are carrying a price cut, below the regional 8.49%. Black Butte Ranch runs at 19.35% — 2.3x the regional rate — on 31 actives and 11.6 months of supply. This is a live snapshot of what is on the market right now, a different population from the closed sales in the three sections above.</p>
 
   <div class="card">
     <h3>Share of actives carrying at least one cut</h3>

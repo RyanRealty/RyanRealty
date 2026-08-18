@@ -132,7 +132,7 @@ function stoBandChart() {
   const peak = idx('2021-05'), trough = idx('2022-12'), lab = idx('2025-11')
   // Series are labelled at 2025-11, where Bend (94.52) and Redmond (97.34) are
   // ~2.8 points apart — they cross too often to label at the right-hand edge.
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Median sale-to-original-ask by month since 2015, Bend and Redmond against the full cross-city range">
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Median sale-to-original-ask by month since 2015, Bend and Redmond against the full range across all seven cities">
   ${grid}
   <path d="${band}" fill="${NAVY}" fill-opacity="0.10"/>
   ${par}
@@ -144,7 +144,7 @@ function stoBandChart() {
   <text x="${r2(x(trough) - 10)}" y="${r2(y(rows[trough][1]) + 5)}" class="anno exc lg ar">${r2(rows[trough][1])}% — Dec 2022</text>
   <text x="${r2(x(lab) + 8)}" y="${r2(y(rows[lab][2]) - 11)}" class="anno dim lg ar">Redmond</text>
   <text x="${r2(x(lab) + 8)}" y="${r2(y(rows[lab][1]) + 22)}" class="anno lg ar">Bend</text>
-  <text x="${L + 6}" y="${T + 4}" class="anno dim lg">shaded band = every other city, high to low</text>
+  <text x="${L + 6}" y="${T + 4}" class="anno dim lg">shaded band = full range across all seven cities</text>
   ${years.join('')}
 </svg>`
 }
@@ -211,11 +211,11 @@ function dtoChart() {
   const gap = `<line x1="${r2(x(rows[bi].dto26))}" y1="${gy + 14}" x2="${r2(x(rows[bi].cdom26))}" y2="${gy + 14}" stroke="${NAVY}" stroke-width="1" opacity="0.45"/>
     <line x1="${r2(x(rows[bi].dto26))}" y1="${gy + 10}" x2="${r2(x(rows[bi].dto26))}" y2="${gy + 18}" stroke="${NAVY}" stroke-width="1" opacity="0.45"/>
     <line x1="${r2(x(rows[bi].cdom26))}" y1="${gy + 10}" x2="${r2(x(rows[bi].cdom26))}" y2="${gy + 18}" stroke="${NAVY}" stroke-width="1" opacity="0.45"/>
-    <text x="${r2((x(rows[bi].dto26) + x(rows[bi].cdom26)) / 2)}" y="${gy + 34}" class="anno mid">${rows[bi].cdom26 - rows[bi].dto26} days of escrow, not marketing</text>`
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Median days to offer against median CDOM by city, July 2026">
+    <text x="${r2((x(rows[bi].dto26) + x(rows[bi].cdom26)) / 2)}" y="${gy + 34}" class="anno mid">${rows[bi].cdom26 - rows[bi].dto26} — the two medians differ by this much</text>`
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Median days to offer against median days-on-market-at-close by city, July 2026">
   ${grid}${bars}${gap}
   <text x="${L}" y="${T + 2}" class="anno">solid = days to offer</text>
-  <text x="${r2(x(130))}" y="${T + 2}" class="anno dim ar">tint = CDOM</text>
+  <text x="${r2(x(130))}" y="${T + 2}" class="anno dim ar">tint = days on market at close</text>
   <text x="${W - R + 10}" y="${T + 2}" class="anno dim">vs Jul '25</text>
 </svg>`
 }
@@ -417,7 +417,7 @@ const html = `<!doctype html>
 
   <div class="card">
     <h3>Every month since 2015</h3>
-    <p class="sub">Bend solid, Redmond dashed, and the band behind them is the high-to-low spread across every other city with at least five sales that month.</p>
+    <p class="sub">Bend solid, Redmond dashed, and the band behind them is the full min-to-max range across all seven cities with at least five sales that month, Bend and Redmond included.</p>
     ${stoBandChart()}
     ${src([
       'pricing_market_index.median_sale_to_original',
@@ -455,13 +455,13 @@ const html = `<!doctype html>
   <div class="stats four">
     <div class="s"><div class="k">Bend · days to offer</div><div class="v">${bendD.dto26}</div><div class="n">Jul 2026 · ${nChip(bendD.n26)}</div></div>
     <div class="s"><div class="k">Bend · CDOM</div><div class="v">${bendD.cdom26}</div><div class="n">same ${bendD.n26} sales</div></div>
-    <div class="s"><div class="k">Gap the seller never waits</div><div class="v">${bendD.cdom26 - bendD.dto26}d</div><div class="n">escrow, not marketing</div></div>
+    <div class="s"><div class="k">Median DOM minus median days-to-offer</div><div class="v">${bendD.cdom26 - bendD.dto26}d</div><div class="n">difference of medians, not a per-sale wait</div></div>
     <div class="s"><div class="k">Bend vs Jul 2025</div><div class="v exc">+${bendD.dto26 - bendD.dto25}d</div><div class="n">${bendD.dto25}d a year ago</div></div>
   </div>
 
   <div class="card">
     <h3>July 2026, by city</h3>
-    <p class="sub">Solid bar is time to offer. The tint behind it runs out to CDOM. Terracotta on the right marks a city that slowed year over year.</p>
+    <p class="sub">Solid bar is time to offer. The tint behind it runs out to days on market at close (the MLS cumulative field is empty on these closings, so this is the plain DOM figure). Terracotta on the right marks a city that slowed year over year.</p>
     ${dtoChart()}
     ${src([
       'sale_pricing_facts',
@@ -482,7 +482,7 @@ const html = `<!doctype html>
   <div class="sec-num">04</div>
   <div class="metric">Price-cut behaviour</div>
   <h2>Cutting is a resort-community habit, not a Bend one.</h2>
-  <p class="stand">${r2(bendCut.pct)}% of Bend's ${bendCut.actives} active listings are carrying a price cut, the second-lowest rate in the region. ${bbrCut.city} runs at ${r2(bbrCut.pct)}%, nearly three times the regional rate, on ${bbrCut.actives} actives and ${bbrCut.mos} months of supply. This is a live snapshot of what is on the market right now, a different population from the closed sales in the three sections above.</p>
+  <p class="stand">${r2(bendCut.pct)}% of Bend's ${bendCut.actives} active listings are carrying a price cut, below the regional ${r2(D.CUTS.region.pct)}%. ${bbrCut.city} runs at ${r2(bbrCut.pct)}% — ${(bbrCut.pct / D.CUTS.region.pct).toFixed(1)}x the regional rate — on ${bbrCut.actives} actives and ${bbrCut.mos} months of supply. This is a live snapshot of what is on the market right now, a different population from the closed sales in the three sections above.</p>
 
   <div class="card">
     <h3>Share of actives carrying at least one cut</h3>
