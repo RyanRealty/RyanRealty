@@ -10,6 +10,13 @@
  * Meta Pixel (connect.facebook.net blocked). This gate hard-fails if any
  * required host is missing, so a future CSP edit can't re-break attribution.
  *
+ * It also covers Google Maps, which fails the same silent way: the vector
+ * renderer fetches its basemap style set from https://www.gstatic.com/maps/res/…
+ * and its tiles from *.googleapis.com. Block either and the map still mounts,
+ * markers and polygons still draw, and no error surfaces — the basemap just
+ * never paints, which is exactly how /homes-for-sale?view=map and ?view=split
+ * shipped pins on a grey pane (found 2026-08-18).
+ *
  * Run: node scripts/check-csp.mjs   (wired into ci:gates)
  */
 import fs from 'node:fs'
@@ -44,6 +51,12 @@ const REQUIRED = {
     'https://www.facebook.com',
     // Follow Up Boss tracking pixel beacons back to widgetbe.com.
     'https://widgetbe.com',
+    // Google Maps JS. maps.gstatic.com does NOT match www.gstatic.com, where the
+    // vector basemap style set lives, and maps.googleapis.com does not cover the
+    // tile hosts. Without these the search map draws pins on a grey pane and
+    // logs nothing. See the CSP comment block in next.config.ts.
+    'https://*.gstatic.com',
+    'https://*.googleapis.com',
   ],
 }
 

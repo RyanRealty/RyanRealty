@@ -18,6 +18,13 @@ const CREAM = '#faf8f4'
 const BORDER = 'rgba(16,39,66,0.12)'
 const TEXT_MID = 'rgba(16,39,66,0.68)'
 const CARD_W = 272
+/** Gap between the pin and the card edge, in px. */
+const PIN_GAP = 14
+/** Keep the card this far inside the map canvas when clamping horizontally. */
+const EDGE_PAD = 8
+
+/** Which side of the pin the card sits on. */
+type Placement = 'above' | 'below'
 
 export type MapListingPopupData = {
   price: number | null
@@ -38,7 +45,15 @@ type Props = {
   onClose: () => void
 }
 
-function PopupCard({ listing, onClose }: { listing: MapListingPopupData; onClose: () => void }) {
+function PopupCard({
+  listing,
+  onClose,
+  placement = 'above',
+}: {
+  listing: MapListingPopupData
+  onClose: () => void
+  placement?: Placement
+}) {
   const stats: string[] = []
   if (listing.beds != null) stats.push(`${Math.round(listing.beds)} bd`)
   if (listing.baths != null) stats.push(`${Math.round(listing.baths)} ba`)
@@ -172,18 +187,21 @@ function PopupCard({ listing, onClose }: { listing: MapListingPopupData; onClose
         </Link>
       </div>
 
+      {/* Caret points AT the pin, so it flips with the card. */}
       <div
         aria-hidden
         style={{
           position: 'absolute',
           left: '50%',
-          bottom: -8,
+          ...(placement === 'above' ? { bottom: -8 } : { top: -8 }),
           transform: 'translateX(-50%)',
           width: 0,
           height: 0,
           borderLeft: '9px solid transparent',
           borderRight: '9px solid transparent',
-          borderTop: `9px solid ${CREAM}`,
+          ...(placement === 'above'
+            ? { borderTop: `9px solid ${CREAM}` }
+            : { borderBottom: `9px solid ${CREAM}` }),
           filter: 'drop-shadow(0 1px 1px rgba(16,39,66,0.12))',
         }}
       />
@@ -191,11 +209,23 @@ function PopupCard({ listing, onClose }: { listing: MapListingPopupData; onClose
   )
 }
 
-/** Mounts a brand popup above `position` on `map`. Unmounts on cleanup. */
+/**
+ * Mounts a brand popup next to `position` on `map`. Unmounts on cleanup.
+ *
+ * The card is anchored ABOVE the pin when there is room and flips BELOW when
+ * there isn't, and it is clamped horizontally inside the map canvas. Without
+ * that, a pin in the upper band of the map put a ~310px-tall card off the top
+ * of the canvas — and SearchMapClustered's wrapper is `overflow: hidden`, so
+ * the card was clipped away entirely. The pin turned white (selected) and no
+ * card was ever visible: the /homes-for-sale?view=map "marker click does
+ * nothing" bug, reproduced 2026-08-18 (card in the DOM at y 36–348 while the
+ * map canvas started at y 296).
+ */
 export default function MapListingPopup({ map, position, listing, onClose }: Props) {
   const rootRef = useRef<Root | null>(null)
   const onCloseRef = useRef(onClose)
   const listingRef = useRef(listing)
+  const placementRef = useRef<Placement>('above')
   onCloseRef.current = onClose
   listingRef.current = listing
 
@@ -205,13 +235,19 @@ export default function MapListingPopup({ map, position, listing, onClose }: Pro
 
     const host = document.createElement('div')
     host.style.cssText =
-      'position:absolute;z-index:1001;transform:translate(-50%,calc(-100% - 14px));pointer-events:auto;'
+      `position:absolute;z-index:1001;transform:translate(-50%,calc(-100% - ${PIN_GAP}px));pointer-events:auto;`
 
     const root = createRoot(host)
     rootRef.current = root
-    root.render(
-      <PopupCard listing={listingRef.current} onClose={() => onCloseRef.current()} />,
-    )
+    const paint = () =>
+      root.render(
+        <PopupCard
+          listing={listingRef.current}
+          onClose={() => onCloseRef.current()}
+          placement={placementRef.current}
+        />,
+      )
+    paint()
 
     class PopupOverlay extends google.maps.OverlayView {
       onAdd() {
@@ -220,10 +256,46 @@ export default function MapListingPopup({ map, position, listing, onClose }: Pro
       draw() {
         const proj = this.getProjection()
         if (!proj) return
-        const point = proj.fromLatLngToDivPixel(new google.maps.LatLng(position.lat, position.lng))
+        const latLng = new google.maps.LatLng(position.lat, position.lng)
+        const point = proj.fromLatLngToDivPixel(latLng)
         if (!point) return
+
+        // Container pixels are measured from the map canvas's own top-left, so
+        // they are the frame the card has to fit inside. Div pixels (used for
+        // left/top) are a different origin and cannot answer "does it fit".
+        const anchor = proj.fromLatLngToContainerPixel(latLng)
+        const canvas = map.getDiv()
+        const canvasW = canvas?.clientWidth ?? 0
+        const canvasH = canvas?.clientHeight ?? 0
+        // offsetHeight is 0 until React has painted the card; the first draw
+        // then keeps the default 'above' and a later draw corrects it.
+        const cardH = host.offsetHeight
+
+        let placement: Placement = 'above'
+        let shiftX = 0
+        if (anchor && canvasW > 0 && canvasH > 0) {
+          if (cardH > 0) {
+            const roomAbove = anchor.y - PIN_GAP
+            const roomBelow = canvasH - anchor.y - PIN_GAP
+            if (roomAbove < cardH && roomBelow > roomAbove) placement = 'below'
+          }
+          const left = anchor.x - CARD_W / 2
+          const right = anchor.x + CARD_W / 2
+          if (left < EDGE_PAD) shiftX = EDGE_PAD - left
+          else if (right > canvasW - EDGE_PAD) shiftX = canvasW - EDGE_PAD - right
+        }
+
         host.style.left = `${point.x}px`
         host.style.top = `${point.y}px`
+        host.style.transform =
+          placement === 'above'
+            ? `translate(calc(-50% + ${shiftX}px), calc(-100% - ${PIN_GAP}px))`
+            : `translate(calc(-50% + ${shiftX}px), ${PIN_GAP}px)`
+
+        if (placement !== placementRef.current) {
+          placementRef.current = placement
+          paint()
+        }
       }
       onRemove() {
         host.remove()
@@ -233,9 +305,18 @@ export default function MapListingPopup({ map, position, listing, onClose }: Pro
     const overlay = new PopupOverlay()
     overlay.setMap(map)
 
+    // The card's height decides above-vs-below, and React paints it a frame or
+    // two AFTER the overlay's first draw() — at which point the map is idle and
+    // Maps has no reason to draw again. Without this the very first draw (card
+    // height 0) is the only one that ever runs and the placement stays 'above'
+    // even when there is no room, which is the bug this component is fixing.
+    const resize = new ResizeObserver(() => overlay.draw())
+    resize.observe(host)
+
     const clickListener = map.addListener('click', () => onCloseRef.current())
 
     return () => {
+      resize.disconnect()
       google.maps.event.removeListener(clickListener)
       overlay.setMap(null)
       queueMicrotask(() => {
@@ -251,7 +332,11 @@ export default function MapListingPopup({ map, position, listing, onClose }: Pro
 
   useEffect(() => {
     rootRef.current?.render(
-      <PopupCard listing={listing} onClose={() => onCloseRef.current()} />,
+      <PopupCard
+        listing={listing}
+        onClose={() => onCloseRef.current()}
+        placement={placementRef.current}
+      />,
     )
   }, [listing])
 
