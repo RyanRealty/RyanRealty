@@ -1,16 +1,16 @@
 ---
-description: Marketing, advertising, Meta or Facebook or Instagram paid ads, lead generation, seller acquisition, CAPI or pixel, weekly marketing optimization or FUB outreach crons — load canonical pipeline documentation first.
+description: Marketing, advertising, Meta or Facebook or Instagram paid ads, lead generation, seller acquisition, CAPI or pixel, weekly marketing optimization or CRM sequence crons — load canonical pipeline documentation first.
 alwaysApply: false
 ---
 
 # Marketing and advertising workflow
 
-Use this rule whenever the user asks for **marketing**, **advertising**, **paid social**, **Meta / Facebook / Instagram ads**, **lead gen**, **seller acquisition**, **CPL**, **CAPI**, **marketing dashboard**, **weekly optimization packet**, **`agent_insights` marketing**, **GA4 for marketing**, or **Follow Up Boss outreach automation** tied to ads.
+Use this rule whenever the user asks for **marketing**, **advertising**, **paid social**, **Meta / Facebook / Instagram ads**, **lead gen**, **seller acquisition**, **CPL**, **CAPI**, **marketing dashboard**, **weekly optimization packet**, **`agent_insights` marketing**, **GA4 for marketing**, or **CRM outreach / sequences** tied to ads.
 
 ## Mandatory reads (in order)
 
 1. **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** — System map, layers, crons, env vars, verification commands, open follow-ups. **Canonical for architecture and data flow.**
-2. **`docs/MARKETING_LEAD_FLOW.md`** — Lead flow only: Meta Lead Ads webhook, site forms, CAPI plus pixel dedup, FUB versus Supabase sinks, troubleshooting.
+2. **`docs/MARKETING_LEAD_FLOW.md`** — Lead flow only: Meta Lead Ads webhook, site forms, CAPI plus pixel dedup, `crm_people` versus other Supabase sinks, troubleshooting.
 3. **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** — Launch playbook when the task is “how do we run the seller campaign.”
 4. **`.cursor/skills/facebook-seller-growth/SKILL.md`** — Recurring optimization routine; append outcomes to **`docs/marketing/facebook-seller-growth-LEARNINGS.md`** after a cycle.
 5. **`social_media_skills/facebook-lead-gen-ad/SKILL.md`** — When building lead-gen **creative**, form fields, or Ads Manager steps for report-style lead magnets.
@@ -24,9 +24,9 @@ Use this rule whenever the user asks for **marketing**, **advertising**, **paid 
 | Area | Typical paths |
 |------|----------------|
 | Weekly marketing packet cron | `app/api/cron/marketing-optimization-report/route.ts` |
-| FUB outreach cron | `app/api/cron/fub-outreach-execution/route.ts` |
+| CRM enroll + sequence crons | `app/api/cron/crm-auto-enroll/route.ts`, `app/api/cron/crm-sequence-engine/route.ts` |
 | Admin marketing dashboard data | `app/actions/dashboard.ts` |
-| FUB API helpers | `lib/followupboss.ts` (`fetchMyLeadsFromFubLive`, etc.) |
+| Native lead capture | `lib/crm/send-event.ts` (`sendEvent` → `ensureNativeLead`) |
 | Meta CAPI from forms | `app/contact/actions.ts`, `app/home-valuation/actions.ts`, routes under `app/api/meta-capi/` |
 | Meta Lead Ads webhook | `app/api/meta/lead-webhook/route.ts` |
 
@@ -34,3 +34,4 @@ Use this rule whenever the user asks for **marketing**, **advertising**, **paid 
 
 - Invent a parallel “marketing architecture” in chat without reading the pipeline doc first.
 - Ship deliverable copy or budget numbers that contradict **fair housing** and **special ad category** rules already noted in the playbook and pipeline doc.
+- Teach Follow Up Boss, a People API, or `FOLLOWUPBOSS_*` as the live CRM. Leads go to `crm_people`.

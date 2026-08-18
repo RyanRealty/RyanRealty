@@ -144,7 +144,7 @@ function pickLimiter(pathname: string): Ratelimit | MemoryWindowLimiter | null {
 // never break, even if a good crawler ever requests from a blocked country.
 //
 // Scope: PAGE ROUTES ONLY. /api/* is never screened here — webhooks (Meta CAPI,
-// FUB, Spark), Vercel crons, and other server-to-server callers legitimately use
+// Spark), Vercel crons, and other server-to-server callers legitimately use
 // non-browser UAs and may originate from foreign IPs. Static assets already skip
 // middleware via the matcher.
 //
@@ -338,7 +338,7 @@ const GEO_NOT_FOUND_HTML =
 // allow-list. When the visitor starts on the alias and the callback resolves on
 // the custom domain (or vice-versa), the verifier cookie is gone and
 // exchangeCodeForSession throws "code verifier could not be found" — the user
-// bounces to /auth-error and NO Follow Up Boss lead is created. Verified live
+// bounces to /auth-error and no CRM lead is created. Verified live
 // 2026-06-02: on ryan-realty.com the verifier cookie is written correctly
 // (Lax, persistent, host-only) and the flow completes; the failures all came
 // from visitors on ryanrealty.vercel.app.
@@ -352,7 +352,7 @@ const GEO_NOT_FOUND_HTML =
 //
 // Funnel every browser (page) request to the canonical host so initiation and
 // callback always share one host. /api/* is excluded so server-to-server
-// callers (Meta CAPI, FUB, Spark webhooks, Vercel crons) that may hit the alias
+// callers (Meta CAPI, Spark webhooks, Vercel crons) that may hit the alias
 // and not follow redirects keep working. Also consolidates SEO to one hostname.
 const CANONICAL_HOST = 'ryan-realty.com'
 const NON_CANONICAL_HOSTS = new Set(['ryanrealty.vercel.app', 'www.ryan-realty.com'])
