@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
+import { publishPulseFreshnessStamp } from '@/lib/market/publish-pulse-freshness'
 
 type Props = {
   title: string
@@ -9,10 +10,7 @@ type Props = {
 }
 
 function formatUpdatedAt(value?: string | null) {
-  if (!value) return 'Updated recently'
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return 'Updated recently'
-  return `Updated ${d.toLocaleDateString()}`
+  return publishPulseFreshnessStamp(value) ?? 'Updated recently'
 }
 
 export default function LivePulseBanner({ title, activeCount, pendingCount, newCount7d, updatedAt }: Props) {

@@ -1,5 +1,5 @@
 {
-  "note": "Files with inline date formatting — migrate to lib/format/date.ts. Count may only shrink.",
+  "note": "Files with inline date formatting \u2014 migrate to lib/format/date.ts. Count may only shrink.",
   "files": [
     "app/account/page.tsx",
     "app/actions/generate-market-report.ts",
@@ -41,7 +41,6 @@
     "components/open-houses/OpenHouseSection.tsx",
     "components/open-houses/OpenHousesClient.tsx",
     "components/reports/FreshnessBadge.tsx",
-    "components/reports/LivePulseBanner.tsx",
     "components/reports/SalesReportCard.tsx",
     "components/site/OpenHousesGrid.tsx",
     "components/site/listing-detail/OpenHouses.tsx",

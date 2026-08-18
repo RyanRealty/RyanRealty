@@ -1,6 +1,7 @@
 import { getRegionPulse } from '@/lib/data/market/getRegionPulse'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { publishPulseFreshnessStamp } from '@/lib/market/publish-pulse-freshness'
 import {
   Body,
   Container,
@@ -85,22 +86,6 @@ function marketVerdict(mos: number | null): { kind: 'hot' | 'balanced' | 'buyer'
   return { kind: 'balanced', text: 'Balanced' }
 }
 
-function fmtFreshness(iso: string): string {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZone: 'America/Los_Angeles',
-      timeZoneName: 'short',
-    })
-  } catch {
-    return ''
-  }
-}
-
 type Props = {
   /**
    * When provided, the snapshot fetches city-scoped data from
@@ -160,7 +145,7 @@ export default async function MarketSnapshot({ citySlug, cityName }: Props = {})
             <H2>{geoLabel} housing market</H2>
             <Body size="small" tone="muted">
               Refreshed every 15 minutes from Oregon Data Share. Single-family homes only.
-              {updatedAt ? ` Updated ${fmtFreshness(updatedAt)}.` : ''}
+              {updatedAt ? ` ${publishPulseFreshnessStamp(updatedAt)}.` : ''}
             </Body>
           </Stack>
           <TextLink

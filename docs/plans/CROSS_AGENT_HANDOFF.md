@@ -2,7 +2,25 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — place-pages subdivision chrome-only reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — place-pages pulse freshness + chrome-only reject slice
+
+**Surface:** Cursor cloud `bc-3e78ee0e` (`cursor/loop-chain-2026-08-18t05-18-8d78`). **Time:** 2026-08-18 ~05:45 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 300). Claimed parent only as `cursor-loop-chain-bc-3e78ee0e-2026-08-18t05-18`. Product **`d5a59f3c3`** is on the feature branch only — cloud run may not push `main`. Draft PR **#97**. Production / `origin/main` is **`b35d5eacc`** (not this SHA). `npm run deploy:verify` for `d5a59f3c3` stopped: production deploys from `main`, so this SHA cannot go READY from this checkout. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (292 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: seven `/subdivisions/{slug}` chrome-only lines **rejected**. Alder Glen / Blue Ridge / Canyon Ridge Phase 3 / Ambrosia Acres / Cascade: H1 + “No active listings…” + sales history. Boyd Crossing / Canyon View: H1 + 2 listing cards + sales history. `/cities/bend/summit-west` desk `Updated 10:20 PM` + FAQ `as of August 2026` **reproduced**. HTML + Playwright (system Chrome); `chromeOnly=false` on every row. Probe `/opt/cursor/artifacts/before_place_pages_v11.json`.
+- Class: `publishPulseFreshness` names the Pacific calendar day on a live pulse vintage (`Updated Aug 17, 2026, 10:20 PM` / `as of August 17, 2026`). Wired desk, FAQ, snapshot, reporting. Gate `ci:publish-pulse-freshness` 7/7.
+- Prod probe after READY: **not done** — SHA is not on `main`. Before shots `/opt/cursor/artifacts/before_summit-west_{390,1280,390_desk,1280_desk}.png`, `/opt/cursor/artifacts/before_alder-glen_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 1 fixed + 7 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Merge PR **#97** to `main` (or a successor on `main`) then `npm run deploy:verify` to READY. After READY, probe Summit West desk + FAQ at 390+1280 for the dated stamp.
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages subdivision chrome-only reject slice
 
 **Surface:** Cursor cloud `bc-e3dbb660` (`cursor/loop-chain-2026-08-18t04-58-faa9`). **Time:** 2026-08-18 ~05:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 308). Claimed parent only as `cursor-loop-chain-bc-e3dbb660-2026-08-18t04-58`. **No product change.** Production stays on **`ab140f397`** (already READY). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (300 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 

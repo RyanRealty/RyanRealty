@@ -6,6 +6,7 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
+import { publishPulseAsOfIso, publishPulseAsOfLabel } from '@/lib/market/publish-pulse-freshness'
 
 /**
  * Structural input — a full MarketPulse satisfies this, and a geo page can also
@@ -75,24 +76,16 @@ export type MarketFaqItem = { question: string; answer: string }
 export type MarketFaqResult = {
   faqs: MarketFaqItem[]
   datasetVariables: StatValue[]
-  /** ISO date (YYYY-MM-DD) the underlying data was refreshed, or null. */
+  /** ISO date (YYYY-MM-DD, Pacific) the underlying data was refreshed, or null. */
   asOfIso: string | null
-  /** Human label e.g. "May 2026", or null when no refresh timestamp. */
+  /** Human label e.g. "May 15, 2026", or null when no refresh timestamp. */
   asOfLabel: string | null
 }
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
-
 function resolveAsOf(refreshedAt: string | null | undefined): { iso: string | null; label: string | null } {
-  if (!refreshedAt) return { iso: null, label: null }
-  const d = new Date(refreshedAt)
-  if (Number.isNaN(d.getTime())) return { iso: null, label: null }
   return {
-    iso: d.toISOString().slice(0, 10),
-    label: `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`,
+    iso: publishPulseAsOfIso(refreshedAt),
+    label: publishPulseAsOfLabel(refreshedAt),
   }
 }
 

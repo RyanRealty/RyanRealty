@@ -23,11 +23,11 @@ describe('buildMarketFaq', () => {
     })
     expect(r.faqs).toHaveLength(4)
     expect(r.asOfIso).toBe('2026-05-15')
-    expect(r.asOfLabel).toBe('May 2026')
+    expect(r.asOfLabel).toBe('May 15, 2026')
     const price = r.faqs.find((f) => f.question.includes('median home price'))
     expect(price?.answer).toContain('$894,750')
     expect(price?.answer).not.toContain('$895,000')
-    expect(price?.answer).toContain('as of May 2026')
+    expect(price?.answer).toContain('as of May 15, 2026')
     const mos = r.faqs.find((f) => f.question.includes("buyer's or seller's"))
     expect(mos?.answer).toContain('3.3 months of supply') // 3.25 -> 1 decimal
     expect(mos?.answer).toContain("seller's market") // <= 4 months

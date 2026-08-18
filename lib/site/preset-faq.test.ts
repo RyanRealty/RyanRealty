@@ -51,7 +51,7 @@ describe('buildPresetFaq', () => {
     expect(result.intro).toContain('Bend is the largest city in Central Oregon')
     // Labeled city-wide context, never the segment's own median.
     expect(result.intro).toContain('Across Bend as a whole, the median list price is $819,000')
-    expect(result.intro).toContain('as of June 2026')
+    expect(result.intro).toContain('as of June 10, 2026')
     expect(result.faqs).toHaveLength(4)
     expect(result.faqs[0]!.question).toBe('How many homes under $750,000 are for sale in Bend?')
     expect(result.faqs[0]!.answer).toContain('214')

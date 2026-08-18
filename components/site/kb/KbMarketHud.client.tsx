@@ -10,6 +10,10 @@ import { KbMarketChart } from './KbMarketChart.client'
 import { valuationPath } from '@/lib/slug'
 import { monthsOfSupplyVerdict as verdictOf, formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
+import {
+  publishPulseFreshnessLabel,
+  publishPulseFreshnessStamp,
+} from '@/lib/market/publish-pulse-freshness'
 
 function Kpi({ val, lbl }: { val: string | null; lbl: string }) {
   return (
@@ -28,14 +32,6 @@ function Kpi({ val, lbl }: { val: string | null; lbl: string }) {
  * traced to a cached DAL source (§0). Reused on the homepage (region) and every
  * city page (city scope) via props — never forked.
  */
-/** "7:04 PM" in Pacific time, or null when the input is not a valid timestamp. */
-function pacificTime(iso: string | null | undefined): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', minute: '2-digit', hour12: true })
-}
-
 export function KbMarketHud({
   data,
   eyebrow = 'The market',
@@ -62,9 +58,9 @@ export function KbMarketHud({
   chartScopeLabel?: string
   /**
    * ISO timestamp of the data refresh (the pulse row's updated_at). When set, the
-   * desk chrome shows "Updated 7:04 PM" — the honest freshness stamp. Without it,
-   * a seconds-ticking wall clock next to "Live · MLS" read as a to-the-second data
-   * stamp over a 10-15 min cache (design-audit P3).
+   * desk chrome shows Updated with the Pacific calendar day and clock. Without it,
+   * a dated wall-clock fallback labeled Pacific so it cannot read as a
+   * to-the-second data stamp over a 10-15 min cache (design-audit P3).
    */
   asOf?: string | null
   /**
@@ -94,18 +90,18 @@ export function KbMarketHud({
 }) {
   const root = useRef<HTMLElement>(null)
   const pathname = usePathname()
-  const updatedAt = pacificTime(asOf)
+  const stamp = publishPulseFreshnessStamp(asOf)
   const [now, setNow] = useState('--:--')
 
   useEffect(() => {
-    if (updatedAt) return
-    // Fallback (no refresh stamp available): consumer-format wall time, no
-    // seconds, labeled Pacific so it cannot read as a data-freshness stamp.
-    const fmt = () => pacificTime(new Date().toISOString()) ?? '--:--'
+    if (stamp) return
+    // Fallback (no refresh stamp available): dated Pacific wall time, labeled
+    // so it cannot read as a data-freshness stamp.
+    const fmt = () => publishPulseFreshnessLabel(new Date().toISOString()) ?? '--:--'
     setNow(fmt())
-    const t = setInterval(() => setNow(fmt()), 30000)
-    return () => clearInterval(t)
-  }, [updatedAt])
+    const timer = setInterval(() => setNow(fmt()), 30000)
+    return () => clearInterval(timer)
+  }, [stamp])
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
@@ -176,7 +172,7 @@ export function KbMarketHud({
               <span className="dot" />
               <span className="txt">Live · MLS</span>
             </span>
-            <span className="mkt-clock mono-num">{updatedAt ? `Updated ${updatedAt}` : `${now} Pacific`}</span>
+            <span className="mkt-clock mono-num">{stamp ?? `${now} Pacific`}</span>
           </span>
         </div>
         <div className="sec-head">
