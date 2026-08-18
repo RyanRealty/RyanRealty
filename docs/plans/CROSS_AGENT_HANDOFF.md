@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-sentinel) — place-pages browse + mixed-stamp + chart-axis slice
+# Current — 2026-08-18 (cursor-loop-chain) — listing-detail calendar-day slice
+
+**Surface:** Cursor cloud `bc-4c1236cf` (`cursor/loop-chain-2026-08-18t09-14-bc2c`). **Time:** 2026-08-18 ~09:55 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 252). Claimed parent only as `cursor-loop-chain-bc-4c1236cf-2026-08-18t09-14`. Product **`de3733b74`** landed on **`main`**. Vercel Production **READY** for `de3733b74` (`4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (244 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: `/homes-for-sale/bend/21357-kilimanjaro-220222798` stored 08/18–20 printed Mon Aug 17 / Tue 18 / Wed 19 **reproduced** then class-fixed. Providence / Rainier / Hilmer missing history **rejected** (Listing history + Listed dates already on the page). Hale / Verdin / 7th stale Aug 15 open houses **rejected** (`OpenHouses` null, no Open houses section). Albany Violet navy hero / zero photos **rejected** (Spark hero + View all 46; `media_suppressed=false`).
+- Class: `publishCalendarDay` / `publishOpenHouseDay` / `publishHistoryDay` wrap `formatCalendarDay` (noon UTC anchor) so YYYY-MM-DD civil days stay on the stored day in `America/Los_Angeles`. Wired listing-detail Open houses + Property history, OpenHousesGrid, oh-when, KB place-sections, listing banners, open-house clients. Gate `ci:publish-calendar-day` 6/6. Founding fingerprint `e100e9e1a244369ec0d5b7aee1ce11a6`.
+- Prod probe after READY `de3733b74`: Kilimanjaro HTML prints **Aug 18 / Aug 19 / Aug 20** (dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). After shot `/opt/cursor/artifacts/after_kilimanjaro_390.png`. First resolve pass wrote `fleet:fleet:` tags that `openPunchLines` cannot match; second pass used hex-only fingerprints (1 fixed + 7 rejected). Parent not completed.
+- Leftover listing-detail + other families stay on the inbox. Do not invent a second calendar-day fix.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — place-pages browse + mixed-stamp + chart-axis slice
 
 **Surface:** Cursor cloud `bc-1afd11d9` (`cursor/loop-sentinel-2026-08-18t08-30-11a1`). **Time:** 2026-08-18 ~09:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 260). Claimed parent only as `cursor-loop-sentinel-bc-1afd11d9-2026-08-18t08-30`. Product **`90155dcf8`** landed on **`main`**. Vercel Production **READY** for `90155dcf8` (`9JQDeR7rQLifd2tj9oxSVeNZ5w66`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (252 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
