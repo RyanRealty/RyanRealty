@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-sentinel) — place-pages chrome-only + Terrebonne days + event map reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — place-pages street-0 + venue-city slice
+
+**Surface:** Cursor cloud `bc-d14c774b` (`cursor/loop-chain-2026-08-18t06-04-137f`). **Time:** 2026-08-18 ~07:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 284). Claimed parent only as `cursor-loop-chain-bc-d14c774b-2026-08-18t06-04`. Product **`c3b968afb`** landed on **`main`** (class `cef36790f` + founding-list follow-up). Vercel Production **READY** for `c3b968afb` (`4AmF8K5eMUkDDCffWa43wWd2yYK8`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (276 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: `/central-oregon/events/sunriver-music-festival` “Tower Theatre, Bend in Sunriver” **reproduced** then class-fixed. `/cities/bend/awbrey-butte` cards printed **0 Moonshadow Court** **reproduced** then class-fixed (MLS 220221237 / 220221242 / 220221243). Tower Theatre / Pilot Butte / Tumalo Falls empty map **rejected** (tiles after load). Barclay Meadows Aw Snap **rejected** (200 + H1 + empty-state). Brentwood / Brier Ridge 404 **rejected** (200 + H1).
+- Class: `publishStreetLine` withholds MLS house number 0 and keeps the street name. `publishPlaceInCity` withholds the page city when the venue already names one. Wired dual-pane `splitRowsFromTiles`, KB ticker / featured / map / activity, v3 field titles, listing cards, nearby lifestyle DAL, looking-at. Gates `ci:publish-street-line` 8/8 and `ci:publish-place-in-city` 4/4. Do not invent a house number.
+- Prod probe after READY `c3b968afb`: Awbrey Butte list + ticker print **Moonshadow Court**, 0× `0 Moonshadow`. Festival Where is **Tower Theatre, Bend**, 0× `Bend in Sunriver`. After shots `/opt/cursor/artifacts/after_awbrey-butte_{390,1280}.png`, `/opt/cursor/artifacts/after_sunriver-music-festival_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 2 fixed + 6 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4+§6, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — place-pages chrome-only + Terrebonne days + event map reject slice
 
 **Surface:** Cursor cloud `bc-17952d67` (`cursor/loop-sentinel-2026-08-18t05-50-59a3`). **Time:** 2026-08-18 ~06:05 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 292). Claimed parent only as `cursor-loop-sentinel-bc-17952d67-2026-08-18t05-50`. **No product change.** Production stays on last product **`0f57f5e7c`** (already READY; tip `b35d5eacc` docs). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (284 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
