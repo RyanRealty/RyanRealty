@@ -67,6 +67,16 @@ checks.push({
     /generateStaticParams/.test(alias),
 })
 
+const mw = src('middleware.ts')
+const area = src('lib/subdivision-area-redirects.ts')
+checks.push({
+  label: 'middleware 308s /neighborhoods/{district} before render (Next 16 streaming)',
+  ok:
+    /export function resolveNeighborhoodAliasRedirect/.test(area) &&
+    /resolveNeighborhoodAliasRedirect/.test(mw) &&
+    /\/neighborhoods\\\//.test(mw),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)

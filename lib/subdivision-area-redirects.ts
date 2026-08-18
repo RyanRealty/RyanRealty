@@ -90,6 +90,18 @@ export function resolveSubdivisionAreaRedirect(slug: string): string | null {
   return REDIRECT_MAP.get(normalize(slug)) ?? null
 }
 
+/**
+ * /neighborhoods/{slug} alias. Only City-of-Bend districts 308 to
+ * /cities/bend/{slug}. Resort slugs (tetherow) stay null so the page 404s —
+ * they are not neighborhoods. Page-level permanentRedirect cannot emit a
+ * hard 3xx under Next 16 streaming (same class as /subdivisions marketing
+ * slugs, verified 2026-08-18: /neighborhoods/awbrey-butte returned 200).
+ */
+export function resolveNeighborhoodAliasRedirect(slug: string): string | null {
+  const dest = resolveSubdivisionAreaRedirect(slug)
+  return dest?.startsWith('/cities/bend/') ? dest : null
+}
+
 /** Full map as sorted [slug, path] pairs — for the contract test + any gate. */
 export function subdivisionAreaRedirectEntries(): Array<[string, string]> {
   return Array.from(REDIRECT_MAP.entries()).sort((a, b) => a[0].localeCompare(b[0]))

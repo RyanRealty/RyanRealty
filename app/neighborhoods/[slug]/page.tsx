@@ -3,6 +3,10 @@
  * Bend-district alias. Live reports live at /cities/bend/{slug}.
  * Founding case: all 13 /neighborhoods/{slug} URLs 404ed (fleet
  * 869e578bf05ec02a89be62bb81403d1d).
+ *
+ * The hard 308 is in middleware (`resolveNeighborhoodAliasRedirect`).
+ * Page-level permanentRedirect cannot emit a 3xx under Next 16 streaming
+ * (verified 2026-08-18: this route returned 200 after generateStaticParams).
  */
 import { notFound, permanentRedirect } from 'next/navigation'
 import { getBendNeighborhoodLedger } from '@/lib/data'

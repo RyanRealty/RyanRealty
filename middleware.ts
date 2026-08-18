@@ -2,7 +2,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import legacyRedirects from '@/data/legacy-redirects.json'
-import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
+import {
+  resolveNeighborhoodAliasRedirect,
+  resolveSubdivisionAreaRedirect,
+} from '@/lib/subdivision-area-redirects'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 import resortCommunitiesRegistry from '@/data/resort-communities.json'
 
@@ -478,6 +481,22 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       if (areaDest) {
         const redirectUrl = url.clone()
         redirectUrl.pathname = areaDest
+        redirectUrl.search = ''
+        return NextResponse.redirect(redirectUrl, 308)
+      }
+    }
+    const nbhdMatch = pathname.match(/^\/neighborhoods\/([^/]+)\/?$/)
+    if (nbhdMatch) {
+      let nbhdSlug = nbhdMatch[1]
+      try {
+        nbhdSlug = decodeURIComponent(nbhdSlug)
+      } catch {
+        /* malformed escape — fall back to the raw segment */
+      }
+      const nbhdDest = resolveNeighborhoodAliasRedirect(nbhdSlug)
+      if (nbhdDest) {
+        const redirectUrl = url.clone()
+        redirectUrl.pathname = nbhdDest
         redirectUrl.search = ''
         return NextResponse.redirect(redirectUrl, 308)
       }
