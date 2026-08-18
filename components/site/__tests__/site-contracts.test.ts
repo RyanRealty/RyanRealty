@@ -524,10 +524,12 @@ describe('design directive contracts', () => {
   })
 
   it('D113 — Continue with Google is the comms door on one card', () => {
-    const modal = readSrc('components/auth/AuthModal.tsx')
+    const login = readSrc('components/auth/LoginForm.tsx')
+    const signup = readSrc('components/auth/SignupForm.tsx')
     const card = readSrc('components/auth/GoogleCommsCard.tsx')
     const gate = readSrc('lib/cma/register-gate.ts')
-    expect(modal).toMatch(/<GoogleCommsCard/)
+    expect(login).toMatch(/<GoogleCommsCard/)
+    expect(signup).toMatch(/<GoogleCommsCard/)
     expect(card).toMatch(/Continue with Google/)
     expect(card).toMatch(/SMS_CONSENT_TEXT|SmsConsentDisclosure/)
     expect(gate).toMatch(/Your report on/)

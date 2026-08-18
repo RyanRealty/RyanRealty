@@ -29,7 +29,7 @@ const BASELINE_FILE = path.join(ROOT, 'scripts', '.canonical-listings-baseline.j
 const WRITE = process.argv.includes('--write-baseline')
 
 const HARD_BANNED = [
-  { re: /from\s+['"][^'"]*\/GeoSectionFeaturedListings['"]/, name: 'GeoSectionFeaturedListings', fix: 'use FeaturedListings (ListingCard grid)' },
+  { re: /from\s+['"][^'"]*\/GeoSectionFeaturedListings['"]/, name: 'GeoSectionFeaturedListings', fix: 'use site/ListingCard' },
   { re: /from\s+['"][^'"]*\/ui\/navigation-menu['"]/, name: 'shadcn ui/navigation-menu', fix: 'use the design-system header (plain nav)' },
 ]
 const RATCHET = [

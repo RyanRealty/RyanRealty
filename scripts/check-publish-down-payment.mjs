@@ -63,14 +63,6 @@ checks.push({
     /publishFinancingSplit\(/.test(tools),
 })
 
-const showcase = src('components/listing/PaymentCalculator.tsx')
-checks.push({
-  label: 'showcase payment calculator uses the published loan amount',
-  ok:
-    /from ['"]@\/lib\/finance\/publish-down-payment['"]/.test(showcase) &&
-    /publishFinancingSplit\(/.test(showcase),
-})
-
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)

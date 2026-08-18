@@ -18,8 +18,8 @@
  * re-baseline; when it hits 0, remove it. New files start at baseline 0, so any
  * literal in a new file fails immediately.
  *
- * Scope: app/ + components/, .ts/.tsx. lib/ is excluded (the module + roster +
- * listing-cta legitimately hold the literals). Emails are NOT gated (too many
+ * Scope: app/ + components/, .ts/.tsx. lib/ is excluded (the module + roster
+ * legitimately hold the literals). Emails are NOT gated (too many
  * legitimate non-render uses). Escape hatch: end a line with `broker-facts-ok`.
  *
  * Usage:

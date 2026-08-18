@@ -52,14 +52,6 @@ checks.push({
     /publishHistoryDay\(/.test(history),
 })
 
-const grid = src('components/site/OpenHousesGrid.tsx')
-checks.push({
-  label: 'OpenHousesGrid badge publishes the calendar weekday',
-  ok:
-    /from ['"]@\/lib\/listing\/publish-calendar-day['"]/.test(grid) &&
-    /publishCalendarDay\(/.test(grid),
-})
-
 const kb = src('lib/kb/place-sections.ts')
 checks.push({
   label: 'KB open-house when-line publishes the calendar day',

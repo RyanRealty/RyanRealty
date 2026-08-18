@@ -80,8 +80,7 @@ export const CONTACT = {
    *  (541.213.6706) is now a private forward target only, off the public site. */
   phoneDirect: '541.703.3095',
   phoneDirectTel: '+15417033095',
-  /** Lead-capture line — same Twilio brand line. Use on lead-capture CTAs.
-   *  Canonical home of lib/listing-cta.ts. */
+  /** Lead-capture line — same Twilio brand line. Use on lead-capture CTAs. */
   phoneFub: '541.703.3095',
   phoneFubDisplay: '541-703-3095',
   phoneFubTel: '+15417033095',
