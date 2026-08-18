@@ -201,6 +201,23 @@ Unused CRM modules: `lib/crm/lead-router.ts` (`captureLead` zero callers), `lib/
 
 **Not seen:** whether all 483 files are applied; RLS/GRANT state; leftover backfill-queue rows.
 
+### Unused `lib/` modules (high confidence, do not mass-delete)
+
+45 top-level `lib/` folders. Almost all have a live entry. High-confidence unused leaves:
+
+| Module | Note |
+|---|---|
+| `lib/crm/lead-router.ts` | `captureLead` — LPs still call `sendEvent` |
+| `lib/canonical.ts` | pages use `getCanonicalSiteUrl` |
+| `lib/lead-scoring.ts`, `lib/listing-highlights.ts`, `lib/market-condition.ts` | tests only; market classify lives in `lib/market/classify.ts` |
+| `lib/email-templates/layout.tsx` | live mail uses `lib/email/shell.ts` |
+| `lib/site/layout-constants.ts` | zero importers |
+| `lib/tc/deal-state.ts`, `lib/tc/signing-schema.ts` | tests only; not wired into seal/signing |
+| `lib/voice/alignment.ts` | tests only; scripts copy the voice ID |
+| `lib/crm/saved-view-seeds.ts` | tests lock AST vs SQL — keep |
+
+`lib/youtube-market-report/` has no Next importer. **Park** (possible offline CLI). Do not delete this pass.
+
 ---
 
 ## Universe 5 — vendor probes
