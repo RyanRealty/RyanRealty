@@ -5,16 +5,18 @@
  *
  * 11F: taken off shadcn and onto the LOCKED admin v2 language
  * (design_system/admin/ADMIN_UI.md). Presentation only — the POST to
- * /api/admin/sync/delta, the loading latch, the success/error message shape and
- * every string are untouched. The shadcn success-green Button becomes the v2
- * primary Button (color is reserved for status, not chrome); message colours
- * map to var(--a-ok) / var(--a-danger).
+ * /api/admin/sync/delta (live runDeltaSync, same core as /api/cron/sync-delta),
+ * the loading latch, and the success/error message shape. The shadcn
+ * success-green Button becomes the v2 primary Button (color is reserved for
+ * status, not chrome); message colours map to var(--a-ok) / var(--a-danger).
  */
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/admin/v2'
 
 export default function TriggerDeltaSyncButton() {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -28,7 +30,12 @@ export default function TriggerDeltaSyncButton() {
         setMessage({ type: 'error', text: (data.error as string) || `HTTP ${res.status}` })
         return
       }
-      setMessage({ type: 'success', text: 'Delta sync triggered. It may take a minute to appear in the log.' })
+      const text =
+        (typeof data.summary === 'string' && data.summary) ||
+        (typeof data.message === 'string' && data.message) ||
+        'Delta sync completed'
+      setMessage({ type: data.ok === false ? 'error' : 'success', text })
+      router.refresh()
     } catch (e) {
       setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Request failed' })
     } finally {
@@ -39,7 +46,7 @@ export default function TriggerDeltaSyncButton() {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-3">
       <Button type="button" onClick={handleClick} disabled={loading}>
-        {loading ? 'Starting…' : 'Run ingest now'}
+        {loading ? 'Syncing…' : 'Run ingest now'}
       </Button>
       {message && (
         <span
