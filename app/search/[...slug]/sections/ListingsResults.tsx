@@ -2,7 +2,6 @@ import { type ListingCardData } from '@/components/site/ListingCard'
 import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
 import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
 import { Body, CTAButton, Eyebrow, H3 } from '@/components/site/primitives'
-import { Card } from '@/components/ui/card'
 import SearchListingsToolbar from '../../../../components/SearchListingsToolbar'
 import { listingTileHref } from '../../../../lib/slug'
 import { type getListingsWithAdvanced } from '../../../actions/listings'
@@ -52,7 +51,7 @@ export function ListingsResults({
   }
   if (kind === 'degraded') {
     return (
-      <Card className="mt-10 p-8 text-center">
+      <div className="mt-10 text-center">
         <Eyebrow>Search delayed</Eyebrow>
         <H3 className="mt-2">We could not load listings in time</H3>
         <Body className="mx-auto mt-2 max-w-md text-muted-foreground">
@@ -63,7 +62,7 @@ export function ListingsResults({
             Reload page
           </CTAButton>
         </form>
-      </Card>
+      </div>
     )
   }
   if (kind === 'empty') {
