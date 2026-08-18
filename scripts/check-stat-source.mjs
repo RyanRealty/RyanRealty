@@ -17,7 +17,8 @@
  *
  * The engine is the ONE path a macro number may travel:
  *
- *   FRED / Freddie PMMS  →  lib/market-national-series.ts        (ingest)
+ *   FRED / Freddie PMMS  →  lib/stats/fred.ts (the one HTTP client;
+ *                            market-national-series.ts routes through it)
  *     →  /api/cron/market-history-snapshot (Mondays 13:00 UTC)
  *     →  public.market_history_weekly       (dated, carries `source`)
  *     →  getMarketHistoryWeekly()           (DAL)
@@ -109,7 +110,7 @@
  * on-disk gate can close that; see "WHY FRESHNESS IS NOT A GATE".
  *
  * ── CHECK 3 · one door in from a data provider ──────────────────────────────
- * The macro provider endpoints belong to lib/market-national-series.ts alone.
+ * The macro provider endpoints belong to lib/stats/fred.ts alone.
  * A second inline fetch anywhere else is a second source of statistics by
  * definition, even when it hits the same provider — two call sites means two
  * parse paths, two failure modes, and two numbers.
@@ -603,13 +604,12 @@ const sources = [...walkFiles('app'), ...walkFiles('components'), ...walkFiles('
   .sort()
 
 const ENGINE_FILE = 'lib/data/config.ts'
-const INGEST_FILE = 'lib/market-national-series.ts'
 const SQL_ENGINE_FN = 'public.get_current_mortgage_rate'
 
 /** The official macro-series endpoints (§0 primary sources) this repo ingests. */
 const PROVIDER_HOSTS = [
-  { host: 'api.stlouisfed.org', label: 'the FRED observations API' },
-  { host: 'freddiemac.com', label: 'the Freddie Mac PMMS history CSV' },
+  { host: 'api.stlouisfed.org', label: 'the FRED observations API', owner: 'lib/stats/fred.ts' },
+  { host: 'freddiemac.com', label: 'the Freddie Mac PMMS history CSV', owner: 'lib/market-national-series.ts' },
 ]
 
 /** A host inside a quoted string — a comment naming the provider is not a fetch. */
@@ -665,16 +665,14 @@ for (const rel of sources) {
   // CHECK 2b — nobody but the engine reads the writer-less app_config key.
   if (rel !== ENGINE_FILE && APP_CONFIG_RATE_KEY.test(src)) rogueAppConfigReads.push(rel)
 
-  // CHECK 3 — one door in from a data provider.
-  if (rel !== INGEST_FILE) {
-    for (const p of PROVIDER_HOSTS) {
-      if (quotedHost(p.host).test(src)) {
-        providerFailures.push(
-          `${rel} reaches ${p.label} directly. Macro data enters through ${INGEST_FILE} and the ` +
-            `market-history-snapshot cron, which stamps every row with its source and its week. ` +
-            `A second call site is a second source of statistics.`,
-        )
-      }
+  // CHECK 3 — one door in per provider: each host names its single owner file.
+  for (const p of PROVIDER_HOSTS) {
+    if (rel !== p.owner && quotedHost(p.host).test(src)) {
+      providerFailures.push(
+        `${rel} reaches ${p.label} directly. That provider's one door is ${p.owner}, ` +
+          `which stamps every row with its source and its vintage. ` +
+          `A second call site is a second source of statistics.`,
+      )
     }
   }
 
@@ -899,7 +897,7 @@ const debt = Object.values(MACRO_CONSTANT_LEDGER).reduce((a, n) => a + n, 0)
 const sqlDebt = Object.values(SQL_CONSTANT_LEDGER).reduce((a, n) => a + n, 0)
 console.log('✓ getCalculatorDefaults is the single macro read, sourced from the ingested weekly series.')
 console.log(`✓ ${SQL_ENGINE_FN}() is the database-side read of the same series.`)
-console.log(`✓ ${PROVIDER_HOSTS.length} provider endpoint(s) reachable only from ${INGEST_FILE}.`)
+console.log(`✓ ${PROVIDER_HOSTS.length} provider endpoint(s), each reachable only from its owner file.`)
 console.log(
   `  ${debt} hardcoded macro constant(s) on the frozen TS ledger; ${sqlDebt} on the SQL ledger ` +
     `(${BASELINE_PATH}). Both only shrink.`,
