@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-sentinel) — place-pages featured-inventory + reject slice
+# Current — 2026-08-18 (cursor-loop-sentinel) — place-pages browse + mixed-stamp + chart-axis slice
+
+**Surface:** Cursor cloud `bc-1afd11d9` (`cursor/loop-sentinel-2026-08-18t08-30-11a1`). **Time:** 2026-08-18 ~09:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 260). Claimed parent only as `cursor-loop-sentinel-bc-1afd11d9-2026-08-18t08-30`. Product **`90155dcf8`** landed on **`main`**. Vercel Production **READY** for `90155dcf8` (`9JQDeR7rQLifd2tj9oxSVeNZ5w66`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (252 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: `/subdivisions/ridge-at-eagle-crest` Browse homes / See homes dropped the plat **reproduced** then class-fixed. `/subdivisions` truncated plat names **reproduced** then class-fixed. `/housing-market` Aug 10 vs Aug 16 stamps **reproduced** then class-fixed. Chart JAN/DEC bunched in the Y gutter **reproduced** then class-fixed. `/neighborhoods/tetherow` 35 vs 28 **rejected** (200 + H1 Page not found). Terrebonne days-to-pending **rejected** (pulse null). Powell Butte this-month median **rejected** (July median sale `$1,263,000`). `/neighborhoods` reused Awbrey aerial **rejected** (three distinct curated photos).
+- Class: `publishPlaceBrowseHref` / `publishPlaceHeroCta` withhold `/homes-for-sale` and `?view=list`. `looksLikeMlsAbbreviation` drops WildflS / SkylinC / Fairway Vill Condo from the A-Z catalog (Triple / Inn Of The 7th stay as recorded English). `publishInstrumentStamp` withholds a mixed Instrument clock. V3Chart x-axis is `grid-column: 2`. Gates `ci:publish-place-browse` 7/7 and `ci:publish-mixed-instrument-stamp` 4/4.
+- Prod probe after READY `90155dcf8`: Ridge hero + Browse homes + list door are `/homes-for-sale/redmond/ridge-at-eagle-crest` (12 cards). Housing-market lead has **no** `updated` (clocks differ); city/SFR stamps are Aug 18. Chart ticks Jan x=134 / Dec x=1169 at 1280. After shots `/opt/cursor/artifacts/after_ridge-at-eagle-crest_{390,1280}.png`, `/opt/cursor/artifacts/after_housing-market_{390,1280}_chart.png`, `/opt/cursor/artifacts/after_subdivisions_{390,1280}_az.png`.
+- Punch dispositions appended (parent not completed): 4 fixed + 4 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list. Known leftovers that this class already killed as instances: `7c15bd27` / `0637cc1d` (same chart-axis + mixed-stamp observations). Next slice should reproduce-or-reject them, not invent a second fix.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4+§6, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — place-pages featured-inventory + reject slice
 
 **Surface:** Cursor cloud `bc-028b80c5` (`cursor/loop-sentinel-2026-08-18t07-30-da07`). **Time:** 2026-08-18 ~08:30 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 268). Claimed parent only as `cursor-loop-sentinel-bc-028b80c5-2026-08-18t07-30`. Product **`9f207c4cc`** landed on **`main`**. Vercel Production **READY** for `9f207c4cc` (`CqDNRaMXqjCVQsqZ6ToXpf74UwFV`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (260 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
