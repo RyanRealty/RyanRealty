@@ -33,12 +33,10 @@ const FILES = [
   'app/activity/_v3/activity-rows.ts',
   'lib/kb/place-sections.ts',
   'app/actions/activity-feed-shared.ts',
-  'components/activity/ActivityFeedCard.tsx',
-  'components/geo-page/ActivityFeedCard.tsx',
-  'components/site/ActivityFeed.tsx',
-  'components/ActivityFeedCard.tsx',
-  'components/ActivityFeedSlider.tsx',
-  'components/activity/ActivityCelebrationOverlay.tsx',
+  // The g55 orphan component trees (ActivityFeedCard, site/ActivityFeed,
+  // ActivityFeedSlider, ActivityCelebrationOverlay) were deleted by
+  // 0d07a86b — the consumer-side rules are exercised on synthetic
+  // fixtures below instead of copies of deleted files.
 ]
 
 function run(args = []) {
@@ -164,8 +162,16 @@ describe('ci:activity-event-labels', () => {
 
   it('E: fails when a consumer renders the raw event_type as text', () => {
     reset()
-    edit('components/site/ActivityFeed.tsx', (t) =>
-      t.replace('{leadFor(item.event_type)}', '{item.event_type}'),
+    write(
+      'components/site/RawLabelFeed.tsx',
+      [
+        "import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'",
+        '',
+        'export function Row({ item }: { item: ActivityFeedItem }) {',
+        '  return <span>{item.event_type}</span>',
+        '}',
+        '',
+      ].join('\n'),
     )
     const { code, out } = run()
     expect(code).toBe(1)
