@@ -155,7 +155,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   // so it doesn't block the response. (FUB-era tagging rules: docs/archive/fub-era/README.md)
   // after() keeps the serverless function alive until tagging/assignment/enroll/
   // backfill finish — a bare fire-and-forget IIFE can be frozen on return, which
-  // dropped contact leads into FUB unassigned + un-enrolled.
+  // dropped contact leads into the CRM unassigned + un-enrolled.
   after(async () => {
     try {
       // Enrichment gates on the native person id sendEvent returned (the old
@@ -182,8 +182,8 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
           },
         })
         // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
-        const { autoEnrollByFubId } = await import('@/lib/crm/enroll')
-        await autoEnrollByFubId(capturedPersonId, { smsConsent }).catch((e: unknown) =>
+        const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
+        await autoEnrollByPersonId(capturedPersonId, { smsConsent }).catch((e: unknown) =>
           console.warn('[contact-form] instant auto-enroll failed:', e),
         )
         }

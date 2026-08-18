@@ -19,10 +19,8 @@ const NATIVE_EMAIL_CLICK_PARAM = '_pid'
  * Two params are honored:
  *   - ?_pid=<crm_people.id> — native id, stamped on every post-cutover send
  *     (attributeSiteLinks). Preferred when both are present.
- *   - ?_fuid=<legacy id>    — pre-cutover FUB id, resolved via fub_legacy_id.
- *     Kept because already-sent emails carry that exact link.
- *
- * Renamed from FubIdentityBridge.tsx 2026-07-09 (FUB decommissioned 2026-06-24).
+ *   - ?_fuid=<legacy id>    — silent alias for already-sent links; resolved
+ *     via crm_people.fub_legacy_id.
  */
 export default function PersonIdentityBridge() {
   const searchParams = useSearchParams()
@@ -30,11 +28,8 @@ export default function PersonIdentityBridge() {
 
   useEffect(() => {
     if (done.current) return
-    const legacyParam = (typeof process.env.NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM === 'string'
-      ? process.env.NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM
-      : DEFAULT_EMAIL_CLICK_PARAM).trim() || DEFAULT_EMAIL_CLICK_PARAM
     const nativeValue = searchParams.get(NATIVE_EMAIL_CLICK_PARAM)
-    const legacyValue = searchParams.get(legacyParam)
+    const legacyValue = searchParams.get(DEFAULT_EMAIL_CLICK_PARAM)
     if (!nativeValue && !legacyValue) return
     done.current = true
     const identify = nativeValue
@@ -43,7 +38,7 @@ export default function PersonIdentityBridge() {
     identify.then(() => {
       const url = new URL(window.location.href)
       url.searchParams.delete(NATIVE_EMAIL_CLICK_PARAM)
-      url.searchParams.delete(legacyParam)
+      url.searchParams.delete(DEFAULT_EMAIL_CLICK_PARAM)
       const newUrl = url.pathname + url.search + url.hash
       window.history.replaceState(null, '', newUrl)
       // Tell the analytics bridge to re-sync GA4 user_id + Meta Pixel

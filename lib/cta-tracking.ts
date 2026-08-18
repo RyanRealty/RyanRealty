@@ -13,7 +13,7 @@ type TrackCtaParams = {
 /**
  * Unified CTA tracking:
  * - GA4/GTM via dataLayer
- * - Follow Up Boss event for identified contacts
+ * - CRM event for identified contacts
  */
 export function trackCtaClick(params: TrackCtaParams): void {
   const label = params.label?.trim()

@@ -20,7 +20,7 @@
  *
  * Seller-lead attribution stub:
  *   north_star_attributed_seller_leads is written as 0 by default.
- *   A follow-up cron reads FUB lead-source attribution and updates the count.
+ *   A follow-up cron reads CRM lead-source attribution and updates the count.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'

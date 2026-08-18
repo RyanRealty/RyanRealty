@@ -3,7 +3,7 @@
  *
  * One explicit, button-triggered path (never automatic):
  *   sendCmaToLead() — a real CRM send from the signing broker's own mailbox
- *   (Gmail DWD, same transport as the CRM composer), PDF attached, FUB BCC'd,
+ *   (Gmail DWD, same transport as the CRM composer), PDF attached,
  *   open/click instrumented, suppression checked (fails closed), and logged
  *   as email_out on the contact's CRM timeline. Replies thread straight back
  *   into the broker's inbox (and the CRM via mailbox sync).
@@ -36,7 +36,6 @@ import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeInboundValuationCopy } from '@/lib/cma/inbound-packet'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const FUB_BCC = process.env.FUB_BCC_ADDRESS?.trim() || 'ryan.realty@followupboss.me'
 const MAX_PDF_BYTES = 25 * 1024 * 1024
 
 interface CmaSendContext {
@@ -334,8 +333,8 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
 
   // Primary rail: the signing broker's real mailbox (same DWD transport the
   // CRM composer uses). The lead gets a 1:1 email from matt@ryan-realty.com
-  // (or the signing broker), FUB is BCC'd, and a reply threads straight back
-  // into the broker's inbox — where the CRM mailbox sync picks it up.
+  // (or the signing broker), and a reply threads straight back into the
+  // broker's inbox — where the CRM mailbox sync picks it up.
   const brokerMailbox =
     ctx.brokerRow.email && /@ryan-realty\.com$/i.test(ctx.brokerRow.email)
       ? ctx.brokerRow.email
@@ -345,7 +344,6 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     subject: body.subject,
     bodyHtml: trackedHtml,
     bodyText: body.text,
-    bcc: FUB_BCC,
     impersonateAs: brokerMailbox,
     attachments: [{ filename: `${slug}.pdf`, content: pdf, mimeType: 'application/pdf' }],
   })

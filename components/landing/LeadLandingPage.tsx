@@ -3,7 +3,7 @@
  *
  * KB (kinetic-brutalist) design — Phase 9 page-class migration, restyled IN
  * PLACE. Every byte of behavior is preserved from the prior ContentPageHero
- * layout: the interactive LeadLandingForm (the FUB lead path) keeps all its
+ * layout: the interactive LeadLandingForm (the native lead path) keeps all its
  * props, the config-driven sections (challenge bullets, process steps, trust
  * bullets, testimonials, FAQ) all still render the same data, the FAQPage
  * JSON-LD still emits from the same visible Q&A, and the two hero CTAs +
@@ -96,7 +96,7 @@ export default function LeadLandingPage({ config }: Props) {
 
         {/* CHALLENGE + PROCESS + TRUST (left) and the LEAD FORM (right). Every
             config-driven list is preserved one-for-one; the LeadLandingForm keeps
-            every prop so the FUB lead path is byte-identical. */}
+            every prop so the native lead path is byte-identical. */}
         <section className="section lp-body" id="lead-detail" aria-label={`${audienceLabel} lead detail`}>
           <div className="wrap lp-grid">
             <div className="lp-col-main">

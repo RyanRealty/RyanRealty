@@ -1,6 +1,6 @@
 /**
  * Lead origin note — the internal FUB timeline note that tells the broker WHY a
- * lead came in. Matt reads this in Follow Up Boss, so it is plain and scannable:
+ * lead came in. Matt reads this in the CRM, so it is plain and scannable:
  * a header line then labelled lines. No em-dashes, no semicolons (brand voice
  * §, internal text still follows the punctuation floor for legibility).
  *

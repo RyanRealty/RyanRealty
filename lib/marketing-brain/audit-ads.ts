@@ -7,14 +7,14 @@
  * decide what creative, targeting, or budget changes to propose.
  *
  * Reads ONLY from public.marketing_channel_daily (channel='meta_ads' and
- * channel='fub'). Does NOT call the Meta Ads API directly — the ingestor
- * already populated the table.
+ * the CRM snapshot series). Does NOT call the Meta Ads API directly — the
+ * ingestor already populated the table.
  *
  * Thresholds (locked to spec):
  *   Creative fatigue : CPM rising > 25% WoW AND CTR falling > 15% WoW
  *   Budget drift     : actual spend > 110% or < 85% of playbook target
  *   CPL under-perf   : campaign CPL > 2x account-level CPL
- *   Tracking gap     : |meta_conversions - fub_qualified_leads| > 30% of meta value
+ *   Tracking gap     : |meta_conversions - crm_qualified_leads| > 30% of meta value
  */
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { RecommendedAction } from './diagnose'
@@ -98,12 +98,12 @@ export interface BudgetByRole {
   drift_flagged: boolean
 }
 
-/** Attribution comparison: Meta Ads conversions vs FUB qualified_seller_leads. */
+/** Attribution comparison: Meta Ads conversions vs CRM qualified_seller_leads. */
 export interface ConversionPath {
   window_days: number
   meta_conversions: number
   fub_qualified_leads: number
-  /** Positive = Meta over-counts; negative = FUB over-counts. */
+  /** Positive = Meta over-counts; negative = CRM over-counts. */
   delta: number
   delta_pct: number | null // relative to meta_conversions
   tracking_gap_flagged: boolean // |delta_pct| > 30%
@@ -157,7 +157,7 @@ const FATIGUE_CTR_WOW_THRESHOLD = -15 // % CTR must fall WoW (negative)
 const BUDGET_HIGH_THRESHOLD = 110 // % of target — above this is drift
 const BUDGET_LOW_THRESHOLD = 85 // % of target — below this is drift
 const CPL_RATIO_THRESHOLD = 2.0 // campaign CPL / account CPL
-const TRACKING_GAP_THRESHOLD = 30 // % deviation between Meta and FUB conversions
+const TRACKING_GAP_THRESHOLD = 30 // % deviation between Meta and CRM conversions
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -220,7 +220,7 @@ async function fetchMetaAdsRows(
   return (data ?? []) as DailyRow[]
 }
 
-/** Fetch FUB qualified_seller_leads for a window (scope='account', metric='qualified_seller_leads'). */
+/** Fetch CRM qualified_seller_leads for a window (scope='account', metric='qualified_seller_leads'). */
 async function fetchFubLeads(startDate: string, endDate: string): Promise<number> {
   const supabase = getSupabase()
   const { data, error } = await supabase
@@ -484,7 +484,7 @@ export async function analyzeBudgetEfficiency(
 }
 
 /**
- * Compare Meta Ads conversions to FUB qualified_seller_leads for the same
+ * Compare Meta Ads conversions to CRM qualified_seller_leads for the same
  * window. Flags a tracking gap when the delta exceeds 30%.
  */
 export async function analyzeConversionPath(
@@ -513,11 +513,11 @@ export async function analyzeConversionPath(
   } else if (trackingGapFlagged) {
     const dir = delta > 0 ? 'over-counting' : 'under-counting'
     detail =
-      `Meta Ads is ${dir} relative to FUB by ${r2(Math.abs(deltaPct!))}% ` +
-      `(Meta: ${metaConversions}, FUB: ${fubLeads}). ` +
-      `Check Pixel events and FUB webhook integration.`
+      `Meta Ads is ${dir} relative to CRM by ${r2(Math.abs(deltaPct!))}% ` +
+      `(Meta: ${metaConversions}, CRM: ${fubLeads}). ` +
+      `Check Pixel events and native lead capture.`
   } else {
-    detail = `Meta Ads (${metaConversions}) and FUB (${fubLeads}) are within the acceptable 30% band.`
+    detail = `Meta Ads (${metaConversions}) and CRM (${fubLeads}) are within the acceptable 30% band.`
   }
 
   return {
@@ -559,7 +559,7 @@ export function findOpportunities(
     opps.push({
       area: 'tracking',
       severity: 'high',
-      headline: 'Meta Pixel and FUB conversion counts diverge by > 30%',
+      headline: 'Meta Pixel and CRM conversion counts diverge by > 30%',
       evidence: conversionPath.detail,
       recommended_action: 'check_tracking',
     })

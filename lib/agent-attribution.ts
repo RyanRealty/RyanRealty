@@ -20,7 +20,7 @@
 
 export const AGENT_ATTRIB_COOKIE = 'rr_agent_attribution'
 
-// Canonical broker short slugs (used in FUB broker:* tags + assignment maps)
+// Canonical broker short slugs (used in broker:* tags + assignment maps)
 export type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 
 // URL slug → canonical short slug
@@ -58,8 +58,8 @@ export function brokerSlugFromText(text: string | null | undefined): BrokerSlug 
   return null
 }
 
-// FUB user IDs by canonical broker slug
-export const FUB_USER_ID_BY_BROKER: Record<BrokerSlug, number> = {
+// Desk assignment ids by canonical broker slug
+export const CRM_DESK_ID_BY_BROKER: Record<BrokerSlug, number> = {
   matt: 1,
   rebecca: 2,
   paul: 3,

@@ -4,7 +4,7 @@
  *
  *   sendBpoToLead() — an explicit, button-triggered CRM send from the signing
  *   broker's own mailbox (Gmail DWD), with automatic Resend fallback. PDF
- *   attached, FUB BCC'd, open/click instrumented, suppression checked (fails
+ *   attached, open/click instrumented, suppression checked (fails
  *   closed), logged as email_out on the contact's timeline. Takes an optional
  *   `override` (BpoSendOverride) to carry a broker-edited subject/body from a
  *   compose dialog instead of the default composed message.
@@ -41,7 +41,6 @@ import { sendGmailMessage } from '@/lib/gmail-draft'
 import { formatPriceExact } from '@/lib/format/money'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const FUB_BCC = process.env.FUB_BCC_ADDRESS?.trim() || 'ryan.realty@followupboss.me'
 const MAX_PDF_BYTES = 25 * 1024 * 1024
 const usd = formatPriceExact
 
@@ -387,7 +386,6 @@ export async function sendBpoToLead(opts: {
     subject: body.subject,
     bodyHtml: trackedHtml,
     bodyText: body.text,
-    bcc: FUB_BCC,
     impersonateAs: brokerMailbox,
     attachments: [{ filename: attachName, content: pdf, mimeType: 'application/pdf' }],
   })

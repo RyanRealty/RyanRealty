@@ -22,7 +22,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { pickRoutedBroker } from '@/lib/crm/lead-routing'
-import { FUB_USER_ID_BY_BROKER } from '@/lib/crm/constants'
+import { CRM_DESK_ID_BY_BROKER } from '@/lib/crm/constants'
 import type { LeadOriginContext } from '@/lib/fub-lead-origin-note'
 
 export type LeadAudience = 'seller' | 'buyer'
@@ -66,9 +66,9 @@ export type CanonicalLeadParams = {
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 
-const FUB_USER_MATT = 1
-// Rebecca + Paul exist as FUB users (ids 2 + 3) but no auto-route to them
-// per Matt's 2026-05-17 directive. Manual reassignment via FUB UI only.
+const CRM_DESK_MATT = 1
+// Rebecca + Paul exist as desks (ids 2 + 3) but no auto-route to them
+// per Matt's 2026-05-17 directive. Manual reassignment in the CRM only.
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -91,8 +91,8 @@ function getServiceSupabase() {
  */
 async function pickBroker(audience: LeadAudience, _tier: 'hot' | 'warm' | 'nurture'): Promise<{ broker: BrokerSlug; userId: number }> {
   const slug = await pickRoutedBroker({ source: audience })
-  const broker = (slug in FUB_USER_ID_BY_BROKER ? slug : 'matt') as BrokerSlug
-  return { broker, userId: FUB_USER_ID_BY_BROKER[broker] ?? FUB_USER_MATT }
+  const broker = (slug in CRM_DESK_ID_BY_BROKER ? slug : 'matt') as BrokerSlug
+  return { broker, userId: CRM_DESK_ID_BY_BROKER[broker] ?? CRM_DESK_MATT }
 }
 
 /**
@@ -170,16 +170,8 @@ const HARD_STOP_TAGS = new Set([
 ])
 
 /**
- * Native replacement for the old FUB-API-based check (2026-07-09). The FUB
- * API was decommissioned 2026-06-24 — getFubApiKey() always returns
- * undefined now, which made the old implementation silently fail open
- * (return false / "not hard-stopped") for every person, every time. That
- * didn't create a live send-time compliance gap (lib/crm/enroll.ts and
- * lib/crm/suppressions.ts both independently re-check crm_suppressions /
- * crm_people.tags before any actual send), but it did mean hard-stopped
- * people were getting incorrectly tagged audience:seller/audience:buyer at
- * LP intake — corrupting lead-source reporting. Reads crm_people.tags
- * directly, same authoritative source as lib/crm/suppressions.ts.
+ * Reads crm_people.tags directly, same authoritative source as
+ * lib/crm/suppressions.ts. Fail-open on a network blip so intake is never blocked.
  */
 export async function isHardStopped(personId: number): Promise<boolean> {
   try {
@@ -266,7 +258,7 @@ export async function canonicallyTagLead(params: CanonicalLeadParams): Promise<{
     // directive 2026-06-09). Fire-and-forget; the 15-min crm-auto-enroll cron
     // is the catch-all if this misses.
     void import('@/lib/crm/enroll')
-      .then(({ autoEnrollByFubId }) => autoEnrollByFubId(params.fubPersonId))
+      .then(({ autoEnrollByPersonId }) => autoEnrollByPersonId(params.fubPersonId))
       .then((r) => { if (r.enrolled) console.log(`[canonical-lead-tagger] auto-enrolled ${params.fubPersonId} → ${r.sequence}`) })
       .catch((e) => console.warn('[canonical-lead-tagger] auto-enroll failed:', e))
     return { ok: true, broker, tagsApplied: tags }

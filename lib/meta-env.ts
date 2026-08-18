@@ -8,7 +8,7 @@
  * META_PAGE_TOKEN silently disables publishing while the dual-reading diagnostics
  * still work (a confusing half-broken state). This is the single accessor: it
  * reads BOTH (preferring META_PAGE_ACCESS_TOKEN), so either env name works
- * everywhere. Mirrors lib/crm/fub-env.ts (the FOLLOWUPBOSS/FUB collapse).
+ * everywhere.
  *
  * The `ci:meta-token` ratchet gate bans NEW direct env reads outside this file;
  * existing readers are a baselined backlog that may only shrink.

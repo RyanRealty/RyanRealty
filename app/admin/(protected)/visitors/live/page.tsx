@@ -33,7 +33,7 @@
 //      15s". No LiveTable component exists anywhere in the repo, and the page's
 //      own footnote says it revalidates on navigation. Cut.
 //   2. The footnote used to say "Hot scores fire a 5-minute FUB call task
-//      automatically (cron-driven)". Follow Up Boss was decommissioned
+//      automatically (cron-driven)". That vendor was decommissioned
 //      2026-06-24. /api/cron/visitor-hot-lead-escalation (every 15 min in
 //      vercel.json) calls createNativeTask with dueInMinutes: 5 against
 //      crm_tasks for an identified session, and emails the alert for every hot

@@ -167,7 +167,7 @@ export async function submitExitIntentLead(input: {
 
 /**
  * Submit a contextual page CTA lead (email/phone capture from city, community, or content pages).
- * Creates a General Inquiry in FUB.
+ * Creates a General Inquiry in the CRM.
  */
 export async function submitPageCTA(input: {
   email?: string

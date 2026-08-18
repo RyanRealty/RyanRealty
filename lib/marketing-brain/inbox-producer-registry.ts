@@ -83,6 +83,10 @@ const PRODUCER_REGISTRY: Record<string, string> = {
   'ops:manychat_setup': 'marketing_brain_skills/producers/ops-manychat',
   'ops:manychat_pause': 'marketing_brain_skills/producers/ops-manychat',
   'ops:manychat_update': 'marketing_brain_skills/producers/ops-manychat',
+  'ops:crm_tag_fix': 'marketing_brain_skills/producers/comms-matt-alert',
+  'ops:crm_sequence_change': 'marketing_brain_skills/producers/comms-matt-alert',
+  'ops:crm_task_create': 'marketing_brain_skills/producers/comms-matt-alert',
+  'ops:crm_routing': 'marketing_brain_skills/producers/comms-matt-alert',
 
   // Section E — communications
   'comms:matt_alert': 'marketing_brain_skills/producers/comms-matt-alert',

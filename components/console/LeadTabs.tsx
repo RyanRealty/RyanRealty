@@ -1,12 +1,11 @@
 'use client'
 
 /**
- * LeadTabs — the mobile information architecture for the Lead Command Center,
- * styled to the FUB reference (docs/MOBILE_CRM_FUB_PARITY.md): a dark identity
- * header band with the avatar, name, owner, and a clean white/blue tab row, then
- * a light grouped body below. One focused section per tab on a phone; on desktop
- * the band shows the identity, the tabs hide, and every section is visible in the
- * original single-scroll arrangement.
+ * LeadTabs — the mobile information architecture for the Lead Command Center:
+ * a dark identity header band with the avatar, name, owner, and a clean
+ * white/blue tab row, then a light grouped body below. One focused section
+ * per tab on a phone; on desktop the band shows the identity, the tabs hide,
+ * and every section is visible in the original single-scroll arrangement.
  *
  * Visibility is pure CSS — no panel unmounts — so every server-action form inside
  * a slot keeps working unchanged. Colors are console tokens (dark charcoal
@@ -35,8 +34,7 @@ const HASH_TO_TAB: Record<string, LeadTabKey> = {
   activity: 'activity',
 }
 
-// Labels follow the FUB contact tabs (Info · Comms · Homes · …). Keys are stable
-// (hash routing + slots depend on them); only the visible labels track FUB.
+// Tab keys are stable (hash routing + slots depend on them).
 const TABS: { key: LeadTabKey; label: string }[] = [
   { key: 'overview', label: 'Info' },
   { key: 'comms', label: 'Comms' },
@@ -60,7 +58,6 @@ export function LeadTabs({
   homeCard,
   defaultTab = 'overview',
   backHref,
-  fubHref,
   flushTop = true,
   overview,
   comms,
@@ -74,9 +71,9 @@ export function LeadTabs({
   stage: string
   live?: boolean
   ownerName?: string | null
-  /** FUB-parity: "Last communication May 21" under the name. Null hides it. */
+  /** "Last communication May 21" under the name. Null hides it. */
   lastCommLabel?: string | null
-  /** FUB-parity: green deal-value pill (e.g. "$655K") near the stage. Null hides it. */
+  /** Green deal-value pill (e.g. "$655K") near the stage. Null hides it. */
   dealValueLabel?: string | null
   /** Primary email + phone shown beside the name in the header. */
   email?: string | null
@@ -87,7 +84,6 @@ export function LeadTabs({
   homeCard?: React.ReactNode
   defaultTab?: LeadTabKey
   backHref: string
-  fubHref?: string | null
   flushTop?: boolean
 } & Record<LeadTabKey, React.ReactNode>) {
   const [active, setActive] = useState<LeadTabKey>(defaultTab)
@@ -118,8 +114,7 @@ export function LeadTabs({
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  // One focused section at a time on EVERY breakpoint — the FUB contact page is
-  // tabbed on desktop too, not a 3-column dump. Only the active tab renders.
+  // One focused section at a time on every breakpoint — not a 3-column dump.
   const slot = (key: LeadTabKey) => cn(active === key ? 'flex' : 'hidden', 'flex-col gap-4')
 
   return (
@@ -130,9 +125,6 @@ export function LeadTabs({
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <div className="flex items-center justify-between py-2.5 text-xs">
             <Link href={backHref} className="inline-flex min-h-8 items-center text-primary-foreground/70 transition-colors hover:text-primary-foreground">← Leads</Link>
-            {fubHref ? (
-              <a href={fubHref} target="_blank" rel="noreferrer" className="text-primary-foreground/45 transition-colors hover:text-primary-foreground/80">Open in FUB ↗</a>
-            ) : null}
           </div>
 
           {/* Identity — big PFP (~1/3 width on mobile) + name/email/phone. The row
@@ -164,7 +156,7 @@ export function LeadTabs({
             </div>
           </div>
 
-          {/* Tabs — visible on every breakpoint (FUB is tabbed on desktop too). */}
+          {/* Tabs — visible on every breakpoint. */}
           <div className="no-scrollbar -mb-px flex gap-5 overflow-x-auto" role="tablist" aria-label="Lead sections">
             {TABS.map((t) => (
               <button
@@ -191,8 +183,7 @@ export function LeadTabs({
 
       {/* ── Light grouped body ── */}
       {/* One focused section per tab on every breakpoint, centered in a readable
-          column that aligns with the identity band above — the FUB contact page,
-          not a 3-column dashboard dump. */}
+          column that aligns with the identity band above. */}
       <div className="mx-auto max-w-3xl px-4 pt-4 sm:px-6">
         {/* Contact-level quick actions + owned-home card sit above every tab, so
             the landing view is: header → actions → home → comms. */}

@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * CrmMobileTabBar — the Follow Up Boss–style bottom tab bar for phones.
+ * CrmMobileTabBar — the mobile bottom tab bar for phones.
  *
  * Matt directive 2026-06-26: the admin CRM must look + behave like the FUB iOS
  * app on mobile — a fixed 5-tab bottom bar that turns the console into a

@@ -60,7 +60,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
   // Guests can save a search too. Instead of returning null (the old behavior,
   // which made "Save this search" invisible to anyone not signed in, i.e. most
   // visitors), the guest branch captures an email and routes it through the same
-  // FUB buyer-lead path the alert strip uses (audience:buyer). Save a search is
+  // native buyer-lead path the alert strip uses (audience:buyer). Save a search is
   // therefore ALWAYS reachable and always feeds the buyer funnel.
 
   /**
@@ -118,7 +118,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
     setErrorMsg('')
     const filters = buildFilters()
     // Map the normalized filters to the alert-capture string shape, then route
-    // through the existing spam-hardened FUB buyer-lead path (audience:buyer).
+    // through the existing spam-hardened native buyer-lead path (audience:buyer).
     const stringFilters: Record<string, string> = {}
     for (const [key, value] of Object.entries(filters)) {
       if (value == null) continue

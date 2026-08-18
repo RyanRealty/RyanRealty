@@ -500,9 +500,8 @@ export async function getBrokerDigest(params: {
 // has a clean crm_* source: new leads by audience and by source (crm_people,
 // outreach-list rows partitioned out via leadSourceTaxonomy), active deals +
 // pipeline value (crm_deals), and conversation volume (crm_timeline). The
-// route sources appointments from crm_appointments; FUB smart-list movement
-// has no crm_* equivalent and was dropped at the 2026-06-24 FUB decommission
-// (getFubApiKey() is hardcoded undefined — a fetched zero would be fabricated).
+// route sources appointments from crm_appointments. Retired vendor smart-list
+// movement has no crm_* equivalent and was dropped.
 // ---------------------------------------------------------------------------
 
 export type WeeklyLeadRow = { tags: string[]; source: string | null }

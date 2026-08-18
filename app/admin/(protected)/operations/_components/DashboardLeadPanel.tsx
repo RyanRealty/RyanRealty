@@ -159,7 +159,7 @@ export default function DashboardLeadPanel({ data }: Props) {
       {/* 11F: a trailing footnote was deleted here, not restyled. It read "Hot
           leads and engagement scoring require FUB API or a contacts table. GA4
           panel will show acquisition and conversion funnel." Both halves were
-          false by the time it was read: Follow Up Boss was decommissioned
+          false by the time it was read: the prior CRM vendor was decommissioned
           2026-06-24, the contacts table it says is missing is crm_people and
           holds 22,977 rows (18,379 with an assigned broker, checked
           2026-08-08), and the GA4 panel it promises in future tense is already

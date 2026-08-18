@@ -373,7 +373,7 @@ export async function analyzeTrafficSources(
 
 /**
  * Full-funnel analysis: sessions -> engaged_sessions -> lead_events ->
- * qualified_seller_leads (from FUB).
+ * qualified_seller_leads (from the CRM snapshot).
  *
  * All metrics read from marketing_channel_daily at account scope.
  * Drop-off rate = (prev_step - step) / prev_step.

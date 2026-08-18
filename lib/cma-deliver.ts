@@ -6,7 +6,7 @@
  * This module handles everything AFTER the HTML:
  *
  *   1. Render the CMA to PDF via renderCmaPdfBuffer (respects the 25 MB cap).
- *   2. Create a Gmail DRAFT addressed to the lead (PDF attached, FUB BCC'd)
+ *   2. Create a Gmail DRAFT addressed to the lead (PDF attached)
  *      via the existing createGmailDraft + DWD path so Matt reviews and sends
  *      from his real mailbox. Falls back to Resend → broker if DWD is down.
  *   3. Notify Matt via Resend that the CMA is ready for review, with the
@@ -33,7 +33,6 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const FUB_BCC = process.env.FUB_BCC_ADDRESS?.trim() || 'ryan.realty@followupboss.me'
 const MATT_ALERT_EMAIL = process.env.MATT_ALERT_EMAIL ?? 'matt@ryan-realty.com'
 const ALERT_FROM = process.env.RESEND_FROM ?? 'alerts@mail.ryan-realty.com'
 const MAX_PDF_BYTES = 25 * 1024 * 1024 // Gmail attachment cap
@@ -331,7 +330,6 @@ export async function finalizeAndDeliverCma(
     subject: emailSubject,
     bodyHtml,
     bodyText,
-    bcc: FUB_BCC,
     impersonateAs: brokerEmail,
     attachments: [
       {
@@ -371,7 +369,7 @@ export async function finalizeAndDeliverCma(
   const recommendedList = cma?.recommended_list
 
   const gmailLine = draftResult.ok
-    ? `Gmail draft created in ${brokerEmail}'s Drafts (draftId: ${gmailDraftId ?? '—'}). BCC'd ${FUB_BCC} so FUB logs it on send.`
+    ? `Gmail draft created in ${brokerEmail}'s Drafts (draftId: ${gmailDraftId ?? '—'}).`
     : `Gmail draft FAILED (${draftResult.error ?? 'unknown error'}). PDF has been emailed directly to ${brokerEmail} via Resend for manual forward.`
 
   const mattHtml = `

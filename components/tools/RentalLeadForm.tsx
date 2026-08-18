@@ -13,7 +13,7 @@ import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
  * Rental-calculator lead capture. A visitor running the numbers asks a Ryan
  * Realty broker to pull real rent comps + underwrite the deal. Expands from a
  * button so the calculator stays clean. Carries the property + analysis context
- * (when launched from a listing) into FUB via submitRentalLead.
+ * (when launched from a listing) into the CRM via submitRentalLead.
  */
 export default function RentalLeadForm({
   propertyLabel,

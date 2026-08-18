@@ -12,7 +12,7 @@ describe('mirrorHealthStatus (CRM mirror kill-switch alarm)', () => {
     expect(status.enabled).toBe(false)
     expect(status.level).toBe('alarm')
     expect(status.message).toContain('CRM_MIRROR_ENABLED=false')
-    expect(status.message).toContain('NOT mirrored')
+    expect(status.message).toContain('NOT copied')
   })
 
   it('is ok when CRM_MIRROR_ENABLED is unset', () => {

@@ -50,9 +50,10 @@ function fmtPhone(digits: string | null): string {
   return digits
 }
 
-function fubLink(personId: number | null): string {
-  if (!personId) return '(no FUB record)'
-  return `https://app.followupboss.com/people/${personId}`
+function crmPersonLink(personId: number | null): string {
+  if (!personId) return '(no CRM record)'
+  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  return `${site}/admin/people/${personId}`
 }
 
 export async function sendFsboAlertEmail(params: FsboAlertParams): Promise<{ ok: boolean; id?: string; error?: string }> {
@@ -100,7 +101,7 @@ ${photoBlock}
 ${ownerSection}
 
 <h3 style="margin:24px 0 8px 0;color:#102742;">Next step</h3>
-<p>FUB record: <a href="${fubLink(params.fubPersonId)}">${fubLink(params.fubPersonId)}</a></p>
+<p>CRM record: <a href="${crmPersonLink(params.fubPersonId)}">${crmPersonLink(params.fubPersonId)}</a></p>
 <p>Approach: reach the owner directly. FSBO sellers chose to skip representation, so the pitch is the same conversation Matt would have at a listing appointment. Pricing accuracy, exposure, time saved. Lead with value, not a critique of their decision.</p>
 
 ${params.enrichmentNotes ? `<p style="margin-top:24px;color:#666;font-size:12px;"><em>Enrichment notes: ${params.enrichmentNotes}</em></p>` : ''}

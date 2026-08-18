@@ -19,8 +19,8 @@ export const CRM_BROKER_BY_EMAIL: Record<string, CrmBrokerSlug> = {
   'paul@ryan-realty.com': 'paul',
 }
 
-/** CRM broker slug → FUB numeric user id (verified live 2026-06-09: Matt=1, Rebecca=2, Paul=3). */
-export const FUB_USER_ID_BY_BROKER: Record<CrmBrokerSlug, number> = {
+/** CRM broker slug → desk assignment id (Matt=1, Rebecca=2, Paul=3). */
+export const CRM_DESK_ID_BY_BROKER: Record<CrmBrokerSlug, number> = {
   matt: 1,
   rebecca: 2,
   paul: 3,

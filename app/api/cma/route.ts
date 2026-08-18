@@ -6,7 +6,7 @@
  * no top-level /api/cma route existed (only /api/cma/[slug]/* for the CMA PDF
  * pipeline), so every submission returned 404 and the lead was silently lost
  * while the form showed a fake green "success." This handler captures the lead
- * into Follow Up Boss (+ Meta CAPI + canonical tags + GA4) and returns 200.
+ * into the native CRM (+ Meta CAPI + canonical tags + GA4) and returns 200.
  *
  * Field contract (set by the Tetherow form components):
  *   intent: 'buyer' | 'seller'   name, email, phone

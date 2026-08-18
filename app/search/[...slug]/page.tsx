@@ -390,7 +390,7 @@ export default async function SearchPage({
 
       {/* Guest listing-alert capture — anonymous visitors only. Signed-in users
           get the Save-search button in the filter row below instead. This is the
-          email -> FUB buyer-lead path (audience:buyer), now present on the route
+          email -> native buyer-lead path (audience:buyer), now present on the route
           most city/preset links land on, not just the bare /homes-for-sale page. */}
       {(city || hasFilterOnly) && (
         <SearchAlertCapture

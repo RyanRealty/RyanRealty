@@ -48,7 +48,7 @@ export async function submitSearchAlertSignup(input: {
   }
 
   // 2. Per-IP rate limit. Server actions bypass the middleware /api limiter, so
-  //    this is the only throttle on a public write into FUB + the DB. FAIL CLOSED
+  //    this is the only throttle on a public write into the CRM + the DB. FAIL CLOSED
   //    in production: if Upstash is unconfigured or down (no limiter, or a thrown
   //    limit() error), a missing throttle must not silently open the floodgate.
   const isProd = process.env.NODE_ENV === 'production'

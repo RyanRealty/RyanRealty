@@ -237,7 +237,7 @@ export const DELIVERABLE_GROUPS: DeliverableGroup[] = [
       {
         id: 'email_newsletter',
         label: 'Email newsletter',
-        description: 'Drafted newsletter sent to your email segment in FUB.',
+        description: 'Drafted newsletter sent to your email segment in the CRM.',
         prompt: 'Draft an email newsletter (let us know which segment below).',
       },
       {

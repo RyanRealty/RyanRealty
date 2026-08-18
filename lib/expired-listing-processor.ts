@@ -212,11 +212,11 @@ export async function processNewExpiredListings(
       // The native crm_people id once we create/reuse a lead. Named crmPersonId
       // (not fubPersonId) because the FUB cutover (2026-06-24) means the workflow
       // is fully CRM-native now: person + tags + note + task + enrollment all live
-      // in crm_*, no Follow Up Boss round-trip. FUB creds are gone in production,
+      // in crm_*, no vendor round-trip. Those creds are gone in production,
       // so the old sendEvent→findPersonByEmail resolve returned null and the whole
       // downstream (tags/note/task/enroll/CMA) silently no-op'd. This block is the
       // fix — it creates the lead directly via ensureNativeLead and enrolls via
-      // autoEnrollPerson (crm_people-id keyed), not autoEnrollByFubId.
+      // autoEnrollPerson (crm_people-id keyed), not autoEnrollByPersonId.
       let crmPersonId: number | null = null
       let matchedBy: string = owner.source ?? 'unresolved'
       let skippedFub = false

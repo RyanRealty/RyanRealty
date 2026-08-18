@@ -24,12 +24,9 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
 
 // ─── Broker routing constants ─────────────────────────────────────────────
-// FUB user ids verified 2026-05-17 via /v1/identity + /v1/users. The
-// FOLLOWUPBOSS_BROKER_USER_MAP env var can override these per-environment if
-// a broker is added/removed/swapped between Matt's accounts.
-const FUB_USER_MATT = 1
-// Rebecca (id 2) + Paul (id 3) remain in FUB but no auto-route per Matt
-// 2026-05-17. Manual reassignment via FUB UI only.
+const CRM_DESK_MATT = 1
+// Rebecca (id 2) + Paul (id 3) exist as desks but no auto-route per Matt
+// 2026-05-17. Manual reassignment in the CRM only.
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 type BrokerAssignment = { broker: BrokerSlug; userId: number }
@@ -55,7 +52,7 @@ export type SellerLPSubmission = {
   reason?: string
   /** rr_session_id (uuid v4 from localStorage) so the now-known person can be
    *  stitched to their prior anonymous visitor_events and those events replayed
-   *  into FUB. Validated server-side before use. */
+   *  into the CRM. Validated server-side before use. */
   sessionId?: string
   /**
    * Which LP variant submitted the form.
@@ -160,14 +157,14 @@ function classifyTimeline(t: SellerLPTimeline | undefined): {
  *     to that broker. Honors `agent=matt`, `agent=rebecca`, `agent=paul`.
  *   - Otherwise route to Matt by default.
  *
- * Manual reassignment in FUB UI works on a per-lead basis regardless.
+ * Manual reassignment in the CRM works on a per-lead basis regardless.
  */
 async function assignSellerLead(
   _classification: 'hot' | 'warm' | 'nurture' | 'unknown',
 ): Promise<BrokerAssignment> {
   const attributed = await readAttributedAgentServer()
   if (attributed) return { broker: attributed.broker, userId: attributed.userId }
-  return { broker: 'matt', userId: FUB_USER_MATT }
+  return { broker: 'matt', userId: CRM_DESK_MATT }
 }
 
 async function recordSellerAssignment(params: {
@@ -295,7 +292,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         address_street: parsed.street,
         // address_city is NOT NULL — a free-form address typed without commas
         // (no Places pick) yields a null city and silently drops this row even
-        // though the FUB lead still lands. Default to Bend (the LP's market) so
+        // though the CRM lead still lands. Default to Bend (the LP's market) so
         // the analytics/auto-CMA row is never lost. (Matt 2026-06-04.)
         address_city: parsed.city || 'Bend',
         address_state: parsed.state,
@@ -387,7 +384,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // A form submit is a definite identification: we now have email + a FUB
     // person id. If the client passed its rr_session_id, stamp the first-party
     // visitor_sessions row (identified_at + fub_person_id) and replay all prior
-    // anonymous visitor_events for this browser into FUB as Viewed Property /
+    // anonymous visitor_events for this browser into the CRM as Viewed Property /
     // Viewed Page events. Idempotent + never throws (see lib/visitor-backfill).
     const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     if (fubPersonId && email) {
@@ -491,7 +488,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
           (reasonLabel ? `. Situation: ${reasonLabel}` : ''),
         assignedAgent: assignment.broker,
         assignmentReason:
-          assignment.userId === FUB_USER_MATT ? 'default routing to Matt' : 'agent attribution cookie',
+          assignment.userId === CRM_DESK_MATT ? 'default routing to Matt' : 'agent attribution cookie',
       }
 
       await enrichNativeLead({
@@ -553,8 +550,8 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // Runs BEFORE createCmaRequest so the CMA link can stamp onto the CRM
     // person for sequence merge fields.
     if (fubPersonId) {
-      const { autoEnrollByFubId } = await import('@/lib/crm/enroll')
-      await autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }).catch((e: unknown) =>
+      const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
+      await autoEnrollByPersonId(fubPersonId, { smsConsent: submission.smsConsent }).catch((e: unknown) =>
         console.warn('[seller-lp] instant auto-enroll failed:', e),
       )
     }
@@ -580,7 +577,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     }
 
     // ─── Always-on Matt alert (Resend email) ──────────────────────────────
-    // Matt 2026-05-18: "Once they land in Follow Up Boss as a new user,
+    // Matt 2026-05-18: "Once they land in the CRM as a new user,
     // I need to always make sure I'm getting an alert." Fire a dedicated
     // email to MATT_ALERT_EMAIL on every new seller LP submission, in
     // addition to the broker-assignment email from createCmaRequest.
