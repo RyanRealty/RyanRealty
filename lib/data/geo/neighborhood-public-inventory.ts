@@ -46,6 +46,12 @@ export const BEND_NEIGHBORHOOD_DISTRICTS: ReadonlyArray<{ label: string; slug: s
   { label: 'Summit West', slug: 'summit-west' },
 ]
 
+/** Canonical Bend-district report. `/neighborhoods/{slug}` 301s here. */
+export function bendNeighborhoodCanonicalHref(slug: string): string | null {
+  const district = BEND_NEIGHBORHOOD_DISTRICTS.find((d) => d.slug === slug)
+  return district ? `/cities/bend/${district.slug}` : null
+}
+
 export type NeighborhoodPublicInventory = {
   label: string
   slug: string

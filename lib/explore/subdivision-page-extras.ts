@@ -5,6 +5,7 @@
  */
 
 import { listingDetailPath, slugify } from '@/lib/slug'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import resortCommunitiesData from '@/data/resort-communities.json'
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import { lifestyleNearLatLng, type LifestyleNearItem } from '@/lib/explore/lifestyle-near'
@@ -30,14 +31,19 @@ export function peerPlatsForResort(
   if (!entry) return []
   return entry.subdivision_aliases
     .filter((a) => slugify(a) !== selfSlug)
+    .map((a) => {
+      const name = publishPlatDisplayName(a)
+      if (!name) return null
+      return {
+        name,
+        href: `/subdivisions/${slugify(a)}`,
+        activeCount: -1,
+        medianPrice: null,
+        img: '',
+      }
+    })
+    .filter((row): row is KbTownItem => row != null)
     .slice(0, 12)
-    .map((a) => ({
-      name: a,
-      href: `/subdivisions/${slugify(a)}`,
-      activeCount: -1,
-      medianPrice: null,
-      img: '',
-    }))
 }
 
 export function mapCentroid(

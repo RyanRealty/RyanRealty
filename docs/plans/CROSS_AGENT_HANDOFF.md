@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — listing-detail history + unmute slice
+# Current — 2026-08-18 (cursor-loop-chain) — seller valuation name + 24h + Places overlay slice
+
+**Surface:** Cursor cloud `bc-53dadb0e` (`cursor/loop-chain-2026-08-17t23-20-af1f`). **Time:** 2026-08-18 ~00:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:seller` (8 of 372). Claimed parent only. Product **`109af2b3b`** landed on **`main`**. Vercel Production **READY** for `109af2b3b` (`47HoMGUP4L9YwxA2hsu8LBmjHrYB`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (364 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 seller lines) at 390+1280: Step 2 required Your name **reproduced** (`name=name` `required`). Places `.pac-item` over Value my home at 390 **reproduced**. Confirmation missing 24-hour SLA **reproduced** in source. Address clear after select **rejected** (Somerset / Greenwood stuck). Step 2 reset while typing phone **rejected** (503 / 541 stayed on step 2). Bend median format mismatch **rejected** (visible `$755,000` once; `$$755,000` is RSC `$` escape).
+- Class: `publishSellValuationConfirm` + `sellQualifyNameRequired()`. Email required, name optional, confirm names **within 24 hours**. `AddressAutocomplete` reserves `pb-48` while open and removes its `.pac-container` on unmount. Gate `ci:publish-sell-valuation` 5/5.
+- Prod probe after READY `109af2b3b`: name input `required=false`, label Your name (optional). Value my home clickable under open suggestions. Fleet-identity confirm: **within 24 hours**, no business day. After shots `/opt/cursor/artifacts/after_sell_{390,1280}_{step1,pac,step2,median,confirm}.webp`.
+- Punch dispositions appended (parent not completed): 5 fixed + 3 rejected. Leftover seller + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-096/R-132, SITE_PAGE_STANDARD §5, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — listing-detail history + unmute slice
 
 **Surface:** Cursor cloud `bc-738b62c1` (`cursor/loop-chain-2026-08-17t22-07-294b`). **Time:** 2026-08-17 ~23:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 380). Claimed parent only. Product **`8ce73d3d2`** landed on **`main`** (history merge `386ad65da` + `zonedDateKey` `5f2aaea32` + timeout seed). Vercel Production **READY** for `8ce73d3d2` (GitHub Vercel success `EVe1nnE1ozvKACJeuxHk3Emydmfn`). Draft PR **#90**. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (372 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 

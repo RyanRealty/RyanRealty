@@ -89,6 +89,18 @@ describe('resolvePlaceContextFromListing', () => {
     expect(ctx.breadcrumb.map((b) => b.type)).toEqual(['city'])
   })
 
+  it('withholds an MLS abbreviation from the plat breadcrumb', () => {
+    const ctx = resolvePlaceContextFromListing({
+      city: 'Bend',
+      citySlug: 'bend',
+      subdivisionName: 'Crr 1',
+      subdivisionSlug: 'crr-1',
+    })
+    expect(ctx.subdivision).toBeNull()
+    expect(ctx.identityLine).toBe('Bend')
+    expect(ctx.breadcrumb.map((b) => b.label).join(' ')).not.toMatch(/Crr/i)
+  })
+
   it('city-only listing has empty parents beyond city leaf', () => {
     const ctx = resolvePlaceContextFromListing({
       city: 'Redmond',

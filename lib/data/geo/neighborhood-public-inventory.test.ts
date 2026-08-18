@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   BEND_NEIGHBORHOOD_DISTRICTS,
+  bendNeighborhoodCanonicalHref,
   medianListPrice,
   neighborhoodGeoSlug,
   rollupNeighborhoodPublicInventory,
@@ -40,6 +41,11 @@ describe('neighborhood public inventory rollup', () => {
     ])
     expect(rows.find((r) => r.slug === 'awbrey-butte')?.activeCount).toBe(1)
     expect(rows.find((r) => r.slug === 'southern-crossing')?.activeCount).toBe(1)
+  })
+
+  it('maps a Bend district slug to the city-nested report', () => {
+    expect(bendNeighborhoodCanonicalHref('awbrey-butte')).toBe('/cities/bend/awbrey-butte')
+    expect(bendNeighborhoodCanonicalHref('tetherow')).toBeNull()
   })
 
   it('median is the lower-middle neighbor on an even set', () => {
