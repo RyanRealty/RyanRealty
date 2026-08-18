@@ -48,6 +48,28 @@ describe('splitRowsFromTiles', () => {
     const rows = splitRowsFromTiles([tile('low', 100), tile('high', 900)])
     expect(rows.map((r) => r.key)).toEqual(['high', 'low'])
   })
+
+  it('prints Moonshadow Court without a leading 0', () => {
+    const rows = splitRowsFromTiles([
+      {
+        listingKey: 'moon',
+        listNumber: '220221237',
+        listPrice: 2_825_000,
+        beds: 4,
+        baths: 4,
+        streetNumber: '0',
+        streetName: 'Moonshadow',
+        streetSuffix: 'Court',
+        city: 'Bend',
+        subdivisionName: 'Awbrey Butte',
+        photoUrl: null,
+        lat: 44.08,
+        lng: -121.33,
+      },
+    ])
+    expect(rows[0]?.title).toBe('Moonshadow Court')
+    expect(rows[0]?.title).not.toMatch(/^0\s/)
+  })
 })
 
 describe('peerPlatsForResort', () => {

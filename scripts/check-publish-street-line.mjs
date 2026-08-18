@@ -58,6 +58,32 @@ checks.push({
     /publishStreetLine\(/.test(looking),
 })
 
+const split = src('lib/explore/subdivision-page-extras.ts')
+checks.push({
+  label: 'place-page dual-pane titles gate through publishStreetLine',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(split) &&
+    /publishStreetLine\(/.test(split) &&
+    !split.includes('[t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join'),
+})
+
+const ticker = src('lib/kb/place-sections.ts')
+checks.push({
+  label: 'KB ticker / map / activity addresses gate through publishStreetLine',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(ticker) &&
+    /publishStreetLine\(/.test(ticker) &&
+    !ticker.includes('[t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join'),
+})
+
+const featured = src('lib/kb/resolve-featured-items.ts')
+checks.push({
+  label: 'KB featured addresses gate through publishStreetLine',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(featured) &&
+    /publishStreetLine\(/.test(featured),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)

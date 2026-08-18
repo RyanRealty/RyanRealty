@@ -37,6 +37,7 @@
 
 import { formatDate } from '@/lib/format/date'
 import { cityHero } from '@/lib/geo-images'
+import { publishStreetLine, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
 import { listingTileHref } from '@/lib/slug'
 import type { KbActivityItem } from '@/components/site/kb/KbActivity.client'
 import type { KbArticlePost } from '@/components/site/kb/KbArticles'
@@ -189,7 +190,10 @@ export function buildOpenHouseItems(rows: readonly OpenHouseRow[], limit = 6): K
     }),
     photoUrl: oh.photo_url,
     price: oh.list_price,
-    address: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
+    address:
+      publishUnparsedStreetLine(oh.unparsed_address) ??
+      publishStreetLine({ streetNumber: oh.street_number, streetName: oh.street_name }) ??
+      'Address on request',
     cityLine: [oh.city, oh.subdivision_name].filter(Boolean).join(' · '),
     beds: oh.beds_total,
     baths: oh.baths_full,
@@ -218,7 +222,12 @@ export function buildActivityItems(
     return {
       kind: staleNew ? 'listed' : km.kind,
       label: staleNew ? 'Listed' : km.label,
-      address: [a.StreetNumber, a.StreetName, a.StreetSuffix].filter(Boolean).join(' ') || 'Address on request',
+      address:
+        publishStreetLine({
+          streetNumber: a.StreetNumber,
+          streetName: a.StreetName,
+          streetSuffix: a.StreetSuffix,
+        }) || 'Address on request',
       cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
       price: a.ListPrice ?? null,
       imageUrl: a.PhotoURL ?? null,
@@ -278,7 +287,12 @@ export function buildMapPointFeatures(tiles: readonly TileRow[]): KbMapFeature[]
       geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
       properties: {
         p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+        a:
+          publishStreetLine({
+            streetNumber: t.streetNumber,
+            streetName: t.streetName,
+            streetSuffix: t.streetSuffix,
+          }) ?? '',
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
         k: t.listingKey ?? undefined,
         // Popup + pin must open the listing detail page (not a dead info card).
@@ -306,7 +320,12 @@ export function buildMapPointFeatures(tiles: readonly TileRow[]): KbMapFeature[]
 export function buildTickerItems(tiles: readonly TileRow[], fallbackTown: string, limit = 6): KbTickerItem[] {
   return tiles.slice(0, limit).map((t) => ({
     price: t.listPrice,
-    address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+    address:
+      publishStreetLine({
+        streetNumber: t.streetNumber,
+        streetName: t.streetName,
+        streetSuffix: t.streetSuffix,
+      }) ?? '',
     town: t.city ?? fallbackTown,
   }))
 }

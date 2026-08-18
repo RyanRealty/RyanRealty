@@ -1,6 +1,7 @@
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import type { KbFeaturedItem } from '@/components/site/kb/types'
 import type { ListingTile } from '@/lib/data'
 
@@ -59,7 +60,12 @@ export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Pro
     .slice(0, limit)
     .map(({ t, m }) => ({
       price: t.listPrice,
-      address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+      address:
+        publishStreetLine({
+          streetNumber: t.streetNumber,
+          streetName: t.streetName,
+          streetSuffix: t.streetSuffix,
+        }) ?? '',
       sub: displaySubdivision(t.subdivisionName) ?? '',
       city: t.city ?? '',
       beds: t.beds,
