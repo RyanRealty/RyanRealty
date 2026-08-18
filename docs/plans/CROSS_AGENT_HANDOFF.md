@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — seller valuation name + 24h + Places overlay slice
+# Current — 2026-08-18 (cursor-loop-sentinel) — place-pages chrome-only reject slice
+
+**Surface:** Cursor cloud `bc-a712da53` (`cursor/loop-sentinel-2026-08-18t01-40-c289`). **Time:** 2026-08-18 ~01:50 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 356). Claimed parent only. **No product** — 8/8 rejected at 390+1280. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (348 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: Aero Acres / Anderson Acres / 27th Park / 27th Street Crossing / Brentwood chrome-only **rejected** (H1 visible; empty-state `No active listings in {plat} right now`). 1880 Ranch / 27th Street Addition chrome-only **rejected** (H1 + plat listing door). Crooked River Ranch no listing door **rejected** (`See Crooked River Ranch homes` → `#homes` and `/homes-for-sale/terrebonne/crooked-river-ranch`; 9 listing hrefs). ArrivalIntent overlay on first visit is residual (do not remount).
+- No class-fix. Prior plat empty-state + community listing doors already hold. Probe `scripts/probe-place-pages-punch-v9.mjs` + `scripts/probe-place-pages-shots-v9.mjs`.
+- Shots `/opt/cursor/artifacts/before_place_v9_{aero,anderson,crr,ranch1880,park27,addition27,crossing27,brentwood}_{390,1280}_top.png` plus CRR after-dismiss.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-110/R-111/R-123, SITE_PAGE_STANDARD §1, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — seller valuation name + 24h + Places overlay slice
 
 **Surface:** Cursor cloud `bc-53dadb0e` (`cursor/loop-chain-2026-08-17t23-20-af1f`). **Time:** 2026-08-18 ~00:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:seller` (8 of 372). Claimed parent only. Product **`109af2b3b`** landed on **`main`**. Vercel Production **READY** for `109af2b3b` (`47HoMGUP4L9YwxA2hsu8LBmjHrYB`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (364 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
