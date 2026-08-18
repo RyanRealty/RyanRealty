@@ -167,7 +167,7 @@ The winning angle becomes the single idea that the ad, LP, and CRM all carry.
   - Objection-handling section that answers the brief's #1 fear with a fact.
   - Real testimonials via `lib/testimonials.ts` / ReviewCard — never "[insert testimonial]".
 - **Form fields:** the minimum that still qualifies (address + timeline + contact). Each
-  field justified. Honor known-visitor prefill (`app/actions/fub-identity-bridge.ts`).
+  field justified. Honor known-visitor prefill on the seller LP form.
 
 ### C) The CRM follow-up (architecture: `lib/crm/enroll.ts`, `/admin/crm/sequences`)
 Leads write through `sendEvent()` in `lib/crm/send-event.ts`. Enrollment is

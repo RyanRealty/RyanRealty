@@ -109,7 +109,7 @@ interface ReputationPayload {
 interface ReputationActionRow {
   id: string;
   action_type: string;           // 'ops:review_response' | 'ops:review_request' | etc.
-  target: string;                // 'gbp:location:<location_id>' or 'fub:person:<id>'
+  target: string;                // 'gbp:location:<location_id>' or 'crm:person:<id>'
   assigned_producer: string;     // 'marketing_brain_skills/producers/ops-reputation'
   payload: ReputationPayload;
   data_evidence: {
@@ -219,7 +219,7 @@ Loads the client record from the CRM by `lead_ids[0]`:
 ```
 GET crm_people by id (lib/crm/)
     ?fields=id,firstName,lastName,name,emails,stage,closeDate
-# do not call FOLLOWUPBOSS_* — CRM is in-house
+# do not call FOLLOWUPBOSS_* . CRM is in-house
 ```
 
 Compose the email using the voice guidelines (warm, specific, no pressure):

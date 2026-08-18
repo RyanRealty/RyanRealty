@@ -157,16 +157,16 @@ WHERE post_queue_id = $post_queue_id;
 
 ### Step 3 — Anti-engagement-bait de-ranking
 
-Before format aggregation, apply the FUB-capture check:
+Before format aggregation, apply the CRM-capture check:
 ```typescript
 for (const post of scoredPosts) {
-  // Pull FUB clicks attributed to this post
-  const fubClicks = await getFubClicksForPost(post.post_queue_id);
-  if (post.score > SCORE_HIGH_THRESHOLD && fubClicks === 0) {
+  // Pull crm_people rows attributed to this post (source / tags)
+  const crmLeads = await getCrmLeadsForPost(post.post_queue_id);
+  if (post.score > SCORE_HIGH_THRESHOLD && crmLeads === 0) {
     // High engagement score but zero lead capture:
     // De-rank by 40% of score — still counts, but doesn't dominate the mix
     post.adjusted_score = post.score * 0.6;
-    post.deranked_reason = 'high_engagement_zero_fub';
+    post.deranked_reason = 'high_engagement_zero_crm';
     await logDerank(post);
   } else {
     post.adjusted_score = post.score;
@@ -174,15 +174,15 @@ for (const post of scoredPosts) {
 }
 ```
 
-FUB click attribution: check `engagement_inbox` for FUB pushes referencing this post's
-`post_queue_id` in `post_queue_id` column, within 72 hours of publish.
+CRM lead attribution: check `crm_people` source/tags (and `/admin/crm`) for captures
+referencing this post within 72 hours of publish. Do not call a vendor CRM.
 
 ### Step 4 — Aggregate format_performance
 
 ```sql
 INSERT INTO format_performance
   (format_tag, platform, period_days, p50_score, p90_score,
-   post_count, avg_reach, avg_saves, avg_shares, avg_fub_clicks,
+   post_count, avg_reach, avg_saves, avg_shares, avg_crm_leads,
    computed_at)
 SELECT
   pq.format_tag,
@@ -194,7 +194,7 @@ SELECT
   AVG(pp.reach)  AS avg_reach,
   AVG(pp.saves)  AS avg_saves,
   AVG(pp.shares) AS avg_shares,
-  0              AS avg_fub_clicks,   -- updated below
+  0              AS avg_crm_leads,   -- updated below
   now()          AS computed_at
 FROM post_queue pq
 JOIN post_performance pp ON pp.post_queue_id = pq.id
@@ -255,7 +255,7 @@ For each: call `update_ab_variant_metrics()` RPC (defined in `ab_testing/SKILL.m
 // Resend email with:
 // - Top 3 posts of the week (by adjusted_score)
 // - Format mix recommendation for next week
-// - Any deranked posts (high engagement, zero FUB) flagged for review
+// - Any deranked posts (high engagement, zero CRM leads) flagged for review
 // - A/B test winner declarations from the past week
 await resend.emails.send({
   from: 'automation@ryan-realty.com',
@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS format_performance (
   avg_reach     numeric(12,2),
   avg_saves     numeric(10,2),
   avg_shares    numeric(10,2),
-  avg_fub_clicks numeric(10,2),
+  avg_crm_leads numeric(10,2),
   computed_at   timestamptz NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS format_performance_unique_idx
@@ -315,7 +315,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS platform_baselines_unique_idx
 
 
 - **Rule 5 — No engagement-bait optimization.** Step 3 de-ranks any high-score post with zero
-  FUB lead capture. The system optimizes for lead generation, not vanity engagement.
+  CRM lead capture (`crm_people`). The system optimizes for lead generation, not vanity engagement.
 - **Full audit log.** `content_mix_log` is append-only and never deleted. Matt can see exactly
   what drove every format mix decision.
 - **No auto-apply of mix.** The `content_mix_log` is a recommendation. `social_calendar` reads
@@ -354,10 +354,10 @@ export const PERFORMANCE_LOOP_CONFIG = {
     top_quartile: 0.40, second_tier: 0.30, experimentation: 0.20, retest_bottom: 0.10,
   },
 
-  // FUB-zero de-rank multiplier
-  fub_zero_derank_factor: 0.60,
+  // CRM-zero de-rank multiplier
+  crm_zero_derank_factor: 0.60,
 
-  // Score threshold above which FUB check is triggered
+  // Score threshold above which CRM lead check is triggered
   score_high_threshold: 0.70,
 
   // Lookback windows for format aggregation (days)
@@ -403,5 +403,5 @@ GET /api/cron/performance-loop?force=true&since=2026-04-20T00:00:00Z
 
 - `automation_skills/automation/post_scheduler/SKILL.md` — `post_performance` table
 - `automation_skills/automation/ab_testing/SKILL.md` — metrics fed into ab_test_variants
-- `automation_skills/automation/engagement_bot/SKILL.md` — FUB click attribution
+- `automation_skills/automation/engagement_bot/SKILL.md` — killed; live capture is `sendEvent` → `crm_people`
 - `video_production_skills/social_calendar/SKILL.md` — reads content_mix_log on Mondays

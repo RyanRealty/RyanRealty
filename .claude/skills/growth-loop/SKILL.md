@@ -13,7 +13,7 @@ This is Loop 1 of the five-loop topology in `docs/DEVELOPMENT_PROCESS.md` §Loop
 
 - Page content, titles/meta, on-page depth (thin → thick), internal linking
 - AI visibility: `app/llms.txt/route.ts`, JSON-LD coverage via `lib/site/json-ld.ts` + `MetadataBlock`, sitemap/robots/canonicals
-- Conversion surfaces: CTAs, forms-to-FUB money paths, UX friction on ranking pages
+- Conversion surfaces: CTAs, forms-to-`crm_people` (`sendEvent`) money paths, UX friction on ranking pages
 - Core Web Vitals on hot routes
 - The competitor benchmark (rankings / CTR / conversion vs named local competitors)
 - Cross-loop arbitration (this session is the orchestrator — see §Arbitration)
@@ -29,7 +29,7 @@ NOT owned: page *structure* under active Experience migration (frozen — check 
 4. Query `site_improvement_ledger` via `listOpenImprovementWindows` / `getChangeClassConfidence` from `lib/data/loop/` (not the `@/lib/data` barrel — file-size budget). Open experiments, their windows, anything whose window closed and needs its `actual_delta` written (that is a Learn step and takes priority over starting new work). Every new row must set `domain` from `COMPANY_IMPROVEMENT_DOMAINS`. A new statistic that reporting, newsletters, CMA, or ads will show must be one DAL function, not a second query.
 
 ### 1. Ingest the scoreboard
-Pull fresh — never from memory: GA4 (sessions, conversions, bounce by surface), Search Console (impressions, clicks, CTR, position by query and page), `web_vitals` by route, Meta/ads CPL by LP (read-only — actions on spend belong to Demand), FUB leads by source, competitor positions on target queries. Sources: the `site_signal` view and the `agent_insights` / marketing snapshot tables populated by the substrate crons (`marketing-snapshot-ga4`, `marketing-snapshot-gsc`, etc.). Respect data-access discipline: schema snapshot + DAL index first, no ad-hoc fishing.
+Pull fresh — never from memory: GA4 (sessions, conversions, bounce by surface), Search Console (impressions, clicks, CTR, position by query and page), `web_vitals` by route, Meta/ads CPL by LP (read-only — actions on spend belong to Demand), CRM leads by source (`crm_people` / `/admin/crm`), competitor positions on target queries. Sources: the `site_signal` view and the `agent_insights` / marketing snapshot tables populated by the substrate crons (`marketing-snapshot-ga4`, `marketing-snapshot-gsc`, etc.). Respect data-access discipline: schema snapshot + DAL index first, no ad-hoc fishing.
 
 **`site_signal` scope contract (locked 2026-06-10):** per-page analysis MUST filter `scope='page'`. Scope-level rollups carry `surface='site:<scope>'` (e.g. `site:account` = GSC site-wide daily totals) and must never enter per-page aggregations. GSC query-level rows are `scope='campaign'` with `surface='query:<q>'`. GSC page/query coverage is top-25-per-day only — a page outside the daily top 25 has no rows, so absence is not zero.
 

@@ -23,7 +23,7 @@ Audits the in-house CRM and lead-handling pipeline. Produces a `CRMAuditReport` 
 
 All data reads from `public.marketing_channel_daily` where `channel = 'fub'`.
 
-Written by `app/api/cron/marketing-snapshot-fub/route.ts` (via `lib/fub-snapshot.ts`).
+Written by the CRM snapshot cron (`app/api/cron/marketing-snapshot-fub/route.ts`; legacy path name). Do not call a vendor CRM API.
 
 ### Account-scope metrics (scope='account', scope_id='')
 

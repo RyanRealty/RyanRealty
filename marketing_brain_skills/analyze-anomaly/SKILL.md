@@ -241,7 +241,7 @@ Based on findings, produce up to 3 recommended actions. Each maps to a valid
 | Creative fatigue on top campaign | `content:fb_lead_gen_ad` | New creative for that campaign |
 | Organic query losing position | `content:seo_blog` or `site:seo_fix` | Target the lost query with new or updated content |
 | Traffic source diversification opportunity | `content:blog_post` | Reduce dependency on flagged source |
-| Lead source quality drop | `ops:fub_audit` | Investigate tag/stage assignments |
+| Lead source quality drop | `ops:crm_audit` | Investigate tag/stage assignments at `/admin/crm` |
 
 ```typescript
 interface RecommendedAction {

@@ -76,7 +76,7 @@ through the FB app.
 - **FB Lead Gen ads.** Handled by `social_media_skills/facebook-lead-gen-ad/` + `ops-meta-ads`.
 - **IG / TikTok / X captions.** Handled by `ig-single-post` and siblings. Marketplace prose is its own register (no hashtags, no link-in-bio, plain factual).
 - **Pricing analysis / CMA.** Producer trusts `ListPrice` from Supabase.
-- **Lead capture from inquiries.** Marketplace messages land in Matt's FB Messenger.  `ops-fub-crm` + the Messenger forwarding integration handle inbound leads.
+- **Lead capture from inquiries.** Marketplace messages land in Matt's FB Messenger. Capture via `sendEvent` → `crm_people`. Review at `/admin/crm`. `ops-fub-crm` is a refuse stub.
 
 ---
 

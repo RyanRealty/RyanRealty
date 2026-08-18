@@ -648,7 +648,7 @@ Run before surfacing. Write to `design_scorecard.json`. Any `fail` = non-ship un
 | 18 | No links in caption | `caption.md` body contains zero `http://` / `https://` / `www.` URLs (LinkedIn deprioritizes link posts; document IS the artifact) |
 | 19 | Broker resolution | List agent / list_agent_slug resolves to one of three brokers; headshot file exists |
 | 20 | File size | `carousel.pdf` < 10 MB (LinkedIn document upload soft limit; 100 MB hard limit, but stay well under) |
-| 21 | CTA route | Slide n contact line uses `541.703.3095` (FUB-tracked bio phone).  NOT `541.213.6706` (direct line). Per CLAUDE.md voice rules: bio phone for inbound lead capture |
+| 21 | CTA route | Slide n contact line uses `541.703.3095` (tracked inbound bio phone).  NOT `541.213.6706` (direct line). Per CLAUDE.md voice rules: bio phone for inbound lead capture |
 
 Photo slides may be downgraded to cream-only if no MLS-traced or documentary photo is available.
 NEVER stand in an AI-generated photo.
@@ -736,7 +736,7 @@ declarative claims, every claim cited. Reference: `marketing_brain_skills/brand-
 - Percentages: one decimal, signed arrow: `↑ 2.1% YoY` / `↓ 8.0% vs Bend SFR`.
 - Days: integer + "days": `38 days`.
 - Unavailable data: em-dash `. ` placeholder (the only allowed em-dash usage).
-- Phone (CTA slide): `541.703.3095` (dotted, FUB-tracked bio phone).
+- Phone (CTA slide): `541.703.3095` (dotted, tracked inbound bio phone).
 - Web: `ryan-realty.com` (hyphenated lowercase).
 
 **Banned vocab (zero tolerance.  see `marketing_brain_skills/brand-voice/VOICE.md` for the full union):**

@@ -65,7 +65,7 @@ job ends at "Matt approves the draft package."
 |---|---|
 | `CLAUDE.md` §0.  Data Accuracy | All numbers trace to live Supabase. Outranks every other rule. |
 | `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Render to `out/`, surface, wait for approval. Outranks every other rule. |
-| `CLAUDE.md` "Voice + content" | Voice rules; FUB-tracked bio phone `541.703.3095`; banned vocab. |
+| `CLAUDE.md` "Voice + content" | Voice rules; tracked inbound bio phone `541.703.3095`; banned vocab. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register, navy `#102742` on cream `#faf8f4`, Amboqia/Geist, headshots. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
 | `marketing_brain_skills/brand-voice/VOICE.md` | Banned vocab union; voice attributes. |
@@ -227,8 +227,8 @@ Substitutions:
 - `<expected_active_date_pretty>`.  `<Month> <day>` (e.g. "May 17"). No year if same year.
 - `<ListAgentFirstName>`.  resolved listing agent (Step 3).
 
-**Phone.** FUB-tracked bio phone `541.703.3095` only.  this note IS a lead-capture surface, so
-calls route through Follow Up Boss for attribution.
+**Phone.** Tracked inbound bio phone `541.703.3095` only.  this note IS a lead-capture surface, so
+calls land on `crm_people` via the inbound SMS/voice path (`sendEvent` / `/admin/crm`).
 
 **Voice rules (HARD).** Warm but specific.  sounds genuinely written, not "marketing." "We"
 for brokerage voice (never "I" except in a Matt-authored `custom_message`). Zero exclamation
@@ -356,7 +356,7 @@ Neighbor outreach note ready for review.  <StreetNumber> <StreetName>, <City>
   NOTE TEXT (~80 words, signed by <ListAgentFirstName>)
     Path: out/neighbor-note/<slug>/note-text.md
     Word count: 78 ✓ (50-90 band)
-    Voice check: pass · Phone: 541.703.3095 (FUB-tracked) ✓
+    Voice check: pass · Phone: 541.703.3095 (tracked inbound) ✓
 
     > Hi neighbor.  We're listing NW Riverview Drive in a few days. You
     > probably know someone who wants to live in your neighborhood. 
@@ -416,7 +416,7 @@ pending → in_production → ready → approved → executed → measured
 - `ready → approved` only on Matt's explicit "ship it" / "approved" / "go."
 - `approved → executed` after files move to `public/marketing-collateral/neighbor-notes/<slug>/`
   and the listing agent is notified.
-- `executed → measured` after 14 d (FUB inbound calls tagged `neighbor-note-<slug>` write to
+- `executed → measured` after 14 d (inbound calls tagged `neighbor-note-<slug>` write to
   `content_performance`).
 
 SQL transitions:
@@ -447,7 +447,7 @@ Any `fail` = non-ship.
 | 4 | Punctuation clean | Zero `!`, zero `;`, zero em-dashes in body (single greeting "Hi neighbor. " allowed) |
 | 5 | Listing agent | Resolved to `matt-ryan` / `paul-stevenson` / `rebecca-peterson`; headshot PNG on disk |
 | 6 | Expected Active in future | `expected_active_date_iso > now()` |
-| 7 | Phone is FUB-tracked | Note + flyer footer use `541.703.3095`, never `541.213.6706` |
+| 7 | Phone is tracked inbound | Note + flyer footer use `541.703.3095`, never `541.213.6706` |
 | 8 | QR target reachable | HTTP HEAD on `https://ryan-realty.com/listings/<mls_id>` returns 200 (or 301→200) |
 | 9 | All figures traced | Every number on note or flyer has a row in `citations.json` |
 | 10 | Brand compliance | Navy `#102742` + cream `#faf8f4` only (no gold); Amboqia + Geist from disk (no system fallback); flyer uses `logo-blue.png` (not re-typeset) |
@@ -503,7 +503,7 @@ Producer), row `neighbor-outreach-note`.
    AND exact address match. **Never invent neighbor addresses** to pad to N.  surface the gap.
 3. **Never widen the radius silently.** Closest 20 addresses > 0.5 mile out → surface (this
    would mail "neighborhood" outreach across a freeway or river).
-4. **Never use `541.213.6706`.** This is a lead-capture surface.  FUB-tracked `541.703.3095`
+4. **Never use `541.213.6706`.** This is a lead-capture surface.  tracked inbound `541.703.3095`
    only.
 5. **Never use exclamation marks, em-dashes in body, or semicolons.** Single greeting em-dash
    "Hi neighbor. " is the one allowance.

@@ -118,15 +118,15 @@ is folded into rung 6.
 8. **Communications log — verified inside the CRM** (Matt directive) — the
    per-deal timeline of emails + texts must surface AND reconcile in the CRM
    person/deal view, not only on the TC deal page. Coordinate with the parallel
-   `crm_*` session: join deal parties → `crm_people` (FUB ids), reuse
+   `crm_*` session: join deal parties → `crm_people` ids, reuse
    `crm_timeline` rather than building a second comm store; capture deal-matched
-   emails from non-FUB parties (escrow/title/lender) directly. Each iteration
+   emails from escrow/title/lender directly. Each iteration
    that touches this also VERIFIES the loop is closing end to end: an inbound
    email/message that belongs to a deal actually produces (a) a logged
-   conversation entry visible in the CRM and (b) any attached document created
+   conversation entry visible in `/admin/crm` and (b) any attached document created
    + filed to the right checklist item. If either half isn't happening, that's
-   the bug to fix this iteration. Texts partial (FUB-channel only — see
-   `project_tc_comms_log_and_email_watch`).
+   the bug to fix this iteration. Texts go through the in-house Twilio path
+   (`project_tc_comms_log_and_email_watch`).
 9. **Production form blanks** — pull Matt's licensed OREF/ODS/OR blanks through
    his Chrome session (`reference_skyslope_forms_api`) so production supersedes
    the samples. Needs his live SkySlope Forms session — do only when available.
@@ -244,7 +244,7 @@ Build discipline:
   email send) are draft-first: surface to Matt, wait for explicit approval.
   Nothing reaches a client without his review gate (north star).
 - Update `docs/TC_SYSTEM.md` roadmap status + `docs/plans/CROSS_AGENT_HANDOFF.md`
-  so the CRM session stays coordinated (link through FUB person ids, not a
+  so the CRM session stays coordinated (link through `crm_people` ids, not a
   second person store).
 
 ## Step 5 — report or stay quiet

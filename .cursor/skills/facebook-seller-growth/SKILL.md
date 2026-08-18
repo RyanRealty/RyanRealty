@@ -1,6 +1,6 @@
 ---
 name: facebook-seller-growth
-description: Unified online growth routine for Ryan Realty across Facebook ads, website analytics, Follow Up Boss outcomes, and organic social growth. Use when running weekly growth optimization, generating execution packets, updating ad strategy, or deciding site and social improvements from data.
+description: Unified online growth routine for Ryan Realty across Facebook ads, website analytics, in-house CRM (`crm_people`) outcomes, and organic social growth. Use when running weekly growth optimization, generating execution packets, updating ad strategy, or deciding site and social improvements from data.
 when_to_use: Use when the user asks for one routine that continuously improves ads, web presence, and social growth; asks for a Claude cloud routine; wants autonomous optimization loops; or asks how to convert analytics into platform growth actions.
 ---
 
@@ -12,7 +12,7 @@ One merged growth routine that:
 
 1. Optimizes Facebook paid seller acquisition
 2. Optimizes website conversion performance
-3. Optimizes CRM outcome quality (Follow Up Boss)
+3. Optimizes CRM outcome quality (`public.crm_people` via `sendEvent`, review at `/admin/crm`)
 4. Optimizes organic social growth using the same analytics signal
 
 This is the canonical routine for cloud and local agent runs in this project (**tracked** under `.cursor/skills/`). A non-gitignored copy may also exist under `~/.claude/skills/` on developer machines; prefer this path so every clone sees the same file.
@@ -21,7 +21,7 @@ This is the canonical routine for cloud and local agent runs in this project (**
 
 Agents are expected to load these **in order** when Matt asks for anything marketing-specific or advertising-related:
 
-1. **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** — End-to-end architecture (Meta → site → CAPI → FUB → Supabase → Vercel crons). **Canonical for how the system actually works.** Regenerate the browsable HTML with `node scripts/build-pipeline-doc-html.mjs` → `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.html`.
+1. **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** — End-to-end architecture (Meta → site → CAPI → `sendEvent` / `crm_people` → Supabase → Vercel crons). **Canonical for how the system actually works.** Regenerate the browsable HTML with `node scripts/build-pipeline-doc-html.mjs` → `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.html`.
 2. **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** — Launch checklist, campaign structure, lead form spec, verification cadence.
 3. **`social_media_skills/facebook-lead-gen-ad/SKILL.md`** — When the task is ad creative, lead form fields, or Meta Ads Manager steps for lead-gen units.
 
@@ -40,7 +40,7 @@ Also indexed from **`AGENTS.md`** (Skills list), **`CLAUDE.md`** (Skill Routing 
 - Meta paid performance (delivery + conversion)
 - GA4 acquisition and funnel signals
 - Website seller funnel conversion checkpoints
-- Follow Up Boss downstream quality signals
+- In-house CRM (`crm_people`) downstream quality signals at `/admin/crm`
 - Prior cycle learnings in **`docs/marketing/facebook-seller-growth-LEARNINGS.md`**
 - Automated packet in `agent_insights` (`insight_type = marketing_optimization_weekly`) when available
 
@@ -127,13 +127,13 @@ For Claude cloud or UI paste routines, use **`docs/marketing/facebook-seller-gro
 | `120244161526200698` | RR MLS — 97703 Property Owners | 7,178 | same |
 | `120244161528410698` | RR MLS — Absentee Owners (Bend area) | 1,619 | same |
 | `120244223033600698` | RR Database — Targetable (no realtors/compliance/test) | 10,164 | `scripts/meta-rebuild-fub-audiences.mjs` |
-| `120244223042110698` | RR FUB Hard-Stop Exclusion (realtors+compliance+test) | 3,023 | same — universal exclusion |
+| `120244223042110698` | RR Hard-Stop Exclusion (realtors+compliance+test; Ads Manager label may still say FUB) | 3,023 | same — universal exclusion |
 | `120244223729930698` | AUD-CORE-Sellers-180d (WCA) | n/a | `scripts/meta-build-campaign-shells.mjs` |
 | `120244223730320698` | AUD-CORE-Sellers-14d (WCA) | n/a | same |
 | `120244223731130698` | AUD-CORE-Converters-365d (WCA) | n/a | same — universal exclusion |
 | `120244223731190698` | AUD-LAL-1pct-Targetable (standard LAL) | n/a | same — NOT yet HOUSING-compatible, see below |
 
-`120243107433010698` "FUB Suppression — All Current Contacts" is legacy/superseded by the Hard-Stop exclusion above.
+`120243107433010698` "Suppression — All Current Contacts" (legacy Ads Manager label) is superseded by the Hard-Stop exclusion above.
 
 ### Live campaign shells (PAUSED, HOUSING-compliant, no creative attached)
 
@@ -181,7 +181,7 @@ Re-run `node scripts/ga4-admin-setup.mjs --dry-run` any time to verify state (sh
 - `/admin/reports/lead-flow` — funnel with wiring health
 - `/admin/reports/traffic-sources` — GBP attribution gap + untagged channels
 - `/admin/analytics/meta-health` — pixel/form/webhook/spend
-- `/admin/people` (index) + `/admin/people/[fubPersonId]` (single-pane-of-glass)
+- `/admin/crm` (people index + person pane)
 
 ### Outstanding UI-only items (API has no path)
 

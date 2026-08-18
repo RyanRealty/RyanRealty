@@ -56,7 +56,7 @@ One source asset flows through a five-tier system:
 
 2. **Google Business "What's New"**: Upload one still image from the listing (most striking view). Add 150-character caption. Google Business visibility feeds local search and Maps results. Example caption: "NEW LISTING: Stunning Tumalo acreage with mountain views. $1.6M. Schedule your tour."
 
-3. **Email Listing Announcement**: Send to Follow Up Boss lead list. Use one Reel thumbnail as hero image, embed the Reel video link (or YouTube link). Shorter email body: 2-3 sentences hook, video embed, button link to full listing.
+3. **Email Listing Announcement**: Send to the `crm_people` buyer/seller segment via Resend (review the list at `/admin/crm`). Use one Reel thumbnail as hero image, embed the Reel video link (or YouTube link). Shorter email body: 2-3 sentences hook, video embed, button link to full listing.
 
 **Tier 5 Archive**: Save listing slug (`tumalo_19496_reel_april2026.mp4` + captions file) for seasonal refresh. November: resend email "Still Available: Tumalo Acreage" with same Reel. Summer: create "6 Months on Market" follow-up video using same footage.
 
@@ -92,7 +92,7 @@ One source asset flows through a five-tier system:
    
    Full analysis: [link]"
 
-2. **Weekly Email (Follow Up Boss cadence)**: Lead with the stat as subject line or preview text. Body: 2-3 sentence explanation. Embed the Reel link. CTA: "Read the full market report."
+2. **Weekly Email (CRM sequence cadence)**: Lead with the stat as subject line or preview text. Body: 2-3 sentence explanation. Embed the Reel link. CTA: "Read the full market report."
 
 3. **Newsletter Bullet**: If Matt sends a weekly newsletter, stat becomes one bullet under "This Week in Bend Real Estate."
 

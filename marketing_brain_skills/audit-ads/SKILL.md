@@ -86,7 +86,7 @@ Returns account-level and per-role `BudgetEfficiency`. Unknown-role campaigns ar
 
 Compares Meta Ads `conversions` (sum of `lead` + `offsite_conversion.fb_pixel_purchase` action events, stored as the `conversions` metric) against CRM `qualified_seller_leads` for the same window.
 
-**Tracking gap = |meta_conversions - fub_qualified_leads| > 30% of meta_conversions.**
+**Tracking gap = |meta_conversions - crm_qualified_leads| > 30% of meta_conversions.**
 
 A large gap signals a Pixel misconfiguration, a CRM inbound (`sendEvent`) failure, or a Meta attribution discrepancy.
 

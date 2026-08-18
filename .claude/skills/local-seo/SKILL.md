@@ -24,7 +24,7 @@ This loop owns the layer the growth-loop does NOT: Google Business Profile, the 
 |---|---|---|
 | Legal/DBA name | Ryan Realty (exactly — no keyword suffix, ever) | gbp SKILL §2 NAP rule |
 | Address | 115 NW Oregon Avenue, Bend, OR 97703 | site JSON-LD, `app/lp/bend/page.tsx` |
-| Citation phone | 541.703.3095 (FUB-tracked — canonical on GBP + every directory so inbound attributes) | design system §Voice; `lib/listing-cta.ts` |
+| Citation phone | 541.703.3095 (tracked inbound bio phone — canonical on GBP + every directory so inbound attributes) | design system §Voice; `lib/listing-cta.ts` |
 | Website | https://ryan-realty.com | canon |
 | Email | matt@ryan-realty.com | canon |
 | Business license | Ryan Realty LLC #201253677, founded 2023-06-21 (OREA-authoritative) | memory `reference_orea_license_records` |

@@ -1,6 +1,6 @@
 ---
 name: facebook-lead-gen-ad
-description: Create and launch Facebook Lead Generation ads with native FB lead forms that route captured leads to Follow-Up Boss (FUB) for nurture. Use this skill whenever the user requests a Facebook ad, says "make a Facebook ad for [topic]", "launch the FB ad for the market report", "boost this on Facebook" (note: redirect to lead-gen, not boost.  see §1), "create a lead-gen campaign", or asks for paid social with form-based lead capture. Use this skill ALWAYS when the monthly-market-report-orchestrator routes deliverable #4. The locked default for monthly market reports is a Lead Generation ad (not boosted post, not traffic ad) because the report itself is the lead magnet.  see §2 for the rationale. This skill creates the ad, attaches the form, sets targeting and budget, and surfaces it as a draft for Matt's "go" before launch.
+description: Create and launch Facebook Lead Generation ads with native FB lead forms that route captured leads to the in-house CRM (`public.crm_people` via `sendEvent`) for nurture. Use this skill whenever the user requests a Facebook ad, says "make a Facebook ad for [topic]", "launch the FB ad for the market report", "boost this on Facebook" (note: redirect to lead-gen, not boost.  see §1), "create a lead-gen campaign", or asks for paid social with form-based lead capture. Use this skill ALWAYS when the monthly-market-report-orchestrator routes deliverable #4. The locked default for monthly market reports is a Lead Generation ad (not boosted post, not traffic ad) because the report itself is the lead magnet.  see §2 for the rationale. This skill creates the ad, attaches the form, sets targeting and budget, and surfaces it as a draft for Matt's "go" before launch.
 output_type: paid-ad
 target_platforms: ["fb_feed", "ig_feed"]
 asset_destination: Supabase asset-library bucket + Meta Ads Manager (after publish)
@@ -32,11 +32,11 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 
 ---
 
-**Scope:** Generate Meta (Facebook + Instagram) Lead Generation ad campaigns where the market report content acts as the lead magnet. Captures leads via FB native lead form → routes to Follow-Up Boss (FUB) for nurture. Locked default for the `monthly-market-report-orchestrator` deliverable #4.
+**Scope:** Generate Meta (Facebook + Instagram) Lead Generation ad campaigns where the market report content acts as the lead magnet. Captures leads via FB native lead form → routes to `crm_people` via `sendEvent` (`lib/crm/send-event.ts`) for nurture. Review at `/admin/crm`. Locked default for the `monthly-market-report-orchestrator` deliverable #4.
 
 **Status:** Canonical 2026-05-07 per Matt directive.  Lead Generation is the default ad type for monthly market reports.
 
-**Repo wiring:** Before proposing URLs, webhooks, UTMs, or server-side events, read **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** (live pipeline: pixel, CAPI, FUB, Supabase, weekly crons). For seller-acquisition launch specifics use **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`**.
+**Repo wiring:** Before proposing URLs, webhooks, UTMs, or server-side events, read **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** (live pipeline: pixel, CAPI, `sendEvent` → `crm_people`, Supabase, weekly crons). For seller-acquisition launch specifics use **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`**.
 
 ---
 
@@ -54,7 +54,7 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 - Retargeting campaigns (separate skill.  different audience strategy)
 - Awareness / brand-only campaigns (no lead capture goal)
 
-**If the user says "boost this on Facebook":** clarify with them. Boosted posts grow reach but don't capture leads. For monthly market reports, Lead Generation is the locked default because the goal is FUB-routed lead capture. Confirm intent before defaulting to a boost.
+**If the user says "boost this on Facebook":** clarify with them. Boosted posts grow reach but don't capture leads. For monthly market reports, Lead Generation is the locked default because the goal is CRM-routed lead capture. Confirm intent before defaulting to a boost.
 
 ---
 
@@ -64,9 +64,9 @@ A piece of content that ships without consulting BOTH of these is non-compliant.
 |---|---|
 | **Boosted post** | Cheapest, highest reach. But: NO lead capture. Reach without a list-build is wasted on monthly reports.  you've already built awareness, you need conversion. |
 | **Traffic ad** (drive clicks to blog) | Decent for SEO + awareness. But: lead capture happens on the blog only IF the visitor opts into a popup or form. Form friction is high (typing on mobile in browser). Lead-gen ads pre-fill the form with FB profile data.  near-zero friction. |
-| **Lead Generation ad** (LOCKED DEFAULT) | The market report is the lead magnet. Form pre-fills with name/email/phone from the user's FB profile. They tap "Submit" once.  done. Lead lands in FUB seconds later for nurture. The audience is already in market.  they just watched a 30s reel about Bend real estate. Conversion rate ≈ 8-15% vs traffic ad ≈ 1-2%. |
+| **Lead Generation ad** (LOCKED DEFAULT) | The market report is the lead magnet. Form pre-fills with name/email/phone from the user's FB profile. They tap "Submit" once.  done. Lead lands in `crm_people` seconds later for nurture (webhook → `sendEvent`). The audience is already in market.  they just watched a 30s reel about Bend real estate. Conversion rate ≈ 8-15% vs traffic ad ≈ 1-2%. |
 
-**Rationale:** Top-of-funnel = capture intent at the moment of highest interest. The market report does the awareness lift; the ad's job is the email-capture conversion. FUB then runs the nurture (drip emails, listing alerts, eventual handoff to Matt for showings).
+**Rationale:** Top-of-funnel = capture intent at the moment of highest interest. The market report does the awareness lift; the ad's job is the email-capture conversion. The in-house sequence engine (`/admin/crm/sequences`, `lib/crm/enroll.ts`) runs the nurture (drip emails, listing alerts, eventual handoff to Matt for showings).
 
 ---
 
@@ -79,13 +79,9 @@ META_PAGE_ID=<your-FB-page-id>                # Ryan Realty FB page
 META_APP_TOKEN=<long-lived-app-access-token>
 META_PAGE_TOKEN=<long-lived-page-access-token>  # already verified live per CLAUDE.md
 META_FB_LEAD_FORM_TEMPLATE_ID=<form-template>   # see §5
-FUB_API_KEY=<follow-up-boss-API-key>
-FUB_PIPELINE_ID=<lead-pipeline-id>              # which FUB pipeline new leads enter
 ```
 
 If `META_AD_ACCOUNT_ID` is missing, halt with: "Meta Ad Account ID not configured. Find it at Ads Manager → Account Overview → Account ID. Add to `.env.local` as `META_AD_ACCOUNT_ID=act_XXXXXXXXX`."
-
-If `FUB_API_KEY` is missing, halt with: "Follow-Up Boss API key not configured. Generate at FUB → My Settings → API → Generate New Key. Add to `.env.local`."
 
 ---
 
@@ -109,7 +105,7 @@ Meta Ads Manager has 3 levels: Campaign → Ad Set → Ad. The lead-gen pattern 
   - Age: 25-65 (Housing category enforces ≥18, no upper-age targeting nuance)
   - Gender: All
   - Detailed targeting: interests in `Real estate`, `Home buying`, `Mortgage`, `Real estate investing`. EXCLUDE: agents/brokers (interest in `Real estate agent` job role).
-  - Lookalike audience: 1% lookalike based on the FUB-imported "engaged buyers" custom audience (if available.  falls back to interest targeting only)
+  - Lookalike audience: 1% lookalike based on the CRM-imported "engaged buyers" custom audience from `crm_people` (if available.  falls back to interest targeting only)
 
 ### 4.3 Ad creative
 - **Format:** Video ad (the short-form vertical reel from `market-data-video/SKILL.md`)
@@ -199,37 +195,19 @@ Form ID returned.  store in `.env.local`. Reuse across campaigns by passing the 
 
 ---
 
-## 6. FUB integration (lead routing)
+## 6. CRM integration (lead routing)
 
-Meta posts each new lead to a **Lead Ads webhook**. Wire the webhook to a Vercel API route:
+Meta posts each new lead to a **Lead Ads webhook**. The live route is already wired:
 
 ```
 POST https://ryanrealty.vercel.app/api/meta/lead-webhook
 ```
 
-That route:
+That route (`app/api/meta/lead-webhook/route.ts`):
 1. Verifies the webhook signature (`X-Hub-Signature-256` against `META_APP_SECRET`)
 2. Fetches the lead details from `/v18.0/{lead-id}` using `META_PAGE_TOKEN`
-3. Creates a contact in FUB via the FUB API:
-   ```
-   POST https://api.followupboss.com/v1/people
-   Authorization: Basic {base64(FUB_API_KEY:)}
-
-   {
-     "firstName": "{first_name}",
-     "lastName": "{last_name}",
-     "emails": [{"value": "{email}", "type": "Primary"}],
-     "phones": [{"value": "{phone}", "type": "Mobile"}],
-     "source": "Facebook Lead Ad.  Bend Market Report April 2026",
-     "tags": ["FB Lead Ad", "Market Report"],
-     "stage": "Lead",
-     "customFields": {
-       "buySellIntent": "{buy_sell_intent}",
-       "campaign": "{campaign-name}"
-     }
-   }
-   ```
-4. Triggers FUB's drip campaign for new market-report leads
+3. Captures the person in `public.crm_people` via `sendEvent` in `lib/crm/send-event.ts` (email-first dedupe through `ensureNativeLead`). Do not call a vendor CRM. Do not set `FOLLOWUPBOSS_API_KEY`.
+4. Enriches tags + origin note; hot leads get a native CRM task. Review the person at `/admin/crm`. Sequences enroll through `lib/crm/enroll.ts` / `/admin/crm/sequences`.
 
 **Webhook config in Meta:** App Dashboard → Webhooks → Page → subscribe to `leadgen` field. Set callback URL to the Vercel route. Verify on first save.
 
@@ -281,7 +259,7 @@ That route:
    
    Form fields: First name, Last name, Email, Phone, Intent (buy/sell/both/exploring)
    
-   On approval: status PAUSED → ACTIVE, leads route to FUB pipeline {pipeline-id}.
+   On approval: status PAUSED → ACTIVE, leads route to `crm_people` via `/api/meta/lead-webhook`.
    ```
 
 10. **On Matt's "go"**.  flip to ACTIVE:
@@ -291,7 +269,7 @@ That route:
     ```
     Same for the ad set and campaign.
 
-11. **Confirm to Matt**.  campaign live, daily spend cap set, leads will route to FUB starting now.
+11. **Confirm to Matt**.  campaign live, daily spend cap set, leads will land in `/admin/crm` starting now.
 
 ---
 
@@ -308,7 +286,7 @@ Before flipping PAUSED → ACTIVE:
 - [ ] Lead form attached + has all required fields (first/last/email/phone/intent)
 - [ ] Privacy policy URL valid (`https://ryan-realty.com/privacy`)
 - [ ] Thank-you screen text approved
-- [ ] FUB webhook configured + verified
+- [ ] Meta lead webhook (`/api/meta/lead-webhook`) configured + verified; a test submit creates a `crm_people` row
 - [ ] Video uploaded (1:1 or 9:16.  Meta auto-handles cross-placement)
 - [ ] Ad copy passes banned-word grep
 - [ ] Banned-word grep on lead form copy too
@@ -324,7 +302,7 @@ After campaign runs for 7 days, surface metrics to Matt:
 - Reach
 - Cost per result (CPL)
 - Total leads captured
-- Lead → FUB sync rate (should be 100%)
+- Lead → `crm_people` sync rate (should be 100%)
 - Intent breakdown (buying / selling / both / exploring)
 - Top-performing audience segment (if multiple ad sets)
 
@@ -368,7 +346,6 @@ All 800×1200 px, pure white bg, identical head height, natural color. Specs in 
 - `automation_skills/automation/engagement_bot/SKILL.md`.  handles inbound DMs / comments from the ad
 - Meta Marketing API: https://developers.facebook.com/docs/marketing-api
 - Meta Lead Ads: https://developers.facebook.com/docs/marketing-api/guides/lead-ads
-- Follow-Up Boss API: https://docs.followupboss.com/
 - Fair Housing Act compliance: https://www.facebook.com/business/m/special-ad-categories
 
 ---

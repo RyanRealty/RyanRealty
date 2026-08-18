@@ -5,9 +5,8 @@ description: Run ONE iteration of the CRM end-to-end guardian — verify every C
 
 # CRM E2E Guardian — one iteration
 
-You are the guardian of the in-house CRM (the FUB replacement; canonical state
-in memory `project_crm_replacement_initiative` and
-`docs/CRM_REPLACEMENT_BLUEPRINT.md`). One iteration = probe → repair → report.
+You are the guardian of the in-house CRM (`public.crm_people` via `sendEvent`
+in `lib/crm/send-event.ts`; review at `/admin/crm`). One iteration = probe → repair → report.
 Matt's bar: **every feature wired into the website, everything works end to
 end, nothing requires him to do manual work the system could do.**
 
@@ -19,13 +18,13 @@ node scripts/crm-e2e-verify.mjs        # probes PRODUCTION (~2-4 min)
 
 ~30 checks: data layer, live invocation of the production CRM crons
 (auto-enroll, sequence-engine, gmail-sync, portal-lead-intake, geo-resolve),
-sync freshness, FUB mirror spot-reconciliation, auto-enroll coverage (no
+sync freshness, auto-enroll coverage (no
 eligible new lead left unenrolled), geo-resolve coverage (no resolvable
 contact left geo-invisible), community-list undercount (the 593f5fe4 class,
 via health Rule 7), engine stalls, owner-resolution coverage, admin surfaces
 (auth-redirect + anonymous-leak check), Twilio webhooks + balance + A2P brand
 state, Gmail DWD auth for all 3 broker mailboxes, the suppression gate, static
-entry-point wiring, Anthropic credits, FUB port-reply watch. JSON lands at
+entry-point wiring, Anthropic credits. JSON lands at
 `tmp/crm-e2e-latest.json`.
 
 ## Step 2 — act on results
@@ -35,7 +34,7 @@ line ("CRM e2e green, N checks") and end the iteration. No essays when green.
 
 **Any FAIL:** fix it THIS iteration, in priority order:
 1. **Lead-loss risks first**: cron routes erroring, auto-enroll coverage gaps,
-   inbound webhook guards down, FUB mirror lag, contact-point table anomalies.
+   inbound webhook guards down, contact-point table anomalies.
 2. **Comms correctness**: engine stalls, suppression gate not blocking,
    sequence misconfiguration.
 3. **Surface/auth**: admin pages failing, data leaking to anonymous visitors
@@ -62,9 +61,8 @@ Current known externals (update this list as they clear):
   in"; all values staged in `scripts/crm-a2p-register.mjs` BIZ block). When
   brand status = APPROVED: re-run `node scripts/crm-a2p-register.mjs` to
   create the LOW_VOLUME campaign, then announce outbound texting is live.
-- `external.fub-port-reply` → when FUB replies about 541.703.3095: read the
-  message, execute the Twilio account-to-account transfer steps, webhook the
-  number like the others (inbound-sms + voice), and update the blueprint.
+- Tracked inbound bio phone `541.703.3095` is ours. Do not wait on a vendor
+  CRM reply. Twilio inbound-sms + voice already webhook into the in-house CRM.
 
 ## Hard rules (never violate, even mid-repair)
 
@@ -75,9 +73,7 @@ Current known externals (update this list as they clear):
 - **Suppressions are sacred**: any fix touching send paths must keep the
   fail-closed `isSuppressed` gate in front of every send.
 - **Clean up synthetic test artifacts in the same iteration** (test people,
-  test notes — in BOTH systems when dual-written).
-- Parallel-run integrity: FUB stays untouched as the fallback until Matt
-  triggers the blueprint §7 cutover gate.
+  test notes). There is no vendor CRM fallback.
 
 ## Loop pacing (when running under /loop self-paced)
 
@@ -101,15 +97,13 @@ Design workflow for #2 (Matt directive): use the FIGMA MCP (connected in the orc
 ## PRIORITY INPUT 2 — Matt 2026-06-11: Twilio is live, finish the telephony setup
 
 Twilio confirmation email arrived; comms infrastructure is GO. Work order, in order:
-1. **FUB opt-outs -> Twilio sync (COMPLIANCE P0, TCPA exposure):** people opted out
-   in FUB are not registered in Twilio. Our own send gate (lib/crm/suppressions.ts,
-   fail-closed) honors FUB opt-outs at send time, but defense-in-depth requires the
-   Twilio layer too: sync every FUB contact carrying contact:do-not-text /
-   compliance:hard-stop (+ TCPA litigator tags per memory reference_tcpa_litigator_handling)
-   into the Twilio Messaging Service opt-out list, initial backfill + ongoing sync in
-   the crm-fub-delta cron. Also verify Advanced Opt-Out (STOP handling) is enabled on
-   the messaging service AND that STOP events flow BACK into FUB tags (bidirectional).
-   Smoke-test rule applies: verify with 1-2 numbers before bulk.
+1. **CRM opt-outs -> Twilio sync (COMPLIANCE P0, TCPA exposure):** people opted out
+   in `crm_people` / suppressions must stay fail-closed. Our send gate
+   (`lib/crm/suppressions.ts`) honors `contact:do-not-text` / `compliance:hard-stop`
+   at send time. Defense-in-depth: keep Advanced Opt-Out (STOP) enabled on the
+   Twilio messaging service so STOP events write back into CRM suppressions.
+   Smoke-test rule applies: verify with 1-2 numbers before bulk. Do not call a
+   vendor CRM and do not set `FOLLOWUPBOSS_API_KEY`.
 2. **Per-broker business phones on public profiles:** each broker's Twilio business
    number goes into public.brokers (new/existing phone field), renders on /team
    profile cards + team/[slug] pages + their JSON-LD (RealEstateAgent telephone) —
@@ -117,9 +111,9 @@ Twilio confirmation email arrived; comms infrastructure is GO. Work order, in or
    Verify INBOUND routing for each number end-to-end: call -> app/api/twilio/voice
    route -> forwards to the right broker cell, recording/voicemail path works
    (voice routes committed today).
-3. **Primary number routing:** verify the main line (541.703.3095 FUB-tracked +
+3. **Primary number routing:** verify the main line (541.703.3095 tracked inbound +
    541.213.6706 direct) — inbound call AND text reach the right place; document the
-   routing map in docs/CRM_REPLACEMENT_BLUEPRINT.md.
+   routing map. Review people at `/admin/crm`.
 Report concrete verification evidence per item (real test calls/texts where safe).
 
 ## PRIORITY INPUT 3 — A2P REJECTION DIAGNOSED (orchestrator, 2026-06-11 ~13:20). Fix + resubmit. THIS BLOCKS ALL LEAD TEXTING.
@@ -179,7 +173,7 @@ smoke send, verify queued-pending-A2P SMS drain.
 message_flow returns 200 AND contains SMS_CONSENT_TEXT verbatim; never cite a consent
 channel a carrier cannot verify by URL; every sample carries a STOP line; consent text
 changes (SmsConsentDisclosure.tsx) require campaign resubmission.
-**FUB→Twilio opt-out backfill (PRIORITY INPUT 2 item 1): STAGED, blocked on Matt.**
+**CRM→Twilio opt-out backfill (PRIORITY INPUT 2 item 1): STAGED, blocked on Matt.**
 `scripts/crm-twilio-optout-backfill.mjs` (dry-run verified: 3,309 unique E.164 numbers
 from contact:do-not-text + compliance:hard-stop). Twilio Consent API
 (accounts.twilio.com/v1/Consents/Bulk) 404s until Compliance Toolkit is ENABLED:
@@ -188,7 +182,7 @@ code only Matt may enter. After he enables: `--smoke` (2 numbers, expect error_c
 then `--execute`.
 
 ### Matt directive 2026-06-12 — opt-out backfill BACK-BURNERED
-The FUB→Twilio Consent API backfill (PRIORITY INPUT 2 item 1) is deferred by Matt:
+The CRM→Twilio Consent API backfill (PRIORITY INPUT 2 item 1) is deferred by Matt:
 our own send gate (lib/crm/suppressions.ts, fail-closed, checked by the sequence
 engine + manual SMS path) is the accepted control. Do NOT nag about the Compliance
 Toolkit verification code. Script stays staged at scripts/crm-twilio-optout-backfill.mjs
