@@ -1,7 +1,12 @@
 ---
 name: ab_testing
-description: Use this skill whenever the user says "run an A/B test", "test thumbnail variants", "split test the hook", "test different captions", "set up a CTA test", "which thumbnail is winning", "check A/B results", "declare the A/B winner", or when a video format skill requests variant testing after generating thumbnails or hooks. Generates and tracks variant combinations for thumbnails, hooks, captions, and CTAs using epsilon-greedy allocation; declares winners after minimum sample thresholds are met.
+description: KILLED as a live pipeline. /api/cron/ab-test-check and /api/workers/ab-test do not exist and are not in vercel.json. Do not run this.
 ---
+
+# STOP - this pipeline is not wired
+
+There is no `/api/cron/ab-test-check` and no `/api/workers/ab-test`. If you loaded this file, stop. Do not invent those routes.
+
 
 # A/B Testing
 

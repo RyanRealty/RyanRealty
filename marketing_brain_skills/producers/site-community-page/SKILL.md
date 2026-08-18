@@ -37,6 +37,11 @@ example_outputs:
     path: public/lp/tetherow/index.html
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # site-community-page
 
 **Scope.** Creates or updates a per-resort-community SEO + AEO landing page at
@@ -59,7 +64,7 @@ or city-level pages like /lp/bend/ (that is `site-city-page`). Does NOT edit
 the global homepage, header, footer, or `/sell` and `/buy` (those are
 `site-edit`).
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-18
 **Exemplar output:** GitHub PR at `site-community/<action_id_prefix>` branch.
 The first executed exemplar is the Tetherow port to

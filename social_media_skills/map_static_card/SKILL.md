@@ -22,6 +22,11 @@ thumbnail_uri: out/proof/2026-05-17/exemplars/map_static_card/sample.png
 example_outputs: []
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Map Static Card
 
 **Scope:** Produces branded static map PNG images for use as the location slide in listing
@@ -32,7 +37,7 @@ Realty wordmark and a custom navy pin marker over the map. Outputs a 1080x1080 s
 `@react-google-maps/api` component in the web app). Does NOT produce video flyovers
 (that is `video_production_skills/google_maps_flyover/SKILL.md`).
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/map_static_card/<listing-slug>/`
 

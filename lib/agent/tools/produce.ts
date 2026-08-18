@@ -78,6 +78,7 @@ export function resolveProducerFromRegistry(actionType: string, registryPath: st
     if (inner.length < 3) continue
     if (/^-+$/.test(inner[0])) continue // markdown separator row
     if (inner[0].toLowerCase() === 'producer_name') continue // header row
+    if (inner.some((c) => /UNUSED\s*\/\s*DO NOT DISPATCH/i.test(c))) continue
     const pathMatch = inner[1].match(/`([^`]+)`/)
     if (!pathMatch) continue
     const tokens = [...inner[2].matchAll(/`([^`]+)`/g)].map((m) => m[1].trim())

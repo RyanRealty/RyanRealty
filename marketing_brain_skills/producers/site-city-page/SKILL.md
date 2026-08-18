@@ -37,6 +37,11 @@ example_outputs:
     path: app/lp/bend/page.tsx
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # site-city-page
 
 **Scope.** Creates or updates the city-level SEO + AEO landing page at
@@ -59,7 +64,7 @@ Does NOT replace per-resort community pages (use `site-community-page`).
 Does NOT replace per-neighborhood pages (use `site-neighborhood-page`).
 The city page links to those, doesn't substitute for them.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-18
 **Exemplar output:** GitHub PR at `site-city/<city-slug>-<prefix>` branch.
 

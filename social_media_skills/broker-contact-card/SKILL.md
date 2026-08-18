@@ -35,9 +35,14 @@ example_outputs: []
     surface: "ig_carousel"
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Broker Contact Card · Buyer-Side Last Tile
 
-**Status:** Canonical  
+**Status:** Deprecated  
 **Locked:** 2026-05-17  
 
 

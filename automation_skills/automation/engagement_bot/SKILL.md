@@ -1,7 +1,12 @@
 ---
 name: engagement_bot
-description: Use this skill whenever the user says "check comments", "pull DMs", "what are people saying on my posts", "draft replies to comments", "triage the inbox", "run the engagement bot", "check for leads in my comments", "any high-intent DMs?", or "push leads from social to FUB". Pulls comments and DMs from 5 platforms every 15 minutes, classifies them by lead intent, drafts replies from voice templates, and pushes high-intent leads to FUB CRM — all for Matt's approval before any reply sends.
+description: KILLED as a live pipeline. /api/cron/engagement-pull does not exist and is not in vercel.json. Do not run this. Do not push leads to Follow Up Boss.
 ---
+
+# STOP - this pipeline is not wired
+
+There is no `/api/cron/engagement-pull` and no `/api/workers/engagement-pull`. CRM is in-house `public.crm_people`. If you loaded this file, stop. Do not invent those routes. Do not call Follow Up Boss.
+
 
 # Engagement Bot
 

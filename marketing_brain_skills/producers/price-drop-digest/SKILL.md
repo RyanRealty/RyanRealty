@@ -28,6 +28,11 @@ example_outputs:
   - out/price-drop-digest/bend/2026-06-09/digest.json
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Price Drop Digest Producer
 
 > All development routes through THE LOOP v1.0.0 - see [docs/DEVELOPMENT_PROCESS.md](../../../docs/DEVELOPMENT_PROCESS.md). Every producer inherits its preflight contract, verification bar, and approval model.
@@ -39,7 +44,7 @@ brand-voice caption, and hands off a static card brief (dimensions, text, data) 
 `ig-single-post` or `instagram-carousel` producer to render. Does NOT produce the rendered
 image or Reel itself - it authors the data layer and caption text only.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-06-09
 **Exemplar output:** `out/price-drop-digest/<city>/<date>/digest.json` + `caption.txt`
 

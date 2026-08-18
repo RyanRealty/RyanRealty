@@ -40,6 +40,11 @@ example_outputs:
     surface: website
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # site-listing-page
 
 **Scope.** Creates or updates a per-listing landing page at
@@ -69,7 +74,7 @@ The skill operates in two modes per the listing's brokerage:
 
 Both modes share the same page template and live data flow.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-18
 **Exemplar output:** GitHub PR at `site-listing/<mls-slug>-<prefix>` branch.
 

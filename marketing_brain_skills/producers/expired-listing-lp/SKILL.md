@@ -25,6 +25,11 @@ example_outputs:
     surface: "email"
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Expired Listing Audit + Landing Page Producer
 
 **Scope:** Two related deliverables:
@@ -32,7 +37,7 @@ example_outputs:
 1. **The shared `/lp/expired-listing` landing page.** Empathy-driven, brand-voice-compliant, framework for the audit. Lives at `app/lp/expired-listing/`. Already shipped.
 2. **Per-listing written audit.** A 1-page email-deliverable that runs the 5-cause diagnostic on a specific expired property: price thesis vs comps, photo quality, MLS description, syndication, agent responsiveness. Triggered by the cron OR direct ask.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-18
 **Voice:** `marketing_brain_skills/brand-voice/VOICE.md`. Never pander, never editorialize, honest + transparent, never overtly state value, let language speak for itself.
 

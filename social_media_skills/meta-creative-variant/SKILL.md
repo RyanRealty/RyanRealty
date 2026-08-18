@@ -23,6 +23,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Meta Creative Variant Producer
 
 **Scope:** Generates a set of 3-5 creative variants for an existing Meta (Facebook and
@@ -34,7 +39,7 @@ the creative layer. All variants land in `marketing_brain_actions.executor_respo
 a contact sheet for Matt's review before anything touches the live ad account. No ad-set
 update executes without Matt's explicit "ship it" per the ops-meta-ads approval gate.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/meta-creative-variant/<campaign-slug>-<YYYY-MM-DD>/`
 **Pipeline doc:** `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` (read before any campaign work)

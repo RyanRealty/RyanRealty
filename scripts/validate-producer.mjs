@@ -333,6 +333,9 @@ const CAPABILITY_AND_BRAIN_PATHS = new Set([
   'marketing_brain_skills/competitor-recon',
   'marketing_brain_skills/platform-trends',
   'marketing_brain_skills/snapshot-channels',
+  // Ghost writer (weekly FORMAT_ROUTE_MAP still names the path). Refuse stub
+  // only: Follow Up Boss is decommissioned. Not an 11-section producer.
+  'marketing_brain_skills/producers/ops-fub-crm',
 ])
 
 export function isCapabilityOrBrain(skillPath) {

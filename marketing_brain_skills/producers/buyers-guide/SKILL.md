@@ -38,6 +38,11 @@ example_outputs:
     path: app/lp/tetherow/buyers-guide/page.tsx
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # buyers-guide
 
 **Scope.** Author and deliver the per-community buyer's guide that backs the
@@ -61,7 +66,7 @@ request, creates a FUB lead with the right tags, regenerates the PDF if
 older than 7 days (so guide numbers stay fresh), and emails the PDF as an
 attachment via Resend.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-18
 **Exemplar output:** First exemplar is the Tetherow buyer's guide:
 - Web: `app/lp/tetherow/buyers-guide/page.tsx`

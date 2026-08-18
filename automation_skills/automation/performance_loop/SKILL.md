@@ -1,7 +1,12 @@
 ---
 name: performance_loop
-description: Use this skill whenever the user says "run the performance loop", "what's our best performing format", "which posts did well this week", "shift the content mix", "update format performance", "what's winning on our social channels", "show me the analytics breakdown", or "rebuild the content mix based on performance". Weekly cron pulls platform analytics for all posts in the last 7 days, scores them by weighted formula, tags by format, updates format_performance table, and shifts next week's content mix toward proven winners.
+description: KILLED as a live pipeline. /api/cron/performance-loop does not exist and is not in vercel.json. Do not run this. Live pulls are performance-pull-48h / 7d / 30d.
 ---
+
+# STOP - this pipeline is not wired
+
+There is no `/api/cron/performance-loop`. Live jobs are `/api/cron/performance-pull-48h`, `performance-pull-7d`, `performance-pull-30d`, and `marketing-measurement-loop`. If you loaded this file, stop. Do not invent that route.
+
 
 # Performance Loop
 

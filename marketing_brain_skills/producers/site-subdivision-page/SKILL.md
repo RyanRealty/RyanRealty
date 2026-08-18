@@ -36,6 +36,11 @@ example_outputs:
     path: app/lp/tetherow/heath/page.tsx
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # site-subdivision-page
 
 **Scope.** Creates or updates a per-subdivision SEO + AEO landing page at
@@ -66,7 +71,7 @@ Does NOT create per-listing detail pages (that is `site-listing-page`).
 Does NOT handle non-resort neighborhoods like NW Crossing or Old Bend
 (that is `site-neighborhood-page`).
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-18
 **Exemplar output:** GitHub PR at `site-subdivision/<community-slug>-<sub-slug>-<prefix>` branch.
 

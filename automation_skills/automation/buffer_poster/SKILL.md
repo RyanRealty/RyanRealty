@@ -1,7 +1,12 @@
 ---
 name: buffer_poster
-description: Schedules and publishes posts to IG, FB, TikTok, YouTube, LinkedIn, X, Pinterest, Threads via the Buffer API. Use when Matt wants one-click multi-platform distribution without wiring each platform's native API directly.
+description: KILLED as a live pipeline. /api/cron/buffer-poster does not exist and is not in vercel.json. Do not run this.
 ---
+
+# STOP - this pipeline is not wired
+
+There is no `/api/cron/buffer-poster`. If you loaded this file, stop. Do not invent that route.
+
 
 # Buffer Poster
 

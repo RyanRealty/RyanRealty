@@ -25,6 +25,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # comms-client-update
 
 **Scope:** Drafts and sends per-client email communications on behalf of Ryan Realty.
@@ -38,7 +43,7 @@ Does NOT send marketing emails to leads (that is `ops-email-send`). Does NOT dra
 review responses (that is `ops-reputation`). Does NOT send alert messages to Matt
 himself (that is `comms-matt-alert`). Does NOT draft listing descriptions or CMAs.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/comms-client-update/<slug>/email-draft.txt` + `contact-sheet.html`
 

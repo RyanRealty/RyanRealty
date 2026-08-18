@@ -21,6 +21,11 @@ thumbnail_uri: out/proof/2026-05-17/exemplars/testimonial_card/sample.png
 example_outputs: []
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Testimonial Card
 
 **Scope:** Renders a branded testimonial quote card from a verified client review. Outputs two
@@ -31,7 +36,7 @@ appears in a corner accent. Does NOT pull review text from Google's API autonomo
 must be provided by Matt or the action row payload to prevent fabrication. Does NOT publish the
 card; it renders to `out/` and awaits Matt's approval.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/testimonial_card/<review-slug>/`
 

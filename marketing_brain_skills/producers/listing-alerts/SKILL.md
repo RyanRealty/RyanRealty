@@ -35,6 +35,11 @@ thumbnail_uri: null
 example_outputs: []
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # listing-alerts
 
 **Scope.** Buyer-side saved-search infrastructure for Ryan Realty's
@@ -52,7 +57,7 @@ FUB integration. The skill does NOT render the criteria-capture form on
 the LP. That lives inside the `site-community-page` (or sister) producer.
 This producer receives the form submission and runs the matching engine.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-18
 **Exemplar output:** Working backend across:
 - `supabase/migrations/<ts>_listing_alerts.sql`

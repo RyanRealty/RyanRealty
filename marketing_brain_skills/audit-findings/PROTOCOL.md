@@ -1,6 +1,10 @@
+# STOP - not a dispatchable producer
+
+`marketing-audit-run` writes `analyze:audit_findings` rows. This file is the payload contract only. Do not start a Producer Authoring session. Do not invent missing producers from this protocol.
+
 # Marketing Brain — Audit Findings Protocol
 
-The contract between the **competitor audit run** and the **Producer Authoring session**. Defines where audit findings land, what shape they take, and how downstream sessions consume them.
+The contract between the **competitor audit run** and any later read of the findings row. Defines where audit findings land and what shape they take. There is no Producer Authoring writer.
 
 **Status:** Locked 2026-05-14.
 **Read by:** Producer Authoring session (to find next skill to author), Marketing Brain Architecture session (when writing audit code), Matt (when reviewing audit results).

@@ -26,6 +26,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # ops-google-ads: Google Ads Operational Producer
 
 **Scope:** Executes real-world changes to the Ryan Realty Google Ads account via the
@@ -39,7 +44,7 @@ analytics or generate reports (that is `audit-ads` + `diagnose-performance`). Do
 upload ad copy (that is `google-ads-copy` producer). Does NOT modify bidding strategies
 unless explicitly in the payload.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** Action row status transitions + `executor_response` jsonb in
 `marketing_brain_actions`.

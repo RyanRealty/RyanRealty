@@ -22,6 +22,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Newsletter Producer
 
 **Scope:** Monthly email newsletter delivered via Resend to the past-client and lead list
@@ -31,7 +36,7 @@ per-recipient merge fields beyond first name. Does not send without Matt's expli
 sign-off. The newsletter is brokerage-brand content; no individual broker headshot
 appears unless a specific broker transaction is featured.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/newsletter/<YYYY-MM>/` (HTML + plain-text + contact-sheet.html)
 

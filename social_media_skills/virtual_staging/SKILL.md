@@ -21,6 +21,11 @@ thumbnail_uri: out/proof/2026-05-17/exemplars/virtual_staging/sample.png
 example_outputs: []
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Virtual Staging
 
 **Scope:** Digitally furnishes empty or sparsely furnished rooms using a Replicate-hosted virtual
@@ -28,7 +33,7 @@ staging model. Outputs one disclosure-tagged PNG per variant. Targets listing we
 IG carousels, and Facebook feed posts. Does NOT produce video, floor plans, or exterior shots.
 Does NOT select photos from the listing autonomously without Matt confirming the source image.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/virtual_staging/<listing-slug>/`
 

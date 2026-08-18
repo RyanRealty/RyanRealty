@@ -1,7 +1,12 @@
 ---
 name: post_scheduler
-description: Use this skill whenever the user says "drain the post queue", "run the post scheduler", "why isn't my post publishing", "force publish a queued post", "check what's in the post queue", "retry a failed post", "is the scheduler running", or when troubleshooting why a queued post hasn't gone live. Drains post_queue every 5 minutes and publishes to IG, FB, TikTok, YouTube, and LinkedIn via their APIs with retry and human-review gating.
+description: KILLED as a live pipeline. /api/cron/post-scheduler does not exist and is not in vercel.json. Do not run this. Publish is /api/social/publish + publisher-sweep.
 ---
+
+# STOP - this pipeline is not wired
+
+There is no `/api/cron/post-scheduler`. Live publish is `/api/social/publish` and `/api/cron/publisher-sweep`. If you loaded this file, stop. Do not invent that route.
+
 
 # Post Scheduler
 
