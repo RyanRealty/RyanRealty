@@ -10,7 +10,7 @@ import {
   getFilterNameFallback,
   buildSearchUrlFromFilters,
 } from '@/lib/search-filters'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/crm/send-event'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'

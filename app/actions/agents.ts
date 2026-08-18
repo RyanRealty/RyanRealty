@@ -273,7 +273,7 @@ export async function submitBrokerInquiry(
   const emailTrim = email?.trim()
   if (!emailTrim) return { ok: false, error: 'Email is required.' }
 
-  const { sendEvent } = await import('@/lib/followupboss')
+  const { sendEvent } = await import('@/lib/crm/send-event')
   const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')

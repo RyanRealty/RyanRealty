@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/crm/send-event'
 import { createCmaRequest } from '@/lib/cma-request'
 import { getMetaPageToken } from '@/lib/meta-env'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'

@@ -326,7 +326,7 @@ Nudge-to-sign-in UX strategy, cookie consent alignment, consistent FUB Registrat
 
 ### 3.4 Lead Capture Surfaces with FUB Attribution (R1 Q1)
 - **Files**: `components/HomeValuationCta.tsx` (new), `components/ExitIntentPopup.tsx` (new), middleware or hook for agent cookie, `lib/followupboss.ts` (extend)
-- **Change**: Build agent tracking cookie system (detect `?agent=slug`, store in cookie with FUB agent name/ID). Extend `FubEventPerson` with `assignedTo`, `assignedUserId`, `tags`. Extend `sendEvent()` to support `campaign` object (UTM data). Build HomeValuationCta (seller leads to FUB Seller Inquiry). Build ExitIntentPopup (email capture, once per session). Build report lead gate (email for full content).
+- **Change**: Build agent tracking cookie system (detect `?agent=slug`, store in cookie with FUB agent name/ID). Extend `LeadEventPerson` with `assignedTo`, `assignedUserId`, `tags`. Extend `sendEvent()` to support `campaign` object (UTM data). Build HomeValuationCta (seller leads to FUB Seller Inquiry). Build ExitIntentPopup (email capture, once per session). Build report lead gate (email for full content).
 - **Verify**: Lead submissions arrive in FUB with correct event types. Agent attribution cookie persists. UTM data appears in FUB campaign object.
 
 ### 3.5 Blog/Guides Infrastructure

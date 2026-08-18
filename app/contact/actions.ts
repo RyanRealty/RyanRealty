@@ -3,7 +3,7 @@
 import { after } from 'next/server'
 import { cookies, headers } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/crm/send-event'
 import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
 import { classifyPropertyGeo, referralIntakeTags } from '@/lib/referral-geo'

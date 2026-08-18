@@ -1,9 +1,9 @@
 'use server'
 
 import {
-  type FubEventPerson,
+  type LeadEventPerson,
   sendEvent,
-} from '@/lib/followupboss'
+} from '@/lib/crm/send-event'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
@@ -93,7 +93,7 @@ export async function submitHeathCmaForm(
   const firstName = (input.name ?? '').split(' ')[0]?.trim() || undefined
   const lastName = (input.name ?? '').split(' ').slice(1).join(' ').trim() || undefined
 
-  const person: FubEventPerson = {
+  const person: LeadEventPerson = {
     firstName,
     lastName,
     emails: [{ value: input.email.trim() }],

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { trackSignedInUser } from '@/lib/followupboss'
+import { trackSignedInUser } from '@/lib/crm/send-event'
 import { stitchVisitorIdentity } from '@/lib/visitor-backfill'
 import { claimGuestSavedSearches } from '@/lib/data/savedSearches'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'

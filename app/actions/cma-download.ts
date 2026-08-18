@@ -3,7 +3,7 @@
 import { createHash } from 'node:crypto'
 import { headers } from 'next/headers'
 import { getAuthLimiter } from '@/lib/rate-limit'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/crm/send-event'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { registerForCmaDocument, CMA_DOCUMENT_TERMS_VERSION } from '@/lib/data/cma/getPublishedCma'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'

@@ -24,7 +24,7 @@ vi.mock('@/app/actions/admin-roles', () => ({
 // Pull-in-free stub for the (dynamically imported) native-capture shim —
 // post-decommission the module only exposes sendEvent + trackSignedInUser +
 // isPlaceholderLeadEmail; the actions under test never reach it.
-vi.mock('@/lib/followupboss', () => ({
+vi.mock('@/lib/crm/send-event', () => ({
   sendEvent: vi.fn(),
 }))
 vi.mock('@/lib/meta/qualifiedEvent', () => ({

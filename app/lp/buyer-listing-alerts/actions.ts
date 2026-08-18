@@ -3,8 +3,8 @@
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
-  type FubEventPerson,
-} from '@/lib/followupboss'
+  type LeadEventPerson,
+} from '@/lib/crm/send-event'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
@@ -162,7 +162,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     const firstName = name.split(/\s+/)[0] || undefined
     const lastName = name.split(/\s+/).slice(1).join(' ') || undefined
 
-    const person: FubEventPerson = fubPersonId
+    const person: LeadEventPerson = fubPersonId
       ? { id: fubPersonId }
       : {
           firstName,

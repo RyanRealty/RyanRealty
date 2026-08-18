@@ -1,6 +1,6 @@
 'use server'
 
-import { sendEvent, type FubEventPerson } from '@/lib/followupboss'
+import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
@@ -86,7 +86,7 @@ export async function submitExitIntentLead(input: {
     return { ok: false, error: 'Invalid email' }
   }
 
-  const person: FubEventPerson = { emails: [{ value: email }] }
+  const person: LeadEventPerson = { emails: [{ value: email }] }
 
   const result = await sendEvent({
     type: 'Registration',
@@ -188,7 +188,7 @@ export async function submitPageCTA(input: {
       return { error: 'Please enter a valid email address' }
     }
 
-    let person: FubEventPerson
+    let person: LeadEventPerson
     if (email) {
       person = { emails: [{ value: email }], ...(phone ? { phones: [{ value: phone }] } : {}) }
     } else if (phone) {
@@ -294,7 +294,7 @@ export async function submitRentalLead(input: {
     const firstName = nameParts[0] || undefined
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined
 
-    let person: FubEventPerson
+    let person: LeadEventPerson
     if (email) {
       person = {
         emails: [{ value: email }],
@@ -414,7 +414,7 @@ export async function submitTetherowLead(input: {
     const firstName = nameParts[0] || undefined
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined
 
-    let person: FubEventPerson
+    let person: LeadEventPerson
     if (email) {
       person = {
         emails: [{ value: email }],

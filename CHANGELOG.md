@@ -14644,7 +14644,7 @@
 
 ### Bug Fixes
 - fix(fub-expired): tighten service area + add $500K price floor
-- fix(heath): remove invalid 'source' field on FubEventPerson — unblock Vercel build
+- fix(heath): remove invalid 'source' field on LeadEventPerson — unblock Vercel build
 
 ---
 

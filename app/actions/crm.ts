@@ -1366,7 +1366,7 @@ export async function createCrmContactAction(formData: FormData): Promise<CrmAct
   if (!firstName) return { ok: false, error: 'First name required' }
   if (!email && !phone) return { ok: false, error: 'An email or a phone number is required' }
 
-  const { sendEvent } = await import('@/lib/followupboss')
+  const { sendEvent } = await import('@/lib/crm/send-event')
   const sent = await sendEvent({
     type: 'General Inquiry',
     source,
