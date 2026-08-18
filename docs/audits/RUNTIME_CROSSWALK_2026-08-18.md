@@ -191,6 +191,18 @@ Unused CRM modules: `lib/crm/lead-router.ts` (`captureLead` zero callers), `lib/
 
 ---
 
+## Database (code vs photograph)
+
+**483** migrations. Newest: `get_current_mortgage_rate` / listing PITI (`20260817190000`). Snapshot + DAL index stamped **2026-08-18T01:27Z**. No live `information_schema` this pass.
+
+**In use from `app/`/`lib/`:** `sale_pricing_facts`, `listing_pricing_reads`, analytics marts, `fleet_findings`, `loop_work_nodes`, `tc_deal_people` / form catalog, plus ~50 SECURITY DEFINER RPCs (`search_listings_advanced`, `search_listing_keys_in_shapes`, CRM claim/lease, market refresh, CMA comps).
+
+**Unused in code (live unknown — do not drop):** `sale_pricing_seller_net` view, `sale_pricing_price_steps`, `analytics_dim_agent`, `analytics_inventory_snapshot`, backfill cursor tables, `listing_detail_mv` (DAL uses tile/search MVs), `get_beacon_metrics` / `get_homepage_market_stats` (types only). Snapshot still lists `trending_scores` after a drop migration — photograph conflict.
+
+**Not seen:** whether all 483 files are applied; RLS/GRANT state; leftover backfill-queue rows.
+
+---
+
 ## Universe 5 — vendor probes
 
 | Probe | Result |
@@ -202,7 +214,7 @@ Unused CRM modules: `lib/crm/lead-router.ts` (`captureLead` zero callers), `lib/
 | Gmail labels | connected |
 | Grok Tasks | empty |
 | Voice MCP | Grok voices only — **not** product ElevenLabs |
-| Hosted Postgres | **not seen** (no query this pass) |
+| Hosted Postgres | **not seen** (no query this pass). Snapshot photograph `2026-08-18T01:27Z`. 483 migration files on disk. |
 | Meta/Google Ads/GSC consoles | **not seen** |
 | Spark live inventory | **not seen** |
 
