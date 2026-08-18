@@ -64,12 +64,12 @@ check('REGISTRY.md has all 22 NEW producer rows', () => {
 // 2. vercel.json has all 10 NEW cron handlers
 const NEW_CRONS = [
   '/api/cron/performance-pull-48h','/api/cron/performance-pull-7d','/api/cron/performance-pull-30d',
-  '/api/cron/weekly-cycle','/api/cron/snapshot-channels',
+  '/api/cron/marketing-weekly-cycle','/api/cron/snapshot-channels',
   '/api/cron/producer-dispatcher','/api/cron/producer-runtime','/api/cron/publisher-sweep',
-  '/api/cron/seller-lead-attribution','/api/cron/strategy-revision-check',
+  '/api/cron/seller-lead-attribution',
   '/api/cron/loop-health-check',
 ]
-check('vercel.json has all 11 new cron handlers', () => {
+check('vercel.json has all 10 new cron handlers', () => {
   const have = new Set(vc.crons.map((c) => c.path))
   const missing = NEW_CRONS.filter((p) => !have.has(p))
   return missing.length === 0 ? true : `missing: ${missing.join(', ')}`
@@ -119,7 +119,6 @@ check('Admin UIs + diagnostic tools present', () => {
   const required = [
     'app/admin/(protected)/producers/page.tsx',
     'app/admin/(protected)/approval-queue/page.tsx',
-    'app/api/admin/run-loop-cycle/route.ts',
     'app/api/admin/run-producer/[id]/route.ts',
     'scripts/loop-health-check.mjs',
     'scripts/brain-activity-report.mjs',

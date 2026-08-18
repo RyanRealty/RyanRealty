@@ -1,21 +1,8 @@
-// cron: manual-only (canonical trigger moved into sync-delta 2026-05-22; kept as a CRON_SECRET-guarded backfill tool)
+// cron: manual-only operator backfill (unused HTTP; do not schedule — work lives in sync-delta)
 /**
- * Expired-listings detection route — manual / ad-hoc invocation.
- *
- * History note (2026-05-22, Matt directive):
- *   The Vercel cron registration on this route has been removed. The
- *   canonical trigger is now `/api/cron/sync-delta`, which runs every
- *   10 minutes against the Spark MLS deltas and calls the same
- *   `processNewExpiredListings` lib at the end of each run.
- *
- *   This route stays callable on demand for backfills, one-off triage,
- *   or manual re-runs from the admin UI. It still requires the
- *   Authorization: Bearer $CRON_SECRET header.
- *
- * The full pipeline (owner lookup, FUB person creation, Resend alert,
- * audit-trail upsert into `public.expired_listings`) lives in
- * `lib/expired-listing-processor.ts` so both callers share the same
- * code path.
+ * TOMBSTONE — unused HTTP shell. Detection runs inside `/api/cron/sync-delta`
+ * via `processNewExpiredListings`. Not in vercel.json. No admin UI caller.
+ * Kept as a CRON_SECRET-guarded backfill curl only. Do not register it.
  */
 
 import { NextRequest, NextResponse } from 'next/server'

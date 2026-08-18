@@ -1,3 +1,4 @@
+// cron: manual-only operator curl (not registered in vercel.json; drains strict verification backlog)
 import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { fetchSparkListingHistory, fetchSparkPriceHistory, type SparkListingHistoryItem } from '@/lib/spark'

@@ -1,3 +1,4 @@
+// cron: manual-only operator curl (not registered in vercel.json; one-shot parity chunk)
 import { NextResponse } from 'next/server'
 import { runOneFullSyncChunk } from '@/app/actions/sync-full-cron'
 import { syncListingHistory, syncSparkListingsDelta } from '@/app/actions/sync-spark'

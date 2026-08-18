@@ -1,6 +1,6 @@
 {
   "note": "TRACK3 fub identifier ratchet — counts may only shrink. Full rename is separate work.",
-  "total": 788,
+  "total": 787,
   "files": [
     "app/actions/admin-email.ts",
     "app/actions/agent-attribution-read.ts",
@@ -40,7 +40,6 @@
     "app/api/admin/crm/export/route.ts",
     "app/api/cma-drafts/[id]/send/route.ts",
     "app/api/cma/[slug]/gmail-draft/route.ts",
-    "app/api/cma/[slug]/track/route.ts",
     "app/api/cron/crm-auto-enroll/route.ts",
     "app/api/cron/crm-sequence-engine/helpers.ts",
     "app/api/cron/crm-sequence-engine/route.ts",

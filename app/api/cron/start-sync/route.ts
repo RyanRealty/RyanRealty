@@ -1,3 +1,4 @@
+// cron: manual-only operator curl (not registered in vercel.json; kicks full/terminal/delta lanes)
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { runOneFullSyncChunk } from '@/app/actions/sync-full-cron'

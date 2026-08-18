@@ -15,7 +15,6 @@
     "app/actions/send-doc.ts": 1,
     "app/admin/(protected)/crm/inbox/page.tsx": 1,
     "app/api/cma-drafts/[id]/send/route.ts": 1,
-    "app/api/cma/[slug]/email/route.ts": 1,
     "app/api/cma/[slug]/gmail-draft/route.ts": 1,
     "app/api/cron/broker-agent-digest/route.ts": 1,
     "app/api/cron/crm-sequence-engine/route.ts": 4,
