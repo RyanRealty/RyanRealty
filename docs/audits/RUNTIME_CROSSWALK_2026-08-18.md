@@ -147,7 +147,19 @@ SendGrid, Mailgun, Posthog, Vercel Analytics/Speed Insights, Slack, Zapier, Clou
 
 ### In use — public (from 1h logs + tree)
 
+**139** public `page.tsx` files (not admin/api). **120** reachable (sitemap, nav, rewrite, email/token, or in-app href). Chrome SoR: `lib/site-nav.ts`. `/homes-for-sale` has no page file — rewrite to `/search`.
+
 Search (`/search`, `/search/[...slug]`), listing-by-address, home, contact, sell, cities, subdivisions, blog, videos, activity, compare, account, open-houses, our-homes, tools (mortgage + rental), housing-market/reports.
+
+`/months-of-supply` is in nav, **not** in sitemap (still in use). `/compare` same. Paid LPs intentionally unsitemapped.
+
+**Orphan public pages (19):**
+
+| Kind | Paths |
+|---|---|
+| Live DAL, no sitemap/nav/href | `/housing-market/annual-review`, `/housing-market/reports/archive/[city]` |
+| `/dev/*` prototypes | 7 pages (robots disallow `/dev/`) |
+| Redirect stubs next.config already 301s | `area-guides`, `areas`, `builders`, `resources`, `pulse`, old `/reports` hops |
 
 **Search/listing (last hunter).** Two live stacks: flagship `app/search/page.tsx` (`SearchFilters` + `MapSearchView`) vs SEO `app/search/[...slug]/page.tsx` (`SearchFilterBar` + grid; map only on `?view=map|split`). Pretty listing URLs rewrite to `app/listing/by-address` → `app/listing/[listingKey]`. Count SoR is `publishSearchCount` / `publishSearchCountPair`.
 
