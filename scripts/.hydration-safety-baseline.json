@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-15T06:13:15.456Z",
+  "generatedAt": "2026-08-18T05:54:00.351Z",
   "format": "file:line:ruleId — each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
   "total": 65,
   "violations": [
@@ -19,7 +19,7 @@
     "components/ListingTile.tsx:296:impure-helper",
     "components/ListingTile.tsx:42:clock-now",
     "components/PageCTA.tsx:76:impure-helper",
-    "components/activity/ActivityFeedCard.tsx:125:impure-helper",
+    "components/activity/ActivityFeedCard.tsx:112:impure-helper",
     "components/admin/crm/GlobalActivityFeed.client.tsx:253:clock-now",
     "components/broker/BrokerHeroCtaButtons.tsx:21:impure-helper",
     "components/broker/BrokerHeroCtaButtons.tsx:39:impure-helper",
@@ -32,7 +32,7 @@
     "components/community/CommunityCTA.tsx:26:impure-helper",
     "components/community/CommunityCTA.tsx:34:impure-helper",
     "components/community/CommunityListings.tsx:46:locale-date",
-    "components/geo-page/ActivityFeedCard.tsx:111:impure-helper",
+    "components/geo-page/ActivityFeedCard.tsx:102:impure-helper",
     "components/geo-page/ListingBarCard.tsx:101:impure-helper",
     "components/landing/LeadLandingForm.tsx:60:impure-helper",
     "components/landing/LeadLandingForm.tsx:61:impure-helper",

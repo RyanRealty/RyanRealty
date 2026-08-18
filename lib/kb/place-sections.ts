@@ -35,6 +35,7 @@
  *     the page file. It stays where the gate can see it, typed `number | null`.
  */
 
+import { activityEventDisplay } from '@/lib/activity/event-label'
 import { formatDate } from '@/lib/format/date'
 import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 import { cityHero } from '@/lib/geo-images'
@@ -171,15 +172,12 @@ export function formatOpenHouseWhen(eventDate: string, start: string | null, end
   return [day, range].filter(Boolean).join(' · ')
 }
 
-/** MLS event_type -> the KB activity row's kind + display label. */
-export const ACTIVITY_KIND: Record<string, { kind: string; label: string }> = {
-  new_listing: { kind: 'new', label: 'New' },
-  price_drop: { kind: 'price_drop', label: 'Price cut' },
-  status_pending: { kind: 'pending', label: 'Pending' },
-  status_closed: { kind: 'sold', label: 'Sold' },
-  back_on_market: { kind: 'new', label: 'Back on market' },
-  status_expired: { kind: 'expired', label: 'Off market' },
-}
+// MLS event_type -> the KB activity row's kind + display label is resolved by
+// `activityEventDisplay` in lib/activity/event-label.ts — the one place that
+// knows the full, open-ended event_type vocabulary. The local ACTIVITY_KIND map
+// that used to live here covered six of the ten types the writer emits and fell
+// back to printing the raw column value, so city / neighborhood / community
+// pages rendered tags like "status_canceled" at visitors.
 
 // ── Builders ─────────────────────────────────────────────────────────────────
 
@@ -217,7 +215,7 @@ export function buildActivityItems(
 ): KbActivityItem[] {
   const { limit = 8, staleNewAfterDays } = opts
   return rows.slice(0, limit).map((a) => {
-    const km = ACTIVITY_KIND[a.event_type] ?? { kind: a.event_type, label: a.event_type }
+    const km = activityEventDisplay(a.event_type)
     const daysOld = a.event_at ? (Date.now() - new Date(a.event_at).getTime()) / 86_400_000 : Infinity
     const staleNew = staleNewAfterDays != null && km.label === 'New' && daysOld > staleNewAfterDays
     return {

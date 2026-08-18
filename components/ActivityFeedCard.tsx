@@ -7,21 +7,28 @@ import { toggleSavedListing } from '../app/actions/saved-listings'
 import { BookmarkIcon } from '@/components/icons/ActionIcons'
 import { trackSavedPropertyAction } from '../app/actions/track-saved-property'
 import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
+import { activityEventLabel } from '@/lib/activity/event-label'
 import { Button } from "@/components/ui/button"
 import { listingDetailPath } from '@/lib/slug'
 
+/**
+ * Badge tint stays local (design tokens); the words come from
+ * lib/activity/event-label.ts so this card cannot label an event differently
+ * from the rest of the site — or print a raw enum.
+ */
 function eventBadge(type: ActivityFeedItem['event_type']): { label: string; className: string } {
+  const label = activityEventLabel(type)
   switch (type) {
     case 'new_listing':
-      return { label: 'New', className: 'bg-success' }
+      return { label, className: 'bg-success' }
     case 'price_drop':
-      return { label: 'Price drop', className: 'bg-warning' }
+      return { label, className: 'bg-warning' }
     case 'status_pending':
-      return { label: 'Under contract', className: 'bg-warning' }
+      return { label, className: 'bg-warning' }
     case 'status_closed':
-      return { label: 'Sold', className: 'bg-muted-foreground' }
+      return { label, className: 'bg-muted-foreground' }
     default:
-      return { label: '', className: '' }
+      return { label, className: 'bg-muted-foreground' }
   }
 }
 

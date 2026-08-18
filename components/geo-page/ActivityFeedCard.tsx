@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
+import { activityEventLabel } from '@/lib/activity/event-label'
 import { Badge } from '@/components/ui/badge'
 import ActivityCelebrationOverlay from '@/components/activity/ActivityCelebrationOverlay'
 import CardActionBar from '@/components/ui/CardActionBar'
@@ -32,19 +33,9 @@ function formatPrice(n: number | null | undefined): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
+/** Public label. One vocabulary, resolved in lib/activity/event-label.ts. */
 function eventLabel(type: ActivityFeedItem['event_type']): string {
-  switch (type) {
-    case 'new_listing':
-      return 'New listing'
-    case 'price_drop':
-      return 'Price reduced'
-    case 'status_pending':
-      return 'Went pending'
-    case 'status_closed':
-      return 'Closed'
-    default:
-      return 'Activity'
-  }
+  return activityEventLabel(type)
 }
 
 function eventBadgeVariant(

@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
+import { activityEventLabel } from '@/lib/activity/event-label'
 import ActivityCelebrationOverlay from '@/components/activity/ActivityCelebrationOverlay'
 import CardActionBar from '@/components/ui/CardActionBar'
 import { listingDetailPath } from '@/lib/slug'
@@ -18,23 +19,9 @@ import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import { toggleLikeListing } from '@/app/actions/likes'
 
+/** Public label. One vocabulary, resolved in lib/activity/event-label.ts. */
 function eventLabel(type: ActivityFeedItem['event_type']): string {
-  switch (type) {
-    case 'new_listing':
-      return 'New to market'
-    case 'price_drop':
-      return 'Price drop'
-    case 'status_pending':
-      return 'Pending'
-    case 'status_closed':
-      return 'Sold'
-    case 'status_expired':
-      return 'Expired'
-    case 'back_on_market':
-      return 'Back on market'
-    default:
-      return type
-  }
+  return activityEventLabel(type)
 }
 
 function eventBadgeVariant(

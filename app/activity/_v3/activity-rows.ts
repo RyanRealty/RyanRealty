@@ -6,17 +6,9 @@
 import type { V3LedgerFigureRow } from '@/components/site/v3'
 import { v3Text } from '@/components/site/v3'
 import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
+import { activityEventLabel } from '@/lib/activity/event-label'
 import { listingTileHref } from '@/lib/slug'
 import { livePrice, liveStamp } from '@/app/_v3/live-format'
-
-const ACTIVITY_LABEL: Record<string, string> = {
-  new_listing: 'New',
-  price_drop: 'Price cut',
-  status_pending: 'Pending',
-  status_closed: 'Sold',
-  back_on_market: 'Back on market',
-  status_expired: 'Off market',
-}
 
 export function activityRows(items: readonly ActivityFeedItem[]): V3LedgerFigureRow[] {
   const rows: V3LedgerFigureRow[] = []
@@ -32,7 +24,7 @@ export function activityRows(items: readonly ActivityFeedItem[]): V3LedgerFigure
     if (!price) continue
     const when = liveStamp(a.event_at)
     if (!when) continue
-    const kind = ACTIVITY_LABEL[a.event_type] ?? a.event_type
+    const kind = activityEventLabel(a.event_type)
     const placeName = [a.City, a.SubdivisionName]
       .map((part) => (typeof part === 'string' ? part.trim() : ''))
       .filter((part) => part.length > 0 && part.toUpperCase() !== 'N/A')

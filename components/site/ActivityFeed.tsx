@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { ACTIVITY_FEED_DEFAULT_CITIES, type ActivityFeedItem } from '@/app/actions/activity-feed-shared'
+import { activityEventLabel } from '@/lib/activity/event-label'
 import {
   Container,
   Eyebrow,
@@ -71,15 +72,9 @@ function iconFor(event: ActivityFeedItem['event_type']) {
   }
 }
 
+/** Public label. One vocabulary, resolved in lib/activity/event-label.ts. */
 function leadFor(event: ActivityFeedItem['event_type']): string {
-  switch (event) {
-    case 'new_listing': return 'New listing'
-    case 'price_drop': return 'Price drop'
-    case 'status_pending': return 'Pending'
-    case 'status_closed': return 'Closed'
-    case 'status_expired': return 'Expired'
-    case 'back_on_market': return 'Back on market'
-  }
+  return activityEventLabel(event)
 }
 
 function buildAddress(item: ActivityFeedItem): string {
