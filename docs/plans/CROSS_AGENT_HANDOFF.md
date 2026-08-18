@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — place-pages alias 308 + MLS plat names slice
+# Current — 2026-08-18 (cursor-loop-chain) — place-pages subdivision chrome-only slice
+
+**Surface:** Cursor cloud `bc-36be220b` (`cursor/loop-chain-2026-08-18t01-48-6f96`). **Time:** 2026-08-18 ~02:00 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 348). Claimed parent only. **No product change** — all 8 lines rejected at 390+1280. Production stays **READY** on `main` `@ d1e38c59c` (prior product `aa4c62d67`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (340 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: `/subdivisions/{8th-street-cottages,barclay-meadows,ahern-acres,brierwood,alstrup-estates,bend-park,blue-chip-ranch,boyd-place}` chrome-only **rejected**. Every URL is HTTP 200 with visible `h1.hero-h` (aria-label `… Homes for Sale`) and `main.kb-root`. Empty plats print **No active listings in {name} right now**. Inventory plats render listing cards (Bend Park 5, Blue Chip Ranch 4, Ahern Acres 3, Alstrup Estates 2). Fleet text (skip / logo / Saved / Menu / phone only) matches pre-stream layout chrome plus hidden `id="S:0"` — not the painted page.
+- Class: none. Do not invent a shell or 404 for plats that already render H1 + empty or cards.
+- Prod probe: Playwright Chromium + `rr-ci-probe/1.0` at 390 and 1280. After shots `/opt/cursor/artifacts/reject_8th_street_cottages_{390,1280}_h1.png`, `/opt/cursor/artifacts/reject_bend_park_{390,1280}_h1.png`, `/opt/cursor/artifacts/reject_boyd_place_{390,1280}_empty.png`, `/opt/cursor/artifacts/reject_bend_park_390_listings.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages alias 308 + MLS plat names slice
 
 **Surface:** Cursor cloud `bc-1d730b67` (`cursor/loop-chain-2026-08-18t00-28-e09f`). **Time:** 2026-08-18 ~01:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 364). Claimed parent only. Product **`aa4c62d67`** landed on **`main`**. Vercel Production **READY** for `aa4c62d67` (`3nZFnPSbtSAVLzWquxqMkfvJG7q2`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (356 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
