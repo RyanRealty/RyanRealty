@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + SSL reject slice
+# Current — 2026-08-18 (cursor-loop-chain) — listing-detail not-found reject slice
+
+**Surface:** Cursor cloud `bc-fa1a24f6` (`cursor/loop-chain-2026-08-18t10-26-df52`). **Time:** 2026-08-18 ~10:40 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 220). Claimed parent only as `cursor-loop-chain-bc-fa1a24f6-2026-08-18t10-26`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (212 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Central Point Gregory / Eagle Point Dutton / Ashland Courtney / Prineville Custer / Grants Pass Ferry / Ashland Fairway / Madras Depot / Klamath Falls Avalon 200 not-found homepage shells **rejected** (each 200 + address title/H1 + list price). Courtney first HTML fetch (16s) returned homepage tags; three retries and both viewports are `424 Courtney Street` `$674,900`. Hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet not-found shell did not reproduce. Do not invent a fix. Do not invent a listing.
+- Prod probe on live `de3733b74`: Gregory H1 `$350,000`; Dutton H1 `$265,000`; Courtney H1 `$674,900`; Custer H1 `$77,777`; Ferry H1 `$110,000`; Fairway H1 `$795,000`; Depot H1 `$32,000`; Avalon H1 `$1` (MLS ask, not a homepage). After shots `/opt/cursor/artifacts/after_gregory_{390,1280}.png`, `/opt/cursor/artifacts/after_courtney_{390,1280}.png`, `/opt/cursor/artifacts/after_avalon_390.png`, `/opt/cursor/artifacts/after_dutton_1280.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + SSL reject slice
 
 **Surface:** Cursor cloud `bc-5bc17e51` (`cursor/loop-chain-2026-08-18t10-16-1314`). **Time:** 2026-08-18 ~10:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 228). Claimed parent only as `cursor-loop-chain-bc-5bc17e51-2026-08-18t10-16`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (220 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
