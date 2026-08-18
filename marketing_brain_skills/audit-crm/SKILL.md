@@ -1,11 +1,11 @@
 ---
 name: marketing-brain-audit-crm
-description: Audit the Follow Up Boss (FUB) CRM pipeline. Measures lead source quality, response-time SLA compliance, pipeline stage health, and the qualified-seller-leads north-star metric. Outputs CRMAuditReport for downstream generate-briefs. Reads only from public.marketing_channel_daily (channel='fub'). Manual trigger at /api/marketing-brain/audit/crm.
+description: Audit the in-house CRM pipeline. Measures lead source quality, response-time SLA compliance, pipeline stage health, and the qualified-seller-leads north-star metric. Outputs CRMAuditReport for downstream generate-briefs. Reads only from public.marketing_channel_daily (legacy channel key 'fub'). Manual trigger at /api/marketing-brain/audit/crm.
 ---
 
 # marketing-brain: audit-crm
 
-Audits the Follow Up Boss (FUB) CRM and lead-handling pipeline. Produces a `CRMAuditReport` consumed by `generate-briefs` to prioritize CRM-sourced content and operational improvements.
+Audits the in-house CRM and lead-handling pipeline. Produces a `CRMAuditReport` consumed by `generate-briefs` to prioritize CRM-sourced content and operational improvements.
 
 ---
 
@@ -19,7 +19,7 @@ Audits the Follow Up Boss (FUB) CRM and lead-handling pipeline. Produces a `CRMA
 
 ---
 
-## FUB data shape
+## CRM data shape
 
 All data reads from `public.marketing_channel_daily` where `channel = 'fub'`.
 
@@ -29,11 +29,11 @@ Written by `app/api/cron/marketing-snapshot-fub/route.ts` (via `lib/fub-snapshot
 
 | Metric | Description |
 |---|---|
-| `new_leads` | Leads created in FUB that day |
+| `new_leads` | Leads created in the CRM that day |
 | `qualified_seller_leads` | Leads with any canonical seller tag (hot-seller, warm-seller, seller, seller-lead). Excludes nurture-only. This is the north-star metric. |
 | `avg_response_time_minutes` | Mean (respondedAt − createdAt) for new leads with measurable response. Only emitted on days where at least one response time was recorded. |
-| `appointments_booked` | FUB events of type Appointment on that day |
-| `deals_created` | Deals created in FUB that day |
+| `appointments_booked` | CRM events of type Appointment on that day |
+| `deals_created` | Deals created in the CRM that day |
 | `deals_closed_won` | Deals whose status transitioned to "closed won" (approximated via updatedAt within day window) |
 | `deals_lost` | Deals whose status transitioned to "closed lost" (same approximation) |
 
@@ -54,7 +54,7 @@ Written by `app/api/cron/marketing-snapshot-fub/route.ts` (via `lib/fub-snapshot
 
 ## Seller-lead tag vocabulary
 
-Tags in FUB that identify a lead as a qualified seller (from `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md §2`):
+Tags in the CRM that identify a lead as a qualified seller (from `docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md §2`):
 
 | Tag | Meaning | Included in north-star |
 |---|---|---|
@@ -126,7 +126,7 @@ untagged_pct = (window_new_leads - window_qualified_seller_leads) / window_new_l
 
 Flag threshold: `TAGGING_DRIFT_THRESHOLD_PCT = 10`.  if > 10% of new leads in the window carry no seller-stage tag, a tagging-drift opportunity is emitted.
 
-This is an approximation. Leads tagged `nurture-only` or untagged both appear in the numerator. True tagging drift (no tag at all on day 0) would require per-person tag inspection in FUB, not available in the aggregated ingestor data.
+This is an approximation. Leads tagged `nurture-only` or untagged both appear in the numerator. True tagging drift (no tag at all on day 0) would require per-person tag inspection in the CRM, not available in the aggregated ingestor data.
 
 ---
 
@@ -230,7 +230,7 @@ Same 10-tag set as `marketing-brain:diagnose-performance`. Tags used by this ski
 
 ## Related skills
 
-- `marketing-brain:snapshot-channels` (`app/api/cron/marketing-snapshot-fub/`).  upstream; writes the FUB rows this skill reads.
+- `marketing-brain:snapshot-channels` (`app/api/cron/marketing-snapshot-fub/`).  upstream; writes the CRM snapshot rows this skill reads.
 - `marketing-brain:diagnose-performance`.  parallel; same `marketing_channel_daily` table, different analysis focus (channel-level, all channels).
 - `marketing-brain:generate-briefs`.  downstream; consumes `opportunities[].recommended_action` to decide what CRM-improvement content to create.
 - `marketing-brain:weekly-cycle`.  orchestrates snapshot + diagnose + audit-crm + generate-briefs in sequence.

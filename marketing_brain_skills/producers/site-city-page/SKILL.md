@@ -86,7 +86,7 @@ The city page links to those, doesn't substitute for them.
 - City vs Central Oregon peer comparison (Bend vs Redmond vs Sisters)
 - The "relocating to Bend" content block: cost-of-living, schools, climate, employers, taxes
 - A "neighborhoods at a glance" matrix with price tier per neighborhood
-- Buyer track + Seller CMA forms (same as community pages, FUB-tagged with `city:bend`)
+- Buyer track + Seller CMA forms (same as community pages, CRM-tagged with `city:bend`)
 - Brand voice validation
 - TypeScript compile verification
 
@@ -289,7 +289,7 @@ Page structure (rich, similar to community page):
 12. **Schools** section with the Bend-La Pine district overview + per-area assignment table
 14. **Pipeline** --EMDASH-- major construction projects, zoning changes, master-plan amendments
 15. **Buyer track** (three cards: showing, alerts, guide) --EMDASH-- same pattern as community pages
-16. **CMA seller form** (FUB tagged `city:bend`)
+16. **CMA seller form** (CRM tagged `city:bend`)
 17. **Methodology** footer
 18. **Footer** with the resort + community pages list (linking to all 14+)
 19. **JSON-LD** City + RealEstateAgent

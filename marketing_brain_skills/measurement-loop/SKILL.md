@@ -157,7 +157,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 2. Wire YouTube Analytics measurement (per-video query splits)
 3. Wire LinkedIn measurement (after dev-app decision)
 4. Wire blog measurement via GA4 page-path filter
-5. Add `attributed_leads` join from FUB (match by source_medium or UTM)
+5. Add `attributed_leads` join from the CRM (match by source_medium or UTM)
 6. Add the dashboard card surfacing top performers
 7. Update producer SKILL.mds to enforce the `published_posts` contract
 8. Add a +90d window for "lifetime confirmed" reads

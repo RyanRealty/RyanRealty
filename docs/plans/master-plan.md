@@ -41,7 +41,7 @@ This document merges the three canonical plan files (Market Data Platform, Compr
 | `app/layout.tsx` (site-wide banner) | Monetization | Engagement doesn't add global UI |
 | `app/sitemap.ts` | Monetization | Reporting may add report URLs |
 | `app/guides/*` | Monetization | Not touch |
-| `lib/followupboss.ts` | Shared | Extend carefully, don't break existing |
+| `lib/crm/send-event.ts` | Shared | Extend carefully, don't break existing |
 | `components/ShareButton.tsx` | Shared | Extend carefully |
 | `app/admin/*` | Admin | Only superuser changes |
 

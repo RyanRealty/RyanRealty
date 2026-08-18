@@ -461,7 +461,7 @@ Same as `site-community-page`: pending → in_production → ready → approved 
 
 3. **Owner identity badge from public records.** For OPM listings where the owner is a builder or a recognizable brand (Pahlisch, etc.), surfacing that on the page adds authority. Sourced from county assessor records.
 
-4. **Per-listing analytics dashboard.** A small admin view at `/admin/listings/<mls_slug>` showing impressions (GA4), clicks (GSC), showing requests (FUB), and time-on-page. Lets Matt see which OPM listings are winning the SERP.
+4. **Per-listing analytics dashboard.** A small admin view at `/admin/listings/<mls_slug>` showing impressions (GA4), clicks (GSC), showing requests (CRM), and time-on-page. Lets Matt see which OPM listings are winning the SERP.
 
 5. **Daily SERP delta tracker.** A small cron that checks Google for each listing's address query and reports our SERP position vs. Zillow, Realtor.com, Redfin, and the listing brokerage. Surface to Matt as a weekly digest.
 

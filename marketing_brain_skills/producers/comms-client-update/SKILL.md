@@ -4,7 +4,7 @@ description: >
   Produces per-client touchpoint communications: weekly seller status updates,
   milestone notes (offer accepted, inspection passed, closing), and quarterly
   past-client touches (home-value update + market snapshot). Sends via Resend
-  with FUB-personalized fields. Voice-validated for warmth and brevity in Matt's
+  with CRM-personalized fields. Voice-validated for warmth and brevity in Matt's
   actual writing register.
 action_types:
   - comms:client_weekly
@@ -13,7 +13,7 @@ action_types:
 output_type: text
 target_platforms: ['email']
 asset_destination: marketing_brain_actions row + email/SMS
-auto_inputs: ['fub_contact_data', 'transaction_status']
+auto_inputs: ['crm_contact_data', 'transaction_status']
 required_inputs: ['contact_id', 'update_type', 'update_body']
 optional_inputs: ['send_channel (default email)', 'schedule_iso (default immediate)']
 estimated_runtime_min: 3
@@ -121,7 +121,7 @@ interface ClientUpdateActionRow {
   assigned_producer: string;         // 'marketing_brain_skills/producers/comms-client-update'
   payload: ClientUpdatePayload;
   data_evidence: {
-    audit_source?: string;           // e.g. 'ops-fub-crm'
+    audit_source?: string;           // e.g. 'crm-sequence-engine'
     trigger_event?: string;          // e.g. 'ShowingConfirmed', 'OfferReceived'
     signal_evidence?: string;
   };
@@ -305,7 +305,7 @@ VERIFICATION TRACE
 
 SEND INSTRUCTIONS
 Via Resend from: <RESEND_FROM or fallback>
-FUB tag to apply after send: 'weekly_update_sent' / 'milestone_<type>' / 'past_client_touch_<quarter>'
+CRM tag to apply after send: 'weekly_update_sent' / 'milestone_<type>' / 'past_client_touch_<quarter>'
 ```
 
 **Step 8: Write citations.json and contact-sheet.html**
@@ -380,23 +380,23 @@ Resend dashboard before sending." Set `status='killed'`. Do not send from
 
 On successful send: update action row to `executed` with the Resend message ID.
 
-**Step 11: Apply FUB tag (post-send)**
+**Step 11: Apply CRM tag (post-send)**
 
-After confirmed send, apply the appropriate FUB tag via `lib/followupboss.ts` or the
-FUB REST API:
+After confirmed send, apply the appropriate CRM tag via `lib/crm/send-event.ts` or the
+in-house CRM (`sendEvent`):
 
 ```
-POST https://api.followupboss.com/v1/events
+POST sendEvent() in lib/crm/send-event.ts
 {
   "source": "Ryan Realty Brain",
   "type": "Note",
-  "personId": "<fub_person_id>",
+  "personId": "<crm_person_id>",
   "description": "Automated <action_type> email sent <ISO date>."
 }
 ```
 
-If FUB person ID is not in the payload, search by email via the FUB people API before
-tagging. If not found in FUB, log the gap in `executor_response.warnings` but do not
+If CRM person ID is not in the payload, search by email via the CRM people API before
+tagging. If not found in the CRM, log the gap in `executor_response.warnings` but do not
 block the send.
 
 ---
@@ -407,7 +407,7 @@ block the send.
 |---|---|---|
 | Supabase MCP | listing data; market stat queries; action row updates | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | Resend API | email delivery | `RESEND_API_KEY`, `RESEND_FROM` |
-| FUB REST API | post-send tagging and event logging | `FOLLOWUPBOSS_API_KEY` |
+| in-house CRM (`sendEvent`) | post-send tagging and event logging | in-house CRM (`public.crm_people`) |
 | Read (file) | GBP corpus, brand voice, bend-market-bible | paths above |
 | Write (file) | `email-draft.txt`, `citations.json`, `contact-sheet.html` | `out/comms-client-update/<slug>/` |
 
@@ -424,7 +424,7 @@ out/comms-client-update/<slug>/
 └── contact-sheet.html
 ```
 
-**After Matt approval:** email sent via Resend; FUB event logged; action row updated to `executed`.
+**After Matt approval:** email sent via Resend; CRM event logged; action row updated to `executed`.
 
 ---
 
@@ -457,7 +457,7 @@ ready             <- executor_response populated with draft_path
   v (Matt says "approve")
 approved          <- approved_by='matt', approved_at=now()
   |
-  v (Resend confirms delivery; FUB event logged)
+  v (Resend confirms delivery; CRM event logged)
 executed          <- Resend message_id captured
   |
   v (no performance loop for direct client emails; marked measured immediately)
@@ -474,7 +474,7 @@ measured
 | Neighborhood data sparse | Fewer than 3 closed sales in 12-month window | Omit median; use the "market has been active" fallback language |
 | RESEND_FROM unset | `process.env.RESEND_FROM` undefined | Kill; surface setup instructions for mail.ryan-realty.com domain verification |
 | Resend API 4xx | Authentication or domain verification error | Kill; surface the full Resend error; do not retry without Matt's direction |
-| FUB person not found | Email lookup returns 0 contacts | Log warning; proceed with send; do not block |
+| CRM person not found | Email lookup returns 0 contacts | Log warning; proceed with send; do not block |
 | Voice fail after 2 iterations | Banned word persists | Kill; cite the specific rule and offending text |
 
 ---
@@ -500,9 +500,9 @@ measured
 
 What would make this 10x better:
 
-1. **FUB webhook trigger**: auto-dispatch a comms-client-update action row when FUB fires a stage-changed webhook (e.g. Under Contract to Closed) rather than requiring a manual produce call.
-2. **Personalization tokens**: replace [CLIENT_NAME], [ADDRESS], [DATE] placeholders with actual values pulled from the FUB contact record at send time rather than requiring the caller to populate them.
-3. **Two-way SMS threading**: if the client replies via SMS, pipe the reply back into the FUB activity feed and create an inbox action row so Matt sees the thread in context.
+1. **CRM inbound (`sendEvent`) trigger**: auto-dispatch a comms-client-update action row when a CRM stage changes (e.g. Under Contract to Closed) rather than requiring a manual produce call.
+2. **Personalization tokens**: replace [CLIENT_NAME], [ADDRESS], [DATE] placeholders with actual values pulled from the CRM contact record at send time rather than requiring the caller to populate them.
+3. **Two-way SMS threading**: if the client replies via SMS, pipe the reply back into the CRM activity feed and create an inbox action row so Matt sees the thread in context.
 
 ---
 

@@ -41,8 +41,7 @@ off to the matching producer the moment a confident parse is dispatched.
 Do NOT use this skill for:
 - Drafting outbound marketing email.  that is `ops-email-send`.
 - Generating brain-side digests Matt receives daily.  that is `daily-digest`.
-- Anything to do with FUB email parsing.  `ops-fub-crm` and the FUB
-  ingestor own that.
+- CRM sequence email.  that is `lib/crm/` / `/admin/crm/sequences`. `ops-fub-crm` is a refuse stub.
 
 ---
 

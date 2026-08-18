@@ -14,7 +14,7 @@ description: >
   cma or the generic comms-email producer) any time the deliverable is a
   per-community-branded PDF buyer's guide. This skill ALSO handles the
   request-handler endpoint that captures buyer's guide form submissions,
-  enriches them with FUB lead routing, and emails the PDF via Resend with
+  enriches them with CRM lead routing, and emails the PDF via Resend with
   a personalized cover note. Each guide has a canonical web version at
   /lp/<community>/buyers-guide/ for SEO + AEO, and the PDF is generated
   from that same page via Puppeteer so they never drift apart.
@@ -62,7 +62,7 @@ on the community LP.
 
 This producer also owns the request-handler API endpoint at
 `/api/buyers-guide/request` that the LP form submits to: it validates the
-request, creates a FUB lead with the right tags, regenerates the PDF if
+request, creates a CRM lead with the right tags, regenerates the PDF if
 older than 7 days (so guide numbers stay fresh), and emails the PDF as an
 attachment via Resend.
 
@@ -85,7 +85,7 @@ attachment via Resend.
 - `ops:buyers_guide_setup`: one-time setup of the Puppeteer PDF generation
   + Resend template + request handler. Idempotent.
 - `ops:buyers_guide_send`: triggered by the LP form submission. Validates
-  request, creates FUB lead, regenerates PDF if stale, emails it.
+  request, creates CRM lead, regenerates PDF if stale, emails it.
 - Both the web page and the PDF share the same data pipeline: pulled live
   from Supabase at PDF-generation time, with `pdf_generated_at` timestamp
   stamped onto the cover so the reader knows when the data was current.
@@ -305,7 +305,7 @@ await browser.close()
 - POST handler accepts BuyersGuideRequestPayload
 - Validates required fields
 - Looks up the PDF at `public/guides/<community_slug>/<slug>-buyers-guide.pdf`. If file doesn't exist OR is older than 7 days, kicks off a regeneration job (or returns a "not yet available" error)
-- Creates a FUB lead with tags: `buyer-intent-soft`, `buyers-guide-requested`, `resort:<community_slug>`, `lp:<source_lp>`
+- Creates a CRM lead with tags: `buyer-intent-soft`, `buyers-guide-requested`, `resort:<community_slug>`, `lp:<source_lp>`
 - Sends the PDF as an email attachment via Resend, with a personalized cover note (Matt's voice, brand-validated)
 - Returns 200 with `{ success: true, lead_id }`
 - Fires gtag + fbq events
@@ -347,17 +347,16 @@ test $(($(date +%s) - $(stat -f %m public/guides/<slug>/<slug>-buyers-guide.pdf)
 
 If older than 7 days, regenerate.
 
-**Step 3.** Create FUB lead:
+**Step 3.** Create CRM lead:
 ```typescript
-await fubCreatePerson({
-  email,
-  name,
-  tags: ['buyer-intent-soft', 'buyers-guide-requested', `resort:${community_slug}`, `lp:${source_lp}`],
+await sendEvent({
+  type: 'Registration',
   source: 'Buyers Guide Request',
-  customFields: {
-    buyers_guide_community: community_slug,
-    buyers_guide_requested_at: new Date().toISOString()
-  }
+  person: {
+    firstName: name,
+    emails: [{ value: email }],
+    tags: ['buyer-intent-soft', 'buyers-guide-requested', `resort:${community_slug}`, `lp:${source_lp}`],
+  },
 })
 ```
 
@@ -376,7 +375,7 @@ await fubCreatePerson({
 | Supabase MCP | data queries for guide content | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | Puppeteer | PDF generation from the web page | `npm install puppeteer` |
 | Resend | email delivery with PDF attachment | `RESEND_API_KEY`, `RESEND_FROM='Ryan Realty <hello@mail.ryan-realty.com>'` |
-| FUB API | lead create on each request | `FOLLOWUPBOSS_API_KEY` |
+| sendEvent / crm_people | lead create on each request | in-house CRM (`public.crm_people`) |
 | Vercel cron | weekly PDF regeneration | registered in `vercel.json` |
 
 ---
@@ -428,7 +427,7 @@ Buyer's guide ready: <community_name>
   TEST PLAN
     1. Open the web version at https://ryan-realty.com/lp/<slug>/buyers-guide/
     2. POST to /api/buyers-guide/request with a test email
-    3. Confirm PDF attached, FUB lead created, voice-validated cover note
+    3. Confirm PDF attached, CRM lead created, voice-validated cover note
 
 Matt merges the PR in GitHub to ship.
 ```
@@ -480,7 +479,7 @@ pending -> in_production -> executed (email sent successfully)
 | PDF render fails | Puppeteer goto returns 4xx | Kill; surface to Matt with the URL and the Puppeteer error |
 | PDF file too large | > 25 MB | Reduce image resolution; if still too large, split into a "Part 1" and "Part 2" |
 | Resend attachment size limit | > 40 MB | Switch to "Download link" mode: store PDF in Supabase Storage, send link instead of attachment |
-| FUB lead create fails | API 5xx | Send the email anyway; log the FUB failure; retry FUB on next cron tick |
+| CRM lead create fails | `sendEvent` 5xx | Send the email anyway; log the CRM failure; retry `sendEvent` on next cron tick |
 | Voice fail | banned word in cover letter or section | Kill; surface specific token + rule |
 | Sub-neighborhood data missing | resort-communities.json incomplete | Omit that section; note in PR |
 
@@ -501,7 +500,7 @@ pending -> in_production -> executed (email sent successfully)
 - `marketing_brain_skills/producers/site-community-page/SKILL.md`. Renders the "Send the guide" form that POSTs to this producer's /request endpoint
 - `marketing_brain_skills/producers/site-subdivision-page/SKILL.md` (pending). Same at the subdivision tier
 - `marketing_brain_skills/producers/site-city-page/SKILL.md` (pending). Same at the city tier
-- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md`. FUB lead pattern
+- `lib/crm/send-event.ts`. CRM lead create (`ops-fub-crm` is a refuse stub)
 - `marketing_brain_skills/producers/ops-email-send/SKILL.md`. Resend send pattern
 - `marketing_brain_skills/producers/listing-alerts/SKILL.md`. Sibling backend producer (same lead-routing pattern)
 
@@ -513,7 +512,7 @@ pending -> in_production -> executed (email sent successfully)
 
 ## 11. Tool gap suggestions
 
-1. **Per-buyer personalization.** Today every guide is the same PDF for every recipient. A future iteration could inject the recipient's name in the cover letter, attach a custom "homes you've already viewed" appendix from FUB tracking, or pre-fill the "next 30 days" plan with their stated timeline.
+1. **Per-buyer personalization.** Today every guide is the same PDF for every recipient. A future iteration could inject the recipient's name in the cover letter, attach a custom "homes you've already viewed" appendix from CRM tracking, or pre-fill the "next 30 days" plan with their stated timeline.
 
 2. **Multi-language.** Bend gets occasional out-of-country buyer interest. A Spanish-language Tetherow guide would unlock LATAM HNW prospect engagement.
 

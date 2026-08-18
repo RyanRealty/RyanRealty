@@ -35,7 +35,7 @@ Website performance audit for the marketing brain. Reads the metrics written by 
 
 - Minimum **14 non-zero days** of ga4 `sessions` data for the window before the audit runs.
 - When this threshold is not met, `auditWebsite` returns `status: 'insufficient_data'` immediately with a `missing_data` array listing which channels and metrics are short, and an empty `opportunities` array.
-- GSC and FUB data that falls below 14 days is noted in `missing_data` but does not by itself block the audit.  the audit degrades gracefully (SEO or funnel sections will have sparse data).
+- GSC and CRM data that falls below 14 days is noted in `missing_data` but does not by itself block the audit.  the audit degrades gracefully (SEO or funnel sections will have sparse data).
 
 ---
 
@@ -78,7 +78,7 @@ sessions → engaged_sessions → lead_events → qualified_seller_leads
 - **sessions**: total GA4 sessions (account scope, channel='ga4')
 - **engaged_sessions**: sessions with >= 10s engagement, >= 1 conversion, or >= 2 pageviews (GA4 definition; stored by snapshot ingestor)
 - **lead_events**: GA4 custom events tagged as lead actions (form submits, call clicks, etc.)
-- **qualified_seller_leads**: FUB count of leads tagged as qualified seller prospects (channel='fub', metric='qualified_seller_leads')
+- **qualified_seller_leads**: CRM count of leads tagged as qualified seller prospects (channel='fub', metric='qualified_seller_leads')
 
 Drop-off rate at each step = `(prev_step_value - step_value) / prev_step_value`.
 

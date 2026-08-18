@@ -258,11 +258,11 @@ Full bios + headshots at `assets/team/`. Source of truth for the broker roster a
 
 | Slug | Name | Title | Phone | Email |
 |---|---|---|---|---|
-| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (FUB-tracked bio) | matt@ryan-realty.com |
+| `matt-ryan` | Matt Ryan | Owner & Principal Broker | `541.703.3095` (bio / lead-capture) | matt@ryan-realty.com |
 | `paul-stevenson` | Paul Stevenson | Broker | `541.977.6841` | — |
 | `rebecca-ryser-peterson` | Rebecca Ryser Peterson | Broker | `415.308.9087` | — |
 
-**Brand-voice phone:** `541.213.6706` (Matt direct — the yard sign number). Use this on signage, video VO, and signature heritage moments. Use the **bio / FUB-tracked phone** (`541.703.3095`) on social profiles, ads, and any lead-capture surface so calls route through Follow Up Boss for attribution.
+**Brand-voice phone:** `541.213.6706` (Matt direct — the yard sign number). Use this on signage, video VO, and signature heritage moments. Use the **bio / lead-capture phone** (`541.703.3095`) on social profiles, ads, and any lead-capture surface so inbound calls land on the brokerage main line.
 
 Files: `matt-ryan.png` / `paul-stevenson.png` / `rebecca-peterson.png` (transparent, default) and `.jpg` (white bg, legacy). 800×1200 · 552px head height · 20px top whitespace · face horizontally centered. Web mirror at `public/images/brokers/`.
 

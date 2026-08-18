@@ -185,7 +185,7 @@ Required details:
 | Styling | Tailwind v4, shadcn/ui components only |
 | Testing | Vitest (unit), Playwright (E2E + visual), Lighthouse CI (perf), pa11y-ci (a11y) |
 | Deployment | Vercel |
-| CRM | In-house (`public.crm_people`). Follow Up Boss is decommissioned. |
+| CRM | In-house (`public.crm_people`). |
 | Data Feed | Spark/MLS API |
 
 ### Running Locally
@@ -272,7 +272,7 @@ The ownership matrix in `docs/plans/master-plan.md` is enforced. Check it before
 | Engagement | `app/search/[...slug]/page.tsx`, `app/page.tsx`, `app/listing/[listingKey]/page.tsx` |
 | Monetization | `components/AdUnit.tsx`, `app/layout.tsx` (banner), `app/guides/*`, `app/sitemap.ts` |
 | Admin | `app/admin/*` |
-| Shared | `lib/followupboss.ts`, `components/ShareButton.tsx` |
+| Shared | `lib/crm/send-event.ts`, `components/ShareButton.tsx` |
 
 ---
 

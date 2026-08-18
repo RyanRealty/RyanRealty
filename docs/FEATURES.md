@@ -74,7 +74,7 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 **Agent contact (2I):**
 
 - “Schedule a showing” and “Ask a question” open **in-page modals** (no mailto).
-- Forms submit via `submitListingInquiry` → stored in Supabase `listing_inquiries` and sent to Follow Up Boss (FUB).
+- Forms submit via `submitListingInquiry` → stored in Supabase `listing_inquiries` and written to `public.crm_people` via `sendEvent()`.
 - Both mobile and desktop CTAs receive `listingKey` for correct attribution.
 
 **Save and share:**
@@ -127,11 +127,11 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 
 ## 4. Integrations
 
-### 4.1 Follow Up Boss (FUB)
+### 4.1 In-house CRM
 
 - **Purpose:** CRM; track signed-in users and listing/page views.
-- **Status: DECOMMISSIONED 2026-06-24.** `getFubApiKey()` in `lib/crm/fub-env.ts` returns `undefined`, so `FOLLOWUPBOSS_API_KEY` is inert and no FUB API call fires. `sendEvent()` in `lib/followupboss.ts` writes to `public.crm_people` instead. The behavior described below now happens in the in-house CRM. Historical setup docs: `docs/archive/fub-era/README.md`.
-- **Behavior:** On Google sign-in, person is found or created in FUB and a **Registration** event is sent. While signed in: **Viewed Property** (listing views), **Viewed Page** (e.g. search pages). Listing inquiry forms (Schedule showing, Ask a question) submit to FUB via `submitListingInquiry` and are stored in `listing_inquiries`.
+- **Writer:** `sendEvent()` in `lib/crm/send-event.ts` creates or reuses a `public.crm_people` row. Archive of the retired vendor path: `docs/archive/fub-era/README.md`.
+- **Behavior:** On Google sign-in, person is found or created and a **Registration** event is sent. While signed in: **Viewed Property** (listing views), **Viewed Page** (e.g. search pages). Listing inquiry forms (Schedule showing, Ask a question) submit via `submitListingInquiry` and are stored in `listing_inquiries`.
 
 ### 4.2 Spark (MLS)
 
@@ -146,7 +146,7 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 
 - **GA4:** Optional `NEXT_PUBLIC_GA4_MEASUREMENT_ID` (direct) or GTM. See `docs/GTM_ANALYTICS_SETUP.md`, `docs/TRACKING_AND_ANALYTICS_AUDIT.md`.
 - **Meta Pixel:** Optional `NEXT_PUBLIC_META_PIXEL_ID`; cookie consent respected.
-- **FUB identity bridge:** Optional `NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM` (e.g. `_fuid`) to link email-click visits to FUB contacts.
+- **CRM identity bridge:** Optional email-click param to link email-click visits to CRM contacts.
 
 ---
 

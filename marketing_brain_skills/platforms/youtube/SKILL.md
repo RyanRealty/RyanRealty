@@ -18,7 +18,7 @@ For a real estate brokerage in a mid-size market like Bend, YouTube serves three
 
 **SEO spillover onto Google.** YouTube is owned by Google. Video results appear in Google web search, often in the first three positions for real estate + local queries. A well-optimized video ranks in two search engines simultaneously.
 
-Where YouTube fits in the Ryan Realty content strategy: at the top and middle of the funnel. Short-form (Reels, TikTok, Shorts) drives awareness. YouTube drives education and conviction. The email list and FUB convert. A viewer who watches 8+ minutes of a Ryan Realty market report has self-qualified as a serious buyer or seller.  they are warm by the time they submit a contact form.
+Where YouTube fits in the Ryan Realty content strategy: at the top and middle of the funnel. Short-form (Reels, TikTok, Shorts) drives awareness. YouTube drives education and conviction. The email list and CRM convert. A viewer who watches 8+ minutes of a Ryan Realty market report has self-qualified as a serious buyer or seller.  they are warm by the time they submit a contact form.
 
 Secondary use: a permanent library. Every market video produced for short-form can be extended into a long-form YouTube cut. The short-form version drives initial distribution; the long-form version ranks in search over time.
 

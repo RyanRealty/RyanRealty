@@ -92,7 +92,7 @@ Does NOT handle non-resort neighborhoods like NW Crossing or Old Bend
 - Map asset: subdivision-specific Google Static Map zoomed tighter than the parent community (zoom 14-15 typically)
 - Per-listing "Schedule a showing" CTAs on each active inventory card (delegates to the parent community page's buyer track section via deep link)
 - Buyer track: lightweight version that links up to the parent's full buyer-track section (the subdivision page does not duplicate the three-card buyer track; instead it has a single "Schedule a showing in <Sub>" CTA + "See all Tetherow homes" back-link)
-- Seller CMA form: full version, FUB-tagged with `seller-intent,resort:<community>,subdivision:<sub>,lp:<source>` so leads can be routed precisely
+- Seller CMA form: full version, CRM-tagged with `seller-intent,resort:<community>,subdivision:<sub>,lp:<source>` so leads can be routed precisely
 - Brand voice validation on all generated copy
 - TypeScript compile verification before PR
 
@@ -296,7 +296,7 @@ Page structure (lighter than the parent community page):
 10. **Active inventory** grid (8 cards) with per-listing "Schedule a showing" buttons
 11. **Recent closings** strip (8-12 rows)
 12. **Parent community sidebar** --EMDASH-- compact "About Tetherow" card with the parent community's master HOA, course recognition, and a "See all Tetherow communities" link back to `/lp/<community>/`
-13. **CMA seller form** --EMDASH-- full form, FUB tags include subdivision precision
+13. **CMA seller form** --EMDASH-- full form, CRM tags include subdivision precision
 14. **Buyer cross-link** --EMDASH-- single CTA "See the full Tetherow buyer track" linking to `/lp/<community>/#buyer`
 15. **Methodology** footer
 16. **JSON-LD** Place (containedInPlace = parent community) + RealEstateAgent

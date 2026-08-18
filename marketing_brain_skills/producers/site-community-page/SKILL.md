@@ -88,11 +88,11 @@ The first executed exemplar is the Tetherow port to
 - Sub-neighborhood horizontal-scroll carousel with snap-points, prev/next arrows, scroll-progress bar, "1 OF N" position hint, keyboard navigation, edge fade indicator
 - Per-listing "Schedule a showing" button on every active inventory card, anchoring to the buyer track section with property pre-fill
 - Buyer track section with three forms: Schedule a Showing, Custom Alerts (delegates to `listing-alerts` producer for delivery), Buyer's Guide (delegates to `buyers-guide` producer for the actual asset)
-- Seller CMA form (existing `/api/cma` endpoint, FUB-tagged)
+- Seller CMA form (existing `/api/cma` endpoint, CRM-tagged)
 - Sticky scroll CTA bar that appears after hero scroll-past
 - Exit-intent modal (mouseleave at top OR mobile tab-hidden after 60% scroll, fires once per session)
 - Dynamic dates: `data-dyn-month-year` spans server-rendered with the current month/year at request time, no client-side flash
-- Analytics: GA4 `G-ST40W4WM6T`, Meta Pixel `1546878946032105`, FUB pixel (when ID is provisioned by the analytics-unification work)
+- Analytics: GA4 `G-ST40W4WM6T`, Meta Pixel `1546878946032105`, CRM identity (when ID is provisioned by the analytics-unification work)
 - Topbar with horizontal white Ryan Realty logo (`/brand/logo-header-white.png`)
 - Brand voice validation on all generated copy before file write
 - TypeScript compile verification before PR opens
@@ -451,7 +451,7 @@ Critical sections of the page:
 1. **<head> metadata** via Next.js Metadata API: title, meta description,
    canonical, og:image (hero), JSON-LD Place + RealEstateAgent.
 2. **Analytics layer** in `app/layout.tsx` (already present): GA4 `G-ST40W4WM6T`,
-   Meta Pixel `1546878946032105`, FUB pixel (when ID lands).
+   Meta Pixel `1546878946032105`, CRM identity (when ID lands).
 3. **Topbar** with the white horizontal logo (`/brand/logo-header-white.png`,
    400x80) + license text + "What's my home worth?" pill.
 4. **Sticky scroll CTA** that reveals on scroll-past-hero.
@@ -488,7 +488,7 @@ Critical sections of the page:
 21. **Pipeline** (from a `pipeline` array in config if present, else omitted).
 22. **Comparison row** (live from the comparison query).
 23. **Our work / If you list** broker block + headshot.
-24. **CMA seller form** (existing /api/cma endpoint, FUB tags from config).
+24. **CMA seller form** (existing /api/cma endpoint, CRM tags from config).
 25. **Methodology** footer with one bullet per data source.
 26. **Footer** with brand block + reach + resort + community pages list +
     legal.
@@ -711,7 +711,7 @@ out/site-community/<slug>/citations.json          (always)
 - [x] TypeScript: PASS (zero errors)
 - [x] Design tokens: PASS (shadcn/ui only, no custom CSS classes)
 - [x] JSON-LD: Place + RealEstateAgent schemas included
-- [x] Analytics: GA4 + Meta Pixel + FUB pixel placeholder
+- [x] Analytics: GA4 + Meta Pixel + CRM identity placeholder
 - [x] Data accuracy: every figure traces to a live Supabase query (citations.json)
 
 ### Approval gate
@@ -842,7 +842,7 @@ measured
 - `data/resort-communities.json` --EMDASH-- the canonical community config
 - `public/lp/tetherow/index.html` --EMDASH-- the visual + content exemplar (gold standard)
 - `app/sitemap.ts` --EMDASH-- sitemap structure to extend
-- `app/actions/lead-capture.ts` --EMDASH-- FUB lead routing (CMA + buyer forms)
+- `app/actions/lead-capture.ts` --EMDASH-- CRM lead routing (CMA + buyer forms)
 
 **Sibling producers in the same tier system:**
 

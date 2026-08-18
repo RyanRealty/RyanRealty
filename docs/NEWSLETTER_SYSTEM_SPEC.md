@@ -312,7 +312,7 @@ or Paul's name. Phase 4 must **template the close per broker**: first-person int
 CTA label (`Talk to {first_name} →`), and the phone number. **Phone decision:** the close is a
 lead-capture surface, so it uses the broker's own reachable line — Matt `541.213.6706` (his direct,
 brand voice), Rebecca `415.308.9087`, Paul `541.977.6841` (from `brokers.phone`/`twilio_number`); the
-FUB-tracked bio line `541.703.3095` is for social profiles, not the newsletter close. `brokers.email_signature`
+Bio line `541.703.3095` is for social profiles, not the newsletter close. `brokers.email_signature`
 is **empty for all three today** (verified) — so the close copy is authored per-broker in the shell,
 and `email_signature` is consumed only as an override when populated (not a hard dependency).
 
