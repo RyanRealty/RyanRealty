@@ -18,8 +18,10 @@ export const maxDuration = 300
  * (listing_boundary_xref_mv — the precomputed listing→boundary spatial join
  * behind every map's pins + homes-for-sale cards), and 20260711160000
  * (listing_search_mv — the on-market search MV carrying every filterable
- * field for voice + screen search). All refreshed CONCURRENTLY so user
- * reads keep working during the refresh.
+ * field for voice + screen search), and 20260819234500
+ * (neighborhood_year_pricing_mv — the per-Bend-district, per-year closed
+ * single-family aggregate the neighborhood page's chart-room forms read).
+ * All refreshed CONCURRENTLY so user reads keep working during the refresh.
  *
  * Schedule: every 15 minutes via vercel.json.
  *
@@ -34,7 +36,8 @@ export const maxDuration = 300
  * Auth: Authorization: Bearer CRON_SECRET
  *
  * Returns: { ok, ran_at, listing_tile_mv: {...}, geo_snapshot_mv: {...},
- *   listing_boundary_xref_mv: {...}, listing_search_mv: {...}, duration_ms }
+ *   listing_boundary_xref_mv: {...}, listing_search_mv: {...},
+ *   neighborhood_year_pricing_mv: {...}, duration_ms }
  */
 export async function GET(request: Request) {
   const denied = requireCronAuth(request)
@@ -112,7 +115,26 @@ export async function GET(request: Request) {
     error: searchError?.message ?? searchData?.error ?? null,
   }
 
-  const ok = tileResult.ok && geoResult.ok && xrefResult.ok && searchResult.ok
+  // neighborhood_year_pricing_mv last — the per-Bend-district, per-year closed
+  // single-family aggregate behind the neighborhood page's chart-room forms.
+  // It derives from listing_tile_mv (polygon assignment against
+  // public.boundaries), so it refreshes AFTER it. ~420 rows out, ~9s in: the
+  // aggregate is a 53K-row scan of a very wide MV, which is exactly why it is
+  // stored here instead of run on a page request.
+  const nbhStart = Date.now()
+  const { data: nbhData, error: nbhError } = await supabase.rpc(
+    'refresh_neighborhood_year_pricing_mv',
+  )
+  const nbhMs = Date.now() - nbhStart
+  const nbhResult = {
+    ok: !nbhError && nbhData?.ok !== false,
+    duration_ms: nbhMs,
+    rpc_duration_ms: nbhData?.duration_ms ?? null,
+    error: nbhError?.message ?? nbhData?.error ?? null,
+  }
+
+  const ok =
+    tileResult.ok && geoResult.ok && xrefResult.ok && searchResult.ok && nbhResult.ok
 
   return NextResponse.json(
     {
@@ -122,6 +144,7 @@ export async function GET(request: Request) {
       geo_snapshot_mv: geoResult,
       listing_boundary_xref_mv: xrefResult,
       listing_search_mv: searchResult,
+      neighborhood_year_pricing_mv: nbhResult,
       duration_ms: Date.now() - startMs,
     },
     { status: ok ? 200 : 500 },

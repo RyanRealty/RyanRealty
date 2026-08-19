@@ -15,6 +15,12 @@
  * parent city's getPriceHistory('city', citySlug, 'monthly', 60), relabeled via
  * chartScopeLabel "{City} (city)" so the city figure never reads as this one's.
  *
+ * The chart-room forms mount INSIDE that same market section (Unit NEIGHBORHOOD
+ * 2026-08-19, ./_v3/neighborhood-market-charts). They read the district polygon
+ * assignment back to 1997 and the live boundary inventory — never a neighborhood
+ * pulse or stats-cache CLOSED figure, both of which under-count closings at this
+ * grain by 6x to 16x. That reconciliation is in the data module's header.
+ *
  * Section stack (E3 light, city funnel parity): breadcrumb · hero · featured ·
  * ticker · map · buyer alerts (mid) · overview/about · market · subdivisions ·
  * area guide · open houses · activity · SELL · guides · testimonials · team ·
@@ -102,6 +108,8 @@ import { mapCentroid } from '@/lib/explore/subdivision-page-extras'
 import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
+import { buildNeighborhoodSchemas } from './neighborhood-schemas'
+import { NeighborhoodMarketCharts } from './_v3/neighborhood-market-charts'
 import '@/components/site/kb/kb.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string; neighborhoodSlug: string }>> {
@@ -394,40 +402,19 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   const hasMap = mapFeatures.length > 0 || Boolean(mapPolygons)
 
-  const neighborhoodSchemas: SchemaInput[] = [
-    {
-      type: 'breadcrumb',
-      items: [
-        { name: 'Home', url: '/' },
-        { name: 'Cities', url: '/cities' },
-        { name: cityName, url: `/cities/${citySlug}` },
-        { name: neighborhood.name, url: `/cities/${citySlug}/${neighborhoodSlug}` },
-      ],
-    },
-    {
-      type: 'place',
-      placeType: 'Neighborhood',
-      name: neighborhood.name,
-      description: `Active single-family homes and live market data for ${neighborhood.name} in ${cityName}, Oregon.`,
-      url: `/cities/${citySlug}/${neighborhoodSlug}`,
-      address: { city: cityName, state: 'OR', country: 'US' },
-      containedInPlace: cityName,
-      geo,
-      hasMap: hasMap ? `/cities/${citySlug}/${neighborhoodSlug}` : undefined,
-      additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
-    },
-  ]
-  if (datasetVariables.length > 0) {
-    neighborhoodSchemas.push({
-      type: 'dataset',
-      name: `${neighborhood.name} real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
-      description: `Live single-family home market data for ${neighborhood.name} in ${cityName}, Oregon. Includes median list price, active inventory, and market statistics. Sourced from the regional MLS via Ryan Realty.`,
-      url: `/cities/${citySlug}/${neighborhoodSlug}`,
-      dateModified: asOfIso ?? undefined,
-      spatialCoverageName: `${neighborhood.name}, ${cityName}, OR`,
-      variableMeasured: datasetVariables,
-    })
-  }
+  // JSON-LD (breadcrumb + Neighborhood Place + Dataset) — extracted verbatim
+  // to ./neighborhood-schemas.ts for the ci:file-size-budget floor.
+  const neighborhoodSchemas: SchemaInput[] = buildNeighborhoodSchemas({
+    neighborhoodName: neighborhood.name,
+    neighborhoodSlug,
+    cityName,
+    citySlug,
+    hasMap,
+    geo,
+    datasetVariables,
+    asOfIso,
+    asOfLabel,
+  })
 
   return (
     <main className="kb-root">
@@ -516,7 +503,18 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           data={marketData}
           eyebrow={`${neighborhood.name} · The market`} geoName={neighborhood.name} asOf={pulse?.refreshedAt ?? null}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
-        />
+        >
+          {/* The approved chart-room forms (Unit NEIGHBORHOOD 2026-08-19) —
+              same market section, additive under the HUD figures. Closed-side
+              cards read the district polygon assignment; the asking-price card
+              reads the same inventory row this page's own figures come from.
+              Neighborhood pulse and stats-cache closed figures are not charted
+              (both under-count closings at this grain — see the data module). */}
+          <NeighborhoodMarketCharts
+            geoSlug={boundaryNeighborhoodSlug}
+            districtName={neighborhood.name}
+          />
+        </KbMarketHud>
         {subdivisionItems.length > 0 ? (
           <KbExploreTowns
             towns={subdivisionItems}

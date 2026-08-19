@@ -101,6 +101,14 @@
   display: block;
   width: 100%;
   height: 100%;
+  /* A root <svg> clips to its viewport by default. The end point of a line
+     sits at x = VB_W - PAD.r, and its mark is a non-scaling round cap, so the
+     last dot of every series was drawn with its outer half cut off — the one
+     dot a reader looks for. Nothing here is positioned outside the box on
+     purpose, so letting the paint overflow costs a stroke width at the edge
+     and returns the final reading. (Unit NEIGHBORHOOD, 2026-08-19: seen on
+     the district year line at 500px, and on every marked line since.) */
+  overflow: visible;
 }
 
 .v3 .v3-chart__axis-line {
