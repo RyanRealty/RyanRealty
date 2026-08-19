@@ -1,0 +1,78 @@
+/* V3ChartCard — one chart-room form as a page card, plus the grid the
+   Instrument lays a family of them into. Tokens only (ci:public-v3). The
+   chart-room source card translates to the page surface as: hairline edge,
+   wash ground, the finding in the display face, the trace collapsed. */
+
+.v3 .v3-instrument__cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--v3-space-md);
+  margin-top: var(--v3-space-lg);
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .v3 .v3-instrument__cards {
+    grid-template-columns: 1fr 1fr;
+  }
+  .v3 .v3-instrument__cards .v3-chartcard--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.v3.v3-chartcard {
+  min-width: 0;
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-card);
+  background: var(--v3-surface-raised);
+  padding: var(--v3-space-md) var(--v3-space-md) var(--v3-space-sm);
+}
+
+.v3 .v3-chartcard__title {
+  font-family: var(--v3-font-display);
+  font-weight: 400;
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  line-height: var(--v3-leading-heading);
+  letter-spacing: var(--v3-track-display);
+  color: var(--v3-ink);
+  margin: 0 0 var(--v3-space-3xs);
+}
+
+.v3 .v3-chartcard__line {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  margin: 0 0 var(--v3-space-sm);
+}
+
+.v3 .v3-chartcard__source {
+  margin-top: var(--v3-space-sm);
+  border-top: 1px solid var(--v3-wash);
+  padding-top: var(--v3-space-2xs);
+}
+
+.v3 .v3-chartcard__source-summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chartcard__source-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3 .v3-chartcard__source-summary:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+.v3 .v3-chartcard__source-body {
+  margin: var(--v3-space-2xs) 0 var(--v3-space-3xs);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}

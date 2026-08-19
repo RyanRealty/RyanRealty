@@ -92,6 +92,15 @@ export { V3ChartSwitch } from './V3ChartSwitch.client'
 
 export type { V3ChartSwitchProps, V3ChartSwitchItem } from './V3ChartSwitch.client'
 
+/**
+ * One chart-room form as a page card: a computed finding, one display line,
+ * the chart (or a segmented set of views), and the section 0 trace collapsed
+ * into a Source disclosure. Instrument mounts a grid of these via `cards`.
+ */
+export { V3ChartCard } from './V3ChartCard'
+
+export type { V3ChartCardProps, V3ChartCardSwitch } from './V3ChartCard'
+
 /* -------------------------------------------------------------------------- */
 /* Pattern 1 — INSTRUMENT: the answer, big                                     */
 /* -------------------------------------------------------------------------- */

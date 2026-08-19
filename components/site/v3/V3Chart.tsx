@@ -113,6 +113,14 @@ export type V3ChartProps = {
   rangeBaseKeyLabel?: V3Text
   /** Bars only. Horizontal for long category names (admin share). */
   layout?: 'vertical' | 'horizontal'
+  /**
+   * Bars only. The ticks are consecutive periods of ONE population (quarters,
+   * years), not categories: every bar draws in the primary tone and the
+   * per-bar key legend is omitted — the x axis already names the run's ends,
+   * and a legend repeating every period is noise. Category bars keep the
+   * default keyed rendering.
+   */
+  run?: boolean
   /** Bars only. The zero baseline as the caller already formatted it. */
   baselineLabel?: V3Text
   emptyReason?: V3Text
@@ -202,6 +210,7 @@ export function V3Chart({
   rangeKeyLabel,
   rangeBaseKeyLabel,
   layout,
+  run,
   baselineLabel,
   emptyReason,
   id,
@@ -262,7 +271,7 @@ export function V3Chart({
       ? plot.lines.map((line) => line.name)
       : plot.kind === 'mix'
         ? plot.segments.map((s) => s.tick)
-        : plot.kind === 'range'
+        : plot.kind === 'range' || (plot.kind === 'bars' && run)
           ? []
           : plot.bars.map((b) => b.tick)
 
@@ -411,7 +420,10 @@ export function V3Chart({
               {plot.bars.map((b) => (
                 <rect
                   key={`${b.index}-${b.tick}`}
-                  className={cn('v3-chart__bar', `v3-chart__bar--${Math.min(b.index, 2)}`)}
+                  className={cn(
+                    'v3-chart__bar',
+                    !run && `v3-chart__bar--${Math.min(b.index, 2)}`,
+                  )}
                   x={b.x}
                   y={b.y}
                   width={b.w}
