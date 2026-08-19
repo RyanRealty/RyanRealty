@@ -754,7 +754,7 @@ export default async function CommunityDetailPage({ params }: Props) {
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow={communityLabel}
-          titleTop={`${community.name},`}
+          titleTop={community.name}
           titleBottom="Homes for Sale"
           lead={placeHeroLead({
             placeName: community.name, parentName: cityName, activeCount,

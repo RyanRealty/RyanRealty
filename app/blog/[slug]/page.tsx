@@ -329,7 +329,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         <V3Quiet
           id="explore"
           eyebrow="More resources"
-          heading="Keep reading"
+          heading="Next steps"
           items={[
             { label: contextualCta.label, href: contextualCta.href },
             ...geoItems.filter((item) => !('href' in item) || !exploreHrefs.has(item.href)),

@@ -1,11 +1,12 @@
 import { v3Text, type V3LedgerFigureRow, type V3QuietItem } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
 import { listingTileHref } from '@/lib/slug'
+import { listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { valuationHref } from '@/lib/site/valuation-href'
 import type { ListingTile } from '@/lib/data/types/listing'
 
 function streetLine(tile: ListingTile): string {
-  return [tile.streetNumber, tile.streetName, tile.streetSuffix].filter(Boolean).join(' ').trim()
+  return listingMlsStreetLine(tile)
 }
 
 export function listingSimilarLedgerRows(tiles: ListingTile[]): V3LedgerFigureRow[] {

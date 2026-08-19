@@ -21,6 +21,7 @@ import type { Metadata } from 'next'
 import { getParkDetail, getParkBoundaryGeoJSON } from '@/lib/data'
 import { CO_PARKS, getParkBySlug, type ParkType } from '@/data/co-parks'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { formatPrice } from '@/lib/format/money'
@@ -196,7 +197,11 @@ export default async function ParkDetailPage({ params }: Props) {
           headline={v3Text(parkName)}
           figures={[figures[0], ...figures.slice(1)]}
           source={v3Text(
-            'active single-family listings (PropertyType A) within about 1.5 miles of the park centroid, from the MLS. A listings timeout renders this park with a zero count and lets ISR retry.',
+            publishNearbyListingsSource({
+              grain: 'park',
+              scope: 'within about 1.5 miles of the park centroid',
+              listingCount: stats.count,
+            }),
           )}
           action={{
             label: v3Text('Value my home'),

@@ -74,10 +74,26 @@ function cleanTitle(raw: string): string {
     t = t
       .slice(0, MAX_TITLE)
       .replace(/\s+\S*$/, '') // drop the partial last word
+      .replace(/[\s,;:]+$/, '') // drop a dangling comma from "City, Ore" → "City,"
       .replace(/\s*[|·—–-]\s*$/, '') // drop a now-dangling separator
       .trim()
   }
   return t || original
+}
+
+/**
+ * Place-page document title. Do not emit "Central Oregon, Oregon" — that
+ * truncates to "Central Oregon," and the layout suffix becomes
+ * "Central Oregon, | Ryan Realty".
+ */
+export function publishPlaceHomesTitle(name: string, city: string | null | undefined): string {
+  const place = name.trim()
+  const cityName = (city ?? '').trim()
+  if (!place) return 'Homes for Sale | Central Oregon'
+  if (!cityName || /^central oregon$/i.test(cityName)) {
+    return `Homes for Sale in ${place} | Central Oregon`
+  }
+  return `Homes for Sale in ${place} | ${cityName}, Oregon`
 }
 
 export function pageMetadata(input: PageMetadataInput): Metadata {

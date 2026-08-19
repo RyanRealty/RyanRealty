@@ -29,6 +29,7 @@
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishPlaceHeroCta } from '@/lib/search/publish-place-browse-href'
 import {
   getGeoBoundaryMapData,
@@ -52,7 +53,7 @@ import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
-import { pageMetadata } from '@/lib/site/page-metadata'
+import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { getListingsWithVideos } from '@/app/actions/videos'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
@@ -153,7 +154,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // thin plat pages never dilute the programmatic-page quality signal.
   const indexable = await isSubdivisionIndexable(slug)
   return pageMetadata({
-    title: `Homes for Sale in ${name} | ${city}, Oregon`,
+    title: publishPlaceHomesTitle(name, city),
     description: `Active homes in ${name}, a subdivision in ${city}. Boundary map and live MLS listings.`,
     path: `/subdivisions/${slug}`,
     noindex: !indexable,
@@ -305,7 +306,11 @@ export default async function SubdivisionPage({ params }: Props) {
       geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
       properties: {
         p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+        a: publishStreetLine({
+          streetNumber: t.streetNumber,
+          streetName: t.streetName,
+          streetSuffix: t.streetSuffix,
+        }) ?? '',
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
         k: t.listingKey,
       },
@@ -444,7 +449,7 @@ export default async function SubdivisionPage({ params }: Props) {
             medianDaysToPending: platFigures.medianDaysToPending,
           }}
           eyebrow={eyebrow}
-          titleTop={`${displayName},`}
+          titleTop={displayName}
           titleBottom="Homes for Sale"
           lead={lede}
           videoSrc={null}

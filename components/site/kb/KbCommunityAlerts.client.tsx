@@ -113,7 +113,7 @@ export function KbCommunityAlerts({
         <div className="comm-alerts-copy">
           <span className="sec-index">New listings</span>
           <h2 className="comm-alerts-h display">
-            Get new {titleTarget}
+            Get new {titleTarget}{' '}
             <br />
             listings by email
           </h2>

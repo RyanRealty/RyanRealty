@@ -34,13 +34,9 @@ function OpenHousePhotos({ items }: { items: readonly OpenHouseFieldItem[] }) {
                   loading={index < 2 ? 'eager' : 'lazy'}
                   fetchPriority={index < 2 ? 'high' : 'auto'}
                 />
-                {item.when ? (
-                  <span className="absolute bottom-2 left-2 bg-foreground/70 px-2 py-1 text-sm text-primary-foreground">
-                    {item.when}
-                  </span>
-                ) : null}
               </span>
-            ) : item.when ? (
+            ) : null}
+            {item.when ? (
               <span className="text-sm text-muted-foreground">{item.when}</span>
             ) : null}
             <span className="text-base font-medium tabular-nums">{item.priceLabel}</span>

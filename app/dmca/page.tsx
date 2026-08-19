@@ -17,6 +17,7 @@
 // @data-free static legal page, no DAL access needed.
 import type { Metadata } from 'next'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
+import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -31,7 +32,10 @@ import {
 
 const siteUrl = getCanonicalSiteUrl()
 const ogImage = `${siteUrl}/api/og?type=default`
-const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'admin@ryan-realty.com'
+const designated = BROKERS.matt
+const designatedAddress = BRAND.mailingAddress
+const designatedPhone = CONTACT.phoneDirect
+const designatedEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? designated.email
 
 export const metadata: Metadata = {
   title: 'DMCA Policy',
@@ -56,7 +60,7 @@ const ITEMS: V3QuietItem[] = [
   {
     kind: 'prose',
     term: 'Designated agent',
-    body: `Ryan Realty has designated an agent to receive notifications of claimed copyright infringement. To reach our DMCA designated agent, email ${contactEmail}.`,
+    body: `Ryan Realty has designated ${designated.name}, ${designated.title}, as agent to receive notifications of claimed copyright infringement. Mail: ${designatedAddress}. Phone: ${designatedPhone}. Email: ${designatedEmail}.`,
   },
   {
     kind: 'prose',
@@ -82,7 +86,7 @@ const ITEMS: V3QuietItem[] = [
     term: 'Repeat infringers',
     body: 'We may terminate accounts of users who are repeat infringers in appropriate circumstances.',
   },
-  { label: `Email ${contactEmail}`, href: `mailto:${contactEmail}` },
+  { label: `Email ${designatedEmail}`, href: `mailto:${designatedEmail}` },
 ]
 
 export default function DMCAPage() {

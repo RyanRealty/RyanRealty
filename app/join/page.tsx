@@ -2,10 +2,10 @@
  * /join - broker recruiting, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Opens on Stage (owned office photo, one line, one action) because this page
- * has an owned asset and ci:kb-breadcrumb-overlay pairs V3Stage with
- * tone="on-media". Then Ledger (listing support doors) then Quiet (how it
- * works, FAQ, edges). No valuation ask. Footer columns drop /sell#get-value.
+ * Opens on Stage (owned office photo, one line, one action). Breadcrumb sits
+ * on the Stage media with tone on-media, same overlay as /buy. Then Ledger
+ * then Quiet.
+ * No valuation ask. Footer columns drop /sell#get-value.
  *
  * THE PAGE CONTRACT, carried across: export const metadata, revalidate 3600,
  * getSurfaceImage, webPage + BreadcrumbList + FAQPage JSON-LD,
@@ -118,20 +118,23 @@ export default async function JoinPage() {
             },
           ]}
         />
-        <V3Breadcrumb
-          tone="on-media"
-          belowNav
-          trail={[{ label: 'Home', href: '/' }, { label: 'Join the team' }]}
-        />
-
-        <V3Stage
-          id="join"
-          headingLevel={1}
-          eyebrow="Join Ryan Realty · Brokers"
-          headline="Film, 3D, and a weekly report"
-          posterSrc={heroSrc ?? OLD_MILL_HERO}
-          action={{ label: 'Talk about joining', href: JOIN_CONTACT_HREF }}
-        />
+        <div className="relative">
+          <V3Stage
+            id="join"
+            headingLevel={1}
+            eyebrow="Join Ryan Realty · Brokers"
+            headline="Film, 3D, and a weekly report"
+            posterSrc={heroSrc ?? OLD_MILL_HERO}
+            action={{ label: 'Talk about joining', href: JOIN_CONTACT_HREF }}
+          />
+          <div className="absolute inset-x-0 top-0 z-10 bg-primary/70">
+            <V3Breadcrumb
+              tone="on-media"
+              belowNav={false}
+              trail={[{ label: 'Home', href: '/' }, { label: 'Join the team' }]}
+            />
+          </div>
+        </div>
 
         {firstSupport ? (
           <V3Ledger

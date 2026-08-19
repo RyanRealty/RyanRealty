@@ -384,6 +384,7 @@ export function KbListingMapImpl({
           <h2 className="sec-title display">
             {title.split('\n').map((ln, i) => (
               <span key={i}>
+                {i > 0 ? ' ' : null}
                 {i > 0 ? <br /> : null}
                 {ln}
               </span>
