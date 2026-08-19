@@ -84,6 +84,23 @@ checks.push({
     /publishStreetLine\(/.test(featured),
 })
 
+const slug = src('lib/slug.ts')
+checks.push({
+  label: 'listing URL segments withhold placeholder 0 via publishStreetNumber',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(slug) &&
+    /publishStreetNumber\(/.test(slug) &&
+    !slug.includes('[parts?.streetNumber, parts?.streetName].filter(Boolean).join'),
+})
+
+const teamLedger = src('app/team/[slug]/_v3/sale-rows.ts')
+checks.push({
+  label: 'team closing ledger addresses gate through publishStreetLine',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(teamLedger) &&
+    /publishStreetLine\(/.test(teamLedger),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)
