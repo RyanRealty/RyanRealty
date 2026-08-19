@@ -75,7 +75,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { publishMonthsOfSupply, publishSoldCount } from '@/lib/market/publish-months-of-supply'
 import { formatPlaceHoaAnnual, placeHoaGlanceLabel, publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
@@ -605,7 +605,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const sellMedian = publishSellMedian({ placeMedian: medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
   const marketData: KbMarketData = {
     active: activeCount,
-    closed30: pulse?.closedLast30Days ?? null,
+    closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
     medianList: medianListPrice,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
@@ -613,7 +613,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     monthsSupply: monthsOfSupply,
     // 12-month rolling fallbacks (market_stats_cache) for neighborhood scope,
     // where pulse 30-day fields are null. Honest 12-month HUD labels only. (§0)
-    sold12mo: stats?.soldCount ?? null,
+    sold12mo: publishSoldCount({ value: stats?.soldCount, grain: 'neighborhood' }),
     medianDom12mo: stats?.medianDaysOnMarket ?? null,
     trend: buildMonthlyTrend(chartPriceHist),
     byTown: [],

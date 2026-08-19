@@ -30,6 +30,7 @@
 import { isSoldAttributionTrusted, type MarketGrain } from '@/lib/market/geo-grain-trust'
 
 export type { MarketGrain }
+export { publishSoldCount, isSoldAttributionTrusted } from '@/lib/market/geo-grain-trust'
 
 export function impliedSixMonthCloses(
   activeCount: number,

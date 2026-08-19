@@ -60,7 +60,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { publishMonthsOfSupply, publishSoldCount } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
@@ -358,7 +358,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const monthsOfSupply = publishMonthsOfSupply({ grain: 'neighborhood', pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
   const marketData: KbMarketData = {
     active: activeCount ?? null,
-    closed30: pulse?.closedLast30Days ?? null,
+    closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
     medianList: medianListPrice,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,

@@ -302,8 +302,24 @@ export function KbMarketHud({
             </Link>
           </div>
         </div>
+        {/*
+          The methodology covers the figures THIS render actually put on screen.
+          It used to be one fixed string naming all four, so a page that withheld
+          its months of supply still printed "four months or less is a seller's
+          market, four to six is balanced, six or more is a buyer's market" —
+          three verdict words next to no figure at all. Every Bend district page
+          reads that way now that neighborhood absorption is withheld
+          (lib/market/geo-grain-trust.ts), which is the §0 rule the withhold
+          exists to serve: the narrative matches the number it sits next to, and
+          says nothing when there is no number.
+        */}
         <p className="mkt-fine">
-          Live single-family figures from the regional MLS. Months of supply is active inventory divided by the homes closed in the last 6 months, then divided by 6. Four months or less is a seller&rsquo;s market, four to six is balanced, six or more is a buyer&rsquo;s market. Sale to list compares the final sale price to the asking price. Median to pending is days from listing to an accepted offer.
+          Live single-family figures from the regional MLS.
+          {data.monthsSupply != null
+            ? ' Months of supply is active inventory divided by the homes closed in the last 6 months, then divided by 6. Four months or less is a seller’s market, four to six is balanced, six or more is a buyer’s market.'
+            : ''}
+          {data.saleToList != null ? ' Sale to list compares the final sale price to the asking price.' : ''}
+          {publishDaysLabel(data.daysToPending) ? ' Median to pending is days from listing to an accepted offer.' : ''}
         </p>
         {children}
       </div>
