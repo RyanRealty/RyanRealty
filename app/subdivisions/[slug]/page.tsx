@@ -54,7 +54,7 @@ import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
-import { pageMetadata } from '@/lib/site/page-metadata'
+import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { getListingsWithVideos } from '@/app/actions/videos'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
@@ -161,7 +161,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // thin plat pages never dilute the programmatic-page quality signal.
   const indexable = await isSubdivisionIndexable(slug)
   return pageMetadata({
-    title: `Homes for Sale in ${name} | ${city}, Oregon`,
+    title: publishPlaceHomesTitle(name, city),
     description: `Active homes in ${name}, a subdivision in ${city}. Boundary map and live MLS listings.`,
     path: `/subdivisions/${slug}`,
     noindex: !indexable,

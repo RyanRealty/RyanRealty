@@ -14,12 +14,23 @@ describe('publishNearbyListingsSource', () => {
     )
   })
 
-  it('names the timeout only when the count is zero', () => {
+  it('does not call a genuine zero a timeout', () => {
+    expect(
+      publishNearbyListingsSource({
+        grain: 'trail',
+        scope: 'within about 1.5 miles of the trailhead',
+        listingCount: 0,
+      }),
+    ).not.toContain('timeout')
+  })
+
+  it('names the timeout only when the read timed out', () => {
     expect(
       publishNearbyListingsSource({
         grain: 'park',
         scope: 'within about 1.5 miles of the park centroid',
         listingCount: 0,
+        timedOut: true,
       }),
     ).toContain('A listings timeout renders this park with a zero count')
   })

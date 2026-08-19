@@ -88,7 +88,10 @@ function cleanTitle(raw: string): string {
  */
 export function publishPlaceHomesTitle(name: string, city: string | null | undefined): string {
   const place = name.trim()
-  const cityName = (city ?? '').trim()
+  const rawCity = (city ?? '').trim()
+  const cityName = /^oregon$/i.test(rawCity)
+    ? ''
+    : rawCity.replace(/,\s*oregon$/i, '').trim()
   if (!place) return 'Homes for Sale | Central Oregon'
   if (!cityName || /^central oregon$/i.test(cityName)) {
     return `Homes for Sale in ${place} | Central Oregon`
