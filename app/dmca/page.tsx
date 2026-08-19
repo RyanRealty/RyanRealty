@@ -86,7 +86,7 @@ const ITEMS: V3QuietItem[] = [
     term: 'Repeat infringers',
     body: 'We may terminate accounts of users who are repeat infringers in appropriate circumstances.',
   },
-  { label: `Email ${contactEmail}`, href: `mailto:${contactEmail}` },
+  { label: `Email ${designatedEmail}`, href: `mailto:${designatedEmail}` },
 ]
 
 export default function DMCAPage() {
