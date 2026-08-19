@@ -40,7 +40,7 @@ export function medianCloseLineSvg(points: TrendPoint[]): string {
   const W = 720
   const H = 220
   const left = 8
-  const right = W - 8
+  const right = W - 24
   const top = 18
   const bottom = 168
   const vals = priced.map((p) => p.medianSalePrice!)
@@ -73,7 +73,7 @@ export function listingTrendSvg(points: ListingTrendPoint[]): string {
   const W = 720
   const H = 240
   const left = 8
-  const right = W - 8
+  const right = W - 24
   const top = 18
   const bottom = 178
   const counts = series.map((p) => p.newListings)

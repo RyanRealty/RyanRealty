@@ -301,9 +301,9 @@ function adjustmentPage(a: RenderCmaArgs): PageDef {
     body: `
   <h2 class="section">Per-Comp Adjustment Grid</h2>
   <p>Each comp is reconciled to the subject in two transparent steps. The market-conditions line normalizes the close price to today using the verified ${esc(a.market?.geoLabel ?? a.subject.city)} year-over-year trend${yoy != null ? ` of ${dec(yoy, 1)}%` : ''}. The size line adjusts for the sqft difference at half the comp's adjusted $/sqft rate, the standard appraisal convention for marginal square footage.</p>
-  <table class="comps" style="font-size:9.5px;">
+  <table class="comps"><colgroup><col class="comp" /><col class="num" /><col class="num" /><col class="num" /><col class="num" /><col class="num" /></colgroup>
     <thead>
-      <tr><th>Comp</th><th class="num">Close $</th><th class="num">Age</th><th class="num">Market conditions (time)</th><th class="num">Size ($/sqft)</th><th class="num">Adjusted $</th></tr>
+      <tr><th>Comp</th><th class="num">Close $</th><th class="num">Age</th><th class="num">Time</th><th class="num">Size</th><th class="num">Adjusted $</th></tr>
     </thead>
     <tbody>${rows}</tbody>
   </table>

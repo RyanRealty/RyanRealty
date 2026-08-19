@@ -51,6 +51,57 @@ export function cmaSlugVersion(slug: string): number {
   return m ? Number(m[1]) : 1
 }
 
+const SLUG_DIRECTIONALS = new Set(['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'])
+
+function formatSlugDirectional(token: string): string {
+  switch (token) {
+    case 'n':
+      return 'N'
+    case 's':
+      return 'S'
+    case 'e':
+      return 'E'
+    case 'w':
+      return 'W'
+    case 'ne':
+      return 'NE'
+    case 'nw':
+      return 'NW'
+    case 'se':
+      return 'SE'
+    case 'sw':
+      return 'SW'
+    default:
+      return token.toUpperCase()
+  }
+}
+
+/** `cma-648-se-douglas` → `SE`. Bare `cma-648-douglas` → null. */
+export function streetDirectionalFromCmaSlug(slug: string): string | null {
+  const parts = cmaSlugBase(slug.trim().toLowerCase()).replace(/^cma-/, '').split('-')
+  if (parts.length >= 3 && /^\d+$/.test(parts[0] ?? '') && SLUG_DIRECTIONALS.has(parts[1] ?? '')) {
+    return formatSlugDirectional(parts[1]!)
+  }
+  return null
+}
+
+/**
+ * Put a slug-encoded directional back on a stripped display address.
+ * "648 Douglas, Bend, OR 97702" + `cma-648-se-douglas` → "648 SE Douglas, Bend, OR 97702".
+ */
+export function applySlugStreetDirectional(address: string, slug: string): string {
+  const dir = streetDirectionalFromCmaSlug(slug)
+  if (!dir) return address
+  const text = address.trim()
+  if (!text) return address
+  const [street, ...rest] = text.split(',')
+  const tokens = (street ?? '').trim().split(/\s+/).filter(Boolean)
+  if (tokens.length < 2) return address
+  if (tokens.some((t) => SLUG_DIRECTIONALS.has(t.toLowerCase()))) return address
+  const restored = `${tokens[0]} ${dir} ${tokens.slice(1).join(' ')}`
+  return rest.length > 0 ? `${restored}, ${rest.map((s) => s.trim()).join(', ')}` : restored
+}
+
 /**
  * From a set of cmas rows, the highest-version document for one address —
  * the row every address-keyed reader (outreach worklist, dashboards, send

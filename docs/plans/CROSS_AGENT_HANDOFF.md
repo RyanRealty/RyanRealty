@@ -2,7 +2,13 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — stats-truth Madras + Foley p0s
+# Current — 2026-08-19 (cursor-cloud) — CMA phone open + PDF
+
+**Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add` PR #127. Loop stays **DISARMED**. Unauth view/pdf → login. Review slim-reads. `/view` serves stored HTML. PDF from render_args. SE from slug. person_id on kickoff. Merged latest main. Drafts stay private. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, database-canonical-reference, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — stats-truth Madras + Foley p0s
 
 **Surface:** Cursor Cloud. Loop stays **DISARMED**. stats-truth p0s reproduced and class-fixed on `main` @ `062ff2372` READY `6LzgjAwNN7XvAjjBEGYfQVjtCZSk`. Madras `/housing-market/madras` hero+FAQ both `$399,900` (zero `$400,000`). Foley 220221409 Active 2 DOM, Listed Aug 16, no Pending Aug 2. Hub SFR pulse+FAQ both `$729,000`. Place-pages (Terrebonne, Powell Butte, Summit West MOS) left to that ship. Punch dispositions appended on `3a6198cd`; parent stays open (119 lines). No CMA. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 

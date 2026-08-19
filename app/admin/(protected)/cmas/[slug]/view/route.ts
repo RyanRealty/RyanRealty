@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server'
 import { getAdminContext } from '@/lib/auth/guards'
+import { redirectToAdminLogin } from '@/lib/auth/admin-login-redirect'
 import { serveCmaDocument, CMA_DOC_HEADERS } from '@/lib/cma/serve-document'
 
 export const dynamic = 'force-dynamic'
@@ -19,8 +20,11 @@ export async function GET(
   context: { params: Promise<{ slug: string }> },
 ) {
   const admin = await getAdminContext()
-  if (!admin || admin.role === 'report_viewer') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!admin) {
+    return redirectToAdminLogin(request)
+  }
+  if (admin.role === 'report_viewer') {
+    return NextResponse.redirect(new URL('/admin/access-denied', request.url), 307)
   }
   const { slug } = await context.params
   const result = await serveCmaDocument({

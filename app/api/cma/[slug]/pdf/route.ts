@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { isAuthorizedAdminOrCron } from '@/lib/auth/guards'
+import { hasMachineAuthHeader, redirectToAdminLogin } from '@/lib/auth/admin-login-redirect'
+import { brokerCmaViewHref } from '@/lib/cma/draft-access'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -31,11 +33,17 @@ export async function GET(
   // A finalized CMA carries client PII (name, subject address, valuation) — gate
   // it to an admin session or the cron secret. Slugs are address-derived and
   // enumerable, so a format check alone is not access control.
-  if (!(await isAuthorizedAdminOrCron(request))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
   const { slug } = await context.params
   const safeSlug = String(slug ?? '').trim().toLowerCase()
+  if (!(await isAuthorizedAdminOrCron(request))) {
+    // Cron / machine callers stay JSON. A phone tap goes to login, then the
+    // HTML document (the PDF URL is not an /admin next path).
+    if (hasMachineAuthHeader(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const next = /^[a-z0-9-]{3,80}$/.test(safeSlug) ? brokerCmaViewHref(safeSlug) : '/admin/cmas'
+    return redirectToAdminLogin(request, next)
+  }
   if (!/^[a-z0-9-]+$/.test(safeSlug)) {
     return NextResponse.json({ error: 'Invalid slug' }, { status: 400 })
   }

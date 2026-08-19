@@ -107,6 +107,61 @@ function fmtDate(iso: string | null): string | null {
 
 const fmtUsd = formatPriceExact
 
+/** USPS-style directional for display. MLS StreetName usually omits these. */
+export function formatStreetDirectional(token: string): string {
+  switch (token.toLowerCase()) {
+    case 'n':
+    case 'north':
+      return 'N'
+    case 's':
+    case 'south':
+      return 'S'
+    case 'e':
+    case 'east':
+      return 'E'
+    case 'w':
+    case 'west':
+      return 'W'
+    case 'ne':
+    case 'northeast':
+      return 'NE'
+    case 'nw':
+    case 'northwest':
+      return 'NW'
+    case 'se':
+    case 'southeast':
+      return 'SE'
+    case 'sw':
+    case 'southwest':
+      return 'SW'
+    default:
+      return token.toUpperCase()
+  }
+}
+
+/**
+ * Keep a broker-entered directional when MLS StreetName dropped it.
+ * "648 SE Douglas" must not become "648 Douglas" on the stored subject.
+ */
+export function applyEnteredStreetDirectional(
+  mlsStreetAddress: string,
+  parsed: ParsedAddress,
+): string {
+  const first = parsed.streetNameTokens[0]
+  if (!first || parsed.streetNameTokens.length < 2 || !DIRECTIONALS.has(first)) {
+    return mlsStreetAddress
+  }
+  const tokens = mlsStreetAddress.trim().split(/\s+/).filter(Boolean)
+  if (tokens.some((t) => DIRECTIONALS.has(t.toLowerCase()))) {
+    return mlsStreetAddress
+  }
+  const dir = formatStreetDirectional(first)
+  if (tokens[0] === parsed.streetNumber) {
+    return [tokens[0], dir, ...tokens.slice(1)].join(' ')
+  }
+  return `${parsed.streetNumber} ${dir} ${mlsStreetAddress}`.trim()
+}
+
 /** Map a listings row to the normalized subject shape. */
 export function rowToSubject(row: CmaListingRow): CmaSubject {
   const streetAddress = `${str(row['StreetNumber']) ?? ''} ${str(row['StreetName']) ?? ''}`.trim()
@@ -280,8 +335,10 @@ export async function resolveCmaSubject(opts: {
     }
     if (rows.length > 0) {
       const best = pickMostRecentListing(rows)
+      const subject = rowToSubject(best)
+      subject.streetAddress = applyEnteredStreetDirectional(subject.streetAddress, parsed)
       return {
-        subject: rowToSubject(best),
+        subject,
         trace: subjectTrace(
           `Entered by address "${raw}" (StreetName ILIKE '${prefix}%').`,
           best,

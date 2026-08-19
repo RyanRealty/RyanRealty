@@ -551,14 +551,11 @@ export {
   getListingWaterSource,
 } from '@/lib/data/pricing/facts'
 export {
-  getCmaAdminRowBySlug,
-  getCmaHtmlBySlug,
-  getCmaAccessIdentity,
-  updateCmaRowFieldsBySlug,
-  deleteCmaRowById,
-  replaceCmaComps,
+  getCmaAdminRowBySlug, getCmaAdminReviewRowBySlug, getCmaServeHead,
+  getCmaStoredHtmlBySlug, getCmaRenderSourceBySlug, getCmaHtmlBySlug,
+  getCmaAccessIdentity, updateCmaRowFieldsBySlug, deleteCmaRowById, replaceCmaComps,
 } from '@/lib/data/cma/documents'
-export type { CmaAdminRow, CmaCompInsert } from '@/lib/data/cma/documents'
+export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource } from '@/lib/data/cma/documents'
 export { listOpenCmaActions, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
 export type { CmaActionRow } from '@/lib/data/cma/queue'
 export { findCrmPersonIdByEmail, stampCmaLinkOnPerson, stampCmaPersonId, logCmaTimelineEvent } from '@/lib/data/cma/crm'

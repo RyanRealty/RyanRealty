@@ -141,7 +141,7 @@ export default function ConsoleQuickAction() {
   if (addPersonSurface) {
     return (
       <Link
-        href="/admin/people#add-person"
+        href="/admin/people?add=1"
         aria-label="New contact"
         className={cn(
           'fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5 [[data-crm-comms]_&]:hidden [[data-kb-open]_&]:hidden',

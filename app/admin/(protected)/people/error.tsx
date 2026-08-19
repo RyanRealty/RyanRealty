@@ -18,7 +18,7 @@ export default function PeopleError({
       </p>
       <div style={{ display: 'flex', gap: 8 }}>
         <Button onClick={reset}>Try again</Button>
-        <Link href="/admin/people#add-person" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+        <Link href="/admin/people?add=1" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
           New contact
         </Link>
       </div>

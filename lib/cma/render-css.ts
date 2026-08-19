@@ -274,10 +274,13 @@ export function cmaStylesheet(siteUrl: string): string {
 
   table.comps {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     font-size: 9px;
     margin-top: 4px;
   }
+  table.comps col.comp { width: 34%; }
+  table.comps col.num { width: 13.2%; }
   table.comps thead th {
     text-align: left;
     font-weight: 600;

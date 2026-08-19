@@ -249,6 +249,10 @@ export function cmaSectionStyles(): string {
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
 
   table.comps .sub-cell { font-size: 8px; color: var(--muted); margin-top: 1px; }
+  table.comps-adjust {
+    table-layout: fixed;
+    width: 100%;
+  }
   table.comps-adjust td.num, table.comps-adjust th.v {
     text-align: right;
     font-variant-numeric: tabular-nums;

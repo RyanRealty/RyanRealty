@@ -4,11 +4,16 @@
  */
 
 import { cookies } from 'next/headers'
-import { getCmaHtmlBySlug, getCmaAccessIdentity } from '@/lib/data'
+import {
+  getCmaAccessIdentity,
+  getCmaRenderSourceBySlug,
+  getCmaServeHead,
+  getCmaStoredHtmlBySlug,
+} from '@/lib/data'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
-import { canBrokerReviewCma, isCmaClientReady } from '@/lib/cma/draft-access'
+import { canBrokerReviewCma, isCmaClientReady, cmaHasStoredHtml } from '@/lib/cma/draft-access'
 import { hydrateCmaMarketArea } from '@/lib/cma/market-area-hydrate'
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
@@ -20,6 +25,7 @@ import {
   renderWrongPersonShell,
 } from '@/lib/cma/register-gate'
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
+import type { CmaRenderSource } from '@/lib/data/cma/documents'
 
 export const CMA_DOC_HEADERS = {
   'Content-Type': 'text/html',
@@ -34,7 +40,7 @@ export type CmaServeResult =
   | { kind: 'redirect'; url: string; status: number }
 
 async function immersiveFromRow(
-  row: NonNullable<Awaited<ReturnType<typeof getCmaHtmlBySlug>>>,
+  row: CmaRenderSource,
   origin: string,
   hydrateArea: boolean,
 ): Promise<string | null> {
@@ -68,6 +74,12 @@ function withTracker(html: string, extra = ''): string {
   return html.includes('</body>') ? html.replace('</body>', `${tracker}</body>`) : html + tracker
 }
 
+function storedHtmlResult(html: string, origin: string): CmaServeResult {
+  let out = html.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
+  out = withTracker(out, '<script src="/rr-cma-doc.js" defer></script>')
+  return { kind: 'html', status: 200, html: out, headers: CMA_DOC_HEADERS }
+}
+
 export async function serveCmaDocument(opts: {
   slug: string
   requestUrl: string
@@ -80,16 +92,16 @@ export async function serveCmaDocument(opts: {
     return { kind: 'json', status: 400, body: { error: 'Invalid slug' } }
   }
 
-  const row = await getCmaHtmlBySlug(safeSlug)
-  if (!row) return { kind: 'json', status: 404, body: { error: 'CMA not found' } }
+  const head = await getCmaServeHead(safeSlug)
+  if (!head) return { kind: 'json', status: 404, body: { error: 'CMA not found' } }
 
-  if (!canBrokerReviewCma({ isAdmin: opts.isAdmin, status: row.status })) {
+  if (!canBrokerReviewCma({ isAdmin: opts.isAdmin, status: head.status })) {
     return { kind: 'json', status: 404, body: { error: 'CMA not found' } }
   }
 
   const origin = new URL(opts.requestUrl).origin
   const wantsPrint = new URL(opts.requestUrl).searchParams.has('print')
-  const publicReady = isCmaClientReady(row.status)
+  const publicReady = isCmaClientReady(head.status)
 
   if (publicReady && !opts.isAdmin && !opts.skipRegisterGate) {
     const identity = await getCmaAccessIdentity(safeSlug)
@@ -136,21 +148,37 @@ export async function serveCmaDocument(opts: {
     }
   }
 
-  if (!wantsPrint) {
-    const immersive = await immersiveFromRow(row, origin, opts.isAdmin)
-    if (immersive) {
-      return { kind: 'html', status: 200, html: withTracker(immersive), headers: CMA_DOC_HEADERS }
+  // Broker review: stored HTML, not a live immersive rebuild (that path is 45–60s).
+  if (opts.isAdmin && !wantsPrint && cmaHasStoredHtml(head.html_path)) {
+    const stored = await getCmaStoredHtmlBySlug(safeSlug)
+    if (stored) return storedHtmlResult(stored, origin)
+  }
+
+  if (!wantsPrint && !opts.isAdmin) {
+    const source = await getCmaRenderSourceBySlug(safeSlug)
+    if (source) {
+      const immersive = await immersiveFromRow(source, origin, false)
+      if (immersive) {
+        return { kind: 'html', status: 200, html: withTracker(immersive), headers: CMA_DOC_HEADERS }
+      }
     }
   }
 
-  if (row.html_content) {
-    let html = row.html_content.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
-    html = withTracker(html, '<script src="/rr-cma-doc.js" defer></script>')
-    return { kind: 'html', status: 200, html, headers: CMA_DOC_HEADERS }
+  if (opts.isAdmin && !wantsPrint) {
+    const source = await getCmaRenderSourceBySlug(safeSlug)
+    if (source) {
+      const immersive = await immersiveFromRow(source, origin, false)
+      if (immersive) {
+        return { kind: 'html', status: 200, html: withTracker(immersive), headers: CMA_DOC_HEADERS }
+      }
+    }
   }
 
-  if (row.html_path?.startsWith('public/cmas/')) {
-    return { kind: 'redirect', url: row.html_path.replace(/^public/, ''), status: 302 }
+  const stored = await getCmaStoredHtmlBySlug(safeSlug)
+  if (stored) return storedHtmlResult(stored, origin)
+
+  if (head.html_path?.startsWith('public/cmas/')) {
+    return { kind: 'redirect', url: head.html_path.replace(/^public/, ''), status: 302 }
   }
 
   return {
