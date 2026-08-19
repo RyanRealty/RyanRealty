@@ -1,8 +1,8 @@
 /**
- * Portal lead intake (FUB cutover, 2026-06-29).
+ * Portal lead intake (CRM cutover, 2026-06-29).
  *
- * Zillow Premier Agent + Realtor.com leads used to enter via FUB's portal
- * integrations. FUB disconnects 2026-06-30, so those feeds are re-pointed to
+ * Zillow Premier Agent + Realtor.com leads used to enter via CRM's portal
+ * integrations. CRM disconnects 2026-06-30, so those feeds are re-pointed to
  * email matt@ryan-realty.com. This cron scans that mailbox for portal lead
  * emails and turns each into a native CRM lead (ensureNativeLead) so nothing
  * drops at cutover.

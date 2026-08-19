@@ -113,7 +113,7 @@ curl -X POST "https://graph.facebook.com/v25.0/120242763392080698" \
 
 If neither lands, the gap is one of:
 - META_APP_SECRET missing → HMAC verification fails → webhook returns 401
-- FUB_API_KEY scope issue → person creation fails
+- UNUSED_VENDOR_CRM_KEY scope issue → person creation fails
 - Resend domain not verified → email send fails silently
 
 Diagnostic command:
@@ -153,7 +153,7 @@ Lesson logged in `.auto-memory/memory_marketing_brain_decisions.md`: **always ch
 - Strategy: [`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`](FB_SELLER_CAMPAIGN_PLAYBOOK.md)
 - End-to-end pipeline: [`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`](FACEBOOK_SELLER_GROWTH_PIPELINE.md)
 - Lead flow (path-by-path): [`docs/MARKETING_LEAD_FLOW.md`](MARKETING_LEAD_FLOW.md)
-- FUB workflow: [`docs/archive/fub-era/README.md`](docs/archive/fub-era/README.md)
+- FUB workflow: [`lib/crm/send-event.ts`](lib/crm/send-event.ts)
 - Weekly review cadence: [`docs/MARKETING_ANALYTICS_PLAYBOOK.md`](MARKETING_ANALYTICS_PLAYBOOK.md)
 - GA4 instrumentation contract: [`marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md`](../marketing_brain_skills/tools_registry/ga4-instrumentation/SKILL.md)
 - Skill: [`facebook-seller-growth`](~/.claude/skills/facebook-seller-growth/) (weekly optimization routine)

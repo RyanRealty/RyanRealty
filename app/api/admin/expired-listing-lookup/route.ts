@@ -10,7 +10,7 @@
  * Body: { listing_key: "..." } OR { street_address, city }
  * Auth: Bearer $CRON_SECRET (admin-only)
  *
- * Returns the OwnerLookupResult + any FUB/DB writes the cron would do.
+ * Returns the OwnerLookupResult + any CRM/DB writes the cron would do.
  */
 
 import { NextRequest, NextResponse } from 'next/server'

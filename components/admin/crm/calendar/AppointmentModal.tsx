@@ -2,7 +2,7 @@
 
 /**
  * AppointmentModal — the §2.6 Create/Edit Appointment modal
- * (docs/fub-crm-spec/09-tasks-and-calendar.md Part 2).
+ * (docs/crm-spec/09-tasks-and-calendar.md Part 2).
  *
  * Centered dialog with the spec's full field inventory: Title, Start date,
  * Start time, End time, End date, Timezone, All-day toggle (hides time
@@ -13,7 +13,7 @@
  *
  * AC-17: editing an appointment whose invitation was previously sent while the
  * checkbox is unchecked surfaces a warning that the reminder will be canceled
- * (FUB silently cancels — we warn instead).
+ * (CRM silently cancels — we warn instead).
  *
  * Admin v2 (11F): shadcn primitives replaced by '@/components/admin/v2' and
  * every semantic Tailwind colour class by a var(--a-*) token. This file and

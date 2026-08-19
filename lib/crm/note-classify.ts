@@ -21,12 +21,12 @@
  *          ~8k rows; the exact note that drowned #18187)
  *        - a system-event prefix: EXPIRED LISTING / LEAD ORIGIN /
  *          Viewed property: / Matt alert: / "… is back on the website"
- *        - the FUB action-plan feedback link
+ *        - the CRM action-plan feedback link
  *   3. everything else                         → HUMAN (default).
  *
  *   The big bucket (~14k 'fub-import', broker-null, no template) is a MIX of
- *   real hand-written notes imported from FUB (which lost broker attribution on
- *   import) and FUB activity. Per the mission directive, when a note is
+ *   real hand-written notes imported from CRM (which lost broker attribution on
+ *   import) and CRM activity. Per the mission directive, when a note is
  *   genuinely ambiguous we DEFAULT IT TO HUMAN — better to show a note than
  *   bury it, which is the entire point of this fix. source alone is NOT a
  *   discriminator ('dual-write' holds both packets and real notes), so we never

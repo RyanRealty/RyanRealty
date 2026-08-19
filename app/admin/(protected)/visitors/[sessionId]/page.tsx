@@ -33,10 +33,10 @@
 // and neither EventCard nor EventRow ever read `.running`. It was a
 // computation with no output.
 //
-// ONE LABEL NOW MATCHES ITS QUERY. The last column read "FUB" with cells
-// "FUB synced" / "local", off visitor_events.pushed_to_fub_at. Nothing is
+// ONE LABEL NOW MATCHES ITS QUERY. The last column read "CRM" with cells
+// "CRM synced" / "local", off visitor_events.pushed_to_fub_at. Nothing is
 // pushed to a retired vendor — it was decommissioned 2026-06-24 and
-// lib/visitor-backfill.ts says in its own header that the per-event FUB replay
+// lib/visitor-backfill.ts says in its own header that the per-event CRM replay
 // was deleted as a dead no-op. The column is now an idempotency cursor: it is
 // stamped when a session identifies and its prior events are rolled up to the
 // contact. The header is "Attached" and the footnote says what it means. The

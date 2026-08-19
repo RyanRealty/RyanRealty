@@ -1,7 +1,7 @@
 /**
  * Auto-enrollment sweep — the catch-all that guarantees no new lead sits
  * outside a workflow regardless of which door it came through (LP, Meta
- * webhook, inbound SMS, manual FUB entry picked up by delta sync).
+ * webhook, inbound SMS, manual CRM entry picked up by delta sync).
  *
  * Every 15 min: scan people created since the enrollment epoch (bounded to a
  * trailing 7-day window) and run the rules. The inline hook in the lead
@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 /**
- * The four master-sequence FUB plan ids — mirrors RULES in lib/crm/enroll.ts
+ * The four master-sequence CRM plan ids — mirrors RULES in lib/crm/enroll.ts
  * (module-private there). Used ONLY for the advisory batch pre-filter below;
  * autoEnrollPerson keeps its own authoritative master-sequence check, so drift
  * here can cost speed, never correctness.
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
     Date.now() - 7 * 86400e3,
   )).toISOString()
 
-  // COALESCE(fub_created_at, created_at) window: native (post-FUB-cutover) rows
+  // COALESCE(fub_created_at, created_at) window: native (post-CRM-cutover) rows
   // never set fub_created_at, so a bare fub_created_at.gte excluded every native
   // lead from the sweep — the exact leads this catch-all exists for. Mirrors
   // autoEnrollPerson's own epoch check (fub_created_at ?? created_at).
@@ -151,7 +151,7 @@ export async function GET(request: Request) {
     if (r.enrolled) enrolled++
     else skipped[r.reason] = (skipped[r.reason] ?? 0) + 1
 
-    // Instant broker text on every NEW lead (any door: LP, FUB entry, Meta,
+    // Instant broker text on every NEW lead (any door: LP, CRM entry, Meta,
     // IDX registration via delta, inbound SMS, detection crons). Dedup is in
     // queueBrokerAlert; the relay on the mini delivers within ~45s.
     if (skipAlert) continue

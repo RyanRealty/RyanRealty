@@ -32,7 +32,7 @@ export function initials(name: string): string {
 }
 
 /** Initials avatar on a neutral token fill. Admin v2 reserves color for
- *  action/status (ADMIN_UI §1); per-person hue coding (the old FUB-style
+ *  action/status (ADMIN_UI §1); per-person hue coding (the old CRM-style
  *  palette) is out of canon here, so identity reads by initials, not color. */
 export function ThreadAvatar({ name, size = 44 }: { name: string; size?: number }) {
   return (

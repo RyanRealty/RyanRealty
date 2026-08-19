@@ -7,7 +7,7 @@
  * moved again to the v2 /admin/people/[id] surface (Phase 11B/B3) — this stub
  * now points straight at the v2 page rather than bouncing through the
  * /admin/crm/[id] bridge redirect. This stub keeps bookmarks and older deep
- * links (SMS/email notifications, FUB-era links) working. Every query param
+ * links (SMS/email notifications, CRM-era links) working. Every query param
  * (flash, error, tpl, smsTpl, view, …) carries over so server actions that
  * still redirect here surface their flash/error messages on the new route.
  */

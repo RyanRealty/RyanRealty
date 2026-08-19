@@ -4,7 +4,7 @@
  *
  * crm_report_subscriptions holds the subscription (person_id, areas, frequency,
  * is_active) plus the Wave 8 cadence stamps (last_sent_at, last_attempt_at). This
- * reader joins it to crm_people for the display name + assigned broker + the FUB
+ * reader joins it to crm_people for the display name + assigned broker + the CRM
  * legacy id (for click attribution), so the engine has everything it needs to
  * render + attribute + send a contact's report in one pass, and the admin view
  * can list "who is subscribed, to what, last sent when".
@@ -29,7 +29,7 @@ export type MarketReportSubscriber = {
   personName: string | null
   /** crm_people.assigned_broker short slug (matt/rebecca/paul), for attribution. */
   assignedBroker: string | null
-  /** FUB legacy person id, for the ?_fuid= click-attribution stamp (nullable). */
+  /** CRM legacy person id, for the ?_fuid= click-attribution stamp (nullable). */
   fubPersonId: number | null
   /** Subscribed geo area slugs. */
   areas: string[]
@@ -75,7 +75,7 @@ function deriveName(p: RawJoinedRow['crm_people']): string | null {
 
 /**
  * Map a raw joined row to the typed subscriber shape. Pure — exported so the
- * mapping (name derivation, areas filtering, frequency normalization, the FUB id
+ * mapping (name derivation, areas filtering, frequency normalization, the CRM id
  * coercion) is unit-tested without the DB.
  */
 export function mapMarketReportSubscriberRow(row: RawJoinedRow): MarketReportSubscriber {

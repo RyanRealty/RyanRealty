@@ -4,7 +4,7 @@ Locked design v6, approved 2026-05-14. Standardized across three accounts:
 
 - `matt@ryan-realty.com` (Google Workspace)
 - `matt.list.homes@gmail.com` (consumer Gmail)
-- Follow Up Boss user profile
+- the in-house CRM user profile
 
 ## What's in this kit
 
@@ -49,7 +49,7 @@ Propagation: Google takes 5–60 minutes to push the new photo to Gmail recipien
 
 ---
 
-## Install — Follow Up Boss
+## Install — the in-house CRM
 
 ### A. Set the email signature
 
@@ -80,7 +80,7 @@ Propagation: Google takes 5–60 minutes to push the new photo to Gmail recipien
 ## Brand spec reference
 
 - **Mission statement:** `Building community through authentic relationships and exceptional customer service.` (verbatim, locked — [bio-drafts.md:29](../../design_system/ryan-realty/assets/social/bio-drafts.md:29))
-- **Phone:** `541.703.3095` (FUB-tracked — inbound calls route to Follow Up Boss attribution)
+- **Phone:** `541.703.3095` (FUB-tracked — inbound calls route to the in-house CRM attribution)
 - **Email:** `matt@ryan-realty.com` (canonical brand address — display on both Gmail accounts)
 - **Web:** `ryan-realty.com` (consumer-facing AgentFire WordPress site; the Vercel app at `ryanrealty.vercel.app` hosts the inline signature images)
 - **License disclosure:** `Ryan Realty LLC · Oregon Principal Broker #201206613 · Equal Housing Opportunity` (matches [OregonDisclosure.tsx](../../components/legal/OregonDisclosure.tsx))

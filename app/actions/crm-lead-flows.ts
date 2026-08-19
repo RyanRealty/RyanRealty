@@ -1,7 +1,7 @@
 'use server'
 
 /**
- * Lead Flows CRUD actions (FUB §8.3).
+ * Lead Flows CRUD actions (CRM §8.3).
  *
  * Owner/superuser only — lead flows decide how every incoming lead is routed.
  * Reads: lib/data/crm/getLeadFlow.ts (cached, tag 'lead-flows').

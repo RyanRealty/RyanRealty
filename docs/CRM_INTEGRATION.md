@@ -1,10 +1,8 @@
 # CRM Integration — native lead flow
 
 **Status 2026-08-18.** Authoritative spec for how leads enter the in-house
-CRM (`public.crm_people`). Follow Up Boss is decommissioned (2026-06-24).
-Do not POST to a third-party people or events API. Unused `FOLLOWUPBOSS_*`
-Vercel names were removed 2026-08-18; they were never a live integration after
-the 2026-06-24 cutover.
+CRM (`public.crm_people` via `/admin/crm`). Do not POST to a third-party
+people or events API. There is no vendor CRM.
 
 Load-bearing invariants are **locked by `ci:crm-lead-integrity` (G49)**.
 
@@ -66,7 +64,7 @@ Sequences are edited at **`/admin/crm/sequences`**. Broker working surface is **
 - **Never create a lead with a third-party People API.** Capture is native.
 - **Never treat a third-party textMessages POST as a send.** Real SMS goes through Twilio + the consent gate (`ci:sms-consent`).
 - **Never auto-text before a stored consent record.**
-- **Do not re-enable Follow Up Boss.** `getFubApiKey()` is hardcoded `undefined`. Lead capture does not wait on that key.
+- **Do not re-enable the in-house CRM.** `getFubApiKey()` is hardcoded `undefined`. Lead capture does not wait on that key.
 
 ## References
 

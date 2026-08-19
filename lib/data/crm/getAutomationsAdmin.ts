@@ -4,7 +4,7 @@ import { buildUsedByMap } from '@/lib/crm/automation-links'
 
 /**
  * getAutomationsAdmin — the two readers the §12.2 Automations list page needs
- * (docs/fub-crm-spec/12-action-plans-and-automations.md):
+ * (docs/crm-spec/12-action-plans-and-automations.md):
  *
  *   - getCrmSequenceFolders(): every folder + live member count, system folders
  *     first (§12.2.2 folder card row).

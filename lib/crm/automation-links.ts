@@ -1,8 +1,8 @@
 /**
  * automation-links — pure helpers for the §12.2.3 "Linked Automations" column
- * (docs/fub-crm-spec/12-action-plans-and-automations.md).
+ * (docs/crm-spec/12-action-plans-and-automations.md).
  *
- * FUB's Automations list shows a "Using: N ▾" pill per row where N = the count
+ * CRM's Automations list shows a "Using: N ▾" pill per row where N = the count
  * of OTHER automations that reference this one via a Run Automation step. Our
  * engine's equivalent is the `run_automation` step channel whose `value` holds
  * the target sequence id (see lib/crm/sequence-step-schema.ts).
@@ -54,7 +54,7 @@ export function collectLinkedAutomationIds(steps: unknown): number[] {
 /**
  * Invert the per-sequence outgoing links into the "Using: N" map the list
  * column renders: for each sequence id, WHICH other sequences reference it.
- * (FUB semantics per shot-34: the pill on row X lists the automations that
+ * (CRM semantics per shot-34: the pill on row X lists the automations that
  * use X — incoming references, not outgoing.)
  */
 export function buildUsedByMap(

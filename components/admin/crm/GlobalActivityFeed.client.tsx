@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * GlobalActivityFeed — the CRM-wide activity stream for the Activity tab (FUB
+ * GlobalActivityFeed — the CRM-wide activity stream for the Activity tab (CRM
  * "Activity" parity). The user includes/excludes activity TYPES (emails, texts,
  * website visits, calls, notes, new leads, updates) with independent toggle
  * chips; the feed re-fetches the union. Same visual language as

@@ -5,7 +5,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 /**
  * getCrmSources — every distinct crm_people.source string in the account,
  * rendered VERBATIM (no normalization, no dedup of near-duplicates) per the
- * §28 §3 mobile Source picker spec (mob-54: FUB lists the raw stored strings,
+ * §28 §3 mobile Source picker spec (mob-54: CRM lists the raw stored strings,
  * kebab-case cron sources included, `<unspecified>` pinned first by the
  * caller). Alphabetical, case-insensitive.
  *

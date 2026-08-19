@@ -46,7 +46,7 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 - `GTM_ANALYTICS_SETUP.md` — GTM/GA4 env-only setup and dataLayer event/trigger reference (merged doc)
 
 ### Integrations
-- Follow Up Boss was decommissioned 2026-06-24. The whole FUB-era doc cluster is archived — see `archive/fub-era/README.md` for the index and what replaced it. Do not build against those files.
+- CRM is in-house: `lib/crm/send-event.ts` writes `public.crm_people`. Review people at `/admin/crm`. See `CRM_INTEGRATION.md`.
 - `GOOGLE_MAPS_SETUP.md` — Google Maps API setup
 - `GOOGLE_ADS_SETUP.md` — Google Ads / conversion setup
 - `GOOGLE_SETUP.md` — where to find each Google ID and verification checklist (merged doc)
@@ -72,10 +72,6 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 - `skyslope-forms-transaction-workbook.xlsx` — transaction workbook
 - `skyslope-pdf-ai-research.md` — PDF processing research
 - `prompts/skyslope-forms-pdf-and-brief-comprehensive-handoff.md` — active agent handoff prompt
-
-## Archive
-
-Historical FUB-era inventory index: `docs/archive/fub-era/README.md`. The era docs themselves remain at their original `docs/FUB_*.md` paths (marker-bannered; inventory may only shrink via `ci:claude-canon`). Never cite an archived/era doc as current state — always verify against code + live rules.
 
 ## Contributing
 

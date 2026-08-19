@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 /**
  * §12.1 People-list loading skeleton
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md): on navigation the
+ * (docs/crm-spec/05-people-list-and-bulk-actions.md): on navigation the
  * table renders skeleton placeholder rows immediately — column headers stay
  * visible, row count matches the visible page, no spinner, layout-stable.
  */

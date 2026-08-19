@@ -1,4 +1,4 @@
--- §12.2 Automations list parity (docs/fub-crm-spec/12-action-plans-and-automations.md)
+-- §12.2 Automations list parity (docs/crm-spec/12-action-plans-and-automations.md)
 -- Folders for the Automations list (spec §12.2.2 folder card + "Move to Folder" row
 -- action + Create Folder header control) and authorship for the Created By column
 -- (§12.2.3 col 7). Mirrors the spec's automation_folders shape (§12.11) on the

@@ -4,7 +4,7 @@ import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 /**
  * getPeopleListSignals — per-row signals for the §05 People list
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md §6 columns 5 + 8).
+ * (docs/crm-spec/05-people-list-and-bulk-actions.md §6 columns 5 + 8).
  *
  * For one PAGE of person ids (≤ 50) returns:
  *   - lastVisit    — max visitor_sessions.last_seen_at for the person's

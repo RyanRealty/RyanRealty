@@ -1,10 +1,10 @@
 // @no-parity — internal admin surface
 //
-// INFERRED: No dedicated FUB frame exists for Contact Attempts as a standalone page.
-// FUB surfaces this as a subview of Lead Sources
+// INFERRED: No dedicated CRM frame exists for Contact Attempts as a standalone page.
+// CRM surfaces this as a subview of Lead Sources
 // (hub href: /admin/crm/reporting/lead-sources?view=attempts).
 // Metric semantics — avg outbound contacts per lead by source — are inferred from
-// FUB's documentation and the hub card copy. See getContactAttemptsReport.ts.
+// CRM's documentation and the hub card copy. See getContactAttemptsReport.ts.
 //
 // 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
 // Presentation only. Carried over verbatim: the getCrmAccess guard, the

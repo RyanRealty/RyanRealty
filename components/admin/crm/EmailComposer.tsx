@@ -212,7 +212,7 @@ export function EmailComposer(props: {
   sendAndCloseAction?: (formData: FormData) => Promise<void>
   /** Template key that was loaded — stamped on email_events for per-template reporting. */
   tplKey?: string | null
-  /** Recipient shown in the FUB-style "To" row (the lead's name + email). */
+  /** Recipient shown in the CRM-style "To" row (the lead's name + email). */
   toLabel?: string | null
   /** Contact this compose targets — required for attachments (upload scoping). */
   personId?: number

@@ -15,7 +15,7 @@ import '@/components/admin/v2/admin-v2.css'
  * recipient chips and the sub-page links.
  */
 
-/** All-caps section divider with flanking separators (FUB-style). */
+/** All-caps section divider with flanking separators (CRM-style). */
 export function SectionDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center" style={{ gap: 'var(--a-s4)', padding: 'var(--a-s4) 0' }}>

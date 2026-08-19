@@ -130,7 +130,7 @@ async function fetchTopEventsForSessions(sessionIds: string[]): Promise<Map<stri
 /**
  * Resolve each hot session to its native crm_people row: prefer the session's
  * crm_person_id; fall back to fub_person_id → crm_people.fub_legacy_id for
- * sessions identified before the FUB cutover. Returns session_id → person.
+ * sessions identified before the CRM cutover. Returns session_id → person.
  */
 async function resolveNativePersons(sessions: HotSession[]): Promise<Map<string, NativePerson>> {
   const map = new Map<string, NativePerson>()

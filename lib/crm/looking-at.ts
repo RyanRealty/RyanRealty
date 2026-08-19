@@ -6,7 +6,7 @@
  * comparison. Does not say we watched them. Draft-only: a `?reply=` composer
  * preload. Never a send. Packet PDF is a later taste stop.
  *
- * Key: crm_people.id (not FUB). One ping per person+listing per session.
+ * Key: crm_people.id (not CRM). One ping per person+listing per session.
  * Unidentified / no specific home / no address = no queue.
  * Same rail as other broker alerts. No fifth inbox.
  */

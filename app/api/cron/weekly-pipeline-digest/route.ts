@@ -147,7 +147,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   const newLeadsByAudience: AudienceCount[] = leadSummary.byAudience
   const newLeadsBySource: SourceCount[] = leadSummary.bySource
 
-  // FUB smart lists are gone (decommissioned 2026-06-24); the email template
+  // CRM smart lists are gone (decommissioned 2026-06-24); the email template
   // renders "No smart list data." for an empty array — honest, not a zero-fill.
   const smartListMovement: SmartListMovement[] = []
 

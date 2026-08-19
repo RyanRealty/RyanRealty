@@ -36,7 +36,7 @@ WHO THE PRODUCT IS FOR
 - Desktop is for deep work (list hygiene, sequences, reviews, reporting).
 - Matt is a licensed principal broker. Wrong numbers, double SMS, and
   TCPA/suppression failures are compliance failures, not UX bugs.
-- Follow Up Boss was decommissioned 2026-06-24. The live system is in-house:
+- the in-house CRM was decommissioned 2026-06-24. The live system is in-house:
   `/admin/crm`, `lib/crm/`, `crm_*` tables, CRM crons in vercel.json.
   Archive docs that still say "build against FUB" are historical only.
 
@@ -81,7 +81,7 @@ PHASE 2 — DATA (before any layout)
 
 PHASE 3 — INFORMATION ARCHITECTURE (before pixels)
 1. Derive destinations from the process inventory, not from the current
-   50+ nav items and not from cloning Follow Up Boss.
+   50+ nav items and not from cloning the in-house CRM.
 2. One job per primary destination. Secondary jobs nest or deep-link.
 3. Phone-first for the response half of the loop. Desktop may densify the
    same tree; it must not be a second product.
@@ -131,8 +131,8 @@ Architecture / rebuild pack
 - docs/plans/ADMIN_REBUILD/audit-reports/* (defect evidence with file:line)
 
 Product / history
-- The Follow Up Boss era is decommissioned. Its docs are archived and indexed at
-  docs/archive/fub-era/README.md. **Banned as targets** by the Admin Product OS
+- The the in-house CRM era is decommissioned. Its docs are archived and indexed at
+  lib/crm/send-event.ts. **Banned as targets** by the Admin Product OS
   amnesia rule — no FUB screen, mobile bar, or IA is a design or naming input.
 - docs/CONSOLE_KIT.md — blacklisted as a design input by the same rule.
 - docs/MARKETING_LEAD_FLOW.md (how leads enter)
@@ -169,7 +169,7 @@ FORBIDDEN
 
 - Starting from "redesign the nav" or "apply Console Kit to all pages."
 - Shipping a prompt-shaped answer as the product ("here are your 8 screens").
-- Cloning Follow Up Boss pixel-for-pixel as the goal.
+- Cloning the in-house CRM pixel-for-pixel as the goal.
 - Treating ADMIN_REBUILD specs as already approved for build.
 - Adding features that are not on the KEEP list from Phase 1.
 - Declaring done because build/CI is green without timed litmus + Matt review.
@@ -220,5 +220,5 @@ Then wait for his answers before designing screens.
 | `specs/03-person-workspace-send.md` | Prior person/send design — treat as one proposal |
 | `LITMUS.md` | Acceptance test #1 — must still pass after any redesign |
 | `CONSOLE_KIT.md` | Blacklisted as a design input (Admin Product OS amnesia) |
-| archived FUB-era docs | See `docs/archive/fub-era/README.md` — banned as targets |
+| archived FUB-era docs | See `lib/crm/send-event.ts` — banned as targets |
 ```

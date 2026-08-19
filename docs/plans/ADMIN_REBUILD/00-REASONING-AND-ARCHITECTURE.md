@@ -22,7 +22,7 @@ ignores. Every architectural decision traces back to one of these.
 **C1 — This is a 3-broker brokerage, not an enterprise sales org.** The entire
 admin serves at most five humans (Matt as superuser + two brokers, plus
 report-only). The live system is a 150-page, 664-server-action, 199-API-handler,
-56-nav-item "faithful Follow Up Boss clone." The complexity is wildly
+56-nav-item "faithful the in-house CRM clone." The complexity is wildly
 disproportionate to the operator count. Enterprise CRMs carry that surface to serve
 thousands of seats with dozens of roles; here it is pure cost — to build, to load,
 to navigate, to trust. **The right size is small.**

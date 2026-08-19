@@ -2,7 +2,7 @@
 
 /**
  * PeopleListView — the §05 People list main area + persistent right panel
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md).
+ * (docs/crm-spec/05-people-list-and-bulk-actions.md).
  *
  * Owns everything to the right of the §3 sidebar:
  *   - §4 header: "All People" h1 + "Showing N people" + "+ New List" (All
@@ -12,7 +12,7 @@
  *     plus the always-visible bulk icon strip (email/import/tag/delete/export).
  *   - §6/§13 table: checkbox · Name(+avatar+source) · Lead Score · Agent ·
  *     Last Visit · Phone (permanent SMS+call icons) · Email · Last Activity
- *     (type icon + description + FUB date) · Tags — column set configurable
+ *     (type icon + description + CRM date) · Tags — column set configurable
  *     per list via the §8 chooser.
  *   - §9 persistent right filter panel (column chooser swaps into the slot).
  *   - §14 multi-select bulk bar (BulkActions), §15 export modal, §16 Add
@@ -127,7 +127,7 @@ export type PeopleRow = {
   assigned_broker: string | null
   agentLabel: string | null
   agentHeadshot: string | null
-  /** §6 col 5 — formatted FUB date ('' when no visit data). */
+  /** §6 col 5 — formatted CRM date ('' when no visit data). */
   lastVisitLabel: string
   /** §6 col 8 — latest lead-initiated event. */
   lastActivity: { icon: ActivityIconKind; label: string; dateLabel: string } | null

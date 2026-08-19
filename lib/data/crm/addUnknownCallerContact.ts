@@ -1,5 +1,5 @@
 /**
- * Name an unknown-caller contact from the Inbox (FUB-parity delivery #5, spec §9).
+ * Name an unknown-caller contact from the Inbox (CRM-parity delivery #5, spec §9).
  *
  * Every inbound text/call already creates a crm_people row via the inbound
  * webhooks (findOrCreatePersonByPhone) with a phone-derived placeholder name

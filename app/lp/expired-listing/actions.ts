@@ -13,7 +13,7 @@ import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
-import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
+import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/lead-origin-note'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 
@@ -40,7 +40,7 @@ export type ExpiredLPSubmission = {
   /** Optional notes. */
   notes?: string
   /** Anonymous visitor session id (uuid v4) from localStorage. When present,
-   *  we stitch this lead's prior browsing history to the FUB person. */
+   *  we stitch this lead's prior browsing history to the CRM person. */
   sessionId?: string
 }
 
@@ -84,7 +84,7 @@ export async function saveExpiredPartialAddress(params: {
  * full seller workflow PLUS a broker priority alert.
  *
  * Expired-LP intake mirrors the seller path. Research that drove voice +
- * content: docs/archive/fub-era/README.md.
+ * content: lib/crm/send-event.ts.
  */
 export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Promise<ExpiredLPResult> {
   try {
@@ -98,7 +98,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     const notes = submission.notes?.trim() ?? ''
 
     // ─── Resolve a pre-known person (identity-bridge cookie only) ──────────
-    // The old FUB findPersonByEmail pre-lookup was a dead no-op after the
+    // The old CRM findPersonByEmail pre-lookup was a dead no-op after the
     // 2026-06-24 decommission and was deleted — sendEvent below resolves the
     // native person by email (ensureNativeLead dedupes email-first).
     let fubPersonId: number | null = null
@@ -163,7 +163,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
       console.warn('[expired-lp] native capture failed:', eventResult.error)
     }
 
-    // ─── Resolve the native CRM person id (post-FUB cutover) ───────────────
+    // ─── Resolve the native CRM person id (post-CRM cutover) ───────────────
     if (eventResult.ok && eventResult.personId) {
       fubPersonId = eventResult.personId
     }
@@ -190,7 +190,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
       }
     }
 
-    // ─── Stitch anonymous browsing history to this FUB person ──────────────
+    // ─── Stitch anonymous browsing history to this CRM person ──────────────
     // Replays prior anonymous visitor_events for this session into the CRM and
     // marks the visitor_sessions row identified. Non-blocking, idempotent.
     if (fubPersonId && email) {

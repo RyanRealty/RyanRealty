@@ -101,9 +101,9 @@ describe('renderCrmMerge — every catalog token resolves', () => {
     expect(renderCrmMerge('%customBuyerSearchAreas%', FULL_PERSON, FULL_CTX)).toBe('NW Bend')
   })
 
-  // FUB-imported template tokens (2026-07-02 mobile audit): 17 of 37 live SMS
+  // CRM-imported template tokens (2026-07-02 mobile audit): 17 of 37 live SMS
   // templates carry these names; one reached a contact literally on Jun 30.
-  it('FUB template aliases resolve (%greeting_time% / %agent_name% / %inquiry_address%)', () => {
+  it('CRM template aliases resolve (%greeting_time% / %agent_name% / %inquiry_address%)', () => {
     const out = renderCrmMerge(
       '%greeting_time%, from %agent_name% re: %inquiry_address%',
       FULL_PERSON,
@@ -118,7 +118,7 @@ describe('renderCrmMerge — every catalog token resolves', () => {
     expect(renderCrmMerge('%inquiry_address%', person, ctx)).toBe('789 Viewed St, Bend OR 97703')
   })
 
-  it('FUB aliases stay literal without data (fail-closed)', () => {
+  it('CRM aliases stay literal without data (fail-closed)', () => {
     const out = renderCrmMerge('%greeting_time% %agent_name% %inquiry_address%', { name: 'X Y' })
     expect(out).toBe('%greeting_time% %agent_name% %inquiry_address%')
   })

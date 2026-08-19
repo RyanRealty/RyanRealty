@@ -286,8 +286,8 @@ export function renderCrmMerge(
     '{{firstName}}': first,
     '{{address}}': customAddress,
     '{{cma_link}}': cmaLink,
-    // FUB-imported template aliases (2026-07-02 mobile audit): 17 of the 37
-    // live SMS templates still carry FUB token names — one already reached a
+    // CRM-imported template aliases (2026-07-02 mobile audit): 17 of the 37
+    // live SMS templates still carry CRM token names — one already reached a
     // contact literally ("%greeting_time%, Matthew, …", Jun 30). Resolve them
     // to the canonical equivalents instead of trusting brokers to catch the
     // composer warning on a phone.
@@ -342,7 +342,7 @@ export function attributeSiteLinks(
     // anonymous sessions. This is what turns "Anonymous · Portland" into a name.
     if (fuid && !/[?&]_fuid=/.test(out)) out += (out.includes('?') ? '&' : '?') + '_fuid=' + fuid
     // Native identity — ?_pid=<crm_people.id> is the post-cutover counterpart:
-    // contacts created after the FUB decommission have no fub_legacy_id, so a
+    // contacts created after the CRM decommission have no fub_legacy_id, so a
     // send that only stamps _fuid can never stitch their web sessions.
     // PersonIdentityBridge prefers _pid when both are present.
     if (pid && !/[?&]_pid=/.test(out)) out += (out.includes('?') ? '&' : '?') + '_pid=' + pid

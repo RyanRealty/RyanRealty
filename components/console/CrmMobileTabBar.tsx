@@ -3,7 +3,7 @@
 /**
  * CrmMobileTabBar — the mobile bottom tab bar for phones.
  *
- * Matt directive 2026-06-26: the admin CRM must look + behave like the FUB iOS
+ * Matt directive 2026-06-26: the admin CRM must look + behave like the CRM iOS
  * app on mobile — a fixed 5-tab bottom bar that turns the console into a
  * thumb-reachable app. D9 (2026-07-17) keeps the tab set Home/Inbox/People/
  * Deals/Activity, but the tabs now arrive as a PROP derived from the ONE
@@ -52,7 +52,7 @@ export default function CrmMobileTabBar({ tabs, inboxUnread = 0 }: { tabs: Mobil
 
   // Matt directive 2026-07-02 (mobile punch list #1): the bar renders on EVERY
   // mobile CRM route, INCLUDING pushed detail views — "I do not have the bottom
-  // bar like in follow up boss." This supersedes the earlier mob-02 suppression.
+  // bar on every mobile CRM route." This supersedes the earlier mob-02 suppression.
   // Full-screen overlays (MobileThread, MobileSettingsScreen) still occlude it
   // at z-50 — those are modals, not routes.
 

@@ -286,7 +286,7 @@ async function readPropertiesReport(
 
 /**
  * Properties report — which listing pages visitors viewed most, with addresses
- * and map coordinates.  Cached 10 minutes to match FUB's reporting cache TTL.
+ * and map coordinates.  Cached 10 minutes to match CRM's reporting cache TTL.
  *
  * Metric → source mapping:
  *   totalViews       → visitor_events WHERE event_type='listing_view', COUNT(*) exact
@@ -300,7 +300,7 @@ async function readPropertiesReport(
  *     address comes from listings table join or URL extraction fallback.
  *   - Long internal listing keys (e.g. "20260522215131371924000000") don't match
  *     listings."ListNumber"; address is extracted from page_url slug or shown as "Listing #ID".
- *   - No broker scope — Properties report has no agent filter (matches FUB spec).
+ *   - No broker scope — Properties report has no agent filter (matches CRM spec).
  *   - Only site visitors are counted; CRM timeline web_events are not included here
  *     (they don't carry listing_mls-level granularity in the payload column).
  *

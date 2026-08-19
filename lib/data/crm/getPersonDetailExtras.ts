@@ -2,7 +2,7 @@ import 'server-only'
 
 /**
  * getPersonDetailExtras — §07 person-detail-desktop right-rail + timeline data
- * (spec docs/fub-crm-spec/07b §9, 07c §7c.8). One call fans out to:
+ * (spec docs/crm-spec/07b §9, 07c §7c.8). One call fans out to:
  *
  *   - appointments  crm_appointments for the person (upcoming first)
  *   - deals         crm_deals rows linked to the person

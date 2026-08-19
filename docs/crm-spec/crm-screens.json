@@ -5,7 +5,7 @@
   },
   {
     "id": "person-detail-desktop",
-    "specRef": "docs/fub-crm-spec/07a-person-detail-sidebar-and-inline-edit.md",
+    "specRef": "docs/crm-spec/07a-person-detail-sidebar-and-inline-edit.md",
     "route": "components/admin/crm/person-detail/PersonWorkspaceBody.tsx",
     "alsoRoutes": [
       "components/admin/crm/person-detail/PersonHomesRegion.tsx",
@@ -23,11 +23,11 @@
       "ContactQuickActions",
       "TemplatePickerNav"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-person-detail-desktop.png"
+    "verify": "docs/crm-spec/_verify/screen-person-detail-desktop.png"
   },
   {
     "id": "person-detail-mobile",
-    "specRef": "docs/fub-crm-spec/25-mobile-contact-detail.md",
+    "specRef": "docs/crm-spec/25-mobile-contact-detail.md",
     "route": "components/admin/crm/person-detail/MobileLeadDetail.tsx",
     "alsoRoutes": [
       "components/admin/crm/person-detail/PersonMobileHomesRegion.tsx",
@@ -43,11 +43,11 @@
       "MobileCalendarTab",
       "MobileActivityTab"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-contact-detail.png"
+    "verify": "docs/crm-spec/_verify/mob-contact-detail.png"
   },
   {
     "id": "inbox-desktop",
-    "specRef": "docs/fub-crm-spec/08-inbox.md",
+    "specRef": "docs/crm-spec/08-inbox.md",
     "route": "app/admin/(protected)/crm/inbox/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -63,11 +63,11 @@
       "getConversationThreadFull",
       "getInboxContactCard"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-inbox-desktop.png"
+    "verify": "docs/crm-spec/_verify/screen-inbox-desktop.png"
   },
   {
     "id": "inbox-mobile",
-    "specRef": "docs/fub-crm-spec/26-mobile-inbox-and-conversations.md",
+    "specRef": "docs/crm-spec/26-mobile-inbox-and-conversations.md",
     "route": "app/admin/(protected)/crm/inbox/_components/mobile/MobileBranch.tsx",
     "status": "done",
     "requiredComponents": [
@@ -76,11 +76,11 @@
       "MobileComposeSheet",
       "AddPersonForm"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-inbox.png"
+    "verify": "docs/crm-spec/_verify/mob-inbox.png"
   },
   {
     "id": "contacts-list-desktop",
-    "specRef": "docs/fub-crm-spec/05-people-list-and-bulk-actions.md",
+    "specRef": "docs/crm-spec/05-people-list-and-bulk-actions.md",
     "route": "app/admin/(protected)/crm/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -93,7 +93,7 @@
       "getCrmSavedViews",
       "getCrmPonds"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-contacts-list.png",
+    "verify": "docs/crm-spec/_verify/screen-contacts-list.png",
     "alsoRoutes": [
       "components/console/TopBarScope.tsx"
     ],
@@ -101,7 +101,7 @@
   },
   {
     "id": "deals-desktop",
-    "specRef": "docs/fub-crm-spec/10-deals-pipelines.md",
+    "specRef": "docs/crm-spec/10-deals-pipelines.md",
     "route": "app/admin/(protected)/crm/deals/page.tsx",
     "status": "superseded",
     "requiredComponents": [
@@ -115,12 +115,12 @@
       "dealInScope",
       "scopeBroker"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-deals.png",
+    "verify": "docs/crm-spec/_verify/screen-deals.png",
     "supersededBy": "/admin/closings (one deal entity) — Track 2 P3, docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md; /admin/crm/deals* are redirect bridges"
   },
   {
     "id": "automations-desktop",
-    "specRef": "docs/fub-crm-spec/12-action-plans-and-automations.md",
+    "specRef": "docs/crm-spec/12-action-plans-and-automations.md",
     "route": "app/admin/(protected)/crm/sequences/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -133,11 +133,11 @@
       "createCrmSequenceFolderAction",
       "moveCrmSequenceToFolderAction"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-automations.png"
+    "verify": "docs/crm-spec/_verify/screen-automations.png"
   },
   {
     "id": "templates-desktop",
-    "specRef": "docs/fub-crm-spec/13-email-and-text-templates.md",
+    "specRef": "docs/crm-spec/13-email-and-text-templates.md",
     "route": "app/admin/(protected)/crm/settings/templates/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -151,11 +151,11 @@
       "moveTemplatesToFolderAction",
       "sendTemplateSelfTestAction"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-templates.png"
+    "verify": "docs/crm-spec/_verify/screen-templates.png"
   },
   {
     "id": "company-settings-desktop",
-    "specRef": "docs/fub-crm-spec/15-admin-company-team-and-roles.md",
+    "specRef": "docs/crm-spec/15-admin-company-team-and-roles.md",
     "route": "app/admin/(protected)/crm/settings/company/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -165,11 +165,11 @@
       "getCrmBlockedNumbers",
       "getA2pCampaignStatus"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-company-settings.png"
+    "verify": "docs/crm-spec/_verify/screen-company-settings.png"
   },
   {
     "id": "tasks-calendar-desktop",
-    "specRef": "docs/fub-crm-spec/09-tasks-and-calendar.md",
+    "specRef": "docs/crm-spec/09-tasks-and-calendar.md",
     "route": "app/admin/(protected)/crm/calendar/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -182,11 +182,11 @@
       "getCrmBrokers",
       "scopeBroker"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-tasks-calendar.png"
+    "verify": "docs/crm-spec/_verify/screen-tasks-calendar.png"
   },
   {
     "id": "reporting-desktop",
-    "specRef": "docs/fub-crm-spec/11-reporting.md",
+    "specRef": "docs/crm-spec/11-reporting.md",
     "route": "app/admin/(protected)/crm/reporting/agent-activity/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -199,22 +199,22 @@
       "scopeBroker",
       "parseColsParam"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-reporting-agent-activity.png"
+    "verify": "docs/crm-spec/_verify/screen-reporting-agent-activity.png"
   },
   {
     "id": "mobile-shell",
-    "specRef": "docs/fub-crm-spec/23-mobile-architecture-and-navigation.md",
+    "specRef": "docs/crm-spec/23-mobile-architecture-and-navigation.md",
     "route": "components/console/CrmMobileTabBar.tsx",
     "status": "done",
     "requiredComponents": [
       "CrmMobileTabBar",
       "activeHref"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-shell.png"
+    "verify": "docs/crm-spec/_verify/mob-shell.png"
   },
   {
     "id": "mobile-compose",
-    "specRef": "docs/fub-crm-spec/27-mobile-compose-email-text-call.md",
+    "specRef": "docs/crm-spec/27-mobile-compose-email-text-call.md",
     "route": "app/admin/(protected)/crm/inbox/_components/mobile/MobileComposeSheet.tsx",
     "status": "done",
     "requiredComponents": [
@@ -225,11 +225,11 @@
       "aiDraftAction",
       "searchAction"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-compose.png"
+    "verify": "docs/crm-spec/_verify/mob-compose.png"
   },
   {
     "id": "mobile-activity-people",
-    "specRef": "docs/fub-crm-spec/24-mobile-activity-people-and-smartlists.md",
+    "specRef": "docs/crm-spec/24-mobile-activity-people-and-smartlists.md",
     "route": "app/admin/(protected)/crm/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -238,7 +238,7 @@
       "ContactsSearch",
       "getPeopleListSignals"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-activity-people.png",
+    "verify": "docs/crm-spec/_verify/mob-activity-people.png",
     "alsoRoutes": [
       "components/console/TopBarScope.tsx"
     ],
@@ -246,7 +246,7 @@
   },
   {
     "id": "mobile-calendar-tasks",
-    "specRef": "docs/fub-crm-spec/29-mobile-calendar-and-tasks.md",
+    "specRef": "docs/crm-spec/29-mobile-calendar-and-tasks.md",
     "route": "app/admin/(protected)/crm/calendar/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -258,11 +258,11 @@
       "deleteCrmTaskAction",
       "searchCrmContactsAction"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-calendar-tasks.png"
+    "verify": "docs/crm-spec/_verify/mob-calendar-tasks.png"
   },
   {
     "id": "mobile-pickers",
-    "specRef": "docs/fub-crm-spec/28-mobile-pickers-modals-and-action-sheets.md",
+    "specRef": "docs/crm-spec/28-mobile-pickers-modals-and-action-sheets.md",
     "route": "components/admin/shared/mobile/MobileDetailsSection.tsx",
     "status": "done",
     "requiredComponents": [
@@ -274,11 +274,11 @@
       "applyAutomationAction",
       "TIMEFRAME_OPTIONS"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-pickers.png"
+    "verify": "docs/crm-spec/_verify/mob-pickers.png"
   },
   {
     "id": "mobile-dashboard",
-    "specRef": "docs/fub-crm-spec/mobile-screens/screen-44.md",
+    "specRef": "docs/crm-spec/mobile-screens/screen-44.md",
     "route": "app/admin/(protected)/broker-dashboard/page.tsx",
     "status": "superseded",
     "requiredComponents": [
@@ -290,12 +290,12 @@
       "getDashboardKpis",
       "getCrmAccess"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-dashboard.png",
+    "verify": "docs/crm-spec/_verify/mob-dashboard.png",
     "supersededBy": "/admin/today (queue jobs) + Oversight family (KPIs/feed) \u2014 Admin Product OS IA lock 2026-08-05, docs/plans/ADMIN_PRODUCT/cut-list.md; broker-dashboard route is a redirect bridge"
   },
   {
     "id": "mobile-settings",
-    "specRef": "docs/fub-crm-spec/mobile-screens/screen-06.md",
+    "specRef": "docs/crm-spec/mobile-screens/screen-06.md",
     "route": "app/admin/(protected)/settings/account/page.tsx",
     "status": "done",
     "requiredComponents": [
@@ -304,7 +304,7 @@
       "getAdminRoleForEmail",
       "getSession"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-settings.png",
+    "verify": "docs/crm-spec/_verify/mob-settings.png",
     "_comment": "Route moved 2026-08-05 (P9 Settings roll): /admin/settings became the config hub; the mob-06 account surface lives unchanged at /admin/settings/account."
   }
 ]

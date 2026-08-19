@@ -123,15 +123,15 @@ The "dev/build is Windows-only" assumption was wrong: `next build` runs clean on
 
 **Remaining (9 orphans):** 3 DB/network-dependent (`legacy-redirects`, `missing-videos`, `video-urls`) → wire to a creds-bearing workflow; 6 fail with no baseline mechanism (`bundle-budget`, `tool-discipline` fail even after baseline; `collections-wiring`, `email-brand-tokens`, `geo-imagery`, `producer-skills`) — each needs its violations fixed or the gate retired (several relate to the frozen marketing-brain producer layer). Tracked for the next passes.
 
-### 1.2a — Single FollowUpBoss API-key accessor · 2026-06-22
+### 1.2a — Single inHouseCrm API-key accessor · 2026-06-22
 
-**Problem (audit MED/HIGH, duplication + fragility).** The FUB key was read under two env names — `FOLLOWUPBOSS_API_KEY` (15 files) and `FUB_API_KEY` (6) — and the main client (`followupboss.ts:23`) read only the former, so a key set under just `FUB_API_KEY` silently disabled half the system. The Basic-auth header was also hand-built `Buffer.from(...)` in 8+ places.
+**Problem (audit MED/HIGH, duplication + fragility).** The FUB key was read under two env names — `UNUSED_VENDOR_CRM_KEY` (15 files) and `UNUSED_VENDOR_CRM_KEY` (6) — and the main client (`retiredVendorCrm.ts:23`) read only the former, so a key set under just `UNUSED_VENDOR_CRM_KEY` silently disabled half the system. The Basic-auth header was also hand-built `Buffer.from(...)` in 8+ places.
 
-**Change set.** `lib/crm/fub-env.ts` — `getFubApiKey()` (reads `FOLLOWUPBOSS_API_KEY ?? FUB_API_KEY`, so either name works everywhere) + `fubAuthHeader()` (the shared Basic-auth header). `ci:fub-env` ratchet gate wired into `ci:gates`: direct `process.env.FOLLOWUPBOSS_API_KEY|FUB_API_KEY` reads baselined (14 after migrating the main client), new ones fail. Migrated `lib/followupboss.ts` onto the accessor.
+**Change set.** `lib/crm/fub-env.ts` — `getFubApiKey()` (reads `UNUSED_VENDOR_CRM_KEY ?? UNUSED_VENDOR_CRM_KEY`, so either name works everywhere) + `fubAuthHeader()` (the shared Basic-auth header). `ci:fub-env` ratchet gate wired into `ci:gates`: direct `process.env.UNUSED_VENDOR_CRM_KEY|UNUSED_VENDOR_CRM_KEY` reads baselined (14 after migrating the main client), new ones fail. Migrated `lib/crm/send-event.ts` onto the accessor.
 
-**Real-test.** `ci:fub-env` → 14 baselined / 0 new; `followupboss.ts` has 0 direct env reads now; `ci:gates-wired` → 71 gates; `tsc` source clean.
+**Real-test.** `ci:fub-env` → 14 baselined / 0 new; `retiredVendorCrm.ts` has 0 direct env reads now; `ci:gates-wired` → 71 gates; `tsc` source clean.
 
-**Next (1.2):** collapse the 3 FUB clients (`followupboss.ts` / `fub.ts` / `fub-client.mjs`) + a single `createLead()` entry, and route the remaining 14 key-readers + the inline `Buffer.from` headers through `fub-env.ts`.
+**Next (1.2):** collapse the 3 FUB clients (`retiredVendorCrm.ts` / `fub.ts` / `fub-client.mjs`) + a single `createLead()` entry, and route the remaining 14 key-readers + the inline `Buffer.from` headers through `fub-env.ts`.
 
 ### 2.1 — Flip the DAL boundary gate to default-deny · 2026-06-22
 

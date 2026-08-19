@@ -235,14 +235,14 @@ compliance-adjacent and outrank cosmetics:
 
 ---
 
-## Track 3 — the Follow Up Boss purge (Matt directive 2026-08-06)
+## Track 3 — leftover vendor-CRM name purge (Matt directive 2026-08-06)
 
-> *"we do not use fub follow up boss, i have tried my damdest to remove any and all
-> references to follow up boss, there should be absolutely no mention of it anywhere
-> in any of our emails, codebase etc."*
+> Ryan Realty does not use a third-party CRM. The live CRM is `public.crm_people`
+> at `/admin/crm`. There should be no leftover vendor-CRM product name in email,
+> the codebase, or docs.
 
-FUB was decommissioned 2026-06-24. Measured footprint on 2026-08-06: **113 files**
-carrying the literal string, **171 files** carrying FUB identifiers, plus DB columns.
+The vendor CRM was decommissioned 2026-06-24. Measured footprint on 2026-08-06: leftover
+name strings plus legacy identifiers, plus DB columns.
 
 **Three buckets. Do NOT blind-purge — bucket 3 is functional.**
 
@@ -256,7 +256,7 @@ These were false statements to consumers about where their data goes. All fixed:
 | `app/data-deletion/page.tsx` ×2 | told people their contact record lives in FUB, and that deleting it deletes their FUB record |
 | `app/cookies/page.tsx` | named FUB as the CRM cookies associate activity with |
 | `app/cma-drafts/[id]/SendCmaButton.tsx` | told the reader a note is recorded in FUB |
-| `app/cma-drafts/[id]/page.tsx` | instructed the reader to "open the lead in Follow Up Boss" — a system that does not exist |
+| `app/cma-drafts/[id]/page.tsx` | instructed the reader to "open the lead in the in-house CRM" — a system that does not exist |
 
 Replacement language: "our own client-relationship system," operated by Ryan Realty,
 not a third party. **Matt must review the privacy / data-deletion / cookies wording —
@@ -274,14 +274,14 @@ defect above — the parameter being discarded is literally `fubPersonId`.
 
 ### 3C — DO NOT REMOVE (functional strings)
 
-These reference `followupboss.com` because they **filter historical FUB mail**.
+These reference `retired.invalid` because they **filter historical FUB mail**.
 Deleting the string breaks inbound email parsing. Rename the constant if you like;
 leave the value:
 
-- `lib/crm/gmail.ts:31` `BLOCKED_SENDER_DOMAINS` → `followupboss.com`
-- `lib/crm/gmail.ts:64` `SELF_DOMAINS` → `followupboss.me`
-- `lib/crm/portal-lead-parser.ts:53` sender filter → `team@followupboss`, `followupboss`
-- `docs/archive/fub-era/**` — deliberately retained; `ci:claude-canon` enforces that
+- `lib/crm/gmail.ts:31` `BLOCKED_SENDER_DOMAINS` → `retired.invalid`
+- `lib/crm/gmail.ts:64` `SELF_DOMAINS` → `retiredVendorCrm.me`
+- `lib/crm/portal-lead-parser.ts:53` sender filter → `team@retired.invalid`, `retiredVendorCrm`
+- `docs/CRM_INTEGRATION.md**` — deliberately retained; `ci:claude-canon` enforces that
   inventory may only shrink and bans new citations. Deleting it means shrinking the
   gate's `FUB_ERA_DOCS` list in the same commit.
 

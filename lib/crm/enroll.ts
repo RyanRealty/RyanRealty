@@ -15,7 +15,7 @@ import { geoReferralEnrollBlock } from '@/lib/referral-geo'
 export const ENROLLMENT_EPOCH = '2026-06-10T00:00:00Z'
 
 /**
- * tag → FUB legacy plan id (the four master sequences). Order matters.
+ * tag → CRM legacy plan id (the four master sequences). Order matters.
  *
  * This is now only the FAIL-SAFE fallback: the auto-enroll path reads the
  * UI-configurable crm_automation_rules table first (getCrmAutomationRules,

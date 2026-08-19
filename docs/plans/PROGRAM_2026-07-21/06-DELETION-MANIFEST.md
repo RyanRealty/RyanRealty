@@ -22,8 +22,8 @@ Repo `/Users/matthewryan/RyanRealty` · HEAD `12a409aa` (== `origin/main`) · `c
 | G25 (catalog arm) | same | `docs/MECHANICAL_GATES.md` | **Empirically verified: deleting it FAILS the gate.** The `existsSync` guard at line 88 is misleading — every directive naming a gate ID then reports "gate not in catalog". Not soft |
 | **migration-drift** | `ci:migration-drift` | `docs/DATABASE_SCHEMA_SNAPSHOT.md` (line 34, **no guard**) | **Empirically verified: uncaught ENOENT, node crash** |
 | **dal-column-quoting** | `ci:dal-column-quoting` | `docs/DATABASE_SCHEMA_SNAPSHOT.md` (line 50, **no guard**) | **Empirically verified: uncaught ENOENT, node crash** |
-| **crm-screen-parity** | `ci:crm-screen-parity` | `docs/fub-crm-spec/crm-screens.json` (`existsSync`→fail; `JSON.parse`) | Immediate fail |
-| crm-screen-parity | same | `docs/fub-crm-spec/_verify/*.png` — 21 files | Per-row `existsSync` for every `status=done` screen → fail |
+| **crm-screen-parity** | `ci:crm-screen-parity` | `docs/crm-spec/crm-screens.json` (`existsSync`→fail; `JSON.parse`) | Immediate fail |
+| crm-screen-parity | same | `docs/crm-spec/_verify/*.png` — 21 files | Per-row `existsSync` for every `status=done` screen → fail |
 | **G45 producer-freeze** | `ci:producer-freeze` | `marketing_brain_skills/producers/REGISTRY.md` (line 40, no guard) | Crash. Ratchet counts rows; row count may only **shrink**, so deleting producer *rows* is allowed |
 | **G35 producer-skills** | `ci:producer-skills` | Walks `marketing_brain_skills/producers/`, `social_media_skills/`, `video_production_skills/` for `SKILL.md`; delegates to `validate-producer.mjs`, which `readFileSync`s `REGISTRY.md` | Roots are `existsSync`-guarded (**verified: deleting `video_production_skills/` → still PASS**). Deleting `REGISTRY.md` degrades gates 3+8 to warnings but `check-producer-freeze` crashes first |
 | resort-definitions | `ci:resort-definitions` | `data/resort-communities.json` | Crash (JSON registry, not prose) |
@@ -102,10 +102,10 @@ git commit -m "chore(docs): track in-flight consolidation program + 3480 build s
 git rm -r --quiet docs/audits docs/research docs/archive docs/handoffs \
                   docs/marketing-brain docs/avatar-market-channel \
                   docs/site-audit docs/broker-runbooks docs/transaction-coordinator 2>/dev/null
-git rm -r --quiet docs/fub-crm-spec/screens docs/fub-crm-spec/mobile-screens \
-                  docs/fub-crm-spec/addenda-captures docs/fub-crm-spec/recordings \
-                  docs/fub-crm-spec/api-export 2>/dev/null
-git rm --quiet 'docs/fub-crm-spec/*.md' 2>/dev/null || git rm --quiet docs/fub-crm-spec/[0-9]*.md docs/fub-crm-spec/README.md docs/fub-crm-spec/VERIFICATION.md docs/fub-crm-spec/CAPTURE-CHECKLIST.md 2>/dev/null
+git rm -r --quiet docs/crm-spec/screens docs/crm-spec/mobile-screens \
+                  docs/crm-spec/addenda-captures docs/crm-spec/recordings \
+                  docs/crm-spec/api-export 2>/dev/null
+git rm --quiet 'docs/crm-spec/*.md' 2>/dev/null || git rm --quiet docs/crm-spec/[0-9]*.md docs/crm-spec/README.md docs/crm-spec/VERIFICATION.md docs/crm-spec/CAPTURE-CHECKLIST.md 2>/dev/null
 npm run ci:gates && git commit -m "chore(docs): delete audit/research/archive/handoff history + FUB spec prose"
 ```
 `crm-screens.json` and `_verify/*.png` are untouched — parity gate stays green.
@@ -196,8 +196,8 @@ npm run ci:gates && npm run push
 | `docs/DESIGN_DIRECTIVES.md` | `check-design-directives.mjs:39,42,48` | `existsSync`→exit 1; `\| Dnn \|` rows parsed |
 | `docs/MECHANICAL_GATES.md` | `check-design-directives.mjs:40,88` | **test-confirmed fail on delete** |
 | `docs/DATABASE_SCHEMA_SNAPSHOT.md` | `check-migration-drift.mjs:34`, `check-dal-column-quoting.mjs:50` | **unguarded `readFileSync` — test-confirmed crash** |
-| `docs/fub-crm-spec/crm-screens.json` | `check-crm-screen-parity.mjs:41,49,56` | `existsSync`+`JSON.parse` |
-| `docs/fub-crm-spec/_verify/*.png` (21) | same, line 101-102 | per-`status=done` `existsSync` |
+| `docs/crm-spec/crm-screens.json` | `check-crm-screen-parity.mjs:41,49,56` | `existsSync`+`JSON.parse` |
+| `docs/crm-spec/_verify/*.png` (21) | same, line 101-102 | per-`status=done` `existsSync` |
 | `marketing_brain_skills/producers/REGISTRY.md` | `check-producer-freeze.mjs:40`, `validate-producer.mjs:28,373` | unguarded `readFileSync`; row-count ratchet |
 | `marketing_brain_skills/producers/*/SKILL.md` (24) | `check-producer-skills.mjs` + `producer-runtime` cron | G35 walks them; cron fs-loads by `assigned_producer` |
 | `social_media_skills/*/SKILL.md` (29) | same | same |

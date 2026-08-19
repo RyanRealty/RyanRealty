@@ -105,7 +105,7 @@ export async function updateCrmDeal(
  *   land on a rendered column) — a bogus stage string is refused, no write.
  * - No-ops (ok:true, no write) when the deal is already in the target stage.
  * - Sets entered_stage_at = now — the stage-history timestamp that powers the
- *   "time in stage" metric and the FUB "Deal Stage Changed" trigger (spec §15).
+ *   "time in stage" metric and the CRM "Deal Stage Changed" trigger (spec §15).
  * - Appends a per-contact crm_timeline audit row (kind 'deal_stage_change')
  *   mirroring the set-stage bulk handler's pattern. Best-effort: a failed audit
  *   insert must not fail the restage the user just performed. Only logged when the
@@ -449,7 +449,7 @@ export async function setDealStatus(
     const scoped = await requireDealInScope(dealId, scopeBroker(access))
     if (!scoped.ok) return scoped
     const sb = createServiceClient()
-    // Existing FUB-imported rows use 'Active' capitalization — write the same
+    // Existing CRM-imported rows use 'Active' capitalization — write the same
     // family; all readers normalize case-insensitively.
     const { error } = await sb
       .from('crm_deals')

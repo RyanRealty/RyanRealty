@@ -103,7 +103,7 @@ Twilio confirmation email arrived; comms infrastructure is GO. Work order, in or
    at send time. Defense-in-depth: keep Advanced Opt-Out (STOP) enabled on the
    Twilio messaging service so STOP events write back into CRM suppressions.
    Smoke-test rule applies: verify with 1-2 numbers before bulk. Do not call a
-   vendor CRM and do not set `FOLLOWUPBOSS_API_KEY`.
+   vendor CRM. Review people at `/admin/crm`.
 2. **Per-broker business phones on public profiles:** each broker's Twilio business
    number goes into public.brokers (new/existing phone field), renders on /team
    profile cards + team/[slug] pages + their JSON-LD (RealEstateAgent telephone) —

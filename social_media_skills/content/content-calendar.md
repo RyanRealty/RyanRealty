@@ -17,7 +17,7 @@ Have available:
 - Existing April content package: `Ryan Realty - Social Media Content Package - April 2026.docx`
 - Tumalo listing assets (7 story frames + Reel + photos in CANVA)
 - Snowdrift Visuals inventory: 19 neighborhood Photo + Video folders in Google Drive
-- In-house CRM: `public.crm_people` notes / tags at `/admin/crm` (pull common buyer/seller questions). Do not set `FOLLOWUPBOSS_API_KEY`.
+- In-house CRM: `public.crm_people` notes / tags at `/admin/crm` (pull common buyer/seller questions).
 - Google Sheets Service Account (for exporting calendar to Matt's dashboard)
 - Supabase access (optional: store calendar metadata in content_calendar_monthly table)
 

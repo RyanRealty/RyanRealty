@@ -1,7 +1,7 @@
 -- CRM custom-field registry (in-house CRM, FUB replacement).
 --
 -- crm_people.custom is a free-form jsonb bag of per-contact key/value pairs
--- carried over from Follow Up Boss (FUB ships 64 typed custom fields). The jsonb
+-- carried over from the in-house CRM (FUB ships 64 typed custom fields). The jsonb
 -- alone has no schema: the UI cannot know a key is a number vs a date, what its
 -- human label is, what order to render it in, or whether it is select-typed with a
 -- fixed option set. This table is that schema layer over the jsonb bag.

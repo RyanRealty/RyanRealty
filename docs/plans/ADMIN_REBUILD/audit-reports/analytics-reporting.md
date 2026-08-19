@@ -137,12 +137,12 @@ Residual issues: Funnel mixes windowed GA4 event *counts* with session counts (e
 Five self-contained RSC cards over `visitor_sessions` + `marketing_channel_daily` + `marketing_decisions`. Raw service-role client in page (`page.tsx:22-27`).
 - **Every card swallows its error into nothing** — `if (error) return null` (`page.tsx:59, 140, 207, 328, 387`): a failed query silently removes the card; the broker cannot tell "no hot leads" from "query broke".
 - **FALSE CRITICAL ALERTS by construction** — SpendAlerts (`page.tsx:261-286`) divides live Meta spend by `channel='fub', metric='qualified_seller_leads'` — a metric with **no writer since 2026-06-24** (`app/api/cron/snapshot-channels/route.ts:8-10`: "marketing-snapshot-fub was removed 2026-07-09 (FUB decommissioned 2026-06-24)"). Any 3-day spend ≥ $60 → "Spent $X … with zero qualified seller leads. Pause the weakest ad set." Permanently wrong, maximally alarming.
-- **Dead-product deep links** — every hot/warm lead renders "FUB ↗" to `https://app.followupboss.com/2/people/view/<id>` (`page.tsx:96-98`); FUB is decommissioned. Internal links correctly use the `/admin/people/<legacyId>` shim (`page.tsx:80,160`).
+- **Dead-product deep links** — every hot/warm lead renders "FUB ↗" to `https://retired.invalid/2/people/view/<id>` (`page.tsx:96-98`); FUB is decommissioned. Internal links correctly use the `/admin/people/<legacyId>` shim (`page.tsx:80,160`).
 - LpRebuildCard pages up to 5,000 sessions per render (`page.tsx:318-327`).
 
 ### 3.3 `ad-roi` ("Marketing ROI", 536 lines) — **broken-data**
 
-Joins spend (meta_ads/google_ads — live) with **dead FUB lead metrics** (`page.tsx:119-128`): "New leads (Follow Up Boss)" and "Qualified seller leads" KPIs are 0 for any window after 2026-06-24, which also nulls "Blended cost per new lead". The page's celebrated "honest data-health table" (`page.tsx:442-491`) doesn't know its own lead feed is decommissioned — it will diagnose "the FUB snapshot" instead of saying the product is gone. Additional defects: `processed_meta_leads` count has **no date filter** (`page.tsx:143-145`) — "Facebook lead-form submissions captured" is a lifetime count displayed under a windowed heading; every `marketing_channel_daily` read has `.gte(date)` but **no `.lte`** (`page.tsx:104-128`) so a custom historical range still includes spend through today; DateRangePicker shows "Last 90 days" while data is 30 (§3.11); 20k-row `visitor_sessions` page-scan per render; copy still narrates "matched to a person in Follow Up Boss".
+Joins spend (meta_ads/google_ads — live) with **dead FUB lead metrics** (`page.tsx:119-128`): "New leads (the in-house CRM)" and "Qualified seller leads" KPIs are 0 for any window after 2026-06-24, which also nulls "Blended cost per new lead". The page's celebrated "honest data-health table" (`page.tsx:442-491`) doesn't know its own lead feed is decommissioned — it will diagnose "the FUB snapshot" instead of saying the product is gone. Additional defects: `processed_meta_leads` count has **no date filter** (`page.tsx:143-145`) — "Facebook lead-form submissions captured" is a lifetime count displayed under a windowed heading; every `marketing_channel_daily` read has `.gte(date)` but **no `.lte`** (`page.tsx:104-128`) so a custom historical range still includes spend through today; DateRangePicker shows "Last 90 days" while data is 30 (§3.11); 20k-row `visitor_sessions` page-scan per render; copy still narrates "matched to a person in the in-house CRM".
 
 ### 3.4 `cost-per-lead` (nav) — **broken-data**
 
@@ -280,7 +280,7 @@ broker-dashboard uses Vault `tc_deals`; agent-activity/agent-goals/marketing-utm
 - **STUB** operations "Notification and alert center" — hardcoded placeholder panel.
 - **ORPHAN** `/admin/crm/reporting/overview` — zero inbound links.
 - **ORPHAN** `/dashboard/marketing` + `/dashboard/marketing/inbox` — admin surfaces outside the admin, reachable only from a digest email; north-star metric dead.
-- **DEAD LINKS** `action-required` "FUB ↗" buttons → decommissioned followupboss.com app.
+- **DEAD LINKS** `action-required` "FUB ↗" buttons → decommissioned retired.invalid app.
 - **DEAD ROLE** `report_viewer` in `reports/layout.tsx` — no such role exists.
 - **STALE CONCEPT** crm/health "Mirror" tile — monitors the decommissioned FUB→crm_* mirror.
 
@@ -324,4 +324,4 @@ All of the following run on `force-dynamic` + `revalidate 0` pages with no unsta
 
 **Redundant (fold in):** operations page (keep sync/data-quality tiles only), reports/leads, reports/traffic-sources (fold into hub Acquisition), analytics/social (fold into Acquisition), funnel-breakdown (fold into lead-flow), reports/custom + CityReportSection (one builder), listing-performance vs properties (one page), crm/reporting/overview (orphan).
 
-**Delete or rebuild from scratch:** reports/brokers, reports/market, cost-per-lead, ad-roi, operations/optimization, operations Notifications panel, operations Revenue panel, /dashboard/marketing(+inbox), action-required SpendAlerts card, all `channel='fub'` reads, all followupboss.com links.
+**Delete or rebuild from scratch:** reports/brokers, reports/market, cost-per-lead, ad-roi, operations/optimization, operations Notifications panel, operations Revenue panel, /dashboard/marketing(+inbox), action-required SpendAlerts card, all `channel='fub'` reads, all retired.invalid links.

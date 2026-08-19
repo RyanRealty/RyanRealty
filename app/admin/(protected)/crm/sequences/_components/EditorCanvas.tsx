@@ -17,8 +17,8 @@
  * av2-menu__panel/av2-menu__item results panel, with the same click-outside +
  * Escape-closes-and-refocuses-trigger behaviour Radix's DropdownMenu gave it.
  *
- * Spec: docs/fub-crm-spec/12-action-plans-and-automations.md §12.4.3 + the
- * pixel reference screens/screen-35.md / screen-37.md. FUB's orange delay
+ * Spec: docs/crm-spec/12-action-plans-and-automations.md §12.4.3 + the
+ * pixel reference screens/screen-35.md / screen-37.md. CRM's orange delay
  * badge maps to the admin v2 `--a-warn-chip` token (amber, dark text) — the
  * same "chip bg, carries dark text" token tokens.css documents for exactly
  * this shape of pill.

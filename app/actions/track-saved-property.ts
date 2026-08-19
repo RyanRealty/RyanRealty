@@ -7,8 +7,8 @@ import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-
  * Fire-and-forget: record a saved listing. Call after a successful save.
  * Zero UI, zero blocking.
  *
- * The FUB "Saved Property" mirror this action used to fire was a dead no-op
- * after the FUB decommission (2026-06-24) and has been deleted — the save
+ * The CRM "Saved Property" mirror this action used to fire was a dead no-op
+ * after the CRM decommission (2026-06-24) and has been deleted — the save
  * itself is already durably recorded (saved listings table + visitor_events);
  * only the GA4 server mirror remains here.
  */

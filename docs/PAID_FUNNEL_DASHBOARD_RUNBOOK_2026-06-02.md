@@ -79,10 +79,10 @@ Verified live: `NEXT_PUBLIC_GOOGLE_ADS_ID`, `NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_L
 
 **GATE:** either an `AW-` conversion fires on `generate_lead` (Google Ads → Conversions shows recent activity), or Google Ads is documented as deferred.
 
-## 7. Follow Up Boss — close the loop
+## 7. the in-house CRM — close the loop
 
 1. **Automation rule (most important):** confirm a FUB Automation Rule listens for the `audience:seller` and `audience:buyer` tags and enrolls the person in the master action plan. The code never sends emails or texts itself — FUB's own engine does. Without this rule, tagged leads sit untouched.
-2. **Env vars in Vercel production:** set `FUB_PIPELINE_ID` and `FOLLOWUPBOSS_BROKER_USER_MAP=matt:1,rebecca:2,paul:3` before any non-Matt `?agent=` route or native Lead Ad launch.
+2. **Env vars in Vercel production:** set `UNUSED_VENDOR_CRM_PIPELINE` and `UNUSED_VENDOR_CRM_BROKER_MAP=matt:1,rebecca:2,paul:3` before any non-Matt `?agent=` route or native Lead Ad launch.
 3. **`_fuid` on email links (fixes "no website traffic in FUB"):** make outbound FUB email-campaign links carry the `_fuid` parameter so the `fub_cid` identity cookie is set when a known contact clicks through. This is the lever that lifts the ~2% visit-to-FUB bridge rate. (The code-side stitch on sign-in is being fixed separately.)
 
 **GATE:** a test contact tagged `audience:seller` auto-enrolls in the seller action plan; a known contact who clicks an email link with `_fuid` produces a "Visited Website" event on their FUB timeline within a few minutes.

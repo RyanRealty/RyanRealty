@@ -1,11 +1,11 @@
--- Deals §10 (docs/fub-crm-spec/10-deals-pipelines.md) — DB-backed pipeline/stage
+-- Deals §10 (docs/crm-spec/10-deals-pipelines.md) — DB-backed pipeline/stage
 -- config + multi-contact junction + actual close date.
 --
 -- 1. crm_pipelines / crm_deal_stages (§20.1/§20.2): until now the Kanban's stage
 --    columns were a static module (lib/crm/deal-pipelines.ts mirroring the FUB
 --    api-export). §9 Manage Pipelines + §10 Add-a-stage require the config to be
 --    MUTABLE (owner-only), so it moves into tables, seeded byte-for-byte from
---    docs/fub-crm-spec/api-export/pipelines.json (same ids, names, colors,
+--    docs/crm-spec/api-export/pipelines.json (same ids, names, colors,
 --    orderWeights, closedStage flags). crm_deals.pipeline/.stage stay free text
 --    matching these names verbatim (the live rows already do).
 -- 2. crm_deal_people (§20.4): a deal can carry MULTIPLE contacts (co-buyers,
@@ -40,7 +40,7 @@ create table if not exists public.crm_deal_stages (
   unique (pipeline_id, name)
 );
 
--- Seed = docs/fub-crm-spec/api-export/pipelines.json (authoritative FUB export).
+-- Seed = docs/crm-spec/api-export/pipelines.json (authoritative FUB export).
 insert into public.crm_pipelines (id, name, description, order_weight) values
   (1, 'Buyers',  'A pipeline for buyers',  1000),
   (2, 'Sellers', 'A pipeline for sellers', 2000)

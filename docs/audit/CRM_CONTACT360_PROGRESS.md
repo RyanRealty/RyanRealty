@@ -199,7 +199,7 @@ Shipped:
 - **9.3 + 9.E.7** email preflight (`6eb90686`) — `prepareDeliverableEmail()` single chokepoint (multipart + CAN-SPAM footer + RFC 8058 List-Unsubscribe headers + deliverability scoring) + HMAC unsubscribe token + `POST /api/email/unsubscribe` (GET is prefetch-safe, only POST suppresses, via the suppression chokepoint). 18 tests. FLAG: set `BROKERAGE_POSTAL_ADDRESS` to the registered street/PO box (CAN-SPAM); fallback carries a valid ZIP+OR so the analyzer passes.
 - **9.E.4** `ci:email-quality` gate (`8ce9af80`) — ratchet: no NEW automated-email sender may bypass the preflight; 24 current senders grandfathered in `scripts/email-quality-baseline.json` (= the migration backlog, may only shrink). Wired into ci:gates; meta-gate clean (103 gates, 0 orphans).
 
-Pre-existing reds fixed (inherited, not mine): **`ci:crm-lead-integrity`** (`58412f70`) was scanning `*.test.ts` fixtures as production lead paths (false-positive on `lib/followupboss.test.ts`) — now skips test/spec files.
+Pre-existing reds fixed (inherited, not mine): **`ci:crm-lead-integrity`** (`58412f70`) was scanning `*.test.ts` fixtures as production lead paths (false-positive on `lib/retiredVendorCrm.test.ts`) — now skips test/spec files.
 
 Inherited red NOT touched (out of CRM scope): **`ci:hydration-safety`** shows 4 NEW #418 violations in `app/lp/buyer-listing-alerts/BuyerLPForm.tsx`, `app/lp/fsbo/FsboLPForm.tsx`, `components/ListingTile.tsx` — introduced by the concurrent **p1.x** date-format/hydration remediation track (last touch `8547a714`), whose own CI is red on them. Left for that track to finish; editing concurrently would clobber their in-flight work. None of the 6 CRM commits touch those files.
 

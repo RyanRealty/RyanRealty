@@ -148,12 +148,12 @@
 
 | Field | Value |
 |-------|--------|
-| **Maturity** | **3** — Large people graph (22978); messaging volume; scope helpers exist. Not 4: stages collapse to Nurture-heavy (journey model underused); multi-broker fail-closed not universal; FUB residue keys. |
+| **Maturity** | **3** — Large people graph (22978); messaging volume; scope helpers exist. Not 4: stages collapse to Nurture-heavy (journey model underused); multi-broker fail-closed not universal; leftover `fub_*` column names. |
 | **Evidence status** | **VERIFIED** (stage distribution + row counts) |
-| **Evidence pointers** | `P-crm-stage-dist.json`: Nurture 20371 · Sphere 2338 · Trash 217 · Past Client 32 · Active Client 12 · Lead 7; crm_message 45299; `lib/crm/scope.ts` (EVIDENCE-LOG); admin CRM tree under `app/admin/(protected)/crm/**` + people; INT-018 FUB Legacy |
+| **Evidence pointers** | `P-crm-stage-dist.json`: Nurture 20371 · Sphere 2338 · Trash 217 · Past Client 32 · Active Client 12 · Lead 7; crm_message 45299; `lib/crm/scope.ts` (EVIDENCE-LOG); admin CRM tree under `app/admin/(protected)/crm/**` + people; INT-018 In-house CRM |
 | **Public risk** | High |
 | **Broker product?** | **Yes** (core) |
-| **Residual disposition** | **ACTIVE** (CRM product) — stage writers/product decision; entity-scope baseline shrink; FUB-named residue purge |
+| **Residual disposition** | **ACTIVE** (CRM product) — stage writers/product decision; entity-scope baseline shrink; leftover identifier-name purge |
 
 ---
 

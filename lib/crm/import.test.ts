@@ -52,7 +52,7 @@ describe('parseCsv', () => {
 // ─── autoDetectMapping ────────────────────────────────────────────────────────
 
 describe('autoDetectMapping', () => {
-  it('maps common FUB export headers', () => {
+  it('maps common CRM export headers', () => {
     const m = autoDetectMapping(['First Name', 'Last Name', 'Email Address', 'Phone Number', 'Stage'])
     expect(m['First Name']).toBe('first_name')
     expect(m['Last Name']).toBe('last_name')

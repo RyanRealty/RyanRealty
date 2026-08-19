@@ -79,7 +79,7 @@ lead arrives → ensureNativeLead / sendEvent
 
 ### Ingress (all create/update people)
 
-Hub: `lib/followupboss.ts` `sendEvent` → `ensureNativeLead` (native only).  
+Hub: `lib/crm/send-event.ts` `sendEvent` → `ensureNativeLead` (native only).  
 Also: `findOrCreatePersonByPhone`, Meta webhook, portal intake cron, Twilio inbound, ~20 LP/form actions (seller-home-value, expired, FSBO, contact, home-valuation, etc.).
 
 ### Notification
@@ -117,7 +117,7 @@ Tasks + reminders: live. Deals CRUD: live, lightly used (~21 rows). No auto-deal
 | Theme | `.console-root` / `console-theme.css` (ops register, not public Heritage). |
 | Person | One route, **two trees**: desktop 3-column vs `MobileContactDetail` tabs (Info/Comms/Activity/Homes/Notes/Calendar). |
 | Inbox / people / tasks / calendar | Same pattern: `md:hidden` mobile fork vs desktop. |
-| Kit | Secondary CRM pages use `ConsoleSection`. Flagship screens use `ci:crm-screen-parity` + `docs/fub-crm-spec/crm-screens.json`. |
+| Kit | Secondary CRM pages use `ConsoleSection`. Flagship screens use `ci:crm-screen-parity` + `docs/crm-spec/crm-screens.json`. |
 | Dual “deals” | `/admin/crm/deals` (pipeline) ≠ `/admin/deals` (Vault/transactions). |
 
 **Design debt class:** not “missing Console Kit.” It is **two products per URL** (RC3), **59 pages for a 3-broker loop** (C1), and **FUB-parity chrome** that can fight a smaller IA.
@@ -272,6 +272,6 @@ Or paste the “Paste-ready system prompt” block inside the skill into a new s
 | Progress log | `docs/plans/ADMIN_REBUILD/PROGRESS.md` |
 | Schema | `docs/DATABASE_SCHEMA_SNAPSHOT.md` |
 | Console kit | `docs/CONSOLE_KIT.md` |
-| Mobile bar (historical) | `docs/MOBILE_CRM_FUB_PARITY.md` |
+| Mobile bar (historical) | `docs/MOBILE_CRM_PARITY.md` |
 | RBAC | `docs/audit/CRM_RBAC_AUDIT.md` |
 | E2E | `scripts/crm-e2e-verify.mjs` → `tmp/crm-e2e-latest.json` |

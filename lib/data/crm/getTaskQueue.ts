@@ -15,7 +15,7 @@ import { zonedDateKey, zonedMinutes } from '@/lib/format/date'
  * render in a client component; the page/cron supplies a stable nowIso):
  *   - today     open, due_at within [startOfToday, endOfToday]
  *   - overdue   open, due_at < startOfToday (and not older than the stale floor —
- *               a task >31 days overdue is FUB import cruft, not real work, per
+ *               a task >31 days overdue is CRM import cruft, not real work, per
  *               Matt 2026-06-15, matching listCrmOpenTasks)
  *   - upcoming  open, due_at > endOfToday, OR no due date
  *   - completed completed within the trailing 30 days, newest first

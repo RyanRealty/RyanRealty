@@ -13,7 +13,7 @@ Read `Ryan_Realty_Marketing_Intelligence.md` (BRAND MANAGER folder), specificall
 - TikTok Analytics (Chrome scrape until API approval)
 - Google Analytics 4 via Service Account (site referral tracking)
 - Google Business Profile Insights API
-- In-house CRM (`public.crm_people` via `/admin/crm`) for lead source attribution. Do not set `FOLLOWUPBOSS_API_KEY`.
+- In-house CRM (`public.crm_people` via `/admin/crm`) for lead source attribution.
 - Supabase access to create/update social_metrics_weekly table
 
 ---
@@ -398,7 +398,7 @@ Are CRM leads down but engagement metrics up?
 - **TikTok Analytics:** Username/password (Chrome scrape until API approval)
 - **YouTube Analytics API:** Google Service Account with YouTube scope enabled
 - **Google Business Profile Insights:** Google Service Account with GBP scope
-- **In-house CRM:** `crm_people` at `/admin/crm` (`sendEvent` in `lib/crm/send-event.ts`). Do not set `FOLLOWUPBOSS_API_KEY`.
+- **In-house CRM:** `crm_people` at `/admin/crm` (`sendEvent` in `lib/crm/send-event.ts`).
 - **Supabase:** Access to ryan-realty-platform; permission to create social_metrics_weekly table
 - **Google Analytics 4:** Service Account with GA4 read scope
 

@@ -31,7 +31,7 @@ export type TrackingPersonResolution = {
   personId: number | null
   /** crm_people.assigned_broker short slug (matt/rebecca/paul) or null. */
   assignedBroker: string | null
-  /** FUB legacy id for the ?_fuid= click-attribution stamp, when known. */
+  /** CRM legacy id for the ?_fuid= click-attribution stamp, when known. */
   fubPersonId: number | null
   /** How the person was found — 'email' means the caller should backfill the row link. */
   resolvedBy: 'crm_person_id' | 'email' | null

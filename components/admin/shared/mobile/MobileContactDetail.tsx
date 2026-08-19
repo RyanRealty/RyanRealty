@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * MobileContactDetail — §25 (docs/fub-crm-spec/25-mobile-contact-detail.md)
+ * MobileContactDetail — §25 (docs/crm-spec/25-mobile-contact-detail.md)
  *
  * The mobile Contact Detail / Lead Profile rendered at < md (~390 px).
- * Matches the FUB iOS reference structure:
+ * Matches the CRM iOS reference structure:
  *   - Header surface continuous through the sub-tab strip (§25.3, §25.4)
  *   - Sub-tab strip: Info · Comms · Homes · Notes · Calendar (horizontally scrollable)
  *   - Active tab: 600 weight + 2.5 px accent bottom underline
@@ -260,7 +260,7 @@ export function MobileContactDetail({
                 {tab.label}
                 {/* §25.4.3 Active underline: 2.5 px accent bar, flush to strip
                     bottom. The admin language keeps ONE action accent, so the
-                    FUB teal translates to it. */}
+                    CRM teal translates to it. */}
                 {isActive && (
                   <span
                     className="absolute bottom-0 left-0 right-0 h-[2.5px] rounded-t"

@@ -4,7 +4,7 @@
  * MobileContactPointsSection — interactive §25.5.4 PHONE NUMBERS + §25.5.5
  * EMAILS cards.
  *
- * FUB supports multiple phones/emails per contact; each section gets an
+ * CRM supports multiple phones/emails per contact; each section gets an
  * "Add phone / Add email" row that opens a small sheet (label + value) and
  * saves through addCrmContactPointAction.
  *
@@ -53,7 +53,7 @@ function SectionHeader({ label }: { label: string }) {
 const CIRCLE_CLS =
   'flex h-10 w-10 items-center justify-center rounded-full transition-transform active:scale-95'
 
-/** ADMIN_UI §1: ONE action accent — the three FUB circle colours collapse to it,
+/** ADMIN_UI §1: ONE action accent — the three CRM circle colours collapse to it,
  *  and the icon + accessible name carry the difference between them. */
 const CIRCLE_STYLE = { backgroundColor: 'var(--a-btn-bg)', color: 'var(--a-btn-fg)' } as const
 

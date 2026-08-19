@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS fub_contacts_cache (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-COMMENT ON TABLE fub_contacts_cache IS 'Follow Up Boss contact mirror; broker_id = assigned agent.';
+COMMENT ON TABLE fub_contacts_cache IS 'the in-house CRM contact mirror; broker_id = assigned agent.';
 
 CREATE TABLE IF NOT EXISTS email_campaigns (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

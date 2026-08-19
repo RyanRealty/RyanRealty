@@ -13,9 +13,9 @@
  *   2. Shape it with summarizeDigest (pure) and send one email. Subject:
  *      "Your day in the CRM, YYYY-MM-DD".
  *
- * Phase 10.4 repoint: this used to read the FUB People API
+ * Phase 10.4 repoint: this used to read the CRM People API
  * (resolveFubUserId -> /people?assignedUserId&createdAfter). It now reads our
- * own CRM, so the digest keeps working through (and after) the FUB cutover. The
+ * own CRM, so the digest keeps working through (and after) the CRM cutover. The
  * email/delivery mechanism (sendEmail + Resend) is unchanged; only the DATA
  * SOURCE moved.
  *

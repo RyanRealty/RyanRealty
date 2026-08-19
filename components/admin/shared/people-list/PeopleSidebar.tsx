@@ -2,7 +2,7 @@
 
 /**
  * PeopleSidebar — the §3 left sidebar of the People list
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md).
+ * (docs/crm-spec/05-people-list-and-bulk-actions.md).
  *
  * Structure (§3.1):
  *   People                      [section header]

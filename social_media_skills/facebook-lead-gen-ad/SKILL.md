@@ -206,7 +206,7 @@ POST https://ryanrealty.vercel.app/api/meta/lead-webhook
 That route (`app/api/meta/lead-webhook/route.ts`):
 1. Verifies the webhook signature (`X-Hub-Signature-256` against `META_APP_SECRET`)
 2. Fetches the lead details from `/v18.0/{lead-id}` using `META_PAGE_TOKEN`
-3. Captures the person in `public.crm_people` via `sendEvent` in `lib/crm/send-event.ts` (email-first dedupe through `ensureNativeLead`). Do not call a vendor CRM. Do not set `FOLLOWUPBOSS_API_KEY`.
+3. Captures the person in `public.crm_people` via `sendEvent` in `lib/crm/send-event.ts` (email-first dedupe through `ensureNativeLead`). Review at `/admin/crm`.
 4. Enriches tags + origin note; hot leads get a native CRM task. Review the person at `/admin/crm`. Sequences enroll through `lib/crm/enroll.ts` / `/admin/crm/sequences`.
 
 **Webhook config in Meta:** App Dashboard → Webhooks → Page → subscribe to `leadgen` field. Set callback URL to the Vercel route. Verify on first save.

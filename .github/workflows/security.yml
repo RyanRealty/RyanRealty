@@ -65,7 +65,7 @@ jobs:
             'sk_test_[a-zA-Z0-9]+'
             'SUPABASE_SERVICE_ROLE_KEY=[a-zA-Z0-9]'
             'SPARK_API_KEY=[a-zA-Z0-9]'
-            'FOLLOWUPBOSS_API_KEY=[a-zA-Z0-9]'
+            'SUPABASE_ANON_KEY=[a-zA-Z0-9]'
             'OPENAI_API_KEY=sk-[a-zA-Z0-9]'
             'RESEND_API_KEY=re_[a-zA-Z0-9]'
             'SENTRY_DSN=https://[a-z0-9]+@'

@@ -42,11 +42,11 @@ type SubmitLeadLandingInput = {
   message?: string
   /** Real first-touch attribution captured client-side (utm_* from the URL +
    *  persisted rr_lp_context). When the visitor arrived from a Facebook ad,
-   *  lp_source='facebook' — so the FUB person carries the true origin instead
+   *  lp_source='facebook' — so the CRM person carries the true origin instead
    *  of a hardcoded 'landing_page'. */
   lpContext?: LpContextInput
   /** Anonymous visitor session id (uuid v4) from localStorage. When present,
-   *  we stitch this lead's prior browsing history to the FUB person and mark
+   *  we stitch this lead's prior browsing history to the CRM person and mark
    *  the visitor_sessions row identified — which is what the Marketing ROI
    *  dashboard counts as "matched to a name". */
   sessionId?: string
@@ -99,8 +99,8 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       },
     })
     if (!result.ok) {
-      // ─── Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2)
-      // The FUB push failed (likely a FUB outage) — without a native record this
+      // ─── Native-capture fallback on a CRM push failure (CONTACT360 Phase 0.2)
+      // The CRM push failed (likely a CRM outage) — without a native record this
       // buyer/seller LP lead would be dropped entirely. Capture it in crm_people
       // + crm_contact_points so the lead is tracked, then still surface the error
       // so the visitor is prompted to retry (the native row dedupes on retry).
@@ -115,7 +115,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
         })
         if (native.created || native.personId > 0) {
           console.warn(
-            `[lead-landing] FUB push failed. native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+            `[lead-landing] CRM push failed. native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
           )
         }
       } catch (e) {
@@ -159,7 +159,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
 
     // Canonical tagging + session stitch so dashboards see this lead alongside
     // the gold-standard LP submissions. Gates on the native person id sendEvent
-    // returned (the old FUB findPersonByEmail re-lookup was a dead no-op
+    // returned (the old CRM findPersonByEmail re-lookup was a dead no-op
     // post-decommission). MUST be awaited: on Vercel serverless the lambda
     // freezes the instant the handler returns, so a fire-and-forget IIFE gets
     // killed mid-flight. The try/catch keeps a blip from failing the capture.

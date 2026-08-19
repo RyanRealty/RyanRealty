@@ -77,7 +77,7 @@ const FALLBACK_BROKERS: Broker[] = (Object.keys(BROKERS) as BrokerKey[]).map((ke
   }
 })
 
-/** Look up "Matt Ryan" broker (used by FUB pipeline snapshots). */
+/** Look up "Matt Ryan" broker (used by CRM pipeline snapshots). */
 export async function getMattBrokerRecord(): Promise<{ id: string; slug?: string | null; email?: string | null } | null> {
   const sb = supabaseAnon()
   if (!sb) return null

@@ -1,5 +1,5 @@
 /**
- * Custom-field display helper (the FUB person-record custom-field section).
+ * Custom-field display helper (the CRM person-record custom-field section).
  *
  * Turns the contact's free-form `crm_people.custom` jsonb bag plus the typed
  * field registry (getCrmFieldDefinitions) into the grouped, ordered, formatted
@@ -7,7 +7,7 @@
  * + per-type formatting is unit-tested in isolation and the card just maps the
  * result.
  *
- * Rules honored here (parity with the FUB person record):
+ * Rules honored here (parity with the CRM person record):
  *   - hideIfEmpty: a field with no usable value is omitted.
  *   - position order: fields render in registry position, then label.
  *   - field_group: rows are bucketed by group; ungrouped fields fall into a
@@ -44,7 +44,7 @@ export type CustomFieldGroup = {
 
 /**
  * Humanize a raw custom-bag key into a display label when no definition
- * supplies one. Strips the FUB `custom` prefix and splits camelCase / snake_case
+ * supplies one. Strips the CRM `custom` prefix and splits camelCase / snake_case
  * into Title Case words: `customSellerPropertyAddress` → "Seller Property
  * Address", `customYearBuilt` → "Year Built". Pure — exported for the test.
  *
@@ -161,10 +161,10 @@ export function groupAndFormat(
     const raw = getCrmFieldValue(custom, def)
     const display = formatCustomFieldDisplay(def, raw)
 
-    // A person's custom-field card shows POPULATED fields only (FUB parity):
+    // A person's custom-field card shows POPULATED fields only (CRM parity):
     // a typed field with no value for this contact is omitted, never rendered
     // as an em-dash placeholder. The registry has ~40 typed definitions the
-    // FUB import never populated (their keys are unprefixed while the imported
+    // CRM import never populated (their keys are unprefixed while the imported
     // data is `custom`-prefixed), so rendering blanks buried the real values
     // under a wall of dashes. The field still exists in the registry / editor
     // — it just doesn't clutter a contact who has no value for it.
@@ -185,7 +185,7 @@ export function groupAndFormat(
   }
 
   // ── Fallback: populated custom keys with NO typed definition ────────────────
-  // The FUB-imported enrichment bag uses `custom`-prefixed keys
+  // The CRM-imported enrichment bag uses `custom`-prefixed keys
   // (customYearBuilt, customSubdivision, customSellerPropertyAddress, …) that
   // the definition registry never declared. Walking definitions alone drops
   // ALL of that data (the display regression Matt hit — a contact showed "just

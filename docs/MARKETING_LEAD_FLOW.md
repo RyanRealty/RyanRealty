@@ -4,7 +4,7 @@
 
 **For AI agents:** Load **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** for architecture, crons, env matrices, and optimization loops. Load **this file** when the question is specifically **how a lead is created**, **what runs on submit**, **deduplication**, or **debugging a missing `crm_people` row**.
 
-**Live contract (2026-08-18):** Capture is **`sendEvent()`** in **`lib/crm/send-event.ts`** → **`ensureNativeLead()`**. Follow Up Boss is decommissioned. There is no People API fallback that creates a live vendor contact. Unused `FOLLOWUPBOSS_*` / `NEXT_PUBLIC_FUB_*` names were removed from Vercel (2026-08-18).
+**Live contract (2026-08-18):** Capture is **`sendEvent()`** in **`lib/crm/send-event.ts`** → **`ensureNativeLead()`**. the in-house CRM is decommissioned. There is no People API fallback that creates a live vendor contact. Unused `retired vendor-CRM env names` / `retired vendor-CRM public env names` names were removed from Vercel (2026-08-18).
 
 ---
 

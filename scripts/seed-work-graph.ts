@@ -269,7 +269,7 @@ const SEEDS = [
     domain: 'leads',
     title: 'Page-tied public analytics',
     objective:
-      'REQUIREMENTS R-219: one URL→page_type map for GTM/GA4/VisitTracker/section tracking. New public pages inherit the map. Do not add per-page GTM tags. Remove leftover Follow Up Boss names from analytics events and cookies.',
+      'REQUIREMENTS R-219: one URL→page_type map for GTM/GA4/VisitTracker/section tracking. New public pages inherit the map. Do not add per-page GTM tags. Remove leftover the in-house CRM names from analytics events and cookies.',
     output: 'lib/analytics/page-type.ts + ci:page-analytics + GA4 page_type/crm_person_id dimensions.',
     accept: 'Live homepage has GTM-WV6R4NZ5, no extra gtag config for G-ST40, cookies list rr_pid not fub_cid. Gate green.',
   },

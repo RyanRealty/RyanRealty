@@ -16,7 +16,7 @@
  * 5-tab bar (CrmMobileTabBar); the utility row below keeps only the affordances
  * the tab bar cannot carry.
  *
- * B5 (Phase 11B): the FUB-style navy top bar (the last public-brand chrome in
+ * B5 (Phase 11B): the CRM-style navy top bar (the last public-brand chrome in
  * the admin — navy bar + white wordmark) is retired. Desktop chrome is the
  * LOCKED §5 Option A left rail (ADMIN_UI.md, Matt 2026-08-05): 216px, the 11
  * destinations in the locked Do / Move / Watch / Reach groups + Settings last,
@@ -107,7 +107,7 @@ export default function ConsoleShell({
     router.push('/admin/login')
     router.refresh()
   }
-  // The FUB scope switcher is meaningful only on the contacts list, where the
+  // The CRM scope switcher is meaningful only on the contacts list, where the
   // ?broker= param drives the feed.
   const onContactsList = pathname === '/admin/crm'
 
@@ -260,7 +260,7 @@ export default function ConsoleShell({
           Lifted above the mobile tab bar on phones. */}
       <ConsoleQuickAction />
 
-      {/* FUB-style bottom tab bar — phones only (the desktop rail covers lg+).
+      {/* CRM-style bottom tab bar — phones only (the desktop rail covers lg+).
           Tabs derive from the one nav source (D9.4). */}
       <CrmMobileTabBar tabs={tabs} inboxUnread={inboxUnread} />
 

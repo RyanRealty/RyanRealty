@@ -3,7 +3,7 @@
 /**
  * CrmMobileKit — shared mobile CRM primitives.
  *
- * Matt directive 2026-06-26: the CRM must look + behave like the FUB iOS app on
+ * Matt directive 2026-06-26: the CRM must look + behave like the CRM iOS app on
  * phones. Every CRM list/detail screen composes these so the look lives in ONE
  * place and can't drift screen-by-screen.
  *
@@ -49,7 +49,7 @@ export function CrmAvatar({
   const dim = { width: size, height: size }
   // A rotted photo URL must fall back to initials. Radix <Avatar> rendered its
   // fallback whenever the image was not 'loaded' — including a 404 — so a stale
-  // FUB/Gravatar/social URL still showed initials. A bare <img> shows the
+  // CRM/Gravatar/social URL still showed initials. A bare <img> shows the
   // browser's broken-image glyph instead, and this component is now the avatar
   // on the person workspace and the people table.
   const [failed, setFailed] = useState(false)
@@ -84,7 +84,7 @@ export function CrmAvatar({
 /* ── List row (the workhorse) ────────────────────────────────────────────── */
 
 /**
- * CrmListRow — one tappable FUB-style row: avatar · (title + subtitle) · right
+ * CrmListRow — one tappable CRM-style row: avatar · (title + subtitle) · right
  * meta + chevron. The WHOLE row is the tap target (min 64px tall for thumbs).
  */
 export function CrmListRow({

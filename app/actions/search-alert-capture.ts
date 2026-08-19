@@ -96,7 +96,7 @@ export async function submitSearchAlertSignup(input: {
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const searchUrl = `${base}${buildSearchUrlFromFilters(normalized)}`
 
-  // 5. Native buyer lead: sendEvent captures via ensureNativeLead (FUB
+  // 5. Native buyer lead: sendEvent captures via ensureNativeLead (CRM
   //    decommissioned 2026-06-24) and returns the crm_people id, which gates
   //    the canonical audience:buyer + buyer:warm + source:idx-registration
   //    tagging (compliance hard-stop guard lives inside canonicallyTagLead).
@@ -133,7 +133,7 @@ export async function submitSearchAlertSignup(input: {
           },
         })
         // Notify the assigned broker so a signup is never missed — a native
-        // crm_tasks row with a near-due reminder (replaces the dead FUB
+        // crm_tasks row with a near-due reminder (replaces the dead CRM
         // createRealtimeTask). Awaited so the serverless freeze cannot drop it.
         await createNativeTask({
           personId: nativeId,

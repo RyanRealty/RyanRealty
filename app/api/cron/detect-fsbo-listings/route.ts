@@ -1,6 +1,6 @@
 /**
  * FSBO detection cron — thin route over lib/fsbo-processor.ts (the native
- * pipeline; the pre-cutover FUB body this route used to carry silently
+ * pipeline; the pre-cutover CRM body this route used to carry silently
  * no-op'd after 2026-06-24 and was replaced 2026-07-14).
  *
  * Detect Zillow FSBOs in the service area (Apify) → skip-trace the owner

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// CLUSTER C (FUB cutover). These DB-touching tests lock the native enrichment
-// paths that replaced the dead FUB enrichment chain:
+// CLUSTER C (CRM cutover). These DB-touching tests lock the native enrichment
+// paths that replaced the dead CRM enrichment chain:
 //   - ensureNativeLead REUSE merges the caller's tags + refreshes source/broker
 //   - enrichNativeLead unions tags, merges custom jsonb, sets assigned_broker,
 //     and writes a crm_timeline origin note

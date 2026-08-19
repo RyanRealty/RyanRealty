@@ -56,7 +56,7 @@ export type CrmCompanySettings = {
   updated_at: string | null
 }
 
-/** Canonical defaults — real Ryan Realty values from FUB API export + shot-40.md. */
+/** Canonical defaults — real Ryan Realty values from CRM API export + shot-40.md. */
 export const DEFAULT_COMPANY_SETTINGS: CrmCompanySettings = {
   id: 1,
   company_name: 'Ryan Realty',

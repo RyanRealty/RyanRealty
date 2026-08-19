@@ -9,12 +9,12 @@
  *   address string → Google Geocoding API → lat/lng
  *                  → Supabase RPC lookup_address_geo → city/neighborhood/subdivision slugs
  *                  → public.fub_person_geo upsert
- *                  → returns { tags, geo } so the caller can push tags to FUB
+ *                  → returns { tags, geo } so the caller can push tags to CRM
  *
  * Cost: ~$0.005 per geocode call (Google's standard rate). Single LP submission
  * is roughly $0.005. Bulk-tagging 3K leads is ~$15.
  *
- * Spec history: docs/archive/fub-era/README.md (geo-tagging).
+ * Spec history: lib/crm/send-event.ts (geo-tagging).
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -162,7 +162,7 @@ export function buildGeoTags(spatial: SpatialMatch | null, geoScope: 'local' | '
 
 /**
  * End-to-end: geocode an address, do spatial lookup, persist to fub_person_geo,
- * and return the canonical tag set the caller can push to FUB.
+ * and return the canonical tag set the caller can push to CRM.
  *
  * Designed to be fire-and-forget from the LP form — never throws; returns
  * { ok: false, error } so the caller can log + continue.

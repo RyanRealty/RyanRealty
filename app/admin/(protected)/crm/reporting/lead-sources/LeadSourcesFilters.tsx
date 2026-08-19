@@ -4,7 +4,7 @@
 // Carried over verbatim: navigate()'s param set and order, and the CSV export
 // URL (broker + date + cols, same route, same `download`).
 //
-// The lead-type control keeps its FUB-parity shape but stops lying: it used to
+// The lead-type control keeps its CRM-parity shape but stops lying: it used to
 // read "Web leads" while the report counted every lead. The CRM has no
 // web-vs-manual classification, so "All leads" is the only real option and the
 // other two render disabled.

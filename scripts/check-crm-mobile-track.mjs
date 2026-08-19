@@ -16,7 +16,7 @@
  *     PROGRESS section is manual; the SHIPPED list here is the machine truth).
  *
  * Plan: docs/plans/CRM_BUILD_MISSION.md — MOBILE DELIVERY TRACK (M1–M9).
- * Spec: docs/fub-crm-spec/§23–§30 + mobile-screens/mob-NN analyses
+ * Spec: docs/crm-spec/§23–§30 + mobile-screens/mob-NN analyses
  * (in-house CRM rebuild spec; not a live third-party CRM).
  */
 import { readFileSync } from 'node:fs'

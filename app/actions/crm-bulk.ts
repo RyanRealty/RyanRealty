@@ -384,7 +384,7 @@ export async function bulkDeleteAction(
 }
 
 // ── §14.3 mass actions (05-people-list spec) ─────────────────────────────────
-// Per the FUB architectural rule replicated in §14.3, none of these fire
+// Per the CRM architectural rule replicated in §14.3, none of these fire
 // automation triggers — the handlers are plain column/junction updates + audit
 // rows and never touch the automation-rule engine.
 

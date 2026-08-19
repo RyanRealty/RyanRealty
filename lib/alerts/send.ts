@@ -317,8 +317,8 @@ export async function resolveRecipientsWithCompliance(
   })
 
   // Primary identity: the row's crm_person_id when present, else a
-  // case-insensitive email match (native replacement for the dead FUB
-  // findPersonByEmail fallback — FUB decommissioned 2026-06-24).
+  // case-insensitive email match (native replacement for the dead CRM
+  // findPersonByEmail fallback — CRM decommissioned 2026-06-24).
   const primaryPerson = await resolvePersonForTracking({
     crmPersonId: row.crm_person_id,
     email: row.email,

@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils'
  *
  * Callers wire `onSubmit` to one of the existing server actions
  * (`app/lp/seller-home-value/actions.ts`, `app/lp/buyer-listing-alerts/actions.ts`,
- * `app/lp/expired-listing/actions.ts`) — those already handle FUB
+ * `app/lp/expired-listing/actions.ts`) — those already handle CRM
  * person creation, custom-field set, tag application, broker
  * round-robin assignment, agent-attribution cookie read, GA4 + Meta
  * Pixel `generate_lead` server-side fire.
@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils'
  * lint time. The block itself ships clean — no banned tokens, no
  * em-dashes, no exclamation marks.
  *
- * Per plan §9 Layer 3. FUB-wiring + tracking-fire integration is
+ * Per plan §9 Layer 3. CRM-wiring + tracking-fire integration is
  * deferred to per-page Wave 3 migrations; this is the structural
  * scaffold that pages adopt + plug their server actions into.
  */

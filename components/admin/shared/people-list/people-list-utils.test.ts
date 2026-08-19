@@ -21,7 +21,7 @@ describe('ordinal', () => {
   })
 })
 
-describe('fmtFubDate (§6 FUB date convention)', () => {
+describe('fmtFubDate (§6 CRM date convention)', () => {
   const now = new Date('2026-07-01T12:00:00Z')
   it("formats older dates as `Nov 13th '25`", () => {
     expect(fmtFubDate('2025-11-13T10:00:00Z', now)).toBe("Nov 13th '25")

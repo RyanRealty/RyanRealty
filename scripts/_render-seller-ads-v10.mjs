@@ -159,7 +159,7 @@ const Q = {
 
 // Two intents:
 //   intent:'call' → CTA is the FUB-tracked bio phone 541.703.3095 (ads/lead-capture
-//                   surfaces route calls through Follow Up Boss for attribution).
+//                   surfaces route calls through the in-house CRM for attribution).
 //   intent:'lp'   → CTA is the seller-LP form action (home estimate / value).
 // No headline contains "sell" / "selling" / "sel" per Matt 2026-05-28.
 // Quotes are verbatim GBP client testimonials (authentic proof, left as-is).
@@ -747,7 +747,7 @@ const sheet = `<!doctype html><html><head><meta charset="utf-8"><title>v10 — 3
 ${rankedCards}
 </div>
 
-<h2><span class="dot" style="color:#7fd1b9">●</span>Call ads · ${callN}<span class="sub">Drive a phone call. CTA is the FUB-tracked line 541.703.3095 so calls route through Follow Up Boss for attribution. Conversational, human, "let's talk."</span></h2>
+<h2><span class="dot" style="color:#7fd1b9">●</span>Call ads · ${callN}<span class="sub">Drive a phone call. CTA is the FUB-tracked line 541.703.3095 so calls route through the in-house CRM for attribution. Conversational, human, "let's talk."</span></h2>
 <div class="grid">
 ${callCards}
 </div>

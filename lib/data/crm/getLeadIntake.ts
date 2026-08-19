@@ -11,7 +11,7 @@ import {
  * getLeadIntake — the single source of truth for "how many leads did we get" on
  * every marketing dashboard (analytics, reports, lead-flow).
  *
- * Reads native `crm_people` (the system of record since the FUB cutover) over a
+ * Reads native `crm_people` (the system of record since the CRM cutover) over a
  * date range and classifies each row's `source` via leadSourceTaxonomy. The key
  * accuracy move: it separates genuine INBOUND leads (web/portal/phone/social/
  * referral) from OUTREACH LISTS we built ourselves (Farm/Import/Sphere/Expired/
@@ -19,8 +19,8 @@ import {
  * because bulk prospecting imports dwarf real inbound volume.
  *
  * This function replaced every `marketing_assignments` read on the dashboards.
- * `marketing_assignments` was the FUB-era attribution ledger; it stopped being
- * written at the 2026-06-24 FUB cutover and its dashboard queries filtered on a
+ * `marketing_assignments` was the CRM-era attribution ledger; it stopped being
+ * written at the 2026-06-24 CRM cutover and its dashboard queries filtered on a
  * non-existent `created_at` column, so those numbers were always 0/stale.
  *
  * DAL boundary (G1): the raw crm_people read lives here. Pages the three needed

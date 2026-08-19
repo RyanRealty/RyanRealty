@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 /**
  * getCrmSuppressions — the paged read side of the compliance suppression list
- * (Wave 2 config, the Block List admin). The FUB "Block List" folds in here:
+ * (Wave 2 config, the Block List admin). The CRM "Block List" folds in here:
  * every consent record (do-not-text, do-not-call, unsubscribed, bounced, the
  * compliance hard-stops and litigator flags) lives in crm_suppressions, and
  * this reader is how the admin surface sees who is suppressed and why.

@@ -77,7 +77,7 @@ export async function findOrCreatePersonByPhone(params: {
 
   // The crm_people payload comes from the shared canonical builder so the native
   // create shape (source + stage + assigned_broker + source-tag) is identical to
-  // the FUB-fallback path (ensureNativeLead) and can never drift. Audience is
+  // the CRM-fallback path (ensureNativeLead) and can never drift. Audience is
   // genuinely unknown on a first inbound contact (the caller could be a buyer or
   // a seller), so no audience tag is stamped here — it is assigned later when the
   // contact takes a buyer/seller action, the same convention the lead-integrity

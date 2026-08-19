@@ -2758,7 +2758,7 @@
   "hurts": [
    "trust"
   ],
-  "issue": "There is no terms/privacy consent line anywhere near the 'Create account' button — the only Privacy policy / Terms of use links are in the footer three scroll-viewports below. The signup action feeds the new contact straight into Follow Up Boss CRM tracking (trackSignedInUser), so contact info is collected and used for marketing follow-up without any point-of-collection disclosure, which savvy users notice and which Zillow-class competitors all carry.",
+  "issue": "There is no terms/privacy consent line anywhere near the 'Create account' button — the only Privacy policy / Terms of use links are in the footer three scroll-viewports below. The signup action feeds the new contact straight into the in-house CRM CRM tracking (trackSignedInUser), so contact info is collected and used for marketing follow-up without any point-of-collection disclosure, which savvy users notice and which Zillow-class competitors all carry.",
   "fix": "Add the standard one-liner under the submit button: 'By creating an account, you agree to our Terms of use and Privacy policy' with inline links (components/auth/SignupForm.tsx, below line 134).",
   "evidence": "signup-mobile-01.png (no consent text in card), signup-mobile-04.png (policy links only in footer); components/auth/SignupForm.tsx (full component, no consent copy), app/actions/auth.ts:143-148 (FUB tracking on signup)",
   "quick_win": true,

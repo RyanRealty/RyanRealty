@@ -15,7 +15,7 @@ export type TrackCtaClickParams = {
 /**
  * Track CTA clicks against the native CRM when we can identify a contact
  * from signed-in email or identity-bridge cookie. sendEvent captures via
- * ensureNativeLead (FUB decommissioned 2026-06-24) — the dead FUB
+ * ensureNativeLead (CRM decommissioned 2026-06-24) — the dead CRM
  * findPersonByEmail pre-lookup was removed; the person is built from the
  * email directly and ensureNativeLead dedupes on it.
  */

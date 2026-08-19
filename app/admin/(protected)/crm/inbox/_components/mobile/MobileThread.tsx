@@ -2,7 +2,7 @@
 
 /**
  * MobileThread — the §26-E (email) / §26-F/26-I (SMS) conversation detail,
- * rendered as a full-screen pushed view (fixed overlay — FUB hides the tab bar
+ * rendered as a full-screen pushed view (fixed overlay — CRM hides the tab bar
  * on pushed screens, AC-26E-07).
  *
  *   - Header: back ‹ · avatar + name (+ › to the contact profile) · phone

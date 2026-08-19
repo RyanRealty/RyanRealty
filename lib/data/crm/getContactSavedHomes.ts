@@ -133,7 +133,7 @@ export function buildHomesPanelUnion(
 /**
  * person → auth-user or-filter for the visitor_identity_map lookup: matches on
  * crm_person_id, fub_person_id (both the crm id AND the legacy fub id, since a
- * FUB-imported person can be keyed either way — this is exactly the leg a native
+ * CRM-imported person can be keyed either way — this is exactly the leg a native
  * lead's saved homes were silently missing), and, when known, the person's
  * normalized emails. PURE, and pinned by the identity-join contract test — the
  * saved-homes counterpart to buildSessionOrFilter for the viewed-listings chain.

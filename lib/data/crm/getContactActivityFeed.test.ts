@@ -74,7 +74,7 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
       expect(classifyTimelineKind('web_event')).toEqual({ category: 'web', direction: null, label: 'Website activity' })
       expect(classifyTimelineKind('lead_created')).toEqual({ category: 'milestone', direction: 'in', label: 'New lead' })
     })
-    it('flags FUB-redacted content as contentHidden', () => {
+    it('flags CRM-redacted content as contentHidden', () => {
       const hidden = toFeedItem({ id: 9, ts: 't', kind: 'email_out', body: null, payload: { contentHidden: true }, source: 'fub-import' })
       expect(hidden.contentHidden).toBe(true)
       expect(hidden.snippet).toBeNull()

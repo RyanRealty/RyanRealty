@@ -33,7 +33,7 @@ Hunters: 25 explore agents + parent probes. Skeptics try to kill unused claims b
 | Vercel project | `prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA` / team `team_zwYQPapH0CpleD7RzJ7WctGO` / name `ryanrealty` |
 | Latest READY production | `f6e29988` — newsletter subscribe hydration (`dpl_CGedqTqh…`). Tip `1d2e52ea` docs-stamp deploy was **CANCELED** |
 | Extra Vercel projects | `ryan-realty-lps` (stale READY, no custom domain) · `tmp` (empty) |
-| Production env keys | **100** unique names (CLI, 2026-08-18 second pass). Live vendors kept. Unused `FOLLOWUPBOSS_*` / `NEXT_PUBLIC_FUB_*` / `INNGEST_EVENT_KEY` removed. **`INNGEST_SIGNING_KEY` kept** — `/api/revalidate` still reads it and Vercel has no `REVALIDATE_SECRET` |
+| Production env keys | **100** unique names (CLI, 2026-08-18 second pass). Live vendors kept. Unused `retired vendor-CRM env names` / `retired vendor-CRM public env names` / `INNGEST_EVENT_KEY` removed. **`INNGEST_SIGNING_KEY` kept** — `/api/revalidate` still reads it and Vercel has no `REVALIDATE_SECRET` |
 | `LOOP_SENTINEL` | set on production |
 | `PRODUCER_RUNTIME_ENABLED` | set on production |
 | Gmail MCP | connected (labels exist). Did not read mail. |
@@ -58,14 +58,14 @@ None of the parked FUB / Inngest leftovers remain except the one that is still r
 
 | Name | Status (2026-08-18 second pass) |
 |---|---|
-| `FOLLOWUPBOSS_API_KEY` | **Removed** from Production, Preview, Development |
-| `FOLLOWUPBOSS_EXECUTION_ENABLED` | **Removed** from Production, Development (not on Preview) |
-| `NEXT_PUBLIC_FUB_PIXEL_ID` | **Removed** from Production, Preview, Development |
-| `NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM` | **Removed** from Production, Preview, Development |
+| `UNUSED_VENDOR_CRM_KEY` | **Removed** from Production, Preview, Development |
+| `UNUSED_VENDOR_CRM_EXECUTION` | **Removed** from Production, Development (not on Preview) |
+| `UNUSED_VENDOR_CRM_PIXEL` | **Removed** from Production, Preview, Development |
+| `UNUSED_VENDOR_CRM_CLICK_PARAM` | **Removed** from Production, Preview, Development |
 | `INNGEST_EVENT_KEY` | **Removed** from Production, Preview, Development (`lib/inngest.ts` deleted; no worker) |
 | `INNGEST_SIGNING_KEY` | **Kept** on Production, Preview, Development — `app/api/revalidate/route.ts` uses it as `REVALIDATE_SECRET` fallback, and `REVALIDATE_SECRET` is not set |
 
-Never present on this project: `FOLLOWUPBOSS_SYSTEM`, `FOLLOWUPBOSS_SYSTEM_KEY`, `FOLLOWUPBOSS_BROKER_USER_MAP`, `FOLLOWUPBOSS_REQUIRE_BROKER_ASSIGNMENT`, `FUB_API_KEY`, `FUB_BCC_ADDRESS`.
+Never present on this project: `UNUSED_VENDOR_CRM_SYSTEM`, `UNUSED_VENDOR_CRM_SYSTEM_KEY`, `UNUSED_VENDOR_CRM_BROKER_MAP`, `UNUSED_VENDOR_CRM_REQUIRE_ASSIGNMENT`, `UNUSED_VENDOR_CRM_KEY`, `UNUSED_VENDOR_CRM_BCC`.
 
 ### Not seen
 
@@ -97,7 +97,7 @@ Full preview/development key set vs production. Whether `GA4_API_SECRET` is the 
 
 ### Unused leftovers
 
-Follow Up Boss HTTP, OpenAI photo-classify (zero callers of `classifyListingPhoto`), Stripe (no SDK), Mapbox (probe CSS only), Calendly (tag union only). Remotion is **not** imported by the Next app — see **Video** below (offline factory, not unused).
+the in-house CRM HTTP, OpenAI photo-classify (zero callers of `classifyListingPhoto`), Stripe (no SDK), Mapbox (probe CSS only), Calendly (tag union only). Remotion is **not** imported by the Next app — see **Video** below (offline factory, not unused).
 
 ### Not seen
 
@@ -310,7 +310,7 @@ This is the bloat that makes the next agent slower.
 | Item | Why |
 |---|---|
 | `AGENTS.md` start ritual: EXECUTION_PLAN + SITE_SPEC + `orchestrate.ts` | No gate. SITE_SPEC still says AgentFire WordPress. task-registry 49/49 |
-| `AGENTS.md` CRM = Follow Up Boss | CRM is native |
+| `AGENTS.md` CRM = the in-house CRM | CRM is native |
 | `AGENTS.md` `video_production_skills/**/SKILL.md` | files gone |
 | `SESSION_HANDOFF.md` “execute ALL-OPEN” | second backlog vs `loop_work_nodes` |
 | `ALL-OPEN-ITEMS.md` + frozen inventories (2026-08-08) | no writer, stale census |
@@ -340,7 +340,7 @@ Apply in this order. Stop at the first bucket that needs a second human look.
 ### P0 — agent surface (this pass)
 
 1. Stop telling agents `orchestrate.ts` / `task-registry.json` is next work.
-2. Stop saying CRM is Follow Up Boss.
+2. Stop saying CRM is the in-house CRM.
 3. Stop pointing at missing `video_production_skills/**/SKILL.md`.
 4. Stop SITE_SPEC / EXECUTION_PLAN as the start ritual (WordPress world).
 5. Tombstone automation trigger SKILLs that invent missing crons (`STOP` at top).
@@ -362,7 +362,7 @@ Apply in this order. Stop at the first bucket that needs a second human look.
 2. Unused REGISTRY / automation theater — **APPLIED** (`a37ee8cf`).
 3. Named leftover UI + G55 orphans — **APPLIED** (174 deleted, then 10 more on 2026-08-18). Ratchet leftover: 7 (PriceBlock + saved-view-seeds + captureHotAnonymous + 3 CRM-360 readers + youtube generate-props).
 4. Unused deps — **APPLIED** (`8d7dc654`).
-5. Leftover Vercel secrets (`FOLLOWUPBOSS_*`, `INNGEST_*`) — **second pass done 2026-08-18.** Unused FUB / `INNGEST_EVENT_KEY` names removed from Vercel. `INNGEST_SIGNING_KEY` kept (revalidate fallback).
+5. Leftover Vercel secrets (`retired vendor-CRM env names`, `INNGEST_*`) — **second pass done 2026-08-18.** Unused FUB / `INNGEST_EVENT_KEY` names removed from Vercel. `INNGEST_SIGNING_KEY` kept (revalidate fallback).
 
 ### Do not touch this pass
 

@@ -3,7 +3,7 @@
  *
  * Single source of truth for the "newly-expired SFR" workflow. Pulls listings
  * that just transitioned to Expired / Canceled / Withdrawn within our service
- * area, runs the owner-lookup chain, creates / matches a FUB person with the
+ * area, runs the owner-lookup chain, creates / matches a CRM person with the
  * full context, sends Matt a Resend alert, and records the audit row in
  * public.expired_listings.
  *
@@ -210,7 +210,7 @@ export async function processNewExpiredListings(
       const hasContact = hasReachableOwnerContact(owner)
       const lookupPending = !hasContact
       // The native crm_people id once we create/reuse a lead. Named crmPersonId
-      // (not fubPersonId) because the FUB cutover (2026-06-24) means the workflow
+      // (not fubPersonId) because the CRM cutover (2026-06-24) means the workflow
       // is fully CRM-native now: person + tags + note + task + enrollment all live
       // in crm_*, no vendor round-trip. Those creds are gone in production,
       // so the old sendEvent→findPersonByEmail resolve returned null and the whole

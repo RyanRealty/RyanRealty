@@ -5,7 +5,7 @@
  *
  * Spec anatomy, top to bottom:
  *   header    "Edit Email Template" + "Created on <date> by <name>" metadata
- *             (renders only when created_at is known — FUB-seeded rows carry
+ *             (renders only when created_at is known — CRM-seeded rows carry
  *             none and we never fabricate a date, §0)
  *   notice    "In use by N automations" when referenced (informational — saving
  *             updates every downstream reference)
@@ -14,7 +14,7 @@
  *             "Share this template with everyone" · Folder assignment
  *   footer    Cancel | Save
  *
- * Preserved in-house extras (kept deliberately, beyond FUB parity): the
+ * Preserved in-house extras (kept deliberately, beyond CRM parity): the
  * Preview tab (renders the exact outbound HTML), the Active switch (pickers
  * filter on it), and "Send test to myself" (routed through the compliance-
  * gated send paths — sends to the calling broker only).

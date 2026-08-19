@@ -12,7 +12,7 @@
 // Pass C — FUB system noise: email rows whose person is FUB's notification
 //   sender are platform noise, now blocked at ingest. Delete historical rows
 //   for senders in the blocklist domain (matched via payload mailbox rows
-//   carrying followupboss missed-call/survey subjects on the Dan Corkill
+//   carrying retiredVendorCrm missed-call/survey subjects on the Dan Corkill
 //   person). Conservative: only kind email_in, person matched by FUB sample
 //   contact email domain.
 //

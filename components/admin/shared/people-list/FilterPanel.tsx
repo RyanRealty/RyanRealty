@@ -2,7 +2,7 @@
 
 /**
  * FilterPanel — the §9 PERSISTENT right filter panel of the People list
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md).
+ * (docs/crm-spec/05-people-list-and-bulk-actions.md).
  *
  * Always visible on the People view (it never auto-closes; switching lists
  * repopulates it). Two states:

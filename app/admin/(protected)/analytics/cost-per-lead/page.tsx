@@ -4,7 +4,7 @@
  *
  * Joins paid spend (marketing_channel_daily, channel=meta_ads/google_ads,
  * metric=spend) with REAL inbound leads (getLeadIntake, from crm_people). The old
- * FUB channel='fub' qualified_seller_leads plane was decommissioned at the 2026-06
+ * CRM channel='fub' qualified_seller_leads plane was decommissioned at the 2026-06
  * cutover (writer removed) — do not restore it. The denominator is ALL inbound
  * leads, so cost-per-lead here is BLENDED, not paid-only (see the page caveat).
  * Drill-down: by campaign and by week so the trend is visible.
@@ -76,7 +76,7 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
   // we can break out by platform in the table.
   // Leads come from getLeadIntake (real crm_people inbound leads, per-day), NOT the
   // dead marketing_channel_daily channel='fub' metrics whose writer was removed at
-  // the 2026-06 FUB cutover — those returned 0 forever, so every CPL read "—" and
+  // the 2026-06 CRM cutover — those returned 0 forever, so every CPL read "—" and
   // the page (named for the owner's core question) was permanently broken.
   // deals_closed_won / closed_deal_volume_usd have no live source at all (they need
   // the transaction ledger, rebuild spec 05/06) — shown as "—", never a fake 0.
@@ -147,7 +147,7 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
     b.campaigns.set(`[Google] ${campName}`, (b.campaigns.get(`[Google] ${campName}`) ?? 0) + v)
   }
   // Real inbound leads per day from getLeadIntake, bucketed into weeks. There is no
-  // separate "qualified seller" sub-count (that was the dead FUB metric), so both
+  // separate "qualified seller" sub-count (that was the dead CRM metric), so both
   // fields hold the one real lead number. closedWon/closedVolume have no source and
   // stay 0 → rendered as "—" via closedDataAvailable.
   for (const day of intake.byDay) {

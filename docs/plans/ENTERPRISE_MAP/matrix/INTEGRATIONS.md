@@ -28,7 +28,7 @@ Disposition: **KEEP** · **FIX** · **RECONNECT** · **PARK** · **LEGACY_RESIDU
 | INT-015 | Nextdoor | `NEXTDOOR_CLIENT_ID`, `NEXTDOOR_CLIENT_SECRET`, `NEXTDOOR_REDIRECT_URI` | `lib/nextdoor.ts` (OAuth + post API; access gated by Nextdoor developer approval) | auth **0** NOT_CONNECTED | **Optional** | **dark** | **PARK** | **PARK disposition:** env clients present; **never OAuth-connected**. Nextdoor partner access may still be gated. Park until explicit “connect Nextdoor” decision — not a red failure of core product. |
 | INT-016 | Pinterest | *(no `PINTEREST_CLIENT_*` in D-env-keys)*; code expects `PINTEREST_CLIENT_ID/SECRET/REDIRECT_URI`, optional `PINTEREST_DEFAULT_BOARD_ID` | `lib/pinterest.ts` | auth **0** NOT_CONNECTED; client keys **absent** locally | **Optional** | **dark** | **PARK** | **PARK disposition:** library exists, **no client credentials in env inventory**, auth empty. Park permanently until product prioritizes pin distribution and issues app credentials. |
 | INT-017 | SkySlope | `SKYSLOPE_ACCESS_KEY`, `SKYSLOPE_ACCESS_SECRET`, `SKYSLOPE_CLIENT_ID`, `SKYSLOPE_CLIENT_SECRET`, `SKYSLOPE_LOGIN_EMAIL`, `SKYSLOPE_LOGIN_PASSWORD` | TC strangler; `lib/tc/*`, `skyslope_transactions`; cron `/api/cron/skyslope-mirror-refresh` | rows **33** (= tc_deals); newest `synced_at` **2026-06-10T00:35:10Z** still STALE; **ops path LIVE** (auth-gated 401 on ryan-realty.com, dpl `3LKLi3cQjgcKFvhLEXyU7N4AGPx8`) | **Mirror**/workflow (not SoR; Vault is TC SoR) | **amber** | **KEEP** (ops) / freshness residual | First refresh waits on production cron 06:20 UTC or a session with the real `CRON_SECRET`. Never treat SkySlope as transaction SoR |
-| INT-018 | Follow Up Boss | `FOLLOWUPBOSS_API_KEY`, `FOLLOWUPBOSS_SYSTEM`, `FOLLOWUPBOSS_SYSTEM_KEY`, `FUB_LOGIN_EMAIL`, `FUB_LOGIN_PASSWORD`, `NEXT_PUBLIC_FUB_PIXEL_ID`, `NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM` | `lib/followupboss.ts` = **native shim** (`sendEvent` → `ensureNativeLead`); cutover 2026-06-24 | CRM SoR is `crm_people` (22978); FUB HTTP intentionally dead | **Legacy** | **dark** | **LEGACY_RESIDUE** | CRM loop — **must not be SoR**. Keys may remain for historical verify-env; remove public FUB pixel/params when safe |
+| INT-018 | In-house CRM | none | `lib/crm/send-event.ts` → `ensureNativeLead` → `public.crm_people`; review at `/admin/crm` | CRM SoR is `crm_people` | **Runtime** | **green** | **KEEP** | Live CRM. No vendor people API. |
 | INT-019 | ElevenLabs | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `ELEVENLABS_VOICE_ID_VICTORIA`, `ELEVENLABS_VOICE_ID_ELLEN` | `lib/voice/*`, `scripts/_voice_lib.py`; Victoria locked | keys present; VO pipeline code live | **Runtime** creative | **green** | **KEEP** | Creative/VO loop — Victoria only for public VO; Ellen id is alt inventory |
 | INT-020 | Apify | `APIFY_API_TOKEN` | `lib/fsbo-detector.ts`, `lib/marketing-brain/competitor-recon.ts` | token present; FSBO/recon paths | **Runtime** scrape | **green** | **KEEP** | Prospecting loop — FSBO / competitor recon |
 | INT-021 | OpenAI | `OPENAI_API_KEY` | AI features across app/scripts | GET `/v1/models` **200** models **118** (2026-08-16) | **Runtime** AI | **green** | **KEEP** | AI loop — models list live; no completion spend this probe |
@@ -64,7 +64,7 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 | `GCP_USER_REFRESH_TOKEN` | Google user refresh (scripts) | TOOLING — with INT-035 |
 | `ELEVENLABS_VOICE_ID_ELLEN` | alt ElevenLabs voice | KEEP under INT-019 inventory; Victoria remains canon |
 | `META_OAUTH_STATE` | Meta OAuth | KEEP under INT-007 |
-| `FOLLOWUPBOSS_*`, `FUB_*`, `NEXT_PUBLIC_FUB_*` | FUB residue | **LEGACY_RESIDUE** under INT-018 |
+| (none) | In-house CRM | Covered by INT-018 — `crm_people` / `/admin/crm` |
 | Remaining INT-001…036 keys | their INT rows | accounted |
 
 **D-env total:** 117 names. Primary integration keys assigned INT-001…036; residue + flags + Vertex/Cursor/site → INT-037 bucket.
@@ -105,7 +105,7 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 | INT-015 | never | n/a | n/a PARK | n/a | — |
 | INT-016 | never | n/a | n/a PARK | n/a | — |
 | INT-017 | ops live 2026-08-16; synced_at still 2026-06-10 | n/a | Mirror only (ok) | stale until first cron | TC |
-| INT-018 | cutover 2026-06-24 | n/a | **must be false as SoR** | n/a | CRM legacy |
+| INT-018 | live `crm_people` / `/admin/crm` | n/a | **SoR is in-house CRM** | n/a | CRM |
 | INT-019…025 | keys present / probed | n/a | yes where used | n/a | per row |
 | INT-021 | models 118 at 2026-08-16 | n/a | yes | n/a | AI |
 | INT-023 | models 12 at 2026-08-16 | n/a | yes | n/a | Grok |
@@ -123,10 +123,10 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 
 | Health | n | IDs |
 |--------|--:|-----|
-| **green** | **18** | 001 Supabase · 003 Vercel · 005 Resend · 009 GBP · 011 TikTok · 012 YouTube · 013 X · 019 ElevenLabs · 020 Apify · 021 OpenAI · 022 Anthropic · 023 xAI · 024 Maps · 025 Upstash · 030 BatchData · 031 Stock · 032 Gen media · 036 AdSense |
+| **green** | **19** | 001 Supabase · 003 Vercel · 005 Resend · 009 GBP · 011 TikTok · 012 YouTube · 013 X · 018 In-house CRM · 019 ElevenLabs · 020 Apify · 021 OpenAI · 022 Anthropic · 023 xAI · 024 Maps · 025 Upstash · 030 BatchData · 031 Stock · 032 Gen media · 036 AdSense |
 | **amber** | **9** | 002 Spark · 004 Twilio · 006 Google SA · 007 Meta · 008 GA4/GTM · 017 SkySlope · 034 Inngest · 035 Google OAuth/CrUX · 037 OTHER/tooling |
 | **red** | **0** | — (2026-08-08 called 009/010/012/013 red from `expires_at` alone; that read ignored refresh tokens + the heartbeat — see EVIDENCE-LOG 2026-08-15 and `process_escape_ledger`) |
-| **dark** | **10** | 010 LinkedIn (parked, no provider refresh token) · 014 Threads · 015 Nextdoor · 016 Pinterest · 018 FUB · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID |
+| **dark** | **9** | 010 LinkedIn (parked, no provider refresh token) · 014 Threads · 015 Nextdoor · 016 Pinterest · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID |
 | **unknown** | **0** | — |
 | **sum** | **37** | |
 
@@ -134,11 +134,11 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 
 | Disposition | n | IDs / notes |
 |-------------|--:|-------------|
-| **KEEP** | 23 | runtime retain (greens + most amber keepers, incl. 009/012/013 auto-refresh + 035 shared OAuth clients) |
+| **KEEP** | 24 | runtime retain (greens + most amber keepers, incl. 009/012/013 auto-refresh + 018 in-house CRM + 035 shared OAuth clients) |
 | **FIX** | 2 | 007 Meta audience heartbeat (first green 2026-08-15, hold 7d) · 017 SkySlope mirror freshness |
 | **RECONNECT** | 0 | none — auto-refresh verified; there is no standing "Matt reconnect" task (Matt 2026-08-15) |
 | **PARK** | 10 | 010 LinkedIn · 014 Threads · 015 Nextdoor · 016 Pinterest · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID · 034 Inngest |
-| **LEGACY_RESIDUE** | 1 | 018 FUB |
+| **LEGACY_RESIDUE** | 0 | — |
 | **TOOLING** | 1 | 037 OTHER bucket |
 
 ## Cron wiring note
@@ -149,5 +149,5 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 ## Evidence sources
 
 - `inventories/D-env-keys.txt`, `P-db-probes.json`, `M-live-db-counts.json`, `E-github-workflows.txt`, `Z-inventory-meta.json`  
-- Code: `lib/{threads,nextdoor,pinterest,tiktok,linkedin,x,youtube,google-business-profile,followupboss,inngest,resend,spark,meta-*}.ts`  
+- Code: `lib/{threads,nextdoor,pinterest,tiktok,linkedin,x,youtube,google-business-profile,crm,inngest,resend,spark,meta-*}.ts`  
 - Append detail: `matrix/EVIDENCE-LOG.md` § INT close pass  

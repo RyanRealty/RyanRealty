@@ -44,7 +44,7 @@ COMMENT ON COLUMN public.marketing_assignments.audience IS
   'Top-level segment that drives which round-robin pool is used. seller leads use the FUB "Seller Leads" group (Matt + Rebecca). Buyer leads round-robin against the full active broker roster.';
 
 COMMENT ON COLUMN public.marketing_assignments.fub_user_id IS
-  'FUB-side numeric user id. As of 2026-05-17: 1=Matt, 2=Rebecca, 3=Paul. Update the env var FOLLOWUPBOSS_BROKER_USER_MAP if these ever change.';
+  'FUB-side numeric user id. As of 2026-05-17: 1=Matt, 2=Rebecca, 3=Paul. Update the env var UNUSED_VENDOR_CRM_BROKER_MAP if these ever change.';
 
 -- Service-role only; no public RLS policies.
 ALTER TABLE public.marketing_assignments ENABLE ROW LEVEL SECURITY;

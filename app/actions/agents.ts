@@ -265,7 +265,7 @@ export type SubmitBrokerInquiryParams = {
   helpType?: string
 }
 
-/** Submit broker contact form: send to FUB as General Inquiry with broker context. */
+/** Submit broker contact form: send to CRM as General Inquiry with broker context. */
 export async function submitBrokerInquiry(
   params: SubmitBrokerInquiryParams
 ): Promise<{ ok: true } | { ok: false; error: string }> {

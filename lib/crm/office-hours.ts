@@ -2,7 +2,7 @@
  * Office-hours evaluation for inbound call routing (spec §15 / §1.5).
  *
  * Company office hours live on crm_company_settings.office_hours as
- * OfficeHoursBlock[] ({ days, start_time, end_time }). Per the FUB spec they
+ * OfficeHoursBlock[] ({ days, start_time, end_time }). Per the CRM spec they
  * affect INBOUND calling only: when blocks are configured and the call arrives
  * outside every block, the inbound voice webhook routes to voicemail instead of
  * ringing a broker's cell. An EMPTY block list means "always open" — the

@@ -34,4 +34,4 @@ Use this rule whenever the user asks for **marketing**, **advertising**, **paid 
 
 - Invent a parallel “marketing architecture” in chat without reading the pipeline doc first.
 - Ship deliverable copy or budget numbers that contradict **fair housing** and **special ad category** rules already noted in the playbook and pipeline doc.
-- Teach Follow Up Boss, a People API, or `FOLLOWUPBOSS_*` as the live CRM. Leads go to `crm_people`.
+- Teach a vendor People API as the live CRM. Leads go to `crm_people` at `/admin/crm`.

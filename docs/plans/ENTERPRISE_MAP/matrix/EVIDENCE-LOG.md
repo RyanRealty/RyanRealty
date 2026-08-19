@@ -210,7 +210,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 - GBP: `GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID` (not GBP_ACCOUNT_ID).
 - Threads: `THREADS_CLIENT_ID` present; auth table empty.
 - Nextdoor/Pinterest: **corrected in INT close pass below** (earlier “no client keys” was wrong for Nextdoor).
-- FUB: `FOLLOWUPBOSS_API_KEY` present (legacy residue, not SoR).
+- FUB: `UNUSED_VENDOR_CRM_KEY` present (legacy residue, not SoR).
 - AdSense: `NEXT_PUBLIC_ADSENSE_CLIENT_ID` present.
 
 ### Still not done this pass
@@ -297,7 +297,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 | broker_gcal_tokens | 0 | EMPTY |
 
 ### Other live signals used
-- listings 594623 · email_events 564 latest 2026-08-08 · meta_audience_log last LIVE 2026-08-16T09:01Z CRM 13980 · skyslope_transactions 33 synced_at sample 2026-06-10 · crm_message 45299 · FUB = native shim only (`lib/followupboss.ts` sendEvent → ensureNativeLead)
+- listings 594623 · email_events 564 latest 2026-08-08 · meta_audience_log last LIVE 2026-08-16T09:01Z CRM 13980 · skyslope_transactions 33 synced_at sample 2026-06-10 · crm_message 45299 · FUB = native shim only (`lib/crm/send-event.ts` sendEvent → ensureNativeLead)
 - Inngest: `lib/inngest.ts` is thin optional HTTP emit; **not** a job runner — disposition **PARK**
 - RentCast/SchoolDigger: keys present; little/no active product call-path → **PARK** optional
 
@@ -308,7 +308,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 
 **green:** 001, 003, 005, 019, 020, 022, 024, 025, 030  
 **red:** 009 GBP, 010 LinkedIn, 012 YouTube, 013 X  
-**dark PARK-adjacent:** 014 Threads, 015 Nextdoor, 016 Pinterest, 018 FUB, 027 RentCast, 028 SchoolDigger  
+**dark PARK-adjacent:** 014 Threads, 015 Nextdoor, 016 Pinterest, 027 RentCast, 028 SchoolDigger (INT-018 is in-house CRM, KEEP)  
 
 ### Explicit PARK list
 1. **INT-014 Threads** — keys only; never connected; no cadence  

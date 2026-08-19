@@ -50,7 +50,7 @@ function buildMarketingAgentPickupPrompt(data: MarketingData): string {
     `- GA4 sessions: ${data.ga4.sessions} | Facebook lead events: ${data.ga4.facebookLeadEvents}`,
     `- Seller visits from Facebook: ${data.website.sellerVisitsFromFacebook30d}`,
     `- Valuation conversion from Facebook seller visits: ${data.website.valuationRateFromFacebookSellerVisits === null ? 'N/A' : (data.website.valuationRateFromFacebookSellerVisits * 100).toFixed(1) + '%'}`,
-    `- FUB Facebook contacts: ${data.fub.facebookContacts30d}`,
+    `- CRM Facebook contacts: ${data.fub.facebookContacts30d}`,
     formatBendContextLine(data.bendMarketContext),
     '',
     'Execute these actions in order:',

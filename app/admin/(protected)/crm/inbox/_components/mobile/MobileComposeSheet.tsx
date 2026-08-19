@@ -9,7 +9,7 @@
  *      supports group texts (2+ recipients → ONE Twilio Conversations group
  *      thread via the existing recipientIds path; capped at 10, AC-26H-06).
  *   2. Channel segmented control: Email | Text (26-J).
- *   3. Text: §27 S3 AI pill strip + template picker + the FUB compose bar
+ *   3. Text: §27 S3 AI pill strip + template picker + the CRM compose bar
  *      (attach/template · "Text message · SMS" input · circular send) with the
  *      quiet-hours override + character counter.
  *   4. Email (S1): template selector ("Blank email" ⇅), then the shared

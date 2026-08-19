@@ -15,7 +15,7 @@ import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignm
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
 import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
 import { buildBuyerAlertFilterSets } from './alert-filters'
-import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
+import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/lead-origin-note'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 
@@ -26,7 +26,7 @@ const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCas
 
 const CRM_DESK_MATT = 1
 // Rebecca (id 2) + Paul (id 3) exist as desks but no auto-route per Matt
-// 2026-05-17. Manual reassignment via FUB UI only.
+// 2026-05-17. Manual reassignment via CRM UI only.
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 type BrokerAssignment = { broker: BrokerSlug; userId: number; reason: string }
@@ -46,7 +46,7 @@ export type BuyerLPSubmission = {
   timeline?: BuyerLPTimeline
   notes?: string
   /** Anonymous visitor session id (uuid v4) from localStorage. When present,
-   *  we stitch this lead's prior browsing history to the FUB person. */
+   *  we stitch this lead's prior browsing history to the CRM person. */
   sessionId?: string
 }
 
@@ -110,8 +110,8 @@ async function recordBuyerAssignment(params: {
 /**
  * Submit the dedicated buyer landing page form.
  *
- * Buyer LP intake (cadence research from the FUB era lives in
- * docs/archive/fub-era/README.md. live path is in-house CRM):
+ * Buyer LP intake (cadence research from the CRM era lives in
+ * lib/crm/send-event.ts. live path is in-house CRM):
  *  1. Resolve or create CRM person (email match > cookie > new)
  *  2. Round-robin assign to Matt or Rebecca via marketing_assignments
  *  3. Apply canonical tags: audience:buyer + buyer:tier + source:buyer-lp + broker:slug
@@ -120,8 +120,8 @@ async function recordBuyerAssignment(params: {
  *  6. Fire Meta CAPI Lead $300 event
  *
  * Downstream: canonicallyTagLead applies `audience:buyer` and the native
- * CRM auto-enrolls the lead in its buyer sequence (FUB decommissioned
- * 2026-06-24. the old FUB action-plan + pause-on-reply cron are gone —
+ * CRM auto-enrolls the lead in its buyer sequence (CRM decommissioned
+ * 2026-06-24. the old CRM action-plan + pause-on-reply cron are gone —
  * pause-on-reply now lives in the native sequence engine).
  */
 export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<BuyerLPResult> {
@@ -141,7 +141,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     const notes = submission.notes?.trim() ?? ''
 
     // ─── Resolve a pre-known person (identity-bridge cookie only) ──────────
-    // The old FUB findPersonByEmail pre-lookup was a dead no-op after the
+    // The old CRM findPersonByEmail pre-lookup was a dead no-op after the
     // 2026-06-24 decommission and was deleted — sendEvent below resolves the
     // native person by email (ensureNativeLead dedupes email-first).
     let fubPersonId: number | null = null
@@ -158,7 +158,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     // ─── Round-robin broker assignment ─────────────────────────────────────
     const assignment = await assignBuyerLead(classification)
 
-    // ─── FUB Buyer Inquiry event ───────────────────────────────────────────
+    // ─── CRM Buyer Inquiry event ───────────────────────────────────────────
     const firstName = name.split(/\s+/)[0] || undefined
     const lastName = name.split(/\s+/).slice(1).join(' ') || undefined
 
@@ -177,9 +177,9 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     const areasStr = searchAreasArr.length ? searchAreasArr.join(', ') : 'unspecified'
 
     // ─── Inbound attribution UTMs (hoisted so sendEvent can use them) ──────
-    // FUB's /v1/people exposes sourceUrl but NOT utmContent/utmCampaign, so the
+    // CRM's /v1/people exposes sourceUrl but NOT utmContent/utmCampaign, so the
     // only way to attribute a buyer lead back to the ad that produced it is to
-    // carry the utm params INTO the FUB sourceUrl. The buyer-lead-attribution
+    // carry the utm params INTO the CRM sourceUrl. The buyer-lead-attribution
     // cron parses utm_content (= the action_id) back out. Mirrors the seller LP.
     let leadSourceUrl = `${siteUrl}/lp/buyer-listing-alerts`
     let originUtmSource: string | undefined
@@ -225,10 +225,10 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
       console.warn('[buyer-lp] native capture failed:', eventResult.error)
     }
 
-    // ─── Resolve the native CRM person id (post-FUB cutover) ───────────────
+    // ─── Resolve the native CRM person id (post-CRM cutover) ───────────────
     // sendEvent captures natively (crm_people) and returns the personId, this
     // MUST run on the happy path. Previously fubPersonId was only resolved
-    // via a dead FUB-only findPersonByEmail call below, which always no-ops
+    // via a dead CRM-only findPersonByEmail call below, which always no-ops
     // post-decommission, so every new buyer lead was silently skipping all
     // enrichment (tags, custom fields, broker assignment, origin note,
     // hot-lead task). Fixed 2026-07-09.
@@ -251,7 +251,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
         })
         if (native.created || native.personId > 0) {
           console.warn(
-            `[buyer-lp] FUB push failed. native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+            `[buyer-lp] CRM push failed. native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
           )
         }
       } catch (e) {
@@ -273,14 +273,14 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
 
     // ─── Compliance gate ───────────────────────────────────────────────────
     // Skip workflow enrollment if person carries hard-stop tags.
-    // Hard-stop tags: docs/archive/fub-era/README.md (compliance gate).
+    // Hard-stop tags: lib/crm/send-event.ts (compliance gate).
     const hardStopped = fubPersonId ? await isHardStopped(fubPersonId) : false
     if (hardStopped) {
       console.warn(`[buyer-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)
     }
 
     // ─── Native enrichment: tags + broker + custom fields + origin note ────
-    // Ported off the dead FUB-only path (addPersonTags/assignPersonToUser/
+    // Ported off the dead CRM-only path (addPersonTags/assignPersonToUser/
     // setPersonCustomFields/postLeadOriginNote all no-op post-decommission)
     // onto the same native enrichNativeLead() the other three LPs use.
     if (fubPersonId && !hardStopped) {

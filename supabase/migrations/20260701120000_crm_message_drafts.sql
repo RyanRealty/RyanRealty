@@ -1,4 +1,4 @@
--- CRM Inbox Drafts (FUB-parity delivery #5, spec docs/fub-crm-spec/08-inbox.md §3.3)
+-- CRM Inbox Drafts (FUB-parity delivery #5, spec docs/crm-spec/08-inbox.md §3.3)
 --
 -- The Inbox "Drafts" folder shows started-but-unsent replies. Until now the
 -- inbox derived every conversation from crm_timeline (sent/received messages

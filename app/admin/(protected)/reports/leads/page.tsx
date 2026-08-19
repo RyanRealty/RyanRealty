@@ -3,7 +3,7 @@
 // Lead analytics — real inbound leads captured in the native CRM (crm_people).
 //
 // Repointed 2026-07-12 off the legacy profiles / user_activities account tables
-// (the pre-FUB-cutover site-auth system, disjoint from the CRM) onto
+// (the pre-CRM-cutover site-auth system, disjoint from the CRM) onto
 // getLeadIntake, the single source of truth every dashboard now shares.
 // "Inbound" excludes the bulk prospecting/import lists (Farm, Import, Sphere,
 // Expired) so the numbers reflect marketing performance, not list-building.

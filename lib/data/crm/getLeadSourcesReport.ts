@@ -455,7 +455,7 @@ async function readLeadSources(params: LeadSourcesParams): Promise<LeadSourcesRe
   }
 
   // 5. Discover distinct source keys + tally per-source metrics in one pass over
-  //    the paged raw rows. Always include null ('<unspecified>') — FUB shows it
+  //    the paged raw rows. Always include null ('<unspecified>') — CRM shows it
   //    even when all-zero. Discovery = every source that has EVER had a lead
   //    (Group C) plus every source with activity in the period (d2).
   const allSourceKeys = new Set<string | null>([null])
@@ -515,7 +515,7 @@ async function readLeadSources(params: LeadSourcesParams): Promise<LeadSourcesRe
   //    - tasks / appointments use person_id → crm_people join (FK auto-resolved by PostgREST).
   //    - Source attribution for calls/emails/texts/notes is "the person being contacted
   //      has source=X AND the activity was logged by a scoped broker".
-  //      This is the same semantic FUB uses for its Lead Sources activity columns.
+  //      This is the same semantic CRM uses for its Lead Sources activity columns.
 
   const perSourceResults: LeadSourcesRow[] = distinctSources.map((srcKey) => ({
     sourceKey: srcKey,
@@ -575,7 +575,7 @@ async function readLeadSources(params: LeadSourcesParams): Promise<LeadSourcesRe
 
 /**
  * Lead Sources report data — per-source lead counts + activity metrics over a date range.
- * Cached 10 minutes to match FUB's documented cache TTL for reporting.
+ * Cached 10 minutes to match CRM's documented cache TTL for reporting.
  *
  * Source tables:
  *   crm_people         — source label (crm_people.source)
@@ -600,7 +600,7 @@ async function readLeadSources(params: LeadSourcesParams): Promise<LeadSourcesRe
  *
  * V1 known limitations:
  *   - Sources appearing ONLY in crm_people (never linked to any timeline event, task, or
- *     appointment) will not appear in the table. This includes FUB source labels that have
+ *     appointment) will not appear in the table. This includes CRM source labels that have
  *     never had a lead or activity (e.g., a brand-new source with 0 records). This is an
  *     honest empty state — such sources have no data to display.
  *   - '<unspecified>' (null source) is always included in the table.

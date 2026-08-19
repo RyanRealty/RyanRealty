@@ -90,7 +90,7 @@ to the hardcoded legacy `/home-valuation` constant (app/home-valuation/actions.t
   inside `canonicallyTagLead` (lib/canonical-lead-tagger.ts:257-264).
 - **`valuations`** — the computed CMA of record for the auto branch; only methodology
   ≥ 3.1 rows are served (lib/cma.ts:787-800).
-- Explicitly NOT SoR: Follow Up Boss (decommissioned 2026-06-24 — `sendEvent` is the
+- Explicitly NOT SoR: the in-house CRM (decommissioned 2026-06-24 — `sendEvent` is the
   in-house capture chokepoint); the admin alert inbox (a notification, not a queue); GA4 and
   Meta (mirrors); and — unlike the written-cma sibling — **no `cmas` row and no
   `marketing_brain_actions` row exists in this path** (nothing in actions.ts creates one;

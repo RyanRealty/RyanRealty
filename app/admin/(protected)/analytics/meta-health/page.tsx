@@ -82,7 +82,7 @@ type CampaignRow = { id: string; name: string; objective?: string; status: strin
 /** Mirrors classifyIntent() in app/api/meta/lead-webhook/route.ts.
  *  Returns null when the option text wouldn't trigger any of the buckets,
  *  which means a lead with that answer would be classified as no-tier
- *  (i.e. the canonical FUB workflow would skip auto-routing). */
+ *  (i.e. the canonical CRM workflow would skip auto-routing). */
 function classifyOption(label: string): 'hot' | 'warm' | 'nurture' | null {
   const a = label.toLowerCase()
   if (a.includes('asap') || a.includes('immediately') || a.includes('right now') || /\bnow\b/.test(a) || a.includes('this month') || a.includes('0-3') || a.includes('0 to 3') || a.includes('within 3')) return 'hot'

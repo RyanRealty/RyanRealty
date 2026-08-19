@@ -10,7 +10,7 @@ import { attributeSiteLinks, renderCrmMerge, type MergeContext, type MergePerson
 
 /**
  * An archived email/SMS template imports into crm_templates with its
- * subject AND body replaced by the literal placeholder "archived" (FUB's marker
+ * subject AND body replaced by the literal placeholder "archived" (CRM's marker
  * for a disabled template). Delivering one sends a contact an email/text that
  * literally reads "archived". This guards the send path: a resolved template
  * whose subject or body is just that placeholder is never sent. Pure + total.
@@ -69,7 +69,7 @@ export function renderMerge(
   ctx?: MergeContext,
 ): string {
   // Every site link in an automated send carries the assigned broker (routing)
-  // AND the recipient's FUB id (?_fuid=) — so a click identifies them, cookies
+  // AND the recipient's CRM id (?_fuid=) — so a click identifies them, cookies
   // the browser to the contact, and backfills their anonymous sessions.
   return attributeSiteLinks(renderCrmMerge(text, person, ctx), person.assigned_broker ?? 'matt', person.fub_legacy_id ?? null)
 }

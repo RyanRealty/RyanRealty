@@ -344,7 +344,7 @@ export async function fetchConversions(range: DateRange): Promise<ConversionsDat
 
   const brokerSplit = intake.byBroker.map((b) => ({ broker: b.broker, count: b.count }))
 
-  // Channel mix replaces the old FUB "tier" classification — more meaningful and
+  // Channel mix replaces the old CRM "tier" classification — more meaningful and
   // it actually populates (tier was never set on the native rows).
   const classificationMix = intake.byChannel
     .filter((c) => c.attributable)

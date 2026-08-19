@@ -3,7 +3,7 @@
  *
  * Matt's rule: EVERY link in newsletters, market reports, saved-search alerts,
  * and CMAs must carry broker attribution so the broker can see sent / opened /
- * delivered / bounced. After the FUB cutover, anything that relied on FUB's own
+ * delivered / bounced. After the CRM cutover, anything that relied on CRM's own
  * email tracking is dead. Tracking now lives in our email HTML (open pixel +
  * click redirects -> crm_timeline via the Resend webhook + the /api/track/e
  * endpoints).
@@ -41,7 +41,7 @@ export interface AttributeOutboundOptions {
    * open/click to). Never throws on a missing id.
    */
   personId?: number | null
-  /** FUB legacy id — stamps ?_fuid= so a click backfills anonymous sessions. */
+  /** CRM legacy id — stamps ?_fuid= so a click backfills anonymous sessions. */
   fubPersonId?: number | null
   /** Stable key for this email, e.g. `newsletter:<id>` or `alert:<searchId>`. */
   emailKey: string

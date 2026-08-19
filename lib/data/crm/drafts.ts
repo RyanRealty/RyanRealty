@@ -1,5 +1,5 @@
 /**
- * CRM Inbox drafts DAL (FUB-parity delivery #5 — the Drafts folder).
+ * CRM Inbox drafts DAL (CRM-parity delivery #5 — the Drafts folder).
  *
  * A draft is a started-but-unsent reply persisted in crm_message_drafts, keyed to
  * one (person, broker, channel). The Inbox "Drafts" folder lists the conversations

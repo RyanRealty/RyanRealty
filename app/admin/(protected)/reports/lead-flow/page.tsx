@@ -13,7 +13,7 @@
  * them; what follows is only what a future editor must not break.
  *
  * DO NOT BREAK:
- *   - `getLeadIntake` is the lead system of record since the FUB cutover
+ *   - `getLeadIntake` is the lead system of record since the CRM cutover
  *     (2026-06-24), inbound sources only. marketing_assignments is decommissioned.
  *   - A surface with 0 sessions in the window must NOT be called a wiring gap —
  *     you cannot tell whether wiring works until traffic arrives.
@@ -332,7 +332,7 @@ async function LeadFlowContent({
   const brokerSplit = new Map<string, number>()
   for (const b of intake.byBroker) brokerSplit.set(b.broker, b.count)
 
-  // Channel split (replaces the old FUB audience split — channel is what we can
+  // Channel split (replaces the old CRM audience split — channel is what we can
   // derive accurately from crm_people.source and it's more actionable).
   const channelSplit = new Map<string, number>()
   for (const c of intake.byChannel) {

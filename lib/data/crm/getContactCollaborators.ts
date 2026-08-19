@@ -1,6 +1,6 @@
 /**
  * getContactCollaborators — reads the additional brokers who collaborate on a
- * contact (FUB §7c.8.9 Collaborators widget). The contact's assigned_broker is
+ * contact (CRM §7c.8.9 Collaborators widget). The contact's assigned_broker is
  * NOT returned here — this table holds the supplementary set only.
  *
  * DAL boundary (G1): raw .from() lives here, inside lib/data/.

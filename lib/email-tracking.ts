@@ -4,7 +4,7 @@
  * We instrument the email HTML we generate (CMA delivery, sequence/drip, alerts)
  * with a 1x1 open pixel and link-wrapped click redirects. Because the tracking
  * lives in the email body, it works no matter how the email is sent — a manual
- * Gmail send by the broker, our Resend transactional path, or a FUB action plan.
+ * Gmail send by the broker, our Resend transactional path, or a CRM action plan.
  *
  * Each open/click hits a tracking endpoint that writes a row to `crm_timeline`
  * (kind `email_open` / `email_click`), so the communications chain shows how many

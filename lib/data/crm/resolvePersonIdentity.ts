@@ -6,13 +6,13 @@
  *
  *   { crmPersonId, fubLegacyId, emails[], phones[], authUserId, sessionIds[] }
  *
- * The join key is FUB-INDEPENDENT: a NORMALIZED email (lowercased) or phone
- * (last-10 digits). FUB's legacy id is carried through for back-compat reads,
+ * The join key is CRM-INDEPENDENT: a NORMALIZED email (lowercased) or phone
+ * (last-10 digits). CRM's legacy id is carried through for back-compat reads,
  * but resolution never depends on it — a native lead with no fub_legacy_id
- * resolves the same way as a FUB-imported one.
+ * resolves the same way as a CRM-imported one.
  *
  * Sources (this is a v1 against the CURRENT schema — no bridge columns yet):
- *   - crm_people.fub_legacy_id            — the legacy FUB key, carried through
+ *   - crm_people.fub_legacy_id            — the legacy CRM key, carried through
  *   - crm_contact_points (kind/value)     — every email/phone for the person
  *   - visitor_identity_map                — rr_vid -> {email, fub_person_id,
  *                                            user_id, session_id}; currently
@@ -50,7 +50,7 @@ export function normalizeEmail(value: string | null | undefined): string | null 
   return v || null
 }
 
-/** Reduce a phone to its last 10 digits (the FUB-independent join key). */
+/** Reduce a phone to its last 10 digits (the CRM-independent join key). */
 export function normalizePhone(value: string | null | undefined): string | null {
   const d = String(value ?? '').replace(/\D/g, '')
   if (d.length >= 10) return d.slice(-10)
@@ -108,7 +108,7 @@ function unionIds<T>(a: Iterable<T>, b: Iterable<T>): T[] {
 }
 
 /**
- * Resolve a crm_people.id into its full FUB-independent identity bundle.
+ * Resolve a crm_people.id into its full CRM-independent identity bundle.
  * Single source of truth — every Contact-360 enrichment panel calls this
  * instead of threading a bare fub id around.
  */
@@ -143,7 +143,7 @@ export async function resolvePersonIdentity(crmPersonId: number): Promise<Person
   )
 
   // 2. visitor_identity_map (made READ here) — resolve sessions + auth uuid by
-  // the FUB-independent keys we already hold: any normalized email, OR the
+  // the CRM-independent keys we already hold: any normalized email, OR the
   // legacy fub id. This is the richer identity graph the panels want.
   const identityRows: Array<{ user_id: string | null; session_id: string | null }> = []
   const orFilters: string[] = []

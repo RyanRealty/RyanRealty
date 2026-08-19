@@ -3,10 +3,10 @@
  * from the self-owned crm_* tables, replacing the retired vendor People API the
  * digest crons used to read (CONTACT360 Phase 10.4 — broker reporting repoint).
  *
- * Before this, /api/cron/daily-broker-digest pulled every new lead from the FUB
+ * Before this, /api/cron/daily-broker-digest pulled every new lead from the CRM
  * People API (resolveFubUserId -> /people?assignedUserId&createdAfter) and the
- * weekly digest aggregated FUB people/deals/appointments. That meant the digest
- * stopped working the moment we cut over off FUB. This reader sources every
+ * weekly digest aggregated CRM people/deals/appointments. That meant the digest
+ * stopped working the moment we cut over off CRM. This reader sources every
  * section from our own CRM, scoped to one broker by their slug (the value stored
  * in crm_people.assigned_broker / crm_tasks.assigned_broker):
  *
@@ -28,8 +28,8 @@
  * createServiceClient bypasses RLS (a cron has no user session).
  *
  * FLAG: every figure here now traces to crm_* — nothing in this reader touches
- * FUB. The lead deep-link is the CRM page /admin/crm/{personId} (our own admin),
- * not a FUB person page.
+ * CRM. The lead deep-link is the CRM page /admin/crm/{personId} (our own admin),
+ * not a CRM person page.
  */
 import { createServiceClient } from '@/lib/supabase/service'
 import { classifyLeadSource } from './leadSourceTaxonomy'
@@ -153,7 +153,7 @@ export type DigestSummary = {
 
 const AWAITING_STATUSES = new Set(['awaiting_broker', 'awaiting_broker_next', 'paused_reply'])
 
-/** The CRM deep link for a contact (our own admin, not FUB). */
+/** The CRM deep link for a contact (our own admin, not CRM). */
 export function crmContactUrl(personId: number): string {
   return `https://ryan-realty.com/admin/people/${personId}`
 }
@@ -495,7 +495,7 @@ export async function getBrokerDigest(params: {
 // ---------------------------------------------------------------------------
 // Weekly pipeline digest (Matt-only) — crm_* sourced aggregates
 //
-// The weekly digest used to aggregate the FUB People API + FUB deals +
+// The weekly digest used to aggregate the CRM People API + CRM deals +
 // appointments + smart lists + conversations. This repoints every section that
 // has a clean crm_* source: new leads by audience and by source (crm_people,
 // outreach-list rows partitioned out via leadSourceTaxonomy), active deals +

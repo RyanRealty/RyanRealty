@@ -13,7 +13,7 @@
  *                        (A.5 gestures; touch-only, checkbox serves mouse).
  *   CalendarReminderRow— 50px event/reminder anatomy: 10px ok dot +
  *                        title (time sub-label added when the event is timed —
- *                        appointments carry times the FUB all-day reminder
+ *                        appointments carry times the CRM all-day reminder
  *                        row didn't need).
  *
  * Admin v2 (11F): every raw control is a v2 primitive and every semantic

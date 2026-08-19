@@ -10,7 +10,7 @@
 
 ## ✅ RESOLVED + VERIFIED LIVE (2026-06-02 ~16:30 UTC)
 
-The PKCE fix shipped (commits `22cca83` "initiate OAuth client-side so PKCE code_verifier survives to callback", `1a34e4e`, `28671b5`, `c87d7cc`) and is **working in production end-to-end**. Verified against live GoTrue auth logs + Follow Up Boss, not assumed:
+The PKCE fix shipped (commits `22cca83` "initiate OAuth client-side so PKCE code_verifier survives to callback", `1a34e4e`, `28671b5`, `c87d7cc`) and is **working in production end-to-end**. Verified against live GoTrue auth logs + the in-house CRM, not assumed:
 
 - **`POST /token` (grant_type=pkce) → 200** at 16:16:40 for `matt@ryan-realty.com` (the exchange that previously never fired). Full live chain: `/authorize 302` → `POST /token 200 [login]` → `/callback 302` → `GET /user 200`.
 - **FUB lead bridge fires:** person 21966 got a `Registration` event "Signed in (Google)" at 16:16:41 and a `Visited Website` "return" at 16:17:01 (fub_cid attribution stamped). The "no FUB lead" symptom is gone.
@@ -47,7 +47,7 @@ This is **not** a Supabase setting, a Google Cloud setting, or a provider toggle
 
 4. **Live reproduction:** clicking "Continue with Google" on `https://ryan-realty.com/login` bounces to `https://ryan-realty.com/auth-error?message=Could%20not%20sign%20in` in under one second (after Google silently returns a code, because the account is already authorized). "Could not sign in" is the generic fall-through.
 
-5. **Follow Up Boss check:** `GET /v1/people?email=matt.lists.homes@gmail.com` → **0 matches**. Confirms no FUB lead is created on Google sign-in today (the FUB sync lives **after** the failing exchange and never runs).
+5. **the in-house CRM check:** `GET /v1/people?email=matt.lists.homes@gmail.com` → **0 matches**. Confirms no FUB lead is created on Google sign-in today (the FUB sync lives **after** the failing exchange and never runs).
 
 ---
 

@@ -2,7 +2,7 @@
 
 /**
  * Pipeline + stage management actions — §9 Manage Pipelines / §10 Add-Edit
- * Stage (spec docs/fub-crm-spec/10-deals-pipelines.md; AC-7 / AC-8).
+ * Stage (spec docs/crm-spec/10-deals-pipelines.md; AC-7 / AC-8).
  *
  * ACCOUNT-OWNER ONLY (§22): every action gates on role === 'superuser' — the
  * same rule the /admin/crm/deals/pipelines route enforces with its 403 page.

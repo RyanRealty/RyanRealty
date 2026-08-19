@@ -53,7 +53,7 @@ above everything.
 | FB ad spec | `social_media_skills/facebook-lead-gen-ad/SKILL.md` | Lead-form template, creative spec, CRM inbound (`sendEvent`) |
 | FB pipeline (live wiring) | `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` | Meta -> site -> CAPI -> crm_people, env vars |
 | Competitor design recon | `marketing_brain_skills/competitor-design-recon/SKILL.md` | Adapt a proven layout, don't invent one |
-| CRM seller sequence (live) | `lib/crm/enroll.ts` | Tag schema + cadence. Archive: `docs/archive/fub-era/README.md` |
+| CRM seller sequence (live) | `lib/crm/enroll.ts` | Tag schema + cadence. Archive: `lib/crm/send-event.ts` |
 | Lead-flow detail | `docs/MARKETING_LEAD_FLOW.md` | Per-path lead creation + dedup |
 
 Producer freeze (G45): this is a recipe the live agent loads. Do **not** add a row to

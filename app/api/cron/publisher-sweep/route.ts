@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
   // Stamp utm_content=<action_id> onto every ryan-realty.com link in a publish
   // payload (ctaUrl, caption text, nested per-platform fields). A seller lead who
   // clicks through the published post then lands on the LP with the action_id in
-  // the URL; the seller LP forwards that into the FUB sourceUrl and the
+  // the URL; the seller LP forwards that into the CRM sourceUrl and the
   // seller-lead-attribution cron matches it back to THIS content_performance row.
   // This is the sender half of the north-star attribution path. Idempotent.
   function stampAttributionUtm(value: unknown, actionId: string, actionType: string): unknown {

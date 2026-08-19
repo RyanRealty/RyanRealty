@@ -48,7 +48,7 @@ export function groupSavedViews(views: SavedViewItem[]): {
 }
 
 /**
- * Keywords that identify neighborhood/area system lists (FUB "Neighborhoods" collection).
+ * Keywords that identify neighborhood/area system lists (CRM "Neighborhoods" collection).
  * Any system list whose name contains one of these (case-insensitive) lands in the
  * Neighborhoods collection; everything else lands in Pipeline.
  */
@@ -64,7 +64,7 @@ export type SystemCollection = {
 }
 
 /**
- * Split the system views into FUB-style named collections.
+ * Split the system views into CRM-style named collections.
  * Returns a Pipeline collection (workflow/stage lists) and a Neighborhoods
  * collection (geography-keyed lists), dropping empty collections.
  */

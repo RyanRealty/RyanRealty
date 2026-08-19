@@ -24,7 +24,7 @@
  *                    the unified listing_alerts table and normalizes `active`.
  *
  * Identity comes from the keystone resolver (resolvePersonIdentity) so a native
- * lead resolves the same as a FUB-imported one.
+ * lead resolves the same as a CRM-imported one.
  *
  * FLAG (newsletter frequency): public.newsletter_subscribers has NO per-
  * subscriber cadence column — only `status` + `segment`. There is no honest
@@ -144,7 +144,7 @@ async function readSequenceMemberships(crmPersonId: number): Promise<ContactSequ
 /**
  * Pause or resume EVERY listing alert a contact receives — ONE update on the
  * unified listing_alerts table, keyed by the same identity the reader uses
- * (crm_person_id OR auth user_id OR FUB id OR any of the contact's emails), so
+ * (crm_person_id OR auth user_id OR CRM id OR any of the contact's emails), so
  * the write matches exactly what getContactListingAlerts reads. Used by the
  * membership toggle's listing-alerts action. Lives in the DAL (raw .from()
  * allowed here).

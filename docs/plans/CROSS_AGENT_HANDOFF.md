@@ -2,7 +2,11 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — listing/place leftovers
+# Current — 2026-08-19 (cursor-cloud) — vendor CRM name purge
+
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Removed leftover vendor-CRM docs, setup scripts, and product-name strings. Live CRM is `public.crm_people` via `lib/crm/send-event.ts` at `/admin/crm`. CMA not touched. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+
+# Prior — 2026-08-19 (cursor-cloud) — listing/place leftovers
 
 **Surface:** Cursor cloud `bc-f3f636d7`. Loop stays **DISARMED**. Nine queued leftovers only. Live-reproduced on ryan-realty.com. Shipped 3 class-fixes on `main` @ `bf85c08d5`. Rejected 6 with live evidence (wheel-tab, featured 0 ACTIVE, browse href, Moonshadow card text, lot beds, Tetherow 19/35 and 35/28). CMA / sitemaps / loop-sentinel / email not touched. Do not re-arm.
 
@@ -13,10 +17,6 @@
 # Prior — 2026-08-19 (cursor-cloud) — listings.xml honesty class
 
 **Surface:** Cursor cloud `bc-7d0ca98e`. Loop stays **DISARMED** (Matt). Family `fleet:public-ux:sitemaps` class-fixed. Live `listing_tile_mv` Active/AUC = 7586. Prod `listings.xml` had 7586 locs / **5827 unique** — `fetchAllRows` paged the MV with no ORDER BY. Fix: `getListingSitemapRows` ordered `listing_key` read. Gate `ci:sitemap-listings-honest`. CMA not touched.
-
-# Prior — 2026-08-19 (cursor-cloud) — four shopper defects class-fixed
-
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Four morning defects only: Bend city/browse SFR count + MOS withhold; listing drop withheld unless original is on history rail; save-search email in the DOM; tour confirm names the listing. CMA / sitemaps / loop-sentinel not touched. No client mail. No re-arm. Leave `LOOP_SENTINEL` off. Do not flip `LOOP_SENTINEL_DEFAULT_OFF`.
 
 # Prior — 2026-08-19 (cursor-cloud) — loop DISARMED
 
@@ -47,7 +47,7 @@
 - Leftover punch families stay on FLEET-PUNCH. Do not start a new ship class from this land.
 - CMA work stays on `cursor/cma-client-document-7fc3` in the primary checkout.
 
-**Do not:** merge this land into the CMA branch. Do not restore Follow Up Boss keys. Do not completeWorkNode on FLEET-PUNCH. Do not invent a listing. Do not SMS, publish, spend, or OAuth.
+**Do not:** merge this land into the CMA branch. Do not restore the in-house CRM keys. Do not completeWorkNode on FLEET-PUNCH. Do not invent a listing. Do not SMS, publish, spend, or OAuth.
 
 **Skills read:** CROSS_AGENT_HANDOFF, SESSION_HANDOFF, database-canonical-reference, deploy-verify-before-done, supabase-migrations-auto.
 

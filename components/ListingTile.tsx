@@ -155,7 +155,7 @@ export type ListingTileProps = {
   hotBadge?: boolean
   /** When true, preload image (e.g. above-the-fold tiles). */
   priority?: boolean
-  /** Optional FUB contact id to attach tile click to. */
+  /** Optional CRM contact id to attach tile click to. */
   fubPersonId?: number | null
   /** Engagement counts for social proof (small number next to icons). */
   likeCount?: number

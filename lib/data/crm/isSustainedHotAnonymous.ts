@@ -40,7 +40,7 @@
  *
  * STILL UN-IDENTIFIED is mandatory. The whole point is to capture the visitor we
  * have NOT otherwise tracked. If the identity bundle already carries a known
- * email, a FUB person, an auth user, OR an existing crm_person, there is nothing
+ * email, a CRM person, an auth user, OR an existing crm_person, there is nothing
  * to capture. The rule must return false so we never create a duplicate.
  *
  * This file is PURE: no Supabase, no IO, no env. The capture DAL
@@ -86,7 +86,7 @@ export type SustainedHotAnonymousSignals = {
   identity: {
     /** visitor_sessions.identified_at on any of the visitor's sessions. */
     identifiedAt?: string | null
-    /** A known FUB person stitched to this visitor. */
+    /** A known CRM person stitched to this visitor. */
     fubPersonId?: number | null
     /** visitor_identity_map.email — a captured email means we already know them. */
     email?: string | null

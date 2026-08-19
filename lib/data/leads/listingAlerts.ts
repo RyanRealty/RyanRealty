@@ -253,7 +253,7 @@ export async function createListingAlertForLead(input: {
 }
 
 /**
- * Listing alerts for ONE lead — matched by auth user id, CRM person id, FUB
+ * Listing alerts for ONE lead — matched by auth user id, CRM person id, CRM
  * person id, OR any of the lead's emails (signups that predate identity
  * linking carry only the email). Used by the broker Lead Command Center to
  * show what a lead is actively shopping for. Active rows first, newest first.

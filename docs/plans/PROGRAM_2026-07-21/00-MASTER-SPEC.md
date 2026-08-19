@@ -133,22 +133,22 @@ Detail in `01-PRIMITIVES.md`. Nine primitives, dependency-ordered.
 | D18 | Brand voice | Orwell's six rules, no pandering, no salesy tone | partial | 12 duplicated lists. Four of six rules cannot be regex-detected. Emails, SMS, CMA prose, VO, captions, and Supabase blog posts are **ungated entirely** |
 | D19 | THE LOOP | Continuous, guardrailed, adversarial, measured | **shelved** | Matt shelved the loop concept 2026-07-21. Spec preserved at `02-LOOP-V2.md` for later. Not part of this program |
 | D20 | Transaction (TC) | Oregon-compliant coordination | not audited | Needs a 20th audit to seed its contract |
-| D21 | **FUB purge** | Zero references to Follow Up Boss anywhere | **not started** | Matt directive 2026-07-21. See §4.1 |
+| D21 | **FUB purge** | Zero references to the in-house CRM anywhere | **not started** | Matt directive 2026-07-21. See §4.1 |
 | D22 | **Canon consolidation** | One rule stated once, one audit per subject, one plan per initiative | **in progress** | Matt directive 2026-07-21. See §4.2 |
 
 ### 4.1 D21 — FUB purge
 
-**Directive (Matt, 2026-07-21):** "We do not use Follow Up Boss anymore so there should be zero reference to it."
+**Directive (Matt, 2026-07-21):** "We do not use the in-house CRM anymore so there should be zero reference to it."
 
-**Verified state.** FUB is off the serving path — zero calls to `api.followupboss.com` anywhere in `app/`. No API route, no cron. What remains is residue:
+**Verified state.** FUB is off the serving path — zero calls to `retired.invalid` anywhere in `app/`. No API route, no cron. What remains is residue:
 
 | Residue | Count |
 |---|---|
 | Code references — `app` 842, `lib` 990, `components` 197, `scripts` 580 | 2,662 |
 | Database columns named `fub_*` | 15 |
-| Env vars, including `FUB_LOGIN_EMAIL` and `FUB_LOGIN_PASSWORD` | 5 |
+| Env vars, including `UNUSED_VENDOR_CRM_LOGIN` and `UNUSED_VENDOR_CRM_PASSWORD` | 5 |
 | Doc files mentioning FUB | 905 |
-| Modules containing `api.followupboss.com` calls | 3 lib + 19 scripts |
+| Modules containing `retired.invalid` calls | 3 lib + 19 scripts |
 
 **Live call sites, all reachable.** Verified as imported by live code. Not yet verified whether each call executes or sits on a dead branch — read before touching.
 

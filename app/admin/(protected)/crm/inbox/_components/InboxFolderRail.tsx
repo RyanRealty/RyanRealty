@@ -1,7 +1,7 @@
 /**
- * InboxFolderRail — the left folder tree of the FUB three-panel inbox
+ * InboxFolderRail — the left folder tree of the CRM three-panel inbox
  * (spec §08 §3). Server component: Compose button (client child), the global
- * unread header, then MY INBOX and COMPANY sections each with the five FUB
+ * unread header, then MY INBOX and COMPANY sections each with the five CRM
  * folders (Inbox / Assigned / Drafts / Sent / Closed) and live count badges.
  * Active folder: accent wash + accent text, via the av2-rail__item
  * [aria-current="page"] rule (admin v2 language, design_system/admin/ADMIN_UI.md).

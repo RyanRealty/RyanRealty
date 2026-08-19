@@ -5,7 +5,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 /**
  * CRM custom-field registry reader (the schema layer over crm_people.custom).
  *
- * crm_people.custom is a free-form jsonb bag (carried from FUB). This reader
+ * crm_people.custom is a free-form jsonb bag (carried from CRM). This reader
  * returns the typed definitions that tell the contact card + the saved-view
  * AST custom-condition builder how to render, label, order, and coerce each
  * value pulled off that bag. The raw .from() read lives here per the DAL

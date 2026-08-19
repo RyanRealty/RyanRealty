@@ -14,7 +14,7 @@ import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
 /**
  * Heath at Tetherow CMA form. Three-step (address + sub-plat context,
- * timing + beds/baths, contact). FUB tags include subdivision precision
+ * timing + beds/baths, contact). CRM tags include subdivision precision
  * so Matt can route leads by sub-plat:
  *   seller-intent,resort:tetherow,subdivision:heath,lp:tetherow-heath-landing-v1,cma-requested
  */

@@ -2,7 +2,7 @@
 
 /**
  * InlineEditField — the §07a §12 canonical inline-edit pattern for the
- * person-detail left sidebar (spec docs/fub-crm-spec/07a-person-detail-
+ * person-detail left sidebar (spec docs/crm-spec/07a-person-detail-
  * sidebar-and-inline-edit.md §12).
  *
  * Read state: static value (or muted "Add …" placeholder), pointer cursor,

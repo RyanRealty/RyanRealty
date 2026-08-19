@@ -2,7 +2,7 @@
 
 /**
  * TasksView — the §09 Part 1 desktop Tasks module
- * (docs/fub-crm-spec/09-tasks-and-calendar.md).
+ * (docs/crm-spec/09-tasks-and-calendar.md).
  *
  * Structure (§1.2): sub-tab bar (Today's Tasks | Overdue (N) | Future) with the
  * right-aligned toolbar (How Tasks work · Filters ▾ · Me ▾), over a two-panel

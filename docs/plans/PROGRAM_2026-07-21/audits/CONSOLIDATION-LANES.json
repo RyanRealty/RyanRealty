@@ -440,7 +440,7 @@
   "lane": "docs-top",
   "files_examined": 132,
   "total_lines": 37163,
-  "headline": "The entire FUB_*.md cluster (18 files) plus 4 more docs describe a Follow Up Boss integration that is fully decommissioned in code (getFubApiKey() in lib/crm/fub-env.ts is hardcoded to return undefined since 2026-06-24/07-14; sendEvent() in lib/followupboss.ts no longer POSTs to FUB at all, it writes natively to crm_people) — these are dead-delete, not history-delete, because agents reading them today would write code against an API that cannot fire.",
+  "headline": "The entire FUB_*.md cluster (18 files) plus 4 more docs describe a the in-house CRM integration that is fully decommissioned in code (getFubApiKey() in lib/crm/fub-env.ts is hardcoded to return undefined since 2026-06-24/07-14; sendEvent() in lib/crm/send-event.ts no longer POSTs to FUB at all, it writes natively to crm_people) — these are dead-delete, not history-delete, because agents reading them today would write code against an API that cannot fire.",
   "verdicts": [
    {
     "path": "docs/DATABASE_SCHEMA_SNAPSHOT.md",
@@ -578,7 +578,7 @@
    {
     "path": "docs/CRM_INTEGRATION.md",
     "verdict": "dead-delete",
-    "reason": "Entire doc is the 'events not people, POST /v1/events' FUB architecture. Verified in lib/followupboss.ts: sendEvent() has a code comment 'FUB DECOMMISSIONED (cutover 2026-06-24): capture natively instead of POSTing to Follow Up Boss' and now writes to crm_people with zero FUB traffic. The G49 gate this doc claims locks FUB-event invariants is enforcing rules for a code path that no longer exists."
+    "reason": "Entire doc is the 'events not people, POST /v1/events' FUB architecture. Verified in lib/crm/send-event.ts: sendEvent() has a code comment 'FUB DECOMMISSIONED (cutover 2026-06-24): capture natively instead of POSTing to the in-house CRM' and now writes to crm_people with zero FUB traffic. The G49 gate this doc claims locks FUB-event invariants is enforcing rules for a code path that no longer exists."
    },
    {
     "path": "docs/CRM_REPLACEMENT_BLUEPRINT.md",
@@ -637,9 +637,9 @@
     "duplicate_of": "AGENTS.md / .cursor/rules/data-architecture.mdc"
    },
    {
-    "path": "docs/FOLLOWUPBOSS-SETUP.md",
-    "verdict": "dead-delete",
-    "reason": "Describes Google-sign-in triggering FUB Registration events and Viewed Property/Viewed Page tracking to FUB. Confirmed dead: sendEvent() no longer talks to FUB at all."
+    "path": "docs/CRM_INTEGRATION.md",
+    "verdict": "keep",
+    "reason": "Live in-house CRM contract. sendEvent() writes crm_people. No vendor people API."
    },
    {
     "path": "docs/FUB_AGENT_LINK_AND_EXPIRED_LP_RESEARCH_2026-05-17.md",
@@ -654,7 +654,7 @@
    {
     "path": "docs/FUB_BROKER_DIGESTS.md",
     "verdict": "dead-delete",
-    "reason": "Verified: app/api/cron/daily-broker-digest/route.ts contains zero FUB references, imports getBrokerDigest from lib/data/crm/getBrokerDigest and reads crm_people/crm_tasks via Supabase directly - contradicts the doc's claim that 'FOLLOWUPBOSS_API_KEY powers the FUB People API queries.'"
+    "reason": "Verified: app/api/cron/daily-broker-digest/route.ts contains zero FUB references, imports getBrokerDigest from lib/data/crm/getBrokerDigest and reads crm_people/crm_tasks via Supabase directly - contradicts the doc's claim that 'UNUSED_VENDOR_CRM_KEY powers the FUB People API queries.'"
    },
    {
     "path": "docs/FUB_BUILD_COMPLETE_2026-05-17.md",
@@ -689,7 +689,7 @@
    {
     "path": "docs/FUB_CUSTOM_FIELDS.md",
     "verdict": "dead-delete",
-    "reason": "Setup instructions to create custom fields inside Follow Up Boss, a system whose write API is decommissioned - these fields cannot be pushed to anymore."
+    "reason": "Setup instructions to create custom fields inside the in-house CRM, a system whose write API is decommissioned - these fields cannot be pushed to anymore."
    },
    {
     "path": "docs/FUB_FSBO_WORKFLOW.md",
@@ -853,7 +853,7 @@
    {
     "path": "docs/MARKETING_LEAD_FLOW.md",
     "verdict": "dead-delete",
-    "reason": "Core architecture claim throughout ('operational truth is FUB Person + timeline events,' every path diagrammed terminating at FUB, 'createFubContact POSTs https://api.followupboss.com/v1/people') is false against current code - sendEvent() no longer touches FUB. Also cited directly by CLAUDE.md's skill-routing table, so this is a live example of the exact rot CLAUDE.md itself warned about."
+    "reason": "Core architecture claim throughout ('operational truth is FUB Person + timeline events,' every path diagrammed terminating at FUB, 'createFubContact POSTs https://retired.invalid/v1/people') is false against current code - sendEvent() no longer touches FUB. Also cited directly by CLAUDE.md's skill-routing table, so this is a live example of the exact rot CLAUDE.md itself warned about."
    },
    {
     "path": "docs/MARKET_REPORTS_AND_SHARING.md",
@@ -872,7 +872,7 @@
     "reason": "Dated 2026-05-24 fix-plan/audit for Meta pixel/CAPI issues found at that time; point-in-time remediation tracker, not an ongoing rule."
    },
    {
-    "path": "docs/MOBILE_CRM_FUB_PARITY.md",
+    "path": "docs/MOBILE_CRM_PARITY.md",
     "verdict": "duplicate-delete",
     "reason": "Uses FUB mobile screenshots purely as a visual/UX reference bar for the in-house CRM mobile build (not an API integration), so it survives the FUB-decommission argument, but its content and role directly parallels docs/CONSOLE_KIT.md's 'contract so the build matches a saved target instead of drifting' pattern already marked canon-rule - this file's unique addition (mobile-specific FUB screenshot references) has diminishing reference value once the mobile CRM build catches up, and its rule ('build then screenshot next to the reference, show Matt') duplicates the same discipline CONSOLE_KIT.md already states.",
     "duplicate_of": "docs/CONSOLE_KIT.md"
@@ -1243,7 +1243,7 @@
   "broken_references": [
    {
     "doc": "docs/FUB_BROKER_DIGESTS.md",
-    "cited": "FOLLOWUPBOSS_API_KEY powers the FUB People API queries in /api/cron/daily-broker-digest",
+    "cited": "UNUSED_VENDOR_CRM_KEY powers the FUB People API queries in /api/cron/daily-broker-digest",
     "why_broken": "app/api/cron/daily-broker-digest/route.ts contains zero FUB references; it imports getBrokerDigest from lib/data/crm/getBrokerDigest and reads crm_people/crm_tasks directly via Supabase."
    },
    {
@@ -1258,8 +1258,8 @@
    },
    {
     "doc": "docs/CRM_INTEGRATION.md",
-    "cited": "Every inbound lead MUST be created via POST /v1/events to Follow Up Boss, enforced by gate G49",
-    "why_broken": "lib/followupboss.ts sendEvent() contains the comment 'FUB DECOMMISSIONED (cutover 2026-06-24): capture natively instead of POSTing to Follow Up Boss' and writes to crm_people with zero FUB traffic."
+    "cited": "Every inbound lead MUST be created via POST /v1/events to the in-house CRM, enforced by gate G49",
+    "why_broken": "lib/crm/send-event.ts sendEvent() contains the comment 'FUB DECOMMISSIONED (cutover 2026-06-24): capture natively instead of POSTing to the in-house CRM' and writes to crm_people with zero FUB traffic."
    },
    {
     "doc": "docs/TC_SYSTEM.md",
@@ -1268,7 +1268,7 @@
    },
    {
     "doc": "docs/MARKETING_LEAD_FLOW.md",
-    "cited": "createFubContact POSTs https://api.followupboss.com/v1/people; operational truth is FUB Person + timeline events",
+    "cited": "createFubContact POSTs https://retired.invalid/v1/people; operational truth is FUB Person + timeline events",
     "why_broken": "Same sendEvent()/getFubApiKey() decommission as above; also treats ryan-realty.com as the legacy WordPress origin distinct from ryanrealty.vercel.app, which is no longer the production topology post-cutover."
    },
    {
@@ -1589,7 +1589,7 @@
    },
    {
     "topic": "crm",
-    "rule": "FUB (Follow Up Boss) is fully decommissioned as of 2026-06-24 -- getFubApiKey() always returns undefined and CRM_LEAD_BACKEND defaults to 'native'. The in-house CRM is the lead system of record with no remaining cutover flip.",
+    "rule": "FUB (the in-house CRM) is fully decommissioned as of 2026-06-24 -- getFubApiKey() always returns undefined and CRM_LEAD_BACKEND defaults to 'native'. The in-house CRM is the lead system of record with no remaining cutover flip.",
     "source_path": "docs/plans/twilio-cutover-2026-06-24.md (open item, now closed)",
     "verification": "code-confirmed",
     "evidence": "lib/crm/lead-router.ts defaults CRM_LEAD_BACKEND to 'native'; lib/canonical-lead-tagger.ts comment: 'API was decommissioned 2026-06-24 -- getFubApiKey() always returns' undefined."
@@ -1644,77 +1644,77 @@
  {
   "lane": "docs-fub-spec",
   "files_examined": 307,
-  "headline": "The entire 112,235-line docs/fub-crm-spec/ directory is a completed migration's build-parity scratchpad: FUB is fully decommissioned (CRM_LEAD_BACKEND defaults to 'native', getFubApiKey() returns undefined so all FUB API calls no-op) and the in-house CRM was signed off production-ready on 2026-07-02. Live-code verification shows the spec's own biggest flagged gaps (Reporting suite, Company Settings) are now fully built, meaning the spec is not just historical but actively wrong about present-tense system state. Only 2 items are genuine machinery: crm-screens.json (read by scripts/check-crm-screen-parity.mjs, wired into ci:gates) and its 21 _verify/*.png screenshots (existsSync-checked by the same script). Everything else -- 33 numbered module spec .md files, 79 desktop screen files, 60 mobile screen files, 10 addenda captures, 8 recording GIFs, 18 api-export JSON/README files, 71 action-plan-step JSON dumps, README/CAPTURE-CHECKLIST/VERIFICATION.md, and 3 verification-raw JSON files -- is provably dead: none of it is read by any running code (grep confirmed zero programmatic references beyond the two machinery files), the FUB account it documents no longer exists, and the migration values it fed have already been baked byte-for-byte into applied Supabase migrations. Sampling method: read README.md and 21-gap-map-vs-inhouse-crm.md in full (the two decision-critical files); read VERIFICATION.md, CAPTURE-CHECKLIST.md, api-export/README.md, recordings/README.md in full; spot-read one representative file each from screens/, mobile-screens/, addenda-captures/ to confirm the pattern held (all describe FUB's own UI/data, none contain Ryan Realty rules); grep-verified zero code references to the .md spec tree, screens/, mobile-screens/, addenda-captures/, recordings/, and api-export/action-plan-steps/; read scripts/check-crm-screen-parity.mjs in full to establish exactly what IS load-bearing (crm-screens.json + _verify/*.png only -- specRef strings are never fs-read, only interpolated into error text); cross-checked the gap map's two biggest 'missing' claims against current app/admin/(protected)/crm/reporting/* and crm/settings/company/* route trees, both now fully built, and against docs/DATABASE_SCHEMA_SNAPSHOT.md confirming crm_company_settings exists. Confidence: high -- the migration-complete claim is corroborated by three independent sources (repo memory, live env-var default, live route tree) not just the spec's own say-so.",
+  "headline": "The entire 112,235-line docs/crm-spec/ directory is a completed migration's build-parity scratchpad: FUB is fully decommissioned (CRM_LEAD_BACKEND defaults to 'native', getFubApiKey() returns undefined so all FUB API calls no-op) and the in-house CRM was signed off production-ready on 2026-07-02. Live-code verification shows the spec's own biggest flagged gaps (Reporting suite, Company Settings) are now fully built, meaning the spec is not just historical but actively wrong about present-tense system state. Only 2 items are genuine machinery: crm-screens.json (read by scripts/check-crm-screen-parity.mjs, wired into ci:gates) and its 21 _verify/*.png screenshots (existsSync-checked by the same script). Everything else -- 33 numbered module spec .md files, 79 desktop screen files, 60 mobile screen files, 10 addenda captures, 8 recording GIFs, 18 api-export JSON/README files, 71 action-plan-step JSON dumps, README/CAPTURE-CHECKLIST/VERIFICATION.md, and 3 verification-raw JSON files -- is provably dead: none of it is read by any running code (grep confirmed zero programmatic references beyond the two machinery files), the FUB account it documents no longer exists, and the migration values it fed have already been baked byte-for-byte into applied Supabase migrations. Sampling method: read README.md and 21-gap-map-vs-inhouse-crm.md in full (the two decision-critical files); read VERIFICATION.md, CAPTURE-CHECKLIST.md, api-export/README.md, recordings/README.md in full; spot-read one representative file each from screens/, mobile-screens/, addenda-captures/ to confirm the pattern held (all describe FUB's own UI/data, none contain Ryan Realty rules); grep-verified zero code references to the .md spec tree, screens/, mobile-screens/, addenda-captures/, recordings/, and api-export/action-plan-steps/; read scripts/check-crm-screen-parity.mjs in full to establish exactly what IS load-bearing (crm-screens.json + _verify/*.png only -- specRef strings are never fs-read, only interpolated into error text); cross-checked the gap map's two biggest 'missing' claims against current app/admin/(protected)/crm/reporting/* and crm/settings/company/* route trees, both now fully built, and against docs/DATABASE_SCHEMA_SNAPSHOT.md confirming crm_company_settings exists. Confidence: high -- the migration-complete claim is corroborated by three independent sources (repo memory, live env-var default, live route tree) not just the spec's own say-so.",
   "verdicts": [
    {
-    "path": "docs/fub-crm-spec/crm-screens.json",
+    "path": "docs/crm-spec/crm-screens.json",
     "verdict": "machinery",
     "reason": "Registry of CRM screens (id/specRef/route/status/requiredComponents/verify). Actively read by scripts/check-crm-screen-parity.mjs.",
     "loaded_by": "scripts/check-crm-screen-parity.mjs via `npm run ci:crm-screen-parity`, which is part of the `ci:gates` chain in package.json"
    },
    {
-    "path": "docs/fub-crm-spec/_verify/*.png (21 files)",
+    "path": "docs/crm-spec/_verify/*.png (21 files)",
     "verdict": "machinery",
     "reason": "Committed screenshots the parity gate verifies exist on disk (existsSync only, content never inspected) for every screen entry marked status=done in crm-screens.json. Deleting these fails the CI gate immediately.",
     "loaded_by": "scripts/check-crm-screen-parity.mjs (same caller as above)"
    },
    {
-    "path": "docs/fub-crm-spec/21-gap-map-vs-inhouse-crm.md",
+    "path": "docs/crm-spec/21-gap-map-vs-inhouse-crm.md",
     "verdict": "dead-delete",
     "reason": "Dated 2026-06-30 build-priority plan. Contradicted by current code: its Priority 1 claim ('all 13 FUB CRM reports are missing') is false today -- app/admin/(protected)/crm/reporting/ now has overview + all 13 report routes (agent-activity, calls, call-logs, texts, appointments, deals, agent-goals, lead-sources, speed-to-lead, contact-attempts, batch-emails, properties, marketing). Its Priority 2 claim ('No crm_company_settings table... no route') is also false -- app/admin/(protected)/crm/settings/company/page.tsx + registration/ + block-list/ subpages exist and crm_company_settings is in docs/DATABASE_SCHEMA_SNAPSHOT.md. Not merely history -- actively wrong about present tense."
    },
    {
-    "path": "docs/fub-crm-spec/{01,02,03,04,05,06a,06b,07a,07b,07c,08,09,10,11,12,13,14,15,16,17,18,19,20,22,23,24,25,26,27,28,29,30}-*.md (32 files)",
+    "path": "docs/crm-spec/{01,02,03,04,05,06a,06b,07a,07b,07c,08,09,10,11,12,13,14,15,16,17,18,19,20,22,23,24,25,26,27,28,29,30}-*.md (32 files)",
     "verdict": "history-delete",
-    "reason": "Screen-by-screen and feature-by-feature specification of Follow Up Boss's own UI, built 2026-06-30 as a one-time build-parity target. The migration it targeted is complete and signed off (CRM_PRODUCTION_SIGNOFF_2026-07-02.md; CRM_LEAD_BACKEND default='native'; getFubApiKey() returns undefined, all 13 FUB fetch call-sites no-op). No code reads any of these .md files at runtime -- grep across .ts/.tsx/.mjs found zero fs reads of this path pattern; the only reference is the cosmetic `specRef` string field in crm-screens.json, which the parity script never opens (confirmed by reading the full script)."
+    "reason": "Screen-by-screen and feature-by-feature specification of the in-house CRM's own UI, built 2026-06-30 as a one-time build-parity target. The migration it targeted is complete and signed off (CRM_PRODUCTION_SIGNOFF_2026-07-02.md; CRM_LEAD_BACKEND default='native'; getFubApiKey() returns undefined, all 13 FUB fetch call-sites no-op). No code reads any of these .md files at runtime -- grep across .ts/.tsx/.mjs found zero fs reads of this path pattern; the only reference is the cosmetic `specRef` string field in crm-screens.json, which the parity script never opens (confirmed by reading the full script)."
    },
    {
-    "path": "docs/fub-crm-spec/screens/*.md (79 files)",
+    "path": "docs/crm-spec/screens/*.md (79 files)",
     "verdict": "history-delete",
     "reason": "Raw per-screen vision analyses of FUB screenshots (exact labels/columns/enum values of a third-party product Ryan Realty no longer uses, captured 2026-06-30 'before the account is decommissioned'). Never read by code; cited only as a specRef string, never fs-opened."
    },
    {
-    "path": "docs/fub-crm-spec/mobile-screens/*.md (60 files)",
+    "path": "docs/crm-spec/mobile-screens/*.md (60 files)",
     "verdict": "history-delete",
     "reason": "Same pattern as screens/ but documenting FUB's native iOS app (a system Ryan Realty doesn't operate). Never read by code."
    },
    {
-    "path": "docs/fub-crm-spec/addenda-captures/*.md (10 files)",
+    "path": "docs/crm-spec/addenda-captures/*.md (10 files)",
     "verdict": "history-delete",
     "reason": "Gap-fill captures from the same 2026-06-30 session (e.g. Agent Activity report, automation editor panels) documenting FUB screens the earlier captures missed. Never read by code; migration complete."
    },
    {
-    "path": "docs/fub-crm-spec/recordings/*.gif + recordings/README.md (8 files)",
+    "path": "docs/crm-spec/recordings/*.gif + recordings/README.md (8 files)",
     "verdict": "history-delete",
     "reason": "Screen-recording GIFs of FUB's live UI, captured before FUB account access ended, to document dynamic interactions (modals, pickers). Purely a build-reference artifact for a completed migration."
    },
    {
-    "path": "docs/fub-crm-spec/api-export/*.json + api-export/README.md (18 files, excludes action-plan-steps/)",
+    "path": "docs/crm-spec/api-export/*.json + api-export/README.md (18 files, excludes action-plan-steps/)",
     "verdict": "dead-delete",
     "reason": "One-time REST export from the now-decommissioned FUB account (stages, customFields, pipelines, actionPlans, users, smartLists, ponds, groups, teams, appointmentTypes/Outcomes, webhooks, plus 5 _sample_*.json schema samples). Verified already fully consumed: supabase/migrations/20260701230000_crm_deal_pipelines.sql hardcodes the exact pipeline/stage rows inline with a comment citing this file as the one-time seed source; the migration is already applied to hosted Supabase. No code reads these JSON files at runtime today. The README itself says 're-pull is impossible once the account is gone' -- it was always meant to be consumed once, not kept as a live reference."
    },
    {
-    "path": "docs/fub-crm-spec/api-export/action-plan-steps/*.json (71 files)",
+    "path": "docs/crm-spec/api-export/action-plan-steps/*.json (71 files)",
     "verdict": "dead-delete",
     "reason": "Raw per-action-plan step dumps (1,070 steps total) from the decommissioned FUB account. Grepped entire repo (.ts/.tsx/.mjs) for 'action-plan-steps' -- zero references anywhere. Pure archive of a retired system."
    },
    {
-    "path": "docs/fub-crm-spec/README.md",
+    "path": "docs/crm-spec/README.md",
     "verdict": "history-delete",
     "reason": "Master index describing the spec's own provenance ('four evidence streams'), a build-status snapshot ('where the in-house build stands today') dated 2026-06-30, now superseded by the completed, signed-off migration."
    },
    {
-    "path": "docs/fub-crm-spec/CAPTURE-CHECKLIST.md",
+    "path": "docs/crm-spec/CAPTURE-CHECKLIST.md",
     "verdict": "history-delete",
     "reason": "A todo-checklist of screenshot/GIF captures needed as of 2026-06-30 ('259 features covered, 67 partial, 193 missing'). All addressed per recordings/README.md, and moot now that the target build is complete."
    },
    {
-    "path": "docs/fub-crm-spec/VERIFICATION.md",
+    "path": "docs/crm-spec/VERIFICATION.md",
     "verdict": "history-delete",
     "reason": "Adversarial-verification audit log across 3 rounds (2026-06-30) scoring how many sampled spec claims held up. An audit-of-past-state, not a rule; the artifact it audited is itself being deleted."
    },
    {
-    "path": "docs/fub-crm-spec/verification-raw.json, verification-raw-round1.json, verification-raw-round2.json",
+    "path": "docs/crm-spec/verification-raw.json, verification-raw-round1.json, verification-raw-round2.json",
     "verdict": "history-delete",
     "reason": "Raw per-claim verifier output backing VERIFICATION.md. Same disposition as the audit doc it supports."
    }
@@ -1722,22 +1722,22 @@
   "durable_rules": [],
   "broken_references": [
    {
-    "doc": "docs/fub-crm-spec/crm-screens.json",
-    "cited": "specRef field values, e.g. \"docs/fub-crm-spec/25-mobile-contact-detail.md\", \"docs/fub-crm-spec/07a-person-detail-sidebar-and-inline-edit.md\" (18 entries)",
+    "doc": "docs/crm-spec/crm-screens.json",
+    "cited": "specRef field values, e.g. \"docs/crm-spec/25-mobile-contact-detail.md\", \"docs/crm-spec/07a-person-detail-sidebar-and-inline-edit.md\" (18 entries)",
     "why_broken": "These are informational citation strings only -- scripts/check-crm-screen-parity.mjs never fs-reads them (confirmed by reading the full script; specRef is only interpolated into console error text). They will dangle once the surrounding .md tree is deleted, but this does NOT break the CI gate since the field is never opened. Whoever executes the deletion should either strip/update the specRef strings to note 'historical, deleted' or leave them as harmless dead citations -- the gate keeps passing either way."
    }
   ],
   "contradictions_noticed": [
-   "docs/fub-crm-spec/21-gap-map-vs-inhouse-crm.md states 'Reporting (13 FUB Reports + Leaderboard) -- Status: Missing... all 13 FUB CRM reports are missing' but current code has app/admin/(protected)/crm/reporting/ with all 13 report routes plus an overview page.",
-   "docs/fub-crm-spec/21-gap-map-vs-inhouse-crm.md states 'Company settings: No crm_company_settings table exists in the schema. No route... Missing entirely' but current code has app/admin/(protected)/crm/settings/company/page.tsx plus registration/ and block-list/ subpages, and docs/DATABASE_SCHEMA_SNAPSHOT.md lists the crm_company_settings table."
+   "docs/crm-spec/21-gap-map-vs-inhouse-crm.md states 'Reporting (13 FUB Reports + Leaderboard) -- Status: Missing... all 13 FUB CRM reports are missing' but current code has app/admin/(protected)/crm/reporting/ with all 13 report routes plus an overview page.",
+   "docs/crm-spec/21-gap-map-vs-inhouse-crm.md states 'Company settings: No crm_company_settings table exists in the schema. No route... Missing entirely' but current code has app/admin/(protected)/crm/settings/company/page.tsx plus registration/ and block-list/ subpages, and docs/DATABASE_SCHEMA_SNAPSHOT.md lists the crm_company_settings table."
   ],
   "delete_recommendation": {
    "files_to_delete": 285,
    "lines_to_delete": 112235,
    "files_to_keep": 22,
    "keep_list": [
-    "docs/fub-crm-spec/crm-screens.json -- read by scripts/check-crm-screen-parity.mjs, wired into ci:gates; deleting breaks the CI build",
-    "docs/fub-crm-spec/_verify/*.png (21 files) -- existsSync-checked by the same script for every status=done screen entry; deleting breaks the CI build"
+    "docs/crm-spec/crm-screens.json -- read by scripts/check-crm-screen-parity.mjs, wired into ci:gates; deleting breaks the CI build",
+    "docs/crm-spec/_verify/*.png (21 files) -- existsSync-checked by the same script for every status=done screen entry; deleting breaks the CI build"
    ]
   }
  },
@@ -1773,7 +1773,7 @@
    {
     "path": "docs/fub-feature-audit/FUB_FEATURE_AUDIT.md",
     "verdict": "duplicate-delete",
-    "reason": "Screen-by-screen catalog of the external FollowUpBoss product's own UI (not our code). Explicitly built as reference for docs/CRM_REPLACEMENT_BLUEPRINT.md and docs/FUB_CRM_FEATURE_SPEC.md (both outside this lane), which already absorbed it.",
+    "reason": "Screen-by-screen catalog of the external inHouseCrm product's own UI (not our code). Explicitly built as reference for docs/CRM_REPLACEMENT_BLUEPRINT.md and docs/FUB_CRM_FEATURE_SPEC.md (both outside this lane), which already absorbed it.",
     "duplicate_of": "docs/FUB_CRM_FEATURE_SPEC.md",
     "lines": 588
    },
@@ -1808,7 +1808,7 @@
    {
     "path": "docs/fub-crm-analysis/batch-01.md through batch-10.md (11 files incl. template)",
     "verdict": "duplicate-delete",
-    "reason": "Raw screen-by-screen transcription of the external FollowUpBoss product's UI (not Ryan Realty code). Confirmed synthesized into docs/FUB_CRM_FEATURE_SPEC.md ('Full per-screen detail: docs/fub-crm-analysis/batch-NN.md' — provenance pointer only, not a live dependency).",
+    "reason": "Raw screen-by-screen transcription of the external inHouseCrm product's UI (not Ryan Realty code). Confirmed synthesized into docs/FUB_CRM_FEATURE_SPEC.md ('Full per-screen detail: docs/fub-crm-analysis/batch-NN.md' — provenance pointer only, not a live dependency).",
     "duplicate_of": "docs/FUB_CRM_FEATURE_SPEC.md",
     "lines": 4890
    },
@@ -1916,7 +1916,7 @@
    {
     "path": "docs/FUB_AUDIT_2026-05-17.md",
     "verdict": "dead-delete",
-    "reason": "Snapshot of the live FollowUpBoss account (users, tags, action plans) as of 2026-05-17. FUB was decommissioned as the system of record 2026-06-24 (confirmed by the SUPERSEDED banner on the sibling doc below and user memory project_crm_replacement_initiative.md / project_twilio_cutover.md). Also cites docs/FUB_CUSTOM_FIELDS.md as describing 16 fields of which zero exist in FUB — a broken reference in a now-irrelevant system.",
+    "reason": "Snapshot of the live inHouseCrm account (users, tags, action plans) as of 2026-05-17. FUB was decommissioned as the system of record 2026-06-24 (confirmed by the SUPERSEDED banner on the sibling doc below and user memory project_crm_replacement_initiative.md / project_twilio_cutover.md). Also cites docs/FUB_CUSTOM_FIELDS.md as describing 16 fields of which zero exist in FUB — a broken reference in a now-irrelevant system.",
     "lines": 558
    },
    {
@@ -1998,7 +1998,7 @@
    {
     "doc": "docs/FUB_AUDIT_2026-05-17.md",
     "cited": "docs/FUB_CUSTOM_FIELDS.md",
-    "why_broken": "The audit itself states the 16 lead-intelligence custom fields documented there (buyer_budget_min, move_timeline, lead_score, lead_tier, is_seller_curious, etc.) do not exist in FollowUpBoss — the actual 10 custom fields are all listing-MLS metadata. FUB_CUSTOM_FIELDS.md still exists in the repo (confirmed) and, since FUB itself was decommissioned 2026-06-24, now describes a system no longer in use at all."
+    "why_broken": "The audit itself states the 16 lead-intelligence custom fields documented there (buyer_budget_min, move_timeline, lead_score, lead_tier, is_seller_curious, etc.) do not exist in inHouseCrm — the actual 10 custom fields are all listing-MLS metadata. FUB_CUSTOM_FIELDS.md still exists in the repo (confirmed) and, since FUB itself was decommissioned 2026-06-24, now describes a system no longer in use at all."
    },
    {
     "doc": "docs/audit/CRM_CONTACT360_BUILDOUT.md",
@@ -2007,7 +2007,7 @@
    }
   ],
   "contradictions_noticed": [
-   "docs/fub-feature-audit/FUB_FEATURE_AUDIT.md (2026-06-25) calls itself both a build-reference AND 'a plain operating manual for the current tool' — but FollowUpBoss was decommissioned as the system of record on 2026-06-24, one day before this doc's capture date, per the SUPERSEDED banner on docs/FUB_LEAD_WORKFLOW_LIVE_AUDIT_2026-05-29.md ('FUB API sending was decommissioned entirely 2026-06-24'). The two dates conflict on exactly when FUB stopped being live infrastructure."
+   "docs/fub-feature-audit/FUB_FEATURE_AUDIT.md (2026-06-25) calls itself both a build-reference AND 'a plain operating manual for the current tool' — but inHouseCrm was decommissioned as the system of record on 2026-06-24, one day before this doc's capture date, per the SUPERSEDED banner on docs/FUB_LEAD_WORKFLOW_LIVE_AUDIT_2026-05-29.md ('FUB API sending was decommissioned entirely 2026-06-24'). The two dates conflict on exactly when FUB stopped being live infrastructure."
   ],
   "delete_recommendation": {
    "files_to_delete": 672,
@@ -2442,7 +2442,7 @@
     "reason": "CLAUDE.md explicitly states 'Canonical platform rule layer lives at social_media_skills/platform-best-practices/SKILL.md.' These five files are a parallel, unregistered platform-playbook set inside marketing_brain_skills/ covering the same ground (GBP, LinkedIn, TikTok, X, YouTube) with no cross-reference reconciling the two locations -- exactly the 'multiples of anything' Matt wants gone."
    },
    {
-    "path": "marketing_brain_skills/tools_registry/REGISTRY.md and marketing_brain_skills/tools_registry/{agentfire-wordpress,apify,classifier,follow-up-boss,ga4,ga4-instrumentation,gbp,gsc,linkedin-api,meta-graph,replicate,resend,spark-mls,supabase,tiktok-api,x-api,youtube-data}/SKILL.md",
+    "path": "marketing_brain_skills/tools_registry/REGISTRY.md and marketing_brain_skills/tools_registry/{agentfire-wordpress,apify,classifier,in-house-crm,ga4,ga4-instrumentation,gbp,gsc,linkedin-api,meta-graph,replicate,resend,spark-mls,supabase,tiktok-api,x-api,youtube-data}/SKILL.md",
     "verdict": "data",
     "lines": 6119,
     "reason": "Zero code references found anywhere in app/, lib/, scripts/ (grep confirmed) -- these are agent-read reference docs, not runtime-loaded machinery. Overlaps substantially with video_production_skills/API_INVENTORY.md, which CLAUDE.md cites as the canonical, verified API-status inventory. Content is inherently tabular (tool/status/endpoint/quota/who-uses-it), belongs as one structured data registry, not 18 near-identical prose files. tools_registry/REGISTRY.md's own 'who uses it' column cites decommissioned producers as active consumers -- see broken_references."

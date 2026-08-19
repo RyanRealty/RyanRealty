@@ -25,7 +25,7 @@ describe('crm email-body', () => {
 })
 
 describe('renderCrmMerge', () => {
-  it('replaces FUB custom field tokens', () => {
+  it('replaces CRM custom field tokens', () => {
     const out = renderCrmMerge('Audit for %customSellerPropertyAddress%', {
       first_name: 'Dana',
       name: 'Dana Felice',

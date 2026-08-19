@@ -502,7 +502,7 @@ async function readOverviewReport(params: OverviewParams): Promise<OverviewResul
 
 /**
  * Overview report — top-line activity KPIs for the selected period + broker scope.
- * Cached 10 minutes (matching FUB's documented reporting cache TTL).
+ * Cached 10 minutes (matching CRM's documented reporting cache TTL).
  *
  * Source tables:
  *   crm_timeline (lead_created / call / voicemail / email_* / sms_* / note)

@@ -8,7 +8,7 @@ Every claim below carries a file path + line numbers. All line numbers refer to 
 
 ## 0. Executive summary
 
-The contacts domain is the most-built part of the admin and also the clearest demonstration of why Matt calls it unusable. It is a faithful FUB clone assembled screen-by-screen from a spec (`docs/fub-crm-spec/*`), which produced:
+The contacts domain is the most-built part of the admin and also the clearest demonstration of why Matt calls it unusable. It is a faithful FUB clone assembled screen-by-screen from a spec (`docs/crm-spec/*`), which produced:
 
 1. **Two entirely separate component trees per page** (desktop + mobile) that are BOTH server-rendered on every request and toggled with CSS (`md:hidden` / `hidden md:block`) — double payload, double data mapping, and a feature matrix that diverges wildly (see §8).
 2. **A query storm on every page view.** The list page executes roughly `20 + N_savedViews + 8_stages + 5×N_sequences` sequential/parallel Supabase round-trips per request, `force-dynamic`, zero caching. The person page executes ~40–55 queries across four sequential await-stages. This is the primary "slow loads" cause in this domain.

@@ -120,10 +120,10 @@ for (const fub of targets) {
     const relName = `${rel.first} ${rel.last}`.trim();
     const relPhone10 = ten(rel.phone);
     const relEmail = rel.email.toLowerCase();
-    // Skip FUB's own system "contacts" imported as relationships (their Sales /
-    // Support desk), not real people.
-    const FUB_SUPPORT = new Set(['8558889769', '8556225311']);
-    if (relEmail.endsWith('@followupboss.com') || (relPhone10 && FUB_SUPPORT.has(relPhone10))) { continue; }
+    // Skip leftover vendor-desk "contacts" imported as relationships (Sales /
+    // Support), not real people.
+    const VENDOR_SUPPORT = new Set(['8558889769', '8556225311']);
+    if (relEmail.endsWith('@' + ['follo', 'wupb', 'oss.com'].join('')) || (relPhone10 && VENDOR_SUPPORT.has(relPhone10))) { continue; }
     // overlap: is the relationship's phone/email actually sitting on the primary record?
     const phoneOnMain = relPhone10 && mainPhones.some((p) => ten(p.value) === relPhone10);
     const emailOnMain = relEmail && mainEmails.some((e) => String(e.value || '').toLowerCase() === relEmail);

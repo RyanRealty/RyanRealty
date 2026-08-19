@@ -11,7 +11,7 @@
  * Null pattern per spec: when Sent = 0 every engagement column renders the
  * em-dash data placeholder (allowed §0 unavailable marker), never 0.
  * "Automations" counts the crm_sequences steps referencing the template (the
- * eye lists them by name); "Action Plans" is the FUB legacy engine — the
+ * eye lists them by name); "Action Plans" is the CRM legacy engine — the
  * in-house CRM runs everything through Automations, so it is honestly 0.
  *
  * Bulk selection powers ONE safe operation — Move to folder — via a

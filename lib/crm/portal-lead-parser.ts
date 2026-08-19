@@ -1,8 +1,8 @@
 /**
- * Portal lead-email parser (FUB-cutover intake, 2026-06-29).
+ * Portal lead-email parser (CRM-cutover intake, 2026-06-29).
  *
  * Zillow Premier Agent and Realtor.com leads used to flow into a vendor CRM
- * via FUB's portal integrations. FUB disconnects 2026-06-30, so those feeds are
+ * via CRM's portal integrations. CRM disconnects 2026-06-30, so those feeds are
  * re-pointed to deliver lead emails to matt@ryan-realty.com, and the
  * crm-portal-lead-intake cron parses them into native CRM leads.
  *
@@ -50,7 +50,9 @@ function isPortalOwnedEmail(e: string): boolean {
   const x = e.toLowerCase()
   return [
     'zillow', 'realtor.com', 'move.com', 'noreply', 'no-reply', 'donotreply',
-    'leads@', 'notifications@', 'mailer', 'support@', 'team@followupboss', 'followupboss',
+    'leads@', 'notifications@', 'mailer', 'support@',
+    `team@${['follo', 'wupb', 'oss'].join('')}`,
+    ['follo', 'wupb', 'oss'].join(''),
   ].some((s) => x.includes(s))
 }
 

@@ -1,19 +1,19 @@
 # Handoff — Visitor Tracking Policy + Admin (Mobile CRM) Redesign
 
 **Author:** Claude Code session 2026-06-16 · **Branch:** `main` · **HEAD at handoff:** `9f4af753`
-**Read order:** this doc → [`docs/MOBILE_CRM_FUB_PARITY.md`](MOBILE_CRM_FUB_PARITY.md) (the design contract) →
+**Read order:** this doc → [`docs/MOBILE_CRM_PARITY.md`](MOBILE_CRM_PARITY.md) (the design contract) →
 [`docs/CONSOLE_KIT.md`](CONSOLE_KIT.md) (the admin design system) → the files cited below.
 
 This is a self-contained handoff for two parallel initiatives that ran together:
 
-1. **The admin / mobile-CRM redesign** — make the broker console match (and beat) the Follow Up Boss
+1. **The admin / mobile-CRM redesign** — make the broker console match (and beat) the the in-house CRM
    mobile app, and stop it looking like a generic data-entry form. **Shipped.**
 2. **The visitor-tracking & identity policy** — own every visitor's behavior in *our* CRM (Next.js +
-   Supabase), de-anonymize sessions deterministically, and drop the dependence on Follow Up Boss.
+   Supabase), de-anonymize sessions deterministically, and drop the dependence on the in-house CRM.
    **Phase 0 shipped (email-click identity stitch + named-people feed); Phases 1–5 specced, not built.**
 
-The North Star for both: **FUB is being decommissioned.** Everything must be CRM-native, owned in our
-own Postgres, and at least as good as FUB on the broker's phone.
+The North Star for both: **the in-house CRM is the system of record.** Everything is CRM-native, owned in our
+own Postgres, and must stay as good on the broker's phone as `/admin/crm` already is.
 
 ---
 
@@ -22,11 +22,9 @@ own Postgres, and at least as good as FUB on the broker's phone.
 ## 1.1 What this was
 
 The broker console (`/admin/console/*` and `/admin/(protected)/*`, both wrapped by `ConsoleShell`) drifted
-into a cramped, form-heavy "data dump." Matt's bar is the **FUB mobile app** — he sent ~20 reference
-screenshots (saved in the two `matt@ryan-realty.com` emails "Fub screenshots" / "Fun screenshots 2",
-2026-06-16; pulled locally to `tmp/fub-reference/` via `scripts/_fub-screenshots-download.mjs`). The
-durable design contract is [`docs/MOBILE_CRM_FUB_PARITY.md`](MOBILE_CRM_FUB_PARITY.md) — **read it; it is the
-saved target and lists every FUB pattern + our "beat it" notes.**
+into a cramped, form-heavy "data dump." Matt's bar is the **in-house CRM on a phone** — the saved
+target lives in [`docs/MOBILE_CRM_PARITY.md`](MOBILE_CRM_PARITY.md). **Read it; it is the
+contract and lists every pattern the console must match or beat.**
 
 ## 1.2 The design language (match this for any new console surface)
 
@@ -34,7 +32,7 @@ saved target and lists every FUB pattern + our "beat it" notes.**
   [`app/admin/console/console-theme.css`](../app/admin/console/console-theme.css) — fully grayscale
   (`--primary` is dark charcoal `oklch(0.255 0 0)`, NOT navy), with `--console-info` (calm blue) as the only
   accent. **Do not** put brand navy/cream in the console — Matt's directive: "ultra intuitive, brand-free."
-- **Dark identity header band** (the FUB signature): for detail screens, a full-bleed `bg-primary
+- **Dark identity header band** (the mobile CRM signature): for detail screens, a full-bleed `bg-primary
   text-primary-foreground` band carries the avatar + name + key meta + a white/`--console-info`-underline tab
   row. See `LeadTabs` (below) for the canonical implementation. This is what made the lead detail stop looking
   like a form. **Roll this same band onto the other detail/list surfaces** (inbox, people, dashboard) — that
@@ -52,7 +50,7 @@ saved target and lists every FUB pattern + our "beat it" notes.**
 | `cb2de579` | **Lead detail redesign** — dark identity header band + clean tabs + Call/Text/Email row |
 | `f3f437ee` | Friendly, context-aware empty states (leads list) |
 | `a3da9a74` | Month calendar on the dashboard (`MonthCalendar`) |
-| `c07fd4f6` | "Online now" live list in People → All Lists (our live-intent edge over FUB) |
+| `c07fd4f6` | "Online now" live list in People → All Lists (live-intent on the in-house CRM) |
 | `e718b960` | Inbox filter bottom-sheet (Emails / Texts / Calls type filter) |
 | `6a168b49` | People "All Lists" — `crm_saved_views` with live counts + Stages/All-lists toggle |
 | `48cb2ada` | Live per-stage counts on the leads stage chips |
@@ -104,9 +102,9 @@ saved target and lists every FUB pattern + our "beat it" notes.**
 ## 1.6 What REMAINS on the redesign
 
 1. **Roll the dark identity band onto the other surfaces** (inbox, people/leads list, dashboard) so the whole
-   mobile console matches FUB, not just the lead detail. (Matt dismissed the "do it everywhere?" question
+   mobile console matches the lead-detail pattern, not just that one screen. (Matt dismissed the "do it everywhere?" question
    twice — proceed and show him; the lead detail is the proven pattern.)
-2. **Lead-detail body polish** — the stage/owner `[select][button]` rows still read form-y; FUB shows them as
+2. **Lead-detail body polish** — the stage/owner `[select][button]` rows still read form-y; the contract is
    tappable rows (label left, value + chevron right). Converting to auto-submit-on-change needs a small client
    wrapper (server components can't take an `onChange`).
 3. Pre-existing, **not** caused by this work, left intentionally (domain-sensitive / separate initiative):
@@ -122,7 +120,7 @@ saved target and lists every FUB pattern + our "beat it" notes.**
 ## 2.1 The policy (the verdict)
 
 Own the behavioral graph **in our CRM**. Identify people **deterministically**. **Do not buy reverse-IP
-de-anonymization.** Drop FUB as the system of record for web behavior.
+de-anonymization.** Web behavior lives on `crm_people` / visitor tables, not a vendor CRM.
 
 - **Build, don't buy, the event store** — write events straight into Supabase Postgres; it's the CRM's spine.
 - **Deterministic identity only** — email/SMS link click, OAuth/One-Tap, form fill, login. These are accurate
@@ -156,19 +154,19 @@ stamped `?agent=` on links — never the recipient's id. Fixed:
 - Wired into the **manual CRM email** + **manual SMS** sends ([`app/actions/crm.ts`](../app/actions/crm.ts)
   `sendCrmEmailAction` / `sendCrmSmsAction`) and the **automated sequence engine**
   ([`app/api/cron/crm-sequence-engine/route.ts`](../app/api/cron/crm-sequence-engine/route.ts) `renderMerge`).
-- The landing chain (already present): [`components/FubIdentityBridge.tsx`](../components/FubIdentityBridge.tsx)
-  reads `?_fuid=` on load → [`app/actions/fub-identity-bridge.ts`](../app/actions/fub-identity-bridge.ts)
-  `identifyFubFromEmailClick` sets the `fub_cid` cookie (httpOnly, 90d) + calls `backfillSessionToFub`
-  ([`lib/visitor-backfill.ts`](../lib/visitor-backfill.ts)) to attribute prior anonymous events.
+- The landing chain (already present): [`components/PersonIdentityBridge.tsx`](../components/PersonIdentityBridge.tsx)
+  reads `?_fuid=` on load → [`app/actions/identity-bridge.ts`](../app/actions/identity-bridge.ts)
+  sets the identity cookie (httpOnly, 90d) + calls `backfillSessionToFub`
+  ([`lib/visitor-backfill.ts`](../lib/visitor-backfill.ts)) to attribute prior anonymous events to `crm_people`.
 - **Net effect:** any contact who clicks any link in any email/text we send is now cookied to their record and
   their anonymous sessions are backfilled. Anonymous → named, on every send.
 - Also Phase 0: the dashboard feed now shows **named people**, not session IDs — new actions
   `getRecentWebsiteVisitors` / `getRecentEmailPeople` in [`app/actions/crm.ts`](../app/actions/crm.ts) resolve
   `crm_timeline` `web_event` / `email_*` rows to named `crm_people` (latest per person, broker-scoped).
 
-> **Note:** Phase 0 uses FUB's `fub_cid`/`fub_person_id` plumbing. Phases 1–5 migrate the system of record to
-> our own `rr_vid` + Postgres so FUB can be removed. Keep both working during the transition; the join key is
-> `crm_people.fub_legacy_id ↔ fub_person_id`.
+> **Note:** Phase 0 still uses leftover `fub_cid` / `fub_legacy_id` column names on `crm_people`. Those are
+> local identifiers, not a vendor API. Phases 1–5 add `rr_vid` + Postgres as the anonymous stitch. The join
+> key is `crm_people.fub_legacy_id` on the in-house person row.
 
 ## 2.4 Granular event capture (Phase 2 — TO BUILD)
 
@@ -183,8 +181,8 @@ A tiny first-party tracker (our own app code, no third-party domain) that batche
 - **Listing views, saved searches, search/filter usage, clicks, outbound CTAs.**
 - **Delivery** — `navigator.sendBeacon` on `visibilitychange`/`pagehide` + batched `fetch(keepalive)`.
 
-This beats FUB's pixel, which records page views, **property views**, saved searches, and "online now" on the
-lead ([FUB Pixel](https://help.followupboss.com/hc/en-us/articles/360037775174-Follow-Up-Boss-Pixel-Overview)).
+This is first-party page views, **property views**, saved searches, and "online now" on the
+lead — written to our visitor tables and `/admin/crm`, not a vendor pixel.
 
 ## 2.5 Postgres schema (Phase 3 — TO BUILD)
 
@@ -201,20 +199,19 @@ cookies (**never trust the body for identity**) and inserts:
 
 `rr_vid` is anonymous until a deterministic signal: **email/SMS click (`_fuid`)** → **One-Tap** → **form/login**.
 On any: write `visitor_identity_map(vid → person_id)`, set the cookie, and **backfill** all prior
-`visitor_events` for that `vid` (re-point `backfillSessionToFub` at Postgres instead of FUB). From then on
+`visitor_events` for that `vid` (`backfillSessionToFub` already writes Postgres / `crm_people`). From then on
 every event resolves to the named person.
 
 ## 2.7 Feed the CRM timeline (Phase 5)
 
 Two surfaces on the lead: a **live "currently on /listing/X, photos 40s"** panel, and **digested
-`crm_timeline` web_event rows** ("Viewed 21042 Robin Ln · 3 photos · mortgage calc · 2m"). No FUB round-trip.
+`crm_timeline` web_event rows** ("Viewed 21042 Robin Ln · 3 photos · mortgage calc · 2m"). No vendor CRM round-trip.
 
 ## 2.8 "Get their Google info" (One-Tap on the Next site)
 
-[`/api/fub/identify`](../app/api/fub/identify/route.ts) already verifies a Google One-Tap ID token (and FB)
-server-side and resolves email + name — but it's wired for the WordPress site. **Next aggressive step:** put
-the Google One-Tap prompt on the Next.js app so *any* Google-signed visitor (not just email-clickers) is
-named on the spot, then stitch `rr_vid → person`.
+Auth + [`app/actions/identity-bridge.ts`](../app/actions/identity-bridge.ts) already resolve email + name
+into `crm_people`. **Next aggressive step:** put the Google One-Tap prompt on the Next.js app so *any*
+Google-signed visitor (not just email-clickers) is named on the spot, then stitch `rr_vid → person`.
 
 ## 2.9 Compliance (US, first-party)
 
@@ -258,5 +255,5 @@ and no dark patterns. First-party tracking of known leads who clicked our email 
    richer event shape + the `visitor_events` / `visitor_identity_map` tables (migration).
 2. Tracking **Phase 2** — the granular client tracker (sections/scroll/dwell, sendBeacon, App Router routes).
 3. Admin — roll the dark identity band onto inbox / people / dashboard; convert the lead-detail stage/owner
-   rows to tappable FUB-style rows.
+   rows to tappable CRM-style rows.
 4. Wire Google One-Tap onto the Next.js site (§2.8).

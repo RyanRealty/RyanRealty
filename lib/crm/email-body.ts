@@ -9,7 +9,7 @@ import { EMAIL_FONT_STACK } from '@/lib/email/brand'
  */
 export type EmailBodyFormat = 'auto' | 'text' | 'html'
 
-/** Detect FUB-style HTML email templates vs plain-text composer bodies. */
+/** Detect CRM-style HTML email templates vs plain-text composer bodies. */
 export function looksLikeHtml(body: string): boolean {
   const t = body.trim()
   return /<\s*(html|div|p|br|table|!doctype|a)\b/i.test(t)

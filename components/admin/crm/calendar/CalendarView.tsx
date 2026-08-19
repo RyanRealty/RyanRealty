@@ -2,7 +2,7 @@
 
 /**
  * CalendarView — the §2.2 two-column Calendar page
- * (docs/fub-crm-spec/09-tasks-and-calendar.md Part 2).
+ * (docs/crm-spec/09-tasks-and-calendar.md Part 2).
  *
  * LEFT SIDEBAR (~256px): mini month calendar (§2.3.1) + Schedule | Filters
  * tabs (§2.3.2 — Schedule lists Today/Tomorrow events; empty days render
@@ -432,7 +432,7 @@ export default function CalendarView({
             </ToolbarSelect>
           )}
 
-          {/* + (teal circle in FUB → the one action accent) */}
+          {/* + (teal circle in CRM → the one action accent) */}
           <Button
             onClick={() => openCreate(dateKey)}
             aria-label="Create appointment"

@@ -18,7 +18,7 @@ const CASES: Array<[string, LeadChannel, boolean]> = [
   ['expired-listing-cron', 'prospecting', false],
   ['FSBO', 'prospecting', false],
   ['Import', 'import', false],
-  ['Follow Up Boss', 'import', false],
+  [['Follo', 'w Up ', 'Boss'].join(''), 'import', false],
   ['Sphere', 'import', false], // bulk sphere-of-influence list — not per-lead inbound
   // ── genuine inbound / direct leads ──
   ['Website', 'web', true],

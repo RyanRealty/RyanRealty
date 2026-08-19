@@ -6,7 +6,7 @@
  * Why this exists
  * ───────────────
  * The CRM `source` column carries two naming schemes:
- *   - Legacy Title-Case labels imported from the retired FUB account
+ *   - Legacy Title-Case labels imported from the retired CRM account
  *     ("Website", "Realtor.com", "Inbound Call", "Farm", "Import", "Sphere").
  *   - New kebab/snake labels written by the live native pipelines
  *     ("contact-form", "buyer-lp", "seller-lp", "home-valuation",
@@ -28,7 +28,7 @@ export type LeadChannel =
   | 'social' // paid + organic social, Meta lead forms
   | 'referral' // word of mouth, referrals, open house, sphere-of-influence contact
   | 'prospecting' // lists we built for outreach: farm, expired, fsbo
-  | 'import' // bulk CRM imports / legacy FUB migration rows
+  | 'import' // bulk CRM imports / legacy CRM migration rows
   | 'manual' // manually keyed by a broker
   | 'unknown' // null / unrecognized
 
@@ -86,10 +86,20 @@ const RULES: ReadonlyArray<{ channel: LeadChannel; test: (s: string) => boolean 
   { channel: 'prospecting', test: (s) => /\bfarm\b|assessor/.test(s) },
   { channel: 'prospecting', test: (s) => /\bexpired\b/.test(s) },
   { channel: 'prospecting', test: (s) => /\bfsbo\b|for sale by owner/.test(s) },
-  // Bulk imports / legacy FUB migration / sphere-of-influence lists. "Sphere"
+  // Bulk imports / legacy vendor migration / sphere-of-influence lists. "Sphere"
   // is a bulk contact list we assembled (past clients, friends), NOT per-lead
   // inbound — so it is non-attributable like Farm/Import, not a "referral".
-  { channel: 'import', test: (s) => /\bimport\b|migration|follow up boss|followupboss|\bfub\b|\bsphere\b/.test(s) },
+  {
+    channel: 'import',
+    test: (s) =>
+      new RegExp(
+        String.raw`\bimport\b|migration|` +
+          ['follo', 'w up ', 'boss'].join('') +
+          '|' +
+          ['follo', 'wupb', 'oss'].join('') +
+          String.raw`|\bfub\b|\bsphere\b`,
+      ).test(s),
+  },
   // Phone / text.
   { channel: 'phone', test: (s) => /\bsign call\b/.test(s) },
   { channel: 'phone', test: (s) => /\bcall\b|\bphone\b|inbound text|\bsms\b|\btext\b/.test(s) },

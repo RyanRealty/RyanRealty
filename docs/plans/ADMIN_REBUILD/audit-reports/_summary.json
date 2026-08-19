@@ -1105,7 +1105,7 @@
     "Operations Revenue panel 'Revenue (30d)' — revenue_events table has zero writers repo-wide",
     "/admin/crm/reporting/overview — orphan: zero inbound links anywhere; the tab strip's Overview points at the hub instead",
     "/dashboard/marketing and /dashboard/marketing/inbox — 1,459-line admin dashboard outside /admin, reachable only from digest-email links, north-star KPI dead",
-    "action-required 'FUB ↗' buttons — deep-link to the decommissioned app.followupboss.com",
+    "action-required 'FUB ↗' buttons — deep-link to the decommissioned retired.invalid",
     "report_viewer role branch in reports/layout.tsx:12 — nav comment confirms no such role exists",
     "crm/health 'Mirror' tile — monitors the decommissioned FUB→crm_* mirror",
     "Duplicate hub tile: 'Closed Deals By Source' card links to lead-sources which has no closed-deal or commission columns (false promise)"

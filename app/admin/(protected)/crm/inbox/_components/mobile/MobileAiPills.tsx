@@ -8,7 +8,7 @@
  * injects it into the compose field — the broker ALWAYS reviews and edits before
  * sending (auto-send of AI content is prohibited, §27 S3 step 6). Custom opens a
  * one-line prompt input. Selected pill = the one admin accent (admin v2 re-skin,
- * P11F — was a navy fill mapped from FUB's purple gradient; the admin blacklists
+ * P11F — was a navy fill mapped from CRM's purple gradient; the admin blacklists
  * the public brand, so the "selected" state now reads through av2-chip's own
  * pressed styling instead).
  */

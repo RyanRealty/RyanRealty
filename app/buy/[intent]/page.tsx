@@ -42,8 +42,8 @@ export default async function BuyLeadIntentPage({ params }: Props) {
   if (!config) notFound()
 
   // Session + identity-bridge reads kept (they pin this route's dynamic
-  // rendering mode); the FUB page-view mirror they fed was deleted with the
-  // FUB decommission — first-party visitor_sessions covers page views now.
+  // rendering mode); the CRM page-view mirror they fed was deleted with the
+  // CRM decommission — first-party visitor_sessions covers page views now.
   await Promise.all([getSession(), getPersonIdFromCookie()])
 
   return <LeadLandingPage config={config} />

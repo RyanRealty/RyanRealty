@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * MobileInboxRow — one §26-A conversation row with FUB swipe actions.
+ * MobileInboxRow — one §26-A conversation row with CRM swipe actions.
  *
  * Anatomy (spec §26 row anatomy, 390pt canvas): unread dot · 40pt avatar ·
  * name + message count · relative timestamp · channel icon + subject line ·

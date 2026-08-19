@@ -2,7 +2,7 @@
 
 /**
  * ColumnChooser — the §8 column chooser flyout of the People list
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md).
+ * (docs/crm-spec/05-people-list-and-bulk-actions.md).
  *
  * Opens in the SAME right-panel slot as the filter panel (PeopleListView swaps
  * the slot content; closing the chooser restores the filter panel — §2 layout

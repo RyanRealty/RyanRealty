@@ -31,9 +31,9 @@ export type ActivityFeedItem = {
   /** Twilio recording for a call/voicemail — drives the inline <audio> player. */
   recordingSid: string | null
   recordingDurationSec: number | null
-  /** True when the row is a FUB-imported message whose body FUB redacted at the
+  /** True when the row is a CRM-imported message whose body CRM redacted at the
    *  API ([CONTENT HIDDEN]). The event is correctly associated to the lead, but
-   *  the content is unavailable until the FUB integration is registered for
+   *  the content is unavailable until the CRM integration is registered for
    *  content access (see scripts/crm-import-fub-comms.mjs). The UI labels these
    *  rather than rendering a blank, so a redacted message never reads as empty. */
   contentHidden: boolean
@@ -54,7 +54,7 @@ const KIND_MAP: Record<string, KindMeta> = {
   // link we texted — a hot engagement signal, shown in activity not the thread.
   sms_click: { category: 'message', direction: 'in', label: 'Text link clicked' },
   email_out: { category: 'email', direction: 'out', label: 'Email sent' },
-  // email_in was missing — inbound FUB/Gmail emails fell through to 'other' and
+  // email_in was missing — inbound CRM/Gmail emails fell through to 'other' and
   // mis-rendered as "Email in". Classify it as an inbound email. (no-drop-off fix)
   email_in: { category: 'email', direction: 'in', label: 'Email received' },
   email: { category: 'email', direction: null, label: 'Email' },
@@ -65,14 +65,14 @@ const KIND_MAP: Record<string, KindMeta> = {
   note: { category: 'note', direction: null, label: 'Note' },
   system: { category: 'system', direction: null, label: 'System update' },
   stage_change: { category: 'milestone', direction: null, label: 'Stage changed' },
-  // lead_created — the "New lead" activity event (FUB-parity). Backfilled for
+  // lead_created — the "New lead" activity event (CRM-parity). Backfilled for
   // every contact from fub_created_at/created_at and written going forward when a
   // lead is first captured, so the global Activity feed has a uniform new-lead row.
   lead_created: { category: 'milestone', direction: 'in', label: 'New lead' },
   home_valuation: { category: 'milestone', direction: null, label: 'Home valuation requested' },
   subscribe_report: { category: 'milestone', direction: null, label: 'Subscribed to a market report' },
   parsed_intent: { category: 'web', direction: null, label: 'Website intent detected' },
-  // web_event was missing — the 14.8K FUB site-activity rows fell through to
+  // web_event was missing — the 14.8K CRM site-activity rows fell through to
   // 'other' and mis-rendered as "Web event". Classify as website activity. (fix)
   web_event: { category: 'web', direction: null, label: 'Website activity' },
 }

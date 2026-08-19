@@ -2,7 +2,7 @@
  * Owner-lookup helpers for the expired-listings workflow.
  *
  * Per Matt's 2026-05-17 expired listings directive (research archived at
- * docs/archive/fub-era/README.md): when a listing goes
+ * lib/crm/send-event.ts): when a listing goes
  * Expired/Withdrawn/Canceled, we need to surface the OWNER so Matt can
  * reach out.
  *
@@ -586,8 +586,8 @@ function buildCountyNotes(
 }
 
 /**
- * Run county records + skip trace first, then optional FUB dedupe match.
- * Never returns early on a weak FUB geo hit without also running enrichment.
+ * Run county records + skip trace first, then optional CRM dedupe match.
+ * Never returns early on a weak CRM geo hit without also running enrichment.
  */
 export async function lookupOwnerForExpiredListing(params: {
   streetAddress: string
@@ -596,7 +596,7 @@ export async function lookupOwnerForExpiredListing(params: {
 }): Promise<OwnerLookupResult> {
   const zip = params.postalCode?.trim().slice(0, 5) || undefined
 
-  // FUB dedupe (parallel — do not short-circuit enrichment on a geo hit).
+  // CRM dedupe (parallel — do not short-circuit enrichment on a geo hit).
   const fubMatchPromise = fubAddressMatch(params.streetAddress, params.city)
 
   // Strategy 1 (canonical): Deschutes County assessor + BatchData skip trace.
@@ -686,7 +686,7 @@ export async function lookupOwnerForExpiredListing(params: {
     return result
   }
 
-  // Strategy 3: FUB address match only (existing person, no fresh contact).
+  // Strategy 3: CRM address match only (existing person, no fresh contact).
   const fubMatch = await fubMatchPromise
   if (fubMatch) {
     return {
@@ -699,6 +699,6 @@ export async function lookupOwnerForExpiredListing(params: {
   return {
     status: 'pending',
     notes:
-      'No county owner match, no skip-trace contact, and no FUB address match. Manual skiptrace required. Confirm BATCHDATA_API_KEY is set on Vercel production.',
+      'No county owner match, no skip-trace contact, and no CRM address match. Manual skiptrace required. Confirm BATCHDATA_API_KEY is set on Vercel production.',
   }
 }

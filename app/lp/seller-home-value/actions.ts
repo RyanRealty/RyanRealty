@@ -9,7 +9,7 @@ import {
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
-import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
+import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/lead-origin-note'
 import { createCmaRequest } from '@/lib/cma-request'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
@@ -60,7 +60,7 @@ export type SellerLPSubmission = {
    * 'list-now-lp' — sell-your-home BOFU LP (high listing intent)
    */
   source?: 'seller-lp' | 'list-now-lp'
-  /** Hosting page path ('/sell') for FUB sourceUrl attribution. Defaults to the LP path. */
+  /** Hosting page path ('/sell') for CRM sourceUrl attribution. Defaults to the LP path. */
   pagePath?: string
   /** Optional "About your home" details the seller can add to sharpen the CMA. */
   homeDetails?: SellerHomeDetails
@@ -191,7 +191,7 @@ async function recordSellerAssignment(params: {
 /**
  * Submit the dedicated seller landing page form.
  *
- * Seller LP intake (archive: docs/archive/fub-era/README.md; live: lib/crm/enroll.ts):
+ * Seller LP intake (archive: lib/crm/send-event.ts; live: lib/crm/enroll.ts):
  *  1. Resolve or create CRM person (email match > cookie > new)
  *  2. Round-robin assign to Matt or Rebecca via public.marketing_assignments
  *  3. Apply canonical kebab-case namespaced tags:
@@ -202,8 +202,8 @@ async function recordSellerAssignment(params: {
  *  7. Create 5-min realtime task for hot leads
  *
  * Downstream: canonicallyTagLead applies `audience:seller` and the native
- * CRM auto-enrolls the lead in its seller sequence (FUB decommissioned
- * 2026-06-24; the old FUB action-plan + pause-on-reply cron are gone —
+ * CRM auto-enrolls the lead in its seller sequence (CRM decommissioned
+ * 2026-06-24; the old CRM action-plan + pause-on-reply cron are gone —
  * pause-on-reply now lives in the native sequence engine).
  */
 export async function submitSellerLPForm(submission: SellerLPSubmission): Promise<SellerLPResult> {
@@ -219,11 +219,11 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     const isListNowLp = lpSource === 'list-now-lp'
     const { classification, tierTag } = classifyTimeline(timeline)
 
-    // ─── Inbound attribution UTMs → FUB sourceUrl ──────────────────────────
-    // FUB's /v1/people API exposes sourceUrl but NOT utmContent/utmCampaign
+    // ─── Inbound attribution UTMs → CRM sourceUrl ──────────────────────────
+    // CRM's /v1/people API exposes sourceUrl but NOT utmContent/utmCampaign
     // (verified 2026-06-08). So the ONLY way a published social post attributes
     // a seller lead back to its marketing_brain_actions row is to carry the utm
-    // params INTO the FUB sourceUrl. The seller-lead-attribution cron parses
+    // params INTO the CRM sourceUrl. The seller-lead-attribution cron parses
     // utm_content (= the action_id) out of sourceUrl and increments
     // content_performance.north_star_attributed_seller_leads. Without this the
     // north-star metric can never move off zero.
@@ -256,7 +256,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     }
 
     // ─── Resolve a pre-known person (identity-bridge cookie only) ──────────
-    // The old FUB findPersonByEmail pre-lookup was a dead no-op after the
+    // The old CRM findPersonByEmail pre-lookup was a dead no-op after the
     // 2026-06-24 decommission and was deleted — sendEvent below resolves the
     // native person by email (ensureNativeLead dedupes email-first).
     let fubPersonId: number | null = null
@@ -280,7 +280,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // ─── Address parsing for downstream property matching ──────────────────
     const parsed = parseAddress(rawAddress)
 
-    // ─── Round-robin broker assignment (decided before FUB writes) ─────────
+    // ─── Round-robin broker assignment (decided before CRM writes) ─────────
     const assignment = await assignSellerLead(classification)
 
     // ─── Optional: persist the valuation request row ───────────────────────
@@ -308,7 +308,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       }
     }
 
-    // ─── FUB Seller Inquiry event ─────────────────────────────────────────
+    // ─── CRM Seller Inquiry event ─────────────────────────────────────────
     const firstName = name.split(/\s+/)[0] || undefined
     const lastName = name.split(/\s+/).slice(1).join(' ') || undefined
 
@@ -334,8 +334,8 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         state: parsed.state ?? undefined,
         code: parsed.postalCode ?? undefined,
       },
-      // Stamp the structured FUB campaign object from the captured origin UTMs so
-      // marketing attribution lands on the event (CRM_INTEGRATION #2). FUB requires
+      // Stamp the structured CRM campaign object from the captured origin UTMs so
+      // marketing attribution lands on the event (CRM_INTEGRATION #2). CRM requires
       // the campaign.source subfield, so only send when utm_source is present.
       campaign: originUtmSource
         ? {
@@ -351,7 +351,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       console.warn('[seller-lp] native capture failed:', eventResult.error)
     }
 
-    // ─── Resolve the native CRM person id (post-FUB cutover) ───────────────
+    // ─── Resolve the native CRM person id (post-CRM cutover) ───────────────
     // sendEvent now captures natively (crm_people) and returns the personId.
     // That is the working id for ALL downstream enrichment.
     if (eventResult.ok && eventResult.personId) {
@@ -381,7 +381,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     }
 
     // ─── Anonymous-to-known backfill ─────────────────────────────────────────
-    // A form submit is a definite identification: we now have email + a FUB
+    // A form submit is a definite identification: we now have email + a CRM
     // person id. If the client passed its rr_session_id, stamp the first-party
     // visitor_sessions row (identified_at + fub_person_id) and replay all prior
     // anonymous visitor_events for this browser into the CRM as Viewed Property /
@@ -400,15 +400,15 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // ─── Compliance gate ───────────────────────────────────────────────────
     // If this person carries do_not_email / Bounced / Unsubscribed /
     // compliance:hard-stop, DO NOT apply audience:seller — that tag triggers
-    // the FUB automation rule which would enroll them in the action plan and
-    // start blasting emails. Hard-stop gate: docs/archive/fub-era/README.md.
+    // the CRM automation rule which would enroll them in the action plan and
+    // start blasting emails. Hard-stop gate: lib/crm/send-event.ts.
     const hardStopped = fubPersonId ? await isHardStopped(fubPersonId) : false
     if (hardStopped) {
       console.warn(`[seller-lp] person ${fubPersonId} is compliance hard-stopped, skipping workflow enrollment`)
     }
 
     // ─── Native enrichment: tags + broker + custom fields + origin note ────
-    // The in-house replacement for the dead FUB enrichment chain. Writes
+    // The in-house replacement for the dead CRM enrichment chain. Writes
     // straight to crm_people (tags union, custom jsonb, assigned_broker) and
     // crm_timeline (origin note) via the DAL.
     if (fubPersonId && !hardStopped) {

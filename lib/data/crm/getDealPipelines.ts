@@ -47,7 +47,7 @@ async function _getDealPipelines(): Promise<BoardPipeline[]> {
   const stages = stagesRes.data ?? []
 
   if (pipes.length === 0) {
-    // Fallback: tables unseeded/unreachable — degrade to the static FUB mirror
+    // Fallback: tables unseeded/unreachable — degrade to the static CRM mirror
     // so the board still renders its columns.
     return DEAL_PIPELINES.map((p, i) => ({
       id: p.id,

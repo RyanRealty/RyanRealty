@@ -93,8 +93,8 @@ export const MV_STALE_REFRESH_HOURS = 2
  * Evaluate every CRM health rule against a snapshot. Returns the alarms that are
  * currently firing — an empty list means every vital is healthy. Pure and total.
  *
- * (FUB mirror + delta-sync rules retired at the cutover 2026-06-24 — the in-house
- * CRM is now the lead system of record; there is no FUB sync to monitor.)
+ * (CRM mirror + delta-sync rules retired at the cutover 2026-06-24 — the in-house
+ * CRM is now the lead system of record; there is no CRM sync to monitor.)
  */
 export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAlarm[] } {
   const alarms: HealthAlarm[] = []
@@ -213,4 +213,4 @@ function formatHours(hours: number): string {
   const rounded = Math.round(hours * 10) / 10
   return `${rounded} ${rounded === 1 ? 'hour' : 'hours'}`
 }
-// (formatMinutes + the delta-stale/mirror rules removed at the FUB cutover 2026-06-24.)
+// (formatMinutes + the delta-stale/mirror rules removed at the CRM cutover 2026-06-24.)

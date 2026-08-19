@@ -2,7 +2,7 @@
 
 /**
  * §07 person-detail-desktop parity actions (CRM_BUILD_MISSION screen:
- * person-detail-desktop, spec docs/fub-crm-spec/07a + 07b + 07c).
+ * person-detail-desktop, spec docs/crm-spec/07a + 07b + 07c).
  *
  *   - updatePersonFieldAction   — inline-edit save for the left-sidebar scalar
  *                                 fields (price / timeframe / background /

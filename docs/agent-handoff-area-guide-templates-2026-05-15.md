@@ -131,7 +131,7 @@ The first three are "area pages" with the same data spine but different scope. T
 | OpenAI / Anthropic | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Generating area descriptions when `subdivision_descriptions` is empty. |
 | Replicate | `REPLICATE_API_TOKEN` | AI imagery generation for area hero shots when no real photo exists. |
 | ElevenLabs | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` | Audio narration of area summaries (Victoria voice, locked). |
-| Follow Up Boss | `FOLLOWUPBOSS_API_KEY` | Lead capture from area-page CTAs. |
+| the in-house CRM | `UNUSED_VENDOR_CRM_KEY` | Lead capture from area-page CTAs. |
 | Google service account | `GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL`, `..._PRIVATE_KEY`, `..._SUBJECT` | Gmail send + Search Console. Use for "alert me when new listings post" subscriptions. |
 
 ### MISSING data sources — gaps you'll need to fill

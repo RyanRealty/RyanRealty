@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * AutomationsListView — the §12.2 Automations list (FUB /2/automations/v2),
+ * AutomationsListView — the §12.2 Automations list (CRM /2/automations/v2),
  * re-skinned to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
  *
  * 11F: migrated off shadcn (Table/Dialog/DropdownMenu/Select/Tooltip/Avatar/
@@ -9,8 +9,8 @@
  * PRESENTATION ONLY — every prop, callback, computation, sort/filter default
  * and user-facing string carries over unchanged.
  *
- * Spec: docs/fub-crm-spec/12-action-plans-and-automations.md §12.2 + the
- * pixel reference docs/fub-crm-spec/screens/screen-34.md:
+ * Spec: docs/crm-spec/12-action-plans-and-automations.md §12.2 + the
+ * pixel reference docs/crm-spec/screens/screen-34.md:
  *   - Header: "Automations" + search + Create Folder (quiet) +
  *     Create Automation (primary → name dialog → routes to the visual editor).
  *   - Folder section: "{N} Folder(s)" label + folder cards ("My Automations /

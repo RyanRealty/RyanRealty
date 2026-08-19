@@ -93,7 +93,7 @@ describe('groupAndFormat', () => {
     expect(groups[0].rows.map((r) => r.key)).toEqual(['present'])
   })
 
-  it('omits an empty typed field on the person card (populated-only, FUB parity)', () => {
+  it('omits an empty typed field on the person card (populated-only, CRM parity)', () => {
     // A typed field with no value for this contact is dropped, not rendered as
     // an em-dash — the card shows only fields that actually have data.
     const defs = [
@@ -127,7 +127,7 @@ describe('groupAndFormat', () => {
 
   // ── Fallback rendering: populated keys with NO definition (the regression) ──
   it('renders populated custom keys that have NO definition (the "just names" fix)', () => {
-    // The real FUB enrichment bag: custom-prefixed keys the registry never declared.
+    // The real CRM enrichment bag: custom-prefixed keys the registry never declared.
     const custom = {
       customYearBuilt: '1977',
       customSubdivision: 'Deschutes RiverWoods',

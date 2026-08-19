@@ -2,11 +2,11 @@
  * Bulk handlers: crm:set-source / crm:set-timeframe / crm:set-lender /
  * crm:assign-pond — the §14.3 single-column mass updates (Update Source,
  * Update Timeframe, Assign Lender, Assign Ponds) from
- * docs/fub-crm-spec/05-people-list-and-bulk-actions.md.
+ * docs/crm-spec/05-people-list-and-bulk-actions.md.
  *
  * One factory builds each handler: validate the submitted value, update the
  * single crm_people column for every id in the chunk, and write a per-person
- * crm_timeline audit row. Per the FUB architectural rule replicated in §14.3,
+ * crm_timeline audit row. Per the CRM architectural rule replicated in §14.3,
  * NO automation triggers fire from these paths (they never touch the
  * automation-rule engine — plain column updates + audit rows only).
  *

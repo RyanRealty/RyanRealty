@@ -50,7 +50,7 @@ export type SellerLPFormProps = {
    */
   formId?: string
   /**
-   * Site path of the page hosting this form ('/sell'). Flows into the FUB
+   * Site path of the page hosting this form ('/sell'). Flows into the CRM
    * sourceUrl so leads attribute to the page they converted on. Defaults to
    * the seller LP path server-side when omitted.
    */

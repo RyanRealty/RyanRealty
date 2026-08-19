@@ -21,7 +21,7 @@
  *   'stop_other_plans'  no value required — pauses every OTHER running enrollment
  *                       for this contact (except the current one). Useful as a
  *                       guard step to prevent two drip sequences competing for
- *                       the same person. FUB parity: "Pause All Other Action Plans".
+ *                       the same person. CRM parity: "Pause All Other Action Plans".
  *
  * v2 conditions node (optional, recursive):
  *   { type: 'condition', field, op, value, truePath: Step[], falsePath: Step[] }

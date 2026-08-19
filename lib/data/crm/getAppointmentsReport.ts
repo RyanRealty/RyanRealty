@@ -8,11 +8,11 @@ export type { DatePreset } from './getAgentActivityReport'
 
 // ── INFERRED REPORT ───────────────────────────────────────────────────────────
 //
-// FUB description (hub page): "See a list of appointments & outcomes with
+// CRM description (hub page): "See a list of appointments & outcomes with
 // details on lead source and agent."
 //
-// No dedicated FUB screen was captured for this report. Layout and KPI set are
-// inferred from the FUB hub description + standard FUB Appointments report
+// No dedicated CRM screen was captured for this report. Layout and KPI set are
+// inferred from the CRM hub description + standard CRM Appointments report
 // conventions (total / set / by-outcome breakdown, detail list with date, person,
 // agent, type, outcome, lead source).
 //
@@ -203,7 +203,7 @@ async function readAppointmentsReport(params: AppointmentsParams): Promise<Appoi
 
   // 4. Detail rows — up to 500 most-recent appointments in scope.
   //    Join crm_people for name + source. Outcome + type resolved from lookup maps.
-  //    Ordered newest-first to mirror FUB's Appointments list default.
+  //    Ordered newest-first to mirror CRM's Appointments list default.
   const { data: apptRows, error: apptError } = await sb
     .from('crm_appointments')
     .select(
@@ -298,11 +298,11 @@ async function readAppointmentsReport(params: AppointmentsParams): Promise<Appoi
  * Appointments report data — list of appointments with outcome, type, lead
  * source, and per-period KPI totals.
  *
- * INFERRED: No dedicated FUB screen was captured. Report shape is inferred
- * from the FUB hub description ("See a list of appointments & outcomes with
- * details on lead source and agent.") + standard FUB Appointments conventions.
+ * INFERRED: No dedicated CRM screen was captured. Report shape is inferred
+ * from the CRM hub description ("See a list of appointments & outcomes with
+ * details on lead source and agent.") + standard CRM Appointments conventions.
  *
- * Cached 10 minutes to match FUB's documented reporting cache TTL.
+ * Cached 10 minutes to match CRM's documented reporting cache TTL.
  * Cache is keyed on filter params so different combos get separate entries.
  *
  * Source tables:
@@ -316,7 +316,7 @@ async function readAppointmentsReport(params: AppointmentsParams): Promise<Appoi
  *   - byOutcome uses the 500-row detail fetch, not dedicated COUNT queries.
  *     Accurate at Ryan Realty's appointment volume (<500/month typical);
  *     add per-outcome COUNT('exact',head) queries if volume grows.
- *   - "Set" = has a linked person_id. FUB's definition may differ slightly
+ *   - "Set" = has a linked person_id. CRM's definition may differ slightly
  *     (e.g. requires a confirmed invite_sent); tracked as a V1 approximation.
  */
 export async function getAppointmentsReport(

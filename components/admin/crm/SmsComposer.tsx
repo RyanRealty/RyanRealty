@@ -245,7 +245,7 @@ export function SmsComposer(props: {
 
       <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
 
-      {/* FUB chat input bar: insert-field · paperclip · message · round send arrow. */}
+      {/* CRM chat input bar: insert-field · paperclip · message · round send arrow. */}
       <div
         className="flex items-end gap-1.5 rounded-3xl py-1.5 pl-1.5 pr-1.5"
         style={{ border: '1px solid var(--a-border)', background: 'var(--a-bg)' }}

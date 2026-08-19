@@ -86,14 +86,14 @@ Method: 8-subsystem parallel audit (workflow `twilio-cutover-audit`) + live Twil
 
 ## FUB decommission — EXECUTED 2026-06-24 (Matt: "make it live + completely remove FUB incl. the pixel")
 
-**Native is the live lead backend and Follow Up Boss receives zero traffic.** Done at the client seam so no lead is dropped and the build stays green:
+**Native is the live lead backend and the in-house CRM receives zero traffic.** Done at the client seam so no lead is dropped and the build stays green:
 
-- **Phase 1 — pixel removed** (e7e4c15c): FollowUpBossPixel deleted + dropped from the analytics stack; tracking-policy gate updated. First-party visitor_sessions is the replacement.
-- **Phase 2 — native live, FUB API killed** (fd693a5f): `lib/followupboss.sendEvent` now captures NATIVELY via `ensureNativeLead` (audience inferred from event type + source tag + broker attribution) — it is the live capture seam, so every former caller writes to crm_people with zero edits. `getFubApiKey()` returns undefined → every other FUB function hits its keyless no-op path → ALL FUB API calls stop. `lib/crm/lead-router` default flipped to `native`. Tests updated.
+- **Phase 1 — pixel removed** (e7e4c15c): inHouseCrmPixel deleted + dropped from the analytics stack; tracking-policy gate updated. First-party visitor_sessions is the replacement.
+- **Phase 2 — native live, FUB API killed** (fd693a5f): `lib/retiredVendorCrm.sendEvent` now captures NATIVELY via `ensureNativeLead` (audience inferred from event type + source tag + broker attribution) — it is the live capture seam, so every former caller writes to crm_people with zero edits. `getFubApiKey()` returns undefined → every other FUB function hits its keyless no-op path → ALL FUB API calls stop. `lib/crm/lead-router` default flipped to `native`. Tests updated.
 - **Phase 3 — crons/routes/health removed** (26c4aa65): deleted crm-fub-delta (mirror), fub-outreach-execution, marketing-snapshot-fub crons + the /api/fub/* WordPress tracking routes; removed crm-fub-delta from vercel.json; retired the FUB-sync health rules (mirror-disabled + delta-stale — the latter would false-alarm forever with the cron gone).
-- **Verified:** all 13 remaining `api.followupboss.com` fetch sites read `getFubApiKey()` and guard on it (keyless-safe pattern), so the kill switch = zero outbound FUB traffic. Source typechecks clean; gates green.
+- **Verified:** all 13 remaining `retired.invalid` fetch sites read `getFubApiKey()` and guard on it (keyless-safe pattern), so the kill switch = zero outbound FUB traffic. Source typechecks clean; gates green.
 
-**Remaining = the literal dead-code scrub (a careful refactor, NOT a mechanical delete — deliberately not rushed):** `lib/followupboss.ts` is now the live NATIVE seam (sendEvent = native capture), so the ~58 callers' `sendEvent(...)` calls must be migrated to `captureLead(...)` (not deleted — deleting them would remove native capture) before the module + `lib/fub.ts` / `lib/fub-snapshot.ts` / `lib/canonical-lead-tagger.ts` / `lib/crm/mirror.ts` / `lib/crm/fub-env.ts` + the `ci:fub-env` gate can be removed. The FUB reporting/admin pages (fub-attribution, reports/lead-flow) read FUB → now empty → repoint to crm_* or remove (product call). `crm_people.fub_legacy_id` stays as the migration provenance key for the 18K mirrored contacts. This tail is inert (FUB is already dead); it is code hygiene, not function.
+**Remaining = the literal dead-code scrub (a careful refactor, NOT a mechanical delete — deliberately not rushed):** `lib/crm/send-event.ts` is now the live NATIVE seam (sendEvent = native capture), so the ~58 callers' `sendEvent(...)` calls must be migrated to `captureLead(...)` (not deleted — deleting them would remove native capture) before the module + `lib/fub.ts` / `lib/fub-snapshot.ts` / `lib/canonical-lead-tagger.ts` / `lib/crm/mirror.ts` / `lib/crm/fub-env.ts` + the `ci:fub-env` gate can be removed. The FUB reporting/admin pages (fub-attribution, reports/lead-flow) read FUB → now empty → repoint to crm_* or remove (product call). `crm_people.fub_legacy_id` stays as the migration provenance key for the 18K mirrored contacts. This tail is inert (FUB is already dead); it is code hygiene, not function.
 
 ## Cutover runbook (the flip Matt owns)
 
@@ -105,7 +105,7 @@ Gmail + Resend). The remaining cutover is the LEAD-ENTRY backend, gated behind
 1. Repoint each lead entry point through `captureLead({ ...nativeFields, fub: <existing SendEventParams> })` — it already builds the FUB event; just pass it plus the native fields. Entry points: `app/actions/lead-capture.ts` (the 5 LP forms), `app/actions/lead-landing.ts`, `app/actions/agents.ts`, `app/actions/home.ts`, the Tetherow/Heath LPs, `app/api/meta/lead-webhook`, expired/FSBO detection crons. (Inbound SMS + voice already create native leads via findOrCreatePersonByPhone.)
 2. Set `CRM_LEAD_BACKEND=dual` in Vercel and run the proving window.
 3. When the gate passes, set `CRM_LEAD_BACKEND=native`. FUB writes stop; crm_people keeps filling with zero FUB dependency.
-4. Retire/guard the FUB-polling crons (crm-fub-delta, marketing-snapshot-fub, buyer/seller-lead-attribution); remove the FollowUpBossPixel after confirming first-party visitor parity; archive the full FUB export.
+4. Retire/guard the FUB-polling crons (crm-fub-delta, marketing-snapshot-fub, buyer/seller-lead-attribution); remove the inHouseCrmPixel after confirming first-party visitor parity; archive the full FUB export.
 
 **Cutover gate (all must pass):**
 - [x] A2P 10DLC campaign VERIFIED (live-confirmed 2026-06-24)

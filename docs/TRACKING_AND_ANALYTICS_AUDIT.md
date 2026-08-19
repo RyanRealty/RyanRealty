@@ -67,23 +67,23 @@ This doc reflects what is **in the code** and how to **test** each piece. It doe
 
 ---
 
-## 5. Follow Up Boss (FUB)
+## 5. In-house CRM (`crm_people`)
 
 | Aspect | Status | Details |
 |--------|--------|--------|
-| **Auth** | ✅ Used | `lib/followupboss.ts` uses `FOLLOWUPBOSS_API_KEY` (server-side). |
+| **Auth** | ✅ Used | `lib/crm/send-event.ts` writes `public.crm_people` via `ensureNativeLead`. |
 | **Registration (sign-in)** | ✅ Yes | `trackSignedInUser()` called from `app/auth/callback/route.ts` and auth actions after Google sign-in. |
-| **Viewed Page** | ✅ Yes | `trackPageView()` in `lib/followupboss.ts`; called from `app/search/[...slug]/page.tsx` for city/subdivision pages with `user` or `fubPersonId` from cookie. |
+| **Viewed Page** | ✅ Yes | `trackPageView()` in `lib/crm/send-event.ts`; called from `app/search/[...slug]/page.tsx` for city/subdivision pages with `user` or person id from cookie. |
 | **Viewed Property (listing page)** | ✅ Yes | `trackListingView()` called from `app/listing/[listingKey]/page.tsx` when `session?.user?.email` exists. |
-| **Viewed Property (tile click)** | ⚠️ Available, not wired | `trackListingTileClick()` exists in `lib/followupboss.ts` but is not called from `ListingCard` or elsewhere. Listing page view is sent; card clicks are not. |
-| **FUB identity bridge** | ✅ Yes | `FubIdentityBridge` in layout; reads `_fuid` (or custom param) from URL, calls `identifyFubFromEmailClick`, sets `fub_cid` cookie, strips param. Search page uses `getFubPersonIdFromCookie()` for anonymous “Viewed Page.” |
+| **Viewed Property (tile click)** | ⚠️ Available, not wired | `trackListingTileClick()` exists in `lib/crm/send-event.ts` but is not called from `ListingCard` or elsewhere. Listing page view is sent; card clicks are not. |
+| **Identity bridge** | ✅ Yes | `PersonIdentityBridge` in layout; reads `_pid` / `_fuid` from URL, calls `identifyPersonFromEmailClick`, sets the identity cookie, strips param. |
 
 **How to verify**
 
-- **Registration:** Sign in with Google → in FUB, confirm the person is created/updated and “Registration” (or equivalent) appears.
-- **Viewed Page:** While signed in (or with `_fuid` in URL and cookie set), open a city or subdivision search page → FUB should show “Viewed Page.”
-- **Viewed Property:** While signed in, open a listing detail page → FUB should show “Viewed Property.” (Anonymous users do not currently send “Viewed Property” from the listing page; only signed-in users do.)
-- **Email-click ID:** Visit with `?_fuid=123` (replace with real FUB person ID) → cookie `fub_cid` should be set and param removed from URL; subsequent “Viewed Page” from search should attach to that person.
+- **Registration:** Sign in with Google → open `/admin/crm` and confirm the person row plus a Registration timeline event.
+- **Viewed Page:** While signed in (or with `_pid` in the URL and cookie set), open a city or subdivision search page → the person timeline should show “Viewed Page.”
+- **Viewed Property:** While signed in, open a listing detail page → the person timeline should show “Viewed Property.” (Anonymous users do not currently send “Viewed Property” from the listing page; only signed-in users do.)
+- **Email-click ID:** Visit with `?_pid=<crm_people.id>` → the identity cookie should be set and the param removed from the URL; later “Viewed Page” events attach to that person.
 
 ---
 

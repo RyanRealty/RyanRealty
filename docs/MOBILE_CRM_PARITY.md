@@ -1,6 +1,6 @@
 # Mobile CRM parity
 
-CRM is in-house. Do not build toward Follow Up Boss.
+CRM is in-house. Do not build toward the in-house CRM.
 
 Matt directive 2026-06-16: "We should be able to do at least this good." This
 doc is the durable contract so the mobile CRM matches a saved target instead

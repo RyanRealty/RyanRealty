@@ -1,6 +1,6 @@
 /**
  * MobileBranch — the < md inbox surface (server component), split out of the
- * inbox page for the file-size budget. Renders the §26 FUB-iOS structure:
+ * inbox page for the file-size budget. Renders the §26 CRM-iOS structure:
  *
  *   - open conversation → MobileThread (26-E email detail / 26-F/26-I SMS
  *     bubbles) as a full-screen pushed view, with the §27 compose + call +

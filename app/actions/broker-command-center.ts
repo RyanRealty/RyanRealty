@@ -133,7 +133,7 @@ export async function getBrokerCommandCenterData(
   // Time anchors, hoisted above the concurrent kickoff (tasks query + the
   // tasksDue mapping + appointments window all read them).
   // Stale floor: a task more than a month past due is almost never real — it is
-  // FUB import cruft (e.g. "add automation tag", due months ago). Hide it from
+  // CRM import cruft (e.g. "add automation tag", due months ago). Hide it from
   // the action pile so the dashboard surfaces only tasks a broker would
   // actually act on today. Matt directive 2026-06-15.
   const now = new Date()

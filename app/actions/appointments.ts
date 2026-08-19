@@ -38,7 +38,7 @@ function isBrokerSlug(v: string): v is CrmBrokerSlug {
  * Browsers emit "2026-07-04T09:00" from datetime-local inputs; Postgres needs
  * a full timestamptz. We treat the value as UTC (server is UTC, admins are
  * Pacific time but the calendar displays UTC labels — consistent with how
- * Google Calendar / FUB handle it for a single-timezone brokerage).
+ * Google Calendar / CRM handle it for a single-timezone brokerage).
  */
 function toTimestamptz(raw: string): string {
   if (!raw) throw new Error('Timestamp is required')
@@ -52,7 +52,7 @@ function toTimestamptz(raw: string): string {
 /**
  * Send the §2.11 invitation email to each contact invitee's PRIMARY email
  * (secondary emails excluded, per spec), from the assigned broker's own Gmail
- * mailbox, suppression-checked per recipient. Text reminders (the FUB
+ * mailbox, suppression-checked per recipient. Text reminders (the CRM
  * Power-Up) are deliberately not implemented — the modal copy says so.
  * Returns the number of invitations actually sent.
  */

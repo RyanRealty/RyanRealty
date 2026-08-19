@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * Person-detail modals (spec docs/fub-crm-spec/07a + 07b + 07c):
+ * Person-detail modals (spec docs/crm-spec/07a + 07b + 07c):
  *
  *   EditPhonesDialog      — §07a 3.1.2 / §7c.6 "Edit Phone Numbers": rows of
  *                           Phone Number · Label (Mobile/Home/Work/Other/Fax) ·

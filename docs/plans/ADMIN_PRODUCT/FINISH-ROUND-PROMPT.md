@@ -103,7 +103,7 @@ is live.
   search via `crm_contact_points` two-step with digit-normalized phones.
 - Phones in contact points are stored digits-only/E.164.
 - FUB-parity screens that a roll retires: mark `status:"superseded"` with a
-  `supersededBy` pointer in `docs/fub-crm-spec/crm-screens.json`.
+  `supersededBy` pointer in `docs/crm-spec/crm-screens.json`.
 - New DAL reads: refresh via `node scripts/check-data-access.mjs --refresh`
   and commit both generated docs.
 - Alert deep links still target `/admin/crm/[id]` — repointing them to

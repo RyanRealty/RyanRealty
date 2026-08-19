@@ -64,8 +64,8 @@ export const metadata: Metadata = {
 
 export default async function ContactPage({ searchParams }: PageProps) {
   // Session + identity-bridge reads kept (they pin this route's dynamic
-  // rendering mode); the FUB page-view mirror they fed was deleted with the
-  // FUB decommission. First-party visitor_sessions covers page views now.
+  // rendering mode); the CRM page-view mirror they fed was deleted with the
+  // CRM decommission. First-party visitor_sessions covers page views now.
   const [params, pageContent, brokers] = await Promise.all([
     searchParams,
     getPageContent('contact'),

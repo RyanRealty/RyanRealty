@@ -1,5 +1,5 @@
 /**
- * INFERRED report — no dedicated FUB screen was observed for this view. Built
+ * INFERRED report — no dedicated CRM screen was observed for this view. Built
  * to the described "Call Logs" feature: a chronological, broker-scoped,
  * paginated list of individual inbound calls and voicemails with recording
  * playback and transcript links.

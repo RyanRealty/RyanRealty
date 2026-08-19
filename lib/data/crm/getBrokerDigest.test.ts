@@ -24,9 +24,9 @@ function baseRows(over: Partial<BrokerDigestRows> = {}): BrokerDigestRows {
 
 describe('getBrokerDigest pure helpers (10.4)', () => {
   describe('crmContactUrl', () => {
-    it('builds the CRM admin deep link, not a FUB url', () => {
+    it('builds the CRM admin deep link, not a CRM url', () => {
       expect(crmContactUrl(4821)).toBe('https://ryan-realty.com/admin/people/4821')
-      expect(crmContactUrl(4821)).not.toContain('followupboss')
+      expect(crmContactUrl(4821)).not.toContain('retiredVendorCrm')
     })
   })
 
