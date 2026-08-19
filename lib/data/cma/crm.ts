@@ -141,7 +141,7 @@ export async function attachCmaToPerson(
     if (existingId && existingId !== personId && !opts?.replace) {
       return { ok: false, error: 'This CMA is already linked to another person.' }
     }
-    const clientName = person.name || (row.client_name as string | null) || null
+    const clientName = (row.client_name as string | null) || person.name || null
     const clientEmail = (row.client_email as string | null) || person.primaryEmail
     const clientPhone = (row.client_phone as string | null) || person.primaryPhone
     const { error } = await sb
