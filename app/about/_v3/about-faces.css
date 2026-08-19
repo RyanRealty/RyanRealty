@@ -44,6 +44,16 @@
 .about-faces__photo-link {
   display: flex;
   justify-content: center;
+  /* Definite width, or the photo's width:100% has nothing to resolve against.
+     At >= 48rem .about-faces__item switches to align-items:center, and in a
+     COLUMN flex container that sizes children to content across the inline
+     axis instead of stretching them. The link then took its width from the
+     img, and the img took its width from the link — circular until the PNG's
+     intrinsic size arrived, so both computed to 0px and the tile jumped from
+     44px to 588px on decode. That is the CLS 0.138 the desktop Lighthouse
+     preset reports on /about and /team; mobile never saw it because the base
+     rule is align-items:stretch. */
+  width: 100%;
   min-width: 0;
   color: inherit;
   text-decoration: none;
