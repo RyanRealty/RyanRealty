@@ -601,7 +601,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : coreChartsRaw
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
+  const monthsOfSupply = publishMonthsOfSupply({ grain: 'neighborhood', pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
   const sellMedian = publishSellMedian({ placeMedian: medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
   const marketData: KbMarketData = {
     active: activeCount,
@@ -638,7 +638,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // case the schools section + FAQ are silently omitted rather than fabricated.
   const schoolDistrictInfo = getDistrictForCity(cityName)
 
-  const marketFaqInput: MarketFaqInput = {
+  const marketFaqInput: MarketFaqInput = { grain: 'neighborhood', // withholds MoS + sold count
     // Alias-aware active count (the same number the hero shows). (§0 / NWX fix)
     activeCount,
     // The SAME figure the hero renders, so the FAQ answer and the market Dataset

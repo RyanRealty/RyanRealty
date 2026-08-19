@@ -4,6 +4,7 @@ import { marketVerdict, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { publishSoldCount, type MarketGrain } from '@/lib/market/geo-grain-trust'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import { publishSearchCount } from '@/lib/search/publish-search-count'
@@ -19,6 +20,18 @@ import { publishSearchCount } from '@/lib/search/publish-search-count'
  * if the value is null/undefined, no question is emitted. Nothing is fabricated.
  */
 export type MarketFaqInput = {
+  /**
+   * The geo grain these figures were read at. REQUIRED, and required rather
+   * than defaulted, because this builder feeds three publication surfaces at
+   * once (visible FAQ, FAQPage JSON-LD, Dataset variableMeasured) and two of
+   * its figures — months of supply and the 12-month sold count — are only
+   * facts at a grain whose closed sales are attributed the same way its
+   * actives are. See lib/market/geo-grain-trust.ts. A neighborhood page
+   * published "48.0 months of supply" and "Homes Sold (12 months): 3" for the
+   * same district in the same markup; both came from a subdivision-name text
+   * join that found 2 of the 42 closes inside that boundary.
+   */
+  grain: MarketGrain
   activeCount?: number | null
   medianListPrice?: number | null
   monthsOfSupply?: number | null
@@ -131,11 +144,14 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     datasetVariables.push({ name: 'Active Listings', value: sfrPublished.value })
   }
 
+  const publishedSold12mo = publishSoldCount({ value: pulse.soldCount12mo, grain: pulse.grain })
+
   const publishedMos = publishMonthsOfSupply({
+    grain: pulse.grain,
     pulseMos: pulse.monthsOfSupply,
     pulseActiveCount: pulse.pulseActiveCount ?? pulse.activeCount,
     displayedActiveCount: pulse.activeCount,
-    soldCount12mo: pulse.soldCount12mo,
+    soldCount12mo: publishedSold12mo,
   })
   if (publishedMos != null && publishedMos > 0) {
     // CLASSIFY THE RAW VALUE, FORMAT ONLY FOR DISPLAY, AND DO NOT LET THE FORMATTING
@@ -189,13 +205,17 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
 
   // ── Extended community-specific questions (§0: only when data exists) ───────
 
-  // Homes sold in the past 12 months — answered from market_stats_cache soldCount.
-  if (pulse.soldCount12mo != null && pulse.soldCount12mo > 0) {
+  // Homes sold in the past 12 months — market_stats_cache soldCount, and only
+  // at a grain that attributes closes the way it attributes actives. The
+  // neighborhood rows count a close only when its "SubdivisionName" string
+  // matches a registered alias, which found 3 of bend-century-west's 72 sales
+  // for the year. publishSoldCount is what withholds it (geo-grain-trust.ts).
+  if (publishedSold12mo != null && publishedSold12mo > 0) {
     faqs.push({
       question: `How many homes sold in ${geoName} in the last year?`,
-      answer: `${pulse.soldCount12mo} single-family homes sold in ${geoName} over the past 12 months${asOf}.`,
+      answer: `${publishedSold12mo} single-family homes sold in ${geoName} over the past 12 months${asOf}.`,
     })
-    datasetVariables.push({ name: 'Homes Sold (12 months)', value: pulse.soldCount12mo })
+    datasetVariables.push({ name: 'Homes Sold (12 months)', value: publishedSold12mo })
   }
 
   // Subdivisions / areas that make up this community — answered from the registry.

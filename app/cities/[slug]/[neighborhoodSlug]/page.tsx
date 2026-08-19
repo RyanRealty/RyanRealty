@@ -355,7 +355,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
+  const monthsOfSupply = publishMonthsOfSupply({ grain: 'neighborhood', pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
   const marketData: KbMarketData = {
     active: activeCount ?? null,
     closed30: pulse?.closedLast30Days ?? null,
@@ -372,7 +372,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   // ── PAGE CONTRACT: AI-citable verified Q&A + structured data ───────────────
   const marketFaqInput: MarketFaqInput = {
-    ...(pulse ?? {}),
+    ...(pulse ?? {}), grain: 'neighborhood', // withholds MoS + sold count (geo-grain-trust.ts)
     activeCount,
     medianListPrice: medianListPrice ?? pulse?.medianListPrice ?? null,
     monthsOfSupply,

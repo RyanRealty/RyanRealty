@@ -150,6 +150,7 @@ async function loadFacts(geo: ExportGeo, period: RangePeriod): Promise<ReportDoc
     sales12mo: t12?.soldCount ?? null,
     activeCount: pulse?.activeCount ?? null,
     monthsOfSupply: publishMonthsOfSupply({
+      grain: geoType,
       pulseMos: pulse?.monthsOfSupply,
       pulseActiveCount: pulse?.activeCount,
       displayedActiveCount: pulse?.activeCount,

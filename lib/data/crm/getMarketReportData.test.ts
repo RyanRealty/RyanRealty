@@ -129,7 +129,7 @@ describe('buildAreaBlock', () => {
     expect(block!.href).toBe('/cities/bend')
   })
 
-  it('withholds live MoS when implied six-month closes cannot sit inside the printed year', () => {
+  it('withholds community MoS entirely, pulse figure and 12-month fallback alike', () => {
     const block = buildAreaBlock({
       slug: 'tetherow',
       geoType: 'neighborhood',
@@ -147,13 +147,15 @@ describe('buildAreaBlock', () => {
     expect(block).not.toBeNull()
     expect(block!.activeListings).toBe(35)
     expect(block!.soldLast12mo).toBe(36)
-    // 35 / 4.6 * 6 ≈ 45.7 closes in six months cannot sit inside 36 in twelve.
-    // Fall back to the 12-month pace: 35 / (36/12) = 11.67.
-    expect(block!.monthsOfSupply).toBe(11.67)
-    expect(block!.marketVerdict).toBe('buyers')
+    // Both the pulse figure and the 12-month fallback read a closed series that
+    // is attributed by subdivision name while the active count is attributed by
+    // polygon, so neither publishes at this grain. The block keeps its inventory
+    // and its volume line and prints no absorption figure and no verdict.
+    expect(block!.monthsOfSupply).toBeNull()
+    expect(block!.marketVerdict).toBeNull()
   })
 
-  it('builds a community block with live pulse MoS (W8.1a: resorts use 6mo like cities)', () => {
+  it('withholds a community MoS even when the pulse row carries one', () => {
     const block = buildAreaBlock({
       slug: 'tetherow',
       geoType: 'neighborhood',
@@ -171,14 +173,16 @@ describe('buildAreaBlock', () => {
     })
     expect(block).not.toBeNull()
     expect(block!.activeListings).toBe(25)
-    expect(block!.monthsOfSupply).toBe(7.5)
+    // A 7.5-month resort figure is exactly the shape the live rows published:
+    // internally consistent, and built on closes the polygon numerator never saw.
+    expect(block!.monthsOfSupply).toBeNull()
     expect(block!.soldLast12mo).toBe(31) // volume line stays rolling_365d
-    expect(block!.marketVerdict).toBe('buyers')
+    expect(block!.marketVerdict).toBeNull()
     expect(block!.source).toBe('market_pulse_live')
     expect(block!.href).toBe('/communities/tetherow')
   })
 
-  it('falls back to rolling_365d MoS for a community when pulse MoS is null (sparse closes)', () => {
+  it('does not fall back to rolling_365d MoS for a community (same untrusted closed series)', () => {
     const block = buildAreaBlock({
       slug: 'pronghorn',
       geoType: 'neighborhood',
@@ -195,13 +199,15 @@ describe('buildAreaBlock', () => {
     })
     expect(block).not.toBeNull()
     expect(block!.activeListings).toBe(16)
-    expect(block!.monthsOfSupply).toBe(16) // 16 / (12/12)
-    expect(block!.marketVerdict).toBe('buyers')
-    // Live active still stamps pulse as source even when MoS falls back.
+    // The rolling_365d fallback is the same untrusted closed series, so a null
+    // pulse figure stays null rather than becoming a computed 16.0.
+    expect(block!.monthsOfSupply).toBeNull()
+    expect(block!.marketVerdict).toBeNull()
+    // Live active still stamps pulse as source even when MoS is withheld.
     expect(block!.source).toBe('market_pulse_live')
   })
 
-  it('computes community MoS from rolling_365d when there is no pulse row at all', () => {
+  it('publishes no community MoS when there is no pulse row at all', () => {
     const block = buildAreaBlock({
       slug: 'tetherow',
       geoType: 'neighborhood',
@@ -218,8 +224,8 @@ describe('buildAreaBlock', () => {
     })
     expect(block).not.toBeNull()
     expect(block!.activeListings).toBe(28)
-    expect(block!.monthsOfSupply).toBe(10.84) // 28 / (31/12), two-decimal precision (MR-1)
-    expect(block!.marketVerdict).toBe('buyers')
+    expect(block!.monthsOfSupply).toBeNull()
+    expect(block!.marketVerdict).toBeNull()
     expect(block!.source).toBe('market_stats_cache:rolling_365d')
   })
 

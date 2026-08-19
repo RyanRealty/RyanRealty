@@ -24,6 +24,7 @@ import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import { getCmaMarketBoardYear } from '@/lib/cma/market-board-mart'
 import type { CmaMarketContext } from '@/lib/cma/types'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { isSoldAttributionTrusted } from '@/lib/market/geo-grain-trust'
 
 export { yearMartCite } from '@/lib/cma/market-board-mart'
 
@@ -102,13 +103,19 @@ export async function getCmaMarketContext(
   // seller's-market verdict (or 5.96 into a buyer's) that the number itself
   // contradicts. Display the rounded figure; classify off the raw one.
   let rawMonthsOfSupply = publishMonthsOfSupply({
+    grain: geoType,
     pulseMos: num(pulse?.months_of_supply),
     pulseActiveCount: active,
     displayedActiveCount: active,
     soldCount12mo: sold365,
   })
   let mosFormula = 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))'
-  if (rawMonthsOfSupply == null && active != null && sold365 > 0) {
+  // THE 12-MONTH FALLBACK IS THE SAME CLOSED SERIES, so it may only run at a
+  // grain whose closes are attributed the way its actives are. At 'neighborhood'
+  // both sold_count and the pulse MoS come off a subdivision-name text join that
+  // misses most of the boundary's sales, and this fallback would turn a withheld
+  // 48-month figure into a computed 64-month one on a broker-signed valuation.
+  if (rawMonthsOfSupply == null && isSoldAttributionTrusted(geoType) && active != null && sold365 > 0) {
     rawMonthsOfSupply = active / (sold365 / 12)
     mosFormula = 'fallback: active_count / (sold_count_365 / 12) — pulse row missing or withheld'
   }

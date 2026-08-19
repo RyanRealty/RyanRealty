@@ -54,7 +54,11 @@ describe('publishBlogCurrentMos', () => {
       display: '5.7',
       verdict: 'balanced market',
     })
-    expect(published?.rows.find((row) => row.label === 'Sunriver')?.display).toBe('11.4')
+    // Sunriver is a geo_type='neighborhood' row: actives from a polygon, closes
+    // from a subdivision-name text join. It drops out of the table rather than
+    // printing an absorption figure and a verdict off a mismatched denominator.
+    expect(published?.rows.find((row) => row.label === 'Sunriver')).toBeUndefined()
+    expect(published?.rows.map((row) => row.label)).not.toContain('Sunriver')
   })
 
   it('returns null when every row is withheld', () => {
@@ -87,7 +91,46 @@ describe('rewriteBlogCurrentMos', () => {
     expect(out).toContain('and 6.0 in 2026')
     expect(out).toContain('3.9 in 2024')
     expect(out).toContain('In Redmond at 4.5 months')
-    expect(out).toContain('In Sunriver at 11.4')
+    expect(out).not.toContain('Sunriver')
     expect(out).toContain('readings from 3.5 to 11.4')
+  })
+})
+
+/**
+ * A withheld place must not leave a stale number standing anywhere in the post.
+ * The list is regenerated from `rows` so it drops out there on its own; the
+ * prose sentence naming it is the surface that used to survive, and a frozen
+ * "In Sunriver at 8.2, the buyer across the table has six other homes to walk
+ * to" is a published market claim with no source behind it.
+ */
+describe('rewriteBlogCurrentMos retires a withheld place', () => {
+  const pulses = [
+    { monthsOfSupply: 4.5, activeCount: 189, refreshedAt: '2026-08-17T01:18:02.858Z' },
+    { monthsOfSupply: 3.52, activeCount: 484, refreshedAt: '2026-08-17T01:18:02.858Z' },
+    { monthsOfSupply: 5.02, activeCount: 82, refreshedAt: '2026-08-17T01:18:02.858Z' },
+    { monthsOfSupply: 4.7, activeCount: 36, refreshedAt: '2026-08-17T01:18:02.858Z' },
+    { monthsOfSupply: 11.35, activeCount: 174, refreshedAt: '2026-08-17T01:18:02.858Z' },
+    { monthsOfSupply: 5.28, activeCount: 51, refreshedAt: '2026-08-17T01:18:02.858Z' },
+    { monthsOfSupply: 11.4, activeCount: 76, refreshedAt: '2026-08-17T01:18:02.858Z' },
+    { monthsOfSupply: 5.74, activeCount: 1836, refreshedAt: '2026-08-17T01:18:02.858Z' },
+  ]
+
+  it('names the neighborhood place as withheld', () => {
+    const published = publishBlogCurrentMos(BLOG_CURRENT_MOS_PLACES, pulses)
+    expect(published?.withheldLabels).toContain('Sunriver')
+  })
+
+  it('deletes the stale prose claim and the stale list row, leaving no orphan figure', () => {
+    const out = rewriteBlogCurrentMos(FROZEN, publishBlogCurrentMos(BLOG_CURRENT_MOS_PLACES, pulses))
+    expect(out).not.toContain('Sunriver')
+    expect(out).not.toContain('8.2')
+    // The surviving city sentence in the same paragraph is untouched.
+    expect(out).toContain('In Redmond at 4.5 months')
+  })
+
+  it('leaves the historical June series alone', () => {
+    const out = rewriteBlogCurrentMos(FROZEN, publishBlogCurrentMos(BLOG_CURRENT_MOS_PLACES, pulses))
+    expect(out).toContain('and 6.0 in 2026')
+    expect(out).toContain('3.9 in 2024')
   })
 })

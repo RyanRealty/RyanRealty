@@ -46,6 +46,9 @@ export function buildSearchCityMarketFaq(
 ): MarketFaqResult {
   return buildMarketFaq(city, {
     ...(pulse ?? {}),
+    // Search city pages are city-grain: refresh_market_pulse attributes actives
+    // and closes with one identical predicate on public.listings.
+    grain: 'city',
     activeCount: published?.count ?? pulse?.activeCount ?? null,
     pulseActiveCount: pulse?.activeCount ?? null,
     medianListPrice: published?.medianListPrice ?? pulse?.medianListPrice ?? null,
@@ -60,6 +63,13 @@ export async function loadSearchCityMarketLayer(args: {
   citySfrTiles: ReadonlyArray<{ listPrice?: number | null }>
 }): Promise<{
   cityPulse: Awaited<ReturnType<typeof getMarketPulse>> | null
+  /**
+   * The same pulse row carrying the grain it was read at, for builders that take
+   * a MarketFaqInput (buildPresetFaq). Declared HERE, beside the
+   * `geoType: 'city'` read that justifies it, rather than at each call site
+   * where the grain would be a guess.
+   */
+  cityFaqInput: MarketFaqInput | null
   publishedCityInventory: CityInventoryPublish | null
   cityMarketFaq: MarketFaqResult | null
 }> {
@@ -78,5 +88,6 @@ export async function loadSearchCityMarketLayer(args: {
     args.isPlainCityPage && args.city
       ? buildSearchCityMarketFaq(args.city, cityPulse, publishedCityInventory)
       : null
-  return { cityPulse, publishedCityInventory, cityMarketFaq }
+  const cityFaqInput: MarketFaqInput | null = cityPulse ? { ...cityPulse, grain: 'city' } : null
+  return { cityPulse, cityFaqInput, publishedCityInventory, cityMarketFaq }
 }

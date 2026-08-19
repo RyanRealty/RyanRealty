@@ -15,6 +15,7 @@ describe('buildMarketFaq', () => {
 
   it('builds all four Q&A from a full pulse, keeping the list median exact', () => {
     const r = buildMarketFaq('Bend', {
+      grain: 'city',
       activeCount: 120,
       medianListPrice: 894750,
       monthsOfSupply: 3.25,
@@ -43,6 +44,7 @@ describe('buildMarketFaq', () => {
   // figure stays on the raw value's side of the threshold (formatMonthsOfSupply).
   it('classifies the RAW months of supply and prints digits on the same side of the threshold', () => {
     const justOverFour = buildMarketFaq('Central Oregon', {
+      grain: 'city',
       monthsOfSupply: 4.02,
       refreshedAt: null,
     })
@@ -62,6 +64,7 @@ describe('buildMarketFaq', () => {
     ).toBe(4.1)
 
     const justUnderSix = buildMarketFaq('Central Oregon', {
+      grain: 'city',
       monthsOfSupply: 5.97,
       refreshedAt: null,
     })
@@ -76,16 +79,17 @@ describe('buildMarketFaq', () => {
   })
 
   it('keeps Southern Crossing and NorthWest Crossing list medians off the thousand-round', () => {
-    const south = buildMarketFaq('Southern Crossing', { medianListPrice: 919500 })
+    const south = buildMarketFaq('Southern Crossing', { grain: 'city', medianListPrice: 919500 })
     expect(south.faqs[0]?.answer).toContain('$919,500')
     expect(south.faqs[0]?.answer).not.toContain('$920,000')
-    const nwx = buildMarketFaq('NorthWest Crossing', { medianListPrice: 1199900 })
+    const nwx = buildMarketFaq('NorthWest Crossing', { grain: 'city', medianListPrice: 1199900 })
     expect(nwx.faqs[0]?.answer).toContain('$1,199,900')
     expect(nwx.faqs[0]?.answer).not.toContain('$1,200,000')
   })
 
   it('visible numbers and dataset variables come from one source (cannot diverge)', () => {
     const r = buildMarketFaq('Redmond', {
+      grain: 'city',
       activeCount: 88,
       medianListPrice: 650000,
       monthsOfSupply: null,
@@ -104,6 +108,7 @@ describe('buildMarketFaq', () => {
 
   it('prints the master HOA when a higher sub-neighborhood estimate is also on file', () => {
     const r = buildMarketFaq('Tetherow', {
+      grain: 'city',
       hoaMasterAnnual: 1464,
       hoaAnnualEstimate: 2244,
       hoaSubEstimates: [2244, 2004, 1464],
@@ -115,6 +120,7 @@ describe('buildMarketFaq', () => {
 
   it('drops months of supply when implied six-month closes exceed the printed year', () => {
     const r = buildMarketFaq('Tetherow', {
+      grain: 'city',
       activeCount: 35,
       monthsOfSupply: 4.6,
       soldCount12mo: 36,
@@ -127,6 +133,7 @@ describe('buildMarketFaq', () => {
 
   it('prints the pulse half-day, not an integer-rounded second figure', () => {
     const r = buildMarketFaq('Black Butte Ranch', {
+      grain: 'city',
       medianDaysToPending: 39.5,
       refreshedAt: null,
     })
@@ -138,6 +145,7 @@ describe('buildMarketFaq', () => {
 
   it('withholds months of supply when the printed SFR count is not the pulse count', () => {
     const r = buildMarketFaq('Bend', {
+      grain: 'city',
       activeCount: 980,
       pulseActiveCount: 475,
       monthsOfSupply: 3.5,
@@ -151,6 +159,7 @@ describe('buildMarketFaq', () => {
 
   it('null or non-positive stats produce no question and no dataset variable', () => {
     const r = buildMarketFaq('Sisters', {
+      grain: 'city',
       activeCount: 0,
       medianListPrice: -5,
       monthsOfSupply: null,
@@ -161,5 +170,65 @@ describe('buildMarketFaq', () => {
     expect(r.datasetVariables).toHaveLength(1)
     expect(r.faqs[0].question).toContain('take to sell')
     expect(r.datasetVariables[0].name).toBe('Median Days to Pending')
+  })
+})
+
+/**
+ * The neighborhood publication path, end to end. /cities/bend/century-west
+ * rendered "48.0 MONTHS" in the visible copy, a Dataset variable
+ * "Months of Supply": 48, and a Dataset variable "Homes Sold (12 months)": 3,
+ * all from one buildMarketFaq call on one pulse row whose 16 actives came from
+ * a polygon and whose 2 closes came from a subdivision-name text join. The
+ * polygon held 42 closes over the same 180 days. Nothing derived from that
+ * closed series may publish at this grain, in the visible FAQ or in the markup.
+ */
+describe('buildMarketFaq at an untrusted grain', () => {
+  const centuryWest = {
+    activeCount: 16,
+    medianListPrice: 749_000,
+    monthsOfSupply: 48,
+    soldCount12mo: 3,
+    medianDaysToPending: 21,
+    refreshedAt: '2026-08-19T17:00:00Z',
+  } as const
+
+  it('publishes no months-of-supply question, no verdict, and no Dataset variable', () => {
+    const { faqs, datasetVariables } = buildMarketFaq('Century West', {
+      grain: 'neighborhood',
+      ...centuryWest,
+    })
+    const text = faqs.map((f) => `${f.question} ${f.answer}`).join(' ')
+    expect(text).not.toMatch(/months of supply/i)
+    expect(text).not.toMatch(/buyer's market|seller's market|balanced market/i)
+    expect(datasetVariables.find((v) => v.name === 'Months of Supply')).toBeUndefined()
+  })
+
+  it('publishes no 12-month sold count in the answer or the Dataset', () => {
+    const { faqs, datasetVariables } = buildMarketFaq('Century West', {
+      grain: 'neighborhood',
+      ...centuryWest,
+    })
+    expect(faqs.map((f) => f.question).join(' ')).not.toMatch(/how many homes sold/i)
+    expect(datasetVariables.find((v) => v.name === 'Homes Sold (12 months)')).toBeUndefined()
+  })
+
+  it('still answers the figures that do not depend on closed-sale attribution', () => {
+    const { faqs, datasetVariables } = buildMarketFaq('Century West', {
+      grain: 'neighborhood',
+      ...centuryWest,
+    })
+    // Active inventory is a polygon count and median list price is a price on
+    // those same actives. Neither reads the closed series, so the page keeps a
+    // real FAQ rather than going blank.
+    expect(faqs.length).toBeGreaterThanOrEqual(3)
+    expect(datasetVariables.map((v) => v.name)).toEqual(
+      expect.arrayContaining(['Median List Price', 'Active Listings', 'Median Days to Pending']),
+    )
+  })
+
+  it('publishes both figures at city grain from the identical input', () => {
+    const { faqs, datasetVariables } = buildMarketFaq('Bend', { grain: 'city', ...centuryWest })
+    expect(faqs.map((f) => f.question).join(' ')).toMatch(/how many homes sold/i)
+    expect(datasetVariables.find((v) => v.name === 'Months of Supply')?.value).toBe(48)
   })
 })

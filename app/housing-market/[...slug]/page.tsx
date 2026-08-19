@@ -142,6 +142,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   const completePriceMonths = priceHistory.filter((p) => p.periodStart.slice(0, 7) !== currentMonthKey)
 
   const mosRaw = publishMonthsOfSupply({
+    grain: geoType,
     pulseMos: pulse?.monthsOfSupply,
     pulseActiveCount: pulse?.activeCount,
     displayedActiveCount: pulse?.activeCount,
@@ -155,6 +156,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     geoName,
     {
       ...(pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null }),
+      grain: geoType,
       monthsOfSupply: mosRaw,
       soldCount12mo: detailRolling?.soldCount ?? null,
     },

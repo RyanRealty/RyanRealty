@@ -57,6 +57,7 @@ import { REPORT_CITY_SLUG_SET } from '@/lib/data/geo/report-cities'
 import { marketVerdict } from '@/lib/market/classify'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { isSoldAttributionTrusted } from '@/lib/market/geo-grain-trust'
 import type { MoSVerdict } from '@/lib/data/types/market'
 import { formatDate } from '@/lib/format/date'
 
@@ -331,12 +332,22 @@ export function buildAreaBlock(args: {
   // (not seller's) and a true 5.96 as balanced (not buyer's) — the pill can
   // never contradict the underlying absorption rate.
   const liveMos = publishMonthsOfSupply({
+    grain: geoType,
     pulseMos: pulse ? toNum(pulse.monthsOfSupply) : null,
     pulseActiveCount: liveActive,
     displayedActiveCount: activeListings,
     soldCount12mo: soldLast12mo,
   })
-  const rawMos = liveMos != null ? liveMos : rawMonthsOfSupply(activeListings, soldLast12mo)
+  // The trailing-12 absorption fallback reads the same closed series the pulse
+  // figure was built from, so an untrusted grain cannot reach it either — a
+  // resort-community report would otherwise mail a computed figure in place of
+  // the withheld one, off a sold count that finds a fraction of the sales.
+  const rawMos =
+    liveMos != null
+      ? liveMos
+      : isSoldAttributionTrusted(geoType)
+        ? rawMonthsOfSupply(activeListings, soldLast12mo)
+        : null
   // Keep two-decimal precision so the display can stay consistent with the
   // raw-derived verdict at the 4.0 / 6.0 boundaries (formatMonths shows the
   // extra decimal only in the narrow boundary band). Verdict is from rawMos.

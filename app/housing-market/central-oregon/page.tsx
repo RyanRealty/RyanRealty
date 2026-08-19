@@ -105,7 +105,7 @@ import {
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
 import { PUBLIC_CLOSED_SALES_METHODOLOGY } from '@/lib/market/publish-public-methodology'
-import { buildMarketFaq } from '@/lib/site/market-faq'
+import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
@@ -222,8 +222,9 @@ export default async function CentralOregonRegionPage() {
   // the page contract requires (G52): the structured data survives a slow or missing
   // region row instead of vanishing. A null field produces no question and no
   // variable, never a fabricated one.
-  const pulse = regionPulse
+  const pulse: MarketFaqInput | null = regionPulse
     ? {
+        grain: 'region',
         activeCount: regionPulse.activeCount,
         medianListPrice: regionPulse.medianListPrice,
         monthsOfSupply: mosRaw,
@@ -233,7 +234,7 @@ export default async function CentralOregonRegionPage() {
     : null
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     'Central Oregon',
-    pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null },
+    pulse ?? { grain: 'region', activeCount: null, medianListPrice: null, refreshedAt: null },
   )
   const refreshedAt = regionPulse?.refreshedAt ?? null
 

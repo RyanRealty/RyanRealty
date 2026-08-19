@@ -198,6 +198,8 @@ export default async function Home() {
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: publishMonthsOfSupply({
+      // getRegionPulse — the central-oregon row, written by refresh_market_pulse.
+      grain: 'region',
       pulseMos: pulse?.monthsOfSupply,
       pulseActiveCount: pulse?.activeCount,
       displayedActiveCount: pulse?.activeCount,

@@ -169,8 +169,11 @@ export default async function CommunitiesPage() {
   // `communityDatasetVars.length > 0` guard below drops the schema. Same
   // contract shape as the other KB data pages (G52), honest about having one
   // source rather than two.
-  const pulse: MarketFaqInput | null = totalActive > 0 ? { activeCount: totalActive } : null
-  const communityFaqInput: MarketFaqInput = pulse ?? { activeCount: null }
+  // 'region' — this index page's only figure is a region-wide active total.
+  // It publishes no months of supply and no sold count, so the grain names the
+  // population the count came from and nothing here can reach the withheld ones.
+  const pulse: MarketFaqInput | null = totalActive > 0 ? { grain: 'region', activeCount: totalActive } : null
+  const communityFaqInput: MarketFaqInput = pulse ?? { grain: 'region', activeCount: null }
   const { datasetVariables: communityDatasetVars } = buildMarketFaq(
     'Central Oregon communities',
     communityFaqInput,

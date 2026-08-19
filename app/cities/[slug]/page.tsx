@@ -390,7 +390,7 @@ export default async function CityDetailPage({ params }: Props) {
 
   // Market HUD.
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount })
+  const monthsOfSupply = publishMonthsOfSupply({ grain: 'city', pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount })
   const marketData: KbMarketData = {
     active: activeCount,
     closed30: pulse?.closedLast30Days ?? null,
@@ -414,6 +414,7 @@ export default async function CityDetailPage({ params }: Props) {
     ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }),
     activeCount: activeCount ?? snapshot.activeSfrCount, pulseActiveCount: pulse?.activeCount ?? null,
     medianListPrice: publishedMedian ?? snapshot.medianListPrice,
+    grain: 'city',
     monthsOfSupply,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, marketFaqInput)

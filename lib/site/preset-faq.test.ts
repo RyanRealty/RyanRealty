@@ -6,8 +6,10 @@ import {
   getSamePresetCityLinks,
   isSortOnlyPreset,
 } from '@/lib/site/preset-faq'
+import type { MarketFaqInput } from '@/lib/site/market-faq'
 
-const PULSE = {
+const PULSE: MarketFaqInput = {
+  grain: 'city',
   activeCount: 512,
   medianListPrice: 818_950,
   monthsOfSupply: 3.4,
@@ -87,6 +89,7 @@ describe('buildPresetFaq', () => {
 
   it('null-guards partial pulse fields independently', () => {
     const result = buildPresetFaq('Bend', preset('condos'), 67, {
+      grain: 'city',
       medianListPrice: null,
       medianDaysToPending: 41,
       refreshedAt: PULSE.refreshedAt,

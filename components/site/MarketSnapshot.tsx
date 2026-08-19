@@ -142,6 +142,7 @@ export default async function MarketSnapshot({
       medianListPrice = publishedMedianListPrice ?? pulse.medianListPrice
       medianDaysToPending = pulse.medianDaysToPending
       monthsOfSupply = publishMonthsOfSupply({
+        grain: 'city',
         pulseMos: pulse.monthsOfSupply,
         pulseActiveCount: pulse.activeCount,
         displayedActiveCount: activeCount,
@@ -155,7 +156,14 @@ export default async function MarketSnapshot({
       activeCount = regionPulse.activeCount
       medianListPrice = regionPulse.medianListPrice
       medianDaysToPending = regionPulse.medianDaysToPending
-      monthsOfSupply = regionPulse.monthsOfSupply
+      // Through the same publisher as the city branch, so one figure under one
+      // label has one gate rather than two code paths that can drift.
+      monthsOfSupply = publishMonthsOfSupply({
+        grain: 'region',
+        pulseMos: regionPulse.monthsOfSupply,
+        pulseActiveCount: regionPulse.activeCount,
+        displayedActiveCount: activeCount,
+      })
       closedLast30Days = regionPulse.soldCount30d
       updatedAt = regionPulse.updatedAt
     }

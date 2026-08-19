@@ -252,6 +252,7 @@ export default async function AnnualReviewPage() {
     medianDaysToPending: null,
   }
   const { faqs, datasetVariables: regionFaqVariables, asOfIso } = buildMarketFaq(REGION_LABEL, {
+    grain: 'region',
     activeCount: pulseFields.activeCount,
     medianListPrice: medianListDisplay,
     monthsOfSupply: mosRaw,

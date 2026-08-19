@@ -72,7 +72,7 @@ import {
   getConcessionsQuarterly,
 } from '@/lib/data/pricing/getConcessionsQuarterly'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
-import { buildMarketFaq } from '@/lib/site/market-faq'
+import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
@@ -185,8 +185,9 @@ export default async function HousingMarketHubPage() {
   // the page contract requires (G52): the structured data survives a slow or missing
   // region row instead of vanishing. A null field produces no question and no
   // variable, never a fabricated one.
-  const pulse = regionPulse
+  const pulse: MarketFaqInput | null = regionPulse
     ? {
+        grain: 'region',
         activeCount: regionPulse.activeCount,
         medianListPrice: regionPulse.medianListPrice,
         // The RAW figure. The builder rounds it for its sentence exactly as this
@@ -198,7 +199,7 @@ export default async function HousingMarketHubPage() {
     : null
   const marketFaq = buildMarketFaq(
     'Central Oregon',
-    pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null },
+    pulse ?? { grain: 'region', activeCount: null, medianListPrice: null, refreshedAt: null },
   )
   const { datasetVariables, asOfIso, asOfLabel } = marketFaq
   const refreshedAt = regionPulse?.refreshedAt ?? null

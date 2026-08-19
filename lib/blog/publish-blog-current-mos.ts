@@ -49,6 +49,14 @@ export type PublishedBlogMosRow = {
 export type PublishedBlogMos = {
   rows: PublishedBlogMosRow[]
   asOfLabel: string
+  /**
+   * Places whose figure was withheld this run. A frozen post carries a stale
+   * claim per place ("Sunriver: 8.2 months, a buyer's market"), and the list is
+   * regenerated from `rows`, so a withheld place vanishes from the list. Its
+   * PROSE claim does not, and an unverifiable number surviving in a sentence is
+   * the same section 0 violation as one in a table. The rewriter retires them.
+   */
+  withheldLabels: string[]
 }
 
 export function blogClaimsCurrentMos(html: string): boolean {
@@ -66,20 +74,35 @@ export function publishBlogCurrentMos(
   pulses: Array<BlogCurrentMosPulse | null>,
 ): PublishedBlogMos | null {
   const rows: PublishedBlogMosRow[] = []
+  const withheldLabels: string[] = []
   let asOf: string | null = null
   for (let i = 0; i < places.length; i += 1) {
     const place = places[i]
     const pulse = pulses[i]
-    if (!place || !pulse) continue
+    if (!place) continue
+    if (!pulse) {
+      withheldLabels.push(place.label)
+      continue
+    }
     const mos = publishMonthsOfSupply({
+      // BLOG_CURRENT_MOS_PLACES carries the grain each row was read at. Sunriver
+      // is a 'neighborhood' row and drops out of the table rather than printing
+      // an absorption figure off a mismatched closed series.
+      grain: place.geoType,
       pulseMos: pulse.monthsOfSupply,
       pulseActiveCount: pulse.activeCount,
       displayedActiveCount: pulse.activeCount,
     })
-    if (mos == null) continue
+    if (mos == null) {
+      withheldLabels.push(place.label)
+      continue
+    }
     if (!asOf && pulse.refreshedAt) asOf = pulse.refreshedAt
     const verdict = marketVerdict(mos)
-    if (verdict.kind === 'unknown') continue
+    if (verdict.kind === 'unknown') {
+      withheldLabels.push(place.label)
+      continue
+    }
     rows.push({
       label: place.label,
       mos,
@@ -88,7 +111,7 @@ export function publishBlogCurrentMos(
     })
   }
   if (rows.length === 0 || !asOf) return null
-  return { rows, asOfLabel: formatDate(asOf) }
+  return { rows, asOfLabel: formatDate(asOf), withheldLabels }
 }
 
 function escapeRegExp(value: string): string {
@@ -129,6 +152,21 @@ export function rewriteBlogCurrentMos(html: string, published: PublishedBlogMos 
     next = next.replace(
       new RegExp(`(\\b${label} at )\\d+(?:\\.\\d+)?(?!\\s+in\\s+20)`, 'gi'),
       `$1${row.display}`,
+    )
+  }
+
+  // Retire the prose claims of every withheld place. The sentence is DELETED,
+  // not repointed at another number: there is no verified figure for that place
+  // this run, and section 0 rule 7 takes fewer sentences over one wrong one.
+  for (const label of published.withheldLabels) {
+    const escaped = escapeRegExp(label)
+    next = next.replace(
+      new RegExp(`(?:^|(?<=[.!?]\\s))[^.!?<>]*\\b${escaped} at \\d+(?:\\.\\d+)?[^.!?]*[.!?]\\s*`, 'gi'),
+      '',
+    )
+    next = next.replace(
+      new RegExp(`\\s*<li><strong>${escaped}:[^<]*</strong>[^<]*</li>`, 'gi'),
+      '',
     )
   }
 

@@ -208,6 +208,7 @@ export default async function CitiesPage() {
   // rather than approximated.
   const pulse: MarketFaqInput | null = regionPulse
     ? {
+        grain: 'region',
         activeCount: regionPulse.activeCount,
         medianListPrice: regionPulse.medianListPrice,
         monthsOfSupply: regionPulse.monthsOfSupply,
@@ -219,7 +220,7 @@ export default async function CitiesPage() {
     (latest, s) => (latest == null || s.refreshedAt > latest ? s.refreshedAt : latest),
     null,
   )
-  const regionFaqInput: MarketFaqInput = pulse ?? { activeCount: totalActive, refreshedAt: latestSnapshotAt }
+  const regionFaqInput: MarketFaqInput = pulse ?? { grain: 'region', activeCount: totalActive, refreshedAt: latestSnapshotAt }
   const { datasetVariables: regionDatasetVars, asOfIso: regionAsOfIso } = buildMarketFaq(
     'Central Oregon',
     regionFaqInput,
