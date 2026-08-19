@@ -9,6 +9,7 @@ import { getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
 import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
 import { getPersonNotes } from '@/lib/data/crm/getPersonNotes'
+import { getPersonGlance } from '@/lib/data/crm/getPersonGlance'
 import { requirePersonInScope } from '@/app/actions/crm'
 import { formatPersonAddress } from '@/lib/crm/person-address'
 import { LEAD_SOURCE_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
@@ -69,10 +70,11 @@ export default async function PersonPage({
   })
   if (!inScope.ok) notFound()
 
-  const [card, relationships, notes] = await Promise.all([
+  const [card, relationships, notes, glance] = await Promise.all([
     getInboxContactCard(idNum),
     getContactRelationships(idNum),
     getPersonNotes(idNum),
+    getPersonGlance(idNum),
   ])
   if (!card) {
     const mapped = await getPersonIdByLegacyId(idNum)
@@ -89,6 +91,8 @@ export default async function PersonPage({
         whoLabels={[]}
         stage={card.stage}
         assignedBroker={card.assignedBroker}
+        nextLine={glance.nextLine}
+        nowLine={glance.nowLine}
         phone={card.phone}
         email={card.email}
         addressLine={addressLine}

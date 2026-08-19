@@ -13,7 +13,7 @@ import {
   SIMPLE_RELATIONSHIP_TYPES,
 } from '@/lib/crm/relationships'
 import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships'
-import { Button, SectionHead, SelectField, TextField } from '@/components/admin/v2'
+import { Button, SectionHead, TextField } from '@/components/admin/v2'
 
 export function PersonRelationships({
   personId,
@@ -26,15 +26,14 @@ export function PersonRelationships({
   const [open, setOpen] = useState(true)
   const [q, setQ] = useState('')
   const [hits, setHits] = useState<RelationshipSearchHit[]>([])
-  const [picked, setPicked] = useState<RelationshipSearchHit | null>(null)
-  const [type, setType] = useState('')
+  const [type, setType] = useState<(typeof SIMPLE_RELATIONSHIP_TYPES)[number]>('spouse')
   const [error, setError] = useState<string | null>(null)
   const [searching, startSearch] = useTransition()
   const [saving, startSave] = useTransition()
 
   useEffect(() => {
     const term = q.trim()
-    if (picked || term.length < 2) {
+    if (term.length < 2) {
       setHits([])
       return
     }
@@ -44,21 +43,32 @@ export function PersonRelationships({
       })
     }, 200)
     return () => clearTimeout(handle)
-  }, [q, personId, picked])
+  }, [q, personId])
 
   function resetForm() {
     setQ('')
     setHits([])
-    setPicked(null)
-    setType('')
+    setType('spouse')
     setError(null)
+  }
+
+  function saveHit(hit: RelationshipSearchHit) {
+    startSave(async () => {
+      const r = await linkExistingRelationshipAction(personId, hit.id, type)
+      if (!r.ok) {
+        setError(r.error ?? 'Could not save the relationship')
+        return
+      }
+      resetForm()
+      router.refresh()
+    })
   }
 
   return (
     <section aria-label="Related people" style={{ margin: '0 0 20px' }}>
       <SectionHead>Related people</SectionHead>
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>
-        Link a spouse, parent, or anyone already in People.
+        Pick spouse or parent, then the person. That click saves.
       </p>
       <ul className="av2-quietlist">
         {relationships.map((r) => (
@@ -90,92 +100,58 @@ export function PersonRelationships({
         </Button>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 480 }}>
-          {picked ? (
-            <p style={{ fontSize: 'var(--a-text-sm)', margin: 0 }}>
-              {picked.name}
-              {picked.phone ? ` · ${picked.phone}` : ''}
-              {' '}
-              <Button
-                variant="quiet"
-                onClick={() => {
-                  setPicked(null)
-                  setQ('')
-                }}
-              >
-                Change
-              </Button>
-            </p>
-          ) : (
-            <>
-              <TextField
-                label="Search an existing person"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                autoComplete="off"
-                autoFocus
-              />
-              {searching ? (
-                <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Searching.</p>
-              ) : null}
-              {hits.length > 0 ? (
-                <ul className="av2-queue">
-                  {hits.map((h) => (
-                    <li key={h.id} className="av2-qrow">
-                      <Button
-                        variant="quiet"
-                        className="av2-qrow__body"
-                        onClick={() => {
-                          setPicked(h)
-                          setHits([])
-                          setError(null)
-                        }}
-                      >
-                        <span className="av2-qrow__title">{h.name}</span>
-                        <span className="av2-qrow__ctx">{[h.phone, h.email].filter(Boolean).join(' · ')}</span>
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </>
-          )}
-          <SelectField label="Relationship" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="">Pick the relationship</option>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {SIMPLE_RELATIONSHIP_TYPES.map((t) => (
-              <option key={t} value={t}>
+              <Button
+                key={t}
+                type="button"
+                variant="quiet"
+                aria-pressed={type === t}
+                onClick={() => setType(t)}
+              >
                 {RELATIONSHIP_LABELS[t]}
-              </option>
+              </Button>
             ))}
-          </SelectField>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button
-              disabled={saving || !picked || !type}
-              onClick={() =>
-                startSave(async () => {
-                  if (!picked || !type) return
-                  const r = await linkExistingRelationshipAction(personId, picked.id, type)
-                  if (!r.ok) {
-                    setError(r.error ?? 'Could not save the relationship')
-                    return
-                  }
-                  resetForm()
-                  setOpen(false)
-                  router.refresh()
-                })
-              }
-            >
-              Save
-            </Button>
-            <Button
-              variant="quiet"
-              onClick={() => {
-                resetForm()
-                setOpen(false)
-              }}
-            >
-              Cancel
-            </Button>
           </div>
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: 0 }}>
+            Linking as {RELATIONSHIP_LABELS[type]}.
+          </p>
+          <TextField
+            label="Search an existing person"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            autoComplete="off"
+            autoFocus
+          />
+          {searching ? (
+            <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Searching.</p>
+          ) : null}
+          {hits.length > 0 ? (
+            <ul className="av2-queue">
+              {hits.map((h) => (
+                <li key={h.id} className="av2-qrow">
+                  <Button
+                    variant="quiet"
+                    className="av2-qrow__body"
+                    disabled={saving}
+                    onClick={() => saveHit(h)}
+                  >
+                    <span className="av2-qrow__title">{h.name}</span>
+                    <span className="av2-qrow__ctx">{[h.phone, h.email].filter(Boolean).join(' · ')}</span>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <Button
+            variant="quiet"
+            onClick={() => {
+              resetForm()
+              setOpen(false)
+            }}
+          >
+            Cancel
+          </Button>
           {error ? (
             <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }} role="alert">{error}</p>
           ) : null}

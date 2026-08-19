@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { composeListNextStep } from '@/lib/crm/person-header-lines'
 
 /**
  * getPeopleListSignals — per-row signals for the §05 People list
@@ -23,6 +24,7 @@ export type PersonListSignal = {
   personId: number
   lastVisit: string | null
   lastActivity: { kind: string; title: string | null; ts: string } | null
+  nextLine: string
 }
 
 /** Lead-initiated timeline kinds (§6 col 8: lead-side signals only). */
@@ -35,10 +37,10 @@ export async function getPeopleListSignals(personIds: number[]): Promise<Map<num
   const out = new Map<number, PersonListSignal>()
   const ids = Array.from(new Set(personIds.filter((n) => Number.isInteger(n) && n > 0)))
   if (ids.length === 0) return out
-  for (const id of ids) out.set(id, { personId: id, lastVisit: null, lastActivity: null })
+  for (const id of ids) out.set(id, { personId: id, lastVisit: null, lastActivity: null, nextLine: 'No next step queued.' })
 
   const sb = createServiceClient()
-  const [visits, events] = await Promise.all([
+  const [visits, events, waiting] = await Promise.all([
     sb
       .from('visitor_sessions')
       .select('crm_person_id,last_seen_at')
@@ -60,6 +62,11 @@ export async function getPeopleListSignals(personIds: number[]): Promise<Map<num
           .range(from, to),
       2000,
     ),
+    sb
+      .from('crm_sequence_enrollments')
+      .select('person_id,step_index,crm_sequences!inner(name,steps)')
+      .in('person_id', ids)
+      .eq('status', 'awaiting_broker_next'),
   ])
 
   if (visits.error) console.error('[getPeopleListSignals] visits', visits.error.message)
@@ -76,6 +83,25 @@ export async function getPeopleListSignals(personIds: number[]): Promise<Map<num
     if (sig && !sig.lastActivity && e.ts) {
       sig.lastActivity = { kind: String(e.kind), title: (e.title as string | null) ?? null, ts: e.ts as string }
     }
+  }
+
+  if (waiting.error) console.error('[getPeopleListSignals] waiting', waiting.error.message)
+  const waitingByPerson = new Map<number, { sequenceName: string; channel: string }>()
+  for (const row of waiting.data ?? []) {
+    const pid = Number(row.person_id)
+    if (waitingByPerson.has(pid)) continue
+    const seq = row.crm_sequences as unknown as { name?: string; steps?: Array<Record<string, unknown>> }
+    const step = (seq.steps ?? [])[row.step_index as number]
+    waitingByPerson.set(pid, {
+      sequenceName: String(seq.name ?? ''),
+      channel: String(step?.channel ?? 'step'),
+    })
+  }
+  for (const sig of out.values()) {
+    sig.nextLine = composeListNextStep({
+      lastActivityKind: sig.lastActivity?.kind ?? null,
+      sequenceWaiting: waitingByPerson.get(sig.personId) ?? null,
+    })
   }
 
   return out

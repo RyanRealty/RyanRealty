@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { scopeBroker } from '@/lib/crm/scope'
 import { searchCrmPeople } from '@/lib/data/crm/searchCrmPeople'
+import { getPeopleListSignals } from '@/lib/data/crm/getPeopleListSignals'
 import { SectionHead, StateWord } from '@/components/admin/v2'
 import { AddPersonCard } from '@/components/admin/shared/people-list/AddPersonDialog'
 import '@/components/admin/v2/admin-v2.css'
@@ -19,12 +20,16 @@ async function RecentlyTouched({
   brokerScope: string | null
 }) {
   const hits = await searchCrmPeople({ q, brokerScope, limit: 25 })
+  const signals = await getPeopleListSignals(hits.map((p) => p.id))
 
   return (
     <>
       <SectionHead>{q ? `Results for "${q}"` : 'Recently touched'}</SectionHead>
       <ul className="av2-queue">
-        {hits.map((p) => (
+        {hits.map((p) => {
+          const next = signals.get(p.id)?.nextLine
+          const nextLine = next && next !== 'No next step queued.' ? next : null
+          return (
           <li key={p.id} className="av2-qrow">
             <span className="av2-qrow__kind">
               <StateWord state="accent">{p.stage ?? 'Lead'}</StateWord>
@@ -36,9 +41,7 @@ async function RecentlyTouched({
                 </Link>
               </div>
               <div className="av2-qrow__ctx">
-                {[p.phones?.[0]?.value, p.emails?.[0]?.value, p.assigned_broker ? `assigned ${p.assigned_broker}` : null]
-                  .filter(Boolean)
-                  .join(' · ')}
+                {[nextLine, p.phones?.[0]?.value, p.emails?.[0]?.value].filter(Boolean).join(' · ')}
               </div>
             </div>
             <span className="av2-qrow__act">
@@ -47,7 +50,8 @@ async function RecentlyTouched({
               </Link>
             </span>
           </li>
-        ))}
+          )
+        })}
         {hits.length === 0 ? (
           <li className="av2-sysnote" style={{ padding: 16 }}>
             {q ? 'No one matches. Try fewer letters, or a phone fragment.' : 'No people yet.'}

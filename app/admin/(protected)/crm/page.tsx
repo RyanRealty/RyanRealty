@@ -191,6 +191,7 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
       agentHeadshot: p.assigned_broker ? (BROKER_HEADSHOT[p.assigned_broker] ?? null) : null,
       lastVisitLabel: sig?.lastVisit ? fmtFubDate(sig.lastVisit) : '',
       lastActivity,
+      nextLine: sig?.nextLine && sig.nextLine !== 'No next step queued.' ? sig.nextLine : null,
       createdLabel: fmtFubDate(p.fub_created_at),
       price: p.price,
       timeframe: p.timeframe,

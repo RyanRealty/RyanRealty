@@ -131,6 +131,7 @@ export type PeopleRow = {
   lastVisitLabel: string
   /** §6 col 8 — latest lead-initiated event. */
   lastActivity: { icon: ActivityIconKind; label: string; dateLabel: string } | null
+  nextLine: string | null
   createdLabel: string
   price: number | null
   timeframe: string | null
@@ -1025,7 +1026,7 @@ function PeopleTableRow({
           <PeopleAvatar name={name} src={p.picture_url} size={32} />
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold" style={{ color: 'var(--a-text)' }}>{name}</span>
-            {p.source ? <span className="block truncate text-xs font-normal" style={MUTED}>{p.source}</span> : null}
+            {p.nextLine ? <span className="block truncate text-xs font-normal" style={MUTED}>{p.nextLine}</span> : p.source ? <span className="block truncate text-xs font-normal" style={MUTED}>{p.source}</span> : null}
           </span>
         </Link>
       </td>
