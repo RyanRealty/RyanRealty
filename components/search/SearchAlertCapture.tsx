@@ -36,8 +36,8 @@ import {
  * - inline — map/split: compact non-sticky strip under filters (layout-safe;
  *   sticky on app-frame overlapped the filter chip row)
  *
- * Guest default is collapsed: one quiet "Get listing alerts" control. The email
- * field, honeypot, disclosure, and submit live behind a click, not a modal.
+ * Guest default shows the email field so save-search collects an address.
+ * Collapse stays available after the visitor dismisses.
  */
 
 /**
@@ -139,7 +139,7 @@ export function SearchAlertCapture({
   const [state, setState] = useState<'idle' | 'done' | 'error'>('idle')
   const [error, setError] = useState('')
   const [dismissed, setDismissed] = useState(false)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [pending, startTransition] = useTransition()
   const isInline = variant === 'inline'
   const rootRef = useRef<HTMLDivElement>(null)
@@ -228,7 +228,7 @@ export function SearchAlertCapture({
             <div className="min-w-0">
               <p className="font-medium">You are set. Watch your inbox for new matches.</p>
               <p className="text-xs text-muted-foreground">
-                Next visit we will remind you you&apos;re watching this search. Pause from any alert email.{' '}
+                Next visit we will remind you you are watching this search. Pause from any alert email.{' '}
                 <Link href="/login?returnUrl=%2Faccount%2Fsaved-searches" className="underline underline-offset-2 hover:text-foreground">
                   Sign in to manage alerts
                 </Link>
@@ -267,7 +267,7 @@ export function SearchAlertCapture({
             />
             <div className="min-w-0">
               <p className={cn('text-sm font-medium text-foreground', isInline && 'text-xs sm:text-sm')}>
-                You&apos;re watching {priorWatch.label}
+                Watching {priorWatch.label}
               </p>
               <p className={cn('text-xs text-muted-foreground', isInline && 'sm:text-xs')}>
                 Matches go to your email. Pause from any alert email link.

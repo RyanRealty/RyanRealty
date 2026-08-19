@@ -553,8 +553,8 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
     expect(mapSplit).toMatch(/underFilterBar/)
   })
 
-  it('guest default is collapsed: no email field until Get listing alerts', () => {
-    expect(src).toMatch(/const \[expanded, setExpanded\] = useState\(false\)/)
+  it('guest default shows the email field so save-search collects an address', () => {
+    expect(src).toMatch(/const \[expanded, setExpanded\] = useState\(true\)/)
     expect(src).toMatch(/Get listing alerts/)
     expect(src).toMatch(/\{!expanded \?/)
     expect(src).toMatch(/name="company"/)

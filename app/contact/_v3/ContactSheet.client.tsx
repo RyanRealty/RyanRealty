@@ -15,6 +15,7 @@ import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { submitContactForm } from '../actions'
 import { CONTACT_FIELD_IDS } from './contact-constants'
+import { publishTourConfirmation } from '@/lib/contact/publish-tour-confirmation'
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
 
@@ -189,7 +190,7 @@ export function ContactSheet({
           })
           setConfirmation(
             isTour
-              ? 'Tour request received. A broker will call or text to confirm a time within one business day.'
+              ? publishTourConfirmation(listingSummary)
               : 'Message received. We respond within one business day.',
           )
           setStatus('sent')
@@ -202,7 +203,7 @@ export function ContactSheet({
         setStatus('failed')
       }
     },
-    [defaultInquiryType, isTour, listingKey, smsConsent],
+    [defaultInquiryType, isTour, listingKey, listingSummary, smsConsent],
   )
 
   const onAdvance = useCallback(

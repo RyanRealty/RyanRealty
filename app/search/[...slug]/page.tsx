@@ -23,7 +23,7 @@ import {
   getSamePresetCityLinks,
   isSortOnlyPreset,
 } from '@/lib/site/preset-faq'
-import { getMarketPulse, getDerivedPopularSearches } from '@/lib/data'
+import { getCityListings, getMarketPulse, getDerivedPopularSearches } from '@/lib/data'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import SearchFilterBar from '../../../components/SearchFilterBar'
 import ShareButton from '../../../components/ShareButton'
@@ -64,6 +64,9 @@ import { renderMapSplitView } from './sections/MapSplitView'
 import { ListingsResults } from './sections/ListingsResults'
 import { SearchSeoTail } from './sections/SeoTail'
 import { publishSearchCount } from '@/lib/search/publish-search-count'
+import { CITY_TILE_FETCH_LIMIT, publishCityInventory } from '@/lib/market/publish-city-inventory'
+import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 
 export async function generateStaticParams() {
   return buildSearchStaticParams()
@@ -216,7 +219,8 @@ export default async function SearchPage({
   // Fetch the independent data the clean results page renders in one parallel batch:
   //   listings (grid + pagination), recent price-change keys, session
   //   (save-search), resort entity keys (JSON-LD + breadcrumb resort flag).
-  const [listingsResult, priceChangeKeys, session, resortEntityKeys] = await Promise.all([
+  const isPlainCityBrowse = !!(city && !subdivision && !preset)
+  const [listingsResult, priceChangeKeys, session, resortEntityKeys, citySfrTiles] = await Promise.all([
     // Route through getListingsWithAdvanced: it serves the common city + base-
     // filter case from the slim, resilient-cached listing_tile_mv (sub-second,
     // with an EXACT count so pagination/header stay right) and only falls back
@@ -236,6 +240,19 @@ export default async function SearchPage({
       : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
     withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
+    isPlainCityBrowse && city
+      ? withTimeoutFallback(
+          getCityListings(city, {
+            status: 'active',
+            sort: 'newest',
+            propertyType: 'A',
+            limit: CITY_TILE_FETCH_LIMIT,
+          }),
+          [],
+          4500,
+          'search:citySfrTiles',
+        )
+      : Promise.resolve([]),
   ])
   // Fail loud: a timed-out or hard-errored listings fetch must NOT render — and
   // let ISR cache — an empty "no homes" grid (the poison-null pattern). Throwing
@@ -340,7 +357,26 @@ export default async function SearchPage({
         geoSlug: canonicalCityCacheSlug(relatedCitySlug),
       }).catch(() => null)
     : null
-  const cityMarketFaq = isPlainCityPage && city ? buildMarketFaq(city, cityPulse) : null
+  const publishedCityInventory =
+    isPlainCityPage && city
+      ? publishCityInventory({
+          pulseCount: cityPulse?.activeCount ?? null,
+          pulseMedian: cityPulse?.medianListPrice ?? null,
+          tileCount: citySfrTiles.length,
+          tileMedian: medianListPriceOfTiles(citySfrTiles),
+          tileLimit: CITY_TILE_FETCH_LIMIT,
+          tileFetchOk: citySfrTiles.length > 0,
+        })
+      : null
+  const cityMarketFaq =
+    isPlainCityPage && city
+      ? buildMarketFaq(city, {
+          ...(cityPulse ?? {}),
+          activeCount: publishedCityInventory?.count ?? cityPulse?.activeCount ?? null,
+          pulseActiveCount: cityPulse?.activeCount ?? null,
+          medianListPrice: publishedCityInventory?.medianListPrice ?? cityPulse?.medianListPrice ?? null,
+        })
+      : null
   const presetDepth =
     isPresetDepthPage && city && preset && !listingsResult.degraded
       ? buildPresetFaq(city, preset, totalCount, cityPulse, presetAreaLabel)
@@ -574,6 +610,8 @@ export default async function SearchPage({
         isPlainCityPage={isPlainCityPage}
         relatedCitySlug={relatedCitySlug}
         city={city}
+        publishedActiveCount={publishedCityInventory?.count ?? null}
+        publishedMedianListPrice={publishedCityInventory?.medianListPrice ?? null}
         cityMarketFaq={cityMarketFaq}
         presetDepth={presetDepth}
         presetBandLinks={presetBandLinks}

@@ -136,6 +136,19 @@ describe('buildMarketFaq', () => {
     expect(r.datasetVariables.find((v) => v.name === 'Median Days to Pending')?.value).toBe(39.5)
   })
 
+  it('withholds months of supply when the printed SFR count is not the pulse count', () => {
+    const r = buildMarketFaq('Bend', {
+      activeCount: 980,
+      pulseActiveCount: 475,
+      monthsOfSupply: 3.5,
+      refreshedAt: '2026-08-19',
+    })
+    expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toContain('980')
+    expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).not.toContain('475')
+    expect(r.faqs.find((f) => f.question.includes("buyer's or seller's"))).toBeUndefined()
+    expect(r.datasetVariables.find((v) => v.name === 'Months of Supply')).toBeUndefined()
+  })
+
   it('null or non-positive stats produce no question and no dataset variable', () => {
     const r = buildMarketFaq('Sisters', {
       activeCount: 0,

@@ -21,6 +21,8 @@ export function SearchSeoTail({
   isPlainCityPage,
   relatedCitySlug,
   city,
+  publishedActiveCount,
+  publishedMedianListPrice,
   cityMarketFaq,
   presetDepth,
   presetBandLinks,
@@ -34,6 +36,8 @@ export function SearchSeoTail({
   isPlainCityPage: boolean
   relatedCitySlug: string | null
   city: string | undefined
+  publishedActiveCount?: number | null
+  publishedMedianListPrice?: number | null
   cityMarketFaq: ReturnType<typeof buildMarketFaq> | null
   presetDepth: ReturnType<typeof buildPresetFaq> | null
   presetBandLinks: { href: string; label: string }[]
@@ -102,7 +106,12 @@ export function SearchSeoTail({
     <>
       {isPlainCityPage && relatedCitySlug && city ? (
         <section id="search-seo" className="mt-12">
-          <MarketSnapshot citySlug={relatedCitySlug} cityName={city} />
+          <MarketSnapshot
+            citySlug={relatedCitySlug}
+            cityName={city}
+            publishedActiveCount={publishedActiveCount}
+            publishedMedianListPrice={publishedMedianListPrice}
+          />
         </section>
       ) : null}
 

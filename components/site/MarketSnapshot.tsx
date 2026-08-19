@@ -1,6 +1,7 @@
 import { getRegionPulse } from '@/lib/data/market/getRegionPulse'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import {
   Body,
   Container,
@@ -110,9 +111,18 @@ type Props = {
    */
   citySlug?: string
   cityName?: string
+  /** Address-set SFR count from publishCityInventory. Overrides pulse. */
+  publishedActiveCount?: number | null
+  /** Address-set SFR median from publishCityInventory. Overrides pulse. */
+  publishedMedianListPrice?: number | null
 }
 
-export default async function MarketSnapshot({ citySlug, cityName }: Props = {}) {
+export default async function MarketSnapshot({
+  citySlug,
+  cityName,
+  publishedActiveCount,
+  publishedMedianListPrice,
+}: Props = {}) {
   // City-scoped path — getMarketPulse reads market_pulse_live for the city row.
   // Region path — getRegionPulse reads the pre-aggregated central-oregon row.
   let activeCount: number | null = null
@@ -128,10 +138,14 @@ export default async function MarketSnapshot({ citySlug, cityName }: Props = {})
       geoSlug: canonicalCityCacheSlug(citySlug),
     })
     if (pulse) {
-      activeCount = pulse.activeCount
-      medianListPrice = pulse.medianListPrice
+      activeCount = publishedActiveCount ?? pulse.activeCount
+      medianListPrice = publishedMedianListPrice ?? pulse.medianListPrice
       medianDaysToPending = pulse.medianDaysToPending
-      monthsOfSupply = pulse.monthsOfSupply
+      monthsOfSupply = publishMonthsOfSupply({
+        pulseMos: pulse.monthsOfSupply,
+        pulseActiveCount: pulse.activeCount,
+        displayedActiveCount: activeCount,
+      })
       closedLast30Days = pulse.closedLast30Days
       updatedAt = pulse.refreshedAt
     }

@@ -40,6 +40,7 @@ type Props = {
     | 'priceDropCount'
     | 'propertySubType'
   >
+  historyPrices?: ReadonlyArray<number | null | undefined>
   className?: string
 }
 
@@ -53,7 +54,7 @@ const STATUS_TONE: Record<string, 'navy' | 'success' | 'warning' | 'danger' | 'n
   Canceled: 'neutral',
 }
 
-export function PriceBlock({ listing, className }: Props) {
+export function PriceBlock({ listing, historyPrices, className }: Props) {
   const isClosed = listing.status === 'Closed'
   const headlinePrice = isClosed
     ? publishListingAsk(listing.closePrice)?.ask ?? null
@@ -67,6 +68,7 @@ export function PriceBlock({ listing, className }: Props) {
     : publishListingDrop({
         listPrice: listing.listPrice,
         originalListPrice: listing.originalListPrice,
+        historyPrices,
       })
   const statusTone = STATUS_TONE[listing.status] ?? 'neutral'
 

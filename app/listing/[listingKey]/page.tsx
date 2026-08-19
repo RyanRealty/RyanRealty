@@ -48,6 +48,7 @@ import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
 import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
+import { publishListingHistoryPrices } from '@/lib/listing/publish-listing-ask'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
@@ -369,7 +370,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const main = (
     <>
-      <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} />
+      <PriceCtaStrip
+        listing={listingWithPhotos}
+        onSave={saveListingFromStrip}
+        initialSaved={initialSaved}
+        historyPrices={publishListingHistoryPrices(history)}
+      />
       <PlaceIdentityLine place={placeContext} />
       <LivePricingRead
         read={pricingRead}

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { formatListingAsk, formatPublishedAsk, publishListingAsk, publishListingDrop } from './publish-listing-ask'
+import {
+  formatListingAsk,
+  formatPublishedAsk,
+  publishListingAsk,
+  publishListingDrop,
+  publishListingHistoryPrices,
+} from './publish-listing-ask'
 
 describe('publishListingAsk', () => {
   it('keeps the 7th Street and Hudspeth founding cases exact', () => {
@@ -49,5 +55,36 @@ describe('publishListingDrop', () => {
   it('withholds when original is not above the ask', () => {
     expect(publishListingDrop({ listPrice: 629500, originalListPrice: 629500 })).toBeNull()
     expect(publishListingDrop({ listPrice: 629500, originalListPrice: null })).toBeNull()
+  })
+
+  it('Mariposa: withholds $9.8M original when history only has the $7.9M ask', () => {
+    expect(
+      publishListingDrop({
+        listPrice: 7_900_000,
+        originalListPrice: 9_800_000,
+        historyPrices: [7_900_000, 7_900_000],
+      }),
+    ).toBeNull()
+  })
+
+  it('reads prices off the published history rail', () => {
+    expect(publishListingHistoryPrices([{ price: 7_900_000 }, { price: null }, { price: 9_800_000 }])).toEqual([
+      7_900_000,
+      9_800_000,
+    ])
+  })
+
+  it('prints the drop when history already carries the original ask', () => {
+    expect(
+      publishListingDrop({
+        listPrice: 7_900_000,
+        originalListPrice: 9_800_000,
+        historyPrices: [9_800_000, 7_900_000],
+      }),
+    ).toEqual({
+      ask: 7_900_000,
+      original: 9_800_000,
+      drop: 1_900_000,
+    })
   })
 })

@@ -64,6 +64,8 @@ type Props = {
   scheduleHref?: string
   /** Override the default ask-question href. */
   askHref?: string
+  /** Prices already on the listing-history rail. Drop withholds without them. */
+  historyPrices?: ReadonlyArray<number | null | undefined>
   className?: string
 }
 
@@ -87,6 +89,7 @@ export function PriceCtaStrip({
   onShare,
   scheduleHref,
   askHref,
+  historyPrices,
   className,
 }: Props) {
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
@@ -114,6 +117,7 @@ export function PriceCtaStrip({
     : publishListingDrop({
         listPrice: listing.listPrice,
         originalListPrice: listing.originalListPrice,
+        historyPrices,
       })
   const contactKey = publishListingContactKey({
     listNumber: listing.listNumber,

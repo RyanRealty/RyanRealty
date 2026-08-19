@@ -2,13 +2,13 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — loop DISARMED
+# Current — 2026-08-19 (cursor-cloud) — four shopper defects class-fixed
 
-**Surface:** Cursor cloud `bc-f77b4a1c`. **Time:** 2026-08-19 ~14:20 UTC. Matt said **"Disarm the loop"** + every agent may do what they need, do not wait. Vercel MCP `needsAuth`; no `VERCEL_TOKEN` in this environment, so env could not be flipped. Code default-off: `LOOP_SENTINEL_DEFAULT_OFF = true` in `lib/data/loop/sentinel.ts`. Cron may still hit `/api/cron/loop-sentinel`; route no-ops (`kill switch (LOOP_SENTINEL=off)`). `/admin/loop` armed flag follows `isLoopSentinelDisarmed()`. Did not touch CMA, punch list, findings, or email. Do not re-arm.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Four morning defects only: Bend city/browse SFR count + MOS withhold; listing drop withheld unless original is on history rail; save-search email in the DOM; tour confirm names the listing. CMA / sitemaps / loop-sentinel not touched. No client mail. No re-arm. Leave `LOOP_SENTINEL` off. Do not flip `LOOP_SENTINEL_DEFAULT_OFF`.
 
-**Next:** Leave the loop off. Do not set `LOOP_SENTINEL=on`. Do not flip `LOOP_SENTINEL_DEFAULT_OFF`.
+# Prior — 2026-08-19 (cursor-cloud) — loop DISARMED
 
-**Skills read:** env-vars, vercel-cli, CROSS_AGENT_HANDOFF, growth-loop (boot only).
+**Surface:** Cursor cloud `bc-f77b4a1c`. Matt said **"Disarm the loop"**. Code default-off: `LOOP_SENTINEL_DEFAULT_OFF = true` in `lib/data/loop/sentinel.ts`. Cron may still hit `/api/cron/loop-sentinel`; route no-ops. Did not touch CMA, punch list, findings, or email.
 
 # Prior — 2026-08-19 (grok-build) — graph armed, motivated-sellers 308 shipped
 

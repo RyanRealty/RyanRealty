@@ -97,6 +97,23 @@ describe('listing-detail CTA row accessible names', () => {
     expect(render({ initialSaved: true })).toMatch(/aria-pressed="true"/)
   })
 
+  it('Mariposa: withholds a $9.8M original that listing history does not carry', () => {
+    const html = render({
+      listing: {
+        ...LISTING,
+        listPrice: 7_900_000,
+        originalListPrice: 9_800_000,
+        streetNumber: '65930',
+        streetName: 'Mariposa',
+        streetSuffix: 'Lane',
+      } as unknown as Parameters<typeof PriceCtaStrip>[0]['listing'],
+      historyPrices: [7_900_000],
+    })
+    expect(html).not.toMatch(/9,800,000/)
+    expect(html).not.toMatch(/1,900,000/)
+    expect(html).toMatch(/7,900,000/)
+  })
+
   it('offers a clear path to the listing alert strip', () => {
     const html = render()
     expect(html).toMatch(/href="#listing-like-alerts"/)

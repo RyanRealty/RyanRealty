@@ -200,6 +200,60 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
 
   const triggerLabel = status === 'done' ? 'Search saved' : 'Save this search'
 
+  if (!user) {
+    if (status === 'done') {
+      return (
+        <Card role="status" className="w-72 shadow-md">
+          <CardContent className="p-4">
+            <p className="text-sm font-medium text-foreground">You are set. Watch your inbox.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              We email you when a new match hits the market. Sign in later to manage alerts. Next visit we will remind you you are watching this search.
+            </p>
+          </CardContent>
+        </Card>
+      )
+    }
+    return (
+      <form onSubmit={handleGuestSave} className="flex flex-wrap items-end gap-2">
+        <Input
+          type="text"
+          name="company"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          className="sr-only h-px w-px"
+        />
+        <div className="min-w-44">
+          <Label htmlFor="save-search-email" className="text-sm font-medium text-muted-foreground">
+            Email
+          </Label>
+          <Input
+            id="save-search-email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            maxLength={254}
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@email.com"
+            className="mt-1 w-full"
+          />
+        </div>
+        <Button type="submit" size="sm" disabled={status === 'saving'}>
+          {status === 'saving' ? 'Saving...' : 'Save this search'}
+        </Button>
+        {status === 'error' ? (
+          <p className="w-full text-sm text-destructive" role="alert">
+            {errorMsg || 'Could not save. Try again.'}
+          </p>
+        ) : null}
+      </form>
+    )
+  }
+
   return (
     <div className="relative">
       {/* Navy-filled control so mid-browse save is not a quiet outline chip. */}
@@ -241,7 +295,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
               </Button>
               </CardContent>
             </Card>
-          ) : user ? (
+          ) : (
             <Card className="absolute left-0 top-full z-50 mt-1 w-72 shadow-md">
             <form
               onSubmit={handleSave}
@@ -278,73 +332,6 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
                   className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                 >
                   {status === 'saving' ? 'Saving…' : 'Save'}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={closePanel}
-                  className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground"
-                >
-                  Cancel
-                </Button>
-              </div>
-              {status === 'error' && (
-                <p className="mt-2 text-sm text-destructive" role="alert">
-                  {errorMsg || 'Could not save. Try again.'}
-                </p>
-              )}
-            </form>
-            </Card>
-          ) : (
-            <Card className="absolute left-0 top-full z-50 mt-1 w-72 shadow-md">
-            <form
-              onSubmit={handleGuestSave}
-              className="p-4"
-            >
-              <p className="text-sm font-medium text-foreground">Email alerts for this search</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Enter your email. We email you when a new listing matches these filters. No account needed.
-              </p>
-              {searchParams?.get('poly') ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Alerts cover the area around your drawn boundary, not the exact shape.
-                </p>
-              ) : null}
-              {/* Honeypot: visually + a11y hidden, not tab-reachable. Bots fill it. */}
-              <Input
-                type="text"
-                name="company"
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                // P0-6: h-px w-px so tailwind-merge drops the Input base h-8/w-full
-                // (bare sr-only loses width:1px to the base w-full in the cascade).
-                className="sr-only h-px w-px"
-              />
-              <Label htmlFor="save-search-email" className="mt-3 block text-sm font-medium text-muted-foreground">
-                Email
-              </Label>
-              <Input
-                id="save-search-email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                maxLength={254}
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@email.com"
-                className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
-                autoFocus
-              />
-              <div className="mt-3 flex gap-2">
-                <Button
-                  type="submit"
-                  disabled={status === 'saving'}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {status === 'saving' ? 'Saving…' : 'Save search'}
                 </Button>
                 <Button
                   type="button"

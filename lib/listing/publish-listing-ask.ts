@@ -31,13 +31,37 @@ export function publishListingAsk(listPrice: number | null | undefined): Publish
   return { ask }
 }
 
+export function publishListingHistoryPrices(
+  rows: ReadonlyArray<{ price?: number | null } | null | undefined> | null | undefined,
+): number[] {
+  const out: number[] = []
+  for (const row of rows ?? []) {
+    const price = asPositivePrice(row?.price)
+    if (price != null) out.push(price)
+  }
+  return out
+}
+
 export function publishListingDrop(input: {
   listPrice: number | null | undefined
   originalListPrice: number | null | undefined
+  /**
+   * Prices on the published listing-history rail. When this list is passed,
+   * OriginalListPrice may print only if that exact dollar amount already
+   * appears on the timeline. Founding case: 65930 Mariposa (220204494)
+   * printed Down $1,900,000 from $9,800,000 while history only had $7,900,000.
+   */
+  historyPrices?: ReadonlyArray<number | null | undefined> | null
 }): PublishedListingDrop | null {
   const ask = asPositivePrice(input.listPrice)
   const original = asPositivePrice(input.originalListPrice)
   if (ask == null || original == null || original <= ask) return null
+  if (input.historyPrices !== undefined && input.historyPrices !== null) {
+    const supported = input.historyPrices
+      .map((price) => asPositivePrice(price))
+      .filter((price): price is number => price != null)
+    if (!supported.includes(original)) return null
+  }
   return { ask, original, drop: original - ask }
 }
 
