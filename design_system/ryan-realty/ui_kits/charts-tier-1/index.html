@@ -65,6 +65,17 @@
 
   footer.kit-foot { background: var(--primary); color: rgba(255,255,255,0.72); font-size: 12px; line-height: 1.7; padding: 28px 0; margin-top: 24px; }
   footer.kit-foot b { color: #fff; font-weight: 600; }
+
+/* Collapsed §0 trace — visible copy stays clean; the receipt is one tap away */
+.srcd{margin-top:14px}
+.srcd summary{list-style:none;cursor:pointer;display:inline-block;font-size:10.5px;
+ letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--mute,rgba(16,39,66,.45));
+ border-bottom:1px dotted currentColor;padding-bottom:1px}
+.srcd summary::-webkit-details-marker{display:none}
+.srcd[open] summary{color:var(--navy,#102742)}
+.srcd p{margin-top:8px;font-size:11.5px;line-height:1.65;color:var(--mute,rgba(16,39,66,.55));max-width:78ch}
+.ts-sec .srcd summary{color:var(--mute-light,rgba(250,248,244,.5))}
+.ts-sec .srcd p{color:var(--mute-light,rgba(250,248,244,.6))}
 </style>
 </head>
 <body>
@@ -112,7 +123,7 @@
   <text x="396.60" y="239.37" class="anno dim mid">seller net after concession</text>
   <text x="66.00" y="278" class="ax mid">'24Q1</text><text x="161.60" y="278" class="ax mid">'24Q3</text><text x="257.20" y="278" class="ax mid">'25Q1</text><text x="352.80" y="278" class="ax mid">'25Q3</text><text x="448.40" y="278" class="ax mid">'26Q1</text><text x="544.00" y="278" class="ax mid">'26Q3</text>
 </svg>
-      <p class="src">sale_pricing_seller_net · product_class='detached', concessions_yn='Yes', concessions_amount&gt;0 · close_date 2024-01-01..2026-08-13 · median(close_price) vs median(seller_net) by quarter · 4,448 rows · fetched 2026-08-17</p>
+      <details class="srcd"><summary>Source</summary><p>sale_pricing_seller_net · product_class='detached', concessions_yn='Yes', concessions_amount&gt;0 · close_date 2024-01-01..2026-08-13 · median(close_price) vs median(seller_net) by quarter · 4,448 rows · fetched 2026-08-17</p></details>
     </div>
     <div class="card">
       <h3>Share of closings carrying a concession</h3>
@@ -131,7 +142,7 @@
   <text x="538.00" y="71.45" class="anno dim ar">quarter in progress</text>
   <text x="50.00" y="228" class="ax mid">'24Q1</text><text x="148.80" y="228" class="ax mid">'24Q3</text><text x="247.60" y="228" class="ax mid">'25Q1</text><text x="346.40" y="228" class="ax mid">'25Q3</text><text x="445.20" y="228" class="ax mid">'26Q1</text><text x="544.00" y="228" class="ax mid">'26Q3</text>
 </svg>
-      <p class="src">sale_pricing_seller_net · product_class='detached' · close_date 2024-01-01..2026-08-13 · count(concessions_yn='Yes') / count(*) by quarter · 10,341 rows · fetched 2026-08-17</p>
+      <details class="srcd"><summary>Source</summary><p>sale_pricing_seller_net · product_class='detached' · close_date 2024-01-01..2026-08-13 · count(concessions_yn='Yes') / count(*) by quarter · 10,341 rows · fetched 2026-08-17</p></details>
     </div>
   </div>
 
@@ -170,7 +181,7 @@
   <text x="62" y="34" class="anno dim lg">shaded band = full range across all seven cities</text>
   <text x="56.00" y="386" class="ax lg mid">2015</text><text x="162.09" y="386" class="ax lg mid">2017</text><text x="268.17" y="386" class="ax lg mid">2019</text><text x="374.26" y="386" class="ax lg mid">2021</text><text x="480.35" y="386" class="ax lg mid">2023</text><text x="586.43" y="386" class="ax lg mid">2025</text>
 </svg>
-    <p class="src">pricing_market_index.median_sale_to_original · monthly by city_slug, n&gt;=5 · 2015-01..2026-07 · 139 months drawn · Aug 2026 excluded, month in progress · fetched 2026-08-17</p>
+    <details class="srcd"><summary>Source</summary><p>pricing_market_index.median_sale_to_original · monthly by city_slug, n&gt;=5 · 2015-01..2026-07 · 139 months drawn · Aug 2026 excluded, month in progress · fetched 2026-08-17</p></details>
   </div>
 
   <div class="card">
@@ -229,7 +240,7 @@
   <text x="142" y="24" class="anno dim ar">city</text>
   <text x="510" y="24" class="anno dim">YoY pts</text>
 </svg>
-    <p class="src">sale_pricing_facts.sale_to_original · product_class='detached' · close_date 2026-04-01..2026-06-30 vs 2025-04-01..2025-06-30 · median by city_slug, n&gt;=5 · fetched 2026-08-17</p>
+    <details class="srcd"><summary>Source</summary><p>sale_pricing_facts.sale_to_original · product_class='detached' · close_date 2026-04-01..2026-06-30 vs 2025-04-01..2025-06-30 · median by city_slug, n&gt;=5 · fetched 2026-08-17</p></details>
   </div>
 
   <div class="caveat"><b>Black Butte Ranch is the outlier and it stays on the chart.</b> 90.15% is a 5.85-point fall, far past anything else here — but it rests on 12 sales against 7 a year earlier. At that size one heavily discounted cabin moves the median several points. Read it as a flag to go look, not as a measurement. The same caution applies to Culver, Sunriver, Terrebonne and Powell Butte, all under 30 sales and all marked. <b>Q3 2026 is deliberately not ranked here</b> — it is six weeks old, 286 Bend closings against 514 in Q2.</div>
@@ -311,7 +322,7 @@
   <text x="482.00" y="28" class="anno dim ar">tint = days on market at close</text>
   <text x="492" y="28" class="anno dim">vs Jul '25</text>
 </svg>
-    <p class="src">sale_pricing_facts · days_to_offer = on_market_date → pending_date · cdom = MLS cumulative days on market · product_class='detached', both columns non-null · close_date 2026-07-01..2026-07-31 vs 2025-07-01..2025-07-31 · median by city_slug, n&gt;=5 · fetched 2026-08-17</p>
+    <details class="srcd"><summary>Source</summary><p>sale_pricing_facts · days_to_offer = on_market_date → pending_date · cdom = MLS cumulative days on market · product_class='detached', both columns non-null · close_date 2026-07-01..2026-07-31 vs 2025-07-01..2025-07-31 · median by city_slug, n&gt;=5 · fetched 2026-08-17</p></details>
   </div>
 
   <div class="caveat"><b>Read the small cities as direction, not measurement.</b> Sisters shows the sharpest improvement on the board, 32 days to 7 — but on 27 sales this July against 12 last July. Terrebonne's jump from 13 to 81 days rests on 5 prior-year sales. Only Bend and Redmond clear 30 sales in both months. <b>July is used because August is a stub</b> — closed data runs to 2026-08-13.</div>
@@ -377,7 +388,7 @@
   <text x="510" y="12" class="anno dim ar">avg cuts</text>
   <text x="510" y="36" class="anno dim ar">per listing</text>
 </svg>
-    <p class="src">market_pulse_live.price_reduction_share, avg_price_drops_active · listings StandardStatus IN ('Active','Coming Soon','Active Under Contract') · SFR sub-type, PropertyType='A' · stored as percent 0-100, not a fraction · methodology v3-2026-05-07 · snapshot 2026-08-18 05:33:20+00</p>
+    <details class="srcd"><summary>Source</summary><p>market_pulse_live.price_reduction_share, avg_price_drops_active · listings StandardStatus IN ('Active','Coming Soon','Active Under Contract') · SFR sub-type, PropertyType='A' · stored as percent 0-100, not a fraction · methodology v3-2026-05-07 · snapshot 2026-08-18 05:33:20+00</p></details>
   </div>
 
   <div class="caveat"><b>Three cities show 0% and the denominators say why.</b> Culver has 11 actives, Metolius has 7 actives, Camp Sherman has 4 actives. Those are true zeros, not missing data — but on 4 listings, a single price cut would move the rate to 25%. They are drawn as a tick at zero rather than an absent bar so the thin sample stays visible instead of implied. Terrebonne's 16.67% is 1 cut out of 6.</div>

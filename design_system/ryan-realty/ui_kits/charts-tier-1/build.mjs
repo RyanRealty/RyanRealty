@@ -259,7 +259,7 @@ function cutsChart() {
 }
 
 /* ── source line ────────────────────────────────────────────────────────── */
-const src = (parts) => `<p class="src">${parts.map(esc).join(' · ')}</p>`
+const src = (parts) => `<details class="srcd"><summary>Source</summary><p>${parts.map(esc).join(' · ')}</p></details>`
 
 /* ── page ───────────────────────────────────────────────────────────────── */
 const cAll = D.CONCESSIONS_ALL.rows
@@ -350,6 +350,17 @@ const html = `<!doctype html>
 
   footer.kit-foot { background: var(--primary); color: rgba(255,255,255,0.72); font-size: 12px; line-height: 1.7; padding: 28px 0; margin-top: 24px; }
   footer.kit-foot b { color: #fff; font-weight: 600; }
+
+/* Collapsed §0 trace — visible copy stays clean; the receipt is one tap away */
+.srcd{margin-top:14px}
+.srcd summary{list-style:none;cursor:pointer;display:inline-block;font-size:10.5px;
+ letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--mute,rgba(16,39,66,.45));
+ border-bottom:1px dotted currentColor;padding-bottom:1px}
+.srcd summary::-webkit-details-marker{display:none}
+.srcd[open] summary{color:var(--navy,#102742)}
+.srcd p{margin-top:8px;font-size:11.5px;line-height:1.65;color:var(--mute,rgba(16,39,66,.55));max-width:78ch}
+.ts-sec .srcd summary{color:var(--mute-light,rgba(250,248,244,.5))}
+.ts-sec .srcd p{color:var(--mute-light,rgba(250,248,244,.6))}
 </style>
 </head>
 <body>

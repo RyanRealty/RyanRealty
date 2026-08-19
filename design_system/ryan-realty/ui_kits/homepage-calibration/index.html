@@ -219,6 +219,19 @@ a{color:inherit}
   .dot{animation:none}
   html{scroll-behavior:auto}
 }
+
+/* Collapsed §0 trace — visible copy stays clean; the receipt is one tap away */
+.srcd{margin-top:14px}
+.srcd summary{list-style:none;cursor:pointer;display:inline-block;font-size:10.5px;
+ letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--mute,rgba(16,39,66,.45));
+ border-bottom:1px dotted currentColor;padding-bottom:1px}
+.srcd summary::-webkit-details-marker{display:none}
+.srcd[open] summary{color:var(--navy,#102742)}
+.srcd p{margin-top:8px;font-size:11.5px;line-height:1.65;color:var(--mute,rgba(16,39,66,.55));max-width:78ch}
+.srcd--cream summary{color:rgba(250,248,244,.5)}
+.srcd--cream p{color:rgba(250,248,244,.6)}
+.ts-sec .srcd summary{color:var(--mute-light,rgba(250,248,244,.5))}
+.ts-sec .srcd p{color:var(--mute-light,rgba(250,248,244,.6))}
 </style>
 </head>
 <body>
@@ -262,11 +275,9 @@ a{color:inherit}
       <div><div class="fig__v num">24<small>days</small></div><div class="fig__l">Days to pending</div></div>
       <div><div class="fig__v num">5.7<small>mo</small></div><div class="fig__l">Months of supply</div></div>
     </div>
-    <p class="src">
-      Central Oregon region · market_pulse_live · active single-family listings, PropertyType A ·
+    <details class="srcd"><summary>Source</summary><p>Central Oregon region · market_pulse_live · active single-family listings, PropertyType A ·
       months of supply = active ÷ (closed last 6 months ÷ 6) · ≤ 4 seller's · 4 to 6 balanced · ≥ 6 buyer's ·
-      methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC
-    </p>
+      methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC</p></details>
   </section>
 </div>
 
@@ -350,15 +361,11 @@ a{color:inherit}
       </div>
     </div>
 
-    <p class="note">
-      The scale runs to 12 months. Powell Butte and Terrebonne extend past it.
+    <details class="srcd"><summary>Source</summary><p>The scale runs to 12 months. Powell Butte and Terrebonne extend past it.
       <strong>Thin</strong> marks a town with fewer than five closed sales in the last 30 days.
-      The ratio is real, the sample is small. Terrebonne shows 6 actives and 0 closed in 30 days.
-    </p>
-    <p class="src src--cream">
-      market_pulse_live · geo_type city · active single-family listings, PropertyType A ·
-      months of supply = active ÷ (closed last 6 months ÷ 6) · methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC
-    </p>
+      The ratio is real, the sample is small. Terrebonne shows 6 actives and 0 closed in 30 days.</p></details>
+    <details class="srcd srcd--cream"><summary>Source</summary><p>market_pulse_live · geo_type city · active single-family listings, PropertyType A ·
+      months of supply = active ÷ (closed last 6 months ÷ 6) · methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC</p></details>
   </div>
 </section>
 
@@ -396,14 +403,12 @@ a{color:inherit}
       <text class="ax" x="8.0" y="324" text-anchor="middle">1998</text><text class="ax" x="263.1" y="324" text-anchor="middle">2005</text><text class="ax" x="481.8" y="324" text-anchor="middle">2011</text><text class="ax" x="700.4" y="324" text-anchor="middle">2017</text><text class="ax" x="846.2" y="324" text-anchor="middle">2021</text><text class="ax" x="992.0" y="324" text-anchor="middle">2025</text>
     </svg>
 
-    <p class="ts-note">
-      Bars are closed sales per year, peaking at 7,769 in 2005 and 7,575 in 2021.
+    <details class="srcd"><summary>Source</summary><p>Bars are closed sales per year, peaking at 7,769 in 2005 and 7,575 in 2021.
       The line is the median close price. The highlighted span is the 2007 to 2011 drawdown,
       $310,000 to $155,000, exactly half.
       Source: <code>analytics_mart_market_annual</code>, <code>geo_type='region'</code>,
       <code>type_scope='sfr'</code>, methodology <code>closed_cte+service_area_v1</code>,
-      computed Aug 10 and 15, 2026. 28 years of closed sales, no forecast.
-    </p>
+      computed Aug 10 and 15, 2026. 28 years of closed sales, no forecast.</p></details>
   </div>
 </section>
 
@@ -499,14 +504,10 @@ a{color:inherit}
       </details>
     </div>
 
-    <p class="note">
-      These 13 towns hold 1,162 of the region's 1,801 active single-family listings.
-      The other 639 sit outside a tracked town boundary.
-    </p>
-    <p class="src src--cream">
-      market_pulse_live · geo_type city · active_count, median_list_price, median_days_to_pending ·
-      single-family, PropertyType A · methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC
-    </p>
+    <details class="srcd"><summary>Source</summary><p>These 13 towns hold 1,162 of the region's 1,801 active single-family listings.
+      The other 639 sit outside a tracked town boundary.</p></details>
+    <details class="srcd srcd--cream"><summary>Source</summary><p>market_pulse_live · geo_type city · active_count, median_list_price, median_days_to_pending ·
+      single-family, PropertyType A · methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC</p></details>
   </div>
 </section>
 
@@ -516,10 +517,8 @@ a{color:inherit}
     <p class="eyebrow">Sell</p>
     <h2 class="h2 display">1,164 homes closed in the last 90 days. Median $675,000.</h2>
     <a class="cta" href="#">Value my home</a>
-    <p class="src">
-      Central Oregon region · market_pulse_live · sold_count_90d, median_close_price_90d ·
-      closed single-family, PropertyType A · methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC
-    </p>
+    <details class="srcd"><summary>Source</summary><p>Central Oregon region · market_pulse_live · sold_count_90d, median_close_price_90d ·
+      closed single-family, PropertyType A · methodology v3-2026-05-07 · updated Aug 18, 2026 22:45 UTC</p></details>
   </div>
 </section>
 
