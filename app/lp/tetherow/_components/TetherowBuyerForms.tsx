@@ -10,7 +10,7 @@
  * The active inventory dropdown is populated SERVER-SIDE from the live
  * listings query (data.ts → fetchTetherowActiveListings) so the option list
  * always matches the cards rendered above on the same page. Each form posts
- * to /api/cma with pre-tagged FUB tags.
+ * to /api/cma with pre-tagged CRM tags.
  */
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'

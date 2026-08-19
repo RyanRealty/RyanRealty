@@ -27,7 +27,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getActiveRulesForTrigger, type CrmTriggerType } from '@/lib/data/crm/getCrmAutomationRules'
 import { manualEnrollPerson } from '@/lib/crm/enroll'
 
-// ── Extended trigger types (v2 — FUB §8.5) ────────────────────────────────────
+// ── Extended trigger types (v2 — CRM §8.5) ────────────────────────────────────
 
 export type ExtendedTriggerType =
   | CrmTriggerType

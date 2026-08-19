@@ -160,7 +160,7 @@ async function readMarketingUtm(datePreset: DatePreset | 'custom'): Promise<Mark
  * the selected window; Leads = distinct identified CRM contacts among those
  * sessions; Appointments / Deals Closed / Deal Value are contact-attributed
  * outcomes for those people (crm_appointments; crm_deals in a closed stage).
- * Cached 10 minutes (FUB reporting TTL).
+ * Cached 10 minutes (CRM reporting TTL).
  */
 export async function getMarketingUtmReport(
   datePreset: DatePreset | 'custom',

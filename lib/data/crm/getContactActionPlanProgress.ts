@@ -1,7 +1,7 @@
 /**
  * getContactActionPlanProgress — reads live sequence enrollments for a contact
  * paired with the sequence metadata (name, total step count). Drives the Action
- * Plans progress panel on the person-detail page (FUB §7c.8.1 / §7c.8.7).
+ * Plans progress panel on the person-detail page (CRM §7c.8.1 / §7c.8.7).
  *
  * Only non-terminal statuses are returned. Terminal enrollments (stopped,
  * completed) are filtered out — they are visible in the activity timeline instead.

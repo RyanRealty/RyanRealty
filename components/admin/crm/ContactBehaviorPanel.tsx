@@ -82,7 +82,7 @@ export default function ContactBehaviorPanel({
             </div>
           ) : null}
 
-          {/* Homes viewed now render as FUB-style property cards in the Homes
+          {/* Homes viewed now render as CRM-style property cards in the Homes
               tab's Activity section (ViewedHomeCard) — no duplicate list here. */}
 
           {/* Searches they ran */}

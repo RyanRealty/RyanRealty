@@ -4,7 +4,7 @@
 
 > **Goal:** maximum seller leads per dollar using only proven 2026 best practices. **Projection:** 30–50 seller leads / month at $1,800/mo budget = $36–$60 cost-per-lead, with the Higher Intent form filtering out tire-kickers so the leads that come through are pre-qualified by timeline.
 
-**CRM:** every Lead Ad lands in **`crm_people`** via **`/api/meta/lead-webhook`** → **`sendEvent`**. Follow Up Boss is gone. Do not curl a vendor People API to verify a test lead.
+**CRM:** every Lead Ad lands in **`crm_people`** via **`/api/meta/lead-webhook`** → **`sendEvent`**. the in-house CRM is gone. Do not curl a vendor People API to verify a test lead.
 
 ---
 
@@ -245,7 +245,7 @@ Already supported in the pipeline — `app/actions/dashboard.ts` `getDashboardMa
 
 Query **`crm_people`** (admin People search or SQL). Expected: a new person with source like `Facebook Lead Ad — Ryan Realty Bend Seller Valuation v1`, tags including `source:fb-ads-seller` / `FB Lead Ad`, and a `crm_tasks` row if classified hot.
 
-Do **not** call `api.followupboss.com`. That integration is off.
+Do **not** call `retired.invalid`. That integration is off.
 
 **T+24 hours:**
 - Meta Ads Manager → Reach > 0, Impressions > 0, CPL visible

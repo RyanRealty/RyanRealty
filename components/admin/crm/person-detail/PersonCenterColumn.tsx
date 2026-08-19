@@ -2,7 +2,7 @@
 
 /**
  * PersonCenterColumn — §07b center column of the person-detail three-column
- * layout (spec docs/fub-crm-spec/07b-person-detail-timeline-and-engagement.md
+ * layout (spec docs/crm-spec/07b-person-detail-timeline-and-engagement.md
  * + 07c §7c.1–7c.5 compose modes).
  *
  * Top to bottom: person navigation strip (§3) → action bar with the four

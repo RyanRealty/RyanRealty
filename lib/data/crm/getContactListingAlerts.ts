@@ -9,9 +9,9 @@
  * one row per search per address.
  *
  * Identity comes from the keystone resolver (resolvePersonIdentity): it yields
- * the person's normalized emails, the auth uuid, and the FUB legacy id — all
+ * the person's normalized emails, the auth uuid, and the CRM legacy id — all
  * three are join keys on listing_alerts (plus crm_person_id directly).
- * Resolution is FUB-independent — a native lead resolves the same way as an
+ * Resolution is CRM-independent — a native lead resolves the same way as an
  * imported one.
  *
  * `source` keeps the historical 'saved-search' / 'guest-alert' vocabulary so

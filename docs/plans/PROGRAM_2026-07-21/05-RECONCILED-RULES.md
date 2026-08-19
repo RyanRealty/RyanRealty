@@ -468,9 +468,9 @@ Local-SEO scope (GBP categories, attributes, posts, photos, reviews, citations) 
 ## 6. CRM and workflows
 
 ### 6.1 FUB is decommissioned — the in-house CRM is the system of record
-Follow Up Boss was fully decommissioned **2026-06-24**. `getFubApiKey()` always returns `undefined`; `CRM_LEAD_BACKEND` defaults to `'native'`. There is no remaining cutover flip. All dashboards count leads from `crm_people` via `getLeadIntake`.
+the in-house CRM was fully decommissioned **2026-06-24**. `getFubApiKey()` always returns `undefined`; `CRM_LEAD_BACKEND` defaults to `'native'`. There is no remaining cutover flip. All dashboards count leads from `crm_people` via `getLeadIntake`.
 
-Every doc that describes FUB as live infrastructure is dead: `docs/CRM_INTEGRATION.md` (its G49 "must POST to FUB" contract is inverted), `docs/TC_SYSTEM.md`, `docs/MARKETING_LEAD_FLOW.md`, `docs/FUB_SELLER_WORKFLOW_2026-05-17.md`, `docs/FUB_CUSTOM_FIELDS.md`, `docs/FUB_BROKER_DIGESTS.md`, `docs/FUB_SMART_LISTS_STARTER_PACK.md`, the whole `docs/fub-crm-spec/` and `docs/fub-feature-audit/` trees, and all three `docs/broker-runbooks/*.md`.
+Every doc that describes FUB as live infrastructure is dead: `docs/CRM_INTEGRATION.md` (its G49 "must POST to FUB" contract is inverted), `docs/TC_SYSTEM.md`, `docs/MARKETING_LEAD_FLOW.md`, `docs/FUB_SELLER_WORKFLOW_2026-05-17.md`, `docs/FUB_CUSTOM_FIELDS.md`, `docs/FUB_BROKER_DIGESTS.md`, `docs/FUB_SMART_LISTS_STARTER_PACK.md`, the whole `docs/crm-spec/` and `docs/fub-feature-audit/` trees, and all three `docs/broker-runbooks/*.md`.
 `GATE: ci:crm-lead-integrity` + `ci:crm-secrets` · *Merged from: 9 docs + code verification*
 
 ### 6.2 One send interface
@@ -573,8 +573,8 @@ Per-page analysis filters to page scope. Scope-level rollups never enter per-pag
 | `sendGovernedSms` / `sendGovernedEmail` are the one send chokepoint | Neither function exists. Real chokepoints: `lib/resend.ts` + `isSuppressed()`, and `lib/crm/twilio.ts` + `lib/crm/sms-delivery.ts`. Restated as §1.7. |
 | `CONTEXT.md` at repo root is the ubiquitous-language document | `CONTEXT.md` does not exist. |
 | CLAUDE.md's `video_production_skills/*` reading list (30 paths, 49 citations) | Directory holds three `.ts`/`.tsx` files and zero markdown. Constraints inlined as §5.5. |
-| `docs/FUB_BROKER_DIGESTS.md`: `FOLLOWUPBOSS_API_KEY` powers `/api/cron/daily-broker-digest` | That route has zero FUB references; it imports `getBrokerDigest` and reads `crm_people` / `crm_tasks` directly. |
-| `docs/CRM_INTEGRATION.md`: every inbound lead must POST to FUB `/v1/events`, gate G49 | `lib/followupboss.ts` `sendEvent()` carries "FUB DECOMMISSIONED (cutover 2026-06-24)" and writes to `crm_people`. |
+| `docs/FUB_BROKER_DIGESTS.md`: `UNUSED_VENDOR_CRM_KEY` powers `/api/cron/daily-broker-digest` | That route has zero FUB references; it imports `getBrokerDigest` and reads `crm_people` / `crm_tasks` directly. |
+| `docs/CRM_INTEGRATION.md`: every inbound lead must POST to FUB `/v1/events`, gate G49 | `lib/crm/send-event.ts` `sendEvent()` carries "FUB DECOMMISSIONED (cutover 2026-06-24)" and writes to `crm_people`. |
 | Broker runbooks: `detect-expired-listings` hourly, `daily-broker-digest` 8am, `weekly-pipeline-digest` Mon 8am, `seller-workflow-pause` every 15 min | None of the four appear in `vercel.json`'s 49 crons. The route folders exist unscheduled. Expired detection now runs inside `sync-delta`. |
 | `contact-playbook.md` cites `scripts/westside-bend-build-fub-import.mjs`; `westside-fub-smart-lists-setup.md` cites `scripts/westside-bend-fub-smart-lists.mjs` | Neither file exists. |
 | `.claude/skills/facebook-seller-growth` cites `scripts/meta-rebuild-fub-audiences.mjs` as ready | File does not exist. |

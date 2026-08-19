@@ -1,6 +1,6 @@
 -- Migration: crm_company_settings
 -- Singleton table (id = 1) holding account-level CRM configuration fields.
--- Per FUB spec §1.11 (docs/fub-crm-spec/15-admin-company-team-and-roles.md).
+-- Per FUB spec §1.11 (docs/crm-spec/15-admin-company-team-and-roles.md).
 -- Seeded with real Ryan Realty values from api-export/_sample_identity.json +
 -- shot-40.md (basic info / virtual phone) + shot-41.md (office hours / business
 -- insights / block list). Service-role key bypasses RLS; admin_roles gate in the

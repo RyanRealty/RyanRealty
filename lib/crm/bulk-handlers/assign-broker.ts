@@ -14,8 +14,8 @@
  * broker somehow enqueued it), every id is skipped and counted under
  * `refused_not_owner` rather than silently reassigning leads. Defense in depth.
  *
- * FUB is decommissioned (2026-06-24) — this writes the CRM system of record only.
- * The single-record path's assignPersonToUser / replacePersonTags FUB calls are
+ * CRM is decommissioned (2026-06-24) — this writes the CRM system of record only.
+ * The single-record path's assignPersonToUser / replacePersonTags CRM calls are
  * intentionally omitted (they would be 18K dead API hits over the full book).
  *
  * Every id in the chunk is accounted for as processed OR skipped so the worker's

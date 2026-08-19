@@ -75,12 +75,12 @@ check(!/gtag\(\s*['"]config['"]\s*,/.test(identity), 'AnalyticsIdentityBridge mu
 check(/gtag\(\s*['"]set['"]/.test(identity), 'AnalyticsIdentityBridge must set user_id via gtag(set)')
 
 const lead = read('lib/lead-tracking.ts')
-check(/crm_person_id:/.test(lead), 'lead-tracking must send crm_person_id to GA4, not a Follow Up Boss name')
+check(/crm_person_id:/.test(lead), 'lead-tracking must send crm_person_id to GA4, not a the in-house CRM name')
 check(!/fub_person_id:\s*params/.test(lead), 'lead-tracking must not emit fub_person_id as a GA4 event param')
 
 const setup = read('scripts/ga4-admin-setup.mjs')
 check(/parameterName:\s*'page_type'/.test(setup), 'ga4-admin-setup must register the page_type custom dimension')
-check(/parameterName:\s*'crm_person_id'/.test(setup), 'ga4-admin-setup must register crm_person_id (not a Follow Up Boss name)')
+check(/parameterName:\s*'crm_person_id'/.test(setup), 'ga4-admin-setup must register crm_person_id (not a the in-house CRM name)')
 
 const SKIP_FIRST = new Set(['admin', 'api', 'actions', 'components', 'data'])
 

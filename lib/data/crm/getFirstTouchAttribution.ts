@@ -10,12 +10,12 @@
  * history for an identity and returns that first-touch attribution.
  *
  * The identity shape is resolvePersonIdentity-compatible: pass any of the
- * person's normalized emails, their stitched session ids, the legacy FUB id,
+ * person's normalized emails, their stitched session ids, the legacy CRM id,
  * and/or an rr_vid. We match a `visitor_sessions` row to the person via ANY of
- * the four FUB-independent keys the snapshot exposes on that table:
+ * the four CRM-independent keys the snapshot exposes on that table:
  *
  *   - session_id        IN (identity.sessionIds)   — stitched sessions
- *   - fub_person_id     =  identity.fubPersonId     — FUB-identified sessions
+ *   - fub_person_id     =  identity.fubPersonId     — CRM-identified sessions
  *   - rr_vid            =  identity.rrVid           — the anonymous visitor id
  *   - identified_email  IN (identity.emails)        — email-identified sessions
  *
@@ -136,7 +136,7 @@ export async function getFirstTouchAttribution(
       : Number(identity.fubPersonId)
   const rrVid = identity.rrVid ? String(identity.rrVid).trim() || null : null
 
-  // Build the FUB-independent OR-filter across the four identity keys. PostgREST
+  // Build the CRM-independent OR-filter across the four identity keys. PostgREST
   // in.(...) values are quoted to stay literal-safe for emails/ids.
   const orFilters: string[] = []
   if (sessionIds.length > 0) {

@@ -579,7 +579,7 @@ task. Everything else fires on trigger match.
 | SEO blog post | [`social_media_skills/blog-post/SKILL.md`](social_media_skills/blog-post/SKILL.md). Publishing path is Supabase `blog_posts` rendered by the live Next site. |
 | Paid Meta pipeline, marketing automation, weekly optimization crons, seller funnel | [`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`](docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md) first, then [`docs/MARKETING_LEAD_FLOW.md`](docs/MARKETING_LEAD_FLOW.md), `.cursor/skills/facebook-seller-growth/SKILL.md` |
 | Facebook lead-gen ad | the two docs above for live wiring, then `social_media_skills/facebook-lead-gen-ad/SKILL.md` |
-| Seller LP follow-up workflow | **The in-house CRM sequence engine.** `app/lp/seller-home-value/actions.ts` → `autoEnrollByFubId()` in [`lib/crm/enroll.ts`](lib/crm/enroll.ts); `/api/cron/crm-auto-enroll` sweeps misses; `/api/cron/crm-sequence-engine` fires touches (pause-on-reply lives inside it); `/api/cron/crm-scheduled-sends` delivers. Sequences edited at `/admin/crm/sequences`. |
+| Seller LP follow-up workflow | **The in-house CRM sequence engine.** `app/lp/seller-home-value/actions.ts` → `autoEnrollByPersonId()` in [`lib/crm/enroll.ts`](lib/crm/enroll.ts); `/api/cron/crm-auto-enroll` sweeps misses; `/api/cron/crm-sequence-engine` fires touches (pause-on-reply lives inside it); `/api/cron/crm-scheduled-sends` delivers. Sequences edited at `/admin/crm/sequences`. |
 | Expired / Canceled / Withdrawn listing workflow | `/lp/expired-listing` · `public.expired_listings`. Detection runs inside the delta sync. |
 | Per-broker agent attribution | `?agent=<slug>` (`matt`, `rebecca`, `paul`, or full-name variants) → `components/AgentAttributionBridge.tsx` writes the `rr_agent_attribution` cookie (90-day). Server: `readAttributedAgentServer()` in `app/actions/agent-attribution-read.ts`. Both LP forms call it and override the default Matt-routing when set. |
 | Broker texts the marketing line (SMS agent) | [`docs/plans/BROKER_SMS_AGENT_2026-07-31.md`](docs/plans/BROKER_SMS_AGENT_2026-07-31.md) · `lib/agent/` |
@@ -589,4 +589,4 @@ task. Everything else fires on trigger match.
 | CMA / valuation | [`lib/cma/`](lib/cma/) + [`marketing_brain_skills/producers/cma/SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md). Recorded in `public.cmas` + `cma_comps`. |
 | Public UI/UX grind / next version of the site / page grade | **KILLED 2026-08-16.** Do not run page-grade. The skill is a refuse stub. Look is Matt keep/kill on real pages. Product of record: [`docs/plans/PUBLIC_PRODUCT/PRODUCT.md`](docs/plans/PUBLIC_PRODUCT/PRODUCT.md). |
 
-**CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Archive: [`docs/archive/fub-era/README.md`](docs/archive/fub-era/README.md).
+**CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.

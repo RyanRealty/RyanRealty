@@ -31,7 +31,7 @@ In AgentFire admin:
 
 - Google One-Tap identification (we receive name + email from any Google-signed-in visitor who clicks Continue)
 - Meta Pixel + Conversions API (browser + server-side event mirroring)
-- Follow Up Boss visitor identification (when known, we log every page view to a CRM record)
+- the in-house CRM visitor identification (when known, we log every page view to a CRM record)
 - Behavioral lead scoring (we compute an engagement score from page views and use it to escalate hot leads)
 - Cross-domain tracking (we link sessions across ryan-realty.com and the Vercel app)
 
@@ -79,10 +79,10 @@ Cookies and tracking technologies
 We use first-party cookies and similar technologies to remember you across pages, measure how visitors use our site, and personalize what we show. You can review and change your cookie preferences at any time using the "Manage cookie preferences" link in the footer.
 
 Identification through Google or Facebook
-If you choose to sign in with Google or Facebook on our site, we receive your name and email address from that provider. We use this information to create or update your record in our customer relationship system (Follow Up Boss) so that we can respond to your inquiries and send you property updates. We never receive your provider password. You may sign out of Google or Facebook at any time to revoke this connection for future visits.
+If you choose to sign in with Google or Facebook on our site, we receive your name and email address from that provider. We use this information to create or update your record in our customer relationship system (the in-house CRM) so that we can respond to your inquiries and send you property updates. We never receive your provider password. You may sign out of Google or Facebook at any time to revoke this connection for future visits.
 
 Behavioral engagement scoring
-When you browse our site, we may calculate an engagement score based on which pages you view, how long you spend on them, and what listings you save. This score helps our brokers prioritize follow-up. The score is stored against your record in Follow Up Boss if you have identified, or against an anonymous browser session if you have not. Anonymous sessions are deleted after 90 days of inactivity.
+When you browse our site, we may calculate an engagement score based on which pages you view, how long you spend on them, and what listings you save. This score helps our brokers prioritize follow-up. The score is stored against your record in the in-house CRM if you have identified, or against an anonymous browser session if you have not. Anonymous sessions are deleted after 90 days of inactivity.
 
 Cross-domain measurement
 We operate two web properties: ryan-realty.com and ryanrealty.vercel.app. When you click from one to the other, we use a Google Analytics linker to count your visit as one continuous session instead of two. This does not transmit any new data — it links measurement only.
@@ -91,7 +91,7 @@ Third-party services we use
 - Google Analytics 4 and Google Signals (audience demographics for ads)
 - Google Ads (conversion measurement and remarketing)
 - Meta Pixel and Conversions API (Facebook and Instagram ad measurement)
-- Follow Up Boss (customer relationship management)
+- the in-house CRM (customer relationship management)
 - Matomo (privacy-respecting site analytics, also gated by your consent)
 
 How to opt out

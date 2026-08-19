@@ -2,13 +2,11 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 
 /**
- * Resolve a legacy person id (from the pre-cutover FUB migration,
+ * Resolve a legacy person id (from the pre-cutover CRM migration,
  * crm_people.fub_legacy_id) to the canonical crm_people id.
  *
- * Renamed from getPersonIdByFubLegacyId.ts 2026-07-09. fub_legacy_id is kept
- * as a historical lineage column (Matt directive 2026-07-09) recording which
- * original FollowUpBoss record a person migrated from, not a live FUB
- * integration, this is a plain native lookup.
+ * fub_legacy_id is a historical lineage column recording which imported
+ * record a person migrated from. This is a plain native lookup.
  *
  * Exists for the /admin/people/[legacyId] -> /admin/crm/[id]
  * redirect (admin consolidation 2026-07-07: the standalone people index merged

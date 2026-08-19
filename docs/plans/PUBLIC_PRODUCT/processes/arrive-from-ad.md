@@ -108,7 +108,7 @@ Preconditions: JavaScript (client forms + tracker); no auth. Paid entries usuall
 | Arrival/engagement telemetry | GA4 (`view_landing_page`, `scroll_depth`) + first-party visitor store dual-write | `components/LandingPageTracker.tsx:53,76-88` |
 
 Explicitly NOT a SoR: `valuation_requests` (best-effort analytics mirror, warn-only —
-seller `actions.ts:341-361`); GA4 and Meta CAPI (attribution mirrors); Follow Up Boss
+seller `actions.ts:341-361`); GA4 and Meta CAPI (attribution mirrors); the in-house CRM
 (decommissioned — `fubPersonId` variables carry native `crm_people.id`,
 `lib/crm/enroll.ts:274-287`); sessionStorage LP context (client-side convenience only,
 `lib/tracking.ts:204-221`).

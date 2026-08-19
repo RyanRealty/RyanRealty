@@ -43,7 +43,7 @@ app/api/cron/marketing-snapshot-<channel>/route.ts
 | Meta Page (FB organic) | `/api/cron/marketing-snapshot-meta-page` | `lib/meta-graph.ts` (TBD) | Pending |
 | Meta Ads (FB paid) | `/api/cron/marketing-snapshot-meta-ads` | `lib/meta-graph.ts` (TBD) | Pending |
 | Instagram | (rolled into Meta Page) | `lib/meta-graph.ts` | Pending |
-| CRM | `/api/cron/marketing-snapshot-fub` | CRM daily snapshot (legacy channel key `fub`) | Pending |
+| CRM | `/api/cron/snapshot-channels` | CRM daily snapshot from `crm_people` | Live |
 | GSC (search console) | `/api/cron/marketing-snapshot-gsc` | `app/actions/search-console-report.ts` | Pending |
 | YouTube | `/api/cron/marketing-snapshot-youtube` | `lib/youtube.ts` | Pending |
 | LinkedIn | `/api/cron/marketing-snapshot-linkedin` | `lib/linkedin.ts` | Pending |

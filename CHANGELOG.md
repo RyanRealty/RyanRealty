@@ -2723,7 +2723,7 @@
 ## v1.751.28 (2026-07-09)
 
 ### Maintenance
-- refactor(crm): purge dead FollowUpBoss integration, fix bugs it was masking
+- refactor(crm): purge dead inHouseCrm integration, fix bugs it was masking
 
 ---
 
@@ -5380,8 +5380,8 @@
 ## v1.615.0 (2026-06-24)
 
 ### Features
-- feat(cutover): native is live; Follow Up Boss API traffic killed at the seam
-- feat(cutover): remove the Follow Up Boss tracking pixel
+- feat(cutover): native is live; the in-house CRM API traffic killed at the seam
+- feat(cutover): remove the the in-house CRM tracking pixel
 
 ---
 
@@ -6762,7 +6762,7 @@
 ## v1.598.0 (2026-06-22)
 
 ### Features
-- feat(audit-p1.2a): single FollowUpBoss API-key accessor + ratchet gate
+- feat(audit-p1.2a): single inHouseCrm API-key accessor + ratchet gate
 
 ---
 
@@ -9996,7 +9996,7 @@
 ## v1.434.0 (2026-06-09)
 
 ### Features
-- feat(tools): rental-calculator FUB lead capture (6C) — "review this deal" -> Follow Up Boss
+- feat(tools): rental-calculator FUB lead capture (6C) — "review this deal" -> the in-house CRM
 
 ---
 
@@ -11024,7 +11024,7 @@
 - feat(ui-kit): /about + /zip mockup uplift, lock /community parity
 
 ### Bug Fixes
-- fix(csp): allow Follow Up Boss pixel + GA4 apex hosts
+- fix(csp): allow the in-house CRM pixel + GA4 apex hosts
 
 ---
 
@@ -14933,7 +14933,7 @@
 ## v1.225.0 (2026-05-18)
 
 ### Features
-- feat(analytics): install Follow Up Boss pixel on Vercel + fix Badge variants
+- feat(analytics): install the in-house CRM pixel on Vercel + fix Badge variants
 
 ---
 

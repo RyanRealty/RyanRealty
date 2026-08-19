@@ -3,7 +3,7 @@
 /**
  * CRM email + SMS template CRUD actions (the write side of crm_templates).
  *
- * crm_templates was SELECT-only (seeded from FUB's 76 email + 37 SMS templates).
+ * crm_templates was SELECT-only (seeded from CRM's 76 email + 37 SMS templates).
  * These actions make it fully editable in the admin: create, update, soft
  * activate/deactivate, and delete with a sequence-reference guard. The cached
  * reader is lib/data/crm/getCrmTemplatesAdmin.ts; the pickers
@@ -173,7 +173,7 @@ export async function renameCategoryAction(
 /**
  * Move a selection of templates into a folder (category), or out of every
  * folder (category = null). A category-only update on purpose: it does NOT
- * re-run body validation, so legacy FUB-imported copy that predates the voice
+ * re-run body validation, so legacy CRM-imported copy that predates the voice
  * gate can still be organized without editing it first.
  */
 export async function moveTemplatesToFolderAction(

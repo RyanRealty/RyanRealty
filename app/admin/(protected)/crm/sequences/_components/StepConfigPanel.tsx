@@ -9,7 +9,7 @@
  *   - step      → the per-channel config form. The Send Email panel carries the
  *     full §12.4.4 anatomy: searchable Template picker, From dropdown,
  *     Recipient Preferences radio group, Delivery Preferences radio group
- *     (unavailable options render disabled/greyed exactly like FUB's
+ *     (unavailable options render disabled/greyed exactly like CRM's
  *     "company office hours" option), and the destructive Delete step control.
  *     The enabled radio in each group reflects what OUR engine actually does
  *     (sends from the assigned broker's mailbox to the primary contact inside
@@ -33,7 +33,7 @@
  *   - the destructive delete-step confirmation now uses ConfirmDialog
  *     directly instead of a hand-rolled Dialog.
  *
- * Spec: docs/fub-crm-spec/12-action-plans-and-automations.md §12.4.4 + the
+ * Spec: docs/crm-spec/12-action-plans-and-automations.md §12.4.4 + the
  * pixel reference screens/screen-36.md.
  */
 

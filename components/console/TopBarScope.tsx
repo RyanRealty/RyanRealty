@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * TopBarScope — the FUB persistent "Everyone ▾" agent-scope switcher pinned in
- * the mobile admin top bar on the contacts list (FUB ui2_5821). Reads the current
+ * TopBarScope — the CRM persistent "Everyone ▾" agent-scope switcher pinned in
+ * the mobile admin top bar on the contacts list (CRM ui2_5821). Reads the current
  * scope from the URL and mounts the shared BrokerScopeSheet so the scope is
  * reachable while scrolling the feed. Lives behind a <Suspense> in ConsoleShell
  * because useSearchParams must be boundary-isolated.

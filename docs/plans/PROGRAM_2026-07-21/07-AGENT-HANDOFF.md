@@ -10,7 +10,7 @@ You are taking over a consolidation program from a prior session. Everything you
 
 Two jobs, in this order.
 
-**Job A — Purge Follow Up Boss.** Matt's directive, verbatim: *"We do not use Follow Up Boss anymore so there should be zero reference to it."*
+**Job A — Purge the in-house CRM.** Matt's directive, verbatim: *"We do not use the in-house CRM anymore so there should be zero reference to it."*
 
 **Job B — Collapse the governing documentation.** Matt's directive, verbatim: *"One document that is the go-to document."* Then, correcting scope when the prior session over-read it: *"WE NEED TO KEEP MEMORY AND CONTEXT — I just don't want duplicates or conflicting audits, reports, plans."*
 
@@ -67,7 +67,7 @@ No FUB traffic can leave the building. This is cleanup, not exposure. Do not tre
 |---|---|
 | Code references — `app` 842, `lib` 990, `components` 197, `scripts` 580 | 2,662 |
 | Database columns named `fub_*` | 15 |
-| Env vars, including `FUB_LOGIN_EMAIL` / `FUB_LOGIN_PASSWORD` | 5 |
+| Env vars, including `UNUSED_VENDOR_CRM_LOGIN` / `UNUSED_VENDOR_CRM_PASSWORD` | 5 |
 | Doc files mentioning FUB | 905 |
 
 **Order:**
@@ -125,7 +125,7 @@ Full table at `06-DELETION-MANIFEST.md` §4. The ones that crash the build with 
 - `CLAUDE.md`, `marketing_brain_skills/producers/TEMPLATE.md`, `lib/marketing-brain/producer-output-class.ts` — each must contain the literal strings `docs/DEVELOPMENT_PROCESS.md` **and** `THE LOOP v1.1.0`, exactly matching the canon's version. **When you rewrite CLAUDE.md, preserve both strings or G44 exits 1.**
 - `docs/MECHANICAL_GATES.md` — test-confirmed fail on delete, despite a misleading `existsSync` guard.
 - `docs/DESIGN_DIRECTIVES.md` — parses `| Dnn |` rows; zero rows fails.
-- `docs/fub-crm-spec/crm-screens.json` + `_verify/*.png` (21 files) — the only survivors of that 112K-line directory.
+- `docs/crm-spec/crm-screens.json` + `_verify/*.png` (21 files) — the only survivors of that 112K-line directory.
 - `marketing_brain_skills/producers/REGISTRY.md` — unguarded read; row count ratchets **down only**.
 - **`docs/admin-help/*.md` (22 files) — a LIVE PRODUCT SURFACE.** `lib/admin-help.ts` reads them at request time for `/admin/help`. Deleting blanks a page brokers use.
 
@@ -164,7 +164,7 @@ Run `npm run ci:gates` after every batch. All 8 doc-dependent gates were green a
 
 ## 8. Done
 
-- Zero references to Follow Up Boss in code, schema, env, or docs — except one historical note explaining what it was and why we left.
+- Zero references to the in-house CRM in code, schema, env, or docs — except one historical note explaining what it was and why we left.
 - `CANON.md` exists and every rule in it is stated exactly once, with no contradiction, each marked enforced-by-gate or prose-only.
 - Every fact in `CANON.md` verified against source. No cron cadence, gate count, file path, or brand value asserted without a check.
 - The knowledge base holds one document per subject. No information lost from the 156 history files.

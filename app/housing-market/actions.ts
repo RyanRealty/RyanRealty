@@ -5,7 +5,7 @@
  *
  * submitMarketPageInquiry — broker inquiry from the housing-market flagship
  * page (app/housing-market/[...slug]/page.tsx). Captures the lead through the
- * shared submitPageCTA path (FUB person + event, Meta CAPI, canonical tagging,
+ * shared submitPageCTA path (CRM person + event, Meta CAPI, canonical tagging,
  * GA4 mirror) so a market-page lead is never dropped. Signature matches
  * LeadCaptureBlock's `onSubmit` contract:
  *   (payload: LeadCapturePayload) => Promise<{ ok: boolean; message?: string }>
@@ -47,7 +47,7 @@ export async function submitMarketPageInquiry(
   })
 
   if (error) {
-    // FUB push failed — capture natively so a FUB outage/cutover never loses the
+    // CRM push failed — capture natively so a CRM outage/cutover never loses the
     // inquiry. Only surface an error if the native capture also fails.
     try {
       const native = await ensureNativeLead({
@@ -59,7 +59,7 @@ export async function submitMarketPageInquiry(
       if (!native.created && native.personId === 0) {
         return { ok: false, message: error }
       }
-      console.warn(`[housing-market] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`)
+      console.warn(`[housing-market] CRM push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`)
     } catch (e) {
       console.warn('[housing-market] native fallback failed:', e)
       return { ok: false, message: error }

@@ -1,6 +1,6 @@
 /**
  * CRM sequence engine — executes due enrollment steps for ACTIVE sequences
- * (blueprint §5.2). The FUB action-plan replacement.
+ * (blueprint §5.2). The CRM action-plan replacement.
  *
  * Safety model:
  *  - All imported sequences sit in status='paused'; the engine only processes
@@ -14,7 +14,7 @@
  * Step schema (native): { channel: 'email'|'sms'|'task'|'tag', delayDays?,
  *   delayMinutes?, templateKey?, subject?, body?, taskName?, taskType?,
  *   addTags?: string[], removeTags?: string[] }
- * FUB-imported sequences carry raw FUB steps; they normalize at activation
+ * CRM-imported sequences carry raw CRM steps; they normalize at activation
  * time. Unparseable steps stop the enrollment safely.
  */
 
@@ -251,7 +251,7 @@ export async function GET(request: Request) {
           body = tpl.body ?? body
         }
         if (!body) { await finish({ status: 'stopped' }); await log(`Sequence "${seq.name}" stopped — empty email step`); errored++; continue }
-        // Archived-placeholder guard: a FUB-archived template imports with
+        // Archived-placeholder guard: a CRM-archived template imports with
         // subject/body = the literal "archived". The empty-body check above
         // misses it (it is 8 non-empty chars). NEVER deliver a placeholder.
         if (isArchivedPlaceholder(subject, body)) {
@@ -348,7 +348,7 @@ export async function GET(request: Request) {
           errored++
           continue
         }
-        // Same archived-placeholder guard as the email path (FUB-archived
+        // Same archived-placeholder guard as the email path (CRM-archived
         // templates import body = the literal "archived").
         if (isArchivedPlaceholder(body, body)) {
           await finish({ status: 'stopped' })
@@ -474,7 +474,7 @@ export async function GET(request: Request) {
           assigned_broker: person.assigned_broker, origin: 'sequence',
         })
       } else if (step.channel === 'tag') {
-        // Native-only tag write (the FUB dual-write for fub_legacy_id people
+        // Native-only tag write (the CRM dual-write for fub_legacy_id people
         // was a dead no-op since the 2026-06-24 decommission and was deleted).
         const current = (person.tags as string[]) ?? []
         const next = [...new Set([...current.filter((t) => !(step.removeTags ?? []).includes(t)), ...(step.addTags ?? [])])]
@@ -545,7 +545,7 @@ export async function GET(request: Request) {
         )
 
       } else if (step.channel === 'stop_other_plans') {
-        // FUB parity: "Pause All Other Action Plans". Pauses every OTHER running
+        // CRM parity: "Pause All Other Action Plans". Pauses every OTHER running
         // enrollment for this contact (excludes the current enrollment `en.id`).
         // Uses status='paused' (the broker-paused state) so the enrollments are
         // surfaced clearly in the enrollment board and can be manually resumed.

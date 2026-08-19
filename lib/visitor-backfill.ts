@@ -11,8 +11,8 @@
  *      (pushed_to_fub_at cursor column, kept for idempotency) and stamps
  *      the events_backfilled_* summary on the session.
  *
- * The old FUB event replay + summary note (trackListingView / trackPageView /
- * addPersonNote per event) was a dead no-op after the 2026-06-24 FUB
+ * The old CRM event replay + summary note (trackListingView / trackPageView /
+ * addPersonNote per event) was a dead no-op after the 2026-06-24 CRM
  * decommission and was deleted — the first-party visitor_events rows ARE the
  * per-person browsing history the CRM and dashboards read.
  *
@@ -45,7 +45,7 @@ function getServiceSupabase(): SupabaseClient | null {
 
 /**
  * Upsert the anon->known link in visitor_identity_map: rr_vid (the durable
- * first-party cookie set by middleware) -> the known FUB person / email / auth
+ * first-party cookie set by middleware) -> the known CRM person / email / auth
  * user. The single stitch reused by EVERY identify path — the WordPress One-Tap
  * bridge (backfillSessionToFub, below) AND the Vercel Supabase OAuth callback
  * (app/auth/callback) — so a Google/Facebook login feeds the Phase-5 identity
@@ -133,7 +133,7 @@ export async function stitchVisitorIdentity(params: {
       identified_at: new Date().toISOString(),
       identified_via: params.source,
     }
-    // Post-FUB-cutover (2026-06-24) the id resolved by every identify path IS
+    // Post-CRM-cutover (2026-06-24) the id resolved by every identify path IS
     // the native crm_people.id. Write it to crm_person_id — the column the
     // visitors dashboard now keys on. fub_person_id is kept in lockstep for
     // legacy readers until they migrate.
@@ -170,14 +170,14 @@ type SessionRow = {
  * Pre-conditions:
  *   - sessionId is a valid uuid v4 the client passed in
  *   - fubPersonId is the result of a successful identify (already
- *     trust-verified; the native crm_people.id post-FUB-cutover)
+ *     trust-verified; the native crm_people.id post-CRM-cutover)
  *
  * Post-conditions:
  *   - visitor_sessions row has identified_at, crm_person_id (+ fub_person_id
  *     in lockstep), identified_email, identified_via,
  *     events_backfilled_at, events_backfilled_count set
  *   - all unprocessed visitor_events for the session have pushed_to_fub_at
- *     set (idempotency cursor; no FUB push happens — FUB is decommissioned)
+ *     set (idempotency cursor; no CRM push happens — CRM is decommissioned)
  *
  * Never throws. Returns a structured result; caller decides how to surface.
  */
@@ -185,7 +185,7 @@ export async function backfillSessionToFub(params: {
   sessionId: string
   fubPersonId: number
   /** Optional. Form paths always have it; the email-click bridge knows only
-   *  the FUB id, so it stitches without an email (the id is the join key). */
+   *  the CRM id, so it stitches without an email (the id is the join key). */
   email?: string
   identifiedVia: IdentifiedVia
 }): Promise<BackfillResult> {
@@ -240,7 +240,7 @@ export async function backfillSessionToFub(params: {
       .from('visitor_sessions')
       .update({
         identified_at: new Date().toISOString(),
-        // Native crm_people.id post-FUB-cutover; kept in both columns so the
+        // Native crm_people.id post-CRM-cutover; kept in both columns so the
         // visitors dashboard (crm_person_id) and legacy readers agree.
         fub_person_id: params.fubPersonId,
         crm_person_id: params.fubPersonId,
@@ -287,7 +287,7 @@ export async function backfillSessionToFub(params: {
   }
 
   // ─── 3. Mark the events as processed ───────────────────────────────────────
-  // The old per-event FUB replay was a dead no-op after the 2026-06-24
+  // The old per-event CRM replay was a dead no-op after the 2026-06-24
   // decommission and was deleted — the visitor_events rows themselves are the
   // person's browsing history now that the session carries crm_person_id.
   // Every event is stamped so re-runs stay idempotent (same cursor semantics
@@ -315,7 +315,7 @@ export async function backfillSessionToFub(params: {
     if (summaryErr) errors.push(`summary update failed: ${summaryErr.message}`)
   }
 
-  // (The old step 6 — a chronological FUB summary note via addPersonNote — was
+  // (The old step 6 — a chronological CRM summary note via addPersonNote — was
   // a dead no-op after the decommission and was deleted. The events themselves,
   // now joined to the person through the identified session, carry the
   // chronology.)

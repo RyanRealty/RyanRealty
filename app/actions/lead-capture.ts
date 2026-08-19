@@ -268,7 +268,7 @@ export async function submitPageCTA(input: {
  * tier:'nurture' (researching, not yet hot), plus 'rental-calculator'/'investor'
  * context tags. Routes to Matt by default (canonicallyTagLead handles routing).
  *
- * Mirrors submitTetherowLead's FUB-event -> Meta-CAPI -> canonical-tags -> GA4
+ * Mirrors submitTetherowLead's CRM-event -> Meta-CAPI -> canonical-tags -> GA4
  * pattern, with the property + analysis context in the message.
  */
 export async function submitRentalLead(input: {
@@ -378,9 +378,9 @@ export async function submitRentalLead(input: {
  * BUG FIX 2026-05-31: all 5 Tetherow forms POSTed to /api/cma, which had no
  * top-level route handler (only /api/cma/[slug]/* existed) — so every luxury
  * paid-traffic lead 404'd and was silently lost while the form showed a fake
- * green success. This restores capture: FUB event -> Meta CAPI -> CANONICAL
+ * green success. This restores capture: CRM event -> Meta CAPI -> CANONICAL
  * tags (audience:seller|buyer — NOT the old 'seller-intent' string that never
- * triggered the FUB workflow) -> GA4 mirror. Tetherow is high-intent paid
+ * triggered the CRM workflow) -> GA4 mirror. Tetherow is high-intent paid
  * traffic, so tier='hot'.
  */
 export async function submitTetherowLead(input: {

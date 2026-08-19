@@ -5,7 +5,7 @@ description: KILLED as a live pipeline. /api/cron/engagement-pull does not exist
 
 # STOP - this pipeline is not wired
 
-There is no `/api/cron/engagement-pull` and no `/api/workers/engagement-pull`. CRM is in-house `public.crm_people` via `sendEvent` in `lib/crm/send-event.ts`. If you loaded this file, stop. Do not invent those routes. Do not call a vendor CRM. Do not set `FOLLOWUPBOSS_API_KEY`.
+There is no `/api/cron/engagement-pull` and no `/api/workers/engagement-pull`. CRM is in-house `public.crm_people` via `sendEvent` in `lib/crm/send-event.ts`. If you loaded this file, stop. Do not invent those routes. Review at `/admin/crm`.
 
 
 # Engagement Bot
@@ -175,7 +175,7 @@ Template fills in values. If no template matches, `draft_reply = null` — Matt 
 
 ### Step 4 — Do not invent a CRM push from this skill
 
-This pipeline is KILLED. Do not POST to a vendor CRM. Do not set `FOLLOWUPBOSS_API_KEY`.
+This pipeline is KILLED. Do not POST to a vendor CRM.
 If a live capture is needed, use `sendEvent` in `lib/crm/send-event.ts` and review the
 person at `/admin/crm`. Do not add that from this skill.
 

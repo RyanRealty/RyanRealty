@@ -59,7 +59,7 @@ email or phone (anonymous events are deliberately skipped, §6). Four doors:
 2. **Auth sign-in/sign-up.** `trackSignedInUser` fires on email sign-in/sign-up
    (`app/actions/auth.ts:116,152`) and on the OAuth/magic-link callback
    (`app/auth/callback/route.ts:136,169`), routing to `ensureNativeLead`
-   (`lib/followupboss.ts:147-176`).
+   (`lib/crm/send-event.ts:147-176`).
 3. **Paid off-site (no site visit).** The Meta lead-form webhook captures Instant Form
    leads (`app/api/meta/lead-webhook/route.ts:440`, dedupe on `processed_meta_leads`
    PK `route.ts:512-519`).
@@ -79,7 +79,7 @@ cookied — each server action re-parses them off the referer at submit time
 
 **Preconditions:** none — all doors accept anonymous-until-now visitors. **NOT this
 process:** anonymous page-view tracking (`visitor_sessions`/`visitor_events`) — a no-key
-event resolves to nothing by design (`lib/followupboss.ts:110-112`;
+event resolves to nothing by design (`lib/crm/send-event.ts:110-112`;
 `lib/data/crm/ensureNativeLead.ts:109`); inbound phone/SMS capture
 (`findOrCreatePersonByPhone`) belongs to `broker-direct-call-text`; what the sequences SEND
 after enrollment belongs to the nurture/delivery plane (`crm-sequence-engine`
@@ -90,7 +90,7 @@ after enrollment belongs to the nurture/delivery plane (`crm-sequence-engine`
 - **Visitor segments:** every segment the site serves — sellers (valuation/LP doors),
   buyers (alerts, saved searches, RSVPs, tours), signed-in browsers (auth door), and
   off-site ad respondents who never visit the site (Meta Instant Forms). Audience is
-  inferred, not asked: from the event type at capture (`lib/followupboss.ts:117-123`) and
+  inferred, not asked: from the event type at capture (`lib/crm/send-event.ts:117-123`) and
   from the caller's own classification at enrichment (`app/contact/actions.ts:153`;
   `app/api/meta/lead-webhook/route.ts:384-385`). Device reality from GA4: **not pulled
   this session — gap** (§11).
@@ -122,8 +122,8 @@ after enrollment belongs to the nurture/delivery plane (`crm-sequence-engine`
 | Meta webhook dedupe | `public.processed_meta_leads` (PK on leadgen_id) | `docs/DATABASE_SCHEMA_SNAPSHOT.md:3880`; `app/api/meta/lead-webhook/route.ts:512-519` |
 | Anonymous→known stitch | `visitor_sessions` / `visitor_identity_map` | `docs/DATABASE_SCHEMA_SNAPSHOT.md:4958,4941`; stitched by `backfillSessionToFub` (called `app/contact/actions.ts:176-183`, `app/lp/seller-home-value/actions.ts:442-450`) |
 
-**Explicitly NOT a SoR:** Follow Up Boss (decommissioned 2026-06-24; the whole module is a
-native shim — `lib/followupboss.ts:1-34`); the `rr_*` cookies and localStorage session id
+**Explicitly NOT a SoR:** the in-house CRM (decommissioned 2026-06-24; the whole module is a
+native shim — `lib/crm/send-event.ts:1-34`); the `rr_*` cookies and localStorage session id
 (client-side hints that feed the SoRs, not records); GA4 / Meta CAPI (conversion mirrors
 owned by the door processes); `valuation_requests` (an artifact of `get-home-value`, written
 beside — not by — this spine, `app/lp/seller-home-value/actions.ts:338-361`); the legacy
@@ -157,7 +157,7 @@ doors in §9. Device = whatever the door's page serves; machine steps are device
    skip this step entirely** (§10 D1).
 5. **Capture** · server · `sendEvent` infers audience from the event type, builds
    `audience:*`/`source:*` tags, allowlists any `brokerAttribution` slug, and calls
-   `ensureNativeLead` (`lib/followupboss.ts:101-131`) · output: the native person id, or
+   `ensureNativeLead` (`lib/crm/send-event.ts:101-131`) · output: the native person id, or
    null for a no-key event · failure: caught; callers run a direct-`ensureNativeLead`
    fallback so a blip never loses the lead (`app/contact/actions.ts:118-138`;
    `app/lp/seller-home-value/actions.ts:417-433`;
@@ -210,7 +210,7 @@ sits outside the done-state longer than one sweep interval regardless of entry d
 
 - **Lead-bearing or anonymous?** No email AND no phone → skip entirely; the identity
   stays in the visitor plane (`lib/data/crm/ensureNativeLead.ts:100-110`;
-  `lib/followupboss.ts:110-112`).
+  `lib/crm/send-event.ts:110-112`).
 - **Reuse or create?** Email match wins; else phone; else create-with-key
   (`lib/data/crm/ensureNativeLead.ts:86-111`). Email+phone conflict → high-confidence
   auto-merge attempt before deciding (`:174-199`).
@@ -304,7 +304,7 @@ confirmed ONE process, not four.
    cookie-identified visitors (`app/lp/seller-home-value/actions.ts:104-154`). No
    enrollment (no audience tag).
 3. **Auth sign-in/sign-up** — name+email only, source `website-signup`
-   (`lib/followupboss.ts:147-176`); the low-intent alert wording exists specifically for
+   (`lib/crm/send-event.ts:147-176`); the low-intent alert wording exists specifically for
    this variant (`lib/crm/enroll.ts:330-349`). Caller-passed page/provider context is
    dropped (§10 D5).
 4. **Meta Instant Form (machine-only, no visit)** — dedupe on leadgen id, audience/tier
@@ -341,7 +341,7 @@ confirmed ONE process, not four.
 **Routes:** none of its own — the spine lives in `lib/` + two API routes + two crons.
 **Registers:** n/a — no UI. The bridges are invisible client components.
 
-**Modules:** `lib/followupboss.ts` (capture shim) · `lib/data/crm/ensureNativeLead.ts`
+**Modules:** `lib/crm/send-event.ts` (capture shim) · `lib/data/crm/ensureNativeLead.ts`
 (find-or-create + enrichment, DAL) · `lib/crm/lead-source.ts` (source labels + paid tags) ·
 `lib/agent-attribution.ts` + `components/AgentAttributionBridge.tsx` +
 `app/actions/agent-attribution-read.ts` (broker attribution) ·
@@ -353,7 +353,7 @@ confirmed ONE process, not four.
 **Known defects (each verified this session):**
 
 - **D1 — UTM attribution is LP-only; `sendEvent`'s `campaign` param is dead.**
-  `sendEvent` never reads `params.campaign` (`lib/followupboss.ts:101-136` — full read),
+  `sendEvent` never reads `params.campaign` (`lib/crm/send-event.ts:101-136` — full read),
   yet non-LP doors still parse UTMs and pass them ONLY through that dead param
   (`app/contact/actions.ts:104-111`; `app/api/meta/lead-webhook/route.ts:426-451`;
   `app/home-valuation/actions.ts:116-129,148-155` — the valuation door, a seller-KPI
@@ -386,7 +386,7 @@ confirmed ONE process, not four.
   unroutable lead no cron fixes. (Documented per-door in contact-PDS D2; the class is
   spine-wide.)
 - **D5 — sign-in context is dropped.** `trackSignedInUser` retains but never forwards
-  `sourceUrl`/`message`/`campaign` (`lib/followupboss.ts:143-156`) while all four callers
+  `sourceUrl`/`message`/`campaign` (`lib/crm/send-event.ts:143-156`) while all four callers
   still pass them (`app/actions/auth.ts:116-121,152-157`;
   `app/auth/callback/route.ts:136,169`) — every sign-in flattens to bare
   `website-signup`, erasing which page and which provider produced it.
@@ -426,7 +426,7 @@ confirmed ONE process, not four.
   race. This door was omitted from this PDS entirely until the 2026-08-11 repair pass.
 - **Naming debt (cosmetic, confirmed):** `autoEnrollByFubId` accepts native ids
   (`lib/crm/enroll.ts:274-283`), `SendEventParams`/`LeadEventPerson` keep the FUB shape
-  (`lib/followupboss.ts:49-94`), `fubPersonId` variables are native ids throughout.
+  (`lib/crm/send-event.ts:49-94`), `fubPersonId` variables are native ids throughout.
 
 **Duplicate/parallel paths that should die:** D8's orphaned pipeline; D9's dead
 chokepoint; the dead `campaign` param once D1 is fixed at the callers.

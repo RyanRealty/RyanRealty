@@ -6,7 +6,7 @@
  * This page joins three live feeds and says, in plain words, what they add up to:
  *   - Ad spend          → marketing_channel_daily (channel=meta_ads / google_ads, metric=spend)
  *   - Site visitors     → visitor_sessions (utm_source → channel, identified_at, fub_person_id, hot_lead_fired_at)
- *   - Leads             → getLeadIntake (real crm_people inbound leads; the dead FUB channel='fub' plane was decommissioned 2026-06)
+ *   - Leads             → getLeadIntake (real crm_people inbound leads; the dead CRM channel='fub' plane was decommissioned 2026-06)
  *   - FB lead forms     → processed_meta_leads (campaign_name + fub_person_id)
  *
  * Design intent: honest first. When a data pipe is dry (no spend synced, no
@@ -193,7 +193,7 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
   }
   const campaigns = Array.from(campaignSpend.entries()).sort((a, b) => b[1] - a[1])
 
-  // ── Leads (FUB account metrics) ──────────────────────────────────────────────
+  // ── Leads (CRM account metrics) ──────────────────────────────────────────────
   // Real inbound leads from crm_people (getLeadIntake). There is no separate live
   // "qualified seller" sub-count, so the ROI math uses the one real lead number.
   const newLeads = intake.inboundLeads

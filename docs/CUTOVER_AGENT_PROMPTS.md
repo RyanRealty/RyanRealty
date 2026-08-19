@@ -148,5 +148,5 @@ Summarize as a checklist with PASS/FAIL and one line on anything that failed.
 
 ## 3) NURTURE LOOP — FUNNEL-04
 
-CRM is in-house. Do not build toward Follow Up Boss. Live nurture is `lib/crm/enroll.ts`
-and `/admin/crm/sequences`. Archive: `docs/archive/fub-era/README.md`.
+CRM is in-house. Do not build toward the in-house CRM. Live nurture is `lib/crm/enroll.ts`
+and `/admin/crm/sequences`. Archive: `lib/crm/send-event.ts`.

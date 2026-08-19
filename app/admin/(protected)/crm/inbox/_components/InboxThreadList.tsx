@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * InboxThreadList — the center thread-list panel of the FUB three-panel inbox
+ * InboxThreadList — the center thread-list panel of the CRM three-panel inbox
  * (spec §08 §4). Toolbar: All/Unread toggle (AC-04), channel Filter disclosure
  * with Emails/Texts/Calls checkboxes + count badge (AC-05, §12.2), and a
  * Select toggle for bulk mode (AC-29: mark read / mark unread / close / reopen /

@@ -3,7 +3,7 @@
  *
  * Mirrors critical conversion events from server actions so they survive
  * client-side ad blockers. Each fire happens AFTER the upstream success
- * (FUB person created, CMA row inserted, lead webhook processed) so we
+ * (CRM person created, CMA row inserted, lead webhook processed) so we
  * never report a conversion that didn't actually happen.
  *
  * Auth:

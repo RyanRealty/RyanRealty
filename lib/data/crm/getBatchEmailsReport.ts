@@ -186,7 +186,7 @@ async function readBatchEmailsReport(
 
 /**
  * Batch Emails report data — recent email campaigns with per-campaign engagement
- * sourced from email_events. Cached 10 minutes (matching FUB's documented cache
+ * sourced from email_events. Cached 10 minutes (matching CRM's documented cache
  * TTL for reporting).
  *
  * Metric → crm_* source mapping:

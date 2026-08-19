@@ -4,7 +4,7 @@
  *
  * The primary implementation lives at /admin/crm/sequences (the full workflow
  * list + trigger rules manager + editor at /sequences/[id]/edit). This route
- * is the FUB-parity URL (/automations) that maps to the same surface.
+ * is the CRM-parity URL (/automations) that maps to the same surface.
  *
  * A permanent redirect keeps the canonical route stable while both paths work
  * for deep links and bookmarks.

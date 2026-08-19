@@ -73,8 +73,8 @@ Client component: `app/lp/seller-home-value/SellerLPForm.tsx` — branches on `k
 **Not assigned at submit-time.** The seller-LP submit does NOT pass `brokerAttribution` to `sendEvent`. The current behavior is:
 
 - FUB's own round-robin / lead-routing rules (configured inside FUB UI, outside this repo) determine who picks up the new lead.
-- The 5-min hot-lead task uses `getPersonAssignedUserId(personId)` to read FUB's current assignment, then falls back to `FOLLOWUPBOSS_DEFAULT_ASSIGNED_USER_ID` env if FUB hasn't assigned yet.
-- `lib/followupboss.ts` `sendEvent` supports `brokerAttribution: { brokerSlug, brokerEmail }` to explicitly assign + tag `broker:<slug>` — used by `app/actions/agents.ts` (agent-card contact form) and `app/actions/track-cta-click.ts`. The seller LP doesn't use it.
+- The 5-min hot-lead task uses `getPersonAssignedUserId(personId)` to read FUB's current assignment, then falls back to `UNUSED_VENDOR_CRM_ASSIGNED_USER` env if FUB hasn't assigned yet.
+- `lib/crm/send-event.ts` `sendEvent` supports `brokerAttribution: { brokerSlug, brokerEmail }` to explicitly assign + tag `broker:<slug>` — used by `app/actions/agents.ts` (agent-card contact form) and `app/actions/track-cta-click.ts`. The seller LP doesn't use it.
 
 So: **broker assignment for seller-LP leads is delegated to FUB's UI-configured lead routing today.** No code in this repo decides which broker gets a new home-valuation lead.
 
@@ -90,8 +90,8 @@ So: **broker assignment for seller-LP leads is delegated to FUB's UI-configured 
 
 ### Client wrapper modules
 Two coexist, both in `lib/`:
-- **`lib/followupboss.ts`** — the canonical and far-larger client. Used by every server action and webhook in the app. ~1130 lines. Auth, person search, events, notes, tags, tasks, broker attribution, live "My Leads" pull. Single env: `FOLLOWUPBOSS_API_KEY` (Basic auth, password empty). Optional `FOLLOWUPBOSS_SYSTEM` + `FOLLOWUPBOSS_SYSTEM_KEY` headers for registered system integrations.
-- **`lib/fub.ts`** — minimal alternate wrapper (`pushToFub`). Reads `FOLLOWUPBOSS_API_KEY`. Used in only a handful of places. The Meta lead webhook (`app/api/meta/lead-webhook/route.ts`) and the FB ad webhook both call the FUB REST API directly with their own `fubHeaders` helper — accepting `FUB_API_KEY` OR `FOLLOWUPBOSS_API_KEY` env. Two env-var names exist for the same key.
+- **`lib/crm/send-event.ts`** — the canonical and far-larger client. Used by every server action and webhook in the app. ~1130 lines. Auth, person search, events, notes, tags, tasks, broker attribution, live "My Leads" pull. Single env: `UNUSED_VENDOR_CRM_KEY` (Basic auth, password empty). Optional `UNUSED_VENDOR_CRM_SYSTEM` + `UNUSED_VENDOR_CRM_SYSTEM_KEY` headers for registered system integrations.
+- **`lib/fub.ts`** — minimal alternate wrapper (`pushToFub`). Reads `UNUSED_VENDOR_CRM_KEY`. Used in only a handful of places. The Meta lead webhook (`app/api/meta/lead-webhook/route.ts`) and the FB ad webhook both call the FUB REST API directly with their own `fubHeaders` helper — accepting `UNUSED_VENDOR_CRM_KEY` OR `UNUSED_VENDOR_CRM_KEY` env. Two env-var names exist for the same key.
 
 ### Auth method
 Basic auth: `Authorization: Basic <base64(apiKey:)>`. API key only — no OAuth, no service account.
@@ -99,15 +99,15 @@ Basic auth: `Authorization: Basic <base64(apiKey:)>`. API key only — no OAuth,
 ### Methods available
 | Need | Function | File | Notes |
 |---|---|---|---|
-| Find person by email | `findPersonByEmail(email)` | `lib/followupboss.ts` | Returns `FubPerson` or null |
-| Create / update person (via event) | `sendEvent({ type, person, ... })` | `lib/followupboss.ts` | FUB auto-creates/merges by email |
+| Find person by email | `findPersonByEmail(email)` | `lib/crm/send-event.ts` | Returns `FubPerson` or null |
+| Create / update person (via event) | `sendEvent({ type, person, ... })` | `lib/crm/send-event.ts` | FUB auto-creates/merges by email |
 | Create person directly | (Not wrapped — see `createFubContact` inline in `app/api/meta/lead-webhook/route.ts`) | — | POST to `/v1/people` directly |
-| Add tags | `addPersonTags(personId, tags)` | `lib/followupboss.ts` | `PUT /v1/people/:id?mergeTags=true` |
-| Add note | `addPersonNote(personId, body)` | `lib/followupboss.ts` | `POST /v1/notes` |
-| Create task | `createRealtimeTask({ personId, taskName, taskType, dueInMinutes })` | `lib/followupboss.ts` | `POST /v1/tasks` |
-| Update stage / tags | `updatePersonAutomationState({ personId, stage, tags })` | `lib/followupboss.ts` | |
-| Assign broker | `brokerAttribution` on `sendEvent`, or `applyBrokerAttribution` internal | `lib/followupboss.ts` | Adds `broker:<slug>` tag + sets `assignedUserId` |
-| Pull my-leads page | `fetchMyLeadsFromFubLive({ brokerSlug, brokerEmail, brokerId })` | `lib/followupboss.ts` | Used by weekly outreach cron |
+| Add tags | `addPersonTags(personId, tags)` | `lib/crm/send-event.ts` | `PUT /v1/people/:id?mergeTags=true` |
+| Add note | `addPersonNote(personId, body)` | `lib/crm/send-event.ts` | `POST /v1/notes` |
+| Create task | `createRealtimeTask({ personId, taskName, taskType, dueInMinutes })` | `lib/crm/send-event.ts` | `POST /v1/tasks` |
+| Update stage / tags | `updatePersonAutomationState({ personId, stage, tags })` | `lib/crm/send-event.ts` | |
+| Assign broker | `brokerAttribution` on `sendEvent`, or `applyBrokerAttribution` internal | `lib/crm/send-event.ts` | Adds `broker:<slug>` tag + sets `assignedUserId` |
+| Pull my-leads page | `fetchMyLeadsFromFubLive({ brokerSlug, brokerEmail, brokerId })` | `lib/crm/send-event.ts` | Used by weekly outreach cron |
 
 ### Email draft / attachment upload
 **Not wrapped in this repo, and FUB's public API does not support either operation.**
@@ -139,9 +139,9 @@ Existing usage patterns:
 **No code-level assignment for inbound seller-LP leads.** FUB-side round-robin (configured in FUB UI) handles it. Code observes via `getPersonAssignedUserId(personId)`.
 
 Resolution chain inside the codebase:
-1. `FOLLOWUPBOSS_BROKER_USER_MAP` env (comma-separated `slug:userId` pairs) — when a caller passes `brokerAttribution: { brokerSlug }`.
+1. `UNUSED_VENDOR_CRM_BROKER_MAP` env (comma-separated `slug:userId` pairs) — when a caller passes `brokerAttribution: { brokerSlug }`.
 2. Supabase `brokers` table lookup (`select email where slug=… and is_active=true`) → `findUserByEmail(email)` in FUB → `userId`.
-3. Falls back to `FOLLOWUPBOSS_DEFAULT_ASSIGNED_USER_ID` env when no explicit slug.
+3. Falls back to `UNUSED_VENDOR_CRM_ASSIGNED_USER` env when no explicit slug.
 
 ### Brokers table
 Lives in Supabase. Columns visible across `app/actions/brokers.ts`, `app/actions/admin-media.ts`, `app/actions/dashboard.ts`: `id` (uuid), `slug`, `display_name`, `email`, `photo_url`, `intro_video_url`, `saved_headshot_urls`, `is_active`, `sort_order`. Three active rows expected (Matt Ryan, Paul Stevenson, Rebecca Peterson per `design_system/ryan-realty/MANIFEST.md`).

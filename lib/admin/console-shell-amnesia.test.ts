@@ -16,7 +16,7 @@
  * rail. Additional pins:
  *
  *   4. RailNav mounts as a JSX element inside an lg-gated wrapper (desktop-only).
- *   5. The retired FUB-style top bar (ConsoleTopNav — navy brand bar + white
+ *   5. The retired CRM-style top bar (ConsoleTopNav — navy brand bar + white
  *      public wordmark) is GONE: not referenced by the shell, file deleted.
  *   6. No file under components/console/ carries a public wordmark path or the
  *      brand navy hex.

@@ -274,7 +274,7 @@ async function readCallsReport(params: CallsParams): Promise<CallsResult> {
  * Calls report data — per-broker inbound call counts, talk time, and
  * conversation metrics over a date range.
  *
- * Cached 10 minutes (matching FUB's documented reporting cache TTL).
+ * Cached 10 minutes (matching CRM's documented reporting cache TTL).
  * Cache is keyed on filter params so different combos get separate entries.
  *
  * Source tables:

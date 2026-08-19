@@ -2,7 +2,7 @@
 
 /**
  * ScopeDropdown — the §7 agent/pond scope control ("Me ▾") in the People
- * toolbar (docs/fub-crm-spec/05-people-list-and-bulk-actions.md).
+ * toolbar (docs/crm-spec/05-people-list-and-bulk-actions.md).
  *
  * A floating dropdown (not a flyout) with a search input and three sections:
  * Everyone / Me · PONDS (View All Ponds + named ponds) · TEAM MEMBERS (the

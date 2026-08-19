@@ -81,7 +81,7 @@ export type CrmLeadVolume = {
 /**
  * getCrmLeadVolume — new crm_people created in the trailing 24h / 7d.
  *
- * `created_at` is the native-row birth, independent of FUB, so this measures the
+ * `created_at` is the native-row birth, independent of CRM, so this measures the
  * CRM's own intake rate. Excludes soft-deleted rows. Two count-only queries (no
  * row payload). `nowMs` is injectable so callers/tests pin the window.
  */

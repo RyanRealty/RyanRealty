@@ -18,11 +18,11 @@ describe('expired-alert crmLink', () => {
     else process.env.NEXT_PUBLIC_SITE_URL = prev
   })
 
-  it('links to the in-house CRM lead, never to Follow Up Boss', () => {
+  it('links to the in-house CRM lead, never to the in-house CRM', () => {
     process.env.NEXT_PUBLIC_SITE_URL = 'https://ryan-realty.com'
     const link = crmLink(12345)
     expect(link).toBe('https://ryan-realty.com/admin/people/12345')
-    expect(link).not.toContain('followupboss')
+    expect(link).not.toContain('retiredVendorCrm')
   })
 
   it('trims a trailing slash on the site url', () => {

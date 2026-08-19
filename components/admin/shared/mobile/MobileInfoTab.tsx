@@ -323,7 +323,7 @@ export function MobileInfoTab({
         />
       </>
 
-      {/* ── §25.5.8 FINANCING — punch #6: the FUB "TRANSFER TO LENDER ›" CTA
+      {/* ── §25.5.8 FINANCING — punch #6: the CRM "TRANSFER TO LENDER ›" CTA
              was inert (no lender-transfer feature exists) — removed. ───────── */}
       <>
         <SectionHeader label="Financing" />

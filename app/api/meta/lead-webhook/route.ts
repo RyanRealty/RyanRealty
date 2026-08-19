@@ -15,8 +15,8 @@ export const runtime = 'nodejs'
  * POST /api/meta/lead-webhook
  *
  * Receives Facebook Lead Ads webhooks and creates/updates contacts in the
- * in-house CRM (crm_people) for lead nurture. FUB was decommissioned
- * 2026-06-24 — the old FUB /events + /people push paths were dead no-ops (the
+ * in-house CRM (crm_people) for lead nurture. CRM was decommissioned
+ * 2026-06-24 — the old CRM /events + /people push paths were dead no-ops (the
  * missing key made getFubConfig throw, silently dropping every webhook lead
  * before even the native fallback could run) and were replaced with the
  * native capture chain: sendEvent (ensureNativeLead) → enrichNativeLead
@@ -66,7 +66,7 @@ function getMetaToken(): string {
   // Prefer the System User token (has `leads_retrieval` scope so we can
   // fetch field_data for each inbound Lead Ad). Fall back to the Page token
   // — which can receive webhooks but CANNOT read individual lead payloads,
-  // so falling back means downstream FUB persons get no email/phone/timeline.
+  // so falling back means downstream CRM persons get no email/phone/timeline.
   const token = (process.env.META_USER_ACCESS_TOKEN || getMetaPageToken() || '').trim()
   if (!token) throw new Error('META_USER_ACCESS_TOKEN or META_PAGE_ACCESS_TOKEN not configured')
   return token
@@ -389,8 +389,8 @@ function buildLeadTags(lead: ParsedLead, brokerSlug: BrokerSlug): string[] {
   else if (lead.buySellIntent === 'both') tags.push('Intent: Buying + Selling')
   else if (lead.buySellIntent === 'exploring') tags.push('Intent: Exploring')
 
-  // Canonical kebab-case namespaced tier tags (FUB-era cadence research;
-  // see docs/archive/fub-era/README.md):
+  // Canonical kebab-case namespaced tier tags (CRM-era cadence research;
+  // see lib/crm/send-event.ts):
   //   seller:hot, seller:warm, seller:nurture
   //   buyer:hot, buyer:warm, buyer:nurture
   if (lead.possibleRealtor) {
@@ -466,7 +466,7 @@ async function createLeadContact(lead: ParsedLead, brokerSlug: BrokerSlug): Prom
 
   // Enrichment in one native write: the canonical tag set (sendEvent only
   // stamps audience:/source: defaults), the campaign custom fields, and the
-  // lead-origin note (replaces the dead FUB setPersonCustomFields /
+  // lead-origin note (replaces the dead CRM setPersonCustomFields /
   // updatePersonAutomationState / notes-POST chain).
   const noteBody = [
     `Facebook Lead Ad capture`,
@@ -506,7 +506,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
 
   // Dedup check — Meta retries on 5xx and network errors. Insert into
   // processed_meta_leads (PRIMARY KEY on leadgen_id) to no-op duplicates.
-  // Without this, duplicate webhook fires create duplicate FUB persons + notes + tasks.
+  // Without this, duplicate webhook fires create duplicate CRM persons + notes + tasks.
   const supabase = getSupabase()
   if (supabase) {
     const { error: dedupError } = await supabase
@@ -538,7 +538,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   // `assigned_broker` form field, else the broker's name in the campaign/ad-set
   // name (e.g. "Seller Leads — Rebecca" — the practical lever since Meta Instant
   // Forms have no true hidden field), else Matt. Used by both the native fallback
-  // and the FUB assignment below.
+  // and the CRM assignment below.
   const brokerSlug: BrokerSlug =
     parsed.assignedBroker ??
     brokerSlugFromText(`${parsed.campaignName ?? ''} ${parsed.adSetName ?? ''}`) ??
@@ -654,7 +654,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   // Geocode + geo-tag seller property addresses, same as the website LP path.
   // Without this, paid Meta seller leads carry audience/source tags but no
   // city:* / neighborhood:* / subdivision:* tags, so they are invisible to the
-  // geo-filtered FUB smart lists brokers route follow-up from until the 30-min
+  // geo-filtered CRM smart lists brokers route follow-up from until the 30-min
   // delta cron eventually picks them up.
   if (parsed.audience === 'seller' && parsed.propertyAddress && !parsed.possibleRealtor) {
     void import('@/lib/lead-geocode')
@@ -665,7 +665,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   }
 
   // Fire 5-min native task for hot leads (skip realtors) — replaces the dead
-  // FUB createRealtimeTask with the crm_tasks equivalent the LP paths use.
+  // CRM createRealtimeTask with the crm_tasks equivalent the LP paths use.
   if (parsed.intent === 'hot' && !parsed.possibleRealtor) {
     const who = [parsed.firstName, parsed.lastName].filter(Boolean).join(' ') || parsed.email || 'unknown'
     const label = parsed.audience === 'buyer' ? 'Hot buyer' : 'Hot seller'
@@ -701,7 +701,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
 
   console.log(`[lead-webhook] Lead ${leadId} → crm person ${personId} (${parsed.email || 'no email'}) intent=${parsed.intent ?? 'n/a'} audience=${parsed.audience} realtor=${parsed.possibleRealtor}`)
 
-  // Mark dedup row complete with FUB person ID + classification context.
+  // Mark dedup row complete with CRM person ID + classification context.
   if (supabase) {
     await supabase
       .from('processed_meta_leads')

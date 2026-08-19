@@ -58,7 +58,7 @@ export function isAssignableBroker(broker: string | null): broker is CrmBrokerSl
 }
 
 /**
- * A folder the inbox page exposes as tabs. The FUB five-folder model
+ * A folder the inbox page exposes as tabs. The CRM five-folder model
  * (spec §3.3) plus the working-set tabs the in-house inbox already shipped:
  *   - 'mine'     conversations in the acting broker's working set (existing)
  *   - 'assigned' explicitly assigned to the acting broker (assigned_broker = me)
@@ -69,15 +69,15 @@ export function isAssignableBroker(broker: string | null): broker is CrmBrokerSl
  */
 export type InboxScope = 'mine' | 'assigned' | 'drafts' | 'all' | 'unread' | 'closed'
 
-// ── FUB five-folder model (spec §08 §2–§3) ───────────────────────────────────
+// ── CRM five-folder model (spec §08 §2–§3) ───────────────────────────────────
 //
 // The rebuilt inbox routes on scope (My Inbox vs Company) × folder (the five
-// FUB folders). The legacy InboxScope above stays for the mobile branch + tests.
+// CRM folders). The legacy InboxScope above stays for the mobile branch + tests.
 
 /** My Inbox (per-user) vs Company (shared, whole working set) — spec §3.2. */
 export type InboxScopeKey = 'me' | 'company'
 
-/** The FUB five folders — spec §3.3. */
+/** The CRM five folders — spec §3.3. */
 export type InboxFolderKey = 'inbox' | 'assigned' | 'drafts' | 'sent' | 'closed'
 
 export const INBOX_FOLDERS: readonly InboxFolderKey[] = ['inbox', 'assigned', 'drafts', 'sent', 'closed']
@@ -179,7 +179,7 @@ export function needsReply(
  *   - 'mine'     conversations assigned to the scoped broker (or, for a superuser
  *                with no slug, every non-closed conversation — same as 'all')
  *   - 'assigned' non-closed conversations whose assigned_broker is the acting
- *                broker (FUB "Assigned" folder). Unlike 'mine', a superuser sees
+ *                broker (CRM "Assigned" folder). Unlike 'mine', a superuser sees
  *                only conversations assigned to their OWN slug here, so it is a
  *                real filter for the owner too. Falls back to brokerScope when no
  *                acting broker is supplied.
@@ -294,7 +294,7 @@ export function deriveConversationFromMessages(rows: RawMessageRow[]): {
 }
 
 /**
- * Pure: does a conversation belong in the given FUB scope × folder (spec §3)?
+ * Pure: does a conversation belong in the given CRM scope × folder (spec §3)?
  *
  *   scope 'me'      the acting broker's own working set (assigned to me).
  *                   Unknown callers appear in Company only (§3.2). Drafts and
@@ -357,14 +357,14 @@ export function matchesFolder(
 /** Per-folder counts for one inbox scope (the folder-rail badges, spec §3.1). */
 export type InboxFolderCounts = Record<InboxFolderKey, number>
 
-/** The FUB folder-queue payload: conversations + rail counts + global unread. */
+/** The CRM folder-queue payload: conversations + rail counts + global unread. */
 export type InboxFolderQueue = {
   conversations: InboxConversation[]
   counts: { me: InboxFolderCounts; company: InboxFolderCounts; unreadTotal: number }
 }
 
 /**
- * getInboxFolderQueue — the FUB scope × folder queue (spec §08 rebuild).
+ * getInboxFolderQueue — the CRM scope × folder queue (spec §08 rebuild).
  * Shares the working-set builder with the legacy tab queue; filters via
  * matchesFolder, overlays the All/Unread view toggle, and returns the per-folder
  * counts for BOTH scopes so the folder rail renders every badge live.

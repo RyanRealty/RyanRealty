@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * SuppressionAdmin — the compliance suppression-list island (Wave 2). The FUB
+ * SuppressionAdmin — the compliance suppression-list island (Wave 2). The CRM
  * Block List folds in here. It renders who is suppressed and why, lets an owner
  * add a manual block, and lifts a single block with an audit trail. A
  * compliance/litigator row needs an explicit confirm to lift (per the TCPA

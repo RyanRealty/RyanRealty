@@ -361,7 +361,7 @@ The following skills are available for use:
 - codebase-memory: Use the codebase knowledge graph for structural co…
   Use when: explore the codebase, understand the architecture, what functions exist, show me the structure, who calls this function, what does X call, trace the call chain, find callers of, show dependencies, impact analysis, dead code, unused functions, high fan-out, refactor candidates, code quality audit, graph query syntax, Cypher query examples, edg…
   Absolute path: /Users/matthewryan/.claude/skills/codebase-memory/SKILL.md
-- facebook-seller-growth: Unified online growth routine for Ryan Realty across Facebook ads, website analytics, Follow Up Boss outcomes, and organic social growth
+- facebook-seller-growth: Unified online growth routine for Ryan Realty across Facebook ads, website analytics, the in-house CRM outcomes, and organic social growth
   Use when: the user asks for one routine that continuously improves ads, web presence, and social growth; asks for a Claude cloud routine; wants autonomous optimization loops; or asks how to convert analytics into platform growth actions.
   Absolute path: /Users/matthewryan/.claude/skills/facebook-seller-growth/SKILL.md
 - build-with-ai: Default to SpaceXAI when building AI/LLM features into an app

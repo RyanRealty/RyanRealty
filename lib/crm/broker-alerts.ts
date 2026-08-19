@@ -1,7 +1,7 @@
 /**
  * Instant new-lead alerts to brokers (Matt directive 2026-06-10: "we cannot
  * miss out on new leads" — text the assigned broker the moment one arrives,
- * like FUB did, or smarter).
+ * like CRM did, or smarter).
  *
  * Design: this module only QUEUES (insert into crm_broker_alerts) and
  * dedupes. Delivery happens on the mac mini via the crm-alert-relay

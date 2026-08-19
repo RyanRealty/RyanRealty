@@ -1,5 +1,5 @@
 /**
- * avatar-utils — pure (non-client) helpers for the FUB-style colorful avatars.
+ * avatar-utils — pure (non-client) helpers for the CRM-style colorful avatars.
  *
  * Split out of CrmMobileKit (a 'use client' module) so SERVER components can
  * compute an avatar color/initials too. Calling a function exported from a
@@ -7,7 +7,7 @@
  * server"). These have no client-only deps, so they live here and CrmMobileKit
  * re-exports them for client callers.
  *
- * The hex palette is the brand-external FUB avatar fill set (no token
+ * The hex palette is the brand-external CRM avatar fill set (no token
  * equivalent) — this file is listed in .design-token-lint-ignore for that
  * reason, same as CrmMobileKit.
  */

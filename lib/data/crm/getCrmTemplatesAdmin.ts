@@ -76,7 +76,7 @@ export type CrmTemplateAdmin = {
   ownerBroker: string | null
   /** Text-only "Feature" flag (§13.2.3) — prominent in the quick-text picker. */
   featured: boolean
-  /** Creation timestamp — null for FUB-seeded rows (never fabricated). */
+  /** Creation timestamp — null for CRM-seeded rows (never fabricated). */
   createdAt: string | null
   /** Count of live sequence steps that reference this template's key. */
   usage: number

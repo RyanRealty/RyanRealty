@@ -130,7 +130,7 @@ Add `SPARK_API_KEY` to `.env.local` (and Vercel) when you have it; then you can 
 ### 4.1 In-house CRM
 
 - **Purpose:** CRM; track signed-in users and listing/page views.
-- **Writer:** `sendEvent()` in `lib/crm/send-event.ts` creates or reuses a `public.crm_people` row. Archive of the retired vendor path: `docs/archive/fub-era/README.md`.
+- **Writer:** `sendEvent()` in `lib/crm/send-event.ts` creates or reuses a `public.crm_people` row. Archive of the retired vendor path: `lib/crm/send-event.ts`.
 - **Behavior:** On Google sign-in, person is found or created and a **Registration** event is sent. While signed in: **Viewed Property** (listing views), **Viewed Page** (e.g. search pages). Listing inquiry forms (Schedule showing, Ask a question) submit via `submitListingInquiry` and are stored in `listing_inquiries`.
 
 ### 4.2 Spark (MLS)

@@ -18,7 +18,7 @@ export function cleanContactName(name: string | null | undefined, fallbackId?: n
  * ("Text lead 5412079190", "Call lead …", "Lead …") or a bare phone number.
  *
  * The inbox uses this to decide whether to surface the "Add as new contact"
- * (Add Person) affordance in the reading pane — FUB's unknown-caller flow
+ * (Add Person) affordance in the reading pane — CRM's unknown-caller flow
  * (spec §9, AC-19/AC-20). Pure so it is shared by the server page and unit tests
  * and lives in this plain (non-'use client') module.
  */

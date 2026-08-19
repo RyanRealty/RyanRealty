@@ -1,7 +1,7 @@
 # CRM BUILD MISSION — paste this to start the build
 
-> Ground-up rebuild of the Ryan Realty in-house CRM to full Follow Up Boss parity, from the
-> verified spec at `docs/fub-crm-spec/`. Runs as one continuous push. The key mechanism that
+> Ground-up rebuild of the Ryan Realty in-house CRM to full the in-house CRM parity, from the
+> verified spec at `docs/crm-spec/`. Runs as one continuous push. The key mechanism that
 > forces real, pixel-perfect building (not prose) is the **DEFINITION OF DONE** block below —
 > a screen is only "done" when a screenshot of the running page visually matches the FUB
 > reference. Prose is never acceptance.
@@ -24,16 +24,16 @@
 
 ## GOAL
 Rebuild the CRM admin UI as a single cohesive, production-grade surface at full FUB parity,
-using `docs/fub-crm-spec/` as the single source of truth. Complete build, not a demo. Done =
+using `docs/crm-spec/` as the single source of truth. Complete build, not a demo. Done =
 works end-to-end in the real app, matches the spec visually + behaviorally, passes every gate.
 
 ## SOURCE OF TRUTH (read in order before writing code)
-1. `docs/fub-crm-spec/README.md`
-2. `docs/fub-crm-spec/21-gap-map-vs-inhouse-crm.md` — the build plan + priority order.
+1. `docs/crm-spec/README.md`
+2. `docs/crm-spec/21-gap-map-vs-inhouse-crm.md` — the build plan + priority order.
 3. The module section(s) for what you're building (§02–§30) — exact UI, fields, columns,
    enums, behaviors, data-touched, numbered acceptance criteria (= the done bar for behavior).
-4. `docs/fub-crm-spec/api-export/*.json` — AUTHORITATIVE data model + config (seed from this).
-5. `docs/fub-crm-spec/screens/`, `mobile-screens/`, `addenda-captures/` — pixel-level
+4. `docs/crm-spec/api-export/*.json` — AUTHORITATIVE data model + config (seed from this).
+5. `docs/crm-spec/screens/`, `mobile-screens/`, `addenda-captures/` — pixel-level
    reference images/analyses for the exact screen you're building.
 
 ## AUTHORITY OVER EXISTING CODE (hard directive)
@@ -53,7 +53,7 @@ screen done, and do not move on, until all are checked:
    no console errors; loads timely (not just above-the-fold).
 2. **VISUAL MATCH (the core gate)** — screenshot the built page (Chrome automation) at the FUB
    reference's viewport, and compare it SIDE-BY-SIDE against the FUB reference image
-   (`docs/fub-crm-spec/screens/<screen>` + the original FUB screenshot). Every layout region,
+   (`docs/crm-spec/screens/<screen>` + the original FUB screenshot). Every layout region,
    column, field, control, label, and spacing must match. The ONLY allowed differences are the
    intentional token swaps (FUB blue/teal → Ryan Realty navy `#102742` / cream `#faf8f4`,
    Geist + Amboqia). Iterate build → screenshot → compare until ZERO structural/content diffs.
@@ -73,11 +73,11 @@ The last build shipped unverified because the DoD was prose an agent ignored. Pr
 build is not. This is now a REAL gate, not a paragraph:
 - **Gate:** `scripts/check-crm-screen-parity.mjs`, script `ci:crm-screen-parity`, WIRED into `package.json`
   → `ci:gates` (and accepted by `ci:gates-wired`). It runs on every commit/CI.
-- **Registry (source of truth):** `docs/fub-crm-spec/crm-screens.json` — one entry per CRM screen (desktop
+- **Registry (source of truth):** `docs/crm-spec/crm-screens.json` — one entry per CRM screen (desktop
   screen-NN + mobile mob-NN): `{ id, specRef, route, status: todo|wip|done, requiredComponents[], verify }`.
 - **The rule it enforces:** a screen with `status:"done"` MUST prove it — (1) its `route` file exists,
   (2) that file references EVERY name in `requiredComponents`, (3) its `verify` screenshot exists on disk
-  (`docs/fub-crm-spec/_verify/<id>.png`). Any miss = RED build. `todo`/`wip` screens are reported, never fail.
+  (`docs/crm-spec/_verify/<id>.png`). Any miss = RED build. `todo`/`wip` screens are reported, never fail.
 - **What that means for the rebuild:** you CANNOT type "done" and move on. To flip a screen to `done` you
   must (a) fill `requiredComponents` with the sections/components its spec reference requires, (b) actually
   render/import them, and (c) commit the screenshot you compared side-by-side to the reference. Otherwise the
@@ -142,7 +142,7 @@ DEFERRED (do NOT build unless told): Deals reporting beyond pipeline, Billing, p
 > confirmed in the delivered source), the pixel fired TWICE → exactly ONE `email_events` open row
 > (idempotent), a real click → ONE click row + 302 to the correct destination, both rows tied to
 > person_id 13168, and the contact UI showed "3 opens · 1 clicks" chips + Emails sent 1 — screenshot
-> committed at `docs/fub-crm-spec/_verify/email-tracking-engagement.png`. Test rows then deleted
+> committed at `docs/crm-spec/_verify/email-tracking-engagement.png`. Test rows then deleted
 > (net-zero; the screenshot is the artifact). What this session ADDED (most send paths were already
 > wired by intervening slices — see status table in the PROGRESS entry): the unsubscribe/compliance
 > link carve-out `isComplianceLink()` in `lib/email-tracking.ts` (unsubscribe rails + the Oregon agency
@@ -244,7 +244,7 @@ FIX:
 # MOBILE DELIVERY TRACK — build the CRM's mobile views to match the FUB-iOS screens (added 2026-07-01)
 
 > **This track was MISSING from the original plan and that is a planning failure.** The delivery order above
-> (0–7) was desktop-only. The 60 analyzed FUB-iOS mobile screens (`docs/fub-crm-spec/mobile-screens/`) plus the
+> (0–7) was desktop-only. The 60 analyzed FUB-iOS mobile screens (`docs/crm-spec/mobile-screens/`) plus the
 > mobile module sections (§23–§30) were referenced as reading material but never turned into build items — so
 > the mobile surfaces (starting with the contact detail) were never built to match and there was nothing for
 > the verification step to check them against. This track fixes that. **Same methodology, same Definition of
@@ -369,7 +369,7 @@ side-by-side. Only then move to the next item.
 # MOBILE UX FIX PUNCH LIST (Matt phone feedback 2026-07-02)
 
 > Matt used the mobile CRM on his real phone (ryan-realty.com, iPhone, 2026-07-02) and sent
-> screenshots + this verbatim feedback: "I do not have the bottom bar like in follow up boss,
+> screenshots + this verbatim feedback: "I do not have the bottom bar on every mobile CRM route,
 > I cannot edit leads, there are different styles to the CRM pages, I need to be able to text
 > from my CRM not open up my messaging app, basically I have what looks like 2 crms, I need to
 > be able to see lead activity on the lead detail so we need to create an activity tab, many
@@ -1362,7 +1362,7 @@ DB verify and reverted net-zero. **9 findings (3 P0, 3 P1, 3 P2); 6 fixed, 3 ope
   email blocking on the block-list page = a link to the existing suppression system
   (crm_suppressions, checked by every send path) — a second crm_blocked_emails store with no
   enforcement would be a lying UI; phone blocking is the fully-enforced half · subdomain
-  displays {subdomain}.ryan-realty.com (not followupboss.com) · registration page maps Twilio
+  displays {subdomain}.ryan-realty.com (not retired.invalid) · registration page maps Twilio
   A2P statuses onto the §1.10 badge enum (VERIFIED/IN_PROGRESS/PENDING/FAILED/NONE) and shows
   the raw Twilio status string alongside for §0 traceability. DEFERRED (explicit): per-user
   call-recording overrides below the master switch (no per-broker recording column; AC-3

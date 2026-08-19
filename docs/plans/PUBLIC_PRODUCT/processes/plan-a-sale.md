@@ -88,8 +88,8 @@ and the `rr_agent_attribution` cookie (`app/lp/seller-home-value/actions.ts:18`)
 | Anonymous pre-contact address partials | `visitor_events` via `saveAnonymousPartialAddress` | `docs/DAL_INDEX.md:2271-2273`; called from `actions.ts:118-120` |
 | Broker-assignment ledger | `marketing_assignments` via `recordMarketingAssignment` | import `actions.ts:12`; write `actions.ts:569-576` |
 
-**Explicitly NOT a SoR:** Follow Up Boss (decommissioned; `sendEvent` from
-`@/lib/followupboss` is legacy naming over the in-house path — CLAUDE.md §9); the page copy
+**Explicitly NOT a SoR:** the in-house CRM (decommissioned; `sendEvent` from
+`@/lib/retiredVendorCrm` is legacy naming over the in-house path — CLAUDE.md §9); the page copy
 for fees (the fee decision SoR is `docs/plans/PUBLIC_PRODUCT/decisions.md:63` and today the
 copy contradicts it — §10 D1); SkySlope.
 

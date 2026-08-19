@@ -67,15 +67,15 @@ This doc reflects what is **in the code** and how to **test** each piece. It doe
 
 ---
 
-## 5. Follow Up Boss (FUB)
+## 5. the in-house CRM (FUB)
 
 | Aspect | Status | Details |
 |--------|--------|--------|
-| **Auth** | ✅ Used | `lib/followupboss.ts` uses `FOLLOWUPBOSS_API_KEY` (server-side). |
+| **Auth** | ✅ Used | `lib/crm/send-event.ts` uses `UNUSED_VENDOR_CRM_KEY` (server-side). |
 | **Registration (sign-in)** | ✅ Yes | `trackSignedInUser()` called from `app/auth/callback/route.ts` and auth actions after Google sign-in. |
-| **Viewed Page** | ✅ Yes | `trackPageView()` in `lib/followupboss.ts`; called from `app/search/[...slug]/page.tsx` for city/subdivision pages with `user` or `fubPersonId` from cookie. |
+| **Viewed Page** | ✅ Yes | `trackPageView()` in `lib/crm/send-event.ts`; called from `app/search/[...slug]/page.tsx` for city/subdivision pages with `user` or `fubPersonId` from cookie. |
 | **Viewed Property (listing page)** | ✅ Yes | `trackListingView()` called from `app/listing/[listingKey]/page.tsx` when `session?.user?.email` exists. |
-| **Viewed Property (tile click)** | ⚠️ Available, not wired | `trackListingTileClick()` exists in `lib/followupboss.ts` but is not called from `ListingCard` or elsewhere. Listing page view is sent; card clicks are not. |
+| **Viewed Property (tile click)** | ⚠️ Available, not wired | `trackListingTileClick()` exists in `lib/crm/send-event.ts` but is not called from `ListingCard` or elsewhere. Listing page view is sent; card clicks are not. |
 | **FUB identity bridge** | ✅ Yes | `FubIdentityBridge` in layout; reads `_fuid` (or custom param) from URL, calls `identifyFubFromEmailClick`, sets `fub_cid` cookie, strips param. Search page uses `getFubPersonIdFromCookie()` for anonymous “Viewed Page.” |
 
 **How to verify**

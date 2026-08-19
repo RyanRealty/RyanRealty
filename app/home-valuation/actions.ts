@@ -183,7 +183,7 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
   // Canonical tagging — apply audience:seller + source:cma-request +
   // broker routing + write to marketing_assignments so this lead surfaces in
   // the same dashboards as /lp/seller-home-value submissions. Gates on the
-  // native person id sendEvent returned (the old FUB findPersonByEmail
+  // native person id sendEvent returned (the old CRM findPersonByEmail
   // re-lookup was a dead no-op post-decommission). Awaited so the serverless
   // freeze cannot drop it; the catch keeps a blip from blocking capture.
   try {
@@ -270,7 +270,7 @@ async function runValuationFollowUp(ctx: {
 
   // Suppression chokepoint (fails closed). A seller who opted out of email gets
   // neither the auto-CMA attachment nor the acknowledgment. The lead is still
-  // captured (FUB + native fallback above) and the broker is still alerted; only
+  // captured (CRM + native fallback above) and the broker is still alerted; only
   // the two LEAD-facing sends below are gated. No crm_person_id here, gate by email.
   const leadSuppressed = (await isSuppressedByEmail(email, 'email')).suppressed
 
@@ -354,8 +354,8 @@ async function runValuationFollowUp(ctx: {
   // above; everyone else (no property match, or CMA generation/send failed)
   // gets a same-second acknowledgment from the verified domain so no lead goes
   // cold on first contact. firstName is parsed from the submitted `name` (same
-  // value used for the FUB person + the CMA greeting) — this is a transactional
-  // Resend send, not a FUB merge tag, because FUB blocks integration emails.
+  // value used for the CRM person + the CMA greeting) — this is a transactional
+  // Resend send, not a CRM merge tag, because CRM blocks integration emails.
   // reply-to is a monitored inbox so "reply to this email" actually reaches us.
   if (!cmaSent && !leadSuppressed) {
     // Suppression chokepoint (fails closed) — re-check in this scope so the

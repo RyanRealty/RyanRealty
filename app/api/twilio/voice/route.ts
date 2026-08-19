@@ -192,7 +192,7 @@ export async function POST(request: Request) {
 
   // 6. Dial the broker's cell, recording both legs with the caller already on
   //    notice. Pass the CALLER's number as caller ID so the broker sees who is
-  //    calling and can call back directly (FUB's forwarding behavior).
+  //    calling and can call back directly (CRM's forwarding behavior).
   //    Recording = env kill-switch AND the Company Settings master switch (AC-3).
   const recording =
     process.env.CRM_CALL_RECORDING !== 'false' &&

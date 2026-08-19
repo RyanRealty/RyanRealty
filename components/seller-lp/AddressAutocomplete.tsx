@@ -4,7 +4,7 @@
  * AddressAutocomplete — Google Places address autocomplete for the seller LP.
  *
  * Real-address picker so leads submit a validated street address (clean data →
- * accurate CMA + geocoding + FUB) instead of free-typed text. Uses the repo's
+ * accurate CMA + geocoding + CRM) instead of free-typed text. Uses the repo's
  * Maps loader (GoogleMapsBootstrap + useGoogleMapsReady) — NOT @react-google-maps/api's
  * broken useJsApiLoader. Restricts to US addresses, biased to the Bend / Central
  * Oregon area. Degrades gracefully: if Places is unavailable the field is a plain

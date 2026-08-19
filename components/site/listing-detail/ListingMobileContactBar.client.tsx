@@ -6,7 +6,7 @@ import type { Broker } from '@/lib/data/types/broker'
 
 /**
  * Mobile sticky contact bar — the always-reachable broker CTA on small screens,
- * replacing the retiring FUB floating widget. Fixed to the bottom of the
+ * replacing the retiring CRM floating widget. Fixed to the bottom of the
  * viewport, hidden on lg+ (the desktop sticky sidebar card carries it there).
  *
  * Slides up once the visitor scrolls past the hero so it never covers the first

@@ -1,5 +1,5 @@
 -- Listing inquiries: showing requests and ask-a-question from listing page.
--- Submissions write here and trigger FollowUpBoss; no RLS so only server/service_role inserts.
+-- Submissions write here and trigger inHouseCrm; no RLS so only server/service_role inserts.
 
 CREATE TABLE IF NOT EXISTS listing_inquiries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

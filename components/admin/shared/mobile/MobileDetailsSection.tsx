@@ -2,10 +2,10 @@
 
 /**
  * MobileDetailsSection — the interactive §25.5.7 DETAILS card, with the full
- * §28 picker set (mobile-pickers, docs/fub-crm-spec/28-mobile-pickers-modals-
+ * §28 picker set (mobile-pickers, docs/crm-spec/28-mobile-pickers-modals-
  * and-action-sheets.md).
  *
- * Every row behaves like FUB: tapping opens the matching picker/editor —
+ * Every row behaves like CRM: tapping opens the matching picker/editor —
  *   Assigned to  → §28 §5 Assign-To sheet (Currently banner · search · Me /
  *                  PONDS / TEAM MEMBERS, tap = instant assign)
  *   Stage        → §28 §2 stage picker (mob-35)
@@ -156,7 +156,7 @@ export function MobileDetailsSection({
   const collabSlugs = new Set(collaborators.map((c) => c.slug))
 
   // §3.4 — <unspecified> pinned first (the clear option); every stored string
-  // verbatim. A literal stored '<unspecified>' string (FUB import artifact)
+  // verbatim. A literal stored '<unspecified>' string (CRM import artifact)
   // would duplicate the clear row, so it folds into it. The contact's current
   // value joins the list even if it fell out of the account vocabulary (so the
   // checkmark still lands somewhere true).

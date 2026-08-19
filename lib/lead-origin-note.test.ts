@@ -3,7 +3,7 @@ import {
   buildLeadOriginNote,
   leadOriginNoteHasDetail,
   type LeadOriginContext,
-} from './fub-lead-origin-note'
+} from './lead-origin-note'
 
 describe('buildLeadOriginNote', () => {
   it('renders all expected labelled lines for a full seller context', () => {

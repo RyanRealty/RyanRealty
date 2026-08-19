@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * AutomationEditor — the §12.4 visual automation editor (FUB
+ * AutomationEditor — the §12.4 visual automation editor (CRM
  * /2/automations/v2/edit/{id}), re-skinned to admin v2 tokens (11F).
  *
  * Three-column layout with no outer scrollbar:
@@ -25,7 +25,7 @@
  * affordance is reproduced with local focus state since inline styles cannot
  * express `:focus-visible`.
  *
- * Spec: docs/fub-crm-spec/12-action-plans-and-automations.md §12.4 + pixel
+ * Spec: docs/crm-spec/12-action-plans-and-automations.md §12.4 + pixel
  * references screens/screen-35/36/37.md.
  */
 

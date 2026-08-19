@@ -616,7 +616,7 @@ export async function getCcSelfAddressAction(): Promise<
  * Render an SMS template body for a specific contact — merge tokens resolved
  * server-side (same renderCrmMerge + buildMergeContext path the send uses) so
  * the mobile compose sheet shows WHAT WILL SEND, not raw %tokens%
- * (2026-07-02 mobile audit: 17 of 37 live SMS templates carry FUB-era tokens;
+ * (2026-07-02 mobile audit: 17 of 37 live SMS templates carry CRM-era tokens;
  * one reached a contact literally on Jun 30). Tokens the contact has no data
  * for stay literal and come back in `unresolved` for the composer warning.
  * Render-only — no send, no writes.

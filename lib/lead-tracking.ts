@@ -61,7 +61,7 @@ export type FireLeadParams = {
   event_id?: string
   /** Optional CRM person id for cross-system stitching. */
   crm_person_id?: number | null
-  /** @deprecated alias for crm_person_id — leftover Follow Up Boss name. */
+  /** @deprecated alias for crm_person_id. */
   fub_person_id?: number | null
   /** Extra event-scoped params (form fields, intent, etc.). */
   extra?: Record<string, string | number | boolean | undefined | null>

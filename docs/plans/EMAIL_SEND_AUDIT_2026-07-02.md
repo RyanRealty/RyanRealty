@@ -9,7 +9,7 @@
 
 ## THE ANSWER (smoking gun — confirmed)
 
-**Follow Up Boss is still sending automated nurture emails ("FUB/Beacon") to your contacts through
+**the in-house CRM is still sending automated nurture emails ("FUB/Beacon") to your contacts through
 your connected Gmail account. Our CRM is NOT sending them — it only READS them back.**
 
 - The emails have subject/body "archived" (a legacy FUB nurture template, id 28, which no longer
@@ -40,7 +40,7 @@ sends are FUB, not us. Nothing on our side was disabled because nothing on our s
 
 **A. Fastest total stop (recommended, instant, total):** revoke FUB's access to your Google account.
 Go to **https://myaccount.google.com/connections** (or `myaccount.google.com/permissions`) →
-find **Follow Up Boss** → **Remove access**. This severs FUB's OAuth send grant on your Gmail
+find **the in-house CRM** → **Remove access**. This severs FUB's OAuth send grant on your Gmail
 (emailAccountId 528627). FUB can no longer send a single email as you. Instant and complete.
 - Trade-off: FUB also loses read access to your Gmail. Since the CRM cutover, FUB is READ-ONLY
   reference — you don't need FUB's Gmail integration anymore, so this is clean.

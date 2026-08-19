@@ -21,9 +21,9 @@ Audits the in-house CRM and lead-handling pipeline. Produces a `CRMAuditReport` 
 
 ## CRM data shape
 
-All data reads from `public.marketing_channel_daily` where `channel = 'fub'`.
+All data reads from `public.crm_people` and related CRM tables. Review at `/admin/crm`.
 
-Written by the CRM snapshot cron (`app/api/cron/marketing-snapshot-fub/route.ts`; legacy path name). Do not call a vendor CRM API.
+Written by the CRM snapshot path in `/api/cron/snapshot-channels`. Do not call a vendor CRM API.
 
 ### Account-scope metrics (scope='account', scope_id='')
 

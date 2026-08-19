@@ -1,8 +1,8 @@
 // @no-parity — internal admin surface, gated by ci:crm-screen-parity instead
-// (docs/fub-crm-spec/crm-screens.json → contacts-list-desktop).
+// (docs/crm-spec/crm-screens.json → contacts-list-desktop).
 //
-// §05 People list — the three-region FUB structure
-// (docs/fub-crm-spec/05-people-list-and-bulk-actions.md §2):
+// §05 People list — the three-region CRM structure
+// (docs/crm-spec/05-people-list-and-bulk-actions.md §2):
 //   LEFT  — PeopleSidebar: All People + Collections hierarchy (§3)
 //   MAIN  — PeopleListView: header (§4), toolbar (§5), table (§6/§13),
 //           bulk bar (§14), Add Person (§16), Export (§15)

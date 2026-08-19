@@ -1,7 +1,7 @@
 'use server'
 
 /**
- * CRM Ponds CRUD + claim actions (FUB §8.2).
+ * CRM Ponds CRUD + claim actions (CRM §8.2).
  *
  * Owner/superuser only for create/update/delete/membership.
  * Any broker can call claimLeadFromPondAction to claim a lead from a pond they

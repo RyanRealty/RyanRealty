@@ -564,7 +564,7 @@ Located in an AgentFire Twig signup template (the "Create Your Account / Gain im
 
 4. **AgentFire dynamic widget static backfill** (audit Section 5.5) — neighborhood pages show "$0" in the Area Highlights widget because Googlebot can't read JS-loaded content. Audit recommends static HTML market data above each widget. Same Spark Editor pattern but ~5-7 pages.
 
-5. **Follow Up Boss newsletter integration** — Matt's directive: no Mailchimp. Tie market-report signup to FUB directly. Needs:
+5. **the in-house CRM newsletter integration** — Matt's directive: no Mailchimp. Tie market-report signup to FUB directly. Needs:
    - AgentFire's native form builder OR a custom form widget
    - FUB lead-create webhook with appropriate tag (e.g., `source=newsletter-signup`)
    - Configuration in AgentFire's admin
@@ -669,7 +669,7 @@ Publishing fabricated "0 active" data would violate CLAUDE.md §0. Flagged for a
 
 Visited Connect a CRM page (`/wp-admin/admin.php?page=external-service`). Confirmed:
 - `fub_widget_key` input has a populated 39-char value
-- AgentFire's lead-capture system is already wired to Follow Up Boss
+- AgentFire's lead-capture system is already wired to the in-house CRM
 
 **This means every form submission on ryan-realty.com (Contact, Sellers, Buyers, the Explore Bend hub newsletter signup widget) already routes leads to FUB.** Matt's "no Mailchimp, FUB direct" directive is satisfied at the infrastructure level. No additional wiring needed.
 

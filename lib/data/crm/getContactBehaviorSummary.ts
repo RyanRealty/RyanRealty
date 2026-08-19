@@ -36,7 +36,7 @@
  *
  * ── IDENTITY JOIN (native, 2026-07-21) ─────────────────────────────────────
  * `resolvePersonIdentity().sessionIds` alone stitched sessions via the legacy
- * FUB id (visitor_sessions.fub_person_id) + email-keyed identity-map rows, so a
+ * CRM id (visitor_sessions.fub_person_id) + email-keyed identity-map rows, so a
  * NATIVE lead (fub_legacy_id NULL) whose sessions carry only crm_person_id
  * resolved zero sessions. The summary now UNIONS that bundle with
  * resolveLeadSessionIds (lib/data/crm/getViewedListings.ts) — the native chain:
@@ -300,7 +300,7 @@ export async function getContactBehaviorSummary(
   const sb = createServiceClient()
 
   // Native identity chain (crm_person_id + lockstep + rr_vid) unioned with the
-  // legacy/email bundle so BOTH native and FUB-imported leads resolve sessions.
+  // legacy/email bundle so BOTH native and CRM-imported leads resolve sessions.
   const nativeSessionIds = await resolveLeadSessionIds(sb, {
     crmPersonId,
     fubLegacyId: identity.fubLegacyId,

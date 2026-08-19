@@ -15,7 +15,7 @@
  * behaviour — ArrowLeft/ArrowRight/Home/End move focus AND selection, with a
  * roving tabindex — since Radix Tabs activates on arrow-key move by default.
  *
- * Spec: docs/fub-crm-spec/12-action-plans-and-automations.md §12.4.2 + the
+ * Spec: docs/crm-spec/12-action-plans-and-automations.md §12.4.2 + the
  * pixel reference screens/screen-35.md (tab strip, search, drag banner,
  * Controls / Actions sections, drag handles).
  */

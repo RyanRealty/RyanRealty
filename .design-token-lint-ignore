@@ -9,16 +9,16 @@
 # @/components/ui design-system components or use Tailwind tokens. Inline brand
 # hex + a system font are the only option for a self-contained HTML document.
 app/api/email/unsubscribe/route.ts
-# CRM mobile kit (FUB-parity primitives, 2026-06-26): the Follow Up Boss look
+# CRM mobile kit (2026-06-26): the in-house CRM look
 # needs 12 distinct colorful avatar fills + colored chat/call/email action circles
 # with white glyphs, plus custom pill/circle button primitives — none expressible
 # in the 2-color brand token system. Same class of exception as the charts below.
 components/admin/shared/mobile/CrmMobileKit.tsx
-# avatar-utils — same FUB avatar hex palette, extracted to a non-client module so
+# avatar-utils — same CRM avatar hex palette, extracted to a non-client module so
 # server components can compute the color too (the kit is 'use client').
 lib/admin/crm-avatar.ts
-# §25 Mobile Contact Detail (M1, 2026-07-01): the FUB-iOS mobile screens are
-# pt-precise references (docs/fub-crm-spec/25-mobile-contact-detail.md) — text
+# §25 Mobile Contact Detail (M1, 2026-07-01): the CRM mobile screens are
+# pt-precise references (docs/crm-spec/25-mobile-contact-detail.md) — text
 # sizes, row heights, and the pixel-verified SMS/Call/Email action-circle hexes
 # (#7595e8/#4ad09f/#4ab8e8, §25.1 "inline (no token)") are part of the visual
 # contract. Raw <button>s are full-row/circular tap targets the <Button>
@@ -27,15 +27,15 @@ components/admin/shared/mobile/MobileContactDetail.tsx
 components/admin/shared/mobile/MobileInfoTab.tsx
 components/admin/shared/mobile/MobilePickerSheet.tsx
 components/admin/shared/mobile/MobilePeopleRoot.tsx
-# §26 Mobile Inbox + §27 Mobile Compose (M3/M4, 2026-07-02): same FUB-iOS
+# §26 Mobile Inbox + §27 Mobile Compose (M3/M4, 2026-07-02): same CRM mobile
 # pt-precise reference class as the §25 files above — the documented row
 # heights (76pt rows, 60pt header, 34pt pills), 15/17/22pt text sizes, and
 # full-row/segmented-pill/swipe-action tap targets are the visual contract
-# (docs/fub-crm-spec/26-*.md + 27-*.md). Raw <button>s are full-bleed rows,
+# (docs/crm-spec/26-*.md + 27-*.md). Raw <button>s are full-bleed rows,
 # segmented pills, and circular icon targets the <Button> primitive can't
 # express.
 # GlobalActivityFeed — the §24 mobile sub-tab strip (full-cell tap targets +
-# 2px indicator + FUB pt sizes) rides the existing feed client; same exception
+# 2px indicator + CRM pt sizes) rides the existing feed client; same exception
 # class as the mobile components above.
 components/admin/crm/GlobalActivityFeed.client.tsx
 components/admin/shared/mobile/MobileDetailsSection.tsx
@@ -45,11 +45,11 @@ components/admin/shared/mobile/MobileHomesTab.tsx
 components/admin/shared/mobile/MobileNotesTab.tsx
 components/admin/shared/mobile/MobileCalendarTab.tsx
 # Mobile punch-list additions (2026-07-02, Matt phone feedback): same §24/§25
-# FUB-iOS pt-precise exception class as the files above — navy header (§24
+# CRM mobile pt-precise exception class as the files above — navy header (§24
 # §1.3), edit sheet (§25.3.2), per-kind activity icon tints.
 components/admin/shared/mobile/MobileEditSheet.tsx
 components/admin/shared/mobile/MobileActivityTab.tsx
-# Comms feed (FUB-parity contact-360, 2026-06-29): clones the Follow Up Boss
+# Comms feed (contact-360, 2026-06-29): the in-house CRM
 # Comms tab as a full-bleed, multi-line, left-aligned expandable message-row
 # list. Each row is a raw <button> so the whole row is the tap target with
 # clamp-to-expand body — the <Button> primitive forces single-line centered
@@ -304,7 +304,7 @@ app/admin/(protected)/crm/reporting/overview/OverviewKpiStrip.tsx
 app/luxury-homes-bend/page.tsx
 
 # §13 Templates surface (admin-only FUB-parity, 2026-07-01,
-# docs/fub-crm-spec/13-email-and-text-templates.md — replaced TemplateEditor.tsx):
+# docs/crm-spec/13-email-and-text-templates.md — replaced TemplateEditor.tsx):
 # raw <button> as inline table-cell text triggers (template-name links), the
 # eye popover trigger, the emoji grid cells, and the circular Feature toggle —
 # the <Button> primitive's inline-flex centering breaks text-flow / the
@@ -312,7 +312,7 @@ app/luxury-homes-bend/page.tsx
 # the §12 automations canvas/palette tiles below.
 
 # §12 Automations visual editor + list (admin-only FUB-parity surfaces, 2026-07-01,
-# docs/fub-crm-spec/12-action-plans-and-automations.md):
+# docs/crm-spec/12-action-plans-and-automations.md):
 # - AutomationEditor.tsx: h-[calc(100vh-8.5rem)] + min-h-[560px] — the editor is a
 #   full-viewport three-column layout with no outer scrollbar (§12.4.1). Same
 #   exception class as AdminSidebar (h-[calc(100vh-61px)]).
@@ -342,7 +342,7 @@ app/admin/(protected)/crm/reporting/properties/page.tsx
 app/admin/(protected)/crm/reporting/call-logs/page.tsx
 
 # Deal pipeline + stage config (FUB parity, 2026-07-01): the canonical stage
-# accent palette mirrored from docs/fub-crm-spec/api-export/pipelines.json — 7
+# accent palette mirrored from docs/crm-spec/api-export/pipelines.json — 7
 # FUB stage hex colors (amber/salmon/periwinkle/gold/green/red) with no 2-color
 # brand-token equivalent, applied to Kanban column top-borders via inline style.
 # Same exception class as lib/admin/crm-avatar.ts.

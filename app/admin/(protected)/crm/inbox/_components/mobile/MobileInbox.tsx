@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * MobileInbox — the §26-A/B/C/D mobile inbox list (< md), FUB-iOS structure
+ * MobileInbox — the §26-A/B/C/D mobile inbox list (< md), CRM-iOS structure
  * re-skinned to Ryan Realty tokens.
  *
  * Regions (top → bottom, per the §26 y-band table):
@@ -20,7 +20,7 @@
  * Admin v2 re-skin (P11F): the header/tab-strip's old solid navy fill was the
  * PUBLIC brand (blacklisted as design input for the admin — ADMIN_UI.md §1);
  * it reads as neutral chrome now (var(--a-surface) + a hairline), matching
- * RailNav/TabBar elsewhere in the admin. The three FUB-style bottom sheets are
+ * RailNav/TabBar elsewhere in the admin. The three CRM-style bottom sheets are
  * the admin's one overlay primitive (Dialog) — there is no v2 sheet.
  */
 
@@ -33,7 +33,7 @@ import { inboxHref } from '../inbox-url'
 import type { InboxFolderKey, InboxScopeKey } from '@/lib/data/crm/getInboxQueue'
 import MobileInboxRow, { MobileAvatar, type MobileConvRow } from './MobileInboxRow'
 
-/** The four mobile sub-tabs — Drafts is desktop-only (FUB docs §22 / AC-26A-02). */
+/** The four mobile sub-tabs — Drafts is desktop-only (CRM docs §22 / AC-26A-02). */
 const MOBILE_TABS: Array<{ key: InboxFolderKey; label: string }> = [
   { key: 'inbox', label: 'Inbox' },
   { key: 'assigned', label: 'Assigned' },

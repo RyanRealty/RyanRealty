@@ -27,7 +27,7 @@
  *
  * Cache-Control: private, no-store, never cache at the edge.
  *
- * Renamed from fub_cid/fubPersonId 2026-07-09 (FUB decommissioned
+ * Renamed from fub_cid/fubPersonId 2026-07-09 (CRM decommissioned
  * 2026-06-24) to match app/actions/identity-bridge.ts and
  * app/auth/callback/route.ts, which both now set the rr_pid cookie.
  */

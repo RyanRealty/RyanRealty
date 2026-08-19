@@ -111,7 +111,7 @@ export default function ListingBrokerCTA({
   return (
     <>
       <TextMattCTA broker={broker} listingKey={listingKey} reviews={reviews} className={className} />
-      {/* Always-reachable mobile bar (hidden on lg+ via CSS) — replaces the FUB
+      {/* Always-reachable mobile bar (hidden on lg+ via CSS) — replaces the CRM
           floating widget; shows the same attributed broker as the card. */}
       <ListingMobileContactBar broker={broker} listingKey={listingKey} />
     </>

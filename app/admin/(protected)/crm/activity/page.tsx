@@ -61,7 +61,7 @@ export default async function CrmActivityPage({
     : ALL_ACTIVITY_TYPE_KEYS
   const selected = requested.length ? requested : ALL_ACTIVITY_TYPE_KEYS
 
-  // Default to the caller's OWN leads (FUB-style "my activity"); the owner can
+  // Default to the caller's OWN leads (CRM-style "my activity"); the owner can
   // widen to Everyone or another broker. A restricted broker is locked to theirs.
   const callerScope = scopeBroker(access)
   const isOwner = callerScope === null

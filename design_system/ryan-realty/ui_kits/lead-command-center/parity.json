@@ -1,7 +1,7 @@
 {
   "route": "components/admin/crm/person-detail/PersonWorkspaceBody.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/lead-command-center/picked-mockup.html",
-  "note": "GROUND-UP REBUILD 2026-07-01 (CRM_BUILD_MISSION, ci:crm-screen-parity); W5.1 RC3 2026-07-26 moved the §07 three-column assembly into PersonWorkspaceBody (page.tsx is the Suspense identity shell). Authoritative per-screen contract: docs/fub-crm-spec/crm-screens.json (person-detail-desktop). Mobile (§25) stays under PersonWorkspace → MobileLeadDetail.",
+  "note": "GROUND-UP REBUILD 2026-07-01 (CRM_BUILD_MISSION, ci:crm-screen-parity); W5.1 RC3 2026-07-26 moved the §07 three-column assembly into PersonWorkspaceBody (page.tsx is the Suspense identity shell). Authoritative per-screen contract: docs/crm-spec/crm-screens.json (person-detail-desktop). Mobile (§25) stays under PersonWorkspace → MobileLeadDetail.",
   "requiredComponents": [
     { "name": "PersonSidebar", "section": "§07a left column — avatar/header, phones, relationships, details, custom fields" },
     { "name": "PersonCenterColumn", "section": "§07b centre — action bar, compose, filter tabs, date-grouped timeline" },

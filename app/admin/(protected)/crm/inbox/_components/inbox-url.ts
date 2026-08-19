@@ -1,5 +1,5 @@
 /**
- * inbox-url — pure href builder for the FUB scope × folder inbox routing
+ * inbox-url — pure href builder for the CRM scope × folder inbox routing
  * (spec §08 §1). Query-param routing on the single /admin/crm/inbox page:
  *   ?scope=me|company & folder=inbox|assigned|drafts|sent|closed
  *   & view=unread (All/Unread toggle) & c=<personId> (open thread)
@@ -42,7 +42,7 @@ export function isFolderKey(v: string | undefined): v is InboxFolderKey {
   return v === 'inbox' || v === 'assigned' || v === 'drafts' || v === 'sent' || v === 'closed'
 }
 
-/** Legacy tab params (?scope=mine|assigned|drafts|unread|all|closed) → the FUB model. */
+/** Legacy tab params (?scope=mine|assigned|drafts|unread|all|closed) → the CRM model. */
 export function mapLegacyScope(
   v: string | undefined,
 ): { scope: InboxScopeKey; folder: InboxFolderKey; view: 'all' | 'unread' } | null {

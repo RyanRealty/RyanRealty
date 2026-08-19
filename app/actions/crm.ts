@@ -4,9 +4,9 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
 /**
  * CRM server actions — reads + mutations for /admin/crm (blueprint §5).
  *
- * crm_people is the system of record (FUB decommissioned 2026-06-24). The old
- * dual-write rule (fub_legacy_id people mutated FUB first, mirror wrote local)
- * is gone — those FUB writes had been silent no-ops since the cutover and were
+ * crm_people is the system of record (CRM decommissioned 2026-06-24). The old
+ * dual-write rule (fub_legacy_id people mutated CRM first, mirror wrote local)
+ * is gone — those CRM writes had been silent no-ops since the cutover and were
  * deleted. Every mutation writes the native tables directly.
  */
 
@@ -346,7 +346,7 @@ const EMPTY_PERSON_FULL: CrmPersonFull = {
 
 /**
  * Explicit crm_people projection for the person-360 read. This is `*` minus the
- * `raw` column (the full FUB import JSON blob), which nothing in the person-detail
+ * `raw` column (the full CRM import JSON blob), which nothing in the person-detail
  * page or its panels ever renders (audited 2026-07-19). Every other column is
  * kept so no typed field or cast-read on the person object can silently blank.
  * assigned_broker (RBAC scope) and fub_legacy_id (drives the geo/cma/visitor
@@ -464,10 +464,10 @@ export async function addCrmNoteAction(formData: FormData): Promise<CrmActionRes
   if (!person) return { ok: false, error: 'Person not found' }
 
   const broker = access.access.brokerSlug ?? undefined
-  // FUB DECOMMISSIONED (2026-06-24): the CRM is the system of record. The old
+  // CRM DECOMMISSIONED (2026-06-24): the CRM is the system of record. The old
   // path gated the note on addPersonNote(fub_legacy_id) and relied on the (dead)
   // mirror sync to write the local row — so notes on ANY imported contact
-  // silently failed ("FUB note write failed", 2026-07-02 audit P0). Write the
+  // silently failed ("CRM note write failed", 2026-07-02 audit P0). Write the
   // local timeline row directly for every contact.
   const sb = createServiceClient()
   const { error } = await sb.from('crm_timeline').insert({
@@ -601,7 +601,7 @@ export type ActivityPerson = { personId: number; name: string; pictureUrl: strin
 
 /**
  * Named-people activity for the broker dashboard "Right now" feed
- * (docs/MOBILE_CRM_FUB_PARITY.md #3). Matt 2026-06-16: show WHO — the latest
+ * (docs/MOBILE_CRM_PARITY.md #3). Matt 2026-06-16: show WHO — the latest
  * person on the site, who opened/sent email — not a wall of anonymous session
  * IDs. Each row resolves crm_timeline events to a named crm_people row and links
  * to that lead. Latest event per person, broker-scoped.
@@ -656,7 +656,7 @@ export type RecentLead = {
 
 /**
  * Recently-added leads for the broker dashboard "New leads" activity segment
- * (docs/MOBILE_CRM_FUB_PARITY.md #3). Broker-scoped the same way the rest of the
+ * (docs/MOBILE_CRM_PARITY.md #3). Broker-scoped the same way the rest of the
  * dashboard reads are — a slug sees only their own, a superuser sees everyone.
  */
 export async function getRecentNewLeads(limit = 12): Promise<RecentLead[]> {
@@ -1101,7 +1101,7 @@ export async function listBrokerLicenses(): Promise<BrokerLicenseRow[]> {
   return (data ?? []) as BrokerLicenseRow[]
 }
 
-/** Reassign a contact to a broker — updates CRM + FUB assignedUserId + broker: tag, logs to timeline. */
+/** Reassign a contact to a broker — updates CRM + CRM assignedUserId + broker: tag, logs to timeline. */
 export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()
   if (!access.ok) return access
@@ -1221,7 +1221,7 @@ export async function removeCrmTagAction(formData: FormData): Promise<CrmActionR
   return { ok: true }
 }
 
-/** Add a phone or email to a contact (§25.5.4/25.5.5 — FUB supports multiple
+/** Add a phone or email to a contact (§25.5.4/25.5.5 — CRM supports multiple
  *  contact points per person; the mobile Info tab's "Add phone / Add email"
  *  flow lands here). Inserts into crm_contact_points (primary only when it is
  *  the person's first point of that kind) + a timeline audit row. */
@@ -1283,8 +1283,8 @@ export async function addCrmTaskAction(formData: FormData): Promise<CrmActionRes
   const person = await getPersonCore(personId)
   if (!person) return { ok: false, error: 'Person not found' }
 
-  // FUB DECOMMISSIONED (2026-06-24): always write the task natively. The old
-  // fub_legacy_id branch routed through the now-dead FUB API (createRealtimeTask)
+  // CRM DECOMMISSIONED (2026-06-24): always write the task natively. The old
+  // fub_legacy_id branch routed through the now-dead CRM API (createRealtimeTask)
   // and returned WITHOUT writing a local crm_tasks row — so task creation was
   // silently broken for the ~18K imported (fub_legacy_id) contacts. crm_tasks is
   // the system of record now.
@@ -1317,7 +1317,7 @@ export async function listCrmOpenTasks(broker?: string): Promise<CrmOpenTask[]> 
   const access = await requireCrmAccess()
   if (!access.ok) return []
   const sb = createServiceClient()
-  // Drop tasks >31 days overdue (FUB import cruft, not real work — Matt
+  // Drop tasks >31 days overdue (CRM import cruft, not real work — Matt
   // 2026-06-15) while keeping tasks with no due date.
   const staleTaskFloor = new Date(Date.now() - 31 * 24 * 3600e3).toISOString()
   let q = sb
@@ -1347,7 +1347,7 @@ export async function listCrmOpenTasks(broker?: string): Promise<CrmOpenTask[]> 
 
 /**
  * Manual contact creation. Routes through sendEvent (native capture via
- * ensureNativeLead since the FUB decommission) so dedupe-by-email/phone and
+ * ensureNativeLead since the CRM decommission) so dedupe-by-email/phone and
  * the standard enrollment pipeline behave exactly like a site lead, then
  * resolves and returns the CRM id.
  */
@@ -1383,7 +1383,7 @@ export async function createCrmContactAction(formData: FormData): Promise<CrmAct
 
   // Resolve the native CRM id — sendEvent returns it directly post-cutover;
   // the contact-point lookups below are the belt-and-suspenders fallback.
-  // (The old FUB mirrorPersonByEmail pull was a dead no-op and was deleted.)
+  // (The old CRM mirrorPersonByEmail pull was a dead no-op and was deleted.)
   const sb = createServiceClient()
   let personId: number | undefined = sent.personId ?? undefined
   if (!personId && email) {

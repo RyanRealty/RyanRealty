@@ -5,8 +5,8 @@ import { resolveDateRange } from './getAgentActivityReport'
 import type { DatePreset } from './getAgentActivityReport'
 import { classifyLeadSource } from './leadSourceTaxonomy'
 
-// INFERRED REPORT — no direct FUB Speed to Lead screen frame exists in the captured
-// reference set. Definition is inferred from FUB's published help documentation:
+// INFERRED REPORT — no direct CRM Speed to Lead screen frame exists in the captured
+// reference set. Definition is inferred from CRM's published help documentation:
 // "Speed to Lead" = time from lead_created event to the first outbound contact
 // (call / email_out / sms_out / voicemail) to that person, aggregated by lead source.
 // Audit verified 2026-07-01 against project dwvlophlbvvygjfxcrhm:
@@ -72,7 +72,7 @@ export type SpeedToLeadResult = {
 /**
  * Outbound contact kinds that count as "first contact" for Speed to Lead.
  * Includes automated outreach (email_out from drip sequences) — this matches
- * FUB's behavior where the first touch in any channel counts.
+ * CRM's behavior where the first touch in any channel counts.
  */
 const OUTBOUND_KINDS = ['call', 'email_out', 'sms_out', 'voicemail'] as const
 
@@ -363,8 +363,8 @@ async function readSpeedToLead(params: SpeedToLeadParams): Promise<SpeedToLeadRe
  * Speed to Lead report — per-source elapsed time from lead_created to first outbound contact.
  * Cached 10 minutes to match the reporting cache TTL across all CRM reports.
  *
- * INFERRED REPORT: no direct FUB Speed to Lead frame was captured. Definition is inferred
- * from FUB's published help documentation and standard industry Speed to Lead semantics.
+ * INFERRED REPORT: no direct CRM Speed to Lead frame was captured. Definition is inferred
+ * from CRM's published help documentation and standard industry Speed to Lead semantics.
  *
  * Metric → crm_* table mapping:
  *   totalLeads     → COUNT(DISTINCT person_id) from crm_timeline WHERE kind='lead_created'
@@ -392,7 +392,7 @@ async function readSpeedToLead(params: SpeedToLeadParams): Promise<SpeedToLeadRe
  *
  * V1 known limitations:
  *   - "First contact" includes automated drip emails (email_out from sequences).
- *     This matches FUB's behavior — the first touch in any channel counts.
+ *     This matches CRM's behavior — the first touch in any channel counts.
  *   - For a lead with multiple lead_created events in the window, only the earliest is used.
  *   - Broker filter scopes Phase 1 (which leads to measure). Phase 2 (outbound contacts)
  *     is unfiltered by broker — any team member's contact to those leads counts.

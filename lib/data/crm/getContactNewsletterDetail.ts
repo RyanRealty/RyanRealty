@@ -10,8 +10,8 @@
  * across their recent newsletter sends).
  *
  * Identity comes from the keystone resolver (resolvePersonIdentity): it yields
- * the person's normalized (lowercased) emails, the FUB legacy id, and the auth
- * uuid. Resolution is FUB-independent — a native lead resolves the same way as
+ * the person's normalized (lowercased) emails, the CRM legacy id, and the auth
+ * uuid. Resolution is CRM-independent — a native lead resolves the same way as
  * an imported one. The newsletter list (`newsletter_subscribers`) is matched by
  * `crm_person_id` OR any of those emails; per-send engagement
  * (`newsletter_recipients`) is matched by `subscriber_id` (when subscribed) OR

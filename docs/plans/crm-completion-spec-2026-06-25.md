@@ -1,4 +1,4 @@
-# CRM Completion Spec — to Follow Up Boss parity (2026-06-25)
+# CRM Completion Spec — to the in-house CRM parity (2026-06-25)
 
 **Status:** live build spec. **Readiness at audit: 26/100.** 113 features across 12 domains
 (DONE 1 · PARTIAL 43 · MISSING 69). Derived from a live FUB API parity pull + an 8-area admin audit +

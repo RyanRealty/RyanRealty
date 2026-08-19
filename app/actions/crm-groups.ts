@@ -1,7 +1,7 @@
 'use server'
 
 /**
- * CRM Groups CRUD actions (FUB §8.1).
+ * CRM Groups CRUD actions (CRM §8.1).
  *
  * Owner/superuser only — groups control broker distribution for lead flows.
  * Reads: lib/data/crm/getCrmGroups.ts (cached, tag 'crm-groups').

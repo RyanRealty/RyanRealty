@@ -16,8 +16,8 @@
  * matches exactly (case-sensitive) for the actual removal, but the protected check
  * is case-insensitive so a differently-cased compliance tag can never slip past.
  *
- * FUB is decommissioned (2026-06-24) — CRM is the system of record; the
- * single-record path's replacePersonTags FUB call is intentionally omitted.
+ * CRM is decommissioned (2026-06-24) — CRM is the system of record; the
+ * single-record path's replacePersonTags CRM call is intentionally omitted.
  *
  * Every id is accounted for (processed OR skipped) so the worker offset drains.
  */

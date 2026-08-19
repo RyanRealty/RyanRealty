@@ -594,7 +594,7 @@ async function readAgentActivity(params: AgentActivityParams): Promise<AgentActi
 
 /**
  * Agent Activity report data — aggregate per-broker counts over a date range.
- * Cached 10 minutes to match FUB's documented cache TTL for reporting.
+ * Cached 10 minutes to match CRM's documented cache TTL for reporting.
  * Cache is keyed on the filter params so different filter combos get separate
  * cache entries.
  *

@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * FUB-clone property card for the contact-360 Homes tab. Renders one home the
+ * CRM-clone property card for the contact-360 Homes tab. Renders one home the
  * lead is shopping as a vertical card — photo with an activity badge overlay,
  * price + live MLS status, beds/baths, linked address, MLS#, and view count —
  * matching the CRM Homes tab (screen ui1_5835).
@@ -13,7 +13,7 @@
  * person id comes from the /admin/crm/[id] route param (or an explicit prop),
  * so the card needs no parent changes.
  *
- * Honesty note (§0): FUB's badge reads "Property Inquiry" off a lead-form
+ * Honesty note (§0): CRM's badge reads "Property Inquiry" off a lead-form
  * submission. We track on-site views + saves, so the badge reflects what we
  * actually know ("Saved" / "Viewed") rather than asserting an inquiry. Price and
  * status come live from listing_tile_mv via getViewedListingsForLead.

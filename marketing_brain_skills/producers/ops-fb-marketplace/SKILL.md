@@ -628,7 +628,7 @@ WHERE id = '<id>';
 
 - `social_media_skills/list-kit/SKILL.md`.  the at-Active orchestrator that may emit `ops:fb_marketplace_create` as one of its fan-out actions alongside `content:ig_single_post` (S1), `content:ig_carousel`, and `content:flyer`.
 - `social_media_skills/facebook-lead-gen-ad/SKILL.md`.  Paid FB lead-gen lives here (companion paid channel; Marketplace is the free one).
-- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md`.  When a Marketplace inquiry lands in Matt's FB Messenger, the Messenger-to-CRM forwarding integration creates a lead via this producer.
+- `lib/crm/send-event.ts`.  When a Marketplace inquiry lands in Matt's FB Messenger, the Messenger-to-CRM forwarding integration creates a lead via this producer.
 
 **Playbooks and pipeline docs:**
 

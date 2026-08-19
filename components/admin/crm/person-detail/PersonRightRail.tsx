@@ -2,7 +2,7 @@
 
 /**
  * PersonRightRail — §7c.8 right action rail of the person-detail three-column
- * layout (spec docs/fub-crm-spec/07c-person-detail-compose-modals-and-right-
+ * layout (spec docs/crm-spec/07c-person-detail-compose-modals-and-right-
  * rail.md). Light-muted background, independently scrollable.
  *
  * Top metadata strip (§07b 13) → widgets in documented order: Action Plans ·
@@ -11,7 +11,7 @@
  * Collaborators → keyboard-shortcut hint pinned at the bottom.
  *
  * Collapse state persists per user (localStorage). Drag-reorder of widgets is
- * a logged deferral. The AgentFire FUB Widget section is FUB-specific
+ * a logged deferral. The AgentFire CRM Widget section is CRM-specific
  * third-party embed and is intentionally not reproduced (logged decision).
  *
  * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
@@ -506,7 +506,7 @@ export function PersonRightRail({
   assignedBroker: string | null
   /** In-house owned-home / CMA card, rendered under the metadata strip. */
   homeCardNode?: React.ReactNode
-  /** §7c.8.5 website-activity slot (our equivalent of FUB's AgentFire widget). */
+  /** §7c.8.5 website-activity slot (our equivalent of CRM's AgentFire widget). */
   websiteActivityNode?: React.ReactNode
 }) {
   const [pending, start] = useTransition()
@@ -762,7 +762,7 @@ export function PersonRightRail({
           )}
         </RailSection>
 
-        {/* Website Activity (§7c.8.5 slot — in-house equivalent of the AgentFire FUB widget).
+        {/* Website Activity (§7c.8.5 slot — in-house equivalent of the AgentFire CRM widget).
             Open by default since the admin consolidation (2026-07-07): this section now
             carries the lead's alerts, report subscriptions, and email delivery story —
             the core of the person-as-lead-hub. Collapse state still persists per user. */}
@@ -805,7 +805,7 @@ export function PersonRightRail({
           )}
         </RailSection>
 
-        {/* Automations (§7c.8.7) — merged with action plans post-FUB-2.0; shows the same enrollments */}
+        {/* Automations (§7c.8.7) — merged with action plans post-CRM-2.0; shows the same enrollments */}
         <RailSection id="automations" icon={<Play className="h-4 w-4" />} title="Automations" defaultOpen={false}>
           {runningPlans.length === 0 ? (
             <p className="py-1 text-sm" style={MUTED}>

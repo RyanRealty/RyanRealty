@@ -9,7 +9,7 @@ type RsvpBody = { openHouseId: string; listingId: string }
 /**
  * POST /api/open-houses/rsvp
  * Body: { openHouseId, listingId } (listingId = listing_key).
- * Requires auth. Creates open_house_rsvps, increments rsvp_count, queues reminders, pushes to FUB.
+ * Requires auth. Creates open_house_rsvps, increments rsvp_count, queues reminders, pushes to CRM.
  */
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()

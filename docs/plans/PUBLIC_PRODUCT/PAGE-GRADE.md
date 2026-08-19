@@ -213,7 +213,7 @@ TRAIL. Invented rows are theater.
 | Sell | Address field is the first screen. One 3% plan. No listing agreement, said once. |
 | About | Faces first. Names are doors. A way to reach them without a form wall. |
 | Saved | What changed, not a dashboard title. |
-| Today | The next action. Beats Follow Up Boss at "what do I do right now." |
+| Today | The next action. Beats the in-house CRM at "what do I do right now." |
 
 **How to run**
 

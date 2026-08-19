@@ -3,9 +3,9 @@
 /**
  * ConsoleQuickAction — the global "+" quick-action FAB (Matt: "very powerful").
  *
- * docs/MOBILE_CRM_FUB_PARITY.md #2. FUB's mobile "+" is a flat create menu. Ours
+ * docs/MOBILE_CRM_PARITY.md #2. CRM's mobile "+" is a flat create menu. Ours
  * beats it two ways:
- *   1. Context-aware — on a lead it pre-targets that lead and adds actions FUB
+ *   1. Context-aware — on a lead it pre-targets that lead and adds actions CRM
  *      has no concept of (Enroll in a workflow, Start a CMA), each deep-linking
  *      into the lead's own tab via a hash that LeadTabs reads.
  *   2. Recommendation-led — on a lead it surfaces the single best next action at

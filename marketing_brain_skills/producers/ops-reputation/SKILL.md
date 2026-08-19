@@ -219,7 +219,7 @@ Loads the client record from the CRM by `lead_ids[0]`:
 ```
 GET crm_people by id (lib/crm/)
     ?fields=id,firstName,lastName,name,emails,stage,closeDate
-# do not call FOLLOWUPBOSS_* . CRM is in-house
+# CRM is in-house public.crm_people via /admin/crm
 ```
 
 Compose the email using the voice guidelines (warm, specific, no pressure):

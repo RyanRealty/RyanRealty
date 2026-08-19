@@ -10,13 +10,13 @@
  * (pauseEnrollmentAction, resumeEnrollmentAction, dismissEnrollmentAction).
  *
  * Destructive operations (merge) write a system timeline entry on the survivor
- * so the action is permanently auditable, matching the FUB Change Log pattern.
+ * so the action is permanently auditable, matching the CRM Change Log pattern.
  *
  * Deferred from the merge:
  *   - Field-level picker (which name/email/phone wins -- survivor always wins here)
  *   - crm_deals re-pointing (no person_id FK on crm_deals yet)
  *   - Hard-delete (soft-delete only for reversibility via the Trash stage)
- *   - Unmerge (not supported per FUB spec paragraphs 7a/4.2)
+ *   - Unmerge (not supported per CRM spec paragraphs 7a/4.2)
  */
 
 import { redirect } from 'next/navigation'
@@ -292,7 +292,7 @@ async function mergePairInternal(
 
 /**
  * §14.3 #8 "Merge People" bulk action: consolidate up to 10 selected duplicates
- * into one survivor. FUB hard limit of 10 replicated. Runs the same merge steps
+ * into one survivor. CRM hard limit of 10 replicated. Runs the same merge steps
  * as the single-pair action per duplicate; returns a result instead of
  * redirecting so the bulk bar can show the outcome inline.
  */

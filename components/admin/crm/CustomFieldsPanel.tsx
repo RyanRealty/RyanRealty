@@ -1,5 +1,5 @@
 /**
- * CustomFieldsPanel — the FUB person-record custom-field section on the CRM
+ * CustomFieldsPanel — the CRM person-record custom-field section on the CRM
  * record card. Given the contact's `crm_people.custom` jsonb bag and the typed
  * field registry (getCrmFieldDefinitions), it renders the values grouped by
  * field_group, in position order, formatted by type.

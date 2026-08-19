@@ -2,7 +2,7 @@
 
 /**
  * ExportPeopleDialog — the §15 Export Selected People modal
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md).
+ * (docs/crm-spec/05-people-list-and-bulk-actions.md).
  *
  * "Would you like to export N people?" + the "Export all columns" checkbox
  * (unchecked by default — it controls which FIELDS export, never which

@@ -1,10 +1,10 @@
 // @no-parity — internal admin surface, no public mockup contract
 // (the §09 tasks surface is covered by ci:crm-screen-parity via the
-// tasks-calendar-desktop registry entry — docs/fub-crm-spec/crm-screens.json)
+// tasks-calendar-desktop registry entry — docs/crm-spec/crm-screens.json)
 
 /**
  * /admin/crm/tasks — the §09 Part 1 Tasks module
- * (spec: docs/fub-crm-spec/09-tasks-and-calendar.md).
+ * (spec: docs/crm-spec/09-tasks-and-calendar.md).
  *
  * Desktop (md+) renders TasksView: Today's Tasks | Overdue (N) | Future
  * sub-tabs, the How-Tasks-work / Filters ▾ / Me ▾ toolbar, and the two-panel

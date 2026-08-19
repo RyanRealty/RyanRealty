@@ -112,7 +112,7 @@ Explicit, per the audit's own verdict summary (`analytics-reporting.md §12`).
 | `/dashboard/marketing` + `/dashboard/marketing/inbox` | orphan admin surface outside `/admin`, north-star metric on dead FUB plane (§2.4, §8) |
 | `/admin/crm/reporting/overview` | orphan — zero inbound links repo-wide (§6, §8) |
 | All `channel='fub'` reads (cost-per-lead, ad-roi, SpendAlerts, /dashboard/marketing) | dead metric plane since 2026-06-24 (§7.1 def#5) |
-| All `followupboss.com` deep links ("FUB ↗" buttons) | product decommissioned (§3.2, §8) |
+| All `retired.invalid` deep links ("FUB ↗" buttons) | product decommissioned (§3.2, §8) |
 | `report_viewer` role plumbing (`reports/layout.tsx`) | "no report_viewer roles exist (verified)" (§4.8) |
 | crm/health "Mirror" tile (FUB→crm_* mirror monitor) | decommissioned pipeline — green-lies about a dead process (§6) |
 | The 5 other "new leads" definitions | §4.3 |
@@ -857,7 +857,7 @@ Each is an end-to-end round-trip test (architecture §8). No placebo ships.
   and no live tab dead-ends.
 - [ ] **Deleted routes gone:** `reports/brokers`, `operations/optimization`,
   operations Notifications/Revenue panels, `/dashboard/marketing(+inbox)`,
-  `crm/reporting/overview`, all `followupboss.com` links, `report_viewer` plumbing,
+  `crm/reporting/overview`, all `retired.invalid` links, `report_viewer` plumbing,
   crm/health Mirror tile — grep-clean.
 - [ ] **Visitors is live:** the list updates within ~15s of a new session without a
   manual refresh; an identified visitor's link opens the correct person (legacy-id

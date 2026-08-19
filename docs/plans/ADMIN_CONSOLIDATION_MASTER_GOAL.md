@@ -73,7 +73,7 @@ per-workstream ownership recorded in the audit doc.
 
 ## Existing foundations (do not rebuild — extend)
 
-- CRM ground-up rebuild complete (18 screens, `docs/fub-crm-spec/crm-screens.json`,
+- CRM ground-up rebuild complete (18 screens, `docs/crm-spec/crm-screens.json`,
   production sign-off 2026-07-02). `/admin/crm` + person detail IS the lead hub base.
 - Subscriptions hub `/admin/crm/subscriptions` + unified email shell `lib/email/shell.ts`
   + newsletter/CMA workflows shipped 2026-07-07 (`LIFECYCLE_WORKFLOWS_MASTER_GOAL.md`).

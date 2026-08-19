@@ -1,15 +1,15 @@
 # Handoff — Visitor Tracking Policy + Admin (Mobile CRM) Redesign
 
 **Author:** Claude Code session 2026-06-16 · **Branch:** `main` · **HEAD at handoff:** `9f4af753`
-**Read order:** this doc → [`docs/MOBILE_CRM_FUB_PARITY.md`](MOBILE_CRM_FUB_PARITY.md) (the design contract) →
+**Read order:** this doc → [`docs/MOBILE_CRM_PARITY.md`](MOBILE_CRM_FUB_PARITY.md) (the design contract) →
 [`docs/CONSOLE_KIT.md`](CONSOLE_KIT.md) (the admin design system) → the files cited below.
 
 This is a self-contained handoff for two parallel initiatives that ran together:
 
-1. **The admin / mobile-CRM redesign** — make the broker console match (and beat) the Follow Up Boss
+1. **The admin / mobile-CRM redesign** — make the broker console match (and beat) the the in-house CRM
    mobile app, and stop it looking like a generic data-entry form. **Shipped.**
 2. **The visitor-tracking & identity policy** — own every visitor's behavior in *our* CRM (Next.js +
-   Supabase), de-anonymize sessions deterministically, and drop the dependence on Follow Up Boss.
+   Supabase), de-anonymize sessions deterministically, and drop the dependence on the in-house CRM.
    **Phase 0 shipped (email-click identity stitch + named-people feed); Phases 1–5 specced, not built.**
 
 The North Star for both: **FUB is being decommissioned.** Everything must be CRM-native, owned in our
@@ -25,7 +25,7 @@ The broker console (`/admin/console/*` and `/admin/(protected)/*`, both wrapped 
 into a cramped, form-heavy "data dump." Matt's bar is the **FUB mobile app** — he sent ~20 reference
 screenshots (saved in the two `matt@ryan-realty.com` emails "Fub screenshots" / "Fun screenshots 2",
 2026-06-16; pulled locally to `tmp/fub-reference/` via `scripts/_fub-screenshots-download.mjs`). The
-durable design contract is [`docs/MOBILE_CRM_FUB_PARITY.md`](MOBILE_CRM_FUB_PARITY.md) — **read it; it is the
+durable design contract is [`docs/MOBILE_CRM_PARITY.md`](MOBILE_CRM_FUB_PARITY.md) — **read it; it is the
 saved target and lists every FUB pattern + our "beat it" notes.**
 
 ## 1.2 The design language (match this for any new console surface)
@@ -184,7 +184,7 @@ A tiny first-party tracker (our own app code, no third-party domain) that batche
 - **Delivery** — `navigator.sendBeacon` on `visibilitychange`/`pagehide` + batched `fetch(keepalive)`.
 
 This beats FUB's pixel, which records page views, **property views**, saved searches, and "online now" on the
-lead ([FUB Pixel](https://help.followupboss.com/hc/en-us/articles/360037775174-Follow-Up-Boss-Pixel-Overview)).
+lead ([FUB Pixel](https://help.retired.invalid/hc/en-us/articles/360037775174-Follow-Up-Boss-Pixel-Overview)).
 
 ## 2.5 Postgres schema (Phase 3 — TO BUILD)
 

@@ -5,14 +5,14 @@
 ## What's already built (the spine — no action needed)
 - **Audience:** "Ryan Realty CRM Leads" Custom Audience live on Meta (13,883, consent-gated, realtor-excluded) + daily auto-refresh.
 - **Tracking:** Meta Pixel + CAPI at 100% across every LP, shared `event_id` dedup → ad→LP→lead is fully measurable.
-- **Capture:** every public form + the FB lead webhook writes to the native CRM even if FollowUpBoss fails — no lead is lost at cutover.
+- **Capture:** every public form + the FB lead webhook writes to the native CRM even if inHouseCrm fails — no lead is lost at cutover.
 - **Per-broker:** `?agent=<slug>` routes traffic-ad leads to the broker; the FB webhook routes lead-form leads by hidden field → campaign name → Matt.
 - **Quality loop:** CRM→CAPI "Qualified" event fires when a lead reaches a qualifying stage (dry-run until you enable it).
 
 ## Launch steps (in order)
 
 **1. Stop the FUB "archived" emails** *(do first — it's still happening)*
-   In FollowUpBoss, disconnect the connected sending email (`matt@ryan-realty.com`) or pause the automation firing the archived template. Our CRM is already hardened against repeating it.
+   In inHouseCrm, disconnect the connected sending email (`matt@ryan-realty.com`) or pause the automation firing the archived template. Our CRM is already hardened against repeating it.
 
 **2. Confirm the audience under Housing** *(2 min, Ads Manager)*
    New campaign → Special Ad Category = **Housing** → open the audience selector → check whether **"Ryan Realty CRM Leads"** is selectable for inclusion. Lookalikes are NOT usable under Housing (confirmed) — don't try to use the 1% lookalike for targeting.

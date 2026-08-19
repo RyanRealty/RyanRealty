@@ -3,9 +3,9 @@
  * same tag-schema + round-robin assignment + custom-field writes that the
  * seller LP form uses.
  *
- * Idea: instead of refactoring every existing FUB person-create path, this
+ * Idea: instead of refactoring every existing CRM person-create path, this
  * helper runs AFTER an existing `sendEvent()` or person-create call. The
- * caller passes the FUB person id + audience + source, and this helper
+ * caller passes the CRM person id + audience + source, and this helper
  * applies the canonical schema universally:
  *
  *   1. `audience:<seller|buyer>` tag
@@ -17,13 +17,13 @@
  *
  * Idempotent — if the person already has the canonical tags, no-op writes.
  *
- * Tagging rules originated in the FUB era — see docs/archive/fub-era/README.md.
+ * Tagging rules originated in the CRM era — see lib/crm/send-event.ts.
  */
 
 import { createClient } from '@supabase/supabase-js'
 import { pickRoutedBroker } from '@/lib/crm/lead-routing'
 import { CRM_DESK_ID_BY_BROKER } from '@/lib/crm/constants'
-import type { LeadOriginContext } from '@/lib/fub-lead-origin-note'
+import type { LeadOriginContext } from '@/lib/lead-origin-note'
 
 export type LeadAudience = 'seller' | 'buyer'
 export type LeadSource =
@@ -55,7 +55,7 @@ export type CanonicalLeadParams = {
   state?: string
   /**
    * Optional lead-origin context. When provided, after the canonical tags +
-   * assignment land we post a plain "LEAD ORIGIN" note to the FUB timeline so
+   * assignment land we post a plain "LEAD ORIGIN" note to the CRM timeline so
    * the broker can see WHY the lead came in (source, page, campaign, what they
    * want). No-op-safe — a missing/sparse context never blocks lead creation.
    */
@@ -143,8 +143,8 @@ async function recordAssignment(params: {
  *      ones may show up):
  *      test record - delete, test-delete-me
  *
- * Per Matt 2026-05-17 realtor directive (FUB-era archive:
- * docs/archive/fub-era/README.md). Tagging them `audience:seller` or
+ * Per Matt 2026-05-17 realtor directive (CRM-era archive:
+ * lib/crm/send-event.ts). Tagging them `audience:seller` or
  * `audience:buyer` would enroll them in the master workflow and start
  * blasting emails. Sequences should ALSO exclude these tags, but the
  * belt-and-suspenders approach is to skip applying the canonical
@@ -191,7 +191,7 @@ export async function isHardStopped(personId: number): Promise<boolean> {
 }
 
 /**
- * Apply the canonical tag schema + assignment to an existing FUB person.
+ * Apply the canonical tag schema + assignment to an existing CRM person.
  *
  * Designed to be called AFTER sendEvent() or any other person-create. Never
  * throws — returns { ok, broker, tags } so the caller can log + continue.
@@ -237,7 +237,7 @@ export async function canonicallyTagLead(params: CanonicalLeadParams): Promise<{
 
   try {
     const { enrichNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
-    const { buildLeadOriginNote } = await import('@/lib/fub-lead-origin-note')
+    const { buildLeadOriginNote } = await import('@/lib/lead-origin-note')
     await enrichNativeLead({
       personId: params.fubPersonId,
       tags,

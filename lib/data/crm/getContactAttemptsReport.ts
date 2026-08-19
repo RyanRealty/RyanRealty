@@ -370,10 +370,10 @@ async function readContactAttempts(
 /**
  * Contact Attempts report — average outbound contacts per lead, broken down by source.
  *
- * INFERRED: No dedicated FUB frame exists for Contact Attempts as a standalone
- * page. This report mirrors the semantic of FUB's "Contact Attempts" subview
+ * INFERRED: No dedicated CRM frame exists for Contact Attempts as a standalone
+ * page. This report mirrors the semantic of CRM's "Contact Attempts" subview
  * of Lead Sources (hub href: /admin/crm/reporting/lead-sources?view=attempts).
- * Metric definitions are inferred from the FUB Lead Sources documentation and
+ * Metric definitions are inferred from the CRM Lead Sources documentation and
  * the hub card description: "See how many times you follow up on average by
  * source." (see @/lib/crm/reporting-constants HUB_LEAD_SOURCE_REPORTS).
  *
@@ -398,7 +398,7 @@ async function readContactAttempts(
  *   .count('exact') because the per-person raw rows are needed for aggregation.
  *   Aggregation runs entirely in JavaScript; no GROUP BY or raw SQL.
  *
- * Cached 10 minutes (matches FUB's documented reporting cache TTL).
+ * Cached 10 minutes (matches CRM's documented reporting cache TTL).
  * Cache keys include all filter params so different filter combos get separate
  * cache entries.
  *

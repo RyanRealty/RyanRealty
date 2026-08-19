@@ -526,7 +526,7 @@ pending -> in_production -> executed (DB row updated)
 - `CLAUDE.md` "Supabase Database, MANDATORY READ before any SQL"
 - `docs/DATABASE_FOR_AI_AGENTS.md`. Listings table mixed-case columns + the SFR-only convention
 - `marketing_brain_skills/brand-voice/VOICE.md`. Email digest copy must pass the same voice guardrail
-- `docs/archive/fub-era/README.md`. Archive only; live lead create is `lib/crm/send-event.ts`
+- `lib/crm/send-event.ts`. Archive only; live lead create is `lib/crm/send-event.ts`
 - `docs/MARKETING_LEAD_FLOW.md`. Webhook + dedup detail
 
 **Producers this skill integrates with:**
@@ -534,7 +534,7 @@ pending -> in_production -> executed (DB row updated)
 - `marketing_brain_skills/producers/site-community-page/SKILL.md`. Renders the Custom Alerts form that submits to this producer's /subscribe endpoint
 - `marketing_brain_skills/producers/site-subdivision-page/SKILL.md` (pending). Same, at the subdivision tier
 - `marketing_brain_skills/producers/site-city-page/SKILL.md` (pending). Same, at the city tier
-- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md`. Refuse stub. Live lead create is `lib/crm/send-event.ts`
+- `lib/crm/send-event.ts`. Refuse stub. Live lead create is `lib/crm/send-event.ts`
 - `marketing_brain_skills/producers/ops-email-send/SKILL.md`. Resend send pattern (reuse the same client wrapper)
 
 **Sibling backend producers:**
@@ -569,4 +569,4 @@ pending -> in_production -> executed (DB row updated)
 - `marketing_brain_skills/brand-voice/VOICE.md`
 - `docs/DATABASE_FOR_AI_AGENTS.md`
 - `docs/MARKETING_LEAD_FLOW.md`
-- `docs/archive/fub-era/README.md`
+- `lib/crm/send-event.ts`

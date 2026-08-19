@@ -41,7 +41,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
 
   if (!email) return { error: 'Email is required' }
 
-  // Listing tour/question CTAs pass ?listingKey=. Resolve which home so the FUB
+  // Listing tour/question CTAs pass ?listingKey=. Resolve which home so the CRM
   // lead names the property (a broker shouldn't have to guess which listing).
   const listingKey = formData.get('listingKey')?.toString()?.trim() ?? ''
   let listingLabel = ''
@@ -152,14 +152,14 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
 
   // Canonical tagging — apply audience:* + source:* + broker:* + round-robin
   // assignment to whatever CRM person sendEvent just touched. Fire-and-forget
-  // so it doesn't block the response. (FUB-era tagging rules: docs/archive/fub-era/README.md)
+  // so it doesn't block the response. (CRM-era tagging rules: lib/crm/send-event.ts)
   // after() keeps the serverless function alive until tagging/assignment/enroll/
   // backfill finish — a bare fire-and-forget IIFE can be frozen on return, which
   // dropped contact leads into the CRM unassigned + un-enrolled.
   after(async () => {
     try {
       // Enrichment gates on the native person id sendEvent returned (the old
-      // FUB findPersonByEmail re-lookup was a dead no-op post-decommission).
+      // CRM findPersonByEmail re-lookup was a dead no-op post-decommission).
       if (capturedPersonId) {
         const recruit = isJoinInquiry(inquiryType)
         if (recruit) {

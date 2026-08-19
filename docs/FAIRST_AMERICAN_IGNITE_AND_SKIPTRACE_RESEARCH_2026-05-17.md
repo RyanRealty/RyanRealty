@@ -78,7 +78,7 @@ There is **no documented "feed me a list of addresses and ping me when ownership
 
 ### 1.7 Broker-facing CRM integrations (FUB, kvCORE, Sierra, Real Geeks)
 
-**No public evidence of a direct IgniteRE -> Follow Up Boss integration.** Follow Up Boss's integration directory does not list First American or IgniteRE as a partner. Source: [Follow Up Boss integrations](https://www.followupboss.com/integrations?tag=Lead+Providers).
+**No public evidence of a direct IgniteRE -> the in-house CRM integration.** the in-house CRM's integration directory does not list First American or IgniteRE as a partner. Source: [the in-house CRM integrations](https://www.retired.invalid/integrations?tag=Lead+Providers).
 
 The Benutech ReboConnect platform has integrated with several real-estate-tech vendors (KnockWise was the named launch partner). The "ReboConnect Scholarship Program" is explicitly aimed at "3rd party Real Estate Tech Companies who are utilizing data in conjunction with affiliated Title or Home Service Companies." Source: [Benutech ReboConnect press release](https://www.prnewswire.com/news-releases/benutech-inc-offers-reboconnect-affordable-data-available-to-3rd-party-real-estate-tech-vendors-300611005.html).
 
@@ -453,7 +453,7 @@ EXPIRED LISTING DETECTED
 - [REDX Expired Leads](https://www.redx.com/products/expired-leads/)
 - [REISift skip tracing records](https://intercom.help/reisift/en/articles/4637016-skip-tracing-records-in-reisift)
 - [SkipSherpa](https://skipsherpa.com/)
-- [Follow Up Boss integrations directory](https://www.followupboss.com/integrations?tag=Lead+Providers)
+- [the in-house CRM integrations directory](https://www.retired.invalid/integrations?tag=Lead+Providers)
 
 ---
 

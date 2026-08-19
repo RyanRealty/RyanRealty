@@ -2,7 +2,7 @@
 
 /**
  * CRM suppression-list admin — the owner-guarded mutation surface over the
- * compliance suppression list (the FUB Block List folded in). Two operations:
+ * compliance suppression list (the CRM Block List folded in). Two operations:
  *
  *   addSuppressionAction   — manually suppress a person/value on a channel.
  *   liftSuppressionAction  — remove ONE suppression row. Lifting a compliance

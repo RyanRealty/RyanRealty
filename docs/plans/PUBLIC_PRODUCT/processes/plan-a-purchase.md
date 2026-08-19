@@ -81,7 +81,7 @@ milestones to GA4 and `/api/visitors/track`
 
 | Artifact | SoR | Evidence |
 |---|---|---|
-| Lead identity | `public.crm_people` via `sendEvent` → `ensureNativeLead` (the FUB module is a native shim: FUB decommissioned 2026-06-24, `sendEvent` is the one live capture entry point returning the native personId) | `lib/followupboss.ts:2-34` (esp. `:27-29`); `app/actions/lead-landing.ts:84-99`; direct `ensureNativeLead` fallback `:106-124` |
+| Lead identity | `public.crm_people` via `sendEvent` → `ensureNativeLead` (the FUB module is a native shim: FUB decommissioned 2026-06-24, `sendEvent` is the one live capture entry point returning the native personId) | `lib/crm/send-event.ts:2-34` (esp. `:27-29`); `app/actions/lead-landing.ts:84-99`; direct `ensureNativeLead` fallback `:106-124` |
 | Guest alert (path b) | `public.listing_alerts` via `upsertListingAlert` — the must-succeed write | `app/actions/search-alert-capture.ts:141-143` |
 | Broker follow-up | `public.crm_tasks` — written for alert signups only; LP submits notify by email with NO task row (an asymmetry, see §10) | `app/actions/search-alert-capture.ts:130-135`; `app/actions/lead-landing.ts:151-157` |
 | Behavioral trail + attribution | first-party `visitor_sessions`/`visitor_events` (section/scroll beacons) and the submit-time session stitch (`backfillSessionToFub`) that marks the session identified — what the Marketing ROI dashboard counts as "matched to a name" | `components/site/kb/KbSectionTracker.client.tsx:7-28`; `app/actions/lead-landing.ts:49-51,178-185` |
@@ -130,7 +130,7 @@ milestones to GA4 and `/api/visitors/track`
    native lead via `ensureNativeLead` with the true first-touch campaign (lp_source falls
    back to `'landing_page'` only when no context exists), message =
    `intent=… | timeframe=… | message=…` · person + campaign · `crm_people` row + returned
-   personId (`app/actions/lead-landing.ts:66-99`; `lib/followupboss.ts:27-29`) · failure: on
+   personId (`app/actions/lead-landing.ts:66-99`; `lib/crm/send-event.ts:27-29`) · failure: on
    a capture failure the action writes a direct `ensureNativeLead` fallback row tagged
    `fub-fallback` so the lead is never dropped, then STILL surfaces the error so the visitor
    retries (the native row dedupes on retry) (`app/actions/lead-landing.ts:100-124`) · n/a —
@@ -294,7 +294,7 @@ hash; the guest-watch residual for return visits
      its docblock still claims KbNav-on-page chrome and calls the capture "the FUB lead path"
      (`components/landing/LeadLandingPage.tsx:22,32` vs the global-nav reality,
      `components/site/PublicNav.client.tsx:15-27`; FUB is a native shim,
-     `lib/followupboss.ts:2-34`).
+     `lib/crm/send-event.ts:2-34`).
   5. **Untraced FAQ numbers**: earnest-money and timeline ranges with no named basis in-file
      (`app/buy/page.tsx:62-64,76-79`) — §0 watch.
   6. **Notification asymmetry**: an alert signup writes a 5-minute `crm_tasks` reminder

@@ -8,7 +8,7 @@
 
 This is the canonical reference. If anything in `docs/`, `.claude/skills/`, or any cursor rule conflicts with this file, this file wins for the *flow* (skills still win for editorial / brand voice).
 
-> **Status as of 2026-08-18:** Capture is native. **`sendEvent()`** in **`lib/crm/send-event.ts`** writes **`crm_people`**. Follow Up Boss is decommissioned (2026-06-24). Do not POST to a vendor People/Events API. Do not list `FOLLOWUPBOSS_*` as required. CAPI Lead events still carry $value for Meta bid optimization. Weekly digest email lands in `MARKETING_DIGEST_EMAIL` after the marketing cron.
+> **Status as of 2026-08-18:** Capture is native. **`sendEvent()`** in **`lib/crm/send-event.ts`** writes **`crm_people`**. the in-house CRM is decommissioned (2026-06-24). Do not POST to a vendor People/Events API. Do not list `retired vendor-CRM env names` as required. CAPI Lead events still carry $value for Meta bid optimization. Weekly digest email lands in `MARKETING_DIGEST_EMAIL` after the marketing cron.
 
 ---
 
@@ -460,7 +460,7 @@ gantt
 
 ## 9. Production env vars (live state)
 
-Names that matter for this pipeline. Unused `FOLLOWUPBOSS_*` / `NEXT_PUBLIC_FUB_*` names were removed from Vercel (2026-08-18). They were not a CRM.
+Names that matter for this pipeline. Unused `retired vendor-CRM env names` / `retired vendor-CRM public env names` names were removed from Vercel (2026-08-18). They were not a CRM.
 
 | Var | Purpose |
 |---|---|

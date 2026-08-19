@@ -12,7 +12,7 @@ export const metadata = { title: 'Company settings | CRM admin' }
 export const dynamic = 'force-dynamic'
 
 /**
- * /admin/crm/settings/company -- FUB Company Settings parity (spec §15 / §1).
+ * /admin/crm/settings/company -- CRM Company Settings parity (spec §15 / §1).
  *
  * Renders the full §1 Company Settings form: basic brokerage identity, virtual
  * phone config (Manage Settings link, fallback number, spam-label change modal,

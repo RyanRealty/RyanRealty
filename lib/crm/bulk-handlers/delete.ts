@@ -9,10 +9,10 @@
  * Owner-only (superuser). The enqueue action enforces this guard at the action
  * boundary; the handler trusts the already-clamped chunk.
  *
- * Does NOT call the FUB API to delete the person there — the parallel run is still
- * live and we do not want to trigger cascades on the FUB side. Contacts stay in FUB
+ * Does NOT call the CRM API to delete the person there — the parallel run is still
+ * live and we do not want to trigger cascades on the CRM side. Contacts stay in CRM
  * but are invisible in the CRM UI. If full deletion is ever needed, a separate
- * hard-delete path (with FUB API call) should be added.
+ * hard-delete path (with CRM API call) should be added.
  *
  * Every id is accounted for (processed OR skipped) so the worker offset drains.
  */

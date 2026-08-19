@@ -6,7 +6,7 @@
  * this route and under the v2 person page's tools door (Phase 11B sub-unit
  * B1, 2026-08-06) — the legacy Lead Command Center is now one tap under
  * /admin/people/[id] instead of owning the primary person route. This stub
- * keeps bookmarks and older deep links (SMS/email notifications, FUB-era
+ * keeps bookmarks and older deep links (SMS/email notifications, CRM-era
  * links, server-action redirects still pointed here) working. Every query
  * param (flash, error, tpl, smsTpl, view, reply, …) carries over so those
  * flash/error messages surface on the new route.

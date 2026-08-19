@@ -10,21 +10,21 @@ import { canonicalTagsToAdd } from '@/lib/crm/tag-canonical'
 type CanonicalAddr = { type?: string | null; street?: string | null; city?: string | null; state?: string | null }
 
 /**
- * Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2 — stop a
- * FUB outage from silently dropping leads). Every lead-capture path that pushes
+ * Native-capture fallback on a CRM push failure (CONTACT360 Phase 0.2 — stop a
+ * CRM outage from silently dropping leads). Every lead-capture path that pushes
  * to the CRM (seller LP, FSBO LP, buyer/general LP) relies on native capture to
- * be the system of record. When the FUB push FAILS — outage, rate-limit, bad
- * key — and we can't even resolve the person back out of FUB, the lead used to
- * vanish: no FUB person, no crm_* row, nothing. This is the shared native
- * find-or-create those failure branches call so a failed FUB push still yields
+ * be the system of record. When the CRM push FAILS — outage, rate-limit, bad
+ * key — and we can't even resolve the person back out of CRM, the lead used to
+ * vanish: no CRM person, no crm_* row, nothing. This is the shared native
+ * find-or-create those failure branches call so a failed CRM push still yields
  * a tracked native lead in crm_people + crm_contact_points.
  *
- * Lookup is email-FIRST then phone, on the same FUB-INDEPENDENT join keys the
+ * Lookup is email-FIRST then phone, on the same CRM-INDEPENDENT join keys the
  * rest of the CRM uses: a normalized (lowercased) email or a last-10-digit
- * phone, matched against crm_contact_points (the same shape the FUB mirror
+ * phone, matched against crm_contact_points (the same shape the CRM mirror
  * writes — see lib/crm/mirror.ts upsertCrmMirrorPerson). On a MISS we insert a
  * crm_people row + its contact points keyed to those same normalized values, so
- * once FUB recovers and the delta sync mirrors the same person, the contact
+ * once CRM recovers and the delta sync mirrors the same person, the contact
  * point lookup already resolves to a native row instead of orphaning a
  * duplicate.
  *
@@ -54,7 +54,7 @@ export type EnsureNativeLeadInput = {
   tags?: string[]
   /**
    * Broker to assign the native lead to. Defaults to Matt. Callers pass the
-   * agent-attributed broker (?agent= cookie) so a FUB-outage fallback still
+   * agent-attributed broker (?agent= cookie) so a CRM-outage fallback still
    * routes a Rebecca/Paul ad lead to the right broker instead of Matt.
    */
   assignedBroker?: CrmBrokerSlug
@@ -151,7 +151,7 @@ async function lookupPersonIdByContactPoint(
 /**
  * Find-or-create a native crm_people lead by normalized email (first) then
  * phone. Returns the resolved person id + whether this call created it. Safe to
- * call from any FUB-push failure branch — it never throws on a DB hiccup (it
+ * call from any CRM-push failure branch — it never throws on a DB hiccup (it
  * logs and returns the best result it has), so the lead-capture handler can
  * still return success to the visitor.
  */
@@ -170,7 +170,7 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
 
   const sb = createServiceClient()
 
-  // Email-first lookup, then phone — the FUB-independent join keys.
+  // Email-first lookup, then phone — the CRM-independent join keys.
   // P12: when BOTH resolve and disagree, try high-confidence auto-merge first
   // (Matt lock) so we don't create a third person.
   const emailMatchPersonId = normalizedEmail
@@ -302,7 +302,7 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
   return { personId, created: true }
 }
 
-/** Dedupe + trim a tag list, dropping empties and over-long tags (FUB parity: <=80). */
+/** Dedupe + trim a tag list, dropping empties and over-long tags (CRM parity: <=80). */
 export function cleanTags(tags: Array<string | null | undefined> | undefined): string[] {
   return Array.from(
     new Set(
@@ -378,7 +378,7 @@ export type NativeEnrichmentInput = {
 }
 
 /**
- * Native lead enrichment — the in-house replacement for the dead FUB enrichment
+ * Native lead enrichment — the in-house replacement for the dead CRM enrichment
  * chain (addPersonTags + assignPersonToUser + setPersonCustomFields +
  * postLeadOriginNote). Runs on a resolved native person id from the LP paths:
  *
@@ -466,7 +466,7 @@ export type CreateNativeTaskInput = {
 }
 
 /**
- * Create a native crm_tasks row — the in-house replacement for the dead FUB
+ * Create a native crm_tasks row — the in-house replacement for the dead CRM
  * createRealtimeTask. Used for the 5-minute hot-lead call task on the seller /
  * FSBO / expired LP paths. Best-effort + never throws.
  *

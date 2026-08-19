@@ -4,7 +4,7 @@
  * RichTextBody — the §13.1.3 email-body editor.
  *
  * A contentEditable surface with the spec's toolbar: Bold, Italic, Underline,
- * unordered/ordered lists, Insert Link, Insert Image (URL — FUB does not host
+ * unordered/ordered lists, Insert Link, Insert Image (URL — CRM does not host
  * assets either, §13.4.8), and a Merge Fields inserter slot. Emits HTML; the
  * send path already handles HTML bodies (looksLikeHtml → sent as-is with
  * inline styles). Plain-text legacy bodies are lifted to <br>-separated HTML

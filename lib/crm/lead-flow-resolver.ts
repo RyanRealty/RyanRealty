@@ -1,5 +1,5 @@
 /**
- * lead-flow-resolver — pure, unit-testable resolver for Lead Flow routing (FUB §8.3).
+ * lead-flow-resolver — pure, unit-testable resolver for Lead Flow routing (CRM §8.3).
  *
  * resolveLeadFlow(flow, rules, context) walks the ordered rules and returns the
  * first matching DistributionTarget. If no rule matches (or there are no rules),

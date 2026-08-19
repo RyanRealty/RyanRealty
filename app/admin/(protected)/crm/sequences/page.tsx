@@ -156,8 +156,8 @@ async function reorderRules(orderedIds: number[]) {
   return reorderCrmAutomationRulesAction(orderedIds)
 }
 
-/** Map FUB legacy plan IDs to canonical plan types for badge rendering.
- *  These IDs come from the FUB API export (enroll.ts RULES constant):
+/** Map CRM legacy plan IDs to canonical plan types for badge rendering.
+ *  These IDs come from the CRM API export (enroll.ts RULES constant):
  *  69 = seller master, 70 = buyer master, 71 = expired, 72 = fsbo. */
 function planTypeFromFubId(fubId: number | null | undefined): WorkflowPlanType {
   switch (fubId) {

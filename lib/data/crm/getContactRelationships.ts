@@ -36,7 +36,7 @@ import {
 export type ContactRelationship = {
   /** crm_relationships.id — the row this contact's side of the link lives on. */
   id: number
-  /** The linked contact's crm_people.id, or null for a name-only (FUB-imported) link. */
+  /** The linked contact's crm_people.id, or null for a name-only (CRM-imported) link. */
   relatedPersonId: number | null
   /** The related contact's current display name (falls back to the stored snapshot). */
   name: string

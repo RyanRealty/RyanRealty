@@ -1,8 +1,8 @@
 /**
  * people-list-utils — PURE helpers for the §05 People list rebuild
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md).
+ * (docs/crm-spec/05-people-list-and-bulk-actions.md).
  *
- * Framework-free so the FUB formatting conventions unit-test under the node
+ * Framework-free so the CRM formatting conventions unit-test under the node
  * vitest env: the `Nov 13th '25` date format (§6 col 5), the relative-recency
  * variant (`6 days ago`), the sidebar count K-abbreviation (§3.2: `17K`, no
  * badge at 0), and the column-chooser catalog (§8).
@@ -23,7 +23,7 @@ export function ordinal(day: number): string {
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /**
- * FUB list-date convention (§6 / §13): recent dates render relative
+ * CRM list-date convention (§6 / §13): recent dates render relative
  * ("6 days ago"), older ones as `Nov 13th '25` (abbreviated month, ordinal
  * day, 2-digit year with apostrophe). `now` injectable for tests.
  */

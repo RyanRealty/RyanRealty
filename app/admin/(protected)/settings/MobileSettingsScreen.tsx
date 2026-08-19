@@ -3,7 +3,7 @@
 /**
  * MobileSettingsScreen — the < md Settings surface (mob-06 fub-ios Settings
  * modal, re-skinned to the admin tokens per the in-house rebuild notes in
- * docs/fub-crm-spec/mobile-screens/screen-06.md).
+ * docs/crm-spec/mobile-screens/screen-06.md).
  *
  * Structure (390×844 reference):
  *   - Full-screen modal (fixed inset-0, occludes tab bar + FAB — no shell
@@ -16,7 +16,7 @@
  *   - Support / links section: Report a bug, Support email, Email signature
  *     (sheet editor), CRM settings, Company settings.
  *
- * FUB-specific rows (Zillow, FUB support emails, app-store version) are
+ * CRM-specific rows (Zillow, CRM support emails, app-store version) are
  * replaced with the Ryan Realty equivalents per the spec's own rebuild notes.
  * Desktop (md+) keeps MySettingsForm unchanged.
  *

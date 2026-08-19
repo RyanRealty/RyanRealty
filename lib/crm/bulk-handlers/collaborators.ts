@@ -1,7 +1,7 @@
 /**
  * Bulk handlers: crm:add-collaborator / crm:remove-collaborator — §14.3 items
  * 6 + 7 (Add Collaborators / Remove Collaborators) from
- * docs/fub-crm-spec/05-people-list-and-bulk-actions.md.
+ * docs/crm-spec/05-people-list-and-bulk-actions.md.
  *
  * Mirrors the single-record collaborator actions in
  * app/actions/crm-person-gaps.ts: the junction is crm_people_collaborators

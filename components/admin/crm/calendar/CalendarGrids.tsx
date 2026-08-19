@@ -2,15 +2,15 @@
 
 /**
  * CalendarGrids — the §2.5 Day / Week / Month grid renderers
- * (docs/fub-crm-spec/09-tasks-and-calendar.md Part 2).
+ * (docs/crm-spec/09-tasks-and-calendar.md Part 2).
  *
  * Pure presentational: the page maps every event source (appointments, tasks,
  * deal closings) into CalEvent rows; these components only place them.
  *
  * Color taxonomy (§2.5.3, on the LOCKED admin v2 tokens — design_system/admin):
- *   appointment → the one action accent (FUB blue)
- *   task        → the warn semantic (FUB yellow)
- *   closing     → the ok semantic (FUB orange → the deals surface's established
+ *   appointment → the one action accent (CRM blue)
+ *   task        → the warn semantic (CRM yellow)
+ *   closing     → the ok semantic (CRM orange → the deals surface's established
  *                 closed-deal green; deliberate token swap)
  * Every fill pairs with var(--a-btn-fg), which flips WITH the fill under
  * [data-theme="dark"] — the pairing every solid control in the language uses.

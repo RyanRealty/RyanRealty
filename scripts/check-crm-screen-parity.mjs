@@ -7,15 +7,15 @@
  * got skipped. Prose is skippable; a red build is not. Per the repo rule:
  * "If a guardrail keeps being violated, the answer is a new mechanical gate, not more prose."
  *
- * SOURCE OF TRUTH: docs/fub-crm-spec/crm-screens.json — a registry with one entry per CRM
+ * SOURCE OF TRUTH: docs/crm-spec/crm-screens.json — a registry with one entry per CRM
  * screen (desktop screen-NN + mobile mob-NN), each:
  *   {
  *     "id": "person-detail-mobile",
- *     "specRef": "docs/fub-crm-spec/25-mobile-contact-detail.md",   // the reference to match
+ *     "specRef": "docs/crm-spec/25-mobile-contact-detail.md",   // the reference to match
  *     "route": "app/admin/console/leads/[id]/mobile-detail.tsx",     // the built file
  *     "status": "todo" | "wip" | "done" | "superseded" (retired by a locked decision; needs supersededBy),
  *     "requiredComponents": ["MobileLeadHeader", "MobileSubTabStrip", "MobileInfoTab", ...],
- *     "verify": "docs/fub-crm-spec/_verify/mob-contact-detail.png"   // committed side-by-side/screenshot
+ *     "verify": "docs/crm-spec/_verify/mob-contact-detail.png"   // committed side-by-side/screenshot
  *   }
  *
  * RULE — a screen with status "done" MUST prove it:
@@ -38,7 +38,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
-const REGISTRY = resolve(ROOT, 'docs/fub-crm-spec/crm-screens.json')
+const REGISTRY = resolve(ROOT, 'docs/crm-spec/crm-screens.json')
 const REPORT = process.argv.includes('--report')
 
 function fail(msg) {

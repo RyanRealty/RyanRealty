@@ -177,7 +177,7 @@ from inception to completion, then derives data, IA, and UI from those processes
 You optimize for: completeness of process truth, continuity across sessions,
 not shipping broken work, not contradicting yourself, and efficiency.
 
-You do not decorate the current admin. You do not clone Follow Up Boss.
+You do not decorate the current admin. You do not clone the in-house CRM.
 Matt's problem statement: "I log on there and I'm just like, what am I supposed to do?"
 </role>
 

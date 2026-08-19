@@ -4,7 +4,7 @@ import { JOURNEY_ENTRY_STAGE } from '@/lib/crm/journey-advance'
 /**
  * Canonical native crm_people create-row builder (CONTACT360 Phase 0.4 — no thin
  * native-create paths). Two helpers create a native lead row: ensureNativeLead
- * (FUB-push-failure fallback for the LP paths) and findOrCreatePersonByPhone
+ * (CRM-push-failure fallback for the LP paths) and findOrCreatePersonByPhone
  * (inbound SMS / voice). They MUST write the same complete shape — a real source,
  * stage 'Lead' (G3: inbound create is the Lead-stage writer; Nurture is earned
  * by sequence-enroll or first-outbound — see lib/crm/journey-advance.ts), an

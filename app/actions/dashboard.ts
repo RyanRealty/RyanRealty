@@ -516,7 +516,7 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
 
     // Contact metrics come from crm_people via getLeadIntake — the org-wide
     // "new leads" source of truth (lib/data/crm/getLeadIntake.ts). The old
-    // fub_contacts_cache counts froze at the 2026-06-24 FUB decommission and
+    // fub_contacts_cache counts froze at the 2026-06-24 CRM decommission and
     // read a permanent fabricated 0. Snap the intake window to 10-minute
     // buckets so its unstable_cache key stays stable (getDashboardKpis
     // pattern) — a millisecond now() would force a full re-read per render.
@@ -577,7 +577,7 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
     sellerVisitsFromFacebook30d = sellerFacebookRes.count ?? 0
     valuationRequests30d = valuationRes.count ?? 0
     // All crm_people rows created in the window (imports included) — the
-    // honest "contacts added" figure now that FUB syncing is dead.
+    // honest "contacts added" figure now that CRM syncing is dead.
     contactsSynced30d = intake.totalRows
     // Social-channel inbound leads per leadSourceTaxonomy (Meta lead forms +
     // paid/organic social) — the taxonomy-consistent "Facebook sourced" count.
@@ -635,9 +635,9 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
     })
   }
 
-  // FUB API access was decommissioned 2026-06-24 — the in-house CRM
+  // CRM API access was decommissioned 2026-06-24 — the in-house CRM
   // (crm_people, sourced by getFubPipelineSnapshot above) is the live
-  // pipeline/quality signal now, not a direct FUB API connection.
+  // pipeline/quality signal now, not a direct CRM API connection.
   if (fubPipeline.myLeadsTotal > 0) score += 15
   else {
     reportItems.push({

@@ -90,7 +90,7 @@ export async function getSignInUrl(provider: 'google' | 'facebook' | 'apple', ne
   return { url: data.url }
 }
 
-/** Sign in with email and password. Tracks user in FollowUp Boss (create or merge by email). */
+/** Sign in with email and password. Tracks the user in the in-house CRM (create or merge by email). */
 export async function signInWithEmailPassword(
   email: string,
   password: string,
@@ -122,7 +122,7 @@ export async function signInWithEmailPassword(
   return { ok: true, next: safeRedirectPath(cookieStore.get(AUTH_NEXT_COOKIE)?.value) }
 }
 
-/** Sign up with email and password. Tracks user in FollowUp Boss (create or merge by email). */
+/** Sign up with email and password. Tracks the user in the in-house CRM (create or merge by email). */
 export async function signUpWithEmailPassword(
   email: string,
   password: string,

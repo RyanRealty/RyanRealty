@@ -3,7 +3,7 @@
  * automation editor (EditorPalette / EditorCanvas / StepConfigPanel /
  * AutomationEditor). Client-safe, no I/O.
  *
- * Spec: docs/fub-crm-spec/12-action-plans-and-automations.md §12.4 (left
+ * Spec: docs/crm-spec/12-action-plans-and-automations.md §12.4 (left
  * palette two-tab structure, Controls + Actions sections, canvas cards).
  * The action inventory maps to OUR engine's executable channels
  * (lib/crm/sequence-step-schema.ts STEP_CHANNELS) — every palette tile is a

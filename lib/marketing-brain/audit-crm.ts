@@ -395,13 +395,13 @@ export async function analyzeResponseTime(
 // ---------------------------------------------------------------------------
 
 /**
- * Canonical stage funnel for FUB seller pipeline (from FB_SELLER_CAMPAIGN_PLAYBOOK.md).
+ * Canonical stage funnel for CRM seller pipeline (from FB_SELLER_CAMPAIGN_PLAYBOOK.md).
  * We attempt to compute conversion rate between adjacent stages.
  */
 const CANONICAL_STAGES = ['new', 'hot', 'warm', 'nurture', 'contract'] as const
 type CanonicalStage = (typeof CANONICAL_STAGES)[number]
 
-/** Fuzzy-match a raw FUB stage name to a canonical stage. */
+/** Fuzzy-match a raw CRM stage name to a canonical stage. */
 function matchCanonicalStage(raw: string): CanonicalStage | null {
   const lower = raw.toLowerCase().trim()
   if (lower.includes('hot')) return 'hot'

@@ -98,7 +98,7 @@ is looking at, including registry filters and path-only presets.
   `{new, price_change, status_change}` on.
 - **`crm_people` (+ tags) · `marketing_assignments` · `crm_tasks`** — the person, routing,
   and follow-up of record: `sendEvent` → `ensureNativeLead` (email-first dedup,
-  lib/followupboss.ts:101,129-130), canonical tags + assignment
+  lib/crm/send-event.ts:101,129-130), canonical tags + assignment
   (canonical-lead-tagger.ts:237-263), the 5-minute task (search-alert-capture.ts:130-135).
 - **`email_events`** — the delivery ledger, one `sent` row per alert email keyed to the
   open/click tracking identity (lib/alerts/send.ts:459-469).
@@ -106,8 +106,8 @@ is looking at, including registry filters and path-only presets.
   only, label + relative href, NO email/token/ids, 90-day TTL —
   lib/alerts/guest-watch-residual.ts:23-42) — product memory, deliberately unsynced; GA4
   (`fireLeadGenerated` mirror, search-alert-capture.ts:146-152) and the `alert_create`
-  search event (SearchAlertCapture.tsx:289-292) — measurement mirrors; Follow Up Boss
-  (decommissioned 2026-06-24 — `sendEvent` is the in-house chokepoint, followupboss.ts:29).
+  search event (SearchAlertCapture.tsx:289-292) — measurement mirrors; the in-house CRM
+  (decommissioned 2026-06-24 — `sendEvent` is the in-house chokepoint, retiredVendorCrm.ts:29).
 
 ## 5. End-to-end path (inception → completion)
 
@@ -141,7 +141,7 @@ is looking at, including registry filters and path-only presets.
    attack finding) (search-alert-capture.ts:75-88; lib/search-filters.ts:415-436).
 8. **CRM capture** · server · `sendEvent({type:'Saved Property Search', …, sourceUrl:
    searchUrl})` → `ensureNativeLead` → native personId (search-alert-capture.ts:101-111;
-   followupboss.ts:129-130). Best-effort: a capture blip never blocks the signup
+   retiredVendorCrm.ts:129-130). Best-effort: a capture blip never blocks the signup
    (:137-139) · failure: `fubPersonId` null — the alert row still persists (step 10) but
    no person row exists yet (the engine can re-link later, saved-search-alerts.ts:43).
 9. **Canonical tagging + broker task** · server · `canonicallyTagLead({audience:'buyer',

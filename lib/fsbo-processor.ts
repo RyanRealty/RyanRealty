@@ -1,6 +1,6 @@
 /**
- * FSBO processor — the native (post-FUB-cutover) pipeline, mirroring
- * lib/expired-listing-processor.ts. The old cron body wrote to the retired FUB
+ * FSBO processor — the native (post-CRM-cutover) pipeline, mirroring
+ * lib/expired-listing-processor.ts. The old cron body wrote to the retired CRM
  * path (sendEvent/addPersonTags), which silently no-ops since the 2026-06-24
  * cutover; this replaces it with the native crm_people flow (Matt directive
  * 2026-07-14: find every FSBO, skip-trace, add as a record, dashboard, prepare

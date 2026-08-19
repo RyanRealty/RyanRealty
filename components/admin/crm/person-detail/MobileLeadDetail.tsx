@@ -37,14 +37,14 @@ function fmtPhone(d: string): string {
   return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : d
 }
 
-/** FUB-imported contact-point labels are lowercase ('mobile', 'work') — render
+/** CRM-imported contact-point labels are lowercase ('mobile', 'work') — render
     Title Case like the Edit sheet's vocabulary (P2-5, 2026-07-02 mobile audit). */
 function titleCaseLabel(label: string | null): string | null {
   if (!label) return null
   return label.replace(/\b[a-z]/g, (c) => c.toUpperCase())
 }
 
-/** FUB date convention (§25 observed): current year → "Jun 1"; other years →
+/** CRM date convention (§25 observed): current year → "Jun 1"; other years →
     "Jul 2, 2025". */
 function fubDate(iso: string): string {
   const y = new Date(iso).toLocaleString('en-US', { year: 'numeric', timeZone: 'America/Los_Angeles' })
@@ -52,7 +52,7 @@ function fubDate(iso: string): string {
   return formatDate(iso, { month: 'short', day: 'numeric', year: y === nowY ? undefined : 'numeric' })
 }
 
-/** Notes ingested from FUB carry literal `<br />` markup — convert to newlines
+/** Notes ingested from CRM carry literal `<br />` markup — convert to newlines
     and strip residual tags so the card shows clean text (§25.8.3). */
 function cleanNoteBody(s: string): string {
   return s.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim()
@@ -165,7 +165,7 @@ export function MobileLeadDetail({
   const emails: MobileEmailEntry[] = full.contactPoints
     .filter((c) => c.kind === 'email')
     .map((c) => ({ id: c.id, value: c.value, label: titleCaseLabel(c.label) }))
-  // Inquiry date = lead_created event, FUB-formatted (falls back to the page's
+  // Inquiry date = lead_created event, CRM-formatted (falls back to the page's
   // preformatted label if the event is outside the loaded timeline window).
   const leadCreatedTs = full.timeline.find((t) => t.kind === 'lead_created')?.ts ?? null
   const inquiries: MobileInquiry[] = person.source
@@ -203,12 +203,12 @@ export function MobileLeadDetail({
   const activityRows: MobileActivityRow[] = full.timeline
     .filter((t) => ACTIVITY_KINDS.has(t.kind))
     .map((t) => {
-      // FUB-imported web_event titles carry a literal "<unspecified>" source
+      // CRM-imported web_event titles carry a literal "<unspecified>" source
       // ("Property Inquiry · <unspecified>") — never show that to a broker
       // (2026-07-02 mobile audit).
       let title = (t.title ?? t.kind.replace(/_/g, ' ')).replace(/\s*·\s*<unspecified>/g, '').replace(/<unspecified>/g, '').trim()
       // P2-7: lead_created rows store the bare contact name as the title
-      // ("Brent Babin") — render FUB's "created" phrasing instead.
+      // ("Brent Babin") — render CRM's "created" phrasing instead.
       if (t.kind === 'lead_created') title = title && title !== 'lead created' ? `${title} was created` : 'Lead created'
       return {
         id: t.id,
@@ -227,7 +227,7 @@ export function MobileLeadDetail({
     phones: full.contactPoints
       .filter((c) => c.kind === 'phone')
       .map((c) => {
-        // FUB-imported labels are lowercase ('mobile') — normalize to the
+        // CRM-imported labels are lowercase ('mobile') — normalize to the
         // §07a PHONE_LABELS vocabulary so the label select shows the value.
         const raw = (c.label ?? 'Mobile').toLowerCase()
         const label = ['mobile', 'home', 'work', 'other', 'fax'].includes(raw)
@@ -270,7 +270,7 @@ export function MobileLeadDetail({
           tags={Array.isArray(person.tags) ? person.tags : []}
           timeframe={
             /* §28 §4: prefer the first-class crm_people.timeframe column the
-               picker writes; fall back to the legacy FUB custom field. */
+               picker writes; fall back to the legacy CRM custom field. */
             (person as unknown as { timeframe?: string | null }).timeframe ?? customVal(/time.?frame/i)
           }
           brokerOptions={CRM_BROKERS.map((b) => ({ value: b, label: CRM_BROKER_DISPLAY[b] }))}

@@ -29,9 +29,9 @@ const websiteSource = (): string =>
 
 /**
  * Record a "contact agent about this listing" inquiry against the native CRM.
- * sendEvent captures via ensureNativeLead (FUB decommissioned 2026-06-24) and
+ * sendEvent captures via ensureNativeLead (CRM decommissioned 2026-06-24) and
  * returns the native crm_people id, which gates the canonical buyer tagging.
- * Replaces the dead FUB trackContactAgentInquiry + findPersonByEmail pair.
+ * Replaces the dead CRM trackContactAgentInquiry + findPersonByEmail pair.
  */
 async function captureContactAgentInquiry(params: TrackContactAgentParams & {
   message: string

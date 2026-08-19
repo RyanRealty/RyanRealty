@@ -6,8 +6,8 @@
  *
  * Linking columns (see docs/DATABASE_SCHEMA_SNAPSHOT.md): both tables carry
  * `outreach_crm_person_id` (the native crm_people id stamped by the outreach
- * send) and `fub_person_id` (post-FUB-cutover this stores the NATIVE id too;
- * pre-cutover rows may still hold the FUB legacy id, so the optional
+ * send) and `fub_person_id` (post-CRM-cutover this stores the NATIVE id too;
+ * pre-cutover rows may still hold the CRM legacy id, so the optional
  * `fubLegacyId` is matched as well).
  *
  * DAL boundary (G1): the raw .from() reads live here, inside lib/data/.

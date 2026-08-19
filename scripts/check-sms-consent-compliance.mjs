@@ -72,14 +72,14 @@ if (consent && !/href="\/terms"/.test(consent)) {
 }
 
 // ── 1b. fail-closed SMS-consent gating in the enroll chokepoint ──────────────
-// SMS must only fire when a lead actively checked the box. autoEnrollByFubId is
+// SMS must only fire when a lead actively checked the box. autoEnrollByPersonId is
 // the single enrollment funnel; it must suppress the sms channel unless
 // smsConsent:true is passed. Lock that the gating is present so a refactor can't
 // silently revert to texting every lead (or every cold-scraped number).
 const enroll = read(ENROLL)
 if (enroll && !(/smsConsent/.test(enroll) && /no-sms-consent/.test(enroll) && /addSuppression/.test(enroll))) {
   fails.push(
-    `${ENROLL}: autoEnrollByFubId must keep the fail-closed SMS-consent gating (smsConsent opt + addSuppression(channel:'sms', reason:'no-sms-consent')). Without it, leads are texted with no opt-in (A2P/TCPA violation).`,
+    `${ENROLL}: autoEnrollByPersonId must keep the fail-closed SMS-consent gating (smsConsent opt + addSuppression(channel:'sms', reason:'no-sms-consent')). Without it, leads are texted with no opt-in (A2P/TCPA violation).`,
   )
 }
 

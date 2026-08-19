@@ -1,10 +1,10 @@
 // @no-parity — internal admin surface, no public mockup contract
-// (gated instead by ci:crm-screen-parity — docs/fub-crm-spec/crm-screens.json
+// (gated instead by ci:crm-screen-parity — docs/crm-spec/crm-screens.json
 // "tasks-calendar-desktop")
 
 /**
  * /admin/crm/calendar — the §09 Calendar module
- * (spec: docs/fub-crm-spec/09-tasks-and-calendar.md Part 2).
+ * (spec: docs/crm-spec/09-tasks-and-calendar.md Part 2).
  *
  * Desktop (md+) renders the §2.2 two-column CalendarView: mini month cal +
  * Schedule|Filters sidebar over the Day/Week/Month grid (Day is the §2.1
@@ -21,7 +21,7 @@
  *
  * < md renders the §29 Screen A mobile Calendar (mob-08) via
  * MobileCalendarScreen — registry entry mobile-calendar-tasks in
- * docs/fub-crm-spec/crm-screens.json (ci:crm-screen-parity).
+ * docs/crm-spec/crm-screens.json (ci:crm-screen-parity).
  *
  * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
  * Presentation only — CalendarView and MobileCalendarScreen are mounted

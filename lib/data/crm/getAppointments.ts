@@ -3,7 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 
 /**
- * getAppointments — broker-scoped appointment reader (FUB audit §5 / §8.12).
+ * getAppointments — broker-scoped appointment reader (CRM audit §5 / §8.12).
  *
  * Returns appointments in the supplied [from, to] window sorted by start_at.
  * Uses the service client (not cached) because the result is broker-scoped and

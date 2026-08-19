@@ -195,7 +195,7 @@ async function readAgentGoals(params: {
 
 /**
  * Agent Goals report data — annual commission actuals + goal targets per broker.
- * Cached 10 minutes to match FUB's documented cache TTL for reporting.
+ * Cached 10 minutes to match CRM's documented cache TTL for reporting.
  *
  * Source tables:
  *   - brokers         (roster — crm_active=true, crm_slug non-null)

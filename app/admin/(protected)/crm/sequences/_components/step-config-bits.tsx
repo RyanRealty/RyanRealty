@@ -166,7 +166,7 @@ export function BranchStepEditor({
 
 /** Static engine-truth radio group. The enabled option reflects what the engine
  *  actually does; unavailable options render disabled/greyed (§12.4.4 pattern —
- *  same treatment FUB gives "Send during company office hours"). Hand-built
+ *  same treatment CRM gives "Send during company office hours"). Hand-built
  *  from native radios (no v2 Radio primitive exists yet) reusing the
  *  `av2-check` token class. The original RadioGroup had no onValueChange
  *  either — it was already a read-only display of engine truth — so the

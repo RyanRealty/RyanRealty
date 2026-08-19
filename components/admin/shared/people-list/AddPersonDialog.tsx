@@ -2,12 +2,12 @@
 
 /**
  * AddPersonDialog — the §16 Add Person modal
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md).
+ * (docs/crm-spec/05-people-list-and-bulk-actions.md).
  *
  * Minimal quick-create: First/Last name (50/50 row), Email, Phone, lead-source
  * dropdown. "Add person" (lowercase p, §16.5 label correction) is disabled
  * until a first name is entered; submit routes through createCrmContactAction
- * (FUB event + local mirror + dedupe) and navigates to the new Person Detail.
+ * (CRM event + local mirror + dedupe) and navigates to the new Person Detail.
  *
  * 11F: migrated off shadcn onto the admin v2 language (Dialog / TextField /
  * SelectField / Button, design_system/admin/ADMIN_UI.md). Presentation only —

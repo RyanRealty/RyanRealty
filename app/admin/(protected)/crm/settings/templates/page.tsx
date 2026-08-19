@@ -16,7 +16,7 @@
  * Folders are crm_templates.category values (channel-scoped) plus the derived
  * system folders (All / My / Used by Automations).
  *
- * Access: any CRM broker (templates are shared team copy — FUB parity); the
+ * Access: any CRM broker (templates are shared team copy — CRM parity); the
  * list is scoped at the data edge: a restricted broker sees shared templates,
  * legacy company templates (owner null), and their own. Destructive ops stay
  * superuser-gated in the actions.

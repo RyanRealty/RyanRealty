@@ -6,10 +6,10 @@
  * attempts to match back to a content_performance row via the campaign:* /
  * ad-content:* tags. Increments north_star_attributed_seller_leads on matches.
  *
- * Rewritten 2026-07-09 off the FUB /v1/people integration (decommissioned
+ * Rewritten 2026-07-09 off the CRM /v1/people integration (decommissioned
  * 2026-06-24) onto the native crm_people tag schema built the same day
  * (lib/crm/lead-source.ts). The old version parsed utm_content/utm_campaign
- * out of a FUB-stored sourceUrl query string; the new one reads the
+ * out of a CRM-stored sourceUrl query string; the new one reads the
  * ad-content:* and campaign:* tags directly, which are more reliable (they're
  * set by resolvePaidAttributionTags() at intake, not round-tripped through a
  * URL). Dropped: the old "source_url contains post_external_id" match method

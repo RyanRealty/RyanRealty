@@ -86,7 +86,7 @@ function isoForCompare(v: string): string {
  * in filters):
  *   or(fub_created_at.<op>.v, and(fub_created_at.is.null, created_at.<op>.v))
  *
- * Why: FUB-imported rows carry their TRUE origin date in fub_created_at (their
+ * Why: CRM-imported rows carry their TRUE origin date in fub_created_at (their
  * created_at is the June-2026 mirror-import timestamp), while native rows
  * (post-2026-06-24 cutover) leave fub_created_at NULL — their birth is
  * created_at. A bare fub_created_at comparison silently excludes every native

@@ -691,9 +691,9 @@ Two-site unification per `docs/handoffs/analytics-unification.md` plus an in-fli
 End state: **one** account ("Ryan Realty", `386736554`), **one** property ("Ryan Realty", `527333348`), **one** measurement ID `G-ST40W4WM6T`. This is what the brain reads via `GOOGLE_GA4_PROPERTY_ID=527333348`.
 
 ### Phase B — Two-site pixel unification
-1. **Discovery — handoff doc audit was wrong about FUB on WordPress.** The 2026-05-16 audit claimed FUB was not installed on either site. Re-verifying via FUB admin (`Admin → Pixel`) showed `WT-QPDMEALA` ALREADY installed on `ryan-realty.com` for ~weeks. The earlier audit grepped for `app.followupboss.com/pixel/` but the actual FUB pixel URL pattern is `widgetbe.com/agent` + `widgetTracker("create", "WT-QPDMEALA")`. **Verified via curl:** `ryan-realty.com` HTML contained `widgetbe.com`, `WT-QPDMEALA`, `widgetTracker` already.
-2. **Authored `components/FollowUpBossPixel.tsx`** — inline `<Script id="fub-pixel" strategy="afterInteractive">` that loads the FUB widget tracker, gated on `hasAnalyticsConsent()` from `CookieConsentBanner` (same gate as `GoogleAnalytics.tsx`). Wired into `app/layout.tsx` next to `<GoogleAnalytics />` and `<MetaPixel />`.
-3. **Added `NEXT_PUBLIC_FUB_PIXEL_ID=WT-QPDMEALA`** to `.env.local` and all three Vercel envs (production + development via `vercel env add`, preview via the API workaround documented in 2026-05-15).
+1. **Discovery — handoff doc audit was wrong about FUB on WordPress.** The 2026-05-16 audit claimed FUB was not installed on either site. Re-verifying via FUB admin (`Admin → Pixel`) showed `WT-QPDMEALA` ALREADY installed on `ryan-realty.com` for ~weeks. The earlier audit grepped for `retired.invalid/pixel/` but the actual FUB pixel URL pattern is `widgetbe.com/agent` + `widgetTracker("create", "WT-QPDMEALA")`. **Verified via curl:** `ryan-realty.com` HTML contained `widgetbe.com`, `WT-QPDMEALA`, `widgetTracker` already.
+2. **Authored `lib/analytics/page-type.ts`** — inline `<Script id="fub-pixel" strategy="afterInteractive">` that loads the FUB widget tracker, gated on `hasAnalyticsConsent()` from `CookieConsentBanner` (same gate as `GoogleAnalytics.tsx`). Wired into `app/layout.tsx` next to `<GoogleAnalytics />` and `<MetaPixel />`.
+3. **Added `UNUSED_VENDOR_CRM_PIXEL=WT-QPDMEALA`** to `.env.local` and all three Vercel envs (production + development via `vercel env add`, preview via the API workaround documented in 2026-05-15).
 4. **Build-blocker fix in `components/ui/badge.tsx`** — `app/admin/(protected)/kpi-dashboard/page.tsx:96` references Badge `variant="success"` and `variant="warning"` but those variants weren't defined in the `cva` config. Vercel prod build was failing on this BEFORE my changes (unrelated tech debt). Added `success` and `warning` variants matching the existing `soft-popular` and `soft-price-drop` styling. Unblocks production deploy.
 5. **WordPress GA4 swap** — in AgentFire admin → Site Settings → AgentFire Settings → Header/Footer Scripts & Metas → "Head after opening tag" field, the GA4 tag (`gtag/js?id=...` + `gtag('config', '...')`) had two occurrences of `G-5FM3WEY062`. Both replaced with `G-ST40W4WM6T` by updating the ACF CodeMirror via `cm.setValue()` + `cm.save()` and clicking Update. Backend save confirmed via post-save inspection (2 of new, 0 of old, FUB pixel `WT-QPDMEALA` still present and untouched, Meta Pixel `1546878946032105` still present and untouched).
 
@@ -707,7 +707,7 @@ End state: **one** account ("Ryan Realty", `386736554`), **one** property ("Ryan
 ### New gotchas (must remember)
 
 - **AgentFire ACF code editors are CodeMirror, not plain textareas.** The hidden backing textarea is `id="acf-field_5841e3f4b8fea"` for the "Head after opening tag" field. To edit programmatically, find the `.CodeMirror` DOM element in the same field wrapper, get its `.CodeMirror` JS instance, and call `setValue(newValue)` then `save()`. Setting the textarea value directly is insufficient — CodeMirror caches its own buffer and the WordPress save handler reads from it.
-- **The FUB pixel uses `widgetbe.com/agent` + `widgetTracker("create", "WT-...")`, NOT `app.followupboss.com/pixel/<id>.js`.** Any pixel-presence audit must grep for `widgetbe.com` or the `WT-` token, not the path-based URL. The earlier handoff audit (2026-05-16) got this wrong and showed FUB as missing on WordPress when it was actually present.
+- **The FUB pixel uses `widgetbe.com/agent` + `widgetTracker("create", "WT-...")`, NOT `retired.invalid/pixel/<id>.js`.** Any pixel-presence audit must grep for `widgetbe.com` or the `WT-` token, not the path-based URL. The earlier handoff audit (2026-05-16) got this wrong and showed FUB as missing on WordPress when it was actually present.
 - **GA4 "Google tag" destinations are an under-known fan-out point.** A single measurement ID can have multiple destinations attached to it, causing every gtag fire to mirror to all of them. Audit via GA4 Admin → Streams → Stream details → "Configure tag settings" → "Manage Google tag" → Destinations list. If you trash a property without also detaching its destination from the surviving Google tag, hits continue firing to the trash for 35 days.
 - **GA4 won't let you outright delete a destination.** The UI forces re-assignment to "another Google tag" before removing. The workaround used here: create an `ORPHAN-do-not-install` tag, assign the destination to it, never install that tag anywhere. When the underlying property permanently deletes (35 days post-trash), the destination auto-cleans.
 - **Vercel `redeploy` rebuilds from the ORIGINAL deployment's commit, not from `origin/main`.** To pick up new env vars AND fresh source, push a commit to `main`; auto-deploy from the push gives the right combination. `vercel redeploy <old-url>` only re-runs the build with new env vars against the OLD source commit — useless if `main` has moved.
@@ -739,7 +739,7 @@ Matt asked for a much bigger GA4 build-out: every lead interaction tracked as a 
 
 ### Commits this session
 
-- `41cfae6` — `feat(analytics): install Follow Up Boss pixel on Vercel + fix Badge variants` (3 files: `app/layout.tsx`, `components/FollowUpBossPixel.tsx`, `components/ui/badge.tsx`)
+- `41cfae6` — `feat(analytics): install the in-house CRM pixel on Vercel + fix Badge variants` (3 files: `app/layout.tsx`, `lib/analytics/page-type.ts`, `components/ui/badge.tsx`)
 
 
 ---
@@ -789,7 +789,7 @@ Pattern recognition: every cross-session-collision commit absorbed by another ag
 ### Commits this session
 
 - `7a71c86` → `e2987ac` — feat(analytics): LP tracking convention + ga4-instrumentation skill
-- `41cfae6` — feat(analytics): install Follow Up Boss pixel on Vercel + fix Badge variants
+- `41cfae6` — feat(analytics): install the in-house CRM pixel on Vercel + fix Badge variants
 - `a4676a0` — docs(memory): log analytics-unification + GA4 cleanup session 2026-05-17
 - `6d511ae` — fix(deps): add @anthropic-ai/sdk to unblock Vercel build
 - `1b2f840` → `16f2478` — fix(analytics): LandingPageTracker fires on consent grant + leaves DOM marker

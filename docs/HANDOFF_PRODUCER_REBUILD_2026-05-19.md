@@ -306,7 +306,7 @@ Also: update the strict-voice gate in the 7 site/comms scripts to allow em-dashe
 | Pexels | stock photo fallback | `PEXELS_API_KEY` (just added) |
 | Resend (`mail.ryan-realty.com` verified) | newsletter, comms-client-update, agent-coop-eflyer | `RESEND_API_KEY` |
 | Meta Page Access Token (live, full scopes) | FB/IG publishing | `META_PAGE_ACCESS_TOKEN` |
-| FollowUpBoss | CRM mutations | `FOLLOWUPBOSS_API_KEY` |
+| inHouseCrm | CRM mutations | `UNUSED_VENDOR_CRM_KEY` |
 | Supabase MCP | live data pulls | project `dwvlophlbvvygjfxcrhm` |
 | xAI Grok (text + image + video + Vision) | content generation, photo tagging | `XAI_API_KEY` |
 

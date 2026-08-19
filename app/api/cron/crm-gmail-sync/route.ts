@@ -4,7 +4,7 @@
  * backfill engine via ?pages=N (bigger page budget per invocation, driven in a
  * loop until each mailbox reports done).
  *
- * Full email content (subject + body) — the thing FUB's API never exposed.
+ * Full email content (subject + body) — the thing CRM's API never exposed.
  */
 
 import { NextResponse } from 'next/server'

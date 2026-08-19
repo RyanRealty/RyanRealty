@@ -28,7 +28,7 @@ const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 
 /**
  * Called when a user lands with an old email-click param (e.g. ?_fuid=123,
- * from a pre-cutover FUB campaign email). The number is a legacy FUB person
+ * from a pre-cutover CRM campaign email). The number is a legacy CRM person
  * id; resolve it to the native crm_people.id via fub_legacy_id, set a
  * first-party cookie linking this browser to that person, and (when the
  * client also passes its rr_session_id) stitch this browser's prior
@@ -52,7 +52,7 @@ export async function identifyPersonFromEmailClick(
 /**
  * The native-id counterpart — called when a user lands with ?_pid=<crm_people.id>
  * (stamped by attributeSiteLinks on every post-cutover outbound email). Contacts
- * created after the FUB decommission have no fub_legacy_id, so without this path
+ * created after the CRM decommission have no fub_legacy_id, so without this path
  * their email clicks would track opens/clicks but never stitch the web session.
  * The id is validated against crm_people (exists + not deleted) before anything
  * is cookied — same trust model as the legacy param (possession of the emailed

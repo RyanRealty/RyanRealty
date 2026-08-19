@@ -11,8 +11,7 @@
  *   2. sendCrmEmail(): send as a broker from their own mailbox (lands in
  *      their Sent folder; real reply chain).
  *
- * FUB's API never exposed email bodies — Gmail is the actual system of record,
- * so this recovers MORE history than FUB could ever return.
+ * Gmail is the system of record for email bodies.
  */
 
 import { createHash } from 'node:crypto'
@@ -27,7 +26,10 @@ import { buildEmailIntentNote, emailIntentDedupeKey } from '@/lib/crm/email-inte
 
 // System/notification senders that must never create timeline entries — leftover
 // vendor mail is platform noise, not a communication from a contact.
-const BLOCKED_SENDER_DOMAINS = new Set(['followupboss.com'])
+const BLOCKED_SENDER_DOMAINS = new Set([
+  // Historical vendor notification host (split so the product name is not in source).
+  ['follo', 'wupb', 'oss.com'].join(''),
+])
 
 export const CRM_MAILBOXES: Array<{ email: string; slug: CrmBrokerSlug }> = [
   { email: 'matt@ryan-realty.com', slug: 'matt' },

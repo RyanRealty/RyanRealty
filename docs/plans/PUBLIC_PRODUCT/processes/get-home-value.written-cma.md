@@ -82,7 +82,7 @@ Google Places autocomplete assists but free-form addresses are accepted.
 
 Explicitly NOT a SoR: `valuation_requests` is an analytics/auto-CMA mirror, not the lead
 record (`actions.ts:338-361` — inserts are best-effort, failure is only warned);
-GA4 and Meta CAPI are attribution mirrors; Follow Up Boss is decommissioned (the
+GA4 and Meta CAPI are attribution mirrors; the in-house CRM is decommissioned (the
 `fubPersonId` variable names carry native `crm_people.id` values —
 `lib/cma-request.ts:88-103`); the legacy `public/cmas/` static files are served via
 redirect for old links only (`app/cma/[slug]/route.ts:200-203`).

@@ -61,9 +61,9 @@ The real cost center is the loop's own model spend, which no ledger tracks. The 
 
 Two things from the loop spec survive because they are useful independent of any loop: the adversarial verification method (build with one agent, refute with a second that is starved of the builder's reasoning, compute the verdict in code rather than asking a model), and the reachability test (a change to unreachable code is not a change).
 
-## 6. Follow Up Boss — zero references
+## 6. the in-house CRM — zero references
 
-**Decided 2026-07-21:** "We do not use Follow Up Boss anymore so there should be zero reference to it."
+**Decided 2026-07-21:** "We do not use the in-house CRM anymore so there should be zero reference to it."
 
 Recorded as D21 in `00-MASTER-SPEC.md` §4.1. Verified: FUB is off the serving path, zero calls in `app/`. Residue is 2,662 code references, 15 `fub_*` database columns, 5 env vars including stored login credentials, 905 doc files, and three reachable lib modules still containing FUB API calls — one of them on the live expired and FSBO path.
 

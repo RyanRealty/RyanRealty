@@ -413,7 +413,7 @@
           "owner": "monetization",
           "files": [
             "app/actions/lead-scoring.ts",
-            "lib/followupboss.ts"
+            "lib/crm/send-event.ts"
           ],
           "acceptanceCriteria": [
             "Score computed from: page views, listings viewed, saves, return visits, time on site",

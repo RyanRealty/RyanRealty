@@ -1,12 +1,12 @@
 'use client'
 
 /**
- * FUB-clone Comms feed for a CRM person. Renders the contact's messages as a
+ * CRM-clone Comms feed for a CRM person. Renders the contact's messages as a
  * chronological row list — one row per message, newest first — matching the
  * Comms tab (channel icon · subject/descriptor · participant ·
- * 2-line preview · date · email open-count). Rows collapse to the FUB anatomy at
+ * 2-line preview · date · email open-count). Rows collapse to the CRM anatomy at
  * rest and expand on tap to reveal the full body, MMS attachments, and call
- * recordings (features FUB's collapsed rows don't carry, surfaced on demand).
+ * recordings (features CRM's collapsed rows don't carry, surfaced on demand).
  */
 import { useState, useTransition } from 'react'
 import { EyeOff, Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Users, Voicemail } from 'lucide-react'
@@ -68,7 +68,7 @@ function fmtDateTime(iso: string): string {
   return fmtDateTimeFn(iso)
 }
 
-/** Channel glyph + the FUB row's title + participant lines for one event. */
+/** Channel glyph + the CRM row's title + participant lines for one event. */
 function rowMeta(e: ConversationEvent, personName: string) {
   const out = e.kind.endsWith('_out')
   if (e.kind.startsWith('email')) {

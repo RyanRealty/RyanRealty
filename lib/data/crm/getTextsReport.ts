@@ -4,9 +4,9 @@ import { createServiceClient } from '@/lib/data/client'
 import { resolveDateRange } from './getAgentActivityReport'
 
 // ── INFERRED REPORT ───────────────────────────────────────────────────────────
-// This report mirrors the Calls report structure and follows standard FUB Texts
-// reporting conventions. No dedicated FUB GIF frame was captured for this tab,
-// so the layout and metric set are inferred from the Calls report + FUB's
+// This report mirrors the Calls report structure and follows standard CRM Texts
+// reporting conventions. No dedicated CRM GIF frame was captured for this tab,
+// so the layout and metric set are inferred from the Calls report + CRM's
 // documented Texts reporting behavior (per-agent sent/received/conversations/
 // response-rate). A code comment is left on each metric clarifying its source.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ export type TextsParams = {
 /**
  * Per-broker row for the Texts report breakdown table.
  *
- * Metric → crm_* source mapping (INFERRED — mirrors Calls report; no FUB GIF frame captured):
+ * Metric → crm_* source mapping (INFERRED — mirrors Calls report; no CRM GIF frame captured):
  *
  * | Metric              | Source                                                                |
  * |---------------------|-----------------------------------------------------------------------|
@@ -285,7 +285,7 @@ async function readTextsReport(params: TextsParams): Promise<TextsResult> {
  * Texts report data — per-broker outbound/inbound SMS counts, conversation
  * counts, and response rate over a date range.
  *
- * Cached 10 minutes (matching FUB's documented reporting cache TTL).
+ * Cached 10 minutes (matching CRM's documented reporting cache TTL).
  * Cache is keyed on filter params so different combos get separate entries.
  *
  * Source tables:
@@ -300,8 +300,8 @@ async function readTextsReport(params: TextsParams): Promise<TextsResult> {
  * select) was silently truncated at 1000, causing e.g. Matt's "Texts Sent" to
  * show 1000 instead of the correct value (1044 non-sequence YTD as of 2026-07-01).
  *
- * INFERRED REPORT: no dedicated FUB GIF frame was captured for the Texts tab.
- * Metrics and layout mirror the Calls report + standard FUB Texts conventions.
+ * INFERRED REPORT: no dedicated CRM GIF frame was captured for the Texts tab.
+ * Metrics and layout mirror the Calls report + standard CRM Texts conventions.
  */
 export async function getTextsReport(params: TextsParams): Promise<TextsResult> {
   const cached = unstable_cache(

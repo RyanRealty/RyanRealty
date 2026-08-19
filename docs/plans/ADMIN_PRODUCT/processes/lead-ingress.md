@@ -17,14 +17,14 @@ Any human raising a hand anywhere (form, ad, text, portal email, saved search, s
   3. Inbound SMS from unknown number — `inbound-sms/route.ts:156-160` → `findOrCreatePersonByPhone()` (`lib/data/crm/findOrCreatePersonByPhone.ts:61,96,107`)
   4. Portal lead email (Zillow/Realtor.com) — `crm-portal-lead-intake/route.ts:94-151` (Gmail scan → `crm_imports` → person)
   5. Saved-search / alert signup — `app/actions/search-alert-capture.ts:103`, `app/actions/saved-searches.ts:182` → `sendEvent()`
-  6. Sign-in/sign-up capture — `lib/followupboss.ts:147-176` `trackSignedInUser()` → `ensureNativeLead()` `:171`
+  6. Sign-in/sign-up capture — `lib/crm/send-event.ts:147-176` `trackSignedInUser()` → `ensureNativeLead()` `:171`
   7. FSBO detection — `lib/fsbo-processor.ts:66-90` (creates person + task + CMA)
   8. CSV import wizard — `/admin/crm/import*` via `app/actions/crm-import` (createImportJobAction → map → preview → start)
 - Preconditions: at least one contact point (email or phone). Postconditions guaranteed by the core (below).
 
 ## 3. Actors
 - Human: the lead; broker only for CSV import.
-- Automated: `sendEvent()` (`lib/followupboss.ts:101-136` — name is legacy; it routes to the in-house CRM), `ensureNativeLead()`, webhook handlers, intake crons.
+- Automated: `sendEvent()` (`lib/crm/send-event.ts:101-136` — name is legacy; it routes to the in-house CRM), `ensureNativeLead()`, webhook handlers, intake crons.
 - Accountable: system; Matt as PB for routing rules (`/admin/crm/settings/assignment`, `lead-flows`).
 
 ## 4. Systems of record
@@ -33,7 +33,7 @@ Any human raising a hand anywhere (form, ad, text, portal email, saved search, s
 
 ## 5. End-to-end path (inception → completion)
 1. **Door receives raw contact** · system · door-specific validation (Meta signature, Twilio signature, form validation) · failure: rejected/ignored · n/a
-2. **Normalize + route to core** · system · every door lands on `ensureNativeLead()` directly or via `sendEvent()` · `lib/followupboss.ts:129` · n/a
+2. **Normalize + route to core** · system · every door lands on `ensureNativeLead()` directly or via `sendEvent()` · `lib/crm/send-event.ts:129` · n/a
 3. **Identity resolution** · system · email-first then phone lookup on `crm_contact_points` (`ensureNativeLead.ts:139-149`); `decideNativeLeadAction` (`:86-111`) picks create vs reuse · → identity-dedup PDS · n/a
 4. **Create or enrich** · system · create: insert `crm_people` `:221-225` + contact points `:233-240`; reuse: `mergeReuseEnrichment` `:266-309` unions tags/source/broker · failure: partial insert (person without points) would strand — idempotency via lookup keys · n/a
 5. **Enrichment + provenance** · system · `enrichNativeLead()` `:338-400` — tags union, `custom` jsonb merge, `assigned_broker` set `:371-381`, origin note `:387-395` · n/a

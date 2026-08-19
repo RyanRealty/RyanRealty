@@ -95,6 +95,6 @@
 "area:crm":
   - changed-files:
       - any-glob-to-any-file:
-          - "lib/followupboss.ts"
-          - "app/actions/fub*.ts"
+          - "lib/crm/send-event.ts"
+          - "lib/crm/**"
           - "app/actions/lead-capture.ts"

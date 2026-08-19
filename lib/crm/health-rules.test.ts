@@ -10,7 +10,7 @@ import {
 
 // A fully-healthy baseline. Each test mutates exactly the vital under test so a
 // fired alarm can only have come from that vital, never an unintended one.
-// (mirror + delta-stale rules retired at the FUB cutover 2026-06-24.)
+// (mirror + delta-stale rules retired at the CRM cutover 2026-06-24.)
 function healthy(): HealthSignals {
   return {
     businessHours: true,

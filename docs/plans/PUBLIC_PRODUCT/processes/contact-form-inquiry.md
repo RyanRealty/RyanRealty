@@ -88,7 +88,7 @@ this process, not processes themselves.
 
 | Artifact | SoR | Evidence |
 |---|---|---|
-| Lead identity | `public.crm_people` | `docs/DATABASE_SCHEMA_SNAPSHOT.md:2112`; written by `sendEvent` → `ensureNativeLead` (`lib/followupboss.ts:101-131`; DAL export `docs/DAL_INDEX.md:707-709`) with a direct-`ensureNativeLead` fallback (`app/contact/actions.ts:117-138`) |
+| Lead identity | `public.crm_people` | `docs/DATABASE_SCHEMA_SNAPSHOT.md:2112`; written by `sendEvent` → `ensureNativeLead` (`lib/crm/send-event.ts:101-131`; DAL export `docs/DAL_INDEX.md:707-709`) with a direct-`ensureNativeLead` fallback (`app/contact/actions.ts:117-138`) |
 | Tags, assignment, origin note | `crm_people` via `enrichNativeLead` | `lib/canonical-lead-tagger.ts:245-263` |
 | Sequence membership | `public.crm_sequence_enrollments` | `docs/DATABASE_SCHEMA_SNAPSHOT.md:2286`; inserted by `autoEnrollPerson` (`lib/crm/enroll.ts:154-161`) |
 | SMS-consent state | `public.crm_suppressions` (channel `sms`, reason `no-sms-consent`) | `docs/DATABASE_SCHEMA_SNAPSHOT.md:2370`; fail-closed write (`lib/crm/enroll.ts:297-305`; consent field `app/contact/actions.ts:39`) |
@@ -96,8 +96,8 @@ this process, not processes themselves.
 | Anonymous→known browsing history | `visitor_sessions` / `visitor_events` / `visitor_identity_map` | `docs/DATABASE_SCHEMA_SNAPSHOT.md:4958,4914`; stitched by `backfillSessionToFub` (`lib/visitor-backfill.ts:141`; called `app/contact/actions.ts:176-183`) |
 | Conversion mirrors | Meta CAPI + GA4 Measurement Protocol | external mirrors, NOT SoR (`app/contact/actions.ts:194-235`; `lib/lead-tracking.ts:75-119`) |
 
-**Explicitly NOT a SoR:** Follow Up Boss (decommissioned 2026-06-24; `sendEvent` is legacy
-naming over the in-house path — `lib/followupboss.ts:102-107`, CLAUDE.md §9); the broker
+**Explicitly NOT a SoR:** the in-house CRM (decommissioned 2026-06-24; `sendEvent` is legacy
+naming over the in-house path — `lib/crm/send-event.ts:102-107`, CLAUDE.md §9); the broker
 notification email (a transient alert to `ADMIN_EMAIL`, `lib/resend.ts:101-124`); GA4/Meta
 (mirrors of, never sources for, the `crm_people` truth).
 
@@ -135,7 +135,7 @@ Happy path = generic `/contact` submit. Listing-intent branch noted inline; vari
    throws.
 8. **Capture** · server · `sendEvent({ type: 'General Inquiry', … })` →
    `ensureNativeLead` creates/reuses the `crm_people` row (match by email) and returns the
-   native person id (`actions.ts:93-112`; `lib/followupboss.ts:101-131`) · failure: → step 9.
+   native person id (`actions.ts:93-112`; `lib/crm/send-event.ts:101-131`) · failure: → step 9.
 9. **Fallback capture** · server · on capture error, a direct `ensureNativeLead` with tags
    `['source:contact-form','fub-fallback']` still writes the lead; only a double failure
    returns an error to the visitor (`actions.ts:117-138`) — a blip never loses the lead.
@@ -281,7 +281,7 @@ inside the form (`ContactForm.tsx:6-17`) — two registers on one surface.
 - **D2 — a lost enrichment is unrepairable.** Audience/broker tags exist ONLY in the
   `after()` block (`actions.ts:148-168`); the capture itself tags just
   `source:<domain>` because type `General Inquiry` maps audience to null
-  (`lib/followupboss.ts:117-126`). The `crm-auto-enroll` sweep cron can only enroll people
+  (`lib/crm/send-event.ts:117-126`). The `crm-auto-enroll` sweep cron can only enroll people
   whose tags already match a rule (`lib/crm/enroll.ts:27-32,124-125`) — so if `after()`
   dies, the lead exists but is never tagged, routed, or enrolled, and no cron fixes it.
 - **D3 — community handoffs drop their context.** `app/communities/[slug]/page.tsx:884,919`

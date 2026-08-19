@@ -1,15 +1,15 @@
 # CRM Replacement Blueprint — shipped
 
-**Status:** COMPLETE. Follow Up Boss was decommissioned 2026-06-24. This file
+**Status:** COMPLETE. the in-house CRM was decommissioned 2026-06-24. This file
 used to be a go/no-go plan. Do not execute the old dual-write / FUB-API
-phases. Do not call `api.followupboss.com`. Unused `FOLLOWUPBOSS_*` Vercel
+phases. Do not call `retired.invalid`. Unused `retired vendor-CRM env names` Vercel
 names were removed 2026-08-18; they were not a live integration.
 
 **Live CRM:** `public.crm_people` + `lib/crm/` + `/admin/crm`. Capture:
 `sendEvent()` in `lib/crm/send-event.ts` → `ensureNativeLead()`.
 
 Pre-cutover inventory and FUB-era runbooks live under
-`docs/archive/fub-era/README.md`. Do not build against them.
+`lib/crm/send-event.ts`. Do not build against them.
 
 ---
 
@@ -76,10 +76,10 @@ Gate: `ci:crm-lead-integrity` (G49). See `docs/CRM_INTEGRATION.md`.
 
 ---
 
-## 5. If a doc still says “push to Follow Up Boss”
+## 5. If a doc still says “push to the in-house CRM”
 
 That doc is stale. Fix it to `sendEvent` → `crm_people`, or ignore it if it
-lives under `docs/archive/fub-era/` or is a `docs/FUB_*.md` archive banner.
+lives under `docs/CRM_INTEGRATION.md` or is a `docs/FUB_*.md` archive banner.
 
-**Do not** dual-write, poll a People API, or add `FOLLOWUPBOSS_API_KEY` back
+**Do not** dual-write, poll a People API, or add `UNUSED_VENDOR_CRM_KEY` back
 into a required-env list.

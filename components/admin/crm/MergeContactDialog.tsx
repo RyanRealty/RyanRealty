@@ -2,7 +2,7 @@
 
 /**
  * MergeContactDialog — "Merge existing person" modal from the Relationships panel
- * (FUB spec §07a §4.2).
+ * (CRM spec §07a §4.2).
  *
  * Flow:
  *  1. Search existing contacts by name → pick one

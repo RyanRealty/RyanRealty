@@ -3,7 +3,7 @@
  *
  * The autonomous pipeline brief calls this handler `snapshot-channels`. The
  * existing infrastructure runs per-platform handlers under marketing-snapshot-*.
- * marketing-snapshot-fub was removed 2026-07-09 (FUB decommissioned 2026-06-24).
+ * marketing-snapshot-fub was removed 2026-07-09 (CRM decommissioned 2026-06-24).
  * google-ads was restored to the fan-out list 2026-08-08 (Enterprise Map: route
  * existed with a fan-out header comment but was omitted from PLATFORMS).
  *

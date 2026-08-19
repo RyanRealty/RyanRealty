@@ -2,14 +2,14 @@
  * MobileCommsTab — §25.6 Comms tab for the mobile Contact Detail
  *
  * A chronological list of inbound/outbound emails, texts, and calls.
- * Newest first. Matches the FUB iOS Comms tab anatomy:
+ * Newest first. Matches the CRM iOS Comms tab anatomy:
  *   - Email row: envelope icon (accent) · bold subject · sender+thread badge · preview · date
  *   - Archived label in muted text
  *   - Open-tracking sub-row: orange envelope + "N open(s)" + "Last opened [date]"
  *   - SMS row: overlapping speech-bubble icon (blue-purple) · participant text · preview · date
  *
  * This is a thin wrapper that delegates to the existing ConversationFeed for the
- * actual row rendering (it's already FUB-matched). We add the §25.6 section bg
+ * actual row rendering (it's already CRM-matched). We add the §25.6 section bg
  * and the empty-state per spec.
  *
  * Server component — no client state needed at the container level.

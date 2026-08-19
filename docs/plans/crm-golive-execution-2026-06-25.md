@@ -81,7 +81,7 @@ exporting ONLY async functions. Confirmed: all four action files export async-on
 
 ## Flagged, NOT auto-fixed (out of this walkthrough's scope / risk-gated)
 
-- **`seller-workflow-pause` cron errors 198×/24h** — `FOLLOWUPBOSS_API_KEY missing` (FUB decommissioned).
+- **`seller-workflow-pause` cron errors 198×/24h** — `UNUSED_VENDOR_CRM_KEY missing` (FUB decommissioned).
   CRM seller-workflow automation, TCPA/consent-adjacent → surfaced for Matt, not autonomously rewired.
 - Pre-existing public-site noise (not CRM, not this walkthrough): search/listing Supabase `57014`
   timeouts + stale-MV degradations, `getListingVideos` fetch failures, producer-runtime SKILL/

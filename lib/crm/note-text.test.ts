@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { noteToText } from '@/lib/crm/note-text'
 
 describe('noteToText', () => {
-  it('turns FUB-era <br /> markup into real newlines (the measured defect)', () => {
+  it('turns CRM-era <br /> markup into real newlines (the measured defect)', () => {
     expect(noteToText('Notes:<br />\nProperty Details:<br />\n- Beds: 3<br />')).toBe(
       'Notes:\n\nProperty Details:\n\n- Beds: 3'
     )

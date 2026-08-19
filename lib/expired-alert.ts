@@ -4,7 +4,7 @@
  * Goes to matt@ryan-realty.com (configurable via MATT_ALERT_EMAIL env var).
  * Subject includes the address + status so the alert is scannable in the
  * inbox. Body has the full listing context + owner-lookup result + a direct
- * link to the FUB person record.
+ * link to the CRM person record.
  */
 
 import { sendEmail } from '@/lib/resend'
@@ -53,7 +53,7 @@ export type ExpiredAlertParams = {
   ownerMailingAddress: string | null
   ownerEmail: string | null
   ownerPhone: string | null
-  /** Native crm_people id (post-FUB-cutover). Deep-links to the in-house CRM lead. */
+  /** Native crm_people id (post-CRM-cutover). Deep-links to the in-house CRM lead. */
   crmPersonId: number | null
   enrichmentNotes: string | null
 }

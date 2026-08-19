@@ -2,7 +2,7 @@
 
 /**
  * PersonSidebar — §07a left meta-sidebar of the person-detail three-column
- * layout (spec docs/fub-crm-spec/07a-person-detail-sidebar-and-inline-edit.md).
+ * layout (spec docs/crm-spec/07a-person-detail-sidebar-and-inline-edit.md).
  *
  * Section order (§07a §1/§13): Avatar/Header → Contact Info (phones · emails ·
  * address, never collapsible) → Relationships → Details (Stage / Assigned to /

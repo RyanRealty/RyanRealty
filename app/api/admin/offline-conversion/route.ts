@@ -6,7 +6,7 @@
  * credited — closed-loop ROAS. Admin-gated. The hashing / dedup / Meta call live
  * in lib/meta-offline-conversions.ts. A future cron can call uploadOfflineConversion
  * directly once the closed-deal -> stored-fbc join is decided (which Vault status
- * / FUB stage counts as a conversion is a business-process call).
+ * / CRM stage counts as a conversion is a business-process call).
  *
  * Body: { milestone, dedupKey, email?, phone?, fbc?, firstName?, lastName?,
  *         value?, eventTimeSec?, ldu?, testEventCode? }

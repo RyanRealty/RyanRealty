@@ -3,7 +3,7 @@
 /**
  * Three-step CMA seller form for /lp/tetherow/. Steps: 1) address + sub-neighborhood,
  * 2) timing + beds/baths, 3) name/email/phone. Submits to the shared
- * /api/cma endpoint with FUB tags pre-tagged for resort:tetherow and the
+ * /api/cma endpoint with CRM tags pre-tagged for resort:tetherow and the
  * v1 campaign source. Ports the multi-step script + form markup from
  * public/lp/tetherow/index.html.
  *

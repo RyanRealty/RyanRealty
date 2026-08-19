@@ -75,7 +75,7 @@
     "An alarm on ANTHROPIC_API_KEY absence: both lib/cma/judge.ts:124 and lib/cma/audit.ts:186 fail open, so a key outage silently degrades every CMA to needs_review with no operator signal."
   ],
   "open_questions_for_owner": [
-    "lib/cma-deliver.ts (Gmail draft + PDF attachment + FUB BCC) has no caller. Was it superseded by lib/cma/send.ts intentionally, or did a UI trigger get dropped? The PDF attachment and the ryan.realty@followupboss.me BCC only exist in the dead path — do you want those behaviors back on the live send?",
+    "lib/cma-deliver.ts (Gmail draft + PDF attachment + FUB BCC) has no caller. Was it superseded by lib/cma/send.ts intentionally, or did a UI trigger get dropped? The PDF attachment and the ryan.realty@retiredVendorCrm.me BCC only exist in the dead path — do you want those behaviors back on the live send?",
     "Should BPO run the same LLM comparability judge and adversarial audit as CMA? Today it is deterministic-only with a 69-line contract vs CMA's 203 — and BPO is the one recommending specific offer dollar amounts.",
     "Should a BPO be deliverable as a PDF, or is the tracked link view sufficient for the buyer-side product?",
     "For the proactive 'want our opinion on price' trigger: what counts as the signal — a saved home (lib/pulse-saves.ts already records these), N repeat views, or the existing engagement_score threshold? And should it auto-build the BPO or just queue a broker prompt?",

@@ -10,7 +10,7 @@ import { resolveLeadFlow } from '@/lib/crm/lead-flow-resolver'
  * pickRoutedBroker({ source, price, area, tags }) resolves the broker slug a
  * new lead should route to. The resolution order is:
  *
- *   1. Lead Flows (FUB §8.3): look up the lead_flows row matching the source.
+ *   1. Lead Flows (CRM §8.3): look up the lead_flows row matching the source.
  *      Walk its rules (evalCondition). On a match, resolve the DistributionTarget:
  *
  *      - broker   → return that slug directly.
@@ -117,7 +117,7 @@ export async function pickRoutedBroker(input: PickRoutedBrokerInput = {}): Promi
   try {
     const source = (input.source ?? '').trim()
 
-    // ── Step 1: Lead Flows (FUB §8.3) ────────────────────────────────────────
+    // ── Step 1: Lead Flows (CRM §8.3) ────────────────────────────────────────
     if (source) {
       const flow = await getLeadFlowBySource(source)
       if (flow && !flow.archived) {

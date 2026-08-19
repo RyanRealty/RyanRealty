@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
 }
 
-// Ryan Realty brand FUB line — dotted format per brand voice spec (CLAUDE.md §3).
+// Ryan Realty brand CRM line — dotted format per brand voice spec (CLAUDE.md §3).
 // Source of truth: lib/brand/contact.ts CONTACT.phoneFub / phoneFubTel
 const BROKER_PHONE = CONTACT.phoneFub
 const BROKER_PHONE_TEL = CONTACT.phoneFubTel

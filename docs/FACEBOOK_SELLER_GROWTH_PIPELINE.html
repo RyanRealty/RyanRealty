@@ -379,7 +379,7 @@
 <script type="text/markdown" id="md-source">
 # Facebook Seller Growth Pipeline
 
-**The end-to-end seller-lead system for Ryan Realty.** From a Facebook ad impression all the way to a stage-tagged contact in Follow Up Boss with a weekly optimization packet that any agent can pick up and execute.
+**The end-to-end seller-lead system for Ryan Realty.** From a Facebook ad impression all the way to a stage-tagged contact in the in-house CRM with a weekly optimization packet that any agent can pick up and execute.
 
 **For AI agents:** Treat this file as the **single front door** for marketing and advertising work in this repo. It is linked from **`AGENTS.md`**, **`CLAUDE.md`** (Skill Routing), **`.cursor/rules/marketing-advertising-workflow.mdc`**, and **`.cursor/skills/facebook-seller-growth/SKILL.md`**. Load it before editing cron routes, dashboard marketing actions, CAPI, or advising on Meta campaigns.
 
@@ -424,7 +424,7 @@ flowchart LR
         FORMS["Server actions — contact, valuation, exit, page CTA"]
     end
 
-    subgraph FUB["Follow Up Boss CRM"]
+    subgraph FUB["the in-house CRM CRM"]
         FUBPP["People and Stages and Tags and Notes and Tasks"]
     end
 
@@ -488,7 +488,7 @@ flowchart LR
 The five layers, in order:
 
 1. **Acquisition** — Meta delivers a click or a Lead Ad form fill.
-2. **Identity stitching** — anonymous visitor gets bound to a Follow Up Boss person id (via Google sign-in, Facebook OAuth, or the email-click `_fuid` cookie).
+2. **Identity stitching** — anonymous visitor gets bound to a the in-house CRM person id (via Google sign-in, Facebook OAuth, or the email-click `_fuid` cookie).
 3. **Conversion event fan-out** — every meaningful action fires events to FUB (Property Inquiry, Seller Inquiry, Saved Property, etc.), Meta Conversions API (deduped with the browser pixel via `event_id`), GA4 (via gtag), and Supabase (`visits`, `valuation_requests`).
 4. **Weekly automation loops** — two Vercel crons run every Monday morning, write structured packets to `agent_insights`, and one of them also writes stage + tag updates back to FUB people.
 5. **Optimization decision loop** — packets are scored 0–100 and tagged `strong / needs_attention / at_risk`. Recommendations are typed `scale / pause / test / fix / watch`. Any agent (or Matt) reads the latest packet and executes the next cycle's changes.
@@ -504,7 +504,7 @@ sequenceDiagram
     participant M as Meta FB and IG
     participant W as Website Next.js
     participant FB as FUB Lead Webhook
-    participant FUB as Follow Up Boss
+    participant FUB as the in-house CRM
 
     Note over M: Two acquisition paths in parallel
 
@@ -541,7 +541,7 @@ sequenceDiagram
 | `components/GoogleAnalytics.tsx` | Loads gtag.js, infers `campaign_source=facebook` from `fbclid` when no UTM is set |
 | `components/PageViewTracker.tsx` | Fires GA4 + Meta page_view on every SPA route change after consent |
 
-**Required env vars for this layer** — `META_APP_SECRET`, `META_PAGE_ACCESS_TOKEN` (or `META_PAGE_TOKEN`), `META_AD_ACCOUNT_ID`, `META_APP_ID`, `META_FB_PAGE_ID`, `META_IG_BUSINESS_ACCOUNT_ID`, `NEXT_PUBLIC_META_PIXEL_ID`, `META_CAPI_ACCESS_TOKEN`, `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `FOLLOWUPBOSS_API_KEY` (also accepted as `FUB_API_KEY`), `FUB_PIPELINE_ID` (optional but recommended).
+**Required env vars for this layer** — `META_APP_SECRET`, `META_PAGE_ACCESS_TOKEN` (or `META_PAGE_TOKEN`), `META_AD_ACCOUNT_ID`, `META_APP_ID`, `META_FB_PAGE_ID`, `META_IG_BUSINESS_ACCOUNT_ID`, `NEXT_PUBLIC_META_PIXEL_ID`, `META_CAPI_ACCESS_TOKEN`, `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `UNUSED_VENDOR_CRM_KEY` (also accepted as `UNUSED_VENDOR_CRM_KEY`), `UNUSED_VENDOR_CRM_PIPELINE` (optional but recommended).
 
 ---
 
@@ -592,7 +592,7 @@ flowchart TD
 | `app/actions/fub-identity-bridge.ts` | `identifyFubFromEmailClick` (sets cookie) + `getFubPersonIdFromCookie` |
 | `components/FubIdentityBridge.tsx` | Client-side bridge: reads `?_fuid=` from URL, fires identify, removes the param so the URL stays clean |
 | `components/AgentAttributionBridge.tsx` | Captures `?agent=` query param into `rr_agent_attribution` cookie for broker attribution |
-| `lib/followupboss.ts` | The full FUB API surface: events, tags, notes, tasks, broker attribution, automation state updates |
+| `lib/crm/send-event.ts` | The full FUB API surface: events, tags, notes, tasks, broker attribution, automation state updates |
 
 ---
 
@@ -606,7 +606,7 @@ sequenceDiagram
     participant U as Visitor
     participant W as Website
     participant SA as Server Action
-    participant FUB as Follow Up Boss
+    participant FUB as the in-house CRM
     participant MC as Meta CAPI
     participant GA as GA4
     participant DB as Supabase
@@ -679,7 +679,7 @@ flowchart TB
         FOE2c -->|no| FOE2e["fetchMyLeadsFromFubLive — paginate people by assignedUserId"]
         FOE3["Filter to my-leads, exclude likely realtors"]
         FOE4["For each contact choose outreach plan by stage"]
-        FOE5{"FOLLOWUPBOSS_EXECUTION_ENABLED"}
+        FOE5{"UNUSED_VENDOR_CRM_EXECUTION"}
         FOE5 -->|true| FOE6a["PUT FUB person stage and tags"]
         FOE5 -->|true| FOE6b["POST FUB note with suggested SMS and email"]
         FOE5 -->|false| FOE6c["Dry-run, packet records intent only"]
@@ -768,7 +768,7 @@ flowchart LR
 |---|---|---|
 | Meta Ads API configured + summary returned | +20 | configured + summary present |
 | GA4 service account configured + responding | +20 | `ga.ok === true` |
-| FUB API key configured | +15 | `FOLLOWUPBOSS_API_KEY` set |
+| FUB API key configured | +15 | `UNUSED_VENDOR_CRM_KEY` set |
 | Meta frequency healthy | +10 / +5 / 0 | ≤2.8 / ≤3.5 / >3.5 |
 | Meta CTR healthy | +10 / +5 / 0 | ≥1.2% / ≥0.8% / <0.8% |
 | Meta CPL healthy | +10 / +5 / 0 | ≤$25 / ≤$40 / >$40 |
@@ -865,7 +865,7 @@ erDiagram
     }
 ```
 
-**Notable:** `fub_contacts_cache` and `fub_contacts` were dropped in migration `20260330100006_drop_unused_tables.sql`. Both the dashboard pipeline snapshot and the outreach execution cron now fall through to the live FUB People API when those tables are absent (added in commit `2762ec96`, see `lib/followupboss.ts` `fetchMyLeadsFromFubLive`).
+**Notable:** `fub_contacts_cache` and `fub_contacts` were dropped in migration `20260330100006_drop_unused_tables.sql`. Both the dashboard pipeline snapshot and the outreach execution cron now fall through to the live FUB People API when those tables are absent (added in commit `2762ec96`, see `lib/crm/send-event.ts` `fetchMyLeadsFromFubLive`).
 
 ---
 
@@ -907,8 +907,8 @@ Verified in Vercel production on 2026-05-10.
 
 | Var | Status | Purpose |
 |---|---|---|
-| `FOLLOWUPBOSS_API_KEY` | ✅ | FUB People + Events + Notes + Tasks |
-| `FOLLOWUPBOSS_EXECUTION_ENABLED` | ✅ true | Toggles apply vs dry-run for outreach cron |
+| `UNUSED_VENDOR_CRM_KEY` | ✅ | FUB People + Events + Notes + Tasks |
+| `UNUSED_VENDOR_CRM_EXECUTION` | ✅ true | Toggles apply vs dry-run for outreach cron |
 | `META_AD_ACCOUNT_ID` | ✅ | Pull Meta Ads insights (spend, CTR, CPL) |
 | `META_PAGE_ACCESS_TOKEN` | ✅ | Lead Ads webhook + Ads insights |
 | `META_APP_ID` + `META_APP_SECRET` | ✅ | Webhook HMAC verify + FB OAuth |
@@ -922,9 +922,9 @@ Verified in Vercel production on 2026-05-10.
 | `GOOGLE_SERVICE_ACCOUNT_SUBJECT` | ✅ matt@ryan-realty.com | DWD impersonation subject |
 | `CRON_SECRET` | ✅ | Bearer auth for cron endpoints |
 | `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase service-role writes |
-| `FUB_PIPELINE_ID` | ⚠️ optional | Routes new FB Lead Ad people into specific pipeline |
-| `FOLLOWUPBOSS_BROKER_USER_MAP` | ⚠️ optional | Slug → FUB userId map for `fetchMyLeadsFromFubLive` |
-| `FOLLOWUPBOSS_REQUIRE_BROKER_ASSIGNMENT` | ⚠️ optional | Hard-fail events when broker assignment can't resolve |
+| `UNUSED_VENDOR_CRM_PIPELINE` | ⚠️ optional | Routes new FB Lead Ad people into specific pipeline |
+| `UNUSED_VENDOR_CRM_BROKER_MAP` | ⚠️ optional | Slug → FUB userId map for `fetchMyLeadsFromFubLive` |
+| `UNUSED_VENDOR_CRM_REQUIRE_ASSIGNMENT` | ⚠️ optional | Hard-fail events when broker assignment can't resolve |
 
 **Preview** environment now mirrors production for the GA4 service account vars (added 2026-05-10 via `scripts/expand-vercel-env-targets.mjs` — bypasses the Vercel CLI bug that demanded a git branch arg even with `--yes --value --force --sensitive` by PATCHing the existing env-var records via the REST API). **Development** target was intentionally skipped: Vercel forbids sensitive env vars from targeting `development` (sensitive vars are server-only; `vercel dev` would need to read them locally). Local development reads from `.env.local`, which already has the values.
 
@@ -998,7 +998,7 @@ Cloud and IDE agents pick up marketing or advertising work through these **track
 ```mermaid
 flowchart LR
     subgraph SHARED["Shared infra"]
-        FUB_LIB["lib/followupboss.ts"]
+        FUB_LIB["lib/crm/send-event.ts"]
         FUB_CLI["lib/fub-client.mjs"]
         MCAPI["lib/meta-capi.ts"]
         TRACK["lib/tracking.ts"]
@@ -1080,7 +1080,7 @@ Sorted by ROI, highest-impact first. Items shipped in iteration 2 are crossed ou
 6. **Get a Meta campaign running.** Latest packet recommends `[FIX][HIGH] No active Meta campaign this cycle` — Meta Ads reports zero spend / zero impressions in the last 30 days. Optimization can't optimize what isn't running. Action lives in Meta Ads Manager.
 7. **Restore `fub_contacts_cache` mirror table.** The dashboard pipeline snapshot pays a FUB API cost on every render right now; only the weekly cron should pay that. Spec a small sync (FUB people → Supabase) on a 30-min cron.
 8. **Investigate the `103 of 150 outreach attempts that get rejected by FUB`.** State + note both fail with the exact same count (47/150 succeed = 103 fail both). Add per-contact error capture in the execution items so we know whether it's invalid person ids in the snapshot, FUB rate limiting, or contacts in restricted states.
-9. **Decide on a strict broker user map.** Setting `FOLLOWUPBOSS_BROKER_USER_MAP=matt-ryan:<userId>` would let `fetchMyLeadsFromFubLive` skip the email lookup and shave a network call per cron.
+9. **Decide on a strict broker user map.** Setting `UNUSED_VENDOR_CRM_BROKER_MAP=matt-ryan:<userId>` would let `fetchMyLeadsFromFubLive` skip the email lookup and shave a network call per cron.
 10. **Resolve the Bend Policy Pulse 3-part series state mismatch.** Files `bend_policy_pulse_part{1,2,3}.mp4` are in `public/v5_library/` but the scorecard says they're drafts awaiting review. Tracked separately from this pipeline but called out here for handoff completeness.
 
 ---
@@ -1091,7 +1091,7 @@ Sorted by ROI, highest-impact first. Items shipped in iteration 2 are crossed ou
 - **FUB Custom Audience export script** — `scripts/export-fub-custom-audience.mjs` ships hashed-PII CSVs for Meta upload. `--mode lookalike-seed` (4,964 rows from current FUB) seeds the LAL; `--mode suppression` (6,000 rows) becomes the Exclusion on every prospecting ad set.
 - Skill — `.claude/skills/facebook-seller-growth/SKILL.md` (canonical routine for cloud + local Claude runs)
 - Learnings — `.claude/skills/facebook-seller-growth/LEARNINGS.md` (one entry per cycle)
-- FUB integration (archived) — `docs/archive/fub-era/README.md`
+- FUB integration (archived) — `lib/crm/send-event.ts`
 - Admin dashboard — `docs/ADMIN_DASHBOARD.md`
 - Cross-agent handoff — `docs/plans/CROSS_AGENT_HANDOFF.md`
 

@@ -16,7 +16,7 @@ import { CONTACT } from '@/lib/brand/contact'
 /**
  * Heath at Tetherow CMA form server action.
  *
- * FUB tag schema (per Matt 2026-05-17):
+ * CRM tag schema (per Matt 2026-05-17):
  *   seller-intent
  *   resort:tetherow
  *   subdivision:heath          <-- precision so sub-plat lead routing works
@@ -24,7 +24,7 @@ import { CONTACT } from '@/lib/brand/contact'
  *   cma-requested
  *   seller:<tier> derived from timeline
  *
- * Routes by default to Matt (FUB user id 1) unless an agent attribution
+ * Routes by default to Matt (CRM user id 1) unless an agent attribution
  * cookie is set on the visitor (rr_agent_attribution).
  */
 
@@ -121,7 +121,7 @@ export async function submitHeathCmaForm(
     // Send natively so a new lead is created if not already known; existing
     // leads are deduped by email match. sendEvent() returns the native
     // crm_people id directly — this is the correct id to use downstream, not
-    // the old findPersonByEmail() re-lookup (a dead FUB-API call since the
+    // the old findPersonByEmail() re-lookup (a dead CRM-API call since the
     // 2026-06-24 decommission, which always returned null and meant this
     // page's tag/assign/task block silently never ran). Fixed 2026-07-09.
     const eventResult = await sendEvent({
@@ -222,7 +222,7 @@ export async function submitHeathCmaForm(
       }),
     }).catch((err) => console.warn('[heath-cma] CAPI call failed:', err))
   } catch (err) {
-    console.error('[heath-cma] FUB submit failed', err)
+    console.error('[heath-cma] CRM submit failed', err)
     return { success: false, error: `Could not submit. Try again shortly or call ${CONTACT.phoneDirect}.` }
   }
 

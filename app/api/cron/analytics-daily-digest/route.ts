@@ -230,7 +230,7 @@ function renderDigestHtml(d: {
 <td style="padding:12px;background:#faf8f4;border-radius:8px;width:25%;">
   <div style="font-size:11px;color:#52606D;text-transform:uppercase;letter-spacing:0.5px;">Qualified sellers</div>
   <div style="font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;">${fmtInt(d.qualLeadsYesterday)}</div>
-  <div style="font-size:11px;color:#52606D;margin-top:2px;">FUB tagged seller</div>
+  <div style="font-size:11px;color:#52606D;margin-top:2px;">CRM tagged seller</div>
 </td>
 </tr>
 </table>

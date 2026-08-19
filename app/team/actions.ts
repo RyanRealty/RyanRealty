@@ -5,7 +5,7 @@ import { submitSellerLPForm } from '@/app/lp/seller-home-value/actions'
 
 /**
  * Broker-landing-page lead submit. Adapts the LeadCaptureBlock 'seller' payload
- * to the seller LP action, which creates the FUB person, applies the seller
+ * to the seller LP action, which creates the CRM person, applies the seller
  * tag taxonomy, and routes the lead to the ATTRIBUTED broker — the
  * BrokerAttributionSetter on the page set the attribution cookie to this broker,
  * so a lead from Rebecca's page lands in the CRM assigned to Rebecca. Reuses the

@@ -24,7 +24,7 @@ describe('note-classify', () => {
       'LEAD ORIGIN\nSource: Contact form (General Inquiry)',
       'Viewed property: 3211 SW Salmon Avenue, Redmond, OR',
       'Matt alert: matt@ryan-realty.com is back on the website',
-      'Let our product team know what you thought of this action plan https://followupboss1.type',
+      'Let our product team know what you thought of this action plan https://example.invalid',
     ]
     for (const body of cases) {
       expect(isSystemNote({ broker: null, body })).toBe(true)
@@ -32,7 +32,7 @@ describe('note-classify', () => {
   })
 
   it('defaults an ambiguous broker-null free-text note to human (better to show than bury)', () => {
-    // A real hand-written note imported from FUB that lost its broker attribution.
+    // A real hand-written note imported from CRM that lost its broker attribution.
     const note = { broker: null, body: 'Talked to seller, wants to list in spring. Prefers text.' }
     expect(isHumanNote(note)).toBe(true)
   })

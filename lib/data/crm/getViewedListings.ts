@@ -14,10 +14,10 @@
  * rendered empty. Sessions now resolve through the full native chain:
  *
  *   1. visitor_sessions.crm_person_id = crmPersonId — written by every identify
- *      path post-FUB-cutover (lib/visitor-backfill.ts:99 + :203 write
+ *      path post-CRM-cutover (lib/visitor-backfill.ts:99 + :203 write
  *      crm_person_id and fub_person_id in lockstep with the native crm id).
  *   2. visitor_sessions.fub_person_id IN (crmPersonId, fubLegacyId) — lockstep
- *      rows written before readers migrated, plus true legacy FUB-import rows.
+ *      rows written before readers migrated, plus true legacy CRM-import rows.
  *   3. visitor_identity_map rows matched by crm_person_id / fub_person_id /
  *      normalized email (writer: lib/visitor-backfill.ts:56-112
  *      stitchVisitorIdentity, called from app/auth/callback/route.ts:55 on
@@ -54,7 +54,7 @@ export type ViewedListing = {
 export type LeadIdentityKeys = {
   crmPersonId: number
   fubLegacyId?: number | null
-  /** Normalized (lowercased) emails — the FUB-independent identity key. */
+  /** Normalized (lowercased) emails — the CRM-independent identity key. */
   emails?: string[]
 }
 

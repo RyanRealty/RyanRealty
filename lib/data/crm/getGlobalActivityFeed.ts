@@ -1,5 +1,5 @@
 /**
- * getGlobalActivityFeed — the CRM-wide activity stream (FUB "Activity" tab parity).
+ * getGlobalActivityFeed — the CRM-wide activity stream (CRM "Activity" tab parity).
  *
  * Reads the timeline across ALL contacts, joins each row to its contact's name,
  * and lets the Activity page include/exclude activity TYPES (emails, texts,

@@ -9,7 +9,7 @@ import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
-import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
+import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/lead-origin-note'
 import { createCmaRequest } from '@/lib/cma-request'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
@@ -123,7 +123,7 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
     const parsed = parseAddress(rawAddress)
 
     // ─── Resolve a pre-known person (identity-bridge cookie only) ──────────
-    // The old FUB findPersonByEmail pre-lookup was a dead no-op after the
+    // The old CRM findPersonByEmail pre-lookup was a dead no-op after the
     // 2026-06-24 decommission and was deleted — sendEvent below resolves the
     // native person by email (ensureNativeLead dedupes email-first).
     let fubPersonId: number | null = null
@@ -169,7 +169,7 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
           ...(phone ? { phones: [{ value: phone }] } : {}),
         }
 
-    // ─── FUB Seller Inquiry event ─────────────────────────────────────────
+    // ─── CRM Seller Inquiry event ─────────────────────────────────────────
     const eventResult = await sendEvent({
       type: 'Seller Inquiry',
       person,
@@ -196,7 +196,7 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
       console.warn('[fsbo-lp] native capture failed:', eventResult.error)
     }
 
-    // ─── Resolve the native CRM person id (post-FUB cutover) ───────────────
+    // ─── Resolve the native CRM person id (post-CRM cutover) ───────────────
     // sendEvent captures natively and returns the personId — the working id for
     // all downstream enrichment.
     if (eventResult.ok && eventResult.personId) {

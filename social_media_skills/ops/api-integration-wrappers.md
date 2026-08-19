@@ -231,7 +231,7 @@ const publishFacebookReel = async (videoUrl, caption) => {
 
 **Purpose:** When someone DMs "strategy", capture them as a lead in `public.crm_people`
 
-**Path:** `sendEvent` in `lib/crm/send-event.ts`. Review at `/admin/crm`. Do not set `FOLLOWUPBOSS_API_KEY`. Do not call `api.followupboss.com`.
+**Path:** `sendEvent` in `lib/crm/send-event.ts`. Review at `/admin/crm`.
 
 **Code (Node.js):**
 

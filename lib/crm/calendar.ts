@@ -1,6 +1,6 @@
 /**
  * lib/crm/calendar.ts — pure calendar math for the §09 Calendar module
- * (docs/fub-crm-spec/09-tasks-and-calendar.md Part 2).
+ * (docs/crm-spec/09-tasks-and-calendar.md Part 2).
  *
  * Everything here is pure (no Intl, no ambient Date.now()) so the grid
  * placement + view ranges are unit-testable and hydration-safe. Two time

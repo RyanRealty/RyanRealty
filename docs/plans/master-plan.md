@@ -325,7 +325,7 @@ Nudge-to-sign-in UX strategy, cookie consent alignment, consistent FUB Registrat
 - **Verify**: `/search/bend/under-300k` renders with correct filters applied and unique metadata.
 
 ### 3.4 Lead Capture Surfaces with FUB Attribution (R1 Q1)
-- **Files**: `components/HomeValuationCta.tsx` (new), `components/ExitIntentPopup.tsx` (new), middleware or hook for agent cookie, `lib/followupboss.ts` (extend)
+- **Files**: `components/HomeValuationCta.tsx` (new), `components/ExitIntentPopup.tsx` (new), middleware or hook for agent cookie, `lib/crm/send-event.ts` (extend)
 - **Change**: Build agent tracking cookie system (detect `?agent=slug`, store in cookie with FUB agent name/ID). Extend `LeadEventPerson` with `assignedTo`, `assignedUserId`, `tags`. Extend `sendEvent()` to support `campaign` object (UTM data). Build HomeValuationCta (seller leads to FUB Seller Inquiry). Build ExitIntentPopup (email capture, once per session). Build report lead gate (email for full content).
 - **Verify**: Lead submissions arrive in FUB with correct event types. Agent attribution cookie persists. UTM data appears in FUB campaign object.
 
@@ -350,7 +350,7 @@ Nudge-to-sign-in UX strategy, cookie consent alignment, consistent FUB Registrat
 - **Verify**: Links render on city pages. All link targets are valid routes.
 
 ### 3.9 FUB Event Coverage
-- **Files**: `lib/followupboss.ts`, all new lead capture components
+- **Files**: `lib/crm/send-event.ts`, all new lead capture components
 - **Change**: Map all new lead capture to FUB events: PageCTA → General Inquiry, HomeValuationCta → Seller Inquiry, Report gate → Registration, Exit popup → Registration, Lender referral → General Inquiry (tagged), Broker form → Property Inquiry. Propagate `fubPersonId` to components that don't receive it yet.
 - **Verify**: Each lead capture type creates correct FUB event. No lead capture surface is silent.
 

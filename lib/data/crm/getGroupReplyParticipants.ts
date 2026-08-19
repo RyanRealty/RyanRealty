@@ -1,7 +1,7 @@
 /**
  * getGroupReplyParticipants — reconstruct the people who belong in a group text
  * reply. Every group message on this contact's timeline stored the full member
- * list (payload.groupMembers for FUB-imported threads, payload.groupTo for
+ * list (payload.groupMembers for CRM-imported threads, payload.groupTo for
  * native Twilio-Conversations sends). A reply must go back to those same people,
  * not just the primary — so this returns each participant as a recipient the
  * composer can pre-select and the send can reach:

@@ -23,7 +23,7 @@ import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 
 type Channel = 'text' | 'email'
 
-/** Quick-tag row — exact FUB labels (spec §7.3). */
+/** Quick-tag row — exact CRM labels (spec §7.3). */
 const QUICK_TAGS = ['Introduction', 'Follow Up', 'Still Buying', 'Nurture Lead']
 
 export default function InlineReply({

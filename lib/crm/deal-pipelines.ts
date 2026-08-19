@@ -1,16 +1,16 @@
 /**
  * Deal pipeline + stage configuration — the canonical, ordered stage columns for
- * the Deals Kanban board (FUB parity, delivery #3, spec §10).
+ * the Deals Kanban board (CRM parity, delivery #3, spec §10).
  *
- * SOURCE OF TRUTH: docs/fub-crm-spec/api-export/pipelines.json (the authoritative
- * FUB pipeline export). This module mirrors that file EXACTLY — the same stage
+ * SOURCE OF TRUTH: docs/crm-spec/api-export/pipelines.json (the authoritative
+ * CRM pipeline export). This module mirrors that file EXACTLY — the same stage
  * names, order (by orderWeight), accent colors, closedStage flags, and pipeline
  * ids. The crm_deals table stores `pipeline` + `stage` as free text whose values
  * match these names verbatim (verified live 2026-07-01: "Buyers"/"Sellers" +
  * "Closed"/"Lost"/"Pending"/"Listed"/"Lost / Terminated"), so the board matches a
  * deal to its column by exact stage-name string equality.
  *
- * The hex accent colors are the FUB stage palette (no 2-color brand-token
+ * The hex accent colors are the CRM stage palette (no 2-color brand-token
  * equivalent); they are applied via inline `style` and this file is listed on
  * .design-token-lint-ignore for that reason — same exception class as
  * lib/admin/crm-avatar.ts.
@@ -20,18 +20,18 @@
  */
 
 export type DealStage = {
-  /** FUB stage id (from pipelines.json) — stable identity for the column. */
+  /** CRM stage id (from pipelines.json) — stable identity for the column. */
   id: number
   /** Exact stage label — matches crm_deals.stage verbatim. */
   name: string
-  /** Accent color (FUB stage palette), applied to the column's top border. */
+  /** Accent color (CRM stage palette), applied to the column's top border. */
   color: string
   /** True on the terminal "won" stage — renders the "Closed" header badge and drives reporting. */
   closedStage: boolean
 }
 
 export type DealPipeline = {
-  /** FUB pipeline id (Buyers=1, Sellers=2). */
+  /** CRM pipeline id (Buyers=1, Sellers=2). */
   id: number
   /** Exact pipeline label — matches crm_deals.pipeline verbatim. */
   name: string
@@ -47,7 +47,7 @@ export const DEAL_PIPELINES: readonly DealPipeline[] = [
   {
     id: 1,
     name: 'Buyers',
-    // "Start (temp stage)" (id 47) — FUB's auto-created never-renamed
+    // "Start (temp stage)" (id 47) — CRM's auto-created never-renamed
     // placeholder — was deleted from crm_deal_stages 2026-07-02 (mobile audit
     // P2-9 hygiene; 0 deals ever referenced it). Kept out of this fallback so
     // an empty-table fallback can't resurrect it.
@@ -79,7 +79,7 @@ export const DEAL_PIPELINE_NAMES: readonly string[] = DEAL_PIPELINES.map((p) => 
 
 /**
  * The predefined stage accent palette for the §10 Add-Stage / Edit-Stage color
- * picker — the FUB stage palette observed in the export, plus complements.
+ * picker — the CRM stage palette observed in the export, plus complements.
  * Lives HERE (a .design-token-lint-ignore module) so no component carries hex
  * literals; components consume these as data.
  */

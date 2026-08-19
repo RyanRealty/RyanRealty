@@ -3,7 +3,7 @@
 // Carried over verbatim: navigate()'s param set and order, the CSV export URL
 // (broker + date + cols, same route, same `download`), the superuser-only agent
 // scope with the locked "Me" state for everyone else, and the honest lead-type
-// control whose two FUB-parity options stay disabled because the CRM has no
+// control whose two CRM-parity options stay disabled because the CRM has no
 // web-vs-manual lead classification.
 import { useRouter, usePathname } from 'next/navigation'
 import { SelectField } from '@/components/admin/v2'
@@ -77,7 +77,7 @@ export default function AgentActivityFilters({
         )}
 
         {/* Lead type — the CRM has no web-vs-manual lead classification, so only
-            "All leads" is real; the FUB-parity options render disabled (honest UI) */}
+            "All leads" is real; the CRM-parity options render disabled (honest UI) */}
         <SelectField label="Lead type" value="all" onChange={() => {}}>
           <option value="all">All leads</option>
           <option value="web" disabled>

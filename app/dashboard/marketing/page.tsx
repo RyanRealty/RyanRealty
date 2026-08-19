@@ -602,7 +602,7 @@ export default async function MarketingBrainPage() {
               <p className="text-4xl font-bold text-foreground">—</p>
               <EmptyState
                 title="Awaiting first ingest"
-                message="FUB snapshot has not run yet. Run the ingestor to populate qualified_seller_leads."
+                message="CRM snapshot has not run yet. Run the ingestor to populate qualified_seller_leads."
                 command={POPULATE_CMD.replace('ga4', 'fub')}
               />
             </div>
@@ -723,7 +723,7 @@ export default async function MarketingBrainPage() {
           </Table>
         )}
         <p className="mt-2 text-xs text-muted-foreground">
-          Categories: content (renders + posts), site (page edits via site-edit producer), ops (Meta Ads + FUB CRM mutations), analyze (anomaly drilldowns), comms (matt alerts + summaries). Legacy = pre-Item-3 rows.
+          Categories: content (renders + posts), site (page edits via site-edit producer), ops (Meta Ads + CRM CRM mutations), analyze (anomaly drilldowns), comms (matt alerts + summaries). Legacy = pre-Item-3 rows.
         </p>
       </div>
 

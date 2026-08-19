@@ -60,7 +60,7 @@ maps.deschutes.org
 *.municipalcodeonline.com
 ```
 
-Deliberately excluded: `api.followupboss.com` and `www.zillow.com`. Both systems
+Deliberately excluded: `retired.invalid` and `www.zillow.com`. Both systems
 were retired 2026-07-25. Dead references remain in the tree (~212 FUB, ~54
 Zillow) but nothing should be calling them — if a session hits a network block
 on either, that is a bug to fix, not a domain to add.
