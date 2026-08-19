@@ -70,6 +70,7 @@ import '@/components/admin/v2/admin-v2.css'
 import ContactsSearch from './_components/ContactsSearch'
 import { MobilePeopleRoot } from '@/components/admin/shared/mobile/MobilePeopleRoot'
 import PeopleSidebar from '@/components/admin/shared/people-list/PeopleSidebar'
+import { getCrmStageCounts } from '@/lib/data/crm/getCrmStageCounts'
 import PeopleListView, { type PeopleRow } from '@/components/admin/shared/people-list/PeopleListView'
 import {
   groupSavedViews, groupSystemByCollection, type SavedViewItem,
@@ -141,7 +142,7 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
   const requestedBroker = sp.broker === 'all' ? undefined : sp.broker || undefined
   const effectiveBroker = scope ?? requestedBroker
 
-  const [views, result, stageRows, tagRows, areaRows, templateRows, sequenceRows, ponds, neighborhoodOptions] = await Promise.all([
+  const [views, result, stageRows, tagRows, areaRows, templateRows, sequenceRows, ponds, stageCounts, neighborhoodOptions] = await Promise.all([
     getCrmSavedViews(access, { includeCounts: false }),
     listCrmPeople({ q: sp.q, stage: sp.stage, broker: effectiveBroker, tag: sp.tag, view: sp.view, page, pond: sp.pond, neighborhood: sp.neighborhood }),
     getCrmStages(),
@@ -150,6 +151,7 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
     getCrmTemplatesAdmin(),
     listCrmSequences(),
     getCrmPonds(),
+    getCrmStageCounts(access),
     getCrmNeighborhoodOptions(),
   ])
 
@@ -157,7 +159,6 @@ async function CrmPeopleBody({ access, sp }: { access: CrmAccess; sp: SearchPara
   const lastPage = totalExact
     ? Math.max(1, Math.ceil(total / pageSize))
     : (rows.length === pageSize ? page + 1 : page)
-  const stageCounts = stageRows.filter((s) => s.isActive).map((s) => ({ key: s.key, label: s.label, count: 0 }))
 
   // §6 col 5 + 8 — per-row Last Visit + latest lead-initiated activity.
   const signals = await getPeopleListSignals(rows.map((r) => r.id))
