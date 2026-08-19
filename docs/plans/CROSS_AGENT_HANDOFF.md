@@ -2,9 +2,9 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (grok-build) — graph armed + motivated-sellers 308 class
+# Current — 2026-08-19 (grok-build) — graph armed, motivated-sellers 308 shipped
 
-**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Loop stays **ARMED**. Graph folded: G34 page-tied analytics DONE, G35 redirect-only 308s, R-219/R-220, CAP-015/017/031 evidence updated. Served ship class FLEET-PUNCH `fleet:public-ux:motivated-sellers` (2 of 158). CMA in_progress on the other checkout not touched.
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Loop stays **ARMED**. Graph folded: G34/G35 **done**, R-219/R-220, CAP-015/017/031 evidence updated. FLEET-PUNCH motivated-sellers slice **fixed** (live 308 `/motivated-sellers` → `/price-drops`, SHA `a6558109` READY `dpl_8PiPQmohwuu12UhRfmpYGEvZaTmt`). Parent released. Next brief: `fleet:public-ux:sitemaps` — `/sitemaps/listings.xml` is an empty urlset while `listing_tile_mv` has 7589 Active/AUC rows. Sentinel handoff skipped: Cursor User API Key 401 (unattended chain cannot launch). CMA in_progress on the other checkout not touched.
 
 # Prior — 2026-08-18 (grok-build) — page-tied analytics
 
