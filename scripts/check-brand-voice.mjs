@@ -2,11 +2,20 @@
 /**
  * check-brand-voice.mjs
  *
- * Greps every JSX/TSX file under app/ and components/ for banned brand-voice
- * vocabulary in string literals (text content + JSX attributes). Fails CI if
- * any new file introduces a banned word.
+ * Scans public copy for the three things VOICE.md gates mechanically: the
+ * "Value my home" CTA phrasings, the virtues we may not claim for ourselves,
+ * and em/en dashes inside authored prose. Copy is read from string literals
+ * AND JSX text children, so a sentence written between tags is caught too.
+ *
+ * WHAT COUNTS AS PUBLIC COPY (the scope block below is the authority, and
+ * scripts/__tests__/brand-voice-scope.test.mjs pins it): every .ts/.tsx/.js/.jsx
+ * file under app/ and components/ minus the internal surfaces, plus the page
+ * registries in data/ and lib/*-content.ts. The extension has never mattered —
+ * a .ts data module is scanned exactly like a .tsx component.
  *
  * Banned vocabulary canonical source: marketing_brain_skills/brand-voice/VOICE.md
+ * The virtue list is PARSED from that file at startup, so narrowing the machine
+ * list without editing the canon fails this gate on itself.
  *
  * Modes:
  *   node scripts/check-brand-voice.mjs                 → check against baseline, exit 1 if violations INCREASED
@@ -53,7 +62,39 @@ const ts = require('typescript')
 // runtime on all five send paths (ci:voice-send-paths). What was missing was
 // never a gate — it was that nobody had READ that copy against the canon. That
 // read happened 2026-08-06.
-const SCAN_DIRS = ['app', 'components']
+//
+// PUBLIC COPY REGISTRIES, added 2026-08-19, and why they are named rather than
+// swept. A reviewer reported this gate blind to "copy that lives in .ts data
+// modules", citing app/cities/[slug]/_v3/city-market-charts-data.ts. That file
+// was already covered: FILE_EXTS has always held '.ts', so every .ts module
+// under app/ and components/ is scanned exactly like a .tsx one (probe: a
+// "What's my home worth" literal and an em-dash prose sentence appended to that
+// exact file both fail the gate). The premise was wrong; the defect class was
+// not.
+//
+// The real hole is one directory over. A page's prose does not all live under
+// app/. The city, community, resort, lead-landing, event, park, trail, venue,
+// school and golf pages render their sentences from registries in data/ and
+// lib/*-content.ts, and NONE of those were scanned. That is public copy — the
+// same sentences, one import away — sitting outside the gate.
+//
+// Scope is drawn by measurement, not by instinct:
+//   data/**            17 .ts registry modules, every one of them page copy.
+//                      Adds 0 violations today: the 35 dashes in them are all
+//                      inside /** */ and // comments, which the scanner strips.
+//   lib/**/*-content.ts  the 5 named content registries. lib/ WHOLESALE stays
+//                      out for the reason measured above; -content.ts is the
+//                      repo's existing name for a public registry, and
+//                      ci:voice-constructions already documents data/ and the
+//                      lib/ content registries as public-copy surfaces. This
+//                      widening makes the two gates agree on what is public.
+const SCAN_DIRS = ['app', 'components', 'data']
+
+// Files outside SCAN_DIRS that are public copy by naming convention. Matched
+// against the repo-relative path so a new lib/<surface>-content.ts is covered
+// the day it is written, not the day someone remembers this list.
+const PUBLIC_COPY_FILE = /^lib\/(?:[^/]+\/)*[^/]*-content\.ts$/
+
 const EXCLUDED_DIRS = new Set(['node_modules', '.next', 'out', 'build', 'dist', '__tests__'])
 const FILE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx'])
 
@@ -82,8 +123,13 @@ const BANNED_WORDS = VOCAB.BANNED_WORD_STRINGS
 //
 // This runs before any file is scanned: if a canon term has no covering phrasing,
 // the gate fails on itself rather than silently under-enforcing.
+// VOICE.md > "Never name the virtues" — the phrasings that claim a virtue for
+// us. Read from the vocabulary module, never typed here (ci:voice-vocab-parity).
+const SELF_PRAISE = VOCAB.SELF_PRAISE ?? []
+const ALL_BANNED_PHRASES = [...BANNED_WORDS, ...SELF_PRAISE]
+
 for (const { canon, covered } of VOCAB.PROJECTION_REQUIRED ?? []) {
-  if (!BANNED_WORDS.some((w) => w.includes(covered))) {
+  if (!ALL_BANNED_PHRASES.some((w) => w.includes(covered))) {
     console.error(
       `\n✖ brand-voice vocabulary is out of sync with the canon.\n` +
         `  VOICE.md bans "${canon}", and the phrasing that projects it ` +
@@ -93,6 +139,120 @@ for (const { canon, covered } of VOCAB.PROJECTION_REQUIRED ?? []) {
     process.exit(1)
   }
 }
+
+// THE GUARD READS THE CANON, not a hand-copied mirror of it (2026-08-19).
+//
+// PROJECTION_REQUIRED above is an array a person maintains, so it proves
+// nothing against the one edit that actually breaks projection: narrowing the
+// canon's coverage and the guard's expectations in the SAME commit. That is
+// exactly what happened at D11 (0ad6a0c2) — SELF_PRAISE went to [] and
+// PROJECTION_REQUIRED lost its six virtue entries together, and the gate stayed
+// green while VOICE.md still said "Do not call ourselves authentic, genuine,
+// honest, simple, transparent, trusted, dedicated". Second recurrence of the
+// /faq failure, same mechanism.
+//
+// So the virtue list is parsed out of VOICE.md itself. Narrowing the machine
+// list now fails here; the only way to un-ban a virtue is to edit the canon,
+// which is where that argument belongs. A canon rewrite that drops the anchor
+// sentence fails loudly rather than silently passing.
+const VOICE_MD_PATH = join(ROOT, 'marketing_brain_skills/brand-voice/VOICE.md')
+const VIRTUE_SENTENCE = /Do not call ourselves\s+([^.]+?)\s*,?\s*or any other virtue/i
+
+// VOICE.md > "About mission (the one exception)": this exact sentence may
+// appear on About. Nowhere else uses authentic / exceptional as a claim about
+// us, so the carve-out is the SENTENCE, not the words.
+const ABOUT_MISSION = VOCAB.ABOUT_MISSION_SENTENCE ?? ''
+
+function canonVirtueWords(canonText) {
+  const m = canonText.match(VIRTUE_SENTENCE)
+  if (!m) return null
+  return m[1]
+    .split(',')
+    .map((w) => w.trim().toLowerCase())
+    .filter((w) => /^[a-z]+$/.test(w))
+}
+
+function assertCanonProjection() {
+  if (!existsSync(VOICE_MD_PATH)) {
+    console.error(
+      `\n✖ brand-voice canon not found at marketing_brain_skills/brand-voice/VOICE.md.\n` +
+        `  This gate projects that file. It does not run without it.\n`
+    )
+    process.exit(1)
+  }
+  const canonText = readFileSync(VOICE_MD_PATH, 'utf8')
+
+  const virtues = canonVirtueWords(canonText)
+  if (!virtues || virtues.length === 0) {
+    console.error(
+      `\n✖ brand-voice canon anchor missing.\n` +
+        `  This gate finds the banned virtues by reading the sentence\n` +
+        `  "Do not call ourselves <words>, or any other virtue." in VOICE.md,\n` +
+        `  and that sentence no longer parses. Re-anchor VIRTUE_SENTENCE in\n` +
+        `  scripts/check-brand-voice.mjs against the rewritten canon.\n`
+    )
+    process.exit(1)
+  }
+
+  const missing = virtues.filter((v) => !SELF_PRAISE.some((p) => p.includes(v)))
+  if (missing.length > 0) {
+    console.error(
+      `\n✖ brand-voice vocabulary is out of sync with the canon.\n` +
+        `  VOICE.md bans calling ourselves ${missing.map((v) => `"${v}"`).join(', ')}, ` +
+        `and no phrasing in SELF_PRAISE carries ${missing.length === 1 ? 'that word' : 'those words'}.\n` +
+        `  Add the phrasing to SELF_PRAISE in scripts/brand-voice-vocabulary.cjs.\n` +
+        `  Un-banning a virtue is a canon edit, not a vocabulary edit.\n`
+    )
+    process.exit(1)
+  }
+
+  // The About-mission carve-out below is only legitimate while the canon still
+  // grants it. If that exception is ever withdrawn, the exemption dies with it.
+  if (ABOUT_MISSION && !canonText.includes(ABOUT_MISSION)) {
+    console.error(
+      `\n✖ brand-voice About-mission exemption no longer matches the canon.\n` +
+        `  ABOUT_MISSION_SENTENCE in scripts/brand-voice-vocabulary.cjs is not\n` +
+        `  present verbatim in VOICE.md, so the carve-out is exempting a\n` +
+        `  sentence the canon does not permit. Re-copy it, or delete it.\n`
+    )
+    process.exit(1)
+  }
+}
+
+// The canon grants the mission sentence to ONE page: "This sentence may appear
+// on About". Scoping the carve-out to app/about/ is what makes the next clause
+// ("Nowhere else uses authentic / exceptional as a claim about us") mechanical
+// rather than honour-system — the same sentence pasted onto /sell or a listing
+// page is a violation, and now fails.
+const ABOUT_SURFACE = 'app/about/'
+
+function findSelfPraiseViolations(value, lineNum, snippet, relPath) {
+  if (ABOUT_MISSION && value.includes(ABOUT_MISSION) && (relPath ?? '').startsWith(ABOUT_SURFACE)) {
+    return []
+  }
+  const out = []
+  for (const phrase of SELF_PRAISE) {
+    // Word-boundary matched, not substring: a plain `includes` reports
+    // "a dishonest broker" as us claiming to be an honest broker, and a gate
+    // that flags the opposite of the sin is one people learn to override.
+    if (selfPraiseRe(phrase).test(value)) {
+      out.push({ word: `Never name the virtues: "${phrase}"`, line: lineNum, snippet })
+    }
+  }
+  return out
+}
+
+const SELF_PRAISE_RE_CACHE = new Map()
+function selfPraiseRe(phrase) {
+  let re = SELF_PRAISE_RE_CACHE.get(phrase)
+  if (!re) {
+    re = new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+    SELF_PRAISE_RE_CACHE.set(phrase, re)
+  }
+  return re
+}
+
+assertCanonProjection()
 
 // SCOPE — our language only (VOICE.md): the laws bind Ryan Realty's own
 // authored marketing copy. Reviews/testimonials and broker-written listing
@@ -306,7 +466,14 @@ function findPunctuationViolations(value, lineNum, snippet, relPath, lineText, p
 // Exported for scripts/__tests__/brand-voice-punctuation.test.mjs. The
 // exemptions below encode §2 carve-outs; a silent regression in one of them
 // would either re-open the em-dash hole or start flagging legitimate output.
-export { findPunctuationViolations, isEmbeddedCode, isDebugOutput, isProseSentence, stripInterpolations }
+export {
+  findPunctuationViolations,
+  findSelfPraiseViolations,
+  isEmbeddedCode,
+  isDebugOutput,
+  isProseSentence,
+  stripInterpolations,
+}
 
 function normalize(p) {
   return p.split(sep).join('/')
@@ -495,6 +662,7 @@ function scanFile(absPath) {
         violations.push({ word: `Law ${pat.law}: ${pat.label}`, line: lineNum, snippet: lit.value.slice(0, 80) })
       }
     }
+    violations.push(...findSelfPraiseViolations(lit.value, lineNum, lit.value.slice(0, 80), relPath))
     violations.push(...findPunctuationViolations(lit.value, lineNum, lit.value.slice(0, 80), relPath, lineText, lines[lineNum - 2] ?? ''))
   }
 
@@ -516,6 +684,7 @@ function scanFile(absPath) {
         violations.push({ word: `Law ${pat.law}: ${pat.label}`, line: lineNum, snippet })
       }
     }
+    violations.push(...findSelfPraiseViolations(frag.value, lineNum, snippet, relPath))
     violations.push(...findPunctuationViolations(frag.value, lineNum, snippet, relPath, lines[lineNum - 1] ?? '', lines[lineNum - 2] ?? ''))
   }
 
@@ -523,15 +692,32 @@ function scanFile(absPath) {
   return { file: relPath, count: violations.length, violations }
 }
 
-function scanAll() {
-  const results = []
+// Every file this gate reads, repo-relative. Exported so the regression test
+// can assert the .ts registries are in scope without re-deriving the walk.
+export function collectScannedFiles() {
+  const files = []
   for (const dir of SCAN_DIRS) {
     const absDir = join(ROOT, dir)
     if (!existsSync(absDir)) continue
-    for (const file of walk(absDir)) {
-      const r = scanFile(file)
-      if (r) results.push(r)
+    for (const file of walk(absDir)) files.push(file)
+  }
+  // Named public-copy registries outside SCAN_DIRS (lib/*-content.ts). Walking
+  // lib/ here is a filter, not a widening: only paths PUBLIC_COPY_FILE matches
+  // are kept, so the 305-violation lib/ sweep measured above never happens.
+  const libDir = join(ROOT, 'lib')
+  if (existsSync(libDir)) {
+    for (const file of walk(libDir)) {
+      if (PUBLIC_COPY_FILE.test(normalize(relative(ROOT, file)))) files.push(file)
     }
+  }
+  return files
+}
+
+function scanAll() {
+  const results = []
+  for (const file of collectScannedFiles()) {
+    const r = scanFile(file)
+    if (r) results.push(r)
   }
   results.sort((a, b) => b.count - a.count)
   return results
