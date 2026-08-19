@@ -22,7 +22,7 @@ describe('GET /cma/[slug]', () => {
     serveCmaDocument.mockReset()
   })
 
-  it('returns 404 for an anonymous draft', async () => {
+  it('keeps an anonymous draft private — 404, never a login bounce', async () => {
     getAdminContext.mockResolvedValue(null)
     serveCmaDocument.mockResolvedValue({
       kind: 'json',

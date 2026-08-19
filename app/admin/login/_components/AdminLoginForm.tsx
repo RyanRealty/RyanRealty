@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
+import { isSafeAdminReturnPath } from '@/lib/auth/admin-return-path'
 import { GoogleIcon } from '@/components/icons/AuthProviderIcons'
 import { Button } from '@/components/admin/v2'
 
@@ -97,7 +98,7 @@ export default function AdminLoginForm({ googleClientId, next }: { googleClientI
   // Preserve the deep-link destination through auth (RC5 fix): a broker who taps an
   // SMS/notification link to a lead with an expired session lands BACK on that lead
   // after signing in, instead of being dumped on the dashboard. Falls back to /admin.
-  const dest = next && next.startsWith('/admin') ? next : ADMIN_NEXT
+  const dest = next && isSafeAdminReturnPath(next) ? next : ADMIN_NEXT
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const buttonRef = useRef<HTMLDivElement>(null)

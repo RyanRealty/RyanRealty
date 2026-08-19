@@ -17,6 +17,7 @@
 
 // @data-free static utility page, no DAL access needed.
 import type { Metadata } from 'next'
+import { isSafeAdminReturnPath } from '@/lib/auth/admin-return-path'
 import {
   V3_ROOT_CLASS,
   V3Footer,
@@ -39,12 +40,11 @@ type Props = { searchParams: Promise<{ message?: string; next?: string }> }
 
 export default async function AuthErrorPage({ searchParams }: Props) {
   const { message, next } = await searchParams
-  const tryAgainHref =
-    next && next.startsWith('/admin')
-      ? `/admin/login${next !== '/admin' ? `?next=${encodeURIComponent(next)}` : ''}`
-      : next && next.startsWith('/')
-        ? `/login?next=${encodeURIComponent(next)}`
-        : '/login'
+  const tryAgainHref = isSafeAdminReturnPath(next)
+    ? `/admin/login${next !== '/admin' ? `?next=${encodeURIComponent(next)}` : ''}`
+    : next && next.startsWith('/')
+      ? `/login?next=${encodeURIComponent(next)}`
+      : '/login'
   let decodedMessage = 'We could not sign you in.'
   if (message) {
     try {

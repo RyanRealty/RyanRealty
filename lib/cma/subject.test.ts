@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { pickMostRecentListing, rowToSubject } from './subject'
+import {
+  applyEnteredStreetDirectional,
+  parseCmaAddress,
+  pickMostRecentListing,
+  rowToSubject,
+} from './subject'
 import type { CmaListingRow } from '@/lib/data'
 
 /**
@@ -99,6 +104,24 @@ describe('pickMostRecentListing', () => {
     expect(subject.photoUrl).toBe('https://cdn.example/2021.jpg')
     expect(subject.postalCode).toBe('97703')
     expect(subject.baths).toBe(3)
+  })
+})
+
+describe('applyEnteredStreetDirectional', () => {
+  it('puts SE back when MLS StreetName is bare Douglas', () => {
+    const parsed = parseCmaAddress('648 SE Douglas, Bend, OR 97702')
+    expect(parsed).not.toBeNull()
+    expect(applyEnteredStreetDirectional('648 Douglas', parsed!)).toBe('648 SE Douglas')
+  })
+
+  it('does not invent a directional the broker did not enter', () => {
+    const parsed = parseCmaAddress('648 Douglas, Bend, OR 97702')
+    expect(applyEnteredStreetDirectional('648 Douglas', parsed!)).toBe('648 Douglas')
+  })
+
+  it('leaves an MLS name that already has the directional', () => {
+    const parsed = parseCmaAddress('1204 NW Iowa Ave, Bend, OR 97703')
+    expect(applyEnteredStreetDirectional('1204 NW Iowa', parsed!)).toBe('1204 NW Iowa')
   })
 })
 

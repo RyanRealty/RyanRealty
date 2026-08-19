@@ -18,6 +18,8 @@ import '@/components/admin/v2/admin-v2.css'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { EntityTitle } from '@/components/admin/v2'
+import { isSafeAdminReturnPath } from '@/lib/auth/admin-return-path'
+import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import AdminLoginForm from './_components/AdminLoginForm'
 
 export const metadata: Metadata = {
@@ -37,7 +39,7 @@ export default async function AdminLoginPage({
   // Preserve the post-auth destination the (protected) layout forwarded through
   // /auth-error → here, so a deep link survives sign-in (RC5). Admin-scoped only.
   const { next } = await searchParams
-  const dest = next && next.startsWith('/admin') ? next : undefined
+  const dest = isSafeAdminReturnPath(next) ? safeRedirectPath(next) : undefined
   return (
     <main
       className="av2-scope"

@@ -2,11 +2,11 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — CRM new-contact + relationships
+# Current — 2026-08-19 (cursor-cloud) — CMA phone login redirect
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Quick add is name + email + phone. Address is `crm_people.addresses`, never a note. Create lands on person detail. Detail first-paints identity, address, Relationships (search + type + save both sides), and a note form. Odessa 63285 linked spouse Nealon 63287 and parent Jane 63290. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Unauthenticated `/admin/cmas/[slug]/view` and browser `/api/cma/[slug]/pdf` now 307 to `/admin/login?next=…` (not JSON 401). Public `/cma/[slug]` still 404s drafts. Real slug is `cma-648-se-douglas` (draft). Restored SE on stored subject + HTML. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
-**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, database-canonical-reference, git-commit.
 
 # Prior — 2026-08-19 (cursor-cloud) — vendor CRM name purge
 

@@ -55,10 +55,26 @@ describe('GET /admin/cmas/[slug]/view', () => {
     })
   })
 
-  it('does not send or approve — unauthenticated stays 401', async () => {
+  it('sends an unauthenticated tap to login, not JSON 401', async () => {
     getAdminContext.mockResolvedValue(null)
     const res = await GET(req(), { params: Promise.resolve({ slug: SLUG }) })
-    expect(res.status).toBe(401)
+    expect(res.status).toBe(307)
+    expect(res.headers.get('location')).toBe(
+      `https://ryan-realty.com/admin/login?next=${encodeURIComponent(`/admin/cmas/${SLUG}/view`)}`,
+    )
+    expect(serveCmaDocument).not.toHaveBeenCalled()
+    expect(res.headers.get('content-type') ?? '').not.toMatch(/json/)
+  })
+
+  it('does not send or approve — report_viewer stays off the draft', async () => {
+    getAdminContext.mockResolvedValue({
+      email: 'viewer@ryan-realty.com',
+      role: 'report_viewer',
+      brokerId: null,
+    })
+    const res = await GET(req(), { params: Promise.resolve({ slug: SLUG }) })
+    expect(res.status).toBe(307)
+    expect(res.headers.get('location')).toBe('https://ryan-realty.com/admin/access-denied')
     expect(serveCmaDocument).not.toHaveBeenCalled()
   })
 })
