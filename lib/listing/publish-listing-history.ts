@@ -17,6 +17,12 @@ import { zonedDateKey } from '@/lib/format/date'
  * The published timeline is the merge. Do not invent a price. Listed uses
  * OnMarketDate + ListPrice when no listed/newlisting row already exists.
  *
+ * A status event dated before the published listed date is a prior cycle.
+ * Foley (220221409) was Active / 2 DOM with OnMarketDate Aug 16 after a
+ * Pending Aug 2 fall-through. Publishing that pending before listed
+ * contradicts the live listing. Price changes on the same ListingKey stay.
+ * Founding case: 2590 Foley (220221409) fleet:07a696dd6362d063f1f6cc1980f3e22f.
+ *
  * Buyer-facing copy never prints a raw MLS field dump
  * (`ListPrice: 14900000.00 → 11900000.00`). Price and the dollar delta
  * already sit on the row. Founding case: 65255 Swalley (220207865)
@@ -119,6 +125,14 @@ function statusEvent(newStatus: string | null | undefined): string | null {
   return STATUS_EVENT[key] ?? null
 }
 
+const PUBLISHED_STATUS_EVENTS = new Set<string>(Object.values(STATUS_EVENT))
+
+function isPublishedStatusEvent(event: string): boolean {
+  const key = normalizeEvent(event)
+  if (!key) return false
+  return PUBLISHED_STATUS_EVENTS.has(key) || STATUS_EVENT[key] != null
+}
+
 function eventKey(event: string, date: string, price: number | null): string {
   return `${normalizeEvent(event)}|${date}|${price ?? ''}`
 }
@@ -200,5 +214,22 @@ export function publishListingHistory(input: {
     })
   }
 
-  return out.sort((a, b) => a.event_date.localeCompare(b.event_date))
+  const listedCutoff =
+    listedDate ??
+    out
+      .filter((row) => {
+        const key = normalizeEvent(row.event)
+        return key === 'listed' || key === 'newlisting'
+      })
+      .map((row) => row.event_date)
+      .sort()
+      .at(-1) ?? null
+
+  return out
+    .filter((row) => {
+      if (!listedCutoff) return true
+      if (!isPublishedStatusEvent(row.event)) return true
+      return row.event_date >= listedCutoff
+    })
+    .sort((a, b) => a.event_date.localeCompare(b.event_date))
 }
