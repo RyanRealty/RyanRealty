@@ -29,6 +29,7 @@ import {
 } from '@/data/co-trails'
 import { buildTrailFaq } from '@/lib/trails-format'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -205,7 +206,11 @@ export default async function TrailDetailPage({ params }: Props) {
             headline={v3Text(trailName)}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(
-              'active single-family listings (PropertyType A) within about 1.5 miles of the trailhead, from the MLS. A listings timeout renders this trail with a zero count and lets ISR retry.',
+              publishNearbyListingsSource({
+                grain: 'trail',
+                scope: 'within about 1.5 miles of the trailhead',
+                listingCount: stats.count,
+              }),
             )}
             action={{
               label: v3Text('Value my home'),

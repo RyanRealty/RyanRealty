@@ -41,7 +41,7 @@ import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker } from '@/app/about/_v3/about-faces'
 import { BrokerValuationSheet } from './_v3/BrokerValuationSheet.client'
 import { namesBroker, reviewBelongsOnPage } from './_v3/review-filter'
-import { brokerageTileToRow, brokerSaleToRow, factualFallbackBio, HEADSHOT } from './_v3/sale-rows'
+import { brokerageTileToRow, factualFallbackBio, HEADSHOT, publishBrokerClosingRows } from './_v3/sale-rows'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const OFFICE_NAME = 'Ryan Realty'
@@ -92,13 +92,11 @@ export default async function TeamMemberPage({ params }: Props) {
   const [reviews, brokerageTiles, brokerSales] = await Promise.all([
     getReviews(24),
     getBrokerageListingTiles({ officeName: OFFICE_NAME, limit: 60 }),
-    getBrokerSales({ email: broker.email, mlsId: broker.mls_id, limit: 24 }),
+    getBrokerSales({ email: broker.email, mlsId: broker.mls_id, limit: 100 }),
   ])
 
-  const ownRows = brokerSales
-    .map(brokerSaleToRow)
-    .filter((row): row is V3LedgerFigureRow => row !== null && Boolean(row.media?.src))
-  const closings = brokerSales.filter((t) => (t.PostalCode ?? '').trim().startsWith('977')).length
+  const ownRows = publishBrokerClosingRows(brokerSales)
+  const closings = ownRows.length
   const hasOwnSales = closings > 0
 
   const firmRows = brokerageTiles
@@ -108,7 +106,7 @@ export default async function TeamMemberPage({ params }: Props) {
     .filter((row): row is V3LedgerFigureRow => row !== null && Boolean(row.media?.src))
     .slice(0, 6)
 
-  const saleRows = hasOwnSales ? ownRows.slice(0, 9) : firmRows
+  const saleRows = hasOwnSales ? ownRows : firmRows
   const [firstSale, ...restSales] = saleRows
 
   const bioText = broker.bio?.trim()

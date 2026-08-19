@@ -15,6 +15,7 @@ import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { buildMapPointFeatures } from '@/lib/kb/place-sections'
 import { listingDetailPath } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
@@ -165,7 +166,7 @@ export default async function Home() {
   // styled as content must honor the tap they invite).
   const tickerItems: KbTickerItem[] = tiles.slice(0, 6).map((t) => ({
     price: t.listPrice,
-    address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+    address: publishStreetLine({ streetNumber: t.streetNumber, streetName: t.streetName, streetSuffix: t.streetSuffix }) ?? '',
     town: t.city ?? '',
     href: listingDetailPath(
       t.listingKey,

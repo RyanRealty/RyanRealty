@@ -12,6 +12,7 @@
  * D11: no virtue names. No invented quote. Who is talking: We.
  */
 
+import type { Metadata } from 'next'
 import { NotFoundClient } from '@/components/NotFoundClient'
 import { HideChrome } from '@/components/layout/HideOnLP'
 import {
@@ -20,6 +21,18 @@ import {
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
 } from '@/components/site/v3'
+
+export const metadata: Metadata = {
+  title: 'Page not found',
+  description: 'This page does not exist or was moved.',
+  robots: { index: false, follow: true },
+  openGraph: {
+    title: 'Page not found',
+    description: 'This page does not exist or was moved.',
+    url: undefined,
+    type: 'website',
+  },
+}
 
 export default function NotFound() {
   return (

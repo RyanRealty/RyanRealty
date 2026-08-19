@@ -57,8 +57,7 @@ export function KbTestimonials({ reviews }: { reviews: KbReview[] }) {
           <div>
             <span className="sec-index">Verified on Google</span>
             <h2 className="sec-title display">
-              What clients
-              <br />
+              What clients <br />
               wrote
             </h2>
           </div>

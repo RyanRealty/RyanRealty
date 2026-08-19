@@ -39,6 +39,16 @@ describe('publishStreetLine', () => {
   it('returns null when nothing publishable remains', () => {
     expect(publishStreetLine({ streetNumber: '0', streetName: null, streetSuffix: null })).toBeNull()
   })
+
+  it('drops a suffix already on the street name', () => {
+    expect(
+      publishStreetLine({
+        streetNumber: '0',
+        streetName: 'Kouns Drive',
+        streetSuffix: 'Drive',
+      }),
+    ).toBe('Kouns Drive')
+  })
 })
 
 describe('publishUnparsedStreetLine', () => {
