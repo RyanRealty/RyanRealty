@@ -504,7 +504,7 @@ writer never adopted the string. That gap is a tracked defect, not a doc error.
 - **No partial answers.** On status questions, go all the way to the exact answer.
 - **Ship on `main`.** Default checkout is `main`. Worktrees OK for parallel/experiment work —
   merge or hand off in `CROSS_AGENT_HANDOFF.md` before stop (anti-strand). See
-  [`AGENTS.md`](AGENTS.md) Worktrees + Cost-aware push and `.cursor/rules/production-parity.mdc`.
+  [`AGENTS.md`](AGENTS.md) Worktrees + Cost-aware push. **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything manually.** All git operations, terminal commands, and
   deployments are yours. Matt never touches the terminal.
 - **Proactively clear git locks.** Check for and remove a stale `.git/index.lock` before any git

@@ -2,11 +2,11 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — 648 CMA send via CRM compose
+# Current — 2026-08-19 (cursor-cloud) — 648 compose on main + R-221 rematch
 
-**Surface:** Cursor Cloud. Branch `cursor/cma-crm-compose-send-4add` PR #134. Loop stays **DISARMED**. 648 CMA (`cma-648-se-douglas`, person 63285) attaches from CRM compose: PDF / text-me / email draft. Review + Send Center + contact CMA card + owned-home card open Messages, not Gmail/mailto/one-click send. Merged latest main (PR 128 compose rebase + PR 137 compile follow-up). Drafts stay private. Do not email or text the household. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. 648 CMA compose is on `origin/main` @ `c58adb790` (PR #134 merged). Do not sit on GitHub Actions. One `ci:gates` per ship. PR CI must be `test:unit`; live-DB `test:int` is nightly. Do not email or text the household. No re-arm. Leave `LOOP_SENTINEL` off.
 
-**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, git-commit.
+**Skills read:** git-commit.
 
 # Prior — 2026-08-19 (cursor-cloud) — CRM compose rebase
 

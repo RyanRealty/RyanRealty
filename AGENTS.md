@@ -52,8 +52,9 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
 3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
 4. **Ship class (fleet / loop):** same-category bot findings share one isolated verify + one production deploy. `loop-brief` prints the class. Do not run `npm run push` after each finding.
-5. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
-6. **Worktree branches:** keep them **local** until merge time. Pushing `wt/*` to `origin` creates Vercel **preview** builds (extra Build CPU) unless previews are disabled in the project dashboard. Prefer merge → push `main` only.
+5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. After a green local stamp + push, stop. Do not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
+6. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
+7. **Worktree branches:** keep them **local** until merge time. Pushing `wt/*` to `origin` creates Vercel **preview** builds (extra Build CPU) unless previews are disabled in the project dashboard. Prefer merge → push `main` only.
 
 ### Worktrees (allowed — design against stranded work)
 

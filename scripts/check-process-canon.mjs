@@ -155,6 +155,24 @@ if (!existsSync('lib/data/loop/ship-class.ts')) {
   fails.push('lib/data/loop/ship-class.ts missing — ship-class grouping is the R-216 mechanism')
 }
 
+// R-221 (Matt 2026-08-19): sitting on GitHub Actions burned hundreds of dollars.
+for (const f of ['docs/DEVELOPMENT_PROCESS.md', 'AGENTS.md', 'CLAUDE.md']) {
+  const src = existsSync(f) ? readFileSync(f, 'utf8') : ''
+  if (!src.includes('do not poll GitHub Actions')) {
+    fails.push(`${f}: must ban CI babysitting (R-221 — do not poll GitHub Actions)`)
+  }
+}
+if (!canon.includes('one ci:gates per ship') && !canon.includes('One `ci:gates` per ship')) {
+  fails.push('docs/DEVELOPMENT_PROCESS.md: must require one ci:gates per ship (R-221)')
+}
+if (!sentinelSrc.includes('do not poll GitHub Actions')) {
+  fails.push('lib/data/loop/sentinel.ts: LOOP_PROMPT must say do not poll GitHub Actions (R-221)')
+}
+const ciYml = existsSync('.github/workflows/ci.yml') ? readFileSync('.github/workflows/ci.yml', 'utf8') : ''
+if (!ciYml.includes('npm run test:unit')) {
+  fails.push('.github/workflows/ci.yml: PR/main CI must run test:unit, not the live-DB int suite (R-221)')
+}
+
 // Full-site review (Matt 2026-08-16 / R-217): packs are the floor, not the
 // ceiling. Token match must not end walker runs. Flow Prover may still END.
 const fleetBriefsSrc = existsSync('lib/data/loop/fleet-briefs.ts')

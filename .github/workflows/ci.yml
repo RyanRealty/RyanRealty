@@ -54,7 +54,9 @@ jobs:
       # hook-tests). Wired 2026-05-30 — gate LAUNCH-15 / DATA-15 / SKILL-12.
       # See docs/MECHANICAL_GATES.md.
       - run: npm run ci:gates
-      - run: npm run test
+      # R-221: PR/main CI is unit+gates only. Live-DB int tests run nightly
+      # (int-nightly.yml). Sitting on a 8-minute int suite is how agents burn money.
+      - run: npm run test:unit
       # NODE_OPTIONS: the type-check phase OOMs at Node's default ~4GB heap at
       # this repo's size (SIGABRT mid "Running TypeScript" — same fix as the
       # local push chain). Invisible until 2026-07-17 because the lint step

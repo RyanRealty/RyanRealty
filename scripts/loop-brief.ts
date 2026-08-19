@@ -174,6 +174,7 @@ async function main() {
   }
   push('')
   push('--- SHIP CLASS (one rebuild for this whole set) ---')
+  push('R-221: do not poll GitHub Actions. One ci:gates per ship.')
   if (!next) {
     push('No eligible open node. Close blocked/in_progress work or open the next version gap.')
   } else {
