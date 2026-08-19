@@ -793,6 +793,10 @@ export * from './prospecting'
 // Auto-derived internal-link layer (W3.4) — /site-index + mega-menu popular
 // searches, ranked by live active inventory (replaces the hand-curated
 // lib/popular-searches.ts snapshot as the live source).
+export { getListingSitemapRows } from './sitemap/getListingSitemapRows'
+export type { ListingSitemapRow, ListingSitemapTile } from './sitemap/listing-sitemap-path'
+export { listingSitemapPath, assembleListingSitemapRows } from './sitemap/listing-sitemap-path'
+
 export { getSiteIndexLinks, getDerivedPopularSearches } from './seo/getSiteIndexLinks'
 export type {
   SiteIndexLinks,

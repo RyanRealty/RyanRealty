@@ -25,6 +25,11 @@
  * memo genuinely applies: one universe build, then four in-memory filters, and
  * all five unstable_cache entries written for the hour ahead.
  *
+ * LISTINGS ARE NOT ON THAT FAN-OUT. getClassRows('listings') reads
+ * listing_tile_mv through getListingSitemapRows (ordered, throw-on-error).
+ * Filtering the universe for listings dropped 1,759 live keys (unordered
+ * pages) and served an empty urlset when the universe threw.
+ *
  * Kept out of lib/data/ deliberately — this is a cache/composition helper, not
  * a DAL read, and the DAL index gate AST-walks lib/data/**\/*.ts.
  */
@@ -32,6 +37,7 @@ import type { MetadataRoute } from 'next'
 import { unstable_cache } from 'next/cache'
 import { buildAllUrls } from '@/app/sitemap'
 import { classifySitemapUrl, type SitemapClass } from '@/lib/data/sitemap/classify'
+import { getListingSitemapRows } from '@/lib/data/sitemap/getListingSitemapRows'
 import { getIndexablePresetSlugs } from '@/lib/search-presets'
 import { createUniverseMemo } from '@/lib/sitemap-universe-memo'
 
@@ -57,6 +63,10 @@ const buildUniverseOnce = createUniverseMemo<MetadataRoute.Sitemap>(
  */
 export const getClassRows = unstable_cache(
   async (cls: SitemapClass): Promise<[string, string][]> => {
+    if (cls === 'listings') {
+      const rows = await getListingSitemapRows()
+      return rows.map((r) => [r.path, r.lastModified])
+    }
     const baseUrl = siteBaseUrl()
     const urls = await buildUniverseOnce()
     const presetSlugs = new Set(getIndexablePresetSlugs())
@@ -67,6 +77,6 @@ export const getClassRows = unstable_cache(
         u.lastModified instanceof Date ? u.lastModified.toISOString() : String(u.lastModified ?? ''),
       ])
   },
-  ['sitemap-class-urls-v2'],
+  ['sitemap-class-urls-v3'],
   { revalidate: 3600 },
 )

@@ -243,8 +243,8 @@ export function listingTileHref(tile: {
   subdivisionName?: string | null
 }): string {
   // Mirror the AUTHORITATIVE canonical builder in app/listing/[listingKey]/page.tsx
-  // (generateMetadata) and app/sitemap.ts EXACTLY, so every internal link agrees
-  // with the indexed canonical: city/neighborhood/subdivision/address-mls.
+  // (generateMetadata) and getListingSitemapRows EXACTLY, so every internal link
+  // agrees with the indexed canonical: city/neighborhood/subdivision/address-mls.
   const subdivision =
     tile.subdivisionName && tile.subdivisionName !== 'N/A' ? tile.subdivisionName : null
   return listingDetailPath(

@@ -29,6 +29,9 @@ describe('classifySitemapUrl', () => {
     expect(classifySitemapUrl(`${B}/homes-for-sale/bend/larkspur/unknown/0-tumalo-reservoir-220207055`, PRESETS)).toBe('listings')
     // Depth-3 listing URL (no neighborhood/subdivision segments).
     expect(classifySitemapUrl(`${B}/homes-for-sale/bend/123-main-220201234`, PRESETS)).toBe('listings')
+    // Incomplete location — listingDetailPath fallback (no hyphenated MLS tail).
+    expect(classifySitemapUrl(`${B}/homes-for-sale/listing/220208193`, PRESETS)).toBe('listings')
+    expect(classifySitemapUrl(`${B}/homes-for-sale/bend/220208193`, PRESETS)).toBe('listings')
   })
 
   it('buckets preset permutations and matrix combos as matrix', () => {
@@ -70,6 +73,7 @@ describe('classifySitemapUrl', () => {
       `${B}/homes-for-sale/bend/awbrey-butte`,
       `${B}/homes-for-sale/bend/awbrey-butte/newest`,
       `${B}/homes-for-sale/bend/awbrey-butte/tetherow/438-9th-220208193`,
+      `${B}/homes-for-sale/listing/220208193`,
       `${B}/open-houses`,
       `${B}/open-houses/bend`,
       `${B}/zip/97703`,

@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { cityEntityKey, cityNeighborhoodPath, listingDetailPath, listingsBrowsePath, slugify, teamPath, valuationPath } from '../lib/slug'
+import { createClient } from '@supabase/supabase-js'
+import { cityEntityKey, cityNeighborhoodPath, listingsBrowsePath, teamPath, valuationPath } from '../lib/slug'
 import { filterRogueCityUrls } from '../lib/sitemap-guard'
 import { getIndexablePresetSlugs } from '../lib/search-presets'
-import { PUBLIC_ACTIVE_STATUSES, PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
+import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
 // Public sitemap — Coming Soon is excluded by policy. See
 // lib/listing-status-public.ts. Never submit a pre-marketing listing to Google.
@@ -18,6 +18,7 @@ import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-inde
 import { getSubdivisionBrowseSlugsByCity } from '@/lib/data/subdivisions/getSubdivisionBrowseSlugsByCity'
 import { getSearchMatrixSitemapEntries, getMatrixCityPresetNoIndex } from '@/lib/seo/getSearchMatrixEntries'
 import { getOutOfAreaCitySitemapEntries } from '@/lib/data/geo/getOutOfAreaCities'
+import { getListingSitemapRows } from '@/lib/data/sitemap/getListingSitemapRows'
 import { CO_EVENTS } from '@/data/co-events'
 import { CO_VENUES } from '@/data/co-venues'
 import { GOLF_COURSES } from '@/data/golf/courses'
@@ -268,24 +269,6 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   const dynamicPages: MetadataRoute.Sitemap = []
 
   try {
-    // Community -> neighborhood lookup for canonical listing paths with optional neighborhood.
-    void supabase
-    const { getCommunitiesForSitemapJoin } = await import('@/lib/data')
-    const communityMetaRows = await getCommunitiesForSitemapJoin(5000)
-    const neighborhoodByCommunity = new Map<string, string>()
-    for (const row of communityMetaRows as Array<{
-      name?: string | null
-      cities?: { name?: string | null; slug?: string | null } | null
-      neighborhoods?: { slug?: string | null } | null
-    }>) {
-      const cityName = (row.cities?.name ?? '').trim()
-      const communityName = (row.name ?? '').trim()
-      const neighborhoodSlug = (row.neighborhoods?.slug ?? '').trim()
-      if (!cityName || !communityName || !neighborhoodSlug) continue
-      const key = `${slugify(cityName)}:${slugify(communityName)}`
-      neighborhoodByCommunity.set(key, neighborhoodSlug)
-    }
-
     // Cities — paginate to get ALL cities (Supabase caps at 1,000 per request)
     const cityRows = await fetchAllRows<{ City?: string | null }>(
       supabase, 'listings', 'City',
@@ -441,52 +424,16 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       })
     }
 
-    // Listings — from the fast active-only slice of listing_tile_mv, NOT a full
-    // scan of the 589K-row, 800-column `listings` table. That scan was timing
-    // out at sitemap-generation time on the loaded pooler, silently dropping
-    // EVERY individual listing from the sitemap (0 listing URLs in prod). The MV
-    // is the lightweight tile view; filtering to on-market statuses returns the
-    // small active set fast and reliably so listings are actually discoverable.
-    const listings = await fetchAllRows<{
-      listing_key: string
-      list_number?: string | null
-      subdivision_name?: string | null
-      city?: string | null
-      postal_code?: string | null
-      street_number?: string | null
-      street_name?: string | null
-    }>(
-      supabase, 'listing_tile_mv',
-      'listing_key, list_number, subdivision_name, city, postal_code, street_number, street_name',
-      (q) => q.in('standard_status', PUBLIC_ACTIVE_STATUSES),
-    )
-
-    for (const r of listings as Array<{
-      listing_key: string
-      list_number?: string | null
-      subdivision_name?: string | null
-      city?: string | null
-      postal_code?: string | null
-      street_number?: string | null
-      street_name?: string | null
-    }>) {
-      // 'N/A' subdivision would slugify into a bogus /n-a/ URL segment — drop it.
-      const subdivision = r.subdivision_name && r.subdivision_name !== 'N/A' ? r.subdivision_name : null
+    // Listings — first-class ordered read of listing_tile_mv. Do not page this
+    // MV with fetchAllRows (no ORDER BY): unordered OFFSET pages returned
+    // 7,586 rows / 5,827 unique keys on 2026-08-19, so 1,759 live listings
+    // never reached listings.xml. Paths use listingTileHref so locs match
+    // the listing-page canonical.
+    const listingRows = await getListingSitemapRows(now)
+    for (const r of listingRows) {
       dynamicPages.push({
-        url: `${baseUrl}${listingDetailPath(
-          r.listing_key,
-          { streetNumber: r.street_number ?? null, streetName: r.street_name ?? null, city: r.city ?? null, state: null, postalCode: r.postal_code ?? null },
-          {
-            city: r.city ?? null,
-            neighborhood:
-              r.city && subdivision
-                ? neighborhoodByCommunity.get(`${slugify(r.city)}:${slugify(subdivision)}`) ?? null
-                : null,
-            subdivision,
-          },
-          { mlsNumber: r.list_number ?? null }
-        )}`,
-        lastModified: now,
+        url: `${baseUrl}${r.path}`,
+        lastModified: new Date(r.lastModified),
         changeFrequency: 'daily',
         priority: 0.7,
       })

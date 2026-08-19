@@ -2,7 +2,13 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — four shopper defects class-fixed
+# Current — 2026-08-19 (cursor-cloud) — listings.xml honesty class
+
+**Surface:** Cursor cloud `bc-7d0ca98e`. Loop stays **DISARMED** (Matt). Family `fleet:public-ux:sitemaps` class-fixed. Live `listing_tile_mv` Active/AUC = 7586. Prod `listings.xml` had 7586 locs / **5827 unique** — `fetchAllRows` paged the MV with no ORDER BY (same drop class as subdivision inventory). Empty urlset is the universe-catch failure mode. Fix: `getListingSitemapRows` ordered `listing_key` read; `getClassRows('listings')` no longer filters `buildAllUrls`. Gate `ci:sitemap-listings-honest`. CMA not touched. Do not re-arm the loop.
+
+**Skills read:** CROSS_AGENT_HANDOFF, public-product-os (folded), database-canonical-reference, DATABASE_FOR_AI_AGENTS.md §0, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — four shopper defects class-fixed
 
 **Surface:** Cursor Cloud. Loop stays **DISARMED**. Four morning defects only: Bend city/browse SFR count + MOS withhold; listing drop withheld unless original is on history rail; save-search email in the DOM; tour confirm names the listing. CMA / sitemaps / loop-sentinel not touched. No client mail. No re-arm. Leave `LOOP_SENTINEL` off. Do not flip `LOOP_SENTINEL_DEFAULT_OFF`.
 
