@@ -17,7 +17,7 @@
 
 // @data-free static utility page, no DAL access needed.
 import type { Metadata } from 'next'
-import { isSafeAdminReturnPath } from '@/lib/auth/admin-return-path'
+import { adminLoginHref, isSafeAdminReturnPath } from '@/lib/auth/admin-return-path'
 import {
   V3_ROOT_CLASS,
   V3Footer,
@@ -41,7 +41,7 @@ type Props = { searchParams: Promise<{ message?: string; next?: string }> }
 export default async function AuthErrorPage({ searchParams }: Props) {
   const { message, next } = await searchParams
   const tryAgainHref = isSafeAdminReturnPath(next)
-    ? `/admin/login${next !== '/admin' ? `?next=${encodeURIComponent(next)}` : ''}`
+    ? adminLoginHref(next ?? '/admin')
     : next && next.startsWith('/')
       ? `/login?next=${encodeURIComponent(next)}`
       : '/login'

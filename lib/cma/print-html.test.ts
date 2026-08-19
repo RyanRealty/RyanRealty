@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getCmaRenderSourceBySlug = vi.fn()
 const getCmaStoredHtmlBySlug = vi.fn()
-const renderCmaHtml = vi.fn(() => ({ html: '<html><body>fresh print</body></html>', pageCount: 19 }))
-const buildCmaMapDataUri = vi.fn(async () => null)
+const renderCmaHtml = vi.fn((_args?: unknown) => ({
+  html: '<html><body>fresh print</body></html>',
+  pageCount: 19,
+}))
+const buildCmaMapDataUri = vi.fn(async (_subject?: unknown, _comps?: unknown) => null)
 
 vi.mock('@/lib/data', () => ({
   getCmaRenderSourceBySlug: (...args: unknown[]) => getCmaRenderSourceBySlug(...args),
@@ -24,11 +27,11 @@ vi.mock('@/lib/data/cma/builderReads', () => ({
 }))
 
 vi.mock('@/lib/cma/render', () => ({
-  renderCmaHtml: (...args: unknown[]) => renderCmaHtml(...args),
+  renderCmaHtml: (args: unknown) => renderCmaHtml(args),
 }))
 
 vi.mock('@/lib/cma/map', () => ({
-  buildCmaMapDataUri: (...args: unknown[]) => buildCmaMapDataUri(...args),
+  buildCmaMapDataUri: (subject: unknown, comps: unknown) => buildCmaMapDataUri(subject, comps),
 }))
 
 import { resolveCmaPrintHtml } from './print-html'
