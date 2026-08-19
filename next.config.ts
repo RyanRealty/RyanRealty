@@ -241,6 +241,14 @@ const nextConfig: NextConfig = {
       { source: '/builders/:slug', destination: '/homes-for-sale?newConstruction=1', permanent: true },
       { source: '/resources', destination: '/housing-market', permanent: true },
       { source: '/pulse', destination: '/activity', permanent: true },
+      // IA lock (P5): deal-signal survivor is /price-drops. Page-level
+      // permanentRedirect() under Next 16 prerender/streaming returns HTTP 200
+      // with no h1/main (fleet 57eefae9 / df8ca55f). The 308 must live here.
+      { source: '/motivated-sellers', destination: '/price-drops', permanent: true },
+      { source: '/motivated-sellers/:city', destination: '/price-drops/:city', permanent: true },
+      // P3: /feed folds into /videos?view=feed. Same Next 16 200-shell class.
+      { source: '/feed', has: [{ type: 'query', key: 'start', value: '(?<start>.*)' }], destination: '/videos?view=feed&start=:start', permanent: true },
+      { source: '/feed', destination: '/videos?view=feed', permanent: true },
       // W8.4: the custom-filter explore tool is retired in favor of the
       // pre-generated /housing-market/[geo] reports (with the timeframe selector).
       // Both explore routes redirect to the housing-market hub. ci:no-explore-route

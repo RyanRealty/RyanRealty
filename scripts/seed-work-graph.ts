@@ -265,6 +265,24 @@ const SEEDS = [
       'Signed-in /admin/loop at 390+1280 shows a one-sentence now/next verdict, a Next list of real upcoming titles without Fleet finding / p0 / sentinel jargon, and Just finished in plain English. Folds work. Screenshot evidence. No factory ledger insert.',
   },
   {
+    versionGap: 'G34',
+    domain: 'leads',
+    title: 'Page-tied public analytics',
+    objective:
+      'REQUIREMENTS R-219: one URL→page_type map for GTM/GA4/VisitTracker/section tracking. New public pages inherit the map. Do not add per-page GTM tags. Remove leftover Follow Up Boss names from analytics events and cookies.',
+    output: 'lib/analytics/page-type.ts + ci:page-analytics + GA4 page_type/crm_person_id dimensions.',
+    accept: 'Live homepage has GTM-WV6R4NZ5, no extra gtag config for G-ST40, cookies list rr_pid not fub_cid. Gate green.',
+  },
+  {
+    versionGap: 'G35',
+    domain: 'public-ux',
+    title: 'Redirect-only aliases emit HTTP 308',
+    objective:
+      'REQUIREMENTS R-220 / P5 IA: deal-signal survivor is /price-drops. Next 16 prerender turned page-level permanentRedirect() into a 200 empty shell. Declare redirect-only public aliases in next.config.ts and lock with ci:redirect-only.',
+    output: 'next.config 308s for /motivated-sellers, /motivated-sellers/:city, /feed. Gate ci:redirect-only.',
+    accept: 'Live /motivated-sellers returns 308 Location /price-drops. Landing H1 is Price drops. Screenshots 390+1280.',
+  },
+  {
     versionGap: 'G29',
     domain: 'factory',
     title: 'Stand the verification fleet up',

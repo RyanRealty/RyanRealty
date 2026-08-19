@@ -450,3 +450,15 @@ Production `/cities/bend/awbrey-butte` hero lead was `in Bend` under a neighborh
 | City | `in {cityName}` | `app/cities/[slug]/page.tsx` |
 | Subdivision | `in {displayName}` | `app/subdivisions/[slug]/page.tsx` |
 | ZIP | `in {zip}` (was `in {area}`) | `app/zip/[zip]/page.tsx` |
+
+## 2026-08-18 — Page-tied analytics (G34)
+
+Public hits classify from `lib/analytics/page-type.ts`. Layout owns `page_view`. GTM-WV6R4NZ5 ships Google tag `G-ST40W4WM6T` only. GA4 event dimensions `page_type` + `crm_person_id` created. Leftover dimension `fub_person_id` display renamed. Cookies page lists `rr_pid`, not `fub_cid`. Identity bridge `gtag('set')` (no second config page_view). Gate `ci:page-analytics`. SHA `02948bcd` READY `dpl_8prn4iFqQ6KxEXuKKPoM17JGDVZp`.
+
+## 2026-08-18 — Remotion factory retired
+
+Deleted `video/`, `listing_video_v4/`, `video_production_skills/`, `lib/youtube-market-report/`. Kept `public/videos/cities|communities|hero*.mp4`. Producer-runtime/dispatcher/weekly/audit crons off. Extra Vercel projects `tmp` + `ryan-realty-lps` deleted. Inngest signing key removed; revalidate uses `REVALIDATE_SECRET`. SHA `01a517f9`. CAP-017 residual is G32 cancel list.
+
+## 2026-08-19 — Redirect-only 308 class (G35 / FLEET-PUNCH motivated-sellers)
+
+Live probe before fix: `GET /motivated-sellers` and `/motivated-sellers/bend` and `/feed` = HTTP 200, title "Ryan Realty — Central Oregon Real Estate", no h1, no main (`x-nextjs-prerender: 1`). Sibling aliases already in `next.config.ts` (`/area-guides`, `/pulse`, `/resources`, `/builders`) returned 308. Class: Next 16 prerender/streaming cannot emit 3xx from page-level `permanentRedirect()`. Fix: declare those aliases in `next.config.ts`. Gate `ci:redirect-only`.

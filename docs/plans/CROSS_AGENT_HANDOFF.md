@@ -2,9 +2,13 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (grok-build) — page-tied analytics
+# Current — 2026-08-19 (grok-build) — graph armed + motivated-sellers 308 class
 
-**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Public tracking is layout-owned. `lib/analytics/page-type.ts` is the only taxonomy (`PUBLIC_PAGE_SEGMENTS` + `pageTypeFromPath`). V3SectionTracker no longer takes a per-page type. `ci:page-analytics` fails a new public page until its first URL segment is on that map. GA4 now has event dimensions `page_type` and `crm_person_id`. Leftover `fub_person_id` dimension was relabeled; site events no longer send that name. Identity bridge uses `gtag('set')` so it does not double `page_view`. GTM `GTM-WV6R4NZ5` still only loads `G-ST40W4WM6T`. CMA not touched.
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Loop stays **ARMED**. Graph folded: G34 page-tied analytics DONE, G35 redirect-only 308s, R-219/R-220, CAP-015/017/031 evidence updated. Served ship class FLEET-PUNCH `fleet:public-ux:motivated-sellers` (2 of 158). CMA in_progress on the other checkout not touched.
+
+# Prior — 2026-08-18 (grok-build) — page-tied analytics
+
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Public tracking is layout-owned. `lib/analytics/page-type.ts` is the only taxonomy. `ci:page-analytics` locks new pages. GA4 `page_type` + `crm_person_id`. SHA `02948bcd` READY. CMA not touched.
 
 # Prior — 2026-08-18 (grok-build) — remotion + brain runtime retired
 

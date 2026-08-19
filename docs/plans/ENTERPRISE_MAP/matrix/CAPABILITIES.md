@@ -228,7 +228,7 @@
 |-------|--------|
 | **Maturity** | **3** — Full pipeline code + crons (dispatcher, runtime, publisher-sweep, measurement-loop); action rows exist. **Learn loop broken as a class:** measured=0; ready backlog ~397 mostly CMA/ops not publishable posts; executed digests lack publish identity. |
 | **Evidence status** | **VERIFIED** (queue census + root-cause class) |
-| **Evidence pointers** | brain_by_status ready 397 / executed 90 / measured **0** / in_production 92 / killed 73 (M-live); P-brain-* samples; `lib/marketing-brain/measurement-loop.ts` findUnmeasuredCandidates; EVIDENCE-LOG CAP-015 sections; crons producer-*, publisher-sweep, marketing-measurement-loop |
+| **Evidence pointers** | Packet 2026-08-19: ready 432 / measured 2. Producer-runtime / dispatcher / weekly / audit crons **deleted 2026-08-18** (`01a517f9`); inbox is `comms-matt-alert` only. Residual: measured loop on remaining ready rows. |
 | **Public risk** | Med |
 | **Broker product?** | Partial |
 | **Residual disposition** | **ACTIVE** (marketing factory) — approve→publish→`published_to`/`published_posts`→measure; drain ready policy; status=measured adoption |
@@ -252,9 +252,9 @@
 
 | Field | Value |
 |-------|--------|
-| **Maturity** | **2** — Remotion projects + §4 hard rules on disk; first-frame gate script exists. **Not** brain-shipped product; skill library deleted; productization low. |
+| **Maturity** | **2** — Remotion factory **deleted 2026-08-18**. Rebuild path is Grok Imagine + Grok Video (`XAI_API_KEY`). `public/videos/cities\|communities\|hero*.mp4` kept. Not productized as a brain producer (R-045 LOCKED). |
 | **Evidence status** | **PARTIAL** |
-| **Evidence pointers** | `listing_video_v4/`; `video/`; Claude.md §4; `scripts/check_first_frame.py`; three caption modules only under `video_production_skills/`; EVIDENCE-LOG CAP-017 |
+| **Evidence pointers** | EVIDENCE-LOG 2026-08-18 Remotion delete (`01a517f9`); G32 cancel list still open; `docs/plans/ENTERPRISE_MAP/xai-stack.md` |
 | **Public risk** | Med |
 | **Broker product?** | Partial |
 | **Residual disposition** | **ACTIVE G32** (Matt ADD 2026-08-16) — G12 docket remains (`docs/plans/ENTERPRISE_MAP/video-decision-docket.json`). Rebuild path is now xAI Imagine + Voice, not ElevenLabs Turbo. R-045 stays LOCKED. Cancel list in `xai-stack-accept.json`. |
@@ -436,7 +436,7 @@
 |-------|--------|
 | **Maturity** | **3** — snapshot-channels fan-out includes google-ads (wiring fixed); multi-platform PLATFORMS list; digests. Token expiry + Meta audience staleness degrade reliability. |
 | **Evidence status** | **PARTIAL** |
-| **Evidence pointers** | `app/api/cron/snapshot-channels/route.ts` PLATFORMS (incl. google-ads) EVIDENCE-LOG S1a; performance-pull crons; analytics-daily-digest; admin analytics/* ; INT-008 |
+| **Evidence pointers** | Snapshot crons + admin analytics/* + INT-008. **2026-08-18:** public `page_type` map + GTM-WV6R4NZ5 Google tag only (`G-ST40W4WM6T`); `ci:page-analytics`; GA4 dims `page_type` / `crm_person_id`. |
 | **Public risk** | Med |
 | **Broker product?** | Ops |
 | **Residual disposition** | **ACTIVE** (analytics ops) — per-snapshot health; GOOGLE_ADS API env if needed; social token dependency |
