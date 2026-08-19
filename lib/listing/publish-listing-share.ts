@@ -15,6 +15,7 @@
  * feed says Tenancy in Common. Do not parse PublicRemarks.
  */
 
+import { publishPricePerSqft } from '@/lib/listing/publish-listing-figure'
 import { propertySubTypeDisplayLabel } from '@/lib/property-type'
 
 const SHARE_SUBTYPES = new Set(['Tenancy in Common', 'Timeshare'])
@@ -27,11 +28,25 @@ export function publishListingShareKind(
   return propertySubTypeDisplayLabel(raw) || raw
 }
 
-export function publishListingSharePricePerSqft(
-  propertySubType: string | null | undefined,
-  pricePerSqft: number | null | undefined,
-): number | null {
-  if (publishListingShareKind(propertySubType)) return null
-  if (pricePerSqft == null || !Number.isFinite(pricePerSqft) || pricePerSqft <= 0) return null
-  return pricePerSqft
+/**
+ * The one published price per square foot.
+ *
+ * `propertyType` is REQUIRED, not optional, so the typechecker — not a
+ * reviewer's memory — makes every surface state which listing it is publishing.
+ * A commercial lease (PropertyType 'G') carries rent in ListPrice, so its
+ * derived "price per square foot" is a rent rate wearing a sale label; the
+ * numeric plausibility rule (a figure that prints as $0 is not a figure) lives
+ * beside it in publishPricePerSqft. Founding cases: 735 Purcell (220174840,
+ * lease, published "$0"), and 220218225 Redmond ($500 over 1,405 sq ft).
+ */
+export function publishListingSharePricePerSqft(input: {
+  propertyType: string | null | undefined
+  propertySubType: string | null | undefined
+  pricePerSqft: number | null | undefined
+}): number | null {
+  if (publishListingShareKind(input.propertySubType)) return null
+  return publishPricePerSqft({
+    propertyType: input.propertyType,
+    pricePerSqft: input.pricePerSqft,
+  })
 }

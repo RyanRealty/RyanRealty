@@ -31,6 +31,10 @@ export type ListingCardData = {
    *  the search mockup; other surfaces stay on the leaner bd/ba/sqft meta. */
   pricePerSqft?: number | null
   propertySubType?: string | null
+  /** MLS PropertyType code (A–H). Required by the price-per-sqft publisher:
+   *  on 'G' (Commercial Lease) the price field is rent, so a derived
+   *  $/sq ft is a lease rate wearing a sale label. */
+  propertyType?: string | null
   badge?: { kind: ListingBadge; label: string }
   /** Scalar virtual-tour / video URL. When present and embeddable, the
    *  VideoListingCard plays it inline; otherwise the card links to detail. */
@@ -148,7 +152,11 @@ export default function ListingCard({
           sqft={listing.sqft}
           pricePerSqft={
             showPricePerSqft
-              ? publishListingSharePricePerSqft(listing.propertySubType, listing.pricePerSqft)
+              ? publishListingSharePricePerSqft({
+                  propertyType: listing.propertyType,
+                  propertySubType: listing.propertySubType,
+                  pricePerSqft: listing.pricePerSqft,
+                })
               : null
           }
         />

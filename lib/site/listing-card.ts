@@ -48,6 +48,7 @@ export function tileToCardData(
     sqft: t.sqft ?? null,
     pricePerSqft: t.pricePerSqft ?? null,
     propertySubType: t.propertySubType ?? null,
+    propertyType: t.propertyType ?? null,
     badge,
     tourUrl: t.tourUrl ?? null,
   }

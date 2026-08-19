@@ -10,6 +10,8 @@
  * original minus exact ask. Do not thousand-round either under the same label.
  */
 
+import { publishSaleAskAmount } from '@/lib/listing/publish-listing-figure'
+
 export type PublishedListingAsk = {
   ask: number
 }
@@ -27,6 +29,28 @@ function asPositivePrice(value: number | null | undefined): number | null {
 
 export function publishListingAsk(listPrice: number | null | undefined): PublishedListingAsk | null {
   const ask = asPositivePrice(listPrice)
+  if (ask == null) return null
+  return { ask }
+}
+
+/**
+ * The published asking SALE price for a listing whose property type is known.
+ *
+ * Every listing-detail surface uses this rather than publishListingAsk(number),
+ * because ListPrice does not always mean an asking sale price. On MLS
+ * PropertyType 'G' — "Commercial Lease" in the feed's own PropertyTypeLabel,
+ * 214 Active rows — it is a lease rate per square foot. 735 Purcell Boulevard,
+ * Bend (MLS 220174840) is a sublease of a former bank building carrying
+ * ListPrice 2.5; the detail page published an H1 of "$3", a price strip of
+ * "$3", a loan amount of "$2", and JSON-LD offers.price 2.5 on a
+ * SingleFamilyResidence. §0.7: withhold the figure rather than publish a rent
+ * rate under a sale label.
+ */
+export function publishListingSaleAsk(input: {
+  price: number | null | undefined
+  propertyType: string | null | undefined
+}): PublishedListingAsk | null {
+  const ask = publishSaleAskAmount({ price: input.price, propertyType: input.propertyType })
   if (ask == null) return null
   return { ask }
 }

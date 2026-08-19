@@ -12,7 +12,7 @@ import { displaySubdivision } from '@/lib/slug'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingAsk, publishListingDrop, publishListingHistoryPrices } from '@/lib/listing/publish-listing-ask'
+import { publishListingDrop, publishListingHistoryPrices, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
@@ -45,6 +45,7 @@ type Props = {
     | 'dom'
     | 'pricePerSqft'
     | 'propertySubType'
+    | 'propertyType'
     | 'streetNumber'
     | 'streetName'
     | 'streetSuffix'
@@ -109,15 +110,17 @@ export function PriceCtaStrip({
   })
 
   const isClosed = listing.status === 'Closed'
-  const publishedAsk = isClosed
-    ? publishListingAsk(listing.closePrice)
-    : publishListingAsk(listing.listPrice)
+  const publishedAsk = publishListingSaleAsk({
+    price: isClosed ? listing.closePrice : listing.listPrice,
+    propertyType: listing.propertyType,
+  })
   const headlinePrice = publishedAsk?.ask ?? null
   const shareKind = publishListingShareKind(listing.propertySubType)
-  const publishedPpsf = publishListingSharePricePerSqft(
-    listing.propertySubType,
-    listing.pricePerSqft,
-  )
+  const publishedPpsf = publishListingSharePricePerSqft({
+    propertyType: listing.propertyType,
+    propertySubType: listing.propertySubType,
+    pricePerSqft: listing.pricePerSqft,
+  })
   const publishedDrop = isClosed
     ? null
     : publishListingDrop({

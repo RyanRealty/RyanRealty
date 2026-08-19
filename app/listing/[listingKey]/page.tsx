@@ -23,6 +23,7 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
+import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
 import { getPublishedCmaForListing } from '@/lib/data/cma/getPublishedCma'
@@ -122,7 +123,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const addressFull = listingMlsAddressFull(listing)
   const description = listingShareSummary({
-    price: listing.listPrice,
+    price: publishListingSaleAsk({ price: listing.listPrice, propertyType: listing.propertyType })
+      ?.ask ?? null,
     beds: listing.beds,
     baths: listing.baths,
     sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
@@ -180,6 +182,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const { listingKey } = await params
   const listing = await getListingDetail(listingKey)
   if (!listing) notFound()
+
+  // The ONE published asking sale price for this page. Withheld on a lease
+  // listing (MLS PropertyType 'G' — 735 Purcell, MLS 220174840, is a sublease
+  // whose ListPrice 2.5 is a per-sq-ft rent rate), so the hero, the "what it
+  // costs to own" block, the share summary and the JSON-LD offer all withhold
+  // together rather than one surface publishing rent as an ask.
+  const publishedSaleAsk =
+    publishListingSaleAsk({ price: listing.listPrice, propertyType: listing.propertyType })?.ask ??
+    null
 
   // Place ladder + market grain (Exploration System). See CONTEXT.md.
   const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
@@ -351,7 +362,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       photos={photos}
       videos={reelVideos}
       addressLine={street}
-      price={listing.listPrice}
+      price={publishedSaleAsk}
       beds={listing.beds}
       baths={listing.baths}
       sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
@@ -367,7 +378,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <PlaceIdentityLine place={placeContext} />
       <LivePricingRead
         read={pricingRead}
-        listPrice={listing.listPrice}
+        listPrice={publishedSaleAsk}
         listingKey={listing.listingKey}
         subjectAddress={street}
         sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
@@ -378,6 +389,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         associationFee={listing.associationFee}
         associationFeeFrequency={listing.associationFeeFrequency}
         taxAnnualAmount={listing.taxAnnualAmount} propertySubType={listing.propertySubType}
+        propertyType={listing.propertyType}
         hideCmaRequest={Boolean(publishedCma)}
       />
       {openHouses.length > 0 ? (
@@ -456,7 +468,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       {history.length > 0 ? <PropertyHistory history={history} mode="meaningful-only" /> : null}
       {/* The money block: what it costs to own, then what it could earn. */}
       <MortgageCalculator
-        listPrice={listing.listPrice}
+        listPrice={publishedSaleAsk}
         taxAnnualAmount={listing.taxAnnualAmount}
         ratePct={calcDefaults?.mortgageRate ?? null}
       />
@@ -530,7 +542,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         ? `${street}, ${listing.city ?? ''}, OR ${listing.postalCode ?? ''}`.trim().replace(/,\s*$/, '')
         : `Listing ${listingKey}`,
       description: listingShareSummary({
-        price: listing.listPrice,
+        price: publishedSaleAsk,
         beds: listing.beds,
         baths: listing.baths,
         sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
@@ -554,7 +566,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
       livingAreaSqft: (listing.sqft ?? listing.totalLivingAreaSqFt) ?? undefined,
       lotSizeSqft: listing.lotSizeSqft ?? undefined,
       yearBuilt: listing.yearBuilt ?? undefined,
-      listPrice: listing.listPrice ?? undefined,
+      // Structured data is published data. A lease rate must not become
+      // offers.price on a SingleFamilyResidence (735 Purcell shipped 2.5).
+      listPrice: publishedSaleAsk ?? undefined,
       // Photos: already gated by media_suppressed in getListingPhotos().
       // Cap at 5 per schema.org convention (matching the builder's own slice).
       photos: photos.length > 0 ? photos.slice(0, 5).map((p) => p.url) : undefined,

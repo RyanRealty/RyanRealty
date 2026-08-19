@@ -52,6 +52,9 @@ export type HouseMeReportFacts = {
   monthlyRent: number | null
   /** MLS PropertySubType. Share kinds withhold living-area $/sqft. */
   propertySubType?: string | null
+  /** MLS PropertyType code (A–H) — 'G' is a lease, where the price field is
+   *  rent and no sale-shaped $/sq ft may publish. */
+  propertyType?: string | null
 }
 
 function isFiniteNumber(v: number | null | undefined): v is number {
@@ -125,10 +128,11 @@ export function buildHouseMeRows(facts: HouseMeReportFacts): HouseMeRow[] {
   }
 
   if (isPositive(facts.listPrice) && isPositive(facts.sqft)) {
-    const ppsf = publishListingSharePricePerSqft(
-      facts.propertySubType,
-      Math.round(facts.listPrice / facts.sqft),
-    )
+    const ppsf = publishListingSharePricePerSqft({
+      propertyType: facts.propertyType,
+      propertySubType: facts.propertySubType,
+      pricePerSqft: facts.listPrice / facts.sqft,
+    })
     if (ppsf != null) {
       rows.push({
         id: 'ppsf',

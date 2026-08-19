@@ -213,11 +213,16 @@ function buildGroups(listing: Props['listing']): Group[] {
 
   // ── Financial ───────────────────────────────────────────────────────────────
   const financial: Spec[] = []
-  const publishedPpsf = publishListingSharePricePerSqft(listing.propertySubType, listing.pricePerSqft)
-  const publishedClosePpsf = publishListingSharePricePerSqft(
-    listing.propertySubType,
-    listing.closePricePerSqft,
-  )
+  const publishedPpsf = publishListingSharePricePerSqft({
+    propertyType: listing.propertyType,
+    propertySubType: listing.propertySubType,
+    pricePerSqft: listing.pricePerSqft,
+  })
+  const publishedClosePpsf = publishListingSharePricePerSqft({
+    propertyType: listing.propertyType,
+    propertySubType: listing.propertySubType,
+    pricePerSqft: listing.closePricePerSqft,
+  })
   if (num(publishedPpsf))
     financial.push({ label: 'Price / sq ft', value: <Price value={publishedPpsf} exact /> })
   if (num(publishedClosePpsf))

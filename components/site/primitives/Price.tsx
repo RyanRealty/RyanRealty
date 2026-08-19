@@ -1,3 +1,4 @@
+import { publishMoneyText } from '@/lib/listing/publish-listing-figure'
 import { cn } from '@/lib/utils'
 
 /**
@@ -6,6 +7,15 @@ import { cn } from '@/lib/utils'
  *
  * Renders `—` for null / undefined / NaN to match the data-placeholder
  * convention used elsewhere on numeric surfaces.
+ *
+ * ALSO renders `—` when the requested register would print `$0` for an amount
+ * that is not zero. The nearest-thousand rule turned every value under $500
+ * into "$0", and that shipped: 735 Purcell (MLS 220174840) published a listing
+ * history of "Listed $0 / Price change $0 / Back on market $0" off lease rates
+ * of $2.50–$2.75, and six Active listings published "$0 per square foot" beside
+ * their ask. Zero dollars is not a smaller number — it is a different claim.
+ * The rule lives in lib/listing/publish-listing-figure.ts (publishMoneyText) so
+ * one predicate governs the primitive and the gate.
  *
  * Always wraps the digits in font-variant-numeric: tabular-nums so column
  * alignment stays clean across stats cards + tables.
@@ -34,33 +44,7 @@ type Props = {
   className?: string
 }
 
-function roundToThousand(n: number): number {
-  return Math.round(n / 1000) * 1000
-}
-
-function format(value: number, compact: boolean, exact: boolean): string {
-  if (exact) {
-    return `$${Math.round(value).toLocaleString('en-US')}`
-  }
-  if (compact) {
-    if (value >= 1_000_000) {
-      const m = value / 1_000_000
-      // 1 decimal for under 10M, 0 decimals at/above (e.g. $12M not $12.0M)
-      return `$${m >= 10 ? Math.round(m) : m.toFixed(1)}M`
-    }
-    if (value >= 1_000) {
-      return `$${Math.round(value / 1000)}k`
-    }
-    return `$${Math.round(value)}`
-  }
-  return `$${roundToThousand(value).toLocaleString('en-US')}`
-}
-
 export function Price({ value, compact = false, exact = false, fallback = '—', className }: Props) {
-  const hasValue = typeof value === 'number' && Number.isFinite(value) && value > 0
-  return (
-    <span className={cn('tabular-nums', className)}>
-      {hasValue ? format(value, compact, exact) : fallback}
-    </span>
-  )
+  const published = publishMoneyText(value, exact ? 'exact' : compact ? 'compact' : 'thousand')
+  return <span className={cn('tabular-nums', className)}>{published ?? fallback}</span>
 }

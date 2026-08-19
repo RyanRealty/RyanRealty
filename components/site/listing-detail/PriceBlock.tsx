@@ -8,7 +8,7 @@ import {
   Stack,
 } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingAsk, publishListingDrop } from '@/lib/listing/publish-listing-ask'
+import { publishListingDrop, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +39,7 @@ type Props = {
     | 'closePricePerSqft'
     | 'priceDropCount'
     | 'propertySubType'
+    | 'propertyType'
   >
   historyPrices?: ReadonlyArray<number | null | undefined>
   className?: string
@@ -56,13 +57,16 @@ const STATUS_TONE: Record<string, 'navy' | 'success' | 'warning' | 'danger' | 'n
 
 export function PriceBlock({ listing, historyPrices, className }: Props) {
   const isClosed = listing.status === 'Closed'
-  const headlinePrice = isClosed
-    ? publishListingAsk(listing.closePrice)?.ask ?? null
-    : publishListingAsk(listing.listPrice)?.ask ?? null
-  const ppsqft = publishListingSharePricePerSqft(
-    listing.propertySubType,
-    isClosed ? listing.closePricePerSqft : listing.pricePerSqft,
-  )
+  const headlinePrice =
+    publishListingSaleAsk({
+      price: isClosed ? listing.closePrice : listing.listPrice,
+      propertyType: listing.propertyType,
+    })?.ask ?? null
+  const ppsqft = publishListingSharePricePerSqft({
+    propertyType: listing.propertyType,
+    propertySubType: listing.propertySubType,
+    pricePerSqft: isClosed ? listing.closePricePerSqft : listing.pricePerSqft,
+  })
   const publishedDrop = isClosed
     ? null
     : publishListingDrop({

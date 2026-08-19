@@ -17,6 +17,8 @@ type Props = {
   taxAnnualAmount?: number | null
   monthlyRent?: number | null
   propertySubType?: string | null
+  /** MLS PropertyType code (A–H) — 'G' is a lease listing. */
+  propertyType?: string | null
   hideCmaRequest?: boolean
   className?: string
 }
@@ -36,6 +38,7 @@ export function LivePricingRead({
   taxAnnualAmount = null,
   monthlyRent = null,
   propertySubType = null,
+  propertyType = null,
   hideCmaRequest,
   className,
 }: Props) {
@@ -52,6 +55,7 @@ export function LivePricingRead({
     taxAnnualAmount,
     monthlyRent,
     propertySubType,
+    propertyType,
   }
   if (buildHouseMeRows(facts).length === 0) return null
   return (
