@@ -15,7 +15,8 @@ describe('lead SMS cannot use personal iMessage', () => {
 
   it('governed lead SMS does not import the broker-self or iMessage rails', () => {
     const governed = read('lib/comms/sendGovernedSms.ts')
-    expect(governed).not.toMatch(/broker-self-sms|osascript|iMessage|LEAD_SMS_IMESSAGE/)
+    expect(governed).not.toMatch(/broker-self-sms|iMessage|LEAD_SMS_IMESSAGE/)
+    expect(governed.includes('osascript')).toBe(false)
     expect(governed).toMatch(/sendSmsViaMessagingService|sendSms/)
   })
 
