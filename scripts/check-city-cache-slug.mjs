@@ -45,9 +45,9 @@ const surfaces = [
     need: /canonicalCityCacheSlug\(slug\)/,
   },
   {
-    path: 'app/search/[...slug]/page.tsx',
+    path: 'lib/market/search-city-sfr-publish.ts',
     label: 'homes-for-sale city pulse uses canonicalCityCacheSlug',
-    need: /canonicalCityCacheSlug\(relatedCitySlug\)/,
+    need: /canonicalCityCacheSlug\((?:args\.)?relatedCitySlug\)/,
   },
 ]
 
