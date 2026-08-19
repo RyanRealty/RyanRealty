@@ -498,6 +498,8 @@ describe('client document look', () => {
     expect(html).toMatch(/\.page\s*\{[^}]*border-radius:\s*0/)
     expect(html).not.toMatch(/background:\s*#e8e3d8/)
     expect(html).not.toMatch(/box-shadow:\s*0\s+6px\s+24px/)
+    expect(immersive).not.toMatch(/box-shadow:\s*0\s+12px\s+28px/)
+    expect(immersive).not.toContain('.btn:hover{transform:translateY(-1px)}')
     expect(html).not.toMatch(/\.(hero-photo|comp-card|flyer-hero|comp-ph|comp-row)\s*\{[^}]*border-radius:\s*(1[2-9]|2[0-4])px/)
     expect(immersive).not.toMatch(/\.(hero-img|comp-ph|comp-row|nb|nb-img|photo-tile)\s*\{[^}]*border-radius:(1[2-9]|2[0-4])px/)
   })
