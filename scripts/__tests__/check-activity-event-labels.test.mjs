@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { writeFileSync, readFileSync, mkdirSync, rmSync, cpSync, statSync } from 'node:fs'
+import { writeFileSync, readFileSync, mkdirSync, rmSync, cpSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
@@ -50,16 +50,9 @@ function run(args = []) {
 function reset() {
   rmSync(SANDBOX, { recursive: true, force: true })
   for (const rel of FILES) {
-    const src = join(REPO, rel)
-    try {
-      statSync(src)
-    } catch {
-      // Founding consumers that were deleted stay off this list's copy set.
-      continue
-    }
     const dest = join(SANDBOX, rel)
     mkdirSync(dirname(dest), { recursive: true })
-    cpSync(src, dest)
+    cpSync(join(REPO, rel), dest)
   }
 }
 
