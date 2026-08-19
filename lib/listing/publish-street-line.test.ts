@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { publishStreetLine, publishStreetNumber, publishUnparsedStreetLine } from './publish-street-line'
+import {
+  listingMlsAddressFull,
+  listingMlsStreetLine,
+  publishStreetLine,
+  publishStreetNumber,
+  publishUnparsedStreetLine,
+} from './publish-street-line'
 
 describe('publishStreetNumber', () => {
   it('withholds a placeholder zero', () => {
@@ -48,6 +54,27 @@ describe('publishStreetLine', () => {
         streetSuffix: 'Drive',
       }),
     ).toBe('Kouns Drive')
+  })
+})
+
+describe('listingMlsAddressFull', () => {
+  it('joins street, city, and postal with a comma after the street', () => {
+    expect(
+      listingMlsStreetLine({
+        streetNumber: '0',
+        streetName: 'Kouns Drive',
+        streetSuffix: 'Drive',
+      }),
+    ).toBe('Kouns Drive')
+    expect(
+      listingMlsAddressFull({
+        streetNumber: '63177',
+        streetName: 'Iner Loop',
+        streetSuffix: null,
+        city: 'Bend',
+        postalCode: '97701',
+      }),
+    ).toBe('63177 Iner Loop, Bend, OR 97701')
   })
 })
 

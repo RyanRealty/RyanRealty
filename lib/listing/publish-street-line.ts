@@ -48,6 +48,32 @@ export function publishStreetLine(input: {
   return line || null
 }
 
+type ListingStreetBits = {
+  streetNumber?: string | number | null
+  streetName?: string | null
+  streetSuffix?: string | null
+  city?: string | null
+  postalCode?: string | null
+}
+
+/** Street line for listing detail (never a leading placeholder 0). */
+export function listingMlsStreetLine(listing: ListingStreetBits): string {
+  return publishStreetLine(listing) ?? ''
+}
+
+/**
+ * Street, city, OR postal. Comma between street and city — the comma-less
+ * form matched no county/Zillow record (design-audit P1, trust).
+ */
+export function listingMlsAddressFull(listing: ListingStreetBits): string {
+  const street = listingMlsStreetLine(listing)
+  return [street, listing.city ? `${listing.city}, OR` : '', listing.postalCode ?? '']
+    .filter(Boolean)
+    .join(', ')
+    .replace(/, OR,\s/, ', OR ')
+    .trim()
+}
+
 /** Already-joined MLS line. Strip a leading placeholder 0. */
 export function publishUnparsedStreetLine(raw: string | null | undefined): string | null {
   const value = raw?.trim() ?? ''
