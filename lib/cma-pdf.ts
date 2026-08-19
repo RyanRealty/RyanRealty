@@ -13,7 +13,7 @@ import chromium from '@sparticuz/chromium-min'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fetchCmaMapPngBuffer } from '@/lib/cma-map'
-import { getCmaHtmlBySlug } from '@/lib/data'
+import { resolveCmaPrintHtml } from '@/lib/cma/print-html'
 import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
 import { pdfRenderOptions, CMA_MARGIN_IN } from '@/lib/pdf/page-contract'
 import { CONTACT } from '@/lib/brand/contact'
@@ -152,9 +152,9 @@ export async function renderCmaPdfBuffer(slug: string): Promise<RenderCmaPdfResu
     // DB-stored CMA (deterministic builder, 2026-07-07): the HTML is fully
     // self-contained (inline CSS, absolute asset URLs, data-URI map), so no
     // asset or map inlining is needed before the render.
-    const row = await getCmaHtmlBySlug(slug)
-    if (!row?.html_content) throw new CmaNotFoundError(slug)
-    html = row.html_content
+    const row = await resolveCmaPrintHtml(slug)
+    if (!row?.html) throw new CmaNotFoundError(slug)
+    html = row.html
     finalizedSource = row.status === 'finalized' || row.status === 'delivered'
   }
 

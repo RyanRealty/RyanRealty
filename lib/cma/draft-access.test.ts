@@ -37,6 +37,16 @@ describe('CMA draft review access', () => {
     expect(canOpenCmaDocument({ html_content: null, html_path: null, render_args: null })).toBe(false)
   })
 
+  it('opens a built draft from html_path without pulling html_content', () => {
+    expect(
+      canOpenCmaDocument({
+        html_content: null,
+        html_path: 'db:cmas.html_content:cma-648-se-douglas',
+        render_args: null,
+      }),
+    ).toBe(true)
+  })
+
   it('puts Review CMA first on the admin entity page', () => {
     const actions = adminCmaEntityActions({
       slug: 'cma-850-quince-redmond-97756',

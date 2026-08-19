@@ -16,12 +16,33 @@ function client() {
 
 export type CmaAdminRow = Record<string, unknown>
 
+export type CmaServeHead = {
+  html_path: string | null
+  status: string
+  broker_slug: string | null
+}
+
+export type CmaRenderSource = {
+  html_path: string | null
+  status: string
+  render_args: Record<string, unknown> | null
+  broker_slug: string | null
+  build_summary: Record<string, unknown> | null
+}
+
+/** Metadata-only admin review read. Never pulls html_content / citations / render_args. */
+export const CMA_ADMIN_REVIEW_COLUMNS =
+  'id, slug, doc_type, status, subject_address, subject_city, subject_listing_key, client_name, client_email, client_phone, broker_slug, built_at, created_at, finalized_at, delivered_at, archived_at, html_path, recommended_list, value_low, value_high, published_to_listing, published_at, published_by, comps_count, build_error, build_summary, price_override, person_id'
+
 /**
  * Full cmas row (including html_content + citations) by slug.
  *
  * P12: a failed read is NOT returned as null. Null means the slug is missing;
  * a transport/RLS/schema error throws so send/publish paths cannot treat a
  * broken read as "no document" and silently skip or mis-route.
+ *
+ * Do not use this on the review page or /view — blobs are hundreds of KB and
+ * pin the pool for 45–60s. Use getCmaAdminReviewRowBySlug / getCmaServeHead.
  */
 export async function getCmaAdminRowBySlug(slug: string): Promise<CmaAdminRow | null> {
   const sb = client()
@@ -38,7 +59,70 @@ export async function getCmaAdminRowBySlug(slug: string): Promise<CmaAdminRow | 
   return (data ?? null) as CmaAdminRow | null
 }
 
-/** The public view read: only what the /cma/[slug] route needs to serve. */
+/** Review chrome only. Missing slug → null (404). Transport error → throw. */
+export async function getCmaAdminReviewRowBySlug(slug: string): Promise<CmaAdminRow | null> {
+  const sb = client()
+  if (!sb) throw new Error('getCmaAdminReviewRowBySlug: Supabase not configured')
+  const { data, error } = await sb
+    .from('cmas')
+    .select(CMA_ADMIN_REVIEW_COLUMNS)
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (error) {
+    console.error('[getCmaAdminReviewRowBySlug]', error.message)
+    throw new Error(`getCmaAdminReviewRowBySlug failed: ${error.message}`)
+  }
+  return (data ?? null) as CmaAdminRow | null
+}
+
+/** Tiny existence + status read. Used so a wrong slug 404s instead of hanging. */
+export async function getCmaServeHead(slug: string): Promise<CmaServeHead | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('cmas')
+    .select('html_path, status, broker_slug')
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (error) {
+    console.error('[getCmaServeHead]', error.message)
+    throw new Error(`getCmaServeHead failed: ${error.message}`)
+  }
+  return (data ?? null) as CmaServeHead | null
+}
+
+export async function getCmaStoredHtmlBySlug(slug: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('cmas')
+    .select('html_content')
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (error) {
+    console.error('[getCmaStoredHtmlBySlug]', error.message)
+    throw new Error(`getCmaStoredHtmlBySlug failed: ${error.message}`)
+  }
+  const html = (data as { html_content?: string | null } | null)?.html_content
+  return typeof html === 'string' && html.length > 0 ? html : null
+}
+
+export async function getCmaRenderSourceBySlug(slug: string): Promise<CmaRenderSource | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('cmas')
+    .select('html_path, status, render_args, broker_slug, build_summary')
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (error) {
+    console.error('[getCmaRenderSourceBySlug]', error.message)
+    throw new Error(`getCmaRenderSourceBySlug failed: ${error.message}`)
+  }
+  return (data ?? null) as CmaRenderSource | null
+}
+
+/** Combined blob read. Prefer getCmaServeHead + getCmaStoredHtmlBySlug on hot paths. */
 export async function getCmaHtmlBySlug(slug: string): Promise<{
   html_content: string | null
   html_path: string | null

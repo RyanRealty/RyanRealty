@@ -109,6 +109,7 @@ export async function createCmaRequest(
     const sb = createServiceClient()
     const rawAddress = input.rawAddress.trim()
     const baseSlug = slugifyAddress(rawAddress)
+    const linkedPersonId = input.crmPersonId ?? input.fubPersonId ?? null
     const leadEmail = input.leadEmail?.toLowerCase().trim() || null
     const leadName = input.leadName?.trim() || null
     const requestSource = input.requestSource ?? 'seller-lp'
@@ -196,6 +197,7 @@ export async function createCmaRequest(
       findOpenCmaActionBySlug,
       mergeCmaActionContact,
       appendCmaActionNotify,
+      stampCmaPersonId,
     } = await import('@/lib/data')
     const { resolveWritableCmaSlot } = await import('@/lib/cma/versions')
 
@@ -241,6 +243,7 @@ export async function createCmaRequest(
           // stamps html_path 'db:cmas.html_content:<slug>' (lib/cma/build.ts).
           html_path: `pending:${slug}`,
           generation_reason: generationReason,
+          ...(linkedPersonId ? { person_id: linkedPersonId } : {}),
         })
         if (inserted.error || !inserted.id) {
           return { ok: false, error: `cmas upsert failed: ${inserted.error ?? 'no row'}` }
@@ -250,6 +253,10 @@ export async function createCmaRequest(
     }
     if (!cmaRow) {
       return { ok: false, error: 'could not land the CMA intake on a writable row' }
+    }
+
+    if (linkedPersonId) {
+      await stampCmaPersonId(cmaRow.slug, linkedPersonId)
     }
 
     // Step 2: queue the action row for the brain dispatcher. The CMA

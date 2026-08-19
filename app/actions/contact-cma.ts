@@ -27,7 +27,7 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
 import { revalidatePath } from 'next/cache'
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { getCmaAdminRowBySlug, findCrmPersonIdByEmail } from '@/lib/data'
+import { getCmaAdminRowBySlug, findCrmPersonIdByEmail, stampCmaPersonId } from '@/lib/data'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead } from '@/lib/cma/send'
@@ -178,6 +178,8 @@ export async function startCmaForContactAction(personId: number): Promise<StartC
     if (!built.ok) {
       return { ok: false, error: built.error ?? 'CMA build did not finish.' }
     }
+
+    await stampCmaPersonId(slug, personId)
 
     revalidatePerson(personId)
     revalidatePath('/admin/cmas')

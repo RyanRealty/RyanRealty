@@ -16,6 +16,7 @@ import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead, prepareCmaSendPreview, type CmaSendOverride } from '@/lib/cma/send'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { slugifyAddress } from '@/lib/cma-request'
+import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { resolveWritableCmaSlot } from '@/lib/cma/versions'
 import {
   getCmaAdminRowBySlug,
@@ -157,7 +158,10 @@ export async function rebuildCmaAction(
     const result = await buildCma({
       slug,
       mlsNumber: (row.subject_listing_key as string | null) ?? null,
-      rawAddress: (row.subject_address as string | null) ?? null,
+      rawAddress: applySlugStreetDirectional(
+        (row.subject_address as string | null) ?? '',
+        slug,
+      ) || null,
       city: (row.subject_city as string | null) ?? null,
       client: {
         name: (input.clientName ?? (row.client_name as string | null))?.trim() || null,

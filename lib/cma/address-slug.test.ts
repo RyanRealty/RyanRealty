@@ -5,7 +5,22 @@ import {
   cmaSlugVersion,
   pickLatestCmaVersion,
   slugifyAddress,
+  streetDirectionalFromCmaSlug,
+  applySlugStreetDirectional,
 } from './address-slug'
+
+describe('slug street directional restore', () => {
+  it('reads SE from cma-648-se-douglas and puts it back on the display address', () => {
+    expect(streetDirectionalFromCmaSlug('cma-648-se-douglas')).toBe('SE')
+    expect(streetDirectionalFromCmaSlug('cma-648-douglas')).toBeNull()
+    expect(applySlugStreetDirectional('648 Douglas, Bend, OR 97702', 'cma-648-se-douglas')).toBe(
+      '648 SE Douglas, Bend, OR 97702',
+    )
+    expect(applySlugStreetDirectional('648 SE Douglas, Bend, OR 97702', 'cma-648-se-douglas')).toBe(
+      '648 SE Douglas, Bend, OR 97702',
+    )
+  })
+})
 
 describe('slugifyAddress keeps street directionals', () => {
   it('keeps SE on 648 SE Douglas and does not collide with the stripped form', () => {

@@ -43,7 +43,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { getCmaAdminRowBySlug, listActiveBrokersForCma } from '@/lib/data'
+import { getCmaAdminReviewRowBySlug, listActiveBrokersForCma } from '@/lib/data'
 import {
   EntityTitle,
   ReportNumbers,
@@ -57,6 +57,7 @@ import { cmaPublishConcerns, cmaPublishRefusals } from '@/app/actions/cma-publis
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
+import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
 
 export const dynamic = 'force-dynamic'
@@ -89,10 +90,11 @@ export default async function AdminCmaReviewPage({
   const { slug } = await params
   const safeSlug = String(slug ?? '').trim().toLowerCase()
   const [row, brokerRows] = await Promise.all([
-    getCmaAdminRowBySlug(safeSlug),
+    getCmaAdminReviewRowBySlug(safeSlug),
     listActiveBrokersForCma(),
   ])
   if (!row) notFound()
+  const subjectAddress = applySlugStreetDirectional(String(row.subject_address ?? ''), safeSlug)
 
   const brokers = brokerRows.map((b) => ({
     slug: String(b.slug),
@@ -100,9 +102,9 @@ export default async function AdminCmaReviewPage({
   }))
 
   const status = String(row.status ?? 'draft')
-  const hasStoredHtml = Boolean(row.html_content)
+  const hasStoredHtml = String(row.html_path ?? '').startsWith('db:cmas.html_content:')
   const isLegacyFile = !hasStoredHtml && String(row.html_path ?? '').startsWith('public/cmas/')
-  const hasDocument = hasStoredHtml || isLegacyFile
+  const hasDocument = hasStoredHtml || isLegacyFile || Boolean(row.built_at)
   const canOpenDocument = canOpenCmaDocument(row)
   const buildError = (row.build_error as string | null) ?? null
   const summary = (row.build_summary as Record<string, unknown> | null) ?? null
@@ -118,7 +120,7 @@ export default async function AdminCmaReviewPage({
   // own words rather than summarised into a flag.
   const concerns = cmaPublishConcerns(row)
 
-  const previewSrc = hasStoredHtml || Boolean(row.render_args)
+  const previewSrc = canOpenDocument
     ? brokerCmaViewHref(safeSlug)
     : isLegacyFile
       ? String(row.html_path).replace(/^public/, '')
@@ -139,7 +141,7 @@ export default async function AdminCmaReviewPage({
       </nav>
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-        <EntityTitle>{String(row.subject_address ?? safeSlug)}</EntityTitle>
+        <EntityTitle>{subjectAddress || safeSlug}</EntityTitle>
         <StateWord state={statusState(status)}>{status}</StateWord>
       </div>
 
@@ -222,7 +224,7 @@ export default async function AdminCmaReviewPage({
       <SectionHead>Listing page</SectionHead>
       <CmaPublishControl
         slug={safeSlug}
-        subjectAddress={String(row.subject_address ?? safeSlug)}
+        subjectAddress={subjectAddress || safeSlug}
         listingKey={listingKey || null}
         valueLow={(row.value_low as number | null) ?? null}
         valueHigh={(row.value_high as number | null) ?? null}
@@ -245,7 +247,7 @@ export default async function AdminCmaReviewPage({
         >
           <iframe
             src={previewSrc}
-            title={`CMA preview for ${String(row.subject_address ?? safeSlug)}`}
+            title={`CMA preview for ${subjectAddress || safeSlug}`}
             style={{ width: '100%', height: '75vh', minHeight: 600, background: 'var(--a-bg)', border: 0 }}
           />
         </div>

@@ -2,9 +2,9 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — CMA phone login redirect
+# Current — 2026-08-19 (cursor-cloud) — CMA phone open + PDF
 
-**Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add` @ `09f61353b`. Loop stays **DISARMED**. Unauthenticated `/admin/cmas/[slug]/view` and browser `/api/cma/[slug]/pdf` now 307 to `/admin/login?next=…` (not JSON 401). Public `/cma/[slug]` still 404s drafts. Real slug is `cma-648-se-douglas` (draft). Restored SE on stored subject + HTML. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add`. Loop stays **DISARMED**. Unauth view/pdf → login. Review page slim-reads (no blobs). `/view` serves stored HTML. PDF re-renders from render_args with fixed adjustment-grid CSS. SE restored from slug. person_id stamped on kickoff/contact build. Drafts stay private. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, database-canonical-reference, git-commit.
 

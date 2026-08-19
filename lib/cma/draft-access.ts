@@ -21,14 +21,22 @@ export function brokerCmaViewHref(slug: string): string {
   return `/admin/cmas/${slug.trim().toLowerCase()}/view`
 }
 
+/** True when html_content lives in the row (builder stamp) without reading the blob. */
+export function cmaHasStoredHtml(htmlPath: unknown): boolean {
+  return String(htmlPath ?? '').startsWith('db:cmas.html_content:')
+}
+
 /** Stored HTML, render_args (draft rebuild), or a legacy public file. */
 export function canOpenCmaDocument(row: {
   html_content?: unknown
   html_path?: unknown
   render_args?: unknown
+  built_at?: unknown
 }): boolean {
   if (row.html_content) return true
+  if (cmaHasStoredHtml(row.html_path)) return true
   if (row.render_args && typeof row.render_args === 'object') return true
+  if (row.built_at) return true
   return String(row.html_path ?? '').startsWith('public/cmas/')
 }
 
