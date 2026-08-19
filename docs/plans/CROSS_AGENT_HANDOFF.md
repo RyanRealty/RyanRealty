@@ -2,14 +2,14 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (grok-build) — runtime crosswalk LIVE
+# Current — 2026-08-18 (grok-build) — runtime crosswalk leftovers closed
 
-**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. **Time:** 2026-08-18 evening PT. Product **`0afc2335`** is on **`origin/main`**. Vercel Production **READY** `dpl_DPCpYf6F9pUGq6BZ1niVEKpTH1dB` (`npm run deploy:verify` exit 0). Aliases include `ryan-realty.com` and `ryanrealty.vercel.app`. CMA dirty checkout `cursor/cma-client-document-7fc3` was not touched.
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. **Time:** 2026-08-18 evening PT. Product land **`0afc2335`** already READY. This follow-up closes leftover audit items (unused modules + hosted stale objects + live Playwright checks). CMA dirty checkout `cursor/cma-client-document-7fc3` was not touched.
 
 **Done**
-- Runtime photograph + unused cleanup + Follow Up Boss purge + search honesty (timeout ≠ 0 homes, neighborhood pan) + GTM/gtag dual-tag stop + nightly E2E locators + G55 orphan delete (166→17) + Vercel FUB/`INNGEST_EVENT_KEY` removed (`INNGEST_SIGNING_KEY` kept as revalidate secret).
-- Capture is `lib/crm/send-event.ts` → `crm_people`. No `lib/followupboss.ts`.
-- Hosted drop recorded: `20260818210000` (`trending_scores` gone, `get_homepage_market_stats` gone).
+- Live Playwright on `ryan-realty.com`: `/contact` has one `#contact-email` (forms e2e 7/7); GTM-WV6R4NZ5 present; no extra `gtag('config', G-ST40W4WM6T)`; `/homes-for-sale/bend/awbrey-butte` H1 Awbrey Butte, 69 homes.
+- G55 leftovers deleted (17→7). Dead OpenAI `classifyListingPhoto` removed. Hosted drop `20260818223000`: `listing_detail_mv`, `_lss_backfill_cursor`, `cache_backfill_progress`, unused tick/refresh RPCs. `analytics_dim_agent` kept (reserved empty dim).
+- Gmail reads on `marketing@` / `admin@` work. No client mail sent.
 
 **Next**
 - Leftover punch families stay on FLEET-PUNCH. Do not start a new ship class from this land.

@@ -1,5 +1,5 @@
 {
-  "count": 79,
+  "count": 78,
   "files": [
     "app/buy/loading.tsx",
     "app/cities/[slug]/[neighborhoodSlug]/error.tsx",
@@ -42,7 +42,7 @@
     "components/VoiceSearchButton.tsx",
     "components/WelcomeBanner.tsx",
     "components/community/CommunityIndexBrowser.tsx",
-    "components/compare/AICompare.tsx",
+
     "components/compare/CompareClient.tsx",
     "components/comparison/ComparisonTray.tsx",
     "components/console/ConsoleCommandPalette.tsx",

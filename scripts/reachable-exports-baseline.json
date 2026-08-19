@@ -1,24 +1,14 @@
 {
   "generatedAt": "2026-08-18T20:45:57.000Z",
   "reason": "Pre-gate backlog of components/** and lib/** modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
-  "count": 17,
+  "count": 7,
   "names": [
-    "components/admin/crm/ContactActivityFeed.tsx",
-    "components/admin/crm/MembershipToggles.tsx",
-    "components/admin/crm/NextStepCard.tsx",
-    "components/admin/crm/source-labels.ts",
-    "components/compare/AICompare.tsx",
     "components/site/listing-detail/PriceBlock.tsx",
     "lib/crm/saved-view-seeds.ts",
-    "lib/data/activity/getRecentActivity.ts",
-    "lib/data/activity/subscribeActivity.ts",
     "lib/data/crm/captureHotAnonymous.ts",
-    "lib/data/crm/getAdAudienceConversionReport.ts",
     "lib/data/crm/getContactIdentityStrip.ts",
     "lib/data/crm/getContactNewsletterDetail.ts",
     "lib/data/crm/getFirstTouchAttribution.ts",
-    "lib/data/expired/dashboard.ts",
-    "lib/data/fsbo/dashboard.ts",
     "lib/youtube-market-report/generate-props.ts"
   ]
 }

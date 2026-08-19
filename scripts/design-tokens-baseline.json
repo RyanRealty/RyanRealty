@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-08-18T20:45:57.000Z",
-  "total": 137,
+  "total": 135,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/api/cma/[slug]/gmail-draft/route.ts": 1,
@@ -35,9 +35,7 @@
     "components/SearchListingsToolbar.tsx": 1,
     "components/ShareButton.tsx": 2,
     "components/TilesSlider.tsx": 1,
-    "components/admin/crm/ContactActivityFeed.tsx": 1,
     "components/admin/crm/EmailComposer.tsx": 1,
-    "components/admin/crm/NextStepCard.tsx": 1,
     "components/admin/crm/ReportSubscriptionsPanel.tsx": 1,
     "components/admin/crm/StoredAttachments.tsx": 1,
     "components/auth/PasswordInput.tsx": 1,

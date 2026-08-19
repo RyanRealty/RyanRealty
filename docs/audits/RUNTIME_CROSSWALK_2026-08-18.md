@@ -241,18 +241,18 @@ Unused CRM modules: `lib/crm/lead-router.ts` (`captureLead` zero callers), `lib/
 
 | Object | Hosted | Code | Verdict |
 |---|---|---|---|
-| `listing_detail_mv` | exists · **589,940** rows · `refreshed_at` max **2026-05-27** | DAL comments only; `refresh-mvs` + pg_cron refresh tile/search/xref, not this. `refresh_listing_detail_mv` still in OpenAPI, no TS caller | **park** — stale 590k MV; refresh RPC still hosted |
+| `listing_detail_mv` | **dropped** `20260818223000` (was 589,940 rows, last refresh 2026-05-27) | no TS reader; not in `cron.job` | **dropped** |
 | `sale_pricing_seller_net` | view · **149,402** rows (= facts) | JS `lib/pricing/seller-net.ts`; no `.from('sale_pricing_seller_net')` | **park** — documented projection over live facts |
 | `sale_pricing_price_steps` | **160,448** rows · latest `event_date` 2026-07-24 | written by live `refresh_sale_pricing_facts_batch` | **keep** |
 | `analytics_dim_agent` | exists · **0** rows | no reader/writer; sibling `analytics_dim_office` is live | **park** — reserved empty dim |
 | `analytics_inventory_snapshot` | **24** rows · last `as_of` **2026-08-10** | `/api/cron/snapshot-active-inventory` | **keep** |
-| `trending_scores` | exists · **0** rows (drop `20260330100006` did not stick) | none; Trending Homes uses `get_trending_listing_keys` / `listing_views` | **drop** (migration written, not applied) |
-| `cache_backfill_progress` | **1** row · `co-history` completed **2026-05-07** (1320 runs) | no repo CREATE/reader; OpenAPI still has `backfill_central_oregon_history_tick` | **park** — leftover cursor while RPC remains |
-| `_lss_backfill_cursor` | **6** shards · all `done=true` · last write **2026-08-01** | no TS; one-shot street-suffix pg_cron (self-unschedule). `cron.job` not readable via PostgREST | **park** — completed cursor; confirm cron jobs gone before drop |
+| `trending_scores` | **dropped** `20260818210000` | none; Trending Homes uses `get_trending_listing_keys` / `listing_views` | **dropped** |
+| `cache_backfill_progress` | **dropped** `20260818223000` (co-history completed 2026-05-07) | tick RPC had no app/cron caller | **dropped** with `backfill_central_oregon_history_tick` |
+| `_lss_backfill_cursor` | **dropped** `20260818223000` (6 shards, all done, last write 2026-08-01) | no TS; not in `cron.job` | **dropped** |
 | `listing_backfill_cursors` | **1** row · job `sale_pricing_facts` · **2026-08-18 18:21Z** | live facts refresh | **keep** |
 | `sync_year_cursor` | **1** row · `phase=idle` since **2026-04-14** | `scripts/sync-status-report.mjs` + `/api/admin/sync/backfill-health` | **keep** |
 | `get_beacon_metrics` | OpenAPI yes | `get_city_period_metrics` wrapper → `getReportMetrics` (admin reports + `market-stat-consistency` cron) | **keep** |
-| `get_homepage_market_stats` | OpenAPI yes | types only | **drop** (migration written, not applied) |
+| `get_homepage_market_stats` | **dropped** `20260818210000` | types only | **dropped** |
 
 **Not seen:** whether all 484 files are applied; RLS/GRANT state; `cron.job` contents (schema not exposed on PostgREST).
 
@@ -352,15 +352,15 @@ Apply in this order. Stop at the first bucket that needs a second human look.
 
 1. Nightly E2E “No tests found” + quality.yml no server + docs-only releases — **APPLIED** (`1bbece98`). Live-site feature-spec assertions still fail on prod (not workflow).
 2. `TriggerDeltaSyncButton` → live `runDeltaSync` — **APPLIED**. Retired `POST /api/admin/sync` Inngest send (`410`).
-3. Dual GTM + gtag if both env ids set — **still needs container / Grok Bot**.
+3. Dual GTM + gtag — **APPLIED** (no `gtag('config', G-ST40W4WM6T)` when GTM is present). Probed live 2026-08-18: GTM-WV6R4NZ5 in HTML, no extra GA4 gtag.js request. Bounce/Unassigned is a 28-day lag, not more code.
 4. Widgetbe CSP after FUB pixel deletion — **APPLIED** (`f33fdc93`).
-5. Search timeout-as-empty + remaining search honesty bugs — **APPLIED** (`50646b6a`, `fa04ae24`, `6a684025`). Neighborhood pan still has no `neighborhood` field on `getViewportSearch`.
+5. Search timeout-as-empty + remaining search honesty bugs — **APPLIED**. `getViewportSearch` forwards `neighborhood` → `boundary_neighborhood`. Live `/homes-for-sale/bend/awbrey-butte` H1 is Awbrey Butte (69 homes).
 
 ### P2 — unused code, one class at a time
 
 1. Unused API shells + dark crons — **APPLIED** (`2e00ac6b`).
 2. Unused REGISTRY / automation theater — **APPLIED** (`a37ee8cf`).
-3. Named leftover UI (showcase, ExitIntent, PageCTA, BrokerContactForm) — **APPLIED**. ~165 other G55 orphans still parked.
+3. Named leftover UI + G55 orphans — **APPLIED** (174 deleted, then 10 more on 2026-08-18). Ratchet leftover: 7 (PriceBlock + saved-view-seeds + captureHotAnonymous + 3 CRM-360 readers + youtube generate-props).
 4. Unused deps — **APPLIED** (`8d7dc654`).
 5. Leftover Vercel secrets (`FOLLOWUPBOSS_*`, `INNGEST_*`) — **second pass done 2026-08-18.** Unused FUB / `INNGEST_EVENT_KEY` names removed from Vercel. `INNGEST_SIGNING_KEY` kept (revalidate fallback).
 

@@ -76,7 +76,7 @@ test.describe('Contact form (/contact)', () => {
     expect(isValid, 'Invalid email should fail HTML5 email validation').toBe(false)
 
     await page.getByRole('button', { name: /^continue$/i }).click()
-    await expect(page.getByRole('alert')).toContainText(/does not look complete/i)
+    await expect(page.locator('#contact-email-error')).toContainText(/does not look complete/i)
     await expect(page.locator('#contact-email')).toBeVisible()
   })
 
