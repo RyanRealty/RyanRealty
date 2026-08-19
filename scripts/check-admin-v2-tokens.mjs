@@ -43,6 +43,10 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/actions.ts',
   'app/admin/(protected)/people/[id]/page.tsx',
   'app/admin/(protected)/people/[id]/PersonIdentityHeader.tsx',
+  'app/admin/(protected)/people/[id]/PersonAddressEditor.tsx',
+  'app/admin/(protected)/people/[id]/PersonRelationships.tsx',
+  'app/admin/(protected)/people/[id]/PersonNotesAdd.tsx',
+  'app/admin/(protected)/people/[id]/PersonWorkspace.tsx',
   'app/admin/(protected)/people/[id]/FieldEditors.tsx',
   'app/admin/(protected)/people/[id]/TasksSection.tsx',
   'app/admin/(protected)/people/[id]/NotesSection.tsx',
@@ -678,7 +682,9 @@ if (existsSync(SPEC) && existsSync(COPY)) {
 }
 
 // Rules 2 + 3 — scan
-const HEX = /#[0-9a-fA-F]{3,8}\b/g
+// `#add-person` is a URL hash, not a color. `#add` is valid 3-digit hex, so
+// `\b` after three hex digits was a false positive on hyphenated fragments.
+const HEX = /#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z-])/g
 const COLOR_FN = /\b(?:rgb|rgba|hsl|hsla|oklch|color-mix)\s*\(/g
 const TW_PALETTE =
   /\b(?:bg|text|border|from|to|via)-(?:white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\d{1,3})?(?:\/\d{1,3})?\b/g
