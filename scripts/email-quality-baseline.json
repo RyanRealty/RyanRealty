@@ -18,7 +18,6 @@
   "lib/digest-email-templates.tsx",
   "lib/expired-alert.ts",
   "lib/fsbo-alert.ts",
-  "lib/marketing-brain/daily-digest.ts",
   "lib/newsletter/send-queue.ts",
   "lib/seller-lead-alert.ts",
   "lib/tc/signing-emails.ts"
