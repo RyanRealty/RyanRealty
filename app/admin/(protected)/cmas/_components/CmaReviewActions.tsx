@@ -29,6 +29,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button, ConfirmDialog, Dialog, SelectField, TextField } from '@/components/admin/v2'
+import { CmaTextMeButton } from '@/components/admin/crm/CmaTextMeButton'
 import { formatPriceExact } from '@/lib/format/money'
 import {
   rebuildCmaAction,
@@ -61,6 +62,7 @@ export interface CmaReviewActionsProps {
   brokerSlug: string | null
   brokers: Array<{ slug: string; displayName: string }>
   hasDocument: boolean
+  personId?: number | null
 }
 
 const usd = formatPriceExact
@@ -319,9 +321,26 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           </Button>
         ) : null}
 
-        <Button onClick={() => setSendOpen(true)} touch className="w-full" disabled={isPending || !isSendable}>
-          Send to lead
-        </Button>
+        {props.hasDocument ? <CmaTextMeButton slug={props.slug} /> : null}
+        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          Opens compose. Texts the review link to your phone after you hit Send. The client is not copied.
+        </p>
+
+        {props.personId ? (
+          <Link
+            href={`/admin/messages/new?c=${props.personId}&channel=email&cma=${encodeURIComponent(props.slug)}`}
+            style={{ textDecoration: 'none' }}
+            className="w-full"
+          >
+            <Button touch className="w-full" disabled={isPending || !isSendable}>
+              Send to lead
+            </Button>
+          </Link>
+        ) : (
+          <Button variant="quiet" onClick={() => setSendOpen(true)} touch className="w-full" disabled={isPending || !isSendable}>
+            Send to lead
+          </Button>
+        )}
 
         <Dialog
           open={sendOpen}

@@ -1,7 +1,6 @@
 // @no-parity — streamed person workspace. Heavy reads stay off the first paint.
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { randomUUID } from 'node:crypto'
 import type { InboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getContactActivityFeed } from '@/lib/data/crm/getContactActivityFeed'
 import { getContactCmas } from '@/lib/data/crm/getContactCmas'
@@ -39,13 +38,13 @@ import {
   getCrmSmsTemplates,
   getTwilioSmsStatus,
 } from '@/app/actions/crm'
-import { Button, CardTitle, HiddenField, SectionHead, SelectField, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
+import { SectionHead, StateWord, ThreadBubble } from '@/components/admin/v2'
+import { CmaTextMeButton } from '@/components/admin/crm/CmaTextMeButton'
 import { PersonDeals } from './PersonDeals'
 import { stripHtml, tsLabel } from './person-format'
 import {
   addTaskFromPerson,
   completeTaskFromPerson,
-  kickoffCmaFromPerson,
   sendEmailFromPerson,
   sendSmsFromPerson,
 } from '../actions'
@@ -323,7 +322,7 @@ export async function PersonWorkspace({
             </section>
           }
         >
-          <HomesSection personId={idNum} fubLegacyId={full.legacyImportId} personEmails={personEmails} />
+          <HomesSection personId={idNum} personEmails={personEmails} />
         </Suspense>
 
       </>
@@ -343,59 +342,12 @@ export async function PersonWorkspace({
         </div>
       </div>
 
-      {showKickoff ? (
-        <section
-          aria-label="Build a CMA"
-          style={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 'var(--a-r-lg)', padding: 16, marginBottom: 20 }}
-        >
-          <CardTitle flush>Build a CMA</CardTitle>
-          {kicked ? (
-            <p style={{ color: 'var(--a-ok)', fontWeight: 500 }}>
-              CMA build kicked off — you&apos;ll get a text when the draft is ready to review. Nothing is sent to the
-              lead until you approve it.
-            </p>
-          ) : (
-            <form action={kickoffCmaFromPerson} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <HiddenField name="personId" value={card.personId} />
-              <HiddenField name="idempotencyKey" value={randomUUID()} />
-              <TextField
-                label="Property address"
-                name="address"
-                required
-                defaultValue={suggestedAddress ?? undefined}
-                placeholder="123 NW Bond St, Bend"
-                hint={
-                  suggestedAddress
-                    ? 'Parsed from their text — confirm it before building.'
-                    : 'Include the city so comps resolve. Confirm it before building.'
-                }
-                error={sp.err ? decodeURIComponent(sp.err) : undefined}
-              />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                <TextField label="Beds" name="beds" inputMode="numeric" placeholder="3" />
-                <TextField label="Baths" name="baths" inputMode="decimal" placeholder="2" />
-                <TextField label="Sqft" name="sqft" inputMode="numeric" placeholder="1800" />
-              </div>
-              <SelectField label="Rent or sell" name="intent" defaultValue="sell">
-                <option value="sell">Sell</option>
-                <option value="rent">Rent</option>
-                <option value="both">Rent or sell</option>
-              </SelectField>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <Button type="submit" touch>
-                  Build CMA — text me when ready
-                </Button>
-                <Link href={`/admin/people/${card.personId}`}>
-                  <Button variant="quiet" touch>
-                    Not now
-                  </Button>
-                </Link>
-              </div>
-              <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 0 }}>
-                The draft lands in the CMA queue for your review. Nothing is sent to the lead until you approve it.
-              </p>
-            </form>
-          )}
+      {showKickoff && kicked ? (
+        <section aria-label="CMA build" style={{ marginBottom: 16 }}>
+          <p style={{ color: 'var(--a-ok)', fontWeight: 500, fontSize: 'var(--a-text-sm)' }}>
+            CMA build kicked off. You&apos;ll get a text when the draft is ready. Nothing is sent to the lead until you
+            approve it.
+          </p>
         </section>
       ) : null}
 
@@ -443,6 +395,7 @@ export async function PersonWorkspace({
                   {c.status}
                 </span>
                 <span className="av2-quiet__fig">{c.valueLine ?? ''}</span>
+                {c.buildState === 'ready' ? <CmaTextMeButton slug={c.slug} label="Text me" fullWidth={false} /> : null}
               </li>
             ))}
             {bpos.map((b) => (

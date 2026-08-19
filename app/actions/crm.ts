@@ -29,6 +29,7 @@ import { savedViewToSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { EMPTY_SEGMENT, type CrmSegment, type CrmNode } from '@/lib/crm/segment-ast'
 import type { TriageItem } from '@/lib/data/crm/getInboundTriage'
 import { createContactAddress, parseCreateContactForm, validateCreateContact } from '@/lib/crm/create-contact'
+import { trySendGroupMms } from '@/lib/crm/try-send-group-mms'
 import { persistCreatedContactAddress, resolveCreatedPersonId } from '@/lib/crm/persist-created-contact'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
@@ -805,6 +806,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   // opt-out (opt-outs are always recorded against a resolved contact).
   const rawPhoneInput = String(formData.get('recipientPhones') ?? '')
     .split(',').map((s) => s.trim()).filter(Boolean)
+  const explicitGroupThread = String(formData.get('groupThread') ?? '') === '1'
 
   // TCPA quiet hours: one time-based check for the whole send (it also covers
   // the carrier-group path below, which cannot ride the per-person chokepoint).
@@ -825,11 +827,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const idempotencyKey = String(formData.get('idempotencyKey') ?? '').trim()
 
   const performSend = async (): Promise<CrmActionResult> => {
-  const sb = createServiceClient()
-  const { getSendTarget } = await import('@/lib/data/crm/getSendTarget')
   const { isSuppressed } = await import('@/lib/crm/suppressions')
-  const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
-  const { buildMergeContext } = await import('@/lib/crm/merge-context')
   const { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, toE164, lookupPersonByPhone } = await import('@/lib/crm/twilio')
 
   let sentCount = 0
@@ -855,91 +853,19 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     }
   }
 
-  // Native group MMS: 2+ recipients → ONE real carrier group thread (everyone
-  // sees everyone's number and messages) via Twilio Conversations, with the
-  // broker's line projected into the group. Replies are recorded by the
-  // Conversations webhook (app/api/twilio/conversations-events). Falls through
-  // to the per-recipient broadcast below if the group can't be formed (a member
-  // out of scope / suppressed / no phone, no broker line, or Twilio rejects).
-  if (recipientIds.length + rawPhones.length >= 2) {
-    const primaryTarget = await getSendTarget(personId)
-    const slug = access.access.brokerSlug ?? (primaryTarget?.person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
-    const proxy = await brokerTwilioNumber(slug)
-    if (proxy && primaryTarget) {
-      const members: Array<{ rid: number | null; phone: string }> = []
-      let blocked = false
-      for (const rid of recipientIds) {
-        if (rid !== personId) {
-          const s = await requirePersonInScope(rid, access.access)
-          if (!s.ok) { blocked = true; break }
-        }
-        const t = await getSendTarget(rid)
-        if (!t || !t.phone) { blocked = true; break }
-        if ((await isSuppressed(rid, 'sms')).suppressed) { blocked = true; break }
-        members.push({ rid, phone: t.phone })
-      }
-      // Raw thread participants (no contact record) join the carrier group directly;
-      // no per-person timeline (there is no contact to log against).
-      for (const e164 of rawPhones) members.push({ rid: null, phone: e164 })
-      if (!blocked && members.length >= 2) {
-        const groupCtx = await buildMergeContext({ person: primaryTarget.person, senderSlug: slug })
-        const mergedBody = attributeSiteLinks(renderCrmMerge(body, primaryTarget.person, groupCtx), slug, primaryTarget.person.fub_legacy_id as number | null)
-        const { sendGroupMms } = await import('@/lib/crm/twilio-conversations')
-        // Conversations media can't ride a URL — download the stored bytes and
-        // upload them to Twilio's MCS inside sendGroupMms. (Before 2026-07-09
-        // group sends silently DROPPED the attachment.)
-        const { loadGroupMedia } = await import('@/lib/crm/attachments')
-        const gm = await loadGroupMedia(refs.items)
-        if (!gm.ok) return gm
-        const groupMedia = gm.media
-        const group = await sendGroupMms({
-          projectedAddress: proxy,
-          participants: members.map((m) => m.phone),
-          body: mergedBody,
-          friendlyName: `Group · ${primaryTarget.person.name ?? personId}`,
-          media: groupMedia,
-        })
-        if (group.ok) {
-          for (const m of members) {
-            if (m.rid === null) continue // raw number: in the carrier group, no timeline to log
-            await sb.from('crm_timeline').insert({
-              person_id: m.rid, kind: 'sms_out', title: 'Group text sent', body: mergedBody,
-              payload: {
-                conversationSid: group.conversationSid, messageSid: group.messageSid,
-                groupTo: members.map((x) => x.phone),
-                // sid + chatServiceSid + media let the existing IM media proxy
-                // (/api/admin/crm/mms/[messageSid]/[mediaSid]) render the sent
-                // attachments in the thread, same as inbound group media.
-                ...(group.media.length
-                  ? { sid: group.messageSid, chatServiceSid: group.chatServiceSid, media: group.media }
-                  : {}),
-              },
-              broker: slug, source: 'app', dedupe_key: `twilio:${group.messageSid}:p${m.rid}`,
-            })
-          }
-          // Shadow-write ONE conversation for the whole carrier group (RC1),
-          // keyed on the Twilio Conversation SID, with every member a participant
-          // (contacts + raw numbers). Non-fatal.
-          try {
-            const { recordConversationMessage } = await import('@/lib/crm/record-message')
-            await recordConversationMessage({
-              sb, direction: 'out', channel: 'mms', body: mergedBody,
-              providerSid: group.messageSid, sentBy: slug, primaryPersonId: personId,
-              assignedBroker: slug, twilioConversationSid: group.conversationSid,
-              conversationSubject: `Group · ${primaryTarget.person.name ?? personId}`,
-              media: group.media.length ? group.media : [],
-              participants: members.map((m) => ({
-                personId: m.rid, rawPhone: m.rid === null ? m.phone : null, address: m.phone,
-              })),
-            })
-          } catch (e) { console.warn('[crm] conversation shadow-write (group) failed', e) }
-          members.forEach((m) => { if (m.rid !== null) revalidateCrm(m.rid) })
-          return { ok: true }
-        }
-        console.warn('[crm] group MMS failed, falling back to broadcast:', group.error)
-      }
-    }
-  }
+  const groupAttempt = await trySendGroupMms({
+    personId,
+    recipientIds,
+    rawPhones,
+    body,
+    attachments: refs.items,
+    access: access.access,
+    explicitGroupThread,
+    overrideQuietHours: override,
+    requirePersonInScope,
+    revalidate: revalidateCrm,
+  })
+  if (groupAttempt) return groupAttempt
 
   // §A4: each 1:1 recipient routes through the governed chokepoint
   // (lib/comms/sendGovernedSms) — hard-stop → suppression (fail closed) →

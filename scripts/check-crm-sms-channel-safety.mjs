@@ -87,6 +87,18 @@ if (drain) {
   }
 }
 
+// ── 2c. broker-to-self CMA text must stay on Twilio, never iMessage ──────────
+const SELF = 'lib/crm/broker-self-sms.ts'
+const self = read(SELF)
+if (self) {
+  if (!/isBrokerPhone/.test(self) || !/alert-drain-core/.test(self)) {
+    fails.push(`${SELF}: must whitelist the destination with isBrokerPhone before any send.`)
+  }
+  if (/osascript|LEAD_SMS_IMESSAGE_FALLBACK|Messages\.app/.test(self)) {
+    fails.push(`${SELF}: broker-self texts must use Twilio, never AppleScript / iMessage.`)
+  }
+}
+
 // ── 3. do-not-call must suppress SMS (TCPA: a text is a call) ────────────────
 const suppress = read(SUPPRESS)
 const dncLine = suppress.match(/contact:do-not-call'[^\n]*channels:\s*\[([^\]]*)\]/)

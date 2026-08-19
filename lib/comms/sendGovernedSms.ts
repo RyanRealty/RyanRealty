@@ -10,8 +10,8 @@
  * shape are the EXACT logic the CRM composer used inline (app/actions/crm.ts
  * sendCrmSmsAction per-recipient block, extracted 2026-07-21) — rows written
  * here are byte-identical to what that action wrote. Group carrier threads
- * (Twilio Conversations) and raw no-contact numbers stay in the composer;
- * they cannot be person-keyed and are baselined by G56.
+ * go through sendGovernedGroupMms. Raw no-contact numbers stay in the composer
+ * and are baselined by G56.
  */
 
 import 'server-only'
