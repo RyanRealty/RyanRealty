@@ -79,8 +79,8 @@ if (!/name="street"/.test(crmNew) || !/name="city"/.test(crmNew) || !/name="zip"
 if (/name="note"/.test(crmNew) || /label="Note"/.test(crmNew)) {
   fails.push('/admin/crm/new must not have a Note field')
 }
-if (!/createContactAddress/.test(createContact) || !/Email required/.test(createContact) || !/Phone required/.test(createContact)) {
-  fails.push('lib/crm/create-contact.ts must require name, email, and phone, and build a structured address')
+if (!/createContactAddress/.test(createContact) || !/Add an email, or a street address/.test(createContact) || !/Phone required/.test(createContact)) {
+  fails.push('lib/crm/create-contact.ts must require name and phone, plus email or street, and build a structured address')
 }
 if (!/createContactAddress/.test(listAction) || !/persistCreatedContactAddress/.test(listAction)) {
   fails.push('createCrmContactAction must persist the structured address after create')
@@ -103,11 +103,17 @@ if (!/includeCounts/.test(savedViews)) {
 if (!/PersonWorkspace/.test(personPage) || !/Suspense/.test(personPage) || !/PersonAddressEditor/.test(personPage)) {
   fails.push('person detail must first-paint identity and address, then stream PersonWorkspace')
 }
-if (!/PersonRelationships/.test(personPage) || !/PersonNotesAdd/.test(personPage)) {
-  fails.push('person detail must first-paint Relationships and a note form')
+if (!/PersonRelationships/.test(personPage) || !/PersonNotesAdd/.test(personPage) || !/FieldEditors/.test(personPage) || !/getPersonNotes/.test(personPage)) {
+  fails.push('person detail must first-paint stage, related people, and notes')
+}
+if (!/savePersonNoteAction/.test(read('app/admin/(protected)/people/[id]/PersonNotesAdd.tsx'))) {
+  fails.push('person notes must save through savePersonNoteAction, not a hanging form post')
 }
 const relUi = read('app/admin/(protected)/people/[id]/PersonRelationships.tsx')
 const relAction = read('app/actions/crm-relationships.ts')
+if (!/useState\(true\)/.test(relUi)) {
+  fails.push('Related people add form must be open on first paint')
+}
 if (!/Search an existing person/.test(relUi) || !/SIMPLE_RELATIONSHIP_TYPES/.test(relUi)) {
   fails.push('Relationships add must search an existing person and pick a simple type')
 }

@@ -11,7 +11,6 @@ import { getContactConversation } from '@/lib/data/crm/getContactConversation'
 import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
 import { getRecipientOptionsForContact } from '@/lib/data/crm/getRecipientOptionsForContact'
 import { getCrmFieldDefinitions } from '@/lib/data/crm/getCrmFieldDefinitions'
-import { getCrmSources } from '@/lib/data/crm/getCrmSources'
 import { getLeadSmsRecipients } from '@/lib/data/crm/getLeadSmsRecipients'
 import { getGroupReplyParticipants } from '@/lib/data/crm/getGroupReplyParticipants'
 import { getAppointmentsForPerson } from '@/lib/data/crm/getAppointments'
@@ -44,22 +43,14 @@ import { Button, CardTitle, HiddenField, SectionHead, StateWord, TextField, Thre
 import { PersonDeals } from './PersonDeals'
 import { stripHtml, tsLabel } from './person-format'
 import {
-  addNoteFromPerson,
-  addTagFromPerson,
   addTaskFromPerson,
-  assignBrokerFromPerson,
   completeTaskFromPerson,
   kickoffCmaFromPerson,
-  removeTagFromPerson,
   sendEmailFromPerson,
   sendSmsFromPerson,
-  updateSourceFromPerson,
-  updateStageFromPerson,
 } from '../actions'
 import { CommsSection } from './CommsSection'
-import { FieldEditors } from './FieldEditors'
 import { HomesSection } from './HomesSection'
-import { NotesSection } from './NotesSection'
 import { SendSection } from './SendSection'
 import { TasksSection } from './TasksSection'
 
@@ -91,7 +82,6 @@ export async function PersonWorkspace({
     emailTemplates,
     smsTemplates,
     twilioStatus,
-    crmSources,
     appointments,
     access,
     relationships,
@@ -110,7 +100,6 @@ export async function PersonWorkspace({
     getCrmEmailTemplates(),
     getCrmSmsTemplates(),
     getTwilioSmsStatus(),
-    getCrmSources(),
     getAppointmentsForPerson(idNum),
     getCrmAccess(),
     getContactRelationships(idNum),
@@ -218,11 +207,6 @@ export async function PersonWorkspace({
 
     const geo = full.geo as { city?: string } | null
 
-    const notes = full.timeline
-      .filter((t) => t.kind === 'note')
-      .slice(0, 20)
-      .map((n) => ({ id: n.id, ts: n.ts, body: n.body ?? n.title ?? '', broker: n.broker }))
-
     const foldTasks = full.tasks.map((t) => ({
       id: t.id,
       name: t.name,
@@ -324,23 +308,6 @@ export async function PersonWorkspace({
           />
         </Suspense>
 
-        <section aria-label="Details">
-          <SectionHead>Details</SectionHead>
-          <FieldEditors
-            stage={person.stage}
-            assignedBroker={(person.assigned_broker as string | null) ?? null}
-            canReassign={access?.role === 'superuser'}
-            source={(person.source as string | null) ?? null}
-            sources={crmSources}
-            tags={(person.tags as string[] | null) ?? []}
-            updateStage={updateStageFromPerson.bind(null, idNum)}
-            assignBroker={assignBrokerFromPerson.bind(null, idNum)}
-            updateSource={updateSourceFromPerson.bind(null, idNum)}
-            addTag={addTagFromPerson.bind(null, idNum)}
-            removeTag={removeTagFromPerson.bind(null, idNum)}
-          />
-        </section>
-
         <TasksSection
           tasks={foldTasks}
           appointments={foldAppointments}
@@ -359,7 +326,6 @@ export async function PersonWorkspace({
           <HomesSection personId={idNum} fubLegacyId={full.legacyImportId} personEmails={personEmails} />
         </Suspense>
 
-        <NotesSection notes={notes} addNote={addNoteFromPerson.bind(null, idNum)} showForm={false} />
       </>
     )
   }

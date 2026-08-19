@@ -23,7 +23,7 @@ export function PersonRelationships({
   relationships: ContactRelationship[]
 }) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [q, setQ] = useState('')
   const [hits, setHits] = useState<RelationshipSearchHit[]>([])
   const [picked, setPicked] = useState<RelationshipSearchHit | null>(null)
@@ -55,8 +55,11 @@ export function PersonRelationships({
   }
 
   return (
-    <section aria-label="Relationships" style={{ margin: '0 0 20px' }}>
-      <SectionHead>Relationships</SectionHead>
+    <section aria-label="Related people" style={{ margin: '0 0 20px' }}>
+      <SectionHead>Related people</SectionHead>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>
+        Link a spouse, parent, or anyone already in People.
+      </p>
       <ul className="av2-quietlist">
         {relationships.map((r) => (
           <li key={r.id} className="av2-quiet">

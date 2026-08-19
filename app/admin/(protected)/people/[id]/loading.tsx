@@ -7,7 +7,7 @@ export default function PersonLoading() {
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }} aria-busy>
       <EntityTitle>Person</EntityTitle>
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
-        Opening this person. Name, phone, email, and address land first.
+        Opening this person. Name, address, related people, and notes land first.
       </p>
     </div>
   )
