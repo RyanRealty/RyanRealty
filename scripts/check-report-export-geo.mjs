@@ -76,6 +76,7 @@ function loadTs(rel) {
   const exports = {}
   const require_ = (spec) => {
     if (spec === '@/lib/slug') return loadTs(SLUG_MODULE)
+    if (spec === '@/lib/listing/publish-street-line') return loadTs('lib/listing/publish-street-line.ts')
     if (spec === '@/data/resort-communities.json') return JSON.parse(readFileSync(join(ROOT, REGISTRY), 'utf8'))
     // Type-only imports are erased by the transpiler; anything else reaching
     // here means the module gained a real runtime dependency and this loader
