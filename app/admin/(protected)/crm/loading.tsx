@@ -13,7 +13,7 @@ export default function CrmPeopleLoading() {
   return (
     <div className="mx-auto max-w-[1600px] px-4 pb-8 pt-2 sm:px-6 sm:py-6" aria-busy>
       <div className="mb-4">
-        <Link href="/admin/people#add-person" className="av2-btn" style={{ textDecoration: 'none' }}>
+        <Link href="/admin/people?add=1" className="av2-btn" style={{ textDecoration: 'none' }}>
           New contact
         </Link>
       </div>

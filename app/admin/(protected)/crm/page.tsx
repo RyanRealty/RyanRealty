@@ -117,7 +117,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
     <div className="av2-scope" style={{ maxWidth: 1600, margin: '0 auto' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <Link
-          href="/admin/people#add-person"
+          href="/admin/people?add=1"
           className="av2-btn"
           data-tour="crm-add-person"
           style={{ textDecoration: 'none' }}

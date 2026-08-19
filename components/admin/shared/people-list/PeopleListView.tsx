@@ -244,7 +244,7 @@ export default function PeopleListView(props: PeopleListViewProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
-    if (params.get('add') === '1' || window.location.hash === '#add-person') {
+    if (params.get('add') === '1') {
       setAddOpen(true)
     }
   }, [])

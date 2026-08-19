@@ -4,13 +4,13 @@
 
 # Current — 2026-08-19 (cursor-cloud) — CMA phone open + PDF
 
-<<<<<<< HEAD
-**Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add`. Loop stays **DISARMED**. Unauth view/pdf → login. Review page slim-reads (no blobs). `/view` serves stored HTML. PDF re-renders from render_args with fixed adjustment-grid CSS. SE restored from slug. person_id stamped on kickoff/contact build. Drafts stay private. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
-=======
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Quick add is name + email + phone. Address is `crm_people.addresses`, never a note. Create lands on person detail. Detail first-paints identity, address, Relationships (search + type + save both sides), and a note form. Odessa 63285 linked spouse Nealon 63287 and parent Jane 63290. `main` @ `553c89fee`. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
->>>>>>> origin/main
+**Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add` PR #127. Loop stays **DISARMED**. Unauth view/pdf → login. Review slim-reads. `/view` serves stored HTML. PDF from render_args. SE from slug. person_id on kickoff. `#add-person` → `?add=1` so ci:admin-v2-tokens is green. Drafts stay private. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, database-canonical-reference, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — people add + relationships
+
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Quick add is name + email + phone. Address is `crm_people.addresses`, never a note. Create lands on person detail. Detail first-paints identity, address, Relationships (search + type + save both sides), and a note form. Odessa 63285 linked spouse Nealon 63287 and parent Jane 63290. `main` @ `553c89fee`. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 # Prior — 2026-08-19 (cursor-cloud) — leftover Triple / street 0 / closings / plat crumb
 
