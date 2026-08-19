@@ -2,7 +2,15 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (grok-build) — graph armed, motivated-sellers 308 shipped
+# Current — 2026-08-19 (cursor-cloud) — loop DISARMED
+
+**Surface:** Cursor cloud `bc-f77b4a1c`. **Time:** 2026-08-19 ~14:20 UTC. Matt said **"Disarm the loop"** + every agent may do what they need, do not wait. Vercel MCP `needsAuth`; no `VERCEL_TOKEN` in this environment, so env could not be flipped. Code default-off: `LOOP_SENTINEL_DEFAULT_OFF = true` in `lib/data/loop/sentinel.ts`. Cron may still hit `/api/cron/loop-sentinel`; route no-ops (`kill switch (LOOP_SENTINEL=off)`). `/admin/loop` armed flag follows `isLoopSentinelDisarmed()`. Did not touch CMA, punch list, findings, or email. Do not re-arm.
+
+**Next:** Leave the loop off. Do not set `LOOP_SENTINEL=on`. Do not flip `LOOP_SENTINEL_DEFAULT_OFF`.
+
+**Skills read:** env-vars, vercel-cli, CROSS_AGENT_HANDOFF, growth-loop (boot only).
+
+# Prior — 2026-08-19 (grok-build) — graph armed, motivated-sellers 308 shipped
 
 **Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Loop stays **ARMED**. Graph folded: G34/G35 **done**, R-219/R-220, CAP-015/017/031 evidence updated. FLEET-PUNCH motivated-sellers slice **fixed** (live 308 `/motivated-sellers` → `/price-drops`, SHA `a6558109` READY `dpl_8PiPQmohwuu12UhRfmpYGEvZaTmt`). Parent released. Next brief: `fleet:public-ux:sitemaps` — `/sitemaps/listings.xml` is an empty urlset while `listing_tile_mv` has 7589 Active/AUC rows. Sentinel handoff skipped: Cursor User API Key 401 (unattended chain cannot launch). CMA in_progress on the other checkout not touched.
 

@@ -5,6 +5,15 @@ const sentinel = readFileSync('lib/data/loop/sentinel.ts', 'utf8')
 const status = readFileSync('lib/data/loop/status.ts', 'utf8')
 const admin = readFileSync('app/admin/(protected)/loop/page.tsx', 'utf8')
 
+describe('loop sentinel — kill switch default off (Matt 2026-08-19)', () => {
+  it('defaults the sentinel to disarmed so leftover LOOP_SENTINEL=on cannot relaunch', () => {
+    expect(sentinel).toMatch(/LOOP_SENTINEL_DEFAULT_OFF = true/)
+    expect(sentinel).toMatch(/isLoopSentinelDisarmed/)
+    expect(sentinel).toMatch(/kill switch \(LOOP_SENTINEL=off\)/)
+    expect(status).toMatch(/armed: !isLoopSentinelDisarmed\(\)/)
+  })
+})
+
 describe('loop sentinel — no daily launch cap (Matt 2026-08-16)', () => {
   it('does not skip on a numeric daily launch cap', () => {
     expect(sentinel).not.toMatch(/DAILY_LAUNCH_CAP/)

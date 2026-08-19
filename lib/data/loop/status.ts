@@ -15,6 +15,7 @@ import { selectShipClass, shipClassKey } from './ship-class'
 import { fleetNodePriority, type WorkNodeState } from './work-node'
 import { upcomingBucket } from './status-copy'
 import { isExpiredUnlearned, windowEndsAt } from './ledger-draft'
+import { isLoopSentinelDisarmed } from './sentinel'
 
 const ACTIVE_WINDOW_MIN = 180
 
@@ -224,7 +225,7 @@ export async function getLoopStatus(now: Date = new Date()): Promise<LoopStatus>
 
   return {
     generatedAt: now.toISOString(),
-    armed: process.env.LOOP_SENTINEL !== 'off',
+    armed: !isLoopSentinelDisarmed(),
     nodes: {
       total: allNodes.length,
       byState,

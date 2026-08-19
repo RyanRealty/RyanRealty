@@ -15,7 +15,7 @@
  * leave 3 dormant hours). The cron heartbeats every 10 minutes — pure
  * deterministic code, no model tokens — and relaunches the moment the
  * previous agent's newest run is terminal. Guards: kill switch
- * (LOOP_SENTINEL=off) · fresh-activity standdown (a working session holds
+ * (default off / LOOP_SENTINEL=off) · fresh-activity standdown (a working session holds
  * the floor) · busy check via the Cursor API (newest run CREATING/RUNNING)
  * · 15-min boot guard (covers the window before an agent's first claim) ·
  * missing key = skip + say so. No daily launch cap (removed 2026-08-16).
@@ -76,15 +76,27 @@ async function fetchNewestRunStatus(agentId: string, apiKey: string): Promise<Ru
 }
 
 /**
+ * Default OFF (Matt 2026-08-19: "Disarm the loop").
+ * Leftover Vercel LOOP_SENTINEL=on must not re-arm — this agent could not
+ * write that env (no VERCEL_TOKEN; Vercel MCP unauthenticated).
+ * Do not flip this unless Matt says "arm the loop".
+ */
+export const LOOP_SENTINEL_DEFAULT_OFF = true
+
+export function isLoopSentinelDisarmed(): boolean {
+  return LOOP_SENTINEL_DEFAULT_OFF || process.env.LOOP_SENTINEL === 'off'
+}
+
+/**
  * handoff=true is the zero-gap chain: the CALLER is a finishing iteration
  * vouching that it is done, so the busy check and boot guard are waived —
  * the successor launches immediately. Kill switch, activity standdown,
  * and the open-work check always apply. There is no daily launch cap.
  */
 export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean }): Promise<SentinelDecision> {
-  // Kill switch. Matt arms with "arm the loop" (LOOP_SENTINEL=on) and disarms
-  // with "disarm the loop" (off). Armed 2026-08-16 21:52 PT after that word.
-  if (process.env.LOOP_SENTINEL === 'off') {
+  // Kill switch. Matt arms with "arm the loop" and disarms with "disarm the loop".
+  // Disarmed 2026-08-19 — default off so cron hits still no-op.
+  if (isLoopSentinelDisarmed()) {
     return { action: 'skipped', reason: 'kill switch (LOOP_SENTINEL=off)' }
   }
 
