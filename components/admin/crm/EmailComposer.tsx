@@ -64,6 +64,7 @@ import {
   AttachmentControl,
   useComposerAttachments,
 } from '@/components/admin/crm/ComposerAttachments'
+import type { CrmAttachmentRef } from '@/lib/crm/attachment-limits'
 import { Button, FilterChip, Menu, SearchField, Switch } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 
@@ -220,6 +221,8 @@ export function EmailComposer(props: {
   recipientOptions?: RecipientOption[]
   /** Prefill for the To row (the contact's primary email). */
   initialTo?: string[]
+  /** Staged CRM-file refs (CMA PDF) — already uploaded, never a mailto/Gmail draft. */
+  initialAttachments?: CrmAttachmentRef[]
   /** Live crm_field_definitions → Custom Fields group in the merge-field dropdown. */
   customFields?: CustomFieldToken[]
   /* ── Variant props — every email-send surface renders THIS component; these
@@ -254,6 +257,11 @@ export function EmailComposer(props: {
 
   // Attachments (multiple, uploaded client-direct — see ComposerAttachments).
   const attachments = useComposerAttachments({ personId: props.personId, channel: 'email' })
+  useEffect(() => {
+    for (const ref of props.initialAttachments ?? []) attachments.addReady(ref)
+    // Seed once when this compose instance mounts (key includes the CMA slug).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Recipients — To/Cc/Bcc rows post JSON arrays; an empty To sends to the
   // contact's primary email (the send action's fallback).

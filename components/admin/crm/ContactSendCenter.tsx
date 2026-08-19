@@ -53,6 +53,7 @@ import type { ContactBpo } from '@/lib/data/crm/getContactBpos'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
 import { sendDeliverable } from '@/app/actions/send-deliverable'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
+import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
 
 type Area = { slug: string; label: string }
 
@@ -147,7 +148,6 @@ export function ContactSendCenter(props: {
   const [pending, startTransition] = useTransition()
   /** Per-flow idempotency keys — stable across retries of THIS attempt; cleared on success. */
   const nlKeyRef = useRef('')
-  const cmaKeyRef = useRef('')
   const bpoKeyRef = useRef('')
   const reportKeyRef = useRef('')
   const listingsKeyRef = useRef('')
@@ -158,22 +158,18 @@ export function ContactSendCenter(props: {
   }
 
   const finalBpos = useMemo(() => props.bpos.filter((b) => b.status === 'final'), [props.bpos])
-  const finalCmas = useMemo(
-    () => props.cmas.filter((c) => c.status === 'finalized' || c.status === 'delivered'),
+  const attachableCmas = useMemo(
+    () => props.cmas.filter((c) => c.hasDocument && c.status !== 'archived'),
     [props.cmas],
   )
-  // In-flight story: builds still running (build_state) + drafts awaiting
-  // review, so the CMA tab never claims "no CMA" while one is minutes from
-  // ready (the kick-off worker texts the broker on ready).
+  // In-flight story: builds still running (build_state) or a draft without a
+  // document yet. Drafts with a PDF attach in Messages — they are not "pending".
   const pendingCmas = useMemo(
     () =>
-      props.cmas.filter(
-        (c) =>
-          c.buildState === 'queued' ||
-          c.buildState === 'building' ||
-          c.buildState === 'failed' ||
-          (c.status !== 'finalized' && c.status !== 'delivered'),
-      ),
+      props.cmas.filter((c) => {
+        const inFlight = c.buildState === 'queued' || c.buildState === 'building' || c.buildState === 'failed'
+        return inFlight || !c.hasDocument
+      }),
     [props.cmas],
   )
 
@@ -181,7 +177,7 @@ export function ContactSendCenter(props: {
   const [bpoSlug, setBpoSlug] = useState(finalBpos[0]?.slug ?? '')
   const [bpoFull, setBpoFull] = useState(false)
   // CMA state
-  const [cmaSlug, setCmaSlug] = useState(finalCmas[0]?.slug ?? '')
+  const [cmaSlug, setCmaSlug] = useState(attachableCmas[0]?.slug ?? '')
   // Market report state
   const [areas, setAreas] = useState<string[]>(props.subscribedAreas)
   const [subscribe, setSubscribe] = useState(false)
@@ -273,20 +269,6 @@ export function ContactSendCenter(props: {
       })
       if (r.ok) bpoKeyRef.current = ''
       return r.ok ? { ok: true, message: 'Price opinion sent.' } : { ok: false, error: r.error }
-    })
-  }
-  function sendCma() {
-    if (!cmaSlug) return
-    run('CMA', async () => {
-      const key = claimKey(cmaKeyRef)
-      const r = await sendDeliverable({
-        personId: props.personId,
-        kind: 'cma',
-        ref: cmaSlug,
-        idempotencyKey: key,
-      })
-      if (r.ok) cmaKeyRef.current = ''
-      return r.ok ? { ok: true, message: 'CMA sent.' } : { ok: false, error: r.error }
     })
   }
   function sendReport() {
@@ -498,7 +480,7 @@ export function ContactSendCenter(props: {
                     ? 'Building — you get a text when it is ready'
                     : failed
                       ? 'Build failed — open the CMA admin page to retry'
-                      : 'Draft — review it, then it becomes sendable'
+                      : 'Draft — rebuild it, then attach it in Messages'
                   return (
                     <div
                       key={c.slug}
@@ -525,11 +507,11 @@ export function ContactSendCenter(props: {
                 })}
               </div>
             ) : null}
-            {finalCmas.length === 0 ? (
+            {attachableCmas.length === 0 ? (
               <div className="space-y-3">
                 {pendingCmas.length === 0 ? (
                   <p className="text-sm" style={{ color: 'var(--a-text-2)' }}>
-                    No finalized CMA yet. Build one — the draft arrives async and you review it before anything sends.
+                    No CMA PDF yet. Build one — then attach it in Messages.
                   </p>
                 ) : null}
                 {/* A link that LOOKS like the quiet button it replaced: the v2
@@ -542,20 +524,21 @@ export function ContactSendCenter(props: {
             ) : (
               <>
                 <SelectField label="CMA" value={cmaSlug} onChange={(e) => setCmaSlug(e.target.value)}>
-                  <option value="" disabled>Choose a finalized CMA</option>
-                  {finalCmas.map((c) => (
+                  <option value="" disabled>Choose a CMA</option>
+                  {attachableCmas.map((c) => (
                     <option key={c.slug} value={c.slug}>
                       {c.subjectAddress}
                       {c.valueLine ? ` · ${c.valueLine}` : ''}
                     </option>
                   ))}
                 </SelectField>
-                <SendButton
-                  onClick={sendCma}
-                  disabled={pending || blocked || !cmaSlug}
-                  busy={busy('CMA')}
-                  label="Send CMA"
-                />
+                <a
+                  href={cmaCrmComposeHref({ personId: props.personId, slug: cmaSlug, channel: 'email' })}
+                  className="av2-btn av2-btn--touch w-full"
+                  style={{ textDecoration: 'none' }}
+                >
+                  Open in Messages
+                </a>
                 <a
                   href={props.cmaBuildHref}
                   className="block text-center text-xs font-medium hover:underline"

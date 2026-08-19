@@ -2,11 +2,12 @@
  * getContactCmas — the contact page's view of public.cmas (the in-house CMA
  * engine's system of record). Prefers the stable person_id link (W5.1), with
  * client_email fallback for older rows. Powers the SendPanel CMA tab +
- * right-rail card (review draft / send finalized / re-send delivered).
+ * right-rail card (review / attach in Messages).
  *
  * DAL boundary (G1): the raw .from() reads live here, inside lib/data/.
  */
 import { createServiceClient } from '@/lib/supabase/service'
+import { cmaHasStoredHtml } from '@/lib/cma/draft-access'
 
 export type CmaBuildState = 'queued' | 'building' | 'ready' | 'failed'
 
@@ -21,6 +22,8 @@ export type ContactCma = {
   deliveredAt: string | null
   /** Always derived from slug — never gated on never-populated preview_url. */
   reviewUrl: string
+  /** Stored HTML or a finished build — compose can attach a PDF. */
+  hasDocument: boolean
 }
 
 function usd(n: unknown): string | null {
@@ -45,7 +48,7 @@ export async function getContactCmas(params: {
 
   const sb = createServiceClient()
   const select =
-    'slug,subject_address,status,build_state,value_low,value_high,created_at,delivered_at,client_email,person_id'
+    'slug,subject_address,status,build_state,value_low,value_high,created_at,delivered_at,client_email,person_id,html_path,built_at'
 
   // person_id first; email fallback for pre-migration rows that never got a link.
   const byPerson = await sb
@@ -81,6 +84,11 @@ export async function getContactCmas(params: {
       createdAt: String(r.created_at),
       deliveredAt: (r.delivered_at as string | null) ?? null,
       reviewUrl: `/admin/cmas/${slug}`,
+      hasDocument:
+        cmaHasStoredHtml(r.html_path) ||
+        String(r.html_path ?? '').startsWith('public/cmas/') ||
+        Boolean(r.built_at) ||
+        asBuildState(r.build_state) === 'ready',
     }
   })
 }

@@ -14,8 +14,10 @@
 import { useState, type ComponentProps } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { FilterChip, SelectField } from '@/components/admin/v2'
+import { CmaComposeAttach, type CmaComposeSeed } from '@/components/admin/crm/CmaComposeAttach'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer, type SmsRecipient } from '@/components/admin/crm/SmsComposer'
+import type { ContactCma } from '@/lib/data/crm/getContactCmas'
 
 type TemplateOpt = { key: string; name: string }
 
@@ -42,8 +44,13 @@ export function CommsSection(props: {
   smsRecipients: SmsRecipient[]
   sendSms: (formData: FormData) => Promise<void>
   sendEmail: (formData: FormData) => Promise<void>
+  saveEmailDraft?: (formData: FormData) => Promise<void>
+  saveSmsDraft?: (formData: FormData) => Promise<void>
+  cmas?: ContactCma[]
+  composeCma?: string | null
 }) {
   const [channel, setChannel] = useState<'sms' | 'email'>(props.initialChannel)
+  const [cmaSeed, setCmaSeed] = useState<CmaComposeSeed | null>(null)
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -76,8 +83,32 @@ export function CommsSection(props: {
     </div>
   )
 
+  function applyCmaSeed(seed: CmaComposeSeed) {
+    setCmaSeed(seed)
+    setChannel(seed.channel)
+  }
+
+  const emailKey = cmaSeed?.channel === 'email' ? `cma-${cmaSeed.slug}` : (props.tplKey ?? 'blank')
+  const smsKey = cmaSeed?.channel === 'sms' ? `cma-${cmaSeed.slug}` : (props.smsTplKey ?? 'blank')
+  const emailTo =
+    cmaSeed?.channel === 'email' && cmaSeed.stage.householdEmails.length > 0
+      ? cmaSeed.stage.householdEmails
+      : props.initialTo
+  const emailSubject =
+    cmaSeed?.channel === 'email' ? cmaSeed.stage.subject : props.emailInitialSubject
+  const emailBody = cmaSeed?.channel === 'email' ? cmaSeed.stage.emailBody : props.emailInitialBody
+  const smsBody = cmaSeed?.channel === 'sms' ? cmaSeed.stage.smsBody : props.smsInitialBody
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {props.cmas && props.cmas.length > 0 ? (
+        <CmaComposeAttach
+          personId={props.personId}
+          cmas={props.cmas}
+          composeSlug={props.composeCma ?? null}
+          onSeed={applyCmaSeed}
+        />
+      ) : null}
       <div className="av2-wordrow" role="group" aria-label="Channel">
         <FilterChip pressed={channel === 'sms'} onClick={() => setChannel('sms')}>
           Text
@@ -100,13 +131,17 @@ export function CommsSection(props: {
           <>
             {templateSelect('smsTpl', props.smsTplKey, props.smsTemplates)}
             <SmsComposer
-              key={props.smsTplKey ?? 'blank'}
-              initialBody={props.smsInitialBody}
+              key={smsKey}
+              initialBody={smsBody}
               sendAction={props.sendSms}
+              saveDraftAction={props.saveSmsDraft}
               recipients={props.smsRecipients}
               primaryPersonId={props.personId}
               personId={props.personId}
               customFields={props.customFields}
+              initialAttachments={cmaSeed?.channel === 'sms' ? [cmaSeed.stage.attachment] : undefined}
+              textMePhone={cmaSeed?.stage.textMePhone ?? null}
+              initialTextMe={cmaSeed?.channel === 'sms'}
             />
           </>
         ) : (
@@ -119,17 +154,19 @@ export function CommsSection(props: {
           <>
             {templateSelect('tpl', props.tplKey, props.emailTemplates)}
             <EmailComposer
-              key={props.tplKey ?? 'blank'}
-              initialSubject={props.emailInitialSubject}
-              initialBody={props.emailInitialBody}
+              key={emailKey}
+              initialSubject={emailSubject}
+              initialBody={emailBody}
               signatureHtml={props.signatureHtml}
               sendAction={props.sendEmail}
+              saveDraftAction={props.saveEmailDraft}
               personId={props.personId}
               tplKey={props.tplKey}
               toLabel={props.toLabel}
-              initialTo={props.initialTo}
+              initialTo={emailTo}
               recipientOptions={props.recipientOptions}
               customFields={props.customFields}
+              initialAttachments={cmaSeed?.channel === 'email' ? [cmaSeed.stage.attachment] : undefined}
             />
           </>
         ) : (

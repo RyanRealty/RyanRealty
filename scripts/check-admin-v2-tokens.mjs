@@ -492,6 +492,7 @@ const SCAN_DIRS = [
   'components/admin/crm/ComposerAttachments.tsx',
   'components/admin/crm/ContactBehaviorPanel.tsx',
   'components/admin/crm/ContactBpoCard.tsx',
+  'components/admin/crm/CmaComposeAttach.tsx',
   'components/admin/crm/ContactCmaCard.tsx',
   'components/admin/crm/ContactDeliveryPanel.tsx',
   'components/admin/crm/ContactEmailEngagement.tsx',

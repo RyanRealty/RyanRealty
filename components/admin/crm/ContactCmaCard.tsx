@@ -2,26 +2,23 @@
 
 /**
  * ContactCmaCard — the contact's CMAs from public.cmas (the in-house CMA
- * engine), right-rail card. Each row: address, status, value range, and the
- * action that matches its state — review a draft, send a finalized one, or
- * re-send a delivered one (all through sendCmaForContactAction via the bound
- * form action, which guards status + suppression server-side).
+ * engine), right-rail card. Each row: address, status, value range, review,
+ * and Send from CRM when a PDF exists. Send opens compose — it does not
+ * fire a one-click email.
  *
  * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
  * Card -> av2-pane, Badge -> StateWord (build + delivery states are system
- * words), Button -> the v2 Button, and the `asChild` Review anchor -> a real
- * <a> carrying av2-btn so hover/pressed/focus come from the stylesheet.
+ * words), and the Review / Send anchors carry av2-btn so hover/pressed/focus
+ * come from the stylesheet.
  *
- * Gate note (ci:admin-ui rule C): "Send to contact" is this card's one primary
- * action. "Re-send" on an already-delivered CMA is deliberately quiet — it was
- * variant="outline" before — so a row that has already gone out never competes
- * with a row that still needs sending.
+ * Gate note (ci:admin-ui rule C): "Send from CRM" is an anchor, not a
+ * primary Button, so this card stays at zero extra primaries.
  */
-import { useState, useTransition } from 'react'
 import { FileText } from 'lucide-react'
 import { formatDate } from '@/lib/format/date'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
-import { Button, StateWord, type AdminState } from '@/components/admin/v2'
+import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
+import { StateWord, type AdminState } from '@/components/admin/v2'
 
 function fmtDate(iso: string): string {
   return formatDate(iso, { month: 'short', day: 'numeric' })
@@ -30,7 +27,7 @@ function fmtDate(iso: string): string {
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
   building: 'Building',
-  finalized: 'Ready to send',
+  finalized: 'Ready',
   delivered: 'Sent',
 }
 
@@ -41,7 +38,6 @@ const BUILD_LABEL: Record<string, string> = {
   failed: 'Build failed',
 }
 
-/** delivered = done; finalized (and not still building) = ready to act on. */
 function statusTone(status: string, building: boolean): AdminState {
   if (building) return 'waiting'
   if (status === 'delivered') return 'ok'
@@ -50,23 +46,10 @@ function statusTone(status: string, building: boolean): AdminState {
 }
 
 export function ContactCmaCard(props: {
+  personId: number
   cmas: ContactCma[]
-  /** Bound sendCmaForm(personId, fd) — posts deliveryId=slug. */
-  sendAction: (formData: FormData) => Promise<void>
 }) {
-  const [pending, startTransition] = useTransition()
-  const [sendingSlug, setSendingSlug] = useState<string | null>(null)
   if (props.cmas.length === 0) return null
-
-  function send(slug: string) {
-    const fd = new FormData()
-    fd.set('deliveryId', slug)
-    setSendingSlug(slug)
-    startTransition(async () => {
-      await props.sendAction(fd)
-      setSendingSlug(null)
-    })
-  }
 
   return (
     <div className="av2-pane">
@@ -76,8 +59,8 @@ export function ContactCmaCard(props: {
       </div>
       <div className="space-y-2.5">
         {props.cmas.map((c) => {
-          const sendable = c.status === 'finalized' || c.status === 'delivered'
           const building = c.buildState === 'queued' || c.buildState === 'building'
+          const attachable = c.hasDocument && !building && c.status !== 'archived'
           const badgeLabel = building
             ? (BUILD_LABEL[c.buildState] ?? c.buildState)
             : (STATUS_LABEL[c.status] ?? c.status)
@@ -96,8 +79,6 @@ export function ContactCmaCard(props: {
                     {c.valueLine ? `${c.valueLine} · ` : ''}{fmtDate(c.createdAt)}
                   </p>
                 </div>
-                {/* shrink-0 lived on the shadcn Badge base class; StateWord takes
-                    no className, so the guard moves to the flex item itself. */}
                 <span className="shrink-0">
                   <StateWord state={statusTone(c.status, building)}>{badgeLabel}</StateWord>
                 </span>
@@ -108,15 +89,14 @@ export function ContactCmaCard(props: {
                     Review
                   </a>
                 ) : null}
-                {sendable && !building ? (
-                  <Button
-                    type="button"
-                    variant={c.status === 'delivered' ? 'quiet' : 'primary'}
-                    disabled={pending}
-                    onClick={() => send(c.slug)}
+                {attachable ? (
+                  <a
+                    href={cmaCrmComposeHref({ personId: props.personId, slug: c.slug, channel: 'email' })}
+                    className="av2-btn"
+                    style={{ textDecoration: 'none' }}
                   >
-                    {sendingSlug === c.slug ? 'Sending…' : c.status === 'delivered' ? 'Re-send' : 'Send to contact'}
-                  </Button>
+                    Send from CRM
+                  </a>
                 ) : null}
               </div>
             </div>

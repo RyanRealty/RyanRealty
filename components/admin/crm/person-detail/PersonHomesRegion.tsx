@@ -8,7 +8,8 @@
  */
 
 import { getContactNextStep } from '@/app/actions/contact-next-step'
-import { sendCmaForm, startBpoForm } from '@/app/admin/(protected)/crm/[id]/form-actions'
+import { startBpoForm } from '@/app/admin/(protected)/crm/[id]/form-actions'
+import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
 import { OwnedHomeCard } from '@/components/admin/crm/OwnedHomeCard'
 import { ContactCmaCard } from '@/components/admin/crm/ContactCmaCard'
 import { ContactBpoCard } from '@/components/admin/crm/ContactBpoCard'
@@ -81,12 +82,12 @@ export async function PersonHomesRegion({
           }
           reviewDeliveryId={reviewId}
           buildHref="?intent=cma"
-          sendAction={sendCmaForm.bind(null, personId)}
+          composeHref={reviewId ? cmaCrmComposeHref({ personId, slug: reviewId, channel: 'email' }) : null}
         />
       ) : null}
       {contactCmas.length > 0 ? (
         <div className={nextStep.ownsHome && homeAddress ? 'mt-2.5' : undefined}>
-          <ContactCmaCard cmas={contactCmas} sendAction={sendCmaForm.bind(null, personId)} />
+          <ContactCmaCard personId={personId} cmas={contactCmas} />
         </div>
       ) : null}
       <div className={nextStep.ownsHome && homeAddress ? 'mt-2.5' : undefined}>

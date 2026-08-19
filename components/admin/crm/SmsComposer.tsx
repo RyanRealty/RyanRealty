@@ -48,8 +48,8 @@ import {
   AttachmentControl,
   useComposerAttachments,
 } from '@/components/admin/crm/ComposerAttachments'
-import { MMS_ACCEPT_ATTR } from '@/lib/crm/attachment-limits'
-import { Button, FilterChip, ToolbarCheck } from '@/components/admin/v2'
+import { MMS_ACCEPT_ATTR, type CrmAttachmentRef } from '@/lib/crm/attachment-limits'
+import { Button, FilterChip, Switch, ToolbarCheck } from '@/components/admin/v2'
 
 function segmentInfo(text: string): { chars: number; segments: number } {
   const gsm = /^[A-Za-z0-9 @£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ!"#%&'()*+,\-./:;<=>?¡ÄÖÑܧ¿äöñüà\n\r^{}\\[~\]|€]*$/.test(text)
@@ -118,6 +118,12 @@ export function SmsComposer(props: {
   personId?: number
   /** Live crm_field_definitions → Custom Fields group in the merge-field dropdown. */
   customFields?: CustomFieldToken[]
+  /** Staged CRM-file refs (CMA PDF) already uploaded into crm-files. */
+  initialAttachments?: CrmAttachmentRef[]
+  /** Broker cell for the Text me copy — never a household number. */
+  textMePhone?: string | null
+  /** Start with Text me on (CMA attach flow). */
+  initialTextMe?: boolean
   /* ── Variant props — every SMS-send surface renders THIS component (Matt
         directive 2026-07-15: one interface for every text/email send). ── */
   /** Hide the MMS attachment control (host path has no contact-file scope). */
@@ -161,6 +167,14 @@ export function SmsComposer(props: {
     personId: props.personId ?? props.primaryPersonId,
     channel: 'mms',
   })
+  useEffect(() => {
+    for (const ref of props.initialAttachments ?? []) attachments.addReady(ref)
+    // Seed once when this compose instance mounts (key includes the CMA slug).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const [textMe, setTextMe] = useState(Boolean(props.initialTextMe && props.textMePhone))
+  const textMePhone = (props.textMePhone ?? '').trim()
 
   const recipients = props.recipients ?? []
   // The lead is always a recipient. Group-thread participants (defaultOn) start
@@ -180,7 +194,10 @@ export function SmsComposer(props: {
   // Selected split into contact ids vs raw phone numbers for the send action.
   const selectedRecips = recipients.filter((r) => r.personId !== props.primaryPersonId && selectedExtra.has(recipKey(r)))
   const extraIds = selectedRecips.filter((r) => r.personId > 0).map((r) => r.personId).join(',')
-  const extraPhones = selectedRecips.filter((r) => r.personId === 0).map((r) => r.phone).join(',')
+  const extraPhones = [
+    ...selectedRecips.filter((r) => r.personId === 0).map((r) => r.phone),
+    ...(textMe && textMePhone ? [textMePhone] : []),
+  ].join(',')
 
   function handleInsertToken(token: string) {
     const el = bodyRef.current
@@ -230,11 +247,31 @@ export function SmsComposer(props: {
           })}
           <input type="hidden" name="recipientIds" value={extraIds} />
           <input type="hidden" name="recipientPhones" value={extraPhones} />
+          {textMePhone ? (
+            <Switch
+              label="Text me a copy of this message"
+              stateText="Text me"
+              labelHidden
+              checked={textMe}
+              onChange={(e) => setTextMe(e.target.checked)}
+            />
+          ) : null}
           {selectedRecips.length > 0 ? (
             <span className="basis-full text-[11px]" style={{ color: 'var(--a-text-2)' }}>
               Replies to {selectedRecips.length + 1} people
             </span>
           ) : null}
+        </div>
+      ) : textMePhone ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Switch
+            label="Text me a copy of this message"
+            stateText="Text me"
+            labelHidden
+            checked={textMe}
+            onChange={(e) => setTextMe(e.target.checked)}
+          />
+          <input type="hidden" name="recipientPhones" value={extraPhones} />
         </div>
       ) : null}
       {unresolved.length > 0 ? (

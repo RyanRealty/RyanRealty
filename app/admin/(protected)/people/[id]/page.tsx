@@ -45,6 +45,7 @@ export default async function PersonPage({
     flash?: string
     error?: string
     replyChannel?: string
+    composeCma?: string
   }>
 }) {
   const ctx = await requireAdminPage('people.view')
@@ -99,9 +100,9 @@ export default async function PersonPage({
           </a>
         ) : null}
         {card.email ? (
-          <a href={`mailto:${card.email}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+          <Link href={`/admin/people/${card.personId}?replyChannel=email#comms`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
             Email
-          </a>
+          </Link>
         ) : null}
         {sp.intent !== 'cma' && sp.kicked !== '1' ? (
           <Link href={`/admin/people/${card.personId}?intent=cma`}>
@@ -138,6 +139,7 @@ export default async function PersonPage({
             tpl: sp.tpl,
             smsTpl: sp.smsTpl,
             replyChannel: sp.replyChannel,
+            composeCma: sp.composeCma,
           }}
         />
       </Suspense>

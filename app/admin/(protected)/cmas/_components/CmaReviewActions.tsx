@@ -2,32 +2,25 @@
 
 /**
  * Review-page action rail: edit client info + price adjustment (rebuild),
- * approve draft → finalized, send to lead, or delete. Send goes out through
- * the CRM — a real email from the signing broker's own mailbox, tracked and
- * logged on the contact's timeline. Sending requires the explicit button
- * click plus a confirmation dialog — nothing fires automatically.
+ * approve draft → finalized, or delete. Send is a link into CRM compose on
+ * the person page — attach the PDF, text-me, or save an email draft. Nothing
+ * leaves the shop from this page.
  *
  * 11F: on the LOCKED admin v2 language. Label+Input+Select ->
- * TextField/SelectField, Separator -> a hairline div, the send-confirmation
- * Dialog stays a plain <Dialog> (mirrors CmaPublishControl and the BPO
- * family's send flow — sending is consequential but not destructive in
- * ConfirmDialog's sense), and the delete confirmation -> <ConfirmDialog>
- * (genuinely destructive + irreversible, exactly what it exists for).
+ * TextField/SelectField, Separator -> a hairline div, and the delete
+ * confirmation -> <ConfirmDialog> (genuinely destructive + irreversible).
  *
  * Gate note (ci:admin-ui rule C, at most one primary-variant Button per
- * file): this file carries three CTA-shaped moments (Approve, the "Send to
- * lead" trigger, and its dialog's "Send now" confirm) plus Save-and-rebuild
- * and Archive. "Send to lead" keeps the one primary accent — the highest-
- * stakes single click on this page (a real email leaving to a real client).
- * Approve, Save-and-rebuild and Archive are quiet; "Send now" is quiet too,
- * matching the confirm-is-never-primary idiom ConfirmDialog itself already
- * bakes in for Delete.
+ * file): Approve, Save-and-rebuild and Archive stay quiet. "Send from CRM"
+ * is an anchor into compose (not a primary Button) so this file stays at
+ * zero extra primaries.
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Button, ConfirmDialog, Dialog, SelectField, TextField } from '@/components/admin/v2'
+import { Button, ConfirmDialog, SelectField, TextField } from '@/components/admin/v2'
+import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
 import { formatPriceExact } from '@/lib/format/money'
 import {
   rebuildCmaAction,
@@ -36,7 +29,6 @@ import {
   archiveCmaAction,
   unarchiveCmaAction,
   deleteCmaAction,
-  sendCmaToLeadAction,
 } from '@/app/actions/cma-admin'
 
 export interface CmaReviewActionsProps {
@@ -51,6 +43,7 @@ export interface CmaReviewActionsProps {
   brokerSlug: string | null
   brokers: Array<{ slug: string; displayName: string }>
   hasDocument: boolean
+  personId: number | null
 }
 
 const usd = formatPriceExact
@@ -65,12 +58,14 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
     props.priceOverride != null ? String(props.priceOverride) : '',
   )
   const [brokerSlug, setBrokerSlug] = useState(props.brokerSlug ?? props.brokers[0]?.slug ?? 'matthew-ryan')
-  const [sendOpen, setSendOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const isDraft = props.status === 'draft'
   const isArchived = props.status === 'archived'
-  const isSendable = (props.status === 'finalized' || props.status === 'delivered') && Boolean(clientEmail.trim())
+  const composeHref =
+    props.personId && props.hasDocument
+      ? cmaCrmComposeHref({ personId: props.personId, slug: props.slug, channel: 'email' })
+      : null
 
   function rebuild() {
     const override = priceOverride.trim() ? Number(priceOverride.replace(/[^0-9.]/g, '')) : null
@@ -116,20 +111,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
       const { error } = await approveCmaAction(props.slug)
       if (error) toast.error(error)
       else {
-        toast.success('Approved. You can now send it to the lead.')
-        router.refresh()
-      }
-    })
-  }
-
-  function sendToLead() {
-    setSendOpen(false)
-    startTransition(async () => {
-      const { data, error } = await sendCmaToLeadAction(props.slug)
-      if (error) toast.error(error)
-      else {
-        const from = data?.transport === 'gmail' && data.mailbox ? ` from ${data.mailbox}` : ''
-        toast.success(`Sent to ${clientEmail.trim()}${from}. Opens, clicks, and replies land on the contact record.`)
+        toast.success('Approved. Send it from CRM compose.')
         router.refresh()
       }
     })
@@ -209,37 +191,24 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           </Button>
         ) : null}
 
-        <Button onClick={() => setSendOpen(true)} touch className="w-full" disabled={isPending || !isSendable}>
-          Send to lead
-        </Button>
-
-        <Dialog
-          open={sendOpen}
-          onClose={() => setSendOpen(false)}
-          title="Send this CMA to the lead?"
-          description={
-            <>
-              A tracked email goes to {clientEmail.trim() || 'the client'} through the CRM, sent from the signing
-              broker&apos;s own mailbox with the PDF attached and a link to the online report. Opens, clicks, and
-              replies land on the contact record.
-            </>
-          }
-          footer={
-            <>
-              <Button variant="quiet" onClick={() => setSendOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="quiet" onClick={sendToLead} disabled={isPending}>
-                Send now
-              </Button>
-            </>
-          }
-        />
-        {!isSendable && props.status === 'draft' ? (
-          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Approve the draft before sending.</p>
+        {composeHref ? (
+          <a href={composeHref} className="av2-btn av2-btn--touch w-full" style={{ textDecoration: 'none' }}>
+            Send from CRM
+          </a>
+        ) : (
+          <Button touch className="w-full" disabled>
+            Send from CRM
+          </Button>
+        )}
+        {!props.personId ? (
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            Tie this CMA to a CRM person to attach the PDF in Messages.
+          </p>
         ) : null}
-        {!clientEmail.trim() ? (
-          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Add a client email (and rebuild) to enable sending.</p>
+        {props.personId && !props.hasDocument ? (
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            Rebuild the document before attaching it in compose.
+          </p>
         ) : null}
       </div>
 

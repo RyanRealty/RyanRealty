@@ -120,6 +120,23 @@ export function useComposerAttachments(params: { personId?: number; channel: Crm
     }
   }
 
+  function addReady(ref: CrmAttachmentRef) {
+    setItemsSynced((prev) => {
+      if (prev.some((i) => i.path === ref.path)) return prev
+      return [
+        ...prev,
+        {
+          key: nextChipKey(),
+          name: ref.name,
+          sizeBytes: ref.sizeBytes,
+          contentType: ref.contentType,
+          status: 'done',
+          path: ref.path,
+        },
+      ]
+    })
+  }
+
   function remove(key: string) {
     setItemsSynced((prev) => prev.filter((i) => i.key !== key))
   }
@@ -132,7 +149,7 @@ export function useComposerAttachments(params: { personId?: number; channel: Crm
     .map((i) => ({ path: i.path, name: i.name, sizeBytes: i.sizeBytes, contentType: i.contentType }))
   const uploading = items.some((i) => i.status === 'uploading')
 
-  return { items, addFiles, remove, clear, ready, uploading, enabled: Boolean(personId) }
+  return { items, addFiles, addReady, remove, clear, ready, uploading, enabled: Boolean(personId) }
 }
 
 export function AttachmentChips(props: {

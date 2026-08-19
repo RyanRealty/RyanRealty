@@ -51,6 +51,8 @@ import {
   completeTaskFromPerson,
   kickoffCmaFromPerson,
   removeTagFromPerson,
+  saveEmailDraftFromPerson,
+  saveSmsDraftFromPerson,
   sendEmailFromPerson,
   sendSmsFromPerson,
   updateSourceFromPerson,
@@ -70,6 +72,7 @@ export type PersonWorkspaceSearch = {
   tpl?: string
   smsTpl?: string
   replyChannel?: string
+  composeCma?: string
 }
 
 export async function PersonWorkspace({
@@ -214,7 +217,9 @@ export async function PersonWorkspace({
     const canEmail = Boolean(primaryEmail)
 
     const replyChannel = sp.replyChannel === 'email' ? ('email' as const) : sp.replyChannel === 'sms' ? ('sms' as const) : null
-    const initialChannel = replyChannel ?? (smsTpl ? 'sms' : tpl ? 'email' : primaryPhone ? 'sms' : 'email')
+    const initialChannel =
+      replyChannel ??
+      (sp.composeCma ? 'email' : smsTpl ? 'sms' : tpl ? 'email' : primaryPhone ? 'sms' : 'email')
 
     const geo = full.geo as { city?: string } | null
 
@@ -304,6 +309,10 @@ export async function PersonWorkspace({
             smsRecipients={smsRecipients}
             sendSms={sendSmsFromPerson.bind(null, idNum)}
             sendEmail={sendEmailFromPerson.bind(null, idNum)}
+            saveEmailDraft={saveEmailDraftFromPerson.bind(null, idNum)}
+            saveSmsDraft={saveSmsDraftFromPerson.bind(null, idNum)}
+            cmas={cmas}
+            composeCma={sp.composeCma ?? null}
           />
         </section>
 

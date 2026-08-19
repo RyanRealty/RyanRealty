@@ -25,6 +25,7 @@ import {
 } from '@/app/actions/crm'
 import { updatePersonFieldAction } from '@/app/actions/crm-person-detail'
 import { startBpoForContactAction } from '@/app/actions/contact-bpo'
+import { saveDraftAction } from '@/app/actions/crm-inbox'
 
 const BASE = '/admin/people'
 
@@ -60,6 +61,20 @@ export async function sendEmailFromPerson(personId: number, formData: FormData):
   const r = await sendCrmEmailAction(formData)
   revalidatePath(personPath(personId))
   if (!r.ok) redirect(errorUrl(personId, `Email not sent — ${r.error ?? 'unknown error'}`))
+}
+
+export async function saveEmailDraftFromPerson(personId: number, formData: FormData): Promise<void> {
+  const r = await saveDraftAction(personId, 'email', formData)
+  revalidatePath(personPath(personId))
+  if (!r.ok) redirect(errorUrl(personId, `Draft not saved — ${r.error ?? 'unknown error'}`))
+  redirect(`${personPath(personId)}?flash=${encodeURIComponent('Email draft saved.')}`)
+}
+
+export async function saveSmsDraftFromPerson(personId: number, formData: FormData): Promise<void> {
+  const r = await saveDraftAction(personId, 'text', formData)
+  revalidatePath(personPath(personId))
+  if (!r.ok) redirect(errorUrl(personId, `Draft not saved — ${r.error ?? 'unknown error'}`))
+  redirect(`${personPath(personId)}?flash=${encodeURIComponent('Text draft saved.')}`)
 }
 
 // ── Notes ───────────────────────────────────────────────────────────────────

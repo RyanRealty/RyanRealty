@@ -219,6 +219,7 @@ export default async function AdminCmaReviewPage({
         brokerSlug={(row.broker_slug as string | null) ?? null}
         brokers={brokers}
         hasDocument={hasDocument}
+        personId={row.person_id == null ? null : Number(row.person_id)}
       />
 
       <SectionHead>Listing page</SectionHead>

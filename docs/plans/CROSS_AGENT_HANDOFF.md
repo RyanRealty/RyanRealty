@@ -2,7 +2,13 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — hub reject + Foley investor HOA
+# Current — 2026-08-19 (cursor-cloud) — 648 CMA send via CRM compose
+
+**Surface:** Cursor Cloud. Branch `cursor/cma-crm-compose-send-4add`. Loop stays **DISARMED**. 648 CMA (`cma-648-se-douglas`, person 63285) attaches from CRM compose: PDF / text-me / email draft. Review + Send Center + contact CMA card + owned-home card open Messages, not Gmail/mailto/one-click send. Drafts stay private. SE stays on the address. Do not email or text the household. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — hub reject + Foley investor HOA
 
 **Surface:** Cursor Cloud. Loop stays **DISARMED**. Two more stats-truth p0s: hub `$730,000` vs FAQ `$729,875` **rejected** (live instrument+FAQ both `$729,000`; class already on `062ff2372`). Foley investor HOA `$0` vs `$22` **fixed** — listing `#hoa` `value="22"` via `publishRentalHoaMonthly`; standalone rental tool stays 0. Product `main` @ `2ff523f5e` READY `DQunyJFMW7tee6t2qNKyZLz5TkbJ`. Foley investor fp `180be952` disposed on `3a6198cd`; hub `32f44490` already disposed; parent stays open (119 lines). Place-pages left. No CMA. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 

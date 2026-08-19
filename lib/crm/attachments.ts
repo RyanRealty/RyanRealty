@@ -59,6 +59,35 @@ export async function createAttachmentUploadUrl(params: {
   return { ok: true, grant: { path: data.path ?? path, signedUrl: data.signedUrl, token: data.token } }
 }
 
+/** Server-side upload of already-rendered bytes (CMA PDF staged into compose). */
+export async function uploadAttachmentBytes(params: {
+  channel: CrmAttachmentChannel
+  personId: number
+  filename: string
+  contentType: string
+  bytes: Buffer
+}): Promise<{ ok: true; ref: CrmAttachmentRef } | { ok: false; error: string }> {
+  const sizeBytes = params.bytes.byteLength
+  const check = validateAttachmentFile(params.channel, {
+    name: params.filename,
+    sizeBytes,
+    contentType: params.contentType,
+  })
+  if (!check.ok) return check
+
+  const sb = createServiceClient()
+  const path = attachmentPathFor(params.channel, params.personId, params.filename, Date.now())
+  const { error } = await sb.storage.from(BUCKET).upload(path, params.bytes, {
+    contentType: params.contentType,
+    upsert: false,
+  })
+  if (error) return { ok: false, error: error.message }
+  return {
+    ok: true,
+    ref: { path, name: params.filename, sizeBytes, contentType: params.contentType },
+  }
+}
+
 /** Download stored attachment bytes (email MIME build, group-MMS MCS upload). */
 export async function downloadAttachment(path: string): Promise<{ ok: true; content: Buffer } | { ok: false; error: string }> {
   const sb = createServiceClient()
