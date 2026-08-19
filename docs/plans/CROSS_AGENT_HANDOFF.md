@@ -6,6 +6,10 @@
 
 **Surface:** Cursor Cloud. Loop stays **DISARMED**. Removed leftover vendor-CRM docs, setup scripts, and product-name strings. Live CRM is `public.crm_people` via `lib/crm/send-event.ts` at `/admin/crm`. CMA not touched. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
+# Prior — 2026-08-19 (cursor-cloud) — four shopper defects LIVE
+
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Four morning defects class-fixed on `e68b5e07f` and **live** on READY production `e8f1d4cd3` (`dpl_3sYtNggHWR3oFayXtELqP7s1ANyV`): browse Bend FAQ/snapshot **980** + MOS **—**; Mariposa 220204494 no $9.8M drop; `#save-search-email` in the DOM; tour confirm names the listing. File-size follow-up `7c28f4cab` Vercel ERROR (behavior unchanged). `/cities/bend` one render showed pulse **474** (empty tile fetch fallback). CMA / loop-sentinel not touched. No client mail. No re-arm.
+
 # Prior — 2026-08-19 (cursor-cloud) — listing/place leftovers
 
 **Surface:** Cursor cloud `bc-f3f636d7`. Loop stays **DISARMED**. Nine queued leftovers only. Live-reproduced on ryan-realty.com. Shipped 3 class-fixes on `main` @ `bf85c08d5`. Rejected 6 with live evidence (wheel-tab, featured 0 ACTIVE, browse href, Moonshadow card text, lot beds, Tetherow 19/35 and 35/28). CMA / sitemaps / loop-sentinel / email not touched. Do not re-arm.
