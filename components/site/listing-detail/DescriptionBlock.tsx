@@ -1,3 +1,4 @@
+import { publishListingRemarks } from '@/lib/listing/publish-listing-remarks'
 import { cn } from '@/lib/utils'
 
 /**
@@ -6,7 +7,8 @@ import { cn } from '@/lib/utils'
  * eyebrow mono label, cream/navy surface.
  *
  * Per CLAUDE.md §0.5 brand voice: public_remarks IS user-facing prose. The
- * remarks come from the MLS; the block renders them as-is.
+ * remarks come from the MLS. Mid-sentence blank-line splits are joined by
+ * publishListingRemarks; words are never invented.
  */
 
 type Props = {
@@ -15,12 +17,8 @@ type Props = {
 }
 
 export function DescriptionBlock({ publicRemarks, className }: Props) {
-  if (!publicRemarks || publicRemarks.trim().length === 0) return null
-
-  const paragraphs = publicRemarks
-    .split(/\n{2,}|\r\n\r\n|\r{2,}/)
-    .map((p) => p.trim())
-    .filter((p) => p.length > 0)
+  const paragraphs = publishListingRemarks(publicRemarks)
+  if (paragraphs.length === 0) return null
 
   return (
     <section className={cn('section', className)}>
