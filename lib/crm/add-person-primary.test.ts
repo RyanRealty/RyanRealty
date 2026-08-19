@@ -32,8 +32,10 @@ describe('People new-contact primary path', () => {
 
   it('create action writes addresses jsonb and never a note', () => {
     const src = readFileSync('app/actions/crm.ts', 'utf8')
+    const persist = readFileSync('lib/crm/persist-created-contact.ts', 'utf8')
     expect(src).toContain('createContactAddress')
-    expect(src).toContain('update({ addresses:')
+    expect(src).toContain('persistCreatedContactAddress')
+    expect(persist).toContain('update({ addresses:')
     expect(src).not.toMatch(/message: note/)
     expect(src).not.toMatch(/Added manually in the CRM/)
   })
