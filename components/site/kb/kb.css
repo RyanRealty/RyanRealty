@@ -1227,6 +1227,15 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-bc.overlay .wrap{pointer-events:auto;padding-top:6px;padding-bottom:6px;}
 .kb-root .kb-bc.overlay .kb-bc-link,.kb-root .kb-bc.overlay .kb-bc-current,.kb-root .kb-bc.overlay .kb-bc-sep{text-shadow:0 1px 5px rgba(0,0,0,.55);}
 /* no mobile override: the topbar is the same 66px at 375 as at 768. */
+/* Overlay trail occupies the top of the hero photo. Reserve that band on the
+   hero itself so H1 / search / eyebrow cannot share pixels with the crumb
+   (plat pages at 1280, walker-desktop 2026-08-19). has-form already pads the
+   inner stack; drop the extra inner top pad when the hero already reserved it. */
+.kb-root:has(> .kb-bc.overlay) .hero{
+  padding-top:8.5rem;
+  box-sizing:border-box;
+}
+.kb-root:has(> .kb-bc.overlay) .hero.has-form .hero-inner{padding-top:1.5rem;}
 
 /* ===== KB redesigns: open houses (editorial) + testimonials (animated stars) ===== */
 /* --- KbOpenHouses --- */

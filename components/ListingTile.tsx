@@ -20,6 +20,7 @@ import { getCanonicalSiteUrl, listingShareText } from '@/lib/share-metadata'
 import { incrementListingShareCount } from '@/app/actions/engagement'
 import { trackListingClick } from '@/lib/tracking'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeftRightIcon } from '@hugeicons/core-free-icons'
 import { normalizeMlsDisplayNumber } from '@/lib/mls-source'
@@ -95,12 +96,12 @@ function getNeighborhoodName(listing: ListingTileListing): string | null {
 }
 
 function formatAddress(listing: ListingTileListing): string {
-  const parts = [
-    [listing.StreetNumber, listing.StreetName].filter(Boolean).join(' ').trim(),
-    listing.City,
-    listing.State,
-    listing.PostalCode,
-  ].filter(Boolean) as string[]
+  const street =
+    publishStreetLine({
+      streetNumber: listing.StreetNumber,
+      streetName: listing.StreetName,
+    }) ?? ''
+  const parts = [street, listing.City, listing.State, listing.PostalCode].filter(Boolean) as string[]
   return parts.join(', ')
 }
 

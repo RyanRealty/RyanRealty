@@ -24,7 +24,8 @@ describe('publishPlatDisplayName', () => {
     expect(publishPlatDisplayName('Ridge At Eagle Crest')).toBe('Ridge At Eagle Crest')
     expect(publishPlatDisplayName('PointsWest')).toBe('PointsWest')
     expect(publishPlatDisplayName('Mtn High')).toBe('Mtn High')
-    expect(publishPlatDisplayName('Triple')).toBe('Triple')
+    expect(publishPlatDisplayName('Triple')).toBe('Triple Knot')
+    expect(publishPlatDisplayName('triple')).toBe('Triple Knot')
   })
 
   it('still drops MLS sentinels', () => {

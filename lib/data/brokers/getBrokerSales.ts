@@ -116,7 +116,9 @@ const cachedBuySide = makeResilientCached(fetchBuySide, ['broker-buy-v1'], cache
  * and caches on its first success.
  *
  * @param email broker's email (sell-side key). @param mlsId buy-side key
- * (optional, resolved if omitted). @param limit max cards (default 9, cap 24).
+ * (optional, resolved if omitted). @param limit optional card cap (max 100,
+ * same as each side fetch). Omit on /team/[slug] so the published count and
+ * the ledger are the same set (Matt 19 vs table 9).
  */
 export async function getBrokerSales(opts: {
   email: string | null | undefined
@@ -126,7 +128,8 @@ export async function getBrokerSales(opts: {
   const email = (opts.email ?? '').trim()
   if (!email) return []
   const emailLc = email.toLowerCase()
-  const limit = Math.min(Math.max(opts.limit ?? 9, 1), 24)
+  const limit =
+    opts.limit == null ? null : Math.min(Math.max(opts.limit, 1), 100)
   const mlsId = await resolveMlsId(emailLc, opts.mlsId ?? '')
   const [sell, buy] = await Promise.all([cachedSellSide(emailLc), cachedBuySide(mlsId)])
 
@@ -140,11 +143,10 @@ export async function getBrokerSales(opts: {
     const k = (r.ListingKey ?? '').trim()
     if (k && !byKey.has(k)) byKey.set(k, r)
   }
-  return [...byKey.values()]
-    .sort((a, b) => {
-      const ad = a.CloseDate ? new Date(a.CloseDate).getTime() : 0
-      const bd = b.CloseDate ? new Date(b.CloseDate).getTime() : 0
-      return bd - ad
-    })
-    .slice(0, limit)
+  const merged = [...byKey.values()].sort((a, b) => {
+    const ad = a.CloseDate ? new Date(a.CloseDate).getTime() : 0
+    const bd = b.CloseDate ? new Date(b.CloseDate).getTime() : 0
+    return bd - ad
+  })
+  return limit == null ? merged : merged.slice(0, limit)
 }

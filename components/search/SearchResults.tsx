@@ -6,6 +6,7 @@ import type { ListingTileRow } from '@/app/actions/listings'
 import { getSearchListings, type SearchFilters } from '@/app/actions/search'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import ListingCard from '@/components/site/ListingCard'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
@@ -238,7 +239,11 @@ export default function SearchResults({
           const subdivision = displaySubdivision(listing.SubdivisionName)
           const cityLine = subdivision ? `${cityZip} · ${subdivision}` : cityZip
           const addressLine =
-            [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim() || cityParts || 'Listing'
+            publishStreetLine({
+              streetNumber: listing.StreetNumber,
+              streetName: listing.StreetName,
+              streetSuffix: listing.StreetSuffix,
+            }) || cityParts || 'Listing'
           // Wrapper carries data-listing-key for the map<->list hover sync
           // (consumed by MapSearchView). ListingCard is the
           // canonical site card — one look across the whole site. The hide
