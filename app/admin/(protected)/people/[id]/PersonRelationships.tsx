@@ -13,7 +13,7 @@ import {
   SIMPLE_RELATIONSHIP_TYPES,
 } from '@/lib/crm/relationships'
 import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships'
-import { Button, SelectField, TextField } from '@/components/admin/v2'
+import { Button, SectionHead, SelectField, TextField } from '@/components/admin/v2'
 
 export function PersonRelationships({
   personId,
@@ -56,7 +56,7 @@ export function PersonRelationships({
 
   return (
     <section aria-label="Relationships" style={{ margin: '0 0 20px' }}>
-      <h2 className="av2-lane-head">Relationships</h2>
+      <SectionHead>Relationships</SectionHead>
       <ul className="av2-quietlist">
         {relationships.map((r) => (
           <li key={r.id} className="av2-quiet">

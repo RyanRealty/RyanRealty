@@ -27,13 +27,8 @@
     "app/admin/(protected)/oversight/page.tsx": {
       "h2": 4
     },
-    "app/admin/(protected)/people/[id]/page.tsx": {
-      "h2": 4,
-      "input": 2
-    },
     "app/admin/(protected)/people/page.tsx": {
-      "input": 1,
-      "h2": 1
+      "input": 1
     },
     "app/admin/(protected)/prospecting/FilterSelect.tsx": {
       "select": 1
@@ -98,8 +93,7 @@
   },
   "legacyPages": [],
   "extraPrimaryButtons": {
-    "app/admin/(protected)/people/[id]/page.tsx": 1,
-    "app/admin/(protected)/today/page.tsx": 2
+    "app/admin/(protected)/today/page.tsx": 1
   },
   "distinctWidths": 6
 }

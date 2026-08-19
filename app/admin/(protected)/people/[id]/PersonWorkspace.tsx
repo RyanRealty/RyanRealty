@@ -40,7 +40,7 @@ import {
   getCrmSmsTemplates,
   getTwilioSmsStatus,
 } from '@/app/actions/crm'
-import { Button, SectionHead, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
+import { Button, HiddenField, SectionHead, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
 import { PersonDeals } from './PersonDeals'
 import { stripHtml, tsLabel } from './person-format'
 import {
@@ -356,7 +356,7 @@ export async function PersonWorkspace({
             </section>
           }
         >
-          <HomesSection personId={idNum} fubLegacyId={person.fub_legacy_id} personEmails={personEmails} />
+          <HomesSection personId={idNum} personEmails={personEmails} />
         </Suspense>
 
         <NotesSection notes={notes} addNote={addNoteFromPerson.bind(null, idNum)} showForm={false} />
@@ -382,7 +382,7 @@ export async function PersonWorkspace({
           aria-label="Build a CMA"
           style={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 'var(--a-r-lg)', padding: 16, marginBottom: 20 }}
         >
-          <h2 style={{ fontSize: 'var(--a-text-lg)', fontWeight: 600, marginBottom: 4 }}>Build a CMA</h2>
+          <SectionHead>Build a CMA</SectionHead>
           {kicked ? (
             <p style={{ color: 'var(--a-ok)', fontWeight: 500 }}>
               CMA build kicked off — you&apos;ll get a text when the draft is ready to review. Nothing is sent to the
@@ -390,8 +390,8 @@ export async function PersonWorkspace({
             </p>
           ) : (
             <form action={kickoffCmaFromPerson} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <input type="hidden" name="personId" value={card.personId} />
-              <input type="hidden" name="idempotencyKey" value={randomUUID()} />
+              <HiddenField name="personId" value={card.personId} />
+              <HiddenField name="idempotencyKey" value={randomUUID()} />
               <TextField
                 label="Property address"
                 name="address"
@@ -436,7 +436,7 @@ export async function PersonWorkspace({
 
       {prospectStory.length > 0 && (
         <section aria-label="Prospect story">
-          <h2 className="av2-lane-head">Prospecting</h2>
+          <SectionHead>Prospecting</SectionHead>
           <ul className="av2-quietlist">
             {prospectStory.map((s) => (
               <li key={s.prospectId} className="av2-quiet">
@@ -456,7 +456,7 @@ export async function PersonWorkspace({
 
       {(cmas.length > 0 || bpos.length > 0) && (
         <section aria-label="Valuations">
-          <h2 className="av2-lane-head">Valuations</h2>
+          <SectionHead>Valuations</SectionHead>
           <ul className="av2-quietlist">
             {cmas.map((c) => (
               <li key={c.slug} className="av2-quiet">
@@ -482,7 +482,7 @@ export async function PersonWorkspace({
         </section>
       )}
 
-      <h2 className="av2-lane-head">Recent activity</h2>
+      <SectionHead>Recent activity</SectionHead>
       <ul className="av2-quiet-list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {feed.map((m) => (
           <li key={m.id} className="av2-quiet">
