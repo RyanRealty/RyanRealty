@@ -2,11 +2,17 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — listings.xml honesty class
+# Current — 2026-08-19 (cursor-cloud) — listing/place leftovers
 
-**Surface:** Cursor cloud `bc-7d0ca98e`. Loop stays **DISARMED** (Matt). Family `fleet:public-ux:sitemaps` class-fixed. Live `listing_tile_mv` Active/AUC = 7586. Prod `listings.xml` had 7586 locs / **5827 unique** — `fetchAllRows` paged the MV with no ORDER BY (same drop class as subdivision inventory). Empty urlset is the universe-catch failure mode. Fix: `getListingSitemapRows` ordered `listing_key` read; `getClassRows('listings')` no longer filters `buildAllUrls`. Gate `ci:sitemap-listings-honest`. CMA not touched. Do not re-arm the loop.
+**Surface:** Cursor cloud `bc-f3f636d7`. Loop stays **DISARMED**. Nine queued leftovers only. Live-reproduced on ryan-realty.com. Shipped 3 class-fixes on `main` @ `bf85c08d5`. Rejected 6 with live evidence (wheel-tab, featured 0 ACTIVE, browse href, Moonshadow card text, lot beds, Tetherow 19/35 and 35/28). CMA / sitemaps / loop-sentinel / email not touched. Do not re-arm.
 
-**Skills read:** CROSS_AGENT_HANDOFF, public-product-os (folded), database-canonical-reference, DATABASE_FOR_AI_AGENTS.md §0, git-commit.
+**Shipped:** team closings count = ledger rows (`publishOwnClosingRows`); MLS remarks join mid-sentence blank lines; listing slugs withhold StreetNumber 0. `ci:gates` 255/255. Deploy verify next.
+
+**Skills read:** CROSS_AGENT_HANDOFF, database-canonical-reference, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — listings.xml honesty class
+
+**Surface:** Cursor cloud `bc-7d0ca98e`. Loop stays **DISARMED** (Matt). Family `fleet:public-ux:sitemaps` class-fixed. Live `listing_tile_mv` Active/AUC = 7586. Prod `listings.xml` had 7586 locs / **5827 unique** — `fetchAllRows` paged the MV with no ORDER BY. Fix: `getListingSitemapRows` ordered `listing_key` read. Gate `ci:sitemap-listings-honest`. CMA not touched.
 
 # Prior — 2026-08-19 (cursor-cloud) — four shopper defects class-fixed
 
