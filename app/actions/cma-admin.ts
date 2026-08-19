@@ -25,6 +25,7 @@ import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@
 import { parsePositiveInt, parsePositiveNumber, resolveCmaClientName } from '@/lib/cma/client-link'
 import {
   attachCmaToPerson,
+  getCmaAdminRowBySlug,
   getCmaAdminReviewRowBySlug,
   getPersonForCmaKickoff,
   searchPeopleByName,

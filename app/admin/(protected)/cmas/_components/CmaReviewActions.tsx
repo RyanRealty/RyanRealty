@@ -62,7 +62,6 @@ export interface CmaReviewActionsProps {
   brokerSlug: string | null
   brokers: Array<{ slug: string; displayName: string }>
   hasDocument: boolean
-  personId?: number | null
 }
 
 const usd = formatPriceExact
