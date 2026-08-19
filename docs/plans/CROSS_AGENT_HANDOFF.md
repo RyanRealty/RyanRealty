@@ -4,7 +4,7 @@
 
 # Current — 2026-08-19 (cursor-cloud) — CMA phone login redirect
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Unauthenticated `/admin/cmas/[slug]/view` and browser `/api/cma/[slug]/pdf` now 307 to `/admin/login?next=…` (not JSON 401). Public `/cma/[slug]` still 404s drafts. Real slug is `cma-648-se-douglas` (draft). Restored SE on stored subject + HTML. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add` @ `09f61353b`. Loop stays **DISARMED**. Unauthenticated `/admin/cmas/[slug]/view` and browser `/api/cma/[slug]/pdf` now 307 to `/admin/login?next=…` (not JSON 401). Public `/cma/[slug]` still 404s drafts. Real slug is `cma-648-se-douglas` (draft). Restored SE on stored subject + HTML. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, database-canonical-reference, git-commit.
 
