@@ -76,7 +76,8 @@ export async function trySendGroupMms(opts: {
   const mergedBody = attributeSiteLinks(
     renderCrmMerge(opts.body, primaryTarget.person, groupCtx),
     slug,
-    primaryTarget.person.fub_legacy_id as number | null,
+    null,
+    opts.personId,
   )
   const { loadGroupMedia } = await import('@/lib/crm/attachments')
   const gm = await loadGroupMedia(opts.attachments)

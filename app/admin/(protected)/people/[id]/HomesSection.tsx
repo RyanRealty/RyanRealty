@@ -10,6 +10,7 @@ import { SectionHead, StateWord } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
 import { getViewedListingsForLead } from '@/lib/data'
 import { buildHomesPanelUnion, getContactSavedHomes } from '@/lib/data/crm/getContactSavedHomes'
+import { resolvePersonIdentity } from '@/lib/data/crm/resolvePersonIdentity'
 
 function money(n: number | null): string {
   return n != null ? `$${Math.round(n).toLocaleString('en-US')}` : ''
@@ -23,16 +24,23 @@ function dayLabel(iso: string): string {
 
 export async function HomesSection({
   personId,
-  fubLegacyId,
   personEmails,
 }: {
   personId: number
-  fubLegacyId: number | null
   personEmails: string[]
 }) {
+  const identity = await resolvePersonIdentity(personId)
   const [viewed, saved] = await Promise.all([
-    getViewedListingsForLead({ crmPersonId: personId, fubLegacyId, emails: personEmails }),
-    getContactSavedHomes({ crmPersonId: personId, fubLegacyId, emails: personEmails }),
+    getViewedListingsForLead({
+      crmPersonId: personId,
+      fubLegacyId: identity.fubLegacyId,
+      emails: personEmails,
+    }),
+    getContactSavedHomes({
+      crmPersonId: personId,
+      fubLegacyId: identity.fubLegacyId,
+      emails: personEmails,
+    }),
   ])
   const homes = buildHomesPanelUnion(viewed, saved)
 

@@ -322,7 +322,7 @@ export async function PersonWorkspace({
             </section>
           }
         >
-          <HomesSection personId={idNum} fubLegacyId={full.legacyImportId} personEmails={personEmails} />
+          <HomesSection personId={idNum} personEmails={personEmails} />
         </Suspense>
 
       </>
