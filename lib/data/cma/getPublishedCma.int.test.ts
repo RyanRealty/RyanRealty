@@ -193,7 +193,7 @@ describeIf('published CMA — the per-document flag is the gate', () => {
       email: REGISTRANT_EMAIL,
       termsVersion: CMA_DOCUMENT_TERMS_VERSION,
     })
-    expect(registered.ok).toBe(true)
+    expect(registered.ok, registered.ok ? 'registered' : registered.error).toBe(true)
     if (!registered.ok) return
 
     // The delivered document is a NORMAL CMA. ODS §7-5 D. Nothing is redacted.
