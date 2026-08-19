@@ -21,9 +21,6 @@
     "app/admin/(protected)/listings/page.tsx": {
       "input": 1
     },
-    "app/admin/(protected)/messages/page.tsx": {
-      "input": 1
-    },
     "app/admin/(protected)/oversight/page.tsx": {
       "h2": 4
     },

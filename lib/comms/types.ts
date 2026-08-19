@@ -3,7 +3,7 @@
  *
  * Layering: conversation layer → governed-send layer (THIS) → provider.
  * Every outbound message to a person routes through sendGovernedSms /
- * sendGovernedEmail, which enforce, IN ORDER:
+ * sendGovernedGroupMms / sendGovernedEmail, which enforce, IN ORDER:
  *
  *   1. hard-stop tags        (compliance:hard-stop — blocks every channel)
  *   2. channel suppression   (crm_suppressions + TAG_CHANNEL, FAIL CLOSED)

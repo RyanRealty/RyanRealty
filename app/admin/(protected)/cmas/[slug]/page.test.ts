@@ -12,7 +12,7 @@ describe('admin CMA entity page', () => {
     const kpis = page.indexOf('<ReportNumbers')
     const send = page.indexOf('Review and send')
     const publish = page.indexOf('<CmaPublishControl')
-    const preview = page.indexOf('Document preview')
+    const preview = page.indexOf('<SectionHead>Document preview</SectionHead>')
     expect(review).toBeGreaterThan(0)
     expect(review).toBeLessThan(pdf)
     expect(review).toBeLessThan(kpis)

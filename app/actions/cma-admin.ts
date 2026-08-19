@@ -6,12 +6,15 @@
  * an admin session and returns { data, error } / { error } — never throws.
  *
  * Sending ALWAYS requires an explicit button click on /admin/cmas/[slug].
- * Nothing in this file is called from a cron.
+ * Broker-to-self "text me this CMA" is also an explicit click and never
+ * emails or texts the household. Nothing in this file is called from a cron.
  */
 
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { getCrmAccess } from '@/app/actions/crm'
+import { runTextCmaReviewLinkToMe } from '@/lib/crm/cma-broker-self-action'
 import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead, prepareCmaSendPreview, type CmaSendOverride } from '@/lib/cma/send'
 import { resolveCmaSubject } from '@/lib/cma/subject'
@@ -350,6 +353,26 @@ export async function deleteCmaAction(id: string): Promise<{ error: string | nul
  * already supports it — omitted, the server composes the live default.
  * CmaReviewActions (/admin/cmas/[slug]) calls this with no second argument.
  */
+/**
+ * Text the acting broker the CMA review link. Never uses client_phone.
+ * Sends immediately through Twilio on this request — not the Mac mini relay.
+ */
+export async function textCmaReviewLinkToMeAction(slug: string): Promise<{ error: string | null }> {
+  try {
+    const email = await requireAdmin()
+    const access = email ? await getCrmAccess() : null
+    return await runTextCmaReviewLinkToMe({
+      authorized: Boolean(email),
+      broker: access?.brokerSlug ?? 'matt',
+      slug,
+      loadRow: (safe) => getCmaAdminRowBySlug(safe),
+    })
+  } catch (e) {
+    console.error('[textCmaReviewLinkToMeAction]', e)
+    return { error: 'Could not text the review link.' }
+  }
+}
+
 export async function sendCmaToLeadAction(
   slug: string,
   override?: CmaSendOverride,

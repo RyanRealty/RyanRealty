@@ -21,6 +21,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button, ConfirmDialog, SelectField, TextField } from '@/components/admin/v2'
+import { CmaTextMeButton } from '@/components/admin/crm/CmaTextMeButton'
 import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
 import { formatPriceExact } from '@/lib/format/money'
 import {
@@ -298,6 +299,13 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           <Button onClick={approve} disabled={isPending || !props.hasDocument} variant="quiet" touch className="w-full">
             Approve (draft to final)
           </Button>
+        ) : null}
+
+        {props.hasDocument ? <CmaTextMeButton slug={props.slug} /> : null}
+        {props.hasDocument ? (
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            Text me opens compose to your phone. The household is not copied until you send.
+          </p>
         ) : null}
 
         {composeHref ? (
