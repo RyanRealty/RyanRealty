@@ -4,7 +4,7 @@
 
 # Current — 2026-08-19 (cursor-cloud) — 648 CMA send via CRM compose
 
-**Surface:** Cursor Cloud. Branch `cursor/cma-crm-compose-send-4add` PR #134. Loop stays **DISARMED**. 648 CMA (`cma-648-se-douglas`, person 63285) attaches from CRM compose: PDF / text-me / email draft. Review + Send Center + contact CMA card + owned-home card open Messages, not Gmail/mailto/one-click send. Merged latest main (PR 128 compose rebase + person-link + SE). Drafts stay private. Do not email or text the household. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Branch `cursor/cma-crm-compose-send-4add` PR #134. Loop stays **DISARMED**. 648 CMA (`cma-648-se-douglas`, person 63285) attaches from CRM compose: PDF / text-me / email draft. Review + Send Center + contact CMA card + owned-home card open Messages, not Gmail/mailto/one-click send. Merged latest main (PR 128 compose rebase + PR 137 compile follow-up). Drafts stay private. Do not email or text the household. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, git-commit.
 
