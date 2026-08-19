@@ -28,9 +28,11 @@
  *  2. ONE GUARD PER FIGURE, SHARED WITH ITS CONSUMER. mosRaw is null unless the stored
  *     value is above 0, which is buildMarketFaq's own condition, so the H1 cannot
  *     assert a verdict the shared builder declined to answer.
- *  3. ONE TRACE PER QUERY, ONE STAMP PER TRACE. Three populations sit on this page
- *     (region pulse, city snapshots, closed sales) and no section borrows another's
- *     figures or another's clock.
+ *  3. ONE TRACE PER QUERY, ONE STAMP PER TRACE. Four population sets sit on this
+ *     page (region pulse, city snapshots, closed sales, and the long-view set:
+ *     national FRED series + the mart's SFR cube + seller-net quarters) and no
+ *     section borrows another's figures or another's clock — each long-view card
+ *     carries its own trace inside its Source disclosure.
  *  4. ABSENT IS NOT ZERO (CLAUDE.md section 0). A covered city with no live row is
  *     not printed as "0 active" under a live-MLS source line.
  *  5. ONE PRIMARY PER VIEWPORT (PUBLIC_UI.md section 1). The sticky public header
@@ -55,7 +57,20 @@ import {
   getPriceHistory,
 } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
-import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
+import {
+  getCoMarketAnnual,
+  getCoMarketAnnualSeries,
+  MART_FLOOR_YEAR,
+} from '@/lib/data/analytics/getCoMarketAnnual'
+import {
+  annualAverages,
+  getNationalIndexSeries,
+  getRateChartSeries,
+} from '@/lib/data/stats/statsChartSeries'
+import {
+  dropInProgressQuarter,
+  getConcessionsQuarterly,
+} from '@/lib/data/pricing/getConcessionsQuarterly'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -84,6 +99,7 @@ import { MarketInquirySheet } from './_v3/MarketInquirySheet.client'
 import { CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
 import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
+import { buildLongViewSection } from './_v3/region-charts'
 import './_v3/tremor-density.css'
 
 export const revalidate = 300
@@ -112,12 +128,28 @@ export default async function HousingMarketHubPage() {
   // resilient-cached and answers a transient failure with its own documented
   // fallback, so a `.catch(() => null)` here would only hide a real outage behind a
   // confident empty page. Nothing is fetched that this page does not render.
-  const [regionPulse, citySnapshots, blogPosts, closedYear, priceHistory] = await Promise.all([
+  const todayKey = zonedDateKey(new Date())
+  const lastFullYear = Number(todayKey.slice(0, 4)) - 1
+  const [
+    regionPulse,
+    citySnapshots,
+    blogPosts,
+    closedYear,
+    priceHistory,
+    rateSeries,
+    nationalSeries,
+    coAnnualSfr,
+    concessionQuarters,
+  ] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
     getMarketPulseAllCitySnapshots(),
     getRecentBlogPosts({ limit: 3 }),
     getCoMarketAnnual({ year: CLOSED_SALES_YEAR, typeScope: 'all' }),
     getPriceHistory('region', 'central-oregon', 'monthly', 60),
+    getRateChartSeries(),
+    getNationalIndexSeries(),
+    getCoMarketAnnualSeries({ fromYear: MART_FLOOR_YEAR, toYear: lastFullYear, typeScope: 'sfr' }),
+    getConcessionsQuarterly(),
   ])
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
@@ -130,8 +162,23 @@ export default async function HousingMarketHubPage() {
   const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
   const verdict = marketVerdict(mosRaw)
   const regionChart = buildRegionMedianChart(
-    dropInProgressMonth(priceHistory, zonedDateKey(new Date()).slice(0, 7)),
+    dropInProgressMonth(priceHistory, todayKey.slice(0, 7)),
   )
+
+  // The long view: the approved chart-room forms wired live. A fourth
+  // population set (national FRED series, the mart's SFR cube, the seller-net
+  // quarters) — each card carries its own trace and its own clock inside its
+  // Source disclosure, so no section borrows another's stamp (invariant 3).
+  const longView = buildLongViewSection({
+    m30: rateSeries?.m30 ?? [],
+    spread: rateSeries?.spread ?? [],
+    norm: rateSeries?.norm ?? null,
+    coAnnual: coAnnualSfr,
+    csAnnualAvg: nationalSeries ? annualAverages(nationalSeries.caseShiller) : new Map(),
+    cpiAnnualAvg: nationalSeries ? annualAverages(nationalSeries.cpi) : new Map(),
+    concessionQuarters: dropInProgressQuarter(concessionQuarters, todayKey),
+  })
+  const [firstLongViewFigure, ...restLongViewFigures] = longView?.figures ?? []
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
   // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
@@ -411,6 +458,19 @@ export default async function HousingMarketHubPage() {
             )}
             rows={[firstGuideRow, ...restGuideRows]}
             action={{ label: v3Text('All guides'), href: '/blog' }}
+          />
+        ) : null}
+
+        {longView && firstLongViewFigure ? (
+          <V3Instrument
+            id="long-view"
+            level={2}
+            className="hm-tremor"
+            eyebrow={v3Text('Rates and the long view')}
+            headline={v3Text(longView.headline)}
+            figures={[firstLongViewFigure, ...restLongViewFigures]}
+            source={v3Text(longView.source)}
+            cards={longView.cards}
           />
         ) : null}
 

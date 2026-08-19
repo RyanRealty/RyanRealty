@@ -25,11 +25,19 @@ export type MarketPulseSnapshot = {
    *  population from median_active_dom (unsold inventory age), and much smaller:
    *  Sisters 16 vs 85, Bend 15 vs 57 (live 2026-07-24). (§0) */
   median_days_to_pending: number | null
+  /** Share of active listings with >= 1 price cut, as the PERCENT the pulse
+   *  row stores (6.6 = 6.6% — verified live 2026-08-19: Bend 6.6, region
+   *  8.46). Kept unrounded so a chart and its source note print the same
+   *  figure at the published grain. (§0) */
+  price_reduction_share: number | null
+  /** The versioned-methodology stamp ON the row (cite the stamp, not the
+   *  definition — CLAUDE.md section 7). */
+  methodology_version: string | null
   updated_at: string | null
 }
 
 const COLUMNS =
-  'geo_slug, geo_label, active_count, median_list_price, months_of_supply, market_health_label, sold_count_30d, new_count_7d, median_active_dom, median_days_to_pending, updated_at'
+  'geo_slug, geo_label, active_count, median_list_price, months_of_supply, market_health_label, sold_count_30d, new_count_7d, median_active_dom, median_days_to_pending, price_reduction_share, methodology_version, updated_at'
 
 function toSnapshot(d: Record<string, unknown>): MarketPulseSnapshot {
   return {
@@ -43,6 +51,8 @@ function toSnapshot(d: Record<string, unknown>): MarketPulseSnapshot {
     new_count_7d: Number(d.new_count_7d ?? 0),
     median_active_dom: d.median_active_dom != null ? Number(d.median_active_dom) : null,
     median_days_to_pending: d.median_days_to_pending != null ? Number(d.median_days_to_pending) : null,
+    price_reduction_share: d.price_reduction_share != null ? Number(d.price_reduction_share) : null,
+    methodology_version: (d.methodology_version as string | null) ?? null,
     updated_at: (d.updated_at as string | null) ?? null,
   }
 }
@@ -88,7 +98,7 @@ async function fetchMarketPulseCitySnapshots(
  * render hit the DB and a blip rendered empty tiles). */
 export const getMarketPulseCitySnapshots = makeResilientCached(
   fetchMarketPulseCitySnapshots,
-  ['market-pulse-city-snapshots-v1'],
+  ['market-pulse-city-snapshots-v2'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],
@@ -113,7 +123,7 @@ async function fetchAllMarketPulseCitySnapshots(): Promise<MarketPulseSnapshot[]
 
 export const getMarketPulseAllCitySnapshots = makeResilientCached(
   fetchAllMarketPulseCitySnapshots,
-  ['market-pulse-all-city-snapshots-v1'],
+  ['market-pulse-all-city-snapshots-v2'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

@@ -4,6 +4,7 @@ import type { ListingDetail } from '@/lib/data/types/listing'
 import { getAreaRentEstimate } from '@/lib/hud-fmr'
 import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishRentalHoaMonthly } from '@/lib/listing/publish-listing-hoa'
 
 /**
  * Listing-detail RentalAnalysis — KB section style.
@@ -52,6 +53,11 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
   const rent = hud
     ? { value: hud.value, low: hud.low, high: hud.high, source: hud.label }
     : estimateMonthlyRent(price)
+  const hoaMonthly = publishRentalHoaMonthly({
+    hoaMonthly: listing.hoaMonthly,
+    associationFee: listing.associationFee,
+    associationFeeFrequency: listing.associationFeeFrequency,
+  })
 
   return (
     <section>
@@ -74,6 +80,7 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
           // publishFinancingSplit so the two widgets cannot disagree.
           initialDownPaymentPct={20}
           initialInterestRate={7}
+          initialHoaMonthly={hoaMonthly}
           propertyLabel={label}
           rentEstimate={{ value: rent.value, low: rent.low, high: rent.high, source: rent.source }}
         />

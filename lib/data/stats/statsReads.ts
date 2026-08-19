@@ -14,7 +14,7 @@
 import 'server-only'
 import { supabaseAnon } from '@/lib/data/client'
 import { OPEN_REALTIME_END, STAT_OBSERVATIONS_TABLE, TABLE_MISSING_CODES } from '@/lib/stats/contract'
-import { daysBetween, isoDay } from '@/lib/stats/vintage'
+import { daysBetween, isoDay, shiftDays } from '@/lib/stats/vintage'
 import { readRegisteredStatSeries, readSeriesCursors, type StatReadOutcome } from '@/lib/data/stats/statsAccess'
 
 /** PostgREST caps a single response at 1,000 rows regardless of a larger limit. */
@@ -87,6 +87,119 @@ export async function readPublicStatSeries(
   }
 
   return { ok: true, data: out }
+}
+
+/**
+ * The newest published point of one public series — what a surface renders as
+ * "the rate today". Same RLS gate and same "." exclusion as the series read.
+ * `ok: true, data: null` means the series is published but holds no figure.
+ */
+export async function readLatestStatPoint(seriesId: string): Promise<StatReadOutcome<StatPoint | null>> {
+  const supabase = supabaseAnon()
+  if (!supabase) return { ok: false, reason: 'not_configured', detail: 'Supabase anon environment is not set.' }
+
+  const { data, error } = await supabase
+    .from(STAT_OBSERVATIONS_TABLE)
+    .select('observation_date, realtime_start, value')
+    .eq('series_id', seriesId)
+    .eq('realtime_end', OPEN_REALTIME_END)
+    .not('value', 'is', null)
+    .order('observation_date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) {
+    if (isTableMissing(error)) return { ok: false, reason: 'table_missing', detail: error.message }
+    return { ok: false, reason: 'read_failed', detail: `${seriesId}: ${error.message}` }
+  }
+  if (!data) return { ok: true, data: null }
+  return {
+    ok: true,
+    data: {
+      observationDate: data.observation_date as string,
+      value: Number(data.value),
+      realtimeStart: data.realtime_start as string,
+    },
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Spread between two series                                           */
+/* ------------------------------------------------------------------ */
+
+/** One aligned spread point: anchor minus the other series' standing figure. */
+export type StatSpreadPoint = {
+  /** The anchor series' period. */
+  observationDate: string
+  anchorValue: number
+  otherValue: number
+  /** The other series' period actually used — on or before the anchor's. */
+  otherObservationDate: string
+  /** anchorValue - otherValue, in the series' shared unit. */
+  spread: number
+}
+
+/**
+ * How far back the other series may stand from an anchor period before the
+ * pair is dropped rather than published. 7 days covers a weekly series read
+ * against a business-daily one (fred:MORTGAGE30US minus fred:DGS10) across
+ * any market holiday; a monthly pairing must pass its own budget explicitly.
+ */
+export const SPREAD_MAX_LAG_DAYS = 7
+
+/**
+ * Step-align two ascending series and subtract. Pure, exported for tests.
+ *
+ * For each anchor point the other series' figure is the newest observation on
+ * or before that date — the figure that was standing, never one from the
+ * future of the period. An anchor point with no other-side figure inside
+ * `maxLagDays` is dropped: publishing a spread against a stale leg would be
+ * inventing a number (CLAUDE.md section 0).
+ */
+export function alignStatSpread(
+  anchor: readonly StatPoint[],
+  other: readonly StatPoint[],
+  maxLagDays: number = SPREAD_MAX_LAG_DAYS,
+): StatSpreadPoint[] {
+  const out: StatSpreadPoint[] = []
+  let j = -1
+  for (const a of anchor) {
+    while (j + 1 < other.length && other[j + 1]!.observationDate <= a.observationDate) j += 1
+    if (j < 0) continue
+    const b = other[j]!
+    const lagDays = daysBetween(b.observationDate, a.observationDate)
+    // NaN (malformed date) fails this check too — a pair that cannot be
+    // dated cannot be published.
+    if (!(lagDays >= 0 && lagDays <= maxLagDays)) continue
+    out.push({
+      observationDate: a.observationDate,
+      anchorValue: a.value,
+      otherValue: b.value,
+      otherObservationDate: b.observationDate,
+      spread: a.value - b.value,
+    })
+  }
+  return out
+}
+
+/**
+ * The spread series `anchor - other` over a window, e.g. the 30-year mortgage
+ * minus the 10-year Treasury. The other leg is read `maxLagDays` further back
+ * so the first anchor points inside the window still have a standing figure.
+ */
+export async function readStatSeriesSpread(
+  anchorSeriesId: string,
+  otherSeriesId: string,
+  options: { from?: string; to?: string; maxPoints?: number; maxLagDays?: number } = {},
+): Promise<StatReadOutcome<StatSpreadPoint[]>> {
+  const maxLagDays = options.maxLagDays ?? SPREAD_MAX_LAG_DAYS
+  const otherFrom = options.from ? shiftDays(options.from, -maxLagDays) : undefined
+  const [anchor, other] = await Promise.all([
+    readPublicStatSeries(anchorSeriesId, options),
+    readPublicStatSeries(otherSeriesId, { ...options, from: otherFrom }),
+  ])
+  if (!anchor.ok) return anchor
+  if (!other.ok) return other
+  return { ok: true, data: alignStatSpread(anchor.data, other.data, maxLagDays) }
 }
 
 /* ------------------------------------------------------------------ */

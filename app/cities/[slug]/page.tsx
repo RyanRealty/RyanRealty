@@ -79,6 +79,8 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { buildCitySchemas } from './city-schemas'
+import { CityMarketCharts } from './_v3/city-market-charts'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -416,38 +418,16 @@ export default async function CityDetailPage({ params }: Props) {
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, marketFaqInput)
   const hasMap = mapFeatures.length > 0
-  const citySchemas: SchemaInput[] = [
-    {
-      type: 'breadcrumb',
-      items: [
-        { name: 'Home', url: '/' },
-        { name: 'Cities', url: '/cities' },
-        { name: cityName, url: `/cities/${slug}` },
-      ],
-    },
-    {
-      type: 'place',
-      placeType: 'City',
-      name: cityName,
-      description: `Active single-family homes and live market data for ${cityName}, Oregon.`,
-      url: `/cities/${slug}`,
-      address: { city: cityName, state: 'OR', country: 'US' },
-      containedInPlace: 'Central Oregon',
-      hasMap: hasMap ? `/cities/${slug}` : undefined,
-      additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
-    },
-  ]
-  if (datasetVariables.length > 0) {
-    citySchemas.push({
-      type: 'dataset',
-      name: `${cityName}, Oregon real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
-      description: `Live single-family home market data for ${cityName}, Oregon. Median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
-      url: `/cities/${slug}`,
-      dateModified: asOfIso ?? undefined,
-      spatialCoverageName: `${cityName}, OR`,
-      variableMeasured: datasetVariables,
-    })
-  }
+  // JSON-LD (breadcrumb + City Place + Dataset) — extracted verbatim to
+  // ./city-schemas.ts for the ci:file-size-budget floor.
+  const citySchemas: SchemaInput[] = buildCitySchemas({
+    cityName,
+    slug,
+    hasMap,
+    datasetVariables,
+    asOfIso,
+    asOfLabel,
+  })
 
   return (
     <main className="kb-root">
@@ -528,6 +508,17 @@ export default async function CityDetailPage({ params }: Props) {
               <MarketCoreCharts data={toPublicCoreChartSeries(coreCharts)} heading={`${cityName} market trends`} />
             </div>
           ) : null}
+          {/* The approved chart-room town charts (Unit CITY 2026-08-19) — same
+              market section, additive under the core trends. Subject rows are
+              bound to the SAME published figures the HUD prints (§0). */}
+          <CityMarketCharts
+            citySlug={slug}
+            geoSlug={geoSlug}
+            cityName={cityName}
+            publishedMos={monthsOfSupply}
+            publishedDtp={pulse?.medianDaysToPending ?? null}
+            displayedActiveCount={activeCount}
+          />
         </KbMarketHud>
         <KbExploreTowns
           towns={bendNeighborhoodItems}

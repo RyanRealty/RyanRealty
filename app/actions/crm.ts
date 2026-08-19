@@ -350,6 +350,7 @@ export type CrmPersonFull = {
   geo: Record<string, unknown> | null
   cmaDeliveries: Array<Record<string, unknown>>
   visitorSessions: number
+  legacyImportId: number | null
 }
 
 /** The empty bundle returned for a missing OR out-of-scope contact (GAP-0). The
@@ -365,6 +366,7 @@ const EMPTY_PERSON_FULL: CrmPersonFull = {
   geo: null,
   cmaDeliveries: [],
   visitorSessions: 0,
+  legacyImportId: null,
 }
 
 /**
@@ -459,6 +461,7 @@ export async function getCrmPersonFull(id: number): Promise<CrmPersonFull> {
     geo: (geo as { data: Record<string, unknown> | null }).data ?? null,
     cmaDeliveries: ((cma as { data: Array<Record<string, unknown>> | null }).data ?? []),
     visitorSessions: (visitors as { count: number | null }).count ?? 0,
+    legacyImportId: fubId,
   }
 }
 

@@ -64,6 +64,7 @@ import {
   type V3Text,
 } from './atoms'
 import { V3Chart, type V3ChartProps } from './V3Chart'
+import { V3ChartCard, type V3ChartCardProps } from './V3ChartCard'
 import './tokens.css'
 import './V3Instrument.css'
 
@@ -180,6 +181,12 @@ export type V3InstrumentProps = {
    */
   chartSecondary?: V3ChartProps
   /**
+   * A family of chart-room forms under the figures, each card one finding with
+   * its own collapsed Source trace (V3ChartCard). Still one Instrument: the
+   * cards are the section's series set, not sections of their own.
+   */
+  cards?: readonly V3ChartCardProps[]
+  /**
    * 1 when the Instrument opens the page and carries its answer. 2 for a market band
    * inside a page another pattern opened. Required, because a page can carry two
    * Instruments and only one of them is the page's answer.
@@ -215,6 +222,7 @@ export function V3Instrument({
   action,
   chart,
   chartSecondary,
+  cards,
   level,
   id,
   className,
@@ -303,6 +311,14 @@ export function V3Instrument({
             {...chartSecondary}
             id={chartSecondary.id ?? (id ? `${id}-chart-2` : undefined)}
           />
+        </div>
+      ) : null}
+
+      {cards && cards.length > 0 ? (
+        <div className="v3-instrument__cards">
+          {cards.map((card, i) => (
+            <V3ChartCard key={card.id ?? `${i}-${card.title}`} {...card} />
+          ))}
         </div>
       ) : null}
 

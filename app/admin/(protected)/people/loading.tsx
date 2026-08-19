@@ -19,7 +19,7 @@ export default function PeopleLoading() {
           marginBottom: 20,
         }}
       >
-        <SectionHead>New contact</SectionHead>
+        <SectionHead flush>New contact</SectionHead>
         <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           Opening the add form.
         </p>

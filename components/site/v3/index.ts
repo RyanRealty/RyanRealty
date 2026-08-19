@@ -52,13 +52,14 @@ export type {
 /* Atoms — the small pieces the six patterns share                             */
 /* -------------------------------------------------------------------------- */
 
-export { V3Button, V3Figure, V3SourceLine, V3Eyebrow, V3Heading } from './atoms'
+export { V3Button, V3Figure, V3SourceLine, V3SourceDisclosure, V3Eyebrow, V3Heading } from './atoms'
 
 export type {
   V3ButtonProps,
   V3ButtonVariant,
   V3FigureProps,
   V3SourceLineProps,
+  V3SourceDisclosureProps,
   V3EyebrowProps,
   V3HeadingProps,
   V3HeadingSize,
@@ -70,7 +71,35 @@ export type {
  */
 export { V3Chart } from './V3Chart'
 
-export type { V3ChartProps, V3ChartSeries, V3ChartPoint, V3ChartKind } from './V3Chart'
+/** How many series a YoY overlay can keep apart — the categorical token count. */
+export { V3_CHART_CATEGORY_SLOTS } from './V3Chart'
+
+export type {
+  V3ChartProps,
+  V3ChartSeries,
+  V3ChartPoint,
+  V3ChartKind,
+  V3ChartBand,
+  V3ChartRangeRow,
+} from './V3Chart'
+
+/**
+ * The segmented control the chart-room forms put over pre-rendered views of
+ * one figure (range, sort, comparison). A client island; the panels arrive
+ * server-rendered as children. An atom, not a seventh pattern.
+ */
+export { V3ChartSwitch } from './V3ChartSwitch.client'
+
+export type { V3ChartSwitchProps, V3ChartSwitchItem } from './V3ChartSwitch.client'
+
+/**
+ * One chart-room form as a page card: a computed finding, one display line,
+ * the chart (or a segmented set of views), and the section 0 trace collapsed
+ * into a Source disclosure. Instrument mounts a grid of these via `cards`.
+ */
+export { V3ChartCard } from './V3ChartCard'
+
+export type { V3ChartCardProps, V3ChartCardSwitch } from './V3ChartCard'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 1 — INSTRUMENT: the answer, big                                     */

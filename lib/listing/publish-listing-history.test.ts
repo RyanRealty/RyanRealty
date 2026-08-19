@@ -64,6 +64,25 @@ describe('publishListingHistory', () => {
     expect(publishListingHistory({ listPrice: 100000 })).toEqual([])
   })
 
+  it('Foley: does not publish pending from a prior cycle before the current listed date', () => {
+    const rows = publishListingHistory({
+      listingHistory: [],
+      statusHistory: [
+        { old_status: 'Active', new_status: 'Pending', changed_at: '2026-08-02T19:03:24.29+00:00' },
+        { old_status: 'Pending', new_status: 'Active', changed_at: '2026-08-16T20:48:03.197+00:00' },
+      ],
+      priceHistory: [
+        { old_price: 1575000, new_price: 1475000, changed_at: '2026-06-19T03:03:09.368+00:00' },
+        { old_price: 1475000, new_price: 1395000, changed_at: '2026-07-28T00:33:41.222+00:00' },
+      ],
+      onMarketDate: '2026-08-16T20:45:52+00:00',
+      listPrice: 1395000,
+    })
+    expect(rows.map((r) => r.event)).toEqual(['pricechange', 'pricechange', 'listed'])
+    expect(rows.find((r) => r.event === 'pending')).toBeUndefined()
+    expect(rows.at(-1)).toMatchObject({ event: 'listed', event_date: '2026-08-16', price: 1395000 })
+  })
+
   it('Swalley: withholds raw ListPrice dump on the published row', () => {
     const rows = publishListingHistory({
       listingHistory: [

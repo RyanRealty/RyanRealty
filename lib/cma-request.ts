@@ -35,9 +35,9 @@ export type CreateCmaRequestInput = {
   leadTimeline?: string | null
   leadClassification?: string | null
   fubPersonId?: number | null
-  /** Native crm_people id (post-FUB-cutover callers pass this instead of, or in
+  /** Native crm_people id (post-cutover callers pass this instead of, or in
    *  addition to, fubPersonId). Used to stamp the CMA slug onto the correct
-   *  crm_people row directly by id when the lead has no fub_legacy_id. */
+   *  crm_people row directly by id when the lead has no leftover import id. */
   crmPersonId?: number | null
   /** Optional "About your home" details the seller added on the LP form.
    *  Compiled into the CMA payload (home_details + seller_improvements). */
@@ -450,7 +450,7 @@ export async function createCmaRequest(
     if (input.crmPersonId || input.fubPersonId) {
       try {
         // Prefer a direct crm_people id (native/post-cutover callers); fall back
-        // to resolving by fub_legacy_id for legacy FUB-mirrored leads.
+        // to the leftover import id for mirrored leads.
         const query = sb.from('crm_people').select('id,custom')
         const { data: mirror } = input.crmPersonId
           ? await query.eq('id', input.crmPersonId).maybeSingle()

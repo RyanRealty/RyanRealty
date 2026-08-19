@@ -54,6 +54,14 @@ export function renderPrintChartSvg(
     return `<svg viewBox="0 0 ${plot.vbW} ${plot.vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" style="width:100%;height:auto;display:block;">${segs}</svg>`
   }
 
+  if (plot.kind === 'range') {
+    // Range geometry is percent-of-track for HTML rows (V3Chart). No print
+    // document draws it yet; a silent empty SVG would hide the gap, so say it.
+    throw new Error(
+      'printChartSvg: range plots are not print-rendered. Use bars or a line for print documents.',
+    )
+  }
+
   const rects = plot.bars
     .map((b) => {
       const opacity = b.highlight || b.index === 0 ? '1' : '0.35'

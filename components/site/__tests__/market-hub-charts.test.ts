@@ -36,7 +36,7 @@ describe('buildMonthlyMedianChart', () => {
     )
     expect(chart).toBeDefined()
     expect(chart?.caption).toBe('Median sale price, completed months')
-    const points = chart?.series[0]?.points ?? []
+    const points = chart?.series?.[0]?.points ?? []
     expect(points).toHaveLength(2)
     expect(points[0]?.label).toBe(formatPriceCompact(500000))
     expect(points[1]?.label).toBe(formatPriceCompact(520000))
@@ -60,7 +60,7 @@ describe('buildMonthlyMedianChart', () => {
       ],
       'Median sale price, completed months',
     )
-    expect(chart?.series[0]?.points).toHaveLength(2)
+    expect(chart?.series?.[0]?.points).toHaveLength(2)
   })
 })
 
@@ -74,9 +74,9 @@ describe('buildRegionMedianChart', () => {
     ]
     const chart = buildRegionMedianChart(monthly)
     expect(chart?.caption).toBe('Median sale price by month, recent years')
-    expect(chart?.series.map((s) => s.name)).toEqual(['2024', '2025'])
-    expect(chart?.series[0]?.points[0]?.label).toBe(formatPriceCompact(450000))
-    expect(chart?.series[0]?.points[0]?.tick).toBe('Jan')
+    expect(chart?.series?.map((s) => s.name)).toEqual(['2024', '2025'])
+    expect(chart?.series?.[0]?.points[0]?.label).toBe(formatPriceCompact(450000))
+    expect(chart?.series?.[0]?.points[0]?.tick).toBe('Jan')
   })
 
   it('falls back to one chronological line when overlay years cannot plot', () => {
@@ -86,8 +86,8 @@ describe('buildRegionMedianChart', () => {
     ])
     expect(chart?.caption).toBe('Median sale price, completed months')
     expect(chart?.series).toHaveLength(1)
-    expect(chart?.series[0]?.name).toBe('Median sale')
-    expect(chart?.series[0]?.points[0]?.label).toBe(formatPriceCompact(500000))
+    expect(chart?.series?.[0]?.name).toBe('Median sale')
+    expect(chart?.series?.[0]?.points[0]?.label).toBe(formatPriceCompact(500000))
   })
 })
 
@@ -114,7 +114,7 @@ describe('lastCompleteMonths and withChartId', () => {
       'Median sale price, last 12 completed months',
     )
     expect(withChartId(chart, 'trailing-median')?.id).toBe('trailing-median')
-    expect(withChartId(chart, 'trailing-median')?.series[0]?.points[0]?.label).toBe(
+    expect(withChartId(chart, 'trailing-median')?.series?.[0]?.points[0]?.label).toBe(
       formatPriceCompact(500000),
     )
     expect(withChartId(undefined, 'trailing-median')).toBeUndefined()
@@ -131,9 +131,9 @@ describe('buildClosedCountChart', () => {
       ],
       'Closed single-family sales by year, Central Oregon',
     )
-    expect(chart?.series[0]?.points.map((p) => p.tick)).toEqual(['2023', '2024'])
-    expect(chart?.series[0]?.points.map((p) => p.label)).toEqual(['1,900', '2,100'])
-    expect(chart?.series[0]?.name).toBe('Homes sold')
+    expect(chart?.series?.[0]?.points.map((p) => p.tick)).toEqual(['2023', '2024'])
+    expect(chart?.series?.[0]?.points.map((p) => p.label)).toEqual(['1,900', '2,100'])
+    expect(chart?.series?.[0]?.name).toBe('Homes sold')
   })
 
   it('returns undefined below two finite years', () => {

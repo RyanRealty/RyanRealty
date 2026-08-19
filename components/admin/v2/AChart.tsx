@@ -173,11 +173,13 @@ export function AChart({
                   {s.tick}, {s.label}
                 </li>
               ))
-            : plot.bars.map((b) => (
-                <li key={`${b.index}-${b.tick}`}>
-                  {b.tick}, {b.label}
-                </li>
-              ))}
+            : plot.kind === 'bars'
+              ? plot.bars.map((b) => (
+                  <li key={`${b.index}-${b.tick}`}>
+                    {b.tick}, {b.label}
+                  </li>
+                ))
+              : null}
       </ol>
     </figure>
   )

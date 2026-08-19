@@ -23,14 +23,16 @@ function dayLabel(iso: string): string {
 
 export async function HomesSection({
   personId,
+  fubLegacyId,
   personEmails,
 }: {
   personId: number
+  fubLegacyId: number | null
   personEmails: string[]
 }) {
   const [viewed, saved] = await Promise.all([
-    getViewedListingsForLead({ crmPersonId: personId, emails: personEmails }),
-    getContactSavedHomes({ crmPersonId: personId, emails: personEmails }),
+    getViewedListingsForLead({ crmPersonId: personId, fubLegacyId, emails: personEmails }),
+    getContactSavedHomes({ crmPersonId: personId, fubLegacyId, emails: personEmails }),
   ])
   const homes = buildHomesPanelUnion(viewed, saved)
 

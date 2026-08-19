@@ -40,7 +40,7 @@ import {
   getCrmSmsTemplates,
   getTwilioSmsStatus,
 } from '@/app/actions/crm'
-import { Button, HiddenField, SectionHead, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
+import { Button, CardTitle, HiddenField, SectionHead, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
 import { PersonDeals } from './PersonDeals'
 import { stripHtml, tsLabel } from './person-format'
 import {
@@ -356,7 +356,7 @@ export async function PersonWorkspace({
             </section>
           }
         >
-          <HomesSection personId={idNum} personEmails={personEmails} />
+          <HomesSection personId={idNum} fubLegacyId={full.legacyImportId} personEmails={personEmails} />
         </Suspense>
 
         <NotesSection notes={notes} addNote={addNoteFromPerson.bind(null, idNum)} showForm={false} />
@@ -382,7 +382,7 @@ export async function PersonWorkspace({
           aria-label="Build a CMA"
           style={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 'var(--a-r-lg)', padding: 16, marginBottom: 20 }}
         >
-          <SectionHead>Build a CMA</SectionHead>
+          <CardTitle flush>Build a CMA</CardTitle>
           {kicked ? (
             <p style={{ color: 'var(--a-ok)', fontWeight: 500 }}>
               CMA build kicked off — you&apos;ll get a text when the draft is ready to review. Nothing is sent to the

@@ -21,7 +21,7 @@
 
 import type { BlogPostCard, MarketPulseSnapshot } from '@/lib/data'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
-import { formatPrice, formatPriceExact } from '@/lib/format/money'
+import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
@@ -82,7 +82,7 @@ export function buildCityLedger(
         snapshot.median_days_to_pending != null
           ? v3Text(`${snapshot.median_days_to_pending} days to pending`)
           : undefined,
-      value: v3Text(formatPrice(snapshot.median_list_price)),
+      value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
     })
   }
