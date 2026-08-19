@@ -2,27 +2,36 @@ import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
   v3Text,
+  V3ChartCard,
   V3Ledger,
   V3Quiet,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
+import type { SearchPriceLadder } from '@/lib/search/price-ladder'
 import type { CityInventoryPublish } from '@/lib/market/publish-city-inventory'
 import { type buildMarketFaq } from '@/lib/site/market-faq'
 import { type buildPresetFaq } from '@/lib/site/preset-faq'
 import { type getAllCityHomesLink } from '../../../../lib/popular-searches'
 import { type SearchPreset } from '../resolve-slug'
 
-/** Below-fold SEO depth: market snapshot band, city + preset FAQs, preset
- *  cross-links, and the related-searches link cloud (see page.tsx call site).
+/** Below-fold SEO depth: market snapshot band, the asking-price ladder, city +
+ *  preset FAQs, preset cross-links, and the related-searches link cloud (see
+ *  page.tsx call site).
  *
  *  FAQPage JSON-LD used to emit from FAQBlock. V3Quiet carries no structured
- *  data, so MetadataBlock emits the same items the Quiet renders. */
+ *  data, so MetadataBlock emits the same items the Quiet renders.
+ *
+ *  The ladder is ONE chart, below the results, inside the market section the
+ *  snapshot already opens — never a gallery, never above the listings. It
+ *  bands the same tile array the snapshot's count and median publish from, so
+ *  it costs no query and cannot disagree with the numbers above it. */
 export function SearchSeoTail({
   isPlainCityPage,
   relatedCitySlug,
   city,
   published,
+  priceLadder,
   cityMarketFaq,
   presetDepth,
   presetBandLinks,
@@ -37,6 +46,8 @@ export function SearchSeoTail({
   relatedCitySlug: string | null
   city: string | undefined
   published?: CityInventoryPublish | null
+  /** Null whenever the tile set was not a complete, uncapped census. */
+  priceLadder?: SearchPriceLadder | null
   cityMarketFaq: ReturnType<typeof buildMarketFaq> | null
   presetDepth: ReturnType<typeof buildPresetFaq> | null
   presetBandLinks: { href: string; label: string }[]
@@ -111,6 +122,28 @@ export function SearchSeoTail({
             publishedActiveCount={published?.count ?? null}
             publishedMedianListPrice={published?.medianListPrice ?? null}
           />
+          {priceLadder ? (
+            <div className="mx-auto mt-6 w-full max-w-3xl">
+              <V3ChartCard
+                id="search-price-ladder"
+                title={v3Text(priceLadder.title)}
+                line={v3Text(priceLadder.line)}
+                source={v3Text(priceLadder.source)}
+                chart={{
+                  kind: 'range',
+                  caption: v3Text(priceLadder.caption),
+                  // The builder stays free of the component layer, so the
+                  // branded names are applied here at the boundary.
+                  rows: priceLadder.rows.map((row) => ({
+                    tick: v3Text(row.tick),
+                    value: row.value,
+                    label: v3Text(row.label),
+                    note: v3Text(row.note),
+                  })),
+                }}
+              />
+            </div>
+          ) : null}
         </section>
       ) : null}
 

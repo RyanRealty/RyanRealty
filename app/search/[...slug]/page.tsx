@@ -335,7 +335,7 @@ export default async function SearchPage({
   )
   // §0: area-scoped totalCount must name the area, not the city.
   const presetAreaLabel = subdivision ? placeName : null
-  const { cityPulse, cityFaqInput, publishedCityInventory, cityMarketFaq } = await loadSearchCityMarketLayer({
+  const { cityPulse, cityFaqInput, publishedCityInventory, cityMarketFaq, priceLadder } = await loadSearchCityMarketLayer({
     city,
     relatedCitySlug,
     isPlainCityPage,
@@ -576,6 +576,7 @@ export default async function SearchPage({
         relatedCitySlug={relatedCitySlug}
         city={city}
         published={publishedCityInventory}
+        priceLadder={priceLadder}
         cityMarketFaq={cityMarketFaq}
         presetDepth={presetDepth}
         presetBandLinks={presetBandLinks}

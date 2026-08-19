@@ -6,6 +6,7 @@ import {
   type CityInventoryPublish,
 } from '@/lib/market/publish-city-inventory'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
+import { buildSearchPriceLadder, type SearchPriceLadder } from '@/lib/search/price-ladder'
 import { buildMarketFaq, type MarketFaqInput, type MarketFaqResult } from '@/lib/site/market-faq'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 
@@ -72,6 +73,13 @@ export async function loadSearchCityMarketLayer(args: {
   cityFaqInput: MarketFaqInput | null
   publishedCityInventory: CityInventoryPublish | null
   cityMarketFaq: MarketFaqResult | null
+  /**
+   * The below-fold asking-price ladder, banded from the SAME tiles the count
+   * and median publish from. No extra query, nothing above the fold, and null
+   * unless publishCityInventory released the tile source (i.e. the fetch was
+   * complete and did not hit the row ceiling).
+   */
+  priceLadder: SearchPriceLadder | null
 }> {
   const cityPulse =
     (args.isPlainCityPage || args.isPresetDepthPage) && args.relatedCitySlug
@@ -89,5 +97,13 @@ export async function loadSearchCityMarketLayer(args: {
       ? buildSearchCityMarketFaq(args.city, cityPulse, publishedCityInventory)
       : null
   const cityFaqInput: MarketFaqInput | null = cityPulse ? { ...cityPulse, grain: 'city' } : null
-  return { cityPulse, cityFaqInput, publishedCityInventory, cityMarketFaq }
+  const priceLadder =
+    args.isPlainCityPage && args.city
+      ? buildSearchPriceLadder({
+          city: args.city,
+          tiles: args.citySfrTiles,
+          published: publishedCityInventory,
+        })
+      : null
+  return { cityPulse, cityFaqInput, publishedCityInventory, cityMarketFaq, priceLadder }
 }
