@@ -280,6 +280,11 @@ for (const file of [
       if (/publishMonthsOfSupply\(/.test(line)) return
       for (const [field, raw] of [
         ['closed30', /closed30:\s*pulse\?\.closedLast30Days/],
+        // The SELL section reads the same 30-day count through its own prop, on a
+        // different line from the HUD's. Guarding only `closed30` left this one
+        // rendering "0 CLOSED · 30 DAYS" on a district with 42 in-polygon closes
+        // over 180 days — a confident zero is worse than the inflated ratio.
+        ['soldCount30d', /soldCount30d:\s*pulse\?\.closedLast30Days/],
         ['sold12mo', /sold12mo:\s*stats\?\.soldCount/],
         ['soldCount12mo', /soldCount12mo:\s*stats\?\.soldCount/],
       ]) {

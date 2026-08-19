@@ -564,7 +564,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             medianListPrice: sellMedian?.value ?? null,
             medianCaption: sellMedian?.caption ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
-            soldCount30d: pulse?.closedLast30Days ?? null,
+            soldCount30d: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
           }}
           eyebrow={`Sell in ${neighborhood.name}`}
         />
