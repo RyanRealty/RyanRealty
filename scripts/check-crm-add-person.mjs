@@ -34,9 +34,26 @@ const personPage = read('app/admin/(protected)/people/[id]/page.tsx')
 const personLoading = read('app/admin/(protected)/people/[id]/loading.tsx')
 const createContact = read('lib/crm/create-contact.ts')
 const persistCreated = read('lib/crm/persist-created-contact.ts')
+const crmLoading = read('app/admin/(protected)/crm/loading.tsx')
+const fab = read('components/console/ConsoleQuickAction.tsx')
 
 if (!/AddPersonCard/.test(peoplePage)) {
   fails.push('app/admin/(protected)/people/page.tsx must mount AddPersonCard as the primary New contact path')
+}
+if (!/AddPersonCard/.test(crmPage)) {
+  fails.push('/admin/crm must mount AddPersonCard on first paint, not a New contact link that leaves the page')
+}
+if (/href="\/admin\/people\?add=1"/.test(crmPage) || /href="\/admin\/crm\/new"/.test(crmPage)) {
+  fails.push('/admin/crm must not send New contact through a second page or Quick actions')
+}
+if (!/AddPersonCard/.test(crmLoading)) {
+  fails.push('/admin/crm loading must paint AddPersonCard so the list hang never hides add')
+}
+if (!/href="#add-person"/.test(fab) || !/addPersonSurface/.test(fab)) {
+  fails.push('People/CRM FAB must jump to #add-person, not open Quick actions')
+}
+if (!/\/admin\/crm#add-person/.test(fab)) {
+  fails.push('Quick actions New contact must land on /admin/crm#add-person')
 }
 if (!/id="add-person"/.test(peopleLoading) || !/New contact/.test(peopleLoading)) {
   fails.push('app/admin/(protected)/people/loading.tsx must paint New contact chrome (no blank white page)')

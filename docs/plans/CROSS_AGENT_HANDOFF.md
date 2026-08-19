@@ -2,7 +2,13 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — hub reject + Foley investor HOA
+# Current — 2026-08-19 (cursor-cloud) — People New contact first-paint
+
+**Surface:** Cursor Cloud. Branch `cursor/people-new-contact-2d83`. Loop stays **DISARMED**. Live friction: add-person hid behind Quick actions / New List on `/admin/crm`. `AddPersonCard` now first-paints above the People list + CRM loading. Header New contact scrolls to `#add-person`. Quick actions stay; New contact lands `/admin/crm#add-person`. Gate `ci:crm-add-person`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — hub reject + Foley investor HOA
 
 **Surface:** Cursor Cloud. Loop stays **DISARMED**. Two more stats-truth p0s: hub `$730,000` vs FAQ `$729,875` **rejected** (live instrument+FAQ both `$729,000`; class already on `062ff2372`). Foley investor HOA `$0` vs `$22` **fixed** — listing `#hoa` `value="22"` via `publishRentalHoaMonthly`; standalone rental tool stays 0. Product `main` @ `2ff523f5e` READY `DQunyJFMW7tee6t2qNKyZLz5TkbJ`. Foley investor fp `180be952` disposed on `3a6198cd`; hub `32f44490` already disposed; parent stays open (119 lines). Place-pages left. No CMA. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 

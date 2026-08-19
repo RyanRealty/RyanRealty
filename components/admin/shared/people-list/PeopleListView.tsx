@@ -244,8 +244,8 @@ export default function PeopleListView(props: PeopleListViewProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
-    if (params.get('add') === '1') {
-      setAddOpen(true)
+    if (params.get('add') === '1' || window.location.hash === '#add-person') {
+      document.getElementById('add-person')?.scrollIntoView({ block: 'start' })
     }
   }, [])
   const [exportOpen, setExportOpen] = useState(false)
@@ -388,7 +388,11 @@ export default function PeopleListView(props: PeopleListViewProps) {
           <div className="flex shrink-0 items-center gap-2">
             <Button
               data-tour="crm-add-person"
-              onClick={() => setAddOpen(true)}
+              onClick={() => {
+                const el = document.getElementById('add-person')
+                if (el) el.scrollIntoView({ block: 'start' })
+                else setAddOpen(true)
+              }}
               style={BAR_BTN}
             >
               <UserRoundPlus className="h-4 w-4" aria-hidden />

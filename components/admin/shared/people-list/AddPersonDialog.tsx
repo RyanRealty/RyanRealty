@@ -13,7 +13,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { createCrmContactAction } from '@/app/actions/crm'
-import { Button, Dialog, TextField } from '@/components/admin/v2'
+import { Button, Dialog, SectionHead, TextField } from '@/components/admin/v2'
 
 function useAddPersonForm(onCreated: () => void) {
   const router = useRouter()
@@ -192,6 +192,7 @@ export function AddPersonCard() {
   return (
     <section
       id="add-person"
+      data-tour="crm-add-person"
       aria-label="New contact"
       style={{
         border: '1px solid var(--a-border)',
@@ -201,7 +202,7 @@ export function AddPersonCard() {
         marginBottom: 20,
       }}
     >
-      <h2 className="av2-lane-head" style={{ marginTop: 0 }}>New contact</h2>
+      <SectionHead flush>New contact</SectionHead>
       <AddPersonFields form={form} />
       <div style={{ marginTop: 12 }}>
         <Button onClick={form.submit} disabled={form.isPending || !form.firstName.trim() || !form.email.trim() || !form.phone.trim()} touch>

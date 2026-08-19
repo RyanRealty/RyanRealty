@@ -115,11 +115,6 @@ export function MobilePeopleRoot({
   if (mode === 'directory') {
     return (
       <div style={{ background: 'var(--a-surface)' }}>
-        <div style={{ padding: '10px 16px' }}>
-          <Link href="/admin/people?add=1" className="av2-btn" style={{ textDecoration: 'none', width: '100%' }}>
-            New contact
-          </Link>
-        </div>
         <SubTabStrip active={ptab} carryBroker={carryBroker} />
         {ptab === 'lists' ? (
           <div>

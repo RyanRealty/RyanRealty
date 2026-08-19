@@ -7,6 +7,18 @@ describe('People new-contact primary path', () => {
     expect(src).toContain('AddPersonCard')
   })
 
+  it('CRM People page mounts the add form above the hanging list', () => {
+    const src = readFileSync('app/admin/(protected)/crm/page.tsx', 'utf8')
+    expect(src).toContain('AddPersonCard')
+    expect(src).not.toContain('href="/admin/people?add=1"')
+  })
+
+  it('People FAB jumps to the form instead of Quick actions', () => {
+    const src = readFileSync('components/console/ConsoleQuickAction.tsx', 'utf8')
+    expect(src).toContain('href="#add-person"')
+    expect(src).toContain('/admin/crm#add-person')
+  })
+
   it('People loading paints New contact instead of a blank page', () => {
     const src = readFileSync('app/admin/(protected)/people/loading.tsx', 'utf8')
     expect(src).toContain('id="add-person"')
