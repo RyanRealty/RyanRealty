@@ -1,8 +1,7 @@
 /**
- * Quick-add contact: name + email + phone.
- * Address is an optional first-class field on the same screen, never a note.
- * Stage, tags, relationships, long notes, assignment extras, and property
- * live on person detail after create.
+ * Quick-add contact: name + phone plus email OR street.
+ * Address is a first-class field, never a note.
+ * Stage, tags, relationships, notes, and property live on person detail.
  */
 
 import { personAddressFromFields, type PersonAddress } from '@/lib/crm/person-address'
@@ -31,12 +30,27 @@ export function parseCreateContactForm(formData: FormData): CreateContactInput {
   }
 }
 
+export function canSubmitCreateContact(input: {
+  firstName: string
+  email: string
+  phone: string
+  street: string
+}): boolean {
+  return Boolean(
+    input.firstName.trim() &&
+    input.phone.trim() &&
+    (input.email.trim() || input.street.trim()),
+  )
+}
+
 export function validateCreateContact(
   input: CreateContactInput,
 ): { ok: true } | { ok: false; error: string } {
   if (!input.firstName) return { ok: false, error: 'First name required' }
-  if (!input.email) return { ok: false, error: 'Email required' }
   if (!input.phone) return { ok: false, error: 'Phone required' }
+  if (!input.email && !input.street) {
+    return { ok: false, error: 'Add an email, or a street address' }
+  }
   return { ok: true }
 }
 

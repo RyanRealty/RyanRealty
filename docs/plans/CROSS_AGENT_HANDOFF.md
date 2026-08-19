@@ -2,7 +2,13 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — People New contact first-paint
+# Current — 2026-08-19 (cursor-cloud) — People file related people + notes
+
+**Surface:** Cursor Cloud. Branch `cursor/people-file-friction-2d83`. Loop stays **DISARMED**. Live file friction after Nealon `63287` + Jane `63290` next to Odessa `63285`: related-people form now first-paints open; notes list + `savePersonNoteAction` (no People-list revalidate); stage/tags on first paint; quick add is name+phone plus email or street, then Opening success. Odessa↔Nealon spouse and Jane parent of Odessa already in `crm_relationships`. Odessa notes were in `crm_timeline` and hidden behind the workspace hang. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — People New contact first-paint
 
 **Surface:** Cursor Cloud. Merged to `main` @ `cea4bde19`. Vercel production **READY** `94hZ3rcsAmuPze5JTWockB7Ejnx4`. Loop stays **DISARMED**. Live friction: add-person hid behind Quick actions / New List on `/admin/crm`. `AddPersonCard` now first-paints above the People list + CRM loading. Header New contact scrolls to `#add-person`. Quick actions stay; New contact lands `/admin/crm#add-person`. Gate `ci:crm-add-person`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
 

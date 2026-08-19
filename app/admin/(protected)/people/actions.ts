@@ -10,10 +10,14 @@
  */
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
+import { createServiceClient } from '@/lib/supabase/service'
 import { createDealFromPersonAction } from '@/app/actions/tc-deal-people'
 import { kickoffCmaForContactAction } from '@/app/actions/crm-cma-kickoff'
 import {
   addCrmNoteAction,
+  getCrmAccess,
+  requirePersonInScope,
   addCrmTagAction,
   addCrmTaskAction,
   assignCrmBrokerAction,
@@ -64,11 +68,61 @@ export async function sendEmailFromPerson(personId: number, formData: FormData):
 
 // ── Notes ───────────────────────────────────────────────────────────────────
 
+export type SavedPersonNote = {
+  id: number
+  ts: string
+  body: string
+  broker: string | null
+}
+
+export async function savePersonNoteAction(
+  personId: number,
+  body: string,
+): Promise<{ ok: true; note: SavedPersonNote } | { ok: false; error: string }> {
+  try {
+    const access = await getCrmAccess()
+    if (!access) return { ok: false, error: 'Sign in to save a note' }
+    const text = body.trim()
+    if (!personId || !text) return { ok: false, error: 'Note body required' }
+    const scoped = await requirePersonInScope(personId, access)
+    if (!scoped.ok) return { ok: false, error: scoped.error ?? 'Not authorized' }
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('crm_timeline')
+      .insert({
+        person_id: personId,
+        kind: 'note',
+        body: text,
+        source: 'app',
+        broker: access.brokerSlug ?? null,
+      })
+      .select('id,ts,body,broker')
+      .single()
+    if (error || !data) {
+      console.error('[savePersonNoteAction]', error?.message)
+      return { ok: false, error: 'Note not saved' }
+    }
+    revalidatePerson(personId)
+    return {
+      ok: true,
+      note: {
+        id: Number(data.id),
+        ts: String(data.ts ?? new Date().toISOString()),
+        body: String(data.body ?? text),
+        broker: data.broker == null ? null : String(data.broker),
+      },
+    }
+  } catch (err) {
+    console.error('[savePersonNoteAction]', err)
+    return { ok: false, error: 'Note not saved' }
+  }
+}
+
 export async function addNoteFromPerson(personId: number, formData: FormData): Promise<void> {
   formData.set('personId', String(personId))
   const r = await addCrmNoteAction(formData)
   revalidatePath(personPath(personId))
-  if (!r.ok) redirect(errorUrl(personId, `Note not saved — ${r.error ?? 'unknown error'}`))
+  if (!r.ok) redirect(errorUrl(personId, `Note not saved. ${r.error ?? 'unknown error'}`))
   redirect(`${personPath(personId)}?flash=${encodeURIComponent('Note saved.')}`)
 }
 

@@ -56,6 +56,7 @@ describe('People new-contact primary path', () => {
     const dialog = readFileSync('components/admin/shared/people-list/AddPersonDialog.tsx', 'utf8')
     const crmNew = readFileSync('app/admin/(protected)/crm/new/page.tsx', 'utf8')
     expect(dialog).toContain('router.push(`/admin/people/${res.personId}`)')
+    expect(dialog).toContain('Opening')
     expect(crmNew).toContain('redirect(`/admin/people/${r.personId}`)')
   })
 
@@ -64,10 +65,21 @@ describe('People new-contact primary path', () => {
     expect(page).toContain('PersonAddressEditor')
     expect(page).toContain('PersonRelationships')
     expect(page).toContain('PersonNotesAdd')
+    expect(page).toContain('FieldEditors')
+    expect(page).toContain('getPersonNotes')
     expect(page).toContain('PersonWorkspace')
     expect(page).toContain('Suspense')
     const loading = readFileSync('app/admin/(protected)/people/[id]/loading.tsx', 'utf8')
     expect(loading).toContain('Opening this person')
+  })
+
+  it('notes save without waiting on the workspace', () => {
+    const ui = readFileSync('app/admin/(protected)/people/[id]/PersonNotesAdd.tsx', 'utf8')
+    expect(ui).toContain('savePersonNoteAction')
+    expect(ui).toContain('Note saved')
+    const action = readFileSync('app/admin/(protected)/people/actions.ts', 'utf8')
+    expect(action).toContain('revalidatePerson(personId)')
+    expect(action).not.toMatch(/savePersonNoteAction[\s\S]*revalidatePath\('\/admin\/crm'\)/)
   })
 
   it('relationship add searches an existing person and writes both sides', () => {
@@ -75,6 +87,7 @@ describe('People new-contact primary path', () => {
     const action = readFileSync('app/actions/crm-relationships.ts', 'utf8')
     expect(ui).toContain('Search an existing person')
     expect(ui).toContain('SIMPLE_RELATIONSHIP_TYPES')
+    expect(ui).toContain('useState(true)')
     expect(ui).toContain('linkExistingRelationshipAction')
     expect(action).toContain('reciprocalType')
     expect(action).toContain('crm_relationships')
