@@ -44,6 +44,6 @@ describe('CRM compose is the only send path', () => {
 
   it('does not document a Gmail or Mac Messages fallback on compose', () => {
     const surface = read('components/admin/crm/ComposeSurface.tsx')
-    expect(surface).not.toMatch(/Gmail|iMessage|osascript|Follow Up Boss/i)
+    expect(surface).not.toMatch(/Gmail|iMessage|osascript|mailto:/i)
   })
 })
