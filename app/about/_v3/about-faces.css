@@ -56,9 +56,19 @@
 
 .about-faces__photo {
   display: block;
-  width: auto;
-  max-width: 100%;
+  /* width/height:auto left the box unsized until the PNG decoded, so the grid
+     collapsed and then jumped — CLS 0.138 on /about and /team, the only two
+     pages that render this grid (lighthouserc asserts <= 0.05). The attributes
+     alone cannot reserve space while both axes are auto. A definite width plus
+     the intrinsic ratio makes the box computable before the image arrives.
+     max-width caps at the file's own 800px, the same ceiling max-width:100%
+     reached via the intrinsic size. Where max-height binds (short viewports)
+     the box now letterboxes instead of shrinking, and object-fit:contain
+     centers the same picture at the same size inside it. */
+  width: 100%;
+  max-width: 800px;
   height: auto;
+  aspect-ratio: 800 / 1200;
   max-height: 70vh;
   object-fit: contain;
 }
