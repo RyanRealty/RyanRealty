@@ -290,6 +290,42 @@ export function V3SourceLine({
 }
 
 /* -------------------------------------------------------------------------- */
+/* V3SourceDisclosure                                                          */
+/* -------------------------------------------------------------------------- */
+
+export type V3SourceDisclosureProps = {
+  /**
+   * The full section 0 trace: table, filter, methodology stamp, population.
+   * Collapsed behind a "Source" summary — the trace is present on every data
+   * block but never a visible paragraph competing with the figures
+   * (Matt 2026-08-19).
+   */
+  source: string
+  /** When the data was last refreshed. Rendered through the canonical formatter. */
+  updatedAt?: string | number | Date | null
+  id?: string
+  className?: string
+}
+
+/**
+ * The collapsed form of the section 0 trace: a native details/summary whose
+ * closed state shows only the word "Source". Use it under a chart or figure
+ * block where the trace names tables, filters, and vintages too long for the
+ * one-line V3SourceLine.
+ */
+export function V3SourceDisclosure({ source, updatedAt, id, className }: V3SourceDisclosureProps) {
+  return (
+    <details id={id} className={cn('v3-source-disclosure', className)}>
+      <summary className="v3-source-disclosure__summary">Source</summary>
+      <p className="v3-source">
+        {source}
+        {updatedAt == null ? null : ` · updated ${formatDate(updatedAt)}`}
+      </p>
+    </details>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
 /* V3Eyebrow                                                                   */
 /* -------------------------------------------------------------------------- */
 

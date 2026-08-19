@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-08-19T15:28:43.827Z
+**Generated:** 2026-08-19T18:02:58.966Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -3201,6 +3201,16 @@ Companion files:
 **Tables:** `sale_pricing_facts`, `pricing_market_index`, `pricing_subdivision_cells`, `listings`
 
 **Selected columns:** `listing_key`, `month`, `n`, `median_ppsf`, `median_sale_to_original`, `median_days_to_offer`, `city_slug`, `subdivision_norm`, `water`, `details->WaterSource`
+
+---
+
+### `lib/data/pricing/getCityQuarterSaleToAsk.ts`
+
+**Exports:** `MIN_CLOSINGS_PER_QUARTER`, `mapCityQuarterSaleToAskRow`, `latestCompleteQuarter`, `pairCityQuarterRows`, `getCityQuarterSaleToAsk`
+
+**TTL windows:** `CACHE_WINDOWS.marketStats`
+
+**Cache tags:** `cacheTag.market, 'pricing-facts'`
 
 ---
 

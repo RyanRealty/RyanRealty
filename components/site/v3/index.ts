@@ -52,13 +52,14 @@ export type {
 /* Atoms — the small pieces the six patterns share                             */
 /* -------------------------------------------------------------------------- */
 
-export { V3Button, V3Figure, V3SourceLine, V3Eyebrow, V3Heading } from './atoms'
+export { V3Button, V3Figure, V3SourceLine, V3SourceDisclosure, V3Eyebrow, V3Heading } from './atoms'
 
 export type {
   V3ButtonProps,
   V3ButtonVariant,
   V3FigureProps,
   V3SourceLineProps,
+  V3SourceDisclosureProps,
   V3EyebrowProps,
   V3HeadingProps,
   V3HeadingSize,

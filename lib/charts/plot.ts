@@ -106,6 +106,8 @@ export type RangeRowIn = {
   baseValue?: number
   /** The prior value as the caller formatted it. */
   baseLabel?: string
+  /** Context for the reading (population, sample size). Pass-through, no geometry. */
+  note?: string
 }
 
 export type RangeBandIn = {
@@ -125,6 +127,15 @@ export type RangePlotRow = {
   /** Stem span, percent. Lollipop stems rise from the domain floor. */
   stemStartPct: number
   stemEndPct: number
+  /** Context for the reading, as the caller passed it. */
+  note: string | null
+  /**
+   * True when the row's value sits beyond opts.clampMax and is drawn AT the
+   * clamp instead of at scale (the chart-room broken-bar rule: one 36-month
+   * outlier must not compress every other row into the left tenth of the
+   * track). The label still carries the true reading.
+   */
+  clamped: boolean
   index: number
 }
 
@@ -132,6 +143,8 @@ export type RangePlot = {
   kind: 'range'
   rows: RangePlotRow[]
   bands: { xPct: number; wPct: number; label: string }[]
+  /** Vertical reference rule (e.g. the region figure); null when out of domain. */
+  ref: { xPct: number; label: string } | null
   xMinLabel: string
   xMaxLabel: string
 }
@@ -282,10 +295,26 @@ export function buildLinePlot(
  */
 export function buildRangePlot(
   rows: readonly RangeRowIn[],
-  opts?: { bands?: readonly RangeBandIn[] },
+  opts?: {
+    bands?: readonly RangeBandIn[]
+    /**
+     * Domain ceiling. A value beyond it is drawn AT the ceiling with
+     * `clamped: true` instead of stretching the scale (one degenerate
+     * outlier — a 36-month supply on 6 actives — must not flatten every
+     * honest row). The row's label still states the true value.
+     */
+    clampMax?: number
+    /** Vertical reference rule (a region figure, full ask). Dropped when it falls outside the domain. */
+    refValue?: number
+    refLabel?: string
+  },
 ): RangePlot | null {
   const usable = rows.filter((r) => isFiniteNumber(r.value))
   if (usable.length < 1) return null
+
+  const clampMax =
+    opts?.clampMax != null && isFiniteNumber(opts.clampMax) ? opts.clampMax : null
+  const clampOf = (value: number) => (clampMax != null ? Math.min(value, clampMax) : value)
 
   const hasBase = usable.some((r) => r.baseValue != null && isFiniteNumber(r.baseValue))
   let min = Infinity
@@ -303,9 +332,9 @@ export function buildRangePlot(
     }
   }
   for (const r of usable) {
-    consider(r.value, r.label)
+    consider(clampOf(r.value), r.label)
     if (r.baseValue != null && isFiniteNumber(r.baseValue)) {
-      consider(r.baseValue, r.baseLabel ?? r.label)
+      consider(clampOf(r.baseValue), r.baseLabel ?? r.label)
     }
   }
 
@@ -323,9 +352,9 @@ export function buildRangePlot(
   const pct = (value: number) => ((value - lo) / range) * 100
 
   const plotted: RangePlotRow[] = usable.map((r, index) => {
-    const x = pct(r.value)
+    const x = pct(clampOf(r.value))
     const base =
-      r.baseValue != null && isFiniteNumber(r.baseValue) ? pct(r.baseValue) : null
+      r.baseValue != null && isFiniteNumber(r.baseValue) ? pct(clampOf(r.baseValue)) : null
     return {
       tick: r.tick,
       xPct: x,
@@ -334,6 +363,8 @@ export function buildRangePlot(
       baseLabel: base != null ? (r.baseLabel ?? null) : null,
       stemStartPct: base != null ? Math.min(base, x) : 0,
       stemEndPct: base != null ? Math.max(base, x) : x,
+      note: r.note ?? null,
+      clamped: clampMax != null && r.value > clampMax,
       index,
     }
   })
@@ -347,10 +378,25 @@ export function buildRangePlot(
     bands.push({ xPct: pct(bLo), wPct: pct(bHi) - pct(bLo), label: band.label })
   }
 
+  // Reference rule. Only drawn inside the domain: a reference the scale cannot
+  // place would render at a false position, so it is dropped (the caller's
+  // source note still carries the number).
+  let ref: RangePlot['ref'] = null
+  if (
+    opts?.refValue != null &&
+    isFiniteNumber(opts.refValue) &&
+    opts.refLabel != null &&
+    opts.refValue >= lo &&
+    opts.refValue <= hi
+  ) {
+    ref = { xPct: pct(opts.refValue), label: opts.refLabel }
+  }
+
   return {
     kind: 'range',
     rows: plotted,
     bands,
+    ref,
     xMinLabel: minLabel,
     xMaxLabel: maxLabel,
   }

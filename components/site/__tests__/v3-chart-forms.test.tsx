@@ -104,6 +104,62 @@ describe('V3Chart range rows', () => {
     expect((html.match(/class="v3-chart__rangeband"/g) ?? []).length).toBe(3)
     expect(html).toContain('Balanced')
   })
+
+  it('clamps an outlier row in the exception ink with its true reading', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Months of supply by town'),
+        kind: 'range',
+        clampMax: 14,
+        rows: [
+          { tick: v3Text('Bend'), value: 3.47, label: v3Text('3.5 mo') },
+          { tick: v3Text('Terrebonne'), value: 36, label: v3Text('36.0 mo') },
+        ],
+      }),
+    )
+    expect(html).toContain('v3-chart__rangedot--clamped')
+    expect(html).toContain('v3-chart__rangelabel--clamped')
+    // The true reading survives, and the row title names the breach.
+    expect(html).toContain('36.0 mo')
+    expect(html).toContain('beyond the scale shown')
+    // The honest row stays un-clamped.
+    expect((html.match(/v3-chart__rangedot--clamped/g) ?? []).length).toBe(1)
+  })
+
+  it('draws an in-domain reference rule with its name', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Price-cut share by town'),
+        kind: 'range',
+        refValue: 8.46,
+        refLabel: v3Text('Region 8.5%'),
+        rows: [
+          { tick: v3Text('Bend'), value: 6.6, label: v3Text('6.6%') },
+          { tick: v3Text('Black Butte Ranch'), value: 16.7, label: v3Text('16.7%') },
+        ],
+      }),
+    )
+    expect(html).toContain('v3-chart__rangeref')
+    expect(html).toContain('Region 8.5%')
+  })
+
+  it('carries a row note into the native title and the hidden readings', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Median days to pending by town'),
+        kind: 'range',
+        rows: [
+          {
+            tick: v3Text('Bend'),
+            value: 18,
+            label: v3Text('18 days'),
+            note: v3Text('167 closed in 30 days'),
+          },
+        ],
+      }),
+    )
+    expect(html).toContain('Bend: 18 days — 167 closed in 30 days')
+  })
 })
 
 describe('V3Chart YoY overlay', () => {

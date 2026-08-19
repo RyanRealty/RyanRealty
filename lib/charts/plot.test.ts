@@ -182,4 +182,50 @@ describe('range plot (lollipop / dumbbell)', () => {
     expect(plot?.rows.map((r) => r.tick)).toEqual(['Bend'])
     expect(buildRangePlot([{ tick: 'x', value: Number.NaN, label: 'n/a' }])).toBeNull()
   })
+
+  it('clamps an outlier at clampMax with clamped: true instead of stretching the domain', () => {
+    // The chart-room broken-bar case: Terrebonne 36 months on 6 actives must
+    // not flatten Bend 3.5 into the left edge.
+    const plot = buildRangePlot(
+      [
+        { tick: 'Bend', value: 3.47, label: '3.5 mo' },
+        { tick: 'Terrebonne', value: 36, label: '36 mo' },
+      ],
+      { clampMax: 14 },
+    )
+    expect(plot?.kind).toBe('range')
+    if (plot?.kind !== 'range') return
+    const bend = plot.rows.find((r) => r.tick === 'Bend')!
+    const terre = plot.rows.find((r) => r.tick === 'Terrebonne')!
+    // Domain top is the CLAMPED max (14 * 1.06), not 36 * 1.06.
+    expect(bend.xPct).toBeCloseTo((3.47 / (14 * 1.06)) * 100, 6)
+    expect(terre.xPct).toBeCloseTo((14 / (14 * 1.06)) * 100, 6)
+    expect(terre.clamped).toBe(true)
+    expect(bend.clamped).toBe(false)
+    // The label still states the true reading.
+    expect(terre.label).toBe('36 mo')
+  })
+
+  it('places an in-domain reference rule in percent and drops one outside the domain', () => {
+    const inDomain = buildRangePlot(
+      [
+        { tick: 'Bend', value: 6.6, label: '6.6%' },
+        { tick: 'Black Butte Ranch', value: 16.7, label: '16.7%' },
+      ],
+      { refValue: 8.46, refLabel: 'Region 8.5%' },
+    )
+    expect(inDomain?.kind).toBe('range')
+    if (inDomain?.kind !== 'range') return
+    expect(inDomain.ref).not.toBeNull()
+    expect(inDomain.ref!.label).toBe('Region 8.5%')
+    expect(inDomain.ref!.xPct).toBeCloseTo((8.46 / (16.7 * 1.06)) * 100, 6)
+
+    const outside = buildRangePlot([{ tick: 'Bend', value: 6.6, label: '6.6%' }], {
+      refValue: 50,
+      refLabel: 'Region 50%',
+    })
+    expect(outside?.kind).toBe('range')
+    if (outside?.kind !== 'range') return
+    expect(outside.ref).toBeNull()
+  })
 })

@@ -65,6 +65,13 @@ export type V3ChartRangeRow = {
   label: V3Text
   baseValue?: number
   baseLabel?: V3Text
+  /**
+   * Context for the row's reading — the population behind the figure
+   * ("475 active single-family · 167 closed in 30 days · small sample").
+   * Carried in the native title and the hidden reading list, never drawn
+   * on the track.
+   */
+  note?: V3Text
 }
 
 export type V3ChartKind = 'line' | 'bars' | 'mix' | 'range'
@@ -87,6 +94,17 @@ export type V3ChartProps = {
   overlay?: 'yoy'
   /** Threshold zones behind a line or across range rows. */
   bands?: readonly V3ChartBand[]
+  /**
+   * Range rows only: domain ceiling. A row's value beyond it draws AT the
+   * ceiling in the exception ink with its true reading — the chart-room
+   * broken-bar rule, so one degenerate outlier cannot flatten every honest
+   * row into the left edge of the track.
+   */
+  clampMax?: number
+  /** Range rows only: a vertical reference rule (the region figure, full ask). */
+  refValue?: number
+  /** Names the reference rule. Required for refValue to draw. */
+  refLabel?: V3Text
   /** Per-point dots with a native <title> reading. Lines only. */
   marks?: boolean
   /** Legend name for the primary dot of a dumbbell row set. */
@@ -128,8 +146,14 @@ function buildAnyPlot(props: V3ChartProps): AnyPlot | null {
         label: r.label,
         baseValue: r.baseValue,
         baseLabel: r.baseLabel,
+        note: r.note,
       })),
-      { bands: toPlotBands(props.bands) },
+      {
+        bands: toPlotBands(props.bands),
+        clampMax: props.clampMax,
+        refValue: props.refValue,
+        refLabel: props.refLabel,
+      },
     )
   }
   const series = toPlotSeries(props.series)
@@ -156,7 +180,9 @@ function readings(plot: AnyPlot): { name: string; tick: string; label: string }[
     return plot.rows.map((r) => ({
       name: r.tick,
       tick: r.tick,
-      label: r.baseLabel != null ? `${r.label} (${r.baseLabel})` : r.label,
+      label:
+        (r.baseLabel != null ? `${r.label} (${r.baseLabel})` : r.label) +
+        (r.note ? ` — ${r.note}` : ''),
     }))
   }
   return plot.bars.map((b) => ({ name: b.tick, tick: b.tick, label: b.label }))
@@ -169,6 +195,9 @@ export function V3Chart({
   kind = 'line',
   overlay,
   bands,
+  clampMax,
+  refValue,
+  refLabel,
   marks,
   rangeKeyLabel,
   rangeBaseKeyLabel,
@@ -195,7 +224,19 @@ export function V3Chart({
     )
   }
 
-  const plot = buildAnyPlot({ caption, series, rows, kind, overlay, bands, layout, baselineLabel })
+  const plot = buildAnyPlot({
+    caption,
+    series,
+    rows,
+    kind,
+    overlay,
+    bands,
+    clampMax,
+    refValue,
+    refLabel,
+    layout,
+    baselineLabel,
+  })
   const captionId = id ? `${id}-caption` : undefined
   const yoy = overlay === 'yoy'
 
@@ -416,10 +457,13 @@ export function V3Chart({
 
       {plot.kind === 'range' ? (
         <div
-          className={cn('v3-chart__range', plot.bands.length > 0 && 'v3-chart__range--banded')}
+          className={cn(
+            'v3-chart__range',
+            (plot.bands.length > 0 || plot.ref != null) && 'v3-chart__range--banded',
+          )}
           aria-hidden="true"
         >
-          {plot.bands.length > 0 ? (
+          {plot.bands.length > 0 || plot.ref ? (
             <div className="v3-chart__rangebands">
               {plot.bands.map((b, i) => (
                 <span
@@ -430,6 +474,18 @@ export function V3Chart({
                   <span className="v3-chart__rangeband-label">{b.label}</span>
                 </span>
               ))}
+              {plot.ref ? (
+                <span className="v3-chart__rangeref" style={{ left: `${plot.ref.xPct}%` }}>
+                  <span
+                    className={cn(
+                      'v3-chart__rangeref-label',
+                      plot.ref.xPct > 78 && 'v3-chart__rangeref-label--before',
+                    )}
+                  >
+                    {plot.ref.label}
+                  </span>
+                </span>
+              ) : null}
             </div>
           ) : null}
           {plot.rows.map((r) => {
@@ -441,16 +497,22 @@ export function V3Chart({
             let before = r.baseXPct != null && r.xPct < r.baseXPct
             if (!before && r.xPct > 78) before = true
             if (before && r.xPct < 12) before = false
+            const core =
+              r.baseLabel != null ? `${r.tick}: ${r.label} (${r.baseLabel})` : `${r.tick}: ${r.label}`
+            const reading = r.note ? `${core} — ${r.note}` : core
             return (
-              <div key={`${r.index}-${r.tick}`} className="v3-chart__rangerow" title={
-                r.baseLabel != null
-                  ? `${r.tick}: ${r.label} (${r.baseLabel})`
-                  : `${r.tick}: ${r.label}`
-              }>
+              <div
+                key={`${r.index}-${r.tick}`}
+                className="v3-chart__rangerow"
+                title={r.clamped ? `${reading} — beyond the scale shown` : reading}
+              >
                 <span className="v3-chart__rangetick">{r.tick}</span>
                 <span className="v3-chart__rangetrack">
                   <span
-                    className="v3-chart__rangestem"
+                    className={cn(
+                      'v3-chart__rangestem',
+                      r.clamped && 'v3-chart__rangestem--clamped',
+                    )}
                     style={{
                       left: `${r.stemStartPct}%`,
                       width: `${Math.max(r.stemEndPct - r.stemStartPct, 0)}%`,
@@ -459,9 +521,19 @@ export function V3Chart({
                   {r.baseXPct != null ? (
                     <span className="v3-chart__rangebase" style={{ left: `${r.baseXPct}%` }} />
                   ) : null}
-                  <span className="v3-chart__rangedot" style={{ left: `${r.xPct}%` }} />
                   <span
-                    className={cn('v3-chart__rangelabel', before && 'v3-chart__rangelabel--before')}
+                    className={cn(
+                      'v3-chart__rangedot',
+                      r.clamped && 'v3-chart__rangedot--clamped',
+                    )}
+                    style={{ left: `${r.xPct}%` }}
+                  />
+                  <span
+                    className={cn(
+                      'v3-chart__rangelabel',
+                      before && 'v3-chart__rangelabel--before',
+                      r.clamped && 'v3-chart__rangelabel--clamped',
+                    )}
                     style={{ left: `${r.xPct}%` }}
                   >
                     {r.label}

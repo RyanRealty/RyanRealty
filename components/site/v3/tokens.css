@@ -213,6 +213,12 @@
   --v3-cat-2: #199e70;
   --v3-cat-3: #847ae3;
   --v3-cat-4: #d55181;
+
+  /* Exception ink — the design system's --rr-exception on cream
+     (design_system/ryan-realty/colors_and_type.css, Matt 2026-08-17). ONE job:
+     mark a data exception — here, a chart row whose value breached the drawn
+     scale. Never decoration, never a CTA, never a background. */
+  --v3-exception: #A8452B;
 }
 
 /* ---------------------------------------------------------------------------
@@ -407,6 +413,31 @@
 
 .v3 .v3-source--on-media {
   color: var(--v3-ink-on-navy-muted);
+}
+
+/* V3SourceDisclosure --------------------------------------------------------
+   The collapsed form of the trace: closed, it is one small word. Open, the
+   full table + filter + vintage line. (Matt 2026-08-19: traces live in a
+   collapsed Source disclosure, never visible paragraphs.) */
+.v3 .v3-source-disclosure,
+.v3.v3-source-disclosure {
+  margin: 0;
+}
+
+.v3 .v3-source-disclosure__summary,
+.v3.v3-source-disclosure .v3-source-disclosure__summary {
+  cursor: pointer;
+  width: fit-content;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-source-disclosure[open] .v3-source-disclosure__summary,
+.v3.v3-source-disclosure[open] .v3-source-disclosure__summary {
+  margin-bottom: var(--v3-space-2xs);
 }
 
 /* V3Eyebrow ----------------------------------------------------------------- */

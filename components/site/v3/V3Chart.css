@@ -362,6 +362,52 @@
   transform: translate(calc(-100% - var(--v3-space-xs)), -50%);
 }
 
+/* A clamped row: the value sits beyond the domain ceiling and is drawn AT it.
+   Exception ink — a breached scale is a data exception, never decoration. */
+.v3 .v3-chart__rangestem--clamped {
+  background: var(--v3-exception);
+}
+
+.v3 .v3-chart__rangedot--clamped {
+  background: var(--v3-exception);
+}
+
+.v3 .v3-chart__rangelabel--clamped {
+  color: var(--v3-exception);
+  font-weight: var(--v3-weight-strong);
+}
+
+/* Reference rule: one vertical line naming a context figure (the region,
+   full ask). Its label sits in the same lane the band names use. */
+.v3 .v3-chart__rangeref {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1.5px solid var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__rangeref-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  background: var(--v3-surface);
+  padding: 0 var(--v3-space-3xs);
+  border-radius: var(--v3-radius-sm);
+}
+
+/* Near the right edge the reference name hangs left of its rule. */
+.v3 .v3-chart__rangeref-label--before {
+  transform: translateX(calc(-100% + var(--v3-space-2xs)));
+}
+
 /* Dumbbell legend dots. */
 .v3 .v3-chart__dotswatch {
   display: inline-block;
