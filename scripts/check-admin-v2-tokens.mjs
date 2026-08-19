@@ -484,7 +484,6 @@ const SCAN_DIRS = [
   'app/admin/(protected)/prospecting/[kind]/[id]/_components/ProspectDetailPage.client.tsx',
   'app/admin/(protected)/settings/MobileSettingsScreen.tsx',
   'app/admin/(protected)/settings/MySettingsForm.tsx',
-  'components/admin/PendingButton.tsx',
   'components/admin/crm/BulkActions.tsx',
   'components/admin/crm/BulkProgress.tsx',
   'components/admin/crm/CmaKickoffMount.tsx',
