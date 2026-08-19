@@ -4,7 +4,7 @@
 
 # Current — 2026-08-19 (cursor-cloud) — CMA person-link + SE + slim review
 
-**Surface:** Cursor Cloud. Branch `cursor/cma-odessa-douglas-2d83`. Live `cma-648-se-douglas` is `person_id=63285` Odessa, `client_name=Odessa`, address `648 SE Douglas, Bend, OR 97702`, beds/baths/sqft 3/1/1056, `Intent: sell`. Review header reads the linked person, not only free-text name. Rebuild keeps `person_id` and SE. Kickoff/rebuild/manual build collect beds/baths/sqft + rent-vs-sell. Admin actions and version-chain reads no longer `select(*)`. Review page does not iframe the document. Relationships + address-on-quick-add stay on `main`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Merged to `main` @ `23f936a51`. Vercel production **READY** `FnhKRD21AK26xTzUs4wTnKau6K6w`. Live `cma-648-se-douglas` is `person_id=63285` Odessa, `client_name=Odessa`, address `648 SE Douglas, Bend, OR 97702`, beds/baths/sqft 3/1/1056, `Intent: sell`. Review header reads the linked person. Rebuild keeps `person_id` and SE. Kickoff/rebuild/manual build collect beds/baths/sqft + rent-vs-sell. Admin actions and version-chain reads no longer `select(*)`. Review page does not iframe the document. Relationships + address-on-quick-add stay on `main`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit, database-canonical-reference.
 
