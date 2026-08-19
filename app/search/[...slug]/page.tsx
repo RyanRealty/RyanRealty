@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon } from '@hugeicons/core-free-icons'
-import { buildMarketFaq } from '@/lib/site/market-faq'
 import {
   buildPresetFaq,
   getAdjacentPriceBandLinks,
@@ -23,8 +22,7 @@ import {
   getSamePresetCityLinks,
   isSortOnlyPreset,
 } from '@/lib/site/preset-faq'
-import { getCityListings, getMarketPulse, getDerivedPopularSearches } from '@/lib/data'
-import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { getDerivedPopularSearches } from '@/lib/data'
 import SearchFilterBar from '../../../components/SearchFilterBar'
 import ShareButton from '../../../components/ShareButton'
 import {
@@ -64,9 +62,7 @@ import { renderMapSplitView } from './sections/MapSplitView'
 import { ListingsResults } from './sections/ListingsResults'
 import { SearchSeoTail } from './sections/SeoTail'
 import { publishSearchCount } from '@/lib/search/publish-search-count'
-import { CITY_TILE_FETCH_LIMIT, publishCityInventory } from '@/lib/market/publish-city-inventory'
-import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { loadCitySfrTilesForSearch, loadSearchCityMarketLayer } from '@/lib/market/search-city-sfr-publish'
 
 export async function generateStaticParams() {
   return buildSearchStaticParams()
@@ -240,19 +236,7 @@ export default async function SearchPage({
       : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
     withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
-    isPlainCityBrowse && city
-      ? withTimeoutFallback(
-          getCityListings(city, {
-            status: 'active',
-            sort: 'newest',
-            propertyType: 'A',
-            limit: CITY_TILE_FETCH_LIMIT,
-          }),
-          [],
-          4500,
-          'search:citySfrTiles',
-        )
-      : Promise.resolve([]),
+    isPlainCityBrowse && city ? loadCitySfrTilesForSearch(city) : Promise.resolve([]),
   ])
   // Fail loud: a timed-out or hard-errored listings fetch must NOT render — and
   // let ISR cache — an empty "no homes" grid (the poison-null pattern). Throwing
@@ -351,32 +335,13 @@ export default async function SearchPage({
   )
   // §0: area-scoped totalCount must name the area, not the city.
   const presetAreaLabel = subdivision ? placeName : null
-  const cityPulse = (isPlainCityPage || isPresetDepthPage) && relatedCitySlug
-    ? await getMarketPulse({
-        geoType: 'city',
-        geoSlug: canonicalCityCacheSlug(relatedCitySlug),
-      }).catch(() => null)
-    : null
-  const publishedCityInventory =
-    isPlainCityPage && city
-      ? publishCityInventory({
-          pulseCount: cityPulse?.activeCount ?? null,
-          pulseMedian: cityPulse?.medianListPrice ?? null,
-          tileCount: citySfrTiles.length,
-          tileMedian: medianListPriceOfTiles(citySfrTiles),
-          tileLimit: CITY_TILE_FETCH_LIMIT,
-          tileFetchOk: citySfrTiles.length > 0,
-        })
-      : null
-  const cityMarketFaq =
-    isPlainCityPage && city
-      ? buildMarketFaq(city, {
-          ...(cityPulse ?? {}),
-          activeCount: publishedCityInventory?.count ?? cityPulse?.activeCount ?? null,
-          pulseActiveCount: cityPulse?.activeCount ?? null,
-          medianListPrice: publishedCityInventory?.medianListPrice ?? cityPulse?.medianListPrice ?? null,
-        })
-      : null
+  const { cityPulse, publishedCityInventory, cityMarketFaq } = await loadSearchCityMarketLayer({
+    city,
+    relatedCitySlug,
+    isPlainCityPage,
+    isPresetDepthPage,
+    citySfrTiles,
+  })
   const presetDepth =
     isPresetDepthPage && city && preset && !listingsResult.degraded
       ? buildPresetFaq(city, preset, totalCount, cityPulse, presetAreaLabel)
@@ -610,8 +575,7 @@ export default async function SearchPage({
         isPlainCityPage={isPlainCityPage}
         relatedCitySlug={relatedCitySlug}
         city={city}
-        publishedActiveCount={publishedCityInventory?.count ?? null}
-        publishedMedianListPrice={publishedCityInventory?.medianListPrice ?? null}
+        published={publishedCityInventory}
         cityMarketFaq={cityMarketFaq}
         presetDepth={presetDepth}
         presetBandLinks={presetBandLinks}

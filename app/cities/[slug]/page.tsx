@@ -388,11 +388,7 @@ export default async function CityDetailPage({ params }: Props) {
 
   // Market HUD.
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const monthsOfSupply = publishMonthsOfSupply({
-    pulseMos: pulse?.monthsOfSupply,
-    pulseActiveCount: pulse?.activeCount,
-    displayedActiveCount: activeCount,
-  })
+  const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount })
   const marketData: KbMarketData = {
     active: activeCount,
     closed30: pulse?.closedLast30Days ?? null,
@@ -414,8 +410,7 @@ export default async function CityDetailPage({ params }: Props) {
   // awaited above and never null. Every figure stays verified (§0).
   const marketFaqInput: MarketFaqInput = {
     ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }),
-    activeCount: activeCount ?? snapshot.activeSfrCount,
-    pulseActiveCount: pulse?.activeCount ?? null,
+    activeCount: activeCount ?? snapshot.activeSfrCount, pulseActiveCount: pulse?.activeCount ?? null,
     medianListPrice: publishedMedian ?? snapshot.medianListPrice,
     monthsOfSupply,
   }

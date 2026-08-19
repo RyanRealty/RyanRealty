@@ -12,7 +12,7 @@ import { displaySubdivision } from '@/lib/slug'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingAsk, publishListingDrop } from '@/lib/listing/publish-listing-ask'
+import { publishListingAsk, publishListingDrop, publishListingHistoryPrices } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 
@@ -66,6 +66,8 @@ type Props = {
   askHref?: string
   /** Prices already on the listing-history rail. Drop withholds without them. */
   historyPrices?: ReadonlyArray<number | null | undefined>
+  /** History rows from the listing rail. Mapped to prices when historyPrices is omitted. */
+  history?: ReadonlyArray<{ price?: number | null } | null | undefined> | null
   className?: string
 }
 
@@ -90,8 +92,11 @@ export function PriceCtaStrip({
   scheduleHref,
   askHref,
   historyPrices,
+  history,
   className,
 }: Props) {
+  const railPrices =
+    historyPrices ?? (history !== undefined ? publishListingHistoryPrices(history) : undefined)
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
 
   // RC7 resume: complete a save this listing was bounced to login for (the hook
@@ -117,7 +122,7 @@ export function PriceCtaStrip({
     : publishListingDrop({
         listPrice: listing.listPrice,
         originalListPrice: listing.originalListPrice,
-        historyPrices,
+        historyPrices: railPrices,
       })
   const contactKey = publishListingContactKey({
     listNumber: listing.listNumber,

@@ -7,6 +7,7 @@ import {
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
+import type { CityInventoryPublish } from '@/lib/market/publish-city-inventory'
 import { type buildMarketFaq } from '@/lib/site/market-faq'
 import { type buildPresetFaq } from '@/lib/site/preset-faq'
 import { type getAllCityHomesLink } from '../../../../lib/popular-searches'
@@ -21,8 +22,7 @@ export function SearchSeoTail({
   isPlainCityPage,
   relatedCitySlug,
   city,
-  publishedActiveCount,
-  publishedMedianListPrice,
+  published,
   cityMarketFaq,
   presetDepth,
   presetBandLinks,
@@ -36,8 +36,7 @@ export function SearchSeoTail({
   isPlainCityPage: boolean
   relatedCitySlug: string | null
   city: string | undefined
-  publishedActiveCount?: number | null
-  publishedMedianListPrice?: number | null
+  published?: CityInventoryPublish | null
   cityMarketFaq: ReturnType<typeof buildMarketFaq> | null
   presetDepth: ReturnType<typeof buildPresetFaq> | null
   presetBandLinks: { href: string; label: string }[]
@@ -109,8 +108,8 @@ export function SearchSeoTail({
           <MarketSnapshot
             citySlug={relatedCitySlug}
             cityName={city}
-            publishedActiveCount={publishedActiveCount}
-            publishedMedianListPrice={publishedMedianListPrice}
+            publishedActiveCount={published?.count ?? null}
+            publishedMedianListPrice={published?.medianListPrice ?? null}
           />
         </section>
       ) : null}
