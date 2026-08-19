@@ -8,6 +8,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 import { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
+import { mergeCmaClientFields } from '@/lib/data/cma/crm-attach-fields'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -141,9 +142,11 @@ export async function attachCmaToPerson(
     if (existingId && existingId !== personId && !opts?.replace) {
       return { ok: false, error: 'This CMA is already linked to another person.' }
     }
-    const clientName = person.name || (row.client_name as string | null) || null
-    const clientEmail = (row.client_email as string | null) || person.primaryEmail
-    const clientPhone = (row.client_phone as string | null) || person.primaryPhone
+    const { clientName, clientEmail, clientPhone } = mergeCmaClientFields({
+      replace: opts?.replace === true,
+      row,
+      person,
+    })
     const { error } = await sb
       .from('cmas')
       .update({
