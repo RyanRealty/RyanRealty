@@ -33,6 +33,7 @@ const savedViews = read('lib/data/crm/getCrmSavedViews.ts')
 const personPage = read('app/admin/(protected)/people/[id]/page.tsx')
 const personLoading = read('app/admin/(protected)/people/[id]/loading.tsx')
 const createContact = read('lib/crm/create-contact.ts')
+const persistCreated = read('lib/crm/persist-created-contact.ts')
 
 if (!/AddPersonCard/.test(peoplePage)) {
   fails.push('app/admin/(protected)/people/page.tsx must mount AddPersonCard as the primary New contact path')
@@ -64,8 +65,11 @@ if (/name="note"/.test(crmNew) || /label="Note"/.test(crmNew)) {
 if (!/createContactAddress/.test(createContact) || !/Email required/.test(createContact) || !/Phone required/.test(createContact)) {
   fails.push('lib/crm/create-contact.ts must require name, email, and phone, and build a structured address')
 }
-if (!/createContactAddress/.test(listAction) || !/update\(\{ addresses:/.test(listAction)) {
-  fails.push('createCrmContactAction must write crm_people.addresses')
+if (!/createContactAddress/.test(listAction) || !/persistCreatedContactAddress/.test(listAction)) {
+  fails.push('createCrmContactAction must persist the structured address after create')
+}
+if (!/update\(\{ addresses:/.test(persistCreated) || !/crm_people/.test(persistCreated)) {
+  fails.push('persistCreatedContactAddress must write crm_people.addresses')
 }
 if (/message: note/.test(listAction) || /Added manually in the CRM/.test(listAction)) {
   fails.push('createCrmContactAction must not write the address or a default line as a note')
