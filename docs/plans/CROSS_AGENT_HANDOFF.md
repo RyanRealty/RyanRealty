@@ -4,7 +4,7 @@
 
 # Current — 2026-08-19 (cursor-cloud) — People New contact first-paint
 
-**Surface:** Cursor Cloud. Branch `cursor/people-new-contact-2d83`. Loop stays **DISARMED**. Live friction: add-person hid behind Quick actions / New List on `/admin/crm`. `AddPersonCard` now first-paints above the People list + CRM loading. Header New contact scrolls to `#add-person`. Quick actions stay; New contact lands `/admin/crm#add-person`. Gate `ci:crm-add-person`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Merged to `main` @ `cea4bde19`. Vercel production **READY** `94hZ3rcsAmuPze5JTWockB7Ejnx4`. Loop stays **DISARMED**. Live friction: add-person hid behind Quick actions / New List on `/admin/crm`. `AddPersonCard` now first-paints above the People list + CRM loading. Header New contact scrolls to `#add-person`. Quick actions stay; New contact lands `/admin/crm#add-person`. Gate `ci:crm-add-person`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
 
