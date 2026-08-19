@@ -2,11 +2,11 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — CRM new-contact + relationships
+# Current — 2026-08-19 (cursor-cloud) — leftover Triple / street 0 / closings / plat crumb
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Quick add is name + email + phone. Address is `crm_people.addresses`, never a note. Create lands on person detail. Detail first-paints identity, address, Relationships (search + type + save both sides), and a note form. Odessa 63285 linked spouse Nealon 63287 and parent Jane 63290. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Walker leftovers still live: Triple H1, 0 Moonshadow search cards, Matt 19 vs 9, plat hero on crumb. Class-fixed on `main` @ `b46698c76`. Did not re-touch featured plats or Tetherow 33=33=$1.499M. Deploy verify next. CMA / loop-sentinel / email not touched. No re-arm. Leave `LOOP_SENTINEL` off.
 
-**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
+**Skills read:** CROSS_AGENT_HANDOFF, git-commit, public-product-os (folded).
 
 # Prior — 2026-08-19 (cursor-cloud) — vendor CRM name purge
 
