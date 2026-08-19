@@ -1,0 +1,8 @@
+{
+  "note": "Rendered-HTML-size ratchet for the heavy public pages (audit item 16, 2026-08-03). bytes = raw uncompressed response body, fetched with a browser User-Agent and Accept-Encoding: identity, from a BUILT `next start` server (never `next dev`). Every value may only SHRINK. Regenerate with --write-baseline only after a real fix lands — never to paper over a regression.",
+  "measuredAt": "2026-08-03T00:00:00.000Z",
+  "baseUrl": "https://ryanrealty.vercel.app",
+  "pages": {
+    "/homes-for-sale": 1019774
+  }
+}
