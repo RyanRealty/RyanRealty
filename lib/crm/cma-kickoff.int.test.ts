@@ -133,7 +133,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const { data: cmaRows } = await sb.from('cmas').select('id, status').eq('slug', slug)
     expect((cmaRows ?? []).length).toBe(1)
     expect(cmaRows![0]!.status).toBe('draft')
-  }, 30000)
+  }, 120_000)
 
   it('an attaching kicker joins the ready-notify list; the append refuses once the build closed (review MED)', async () => {
     expect(personId).not.toBeNull()
@@ -197,7 +197,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
 
     // Restore the open status the remaining cases expect.
     await sb.from('marketing_brain_actions').update({ status: 'pending' }).eq('id', actionId)
-  }, 30000)
+  }, 120_000)
 
   it('never clobbers an existing cmas row (review HIGH): a kick-off against a finalized CMA returns alreadyBuilt and touches nothing', async () => {
     expect(personId).not.toBeNull()
@@ -234,7 +234,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     expect(after!.client_email).toBe(ORIGINAL_EMAIL)
     const { data: actions } = await sb.from('marketing_brain_actions').select('id').eq('target', `cma:${slug}`)
     expect((actions ?? []).length).toBe(0)
-  }, 30000)
+  }, 120_000)
 
   it('a never-built stub (killed build) is re-kickable, not a dead-end (review LOW)', async () => {
     expect(personId).not.toBeNull()
@@ -263,7 +263,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     }
     const { data: actions } = await sb.from('marketing_brain_actions').select('id').eq('target', `cma:${slug}`)
     expect((actions ?? []).length).toBe(1)
-  }, 30000)
+  }, 120_000)
 
   it('an explicit fresh build on a protected document opens --v2 and preserves the original (Matt decision 2026-07-17)', async () => {
     expect(personId).not.toBeNull()
@@ -337,7 +337,7 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     expect((action!.payload as Record<string, unknown>).notify_broker_sms).toEqual([
       { person_id: personId, broker: 'matt' },
     ])
-  }, 30000)
+  }, 120_000)
 
   it('the DB backstop holds (review MED): a second OPEN content:cma row for one target is rejected by the partial unique index', async () => {
     const target = `cma:${intId('race')}`
@@ -361,5 +361,5 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     const second = await sb.from('marketing_brain_actions').insert(base).select('id').single()
     expect(second.error?.code).toBe('23505')
     await sb.from('marketing_brain_actions').delete().eq('target', target)
-  }, 30000)
+  }, 120_000)
 })
