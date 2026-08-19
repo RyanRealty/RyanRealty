@@ -2,11 +2,11 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — CRM new-contact + relationships
+# Current — 2026-08-19 (cursor-cloud) — stats-truth Madras + Foley p0s
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Quick add is name + email + phone. Address is `crm_people.addresses`, never a note. Create lands on person detail. Detail first-paints identity, address, Relationships (search + type + save both sides), and a note form. Odessa 63285 linked spouse Nealon 63287 and parent Jane 63290. `main` @ `553c89fee`. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. stats-truth p0s reproduced and class-fixed on `main` @ `062ff2372` READY `6LzgjAwNN7XvAjjBEGYfQVjtCZSk`. Madras `/housing-market/madras` hero+FAQ both `$399,900` (zero `$400,000`). Foley 220221409 Active 2 DOM, Listed Aug 16, no Pending Aug 2. Hub SFR pulse+FAQ both `$729,000`. Place-pages (Terrebonne, Powell Butte, Summit West MOS) left to that ship. Punch dispositions appended on `3a6198cd`; parent stays open (119 lines). No CMA. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
-**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
+**Skills read:** database-canonical-reference, tdd, git-commit.
 
 # Prior — 2026-08-19 (cursor-cloud) — leftover Triple / street 0 / closings / plat crumb
 
