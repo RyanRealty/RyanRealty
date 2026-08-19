@@ -15,6 +15,7 @@ import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingAsk, publishListingDrop, publishListingHistoryPrices } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /**
  * PriceCtaStrip — price + address + pill row + CTA hierarchy under the hero.
@@ -128,7 +129,7 @@ export function PriceCtaStrip({
     listNumber: listing.listNumber,
     listingKey: listing.listingKey,
   })
-  const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
+  const street = publishStreetLine({ streetNumber: listing.streetNumber, streetName: listing.streetName, streetSuffix: listing.streetSuffix }) ?? ''
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
     .join(' ')

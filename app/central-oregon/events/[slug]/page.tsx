@@ -26,6 +26,7 @@ import { CO_VENUES } from '@/data/co-venues'
 import { formatEventDate, buildEventFaq } from '@/lib/events-format'
 import { publishPlaceInCity } from '@/lib/place/publish-place-in-city'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -213,7 +214,11 @@ export default async function EventDetailPage({ params }: Props) {
             headline={v3Text(eventName)}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(
-              'active single-family listings (PropertyType A) within about 1.5 miles of the venue, from the MLS. A listings timeout renders this event with a zero count and lets ISR retry.',
+              publishNearbyListingsSource({
+                grain: 'event',
+                scope: 'within about 1.5 miles of the venue',
+                listingCount: stats.count,
+              }),
             )}
             action={{
               label: v3Text('Value my home'),

@@ -99,8 +99,7 @@ export function KbFeatured({
         <div className="sec-head">
           <span className="sec-index">{eyebrow}</span>
           <h2 className="sec-title display">
-            On the
-            <br />
+            On the <br />
             market
           </h2>
         </div>

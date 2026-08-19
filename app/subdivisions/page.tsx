@@ -160,7 +160,7 @@ export default async function SubdivisionsPage() {
                 Live market
               </span>
               <h1 className="sec-title display">
-                Recorded plats across<br />Central Oregon.
+                Recorded plats across <br />Central Oregon.
               </h1>
             </div>
             <p className="neigh-sub" style={{ marginTop: '20px' }}>
@@ -201,7 +201,7 @@ export default async function SubdivisionsPage() {
             <div className="sec-head">
               <span className="sec-index">Recorded plats</span>
               <h2 className="sec-title display">
-                Plats inside the<br />known communities
+                Plats inside the <br />known communities
               </h2>
             </div>
             <div>
@@ -311,7 +311,7 @@ export default async function SubdivisionsPage() {
             <div className="sec-head">
               <span className="sec-index">The full index</span>
               <h2 className="sec-title display">
-                Community plats,<br />A to Z
+                Community plats, <br />A to Z
               </h2>
             </div>
             <p
@@ -341,7 +341,7 @@ export default async function SubdivisionsPage() {
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
               <h2 className="sec-title display">
-                Find a home, or<br />price the one you have.
+                Find a home, or <br />price the one you have.
               </h2>
             </div>
             <div className="max-w-xl pt-6 pb-12">
