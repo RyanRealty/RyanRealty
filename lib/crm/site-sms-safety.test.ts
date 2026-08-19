@@ -27,6 +27,8 @@ describe('lead SMS cannot use personal iMessage', () => {
     expect(sms).not.toMatch(/LEAD_SMS_IMESSAGE_FALLBACK/)
     expect(group).toMatch(/decideGroupSmsFallback/)
     expect(group).toMatch(/GROUP_THREAD_FAILED/)
+    expect(group).toMatch(/sendGovernedGroupMms/)
+    expect(group).not.toMatch(/sendGroupMms/)
     expect(group).not.toMatch(/LEAD_SMS_IMESSAGE_FALLBACK/)
   })
 

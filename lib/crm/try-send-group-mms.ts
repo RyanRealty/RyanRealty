@@ -1,6 +1,5 @@
 import 'server-only'
 
-import { createServiceClient } from '@/lib/supabase/service'
 import type { CrmAttachmentRef } from '@/lib/crm/attachment-limits'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 import { decideGroupSmsFallback, GROUP_THREAD_FAILED } from '@/lib/crm/compose-group'
@@ -17,6 +16,9 @@ export type GroupSmsAccess = {
  * One carrier group thread for 2+ people. Returns a send result when the
  * attempt is finished (sent, or refused so we do not fan out). Returns null
  * when the 1:1 path should continue.
+ *
+ * The Twilio call lives in sendGovernedGroupMms (G56). This file only
+ * assembles members, checks broker scope, and decides fan-out.
  */
 export async function trySendGroupMms(opts: {
   personId: number
@@ -26,6 +28,7 @@ export async function trySendGroupMms(opts: {
   attachments: CrmAttachmentRef[]
   access: GroupSmsAccess
   explicitGroupThread: boolean
+  overrideQuietHours?: boolean
   requirePersonInScope: (
     personId: number,
     access: GroupSmsAccess,
@@ -75,16 +78,21 @@ export async function trySendGroupMms(opts: {
     slug,
     primaryTarget.person.fub_legacy_id as number | null,
   )
-  const { sendGroupMms } = await import('@/lib/crm/twilio-conversations')
   const { loadGroupMedia } = await import('@/lib/crm/attachments')
   const gm = await loadGroupMedia(opts.attachments)
   if (!gm.ok) return gm
-  const group = await sendGroupMms({
+
+  const { sendGovernedGroupMms } = await import('@/lib/comms/sendGovernedGroupMms')
+  const group = await sendGovernedGroupMms({
+    primaryPersonId: opts.personId,
+    members: members.map((m) => ({ personId: m.rid, phone: m.phone })),
     projectedAddress: proxy,
-    participants: members.map((m) => m.phone),
-    body: mergedBody,
+    mergedBody,
     friendlyName: `Group · ${primaryTarget.person.name ?? opts.personId}`,
     media: gm.media,
+    purpose: 'crm:manual-group-sms',
+    initiator: { kind: 'broker', broker: slug },
+    overrideQuietHours: opts.overrideQuietHours,
   })
   if (!group.ok) {
     const fan = decideGroupSmsFallback({
@@ -96,50 +104,6 @@ export async function trySendGroupMms(opts: {
     return null
   }
 
-  const sb = createServiceClient()
-  for (const m of members) {
-    if (m.rid === null) continue
-    await sb.from('crm_timeline').insert({
-      person_id: m.rid,
-      kind: 'sms_out',
-      title: 'Group text sent',
-      body: mergedBody,
-      payload: {
-        conversationSid: group.conversationSid,
-        messageSid: group.messageSid,
-        groupTo: members.map((x) => x.phone),
-        ...(group.media.length
-          ? { sid: group.messageSid, chatServiceSid: group.chatServiceSid, media: group.media }
-          : {}),
-      },
-      broker: slug,
-      source: 'app',
-      dedupe_key: `twilio:${group.messageSid}:p${m.rid}`,
-    })
-  }
-  try {
-    const { recordConversationMessage } = await import('@/lib/crm/record-message')
-    await recordConversationMessage({
-      sb,
-      direction: 'out',
-      channel: 'mms',
-      body: mergedBody,
-      providerSid: group.messageSid,
-      sentBy: slug,
-      primaryPersonId: opts.personId,
-      assignedBroker: slug,
-      twilioConversationSid: group.conversationSid,
-      conversationSubject: `Group · ${primaryTarget.person.name ?? opts.personId}`,
-      media: group.media.length ? group.media : [],
-      participants: members.map((m) => ({
-        personId: m.rid,
-        rawPhone: m.rid === null ? m.phone : null,
-        address: m.phone,
-      })),
-    })
-  } catch (e) {
-    console.warn('[crm] conversation shadow-write (group) failed', e)
-  }
   for (const m of members) {
     if (m.rid !== null) opts.revalidate(m.rid)
   }

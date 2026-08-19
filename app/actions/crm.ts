@@ -861,6 +861,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     attachments: refs.items,
     access: access.access,
     explicitGroupThread,
+    overrideQuietHours: override,
     requirePersonInScope,
     revalidate: revalidateCrm,
   })

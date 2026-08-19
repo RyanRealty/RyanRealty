@@ -21,6 +21,7 @@ const h = vi.hoisted(() => ({
   buildMergeContext: vi.fn(),
   sendSms: vi.fn(),
   sendSmsViaMessagingService: vi.fn(),
+  sendGroupMms: vi.fn(),
   brokerTwilioNumber: vi.fn(),
   instrumentSmsLinks: vi.fn(),
   recordConversationMessage: vi.fn(),
@@ -44,6 +45,7 @@ vi.mock('@/lib/crm/twilio', () => ({
   sendSmsViaMessagingService: h.sendSmsViaMessagingService,
   brokerTwilioNumber: h.brokerTwilioNumber,
 }))
+vi.mock('@/lib/crm/twilio-conversations', () => ({ sendGroupMms: h.sendGroupMms }))
 vi.mock('@/lib/data/crm/shortLinks', () => ({ instrumentSmsLinks: h.instrumentSmsLinks }))
 vi.mock('@/lib/crm/record-message', () => ({ recordConversationMessage: h.recordConversationMessage }))
 vi.mock('@/lib/crm/gmail', () => ({
@@ -68,6 +70,7 @@ vi.mock('@/lib/supabase/service', () => ({
 }))
 
 import { sendGovernedSms } from './sendGovernedSms'
+import { sendGovernedGroupMms } from './sendGovernedGroupMms'
 import { sendGovernedEmail } from './sendGovernedEmail'
 import { QUIET_HOURS_ERROR } from './guards'
 
@@ -355,5 +358,57 @@ describe('sendGovernedEmail — guard order', () => {
     expect(res.ok).toBe(false)
     expect(h.prepareDeliverableEmail).not.toHaveBeenCalled()
     expect(h.resendSendEmail).not.toHaveBeenCalled()
+  })
+})
+
+describe('sendGovernedGroupMms — one thread, same guards', () => {
+  const groupReq = {
+    primaryPersonId: 42,
+    members: [
+      { personId: 42, phone: '+15415551111' },
+      { personId: 43, phone: '+15415552222' },
+    ],
+    projectedAddress: '+15417033095',
+    mergedBody: 'hello both',
+    friendlyName: 'Group · Jane',
+    purpose: 'crm:manual-group-sms',
+    initiator: { kind: 'broker' as const, broker: 'matt' },
+  }
+
+  it('a suppressed member blocks the whole group and never calls Twilio', async () => {
+    passAllGuards()
+    h.isSuppressed.mockImplementation(async (personId: number) =>
+      personId === 43
+        ? { suppressed: true, reasons: ['sms:stop-keyword'] }
+        : { suppressed: false, reasons: [] },
+    )
+    const res = await sendGovernedGroupMms(groupReq)
+    expect(res.ok).toBe(false)
+    if (res.ok === false) expect(res.stage).toBe('suppression')
+    expect(h.sendGroupMms).not.toHaveBeenCalled()
+    expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
+  })
+
+  it('sends one group thread after every member clears guards', async () => {
+    passAllGuards()
+    h.instrumentSmsLinks.mockImplementation(async (text: string) => `tracked:${text}`)
+    h.recordConversationMessage.mockResolvedValue({
+      ok: true,
+      conversationId: 'c1',
+      messageId: 'm1',
+      deduped: false,
+    })
+    h.sendGroupMms.mockResolvedValue({
+      ok: true,
+      conversationSid: 'CH1',
+      messageSid: 'IM1',
+      chatServiceSid: 'IS1',
+      media: [],
+    })
+    const res = await sendGovernedGroupMms(groupReq)
+    expect(res).toMatchObject({ ok: true, conversationSid: 'CH1', messageSid: 'IM1' })
+    expect(h.sendGroupMms).toHaveBeenCalledTimes(1)
+    expect(h.sendGroupMms.mock.calls[0][0].participants).toEqual(['+15415551111', '+15415552222'])
+    expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(2)
   })
 })
