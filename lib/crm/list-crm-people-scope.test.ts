@@ -145,8 +145,27 @@ describe('listCrmPeople — broker scope (Option A)', () => {
     const res = await listCrmPeople({ broker: 'all' })
     expect(res.rows).toEqual([])
     expect(res.total).toBe(0)
+    expect(res.totalExact).toBe(true)
     // No crm_people read was even attempted.
     expect(crmPeopleEqs).toHaveLength(0)
+  })
+})
+
+describe('listCrmPeople — first-paint count', () => {
+  it('skips the book-wide exact count on the default All People list', async () => {
+    cannedRows = [{ id: 1 }]
+    cannedCount = 22705
+    const res = await listCrmPeople({})
+    expect(res.totalExact).toBe(false)
+    expect(res.total).toBe(1)
+  })
+
+  it('keeps an exact count when a filter narrows the set', async () => {
+    cannedRows = [{ id: 1 }]
+    cannedCount = 18
+    const res = await listCrmPeople({ stage: 'Lead' })
+    expect(res.totalExact).toBe(true)
+    expect(res.total).toBe(18)
   })
 })
 

@@ -11,6 +11,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { toFeedItem, type ActivityFeedItem } from '@/lib/data/crm/getContactActivityFeed'
 import { readSmsDelivery, deliverySummary } from '@/lib/crm/sms-delivery'
+import { firstPersonAddress, type PersonAddress } from '@/lib/crm/person-address'
 
 /** The condensed contact card for the inbox reading-pane sidebar (spec §6). */
 export type InboxContactCard = {
@@ -26,6 +27,7 @@ export type InboxContactCard = {
   email: string | null
   phone: string | null
   pictureUrl: string | null
+  address: PersonAddress | null
 }
 
 /**
@@ -38,7 +40,7 @@ export async function getInboxContactCard(personId: number): Promise<InboxContac
   const sb = createServiceClient()
   const { data } = await sb
     .from('crm_people')
-    .select('id,name,stage,assigned_broker,lender_name,source,price,timeframe,tags,emails,phones,picture_url')
+    .select('id,name,stage,assigned_broker,lender_name,source,price,timeframe,tags,emails,phones,picture_url,addresses')
     .eq('id', personId)
     .eq('deleted', false)
     .maybeSingle()
@@ -58,6 +60,7 @@ export async function getInboxContactCard(personId: number): Promise<InboxContac
     email: emails.find((e) => e.value)?.value ?? null,
     phone: phones.find((p) => p.value)?.value ?? null,
     pictureUrl: (data.picture_url as string | null) ?? null,
+    address: firstPersonAddress(data.addresses),
   }
 }
 

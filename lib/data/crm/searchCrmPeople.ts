@@ -29,38 +29,43 @@ export async function searchCrmPeople(params: {
   brokerScope: string | null
   limit?: number
 }): Promise<CrmPersonHit[]> {
-  const q = (params.q ?? '').trim()
-  const limit = Math.min(Math.max(params.limit ?? 25, 1), 100)
-  const sb = createServiceClient()
+  try {
+    const q = (params.q ?? '').trim()
+    const limit = Math.min(Math.max(params.limit ?? 25, 1), 100)
+    const sb = createServiceClient()
 
-  let query = sb.from('crm_people').select(SELECT).eq('deleted', false)
-  if (params.brokerScope) query = query.eq('assigned_broker', params.brokerScope)
+    let query = sb.from('crm_people').select(SELECT).eq('deleted', false)
+    if (params.brokerScope) query = query.eq('assigned_broker', params.brokerScope)
 
-  if (q) {
-    const escaped = q.replace(/[%_,()]/g, ' ').trim()
-    if (!escaped) return []
-    // Step 1 — contact-point index. Phones are stored digits-normalized, so a
-    // dashed/spaced fragment searches by its digits; emails by the raw term.
-    const digits = q.replace(/\D/g, '')
-    const [byValue, byDigits] = await Promise.all([
-      sb.from('crm_contact_points').select('person_id').ilike('value', `%${escaped}%`).limit(200),
-      digits.length >= 4
-        ? sb.from('crm_contact_points').select('person_id').ilike('value', `%${digits}%`).limit(200)
-        : Promise.resolve({ data: [] as Array<{ person_id: number }> }),
-    ])
-    const ids = [
-      ...new Set([...(byValue.data ?? []), ...(byDigits.data ?? [])].map((p) => p.person_id as number)),
-    ]
-    // Step 2 — name OR resolved ids.
-    query = ids.length
-      ? query.or(`name.ilike.%${escaped}%,id.in.(${ids.join(',')})`)
-      : query.ilike('name', `%${escaped}%`)
-  }
+    if (q) {
+      const escaped = q.replace(/[%_,()]/g, ' ').trim()
+      if (!escaped) return []
+      // Step 1 — contact-point index. Phones are stored digits-normalized, so a
+      // dashed/spaced fragment searches by its digits; emails by the raw term.
+      const digits = q.replace(/\D/g, '')
+      const [byValue, byDigits] = await Promise.all([
+        sb.from('crm_contact_points').select('person_id').ilike('value', `%${escaped}%`).limit(200),
+        digits.length >= 4
+          ? sb.from('crm_contact_points').select('person_id').ilike('value', `%${digits}%`).limit(200)
+          : Promise.resolve({ data: [] as Array<{ person_id: number }> }),
+      ])
+      const ids = [
+        ...new Set([...(byValue.data ?? []), ...(byDigits.data ?? [])].map((p) => p.person_id as number)),
+      ]
+      // Step 2 — name OR resolved ids.
+      query = ids.length
+        ? query.or(`name.ilike.%${escaped}%,id.in.(${ids.join(',')})`)
+        : query.ilike('name', `%${escaped}%`)
+    }
 
-  const { data, error } = await query.order('updated_at', { ascending: false }).limit(limit)
-  if (error) {
-    console.error('[searchCrmPeople] read failed:', error.message)
+    const { data, error } = await query.order('updated_at', { ascending: false }).limit(limit)
+    if (error) {
+      console.error('[searchCrmPeople] read failed:', error.message)
+      return []
+    }
+    return (data ?? []) as CrmPersonHit[]
+  } catch (err) {
+    console.error('[searchCrmPeople]', err)
     return []
   }
-  return (data ?? []) as CrmPersonHit[]
 }

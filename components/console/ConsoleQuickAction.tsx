@@ -135,6 +135,25 @@ export default function ConsoleQuickAction() {
 
   if (suppressed) return null
 
+  const addPersonSurface =
+    !leadId && (pathname === '/admin/people' || pathname === '/admin/crm')
+
+  if (addPersonSurface) {
+    return (
+      <Link
+        href="/admin/people#add-person"
+        aria-label="New contact"
+        className={cn(
+          'fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5 [[data-crm-comms]_&]:hidden [[data-kb-open]_&]:hidden',
+          mobileSuppressed ? 'hidden md:flex' : 'flex',
+        )}
+        style={{ backgroundColor: 'var(--a-btn-bg, var(--console-info))', color: 'var(--a-btn-fg, #fff)' }}
+      >
+        <UserPlus className="h-6 w-6" />
+      </Link>
+    )
+  }
+
   return (
     <>
       <button

@@ -1,45 +1,28 @@
 // @no-parity — internal admin surface, no public mockup contract
-// People (P9 roll:people, IA lock 2026-08-05): search-first LOOKUP, not a
-// worklist (Matt Q2: the 22,951-row list is not weekly). One search field over
-// name + contact points; no term = recently touched. The full legacy list with
-// segments/saved views stays at /admin/crm until that machinery migrates.
-// (This URL was a redirect bridge from the 2026-07-07 consolidation — the
-// destination returns here under its job name.)
+// People: new-contact first, then lookup. Search by name or contact. No book-wide dump.
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { scopeBroker } from '@/lib/crm/scope'
 import { searchCrmPeople } from '@/lib/data/crm/searchCrmPeople'
 import { StateWord } from '@/components/admin/v2'
+import { AddPersonCard } from '@/components/admin/shared/people-list/AddPersonDialog'
+import '@/components/admin/v2/admin-v2.css'
 
 export const dynamic = 'force-dynamic'
 
-export default async function PeoplePage({
-  searchParams,
+async function RecentlyTouched({
+  q,
+  brokerScope,
 }: {
-  searchParams: Promise<{ q?: string }>
+  q: string | null
+  brokerScope: string | null
 }) {
-  const ctx = await requireAdminPage('people.view')
-  const brokerScope = scopeBroker(ctx)
-  const q = ((await searchParams).q ?? '').trim() || null
-
   const hits = await searchCrmPeople({ q, brokerScope, limit: 25 })
 
   return (
-    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <form method="GET" style={{ margin: '12px 0 20px' }}>
-        <input
-          className="av2-input"
-          style={{ width: '100%' }}
-          type="search"
-          name="q"
-          defaultValue={q ?? ''}
-          placeholder="Search by name, phone, or email…"
-          aria-label="Search people"
-          autoFocus
-        />
-      </form>
-
-      <h2 className="av2-lane-head">{q ? `Results for “${q}”` : 'Recently touched'}</h2>
+    <>
+      <h2 className="av2-lane-head">{q ? `Results for "${q}"` : 'Recently touched'}</h2>
       <ul className="av2-queue">
         {hits.map((p) => (
           <li key={p.id} className="av2-qrow">
@@ -71,13 +54,47 @@ export default async function PeoplePage({
           </li>
         ) : null}
       </ul>
-      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
-        Need segments, saved views, or bulk tools?{' '}
-        <Link href="/admin/crm" style={{ color: 'var(--a-accent)' }}>
-          Open the full list
-        </Link>
-        .
-      </p>
+    </>
+  )
+}
+
+function RecentlyTouchedFallback() {
+  return (
+    <div aria-busy="true" style={{ padding: '8px 0' }}>
+      <h2 className="av2-lane-head">Recently touched</h2>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Loading recent people.</p>
+    </div>
+  )
+}
+
+export default async function PeoplePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
+  const ctx = await requireAdminPage('people.view')
+  const brokerScope = scopeBroker(ctx)
+  const q = ((await searchParams).q ?? '').trim() || null
+
+  return (
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+      <AddPersonCard />
+
+      <form method="GET" style={{ margin: '0 0 20px' }}>
+        <input
+          className="av2-input"
+          style={{ width: '100%' }}
+          type="search"
+          name="q"
+          defaultValue={q ?? ''}
+          placeholder="Search by name, phone, or email"
+          aria-label="Search people"
+        />
+      </form>
+
+      <Suspense fallback={<RecentlyTouchedFallback />}>
+        <RecentlyTouched q={q} brokerScope={brokerScope} />
+      </Suspense>
     </div>
   )
 }

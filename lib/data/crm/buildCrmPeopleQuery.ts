@@ -41,6 +41,13 @@ export type BuildOptions = {
   /** When true, return a head-count instead of a row query. */
   countOnly?: boolean
   /**
+   * When false, skip the exact COUNT(*) that rides with a list select.
+   * The default All People page is 22k+ rows; waiting on that count blocks
+   * first paint. Filtered / saved-view lists keep the exact count.
+   * Ignored when countOnly (a head count is the whole query).
+   */
+  includeCount?: boolean
+  /**
    * Override the row projection. Defaults to CRM_PEOPLE_SELECT. The people list
    * reads a few extra columns (price, timeframe, pond_id) it renders but the bulk
    * / audience consumers don't — they pass their superset here so every reader
@@ -288,9 +295,13 @@ export function buildCrmPeopleQuery(
   const select = opts.countOnly ? 'id' : opts.select ?? CRM_PEOPLE_SELECT
   const selectOpts = opts.countOnly
     ? { count: 'exact' as const, head: true }
-    : { count: 'exact' as const }
+    : opts.includeCount === false
+      ? undefined
+      : { count: 'exact' as const }
 
-  let query = sb.from('crm_people').select(select, selectOpts)
+  let query = selectOpts
+    ? sb.from('crm_people').select(select, selectOpts)
+    : sb.from('crm_people').select(select)
 
   // Invariant 2: soft-deleted rows never leak.
   query = query.eq('deleted', false)

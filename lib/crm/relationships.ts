@@ -38,6 +38,17 @@ export const RELATIONSHIP_TYPES = [
   // side manually with setRelationshipType.
   'son-in-law',
   'mother-in-law',
+  'family',
+  'other',
+] as const
+
+/** Types the person-detail quick link offers. Fewest choices, household-first. */
+export const SIMPLE_RELATIONSHIP_TYPES = [
+  'spouse',
+  'partner',
+  'parent',
+  'child',
+  'family',
   'other',
 ] as const
 
@@ -59,6 +70,7 @@ export const RELATIONSHIP_LABELS: Record<RelationshipType, string> = {
   principal: 'Principal',
   'son-in-law': 'Son-in-law',
   'mother-in-law': 'Mother-in-law',
+  family: 'Family',
   other: 'Other',
 }
 
@@ -71,6 +83,7 @@ export const SYMMETRIC_TYPES: ReadonlySet<RelationshipType> = new Set<Relationsh
   'partner',
   'sibling',
   'co-buyer',
+  'family',
 ])
 
 /**
@@ -86,6 +99,7 @@ const RECIPROCAL: Record<RelationshipType, RelationshipType> = {
   sibling: 'sibling',
   'co-buyer': 'co-buyer',
   other: 'other',
+  family: 'family',
   // directional pairs — reciprocal is the inverse type
   parent: 'child',
   child: 'parent',

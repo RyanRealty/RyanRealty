@@ -73,6 +73,14 @@ describe('buildCrmPeopleQuery — invariants', () => {
     expect(eqCalls(calls)).toContainEqual(['assigned_broker', 'rebecca'])
   })
 
+  it('skips exact COUNT(*) when includeCount is false', () => {
+    const list = makeMockSb()
+    buildCrmPeopleQuery(list.sb, EMPTY_SEGMENT, null, { includeCount: false, limit: 50 })
+    const listSelect = list.calls.find((c) => c.method === 'select')
+    expect(listSelect?.args[0]).toBe(CRM_PEOPLE_SELECT)
+    expect(listSelect?.args[1]).toBeUndefined()
+  })
+
   it('selects the row columns for a list query and uses head-count for countOnly', () => {
     const list = makeMockSb()
     buildCrmPeopleQuery(list.sb, EMPTY_SEGMENT, null)

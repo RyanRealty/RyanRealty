@@ -21,6 +21,7 @@ function tsLabel(iso: string): string {
 export function NotesSection(props: {
   notes: Array<{ id: number; ts: string; body: string; broker: string | null }>
   addNote: (formData: FormData) => Promise<void>
+  showForm?: boolean
 }) {
   return (
     <section aria-label="Notes">
@@ -43,14 +44,16 @@ export function NotesSection(props: {
           </li>
         ) : null}
       </ul>
-      <form action={props.addNote} style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 640 }}>
-        <TextAreaField label="Add a note" name="body" rows={3} required placeholder="What happened?" />
-        <div>
-          <Button type="submit" variant="quiet">
-            Save note
-          </Button>
-        </div>
-      </form>
+      {props.showForm === false ? null : (
+        <form action={props.addNote} style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 640 }}>
+          <TextAreaField label="Add a note" name="body" rows={3} required placeholder="What happened?" />
+          <div>
+            <Button type="submit" variant="quiet">
+              Save note
+            </Button>
+          </div>
+        </form>
+      )}
     </section>
   )
 }

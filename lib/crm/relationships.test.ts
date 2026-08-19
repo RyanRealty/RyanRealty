@@ -9,6 +9,7 @@ import {
   isSelfLink,
   validateLink,
   pairKey,
+  SIMPLE_RELATIONSHIP_TYPES,
   type RelationshipType,
 } from './relationships'
 
@@ -38,6 +39,7 @@ describe('relationship vocabulary (CONTACT360 Phase 4.1)', () => {
       expect(reciprocalType('partner')).toBe('partner')
       expect(reciprocalType('sibling')).toBe('sibling')
       expect(reciprocalType('co-buyer')).toBe('co-buyer')
+      expect(reciprocalType('family')).toBe('family')
     })
 
     it('maps directional pairs to their inverse', () => {
@@ -53,6 +55,17 @@ describe('relationship vocabulary (CONTACT360 Phase 4.1)', () => {
 
     it('treats other as symmetric (its own reciprocal)', () => {
       expect(reciprocalType('other')).toBe('other')
+    })
+
+    it('offers the six simple household types on person detail', () => {
+      expect([...SIMPLE_RELATIONSHIP_TYPES]).toEqual([
+        'spouse',
+        'partner',
+        'parent',
+        'child',
+        'family',
+        'other',
+      ])
     })
 
     it('a directional reciprocal is never the same type (no accidental symmetry)', () => {

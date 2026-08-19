@@ -87,11 +87,14 @@ async function countForAst(
  * Every view the caller may see, each with a live scoped count. Ordered by
  * position then id (stable). The caller's email + scope come from getCrmAccess().
  */
-export async function getCrmSavedViews(access: ScopeAccess & { email: string }): Promise<CrmSavedViewWithCount[]> {
+export async function getCrmSavedViews(
+  access: ScopeAccess & { email: string },
+  opts?: { includeCounts?: boolean },
+): Promise<CrmSavedViewWithCount[]> {
   const sb = createServiceClient()
   const email = access.email.trim().toLowerCase()
   const isSuperuser = access.role === 'superuser'
-  const brokerScope = scopeBroker(access)
+  const includeCounts = opts?.includeCounts !== false
 
   let query = sb.from('crm_saved_views').select(SAVED_VIEW_SELECT)
   // A non-superuser sees system (owner_email null) + shared + their own. A
@@ -110,6 +113,13 @@ export async function getCrmSavedViews(access: ScopeAccess & { email: string }):
   }
 
   const rows = data as RawSavedViewRow[]
+  // First paint of People/CRM must not wait on one exact COUNT(*) per saved
+  // view (neighborhood + pipeline lists over the full book). Names still
+  // render; badges fill in when a caller asks for counts.
+  if (!includeCounts) {
+    return rows.map((r) => mapRow(r, null, email))
+  }
+  const brokerScope = scopeBroker(access)
   return Promise.all(
     rows.map(async (r): Promise<CrmSavedViewWithCount> => {
       const count = await countForAst(sb, r.ast, brokerScope)

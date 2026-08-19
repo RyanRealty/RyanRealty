@@ -6,10 +6,11 @@ type PersonIdentityHeaderProps = {
   whoLabels: PersonWhoLabel[]
   stage: string
   assignedBroker: string | null
-  nextLine: string
-  nowLine: string
+  nextLine?: string | null
+  nowLine?: string | null
   phone: string | null
   email: string | null
+  addressLine?: string | null
   source: string | null
   price: number | null
   timeframe: string | null
@@ -25,6 +26,7 @@ export function PersonIdentityHeader({
   nowLine,
   phone,
   email,
+  addressLine,
   source,
   price,
   timeframe,
@@ -53,16 +55,22 @@ export function PersonIdentityHeader({
           <span style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>assigned {assignedBroker}</span>
         ) : null}
       </div>
-      <div style={{ margin: '8px 0 4px', fontSize: 'var(--a-text-sm)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div>
-          <span style={{ color: 'var(--a-text-2)' }}>Next </span>
-          {nextLine}
+      {nextLine || nowLine ? (
+        <div style={{ margin: '8px 0 4px', fontSize: 'var(--a-text-sm)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {nextLine ? (
+            <div>
+              <span style={{ color: 'var(--a-text-2)' }}>Next </span>
+              {nextLine}
+            </div>
+          ) : null}
+          {nowLine ? (
+            <div>
+              <span style={{ color: 'var(--a-text-2)' }}>Now </span>
+              {nowLine}
+            </div>
+          ) : null}
         </div>
-        <div>
-          <span style={{ color: 'var(--a-text-2)' }}>Now </span>
-          {nowLine}
-        </div>
-      </div>
+      ) : null}
       <div style={{ margin: '4px 0 4px', fontSize: 'var(--a-text-sm)', fontFamily: 'var(--a-font-mono)' }}>
         {phone ? (
           <a href={`tel:${phone}`} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
@@ -77,6 +85,11 @@ export function PersonIdentityHeader({
         ) : null}
         {!phone && !email ? <span style={{ color: 'var(--a-text-2)' }}>No contact points</span> : null}
       </div>
+      {addressLine ? (
+        <div style={{ margin: '0 0 4px', fontSize: 'var(--a-text-sm)', fontFamily: 'var(--a-font-mono)' }}>
+          {addressLine}
+        </div>
+      ) : null}
       <div style={{ margin: '0 0 14px', color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>
         {meta || '—'}
       </div>
