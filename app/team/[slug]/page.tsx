@@ -10,7 +10,7 @@
  * fix, BrokerAttributionSetter, RealEstateAgent JSON-LD on worksFor (brokerage
  * aggregate, not the individual), BreadcrumbList, V3SectionTracker
  * pageType="broker", revalidate 60, reviewBelongsOnPage, 977 zip filter,
- * photo-only tiles.
+ * published closing count equals ledger rows.
  *
  * D11: no virtue names. No invented quote. MLS remarks N/A.
  *
@@ -41,7 +41,7 @@ import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker } from '@/app/about/_v3/about-faces'
 import { BrokerValuationSheet } from './_v3/BrokerValuationSheet.client'
 import { namesBroker, reviewBelongsOnPage } from './_v3/review-filter'
-import { brokerageTileToRow, brokerSaleToRow, factualFallbackBio, HEADSHOT } from './_v3/sale-rows'
+import { brokerageTileToRow, factualFallbackBio, HEADSHOT, publishOwnClosingRows } from './_v3/sale-rows'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const OFFICE_NAME = 'Ryan Realty'
@@ -95,20 +95,18 @@ export default async function TeamMemberPage({ params }: Props) {
     getBrokerSales({ email: broker.email, mlsId: broker.mls_id, limit: 24 }),
   ])
 
-  const ownRows = brokerSales
-    .map(brokerSaleToRow)
-    .filter((row): row is V3LedgerFigureRow => row !== null && Boolean(row.media?.src))
-  const closings = brokerSales.filter((t) => (t.PostalCode ?? '').trim().startsWith('977')).length
+  const ownRows = publishOwnClosingRows(brokerSales)
+  const closings = ownRows.length
   const hasOwnSales = closings > 0
 
   const firmRows = brokerageTiles
     .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
     .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
     .map(brokerageTileToRow)
-    .filter((row): row is V3LedgerFigureRow => row !== null && Boolean(row.media?.src))
+    .filter((row): row is V3LedgerFigureRow => row !== null)
     .slice(0, 6)
 
-  const saleRows = hasOwnSales ? ownRows.slice(0, 9) : firmRows
+  const saleRows = hasOwnSales ? ownRows : firmRows
   const [firstSale, ...restSales] = saleRows
 
   const bioText = broker.bio?.trim()
@@ -272,7 +270,7 @@ export default async function TeamMemberPage({ params }: Props) {
             eyebrow={v3Text('Closings')}
             heading={v3Text('Closed sales')}
             rows={[]}
-            emptyMessage={v3Text('No Central Oregon closings with a listing photo in this refresh.')}
+            emptyMessage={v3Text('No Central Oregon closings in this refresh.')}
           />
         )}
 
