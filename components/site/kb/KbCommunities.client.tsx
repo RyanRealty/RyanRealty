@@ -90,8 +90,7 @@ export function KbCommunities({ communities, eyebrow = 'Central Oregon' }: { com
         <div className="sec-head">
           <span className="sec-index">{eyebrow}</span>
           <h2 className="sec-title display">
-            Named
-            <br />
+            Named <br />
             communities
           </h2>
         </div>

@@ -56,7 +56,7 @@ export function KbFooter({
             the visitor is already on the get-in-touch page (design-audit P3). */}
         {hideCta ? null : (
         <div className="foot-cta">
-          <h2 className="display">A broker<br />writes back.</h2>
+          <h2 className="display">A broker <br />writes back.</h2>
           <p className="sub">
             Buying, selling, or still deciding which town fits. Tell us the street. We bring the
             comps and the number a home sells for.

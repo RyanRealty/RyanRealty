@@ -21,15 +21,26 @@ export function publishStreetPart(raw: string | null | undefined): string | null
   return value || null
 }
 
+/** True when the street name already ends with this suffix (Drive Drive). */
+export function streetNameHasSuffix(streetName: string, streetSuffix: string): boolean {
+  const name = streetName.trim()
+  const suffix = streetSuffix.trim()
+  if (!name || !suffix) return false
+  const last = name.split(/\s+/).pop() ?? ''
+  return last.localeCompare(suffix, undefined, { sensitivity: 'accent' }) === 0
+}
+
 export function publishStreetLine(input: {
   streetNumber?: string | number | null
   streetName?: string | null
   streetSuffix?: string | null
 }): string | null {
+  const name = publishStreetPart(input.streetName)
+  const suffix = publishStreetPart(input.streetSuffix)
   const line = [
     publishStreetNumber(input.streetNumber),
-    publishStreetPart(input.streetName),
-    publishStreetPart(input.streetSuffix),
+    name,
+    name && suffix && streetNameHasSuffix(name, suffix) ? null : suffix,
   ]
     .filter((part): part is string => part != null)
     .join(' ')

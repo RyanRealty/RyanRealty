@@ -222,7 +222,7 @@ export function KbHero({
               short two-word title fits on one line the words keep their gap
               ("Contact Us", not "ContactUs"); at a line wrap the space
               collapses, so long titles are unaffected (design-audit P2). */}
-          <span className="reveal-mask" aria-hidden="true"><span className="ln reveal-inner">{titleTop}</span></span>{' '}
+          <span className="reveal-mask" aria-hidden="true"><span className="ln reveal-inner">{titleTop} </span></span>
           <span className="reveal-mask" aria-hidden="true"><span className="ln indent reveal-inner">{titleBottom}</span></span>
         </h1>
         {showSearch ? (
@@ -266,7 +266,11 @@ export function KbHero({
                     </>
                   ) : (
                     <>
-                      <b>{data.activeCount.toLocaleString('en-US')} homes</b> for sale{' '}
+                      <b>
+                        {data.activeCount.toLocaleString('en-US')}{' '}
+                        {data.activeCount === 1 ? 'home' : 'homes'}
+                      </b>{' '}
+                      for sale{' '}
                     </>
                   )
                 ) : null}

@@ -7,6 +7,7 @@
 
 import { formatDate } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { v3Text, type V3LedgerFigureRow } from '@/components/site/v3'
 import type { BrokerSaleTile } from '@/lib/data'
@@ -18,8 +19,11 @@ function inServiceArea(postal: string | null | undefined): boolean {
 
 function addressLine(tile: PriceDropTile): string {
   return (
-    [tile.StreetNumber, tile.StreetName, tile.StreetSuffix].filter(Boolean).join(' ') ||
-    'Address withheld'
+    publishStreetLine({
+      streetNumber: tile.StreetNumber,
+      streetName: tile.StreetName,
+      streetSuffix: tile.StreetSuffix,
+    }) || 'Address withheld'
   )
 }
 
@@ -63,6 +67,16 @@ export function brokerSaleToRow(tile: BrokerSaleTile): V3LedgerFigureRow | null 
     ...row,
     when: v3Text(soldWhen(tile.CloseDate, tile.saleSide)),
   }
+}
+
+/** Closings a visitor can see — same set as the Homes closed stat. */
+export function publishBrokerClosingRows(sales: readonly BrokerSaleTile[]): V3LedgerFigureRow[] {
+  const rows: V3LedgerFigureRow[] = []
+  for (const sale of sales) {
+    const row = brokerSaleToRow(sale)
+    if (row) rows.push(row)
+  }
+  return rows
 }
 
 export function factualFallbackBio(opts: {

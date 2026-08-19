@@ -53,8 +53,7 @@ export function KbBuyCta({
       <div className="buy-cta-copy">
         <span className="sec-index">Buy in {communityName}</span>
         <h2 className="buy-cta-h display">
-          Homes for sale
-          <br />
+          Homes for sale <br />
           in {communityName}
         </h2>
         <p className="buy-cta-p">
