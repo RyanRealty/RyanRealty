@@ -23,6 +23,7 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
 import { getPublishedCmaForListing } from '@/lib/data/cma/getPublishedCma'
 import { getListingPricingRead } from '@/lib/data/pricing/reads'
@@ -119,7 +120,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const listing = await getListingDetail(listingKey)
   if (!listing) notFound()
 
-  const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
+  const street = publishStreetLine({
+    streetNumber: listing.streetNumber,
+    streetName: listing.streetName,
+    streetSuffix: listing.streetSuffix,
+  }) ?? ''
   // Comma between street and city ("63177 Iner Loop, Bend, OR 97701") — the
   // comma-less form matched no county/Zillow record (design-audit P1, trust).
   const addressFull = [street, listing.city ? `${listing.city}, OR` : '', listing.postalCode ?? '']
@@ -311,7 +316,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
       }
     : reviews
 
-  const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
+  const street = publishStreetLine({
+    streetNumber: listing.streetNumber,
+    streetName: listing.streetName,
+    streetSuffix: listing.streetSuffix,
+  }) ?? ''
   const cityHref = listing.citySlug ? `/cities/${listing.citySlug}` : null
   const listingHref = listingDetailPath(
     listing.listingKey,

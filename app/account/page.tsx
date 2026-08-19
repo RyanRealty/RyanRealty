@@ -106,7 +106,7 @@ function SectionHeader({
  */
 export default async function AccountPage({ searchParams }: PageProps) {
   const session = await getSession()
-  if (!session?.user) redirect('/')
+  if (!session?.user) redirect('/login')
   const userId = session.user.id
 
   const { tab: tabParam } = await searchParams

@@ -165,7 +165,7 @@ export default async function NeighborhoodsPage() {
                 Live market
               </span>
               <h1 className="sec-title display">
-                Bend,<br />neighborhood by neighborhood.
+                Bend, <br />neighborhood by neighborhood.
               </h1>
             </div>
             <p className="neigh-sub" style={{ marginTop: '20px' }}>
@@ -205,7 +205,7 @@ export default async function NeighborhoodsPage() {
             <div className="sec-head">
               <span className="sec-index">City of Bend</span>
               <h2 className="sec-title display">
-                Pick a district.<br />See what is listed.
+                Pick a district. <br />See what is listed.
               </h2>
             </div>
             <div>
@@ -325,7 +325,7 @@ export default async function NeighborhoodsPage() {
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
               <h2 className="sec-title display">
-                Search every listing<br />in Central Oregon
+                Search every listing <br />in Central Oregon
               </h2>
             </div>
             <div className="max-w-xl pt-6 pb-12">

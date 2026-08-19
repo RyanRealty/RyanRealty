@@ -64,7 +64,7 @@ export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; e
         <div className="sell-copy">
           <span className="sec-index">{eyebrow}</span>
           <h2 className="sell-h display">
-            {"What's your"}
+            {"What's your "}
             <br />
             home worth?
           </h2>

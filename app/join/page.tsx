@@ -2,10 +2,10 @@
  * /join - broker recruiting, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Opens on Stage (owned office photo, one line, one action) because this page
- * has an owned asset and ci:kb-breadcrumb-overlay pairs V3Stage with
- * tone="on-media". Then Ledger (listing support doors) then Quiet (how it
- * works, FAQ, edges). No valuation ask. Footer columns drop /sell#get-value.
+ * Opens on Stage (owned office photo, one line, one action). Breadcrumb stays
+ * surface tone: it sits above the Stage, not over the photo, so on-media
+ * inverted type is unreadable on the cream band. Then Ledger then Quiet.
+ * No valuation ask. Footer columns drop /sell#get-value.
  *
  * THE PAGE CONTRACT, carried across: export const metadata, revalidate 3600,
  * getSurfaceImage, webPage + BreadcrumbList + FAQPage JSON-LD,
@@ -119,7 +119,6 @@ export default async function JoinPage() {
           ]}
         />
         <V3Breadcrumb
-          tone="on-media"
           belowNav
           trail={[{ label: 'Home', href: '/' }, { label: 'Join the team' }]}
         />

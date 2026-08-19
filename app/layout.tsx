@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     title: "Ryan Realty — Central Oregon Real Estate",
     description: "Find your next home in Bend and Central Oregon. Expert real estate service and listings.",
   },
-  robots: "index, follow",
+  robots: { index: true, follow: true },
   // No blanket alternates.canonical here — a root-layout canonical silently
   // masks every page that forgets its own canonical (Google sees the homepage
   // URL as canonical for every route). Each page sets its own canonical.
