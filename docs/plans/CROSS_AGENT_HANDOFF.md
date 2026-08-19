@@ -4,7 +4,7 @@
 
 # Current — 2026-08-19 (cursor-cloud) — CMA phone open + PDF
 
-**Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add` PR #127. Loop stays **DISARMED**. Unauth view/pdf → login. Review slim-reads. `/view` serves stored HTML. PDF from render_args. SE from slug. person_id on kickoff. `#add-person` → `?add=1` so ci:admin-v2-tokens is green. Drafts stay private. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add` PR #127. Loop stays **DISARMED**. Unauth view/pdf → login. Review slim-reads. `/view` serves stored HTML. PDF from render_args. SE from slug. person_id on kickoff. People-add CI: `?add=1`, v2 SectionHead/HiddenField, homes without leftover identifiers. Drafts stay private. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, database-canonical-reference, git-commit.
 
