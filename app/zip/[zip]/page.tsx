@@ -35,6 +35,7 @@ import {
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { formatDate } from '@/lib/format/date'
 import { homesForSalePath } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishPlaceHeroCta } from '@/lib/search/publish-place-browse-href'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { buildYearSeries } from '@/lib/kb/year-series'
@@ -249,7 +250,11 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
       properties: {
         p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+        a: publishStreetLine({
+          streetNumber: t.streetNumber,
+          streetName: t.streetName,
+          streetSuffix: t.streetSuffix,
+        }) ?? '',
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
       },
     }))

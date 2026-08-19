@@ -249,7 +249,7 @@ export default async function CommunitiesPage() {
                 <span className="dot" aria-hidden />
                 Live market
               </span>
-              <h1 className="sec-title display">Communities across<br />Central Oregon.</h1>
+              <h1 className="sec-title display">Communities across <br />Central Oregon.</h1>
             </div>
 
             <p className="neigh-sub" style={{ marginTop: '20px' }}>
@@ -292,7 +292,7 @@ export default async function CommunitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Resort communities</span>
-              <h2 className="sec-title display">Resorts and<br />planned communities</h2>
+              <h2 className="sec-title display">Resorts and <br />planned communities</h2>
             </div>
 
             <div>
@@ -423,7 +423,7 @@ export default async function CommunitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">The full index</span>
-              <h2 className="sec-title display">Every community,<br />A to Z</h2>
+              <h2 className="sec-title display">Every community, <br />A to Z</h2>
             </div>
             <p
               className="mt-4 max-w-prose"
@@ -451,7 +451,7 @@ export default async function CommunitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">Find a home, or<br />price the one you have.</h2>
+              <h2 className="sec-title display">Find a home, or <br />price the one you have.</h2>
             </div>
             <div className="max-w-xl pt-6 pb-12">
               <p className="neigh-sub" style={{ margin: 0 }}>

@@ -82,6 +82,14 @@ for (const f of walk(APP)) {
   }
 }
 
+const css = readFileSync('components/site/kb/kb.css', 'utf8')
+if (!/:has\(>\s*\.kb-bc\.overlay\)\s*\.hero\s*\{/.test(css) || !css.includes('padding-top:8.5rem')) {
+  fails.push(
+    'components/site/kb/kb.css  overlay heroes must reserve the trail band ' +
+      '(.kb-root:has(> .kb-bc.overlay) .hero { padding-top:8.5rem }) so the H1 cannot overlap the crumb.',
+  )
+}
+
 console.log('KB breadcrumb overlay gate (dark-hero pages)')
 console.log('===========================================')
 if (fails.length) {
@@ -91,3 +99,4 @@ if (fails.length) {
   process.exit(1)
 }
 console.log('Every KbBreadcrumb on a dark-hero page uses the navy overlay variant.')
+console.log('Overlay heroes reserve the trail band so H1 / search cannot overlap the crumb.')

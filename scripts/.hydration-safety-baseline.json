@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-18T19:31:48.504Z",
+  "generatedAt": "2026-08-19T17:17:25.555Z",
   "format": "file:line:ruleId — each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
-  "total": 21,
+  "total": 19,
   "violations": [
     "app/admin/(protected)/crm/reporting/agent-goals/AgentGoalsYearSelect.tsx:24:clock-new-date",
     "app/components/admin/AdminUsersList.tsx:131:locale-date",
@@ -11,10 +11,8 @@
     "components/AnalyticsIdentityBridge.tsx:48:clock-now",
     "components/AnalyticsIdentityBridge.tsx:49:clock-now",
     "components/ExportMyDataButton.tsx:26:clock-new-date",
-    "components/GTMHead.tsx:32:clock-new-date",
-    "components/GoogleAnalytics.tsx:84:clock-new-date",
-    "components/ListingTile.tsx:296:impure-helper",
-    "components/ListingTile.tsx:42:clock-now",
+    "components/ListingTile.tsx:297:impure-helper",
+    "components/ListingTile.tsx:43:clock-now",
     "components/admin/crm/GlobalActivityFeed.client.tsx:253:clock-now",
     "components/landing/LeadLandingForm.tsx:60:impure-helper",
     "components/landing/LeadLandingForm.tsx:61:impure-helper",

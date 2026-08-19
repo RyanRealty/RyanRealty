@@ -24,6 +24,7 @@ import { getGolfDetail } from '@/lib/data'
 import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
 import { GOLF_ACCESS_LABEL, buildGolfFaq, cityToGeoSlug, displayCity } from '@/lib/golf-format'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -202,7 +203,11 @@ export default async function GolfDetailPage({ params }: Props) {
             headline={v3Text(courseName)}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(
-              'active single-family listings (PropertyType A) within about 1.5 miles of the clubhouse, from the MLS. A listings timeout renders this course with a zero count and lets ISR retry.',
+              publishNearbyListingsSource({
+                grain: 'course',
+                scope: 'within about 1.5 miles of the clubhouse',
+                listingCount: stats.count,
+              }),
             )}
             action={{
               label: v3Text('Value my home'),

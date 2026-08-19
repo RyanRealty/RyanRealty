@@ -4,13 +4,23 @@
 
 # Current — 2026-08-19 (cursor-cloud) — CMA phone open + PDF
 
+<<<<<<< HEAD
 **Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add`. Loop stays **DISARMED**. Unauth view/pdf → login. Review page slim-reads (no blobs). `/view` serves stored HTML. PDF re-renders from render_args with fixed adjustment-grid CSS. SE restored from slug. person_id stamped on kickoff/contact build. Drafts stay private. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+=======
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Quick add is name + email + phone. Address is `crm_people.addresses`, never a note. Create lands on person detail. Detail first-paints identity, address, Relationships (search + type + save both sides), and a note form. Odessa 63285 linked spouse Nealon 63287 and parent Jane 63290. `main` @ `553c89fee`. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+>>>>>>> origin/main
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, database-canonical-reference, git-commit.
 
+# Prior — 2026-08-19 (cursor-cloud) — leftover Triple / street 0 / closings / plat crumb
+
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Walker leftovers still live: Triple H1, 0 Moonshadow search cards, Matt 19 vs 9, plat hero on crumb. Class-fixed on `main` @ `b46698c76`. Did not re-touch featured plats or Tetherow 33=33=$1.499M. Deploy verify next. CMA / loop-sentinel / email not touched. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** CROSS_AGENT_HANDOFF, git-commit, public-product-os (folded).
+
 # Prior — 2026-08-19 (cursor-cloud) — vendor CRM name purge
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Removed leftover vendor-CRM docs, setup scripts, and product-name strings. Live CRM is `public.crm_people` via `lib/crm/send-event.ts` at `/admin/crm`. CMA not touched. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Removed leftover vendor-CRM docs, setup scripts, and product-name strings. Live CRM is `public.crm_people` via `lib/crm/send-event.ts` at `/admin/crm`. `main` @ `3e832749d`. `ci:gates` passed on GitHub. First Vercel production deploy `323yhyaDX5S7J75ecVUc3qdK43tN` ERROR after BUILDING. Retrying. CMA not touched. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 # Prior — 2026-08-19 (cursor-cloud) — four shopper defects LIVE
 

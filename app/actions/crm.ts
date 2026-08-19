@@ -29,6 +29,7 @@ import { savedViewToSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { EMPTY_SEGMENT, type CrmSegment, type CrmNode } from '@/lib/crm/segment-ast'
 import type { TriageItem } from '@/lib/data/crm/getInboundTriage'
 import { createContactAddress, parseCreateContactForm, validateCreateContact } from '@/lib/crm/create-contact'
+import { persistCreatedContactAddress, resolveCreatedPersonId } from '@/lib/crm/persist-created-contact'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
 
@@ -1397,42 +1398,12 @@ export async function createCrmContactAction(formData: FormData): Promise<CrmAct
   })
   if (!sent.ok) return { ok: false, error: `Lead create failed: ${'error' in sent ? sent.error : sent.status}` }
 
-  // Resolve the native CRM id. sendEvent returns it directly post-cutover;
-  // the contact-point lookups below are the belt-and-suspenders fallback.
-  const sb = createServiceClient()
-  let personId: number | undefined = sent.personId ?? undefined
-  if (!personId && input.email) {
-    const { data: pt } = await sb
-      .from('crm_contact_points')
-      .select('person_id')
-      .eq('kind', 'email')
-      .eq('value', input.email)
-      .order('person_id', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    personId = (pt?.person_id as number | undefined) ?? undefined
-  }
-  if (!personId && input.phone) {
-    const digits = input.phone.replace(/\D/g, '').slice(-10)
-    const { data: pt } = await sb
-      .from('crm_contact_points')
-      .select('person_id,value')
-      .eq('kind', 'phone')
-      .ilike('value', `%${digits}`)
-      .order('person_id', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    personId = (pt?.person_id as number | undefined) ?? undefined
-  }
-  if (personId && address) {
-    const { data: person } = await sb.from('crm_people').select('addresses').eq('id', personId).maybeSingle()
-    const rest = Array.isArray(person?.addresses) ? (person!.addresses as unknown[]).slice(1) : []
-    const { error: addressError } = await sb
-      .from('crm_people')
-      .update({ addresses: [address, ...rest], updated_at: new Date().toISOString() })
-      .eq('id', personId)
-    if (addressError) console.error('[createCrmContactAction] address', addressError.message)
-  }
+  const personId = await resolveCreatedPersonId({
+    sentPersonId: sent.personId ?? undefined,
+    email: input.email,
+    phone: input.phone,
+  })
+  if (personId && address) await persistCreatedContactAddress(personId, address)
   revalidateCrm(personId)
   return { ok: true, personId }
 }

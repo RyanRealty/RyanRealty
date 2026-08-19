@@ -33,6 +33,20 @@ checks.push({
     helper.includes('stoneth'),
 })
 
+checks.push({
+  label: 'publishPlatDisplayName records Triple as Triple Knot',
+  ok: helper.includes("triple: 'Triple Knot'") && helper.includes('RECORDED_PLAT_DISPLAY'),
+})
+
+const platPage = src('app/subdivisions/[slug]/page.tsx')
+checks.push({
+  label: 'plat page visitor name gates through publishPlatDisplayName',
+  ok:
+    /from ['"]@\/lib\/market\/publish-plat-display-name['"]/.test(platPage) &&
+    /publishPlatDisplayName\(/.test(platPage) &&
+    /function publishSubdivisionPageName/.test(platPage),
+})
+
 const catalog = src('lib/data/geo/plat-public-inventory.ts')
 checks.push({
   label: 'registry A-Z catalog withholds MLS abbreviations via looksLikeMlsAbbreviation',

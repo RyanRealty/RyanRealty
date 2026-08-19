@@ -12,20 +12,7 @@ import {
   type PublishedPlaceHoa,
 } from '@/lib/market/publish-place-hoa'
 import { publishFactValue } from '@/lib/market/publish-fact-value'
-
-// The MLS SubdivisionName field is fixed-length and cuts some names off
-// mid-word ("Lodges at Bachelor V", "Triple") — they read as broken chips,
-// not intentionally short ones (design-audit P3). Display-only correction;
-// the raw MLS string still drives the /subdivisions/[slug] URL below since
-// that page filters listings by the exact subdivision_name value. Only
-// "Triple" is mapped — its full name is independently confirmed elsewhere
-// in data/resort-community-tetherow.json ("Triple Knot townhomes", "$8,244
-// in Triple Knot"); "Lodges at Bachelor V" has no verifiable full form in
-// any source this codebase has access to, so it stays unmapped rather than
-// guessed (CLAUDE.md §0 — never fabricate a value that can't be verified).
-const SUBDIVISION_ALIAS_DISPLAY: Record<string, string> = {
-  Triple: 'Triple Knot',
-}
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 
 /**
  * KB Resort Overview — the rich, verified depth a resort/golf/master-planned
@@ -133,7 +120,7 @@ export function KbResortOverview({
                 <div className="ov-alias-row">
                   {aliasChips.map((a) => (
                     <Link key={a} href={`/subdivisions/${slugify(a)}`} className="ov-alias ov-alias-link">
-                      {SUBDIVISION_ALIAS_DISPLAY[a] ?? a}
+                      {publishPlatDisplayName(a) ?? a}
                       <span className="ov-alias-arr" aria-hidden="true">›</span>
                     </Link>
                   ))}

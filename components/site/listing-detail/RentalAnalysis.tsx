@@ -3,6 +3,7 @@ import { Body } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { getAreaRentEstimate } from '@/lib/hud-fmr'
 import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /**
  * Listing-detail RentalAnalysis — KB section style.
@@ -46,7 +47,7 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
     listing.taxAnnualAmount && listing.taxAnnualAmount > 0
       ? listing.taxAnnualAmount
       : Math.round(price * PROPERTY_TAX_RATE_FRACTION)
-  const label = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim() || undefined
+  const label = publishStreetLine({ streetNumber: listing.streetNumber, streetName: listing.streetName, streetSuffix: listing.streetSuffix }) || undefined
   const hud = getAreaRentEstimate(listing.city, listing.beds)
   const rent = hud
     ? { value: hud.value, low: hud.low, high: hud.high, source: hud.label }

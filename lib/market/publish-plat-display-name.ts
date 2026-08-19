@@ -5,11 +5,21 @@
  * StoneTH, Crr 1) are not place names. Withhold them. Do not invent an
  * expansion.
  *
+ * A recorded truncation (MLS "Triple" for Tetherow Triple Knot) may use the
+ * independently confirmed visitor name. Do not invent expansions for codes
+ * without a recorded full form.
+ *
  * Founding case: /subdivisions/river-meadows More areas printed Oww,
  * DrrhTrs, Drrh Trs, OWW2 (fleet ca552556c46f87dbefdbe4ae948f1b68).
+ * Triple: /subdivisions/triple printed the cut MLS token (walker-desktop 2026-08-19).
  */
 
 import { displaySubdivision } from '@/lib/slug'
+
+/** MLS ingest token → recorded visitor name. Keys are lowercased. */
+const RECORDED_PLAT_DISPLAY: Record<string, string> = {
+  triple: 'Triple Knot',
+}
 
 const KNOWN_MLS_ABBREVIATIONS = new Set(
   [
@@ -53,6 +63,8 @@ export function looksLikeMlsAbbreviation(name: string): boolean {
 export function publishPlatDisplayName(raw: string | null | undefined): string | null {
   const cleaned = displaySubdivision(raw)
   if (!cleaned) return null
+  const recorded = RECORDED_PLAT_DISPLAY[cleaned.toLowerCase()]
+  if (recorded) return recorded
   if (looksLikeMlsAbbreviation(cleaned)) return null
   return cleaned
 }

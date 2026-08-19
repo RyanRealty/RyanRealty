@@ -148,7 +148,7 @@ const nextConfig: NextConfig = {
           // connect-src" on every page.)
           // Also required: the GA4 APEX host analytics.google.com (Signals /
           // cross-device — *.analytics.google.com does NOT match the bare host).
-          // widgetbe.com is gone (inHouseCrmPixel deleted 2026-06-24).
+          // widgetbe.com is gone (vendor pixel deleted 2026-06-24).
           //
           // Google Maps JS needs MORE than maps.googleapis.com + maps.gstatic.com
           // in connect-src. The vector renderer fetches its basemap style set from

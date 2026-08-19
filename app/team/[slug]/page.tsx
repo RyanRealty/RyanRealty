@@ -92,7 +92,7 @@ export default async function TeamMemberPage({ params }: Props) {
   const [reviews, brokerageTiles, brokerSales] = await Promise.all([
     getReviews(24),
     getBrokerageListingTiles({ officeName: OFFICE_NAME, limit: 60 }),
-    getBrokerSales({ email: broker.email, mlsId: broker.mls_id, limit: 24 }),
+    getBrokerSales({ email: broker.email, mlsId: broker.mls_id }),
   ])
 
   const ownRows = publishOwnClosingRows(brokerSales)

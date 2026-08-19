@@ -46,6 +46,8 @@ import {
   subdivisionPlaceContext,
 } from '@/lib/explore/subdivision-page-extras'
 import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { isSubdivisionIndexable } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
@@ -136,6 +138,12 @@ function slugToTitle(slug: string): string {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+/** Visitor plat name. MLS alias stays the ingest key; Triple → Triple Knot. */
+function publishSubdivisionPageName(slug: string, registryMatch: RegistryMatch | null): string {
+  const raw = registryMatch?.canonicalName ?? slugToTitle(slug)
+  return publishPlatDisplayName(raw) ?? raw
+}
+
 // ---------------------------------------------------------------------------
 // Metadata
 // ---------------------------------------------------------------------------
@@ -143,7 +151,7 @@ function slugToTitle(slug: string): string {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const registryMatch = resolveRegistryAlias(slug)
-  const name = registryMatch?.canonicalName ?? slugToTitle(slug)
+  const name = publishSubdivisionPageName(slug, registryMatch)
   const city = registryMatch?.city ?? 'Central Oregon'
   // Indexability threshold (W2.1): a plat earns index,follow only with a GIS
   // polygon AND >= SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime closed sales
@@ -228,7 +236,7 @@ export default async function SubdivisionPage({ params }: Props) {
   }
 
   // ── Name + city display ───────────────────────────────────────────────────
-  const displayName = registryMatch?.canonicalName ?? slugToTitle(slug)
+  const displayName = publishSubdivisionPageName(slug, registryMatch)
   // Parent city for plain GIS plats (W2.4 parent cross-link): the MODAL city
   // among the plat's own in-boundary listings, already fetched — derived from
   // data, never guessed (§0). Claimed only when a strict majority agrees.
@@ -305,7 +313,12 @@ export default async function SubdivisionPage({ params }: Props) {
       geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
       properties: {
         p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+        a:
+          publishStreetLine({
+            streetNumber: t.streetNumber,
+            streetName: t.streetName,
+            streetSuffix: t.streetSuffix,
+          }) ?? '',
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
         k: t.listingKey,
       },

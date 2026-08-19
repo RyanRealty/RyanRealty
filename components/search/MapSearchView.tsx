@@ -20,6 +20,7 @@ import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registr
 import { publishSearchCountPair } from '@/lib/search/publish-search-count'
 import { GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope } from '@/components/search/geo-scope'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { cn } from '@/lib/utils'
@@ -51,7 +52,13 @@ const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered
 
 /** Street line only (e.g. "2732 NW Ordway Ave") — matches ListingCard addressLine. */
 function cardStreet(l: ListingTileRow): string {
-  return [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(' ').trim() || (l.City ?? 'Listing')
+  return (
+    publishStreetLine({
+      streetNumber: l.StreetNumber,
+      streetName: l.StreetName,
+      streetSuffix: l.StreetSuffix,
+    }) || (l.City ?? 'Listing')
+  )
 }
 
 /** "Bend, OR 97703 · Awbrey Butte" — city + state + zip, plus subdivision when

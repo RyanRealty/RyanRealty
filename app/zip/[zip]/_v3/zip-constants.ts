@@ -33,6 +33,7 @@ import type { ListingTile } from '@/lib/data'
 import type { V3FieldItem } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /**
  * The canonical ZIP codes Ryan Realty serves. `dynamicParams = false` on the
@@ -173,10 +174,11 @@ export function numeric(values: Array<number | null | undefined>, floor = 0): nu
 
 /** The address as the feed reports it, or the best name the tile still carries. */
 export function tileTitle(tile: ListingTile, fallback: string): string {
-  const address = [tile.streetNumber, tile.streetName, tile.streetSuffix]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
+  const address = publishStreetLine({
+    streetNumber: tile.streetNumber,
+    streetName: tile.streetName,
+    streetSuffix: tile.streetSuffix,
+  })
   if (address) return address
   return displaySubdivision(tile.subdivisionName) ?? tile.city?.trim() ?? fallback
 }

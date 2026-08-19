@@ -23,6 +23,7 @@ import type { Metadata } from 'next'
 import { getSchoolDetail, getBoundaryGeoJSON } from '@/lib/data'
 import { CO_SCHOOLS, getSchoolBySlug, slugifySchoolName, type SchoolLevel } from '@/data/co-schools'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -239,7 +240,11 @@ export default async function SchoolDetailPage({ params }: Props) {
             headline={v3Text(schoolName)}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(
-              'active single-family listings (PropertyType A) whose MLS school field matches this school, from the MLS. A listings timeout renders this school with a zero count and lets ISR retry.',
+              publishNearbyListingsSource({
+                grain: 'school',
+                scope: 'whose MLS school field matches this school',
+                listingCount: stats.count,
+              }),
             )}
             action={{
               label: v3Text('Value my home'),

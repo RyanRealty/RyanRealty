@@ -297,7 +297,7 @@ export default async function CitiesPage() {
                 <span className="dot" aria-hidden />
                 Live market
               </span>
-              <h1 className="sec-title display">Central Oregon,<br />city by city.</h1>
+              <h1 className="sec-title display">Central Oregon, <br />city by city.</h1>
             </div>
 
             <p
@@ -349,7 +349,7 @@ export default async function CitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">Pick a city.<br />See what is listed.</h2>
+              <h2 className="sec-title display">Pick a city. <br />See what is listed.</h2>
             </div>
 
             <div>
@@ -494,7 +494,7 @@ export default async function CitiesPage() {
                   the page starting over (design-audit P3). */}
               <div className="sec-head">
                 <span className="sec-index">More areas</span>
-                <h2 className="sec-title display">The rest of<br />Central Oregon</h2>
+                <h2 className="sec-title display">The rest of <br />Central Oregon</h2>
               </div>
 
               <div className="max-w-2xl pt-2" style={{ borderTop: '1px solid var(--navy-12)' }}>
@@ -544,7 +544,7 @@ export default async function CitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">Search every listing<br />in Central Oregon</h2>
+              <h2 className="sec-title display">Search every listing <br />in Central Oregon</h2>
             </div>
             <div className="max-w-xl pt-6 pb-12">
               <p className="neigh-sub" style={{ margin: 0 }}>

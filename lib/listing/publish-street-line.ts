@@ -21,20 +21,57 @@ export function publishStreetPart(raw: string | null | undefined): string | null
   return value || null
 }
 
+/** True when the street name already ends with this suffix (Drive Drive). */
+export function streetNameHasSuffix(streetName: string, streetSuffix: string): boolean {
+  const name = streetName.trim()
+  const suffix = streetSuffix.trim()
+  if (!name || !suffix) return false
+  const last = name.split(/\s+/).pop() ?? ''
+  return last.localeCompare(suffix, undefined, { sensitivity: 'accent' }) === 0
+}
+
 export function publishStreetLine(input: {
   streetNumber?: string | number | null
   streetName?: string | null
   streetSuffix?: string | null
 }): string | null {
+  const name = publishStreetPart(input.streetName)
+  const suffix = publishStreetPart(input.streetSuffix)
   const line = [
     publishStreetNumber(input.streetNumber),
-    publishStreetPart(input.streetName),
-    publishStreetPart(input.streetSuffix),
+    name,
+    name && suffix && streetNameHasSuffix(name, suffix) ? null : suffix,
   ]
     .filter((part): part is string => part != null)
     .join(' ')
     .trim()
   return line || null
+}
+
+type ListingStreetBits = {
+  streetNumber?: string | number | null
+  streetName?: string | null
+  streetSuffix?: string | null
+  city?: string | null
+  postalCode?: string | null
+}
+
+/** Street line for listing detail (never a leading placeholder 0). */
+export function listingMlsStreetLine(listing: ListingStreetBits): string {
+  return publishStreetLine(listing) ?? ''
+}
+
+/**
+ * Street, city, OR postal. Comma between street and city — the comma-less
+ * form matched no county/Zillow record (design-audit P1, trust).
+ */
+export function listingMlsAddressFull(listing: ListingStreetBits): string {
+  const street = listingMlsStreetLine(listing)
+  return [street, listing.city ? `${listing.city}, OR` : '', listing.postalCode ?? '']
+    .filter(Boolean)
+    .join(', ')
+    .replace(/, OR,\s/, ', OR ')
+    .trim()
 }
 
 /** Already-joined MLS line. Strip a leading placeholder 0. */

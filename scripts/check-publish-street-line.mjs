@@ -101,6 +101,43 @@ checks.push({
     /publishStreetLine\(/.test(teamLedger),
 })
 
+const teamPage = src('app/team/[slug]/page.tsx')
+checks.push({
+  label: 'team page publishes every own closing (no 9-row card cap)',
+  ok:
+    /publishOwnClosingRows\(brokerSales\)/.test(teamPage) &&
+    /getBrokerSales\(\{ email: broker\.email, mlsId: broker\.mls_id \}\)/.test(teamPage) &&
+    !/getBrokerSales\([^)]*limit:/.test(teamPage) &&
+    !teamPage.includes('.slice(0, 9)'),
+})
+
+const searchCards = src('components/search/SearchResults.tsx')
+checks.push({
+  label: 'search result cards withhold placeholder 0 via publishStreetLine',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(searchCards) &&
+    /publishStreetLine\(/.test(searchCards) &&
+    !searchCards.includes('[listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join'),
+})
+
+const mapCards = src('components/search/MapSearchView.tsx')
+checks.push({
+  label: 'map-search cards withhold placeholder 0 via publishStreetLine',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(mapCards) &&
+    /publishStreetLine\(/.test(mapCards) &&
+    !mapCards.includes('[l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join'),
+})
+
+const platMap = src('app/subdivisions/[slug]/page.tsx')
+checks.push({
+  label: 'plat map pin addresses withhold placeholder 0 via publishStreetLine',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(platMap) &&
+    /publishStreetLine\(/.test(platMap) &&
+    !platMap.includes('[t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join'),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)
