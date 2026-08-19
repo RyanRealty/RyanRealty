@@ -56,7 +56,7 @@ export function visitorPageCategoryFromPath(pathname: string): string {
   if (listingMlsFromPath(p)) return 'listing_detail'
   if (/^\/listing\/[^/]+/.test(p)) return 'listing_detail'
   if (/^\/(search|listings|properties)/.test(p) || p.startsWith('/homes-for-sale')) return 'search'
-  if (/^\/lp\/seller-home-value|^\/home-valuation|^\/sell(\/|$)/.test(p)) return 'seller_intent'
+  if (/^\/lp\/seller-home-value|^\/sell(\/|$)/.test(p)) return 'seller_intent'
   if (/^\/lp\/buyer-listing-alerts|^\/buyers(\/|$)|^\/explore/.test(p) || p.startsWith('/buy')) return 'buyer_intent'
   if (/^\/lp\/expired-listing|^\/lp\/fsbo|^\/lp\/sell/.test(p)) return 'seller_intent'
   if (/mortgage|affordability|rental-property|appreciation/.test(p)) return 'financial_tools'
@@ -80,7 +80,7 @@ export function pageTypeFromPath(pathname: string): PageType {
   if (p.startsWith('/subdivisions')) return 'subdivision'
   if (p.startsWith('/zip/')) return 'zip'
   if (p.startsWith('/housing-market') || p.startsWith('/reports') || p.startsWith('/months-of-supply')) return 'market'
-  if (p.startsWith('/sell') || p.startsWith('/home-valuation') || p.startsWith('/lp/seller') || p.startsWith('/lp/expired') || p.startsWith('/lp/fsbo') || p.startsWith('/lp/sell')) {
+  if (p.startsWith('/sell') || p.startsWith('/lp/seller') || p.startsWith('/lp/expired') || p.startsWith('/lp/fsbo') || p.startsWith('/lp/sell')) {
     return 'sell'
   }
   if (p.startsWith('/buy') || p.startsWith('/lp/buyer')) return 'buy'
