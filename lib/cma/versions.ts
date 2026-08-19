@@ -21,7 +21,8 @@
  */
 
 import 'server-only'
-import { getCmaAdminRowBySlug } from '@/lib/data'
+import { getCmaAdminReviewRowBySlug } from '@/lib/data'
+import { cmaHasStoredHtml } from '@/lib/cma/draft-access'
 import type { CmaAdminRow } from '@/lib/data'
 import { cmaSlugForVersion } from '@/lib/cma/address-slug'
 
@@ -108,7 +109,7 @@ async function resolveWritableSlot(
 
 // ── CMA wrappers ────────────────────────────────────────────────────────────
 
-const fetchCmaRow: DocFetch = (slug) => getCmaAdminRowBySlug(slug)
+const fetchCmaRow: DocFetch = (slug) => getCmaAdminReviewRowBySlug(slug)
 
 /**
  * The newest CMA document for an address (highest version), or null. Readers
@@ -139,7 +140,7 @@ export async function getLatestBuiltCmaRowForBaseSlug(
   for (let i = hits.length - 1; i >= 0; i--) {
     const hit = hits[i]!
     if (String(hit.row.status ?? '') === 'archived') continue
-    if (hit.row.html_content) return { slug: hit.slug, row: hit.row }
+    if (cmaHasStoredHtml(hit.row.html_path) || hit.row.built_at) return { slug: hit.slug, row: hit.row }
   }
   return null
 }

@@ -20,6 +20,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 import { sendBrokerNotification, sendLeadConfirmation } from '@/lib/cma/request-emails'
+import { applyCmaClientIntent, isCmaClientIntent } from '@/lib/cma/client-intent'
+import { parsePositiveInt, parsePositiveNumber } from '@/lib/cma/client-link'
 
 export type CreateCmaRequestInput = {
   rawAddress: string
@@ -44,6 +46,8 @@ export type CreateCmaRequestInput = {
   sellerHomeDetails?: {
     bedrooms?: string
     bathrooms?: string
+    squareFeet?: string
+    intent?: 'sell' | 'rent' | 'both'
     roofAge?: string
     furnaceAge?: string
     acAge?: string
@@ -150,6 +154,7 @@ export async function createCmaRequest(
       const d: Record<string, string> = {}
       if (hd.bedrooms?.trim()) d.bedrooms = hd.bedrooms.trim()
       if (hd.bathrooms?.trim()) d.bathrooms = hd.bathrooms.trim()
+      if (hd.squareFeet?.trim()) d.square_feet = hd.squareFeet.trim()
       if (hd.roofAge?.trim()) d.roof_age = hd.roofAge.trim()
       if (hd.furnaceAge?.trim()) d.furnace_age = hd.furnaceAge.trim()
       if (hd.acAge?.trim()) d.ac_age = hd.acAge.trim()
@@ -157,8 +162,10 @@ export async function createCmaRequest(
       homeDetails = Object.keys(d).length > 0 ? d : null
 
       const parts: string[] = []
-      if (hd.bedrooms?.trim() || hd.bathrooms?.trim()) {
-        parts.push(`Beds/baths (seller-reported): ${hd.bedrooms?.trim() || '?'} / ${hd.bathrooms?.trim() || '?'}`)
+      if (hd.bedrooms?.trim() || hd.bathrooms?.trim() || hd.squareFeet?.trim()) {
+        parts.push(
+          `Beds/baths/sqft (seller-reported): ${hd.bedrooms?.trim() || '?'} / ${hd.bathrooms?.trim() || '?'} / ${hd.squareFeet?.trim() || '?'}`,
+        )
       }
       const sys: string[] = []
       if (hd.roofAge?.trim()) sys.push(`roof ${hd.roofAge.trim()}`)
@@ -178,7 +185,13 @@ export async function createCmaRequest(
     const baseNotes = input.leadTimeline
       ? `Lead timeline: ${input.leadTimeline}${input.leadClassification ? ` · classification: ${input.leadClassification}` : ''}`
       : null
-    const clientNotesFull = [baseNotes, sellerImprovementsText].filter(Boolean).join(' · ') || null
+    const clientNotesFull = applyCmaClientIntent(
+      [baseNotes, sellerImprovementsText].filter(Boolean).join(' · ') || null,
+      isCmaClientIntent(hd?.intent) ? hd.intent : null,
+    )
+    const subjectBeds = parsePositiveInt(hd?.bedrooms ?? null)
+    const subjectBaths = parsePositiveNumber(hd?.bathrooms ?? null)
+    const subjectSqft = parsePositiveInt(hd?.squareFeet ?? null)
 
     // Step 1: land the intake on a writable cmas row. The old blind
     // upsert-by-slug here was the clobber class (adversarial review 2026-07-17
@@ -221,6 +234,9 @@ export async function createCmaRequest(
         if (leadEmail) patch.client_email = leadEmail
         if (leadPhoneTrimmed) patch.client_phone = leadPhoneTrimmed
         if (clientNotesFull) patch.client_notes = clientNotesFull
+        if (subjectBeds != null) patch.subject_beds = subjectBeds
+        if (subjectBaths != null) patch.subject_baths = subjectBaths
+        if (subjectSqft != null) patch.subject_sqft = subjectSqft
         const updated = await updateCmaRowFieldsBySlug(slug, patch, { onlyWhenStatus: 'draft' })
         if (!updated.ok) {
           if (attempt === 0) continue
@@ -236,6 +252,9 @@ export async function createCmaRequest(
           client_email: leadEmail,
           client_phone: leadPhoneTrimmed,
           client_notes: clientNotesFull,
+          ...(subjectBeds != null ? { subject_beds: subjectBeds } : {}),
+          ...(subjectBaths != null ? { subject_baths: subjectBaths } : {}),
+          ...(subjectSqft != null ? { subject_sqft: subjectSqft } : {}),
           broker_id: brokerId,
           broker_slug: broker.slug,
           status: 'draft',
@@ -285,6 +304,8 @@ export async function createCmaRequest(
           seller_improvements: sellerImprovementsText,
           seller_improvements_total: sellerImprovementsTotal,
           home_details: homeDetails,
+          crm_person_id: linkedPersonId,
+          client_intent: isCmaClientIntent(hd?.intent) ? hd.intent : null,
           // D8 kick-off + notify: the build worker texts each listed broker a
           // review link when the draft is ready. A LIST, not a flag — kickers
           // that attach to this build while it is open append their own

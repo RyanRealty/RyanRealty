@@ -7,6 +7,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
+import { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -97,5 +98,65 @@ export async function stampCmaPersonId(slug: string, personId: number): Promise<
       .is('person_id', null)
   } catch (e) {
     console.warn('[stampCmaPersonId]', e instanceof Error ? e.message : String(e))
+  }
+}
+
+export type AttachCmaPersonResult =
+  | {
+      ok: true
+      personId: number
+      clientName: string | null
+      clientEmail: string | null
+      clientPhone: string | null
+    }
+  | { ok: false; error: string }
+
+/**
+ * Real person-link on a CMA. Sets `person_id` and fills blank client name /
+ * email / phone from the person. `replace: false` (kickoff) will not steal a
+ * row that already belongs to someone else; the review picker passes true.
+ */
+export async function attachCmaToPerson(
+  slug: string,
+  personId: number,
+  opts?: { replace?: boolean },
+): Promise<AttachCmaPersonResult> {
+  const safeSlug = slug.trim().toLowerCase()
+  if (!safeSlug || !Number.isFinite(personId) || personId <= 0) {
+    return { ok: false, error: 'CMA slug and a person are required.' }
+  }
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const person = await getPersonForCmaKickoff(personId)
+  if (!person) return { ok: false, error: 'Contact not found' }
+  try {
+    const { data: row, error: readErr } = await sb
+      .from('cmas')
+      .select('person_id, client_name, client_email, client_phone')
+      .eq('slug', safeSlug)
+      .maybeSingle()
+    if (readErr) return { ok: false, error: readErr.message }
+    if (!row) return { ok: false, error: 'CMA not found' }
+    const existingId = row.person_id == null ? null : Number(row.person_id)
+    if (existingId && existingId !== personId && !opts?.replace) {
+      return { ok: false, error: 'This CMA is already linked to another person.' }
+    }
+    const clientName = person.name || (row.client_name as string | null) || null
+    const clientEmail = (row.client_email as string | null) || person.primaryEmail
+    const clientPhone = (row.client_phone as string | null) || person.primaryPhone
+    const { error } = await sb
+      .from('cmas')
+      .update({
+        person_id: personId,
+        client_name: clientName,
+        client_email: clientEmail,
+        client_phone: clientPhone,
+      })
+      .eq('slug', safeSlug)
+    if (error) return { ok: false, error: error.message }
+    return { ok: true, personId, clientName, clientEmail, clientPhone }
+  } catch (e) {
+    console.error('[attachCmaToPerson]', e)
+    return { ok: false, error: 'Could not link this CMA to the person.' }
   }
 }

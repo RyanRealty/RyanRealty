@@ -44,7 +44,15 @@ export async function kickoffCmaFromPerson(formData: FormData): Promise<void> {
   const personId = Number(formData.get('personId'))
   const address = String(formData.get('address') ?? '').trim()
   const idempotencyKey = String(formData.get('idempotencyKey') ?? '')
-  const res = await kickoffCmaForContactAction({ personId, address, idempotencyKey })
+  const res = await kickoffCmaForContactAction({
+    personId,
+    address,
+    idempotencyKey,
+    beds: String(formData.get('beds') ?? ''),
+    baths: String(formData.get('baths') ?? ''),
+    sqft: String(formData.get('sqft') ?? ''),
+    intent: String(formData.get('intent') ?? ''),
+  })
   revalidatePath(personPath(personId))
   if (res.ok) redirect(`${personPath(personId)}?kicked=1`)
   redirect(`${personPath(personId)}?intent=cma&err=${encodeURIComponent(res.error ?? 'Kickoff failed')}`)

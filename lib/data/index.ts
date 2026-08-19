@@ -558,7 +558,12 @@ export {
 export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource } from '@/lib/data/cma/documents'
 export { listOpenCmaActions, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
 export type { CmaActionRow } from '@/lib/data/cma/queue'
-export { findCrmPersonIdByEmail, stampCmaLinkOnPerson, stampCmaPersonId, logCmaTimelineEvent } from '@/lib/data/cma/crm'
+export { findCrmPersonIdByEmail, stampCmaLinkOnPerson, stampCmaPersonId, attachCmaToPerson, logCmaTimelineEvent } from '@/lib/data/cma/crm'
+export type { AttachCmaPersonResult } from '@/lib/data/cma/crm'
+export { searchPeopleByName } from '@/lib/data/crm/searchPeople'
+export type { PeopleSearchHit } from '@/lib/data/crm/searchPeople'
+export { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
+export type { PersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
 
 // Resort community registry — typed read access to data/resort-communities.json
 export {

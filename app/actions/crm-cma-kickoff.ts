@@ -12,11 +12,17 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
 import { revalidatePath } from 'next/cache'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { kickoffCmaCore, type CmaKickoffResult } from '@/lib/crm/cma-kickoff'
+import { isCmaClientIntent } from '@/lib/cma/client-intent'
+import { parsePositiveInt, parsePositiveNumber } from '@/lib/cma/client-link'
 
 export async function kickoffCmaForContactAction(input: {
   personId: number
   address: string
   idempotencyKey: string
+  beds?: number | string | null
+  baths?: number | string | null
+  sqft?: number | string | null
+  intent?: string | null
   /** Explicit "build a fresh CMA" confirmation from the sheet (Matt decision
    *  2026-07-17) — see kickoffCmaCore. */
   buildNewVersion?: boolean
@@ -37,6 +43,10 @@ export async function kickoffCmaForContactAction(input: {
       idempotencyKey: String(input?.idempotencyKey ?? ''),
       actorBroker: access.brokerSlug ?? null,
       buildNewVersion: Boolean(input?.buildNewVersion),
+      beds: parsePositiveInt(input?.beds ?? null),
+      baths: parsePositiveNumber(input?.baths ?? null),
+      sqft: parsePositiveInt(input?.sqft ?? null),
+      intent: isCmaClientIntent(input?.intent) ? input.intent : null,
     })
     if (result.ok) {
       revalidatePerson(personId)

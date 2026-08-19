@@ -39,7 +39,7 @@ import {
   getCrmSmsTemplates,
   getTwilioSmsStatus,
 } from '@/app/actions/crm'
-import { Button, CardTitle, HiddenField, SectionHead, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
+import { Button, CardTitle, HiddenField, SectionHead, SelectField, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
 import { PersonDeals } from './PersonDeals'
 import { stripHtml, tsLabel } from './person-format'
 import {
@@ -371,6 +371,16 @@ export async function PersonWorkspace({
                 }
                 error={sp.err ? decodeURIComponent(sp.err) : undefined}
               />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <TextField label="Beds" name="beds" inputMode="numeric" placeholder="3" />
+                <TextField label="Baths" name="baths" inputMode="decimal" placeholder="2" />
+                <TextField label="Sqft" name="sqft" inputMode="numeric" placeholder="1800" />
+              </div>
+              <SelectField label="Rent or sell" name="intent" defaultValue="sell">
+                <option value="sell">Sell</option>
+                <option value="rent">Rent</option>
+                <option value="both">Rent or sell</option>
+              </SelectField>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Button type="submit" touch>
                   Build CMA — text me when ready

@@ -7,6 +7,7 @@ import {
   slugifyAddress,
   streetDirectionalFromCmaSlug,
   applySlugStreetDirectional,
+  formatPersistedCmaAddress,
 } from './address-slug'
 
 describe('slug street directional restore', () => {
@@ -19,6 +20,17 @@ describe('slug street directional restore', () => {
     expect(applySlugStreetDirectional('648 SE Douglas, Bend, OR 97702', 'cma-648-se-douglas')).toBe(
       '648 SE Douglas, Bend, OR 97702',
     )
+  })
+
+  it('persists 648 SE Douglas when MLS StreetName is bare Douglas', () => {
+    expect(
+      formatPersistedCmaAddress({
+        streetAddress: '648 Douglas',
+        city: 'Bend',
+        postalCode: '97702',
+        slug: 'cma-648-se-douglas',
+      }),
+    ).toBe('648 SE Douglas, Bend, OR 97702')
   })
 })
 

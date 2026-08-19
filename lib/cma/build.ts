@@ -19,7 +19,9 @@ import {
   getPricingMarketIndex,
   type CmaCompInsert,
 } from '@/lib/data'
-import { resolveCmaSubject } from '@/lib/cma/subject'
+import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
+import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
+import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCompAlongMarket } from '@/lib/pricing/estimate'
@@ -152,7 +154,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       await recordBuildFailure(slug, resolved.trace, { stage: 'subject', docType })
       return { ok: false, error: resolved.trace, slug }
     }
-    const subject = resolved.subject
+    resolved.subject.streetAddress = applySlugStreetDirectional(resolved.subject.streetAddress, slug)
+    const subject = applySubjectFactOverrides(resolved.subject, input.subjectFacts)
 
     // 2 + 3. Comps, market context, and authoritative site data (zoning / well
     // / septic from county + OWRD records — SKILL §3.5/§3.6) in parallel. Site
@@ -906,7 +909,12 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const upsert = await upsertCmaRowBySlug({
       slug,
       doc_type: docType,
-      subject_address: `${subject.streetAddress}, ${subject.city}, OR ${subject.postalCode ?? ''}`.trim(),
+      subject_address: formatPersistedCmaAddress({
+        streetAddress: subject.streetAddress,
+        city: subject.city,
+        postalCode: subject.postalCode,
+        slug,
+      }),
       subject_listing_key: subject.listingKey,
       subject_subdivision: subject.subdivision,
       subject_city: subject.city,
@@ -918,7 +926,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       client_name: input.client.name,
       client_email: input.client.email,
       client_phone: input.client.phone,
-      client_notes: input.client.notes,
+      client_notes: applyCmaClientIntent(
+        input.client.notes,
+        isCmaClientIntent(input.clientIntent) ? input.clientIntent : parseCmaClientIntent(input.client.notes),
+      ),
+      ...(input.personId && Number.isFinite(input.personId) && input.personId > 0
+        ? { person_id: Math.round(input.personId) }
+        : {}),
       broker_id: broker.id,
       broker_slug: broker.slug,
       value_low: pricing.valueLow,

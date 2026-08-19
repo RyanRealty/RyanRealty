@@ -2,7 +2,13 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — People file related people + notes
+# Current — 2026-08-19 (cursor-cloud) — CMA person-link + SE + slim review
+
+**Surface:** Cursor Cloud. Branch `cursor/cma-odessa-douglas-2d83`. Live `cma-648-se-douglas` is `person_id=63285` Odessa, `client_name=Odessa`, address `648 SE Douglas, Bend, OR 97702`, beds/baths/sqft 3/1/1056, `Intent: sell`. Review header reads the linked person, not only free-text name. Rebuild keeps `person_id` and SE. Kickoff/rebuild/manual build collect beds/baths/sqft + rent-vs-sell. Admin actions and version-chain reads no longer `select(*)`. Review page does not iframe the document. Relationships + address-on-quick-add stay on `main`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit, database-canonical-reference.
+
+# Prior — 2026-08-19 (cursor-cloud) — People file related people + notes
 
 **Surface:** Cursor Cloud. Merged to `main` @ `7a30d1ef8`. Vercel production **READY** `2PxU2QeAJnU5Qe5BF9ADdYTEefuq`. Loop stays **DISARMED**. Live file friction after Nealon `63287` + Jane `63290` next to Odessa `63285`: related-people form now first-paints open; notes list + `savePersonNoteAction` (no People-list revalidate); stage/tags on first paint; quick add is name+phone plus email or street, then Opening success. Odessa↔Nealon spouse and Jane parent of Odessa already in `crm_relationships`. Odessa notes were in `crm_timeline` and hidden behind the workspace hang. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
 
