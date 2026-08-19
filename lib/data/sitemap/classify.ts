@@ -19,6 +19,8 @@ export const SITEMAP_CLASSES: SitemapClass[] = ['core', 'geo', 'listings', 'matr
 
 /** Listing-detail URLs end in an MLS number: .../438-9th-220208193 */
 const LISTING_TAIL = /-\d{6,}$/
+/** Bare MLS when the address slug is empty: .../bend/220208193 */
+const BARE_MLS = /^\d{6,}$/
 
 export function classifySitemapUrl(url: string, presetSlugs: ReadonlySet<string>): SitemapClass {
   const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/\/$/, '') || '/'
@@ -27,7 +29,12 @@ export function classifySitemapUrl(url: string, presetSlugs: ReadonlySet<string>
   if (seg[0] === 'blog') return 'content'
 
   if (seg[0] === 'homes-for-sale') {
-    if (seg.length >= 2 && LISTING_TAIL.test(seg[seg.length - 1])) return 'listings'
+    // Incomplete location falls back to /homes-for-sale/listing/{id}.
+    // That last segment has no hyphen, so LISTING_TAIL alone missed it and
+    // parked those locs in geo — listings.xml looked empty for that set.
+    if (seg[1] === 'listing') return 'listings'
+    const last = seg[seg.length - 1] ?? ''
+    if (seg.length >= 2 && (LISTING_TAIL.test(last) || BARE_MLS.test(last))) return 'listings'
     if (seg.length === 1 || seg.length === 2) {
       // /homes-for-sale and /homes-for-sale/{city} are core inventory hubs;
       // /homes-for-sale/{city}/{preset} is a matrix permutation.
