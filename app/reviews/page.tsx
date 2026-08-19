@@ -70,7 +70,7 @@ export default async function ReviewsPage() {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd) }}
         />
-        <V3SectionTracker pageType="media" />
+        <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Reviews' }]} />
 
         {quotes.length > 0 ? (

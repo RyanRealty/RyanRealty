@@ -87,7 +87,7 @@ export default function SchoolsIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="schools" />
+        <V3SectionTracker />
         <MetadataBlock
           schemas={[
             {

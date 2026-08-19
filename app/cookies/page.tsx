@@ -165,7 +165,7 @@ export default function CookiePolicyPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="legal" />
+        <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cookies' }]} />
 
         <V3Quiet

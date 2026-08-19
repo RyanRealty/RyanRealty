@@ -251,7 +251,7 @@ export default async function CitiesPage() {
 
   return (
     <main className="kb-root">
-      <KbSectionTracker pageType="index" />
+      <KbSectionTracker />
 
       {/* Structured data: breadcrumb + CollectionPage + ItemList of city pages */}
       <MetadataBlock schemas={schemas} />

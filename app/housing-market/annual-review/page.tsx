@@ -456,7 +456,7 @@ export default async function AnnualReviewPage() {
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
 
-        <V3SectionTracker pageType="market-report-annual" />
+        <V3SectionTracker />
 
         <V3Breadcrumb
           trail={[

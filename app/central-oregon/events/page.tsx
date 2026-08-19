@@ -97,7 +97,7 @@ export default function EventsIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="events" />
+        <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[{ label: 'Home', href: '/' }, { label: 'Central Oregon events' }]}

@@ -90,7 +90,7 @@ export default async function ReportPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="market-reports" />
+        <V3SectionTracker />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reportSchema) }} />
         <MetadataBlock
           schemas={[

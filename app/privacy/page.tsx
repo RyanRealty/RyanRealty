@@ -173,7 +173,7 @@ export default function PrivacyPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="legal" />
+        <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Privacy' }]} />
 
         <div id="sms">

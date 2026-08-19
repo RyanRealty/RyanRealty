@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
+import { pageTypeFromPath } from '@/lib/analytics/page-type'
 
-export type V3SectionTrackerProps = { pageType: string }
+export type V3SectionTrackerProps = Record<string, never>
 
 /**
  * V3 section + scroll tracking. An island, not a seventh pattern: chrome
@@ -13,8 +15,13 @@ export type V3SectionTrackerProps = { pageType: string }
  * 25/50/75/100% scroll-depth milestones. Dual-sinks to GA4/Pixel (trackEvent)
  * AND our internal /api/visitors/track with full `location.href`. Tracking
  * must never break the page.
+ *
+ * page_type comes from the shared URL map. Do not pass a per-page type.
  */
-export function V3SectionTracker({ pageType }: V3SectionTrackerProps) {
+export function V3SectionTracker(_props?: V3SectionTrackerProps) {
+  const pathname = usePathname()
+  const pageType = pageTypeFromPath(pathname || '/')
+
   useEffect(() => {
     /** Best-effort dual-sink to our internal store. Lives inside the effect so
      *  hydration-safety does not see `readRrSessionId` in the render body. */

@@ -106,9 +106,10 @@ const CUSTOM_DIMENSIONS = [
   { parameterName: 'broker_slug',         displayName: 'Broker Slug',         description: 'Assigned broker slug (matt-ryan / paul-stevenson / rebecca-peterson)', scope: 'EVENT' },
   { parameterName: 'lead_classification', displayName: 'Lead Classification', description: 'Timeline-based tier (hot / warm / nurture)',                         scope: 'EVENT' },
   { parameterName: 'lead_type',           displayName: 'Lead Type',           description: 'seller or buyer',                                                    scope: 'EVENT' },
+  { parameterName: 'page_type',           displayName: 'Page Type',           description: 'Shared URL taxonomy from lib/analytics/page-type.ts',                 scope: 'EVENT' },
   // User-scoped
   { parameterName: 'assigned_broker',     displayName: 'Assigned Broker',     description: 'First broker assigned to this user — stable user property',          scope: 'USER' },
-  { parameterName: 'lead_status',         displayName: 'Lead Status',         description: 'Current FUB pipeline status — synced from FUB via user property',    scope: 'USER' },
+  { parameterName: 'lead_status',         displayName: 'Lead Status',         description: 'Current CRM pipeline status — synced as a user property',            scope: 'USER' },
 ]
 
 /**
@@ -209,13 +210,13 @@ const AUDIENCES = [
   },
   {
     displayName: 'Identified Facebook leads',
-    description: 'Has a FUB Person ID AND first arrived from facebook or instagram. Named leads from Meta.',
+    description: 'Has a CRM person id AND first arrived from facebook or instagram. Named leads from Meta.',
     membershipDurationDays: 540,
     spec: { kind: 'identified_facebook_leads' },
   },
   {
     displayName: 'Identified Google leads',
-    description: 'Has a FUB Person ID AND first arrived from google. Named leads from Google.',
+    description: 'Has a CRM person id AND first arrived from google. Named leads from Google.',
     membershipDurationDays: 540,
     spec: { kind: 'identified_google_leads' },
   },

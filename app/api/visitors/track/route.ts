@@ -446,6 +446,8 @@ export async function POST(request: NextRequest) {
             return undefined
           }
         })()
+        const { pageTypeFromPath } = await import('@/lib/analytics/page-type')
+        const pageType = pagePath ? pageTypeFromPath(pagePath) : undefined
         const meta = body.metadata && typeof body.metadata === 'object' ? body.metadata : {}
         const intent = typeof meta.intent === 'string' ? meta.intent : undefined
         const source = typeof meta.source === 'string' ? meta.source : undefined
@@ -459,6 +461,7 @@ export async function POST(request: NextRequest) {
             page_title: body.pageTitle ?? undefined,
             page_referrer: body.referrer ?? undefined,
             page_path: pagePath,
+            page_type: pageType,
             // First-party session stitch (optional custom dim later)
             session_id: sessionId.slice(0, 36),
             intent,

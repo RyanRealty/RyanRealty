@@ -143,7 +143,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="price-drops-city" />
+        <V3SectionTracker />
         <TrackSearchView city={cityName} resultsCount={total} />
         <MetadataBlock schemas={schemas} />
 

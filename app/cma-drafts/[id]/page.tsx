@@ -89,7 +89,7 @@ export default async function CmaDraftReviewPage({
     return (
       <>
         <main className={V3_ROOT_CLASS}>
-          <V3SectionTracker pageType="utility" />
+          <V3SectionTracker />
           <V3Quiet
             id="cma-draft"
             heading="Link not valid"
@@ -207,7 +207,7 @@ export default async function CmaDraftReviewPage({
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="utility" />
+        <V3SectionTracker />
         <V3Quiet
           id="cma-draft"
           eyebrow="Ryan Realty auto-CMA"

@@ -431,7 +431,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbSectionTracker pageType="neighborhood" />
+      <KbSectionTracker />
       <MetadataBlock schemas={neighborhoodSchemas} />
       <KbBreadcrumb
         overlay

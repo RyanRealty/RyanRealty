@@ -4,7 +4,7 @@
 
 # Current — 2026-08-18 (grok-build) — page-tied analytics
 
-**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Public tracking is layout-owned: `lib/analytics/page-type.ts` is the taxonomy, `PageViewTracker` + `VisitTracker` fire from the root, GTM `GTM-WV6R4NZ5` v5 loads `G-ST40W4WM6T` only. `ci:page-analytics` locks it. Cookies page lists `rr_pid` not `fub_cid`. CMA not touched.
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Public tracking is layout-owned. `lib/analytics/page-type.ts` is the only taxonomy (`PUBLIC_PAGE_SEGMENTS` + `pageTypeFromPath`). V3SectionTracker no longer takes a per-page type. `ci:page-analytics` fails a new public page until its first URL segment is on that map. GA4 now has event dimensions `page_type` and `crm_person_id`. Leftover `fub_person_id` dimension was relabeled; site events no longer send that name. Identity bridge uses `gtag('set')` so it does not double `page_view`. GTM `GTM-WV6R4NZ5` still only loads `G-ST40W4WM6T`. CMA not touched.
 
 # Prior — 2026-08-18 (grok-build) — remotion + brain runtime retired
 

@@ -227,7 +227,7 @@ export default async function TeamMemberPage({ params }: Props) {
             }),
           }}
         />
-        <V3SectionTracker pageType="broker" />
+        <V3SectionTracker />
         <MetadataBlock
           schemas={[
             {

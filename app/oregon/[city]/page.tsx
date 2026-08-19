@@ -325,7 +325,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
 
-        <V3SectionTracker pageType="out-of-area-city" />
+        <V3SectionTracker />
 
         <V3Breadcrumb
           trail={[

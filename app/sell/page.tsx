@@ -211,7 +211,7 @@ export default async function SellPage() {
     <>
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
-        <V3SectionTracker pageType="sell" />
+        <V3SectionTracker />
 
         <V3Breadcrumb
           tone="on-media"

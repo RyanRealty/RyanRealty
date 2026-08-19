@@ -380,7 +380,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
 
   return (
     <main className="kb-root">
-      <KbSectionTracker pageType="zip" />
+      <KbSectionTracker />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb overlay
         trail={[

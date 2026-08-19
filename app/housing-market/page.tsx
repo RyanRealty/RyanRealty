@@ -309,7 +309,7 @@ export default async function HousingMarketHubPage() {
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
 
-        <V3SectionTracker pageType="market-report" />
+        <V3SectionTracker />
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Housing market' }]} />
 

@@ -77,7 +77,7 @@ export default async function BrokerSelfEditPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="utility" />
+        <V3SectionTracker />
         <V3Breadcrumb
           trail={[
             { label: 'Home', href: '/' },

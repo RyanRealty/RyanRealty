@@ -94,7 +94,7 @@ export default async function JoinPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="join" />
+        <V3SectionTracker />
         <JoinCtaTracker />
         <MetadataBlock
           schemas={[

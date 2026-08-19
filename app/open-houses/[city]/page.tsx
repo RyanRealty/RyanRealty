@@ -185,7 +185,7 @@ export default async function OpenHousesCityPage({
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="open-houses-city" />
+        <V3SectionTracker />
         <TrackSearchView city={cityName} resultsCount={count} />
         <MetadataBlock schemas={schemas} />
 

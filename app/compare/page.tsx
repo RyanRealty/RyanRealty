@@ -145,7 +145,7 @@ export default async function ComparePage({
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="compare" />
+        <V3SectionTracker />
 
         <MetadataBlock
           schema={{

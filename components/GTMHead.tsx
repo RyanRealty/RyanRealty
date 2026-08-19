@@ -10,7 +10,8 @@ const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
 /**
  * GTM container. Loads only after analytics consent (ci:tracking-policy).
  * Pushes page_type onto dataLayer before gtm.js so the Google tag can
- * stamp every hit. Automatic page_view is off — PageViewTracker owns it.
+ * stamp every hit. First-paint page_view stays on the GTM Google tag
+ * (All Pages). PageViewTracker stamps page_type and sends SPA page_view.
  */
 export default function GTMHead() {
   const pathname = usePathname()

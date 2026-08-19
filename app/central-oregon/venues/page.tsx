@@ -90,7 +90,7 @@ export default function VenuesIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="venues" />
+        <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[{ label: 'Home', href: '/' }, { label: 'Live music & shows' }]}
