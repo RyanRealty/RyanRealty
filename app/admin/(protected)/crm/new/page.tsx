@@ -5,7 +5,7 @@
 // relationships, long notes, assignment extras, and property.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createCrmContactAction } from '@/app/actions/crm'
+import { createQuickContactAction } from '@/app/actions/crm-quick-add'
 import { Button, TextField, VerdictLine } from '@/components/admin/v2'
 
 export const metadata = { title: 'New contact | CRM | Admin' }
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 async function createContactForm(formData: FormData): Promise<void> {
   'use server'
-  const r = await createCrmContactAction(formData)
+  const r = await createQuickContactAction(formData)
   if (r.ok && r.personId) redirect(`/admin/people/${r.personId}`)
   if (r.ok) redirect('/admin/people')
   redirect(`/admin/crm/new?error=${encodeURIComponent(r.error ?? 'create failed')}`)
@@ -32,7 +32,7 @@ export default async function CrmNewContactPage({ searchParams }: { searchParams
             </>
           ) : (
             <>
-              <b>First name, email, and phone.</b> Address is a field, not a note. You land on the person next.
+              <b>First name and phone, plus an email or a street.</b> Address is a field, not a note. You land on the person next.
             </>
           )}
         </VerdictLine>
@@ -48,7 +48,7 @@ export default async function CrmNewContactPage({ searchParams }: { searchParams
         <TextField label="First name" name="firstName" required autoComplete="off" />
         <TextField label="Last name" name="lastName" autoComplete="off" />
         <TextField label="Phone" name="phone" type="tel" required autoComplete="off" />
-        <TextField label="Email" name="email" type="email" required autoComplete="off" />
+        <TextField label="Email" name="email" type="email" autoComplete="off" />
         <TextField label="Street" name="street" autoComplete="street-address" />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 88px', gap: 12 }}>
           <TextField label="City" name="city" autoComplete="address-level2" />

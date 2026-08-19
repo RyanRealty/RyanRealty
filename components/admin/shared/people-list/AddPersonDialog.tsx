@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * New contact quick add. Name, email, phone. Address is a field, never a note.
- * After save, open person detail for stage, tags, relationships, notes, assignment, property.
+ * New contact quick add. Name and phone, plus email or street.
+ * After save, open person detail for stage, tags, related people, and notes.
  *
  * Cancel vs Esc: v2 Dialog routes every close through one onClose. The `open`
  * prop tells them apart — still true = user dismissed, already false = parent
@@ -12,8 +12,9 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { createCrmContactAction } from '@/app/actions/crm'
-import { Button, Dialog, TextField } from '@/components/admin/v2'
+import { createQuickContactAction } from '@/app/actions/crm-quick-add'
+import { canSubmitCreateContact } from '@/lib/crm/create-contact'
+import { Button, Dialog, SectionHead, TextField } from '@/components/admin/v2'
 
 function useAddPersonForm(onCreated: () => void) {
   const router = useRouter()
@@ -27,6 +28,7 @@ function useAddPersonForm(onCreated: () => void) {
   const [state, setState] = useState('OR')
   const [zip, setZip] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [created, setCreated] = useState<{ personId: number; name: string } | null>(null)
 
   const reset = () => {
     setFirstName('')
@@ -52,15 +54,21 @@ function useAddPersonForm(onCreated: () => void) {
     fd.set('state', state.trim())
     fd.set('zip', zip.trim())
     startTransition(async () => {
-      const res = await createCrmContactAction(fd)
+      const res = await createQuickContactAction(fd)
       if (!res.ok) {
         setError(res.error ?? 'Could not add the person')
         return
       }
+      const name = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
       reset()
+      if (res.personId) {
+        setCreated({ personId: res.personId, name: name || `Person ${res.personId}` })
+        onCreated()
+        router.push(`/admin/people/${res.personId}`)
+        return
+      }
       onCreated()
-      if (res.personId) router.push(`/admin/people/${res.personId}`)
-      else router.refresh()
+      router.refresh()
     })
   }
 
@@ -75,6 +83,8 @@ function useAddPersonForm(onCreated: () => void) {
     state, setState,
     zip, setZip,
     error,
+    created,
+    canSubmit: canSubmitCreateContact({ firstName, email, phone, street }),
     reset,
     submit,
   }
@@ -112,7 +122,6 @@ function AddPersonFields({ form }: { form: ReturnType<typeof useAddPersonForm> }
         value={form.email}
         onChange={(e) => form.setEmail(e.target.value)}
         autoComplete="off"
-        required
       />
       <TextField
         label="Street"
@@ -145,7 +154,7 @@ function AddPersonFields({ form }: { form: ReturnType<typeof useAddPersonForm> }
         />
       </div>
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-        First name, email, and phone. Address is optional here. Stage, tags, notes, and property go on the person after save.
+        First name and phone, plus an email or a street. Stage, tags, related people, and notes open on the person after save.
       </p>
       {form.error ? (
         <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }} role="alert">{form.error}</p>
@@ -173,9 +182,9 @@ export default function AddPersonDialog({
       footer={
         <>
           <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={form.isPending}>Cancel</Button>
-          <Button onClick={form.submit} disabled={form.isPending || !form.firstName.trim() || !form.email.trim() || !form.phone.trim()}>
+          <Button onClick={form.submit} disabled={form.isPending || !form.canSubmit}>
             {form.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
-            New contact
+            {form.isPending ? 'Saving' : 'New contact'}
           </Button>
         </>
       }
@@ -192,6 +201,7 @@ export function AddPersonCard() {
   return (
     <section
       id="add-person"
+      data-tour="crm-add-person"
       aria-label="New contact"
       style={{
         border: '1px solid var(--a-border)',
@@ -201,14 +211,22 @@ export function AddPersonCard() {
         marginBottom: 20,
       }}
     >
-      <h2 className="av2-lane-head" style={{ marginTop: 0 }}>New contact</h2>
-      <AddPersonFields form={form} />
-      <div style={{ marginTop: 12 }}>
-        <Button onClick={form.submit} disabled={form.isPending || !form.firstName.trim() || !form.email.trim() || !form.phone.trim()} touch>
-          {form.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
-          New contact
-        </Button>
-      </div>
+      <SectionHead flush>New contact</SectionHead>
+      {form.created ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-ok)', fontWeight: 500, margin: '8px 0 0' }}>
+          Opening {form.created.name}. Stage, tags, related people, and notes are on that page.
+        </p>
+      ) : (
+        <>
+          <AddPersonFields form={form} />
+          <div style={{ marginTop: 12 }}>
+            <Button onClick={form.submit} disabled={form.isPending || !form.canSubmit} touch>
+              {form.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
+              {form.isPending ? 'Saving' : 'New contact'}
+            </Button>
+          </div>
+        </>
+      )}
     </section>
   )
 }

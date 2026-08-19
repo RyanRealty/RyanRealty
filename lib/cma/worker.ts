@@ -10,7 +10,9 @@
  * the action row with the reason recorded.
  */
 
-import { listOpenCmaActions, updateCmaActionRow, getCmaActionPayload, getCmaAdminRowBySlug } from '@/lib/data'
+import { listOpenCmaActions, updateCmaActionRow, getCmaActionPayload, getCmaServeHead, attachCmaToPerson } from '@/lib/data'
+import { isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
+import { parsePositiveInt, parsePositiveNumber } from '@/lib/cma/client-link'
 import type { CmaActionRow } from '@/lib/data'
 import { buildCma } from '@/lib/cma/build'
 import { slugifyAddress } from '@/lib/cma-request'
@@ -91,7 +93,7 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
   // action's stale client fields and 404 the client's live /cma/[slug] link —
   // the upsert-by-slug clobber class (adversarial review 2026-07-17). New
   // requests for the address open a --vN slot via createCmaRequest instead.
-  const existingDoc = (await getCmaAdminRowBySlug(slug)) as { status?: unknown } | null
+  const existingDoc = await getCmaServeHead(slug)
   const existingStatus = existingDoc ? String(existingDoc.status ?? '') : null
   if (existingDoc && existingStatus !== 'draft') {
     await updateCmaActionRow(action.id, {
@@ -110,6 +112,11 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
   })
 
   const payload = action.payload
+  const homeDetails =
+    payload['home_details'] && typeof payload['home_details'] === 'object'
+      ? (payload['home_details'] as Record<string, unknown>)
+      : null
+  const linkedPersonId = num(payload['crm_person_id']) ?? notifyEntries(payload)[0]?.personId ?? null
   const result = await buildCma({
     slug,
     rawAddress: str(payload['subject_address']),
@@ -125,6 +132,15 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
     brokerEmail: str(payload['broker_email']),
     sellerImprovementsTotal: num(payload['seller_improvements_total']),
     sellerImprovementsText: str(payload['seller_improvements']),
+    personId: linkedPersonId,
+    subjectFacts: {
+      beds: parsePositiveInt(homeDetails?.bedrooms ?? homeDetails?.beds ?? null),
+      baths: parsePositiveNumber(homeDetails?.bathrooms ?? homeDetails?.baths ?? null),
+      sqft: parsePositiveInt(homeDetails?.square_feet ?? homeDetails?.sqft ?? null),
+    },
+    clientIntent: isCmaClientIntent(payload['client_intent'])
+      ? payload['client_intent']
+      : parseCmaClientIntent(str(payload['client_notes'])),
     // Spec 07 §4.1 — thread the doc type end to end (kills Defect 4). Expired
     // detection queues its CMA request with payload.doc_type='expired-audit';
     // the worker must pass it through so the built cmas row lands as an audit
@@ -173,10 +189,9 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
       // cmas.person_id so person-scoped reads (getContactCmas, the person
       // page's Valuations lane) can see the doc. Fill-only; found live
       // 2026-08-05 with person_id null on a person-kicked CMA.
-      const kickPersonId = entries[0]?.personId
+      const kickPersonId = linkedPersonId ?? entries[0]?.personId
       if (kickPersonId) {
-        const { stampCmaPersonId } = await import('@/lib/data')
-        await stampCmaPersonId(slug, kickPersonId)
+        await attachCmaToPerson(slug, kickPersonId)
       }
       if (entries.length > 0) {
         const { queueCmaReadyAlert } = await import('@/lib/crm/broker-alerts')

@@ -102,6 +102,21 @@ export function applySlugStreetDirectional(address: string, slug: string): strin
   return rest.length > 0 ? `${restored}, ${rest.map((s) => s.trim()).join(', ')}` : restored
 }
 
+/** Persist the subject line with the slug-encoded directional still on it. */
+export function formatPersistedCmaAddress(opts: {
+  streetAddress: string
+  city: string
+  postalCode?: string | null
+  slug: string
+}): string {
+  const zip = opts.postalCode?.trim() ? ` ${opts.postalCode.trim()}` : ''
+  const city = opts.city.trim()
+  const line = city
+    ? `${opts.streetAddress.trim()}, ${city}, OR${zip}`.trim()
+    : opts.streetAddress.trim()
+  return applySlugStreetDirectional(line, opts.slug)
+}
+
 /**
  * From a set of cmas rows, the highest-version document for one address —
  * the row every address-keyed reader (outreach worklist, dashboards, send

@@ -1,7 +1,6 @@
 // @no-parity — internal admin surface, no public mockup contract
-// Person entity page. First paint is identity + address from one card read.
-// Stage, tags, assignment, relationships, notes, and comms stream in
-// PersonWorkspace so the page does not hang on skeleton after create.
+// Person entity page. First paint is the detailed add: identity, address,
+// stage, tags, related people, and notes. Messages and tools stream after.
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { notFound, redirect } from 'next/navigation'
@@ -9,12 +8,21 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
 import { getContactRelationships } from '@/lib/data/crm/getContactRelationships'
+import { getPersonNotes } from '@/lib/data/crm/getPersonNotes'
 import { requirePersonInScope } from '@/app/actions/crm'
 import { formatPersonAddress } from '@/lib/crm/person-address'
-import { addNoteFromPerson } from '../actions'
-import { Button } from '@/components/admin/v2'
+import { LEAD_SOURCE_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
+import { Button, SectionHead } from '@/components/admin/v2'
+import {
+  addTagFromPerson,
+  assignBrokerFromPerson,
+  removeTagFromPerson,
+  updateSourceFromPerson,
+  updateStageFromPerson,
+} from '../actions'
 import { PersonIdentityHeader } from './PersonIdentityHeader'
 import { PersonAddressEditor } from './PersonAddressEditor'
+import { FieldEditors } from './FieldEditors'
 import { PersonRelationships } from './PersonRelationships'
 import { PersonNotesAdd } from './PersonNotesAdd'
 import { PersonWorkspace } from './PersonWorkspace'
@@ -25,7 +33,7 @@ function PersonWorkspaceFallback() {
   return (
     <div aria-busy="true" style={{ padding: '8px 0' }}>
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
-        Loading stage, tags, notes, and messages.
+        Loading messages and activity.
       </p>
     </div>
   )
@@ -60,9 +68,10 @@ export default async function PersonPage({
   })
   if (!inScope.ok) notFound()
 
-  const [card, relationships] = await Promise.all([
+  const [card, relationships, notes] = await Promise.all([
     getInboxContactCard(idNum),
     getContactRelationships(idNum),
+    getPersonNotes(idNum),
   ])
   if (!card) {
     const mapped = await getPersonIdByLegacyId(idNum)
@@ -125,8 +134,25 @@ export default async function PersonPage({
         </div>
       ) : null}
 
+      <section aria-label="Stage and tags" style={{ margin: '0 0 20px' }}>
+        <SectionHead>Stage and tags</SectionHead>
+        <FieldEditors
+          stage={card.stage}
+          assignedBroker={card.assignedBroker}
+          canReassign={ctx.role === 'superuser'}
+          source={card.source}
+          sources={[...LEAD_SOURCE_OPTIONS]}
+          tags={card.tags}
+          updateStage={updateStageFromPerson.bind(null, card.personId)}
+          assignBroker={assignBrokerFromPerson.bind(null, card.personId)}
+          updateSource={updateSourceFromPerson.bind(null, card.personId)}
+          addTag={addTagFromPerson.bind(null, card.personId)}
+          removeTag={removeTagFromPerson.bind(null, card.personId)}
+        />
+      </section>
+
       <PersonRelationships personId={card.personId} relationships={relationships} />
-      <PersonNotesAdd addNote={addNoteFromPerson.bind(null, card.personId)} />
+      <PersonNotesAdd personId={card.personId} notes={notes} />
 
       <Suspense fallback={<PersonWorkspaceFallback />}>
         <PersonWorkspace

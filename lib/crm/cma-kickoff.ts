@@ -30,7 +30,7 @@ import 'server-only'
 import { parseContactAddress } from '@/lib/crm/contact-cma-address'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 import { withSendIdempotency } from '@/lib/crm/idempotency'
-import { appendCmaActionNotify, findOpenCmaActionBySlug } from '@/lib/data'
+import { appendCmaActionNotify, attachCmaToPerson, findOpenCmaActionBySlug } from '@/lib/data'
 import { getLatestCmaRowForBaseSlug, resolveWritableCmaSlot } from '@/lib/cma/versions'
 import { getPersonForCmaKickoff, logCmaKickoffTimeline } from '@/lib/data/crm/cmaKickoff'
 
@@ -99,6 +99,10 @@ export async function kickoffCmaCore(input: {
   personId: number
   address: string
   idempotencyKey: string
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
+  intent?: 'sell' | 'rent' | 'both' | null
   /** CRM broker slug of the broker who tapped (from getCrmAccess). */
   actorBroker: string | null
   /** Explicit broker opt-in (Matt decision 2026-07-17): when a reviewable
@@ -186,6 +190,7 @@ export async function kickoffCmaCore(input: {
       if (!slot.existing && slot.priorStatus && !input.buildNewVersion) {
         const latest = await getLatestCmaRowForBaseSlug(slug)
         const docSlug = latest?.slug ?? slug
+        await attachCmaToPerson(docSlug, person.id)
         await logCmaKickoffTimeline({
           personId: person.id,
           title: 'CMA kick-off — existing document found',
@@ -202,9 +207,10 @@ export async function kickoffCmaCore(input: {
         }
       }
       if (slot.existing && !input.buildNewVersion) {
-        const ex = slot.existing.row as { html_path?: unknown; html_content?: unknown }
-        const isNeverBuiltStub = String(ex.html_path ?? '').startsWith('pending:') && !ex.html_content
+        const ex = slot.existing.row as { html_path?: unknown; built_at?: unknown }
+        const isNeverBuiltStub = String(ex.html_path ?? '').startsWith('pending:') && !ex.built_at
         if (!isNeverBuiltStub) {
+          await attachCmaToPerson(slot.slug, person.id)
           await logCmaKickoffTimeline({
             personId: person.id,
             title: 'CMA kick-off — existing document found',
@@ -237,6 +243,12 @@ export async function kickoffCmaCore(input: {
         notifyLead: false,
         notifyBroker: false,
         brokerSmsNotify: { personId: person.id, broker: alertBroker },
+        sellerHomeDetails: {
+          bedrooms: input.beds != null ? String(input.beds) : undefined,
+          bathrooms: input.baths != null ? String(input.baths) : undefined,
+          squareFeet: input.sqft != null ? String(input.sqft) : undefined,
+          intent: input.intent ?? undefined,
+        },
       })
       if (!created.ok) {
         // TOCTOU fallback (review MED): a concurrent kicker can win the race

@@ -297,7 +297,12 @@ export async function resolveCmaSubject(opts: {
     if (rows.length > 0) {
       const pool = await listingsForProperty(rows[0]!)
       const best = pickMostRecentListing(pool)
-      return { subject: rowToSubject(best), trace: subjectTrace(`Entered by MLS ${opts.mlsNumber.trim()}.`, best, pool.length) }
+      const subject = rowToSubject(best)
+      if (opts.rawAddress?.trim()) {
+        const parsed = parseCmaAddress(opts.rawAddress, opts.city, opts.postalCode)
+        if (parsed) subject.streetAddress = applyEnteredStreetDirectional(subject.streetAddress, parsed)
+      }
+      return { subject, trace: subjectTrace(`Entered by MLS ${opts.mlsNumber.trim()}.`, best, pool.length) }
     }
   }
   const raw = opts.rawAddress?.trim()
@@ -359,6 +364,23 @@ export async function resolveCmaSubject(opts: {
  * square footage — caught by the adversarial CMA audit). Implausible years
  * resolve to null so no report states an impossible fact.
  */
+/** Broker-entered beds/baths/sqft win when MLS left them blank or stale. */
+export function applySubjectFactOverrides(
+  subject: CmaSubject,
+  facts?: { beds?: number | null; baths?: number | null; sqft?: number | null } | null,
+): CmaSubject {
+  if (!facts) return subject
+  const beds = facts.beds != null && Number.isFinite(facts.beds) && facts.beds > 0 ? Math.round(facts.beds) : null
+  const baths = facts.baths != null && Number.isFinite(facts.baths) && facts.baths > 0 ? facts.baths : null
+  const sqft = facts.sqft != null && Number.isFinite(facts.sqft) && facts.sqft > 0 ? Math.round(facts.sqft) : null
+  return {
+    ...subject,
+    beds: beds ?? subject.beds,
+    baths: baths ?? subject.baths,
+    sqft: sqft ?? subject.sqft,
+  }
+}
+
 export function saneYearBuilt(y: number | null): number | null {
   if (y == null) return null
   const maxYear = new Date().getFullYear() + 2

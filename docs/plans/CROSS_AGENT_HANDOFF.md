@@ -4,9 +4,27 @@
 
 # Current — 2026-08-19 (cursor-cloud) — 648 CMA send via CRM compose
 
-**Surface:** Cursor Cloud. Branch `cursor/cma-crm-compose-send-4add`. Loop stays **DISARMED**. 648 CMA (`cma-648-se-douglas`, person 63285) attaches from CRM compose: PDF / text-me / email draft. Review + Send Center + contact CMA card + owned-home card open Messages, not Gmail/mailto/one-click send. Drafts stay private. SE stays on the address. Do not email or text the household. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Branch `cursor/cma-crm-compose-send-4add` PR #134. Loop stays **DISARMED**. 648 CMA (`cma-648-se-douglas`, person 63285) attaches from CRM compose: PDF / text-me / email draft. Review + Send Center + contact CMA card + owned-home card open Messages, not Gmail/mailto/one-click send. Merged latest main (person-link + SE + slim review). Drafts stay private. Do not email or text the household. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — CMA person-link + SE + slim review
+
+**Surface:** Cursor Cloud. Merged to `main` @ `23f936a51`. Vercel production **READY** `FnhKRD21AK26xTzUs4wTnKau6K6w`. Live `cma-648-se-douglas` is `person_id=63285` Odessa, `client_name=Odessa`, address `648 SE Douglas, Bend, OR 97702`, beds/baths/sqft 3/1/1056, `Intent: sell`. Review header reads the linked person. Rebuild keeps `person_id` and SE. Kickoff/rebuild/manual build collect beds/baths/sqft + rent-vs-sell. Admin actions and version-chain reads no longer `select(*)`. Review page does not iframe the document. Relationships + address-on-quick-add stay on `main`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit, database-canonical-reference.
+
+# Prior — 2026-08-19 (cursor-cloud) — People file related people + notes
+
+**Surface:** Cursor Cloud. Merged to `main` @ `7a30d1ef8`. Vercel production **READY** `2PxU2QeAJnU5Qe5BF9ADdYTEefuq`. Loop stays **DISARMED**. Live file friction after Nealon `63287` + Jane `63290` next to Odessa `63285`: related-people form now first-paints open; notes list + `savePersonNoteAction` (no People-list revalidate); stage/tags on first paint; quick add is name+phone plus email or street, then Opening success. Odessa↔Nealon spouse and Jane parent of Odessa already in `crm_relationships`. Odessa notes were in `crm_timeline` and hidden behind the workspace hang. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — People New contact first-paint
+
+**Surface:** Cursor Cloud. Merged to `main` @ `cea4bde19`. Vercel production **READY** `94hZ3rcsAmuPze5JTWockB7Ejnx4`. Loop stays **DISARMED**. Live friction: add-person hid behind Quick actions / New List on `/admin/crm`. `AddPersonCard` now first-paints above the People list + CRM loading. Header New contact scrolls to `#add-person`. Quick actions stay; New contact lands `/admin/crm#add-person`. Gate `ci:crm-add-person`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
 
 # Prior — 2026-08-19 (cursor-cloud) — hub reject + Foley investor HOA
 

@@ -18,11 +18,17 @@ import { resolveCmaSubject } from '@/lib/cma/subject'
 import { slugifyAddress } from '@/lib/cma-request'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { resolveWritableCmaSlot } from '@/lib/cma/versions'
+import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
+import { parsePositiveInt, parsePositiveNumber, resolveCmaClientName } from '@/lib/cma/client-link'
 import {
-  getCmaAdminRowBySlug,
+  attachCmaToPerson,
+  getCmaAdminReviewRowBySlug,
+  getPersonForCmaKickoff,
+  searchPeopleByName,
   updateCmaRowFieldsBySlug,
   deleteCmaRowById,
 } from '@/lib/data'
+import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 async function requireAdmin(): Promise<string | null> {
   const session = await getSession()
@@ -45,6 +51,11 @@ export type BuildCmaAdminInput = {
   clientEmail?: string | null
   clientPhone?: string | null
   brokerSlug?: string | null
+  personId?: number | null
+  beds?: number | string | null
+  baths?: number | string | null
+  sqft?: number | string | null
+  intent?: string | null
 }
 
 export async function buildCmaAdminAction(
@@ -81,20 +92,37 @@ export async function buildCmaAdminAction(
     if (!slot.ok) return { data: null, error: slot.error }
     slug = slot.slug
 
+    const personId = parsePositiveInt(input.personId ?? null)
+    const linked = personId ? await getPersonForCmaKickoff(personId) : null
+    const intent = isCmaClientIntent(input.intent) ? input.intent : null
     const result = await buildCma({
       slug,
       mlsNumber: mls,
       rawAddress,
       client: {
-        name: input.clientName?.trim() || null,
-        email: input.clientEmail?.trim().toLowerCase() || null,
-        phone: input.clientPhone?.trim() || null,
-        notes: null,
+        name: resolveCmaClientName({
+          enteredName: input.clientName,
+          linkedPersonName: linked?.name,
+        }),
+        email: input.clientEmail?.trim().toLowerCase() || linked?.primaryEmail || null,
+        phone: input.clientPhone?.trim() || linked?.primaryPhone || null,
+        notes: applyCmaClientIntent(null, intent),
       },
       brokerSlug: input.brokerSlug?.trim() || null,
       requestSource: 'admin-manual',
+      personId,
+      subjectFacts: {
+        beds: parsePositiveInt(input.beds ?? null),
+        baths: parsePositiveNumber(input.baths ?? null),
+        sqft: parsePositiveInt(input.sqft ?? null),
+      },
+      clientIntent: intent,
     })
     if (!result.ok) return { data: null, error: result.error ?? 'Build failed' }
+    if (personId) {
+      await attachCmaToPerson(slug, personId, { replace: true })
+      revalidatePerson(personId)
+    }
     refresh(slug)
     return { data: { slug }, error: null }
   } catch (e) {
@@ -110,6 +138,11 @@ export type RebuildCmaInput = {
   clientName?: string | null
   clientEmail?: string | null
   clientPhone?: string | null
+  personId?: number | null
+  beds?: number | string | null
+  baths?: number | string | null
+  sqft?: number | string | null
+  intent?: string | null
   priceOverride?: number | null
   brokerSlug?: string | null
 }
@@ -147,13 +180,21 @@ export async function rebuildCmaAction(
   try {
     if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
     const slug = input.slug.trim().toLowerCase()
-    const row = await getCmaAdminRowBySlug(slug)
+    const row = await getCmaAdminReviewRowBySlug(slug)
     if (!row) return { data: null, error: 'CMA not found' }
 
     const priceOverride =
       input.priceOverride != null && Number.isFinite(input.priceOverride) && input.priceOverride > 0
         ? Math.round(input.priceOverride)
         : null
+
+    const personId =
+      parsePositiveInt(input.personId ?? null) ??
+      (row.person_id == null ? null : Number(row.person_id))
+    const linked = personId ? await getPersonForCmaKickoff(personId) : null
+    const intent = isCmaClientIntent(input.intent)
+      ? input.intent
+      : parseCmaClientIntent((row.client_notes as string | null) ?? null)
 
     const result = await buildCma({
       slug,
@@ -164,18 +205,36 @@ export async function rebuildCmaAction(
       ) || null,
       city: (row.subject_city as string | null) ?? null,
       client: {
-        name: (input.clientName ?? (row.client_name as string | null))?.trim() || null,
-        email: (input.clientEmail ?? (row.client_email as string | null))?.trim().toLowerCase() || null,
-        phone: (input.clientPhone ?? (row.client_phone as string | null))?.trim() || null,
+        name: resolveCmaClientName({
+          enteredName: input.clientName,
+          storedName: row.client_name as string | null,
+          linkedPersonName: linked?.name,
+        }),
+        email:
+          (input.clientEmail ?? (row.client_email as string | null))?.trim().toLowerCase() ||
+          linked?.primaryEmail ||
+          null,
+        phone: (input.clientPhone ?? (row.client_phone as string | null))?.trim() || linked?.primaryPhone || null,
         notes: (row.client_notes as string | null) ?? null,
       },
       brokerSlug: input.brokerSlug?.trim() || (row.broker_slug as string | null),
       priceOverride,
       requestSource: 'admin-rebuild',
+      personId,
+      subjectFacts: {
+        beds: parsePositiveInt(input.beds ?? (row.subject_beds as number | null)),
+        baths: parsePositiveNumber(input.baths ?? (row.subject_baths as number | null)),
+        sqft: parsePositiveInt(input.sqft ?? (row.subject_sqft as number | null)),
+      },
+      clientIntent: isCmaClientIntent(intent) ? intent : undefined,
       // Preserve the document type — a rebuild of an expired audit stays an audit.
       docType: (row.doc_type as string | null) === 'expired-audit' ? 'expired-audit' : 'cma',
     })
     if (!result.ok) return { data: null, error: result.error ?? 'Rebuild failed' }
+    if (personId) {
+      await attachCmaToPerson(slug, personId)
+      revalidatePerson(personId)
+    }
     // A rebuild returns the CMA to draft for a fresh review before any send.
     refresh(slug)
     return { data: { slug }, error: null }
@@ -194,9 +253,10 @@ export async function approveCmaAction(
   try {
     if (!(await requireAdmin())) return { error: 'Unauthorized' }
     const safeSlug = slug.trim().toLowerCase()
-    const row = await getCmaAdminRowBySlug(safeSlug)
+    const row = await getCmaAdminReviewRowBySlug(safeSlug)
     if (!row) return { error: 'CMA not found' }
-    if (!row.html_content && !(row.html_path as string | null)?.startsWith('public/cmas/')) {
+    const htmlPath = String(row.html_path ?? '')
+    if (!htmlPath.startsWith('db:cmas.html_content:') && !htmlPath.startsWith('public/cmas/')) {
       return { error: 'This CMA has no built document yet. Build it before approving.' }
     }
     // Accuracy gate (mirrors app/actions/bpo-admin.ts finalizeBpoAction): a
@@ -232,7 +292,7 @@ export async function archiveCmaAction(slug: string): Promise<{ error: string | 
   try {
     if (!(await requireAdmin())) return { error: 'Unauthorized' }
     const safeSlug = slug.trim().toLowerCase()
-    const row = await getCmaAdminRowBySlug(safeSlug)
+    const row = await getCmaAdminReviewRowBySlug(safeSlug)
     if (!row) return { error: 'CMA not found' }
     // status 'archived' drives the /admin/cmas facet; archived_at is the flag
     // the per-contact reads (getContactCmas) filter on. Set both together.
@@ -253,7 +313,7 @@ export async function unarchiveCmaAction(slug: string): Promise<{ error: string 
   try {
     if (!(await requireAdmin())) return { error: 'Unauthorized' }
     const safeSlug = slug.trim().toLowerCase()
-    const row = await getCmaAdminRowBySlug(safeSlug)
+    const row = await getCmaAdminReviewRowBySlug(safeSlug)
     if (!row) return { error: 'CMA not found' }
     // Restore the pre-archive status from the row's own lifecycle timestamps.
     const status = row.delivered_at ? 'delivered' : row.finalized_at ? 'finalized' : 'draft'
@@ -334,7 +394,7 @@ export async function prepareCmaSendAction(slug: string): Promise<{
     const safeSlug = slug.trim().toLowerCase()
     const preview = await prepareCmaSendPreview(safeSlug)
     if (!preview.ok) return { data: null, error: preview.error }
-    const row = await getCmaAdminRowBySlug(safeSlug)
+    const row = await getCmaAdminReviewRowBySlug(safeSlug)
     const deliveredAt = (row?.delivered_at as string | null) ?? null
     return {
       data: {
@@ -352,5 +412,49 @@ export async function prepareCmaSendAction(slug: string): Promise<{
   } catch (e) {
     console.error('[prepareCmaSendAction]', e)
     return { data: null, error: 'Could not prepare the send.' }
+  }
+}
+
+export async function searchCmaPersonAction(
+  query: string,
+): Promise<{ data: Array<{ id: number; name: string | null; email: string | null }>; error: string | null }> {
+  try {
+    if (!(await requireAdmin())) return { data: [], error: 'Unauthorized' }
+    const hits = await searchPeopleByName({ query, brokerScope: null, limit: 8 })
+    return { data: hits, error: null }
+  } catch (e) {
+    console.error('[searchCmaPersonAction]', e)
+    return { data: [], error: 'Search failed' }
+  }
+}
+
+export async function attachCmaPersonAction(input: {
+  slug: string
+  personId: number
+}): Promise<{
+  data: { personId: number; clientName: string | null; clientEmail: string | null; clientPhone: string | null } | null
+  error: string | null
+}> {
+  try {
+    if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
+    const slug = input.slug.trim().toLowerCase()
+    const personId = parsePositiveInt(input.personId)
+    if (!slug || !personId) return { data: null, error: 'Pick a person to link.' }
+    const result = await attachCmaToPerson(slug, personId, { replace: true })
+    if (!result.ok) return { data: null, error: result.error }
+    revalidatePerson(personId)
+    refresh(slug)
+    return {
+      data: {
+        personId: result.personId,
+        clientName: result.clientName,
+        clientEmail: result.clientEmail,
+        clientPhone: result.clientPhone,
+      },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[attachCmaPersonAction]', e)
+    return { data: null, error: 'Could not link this CMA to the person.' }
   }
 }

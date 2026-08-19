@@ -41,9 +41,16 @@ describe('create-contact quick add', () => {
     })
   })
 
-  it('rejects a missing email', () => {
+  it('accepts name + phone + street without email', () => {
+    const input = parseCreateContactForm(
+      fd({ firstName: 'Nealon', phone: '5415550101', street: '123 NW Bond St' }),
+    )
+    expect(validateCreateContact(input)).toEqual({ ok: true })
+  })
+
+  it('rejects missing email and street', () => {
     const input = parseCreateContactForm(fd({ firstName: 'Odessa', phone: '5415550100' }))
-    expect(validateCreateContact(input)).toEqual({ ok: false, error: 'Email required' })
+    expect(validateCreateContact(input)).toEqual({ ok: false, error: 'Add an email, or a street address' })
   })
 
   it('rejects a missing phone', () => {

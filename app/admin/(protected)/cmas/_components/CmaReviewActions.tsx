@@ -17,6 +17,7 @@
  */
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button, ConfirmDialog, SelectField, TextField } from '@/components/admin/v2'
@@ -29,7 +30,10 @@ import {
   archiveCmaAction,
   unarchiveCmaAction,
   deleteCmaAction,
+  searchCmaPersonAction,
+  attachCmaPersonAction,
 } from '@/app/actions/cma-admin'
+import { cmaClientIntentLabel, isCmaClientIntent, type CmaClientIntent } from '@/lib/cma/client-intent'
 
 export interface CmaReviewActionsProps {
   cmaId: string
@@ -38,12 +42,17 @@ export interface CmaReviewActionsProps {
   clientName: string | null
   clientEmail: string | null
   clientPhone: string | null
+  personId: number | null
+  personName: string | null
+  subjectBeds: number | null
+  subjectBaths: number | null
+  subjectSqft: number | null
+  clientIntent: CmaClientIntent | null
   recommendedList: number | null
   priceOverride: number | null
   brokerSlug: string | null
   brokers: Array<{ slug: string; displayName: string }>
   hasDocument: boolean
-  personId: number | null
 }
 
 const usd = formatPriceExact
@@ -58,13 +67,21 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
     props.priceOverride != null ? String(props.priceOverride) : '',
   )
   const [brokerSlug, setBrokerSlug] = useState(props.brokerSlug ?? props.brokers[0]?.slug ?? 'matthew-ryan')
+  const [personId, setPersonId] = useState<number | null>(props.personId)
+  const [personName, setPersonName] = useState(props.personName ?? '')
+  const [personQuery, setPersonQuery] = useState('')
+  const [personHits, setPersonHits] = useState<Array<{ id: number; name: string | null; email: string | null }>>([])
+  const [beds, setBeds] = useState(props.subjectBeds != null ? String(props.subjectBeds) : '')
+  const [baths, setBaths] = useState(props.subjectBaths != null ? String(props.subjectBaths) : '')
+  const [sqft, setSqft] = useState(props.subjectSqft != null ? String(props.subjectSqft) : '')
+  const [intent, setIntent] = useState<CmaClientIntent | ''>(props.clientIntent ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const isDraft = props.status === 'draft'
   const isArchived = props.status === 'archived'
   const composeHref =
-    props.personId && props.hasDocument
-      ? cmaCrmComposeHref({ personId: props.personId, slug: props.slug, channel: 'email' })
+    personId && props.hasDocument
+      ? cmaCrmComposeHref({ personId, slug: props.slug, channel: 'email' })
       : null
 
   function rebuild() {
@@ -79,6 +96,11 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         clientName: clientName.trim() || null,
         clientEmail: clientEmail.trim() || null,
         clientPhone: clientPhone.trim() || null,
+        personId,
+        beds: beds.trim() || null,
+        baths: baths.trim() || null,
+        sqft: sqft.trim() || null,
+        intent: intent || null,
         priceOverride: override,
       })
       if (error) toast.error(error)
@@ -143,9 +165,96 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
   return (
     <div className="space-y-5">
       <div className="space-y-4">
+        <div className="space-y-1.5">
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            {personId
+              ? `Linked person: ${personName || clientName || `people/${personId}`}`
+              : 'No person linked. Search and attach a CRM contact.'}
+          </p>
+          {personId ? (
+            <Link href={`/admin/people/${personId}`} style={{ color: 'var(--a-accent)', fontSize: 'var(--a-text-xs)' }}>
+              Open person file
+            </Link>
+          ) : null}
+          <TextField
+            label="Find person"
+            value={personQuery}
+            onChange={(e) => setPersonQuery(e.target.value)}
+            hint="Name, at least two characters. This is the person-link, not free-text client name."
+          />
+          <Button
+            type="button"
+            variant="quiet"
+            disabled={isPending || personQuery.trim().length < 2}
+            onClick={() => {
+              startTransition(async () => {
+                const { data, error } = await searchCmaPersonAction(personQuery)
+                if (error) toast.error(error)
+                else setPersonHits(data)
+              })
+            }}
+          >
+            Search people
+          </Button>
+          {personHits.length > 0 ? (
+            <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
+              {personHits.map((hit) => (
+                <li key={hit.id} style={{ marginBottom: 6 }}>
+                  <Button
+                    type="button"
+                    variant="quiet"
+                    className="w-full"
+                    disabled={isPending}
+                    onClick={() => {
+                      startTransition(async () => {
+                        const { data, error } = await attachCmaPersonAction({
+                          slug: props.slug,
+                          personId: hit.id,
+                        })
+                        if (error || !data) {
+                          toast.error(error ?? 'Could not link this person.')
+                          return
+                        }
+                        setPersonId(data.personId)
+                        setPersonName(data.clientName ?? hit.name ?? '')
+                        if (data.clientName) setClientName(data.clientName)
+                        if (data.clientEmail) setClientEmail(data.clientEmail)
+                        if (data.clientPhone) setClientPhone(data.clientPhone)
+                        setPersonHits([])
+                        setPersonQuery('')
+                        toast.success(`Linked to ${data.clientName ?? hit.name ?? `people/${hit.id}`}.`)
+                        router.refresh()
+                      })
+                    }}
+                  >
+                    {hit.name ?? `people/${hit.id}`}
+                    {hit.email ? ` · ${hit.email}` : ''}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+
         <TextField label="Client name" value={clientName} onChange={(e) => setClientName(e.target.value)} />
         <TextField label="Client email" type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
         <TextField label="Client phone" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <TextField label="Beds" inputMode="numeric" value={beds} onChange={(e) => setBeds(e.target.value)} />
+          <TextField label="Baths" inputMode="decimal" value={baths} onChange={(e) => setBaths(e.target.value)} />
+          <TextField label="Sqft" inputMode="numeric" value={sqft} onChange={(e) => setSqft(e.target.value)} />
+        </div>
+        <SelectField
+          label="Rent or sell"
+          value={intent}
+          onChange={(e) => setIntent(isCmaClientIntent(e.target.value) ? e.target.value : '')}
+        >
+          <option value="">Not set</option>
+          <option value="sell">{cmaClientIntentLabel('sell')}</option>
+          <option value="rent">{cmaClientIntentLabel('rent')}</option>
+          <option value="both">{cmaClientIntentLabel('both')}</option>
+        </SelectField>
 
         <div className="space-y-1.5">
           <SelectField label="Signing broker" value={brokerSlug} onChange={(e) => setBrokerSlug(e.target.value)}>
@@ -200,12 +309,12 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
             Send from CRM
           </Button>
         )}
-        {!props.personId ? (
+        {!personId ? (
           <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
             Tie this CMA to a CRM person to attach the PDF in Messages.
           </p>
         ) : null}
-        {props.personId && !props.hasDocument ? (
+        {personId && !props.hasDocument ? (
           <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
             Rebuild the document before attaching it in compose.
           </p>

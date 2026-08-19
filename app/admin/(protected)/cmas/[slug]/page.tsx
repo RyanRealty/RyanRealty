@@ -43,7 +43,8 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { getCmaAdminReviewRowBySlug, listActiveBrokersForCma } from '@/lib/data'
+import { getCmaAdminReviewRowBySlug, getPersonForCmaKickoff, listActiveBrokersForCma } from '@/lib/data'
+import { parseCmaClientIntent } from '@/lib/cma/client-intent'
 import {
   EntityTitle,
   ReportNumbers,
@@ -95,6 +96,9 @@ export default async function AdminCmaReviewPage({
   ])
   if (!row) notFound()
   const subjectAddress = applySlugStreetDirectional(String(row.subject_address ?? ''), safeSlug)
+  const personId = row.person_id == null ? null : Number(row.person_id)
+  const linkedPerson = personId ? await getPersonForCmaKickoff(personId) : null
+  const clientLabel = linkedPerson?.name || (row.client_name as string | null) || null
 
   const brokers = brokerRows.map((b) => ({
     slug: String(b.slug),
@@ -146,8 +150,21 @@ export default async function AdminCmaReviewPage({
       </div>
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '4px 0 0' }}>
-        {row.client_name ? `Prepared for ${String(row.client_name)}` : 'No client on file'}
-        {row.client_email ? ` · ${String(row.client_email)}` : ''}
+        {clientLabel && personId ? (
+          <>
+            Prepared for{' '}
+            <Link href={`/admin/people/${personId}`} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+              {clientLabel}
+            </Link>
+          </>
+        ) : clientLabel ? (
+          `Prepared for ${clientLabel}`
+        ) : (
+          'No client on file'
+        )}
+        {(linkedPerson?.primaryEmail || row.client_email)
+          ? ` · ${String(linkedPerson?.primaryEmail || row.client_email)}`
+          : ''}
         {row.broker_slug ? ` · signed by ${String(row.broker_slug)}` : ''}
         {` · built ${formatDate((row.built_at as string | null) ?? (row.created_at as string | null))}`}
       </p>
@@ -211,15 +228,20 @@ export default async function AdminCmaReviewPage({
         cmaId={String(row.id)}
         slug={safeSlug}
         status={status}
-        clientName={(row.client_name as string | null) ?? null}
-        clientEmail={(row.client_email as string | null) ?? null}
-        clientPhone={(row.client_phone as string | null) ?? null}
+        clientName={clientLabel}
+        clientEmail={(linkedPerson?.primaryEmail || (row.client_email as string | null)) ?? null}
+        clientPhone={(linkedPerson?.primaryPhone || (row.client_phone as string | null)) ?? null}
+        personId={personId}
+        personName={linkedPerson?.name ?? null}
+        subjectBeds={(row.subject_beds as number | null) ?? null}
+        subjectBaths={(row.subject_baths as number | null) ?? null}
+        subjectSqft={(row.subject_sqft as number | null) ?? null}
+        clientIntent={parseCmaClientIntent((row.client_notes as string | null) ?? null)}
         recommendedList={(row.recommended_list as number | null) ?? null}
         priceOverride={(row.price_override as number | null) ?? null}
         brokerSlug={(row.broker_slug as string | null) ?? null}
         brokers={brokers}
         hasDocument={hasDocument}
-        personId={row.person_id == null ? null : Number(row.person_id)}
       />
 
       <SectionHead>Listing page</SectionHead>
@@ -238,20 +260,10 @@ export default async function AdminCmaReviewPage({
 
       <SectionHead>Document preview</SectionHead>
       {previewSrc ? (
-        <div
-          style={{
-            overflow: 'hidden',
-            borderRadius: 0,
-            border: '1px solid var(--a-border)',
-            background: 'var(--a-inset)',
-          }}
-        >
-          <iframe
-            src={previewSrc}
-            title={`CMA preview for ${subjectAddress || safeSlug}`}
-            style={{ width: '100%', height: '75vh', minHeight: 600, background: 'var(--a-bg)', border: 0 }}
-          />
-        </div>
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          Open Review CMA above to read the document. The preview is not inlined here so this
+          page stays fast.
+        </p>
       ) : (
         <p
           style={{

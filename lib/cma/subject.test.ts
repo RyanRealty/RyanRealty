@@ -125,6 +125,22 @@ describe('applyEnteredStreetDirectional', () => {
   })
 })
 
+describe('applySubjectFactOverrides', () => {
+  it('fills missing beds/baths/sqft from the broker form', async () => {
+    const { applySubjectFactOverrides, rowToSubject } = await import('./subject')
+    const subject = rowToSubject({
+      ...IOWA_2021,
+      BedroomsTotal: null,
+      BathroomsTotal: null,
+      TotalLivingAreaSqFt: null,
+    })
+    const next = applySubjectFactOverrides(subject, { beds: 3, baths: 1, sqft: 1056 })
+    expect(next.beds).toBe(3)
+    expect(next.baths).toBe(1)
+    expect(next.sqft).toBe(1056)
+  })
+})
+
 describe('saneYearBuilt', () => {
   it('nulls the sqft-in-year-field MLS data-entry error (live 2026-07-11 case)', async () => {
     const { saneYearBuilt } = await import('@/lib/cma/subject')
