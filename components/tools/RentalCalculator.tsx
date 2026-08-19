@@ -56,6 +56,8 @@ export type RentalCalculatorProps = {
   initialPropertyTaxesYear?: number
   initialDownPaymentPct?: number
   initialInterestRate?: number
+  /** Listing HOA from publishRentalHoaMonthly. Standalone tool leaves this unset. */
+  initialHoaMonthly?: number
   /** Shown above the calculator on listing embeds, e.g. "2954 NW Awbrey Rd". */
   propertyLabel?: string
   /** Estimated rent to surface as a hint and pre-fill. */
@@ -197,6 +199,7 @@ export default function RentalCalculator({
   initialPropertyTaxesYear,
   initialDownPaymentPct,
   initialInterestRate,
+  initialHoaMonthly,
   propertyLabel,
   rentEstimate,
   embedded = false,
@@ -232,7 +235,11 @@ export default function RentalCalculator({
   const [mgmtPct, setMgmtPct] = useState(8)
   const [maintPct, setMaintPct] = useState(5)
   const [capexPct, setCapexPct] = useState(5)
-  const [hoaMonthly, setHoaMonthly] = useState(0)
+  const [hoaMonthly, setHoaMonthly] = useState(
+    initialHoaMonthly != null && Number.isFinite(initialHoaMonthly) && initialHoaMonthly > 0
+      ? Math.round(initialHoaMonthly)
+      : 0,
+  )
 
   const [appreciationPct, setAppreciationPct] = useState(3)
   const [rentGrowthPct, setRentGrowthPct] = useState(2)

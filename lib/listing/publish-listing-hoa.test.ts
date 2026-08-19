@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatListingHoa, publishListingHoa } from './publish-listing-hoa'
+import { formatListingHoa, publishListingHoa, publishRentalHoaMonthly } from './publish-listing-hoa'
 
 describe('publishListingHoa', () => {
   it('keeps Foley / 7th / Canyons founding cases exact', () => {
@@ -33,5 +33,12 @@ describe('publishListingHoa', () => {
   it('withholds a missing or non-positive fee', () => {
     expect(publishListingHoa({ hoaMonthly: 0, associationFee: 0 })).toBeNull()
     expect(publishListingHoa({ hoaMonthly: null, associationFee: null })).toBeNull()
+  })
+
+  it('Foley investor: rental HOA seeds the published monthly, not $0', () => {
+    expect(publishRentalHoaMonthly({ hoaMonthly: 21.67 })).toBe(22)
+    expect(publishRentalHoaMonthly({ hoaMonthly: 22 })).toBe(22)
+    expect(publishRentalHoaMonthly({ hoaMonthly: null, associationFee: null })).toBe(0)
+    expect(publishRentalHoaMonthly({ hoaMonthly: 0 })).toBe(0)
   })
 })

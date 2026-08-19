@@ -7,6 +7,9 @@
  *
  * Prefer the ingest monthly (`hoa_monthly`). Else normalize AssociationFee
  * by frequency. Display is exact whole dollars, never nearest-thousand.
+ * Facts, True cost, and the listing rental-analysis HOA field share that
+ * monthly. A missing fee withholds on Facts/True cost and seeds $0 in the
+ * investor calculator (no listing on the standalone tool).
  */
 
 export type PublishedListingHoa = {
@@ -48,4 +51,17 @@ export function publishListingHoa(input: {
 
 export function formatListingHoa(hoa: PublishedListingHoa): string {
   return `$${Math.round(hoa.monthly).toLocaleString('en-US')} per month`
+}
+
+/**
+ * Seed for the listing rental-analysis HOA field. Same monthly Facts and
+ * True cost publish. Missing HOA stays 0 so the standalone calculator is
+ * unchanged. Foley 220221409: hoa_monthly 21.67 printed $22, investor
+ * input stayed 0 (fleet:investor listing-detail 2026-08-19).
+ */
+export function publishRentalHoaMonthly(
+  input: Parameters<typeof publishListingHoa>[0],
+): number {
+  const hoa = publishListingHoa(input)
+  return hoa ? Math.round(hoa.monthly) : 0
 }
