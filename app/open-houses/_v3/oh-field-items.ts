@@ -16,6 +16,7 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHo
 
     const when = openHouseWhen(oh.eventDate, oh.startTime, oh.endTime)
     const specs = [
+      when || null,
       oh.beds != null ? `${oh.beds} bd` : null,
       oh.baths != null ? `${oh.baths} ba` : null,
       oh.sqft != null ? `${oh.sqft.toLocaleString('en-US')} sqft` : null,

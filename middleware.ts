@@ -7,6 +7,8 @@ import {
   resolveSubdivisionAreaRedirect,
 } from '@/lib/subdivision-area-redirects'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
+import { hasSupabaseAuthCookie } from '@/lib/auth/has-supabase-auth-cookie'
+import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import resortCommunitiesRegistry from '@/data/resort-communities.json'
 
 /**
@@ -537,6 +539,20 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       status: 403,
       headers: { 'x-bot-screen': botBlockReason, 'cache-control': 'no-store' },
     })
+  }
+
+  // ─── (0e) Signed-out /account → hard 307 before the shell streams ─────
+  // App Router getSession()+redirect() can flush metadata first and ship HTTP
+  // 200 with an empty Account shell. Same class as the subdivision soft-404
+  // note above: a real 3xx has to happen here.
+  if (pathname === '/account' || pathname.startsWith('/account/')) {
+    if (!hasSupabaseAuthCookie(request.cookies.getAll())) {
+      const login = url.clone()
+      login.pathname = '/login'
+      const next = safeRedirectPath(`${pathname}${url.search || ''}`, '/account')
+      login.search = `?next=${encodeURIComponent(next)}`
+      return NextResponse.redirect(login, 307)
+    }
   }
 
   // ─── (1) Host-based rewrite for LP subdomains ──────────────────────────

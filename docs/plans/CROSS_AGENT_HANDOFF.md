@@ -2,11 +2,11 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — CRM new-contact + relationships
+# Current — 2026-08-19 (cursor-cloud) — FLEET-PUNCH leftover burn
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Quick add is name + email + phone. Address is `crm_people.addresses`, never a note. Create lands on person detail. Detail first-paints identity, address, Relationships (search + type + save both sides), and a note form. Odessa 63285 linked spouse Nealon 63287 and parent Jane 63290. `main` @ `553c89fee`. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Do not re-arm. `main` @ `0957bb6cb` READY `dpl_XYyzoRaJasFixotdGFLTCF4Qf4Zt`. Leftover punch still open on `3a6198cd`. This branch: plat titles, OH dates in list meta, signed-out `/account` 307, genuine-zero nearby source. Leave sitemaps + money-path p0s. No CMA. No client mail.
 
-**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
+**Skills read:** CROSS_AGENT_HANDOFF, git-commit, public-product-os (folded).
 
 # Prior — 2026-08-19 (cursor-cloud) — leftover Triple / street 0 / closings / plat crumb
 
