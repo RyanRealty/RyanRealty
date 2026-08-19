@@ -36,7 +36,7 @@
 
 **Surface:** Cursor Cloud `cursor/site-texting-1eb2` PR **128**. Loop stays **DISARMED**. Rebased onto `main` after PR 127. CRM compose is the only send path. No Jane/Odessa/Nealon sends. No Gmail fallback. No re-arm. Leave `LOOP_SENTINEL` off.
 
-**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, git-commit.
+**Skills read:** admin-product-os, frontend-design, git-commit.
 
 # Prior — 2026-08-19 (cursor-cloud) — CMA phone open + PDF
 

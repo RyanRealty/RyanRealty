@@ -17,7 +17,7 @@ function QueueFallback() {
     <nav className="av2-convlist" aria-label="Conversations">
       <div style={{ padding: '12px 16px 8px' }}>
         <Link href="/admin/messages/new" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-          New text
+          New message
         </Link>
       </div>
       <div className="av2-sysnote" style={{ padding: 24 }}>
@@ -61,10 +61,10 @@ export default async function MessagesPage({
         <section className="av2-thread" aria-label="No conversation selected">
           <div className="av2-scroll">
             <div className="av2-sysnote">
-              Pick a conversation, or start a new text.
+              Pick a conversation, or start a new message.
               <div style={{ marginTop: 12 }}>
                 <Link href="/admin/messages/new" style={{ textDecoration: 'none' }}>
-                  <Button variant="quiet">New text</Button>
+                  <Button variant="quiet">New message</Button>
                 </Link>
               </div>
             </div>

@@ -30,6 +30,7 @@ import { EMPTY_SEGMENT, type CrmSegment, type CrmNode } from '@/lib/crm/segment-
 import type { TriageItem } from '@/lib/data/crm/getInboundTriage'
 import { createContactAddress, parseCreateContactForm, validateCreateContact } from '@/lib/crm/create-contact'
 import { persistCreatedContactAddress, resolveCreatedPersonId } from '@/lib/crm/persist-created-contact'
+import { decideGroupSmsFallback, GROUP_THREAD_FAILED } from '@/lib/crm/compose-group'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
 
@@ -805,6 +806,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   // opt-out (opt-outs are always recorded against a resolved contact).
   const rawPhoneInput = String(formData.get('recipientPhones') ?? '')
     .split(',').map((s) => s.trim()).filter(Boolean)
+  const explicitGroupThread = String(formData.get('groupThread') ?? '') === '1'
 
   // TCPA quiet hours: one time-based check for the whole send (it also covers
   // the carrier-group path below, which cannot ride the per-person chokepoint).
@@ -936,8 +938,14 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
           members.forEach((m) => { if (m.rid !== null) revalidateCrm(m.rid) })
           return { ok: true }
         }
+        const fan = decideGroupSmsFallback({ explicitGroupThread, groupFormed: false })
+        if (!fan.allowFanOut) return { ok: false, error: fan.error ?? group.error }
         console.warn('[crm] group MMS failed, falling back to broadcast:', group.error)
+      } else if (explicitGroupThread) {
+        return { ok: false, error: GROUP_THREAD_FAILED }
       }
+    } else if (explicitGroupThread) {
+      return { ok: false, error: GROUP_THREAD_FAILED }
     }
   }
 

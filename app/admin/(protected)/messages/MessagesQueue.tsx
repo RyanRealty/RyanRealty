@@ -14,7 +14,7 @@ export async function MessagesQueue({
     <nav className="av2-convlist" aria-label="Conversations">
       <div style={{ padding: '12px 16px 8px' }}>
         <Link href="/admin/messages/new" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-          New text
+          New message
         </Link>
       </div>
       {conversations.map((c) => (

@@ -3,7 +3,7 @@ import { getConversationThreadFull, getInboxContactCard } from '@/lib/data/crm/g
 import { requirePersonInScope } from '@/app/actions/crm'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { Button, ThreadBubble } from '@/components/admin/v2'
-import { MessagesComposer } from './MessagesComposer.client'
+import { ComposeSurface } from '@/components/admin/crm/ComposeSurface'
 import type { CrmAccess } from '@/app/actions/crm'
 
 function tsLabel(iso: string): string {
@@ -99,7 +99,21 @@ export async function MessagesThread({
         </div>
 
         <div className="av2-composer">
-          <MessagesComposer personId={personId} quiet={quiet} hasPhone={Boolean(card?.phone)} />
+          <ComposeSurface
+            initialPeople={
+              card
+                ? [
+                    {
+                      id: card.personId,
+                      name: card.name ?? 'Unknown contact',
+                      phone: card.phone,
+                      email: card.email,
+                    },
+                  ]
+                : []
+            }
+            quiet={quiet}
+          />
         </div>
       </section>
 

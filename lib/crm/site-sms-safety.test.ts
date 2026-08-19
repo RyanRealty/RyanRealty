@@ -19,6 +19,13 @@ describe('lead SMS cannot use personal iMessage', () => {
     expect(governed).toMatch(/sendSmsViaMessagingService|sendSms/)
   })
 
+  it('group compose on the site path refuses silent one-off fan-out', () => {
+    const sms = read('app/actions/crm.ts')
+    expect(sms).toMatch(/decideGroupSmsFallback/)
+    expect(sms).toMatch(/groupThread/)
+    expect(sms).not.toMatch(/LEAD_SMS_IMESSAGE_FALLBACK/)
+  })
+
   it('broker-self CMA text uses Twilio, never AppleScript', () => {
     const self = read('lib/crm/broker-self-sms.ts')
     expect(self).toMatch(/api\.twilio\.com/)

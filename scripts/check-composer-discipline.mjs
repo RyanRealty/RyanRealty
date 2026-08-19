@@ -35,10 +35,10 @@ const SKIP = new Set(['node_modules', '.next', 'out', 'dist'])
 // composes a message a human then sends, so it is a compose surface and belongs
 // under the one-interface rule like the rest.
 const SEND_ACTIONS =
-  /sendCrmSmsAction|sendCrmEmailAction|sendAdminEmail|sendDocEmailAction|sendDocSmsAction|bulkEmailCohortAction|dispatchComposeCohortAction|scheduleComposeCohortAction|stageDscrDealListDraftAction/
+  /sendCrmSmsAction|sendCrmEmailAction|sendComposeAction|sendAdminEmail|sendDocEmailAction|sendDocSmsAction|bulkEmailCohortAction|dispatchComposeCohortAction|scheduleComposeCohortAction|stageDscrDealListDraftAction/
 
 const CANONICAL_IMPORT =
-  /@\/components\/admin\/crm\/(SmsComposer|EmailComposer|EmailBodyEditor)/
+  /@\/components\/admin\/crm\/(SmsComposer|EmailComposer|EmailBodyEditor|ComposeSurface)/
 
 // Reviewed exemptions. Keep each entry justified — an unjustified entry is a
 // gate hole, not a convenience.
@@ -64,7 +64,7 @@ const violations = []
 for (const file of SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)))) {
   const rel = relative(ROOT, file)
   // The canonical composers themselves are the interface.
-  if (/components\/admin\/crm\/(SmsComposer|EmailComposer|EmailBodyEditor)\.tsx$/.test(rel)) continue
+  if (/components\/admin\/crm\/(SmsComposer|EmailComposer|EmailBodyEditor|ComposeSurface)\.tsx$/.test(rel)) continue
   const src = readFileSync(file, 'utf8')
   if (!SEND_ACTIONS.test(src)) continue
   if (!src.includes('<Textarea') && !src.includes('<textarea')) continue
