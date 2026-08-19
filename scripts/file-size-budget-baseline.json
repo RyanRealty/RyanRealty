@@ -5,7 +5,7 @@
     "app/actions/cities.ts": 720,
     "app/actions/crm-inbox.ts": 654,
     "app/actions/crm-person-detail.ts": 647,
-    "app/actions/crm.ts": 1924,
+    "app/actions/crm.ts": 1895,
     "app/actions/dashboard.ts": 977,
     "app/actions/listing-detail.ts": 1223,
     "app/actions/listings.ts": 2666,
