@@ -10,7 +10,7 @@
 
 # Prior — 2026-08-19 (cursor-cloud) — vendor CRM name purge
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Removed leftover vendor-CRM docs, setup scripts, and product-name strings. Live CRM is `public.crm_people` via `lib/crm/send-event.ts` at `/admin/crm`. CMA not touched. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Removed leftover vendor-CRM docs, setup scripts, and product-name strings. Live CRM is `public.crm_people` via `lib/crm/send-event.ts` at `/admin/crm`. `main` @ `3e832749d`. `ci:gates` passed on GitHub. First Vercel production deploy `323yhyaDX5S7J75ecVUc3qdK43tN` ERROR after BUILDING. Retrying. CMA not touched. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 # Prior — 2026-08-19 (cursor-cloud) — four shopper defects LIVE
 
