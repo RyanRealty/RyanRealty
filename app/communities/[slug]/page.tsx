@@ -651,7 +651,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     medianDaysOnMarket: stats?.medianDaysOnMarket ?? null,
     refreshedAt: pulse?.refreshedAt ?? snapshot?.refreshedAt ?? null,
     // Extended fields — community-specific grounded questions.
-    soldCount12mo: stats?.soldCount ?? null,
+    soldCount12mo: publishSoldCount({ value: stats?.soldCount, grain: 'neighborhood' }),
     subdivisionAliases: registryEntry?.subdivision_aliases?.length
       ? registryEntry.subdivision_aliases
       : null,

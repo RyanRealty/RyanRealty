@@ -262,6 +262,40 @@ add(
     /isSoldAttributionTrusted\(geoType\)/.test(src('lib/data/crm/getMarketReportData.ts')),
 )
 
+// The raw sold fields feed the same broken denominator as the ratio, so a page
+// may not read them straight off the pulse row. Without this, reverting
+// `closed30` to `pulse?.closedLast30Days ?? null` passed the whole gate — the
+// withheld ratio disappeared while the count it was built from kept printing.
+const rawSoldReads = []
+for (const file of [
+  'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+  'app/communities/[slug]/page.tsx',
+]) {
+  // Line-wise, skipping the publishMonthsOfSupply() call itself: that one takes
+  // the RAW count on purpose, as the input to its own impossible-arithmetic
+  // check. It is an argument to the guard, not a figure the page publishes.
+  src(file)
+    .split('\n')
+    .forEach((line, i) => {
+      if (/publishMonthsOfSupply\(/.test(line)) return
+      for (const [field, raw] of [
+        ['closed30', /closed30:\s*pulse\?\.closedLast30Days/],
+        ['sold12mo', /sold12mo:\s*stats\?\.soldCount/],
+        ['soldCount12mo', /soldCount12mo:\s*stats\?\.soldCount/],
+      ]) {
+        if (raw.test(line)) {
+          rawSoldReads.push(`${file}:${i + 1} ${field} reads the pulse row directly — route it through publishSoldCount()`)
+        }
+      }
+    })
+}
+
+add(
+  'neighborhood place pages route every sold count through publishSoldCount',
+  rawSoldReads.length === 0,
+  rawSoldReads.join('\n      '),
+)
+
 /* -------------------------------------------------------------------------- */
 
 const failed = checks.filter((c) => !c.ok)
