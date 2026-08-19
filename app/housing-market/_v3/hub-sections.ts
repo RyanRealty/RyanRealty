@@ -14,7 +14,7 @@
 
 import type { MarketPulse, MarketPulseSnapshot } from '@/lib/data'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
-import { formatPrice } from '@/lib/format/money'
+import { formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath } from '@/lib/slug'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import {
@@ -74,7 +74,7 @@ export function buildCityLedger(
         snapshot.median_days_to_pending != null
           ? v3Text(`${snapshot.median_days_to_pending} days to pending`)
           : undefined,
-      value: v3Text(formatPrice(snapshot.median_list_price)),
+      value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
     })
   }
@@ -211,7 +211,7 @@ export function buildSfrFollowFigures(pulse: MarketPulse | null): V3InstrumentFi
   const figures: V3InstrumentFigure[] = []
   if (pulse?.medianListPrice != null && pulse.medianListPrice > 0) {
     figures.push({
-      value: v3Text(formatPrice(pulse.medianListPrice)),
+      value: v3Text(formatPriceExact(pulse.medianListPrice)),
       label: v3Text('median list price, SFR pulse'),
       href: '/housing-market/central-oregon',
     })

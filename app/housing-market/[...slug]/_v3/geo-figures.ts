@@ -72,7 +72,11 @@ export function buildLiveFigures(pulse: MarketPulse | null, mosText: string | nu
   const figures: V3InstrumentFigure[] = []
   if (medianListPrice != null) {
     figures.push({
-      value: v3Text(formatPrice(medianListPrice)),
+      // THE DIGITS THE FAQ PUBLISHES, NOT A SECOND ROUNDING. buildMarketFaq
+      // uses formatPriceExact on the same pulse.medianListPrice. formatPrice
+      // rounds to the nearest $1,000, so Madras $399,900 printed $400,000 in
+      // the Instrument beside $399,900 in the FAQ (fleet:6f45be4c).
+      value: v3Text(formatPriceExact(medianListPrice)),
       label: v3Text('median list price'),
       href: listingsBrowsePath(),
     })
@@ -197,7 +201,7 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[], currentCitySlu
         snapshot.median_days_to_pending != null
           ? v3Text(`${snapshot.median_days_to_pending} days to pending`)
           : undefined,
-      value: v3Text(formatPrice(snapshot.median_list_price)),
+      value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
     })
   }

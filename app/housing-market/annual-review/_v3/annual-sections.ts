@@ -39,7 +39,7 @@ import type { ReportCity } from '@/lib/data/geo/report-cities'
 import { marketVerdict } from '@/lib/market/classify'
 import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import { formatPrice } from '@/lib/format/money'
+import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
 import { v3Text, type V3ChartProps, type V3InstrumentFigure, type V3LedgerFigureRow } from '@/components/site/v3'
@@ -85,8 +85,8 @@ export type CityLedger = {
  *
  * medianListDisplay is the figure the page ALSO hands buildMarketFaq, so the
  * Instrument, the visible FAQ sentence, and the Dataset variable are one number
- * (see the page's invariant 6). formatPrice below re-applies the same
- * nearest-$1,000 rounding to an already-rounded figure, which is identity.
+ * (see the page's invariant 6). formatPriceExact prints those digits, not a
+ * second thousand-round of an already-shared figure.
  */
 export function buildRegionFigures(
   pulse: MarketPulse | null,
@@ -110,7 +110,7 @@ export function buildRegionFigures(
   }
   if (medianListDisplay != null) {
     figures.push({
-      value: v3Text(formatPrice(medianListDisplay)),
+      value: v3Text(formatPriceExact(medianListDisplay)),
       label: v3Text('median list price'),
       href: REGION_REPORT_PATH,
     })
@@ -173,7 +173,7 @@ export function buildInventoryLedger(
         mos != null
           ? v3Text(`${formatMonthsOfSupply(mos)} months of supply, a ${marketVerdict(mos).label}`)
           : undefined,
-      value: v3Text(formatPrice(snapshot.median_list_price)),
+      value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: city.slug,
     })
   }

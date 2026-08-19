@@ -12,7 +12,7 @@
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/lib/data/geo/report-cities'
 import { parseRangePeriod, type RangePeriod, type CityRangeReport } from '@/lib/market/range-periods'
 import type { CityReportSnapshot } from '@/lib/data/market/getCityReportSnapshot'
-import { formatPrice } from '@/lib/format/money'
+import { formatPrice, formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import { marketVerdict } from '@/lib/market/classify'
@@ -40,7 +40,7 @@ export function buildRegionFigures(
   const figures: V3InstrumentFigure[] = []
   if (pulse.medianListPrice != null && pulse.medianListPrice > 0) {
     figures.push({
-      value: v3Text(formatPrice(pulse.medianListPrice)),
+      value: v3Text(formatPriceExact(pulse.medianListPrice)),
       label: v3Text('median list price'),
       href: '/housing-market',
     })
@@ -78,8 +78,11 @@ export function buildRegionFigures(
 export function buildCityLedgerRows(snapshots: CityReportSnapshot[]): V3LedgerFigureRow[] {
   const rows: V3LedgerFigureRow[] = []
   for (const s of snapshots) {
-    const price = s.live?.medianListPrice ?? s.trailing12mo?.medianSalePrice
+    const listPrice = s.live?.medianListPrice
+    const salePrice = s.trailing12mo?.medianSalePrice
+    const price = listPrice != null && listPrice > 0 ? listPrice : salePrice
     if (price == null || price <= 0) continue
+    const usingLiveList = listPrice != null && listPrice > 0
     const active = s.live?.activeCount
     rows.push({
       href: `/cities/${s.urlSlug}`,
@@ -89,7 +92,7 @@ export function buildCityLedgerRows(snapshots: CityReportSnapshot[]): V3LedgerFi
           : 'trailing 12 months',
       ),
       what: v3Text(s.cityLabel),
-      value: v3Text(formatPrice(price)),
+      value: v3Text(usingLiveList ? formatPriceExact(price) : formatPrice(price)),
       id: s.urlSlug,
     })
   }

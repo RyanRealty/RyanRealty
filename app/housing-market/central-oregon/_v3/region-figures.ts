@@ -40,7 +40,7 @@
 import type { MarketPulse } from '@/lib/data'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { formatPrice } from '@/lib/format/money'
+import { formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath } from '@/lib/slug'
 import { v3Text, type V3ChartProps, type V3InstrumentFigure } from '@/components/site/v3'
 import { buildClosedVolumeChart, buildCompositionChart } from '../../_v3/market-charts'
@@ -101,7 +101,7 @@ export function buildRegionInstruments(
   const liveFigures: V3InstrumentFigure[] = []
   if (medianListPrice != null) {
     liveFigures.push({
-      value: v3Text(formatPrice(medianListPrice)),
+      value: v3Text(formatPriceExact(medianListPrice)),
       label: v3Text('median list price, SFR pulse'),
       href: listingsBrowsePath(),
     })
