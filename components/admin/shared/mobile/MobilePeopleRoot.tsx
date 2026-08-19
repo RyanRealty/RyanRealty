@@ -116,9 +116,9 @@ export function MobilePeopleRoot({
     return (
       <div style={{ background: 'var(--a-surface)' }}>
         <div style={{ padding: '10px 16px' }}>
-          <a href="/admin/people#add-person" className="av2-btn" style={{ textDecoration: 'none', width: '100%' }}>
+          <Link href="/admin/people#add-person" className="av2-btn" style={{ textDecoration: 'none', width: '100%' }}>
             New contact
-          </a>
+          </Link>
         </div>
         <SubTabStrip active={ptab} carryBroker={carryBroker} />
         {ptab === 'lists' ? (

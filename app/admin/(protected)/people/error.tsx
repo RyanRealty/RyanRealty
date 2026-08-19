@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Button } from '@/components/admin/v2'
 import '@/components/admin/v2/admin-v2.css'
 
@@ -17,9 +18,9 @@ export default function PeopleError({
       </p>
       <div style={{ display: 'flex', gap: 8 }}>
         <Button onClick={reset}>Try again</Button>
-        <a href="/admin/people#add-person" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+        <Link href="/admin/people#add-person" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
           New contact
-        </a>
+        </Link>
       </div>
     </div>
   )

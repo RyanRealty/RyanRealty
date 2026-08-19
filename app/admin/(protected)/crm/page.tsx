@@ -51,6 +51,7 @@
 // navigates away. It now mounts directly, migrated to the v2 SearchField, at
 // ./_components/ContactsSearch.
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess, listCrmPeople, listCrmSequences, type CrmAccess } from '@/app/actions/crm'
@@ -114,14 +115,14 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   return (
     <div className="av2-scope" style={{ maxWidth: 1600, margin: '0 auto' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-        <a
+        <Link
           href="/admin/people#add-person"
           className="av2-btn"
           data-tour="crm-add-person"
           style={{ textDecoration: 'none' }}
         >
           New contact
-        </a>
+        </Link>
       </div>
       <Suspense fallback={<CrmListFallback />}>
         <CrmPeopleBody access={access} sp={sp} />
