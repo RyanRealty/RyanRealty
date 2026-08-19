@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
+import { requirePersonInScope } from '@/app/actions/crm'
 import { getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getDraftsForPerson } from '@/lib/data/crm/drafts'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
@@ -20,8 +20,7 @@ export default async function MessagesNewPage({
   searchParams: Promise<{ c?: string; channel?: string; self?: string; cma?: string }>
 }) {
   const ctx = await requireAdminPage('inbox.send')
-  const access = await getCrmAccess()
-  if (!access) notFound()
+  const access = { email: ctx.email, role: ctx.role, brokerSlug: ctx.brokerSlug }
   const sp = await searchParams
   const selectedId = Number(sp.c) || null
   const channel = sp.channel === 'email' ? 'email' : 'text'

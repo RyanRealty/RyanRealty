@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { Button } from '@/components/admin/v2'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { scopeBroker } from '@/lib/crm/scope'
-import { getCrmAccess } from '@/app/actions/crm'
 import { MessagesQueue } from './MessagesQueue'
 import { MessagesThread } from './MessagesThread'
 
@@ -43,7 +42,7 @@ export default async function MessagesPage({
   searchParams: Promise<{ c?: string }>
 }) {
   const ctx = await requireAdminPage('inbox.view')
-  const access = await getCrmAccess()
+  const access = { email: ctx.email, role: ctx.role, brokerSlug: ctx.brokerSlug }
   const brokerScope = scopeBroker(ctx)
   const selectedId = Number((await searchParams).c) || null
 
