@@ -1,0 +1,264 @@
+<section class="fam" id="fam-instrument">
+<style>
+#fam-instrument{--iink:#faf8f4;--imut:rgba(250,248,244,.55);--ifaint:rgba(250,248,244,.30);--igrid:rgba(250,248,244,.07);
+--iblue:#3987e5;--iorange:#d95926;--igood:#0ca30c;--ibad:#E08163;
+font-family:'Geist',system-ui,sans-serif;color:var(--iink);display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+#fam-instrument .card{position:relative;min-width:0;background:rgba(250,248,244,.03);border:1px solid rgba(250,248,244,.10);border-radius:16px;padding:18px 18px 10px}
+#fam-instrument .ct{font-family:'Amboqia',Georgia,serif;font-weight:400;font-size:21px;letter-spacing:.01em;margin:0 0 14px;line-height:1.15}
+#fam-instrument .srcd{margin:10px 0 4px;font-size:11px;color:var(--imut)}
+#fam-instrument .srcd summary{cursor:pointer;letter-spacing:.06em;text-transform:uppercase;font-size:10px}
+#fam-instrument .srcd p{margin:6px 0 0;line-height:1.5}
+#fam-instrument .itip{position:absolute;z-index:9;pointer-events:none;display:none;background:#0b1830;border:1px solid rgba(250,248,244,.18);
+border-radius:8px;padding:6px 9px;font-size:11.5px;line-height:1.45;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+#fam-instrument .chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:99px;padding:2px 8px;letter-spacing:.02em;white-space:nowrap}
+#fam-instrument .chip.good{color:#3fd23f;background:rgba(12,163,12,.14)}
+#fam-instrument .chip.bad{color:var(--ibad);background:rgba(224,129,99,.13)}
+#fam-instrument .chip.flat{color:var(--imut);background:rgba(250,248,244,.07)}
+/* tiles */
+#fam-instrument .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+#fam-instrument .tile{background:rgba(250,248,244,.03);border:1px solid rgba(250,248,244,.08);border-radius:12px;padding:12px 12px 8px;min-width:0}
+#fam-instrument .tlab{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--imut);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fam-instrument .tval{font-family:'Amboqia',Georgia,serif;font-size:34px;line-height:1;margin-bottom:2px}
+#fam-instrument .tval small{font-size:16px;color:var(--imut);font-family:'Geist',system-ui,sans-serif}
+#fam-instrument .tsub{font-size:10.5px;color:var(--imut);margin:2px 0 8px}
+#fam-instrument .tile canvas{width:100%;height:38px;display:block;margin-top:8px}
+/* gauges */
+#fam-instrument .glegend{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--imut);letter-spacing:.05em;margin-bottom:10px}
+#fam-instrument .glegend b{color:var(--iink);font-weight:500}
+#fam-instrument .gdot{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:5px;vertical-align:0}
+#fam-instrument .gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+#fam-instrument .gauge{text-align:center;padding:6px 2px 8px;border-radius:10px}
+#fam-instrument .gauge:hover{background:rgba(250,248,244,.04)}
+#fam-instrument .gname{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--imut)}
+#fam-instrument .gval{font-family:'Amboqia',Georgia,serif;font-size:26px;line-height:1.05}
+#fam-instrument .gval small{font-size:13px;color:var(--imut);font-family:'Geist',system-ui,sans-serif}
+#fam-instrument .gverd{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--imut);margin-top:1px}
+/* heat strip */
+#fam-instrument .chead{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px 16px;margin-bottom:14px}
+#fam-instrument .chead .ct{margin:0;flex:1 1 auto;min-width:0}
+#fam-instrument .seg{position:relative;flex:0 0 auto;display:inline-flex;background:rgba(250,248,244,.06);
+border:1px solid rgba(250,248,244,.12);border-radius:99px;padding:2px;isolation:isolate}
+#fam-instrument .seg button{position:relative;z-index:1;border:0;background:none;color:var(--imut);font:600 11px 'Geist',system-ui,sans-serif;
+letter-spacing:.05em;padding:4px 12px;border-radius:99px;cursor:pointer}
+#fam-instrument .seg button.on{color:#0b1830}
+#fam-instrument .seg .thumb{position:absolute;z-index:0;top:2px;bottom:2px;border-radius:99px;background:var(--iink);transition:left .18s ease,width .18s ease}
+#fam-instrument #instrument-heat{width:100%;display:block;cursor:crosshair}
+#fam-instrument .hlegend{display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--imut);margin-top:8px;flex-wrap:wrap}
+#fam-instrument .hgrad{height:8px;width:140px;border-radius:4px;background:linear-gradient(90deg,#1c5cab,#2a78d6,#5598e7,#86b6ef,#b7d3f6,#e3eefc)}
+/* delta board */
+#fam-instrument .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px 22px}
+#fam-instrument .dmet{padding:6px 0 2px;min-width:0}
+#fam-instrument .dlab{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--imut);margin-bottom:6px}
+#fam-instrument .drow{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+#fam-instrument .dthen{font-family:'Amboqia',Georgia,serif;font-size:19px;color:var(--ifaint)}
+#fam-instrument .darr{color:var(--ifaint);font-size:14px}
+#fam-instrument .dnow{font-family:'Amboqia',Georgia,serif;font-size:38px;line-height:1}
+#fam-instrument .dyr{display:block;font-family:'Geist',system-ui,sans-serif;font-size:9.5px;letter-spacing:.08em;color:var(--imut);margin-top:3px}
+#fam-instrument .dmet canvas{width:100%;height:30px;display:block;margin-top:8px}
+/* hybrid */
+#fam-instrument .hyb{font-size:17px;line-height:2.05;max-width:660px}
+#fam-instrument .hyb .sent{margin:0 0 10px}
+#fam-instrument .hyb b{font-weight:700}
+#fam-instrument .nw{white-space:nowrap}
+#fam-instrument .mb{display:inline-block;height:9px;border-radius:2px;background:var(--iblue);margin:0 2px 0 6px;vertical-align:baseline;cursor:default}
+#fam-instrument .mb.acc{background:var(--ibad)}
+#fam-instrument .hybnote{font-size:10.5px;color:var(--imut);letter-spacing:.04em}
+/* peak meters */
+#fam-instrument #instrument-peak-wrap svg{display:block;width:100%}
+#fam-instrument .cdesc{font-size:12px;color:rgba(250,248,244,.55);margin:2px 0 6px;line-height:1.45}
+</style>
+
+<div class="card" id="instrument-card-tiles">
+  <h3 class="ct">A year of moving sideways</h3>
+  <p class="cdesc">Four current-market tiles: mortgage rate, region SFR price, Bend days-to-offer, price cuts.</p>
+  <div class="plot"><div class="tiles" id="instrument-tiles"></div></div>
+  <div class="itip" id="instrument-tip-tiles"></div>
+  <details class="srcd"><summary>Source</summary><p>30-yr fixed: FRED weekly, latest 2026-08-13 (out/chart-data.json&nbsp;m30); YoY compares the week nearest 365 days prior — 2025-08-14, 6.58% — hover the chip for the anchor. Median + sales: MLS region cube, full-year 2025 medians over 5,021 closes (cube). Bend days to offer: July 2026 vs July 2025 medians, sale_pricing_facts detached, n=217/220 (charts-tier-1 DTO_JULY, fetched 2026-08-17). Cut share: market_pulse_live 2026-08-18, 1,805 actives region-wide (CUTS). No cut-share history exists on disk, so that tile shows today’s per-town spread instead of a trend.</p></details>
+</div>
+
+<div class="card" id="instrument-card-gauges">
+  <h3 class="ct">Bend leans seller, La Pine buyer</h3>
+  <p class="cdesc">Months of supply gauges, six most-active towns, live snapshot.</p>
+  <div class="glegend"><span><span class="gdot" style="background:#3987e5"></span><b>Seller’s</b> ≤4 mo</span>
+  <span><span class="gdot" style="background:rgba(250,248,244,.35)"></span><b>Balanced</b> 4–6 mo</span>
+  <span><span class="gdot" style="background:#d95926"></span><b>Buyer’s</b> ≥6 mo</span></div>
+  <div class="plot"><div class="gauges" id="instrument-gauges"></div></div>
+  <div class="itip" id="instrument-tip-gauges"></div>
+  <details class="srcd"><summary>Source</summary><p>market_pulse_live snapshot, fetched 2026-08-19 UTC (out/chart-data.json&nbsp;towns). Months of supply = actives ÷ (closed last 6 months ÷ 6); thresholds ≤4 seller’s · 4–6 balanced · ≥6 buyer’s. Six most-active towns shown; dial runs 0–12 months.</p></details>
+</div>
+
+<div class="card" id="instrument-card-heat">
+  <div class="chead"><h3 class="ct">Cheap money ended in 2022</h3>
+  <div class="seg" id="instrument-seg"><div class="thumb"></div><button data-n="3">3Y</button><button data-n="5">5Y</button><button data-n="0" class="on">ALL</button></div></div>
+  <p class="cdesc">Weekly 30-year mortgage rate, one cell per week, 2015–2026.</p>
+  <div class="plot"><canvas id="instrument-heat"></canvas>
+  <div class="hlegend"><span id="instrument-hmin"></span><div class="hgrad"></div><span id="instrument-hmax"></span><span style="margin-left:auto">30-yr fixed rate, one cell = one week</span></div></div>
+  <div class="itip" id="instrument-tip-heat"></div>
+  <details class="srcd"><summary>Source</summary><p>FRED 30-yr fixed-rate mortgage average, weekly, 2015-01-08 → 2026-08-13, 606 weeks (out/chart-data.json&nbsp;m30). Brighter = higher rate; scale spans the window’s actual min–max.</p></details>
+</div>
+
+<div class="card" id="instrument-card-delta">
+  <h3 class="ct">2021 was another market</h3>
+  <p class="cdesc">Six market metrics, 2021 vs 2025, region and Bend detached.</p>
+  <div class="plot"><div class="dgrid" id="instrument-delta"></div></div>
+  <div class="itip" id="instrument-tip-delta"></div>
+  <details class="srcd"><summary>Source</summary><p>Region median, homes sold, dollar volume: MLS region cube + volume series, full years 2021 vs 2025 (out/chart-data.json). Rate: FRED weekly, 2021-12-30 vs 2026-08-13 (m30). Bend days-to-offer and sale÷original-ask: terrain2.json annual medians, 2021 (n=3,100) vs 2025 (n=2,182), fetched 2026-08-19. Sparks run 2015→2025.</p></details>
+</div>
+
+<div class="card" id="instrument-card-hybrid">
+  <h3 class="ct">Speed depends on the town</h3>
+  <p class="cdesc">Days to pending, % over asking, sale-to-list, SFR by town.</p>
+  <div class="plot"><div class="hyb" id="instrument-hybrid"></div><div class="hybnote">Last 30 days of pendings and closes · hover a bar for the exact figure</div></div>
+  <div class="itip" id="instrument-tip-hybrid"></div>
+  <details class="srcd"><summary>Source</summary><p>market_pulse_live snapshot, fetched 2026-08-19 UTC (out/chart-data.json&nbsp;towns): median_days_to_pending (Bend 18 over 167 pendings, La Pine 51.5 over 21, Prineville 60 over 21), pct_sold_over_asking (Madras 37.14% of 15, Redmond 19.46% of 30, Bend 17.27% of 167), median_sale_to_list (Bend 98.16%, La Pine 96.33%). Towns under 15 closes omitted.</p></details>
+</div>
+
+<div class="card" id="instrument-card-peak">
+  <h3 class="ct">Seven towns beat their 2022 peak</h3>
+  <p class="cdesc">2025 median detached close price vs 2022 peak, by town.</p>
+  <div class="plot" id="instrument-peak-wrap"></div>
+  <div class="itip" id="instrument-tip-peak"></div>
+  <details class="srcd"><summary>Source</summary><p>terrain2.json per-city annual median close prices, fetched 2026-08-19: 2025 full-year median ÷ 2022 median. Camp Sherman omitted (3 closes in 2025). Culver (n=25) and Black Butte Ranch (n=40) are thin — counts in the hover.</p></details>
+</div>
+</section>
+<script>(function(){
+var D={"rate":{"now":["2026-08-13",6.67],"spark":[["2023-08-17",7.09],["2023-08-24",7.23],["2023-08-31",7.18],["2023-09-07",7.12],["2023-09-14",7.18],["2023-09-21",7.19],["2023-09-28",7.31],["2023-10-05",7.49],["2023-10-12",7.57],["2023-10-19",7.63],["2023-10-26",7.79],["2023-11-02",7.76],["2023-11-09",7.5],["2023-11-16",7.44],["2023-11-22",7.29],["2023-11-30",7.22],["2023-12-07",7.03],["2023-12-14",6.95],["2023-12-21",6.67],["2023-12-28",6.61],["2024-01-04",6.62],["2024-01-11",6.66],["2024-01-18",6.6],["2024-01-25",6.69],["2024-02-01",6.63],["2024-02-08",6.64],["2024-02-15",6.77],["2024-02-22",6.9],["2024-02-29",6.94],["2024-03-07",6.88],["2024-03-14",6.74],["2024-03-21",6.87],["2024-03-28",6.79],["2024-04-04",6.82],["2024-04-11",6.88],["2024-04-18",7.1],["2024-04-25",7.17],["2024-05-02",7.22],["2024-05-09",7.09],["2024-05-16",7.02],["2024-05-23",6.94],["2024-05-30",7.03],["2024-06-06",6.99],["2024-06-13",6.95],["2024-06-20",6.87],["2024-06-27",6.86],["2024-07-03",6.95],["2024-07-11",6.89],["2024-07-18",6.77],["2024-07-25",6.78],["2024-08-01",6.73],["2024-08-08",6.47],["2024-08-15",6.49],["2024-08-22",6.46],["2024-08-29",6.35],["2024-09-05",6.35],["2024-09-12",6.2],["2024-09-19",6.09],["2024-09-26",6.08],["2024-10-03",6.12],["2024-10-10",6.32],["2024-10-17",6.44],["2024-10-24",6.54],["2024-10-31",6.72],["2024-11-07",6.79],["2024-11-14",6.78],["2024-11-21",6.84],["2024-11-27",6.81],["2024-12-05",6.69],["2024-12-12",6.6],["2024-12-19",6.72],["2024-12-26",6.85],["2025-01-02",6.91],["2025-01-09",6.93],["2025-01-16",7.04],["2025-01-23",6.96],["2025-01-30",6.95],["2025-02-06",6.89],["2025-02-13",6.87],["2025-02-20",6.85],["2025-02-27",6.76],["2025-03-06",6.63],["2025-03-13",6.65],["2025-03-20",6.67],["2025-03-27",6.65],["2025-04-03",6.64],["2025-04-10",6.62],["2025-04-17",6.83],["2025-04-24",6.81],["2025-05-01",6.76],["2025-05-08",6.76],["2025-05-15",6.81],["2025-05-22",6.86],["2025-05-29",6.89],["2025-06-05",6.85],["2025-06-12",6.84],["2025-06-18",6.81],["2025-06-26",6.77],["2025-07-03",6.67],["2025-07-10",6.72],["2025-07-17",6.75],["2025-07-24",6.74],["2025-07-31",6.72],["2025-08-07",6.63],["2025-08-14",6.58],["2025-08-21",6.58],["2025-08-28",6.56],["2025-09-04",6.5],["2025-09-11",6.35],["2025-09-18",6.26],["2025-09-25",6.3],["2025-10-02",6.34],["2025-10-09",6.3],["2025-10-16",6.27],["2025-10-23",6.19],["2025-10-30",6.17],["2025-11-06",6.22],["2025-11-13",6.24],["2025-11-20",6.26],["2025-11-26",6.23],["2025-12-04",6.19],["2025-12-11",6.22],["2025-12-18",6.21],["2025-12-24",6.18],["2025-12-31",6.15],["2026-01-08",6.16],["2026-01-15",6.06],["2026-01-22",6.09],["2026-01-29",6.1],["2026-02-05",6.11],["2026-02-12",6.09],["2026-02-19",6.01],["2026-02-26",5.98],["2026-03-05",6],["2026-03-12",6.11],["2026-03-19",6.22],["2026-03-26",6.38],["2026-04-02",6.46],["2026-04-09",6.37],["2026-04-16",6.3],["2026-04-23",6.23],["2026-04-30",6.3],["2026-05-07",6.37],["2026-05-14",6.36],["2026-05-21",6.51],["2026-05-28",6.53],["2026-06-04",6.48],["2026-06-11",6.52],["2026-06-18",6.47],["2026-06-25",6.49],["2026-07-02",6.43],["2026-07-09",6.49],["2026-07-16",6.55],["2026-07-23",6.58],["2026-07-30",6.66],["2026-08-06",6.69],["2026-08-13",6.67]],"all":[["2015-01-08",3.73],["2015-01-15",3.66],["2015-01-22",3.63],["2015-01-29",3.66],["2015-02-05",3.59],["2015-02-12",3.69],["2015-02-19",3.76],["2015-02-26",3.8],["2015-03-05",3.75],["2015-03-12",3.86],["2015-03-19",3.78],["2015-03-26",3.69],["2015-04-02",3.7],["2015-04-09",3.66],["2015-04-16",3.67],["2015-04-23",3.65],["2015-04-30",3.68],["2015-05-07",3.8],["2015-05-14",3.85],["2015-05-21",3.84],["2015-05-28",3.87],["2015-06-04",3.87],["2015-06-11",4.04],["2015-06-18",4],["2015-06-25",4.02],["2015-07-02",4.08],["2015-07-09",4.04],["2015-07-16",4.09],["2015-07-23",4.04],["2015-07-30",3.98],["2015-08-06",3.91],["2015-08-13",3.94],["2015-08-20",3.93],["2015-08-27",3.84],["2015-09-03",3.89],["2015-09-10",3.9],["2015-09-17",3.91],["2015-09-24",3.86],["2015-10-01",3.85],["2015-10-08",3.76],["2015-10-15",3.82],["2015-10-22",3.79],["2015-10-29",3.76],["2015-11-05",3.87],["2015-11-12",3.98],["2015-11-19",3.97],["2015-11-25",3.95],["2015-12-03",3.93],["2015-12-10",3.95],["2015-12-17",3.97],["2015-12-24",3.96],["2015-12-31",4.01],["2016-01-07",3.97],["2016-01-14",3.92],["2016-01-21",3.81],["2016-01-28",3.79],["2016-02-04",3.72],["2016-02-11",3.65],["2016-02-18",3.65],["2016-02-25",3.62],["2016-03-03",3.64],["2016-03-10",3.68],["2016-03-17",3.73],["2016-03-24",3.71],["2016-03-31",3.71],["2016-04-07",3.59],["2016-04-14",3.58],["2016-04-21",3.59],["2016-04-28",3.66],["2016-05-05",3.61],["2016-05-12",3.57],["2016-05-19",3.58],["2016-05-26",3.64],["2016-06-02",3.66],["2016-06-09",3.6],["2016-06-16",3.54],["2016-06-23",3.56],["2016-06-30",3.48],["2016-07-07",3.41],["2016-07-14",3.42],["2016-07-21",3.45],["2016-07-28",3.48],["2016-08-04",3.43],["2016-08-11",3.45],["2016-08-18",3.43],["2016-08-25",3.43],["2016-09-01",3.46],["2016-09-08",3.44],["2016-09-15",3.5],["2016-09-22",3.48],["2016-09-29",3.42],["2016-10-06",3.42],["2016-10-13",3.47],["2016-10-20",3.52],["2016-10-27",3.47],["2016-11-03",3.54],["2016-11-10",3.57],["2016-11-17",3.94],["2016-11-23",4.03],["2016-12-01",4.08],["2016-12-08",4.13],["2016-12-15",4.16],["2016-12-22",4.3],["2016-12-29",4.32],["2017-01-05",4.2],["2017-01-12",4.12],["2017-01-19",4.09],["2017-01-26",4.19],["2017-02-02",4.19],["2017-02-09",4.17],["2017-02-16",4.15],["2017-02-23",4.16],["2017-03-02",4.1],["2017-03-09",4.21],["2017-03-16",4.3],["2017-03-23",4.23],["2017-03-30",4.14],["2017-04-06",4.1],["2017-04-13",4.08],["2017-04-20",3.97],["2017-04-27",4.03],["2017-05-04",4.02],["2017-05-11",4.05],["2017-05-18",4.02],["2017-05-25",3.95],["2017-06-01",3.94],["2017-06-08",3.89],["2017-06-15",3.91],["2017-06-22",3.9],["2017-06-29",3.88],["2017-07-06",3.96],["2017-07-13",4.03],["2017-07-20",3.96],["2017-07-27",3.92],["2017-08-03",3.93],["2017-08-10",3.9],["2017-08-17",3.89],["2017-08-24",3.86],["2017-08-31",3.82],["2017-09-07",3.78],["2017-09-14",3.78],["2017-09-21",3.83],["2017-09-28",3.83],["2017-10-05",3.85],["2017-10-12",3.91],["2017-10-19",3.88],["2017-10-26",3.94],["2017-11-02",3.94],["2017-11-09",3.9],["2017-11-16",3.95],["2017-11-22",3.92],["2017-11-30",3.9],["2017-12-07",3.94],["2017-12-14",3.93],["2017-12-21",3.94],["2017-12-28",3.99],["2018-01-04",3.95],["2018-01-11",3.99],["2018-01-18",4.04],["2018-01-25",4.15],["2018-02-01",4.22],["2018-02-08",4.32],["2018-02-15",4.38],["2018-02-22",4.4],["2018-03-01",4.43],["2018-03-08",4.46],["2018-03-15",4.44],["2018-03-22",4.45],["2018-03-29",4.44],["2018-04-05",4.4],["2018-04-12",4.42],["2018-04-19",4.47],["2018-04-26",4.58],["2018-05-03",4.55],["2018-05-10",4.55],["2018-05-17",4.61],["2018-05-24",4.66],["2018-05-31",4.56],["2018-06-07",4.54],["2018-06-14",4.62],["2018-06-21",4.57],["2018-06-28",4.55],["2018-07-05",4.52],["2018-07-12",4.53],["2018-07-19",4.52],["2018-07-26",4.54],["2018-08-02",4.6],["2018-08-09",4.59],["2018-08-16",4.53],["2018-08-23",4.51],["2018-08-30",4.52],["2018-09-06",4.54],["2018-09-13",4.6],["2018-09-20",4.65],["2018-09-27",4.72],["2018-10-04",4.71],["2018-10-11",4.9],["2018-10-18",4.85],["2018-10-25",4.86],["2018-11-01",4.83],["2018-11-08",4.94],["2018-11-15",4.94],["2018-11-21",4.81],["2018-11-29",4.81],["2018-12-06",4.75],["2018-12-13",4.63],["2018-12-20",4.62],["2018-12-27",4.55],["2019-01-03",4.51],["2019-01-10",4.45],["2019-01-17",4.45],["2019-01-24",4.45],["2019-01-31",4.46],["2019-02-07",4.41],["2019-02-14",4.37],["2019-02-21",4.35],["2019-02-28",4.35],["2019-03-07",4.41],["2019-03-14",4.31],["2019-03-21",4.28],["2019-03-28",4.06],["2019-04-04",4.08],["2019-04-11",4.12],["2019-04-18",4.17],["2019-04-25",4.2],["2019-05-02",4.14],["2019-05-09",4.1],["2019-05-16",4.07],["2019-05-23",4.06],["2019-05-30",3.99],["2019-06-06",3.82],["2019-06-13",3.82],["2019-06-20",3.84],["2019-06-27",3.73],["2019-07-03",3.75],["2019-07-11",3.75],["2019-07-18",3.81],["2019-07-25",3.75],["2019-08-01",3.75],["2019-08-08",3.6],["2019-08-15",3.6],["2019-08-22",3.55],["2019-08-29",3.58],["2019-09-05",3.49],["2019-09-12",3.56],["2019-09-19",3.73],["2019-09-26",3.64],["2019-10-03",3.65],["2019-10-10",3.57],["2019-10-17",3.69],["2019-10-24",3.75],["2019-10-31",3.78],["2019-11-07",3.69],["2019-11-14",3.75],["2019-11-21",3.66],["2019-11-27",3.68],["2019-12-05",3.68],["2019-12-12",3.73],["2019-12-19",3.73],["2019-12-26",3.74],["2020-01-02",3.72],["2020-01-09",3.64],["2020-01-16",3.65],["2020-01-23",3.6],["2020-01-30",3.51],["2020-02-06",3.45],["2020-02-13",3.47],["2020-02-20",3.49],["2020-02-27",3.45],["2020-03-05",3.29],["2020-03-12",3.36],["2020-03-19",3.65],["2020-03-26",3.5],["2020-04-02",3.33],["2020-04-09",3.33],["2020-04-16",3.31],["2020-04-23",3.33],["2020-04-30",3.23],["2020-05-07",3.26],["2020-05-14",3.28],["2020-05-21",3.24],["2020-05-28",3.15],["2020-06-04",3.18],["2020-06-11",3.21],["2020-06-18",3.13],["2020-06-25",3.13],["2020-07-02",3.07],["2020-07-09",3.03],["2020-07-16",2.98],["2020-07-23",3.01],["2020-07-30",2.99],["2020-08-06",2.88],["2020-08-13",2.96],["2020-08-20",2.99],["2020-08-27",2.91],["2020-09-03",2.93],["2020-09-10",2.86],["2020-09-17",2.87],["2020-09-24",2.9],["2020-10-01",2.88],["2020-10-08",2.87],["2020-10-15",2.81],["2020-10-22",2.8],["2020-10-29",2.81],["2020-11-05",2.78],["2020-11-12",2.84],["2020-11-19",2.72],["2020-11-25",2.72],["2020-12-03",2.71],["2020-12-10",2.71],["2020-12-17",2.67],["2020-12-24",2.66],["2020-12-31",2.67],["2021-01-07",2.65],["2021-01-14",2.79],["2021-01-21",2.77],["2021-01-28",2.73],["2021-02-04",2.73],["2021-02-11",2.73],["2021-02-18",2.81],["2021-02-25",2.97],["2021-03-04",3.02],["2021-03-11",3.05],["2021-03-18",3.09],["2021-03-25",3.17],["2021-04-01",3.18],["2021-04-08",3.13],["2021-04-15",3.04],["2021-04-22",2.97],["2021-04-29",2.98],["2021-05-06",2.96],["2021-05-13",2.94],["2021-05-20",3],["2021-05-27",2.95],["2021-06-03",2.99],["2021-06-10",2.96],["2021-06-17",2.93],["2021-06-24",3.02],["2021-07-01",2.98],["2021-07-08",2.9],["2021-07-15",2.88],["2021-07-22",2.78],["2021-07-29",2.8],["2021-08-05",2.77],["2021-08-12",2.87],["2021-08-19",2.86],["2021-08-26",2.87],["2021-09-02",2.87],["2021-09-09",2.88],["2021-09-16",2.86],["2021-09-23",2.88],["2021-09-30",3.01],["2021-10-07",2.99],["2021-10-14",3.05],["2021-10-21",3.09],["2021-10-28",3.14],["2021-11-04",3.09],["2021-11-10",2.98],["2021-11-18",3.1],["2021-11-24",3.1],["2021-12-02",3.11],["2021-12-09",3.1],["2021-12-16",3.12],["2021-12-23",3.05],["2021-12-30",3.11],["2022-01-06",3.22],["2022-01-13",3.45],["2022-01-20",3.56],["2022-01-27",3.55],["2022-02-03",3.55],["2022-02-10",3.69],["2022-02-17",3.92],["2022-02-24",3.89],["2022-03-03",3.76],["2022-03-10",3.85],["2022-03-17",4.16],["2022-03-24",4.42],["2022-03-31",4.67],["2022-04-07",4.72],["2022-04-14",5],["2022-04-21",5.11],["2022-04-28",5.1],["2022-05-05",5.27],["2022-05-12",5.3],["2022-05-19",5.25],["2022-05-26",5.1],["2022-06-02",5.09],["2022-06-09",5.23],["2022-06-16",5.78],["2022-06-23",5.81],["2022-06-30",5.7],["2022-07-07",5.3],["2022-07-14",5.51],["2022-07-21",5.54],["2022-07-28",5.3],["2022-08-04",4.99],["2022-08-11",5.22],["2022-08-18",5.13],["2022-08-25",5.55],["2022-09-01",5.66],["2022-09-08",5.89],["2022-09-15",6.02],["2022-09-22",6.29],["2022-09-29",6.7],["2022-10-06",6.66],["2022-10-13",6.92],["2022-10-20",6.94],["2022-10-27",7.08],["2022-11-03",6.95],["2022-11-10",7.08],["2022-11-17",6.61],["2022-11-23",6.58],["2022-12-01",6.49],["2022-12-08",6.33],["2022-12-15",6.31],["2022-12-22",6.27],["2022-12-29",6.42],["2023-01-05",6.48],["2023-01-12",6.33],["2023-01-19",6.15],["2023-01-26",6.13],["2023-02-02",6.09],["2023-02-09",6.12],["2023-02-16",6.32],["2023-02-23",6.5],["2023-03-02",6.65],["2023-03-09",6.73],["2023-03-16",6.6],["2023-03-23",6.42],["2023-03-30",6.32],["2023-04-06",6.28],["2023-04-13",6.27],["2023-04-20",6.39],["2023-04-27",6.43],["2023-05-04",6.39],["2023-05-11",6.35],["2023-05-18",6.39],["2023-05-25",6.57],["2023-06-01",6.79],["2023-06-08",6.71],["2023-06-15",6.69],["2023-06-22",6.67],["2023-06-29",6.71],["2023-07-06",6.81],["2023-07-13",6.96],["2023-07-20",6.78],["2023-07-27",6.81],["2023-08-03",6.9],["2023-08-10",6.96],["2023-08-17",7.09],["2023-08-24",7.23],["2023-08-31",7.18],["2023-09-07",7.12],["2023-09-14",7.18],["2023-09-21",7.19],["2023-09-28",7.31],["2023-10-05",7.49],["2023-10-12",7.57],["2023-10-19",7.63],["2023-10-26",7.79],["2023-11-02",7.76],["2023-11-09",7.5],["2023-11-16",7.44],["2023-11-22",7.29],["2023-11-30",7.22],["2023-12-07",7.03],["2023-12-14",6.95],["2023-12-21",6.67],["2023-12-28",6.61],["2024-01-04",6.62],["2024-01-11",6.66],["2024-01-18",6.6],["2024-01-25",6.69],["2024-02-01",6.63],["2024-02-08",6.64],["2024-02-15",6.77],["2024-02-22",6.9],["2024-02-29",6.94],["2024-03-07",6.88],["2024-03-14",6.74],["2024-03-21",6.87],["2024-03-28",6.79],["2024-04-04",6.82],["2024-04-11",6.88],["2024-04-18",7.1],["2024-04-25",7.17],["2024-05-02",7.22],["2024-05-09",7.09],["2024-05-16",7.02],["2024-05-23",6.94],["2024-05-30",7.03],["2024-06-06",6.99],["2024-06-13",6.95],["2024-06-20",6.87],["2024-06-27",6.86],["2024-07-03",6.95],["2024-07-11",6.89],["2024-07-18",6.77],["2024-07-25",6.78],["2024-08-01",6.73],["2024-08-08",6.47],["2024-08-15",6.49],["2024-08-22",6.46],["2024-08-29",6.35],["2024-09-05",6.35],["2024-09-12",6.2],["2024-09-19",6.09],["2024-09-26",6.08],["2024-10-03",6.12],["2024-10-10",6.32],["2024-10-17",6.44],["2024-10-24",6.54],["2024-10-31",6.72],["2024-11-07",6.79],["2024-11-14",6.78],["2024-11-21",6.84],["2024-11-27",6.81],["2024-12-05",6.69],["2024-12-12",6.6],["2024-12-19",6.72],["2024-12-26",6.85],["2025-01-02",6.91],["2025-01-09",6.93],["2025-01-16",7.04],["2025-01-23",6.96],["2025-01-30",6.95],["2025-02-06",6.89],["2025-02-13",6.87],["2025-02-20",6.85],["2025-02-27",6.76],["2025-03-06",6.63],["2025-03-13",6.65],["2025-03-20",6.67],["2025-03-27",6.65],["2025-04-03",6.64],["2025-04-10",6.62],["2025-04-17",6.83],["2025-04-24",6.81],["2025-05-01",6.76],["2025-05-08",6.76],["2025-05-15",6.81],["2025-05-22",6.86],["2025-05-29",6.89],["2025-06-05",6.85],["2025-06-12",6.84],["2025-06-18",6.81],["2025-06-26",6.77],["2025-07-03",6.67],["2025-07-10",6.72],["2025-07-17",6.75],["2025-07-24",6.74],["2025-07-31",6.72],["2025-08-07",6.63],["2025-08-14",6.58],["2025-08-21",6.58],["2025-08-28",6.56],["2025-09-04",6.5],["2025-09-11",6.35],["2025-09-18",6.26],["2025-09-25",6.3],["2025-10-02",6.34],["2025-10-09",6.3],["2025-10-16",6.27],["2025-10-23",6.19],["2025-10-30",6.17],["2025-11-06",6.22],["2025-11-13",6.24],["2025-11-20",6.26],["2025-11-26",6.23],["2025-12-04",6.19],["2025-12-11",6.22],["2025-12-18",6.21],["2025-12-24",6.18],["2025-12-31",6.15],["2026-01-08",6.16],["2026-01-15",6.06],["2026-01-22",6.09],["2026-01-29",6.1],["2026-02-05",6.11],["2026-02-12",6.09],["2026-02-19",6.01],["2026-02-26",5.98],["2026-03-05",6],["2026-03-12",6.11],["2026-03-19",6.22],["2026-03-26",6.38],["2026-04-02",6.46],["2026-04-09",6.37],["2026-04-16",6.3],["2026-04-23",6.23],["2026-04-30",6.3],["2026-05-07",6.37],["2026-05-14",6.36],["2026-05-21",6.51],["2026-05-28",6.53],["2026-06-04",6.48],["2026-06-11",6.52],["2026-06-18",6.47],["2026-06-25",6.49],["2026-07-02",6.43],["2026-07-09",6.49],["2026-07-16",6.55],["2026-07-23",6.58],["2026-07-30",6.66],["2026-08-06",6.69],["2026-08-13",6.67]]},"median":{"now":[2025,615000,5021],"prev":[2024,608000,4850],"spark":[[2015,275000],[2016,304000],[2017,340000],[2018,360000],[2019,380000],[2020,420000],[2021,530000],[2022,600000],[2023,589000],[2024,608000],[2025,615000]]},"dto":{"july26":23,"july25":20,"n26":217,"n25":220,"spark":[[2015,18],[2016,15],[2017,18],[2018,21],[2019,17],[2020,9],[2021,5],[2022,7],[2023,15],[2024,22],[2025,29],[2026,19]]},"cuts":{"region":{"city":"Central Oregon","actives":1805,"pct":8.49,"drops":0.13,"mos":5.7},"towns":[{"label":"Black Butte Ranch","pct":19.35,"actives":31},{"label":"Terrebonne","pct":16.67,"actives":6},{"label":"Powell Butte","pct":12.12,"actives":64},{"label":"La Pine","pct":8.52,"actives":172},{"label":"Prineville","pct":8.43,"actives":80},{"label":"Redmond","pct":8.11,"actives":182},{"label":"Madras","pct":8,"actives":49},{"label":"Sunriver","pct":7.84,"actives":51},{"label":"Bend","pct":6.63,"actives":472},{"label":"Sisters","pct":5.41,"actives":36},{"label":"Culver","pct":0,"actives":11},{"label":"Metolius","pct":0,"actives":7},{"label":"Camp Sherman","pct":0,"actives":4}]},"gauges":[{"label":"Bend","mos":3.47,"actives":475},{"label":"Redmond","mos":4.28,"actives":181},{"label":"Prineville","mos":4.92,"actives":82},{"label":"Madras","mos":5.07,"actives":49},{"label":"Sunriver","mos":6.65,"actives":51},{"label":"La Pine","mos":11.15,"actives":171}],"delta":[{"lab":"MEDIAN SALE PRICE · REGION","then":"$530K","thenSub":"2021","now":"$615K","nowSub":"2025","chip":{"dir":"▲","txt":"16.0%","good":true},"spark":[[2015,275000],[2016,304000],[2017,340000],[2018,360000],[2019,380000],[2020,420000],[2021,530000],[2022,600000],[2023,589000],[2024,608000],[2025,615000]],"unit":"$"},{"lab":"30-YR MORTGAGE RATE","then":"3.11%","thenSub":"DEC ’21","now":"6.67%","nowSub":"AUG ’26","chip":{"dir":"▲","txt":"3.56 pt","good":false},"spark":[["2015-01-08",3.73],["2015-02-05",3.59],["2015-03-05",3.75],["2015-04-02",3.7],["2015-04-30",3.68],["2015-05-28",3.87],["2015-06-25",4.02],["2015-07-23",4.04],["2015-08-20",3.93],["2015-09-17",3.91],["2015-10-15",3.82],["2015-11-12",3.98],["2015-12-10",3.95],["2016-01-07",3.97],["2016-02-04",3.72],["2016-03-03",3.64],["2016-03-31",3.71],["2016-04-28",3.66],["2016-05-26",3.64],["2016-06-23",3.56],["2016-07-21",3.45],["2016-08-18",3.43],["2016-09-15",3.5],["2016-10-13",3.47],["2016-11-10",3.57],["2016-12-08",4.13],["2017-01-05",4.2],["2017-02-02",4.19],["2017-03-02",4.1],["2017-03-30",4.14],["2017-04-27",4.03],["2017-05-25",3.95],["2017-06-22",3.9],["2017-07-20",3.96],["2017-08-17",3.89],["2017-09-14",3.78],["2017-10-12",3.91],["2017-11-09",3.9],["2017-12-07",3.94],["2018-01-04",3.95],["2018-02-01",4.22],["2018-03-01",4.43],["2018-03-29",4.44],["2018-04-26",4.58],["2018-05-24",4.66],["2018-06-21",4.57],["2018-07-19",4.52],["2018-08-16",4.53],["2018-09-13",4.6],["2018-10-11",4.9],["2018-11-08",4.94],["2018-12-06",4.75],["2019-01-03",4.51],["2019-01-31",4.46],["2019-02-28",4.35],["2019-03-28",4.06],["2019-04-25",4.2],["2019-05-23",4.06],["2019-06-20",3.84],["2019-07-18",3.81],["2019-08-15",3.6],["2019-09-12",3.56],["2019-10-10",3.57],["2019-11-07",3.69],["2019-12-05",3.68],["2020-01-02",3.72],["2020-01-30",3.51],["2020-02-27",3.45],["2020-03-26",3.5],["2020-04-23",3.33],["2020-05-21",3.24],["2020-06-18",3.13],["2020-07-16",2.98],["2020-08-13",2.96],["2020-09-10",2.86],["2020-10-08",2.87],["2020-11-05",2.78],["2020-12-03",2.71],["2020-12-31",2.67],["2021-01-28",2.73],["2021-02-25",2.97],["2021-03-25",3.17],["2021-04-22",2.97],["2021-05-20",3],["2021-06-17",2.93],["2021-07-15",2.88],["2021-08-12",2.87],["2021-09-09",2.88],["2021-10-07",2.99],["2021-11-04",3.09],["2021-12-02",3.11],["2021-12-30",3.11],["2022-01-27",3.55],["2022-02-24",3.89],["2022-03-24",4.42],["2022-04-21",5.11],["2022-05-19",5.25],["2022-06-16",5.78],["2022-07-14",5.51],["2022-08-11",5.22],["2022-09-08",5.89],["2022-10-06",6.66],["2022-11-03",6.95],["2022-12-01",6.49],["2022-12-29",6.42],["2023-01-26",6.13],["2023-02-23",6.5],["2023-03-23",6.42],["2023-04-20",6.39],["2023-05-18",6.39],["2023-06-15",6.69],["2023-07-13",6.96],["2023-08-10",6.96],["2023-09-07",7.12],["2023-10-05",7.49],["2023-11-02",7.76],["2023-11-30",7.22],["2023-12-28",6.61],["2024-01-25",6.69],["2024-02-22",6.9],["2024-03-21",6.87],["2024-04-18",7.1],["2024-05-16",7.02],["2024-06-13",6.95],["2024-07-11",6.89],["2024-08-08",6.47],["2024-09-05",6.35],["2024-10-03",6.12],["2024-10-31",6.72],["2024-11-27",6.81],["2024-12-26",6.85],["2025-01-23",6.96],["2025-02-20",6.85],["2025-03-20",6.67],["2025-04-17",6.83],["2025-05-15",6.81],["2025-06-12",6.84],["2025-07-10",6.72],["2025-08-07",6.63],["2025-09-04",6.5],["2025-10-02",6.34],["2025-10-30",6.17],["2025-11-26",6.23],["2025-12-24",6.18],["2026-01-22",6.09],["2026-02-19",6.01],["2026-03-19",6.22],["2026-04-16",6.3],["2026-05-14",6.36],["2026-06-11",6.52],["2026-07-09",6.49],["2026-08-06",6.69],["2026-08-13",6.67]],"unit":"%"},{"lab":"HOMES SOLD · REGION","then":"7,575","thenSub":"2021","now":"5,021","nowSub":"2025","chip":{"dir":"▼","txt":"-33.7%","good":false},"spark":[[2015,6316],[2016,6560],[2017,6344],[2018,6533],[2019,6421],[2020,7484],[2021,7575],[2022,5925],[2023,4531],[2024,4850],[2025,5021]],"unit":" homes"},{"lab":"DOLLAR VOLUME · REGION","then":"$4.86B","thenSub":"2021","now":"$3.82B","nowSub":"2025","chip":{"dir":"▼","txt":"-21.3%","good":false},"spark":[[2015,2.038],[2016,2.343],[2017,2.507],[2018,2.759],[2019,2.866],[2020,3.903],[2021,4.858],[2022,4.266],[2023,3.23],[2024,3.593],[2025,3.824]],"unit":"$B"},{"lab":"BEND DAYS TO OFFER","then":"5 days","thenSub":"2021","now":"29 days","nowSub":"2025","chip":{"dir":"▲","txt":"+24 days","good":false},"spark":[[2015,18],[2016,15],[2017,18],[2018,21],[2019,17],[2020,9],[2021,5],[2022,7],[2023,15],[2024,22],[2025,29]],"unit":" days"},{"lab":"BEND SALE VS ORIGINAL ASK","then":"100.0%","thenSub":"2021","now":"96.8%","nowSub":"2025","chip":{"dir":"▼","txt":"-3.2 pt","good":false},"spark":[[2015,98.6],[2016,98.7],[2017,98.6],[2018,98.4],[2019,98.3],[2020,100],[2021,100],[2022,100],[2023,98.3],[2024,98.1],[2025,96.8]],"unit":"%"}],"hybrid":[{"parts":[{"t":"Bend goes pending in "},{"n":"18 days","tail":".","v":18,"max":60,"exact":"18 days · 167 pendings"},{"t":" La Pine takes "},{"n":"52","tail":",","v":51.5,"max":60,"exact":"51.5 days · 21 pendings"},{"t":" Prineville "},{"n":"60","tail":".","v":60,"max":60,"accent":true,"exact":"60 days · 21 pendings"}]},{"parts":[{"n":"37%","v":37.14,"max":40,"accent":true,"exact":"37.14% of 15 sales"},{"t":" of Madras sales closed over asking. Redmond "},{"n":"19%","tail":",","v":19.46,"max":40,"exact":"19.46% of 30 sales"},{"t":" Bend "},{"n":"17%","tail":".","v":17.27,"max":40,"exact":"17.27% of 167 sales"}]},{"parts":[{"t":"Bend closes "},{"n":"1.8%","v":1.84,"max":4,"exact":"median sale-to-list 98.2%"},{"t":" under list. La Pine, "},{"n":"3.7%","tail":" under.","v":3.67,"max":4,"accent":true,"exact":"median sale-to-list 96.3%"}]}],"peak":[{"label":"Powell Butte","p22":1065000,"n22":63,"p25":1350000,"n25":57,"pct":126.8},{"label":"Sisters","p22":735000,"n22":221,"p25":799999,"n25":153,"pct":108.8},{"label":"Culver","p22":370000,"n22":45,"p25":399000,"n25":25,"pct":107.8},{"label":"Terrebonne","p22":585000,"n22":101,"p25":624900,"n25":71,"pct":106.8},{"label":"Redmond","p22":531280,"n22":947,"p25":549000,"n25":790,"pct":103.3},{"label":"Bend","p22":765000,"n22":2502,"p25":772500,"n25":2182,"pct":101},{"label":"Prineville","p22":425000,"n22":365,"p25":428400,"n25":322,"pct":100.8},{"label":"Madras","p22":383450,"n22":196,"p25":374000,"n25":169,"pct":97.5},{"label":"Sunriver","p22":934950,"n22":134,"p25":882500,"n25":134,"pct":94.4},{"label":"La Pine","p22":464950,"n22":268,"p25":408500,"n25":200,"pct":87.9},{"label":"Black Butte Ranch","p22":1391250,"n22":34,"p25":1037500,"n25":40,"pct":74.6}]};
+var INK='#faf8f4',MUT='rgba(250,248,244,.55)',FAINT='rgba(250,248,244,.30)',GRID='rgba(250,248,244,.07)';
+var BLUE='#3987e5',ORANGE='#d95926',BAD='#E08163',GOOD='#3fd23f';
+var RAMP=['#1c5cab','#2a78d6','#5598e7','#86b6ef','#b7d3f6','#e3eefc'];
+function $(id){return document.getElementById(id)}
+function cvs(c){var r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;
+c.width=Math.max(1,Math.round(r.width*d));c.height=Math.max(1,Math.round(r.height*d));
+var x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);return{x:x,w:r.width,h:r.height}}
+function tip(card,t){var el=$('instrument-tip-'+card);return{show:function(html,cx,cy){
+el.innerHTML=html;el.style.display='block';var cr=$('instrument-card-'+card).getBoundingClientRect();
+var x=cx-cr.left+14,y=cy-cr.top-10;el.style.left='0px';el.style.top='0px';
+var w=el.offsetWidth;if(x+w>cr.width-8)x=cx-cr.left-w-14;el.style.left=Math.max(4,x)+'px';el.style.top=Math.max(4,y)+'px';},
+hide:function(){el.style.display='none'}}}
+function lerp(a,b,t){return a+(b-a)*t}
+function hex2(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function ramp(t){t=Math.max(0,Math.min(1,t));var s=t*(RAMP.length-1),i=Math.min(RAMP.length-2,Math.floor(s)),f=s-i;
+var a=hex2(RAMP[i]),b=hex2(RAMP[i+1]);return'rgb('+Math.round(lerp(a[0],b[0],f))+','+Math.round(lerp(a[1],b[1],f))+','+Math.round(lerp(a[2],b[2],f))+')'}
+function sparkline(c,pts,color,card,fmt){if(!pts||pts.length<2){c.style.display='none';return}var s=cvs(c),p=4;
+var ys=pts.map(function(r){return r[1]}),mn=Math.min.apply(0,ys),mx=Math.max.apply(0,ys);if(mx===mn)mx=mn+1;
+function X(i){return p+(s.w-2*p)*i/(pts.length-1)}
+function Y(v){return p+(s.h-2*p)*(1-(v-mn)/(mx-mn))}
+s.x.strokeStyle=color;s.x.lineWidth=2;s.x.lineJoin='round';s.x.beginPath();
+pts.forEach(function(r,i){i?s.x.lineTo(X(i),Y(r[1])):s.x.moveTo(X(i),Y(r[1]))});s.x.stroke();
+s.x.fillStyle=INK;s.x.beginPath();s.x.arc(X(pts.length-1),Y(pts[pts.length-1][1]),2.5,0,7);s.x.fill();
+if(card){var T=tip(card);c.onpointermove=function(e){var r=c.getBoundingClientRect();
+var i=Math.round((e.clientX-r.left-p)/((s.w-2*p)/(pts.length-1)));i=Math.max(0,Math.min(pts.length-1,i));
+T.show('<b>'+pts[i][0]+'</b> · '+fmt(pts[i][1]),e.clientX,e.clientY)};c.onpointerleave=function(){T.hide()}}}
+/* ── 1 · tiles ── */
+function yoyAgo(){var t=new Date(D.rate.now[0]+'T00:00:00Z').getTime()-365*864e5,best=D.rate.all[0],bd=1/0;
+D.rate.all.forEach(function(r){var d=Math.abs(new Date(r[0]+'T00:00:00Z').getTime()-t);if(d<bd){bd=d;best=r}});return best}
+function tiles(){var el=$('instrument-tiles');
+var ago=yoyAgo(),dr=D.rate.now[1]-ago[1];
+var rchip='<span class="chip '+(dr>0?'bad':dr<0?'good':'flat')+'" title="vs week of '+ago[0]+' ('+ago[1].toFixed(2)+'%)">'+(dr>0?'▲ +':dr<0?'▼ -':'· ')+Math.abs(dr).toFixed(2)+' pt YoY</span>';
+el.innerHTML=
+'<div class="tile"><div class="tlab">30-yr rate</div><div class="tval">'+D.rate.now[1].toFixed(2)+'<small>%</small></div>'+
+'<div class="tsub">week of '+D.rate.now[0]+'</div>'+rchip+'<canvas id="instrument-sp-rate"></canvas></div>'+
+'<div class="tile"><div class="tlab">Median sale price</div><div class="tval">$'+(D.median.now[1]/1000)+'<small>K</small></div>'+
+'<div class="tsub">2025 · '+D.median.now[2].toLocaleString('en-US')+' sales</div><span class="chip good">▲ +'+(100*(D.median.now[1]-D.median.prev[1])/D.median.prev[1]).toFixed(1)+'% vs 2024</span><canvas id="instrument-sp-med"></canvas></div>'+
+'<div class="tile"><div class="tlab">Bend days to offer</div><div class="tval">'+D.dto.july26+'<small> days</small></div>'+
+'<div class="tsub">July 2026 · '+D.dto.n26+' closes</div><span class="chip bad">▲ +'+(D.dto.july26-D.dto.july25)+' days YoY</span><canvas id="instrument-sp-dto"></canvas></div>'+
+'<div class="tile"><div class="tlab">Price cuts · region</div><div class="tval">'+D.cuts.region.pct.toFixed(1)+'<small>%</small></div>'+
+'<div class="tsub">of '+D.cuts.region.actives.toLocaleString('en-US')+' actives · Aug 18</div><span class="chip flat">town spread ↓</span><canvas id="instrument-sp-cuts"></canvas></div>';
+sparkline($('instrument-sp-rate'),D.rate.spark,BLUE,'tiles',function(v){return v.toFixed(2)+'%'});
+sparkline($('instrument-sp-med'),D.median.spark,BLUE,'tiles',function(v){return'$'+v.toLocaleString('en-US')});
+sparkline($('instrument-sp-dto'),D.dto.spark,BLUE,'tiles',function(v){return v+' days (full-year median)'});
+var c=$('instrument-sp-cuts'),s=cvs(c),ts=D.cuts.towns,bw=(s.w-2)/ts.length,mx=Math.max.apply(0,ts.map(function(t){return t.pct}));
+ts.forEach(function(t,i){var h=Math.max(1.5,(s.h-4)*t.pct/mx);
+s.x.fillStyle=t.pct>=15?BAD:BLUE;s.x.fillRect(1+i*bw,s.h-h,bw-2,h)});
+var T=tip('tiles');c.onpointermove=function(e){var r=c.getBoundingClientRect(),i=Math.max(0,Math.min(ts.length-1,Math.floor((e.clientX-r.left)/bw)));
+T.show('<b>'+ts[i].label+'</b> · '+ts[i].pct+'% of '+ts[i].actives+' actives cut',e.clientX,e.clientY)};c.onpointerleave=function(){T.hide()}}
+/* ── 2 · gauges ── */
+function pol(cx,cy,r,deg){var a=(180-deg)*Math.PI/180;return[cx+r*Math.cos(a),cy-r*Math.sin(a)]}
+function arc(cx,cy,r,a0,a1){var p0=pol(cx,cy,r,a0),p1=pol(cx,cy,r,a1);
+return'M'+p0[0].toFixed(2)+' '+p0[1].toFixed(2)+' A'+r+' '+r+' 0 '+(a1-a0>180?1:0)+' 1 '+p1[0].toFixed(2)+' '+p1[1].toFixed(2)}
+function gauges(){var el=$('instrument-gauges'),MAX=12,T=tip('gauges');
+D.gauges.forEach(function(g){var v=Math.min(g.mos,MAX),deg=180*v/MAX;
+var verd=g.mos<=4?'Seller’s':(g.mos<6?'Balanced':'Buyer’s');
+var zones=[[0,4,BLUE],[4,6,'rgba(250,248,244,.22)'],[6,12,ORANGE]];
+var svg='<svg viewBox="0 0 120 72" width="128" height="77" style="max-width:100%">';
+zones.forEach(function(z){var a0=180*z[0]/MAX+(z[0]?1.6:0),a1=180*z[1]/MAX-(z[1]<12?1.6:0);
+svg+='<path d="'+arc(60,62,44,a0,a1)+'" fill="none" stroke="'+z[2]+'" stroke-width="9" stroke-linecap="butt"/>'});
+var n=pol(60,62,33,deg);
+svg+='<line x1="60" y1="62" x2="'+n[0].toFixed(1)+'" y2="'+n[1].toFixed(1)+'" stroke="'+INK+'" stroke-width="2.5" stroke-linecap="round"/>';
+svg+='<circle cx="60" cy="62" r="3.2" fill="'+INK+'"/></svg>';
+var d=document.createElement('div');d.className='gauge';
+d.innerHTML='<div class="gname">'+g.label+'</div>'+svg+'<div class="gval">'+g.mos.toFixed(1)+'<small> mo</small></div><div class="gverd">'+verd+'</div>';
+d.onpointermove=function(e){T.show('<b>'+g.label+'</b> · '+g.mos.toFixed(1)+' months of supply<br>'+g.actives+' active listings · '+verd.toLowerCase()+' market',e.clientX,e.clientY)};
+d.onpointerleave=function(){T.hide()};el.appendChild(d)})}
+/* ── 3 · heat strip ── */
+var heatN=0,heatMap={},heatYears=[];
+function doy(ds){var d=new Date(ds+'T00:00:00Z');return Math.floor((d-Date.UTC(d.getUTCFullYear(),0,1))/864e5)}
+function heat(){var c=$('instrument-heat');
+var all=D.rate.all,years=[];all.forEach(function(r){var y=+r[0].slice(0,4);if(years.indexOf(y)<0)years.push(y)});
+if(heatN)years=years.slice(-heatN);heatYears=years;
+var vals=all.map(function(r){return r[1]}),mn=Math.min.apply(0,vals),mx=Math.max.apply(0,vals);
+$('instrument-hmin').textContent=mn.toFixed(2)+'%';$('instrument-hmax').textContent=mx.toFixed(2)+'%';
+var narrow=c.getBoundingClientRect().width<520;
+var rowH=years.length<=5?(narrow?22:30):(narrow?16:22),top=16,labW=38;
+c.style.height=(top+rowH*years.length)+'px';
+var s=cvs(c),cw=(s.w-labW)/53;heatMap={};
+s.x.font='10px Geist,system-ui,sans-serif';s.x.fillStyle=MUT;
+var mdoy=[0,31,59,90,120,151,181,212,243,273,304,334];
+'JFMAMJJASOND'.split('').forEach(function(m,i){s.x.fillText(m,labW+cw*(mdoy[i]/7)+cw*1.6,10)});
+all.forEach(function(r){var y=+r[0].slice(0,4),yi=years.indexOf(y);if(yi<0)return;
+var w=Math.min(52,Math.floor(doy(r[0])/7));while(heatMap[yi+'-'+w]&&w<52)w++;heatMap[yi+'-'+w]=r;
+s.x.fillStyle=ramp((r[1]-mn)/(mx-mn));
+s.x.fillRect(labW+w*cw,top+yi*rowH,Math.max(1,cw-1),rowH-2)});
+s.x.fillStyle=MUT;s.x.font='10.5px Geist,system-ui,sans-serif';
+years.forEach(function(y,i){s.x.fillText("'"+String(y).slice(2),2,top+i*rowH+rowH/2+3)});
+var T=tip('heat');c.onpointermove=function(e){var r=c.getBoundingClientRect(),
+w=Math.floor((e.clientX-r.left-labW)/cw),yi=Math.floor((e.clientY-r.top-top)/rowH);
+var d=heatMap[yi+'-'+w];if(d)T.show('<b>'+d[0]+'</b> · '+d[1].toFixed(2)+'%',e.clientX,e.clientY);else T.hide()};
+c.onpointerleave=function(){T.hide()}}
+function segInit(){var seg=$('instrument-seg'),th=seg.querySelector('.thumb'),bs=[].slice.call(seg.querySelectorAll('button'));
+function place(b){th.style.left=b.offsetLeft+'px';th.style.width=b.offsetWidth+'px'}
+bs.forEach(function(b){b.onclick=function(){bs.forEach(function(x){x.classList.remove('on')});
+b.classList.add('on');place(b);heatN=+b.dataset.n;heat()}});place(seg.querySelector('.on'))}
+/* ── 4 · delta board ── */
+function deltas(){var el=$('instrument-delta');
+D.delta.forEach(function(m,i){var d=document.createElement('div');d.className='dmet';
+d.innerHTML='<div class="dlab">'+m.lab+'</div><div class="drow"><span class="dthen">'+m.then+'<span class="dyr">'+m.thenSub+'</span></span>'+
+'<span class="darr">→</span><span class="dnow">'+m.now+'<span class="dyr">'+m.nowSub+'</span></span>'+
+'<span class="chip '+(m.chip.good?'good':'bad')+'">'+m.chip.dir+' '+m.chip.txt+'</span></div>'+
+'<canvas id="instrument-dsp-'+i+'"></canvas>';el.appendChild(d);
+sparkline($('instrument-dsp-'+i),m.spark,BLUE,'delta',function(v){return m.unit==='$'?'$'+v.toLocaleString('en-US'):(m.unit==='$B'?'$'+v.toFixed(2)+'B':v.toLocaleString('en-US')+m.unit)})})}
+/* ── 5 · hybrid ── */
+function hybrid(){var el=$('instrument-hybrid'),T=tip('hybrid');
+D.hybrid.forEach(function(line){var p=document.createElement('p');p.className='sent';
+line.parts.forEach(function(pt){if(pt.t)p.appendChild(document.createTextNode(pt.t));
+if(pt.n){var u=document.createElement('span');u.className='nw';
+var b=document.createElement('b');b.textContent=pt.n;u.appendChild(b);
+var bar=document.createElement('span');bar.className='mb'+(pt.accent?' acc':'');
+bar.style.width=Math.max(6,70*pt.v/pt.max)+'px';
+bar.onpointermove=function(e){T.show(pt.exact,e.clientX,e.clientY)};
+bar.onpointerleave=function(){T.hide()};u.appendChild(bar);
+if(pt.tail)u.appendChild(document.createTextNode(pt.tail));
+p.appendChild(u)}});el.appendChild(p)})}
+/* ── 6 · peak meters ── */
+function peak(){var el=$('instrument-peak-wrap'),T=tip('peak');
+var W=Math.max(300,el.getBoundingClientRect().width),labW=W<420?106:130,lfs=W<420?10:11.5,valW=44,rowH=26,top=18;
+var H=top+rowH*D.peak.length+6,mx=Math.max.apply(0,D.peak.map(function(p){return p.pct}));
+var scale=(W-labW-valW-8)/mx,x100=labW+100*scale;
+var svg='<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'">';
+svg+='<line x1="'+x100+'" y1="'+(top-4)+'" x2="'+x100+'" y2="'+(H-4)+'" stroke="rgba(250,248,244,.35)" stroke-width="1" stroke-dasharray="none"/>';
+svg+='<text x="'+x100+'" y="'+(top-8)+'" fill="'+MUT+'" font-size="9.5" text-anchor="middle" font-family="Geist,system-ui,sans-serif" letter-spacing=".06em">2022 PEAK = 100%</text>';
+D.peak.forEach(function(p,i){var y=top+i*rowH,w=p.pct*scale,acc=p.pct<80;
+svg+='<text x="'+(labW-8)+'" y="'+(y+rowH/2+3.5)+'" fill="'+INK+'" font-size="'+lfs+'" text-anchor="end" font-family="Geist,system-ui,sans-serif">'+p.label+'</text>';
+svg+='<rect data-i="'+i+'" x="'+labW+'" y="'+(y+rowH/2-5)+'" width="'+w.toFixed(1)+'" height="10" rx="2" fill="'+(acc?BAD:BLUE)+'"/>';
+svg+='<text x="'+(labW+w+6)+'" y="'+(y+rowH/2+3.5)+'" fill="'+(acc?BAD:INK)+'" font-size="11" font-family="Geist,system-ui,sans-serif">'+p.pct.toFixed(0)+'%</text>'});
+svg+='</svg>';el.innerHTML=svg;
+el.querySelector('svg').addEventListener('pointermove',function(e){var t=e.target;
+if(t.tagName==='rect'){var p=D.peak[+t.getAttribute('data-i')];
+T.show('<b>'+p.label+'</b><br>2022 median $'+p.p22.toLocaleString('en-US')+' ('+p.n22.toLocaleString('en-US')+' closes)<br>2025 median $'+p.p25.toLocaleString('en-US')+' ('+p.n25.toLocaleString('en-US')+' closes) = <b>'+p.pct+'%</b>',e.clientX,e.clientY)}else T.hide()});
+el.querySelector('svg').addEventListener('pointerleave',function(){T.hide()})}
+function init(){tiles();gauges();heat();segInit();deltas();hybrid();peak()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){
+$('instrument-tiles').innerHTML='';$('instrument-gauges').innerHTML='';$('instrument-delta').innerHTML='';
+$('instrument-hybrid').innerHTML='';tiles();gauges();heat();deltas();hybrid();peak()},150)});
+})()</script>

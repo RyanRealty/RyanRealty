@@ -1,0 +1,584 @@
+<section class="fam" id="fam-relate">
+<style>
+#fam-relate{--r-ink:#faf8f4;--r-mut:rgba(250,248,244,.55);--r-fnt:rgba(250,248,244,.34);--r-grid:rgba(250,248,244,.07);--r-blue:#3987e5;--r-orange:#d95926;--r-aqua:#199e70;--r-acc:#E08163;}
+#fam-relate .rcard{background:rgba(250,248,244,.03);border:1px solid rgba(250,248,244,.10);border-radius:16px;padding:18px 18px 10px;margin:0 0 22px;}
+#fam-relate .ct{font-family:'Amboqia',Georgia,serif;font-weight:400;font-size:21px;letter-spacing:.01em;color:var(--r-ink);margin:0 0 14px;}
+#fam-relate .plot{position:relative;width:100%;}
+#fam-relate .plot canvas{display:block;width:100%;}
+#fam-relate .rtip{position:absolute;pointer-events:none;background:#0b1830;border:1px solid rgba(250,248,244,.18);border-radius:8px;padding:7px 10px;font:11px/1.5 Geist,system-ui,sans-serif;color:var(--r-ink);white-space:nowrap;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.45);}
+#fam-relate .rtip .tt{font-weight:600;font-size:11.5px;margin-bottom:2px;}
+#fam-relate .rtip .tr{display:flex;gap:10px;justify-content:space-between;color:var(--r-mut);}
+#fam-relate .rtip .tr b{color:var(--r-ink);font-weight:600;}
+#fam-relate .srcd{margin:8px 0 2px;font:11px Geist,system-ui,sans-serif;color:var(--r-fnt);}
+#fam-relate .srcd summary{cursor:pointer;outline:none;}
+#fam-relate .srcd p{margin:6px 0 2px;line-height:1.5;color:var(--r-mut);}
+#fam-relate .rkpi{display:flex;flex-wrap:wrap;gap:12px 34px;margin:2px 2px 22px;}
+#fam-relate .rkpi .kv{font-family:'Amboqia',Georgia,serif;font-size:32px;color:var(--r-ink);line-height:1.1;}
+#fam-relate .rkpi .kl{font:10px Geist,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--r-mut);margin-top:4px;}
+#fam-relate .rseg{position:relative;display:flex;flex-wrap:wrap;gap:2px;background:rgba(250,248,244,.05);border:1px solid rgba(250,248,244,.10);border-radius:999px;padding:3px;width:max-content;max-width:100%;margin:0 0 14px;}
+#fam-relate .rseg button{position:relative;z-index:1;border:0;background:transparent;color:var(--r-mut);font:12px Geist,system-ui,sans-serif;padding:5px 11px;border-radius:999px;cursor:pointer;white-space:nowrap;}
+#fam-relate .rseg button.on{color:#0b1830;font-weight:600;}
+#fam-relate .rseg .th{position:absolute;z-index:0;background:var(--r-ink);border-radius:999px;transition:all .22s ease;}
+#fam-relate .rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:900px){#fam-relate .rgrid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:620px){#fam-relate .rgrid{grid-template-columns:repeat(2,1fr);}}
+#fam-relate .rmini{position:relative;border:1px solid rgba(250,248,244,.08);border-radius:10px;padding:8px 8px 4px;}
+#fam-relate .rmini .mn{font:11px Geist,system-ui,sans-serif;color:var(--r-ink);display:flex;justify-content:space-between;gap:6px;}
+#fam-relate .rmini .mn b{font-weight:600;color:var(--r-mut);}
+#fam-relate .raxnote{font:10px Geist,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--r-fnt);margin:0 2px 10px;}
+#fam-relate .cdesc{font-size:12px;color:rgba(250,248,244,.55);margin:2px 0 6px;line-height:1.45}
+</style>
+
+<div class="rkpi" id="relate-kpi"></div>
+
+<div class="rcard" id="relate-c1">
+  <h3 class="ct">Bend tight, the fringe stacked</h3>
+  <p class="cdesc">Months of supply vs price-cut share, SFR by town, live.</p>
+  <div class="plot"><canvas id="relate-cv1" height="340"></canvas><div class="rtip" id="relate-tip1" hidden></div></div>
+  <details class="srcd"><summary>Source</summary><p>market_pulse_live town rows via out/chart-data.json, fetched 2026-08-19T03:53 UTC. x = months_of_supply (log scale), y = price_reduction_share %, bubble area = active_count. 6-mo buyer line per the canonical supply thresholds. Accent = supply &ge; 6 mo and cut share &ge; the 13-town median (8.0%).</p></details>
+</div>
+
+<div class="rcard" id="relate-c2">
+  <h3 class="ct">Four towns stacked and cutting</h3>
+  <p class="cdesc">Town quadrants by SFR supply vs price-cut share, 13-town medians.</p>
+  <div class="plot"><canvas id="relate-cv2" height="320"></canvas><div class="rtip" id="relate-tip2" hidden></div></div>
+  <details class="srcd"><summary>Source</summary><p>Same 13 market_pulse_live rows as above (fetched 2026-08-19T03:53 UTC). Split lines are the in-page medians of the 13 towns: 6.65 mo supply, 8.0% cut share. A town on a median line counts as the lower side.</p></details>
+</div>
+
+<div class="rcard" id="relate-c3">
+  <h3 class="ct">$254 to $543 a foot</h3>
+  <p class="cdesc">Median detached close price per square foot by town, 2026 YTD.</p>
+  <div class="plot"><canvas id="relate-cv3" height="300"></canvas><div class="rtip" id="relate-tip3" hidden></div></div>
+  <details class="srcd"><summary>Source</summary><p>listings sold rollup via out/terrain2.json, fetched 2026-08-19T04:01 UTC. Median close $/sqft per town, 2026 closes year-to-date through mid-Aug; n in tooltip = YTD closes. Camp Sherman n=5 and Black Butte Ranch n=19 are thin — read those two as indicative.</p></details>
+</div>
+
+<div class="rcard" id="relate-c4">
+  <h3 class="ct">Five dials against the region</h3>
+  <p class="cdesc">Five live SFR market metrics per town vs region median.</p>
+  <div class="rseg" id="relate-seg4"><div class="th"></div></div>
+  <div class="plot"><div id="relate-sv4"></div><div class="rtip" id="relate-tip4" hidden></div></div>
+  <details class="srcd"><summary>Source</summary><p>market_pulse_live via out/chart-data.json (fetched 2026-08-19T03:53 UTC): months_of_supply, median_days_to_pending, price_reduction_share, pct_sold_over_asking, median_sale_to_list. Every axis points up = stronger for sellers (supply, days, cuts inverted). Region = per-metric median across the 13 town rows, computed in-page. Metolius and Terrebonne carry null metrics this month and are not switchable.</p></details>
+</div>
+
+<div class="rcard" id="relate-c5">
+  <h3 class="ct">2021 was one dot</h3>
+  <p class="cdesc">Detached days to offer vs % of original ask, per town, 2019–2026.</p>
+  <div class="plot"><canvas id="relate-cv5" height="340"></canvas><div class="rtip" id="relate-tip5" hidden></div></div>
+  <details class="srcd"><summary>Source</summary><p>out/terrain2.json (fetched 2026-08-19T04:01 UTC): per town-year median days-to-offer (x) and median % of original ask (y), 2019&ndash;2026; 2026 = closes YTD. Each trail runs 2019&rarr;2026, fading in; dot = 2026.</p></details>
+</div>
+
+<div class="rcard" id="relate-c6">
+  <h3 class="ct">Every town rode one wave</h3>
+  <p class="cdesc">Median detached close price per town, 1998–2026 YTD, $0–$1.4M scale.</p>
+  <div class="raxnote">Shared scale $0&ndash;$1.4M &middot; shaded band = 2007&ndash;2011 crash</div>
+  <div class="plot"><div class="rgrid" id="relate-grid6"></div><div class="rtip" id="relate-tip6" hidden></div></div>
+  <details class="srcd"><summary>Source</summary><p>out/terrain2.json (fetched 2026-08-19T04:01 UTC): median close price per town-year, 1998&ndash;2026 YTD. Crash band = region median peak $310,000 (2007) to trough $155,000 (2011), from the region cube in out/chart-data.json. Camp Sherman shows a gap at 2010 (no recorded closes).</p></details>
+</div>
+
+</section>
+<script>(function(){
+var D = {"towns":[{"label":"Bend","act":475,"listp":759900,"mos":3.47,"dtp":18,"cut":6.6,"over":17.27,"stl":0.9816,"sold30":167},{"label":"Redmond","act":181,"listp":534950,"mos":4.28,"dtp":20,"cut":8.15,"over":19.46,"stl":0.9865,"sold30":30},{"label":"La Pine","act":171,"listp":499900,"mos":11.15,"dtp":51.5,"cut":8.62,"over":12.5,"stl":0.9633,"sold30":21},{"label":"Prineville","act":82,"listp":450000,"mos":4.92,"dtp":60,"cut":8.24,"over":18.64,"stl":0.9721,"sold30":21},{"label":"Powell Butte","act":63,"listp":1360000,"mos":12.19,"dtp":37.5,"cut":12.31,"over":6.25,"stl":0.949,"sold30":3},{"label":"Sunriver","act":51,"listp":899450,"mos":6.65,"dtp":17,"cut":7.84,"over":3.45,"stl":0.9676,"sold30":5},{"label":"Madras","act":49,"listp":399900,"mos":5.07,"dtp":34,"cut":8,"over":37.14,"stl":0.9871,"sold30":15},{"label":"Sisters","act":34,"listp":699000,"mos":4.43,"dtp":10,"cut":5.71,"over":21.88,"stl":1,"sold30":11},{"label":"Black Butte Ranch","act":30,"listp":995000,"mos":11.25,"dtp":31,"cut":16.67,"over":0,"stl":0.9265,"sold30":2},{"label":"Culver","act":12,"listp":414925,"mos":7.2,"dtp":47,"cut":0,"over":0,"stl":0.9617,"sold30":1},{"label":"Metolius","act":7,"listp":346950,"mos":7,"dtp":null,"cut":0,"over":25,"stl":1,"sold30":0},{"label":"Terrebonne","act":6,"listp":685000,"mos":36,"dtp":null,"cut":16.67,"over":null,"stl":null,"sold30":0},{"label":"Camp Sherman","act":4,"listp":945000,"mos":4,"dtp":18,"cut":0,"over":0,"stl":0.9657,"sold30":2}],"terr":[{"label":"Bend","py":[[1998,136900,1539],[1999,145000,1588],[2000,173500,1599],[2001,173900,1781],[2002,189000,1874],[2003,204000,2179],[2004,233394,2723],[2005,288380,3358],[2006,359818,2421],[2007,355000,1731],[2008,299900,1302],[2009,220000,1827],[2010,200000,2015],[2011,199900,2073],[2012,229250,2443],[2013,280000,2695],[2014,300000,2655],[2015,339900,2952],[2016,371870,3021],[2017,410000,2930],[2018,438000,2947],[2019,469900,2839],[2020,535000,3184],[2021,680500,3100],[2022,765000,2502],[2023,749970,1932],[2024,770000,1975],[2025,772500,2182],[2026,765000,1220]],"ds":[[2019,17,98.3],[2020,9,100],[2021,5,100],[2022,7,100],[2023,15,98.3],[2024,22,98.1],[2025,29,96.8],[2026,19,97.8]],"ppsf":405,"n26":1220},{"label":"Black Butte Ranch","py":[[1998,325000,49],[1999,304000,47],[2000,360000,57],[2001,295500,38],[2002,381250,48],[2003,388500,40],[2004,422405,51],[2005,652000,48],[2006,595000,42],[2007,789000,29],[2008,743125,19],[2009,669000,16],[2010,540000,18],[2011,507500,18],[2012,465000,26],[2013,422000,42],[2014,475000,25],[2015,421200,47],[2016,460000,49],[2017,575000,37],[2018,520000,45],[2019,598500,44],[2020,700000,83],[2021,833500,42],[2022,1391250,34],[2023,1147500,24],[2024,1097500,32],[2025,1037500,40],[2026,950000,19]],"ds":[[2019,39,94],[2020,38,96.1],[2021,4,100],[2022,5,100],[2023,12,94.8],[2024,14,98.7],[2025,39,94.5],[2026,32,90.3]],"ppsf":481,"n26":19},{"label":"Camp Sherman","py":[[1998,177500,8],[1999,279500,5],[2000,249900,9],[2001,269500,5],[2002,225000,3],[2003,241000,6],[2004,325000,7],[2005,405000,9],[2006,647500,4],[2007,565000,4],[2008,462750,4],[2009,392250,6],[2011,274950,4],[2012,288750,8],[2013,355000,3],[2014,383750,10],[2015,335000,7],[2016,370000,8],[2017,356000,13],[2018,377000,7],[2019,431750,12],[2020,459500,6],[2021,1350000,3],[2022,633000,8],[2023,765500,10],[2024,982000,3],[2025,730000,3],[2026,750000,5]],"ds":[[2019,67,94.8],[2020,11,96.5],[2021,7,97.4],[2022,10,97.3],[2023,6,100],[2024,21,97.6],[2025,36,85.9],[2026,36,96.6]],"ppsf":543,"n26":5},{"label":"Culver","py":[[1998,80103,20],[1999,87136,20],[2000,83950,18],[2001,96000,19],[2002,94750,14],[2003,111900,25],[2004,123950,32],[2005,156244,56],[2006,169900,67],[2007,179950,46],[2008,175300,15],[2009,122750,26],[2010,99550,38],[2011,85500,27],[2012,89000,33],[2013,120000,35],[2014,135000,41],[2015,143500,38],[2016,200000,32],[2017,220250,44],[2018,230000,69],[2019,260000,50],[2020,274500,56],[2021,340000,67],[2022,370000,45],[2023,425000,27],[2024,415000,23],[2025,399000,25],[2026,439000,19]],"ds":[[2019,17,99.9],[2020,21,98.3],[2021,5,100],[2022,6,100],[2023,64,94.3],[2024,33,96.1],[2025,44,97.3],[2026,66,97.9]],"ppsf":305,"n26":19},{"label":"La Pine","py":[[1998,97000,83],[1999,88368,112],[2000,95000,108],[2001,107000,104],[2002,113989,95],[2003,116714,137],[2004,134950,216],[2005,167950,282],[2006,197500,237],[2007,230500,128],[2008,178500,92],[2009,128000,168],[2010,111250,172],[2011,120000,154],[2012,105000,169],[2013,147750,172],[2014,159450,148],[2015,193750,212],[2016,220000,223],[2017,245000,252],[2018,259525,240],[2019,277000,252],[2020,327250,268],[2021,400000,328],[2022,464950,268],[2023,425000,189],[2024,454900,199],[2025,408500,200],[2026,420000,107]],"ds":[[2019,30,97.6],[2020,17,99.7],[2021,7,100],[2022,23,98.5],[2023,37,95.7],[2024,42,96.3],[2025,48,96.5],[2026,52,96.9]],"ppsf":291,"n26":107},{"label":"Madras","py":[[1998,93662,68],[1999,95450,74],[2000,97950,72],[2001,101900,75],[2002,105000,97],[2003,104000,83],[2004,111650,120],[2005,139100,157],[2006,168500,221],[2007,185000,95],[2008,149698,80],[2009,89900,99],[2010,72000,102],[2011,69900,91],[2012,79700,84],[2013,99000,93],[2014,115000,119],[2015,125000,144],[2016,152900,150],[2017,179000,133],[2018,213415,144],[2019,222500,127],[2020,263400,185],[2021,311500,185],[2022,383450,196],[2023,360000,129],[2024,362500,136],[2025,374000,169],[2026,366633,86]],"ds":[[2019,28,96.2],[2020,14,98.6],[2021,8,100],[2022,17,100],[2023,32,96.6],[2024,42,97.1],[2025,42,98.3],[2026,47,98.3]],"ppsf":254,"n26":86},{"label":"Powell Butte","py":[[1998,173250,24],[1999,205000,31],[2000,210000,13],[2001,215185,28],[2002,257750,24],[2003,322000,31],[2004,322500,33],[2005,420000,23],[2006,629530,29],[2007,559500,10],[2008,486750,18],[2009,385000,22],[2010,328900,39],[2011,257500,30],[2012,311125,52],[2013,376000,46],[2014,420000,47],[2015,426250,56],[2016,481500,62],[2017,530000,64],[2018,600000,63],[2019,627000,58],[2020,685000,109],[2021,982000,76],[2022,1065000,63],[2023,1125000,60],[2024,1200000,64],[2025,1350000,57],[2026,1225000,34]],"ds":[[2019,48,96.4],[2020,37,98],[2021,8,100],[2022,9,99.1],[2023,36,95],[2024,29,96.1],[2025,60,93.8],[2026,38,94.4]],"ppsf":465,"n26":34},{"label":"Prineville","py":[[1998,88900,148],[1999,88500,186],[2000,99500,195],[2001,110000,178],[2002,109500,234],[2003,117264,304],[2004,120000,381],[2005,155302,476],[2006,213920,360],[2007,225000,193],[2008,185567,151],[2009,118000,200],[2010,102000,279],[2011,87000,267],[2012,107500,282],[2013,135000,251],[2014,145000,276],[2015,170342,338],[2016,200050,351],[2017,230000,364],[2018,245000,345],[2019,267500,374],[2020,309900,407],[2021,389662,418],[2022,425000,365],[2023,424995,297],[2024,442500,317],[2025,428400,322],[2026,454500,170]],"ds":[[2019,30,97.7],[2020,13,99.3],[2021,8,100],[2022,14,98.8],[2023,37,96.1],[2024,30,98],[2025,40,97.3],[2026,35,97.7]],"ppsf":292,"n26":170},{"label":"Redmond","py":[[1998,111505,507],[1999,116600,543],[2000,124900,539],[2001,128600,582],[2002,139900,607],[2003,155900,708],[2004,164900,993],[2005,209500,1244],[2006,269925,954],[2007,255000,535],[2008,219975,462],[2009,150800,655],[2010,128000,755],[2011,121700,692],[2012,139950,722],[2013,184500,705],[2014,205000,849],[2015,229900,977],[2016,261000,1025],[2017,295000,932],[2018,300000,1017],[2019,327832,1083],[2020,365000,1284],[2021,460000,1299],[2022,531280,947],[2023,503000,704],[2024,530384,856],[2025,549000,790],[2026,528000,374]],"ds":[[2019,19,98.8],[2020,9,100],[2021,5,100.3],[2022,9,100],[2023,17,98.2],[2024,25,98.3],[2025,28,97.9],[2026,23,98.3]],"ppsf":328,"n26":374},{"label":"Sisters","py":[[1998,163000,116],[1999,174500,86],[2000,220000,95],[2001,219000,91],[2002,235000,107],[2003,241000,121],[2004,292000,142],[2005,359000,160],[2006,454500,134],[2007,429822,108],[2008,359250,76],[2009,250000,71],[2010,228250,112],[2011,219500,130],[2012,249900,125],[2013,324900,141],[2014,289950,156],[2015,340000,155],[2016,392500,158],[2017,423000,178],[2018,455000,199],[2019,468500,204],[2020,501880,260],[2021,642475,262],[2022,735000,221],[2023,719000,180],[2024,750000,171],[2025,799999,153],[2026,760000,107]],"ds":[[2019,24,97.7],[2020,17,100],[2021,5,100],[2022,6,100],[2023,19,97],[2024,19,97.7],[2025,27,97.1],[2026,18,97.8]],"ppsf":415,"n26":107},{"label":"Sunriver","py":[[1998,220000,263],[1999,245000,284],[2000,294500,229],[2001,289500,171],[2002,320000,199],[2003,335000,234],[2004,396000,244],[2005,462500,217],[2006,575000,166],[2007,545774,142],[2008,561500,73],[2009,402000,80],[2010,415000,94],[2011,375000,98],[2012,350000,143],[2013,364000,148],[2014,369500,144],[2015,375000,200],[2016,392500,212],[2017,460000,177],[2018,510250,188],[2019,519000,179],[2020,585000,207],[2021,830000,191],[2022,934950,134],[2023,950000,100],[2024,899900,99],[2025,882500,134],[2026,865000,58]],"ds":[[2019,13,98.1],[2020,7,100],[2021,5,102.1],[2022,5,100],[2023,16,96.4],[2024,25,96.8],[2025,36,94.7],[2026,20,97.3]],"ppsf":444,"n26":58},{"label":"Terrebonne","py":[[1998,110500,20],[1999,137400,25],[2000,127000,28],[2001,185500,32],[2002,159900,33],[2003,153000,42],[2004,148250,54],[2005,204900,83],[2006,341350,66],[2007,301250,42],[2008,280000,31],[2009,168000,53],[2010,150000,63],[2011,161950,76],[2012,150000,72],[2013,223000,93],[2014,242000,69],[2015,265000,81],[2016,284000,111],[2017,309000,107],[2018,374950,102],[2019,371500,92],[2020,415000,140],[2021,553000,124],[2022,585000,101],[2023,615000,73],[2024,630000,81],[2025,624900,71],[2026,610000,40]],"ds":[[2019,29,97.1],[2020,16,98.1],[2021,7,100],[2022,16,97.9],[2023,26,96.5],[2024,26,96.9],[2025,53,95.4],[2026,45,96.4]],"ppsf":370,"n26":40}],"fetched":"2026-08-19T03:53 UTC","t2fetched":"2026-08-19T04:01 UTC","crash":{"from":2007,"to":2011,"peakP":310000,"troughP":155000}};
+var INK='#faf8f4', MUT='rgba(250,248,244,.55)', FNT='rgba(250,248,244,.38)', GRID='rgba(250,248,244,.07)';
+var BLUE='#3987e5', ORANGE='#d95926', AQUA='#199e70', ACC='#E08163', SURF='#0f2140';
+var F='Geist,system-ui,sans-serif', FA="'Amboqia',Georgia,serif";
+
+function med(a){var s=a.filter(function(v){return v!=null;}).slice().sort(function(x,y){return x-y;});var m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function $(id){return document.getElementById(id);}
+function fmt$(v){return '$'+Math.round(v).toLocaleString('en-US');}
+function fmtM(v){return v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+Math.round(v/1e3)+'K';}
+
+var MOS_MED = med(D.towns.map(function(t){return t.mos;}));
+var CUT_MED = med(D.towns.map(function(t){return t.cut;}));
+var ACT_SUM = D.towns.reduce(function(a,t){return a+t.act;},0);
+
+/* KPI row */
+(function(){
+  var k=$('relate-kpi');
+  [[String(D.towns.length),'towns live'],[ACT_SUM.toLocaleString('en-US'),'homes on market'],
+   [MOS_MED.toFixed(1)+' mo','median supply'],[CUT_MED.toFixed(1)+'%','median cut share']]
+  .forEach(function(p){
+    var d=document.createElement('div');
+    var v=document.createElement('div');v.className='kv';v.textContent=p[0];
+    var l=document.createElement('div');l.className='kl';l.textContent=p[1];
+    d.appendChild(v);d.appendChild(l);k.appendChild(d);
+  });
+})();
+
+/* canvas setup with dpr */
+function cnv(id,h){
+  var cv=$(id), dpr=window.devicePixelRatio||1, w=cv.parentNode.clientWidth;
+  cv.style.height=h+'px'; cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  var ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {cv:cv,ctx:ctx,w:w,h:h};
+}
+
+/* tooltip helper — rows built with textContent only */
+function tipCtl(tipId){
+  var tip=$(tipId);
+  return {
+    show:function(title,rows,x,y,box){
+      tip.hidden=false; while(tip.firstChild)tip.removeChild(tip.firstChild);
+      var t=document.createElement('div');t.className='tt';t.textContent=title;tip.appendChild(t);
+      rows.forEach(function(r){
+        var d=document.createElement('div');d.className='tr';
+        var a=document.createElement('span');a.textContent=r[0];
+        var b=document.createElement('b');b.textContent=r[1];
+        d.appendChild(a);d.appendChild(b);tip.appendChild(d);
+      });
+      var tw=tip.offsetWidth, th=tip.offsetHeight;
+      var lx=x+14, ly=y-th-10;
+      if(lx+tw>box.w-4) lx=x-tw-14;
+      if(lx<0) lx=4;
+      if(ly<0) ly=y+14;
+      tip.style.left=lx+'px'; tip.style.top=ly+'px';
+    },
+    hide:function(){tip.hidden=true;}
+  };
+}
+function hitLayer(cv,pts,tipId){
+  var tc=tipCtl(tipId);
+  cv.addEventListener('pointermove',function(e){
+    var r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    var best=null,bd=1e9;
+    pts.forEach(function(p){
+      var d=Math.hypot(mx-p.x,my-p.y);
+      if(d<Math.max((p.r||6)+12,16)&&d<bd){bd=d;best=p;}
+    });
+    if(best) tc.show(best.title,best.rows,best.x,best.y,{w:r.width});
+    else tc.hide();
+  });
+  cv.addEventListener('pointerleave',function(){tc.hide();});
+}
+
+function grid(ctx,x0,y0,x1,y1,xs,ys){
+  ctx.strokeStyle=GRID;ctx.lineWidth=1;
+  ys.forEach(function(y){ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();});
+  xs.forEach(function(x){ctx.beginPath();ctx.moveTo(x,y0);ctx.lineTo(x,y1);ctx.stroke();});
+}
+
+/* ── C1: bubble scatter, MoS (log x) vs cut share, bubble = actives ── */
+function renderC1(){
+  var c=cnv('relate-cv1',340),ctx=c.ctx,w=c.w,h=c.h;
+  var narrow=w<560;
+  var padL=40,padR=narrow?14:24,padT=26,padB=34;
+  var X0=3,X1=42;
+  function X(v){return padL+(Math.log(v/X0)/Math.log(X1/X0))*(w-padL-padR);}
+  function Y(v){return padT+(1-v/18)*(h-padT-padB);}
+  var xt=[3,6,12,24,36], yt=[0,5,10,15];
+  grid(ctx,padL,padT,w-padR,h-padB,xt.map(X),yt.map(Y));
+  ctx.font='10px '+F;ctx.fillStyle=MUT;ctx.textAlign='center';
+  xt.forEach(function(v){ctx.fillText(v+' mo',X(v),h-padB+16);});
+  ctx.textAlign='right';
+  yt.forEach(function(v){ctx.fillText(v+'%',padL-8,Y(v)+3);});
+  ctx.save();ctx.textAlign='left';ctx.fillStyle=FNT;
+  ctx.fillText('months of supply \u2192',padL,h-6);
+  ctx.translate(12,Y(9));ctx.rotate(-Math.PI/2);ctx.textAlign='center';
+  ctx.fillText('% of actives with a price cut \u2192',0,0);ctx.restore();
+  /* buyer line at 6 mo (canonical threshold) */
+  ctx.strokeStyle='rgba(250,248,244,.22)';ctx.beginPath();ctx.moveTo(X(6),padT);ctx.lineTo(X(6),h-padB);ctx.stroke();
+  if(!narrow){ctx.fillStyle=FNT;ctx.textAlign='left';ctx.font='9.5px '+F;
+  ctx.fillText('6 mo = buyer line',X(6)+5,padT+9);}
+  /* quadrant corner labels */
+  ctx.font='10px '+F;
+  function tag(t,x,y,align,col){ctx.fillStyle=col||FNT;ctx.textAlign=align;ctx.fillText(t,x,y);}
+  tag('TIGHT BUT CUTTING',padL+2,padT+9,'left');
+  tag('TIGHT & HOLDING',padL+2,h-padB-8,'left');
+  tag('STACKED & HOLDING',w-padR-2,h-padB-8,'right');
+  tag('STACKED & CUTTING',w-padR-2,padT+9,'right',ACC);
+  /* bubbles */
+  var pts=[];
+  var sc=narrow?0.85:1.25;
+  var ts=D.towns.slice().sort(function(a,b){return b.act-a.act;});
+  ts.forEach(function(t){
+    var bad=t.mos>=6&&t.cut>=CUT_MED;
+    var col=bad?ACC:BLUE;
+    var x=X(t.mos),y=Y(Math.min(t.cut,18)),r=Math.max(5,Math.sqrt(t.act)*sc);
+    ctx.beginPath();ctx.arc(x,y,r+2,0,7);ctx.fillStyle=SURF;ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,r,0,7);
+    ctx.fillStyle=bad?'rgba(224,129,99,.30)':'rgba(57,135,229,.28)';ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle=col;ctx.stroke();
+    pts.push({x:x,y:y,r:r,lab:t.label,bad:bad,title:t.label,rows:[
+      ['supply',t.mos+' mo'],['cut share',t.cut.toFixed(1)+'%'],
+      ['active homes',String(t.act)],['median list',fmt$(t.listp)]]});
+  });
+  /* direct labels: side labels on wide, centered-below on narrow */
+  ctx.font='10.5px '+F;
+  if(narrow){
+    var nl=pts.filter(function(p){return p.bad||p.r>14;});
+    nl.forEach(function(p){
+      var tw2=ctx.measureText(p.lab).width;
+      var lx=Math.max(padL+tw2/2,Math.min(w-6-tw2/2,p.x));
+      ctx.textAlign='center';ctx.fillStyle=p.bad?ACC:MUT;
+      ctx.fillText(p.lab,lx,Math.min(p.y+p.r+13,h-8));
+    });
+  } else {
+    var labs=pts.map(function(p){return {p:p,x:p.x+p.r+5,y:p.y+3};});
+    labs.sort(function(a,b){return a.y-b.y;});
+    ctx.textAlign='left';
+    for(var i=0;i<labs.length;i++){
+      for(var j=0;j<i;j++){
+        var a=labs[j],b=labs[i];
+        var awd=ctx.measureText(a.p.lab).width, bwd=ctx.measureText(b.p.lab).width;
+        if(Math.abs(b.y-a.y)<11 && b.x<a.x+awd+6 && a.x<b.x+bwd+6) b.y=a.y+11;
+      }
+    }
+    labs.forEach(function(l){
+      if(l.x+ctx.measureText(l.p.lab).width>w-2){ctx.textAlign='right';l.x=l.p.x-l.p.r-5;}else ctx.textAlign='left';
+      ctx.fillStyle=l.p.bad?ACC:MUT;ctx.fillText(l.p.lab,l.x,Math.min(l.y,h-8));
+    });
+  }
+  hitLayer(c.cv,pts,'relate-tip1');
+}
+
+/* ── C2: four-fold on the same data, median splits ── */
+function renderC2(){
+  var c=cnv('relate-cv2',320),ctx=c.ctx,w=c.w,h=c.h;
+  var padL=40,padR=20,padT=24,padB=34;
+  var X0=3,X1=42;
+  function X(v){return padL+(Math.log(v/X0)/Math.log(X1/X0))*(w-padL-padR);}
+  function Y(v){return padT+(1-v/18)*(h-padT-padB);}
+  var mx=X(MOS_MED),my=Y(CUT_MED);
+  /* bad-quadrant wash */
+  ctx.fillStyle='rgba(224,129,99,.08)';ctx.fillRect(mx,padT,w-padR-mx,my-padT);
+  var xt=[3,6,12,24,36],yt=[0,5,10,15];
+  grid(ctx,padL,padT,w-padR,h-padB,xt.map(X),yt.map(Y));
+  ctx.font='10px '+F;ctx.fillStyle=MUT;ctx.textAlign='center';
+  xt.forEach(function(v){ctx.fillText(v+' mo',X(v),h-padB+16);});
+  ctx.textAlign='right';yt.forEach(function(v){ctx.fillText(v+'%',padL-8,Y(v)+3);});
+  /* median split lines */
+  ctx.strokeStyle='rgba(250,248,244,.35)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(mx,padT);ctx.lineTo(mx,h-padB);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(padL,my);ctx.lineTo(w-padR,my);ctx.stroke();
+  ctx.fillStyle=FNT;ctx.font='9.5px '+F;ctx.textAlign='left';
+  ctx.textAlign='right';ctx.fillText('median '+MOS_MED.toFixed(1)+' mo',mx-6,padT+12);ctx.textAlign='left';
+  ctx.textAlign='right';ctx.fillText('median '+CUT_MED.toFixed(1)+'%',w-padR-6,my+14);ctx.textAlign='left';
+  /* quadrant counts + dots */
+  var q={tl:[],tr:[],bl:[],br:[]};
+  D.towns.forEach(function(t){
+    var hi=t.mos>MOS_MED, cu=t.cut>CUT_MED;
+    q[(cu?'t':'b')+(hi?'r':'l')].push(t);
+  });
+  ctx.font='34px '+FA;ctx.fillStyle='rgba(250,248,244,.30)';
+  ctx.textAlign='left';ctx.fillText(String(q.tl.length),padL+10,padT+40);
+  ctx.fillText(String(q.bl.length),padL+10,h-padB-14);
+  ctx.textAlign='left';ctx.fillStyle='rgba(224,129,99,.85)';ctx.fillText(String(q.tr.length),mx+14,padT+44);
+  ctx.fillStyle='rgba(250,248,244,.30)';ctx.fillText(String(q.br.length),w-padR-10,h-padB-14);
+  var pts=[];
+  D.towns.forEach(function(t){
+    var x=X(t.mos),y=Y(Math.min(t.cut,18));
+    var bad=t.mos>MOS_MED&&t.cut>CUT_MED;
+    ctx.beginPath();ctx.arc(x,y,5.5,0,7);ctx.fillStyle=SURF;ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fillStyle=bad?ACC:INK;ctx.fill();
+    pts.push({x:x,y:y,r:6,title:t.label,rows:[
+      ['supply',t.mos+' mo'],['cut share',t.cut.toFixed(1)+'%'],['active homes',String(t.act)]]});
+  });
+  /* label only the accent quadrant towns */
+  ctx.font='10.5px '+F;ctx.textAlign='left';
+  var tl=pts.filter(function(p,i){var t=D.towns[i];return t.mos>MOS_MED&&t.cut>CUT_MED;});
+  tl.sort(function(a,b){return a.y-b.y;});
+  var lastY=-99;
+  tl.forEach(function(p){
+    var y=p.y+3; if(y-lastY<11)y=lastY+11; lastY=y;
+    var xx=p.x+9; ctx.textAlign='left';
+    if(xx+ctx.measureText(p.title).width>w-4){ctx.textAlign='right';xx=p.x-9;}
+    ctx.fillStyle=ACC;ctx.fillText(p.title,xx,y);
+  });
+  hitLayer(c.cv,pts,'relate-tip2');
+}
+
+/* ── C3: strip / beeswarm — 2026 median $/sqft, one axis ── */
+function renderC3(){
+  var c=cnv('relate-cv3',300),ctx=c.ctx,w=c.w,h=c.h;
+  var padL=18,padR=18,axY=h/2+8;
+  var V0=240,V1=560;
+  function X(v){return padL+(v-V0)/(V1-V0)*(w-padL-padR);}
+  var ds=D.terr.map(function(t){return {label:t.label,v:t.ppsf,n:t.n26};})
+    .sort(function(a,b){return a.v-b.v;});
+  var lo=ds[0],hi=ds[ds.length-1];
+  /* axis */
+  ctx.strokeStyle='rgba(250,248,244,.22)';ctx.beginPath();ctx.moveTo(padL,axY);ctx.lineTo(w-padR,axY);ctx.stroke();
+  ctx.font='10px '+F;ctx.fillStyle=MUT;ctx.textAlign='center';
+  [250,300,350,400,450,500,550].forEach(function(v){
+    ctx.strokeStyle=GRID;ctx.beginPath();ctx.moveTo(X(v),axY-5);ctx.lineTo(X(v),axY+5);ctx.stroke();
+    ctx.fillText('$'+v,X(v),axY+22);
+  });
+  ctx.fillStyle=FNT;ctx.textAlign='center';
+  ctx.fillText('median close $ per sq ft, 2026 YTD',w/2,h-6);
+  /* labels staggered above/below with leaders */
+  var lev=[-1,1,-2,2,-3,3];
+  var ends={};
+  var pts=[];
+  ds.forEach(function(d,i){
+    var x=X(d.v), ext=(d===lo||d===hi);
+    var col=ext?ACC:BLUE;
+    ctx.font='10.5px '+F;
+    var tw=Math.max(ctx.measureText(d.label).width,ctx.measureText('$'+d.v).width);
+    var L=null;
+    for(var k=0;k<lev.length;k++){
+      var e=ends[lev[k]]==null?-1e9:ends[lev[k]];
+      if(x-tw/2>e+12){L=lev[k];break;}
+    }
+    if(L==null)L=lev[i%lev.length];
+    ends[L]=x+tw/2;
+    /* text block: two lines; ly = block anchor distance from axis */
+    var dist=36+(Math.abs(L)-1)*32;
+    var nameY, valY, leadEnd;
+    if(L<0){ nameY=axY-dist-12; valY=axY-dist; leadEnd=valY+6; }
+    else   { nameY=axY+dist;    valY=axY+dist+12; leadEnd=nameY-10; }
+    /* leader */
+    ctx.strokeStyle='rgba(250,248,244,.18)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,axY+(L<0?-9:9));ctx.lineTo(x,leadEnd);ctx.stroke();
+    /* dot: surface ring + fill */
+    ctx.beginPath();ctx.arc(x,axY,9,0,7);ctx.fillStyle=SURF;ctx.fill();
+    ctx.beginPath();ctx.arc(x,axY,7,0,7);ctx.fillStyle=col;ctx.fill();
+    ctx.textAlign='center';
+    var cx=Math.max(padL+tw/2,Math.min(w-padR-tw/2,x));
+    ctx.fillStyle=ext?ACC:INK;ctx.font='10.5px '+F;
+    ctx.fillText(d.label,cx,nameY);
+    ctx.fillStyle=MUT;ctx.font='10px '+F;
+    ctx.fillText('$'+d.v,cx,valY);
+    pts.push({x:x,y:axY,r:9,title:d.label,rows:[['$ / sq ft','$'+d.v],['closes 2026 YTD',String(d.n)]]});
+  });
+  hitLayer(c.cv,pts,'relate-tip3');
+}
+
+/* ── C4: parallel coordinates with town switcher ── */
+var C4_SEL='Bend';
+var C4_METRICS=[
+  {key:'mos',  name:'supply',       unit:' mo', inv:true,  fmt:function(v){return v.toFixed(1)+' mo';}},
+  {key:'dtp',  name:'days to pending',unit:' d', inv:true,  fmt:function(v){return Math.round(v)+' days';}},
+  {key:'cut',  name:'cut share',    unit:'%',  inv:true,  fmt:function(v){return v.toFixed(1)+'%';}},
+  {key:'over', name:'sold over ask',unit:'%',  inv:false, fmt:function(v){return v.toFixed(1)+'%';}},
+  {key:'stl',  name:'sale-to-list', unit:'%',  inv:false, fmt:function(v){return (v*100).toFixed(1)+'%';}}
+];
+function c4towns(){return D.towns.filter(function(t){
+  return C4_METRICS.every(function(m){return t[m.key]!=null;});});}
+function buildSeg4(){
+  var seg=$('relate-seg4'), th=seg.querySelector('.th');
+  c4towns().forEach(function(t){
+    var b=document.createElement('button');b.type='button';b.textContent=t.label;
+    if(t.label===C4_SEL)b.className='on';
+    b.addEventListener('click',function(){
+      C4_SEL=t.label;
+      seg.querySelectorAll('button').forEach(function(x){x.className=x.textContent===C4_SEL?'on':'';});
+      moveThumb();renderC4();
+    });
+    seg.appendChild(b);
+  });
+  function moveThumb(){
+    var on=seg.querySelector('button.on');if(!on)return;
+    th.style.left=on.offsetLeft+'px';th.style.top=on.offsetTop+'px';
+    th.style.width=on.offsetWidth+'px';th.style.height=on.offsetHeight+'px';
+  }
+  window.relateMoveThumb4=moveThumb;
+  requestAnimationFrame(moveThumb);
+}
+function renderC4(){
+  var host=$('relate-sv4'); host.innerHTML='';
+  var w=host.parentNode.clientWidth, h=380;
+  var NS='http://www.w3.org/2000/svg';
+  var svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('width',w);svg.setAttribute('height',h);
+  svg.style.display='block';
+  var padL=30,padR=30,padT=46,padB=44;
+  var tt=c4towns(), all=tt;
+  var n=C4_METRICS.length;
+  function ax(i){return padL+i*(w-padL-padR)/(n-1);}
+  var ranges=C4_METRICS.map(function(m){
+    var vs=all.map(function(t){return t[m.key];});
+    return {min:Math.min.apply(null,vs),max:Math.max.apply(null,vs)};
+  });
+  function Y(mi,v){
+    var r=ranges[mi],m=C4_METRICS[mi];
+    var f=r.max===r.min?0.5:(v-r.min)/(r.max-r.min);
+    if(m.inv)f=1-f;
+    return padT+(1-f)*(h-padT-padB);
+  }
+  function el(tag,attrs,txt){
+    var e=document.createElementNS(NS,tag);
+    for(var k in attrs)e.setAttribute(k,attrs[k]);
+    if(txt!=null)e.textContent=txt;
+    return e;
+  }
+  /* axes */
+  var narrow=w<560;
+  var SHORT=['supply','pending','cuts','over ask','sale/list'];
+  C4_METRICS.forEach(function(m,i){
+    svg.appendChild(el('line',{x1:ax(i),y1:padT,x2:ax(i),y2:h-padB,stroke:'rgba(250,248,244,.16)','stroke-width':1}));
+    var anch=i===0?'start':(i===n-1?'end':'middle');
+    var tx=i===0?ax(i)-14:(i===n-1?ax(i)+14:ax(i));
+    svg.appendChild(el('text',{x:tx,y:padT-26,fill:MUT,'text-anchor':anch,style:'font:10.5px '+F},narrow?SHORT[i]:m.name));
+    var top=m.inv?ranges[i].min:ranges[i].max, bot=m.inv?ranges[i].max:ranges[i].min;
+    svg.appendChild(el('text',{x:tx,y:padT-13,fill:FNT,'text-anchor':anch,style:'font:9.5px '+F},m.fmt(top)));
+    svg.appendChild(el('text',{x:tx,y:h-padB+14,fill:FNT,'text-anchor':anch,style:'font:9.5px '+F},m.fmt(bot)));
+  });
+  svg.appendChild(el('text',{x:padL,y:h-8,fill:FNT,style:'font:9.5px '+F},'up = stronger for sellers'));
+  /* context lines: all towns faint */
+  function path(t){
+    return C4_METRICS.map(function(m,i){return (i?'L':'M')+ax(i)+' '+Y(i,t[m.key]);}).join(' ');
+  }
+  all.forEach(function(t){
+    if(t.label===C4_SEL)return;
+    svg.appendChild(el('path',{d:path(t),fill:'none',stroke:'rgba(250,248,244,.10)','stroke-width':1.5}));
+  });
+  /* region median line */
+  var reg={};
+  C4_METRICS.forEach(function(m){reg[m.key]=med(D.towns.map(function(t){return t[m.key];}));});
+  reg.label='Region median';
+  svg.appendChild(el('path',{d:path(reg),fill:'none',stroke:'rgba(250,248,244,.45)','stroke-width':2}));
+  svg.appendChild(el('text',{x:ax(n-1)+0,y:Y(n-1,reg.stl)+16,fill:MUT,'text-anchor':'end',style:'font:10px '+F},'region'));
+  /* selected town */
+  var sel=all.filter(function(t){return t.label===C4_SEL;})[0];
+  svg.appendChild(el('path',{d:path(sel),fill:'none',stroke:BLUE,'stroke-width':2.5}));
+  var tc=tipCtl('relate-tip4');
+  C4_METRICS.forEach(function(m,i){
+    var x=ax(i),y=Y(i,sel[m.key]);
+    svg.appendChild(el('circle',{cx:x,cy:y,r:6,fill:BLUE,stroke:SURF,'stroke-width':2}));
+    var anch=i===0?'start':(i===n-1?'end':'middle');
+    var lx=i===0?x+9:(i===n-1?x-9:x);
+    var vy=y<padT+26?y+22:y-10;
+    svg.appendChild(el('text',{x:lx,y:vy,fill:INK,'text-anchor':anch,style:'font:600 11px '+F},m.fmt(sel[m.key])));
+    var hot=el('circle',{cx:x,cy:y,r:16,fill:'transparent'});
+    hot.addEventListener('pointermove',function(){
+      tc.show(sel.label+' \u2014 '+m.name,[['town',m.fmt(sel[m.key])],['region median',m.fmt(reg[m.key])]],x,y,{w:w});
+    });
+    hot.addEventListener('pointerleave',function(){tc.hide();});
+    svg.appendChild(hot);
+  });
+  host.appendChild(svg);
+}
+
+/* ── C5: time-trails, days-to-offer vs % of ask, 2019→2026 ── */
+function renderC5(){
+  var c=cnv('relate-cv5',340),ctx=c.ctx,w=c.w,h=c.h;
+  var padL=44,padR=70,padT=22,padB=36;
+  function X(v){return padL+v/70*(w-padL-padR);}
+  function Y(v){return padT+(1-(v-85)/(103-85))*(h-padT-padB);}
+  var xt=[0,20,40,60],yt=[85,90,95,100];
+  grid(ctx,padL,padT,w-padR,h-padB,xt.map(X),yt.map(Y));
+  ctx.font='10px '+F;ctx.fillStyle=MUT;ctx.textAlign='center';
+  xt.forEach(function(v){ctx.fillText(v+' d',X(v),h-padB+16);});
+  ctx.textAlign='right';yt.forEach(function(v){ctx.fillText(v+'%',padL-8,Y(v)+3);});
+  /* 100% reference */
+  ctx.strokeStyle='rgba(250,248,244,.20)';ctx.beginPath();ctx.moveTo(padL,Y(100));ctx.lineTo(w-padR,Y(100));ctx.stroke();
+  ctx.fillStyle=FNT;ctx.textAlign='left';ctx.font='9.5px '+F;
+  ctx.fillText('full ask',w-padR+6,Y(100)+3);
+  ctx.save();ctx.translate(12,Y(94));ctx.rotate(-Math.PI/2);ctx.textAlign='center';
+  ctx.fillText('% of original ask \u2192',0,0);ctx.restore();
+  ctx.textAlign='left';ctx.fillText('median days to offer \u2192',padL,h-6);
+  var EMPH={'Bend':BLUE,'La Pine':ORANGE,'Culver':AQUA};
+  var pts=[];
+  function trail(t,col,base){
+    var P=t.ds.map(function(r){return {y:r[0],x:X(r[1]),yy:Y(r[2]),d:r[1],s:r[2]};});
+    for(var i=1;i<P.length;i++){
+      var a=(i)/(P.length-1);
+      ctx.strokeStyle=col;ctx.globalAlpha=base*(0.22+0.78*a);
+      ctx.lineWidth=col===MUT?1.4:2.2;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(P[i-1].x,P[i-1].yy);ctx.lineTo(P[i].x,P[i].yy);ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    var e=P[P.length-1];
+    ctx.beginPath();ctx.arc(e.x,e.yy,col===MUT?3.5:5.5,0,7);
+    ctx.fillStyle=SURF;ctx.fill();
+    ctx.beginPath();ctx.arc(e.x,e.yy,col===MUT?2.5:4,0,7);
+    ctx.fillStyle=col===MUT?'rgba(250,248,244,.5)':col;ctx.fill();
+    P.forEach(function(p){pts.push({x:p.x,y:p.yy,r:7,title:t.label+' \u00b7 '+p.y,
+      rows:[['days to offer',p.d+' days'],['% of original ask',p.s+'%']]});});
+    return e;
+  }
+  D.terr.forEach(function(t){if(!EMPH[t.label])trail(t,MUT,0.38);});
+  var ends=[];
+  D.terr.forEach(function(t){
+    if(EMPH[t.label]) ends.push({t:t,e:trail(t,EMPH[t.label],1),col:EMPH[t.label]});
+  });
+  /* 2021 cluster annotation — ellipse sized from the twelve 2021 vertices so it
+     encloses every town, incl. Camp Sherman at 97.4% (the one below full ask) */
+  var xs=[],ys=[];
+  D.terr.forEach(function(t){t.ds.forEach(function(r){if(r[0]===2021){xs.push(X(r[1]));ys.push(Y(r[2]));}});});
+  var ax0=Math.min.apply(null,xs),ax1=Math.max.apply(null,xs),
+      ay0=Math.min.apply(null,ys),ay1=Math.max.apply(null,ys);
+  var cx=(ax0+ax1)/2, cy=(ay0+ay1)/2,
+      erx=(ax1-ax0)/2+9, ery=(ay1-ay0)/2+9;
+  ctx.strokeStyle=ACC;ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.ellipse(cx,cy,erx,ery,0,0,7);ctx.stroke();
+  ctx.font='10.5px '+F;ctx.textAlign='left';
+  var atx=cx+erx+8;
+  ctx.lineWidth=3.5;ctx.strokeStyle=SURF;ctx.lineJoin='round';
+  ctx.strokeText('2021: all twelve towns',atx,cy-2);
+  ctx.strokeText('about a week, at or near full ask',atx,cy+11);
+  ctx.fillStyle=ACC;ctx.fillText('2021: all twelve towns',atx,cy-2);
+  ctx.fillStyle='rgba(224,129,99,.85)';
+  ctx.fillText('about a week, at or near full ask',atx,cy+11);
+  /* endpoint labels */
+  ctx.font='600 11px '+F;
+  ends.sort(function(a,b){return a.e.yy-b.e.yy;});
+  var ly=-99;
+  ends.forEach(function(o){
+    var y=o.e.yy+4;if(y-ly<13)y=ly+13;ly=y;
+    var lbl=o.t.label+' \u201926';
+    ctx.textAlign='left';ctx.lineWidth=3.5;ctx.strokeStyle=SURF;ctx.lineJoin='round';
+    ctx.strokeText(lbl,o.e.x+9,y);
+    ctx.fillStyle=o.col;ctx.fillText(lbl,o.e.x+9,y);
+  });
+  hitLayer(c.cv,pts,'relate-tip5');
+}
+
+/* ── C6: small-multiples grid, shared scale, crash shaded ── */
+function renderC6(){
+  var host=$('relate-grid6'); host.innerHTML='';
+  var tc=tipCtl('relate-tip6');
+  var PMAX=1.4e6, Y0=1998, Y1=2026;
+  var order=D.terr.slice().sort(function(a,b){
+    return b.py[b.py.length-1][1]-a.py[a.py.length-1][1];});
+  order.forEach(function(t){
+    var d=document.createElement('div');d.className='rmini';
+    var nm=document.createElement('div');nm.className='mn';
+    var s1=document.createElement('span');s1.textContent=t.label;
+    var s2=document.createElement('b');s2.textContent=fmtM(t.py[t.py.length-1][1]);
+    nm.appendChild(s1);nm.appendChild(s2);d.appendChild(nm);
+    var cv=document.createElement('canvas');d.appendChild(cv);host.appendChild(d);
+    var dpr=window.devicePixelRatio||1, w=d.clientWidth-16, h=84;
+    cv.style.width=w+'px';cv.style.height=h+'px';cv.width=w*dpr;cv.height=h*dpr;
+    var ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+    function X(y){return (y-Y0)/(Y1-Y0)*w;}
+    function Y(p){return (1-p/PMAX)*(h-6)+3;}
+    /* crash band */
+    ctx.fillStyle='rgba(224,129,99,.10)';
+    ctx.fillRect(X(D.crash.from),0,X(D.crash.to)-X(D.crash.from),h);
+    /* gridlines at 0.5M / 1M */
+    ctx.strokeStyle=GRID;ctx.lineWidth=1;
+    [5e5,1e6].forEach(function(v){ctx.beginPath();ctx.moveTo(0,Y(v));ctx.lineTo(w,Y(v));ctx.stroke();});
+    /* line with gap handling */
+    ctx.strokeStyle=BLUE;ctx.lineWidth=1.8;ctx.lineJoin='round';ctx.beginPath();
+    var prevY=null;
+    t.py.forEach(function(r){
+      if(prevY!=null&&r[0]-prevY>1){ctx.stroke();ctx.beginPath();prevY=null;}
+      if(prevY==null)ctx.moveTo(X(r[0]),Y(r[1]));else ctx.lineTo(X(r[0]),Y(r[1]));
+      prevY=r[0];
+    });
+    ctx.stroke();
+    var last=t.py[t.py.length-1];
+    ctx.beginPath();ctx.arc(X(last[0]),Y(last[1]),3,0,7);ctx.fillStyle=BLUE;ctx.fill();
+    /* crosshair + tooltip */
+    var ch=null;
+    cv.addEventListener('pointermove',function(e){
+      var r=cv.getBoundingClientRect(),mx=e.clientX-r.left;
+      var yr=Math.round(mx/w*(Y1-Y0))+Y0;
+      var row=null;t.py.forEach(function(p){if(p[0]===yr)row=p;});
+      if(!row){tc.hide();return;}
+      var hostR=host.parentNode.getBoundingClientRect();
+      tc.show(t.label+' \u00b7 '+row[0],
+        [['median close',fmt$(row[1])],['closes',String(row[2])]],
+        r.left-hostR.left+X(row[0]), r.top-hostR.top+Y(row[1]), {w:hostR.width});
+    });
+    cv.addEventListener('pointerleave',function(){tc.hide();});
+  });
+}
+
+function renderAll(){renderC1();renderC2();renderC3();renderC4();renderC5();renderC6();
+  if(window.relateMoveThumb4)window.relateMoveThumb4();}
+function boot(){buildSeg4();renderAll();
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){renderAll();});
+  var t;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(renderAll,160);});}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})()</script>

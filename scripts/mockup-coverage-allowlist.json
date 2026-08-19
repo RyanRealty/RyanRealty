@@ -3,6 +3,7 @@
   "reason": "Mockup directories that intentionally lack a parity.json (e.g. legacy mockups not yet ported to the contract format). Each entry should disappear once the parity contract is authored.",
   "allowed": [
     "buyer-alerts-lp",
+    "chart-room",
     "charts-tier-1",
     "expired-lp",
     "homepage-calibration",

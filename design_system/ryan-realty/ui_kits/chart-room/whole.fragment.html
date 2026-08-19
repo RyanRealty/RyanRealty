@@ -1,0 +1,379 @@
+<section class="fam" id="fam-whole">
+<style>
+#fam-whole{display:grid;gap:18px;font-family:'Geist',system-ui,sans-serif;color:#faf8f4}
+#fam-whole .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+#fam-whole .kpi{background:rgba(250,248,244,.03);border:1px solid rgba(250,248,244,.10);border-radius:16px;padding:14px 16px}
+#fam-whole .kpi b{display:block;font-family:'Amboqia',Georgia,serif;font-weight:400;font-size:30px;line-height:1.1}
+#fam-whole .kpi span{display:block;margin-top:4px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(250,248,244,.55)}
+#fam-whole .card{position:relative;background:rgba(250,248,244,.03);border:1px solid rgba(250,248,244,.10);border-radius:16px;padding:18px 18px 10px}
+#fam-whole .ct{margin:0 0 12px;font-family:'Amboqia',Georgia,serif;font-weight:400;font-size:21px;letter-spacing:.01em}
+#fam-whole .csub{margin:-8px 0 12px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(250,248,244,.55);line-height:1.5}
+#fam-whole .plot{width:100%;position:relative}
+#fam-whole .plot svg{display:block;width:100%}
+#fam-whole .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0 2px;font-size:11px;color:rgba(250,248,244,.75)}
+#fam-whole .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+#fam-whole .seg{position:absolute;top:16px;right:16px;display:flex;background:rgba(250,248,244,.06);border:1px solid rgba(250,248,244,.10);border-radius:999px;padding:2px}
+#fam-whole .seg button{border:0;background:transparent;color:rgba(250,248,244,.6);font:500 11px 'Geist',system-ui,sans-serif;padding:4px 12px;border-radius:999px;cursor:pointer}
+#fam-whole .seg button.on{background:rgba(250,248,244,.14);color:#faf8f4}
+#fam-whole .tip{position:absolute;pointer-events:none;z-index:5;display:none;background:#0b1830;border:1px solid rgba(250,248,244,.18);border-radius:10px;padding:8px 10px;font-size:11.5px;line-height:1.5;box-shadow:0 6px 18px rgba(0,0,0,.45);max-width:230px}
+#fam-whole .tip b{font-size:12.5px}
+#fam-whole .tip .r{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+#fam-whole .tip .k{display:inline-block;width:9px;height:3px;border-radius:2px;flex:none;align-self:center}
+#fam-whole .tip .v{font-weight:600;margin-left:auto;font-variant-numeric:tabular-nums}
+#fam-whole .srcd{margin:8px -6px 0;font-size:11px;color:rgba(250,248,244,.45)}
+#fam-whole .srcd summary{cursor:pointer;padding:4px 6px;letter-spacing:.08em;text-transform:uppercase;font-size:9.5px}
+#fam-whole .srcd p{margin:2px 6px 6px;line-height:1.5}
+#fam-whole text{font-family:'Geist',system-ui,sans-serif}
+#fam-whole .minis{display:flex;gap:0;max-width:520px;margin:14px auto 0}
+#fam-whole .mini{flex:1 1 0;min-width:0;text-align:center}
+#fam-whole .mini svg{width:100%;max-width:36px;height:auto}
+#fam-whole .mini .ql{font-size:9px;color:rgba(250,248,244,.5);margin-top:2px}
+#fam-whole .mini .yl{font-size:9px;letter-spacing:.08em;color:rgba(250,248,244,.75)}
+#fam-whole .cdesc{font-size:12px;color:rgba(250,248,244,.55);margin:2px 0 6px;line-height:1.45}
+</style>
+
+<div class="kpis">
+  <div class="kpi"><b>45.1%</b><span>detached closings with concessions &middot; Q2 2026</span></div>
+  <div class="kpi"><b>$10,000</b><span>median concession, detached &middot; Q2 2026</span></div>
+  <div class="kpi"><b>5,021</b><span>region SFR closings &middot; 2025</span></div>
+  <div class="kpi"><b>52.6%</b><span>Bend share of 12-town detached closings &middot; 2025</span></div>
+</div>
+<details class="srcd" style="margin-top:-8px"><summary>Source</summary><p>Two universes, named on each tile. Detached: Supabase sale_pricing_seller_net, product_class='detached', Q2 2026 closings &mdash; 437 of 968 with concessions = 45.1%; median concession among those 437 = $10,000. Region SFR: analytics_mart_market_annual, type_scope='sfr', geo_type='region' &mdash; 5,021 closings in 2025. 12-town detached: terrain2.json (sale_pricing_facts) &mdash; Bend 2,182 of 4,146 = 52.6%. The 12-town detached universe is narrower than region SFR, so 52.6% does not divide the region tile.</p></details>
+
+<article class="card" id="whole-c1">
+  <h3 class="ct">Concessions on 45% of detached sales</h3>
+  <p class="cdesc">Share of detached closings with seller concessions, Central Oregon, quarterly 2024–2026.</p>
+  <div class="plot" id="whole-p1"></div>
+  <div class="tip" id="whole-c1-tip"></div>
+  <details class="srcd"><summary>Source</summary><p>Supabase sale_pricing_seller_net &mdash; detached closings by quarter, share with concessions_yn='Yes'. Q2 2026: 437 of 968 = 45.1%. Mini donuts: 2024Q1&ndash;2026Q3; Q3 partial through Aug 13, 2026.</p></details>
+</article>
+
+<article class="card" id="whole-c2">
+  <h3 class="ct">Bend is half of closings</h3>
+  <p class="cdesc">Share of 2025 detached closings by town, 12 Central Oregon towns.</p>
+  <div class="plot" id="whole-p2"></div>
+  <div class="tip" id="whole-c2-tip"></div>
+  <details class="srcd"><summary>Source</summary><p>terrain2.json (sale_pricing_facts) per-town detached closed-sale counts, 2025: 4,146 closings across 12 towns; Bend 2,182 = 52.6%. Tile area = share of closings, not dollar volume &mdash; a $ share built from medians &times; counts would be dishonest, so it is not shown.</p></details>
+</article>
+
+<article class="card" id="whole-c3">
+  <h3 class="ct">The mix barely moves</h3>
+  <p class="cdesc">Share of 12-town detached closings by top towns, 1998–2025.</p>
+  <div class="plot" id="whole-p3"></div>
+  <div class="legend" id="whole-l3"></div>
+  <div class="tip" id="whole-c3-tip"></div>
+  <details class="srcd"><summary>Source</summary><p>terrain2.json (sale_pricing_facts) detached closed-sale counts per town per year, 1998&ndash;2025; each bar = that year's 12-town total. Top 5 towns by 28-year volume, rest folded to Other. Bend's share stays between 49.9% (2024) and 60.9% (2013).</p></details>
+</article>
+
+<article class="card" id="whole-c4">
+  <h3 class="ct">45 in 100 pay concessions</h3>
+  <p class="cdesc">Q2 2026 detached closings with seller concessions, 45 of 100.</p>
+  <div class="plot" id="whole-p4"></div>
+  <div class="legend" id="whole-l4"></div>
+  <div class="tip" id="whole-c4-tip"></div>
+  <details class="srcd"><summary>Source</summary><p>Same query as the donut: Q2 2026 detached closings, 437 of 968 with seller concessions = 45.1%, rounded to 45 of 100 squares.</p></details>
+</article>
+
+<article class="card" id="whole-c5">
+  <h3 class="ct">2008 cut closings 62%</h3>
+  <div class="seg" id="whole-seg5"><button data-r="10">10Y</button><button data-r="all" class="on">ALL</button></div>
+  <p class="cdesc" style="max-width:calc(100% - 120px)">Detached closings per year by town, 12-town total, 1998–2025.</p>
+  <div class="plot" id="whole-p5"></div>
+  <div class="legend" id="whole-l5"></div>
+  <div class="tip" id="whole-c5-tip"></div>
+  <details class="srcd"><summary>Source</summary><p>terrain2.json (sale_pricing_facts) detached closed-sale counts per town per year, 12 towns: 2005: 6,113 &rarr; 2008: 2,323 (&minus;62%). Stacked area of yearly counts, 1998&ndash;2025; top 5 towns + Other. This 12-town detached universe is narrower than the region SFR cube in the last chart.</p></details>
+</article>
+
+<article class="card" id="whole-c6">
+  <h3 class="ct">A third fewer than 2021</h3>
+  <p class="cdesc">Region-wide SFR closings, 2005/2021/2025, a wider universe than 12-town charts.</p>
+  <div class="plot" id="whole-p6"></div>
+  <div class="legend" id="whole-l6"></div>
+  <div class="tip" id="whole-c6-tip"></div>
+  <details class="srcd"><summary>Source</summary><p>chart-data.json cube (analytics_mart_market_annual, type_scope='sfr', geo_type='region'): region-wide SFR sold counts by year &mdash; 2005: 7,769 (all-time peak) &middot; 2021: 7,575 &middot; 2025: 5,021 (&minus;34% vs 2021). One mark = 100 closings. Region SFR covers more area and more home types than the 12-town detached charts above, so its 2005 (7,769) exceeds theirs (6,113).</p></details>
+</article>
+</section>
+<script>(function(){
+var D = {"conc":[{"q":"2024Q1","n":770,"nc":285,"inc":37,"partial":false},{"q":"2024Q2","n":1116,"nc":429,"inc":38.4,"partial":false},{"q":"2024Q3","n":1134,"nc":484,"inc":42.7,"partial":false},{"q":"2024Q4","n":936,"nc":423,"inc":45.2,"partial":false},{"q":"2025Q1","n":829,"nc":359,"inc":43.3,"partial":false},{"q":"2025Q2","n":1110,"nc":471,"inc":42.4,"partial":false},{"q":"2025Q3","n":1222,"nc":499,"inc":40.8,"partial":false},{"q":"2025Q4","n":985,"nc":481,"inc":48.8,"partial":false},{"q":"2026Q1","n":749,"nc":332,"inc":44.3,"partial":false},{"q":"2026Q2","n":968,"nc":437,"inc":45.1,"partial":false},{"q":"2026Q3","n":522,"nc":250,"inc":47.9,"partial":true}],"lf":{"q":"2026Q2","n":968,"nc":437,"inc":45.1},"waffleN":45,"towns25":[{"name":"Bend","n":2182,"share":52.6},{"name":"Redmond","n":790,"share":19.1},{"name":"Prineville","n":322,"share":7.8},{"name":"La Pine","n":200,"share":4.8},{"name":"Madras","n":169,"share":4.1},{"name":"Sisters","n":153,"share":3.7},{"name":"Sunriver","n":134,"share":3.2},{"name":"Terrebonne","n":71,"share":1.7},{"name":"Powell Butte","n":57,"share":1.4},{"name":"Black Butte Ranch","n":40,"share":1},{"name":"Culver","n":25,"share":0.6},{"name":"Camp Sherman","n":3,"share":0.1}],"total25":4146,"series":["Bend","Redmond","Prineville","La Pine","Sunriver","Other"],"years":[{"y":1998,"total":2845,"vals":[1539,507,148,83,263,305]},{"y":1999,"total":3001,"vals":[1588,543,186,112,284,288]},{"y":2000,"total":2962,"vals":[1599,539,195,108,229,292]},{"y":2001,"total":3104,"vals":[1781,582,178,104,171,288]},{"y":2002,"total":3335,"vals":[1874,607,234,95,199,326]},{"y":2003,"total":3910,"vals":[2179,708,304,137,234,348]},{"y":2004,"total":4996,"vals":[2723,993,381,216,244,439]},{"y":2005,"total":6113,"vals":[3358,1244,476,282,217,536]},{"y":2006,"total":4701,"vals":[2421,954,360,237,166,563]},{"y":2007,"total":3063,"vals":[1731,535,193,128,142,334]},{"y":2008,"total":2323,"vals":[1302,462,151,92,73,243]},{"y":2009,"total":3223,"vals":[1827,655,200,168,80,293]},{"y":2010,"total":3687,"vals":[2015,755,279,172,94,372]},{"y":2011,"total":3660,"vals":[2073,692,267,154,98,376]},{"y":2012,"total":4159,"vals":[2443,722,282,169,143,400]},{"y":2013,"total":4424,"vals":[2695,705,251,172,148,453]},{"y":2014,"total":4539,"vals":[2655,849,276,148,144,467]},{"y":2015,"total":5207,"vals":[2952,977,338,212,200,528]},{"y":2016,"total":5402,"vals":[3021,1025,351,223,212,570]},{"y":2017,"total":5231,"vals":[2930,932,364,252,177,576]},{"y":2018,"total":5366,"vals":[2947,1017,345,240,188,629]},{"y":2019,"total":5314,"vals":[2839,1083,374,252,179,587]},{"y":2020,"total":6189,"vals":[3184,1284,407,268,207,839]},{"y":2021,"total":6095,"vals":[3100,1299,418,328,191,759]},{"y":2022,"total":4884,"vals":[2502,947,365,268,134,668]},{"y":2023,"total":3725,"vals":[1932,704,297,189,100,503]},{"y":2024,"total":3956,"vals":[1975,856,317,199,99,510]},{"y":2025,"total":4146,"vals":[2182,790,322,200,134,518]}],"pict":[{"y":2005,"n":7769},{"y":2021,"n":7575},{"y":2025,"n":5021}]};
+var INK='#faf8f4', ACC='#E08163', GRID='rgba(250,248,244,.07)', MUT='rgba(250,248,244,.55)',
+    GRAY='rgba(250,248,244,.22)', NAVY='#0b1830',
+    SC=['#3987e5','#d95926','#199e70','#c98500','#d55181','rgba(250,248,244,.28)'];
+var NS='http://www.w3.org/2000/svg';
+function el(t,at,parent){var e=document.createElementNS(NS,t);for(var k in at)e.setAttribute(k,at[k]);if(parent)parent.appendChild(e);return e;}
+function txt(at,parent,s){var e=el('text',at,parent);e.textContent=s;return e;}
+function fmt(n){return n.toLocaleString('en-US');}
+
+// ---- tooltip ----
+function tipFor(cardId){
+  var card=document.getElementById(cardId), tip=document.getElementById(cardId+'-tip');
+  return {
+    show:function(evt,title,rows){
+      tip.textContent='';
+      if(title){var b=document.createElement('b');b.textContent=title;tip.appendChild(b);}
+      (rows||[]).forEach(function(r){
+        var d=document.createElement('div');d.className='r';
+        if(r.c){var k=document.createElement('i');k.className='k';k.style.background=r.c;d.appendChild(k);}
+        var l=document.createElement('span');l.textContent=r.l;l.style.color='rgba(250,248,244,.7)';d.appendChild(l);
+        var v=document.createElement('span');v.className='v';v.textContent=r.v;d.appendChild(v);
+        tip.appendChild(d);
+      });
+      tip.style.display='block';
+      var cr=card.getBoundingClientRect();
+      var x=evt.clientX-cr.left+14, y=evt.clientY-cr.top+14;
+      var tw=tip.offsetWidth, th=tip.offsetHeight;
+      if(x+tw>cr.width-8)x=evt.clientX-cr.left-tw-14;
+      if(y+th>cr.height-8)y=evt.clientY-cr.top-th-14;
+      tip.style.left=Math.max(4,x)+'px'; tip.style.top=Math.max(4,y)+'px';
+    },
+    hide:function(){tip.style.display='none';}
+  };
+}
+function legend(id,names,colors){
+  var L=document.getElementById(id); if(!L)return; L.textContent='';
+  names.forEach(function(n,i){var s=document.createElement('span');var i2=document.createElement('i');
+    i2.style.background=colors[i];s.appendChild(i2);s.appendChild(document.createTextNode(n));L.appendChild(s);});
+}
+function arc(cx,cy,r,a0,a1){ // degrees, clockwise from 12 o'clock
+  var s=(a0-90)*Math.PI/180, e=(a1-90)*Math.PI/180;
+  var large=(a1-a0)>180?1:0;
+  return 'M'+(cx+r*Math.cos(s)).toFixed(2)+' '+(cy+r*Math.sin(s)).toFixed(2)+
+         'A'+r+' '+r+' 0 '+large+' 1 '+(cx+r*Math.cos(e)).toFixed(2)+' '+(cy+r*Math.sin(e)).toFixed(2);
+}
+
+// ================= C1: donut + mini multiples =================
+function c1(){
+  var p=document.getElementById('whole-p1'); p.textContent='';
+  var T=tipFor('whole-c1');
+  var W=p.clientWidth, H=210;
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,height:H},p);
+  var cx=W/2, cy=H/2, r=76, ring=25, g=2.4; // deg gap
+  var aYes=D.lf.inc*3.6;
+  var segs=[
+    {a0:g,a1:aYes-g,c:ACC,name:'with concessions',n:D.lf.nc,pct:D.lf.inc},
+    {a0:aYes+g,a1:360-g,c:GRAY,name:'no concession',n:D.lf.n-D.lf.nc,pct:+(100-D.lf.inc).toFixed(1)}
+  ];
+  segs.forEach(function(s){
+    var path=el('path',{d:arc(cx,cy,r,s.a0,s.a1),fill:'none',stroke:s.c,'stroke-width':ring},svg);
+    path.style.cursor='default';
+    path.addEventListener('pointermove',function(e){T.show(e,'Q2 2026',[{c:s.c,l:s.name,v:s.pct+'%'},{l:'detached closings',v:fmt(s.n)+' of '+fmt(D.lf.n)}]);});
+    path.addEventListener('pointerleave',T.hide);
+  });
+  txt({x:cx,y:cy+2,'text-anchor':'middle',fill:INK,'font-size':34,'font-family':"'Amboqia',Georgia,serif"},svg,D.lf.inc+'%');
+  txt({x:cx,y:cy+22,'text-anchor':'middle',fill:MUT,'font-size':10.5},svg,'of Q2 2026 detached closings');
+  // minis
+  var row=document.createElement('div');row.className='minis';p.appendChild(row);
+  D.conc.forEach(function(q,qi){
+    var d=document.createElement('div');d.className='mini';row.appendChild(d);
+    var s=el('svg',{viewBox:'0 0 40 40'},d);
+    var a=q.inc*3.6;
+    el('path',{d:arc(20,20,14,3,a-3),fill:'none',stroke:ACC,'stroke-width':7},s);
+    el('path',{d:arc(20,20,14,a+3,357),fill:'none',stroke:GRAY,'stroke-width':7},s);
+    var qn=q.q.slice(4), yr=q.q.slice(0,4);
+    var ql=document.createElement('div');ql.className=qn==='Q1'?'yl':'ql';
+    ql.textContent=qn==='Q1'?yr:qn; d.appendChild(ql);
+    if(qi===D.conc.length-1){var v=document.createElement('div');v.className='ql';v.style.color=ACC;v.textContent=q.inc+'%*';d.appendChild(v);}
+    d.addEventListener('pointermove',function(e){T.show(e,q.q+(q.partial?' (partial, to Aug 13)':''),[{c:ACC,l:'with concessions',v:q.inc+'%'},{l:'detached closings',v:fmt(q.nc)+' of '+fmt(q.n)}]);});
+    d.addEventListener('pointerleave',T.hide);
+  });
+}
+
+// ================= C2: treemap (squarified) =================
+function squarify(items,x,y,w,h,out){
+  if(!items.length)return;
+  if(items.length===1){out.push({t:items[0],x:x,y:y,w:w,h:h});return;}
+  var total=items.reduce(function(s,i){return s+i.n;},0);
+  var row=[],rest=items.slice(),best=Infinity;
+  while(rest.length){
+    var cand=row.concat([rest[0]]);
+    var side=Math.min(w,h), sum=cand.reduce(function(s,i){return s+i.n;},0);
+    var area=sum/total*w*h, thick=area/side, worst=0;
+    cand.forEach(function(i){var len=i.n/sum*side, ar=Math.max(thick/len,len/thick); if(ar>worst)worst=ar;});
+    if(worst<=best){best=worst;row=cand;rest.shift();}
+    else break;
+  }
+  var sum=row.reduce(function(s,i){return s+i.n;},0), area=sum/total*w*h;
+  if(w>=h){var tw=area/h,cy=y;
+    row.forEach(function(i){var ih=i.n/sum*h;out.push({t:i,x:x,y:cy,w:tw,h:ih});cy+=ih;});
+    squarify(rest,x+tw,y,w-tw,h,out);
+  } else {var th=area/w,cx=x;
+    row.forEach(function(i){var iw=i.n/sum*w;out.push({t:i,x:cx,y:y,w:iw,h:th});cx+=iw;});
+    squarify(rest,x,y+th,w,h-th,out);
+  }
+}
+function c2(){
+  var p=document.getElementById('whole-p2'); p.textContent='';
+  var T=tipFor('whole-c2');
+  var W=p.clientWidth, H=320;
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,height:H},p);
+  var rects=[]; squarify(D.towns25.slice(),0,0,W,H,rects);
+  rects.forEach(function(rc){
+    var r=el('rect',{x:rc.x+1,y:rc.y+1,width:Math.max(0,rc.w-2),height:Math.max(0,rc.h-2),rx:3,fill:'#3987e5','fill-opacity':.30},svg);
+    r.addEventListener('pointermove',function(e){r.setAttribute('fill-opacity',.48);
+      T.show(e,rc.t.name,[{l:'2025 closings',v:fmt(rc.t.n)},{l:'share of 12 towns',v:rc.t.share+'%'}]);});
+    r.addEventListener('pointerleave',function(){r.setAttribute('fill-opacity',.30);T.hide();});
+    var name=rc.t.name, fits=rc.w>name.length*6.3+10&&rc.h>30;
+    if(fits){
+      txt({x:rc.x+9,y:rc.y+19,fill:INK,'font-size':11.5,'font-weight':600,'pointer-events':'none'},svg,name);
+      if(rc.h>44)txt({x:rc.x+9,y:rc.y+34,fill:MUT,'font-size':11,'pointer-events':'none'},svg,rc.t.share+'%');
+    }
+  });
+}
+
+// ================= C3: 100% stacked bars =================
+function c3(){
+  var p=document.getElementById('whole-p3'); p.textContent='';
+  var T=tipFor('whole-c3');
+  var W=p.clientWidth, H=300, ml=32, mr=4, mt=6, mb=20;
+  var iw=W-ml-mr, ih=H-mt-mb;
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,height:H},p);
+  [0,25,50,75,100].forEach(function(v){
+    var y=mt+ih-v/100*ih;
+    el('line',{x1:ml,x2:W-mr,y1:y,y2:y,stroke:GRID,'stroke-width':1},svg);
+    txt({x:ml-6,y:y+3.5,'text-anchor':'end',fill:MUT,'font-size':10},svg,v+'%');
+  });
+  var n=D.years.length, step=iw/n, bw=Math.min(24,step-2);
+  D.years.forEach(function(yr,i){
+    var x=ml+i*step+(step-bw)/2, y=mt+ih;
+    var grp=el('g',{'fill-opacity':.88},svg);
+    yr.vals.forEach(function(v,si){
+      var hgt=v/yr.total*ih;
+      el('rect',{x:x,y:y-hgt+1,width:bw,height:Math.max(0,hgt-2),fill:SC[si]},grp);
+      y-=hgt;
+    });
+    var hit=el('rect',{x:ml+i*step,y:mt,width:step,height:ih,fill:'transparent'},svg);
+    hit.addEventListener('pointermove',function(e){
+      grp.setAttribute('fill-opacity',1);
+      T.show(e,String(yr.y),D.series.map(function(s,si){
+        return {c:SC[si],l:s,v:(100*yr.vals[si]/yr.total).toFixed(1)+'%'};
+      }).concat([{l:'closings',v:fmt(yr.total)}]));
+    });
+    hit.addEventListener('pointerleave',function(){grp.setAttribute('fill-opacity',.88);T.hide();});
+    if(yr.y%5===0||yr.y===1998||yr.y===2025)
+      txt({x:ml+i*step+step/2,y:H-6,'text-anchor':'middle',fill:MUT,'font-size':10},svg,"'"+String(yr.y).slice(2));
+  });
+  legend('whole-l3',D.series,SC);
+}
+
+// ================= C4: waffle =================
+function c4(){
+  var p=document.getElementById('whole-p4'); p.textContent='';
+  var T=tipFor('whole-c4');
+  var W=p.clientWidth, gap=3;
+  var cell=Math.min(24,(Math.min(W,420)-9*gap)/10);
+  var gw=10*cell+9*gap, H=gw;
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,height:H},p);
+  var x0=(W-gw)/2;
+  for(var i=0;i<100;i++){
+    var row=Math.floor(i/10), col=i%10, paid=i<D.waffleN;
+    var r=el('rect',{x:x0+col*(cell+gap),y:row*(cell+gap),width:cell,height:cell,rx:4,
+      fill:paid?ACC:GRAY,'fill-opacity':paid?1:.35},svg);
+    (function(paid){
+      r.addEventListener('pointermove',function(e){T.show(e,'Q2 2026',[
+        {c:ACC,l:'paid concessions',v:D.waffleN+' of 100'},
+        {l:'actual',v:D.lf.inc+'% ('+fmt(D.lf.nc)+' of '+fmt(D.lf.n)+')'}]);});
+      r.addEventListener('pointerleave',T.hide);
+    })(paid);
+  }
+  legend('whole-l4',['paid concessions ('+D.waffleN+')','did not ('+(100-D.waffleN)+')'],[ACC,GRAY]);
+}
+
+// ================= C5: stacked area =================
+var c5range='all';
+function c5(){
+  var p=document.getElementById('whole-p5'); p.textContent='';
+  var T=tipFor('whole-c5');
+  var yrs=c5range==='10'?D.years.filter(function(r){return r.y>=2016;}):D.years;
+  var W=p.clientWidth, H=300, ml=40, mr=8, mt=8, mb=20;
+  var iw=W-ml-mr, ih=H-mt-mb;
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,height:H},p);
+  var maxT=Math.max.apply(null,yrs.map(function(r){return r.total;}));
+  var yMax=Math.ceil(maxT/1000)*1000;
+  var X=function(i){return ml+i/(yrs.length-1)*iw;};
+  var Y=function(v){return mt+ih-v/yMax*ih;};
+  for(var g2=0;g2<=yMax;g2+=2000){
+    el('line',{x1:ml,x2:W-mr,y1:Y(g2),y2:Y(g2),stroke:GRID,'stroke-width':1},svg);
+    txt({x:ml-6,y:Y(g2)+3.5,'text-anchor':'end',fill:MUT,'font-size':10},svg,g2===0?'0':(g2/1000)+'k');
+  }
+  // stack: cumulative from bottom (Bend first)
+  var cum=yrs.map(function(){return 0;});
+  for(var si=0;si<6;si++){
+    var top=yrs.map(function(r,i){return cum[i]+r.vals[si];});
+    var dPath='M'+X(0).toFixed(1)+' '+Y(cum[0]).toFixed(1);
+    for(var i2=1;i2<yrs.length;i2++)dPath+='L'+X(i2).toFixed(1)+' '+Y(cum[i2]).toFixed(1);
+    for(var i3=yrs.length-1;i3>=0;i3--)dPath+='L'+X(i3).toFixed(1)+' '+Y(top[i3]).toFixed(1);
+    dPath+='Z';
+    el('path',{d:dPath,fill:SC[si],'fill-opacity':si===5?.5:.82,stroke:NAVY,'stroke-width':1.5},svg);
+    cum=top;
+  }
+  yrs.forEach(function(r,i){
+    if(r.y%5===0||r.y===yrs[0].y||r.y===2025)
+      txt({x:X(i),y:H-6,'text-anchor':'middle',fill:MUT,'font-size':10},svg,"'"+String(r.y).slice(2));
+  });
+  var cross=el('line',{y1:mt,y2:mt+ih,stroke:'rgba(250,248,244,.35)','stroke-width':1,visibility:'hidden'},svg);
+  var ov=el('rect',{x:ml,y:mt,width:iw,height:ih,fill:'transparent'},svg);
+  ov.addEventListener('pointermove',function(e){
+    var rect=svg.getBoundingClientRect();
+    var fx=(e.clientX-rect.left)*(W/rect.width);
+    var i=Math.round((fx-ml)/iw*(yrs.length-1)); i=Math.max(0,Math.min(yrs.length-1,i));
+    cross.setAttribute('x1',X(i));cross.setAttribute('x2',X(i));cross.setAttribute('visibility','visible');
+    var r=yrs[i];
+    T.show(e,String(r.y),D.series.map(function(s,si){return {c:SC[si],l:s,v:fmt(r.vals[si])};})
+      .concat([{l:'total',v:fmt(r.total)}]));
+  });
+  ov.addEventListener('pointerleave',function(){cross.setAttribute('visibility','hidden');T.hide();});
+  legend('whole-l5',D.series,SC);
+}
+
+// ================= C6: pictogram =================
+function c6(){
+  var p=document.getElementById('whole-p6'); p.textContent='';
+  var T=tipFor('whole-c6');
+  var W=p.clientWidth, ml=44, pitch=11, r=4;
+  var perLine=Math.max(10,Math.floor((W-ml-56)/pitch));
+  var rows=D.pict.map(function(d){return {y:d.y,n:d.n,marks:d.n/100};});
+  var lineH=13, rowGap=18, yCur=8, rowsMeta=[];
+  rows.forEach(function(rw){
+    var lines=Math.ceil(rw.marks/perLine);
+    rowsMeta.push({rw:rw,y:yCur,lines:lines});
+    yCur+=lines*lineH+rowGap;
+  });
+  var H=yCur+2;
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,height:H},p);
+  rowsMeta.forEach(function(m,mi){
+    var rw=m.rw, color=rw.y===2025?'#3987e5':GRAY;
+    txt({x:0,y:m.y+10,fill:INK,'font-size':12,'font-weight':600},svg,String(rw.y));
+    var full=Math.floor(rw.marks), frac=rw.marks-full;
+    var grp=el('g',{},svg);
+    for(var i=0;i<full;i++){
+      var line=Math.floor(i/perLine), col=i%perLine;
+      el('circle',{cx:ml+col*pitch+r,cy:m.y+6+line*lineH,r:r,fill:color},grp);
+    }
+    if(frac>0.02){
+      var line2=Math.floor(full/perLine), col2=full%perLine;
+      var cx2=ml+col2*pitch+r, cy2=m.y+6+line2*lineH;
+      var clipId='whole-pc'+mi;
+      var cp=el('clipPath',{id:clipId},svg);
+      el('rect',{x:cx2-r,y:cy2-r,width:2*r*frac,height:2*r},cp);
+      el('circle',{cx:cx2,cy:cy2,r:r,fill:color,'clip-path':'url(#'+clipId+')'},grp);
+      el('circle',{cx:cx2,cy:cy2,r:r,fill:'none',stroke:color,'stroke-opacity':.35,'stroke-width':1},grp);
+    }
+    var lastLine=Math.max(0,Math.ceil(rw.marks/perLine)-1);
+    var lastCol=(rw.marks-lastLine*perLine);
+    txt({x:ml+Math.min(lastCol,perLine)*pitch+14,y:m.y+10+lastLine*lineH,fill:MUT,'font-size':11.5,'font-weight':600},svg,fmt(rw.n));
+    var hit=el('rect',{x:0,y:m.y-4,width:W,height:m.lines*lineH+10,fill:'transparent'},svg);
+    hit.addEventListener('pointermove',function(e){T.show(e,String(rw.y),[
+      {c:color,l:'region SFR closings',v:fmt(rw.n)},{l:'marks (1 = 100)',v:(rw.marks).toFixed(1)}]);});
+    hit.addEventListener('pointerleave',T.hide);
+  });
+  legend('whole-l6',['one mark = 100 region SFR closings \u00b7 2025 in blue'],['#3987e5']);
+}
+
+function renderAll(){c1();c2();c3();c4();c5();c6();}
+var segBtns=document.querySelectorAll('#whole-seg5 button');
+segBtns.forEach(function(b){b.addEventListener('click',function(){
+  segBtns.forEach(function(x){x.classList.remove('on');});
+  b.classList.add('on'); c5range=b.getAttribute('data-r'); c5();
+});});
+var rto;window.addEventListener('resize',function(){clearTimeout(rto);rto=setTimeout(renderAll,150);});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',renderAll);else renderAll();
+})()</script>
