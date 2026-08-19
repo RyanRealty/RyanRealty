@@ -51,6 +51,7 @@ import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { isSubdivisionIndexable } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
+import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
@@ -518,6 +519,16 @@ export default async function SubdivisionPage({ params }: Props) {
           history={salesHistory}
           stats={subdivisionStats}
           cityName={cityName}
+          charts={
+            <SubdivisionMarketCharts
+              slug={slug}
+              platName={displayName}
+              citySlug={citySlug}
+              cityName={cityName}
+              resortSlug={resortSlug}
+              history={salesHistory}
+            />
+          }
         />
         {/* Assigned schools (W2.4 MPC parity) — §0-thresholded modal assignment
             from this subdivision's own listings; renders null when no level

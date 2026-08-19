@@ -193,7 +193,12 @@
 
   /* Range rows (lollipop / dumbbell) and per-point marks. */
   --v3-chart-row: 1.9rem;
-  --v3-chart-range-label: 6.5rem;
+  /* The tick gutter on a range chart. A fixed 6.5rem truncated every long
+     row name at any width ("Fairway Crest Vill…" on a 1150px card), so it
+     scales with the chart instead: the 6.5rem floor is the old value, which
+     is what a phone still gets, and a wide card spends part of its width on
+     the names rather than on more empty track. */
+  --v3-chart-range-label: clamp(6.5rem, 18%, 10rem);
   --v3-chart-mark: 9px;
   --v3-chart-mark-base: 7px;
 

@@ -169,3 +169,79 @@ export async function getCoMarketAnnualSeries(opts: {
   )
   return rows.filter((r) => r.year > 0 && r.soldCount > 0 && r.source === 'mart')
 }
+
+/** One mart cell reduced to what a comparison line needs. */
+export type MartAnnualPoint = {
+  year: number
+  soldCount: number
+  medianClose: number | null
+}
+
+/**
+ * EVERY year of one geo's mart cells in ONE query, ascending.
+ *
+ * getCoMarketAnnualSeries fans a year range into one cached read per year,
+ * which is right for the region hub that already holds those cells warm. A
+ * place page that only wants a context line ("this plat against its city")
+ * would pay 28 round trips for 28 numbers, so this reads the same mart rows as
+ * a single filtered select. Mart-only, like every other public cube read: a
+ * missing year is missing and nothing falls back to scanning `listings`.
+ *
+ * Rows with no closings are dropped — a mart cell with sold_count 0 carries no
+ * median, and a zero on a price line reads as a $0 sale.
+ */
+async function fetchMartAnnualSeries(input: {
+  geoType: AnalyticsGeoType
+  geoSlug: string
+  typeScope?: AnalyticsTypeScope
+}): Promise<MartAnnualPoint[]> {
+  const geoType: AnalyticsGeoType = input.geoType === 'city' ? 'city' : 'region'
+  const geoSlug = input.geoSlug.trim().toLowerCase()
+  if (!geoSlug) return []
+  const typeScope = TypeScopeSchema.parse(input.typeScope ?? 'sfr')
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('analytics_mart_market_annual')
+    .select('year,sold_count,median_close')
+    .eq('geo_type', geoType)
+    .eq('geo_slug', geoSlug)
+    .eq('type_scope', typeScope)
+    .order('year', { ascending: true })
+  if (error) {
+    // Throw so the resilient wrapper never caches an empty series for a
+    // transient failure; the caller's chart is withheld for that render only.
+    throw new Error(
+      `analytics_mart_market_annual series failed for ${geoType}/${geoSlug}/${typeScope}: ${error.message}`,
+    )
+  }
+  const rows = (Array.isArray(data) ? data : []) as Array<{
+    year?: number | null
+    sold_count?: number | null
+    median_close?: number | string | null
+  }>
+  const out: MartAnnualPoint[] = []
+  for (const row of rows) {
+    const year = Number(row.year)
+    const soldCount = Number(row.sold_count ?? 0)
+    if (!Number.isInteger(year) || !(soldCount > 0)) continue
+    const median = row.median_close == null ? null : Number(row.median_close)
+    out.push({
+      year,
+      soldCount,
+      medianClose: median != null && Number.isFinite(median) && median > 0 ? median : null,
+    })
+  }
+  return out
+}
+
+/** Cached 6h alongside every other mart read. */
+export const getMartAnnualSeries = makeResilientCached(
+  fetchMartAnnualSeries,
+  ['analytics-mart-annual-series-v1'],
+  {
+    revalidate: CACHE_WINDOWS.marketStats,
+    tags: [cacheTag.market, 'analytics-co-market'],
+  },
+  [] as MartAnnualPoint[],
+)

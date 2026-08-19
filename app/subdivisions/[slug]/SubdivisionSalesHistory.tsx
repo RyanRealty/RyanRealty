@@ -18,7 +18,7 @@
  * sales-history migration is applied).
  */
 
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
 import type { MarketStats } from '@/lib/data'
 import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
@@ -55,9 +55,15 @@ interface Props {
   history: SubdivisionSalesYear[]
   stats: MarketStats | null
   cityName: string
+  /**
+   * The chart-room cards for this plat (SubdivisionMarketCharts), mounted
+   * inside this section so the page keeps ONE market section. Passed as a
+   * node because this component is synchronous and the charts read the DAL.
+   */
+  charts?: ReactNode
 }
 
-export function SubdivisionSalesHistory({ displayName, history, stats, cityName }: Props) {
+export function SubdivisionSalesHistory({ displayName, history, stats, cityName, charts }: Props) {
   const hasHistory = history.length > 0
   const hasStats = Boolean(stats && (stats.medianSalePrice != null || stats.soldCount != null))
   if (!hasHistory && !hasStats) return null
@@ -139,8 +145,10 @@ export function SubdivisionSalesHistory({ displayName, history, stats, cityName 
           </div>
         ) : null}
 
+        {charts}
+
         {hasHistory ? (
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', marginTop: '2rem' }}>
             <table
               style={{
                 width: '100%',
