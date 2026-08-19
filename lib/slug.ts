@@ -1,3 +1,5 @@
+import { publishStreetNumber } from '@/lib/listing/publish-street-line'
+
 /**
  * Normalize display names to URL- and storage-safe keys.
  * Used for banner entity_key and storage paths so web and mobile share the same URLs.
@@ -147,7 +149,7 @@ export function listingAddressSlug(parts: {
   state?: string | null
   postalCode?: string | null
 }): string {
-  const street = [parts.streetNumber, parts.streetName].filter(Boolean).join('-')
+  const street = [publishStreetNumber(parts.streetNumber), parts.streetName].filter(Boolean).join('-')
   const loc = [parts.city, parts.state].filter(Boolean).join('-')
   const zip = (parts.postalCode ?? '').toString().trim().replace(/\D/g, '')
   const combined = [street, loc, zip].filter(Boolean).join('-')
@@ -164,7 +166,7 @@ export function listingAddressSlugWithMls(
 ): string {
   const mls = String(mlsNumber ?? '').trim()
   if (!mls) return ''
-  const streetRaw = [parts?.streetNumber, parts?.streetName].filter(Boolean).join('-').trim()
+  const streetRaw = [publishStreetNumber(parts?.streetNumber), parts?.streetName].filter(Boolean).join('-').trim()
   const street = streetRaw ? slugify(streetRaw) : ''
   return street ? `${street}-${mls}` : mls
 }

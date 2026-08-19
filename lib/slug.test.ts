@@ -174,6 +174,32 @@ describe('slug', () => {
     ).toBe('/homes-for-sale/bend/westside/northwest-crossing/100-main-st-220189456')
   })
 
+  it('withholds placeholder street number 0 from the Moonshadow listing segment', () => {
+    expect(
+      listingDetailPath(
+        'spark-moonshadow',
+        {
+          streetNumber: '0',
+          streetName: 'Moonshadow Court',
+          city: 'Bend',
+          state: 'OR',
+          postalCode: '97701',
+        },
+        { city: 'Bend' },
+        { mlsNumber: '220221237' }
+      )
+    ).toBe('/homes-for-sale/bend/moonshadow-court-220221237')
+    expect(
+      listingTileHref({
+        listingKey: 'spark-moonshadow',
+        listNumber: '220221237',
+        streetNumber: '0',
+        streetName: 'Moonshadow Court',
+        city: 'Bend',
+      }),
+    ).toBe('/homes-for-sale/bend/moonshadow-court-220221237')
+  })
+
   it('listingTileHref prefers boundaryCity and drops the N/A subdivision sentinel', () => {
     expect(
       listingTileHref({
