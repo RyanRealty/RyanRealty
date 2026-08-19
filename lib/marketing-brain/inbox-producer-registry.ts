@@ -27,79 +27,12 @@
  */
 
 const PRODUCER_REGISTRY: Record<string, string> = {
-  // Section A — orchestrators (cloud-runnable only)
-  'content:list_kit': 'social_media_skills/list-kit',
-
-  // Section B — content producers (flat-design / text; video producers
-  // decommissioned 2026-06-14 → routed to matt_alert by omission)
-  'content:blog_post': 'social_media_skills/blog-post',
-  'content:seo_blog': 'social_media_skills/blog-post',
-  'content:fb_lead_gen_ad': 'social_media_skills/facebook-lead-gen-ad',
-  'content:fb_ad': 'social_media_skills/facebook-lead-gen-ad',
-  'content:flyer': 'social_media_skills/flyer-design',
-  'content:just_listed_flyer': 'social_media_skills/flyer-design',
-  'content:open_house_flyer': 'social_media_skills/flyer-design',
-  'content:feature_sheet': 'social_media_skills/flyer-design',
-  'content:ig_carousel': 'social_media_skills/instagram-carousel',
-  'content:image_meme': 'social_media_skills/meme_lord',
-  'content:ig_single_post': 'social_media_skills/ig-single-post',
-  'content:open_house_stories': 'social_media_skills/open-house-stories',
-  'content:under_contract_announcement': 'social_media_skills/under-contract-announcement',
-  'content:sold_deal_summary': 'social_media_skills/sold-deal-summary',
-  'content:linkedin_doc_carousel': 'social_media_skills/linkedin-document-carousel',
-  'content:agent_coop_eflyer': 'social_media_skills/agent-coop-eflyer',
-  'content:postcard_mailer': 'social_media_skills/postcard-farm-mailer',
-  'content:yard_sign': 'social_media_skills/yard-sign-rider',
-  'content:neighbor_note': 'social_media_skills/neighbor-outreach-note',
-
-  // Section C — site producers
-  'site:copy_update': 'marketing_brain_skills/producers/site-edit',
-  'site:meta_update': 'marketing_brain_skills/producers/site-edit',
-  'site:cta_update': 'marketing_brain_skills/producers/site-edit',
-  'site:page_create': 'marketing_brain_skills/producers/site-page-create',
-  'site:landing_page_create': 'marketing_brain_skills/producers/site-page-create',
-  'site:perf_fix': 'marketing_brain_skills/producers/site-performance',
-  'site:redirect_add': 'marketing_brain_skills/producers/site-performance',
-  'site:schema_add': 'marketing_brain_skills/producers/site-performance',
-  'site:property_landing_create': 'marketing_brain_skills/producers/site-property-landing',
-  'site:property_landing_update': 'marketing_brain_skills/producers/site-property-landing',
-  'site:matterport_embed': 'marketing_brain_skills/producers/site-matterport-embed',
-
-  // Section D — operational producers
-  'ops:meta_budget': 'marketing_brain_skills/producers/ops-meta-ads',
-  'ops:meta_pause': 'marketing_brain_skills/producers/ops-meta-ads',
-  'ops:meta_resume': 'marketing_brain_skills/producers/ops-meta-ads',
-  'ops:meta_audience': 'marketing_brain_skills/producers/ops-meta-ads',
-  'ops:meta_creative_swap': 'marketing_brain_skills/producers/ops-meta-ads',
-  'ops:email_newsletter': 'marketing_brain_skills/producers/ops-email-send',
-  'ops:email_blast': 'marketing_brain_skills/producers/ops-email-send',
-  'ops:email_template_update': 'marketing_brain_skills/producers/ops-email-send',
-  'ops:review_response': 'marketing_brain_skills/producers/ops-reputation',
-  'ops:review_request': 'marketing_brain_skills/producers/ops-reputation',
-  'ops:gbp_post': 'marketing_brain_skills/producers/ops-reputation',
-  'ops:gbp_qna': 'marketing_brain_skills/producers/ops-reputation',
-  'ops:fb_marketplace_create': 'marketing_brain_skills/producers/ops-fb-marketplace',
-  'ops:fb_marketplace_update': 'marketing_brain_skills/producers/ops-fb-marketplace',
-  'ops:manychat_setup': 'marketing_brain_skills/producers/ops-manychat',
-  'ops:manychat_pause': 'marketing_brain_skills/producers/ops-manychat',
-  'ops:manychat_update': 'marketing_brain_skills/producers/ops-manychat',
-  'ops:crm_tag_fix': 'marketing_brain_skills/producers/comms-matt-alert',
-  'ops:crm_sequence_change': 'marketing_brain_skills/producers/comms-matt-alert',
-  'ops:crm_task_create': 'marketing_brain_skills/producers/comms-matt-alert',
-  'ops:crm_routing': 'marketing_brain_skills/producers/comms-matt-alert',
-
-  // Section E — communications
+  // Producer runtime retired 2026-08-18. Inbox still files a row; every
+  // action type that used to dispatch a SKILL.md now lands on matt_alert.
   'comms:matt_alert': 'marketing_brain_skills/producers/comms-matt-alert',
   'comms:matt_summary': 'marketing_brain_skills/producers/comms-matt-alert',
   'comms:team_update': 'marketing_brain_skills/producers/comms-matt-alert',
   'comms:stakeholder_summary': 'marketing_brain_skills/producers/comms-matt-alert',
-
-  // Section F — analysis
-  'analyze:drop_investigation': 'marketing_brain_skills/analyze-anomaly',
-  'analyze:spike_investigation': 'marketing_brain_skills/analyze-anomaly',
-  'analyze:metric_decomposition': 'marketing_brain_skills/analyze-anomaly',
-  'analyze:ab_test_design': 'marketing_brain_skills/analyze-experiment',
-  'analyze:ab_test_readout': 'marketing_brain_skills/analyze-experiment',
 }
 
 export default PRODUCER_REGISTRY

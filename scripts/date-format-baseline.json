@@ -32,8 +32,6 @@
     "lib/data/guides/getGuides.ts",
     "lib/digest-email-templates.tsx",
     "lib/pdf/cma-pdf.tsx",
-    "lib/saved-search-cadence.ts",
-    "lib/youtube-market-report/generate-props.ts",
-    "lib/youtube-market-report/queries.ts"
+    "lib/saved-search-cadence.ts"
   ]
 }

@@ -47,56 +47,14 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 // Heavy and/or compilation-irrelevant directories excluded from the git
 // archive to keep extraction fast.
 //
-// WHY video/ needs special handling:
-//   The top-level tsconfig has `"exclude": ["video"]` which prevents all
-//   video/* files from being scanned as compilation roots.  However,
-//   `lib/youtube-market-report/` imports types from
-//   `video/market-report/src/VideoProps` — TypeScript follows that import
-//   even though video/ is excluded from root scanning.  VideoProps.ts has
-//   no external imports (pure type definitions), so it resolves fine via the
-//   root node_modules.
-//
-//   All other video/* sub-packages (cascade-peaks, earnest, area_guides, etc.)
-//   import package-specific deps (@remotion/cli, @react-three/fiber, three…)
-//   that live only in their own per-package node_modules, not in the root.
-//   If those files are included in the archive, they would be scanned as roots
-//   and produce "cannot find module" false-positives.
-//
-//   Solution: include ONLY video/market-report/src/ (the one dir imported by
-//   lib/) and exclude all other video/* sub-packages from the archive.
+// Remotion / video/* factory retired 2026-08-18.
 const ARCHIVE_EXCLUDES = [
   // Root-level heavy dirs (GBs of compiled video, images, docs)
   'public',
   'out',
   'design_system',
   'docs',
-  // listing_video_v4 — its own Remotion project; not part of root tsconfig
   'listing_video_v4',
-  // video/* sub-packages that use per-package deps not in root node_modules.
-  // video/market-report/src/ is NOT excluded — it's imported by lib/.
-  'video/area_guides',
-  'video/avatar_market_update',
-  'video/cascade-peaks',
-  'video/data_viz_video',
-  'video/earnest',
-  'video/evergreen-education',
-  'video/listing-tour',
-  'video/listing_reveal',
-  'video/map_route_video',
-  'video/market-report-yt-long',
-  'video/market-report/data',
-  'video/market-report/node_modules',
-  'video/market-report/out',
-  'video/market-report/public',
-  'video/market-report/remotion.config.ts',
-  'video/market-report/scripts',
-  'video/meme_content',
-  'video/news_video',
-  'video/news_video_avatar',
-  'video/school_district_overlay',
-  'video/tiktok_listing_tour',
-  'video/tumalo-aerial',
-  'video/walkability_overlay',
 ];
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
@@ -186,7 +144,7 @@ if (!fs.existsSync(dstModules)) {
 // set `baseUrl` explicitly for the same reason.
 //
 // The `exclude` list in the base config already covers scripts/, video/,
-// listing_video_v4/, out/ — those remain excluded.
+// out/ remains excluded.
 
 const wrapperTsconfig = {
   extends: './tsconfig.json',
@@ -202,15 +160,6 @@ const wrapperTsconfig = {
   // which don't exist in the commit tree.  Replicate the meaningful parts
   // without those.  `**/*.ts` and `**/*.tsx` already cover the source tree.
   include: ['**/*.ts', '**/*.tsx', '**/*.mts'],
-  // Base exclude list — mirrors tsconfig.json's exclude plus a few additions.
-  //
-  // video/market-report/src/ is intentionally NOT excluded (unlike the base
-  // tsconfig's blanket `"video"` exclusion) because lib/youtube-market-report/
-  // imports types from that specific path and tsc must resolve them.  The other
-  // video/* sub-packages ARE excluded to prevent them from being scanned as
-  // roots (they have per-package deps not in root node_modules — the archive
-  // didn't include those anyway).  .next/ is excluded entirely since it
-  // doesn't exist in the commit tree.
   exclude: [
     'node_modules',
     '_style_backup',
@@ -221,26 +170,6 @@ const wrapperTsconfig = {
     'public',
     'public/producer-gallery-assets',
     '.next',
-    // video sub-packages that use per-package deps (excluded from archive too)
-    'video/area_guides',
-    'video/avatar_market_update',
-    'video/cascade-peaks',
-    'video/data_viz_video',
-    'video/earnest',
-    'video/evergreen-education',
-    'video/listing-tour',
-    'video/listing_reveal',
-    'video/map_route_video',
-    'video/market-report-yt-long',
-    'video/meme_content',
-    'video/news_video',
-    'video/news_video_avatar',
-    'video/school_district_overlay',
-    'video/tiktok_listing_tour',
-    'video/tumalo-aerial',
-    'video/walkability_overlay',
-    // root-level config file of market-report package (uses @remotion/cli/config)
-    'video/market-report/remotion.config.ts',
   ],
 };
 

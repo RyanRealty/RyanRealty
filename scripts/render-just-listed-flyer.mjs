@@ -117,7 +117,7 @@ function registerFlyerFonts() {
   const geistBold = join(geistDir, 'Geist-Bold.ttf')
   const geistRegular = join(geistDir, 'Geist-Regular.ttf')
   const geistSemi = join(geistDir, 'Geist-SemiBold.ttf')
-  const azo = join(REPO_ROOT, 'video/market-report/public/AzoSans-Medium.ttf')
+  const azo = join(REPO_ROOT, 'public/fonts/AzoSans-Medium.ttf')
   if (existsSync(geistBold)) GlobalFonts.registerFromPath(geistBold, 'Geist-Bold')
   if (existsSync(geistRegular)) GlobalFonts.registerFromPath(geistRegular, 'Geist')
   if (existsSync(geistSemi)) GlobalFonts.registerFromPath(geistSemi, 'Geist-SemiBold')
@@ -126,9 +126,8 @@ function registerFlyerFonts() {
   let displayFamily = 'Geist-Bold'
   const amboqiaCandidates = [
     process.env.FLYER_FONT_AMBOQIA,
-    join(REPO_ROOT, 'video/market-report/public/Amboqia.otf'),
-    join(REPO_ROOT, 'video/market-report/public/fonts/Amboqia.otf'),
-    join(REPO_ROOT, 'listing_video_v4/public/fonts/Amboqia.otf'),
+    join(REPO_ROOT, 'public/fonts/Amboqia_Boriango.otf'),
+    join(REPO_ROOT, 'design_system/ryan-realty/assets/fonts/Amboqia_Boriango.otf'),
   ].filter(Boolean)
   for (const p of amboqiaCandidates) {
     if (p && existsSync(p)) {
@@ -278,7 +277,7 @@ async function main() {
   const heroImg = await loadImage(photos[0])
   const thumbImgs = photos.length > 1 ? await Promise.all(photos.slice(1, 4).map((p) => loadImage(p))) : []
 
-  const logoPath = join(REPO_ROOT, 'listing_video_v4/public/brand/stacked_logo_white.png')
+  const logoPath = join(REPO_ROOT, 'design_system/ryan-realty/assets/brand/logo-blue.png')
   /** @type {import('@napi-rs/canvas').Image | null} */
   let logoImg = null
   if (existsSync(logoPath)) {

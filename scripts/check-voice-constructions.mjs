@@ -53,7 +53,6 @@ const SKIP_TOP = new Set([
   'tmp', 'scratch', 'test-results', 'playwright-report',
   'public',                 // static assets + the tracker scripts
   'supabase',               // migrations (DB copy is handled by its own pass)
-  'video', 'listing_video_v4', 'video_production_skills', // render projects
   'design_system',          // mockups + previews, not shipped copy
   'docs',                   // internal documentation
 ])
