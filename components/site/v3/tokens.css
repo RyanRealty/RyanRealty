@@ -190,6 +190,29 @@
   --v3-chart-plot: 11rem;
   --v3-chart-stroke: 1.75px;
   --v3-chart-stroke-context: 1.25px;
+
+  /* Range rows (lollipop / dumbbell) and per-point marks. */
+  --v3-chart-row: 1.9rem;
+  --v3-chart-range-label: 6.5rem;
+  --v3-chart-mark: 9px;
+  --v3-chart-mark-base: 7px;
+
+  /* Threshold-band wash behind a line or across range rows. */
+  --v3-chart-band: var(--v3-wash);
+
+  /* Categorical series run — the ONE sanctioned exception to navy-only marks,
+     for year-over-year overlays where up to five lines must keep identity
+     (chart-room lock, Matt-approved forms, 2026-08-19). Validated on cream
+     #faf8f4 with the dataviz palette validator (mode light): all five >= 3:1
+     against the surface, CVD ΔE floor met with the legend's direct labels as
+     relief. Slots 1 and 3 are snapped from the dark-room run (#c98500 ->
+     #b97c00, #9085e9 -> #847ae3) to clear 3:1 on this surface. Data marks
+     only — never decoration, never a CTA, never a background. */
+  --v3-cat-0: #3987e5;
+  --v3-cat-1: #b97c00;
+  --v3-cat-2: #199e70;
+  --v3-cat-3: #847ae3;
+  --v3-cat-4: #d55181;
 }
 
 /* ---------------------------------------------------------------------------

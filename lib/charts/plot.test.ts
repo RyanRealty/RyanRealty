@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildBarPlot, buildLinePlot, buildMixPlot, linePath } from './plot'
+import { buildBarPlot, buildLinePlot, buildMixPlot, buildRangePlot, linePath } from './plot'
 
 describe('shared chart plot', () => {
   it('draws straight segments and lifts across a gap', () => {
@@ -77,5 +77,109 @@ describe('shared chart plot', () => {
       { x: 10, y: 20, plot: true, label: 'b', tick: '2' },
     ])
     expect(d).toBe('M0.00,10.00 L10.00,20.00')
+  })
+
+  it('clamps line threshold bands to the data domain and drops outsiders', () => {
+    const plot = buildLinePlot(
+      [
+        {
+          name: 'Spread',
+          points: [
+            { value: 1.4, tick: '2024', label: '1.40pp' },
+            { value: 2.9, tick: '2026', label: '2.90pp' },
+          ],
+        },
+      ],
+      {
+        bands: [
+          { from: 1.5, to: 2.0, label: 'Norm 1.5–2.0pp' },
+          { from: 10, to: 12, label: 'outside the data — must drop' },
+        ],
+      },
+    )
+    expect(plot?.kind).toBe('line')
+    if (plot?.kind !== 'line') return
+    expect(plot.bands).toHaveLength(1)
+    const band = plot.bands[0]!
+    expect(band.label).toBe('Norm 1.5–2.0pp')
+    expect(band.h).toBeGreaterThan(0)
+    // Inside the frame's vertical padding.
+    expect(band.y).toBeGreaterThan(0)
+    expect(band.y + band.h).toBeLessThan(plot.vbH)
+  })
+})
+
+describe('range plot (lollipop / dumbbell)', () => {
+  it('anchors lollipop-only non-negative rows at zero so stem length is magnitude', () => {
+    const plot = buildRangePlot([
+      { tick: 'Sisters', value: 10, label: '10 days' },
+      { tick: 'Bend', value: 18, label: '18 days' },
+      { tick: 'Prineville', value: 60, label: '60 days' },
+    ])
+    expect(plot?.kind).toBe('range')
+    if (plot?.kind !== 'range') return
+    const bend = plot.rows.find((r) => r.tick === 'Bend')!
+    const prine = plot.rows.find((r) => r.tick === 'Prineville')!
+    // Zero floor: Bend at 18 of a 60*1.06 domain, and stems start at 0.
+    expect(bend.stemStartPct).toBe(0)
+    expect(bend.xPct).toBeCloseTo((18 / (60 * 1.06)) * 100, 6)
+    expect(prine.xPct).toBeCloseTo((60 / (60 * 1.06)) * 100, 6)
+    expect(bend.baseXPct).toBeNull()
+  })
+
+  it('spans dumbbell pairs from base to value over a padded extent', () => {
+    const plot = buildRangePlot([
+      { tick: 'Bend', value: 98.45, label: '98.5%', baseValue: 97.79, baseLabel: '97.8%' },
+      { tick: 'Black Butte Ranch', value: 90.15, label: '90.2%', baseValue: 96.0, baseLabel: '96.0%' },
+    ])
+    expect(plot?.kind).toBe('range')
+    if (plot?.kind !== 'range') return
+    const bend = plot.rows.find((r) => r.tick === 'Bend')!
+    expect(bend.baseXPct).not.toBeNull()
+    // The stem covers exactly the base -> value span, whichever direction.
+    expect(bend.stemStartPct).toBeCloseTo(Math.min(bend.xPct, bend.baseXPct!), 9)
+    expect(bend.stemEndPct).toBeCloseTo(Math.max(bend.xPct, bend.baseXPct!), 9)
+    // Padded extent, not zero-anchored: everything stays inside 0..100.
+    for (const r of plot.rows) {
+      expect(r.xPct).toBeGreaterThanOrEqual(0)
+      expect(r.xPct).toBeLessThanOrEqual(100)
+      expect(r.baseXPct!).toBeGreaterThanOrEqual(0)
+      expect(r.baseXPct!).toBeLessThanOrEqual(100)
+    }
+    // xMin/xMax labels are the caller's own formatted extremes.
+    expect(plot.xMinLabel).toBe('90.2%')
+    expect(plot.xMaxLabel).toBe('98.5%')
+  })
+
+  it('maps x threshold bands in percent and clamps to the domain', () => {
+    const plot = buildRangePlot(
+      [
+        { tick: 'Bend', value: 3.47, label: '3.5 mo' },
+        { tick: 'La Pine', value: 11.15, label: '11.2 mo' },
+      ],
+      {
+        bands: [
+          { from: 0, to: 4, label: "Seller's" },
+          { from: 4, to: 6, label: 'Balanced' },
+          { from: 6, to: 99, label: "Buyer's" }, // open-ended: clamps to the domain top
+        ],
+      },
+    )
+    expect(plot?.kind).toBe('range')
+    if (plot?.kind !== 'range') return
+    expect(plot.bands).toHaveLength(3)
+    const [sellers, balanced, buyers] = plot.bands
+    expect(sellers!.xPct).toBe(0)
+    expect(sellers!.xPct + sellers!.wPct).toBeCloseTo(balanced!.xPct, 9)
+    expect(buyers!.xPct + buyers!.wPct).toBeCloseTo(100, 6)
+  })
+
+  it('drops rows without a finite value, returns null with none', () => {
+    const plot = buildRangePlot([
+      { tick: 'Metolius', value: Number.NaN, label: 'n/a' },
+      { tick: 'Bend', value: 18, label: '18 days' },
+    ])
+    expect(plot?.rows.map((r) => r.tick)).toEqual(['Bend'])
+    expect(buildRangePlot([{ tick: 'x', value: Number.NaN, label: 'n/a' }])).toBeNull()
   })
 })

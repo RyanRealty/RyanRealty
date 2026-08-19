@@ -164,6 +164,268 @@
   color: var(--v3-ink-muted);
 }
 
+/* ---------------------------------------------------------------------------
+   Threshold bands (line frame). Washes behind the data, clamped to the domain
+   by lib/charts/plot.ts. Labels are listed in the band key line above the
+   frame — SVG text would stretch with the viewBox.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__band {
+  fill: var(--v3-chart-band);
+}
+
+.v3 .v3-chart__bandkey {
+  margin: 0 0 var(--v3-space-2xs);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Per-point marks. A zero-length round-capped stroke with non-scaling-stroke
+   stays a circle while the viewBox stretches. The <title> child is the
+   reading on hover.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__mark {
+  fill: none;
+  stroke: var(--v3-ink);
+  stroke-width: var(--v3-chart-mark);
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: stroke;
+}
+
+.v3 .v3-chart__mark--1,
+.v3 .v3-chart__mark--2 {
+  stroke: var(--v3-ink-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   YoY overlay. Up to five lines keep one categorical hue each (validated on
+   cream — see tokens.css). The legend carries the year names, so hue is
+   never the only encoding.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__line--cat0 { stroke: var(--v3-cat-0); }
+.v3 .v3-chart__line--cat1 { stroke: var(--v3-cat-1); }
+.v3 .v3-chart__line--cat2 { stroke: var(--v3-cat-2); }
+.v3 .v3-chart__line--cat3 { stroke: var(--v3-cat-3); }
+.v3 .v3-chart__line--cat4 { stroke: var(--v3-cat-4); }
+
+.v3 .v3-chart--yoy .v3-chart__line,
+.v3 .v3-chart--yoy .v3-chart__mark {
+  stroke-width: var(--v3-chart-stroke);
+  stroke-dasharray: none;
+}
+
+.v3 .v3-chart__key--cat0 .v3-chart__swatch,
+.v3 .v3-chart__key--cat1 .v3-chart__swatch,
+.v3 .v3-chart__key--cat2 .v3-chart__swatch,
+.v3 .v3-chart__key--cat3 .v3-chart__swatch,
+.v3 .v3-chart__key--cat4 .v3-chart__swatch {
+  border-top-style: solid;
+  border-top-width: var(--v3-chart-stroke);
+}
+
+.v3 .v3-chart__key--cat0 .v3-chart__swatch { border-top-color: var(--v3-cat-0); }
+.v3 .v3-chart__key--cat1 .v3-chart__swatch { border-top-color: var(--v3-cat-1); }
+.v3 .v3-chart__key--cat2 .v3-chart__swatch { border-top-color: var(--v3-cat-2); }
+.v3 .v3-chart__key--cat3 .v3-chart__swatch { border-top-color: var(--v3-cat-3); }
+.v3 .v3-chart__key--cat4 .v3-chart__swatch { border-top-color: var(--v3-cat-4); }
+
+/* ---------------------------------------------------------------------------
+   Range rows: lollipop / dumbbell. HTML rows, percent geometry from
+   lib/charts/plot.ts — dots stay circular at every width, and the labels are
+   real text.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__range {
+  position: relative;
+}
+
+/* With threshold bands, the band labels get their own lane above row one. */
+.v3 .v3-chart__range--banded {
+  padding-top: var(--v3-space-lg);
+}
+
+.v3 .v3-chart__rangebands {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--v3-chart-range-label) + var(--v3-space-sm));
+  right: 0;
+  pointer-events: none;
+}
+
+.v3 .v3-chart__rangeband {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--v3-chart-band);
+}
+
+/* Adjacent zones alternate wash / clear — one shared tint would fuse three
+   bands into a single field with invisible thresholds. */
+.v3 .v3-chart__rangeband:nth-of-type(even) {
+  background: transparent;
+}
+
+/* Band names draw inside their band, in the lane the --banded padding opens.
+   The caller keeps them short (the type doc says so); a name wider than its
+   band clips rather than colliding with a neighbor. */
+.v3 .v3-chart__rangeband-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__rangerow {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--v3-chart-range-label) minmax(0, 1fr);
+  column-gap: var(--v3-space-sm);
+  align-items: center;
+  height: var(--v3-chart-row);
+}
+
+.v3 .v3-chart__rangetick {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: right;
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__rangetrack {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+}
+
+.v3 .v3-chart__rangestem {
+  position: absolute;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--v3-ink);
+}
+
+.v3 .v3-chart__rangedot,
+.v3 .v3-chart__rangebase {
+  position: absolute;
+  top: 50%;
+  border-radius: var(--v3-radius-pill);
+  transform: translate(-50%, -50%);
+}
+
+.v3 .v3-chart__rangedot {
+  width: var(--v3-chart-mark);
+  height: var(--v3-chart-mark);
+  background: var(--v3-ink);
+}
+
+.v3 .v3-chart__rangebase {
+  width: var(--v3-chart-mark-base);
+  height: var(--v3-chart-mark-base);
+  background: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__rangelabel {
+  position: absolute;
+  top: 50%;
+  transform: translate(var(--v3-space-xs), -50%);
+  white-space: nowrap;
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink);
+  /* Surface chip: the reading stays legible when a stem, a dot, or a band
+     wash runs beneath it. */
+  background: var(--v3-surface);
+  padding: 0 var(--v3-space-3xs);
+  border-radius: var(--v3-radius-sm);
+}
+
+/* Near the right edge the reading flips to the left of the dot. */
+.v3 .v3-chart__rangelabel--before {
+  transform: translate(calc(-100% - var(--v3-space-xs)), -50%);
+}
+
+/* Dumbbell legend dots. */
+.v3 .v3-chart__dotswatch {
+  display: inline-block;
+  width: var(--v3-chart-mark);
+  height: var(--v3-chart-mark);
+  border-radius: var(--v3-radius-pill);
+  background: var(--v3-ink);
+}
+
+.v3 .v3-chart__key--dotbase .v3-chart__dotswatch {
+  width: var(--v3-chart-mark-base);
+  height: var(--v3-chart-mark-base);
+  background: var(--v3-ink-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Chart switch: the segmented control over pre-rendered panels. Navy pill on
+   the wash track; 200ms state change per the motion ladder.
+   --------------------------------------------------------------------------- */
+
+.v3.v3-chart-switch {
+  min-width: 0;
+}
+
+.v3 .v3-chart-switch__seg {
+  display: inline-flex;
+  gap: var(--v3-space-3xs);
+  margin: 0 0 var(--v3-space-sm);
+  padding: var(--v3-space-3xs);
+  background: var(--v3-wash);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-pill);
+}
+
+.v3 .v3-chart-switch__tab {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: var(--v3-space-2xs) var(--v3-space-md);
+  min-height: calc(var(--v3-tap) - var(--v3-space-sm));
+  border-radius: var(--v3-radius-pill);
+  background: transparent;
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  line-height: var(--v3-leading-control);
+  cursor: pointer;
+  transition:
+    background-color var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-chart-switch__tab--on {
+  background: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3 .v3-chart-switch__panel {
+  min-width: 0;
+}
+
 /* The numbers, for a reader who cannot see the line. Clipped, not display:none,
    so they stay in the accessibility tree. */
 .v3 .v3-chart__data {

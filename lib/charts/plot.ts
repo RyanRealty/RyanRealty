@@ -37,6 +37,8 @@ export type PlottedPoint = {
 export type LinePlot = {
   kind: 'line'
   lines: { name: string; d: string; points: PlottedPoint[] }[]
+  /** Threshold zones behind the lines, clamped to the data's y-domain. */
+  bands: { y: number; h: number; label: string }[]
   yMinLabel: string
   yMaxLabel: string
   xStart: string
@@ -85,7 +87,56 @@ export type MixPlot = {
   vbH: number
 }
 
-export type AnyPlot = LinePlot | BarPlot | MixPlot
+/** A horizontal value band (threshold zone) mapped into the line frame. */
+export type LineBand = {
+  y: number
+  h: number
+  label: string
+}
+
+/** One row of a range plot: a lollipop dot, or a dumbbell pair. Percent geometry. */
+export type RangeRowIn = {
+  /** Row name (a town, a segment). */
+  tick: string
+  /** The primary value — the filled dot. */
+  value: number
+  /** The primary value as the caller formatted it. */
+  label: string
+  /** Optional prior/context value — makes the row a dumbbell. */
+  baseValue?: number
+  /** The prior value as the caller formatted it. */
+  baseLabel?: string
+}
+
+export type RangeBandIn = {
+  from: number
+  to: number
+  label: string
+}
+
+export type RangePlotRow = {
+  tick: string
+  /** Primary dot position, percent of the track (0–100). */
+  xPct: number
+  label: string
+  /** Dumbbell tail position, percent; null on a lollipop row. */
+  baseXPct: number | null
+  baseLabel: string | null
+  /** Stem span, percent. Lollipop stems rise from the domain floor. */
+  stemStartPct: number
+  stemEndPct: number
+  index: number
+}
+
+export type RangePlot = {
+  kind: 'range'
+  rows: RangePlotRow[]
+  bands: { xPct: number; wPct: number; label: string }[]
+  xMinLabel: string
+  xMaxLabel: string
+}
+
+export type AnyPlot = LinePlot | BarPlot | MixPlot | RangePlot
 
 function isFiniteNumber(value: number): boolean {
   return Number.isFinite(value)
@@ -107,7 +158,10 @@ export function linePath(points: readonly PlottedPoint[]): string {
 }
 
 /** Straight segments. The line lifts across a gap. No spline. */
-export function buildLinePlot(series: readonly PlotSeriesIn[]): LinePlot | null {
+export function buildLinePlot(
+  series: readonly PlotSeriesIn[],
+  opts?: { bands?: readonly RangeBandIn[] },
+): LinePlot | null {
   const useAt = series.some((s) => s.points.some((p) => p.at != null && isFiniteNumber(p.at)))
 
   const finite: { point: PlotPointIn; order: number }[] = []
@@ -189,15 +243,116 @@ export function buildLinePlot(series: readonly PlotSeriesIn[]): LinePlot | null 
   })
   if (lines.length === 0) return null
 
+  // Threshold zones, clamped to the data's y-domain. A band is context for
+  // values that exist; it never widens the domain, and one that falls wholly
+  // outside the plotted range is dropped rather than distorting the scale.
+  const bands: LinePlot['bands'] = []
+  for (const band of opts?.bands ?? []) {
+    if (!isFiniteNumber(band.from) || !isFiniteNumber(band.to)) continue
+    const lo = Math.max(Math.min(band.from, band.to), y0)
+    const hi = Math.min(Math.max(band.from, band.to), y1)
+    if (!(hi > lo)) continue
+    const top = yOf(hi)
+    const bottom = yOf(lo)
+    bands.push({ y: top, h: bottom - top, label: band.label })
+  }
+
   return {
     kind: 'line',
     lines,
+    bands,
     yMinLabel,
     yMaxLabel,
     xStart,
     xEnd,
     vbW: VB_W,
     vbH: VB_H,
+  }
+}
+
+/**
+ * Lollipop / dumbbell rows: categories on Y, one value (dot) or a pair
+ * (prior -> current) on X. Geometry is PERCENT of the track so the renderer
+ * lays rows out in HTML and circles stay circles at any width — a stretched
+ * SVG viewBox would draw them as ellipses.
+ *
+ * Domain: with any dumbbell pair present, the padded extent of all values;
+ * lollipop-only rows with a non-negative floor anchor at zero so stem length
+ * is magnitude, not an artifact of the minimum.
+ */
+export function buildRangePlot(
+  rows: readonly RangeRowIn[],
+  opts?: { bands?: readonly RangeBandIn[] },
+): RangePlot | null {
+  const usable = rows.filter((r) => isFiniteNumber(r.value))
+  if (usable.length < 1) return null
+
+  const hasBase = usable.some((r) => r.baseValue != null && isFiniteNumber(r.baseValue))
+  let min = Infinity
+  let max = -Infinity
+  let minLabel = usable[0]!.label
+  let maxLabel = usable[0]!.label
+  const consider = (value: number, label: string) => {
+    if (value < min) {
+      min = value
+      minLabel = label
+    }
+    if (value > max) {
+      max = value
+      maxLabel = label
+    }
+  }
+  for (const r of usable) {
+    consider(r.value, r.label)
+    if (r.baseValue != null && isFiniteNumber(r.baseValue)) {
+      consider(r.baseValue, r.baseLabel ?? r.label)
+    }
+  }
+
+  let lo: number
+  let hi: number
+  if (!hasBase && min >= 0) {
+    lo = 0
+    hi = max === 0 ? 1 : max * 1.06
+  } else {
+    const span = max - min || Math.abs(max) || 1
+    lo = min - span * 0.08
+    hi = max + span * 0.08
+  }
+  const range = hi - lo || 1
+  const pct = (value: number) => ((value - lo) / range) * 100
+
+  const plotted: RangePlotRow[] = usable.map((r, index) => {
+    const x = pct(r.value)
+    const base =
+      r.baseValue != null && isFiniteNumber(r.baseValue) ? pct(r.baseValue) : null
+    return {
+      tick: r.tick,
+      xPct: x,
+      label: r.label,
+      baseXPct: base,
+      baseLabel: base != null ? (r.baseLabel ?? null) : null,
+      stemStartPct: base != null ? Math.min(base, x) : 0,
+      stemEndPct: base != null ? Math.max(base, x) : x,
+      index,
+    }
+  })
+
+  const bands: RangePlot['bands'] = []
+  for (const band of opts?.bands ?? []) {
+    if (!isFiniteNumber(band.from) || !isFiniteNumber(band.to)) continue
+    const bLo = Math.max(Math.min(band.from, band.to), lo)
+    const bHi = Math.min(Math.max(band.from, band.to), hi)
+    if (!(bHi > bLo)) continue
+    bands.push({ xPct: pct(bLo), wPct: pct(bHi) - pct(bLo), label: band.label })
+  }
+
+  return {
+    kind: 'range',
+    rows: plotted,
+    bands,
+    xMinLabel: minLabel,
+    xMaxLabel: maxLabel,
   }
 }
 

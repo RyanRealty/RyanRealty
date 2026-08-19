@@ -70,7 +70,26 @@ export type {
  */
 export { V3Chart } from './V3Chart'
 
-export type { V3ChartProps, V3ChartSeries, V3ChartPoint, V3ChartKind } from './V3Chart'
+/** How many series a YoY overlay can keep apart — the categorical token count. */
+export { V3_CHART_CATEGORY_SLOTS } from './V3Chart'
+
+export type {
+  V3ChartProps,
+  V3ChartSeries,
+  V3ChartPoint,
+  V3ChartKind,
+  V3ChartBand,
+  V3ChartRangeRow,
+} from './V3Chart'
+
+/**
+ * The segmented control the chart-room forms put over pre-rendered views of
+ * one figure (range, sort, comparison). A client island; the panels arrive
+ * server-rendered as children. An atom, not a seventh pattern.
+ */
+export { V3ChartSwitch } from './V3ChartSwitch.client'
+
+export type { V3ChartSwitchProps, V3ChartSwitchItem } from './V3ChartSwitch.client'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 1 — INSTRUMENT: the answer, big                                     */
