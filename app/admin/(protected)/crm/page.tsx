@@ -51,7 +51,6 @@
 // navigates away. It now mounts directly, migrated to the v2 SearchField, at
 // ./_components/ContactsSearch.
 import { Suspense } from 'react'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess, listCrmPeople, listCrmSequences, type CrmAccess } from '@/app/actions/crm'
@@ -71,6 +70,7 @@ import ContactsSearch from './_components/ContactsSearch'
 import { MobilePeopleRoot } from '@/components/admin/shared/mobile/MobilePeopleRoot'
 import PeopleSidebar from '@/components/admin/shared/people-list/PeopleSidebar'
 import { getCrmStageCounts } from '@/lib/data/crm/getCrmStageCounts'
+import { AddPersonCard } from '@/components/admin/shared/people-list/AddPersonDialog'
 import PeopleListView, { type PeopleRow } from '@/components/admin/shared/people-list/PeopleListView'
 import {
   groupSavedViews, groupSystemByCollection, type SavedViewItem,
@@ -115,16 +115,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const sp = await searchParams
   return (
     <div className="av2-scope" style={{ maxWidth: 1600, margin: '0 auto' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-        <Link
-          href="/admin/people?add=1"
-          className="av2-btn"
-          data-tour="crm-add-person"
-          style={{ textDecoration: 'none' }}
-        >
-          New contact
-        </Link>
-      </div>
+      <AddPersonCard />
       <Suspense fallback={<CrmListFallback />}>
         <CrmPeopleBody access={access} sp={sp} />
       </Suspense>

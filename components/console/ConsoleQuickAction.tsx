@@ -32,7 +32,7 @@ type Item = { label: string; href: string; icon: React.ComponentType<{ className
 
 // Create surfaces that exist anywhere in the console — always available.
 const GLOBAL: Item[] = [
-  { label: 'New contact', href: '/admin/crm/new', icon: UserPlus },
+  { label: 'New contact', href: '/admin/crm#add-person', icon: UserPlus },
   { label: 'New task', href: '/admin/crm/tasks', icon: CheckSquare },
   { label: 'View pipeline', href: '/admin/crm/deals', icon: Briefcase },
   { label: 'Compose email', href: '/admin/email/compose', icon: PenSquare },
@@ -64,7 +64,7 @@ function ActionGrid({ items, onPick }: { items: Item[]; onPick: () => void }) {
         // Same-page hash links must be plain anchors: Next's <Link> uses
         // history.pushState, which does NOT fire `hashchange`, so LeadTabs would
         // never see the deep link. A native anchor fires it.
-        return it.href.startsWith('#') ? (
+        return it.href.includes('#') ? (
           <a key={it.label} href={it.href} onClick={onPick} className={cls}>{inner}</a>
         ) : (
           <Link key={it.label} href={it.href} onClick={onPick} className={cls}>{inner}</Link>
@@ -140,8 +140,8 @@ export default function ConsoleQuickAction() {
 
   if (addPersonSurface) {
     return (
-      <Link
-        href="/admin/people?add=1"
+      <a
+        href="#add-person"
         aria-label="New contact"
         className={cn(
           'fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 lg:bottom-5 [[data-crm-comms]_&]:hidden [[data-kb-open]_&]:hidden',
@@ -150,7 +150,7 @@ export default function ConsoleQuickAction() {
         style={{ backgroundColor: 'var(--a-btn-bg, var(--console-info))', color: 'var(--a-btn-fg, #fff)' }}
       >
         <UserPlus className="h-6 w-6" />
-      </Link>
+      </a>
     )
   }
 
