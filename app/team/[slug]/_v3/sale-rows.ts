@@ -7,6 +7,7 @@
 
 import { formatDate } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { v3Text, type V3LedgerFigureRow } from '@/components/site/v3'
 import type { BrokerSaleTile } from '@/lib/data'
@@ -18,8 +19,11 @@ function inServiceArea(postal: string | null | undefined): boolean {
 
 function addressLine(tile: PriceDropTile): string {
   return (
-    [tile.StreetNumber, tile.StreetName, tile.StreetSuffix].filter(Boolean).join(' ') ||
-    'Address withheld'
+    publishStreetLine({
+      streetNumber: tile.StreetNumber,
+      streetName: tile.StreetName,
+      streetSuffix: tile.StreetSuffix,
+    }) || 'Address withheld'
   )
 }
 
@@ -63,6 +67,17 @@ export function brokerSaleToRow(tile: BrokerSaleTile): V3LedgerFigureRow | null 
     ...row,
     when: v3Text(soldWhen(tile.CloseDate, tile.saleSide)),
   }
+}
+
+/**
+ * Published closings for a broker page. Count and ledger rows are the same
+ * set: 977-zip sales that map to a row. Do not hide a closing because the
+ * photo is missing, and do not slice the ledger below the published count.
+ */
+export function publishOwnClosingRows(brokerSales: BrokerSaleTile[]): V3LedgerFigureRow[] {
+  return brokerSales
+    .map(brokerSaleToRow)
+    .filter((row): row is V3LedgerFigureRow => row !== null)
 }
 
 export function factualFallbackBio(opts: {
