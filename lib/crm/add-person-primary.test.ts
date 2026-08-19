@@ -77,6 +77,7 @@ describe('People new-contact primary path', () => {
     const ui = readFileSync('app/admin/(protected)/people/[id]/PersonNotesAdd.tsx', 'utf8')
     expect(ui).toContain('savePersonNoteAction')
     expect(ui).toContain('Note saved')
+    expect(ui).toContain("timeZone: 'America/Los_Angeles'")
     const action = readFileSync('app/admin/(protected)/people/actions.ts', 'utf8')
     expect(action).toContain('revalidatePerson(personId)')
     expect(action).not.toMatch(/savePersonNoteAction[\s\S]*revalidatePath\('\/admin\/crm'\)/)

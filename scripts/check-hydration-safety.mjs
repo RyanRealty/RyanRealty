@@ -237,8 +237,8 @@ const LOCALE_TS_RE = /\.toLocaleString\s*\(/g
  */
 function localeStringIsDateFormatWithoutTz(lines, lineIdx, matchOffset) {
   // Build a multi-line string starting from the opening `(` of the call,
-  // spanning at most 6 more lines (enough for a compact options object).
-  const chunk = lines.slice(lineIdx, lineIdx + 6).join('\n')
+  // spanning enough lines for a standard Intl options object (locale + keys + timeZone).
+  const chunk = lines.slice(lineIdx, lineIdx + 12).join('\n')
   // Find the opening paren at the right position
   const parenStart = matchOffset != null ? matchOffset : chunk.indexOf('(')
   if (parenStart === -1) return false
