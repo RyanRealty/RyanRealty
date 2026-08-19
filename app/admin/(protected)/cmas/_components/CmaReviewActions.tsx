@@ -29,6 +29,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button, ConfirmDialog, Dialog, SelectField, TextField } from '@/components/admin/v2'
+import { CmaTextMeButton } from '@/components/admin/crm/CmaTextMeButton'
 import { formatPriceExact } from '@/lib/format/money'
 import {
   rebuildCmaAction,
@@ -318,6 +319,11 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
             Approve (draft to final)
           </Button>
         ) : null}
+
+        {props.hasDocument ? <CmaTextMeButton slug={props.slug} /> : null}
+        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          Texts the review link to your phone. The client is not copied.
+        </p>
 
         <Button onClick={() => setSendOpen(true)} touch className="w-full" disabled={isPending || !isSendable}>
           Send to lead

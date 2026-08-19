@@ -30,6 +30,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Button, Dialog, TextField } from '@/components/admin/v2'
+import { CmaTextMeButton } from '@/components/admin/crm/CmaTextMeButton'
 import { kickoffCmaForContactAction } from '@/app/actions/crm-cma-kickoff'
 import { resolveKickoff } from './cma-kickoff-client'
 
@@ -171,6 +172,7 @@ export function CmaKickoffSheet({
             >
               {done.alreadyBuilt ? 'Review the existing CMA' : 'Open the CMA queue'}
             </Link>
+            {done.alreadyBuilt ? <CmaTextMeButton slug={done.slug} /> : null}
             {done.alreadyBuilt ? (
               <Button variant="quiet" onClick={() => submit(true)} disabled={pending}>
                 {pending ? 'Kicking off…' : 'Build a fresh CMA — text me when ready'}

@@ -2,33 +2,45 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — CMA person-link + SE + slim review
+# Current — 2026-08-19 (cursor-cloud) — CRM compose rebase
 
-**Surface:** Cursor Cloud. Merged to `main` @ `23f936a51`. Vercel production **READY** `FnhKRD21AK26xTzUs4wTnKau6K6w`. Live `cma-648-se-douglas` is `person_id=63285` Odessa, `client_name=Odessa`, address `648 SE Douglas, Bend, OR 97702`, beds/baths/sqft 3/1/1056, `Intent: sell`. Review header reads the linked person. Rebuild keeps `person_id` and SE. Kickoff/rebuild/manual build collect beds/baths/sqft + rent-vs-sell. Admin actions and version-chain reads no longer `select(*)`. Review page does not iframe the document. Relationships + address-on-quick-add stay on `main`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud `cursor/site-texting-1eb2` PR **128**. Loop stays **DISARMED**. Rebased onto current `main` (PR 123 + people file + CMA 127 + person-link). CRM compose is the only send path. No Jane/Odessa/Nealon sends. No Gmail fallback. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — CMA person-link and SE persist live
+
+**Surface:** Cursor Cloud. Merged to `main` @ `23f936a51`. Vercel production **READY** `FnhKRD21AK26xTzUs4wTnKau6K6w`. Live `cma-648-se-douglas` is `person_id=63285` Odessa, `client_name=Odessa`, address `648 SE Douglas, Bend, OR 97702`, beds/baths/sqft 3/1/1056, `Intent: sell`. Review header reads the linked person. Rebuild keeps `person_id` and SE. Kickoff/rebuild/manual build collect beds/baths/sqft + rent-vs-sell. Admin actions and version-chain reads no longer `select(*)`. Review page does not iframe the document. Relationships + address-on-quick-add stay on `main`. No email. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit, database-canonical-reference.
 
 # Prior — 2026-08-19 (cursor-cloud) — People file related people + notes
 
-**Surface:** Cursor Cloud. Merged to `main` @ `7a30d1ef8`. Vercel production **READY** `2PxU2QeAJnU5Qe5BF9ADdYTEefuq`. Loop stays **DISARMED**. Live file friction after Nealon `63287` + Jane `63290` next to Odessa `63285`: related-people form now first-paints open; notes list + `savePersonNoteAction` (no People-list revalidate); stage/tags on first paint; quick add is name+phone plus email or street, then Opening success. Odessa↔Nealon spouse and Jane parent of Odessa already in `crm_relationships`. Odessa notes were in `crm_timeline` and hidden behind the workspace hang. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Merged to `main` @ `7a30d1ef8`. Vercel production **READY** `2PxU2QeAJnU5Qe5BF9ADdYTEefuq`. Loop stays **DISARMED**. Related-people form first-paints open; notes list + `savePersonNoteAction`; stage/tags on first paint. No email. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
 
 # Prior — 2026-08-19 (cursor-cloud) — People New contact first-paint
 
-**Surface:** Cursor Cloud. Merged to `main` @ `cea4bde19`. Vercel production **READY** `94hZ3rcsAmuPze5JTWockB7Ejnx4`. Loop stays **DISARMED**. Live friction: add-person hid behind Quick actions / New List on `/admin/crm`. `AddPersonCard` now first-paints above the People list + CRM loading. Header New contact scrolls to `#add-person`. Quick actions stay; New contact lands `/admin/crm#add-person`. Gate `ci:crm-add-person`. No FUB. No email. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Merged to `main` @ `cea4bde19`. Vercel production **READY** `94hZ3rcsAmuPze5JTWockB7Ejnx4`. Loop stays **DISARMED**. `AddPersonCard` first-paints above the People list. Gate `ci:crm-add-person`. No email. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, frontend-design, git-commit.
 
 # Prior — 2026-08-19 (cursor-cloud) — hub reject + Foley investor HOA
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. Two more stats-truth p0s: hub `$730,000` vs FAQ `$729,875` **rejected** (live instrument+FAQ both `$729,000`; class already on `062ff2372`). Foley investor HOA `$0` vs `$22` **fixed** — listing `#hoa` `value="22"` via `publishRentalHoaMonthly`; standalone rental tool stays 0. Product `main` @ `2ff523f5e` READY `DQunyJFMW7tee6t2qNKyZLz5TkbJ`. Foley investor fp `180be952` disposed on `3a6198cd`; hub `32f44490` already disposed; parent stays open (119 lines). Place-pages left. No CMA. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. Foley investor HOA `$0` vs `$22` **fixed**. Product `main` @ `2ff523f5e`. No CMA. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** database-canonical-reference, git-commit.
 
 # Prior — 2026-08-19 (cursor-cloud) — CMA phone open + PDF
 
-**Surface:** Cursor Cloud. Branch `cursor/cma-phone-login-redirect-4add` PR #127. Loop stays **DISARMED**. Unauth view/pdf → login. Review slim-reads. `/view` serves stored HTML. PDF from render_args. SE from slug. person_id on kickoff. Merged latest main. Drafts stay private. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud `cursor/site-texting-1eb2` PR **128**. Loop stays **DISARMED**. Rebased onto `main` after PR 127. CRM compose is the only send path. No Jane/Odessa/Nealon sends. No Gmail fallback. No re-arm. Leave `LOOP_SENTINEL` off.
+
+**Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, git-commit.
+
+# Prior — 2026-08-19 (cursor-cloud) — CMA phone open + PDF
+
+**Surface:** Cursor Cloud. PR #127 merged to `main`. Loop stays **DISARMED**. Unauth view/pdf → login. Review slim-reads. `/view` serves stored HTML. PDF from render_args. SE from slug. person_id on kickoff. Drafts stay private. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, database-canonical-reference, git-commit.
 

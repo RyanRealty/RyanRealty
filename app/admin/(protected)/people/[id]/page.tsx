@@ -26,6 +26,7 @@ import { FieldEditors } from './FieldEditors'
 import { PersonRelationships } from './PersonRelationships'
 import { PersonNotesAdd } from './PersonNotesAdd'
 import { PersonWorkspace } from './PersonWorkspace'
+import { CmaKickoffSheet } from '@/components/admin/crm/CmaKickoffSheet'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,9 +99,23 @@ export default async function PersonPage({
 
       <PersonAddressEditor personId={card.personId} address={card.address} />
 
+      <CmaKickoffSheet
+        personId={card.personId}
+        personName={card.name}
+        personPhone={card.phone}
+        personEmail={card.email}
+        suggestedAddress={addressLine}
+        autoOpen={sp.intent === 'cma'}
+      />
+
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        {card.phone ? (
+          <Link href={`/admin/messages/new?c=${card.personId}`}>
+            <Button>Text</Button>
+          </Link>
+        ) : null}
         <Link href={`/admin/messages?c=${card.personId}`}>
-          <Button>Message</Button>
+          <Button variant="quiet">Message</Button>
         </Link>
         {card.phone ? (
           <a href={`tel:${card.phone}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
