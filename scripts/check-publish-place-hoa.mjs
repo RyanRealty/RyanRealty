@@ -37,10 +37,6 @@ const surfaces = [
     label: 'KB resort glance gates Master HOA through publishPlaceHoa',
   },
   {
-    path: 'components/site/CommunityRichContent.tsx',
-    label: 'CommunityRichContent glance gates Master HOA through publishPlaceHoa',
-  },
-  {
     path: 'app/communities/[slug]/_v3/place-knowledge.ts',
     label: 'place-knowledge Quiet gates HOA through publishPlaceHoa',
   },

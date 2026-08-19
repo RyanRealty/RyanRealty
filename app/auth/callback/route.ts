@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { trackSignedInUser } from '@/lib/followupboss'
+import { trackSignedInUser } from '@/lib/crm/send-event'
 import { stitchVisitorIdentity } from '@/lib/visitor-backfill'
 import { claimGuestSavedSearches } from '@/lib/data/savedSearches'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
@@ -29,7 +29,7 @@ const PERSON_ID_MAX_AGE = 90 * 24 * 60 * 60 // 90 days — matches app/actions/i
  * the CRM simply gets stamped on a later visit. Never blocks or fails sign-in.
  *
  * Fixed 2026-07-09: previously called findPersonByEmail(), which hits
- * FollowUpBoss's API and has unconditionally returned null since the
+ * a retired vendor API and has unconditionally returned null since the
  * 2026-06-24 decommission — every sign-in on the entire site was silently
  * failing to stamp this cookie. Replaced with the native personIdsByEmailCi()
  * lookup used everywhere else in the CRM.

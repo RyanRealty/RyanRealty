@@ -138,35 +138,7 @@ async function checkSpark() {
   }
 }
 
-// ─── 3. Follow Up Boss ──────────────────────────────────────────────────────
-
-async function checkFollowUpBoss() {
-  const apiKey = env('FOLLOWUPBOSS_API_KEY')
-  if (!apiKey) {
-    fail('Follow Up Boss', 'FOLLOWUPBOSS_API_KEY', 'Not set')
-    return
-  }
-
-  try {
-    const auth = Buffer.from(`${apiKey}:`).toString('base64')
-    const res = await fetch('https://api.followupboss.com/v1/people?limit=1&fields=id', {
-      headers: {
-        Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/json',
-      },
-    })
-    if (res.ok) {
-      const data = await res.json() as { people?: unknown[] }
-      pass('Follow Up Boss', 'FOLLOWUPBOSS_API_KEY', `Connected — API key valid (${data.people?.length ?? 0} person(s) returned)`)
-    } else {
-      fail('Follow Up Boss', 'FOLLOWUPBOSS_API_KEY', `HTTP ${res.status}: ${res.statusText}`)
-    }
-  } catch (e) {
-    fail('Follow Up Boss', 'FOLLOWUPBOSS_API_KEY', `Connection error: ${e instanceof Error ? e.message : String(e)}`)
-  }
-}
-
-// ─── 4. xAI / Grok ─────────────────────────────────────────────────────────
+// ─── 3. xAI / Grok ─────────────────────────────────────────────────────────
 
 async function checkXai() {
   const apiKey = env('XAI_API_KEY')
@@ -546,16 +518,6 @@ function checkMeta() {
 // ─── 14. Misc ───────────────────────────────────────────────────────────────
 
 async function checkMisc() {
-  // FUB email click param
-  const fubParam = env('NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM')
-  if (!fubParam) {
-    warn('FUB Email Click Param', 'NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM', 'Not set (optional)')
-  } else if (fubParam === '_fuid') {
-    pass('FUB Email Click Param', 'NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM', `Correct value: ${fubParam}`)
-  } else {
-    warn('FUB Email Click Param', 'NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM', `Unexpected value: "${fubParam}" (expected "_fuid")`)
-  }
-
   // Cron secret
   const cronSecret = env('CRON_SECRET')
   if (!cronSecret) {
@@ -625,7 +587,6 @@ async function main() {
   await Promise.all([
     checkSupabase(),
     checkSpark(),
-    checkFollowUpBoss(),
     checkXai(),
     checkOpenAI(),
     checkReplicate(),
@@ -650,7 +611,6 @@ async function main() {
   const categories = [
     { title: 'Supabase', vars: ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'] },
     { title: 'Spark MLS', vars: ['SPARK_API_KEY', 'SPARK_API_BASE_URL'] },
-    { title: 'Follow Up Boss', vars: ['FOLLOWUPBOSS_API_KEY'] },
     { title: 'xAI / Grok', vars: ['XAI_API_KEY'] },
     { title: 'OpenAI', vars: ['OPENAI_API_KEY'] },
     { title: 'Replicate', vars: ['REPLICATE_API_TOKEN'] },
@@ -663,7 +623,7 @@ async function main() {
     { title: 'Google OAuth', vars: ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'] },
     { title: 'Analytics & Tracking', vars: ['NEXT_PUBLIC_GA4_MEASUREMENT_ID', 'GOOGLE_GA4_PROPERTY_ID', 'NEXT_PUBLIC_GTM_CONTAINER_ID', 'NEXT_PUBLIC_ADSENSE_CLIENT_ID', 'NEXT_PUBLIC_META_PIXEL_ID'] },
     { title: 'Meta', vars: ['META_APP_ID', 'META_AD_ACCOUNT_ID', 'META_APP_SECRET'] },
-    { title: 'Misc', vars: ['NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM', 'CRON_SECRET', 'SENTRY_DSN', 'SENTRY_AUTH_TOKEN', 'INNGEST_EVENT_KEY', 'INNGEST_SIGNING_KEY'] },
+    { title: 'Misc', vars: ['CRON_SECRET', 'SENTRY_DSN', 'SENTRY_AUTH_TOKEN', 'INNGEST_EVENT_KEY', 'INNGEST_SIGNING_KEY'] },
   ]
 
   let totalPass = 0

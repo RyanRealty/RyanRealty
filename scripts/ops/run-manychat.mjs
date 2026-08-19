@@ -57,35 +57,30 @@ const baseTriggers = [
   {
     keyword: 'SHOWING',
     reply: `Thank you for your interest in ${address}. Our team will reach out within the hour to schedule a showing. You can also call us directly at 541.213.6706.`,
-    fub_tag: 'ig-showing-request',
-    fub_source: 'Instagram DM — SHOWING keyword',
+    tag: 'ig-showing-request',
+    source: 'Instagram DM — SHOWING keyword',
   },
   {
     keyword: 'OPENHOUSE',
     reply: `Thank you for asking about the open house at ${address}. We will send you the date and time details right away. Questions? Call 541.213.6706.`,
-    fub_tag: 'ig-open-house-inquiry',
-    fub_source: 'Instagram DM — OPENHOUSE keyword',
+    tag: 'ig-open-house-inquiry',
+    source: 'Instagram DM — OPENHOUSE keyword',
   },
   {
     keyword: 'DETAILS',
     reply: `Happy to send the full property details for ${address} (${priceDisplay}${beds ? `, ${beds}BD/${baths}BA` : ''}). Reply with your email address and we will get those over to you.`,
-    fub_tag: 'ig-details-request',
-    fub_source: 'Instagram DM — DETAILS keyword',
+    tag: 'ig-details-request',
+    source: 'Instagram DM — DETAILS keyword',
   },
   {
     keyword: streetKeyword,
     reply: `Thank you for reaching out about ${address} (${priceDisplay}). What would you like to know? We are happy to answer any questions — or call us at 541.213.6706.`,
-    fub_tag: `ig-address-inquiry-${slug}`,
-    fub_source: `Instagram DM — ${streetKeyword} keyword`,
+    tag: `ig-address-inquiry-${slug}`,
+    source: `Instagram DM — ${streetKeyword} keyword`,
   },
   // Merge user-specified triggers
   ...userTriggers,
 ];
-
-// ── FUB webhook integration ───────────────────────────────────────────────────
-const fubWebhookUrl = process.env.NEXT_PUBLIC_VERCEL_URL
-  ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/api/webhooks/fub-capture`
-  : 'https://ryanrealty.vercel.app/api/webhooks/fub-capture';
 
 // ── ManyChat flow JSON (import-ready format) ──────────────────────────────────
 const flowJson = {
@@ -105,18 +100,14 @@ const flowJson = {
       type: 'text',
       text: t.reply,
     },
-    fub_webhook: {
-      url: fubWebhookUrl,
-      method: 'POST',
-      body: {
-        source: t.fub_source,
-        tags: [t.fub_tag, 'ig-lead', 'instagram-dm'],
-        listing_address: address,
-        listing_price: priceDisplay,
-        trigger_keyword: t.keyword,
-        listing_key: listing.listing_key || '',
-        assigned_to: listing.list_agent_name || 'Matt Ryan',
-      },
+    crm_note: {
+      source: t.source,
+      tags: [t.tag, 'ig-lead', 'instagram-dm'],
+      listing_address: address,
+      listing_price: priceDisplay,
+      trigger_keyword: t.keyword,
+      listing_key: listing.listing_key || '',
+      assigned_to: listing.list_agent_name || 'Matt Ryan',
     },
   })),
   fallback_message: `Thank you for reaching out to Ryan Realty. For immediate assistance, call 541.213.6706 or visit ryan-realty.com.`,
@@ -132,9 +123,9 @@ ${!hasApiKey ? '\n> ℹ  MANYCHAT_API_KEY not set — dry-run mode only. Set the
 
 ${baseTriggers.map(t => `- \`${t.keyword}\` → "${t.reply.slice(0, 80)}..."`).join('\n')}
 
-## FUB integration
+## Native CRM
 
-Every trigger fires a webhook to \`${fubWebhookUrl}\` to capture the lead in FUB.
+Keyword replies stay in ManyChat. Capture any named lead in the in-house CRM (crm_people) — there is no third-party CRM webhook.
 
 ## To approve
 
@@ -153,15 +144,14 @@ const commentary = `# Commentary — ${PRODUCER}
 ManyChat IG keyword automation flow for ${address}.
 ${baseTriggers.length} triggers: ${baseTriggers.map(t => t.keyword).join(', ')}
 
-## FUB lead capture
-Every trigger fires a FUB webhook at ${fubWebhookUrl}.
-Tags applied: ig-lead, instagram-dm, and trigger-specific tag.
+## Native CRM
+No third-party CRM webhook. Tags for a follow-up capture: ig-lead, instagram-dm, and the trigger-specific tag.
 
 ## Why now
 New listing posted to IG. Keyword automation captures DM leads without manual monitoring.
 
 ## Rollback plan
-Pause or delete the flow in ManyChat Automation dashboard. FUB leads already captured are unaffected.
+Pause or delete the flow in ManyChat Automation dashboard. CRM contacts already captured are unaffected.
 
 ## Estimated impact
 Keyword flows convert ~15–25% of caption-driven DMs into captured leads (industry benchmark).
@@ -223,7 +213,7 @@ if (live) {
 } else {
   console.log(`✓ DRY RUN — ManyChat flow bundle written to ${outDir}/flow.json`);
   console.log(`  Triggers: ${baseTriggers.map(t => t.keyword).join(', ')}`);
-  console.log(`  FUB webhook: ${fubWebhookUrl}`);
+  console.log('  CRM: in-house crm_people (no third-party webhook)');
   if (!hasApiKey) console.log(`  ℹ  MANYCHAT_API_KEY not set — dry-run only with note`);
 }
 
@@ -232,14 +222,14 @@ function writeSidecars(dir, payload, { valid, missing, hasApiKey }) {
   fs.writeFileSync(path.join(dir, 'citations.json'), JSON.stringify({
     producer: PRODUCER, generated_at: now,
     sources: [{ label: 'ManyChat API', url: 'https://api.manychat.com/', note: 'Pro plan required for keyword triggers' }],
-    api_key_configured: hasApiKey, fub_webhook: fubWebhookUrl,
+    api_key_configured: hasApiKey, crm: 'crm_people',
   }, null, 2));
   fs.writeFileSync(path.join(dir, 'provenance.json'), JSON.stringify({
     producer: PRODUCER, payload_path: payloadPath, generated_at: now, live_mode: live, target_slug: slug,
   }, null, 2));
   fs.writeFileSync(path.join(dir, 'design_scorecard.json'), JSON.stringify({
     producer: PRODUCER,
-    checks: { payload_validates: valid, fields_populated: missing.length === 0, voice_clean: true, api_key_present: hasApiKey, fub_integration: true },
+    checks: { payload_validates: valid, fields_populated: missing.length === 0, voice_clean: true, api_key_present: hasApiKey },
     missing_fields: missing, score: valid ? 95 : 50,
     note: hasApiKey ? null : 'MANYCHAT_API_KEY not set — import via UI',
   }, null, 2));
@@ -248,5 +238,3 @@ function writeSidecars(dir, payload, { valid, missing, hasApiKey }) {
     target_slug: slug, generated_at: now, live, api_key_present: hasApiKey, out_dir: dir,
   }, null, 2));
 }
-
-const fubWebhookUrl2 = fubWebhookUrl; // hoist for sidecar closure

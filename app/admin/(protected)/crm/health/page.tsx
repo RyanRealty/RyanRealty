@@ -17,15 +17,9 @@
 // no tile changed color in this migration.
 //
 // ONE FALSE CLAIM CUT — the Mirror tile. It rendered a GREEN tile reading
-// "Mirroring", noted "FUB leads are flowing into crm_*", and derived that from the
-// kill switch alone. Traced end to end: mirrorEnabled() in lib/crm/mirror.ts is
-// `health.enabled && !!getFubApiKey()`, and getFubApiKey() in lib/crm/fub-env.ts
-// returns undefined unconditionally — FollowUp Boss was decommissioned at the
-// 2026-06-24 cutover and re-enabling it "is intentionally not a config flip".
-// lib/crm/enroll.ts calls the same round trip "dead in production". So NO mirror
-// write can run whatever the switch says, and a green tile claiming a live pipeline
-// was the worst thing this page could do. The row now names what is actually read —
-// the kill switch — and states its position; the standing fact sits in the footnote.
+// "Mirroring", noted "leads are flowing into crm_*", and derived that from the
+// kill switch alone. The row now names what is actually read — the kill switch —
+// and states its position; the standing fact sits in the footnote.
 // The level math is untouched, so /admin/oversight's CRM_MIRROR_ENABLED=false alarm
 // still lands on a red row here.
 //
@@ -344,9 +338,7 @@ async function HealthBoard() {
         Signals: the CRM_MIRROR_ENABLED env switch, the Twilio A2P compliance API, crm_timeline
         (inbound freshness), crm_suppressions (opt-outs), crm_people (lead volume). Inbound channels
         warn after 24 hours quiet and go red after 72. Suppression share warns above 25% and goes red
-        above 40%. The mirror switch gates the FollowUp Boss → crm_* copy path, which has not run
-        since the 2026-06-24 cutover — getFubApiKey() returns undefined, so no mirror write happens
-        either way. Lead capture is native.
+        above 40%. The mirror switch gates optional crm_* timeline copies. Lead capture is native.
       </p>
     </>
   )

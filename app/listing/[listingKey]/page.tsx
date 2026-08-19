@@ -10,6 +10,7 @@ import {
   getBrokers,
   getReviews,
   resolveListingAgent,
+  getCalculatorDefaults,
 } from '@/lib/data'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
@@ -205,7 +206,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
       : { city: listing.city ?? undefined }
 
-  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma, builderTiles, pricingRead] =
+  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -258,6 +259,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
           )
         : Promise.resolve([]),
       withTimeoutFallback(getListingPricingRead(listing.listingKey), null, 3000, 'listing:pricingRead'),
+      // Payment rate from the ingested 30-yr series; null keeps the component default.
+      withTimeoutFallback(getCalculatorDefaults(), null, 3000, 'listing:calcDefaults'),
     ])
 
   const listingWithPhotos = { ...listing, photos }
@@ -358,8 +361,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
       beds={listing.beds}
       baths={listing.baths}
       sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
-      lat={listing.lat}
-      lng={listing.lng}
+      acres={listing.lotSizeAcres}
+      propertySubType={listing.propertySubType}
+      lat={listing.lat} lng={listing.lng}
     />
   )
 
@@ -379,7 +383,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         hoaMonthly={listing.hoaMonthly}
         associationFee={listing.associationFee}
         associationFeeFrequency={listing.associationFeeFrequency}
-        taxAnnualAmount={listing.taxAnnualAmount}
+        taxAnnualAmount={listing.taxAnnualAmount} propertySubType={listing.propertySubType}
         hideCmaRequest={Boolean(publishedCma)}
       />
       {openHouses.length > 0 ? (
@@ -460,6 +464,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <MortgageCalculator
         listPrice={listing.listPrice}
         taxAnnualAmount={listing.taxAnnualAmount}
+        ratePct={calcDefaults?.mortgageRate ?? null}
       />
       <RentalAnalysis listing={listing} />
       {/* Our opinion of value. Renders ONLY for a document Matt published per

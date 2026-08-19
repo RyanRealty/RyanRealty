@@ -4,7 +4,7 @@ import { cache } from 'react'
 import { cookies, headers } from 'next/headers'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { createClient } from '@/lib/supabase/server'
-import { trackSignedInUser } from '@/lib/followupboss'
+import { trackSignedInUser } from '@/lib/crm/send-event'
 
 const AUTH_NEXT_COOKIE = 'auth_next'
 

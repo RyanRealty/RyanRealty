@@ -3,15 +3,83 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { ListingTileRow } from '@/app/actions/listings'
-import { getSearchListings } from '@/app/actions/search'
+import { getSearchListings, type SearchFilters } from '@/app/actions/search'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import ListingCard from '@/components/site/ListingCard'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import { Button } from '@/components/ui/button'
 import { Eyebrow, H3, Body } from '@/components/site/primitives'
+
+/**
+ * Convert the page's URL filter object into getSearchListings' SearchFilters.
+ * Same registry passthrough MapSearchView uses so page 2 matches page 1
+ * (maxBeds/maxBaths + every SEARCH_FIELDS key). Empty status stays empty
+ * (active+pending); do not coerce '' to Active.
+ */
+export function toSearchListingsFilters(f: SearchFiltersInitial): SearchFilters {
+  const raw = f as Record<string, string | undefined>
+  const registry: Record<string, unknown> = {}
+  for (const def of SEARCH_FIELDS) {
+    if (def.kind === 'boolean') {
+      if (raw[def.key] === '1') registry[def.key] = true
+    } else if (def.kind === 'multi') {
+      const value = raw[def.key]
+      if (value?.trim()) {
+        const values = value.split(',').map((v) => v.trim()).filter(Boolean)
+        if (values.length > 0) registry[def.key] = values
+      }
+    } else if (def.kind === 'text') {
+      if (def.key === 'keywords') continue
+      const value = raw[def.key]?.trim()
+      if (value) registry[def.key] = value
+    } else {
+      if (def.key === 'dom') continue
+      const params = def.legacyParams
+        ? [def.legacyParams.min, def.legacyParams.max]
+        : [`${def.key}Min`, `${def.key}Max`]
+      for (const param of params) {
+        if (!param) continue
+        const value = raw[param]
+        if (value == null || value.trim() === '') continue
+        const parsed = Number(value)
+        if (Number.isFinite(parsed)) registry[param] = parsed
+      }
+    }
+  }
+  return {
+    ...(registry as Partial<SearchFilters>),
+    city: f.city || undefined,
+    subdivision: f.subdivision || undefined,
+    minPrice: f.minPrice ? Number(f.minPrice) : undefined,
+    maxPrice: f.maxPrice ? Number(f.maxPrice) : undefined,
+    beds: f.beds ? Number(f.beds) : undefined,
+    baths: f.baths ? Number(f.baths) : undefined,
+    maxBeds: f.maxBeds ? Number(f.maxBeds) : undefined,
+    maxBaths: f.maxBaths ? Number(f.maxBaths) : undefined,
+    status: f.status ?? 'Active',
+    sort: f.sort || 'newest',
+    minSqFt: f.minSqFt ? Number(f.minSqFt) : undefined,
+    maxSqFt: f.maxSqFt ? Number(f.maxSqFt) : undefined,
+    lotAcresMin: f.lotAcresMin != null && f.lotAcresMin !== '' ? Number(f.lotAcresMin) : undefined,
+    lotAcresMax: f.lotAcresMax != null && f.lotAcresMax !== '' ? Number(f.lotAcresMax) : undefined,
+    yearBuiltMin: f.yearBuiltMin ? Number(f.yearBuiltMin) : undefined,
+    yearBuiltMax: f.yearBuiltMax ? Number(f.yearBuiltMax) : undefined,
+    propertyType: f.propertyType || undefined,
+    postalCode: f.postalCode || undefined,
+    garageMin: f.garageMin ? Number(f.garageMin) : undefined,
+    daysOnMarket: f.daysOnMarket || undefined,
+    keywords: f.keywords || undefined,
+    hasPool: f.hasPool === '1' ? true : undefined,
+    hasView: f.hasView === '1' ? true : undefined,
+    hasWaterfront: f.hasWaterfront === '1' ? true : undefined,
+    hasFireplace: f.hasFireplace === '1' ? true : undefined,
+    hasGolfCourse: f.hasGolfCourse === '1' ? true : undefined,
+  }
+}
 
 type Props = {
   initialListings: ListingTileRow[]
@@ -84,30 +152,10 @@ export default function SearchResults({
     setLoading(true)
     try {
       const nextPage = page + 1
-      const filtersForApi = {
-        city: filters.city || undefined,
-        subdivision: filters.subdivision || undefined,
-        minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
-        maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
-        beds: filters.beds ? Number(filters.beds) : undefined,
-        baths: filters.baths ? Number(filters.baths) : undefined,
-        status: filters.status || 'Active',
-        sort: filters.sort || 'newest',
-        minSqFt: filters.minSqFt ? Number(filters.minSqFt) : undefined,
-        maxSqFt: filters.maxSqFt ? Number(filters.maxSqFt) : undefined,
-        lotAcresMin: filters.lotAcresMin != null ? Number(filters.lotAcresMin) : undefined,
-        lotAcresMax: filters.lotAcresMax != null ? Number(filters.lotAcresMax) : undefined,
-        yearBuiltMin: filters.yearBuiltMin ? Number(filters.yearBuiltMin) : undefined,
-        yearBuiltMax: filters.yearBuiltMax ? Number(filters.yearBuiltMax) : undefined,
-        propertyType: filters.propertyType || undefined,
-        hasPool: filters.hasPool === '1',
-        hasView: filters.hasView === '1',
-        hasWaterfront: filters.hasWaterfront === '1',
-        garageMin: filters.garageMin != null ? Number(filters.garageMin) : undefined,
-        daysOnMarket: filters.daysOnMarket || undefined,
-        keywords: filters.keywords || undefined,
-      }
-      const { listings: nextListings, totalCount: nextTotal } = await getSearchListings(filtersForApi, nextPage)
+      const { listings: nextListings, totalCount: nextTotal } = await getSearchListings(
+        toSearchListingsFilters(filters),
+        nextPage
+      )
       setListings((prev) => [...prev, ...nextListings])
       setTotal(nextTotal)
       setPage(nextPage)

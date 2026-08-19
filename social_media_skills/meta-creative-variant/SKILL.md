@@ -23,6 +23,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Meta Creative Variant Producer
 
 **Scope:** Generates a set of 3-5 creative variants for an existing Meta (Facebook and
@@ -34,7 +39,7 @@ the creative layer. All variants land in `marketing_brain_actions.executor_respo
 a contact sheet for Matt's review before anything touches the live ad account. No ad-set
 update executes without Matt's explicit "ship it" per the ops-meta-ads approval gate.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/meta-creative-variant/<campaign-slug>-<YYYY-MM-DD>/`
 **Pipeline doc:** `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` (read before any campaign work)
@@ -138,8 +143,8 @@ Before generating any copy:
 - `CLAUDE.md` §0.5 (Draft-First, Commit-Last)
 - `design_system/ryan-realty/SKILL.md` (brand voice, navy/cream palette, banned vocabulary)
 - `marketing_brain_skills/brand-voice/VOICE.md` (inline rules plus full §6.2 banned list)
-- `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` (live seller-funnel pipeline: CAPI, FUB wiring, campaign structure, approved budget bands, weekly optimization loop)
-- `docs/MARKETING_LEAD_FLOW.md` (webhook path, FUB dedup, lead routing detail)
+- `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` (live seller-funnel pipeline: CAPI, `sendEvent` → `crm_people`, campaign structure, approved budget bands, weekly optimization loop)
+- `docs/MARKETING_LEAD_FLOW.md` (webhook path, native `crm_people` dedup via `sendEvent`, lead routing detail)
 - `automation_skills/content_engine/SKILL.md` (content routing)
 - `social_media_skills/platform-best-practices/SKILL.md` (2026 Meta algorithm context)
 
@@ -218,7 +223,7 @@ Voice rules for paid-ad copy (from `marketing_brain_skills/brand-voice/VOICE.md`
 - No hype openings: "get ready to fall in love", "introducing", "you won't believe"
 - No "approximately", "roughly", "about" - use the actual number or omit the claim
 - "You/your" is the subject. Never "I" in ad copy (brokerage speaks, not Matt personally)
-- Phone format if used: 541.213.6706 (dotted). Bio phone for ads: 541.703.3095 (FUB-tracked)
+- Phone format if used: 541.213.6706 (dotted). Bio phone for ads: 541.703.3095 (tracked inbound / bio line)
 - No emoji in headlines or primary text
 
 - No demographic language in copy or image concepts
@@ -441,7 +446,7 @@ killed            <- Matt rejects all variants, or any gate fails after 2 auto-f
 - `design_system/ryan-realty/SKILL.md` - brand voice, logo-is-a-closer doctrine, navy/cream palette
 - `marketing_brain_skills/brand-voice/VOICE.md` - inline rules (banned words, punctuation, fake urgency)
 - `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` - live seller-funnel pipeline (read before any Meta campaign work)
-- `docs/MARKETING_LEAD_FLOW.md` - lead routing detail (webhook, FUB dedup)
+- `docs/MARKETING_LEAD_FLOW.md` - lead routing detail (webhook, native CRM dedup)
 
 **Pipeline:**
 - `automation_skills/content_engine/SKILL.md` - content routing

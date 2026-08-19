@@ -21,6 +21,11 @@ thumbnail_uri: out/proof/2026-05-17/exemplars/comparable_grid/sample.png
 example_outputs: []
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Comparable Grid
 
 **Scope:** Produces a branded 3x2 or 3x3 image grid of comparable closed sales. Each cell contains
@@ -32,7 +37,7 @@ the `cma` producer (`marketing_brain_skills/producers/cma/`) handles that. Does 
 comps from anything other than Supabase `listings` (no manual comp lists from memory, no
 Zillow-sourced prices).
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/comparable_grid/<listing-slug>/`
 

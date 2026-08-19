@@ -61,6 +61,44 @@ for (const surface of surfaces) {
   })
 }
 
+/**
+ * Homepage hero: the count IS the region pulse row, so the sentence it sits in
+ * may not name the town doors.
+ *
+ * Founding case (fleet, 2026-08-17): the hero read "1,834 homes for sale Bend,
+ * Redmond, Sisters, Sunriver, La Pine, and Terrebonne." 1,834 was
+ * market_pulse_live geo_type='region'; those six towns summed to 927. Fixed in
+ * 30b0a926 by relabelling the lead — with nothing mechanical holding it, because
+ * the remainder checks below only cover the town TABLE, and ci:place-hero-grain
+ * covers the place pages, not app/page.tsx. The town list is read out of the
+ * page's own TOWN_ORDER so a new town door cannot slip past this.
+ */
+{
+  const text = src('app/page.tsx')
+  const heroMatch = /<KbHero\b[\s\S]*?\/>/.exec(text)
+  const hero = heroMatch ? heroMatch[0] : ''
+  const leadMatch = /\blead=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(hero)
+  const lead = (leadMatch?.[1] ?? leadMatch?.[2] ?? '').toLowerCase()
+  const townOrder = /const TOWN_ORDER = \[([^\]]*)\]/.exec(text)?.[1] ?? ''
+  const towns = [...townOrder.matchAll(/'([^']+)'/g)].map((m) => m[1].replace(/-/g, ' '))
+  const named = towns.filter((town) => lead.includes(town))
+  checks.push({
+    label: 'homepage hero passes the region pulse count',
+    ok: /activeCount:\s*pulse\?\.activeCount/.test(hero),
+  })
+  checks.push({
+    label: 'homepage hero lead names the region, not the town doors',
+    ok:
+      towns.length > 0 &&
+      lead.length > 0 &&
+      named.length === 0 &&
+      /central oregon/.test(lead),
+  })
+  if (named.length > 0) {
+    console.log(`      hero lead names town door(s): ${named.join(', ')}`)
+  }
+}
+
 const builders = [
   'app/page.tsx',
   'app/housing-market/_v3/hub-sections.ts',

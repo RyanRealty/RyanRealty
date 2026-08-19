@@ -22,16 +22,21 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Newsletter Producer
 
 **Scope:** Monthly email newsletter delivered via Resend to the past-client and lead list
-maintained in Follow Up Boss. Produces one HTML email body, one plain-text fallback, and
+maintained in `public.crm_people` (review at `/admin/crm`). Produces one HTML email body, one plain-text fallback, and
 registers both as assets in the content library. Does not handle list segmentation or
 per-recipient merge fields beyond first name. Does not send without Matt's explicit
 sign-off. The newsletter is brokerage-brand content; no individual broker headshot
 appears unless a specific broker transaction is featured.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/newsletter/<YYYY-MM>/` (HTML + plain-text + contact-sheet.html)
 
@@ -51,7 +56,7 @@ appears unless a specific broker transaction is featured.
 
 ### Out of scope
 
-- List management (use FUB CRM directly for segmentation changes)
+- List management (use `/admin/crm` segments and tags; do not open a vendor CRM)
 - Transactional emails (showing confirmations, automated drip) - those are ops-email-send
 - The monthly market report blog post - that is market-report-blog producer
 - Video scripts or social captions - separate producers
@@ -310,7 +315,7 @@ Stop. Do not send. Wait for Matt's explicit approval.
 // Using Resend Node SDK:
 const { data, error } = await resend.emails.send({
   from: process.env.RESEND_FROM,  // 'Ryan Realty <mail@mail.ryan-realty.com>'
-  to: '<recipient list from FUB export or Resend audience>',
+  to: '<recipient list from crm_people segment or Resend audience>',
   subject: payload.subject_line,
   html: htmlBody,
   text: plainTextBody,
@@ -333,7 +338,7 @@ Transition action row: `approved` then `executed` after send confirmation.
 |---|---|---|
 | Supabase MCP | market data pull, action row transitions, brokers table | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | Resend API | email send | `RESEND_API_KEY` (set), `RESEND_FROM` (UNSET - see §9) |
-| FUB API | resolve broker, optional recipient list export | `FOLLOWUPBOSS_API_KEY` |
+| In-house CRM | resolve broker + recipient list from `crm_people` | `lib/crm/send-event.ts`, `/admin/crm` |
 | Spark API | Supabase reconciliation cross-check | `SPARK_API_KEY`, `SPARK_API_BASE_URL` |
 
 ---
@@ -447,7 +452,7 @@ Expected smoke-test outcome: producer executes Steps 1-10 successfully (builds d
 What would make this 10x better:
 
 1. **Resend email domain verification** (action required): verify mail.ryan-realty.com in the Resend dashboard to unlock custom "From" addresses and domain reputation.
-2. **FUB segment sync**: pull segment membership directly from FUB rather than maintaining a separate list, so buyers who close automatically drop off the buyer newsletter and join the post-close segment.
+2. **CRM segment sync**: pull segment membership from `crm_people` tags / `/admin/crm` rather than a side list, so buyers who close drop off the buyer newsletter and join the post-close segment.
 3. **Dynamic open-time personalization**: use Resend send-time optimization to send each recipient's email at the hour they historically open emails, lifting open rates 10-20% per Resend benchmark data.
 
 ---

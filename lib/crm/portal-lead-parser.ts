@@ -1,7 +1,7 @@
 /**
  * Portal lead-email parser (FUB-cutover intake, 2026-06-29).
  *
- * Zillow Premier Agent and Realtor.com leads used to flow into Follow Up Boss
+ * Zillow Premier Agent and Realtor.com leads used to flow into a vendor CRM
  * via FUB's portal integrations. FUB disconnects 2026-06-30, so those feeds are
  * re-pointed to deliver lead emails to matt@ryan-realty.com, and the
  * crm-portal-lead-intake cron parses them into native CRM leads.

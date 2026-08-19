@@ -54,7 +54,7 @@ function lpDirs() {
 }
 
 const CRITERIA = [
-  { key: 'lead-create', captureOnly: true, re: /createCmaRequest|submit[A-Z]\w*Form|create\w*(?:Lead|Person|Inquiry)|followupboss|upsertFub|createOrUpdateFub/i },
+  { key: 'lead-create', captureOnly: true, re: /createCmaRequest|submit[A-Z]\w*Form|create\w*(?:Lead|Person|Inquiry)|sendEvent|ensureNativeLead/i },
   { key: 'capi', captureOnly: true, re: /meta-capi|sendCapi|capiLead|metaCapi|trackMetaLead|fbq\(/i },
   { key: 'ga4-lead', captureOnly: true, re: /generate_lead|measurement-protocol|ga4MeasurementProtocol|trackLead|gtag\(/i },
   { key: 'confirmation', captureOnly: true, re: /thank|submitted|success|confirmation|we (?:got|have|received)|on its way/i },

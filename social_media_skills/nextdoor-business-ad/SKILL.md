@@ -22,6 +22,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # nextdoor-business-ad
 
 **Scope:** Produces a Nextdoor for Business sponsored-post copy bundle targeting
@@ -35,7 +40,7 @@ Does NOT post to Nextdoor (API not wired; see §9 failure modes). Does NOT produ
 Meta, Google, or any other paid-ad copy. Does NOT write organic neighborhood posts
 (those route through `ops-reputation` for GBP or through the organic social pipeline).
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/nextdoor-business-ad/<slug>/post-bundle.txt` + `contact-sheet.html`
 

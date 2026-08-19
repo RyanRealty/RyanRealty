@@ -23,6 +23,11 @@ example_outputs:
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # CMA Narrative Producer
 
 **Scope:** Long-form narrative prose for a Comparative Market Analysis. This producer is
@@ -33,7 +38,7 @@ for four narrative sections of the CMA HTML: (1) cover letter, (2) subject prope
 narrative, (3) pricing rationale, and (4) disclosure statement. Total prose: 600-1000
 words, voice-validated, no banned words, no em-dashes, no semicolons.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Parent producer:** `marketing_brain_skills/producers/cma/SKILL.md`
 **Exemplar CMA:** `public/cmas/cma-21042-robin/cma.html` (reference for prose placement)

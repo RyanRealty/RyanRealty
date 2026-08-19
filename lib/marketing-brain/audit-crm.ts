@@ -1,11 +1,12 @@
 /**
  * marketing-brain: audit-crm
  *
- * Audits the Follow Up Boss (FUB) CRM and lead-handling pipeline.
- * Reads exclusively from public.marketing_channel_daily (channel='fub').
+ * Audits the in-house CRM (crm_people / sequences) lead-handling pipeline.
+ * Reads exclusively from public.marketing_channel_daily (channel='fub' —
+ * the snapshot series name; values are native CRM metrics).
  * No writes. Pure analytics for downstream generate-briefs consumption.
  *
- * Key metrics ingested by marketing-snapshot-fub:
+ * Key metrics ingested by the CRM snapshot:
  *   account scope:
  *     new_leads, qualified_seller_leads, avg_response_time_minutes,
  *     appointments_booked, deals_created, deals_closed_won, deals_lost
@@ -19,7 +20,7 @@
  *   WARM lead (warm-seller tag): respond within 30 minutes
  *
  * Response-time compliance is approximated from avg_response_time_minutes
- * stored at account scope. The FUB ingestor emits this per-day mean only
+ * stored at account scope. The CRM snapshot emits this per-day mean only
  * when at least one response time was measurable. Days with no data are
  * excluded from the compliance calculation.
  */
@@ -648,7 +649,7 @@ export function findOpportunities(report: Omit<CRMAuditReport, 'opportunities'>)
       area: 'response_time',
       severity: 'medium',
       headline: 'No response-time data available — tracking may be missing',
-      evidence: 'avg_response_time_minutes metric was not found in the window. FUB may not be surfacing this field.',
+      evidence: 'avg_response_time_minutes metric was not found in the window. The CRM snapshot may not be surfacing this field.',
       recommended_action: 'check_tracking',
     })
   }

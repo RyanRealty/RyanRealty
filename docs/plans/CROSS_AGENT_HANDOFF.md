@@ -2,7 +2,262 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
+# Current — 2026-08-18 (grok-build) — runtime crosswalk leftovers closed
+
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. **Time:** 2026-08-18 evening PT. Product land **`0afc2335`** already READY. This follow-up closes leftover audit items (unused modules + hosted stale objects + live Playwright checks). CMA dirty checkout `cursor/cma-client-document-7fc3` was not touched.
+
+**Done**
+- Live Playwright on `ryan-realty.com`: `/contact` has one `#contact-email` (forms e2e 7/7); GTM-WV6R4NZ5 present; no extra `gtag('config', G-ST40W4WM6T)`; `/homes-for-sale/bend/awbrey-butte` H1 Awbrey Butte, 69 homes.
+- G55 leftovers deleted (17→7). Dead OpenAI `classifyListingPhoto` removed. Hosted drop `20260818223000`: `listing_detail_mv`, `_lss_backfill_cursor`, `cache_backfill_progress`, unused tick/refresh RPCs. `analytics_dim_agent` kept (reserved empty dim).
+- Gmail reads on `marketing@` / `admin@` work. No client mail sent.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Do not start a new ship class from this land.
+- CMA work stays on `cursor/cma-client-document-7fc3` in the primary checkout.
+
+**Do not:** merge this land into the CMA branch. Do not restore Follow Up Boss keys. Do not completeWorkNode on FLEET-PUNCH. Do not invent a listing. Do not SMS, publish, spend, or OAuth.
+
+**Skills read:** CROSS_AGENT_HANDOFF, SESSION_HANDOFF, database-canonical-reference, deploy-verify-before-done, supabase-migrations-auto.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — listing-detail TIC/empty/navy/history reject slice
+
+**Surface:** Cursor cloud `bc-26cdbbff` (`cursor/loop-sentinel-2026-08-18t13-10-b8d6`). **Time:** 2026-08-18 ~13:25 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 180). Claimed parent only as `cursor-loop-sentinel-bc-26cdbbff-2026-08-18t13-10`. **No product change from this session.** Production stays on last product **`af9e9308d`** (READY `HVMX96aLeSPgLGnGdkfGGExAkjfK`; concurrent listing-history dump class). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (164 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Redtail Hawk $5K / $3 ppsf / no share label **rejected** (hero `$5K TENANCY IN COMMON`, H1 `$4,900`, View all 47; What this listing shows is HOA `$399` / tax `$550`, no living-area `$/sqft`; prior class `cdb35fb11`). Awbrey Butte under-400k empty state **rejected** (7 homes, 1–7 of 7; under-300k still 3). Monta Vista blank navy UNMUTE **rejected** (Spark field, `$119K`, 7.44 ACRES, View all 6, video=0). Roosevelt intermittent navy **rejected** (live exterior, `$989K` 5/2/1092, View all 50). Borden missing history **rejected** (Listing history LISTED Jul 22, 2026 `$487,000`). Borden missing history dup **rejected** (same dated row). Borden missing agent attribution **rejected** (Listing courtesy of eXp Realty, LLC, agent Molly McInelly). Empire missing history **rejected** (LISTED Aug 10, 2026 `$455,000`; courtesy Cascade Hasson, Jenna Raanes). Hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet unlabeled share / empty under-400k / blank-UNMUTE / intermittent navy / missing history / missing courtesy did not reproduce. Do not invent a listing, beds, or a second TIC/ppsf fix.
+- Prod probe on live pages: Redtail H1 `$4,900` + TENANCY IN COMMON; Awbrey under-400k 7 homes; Monta Vista H1 `$119,000`; Roosevelt H1 `$989,000`; Borden H1 `$487,000` + history + Molly McInelly; Empire H1 `$455,000` + history. After shots `/opt/cursor/artifacts/after_redtail_{390,1280}.png`, `/opt/cursor/artifacts/after_awbrey400_{390,1280}.png`, `/opt/cursor/artifacts/after_montavista_{390,1280}.png`, `/opt/cursor/artifacts/after_roosevelt_{390,1280}.png`, `/opt/cursor/artifacts/after_borden_{390,1280}.png`, `/opt/cursor/artifacts/after_borden_390_history.png`, `/opt/cursor/artifacts/after_borden_390_molly_mcinelly.png`, `/opt/cursor/artifacts/after_empire_{390,1280}.png`, `/opt/cursor/artifacts/after_empire_390_history.png`.
+- Punch dispositions already on the parent (hex-only; matching this session's verdicts). Parent not completed. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail withhold raw ListPrice history dump
+
+**Surface:** Cursor cloud `bc-8bf1d624` (`cursor/loop-chain-2026-08-18t13-29-e1f3`). **Time:** 2026-08-18 ~13:45 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 172). Claimed parent only as `cursor-loop-chain-bc-8bf1d624-2026-08-18t13-29`. Product **`af9e9308d`** landed on **`main`**. Vercel Production **READY** for `af9e9308d` (`HVMX96aLeSPgLGnGdkfGGExAkjfK`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (164 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Empire future date **rejected** (today Aug 18; Data last updated August 18, 2026). Empire missing history **rejected** (Listing history + Listed `$455K`). Rockway UNMUTE on still **rejected** (photo `$649K` 3/2/1392, video=0). Rockway interstitial **rejected** (no Next-step / NOT NOW). Swalley raw ListPrice dump **reproduced** then class-fixed. 438 9th courtesy **rejected** (Premiere Property Group, LLC). Roosevelt courtesy **rejected** (Stellar Realty Northwest). 438 9th lot size **rejected** (specs `0.64 acres`; hero withholds acres when beds exist). Hex-only fingerprints (1 fixed + 7 rejected).
+- Class: buyer-facing listing history never prints MLS field dumps (`ListPrice: 14900000.00 → 11900000.00`). `publishListingHistoryDescription` withholds those strings; `publishListingHistoryDeltaLabel` prints `$3.0M down` via `formatPriceCompact`. Wired PropertyHistory + expired-listing-note. Gate `ci:publish-listing-history` 8/8. Founding fingerprint `7e278bfeb28c9806649154eeb32c5567`.
+- Prod probe after READY `af9e9308d`: Swalley history **`$11,900,000`** + **`$3.0M down`**, no `ListPrice: 14900000`. After shots `/opt/cursor/artifacts/after_swalley_{390,1280}_listing_history.png`.
+- Punch dispositions appended (parent not completed): 1 fixed + 7 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail TIC share label + withhold ppsf
+
+**Surface:** Cursor cloud `bc-a0c77b4b` (`cursor/loop-chain-2026-08-18t12-00-4d91`). **Time:** 2026-08-18 ~13:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 188). Claimed parent only as `cursor-loop-chain-bc-a0c77b4b-2026-08-18t12-00`. Product **`cdb35fb11`** landed on **`main`**. Vercel Production **READY** for `cdb35fb11` (`CxViDz2vpqBeLEYN8NsTuDcypKwD`; GitHub Vercel success + Production deployment). First `npm run deploy:verify` hit READY on the prior product SHA `05bbb31`; the HouseMe follow-up SHA verified via GitHub Production status after the CLI login stall. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (180 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Old Farm under-300k auto-nav **rejected**. Dick George missing-spec **rejected** (`$380K` 6.34 ACRES). River Bend blank UNMUTE **rejected** (live photo + `$1.9M`). 2390 Snowgoose share ask **reproduced** then class-fixed. Black Canyon Aw Snap **rejected** (`$25K` 20 ACRES). Gerig blank navy **rejected** (`$1.9M` 190.69 ACRES). 2250 Snowgoose share ask **reproduced** then class-fixed. Surveyor missing photo **rejected** (`$698K` VIEW ALL 54). Hex-only fingerprints (2 fixed + 6 rejected).
+- Class: MLS `PropertySubType` Tenancy in Common / Timeshare prints that label on the hero and strip. `publishListingSharePricePerSqft` withholds living-area `$/sqft` on hero, strip, PriceBlock, PropertySpecs, ListingCard, and HouseMe. Do not invent fractional or timeshare when the feed says Tenancy in Common. Do not parse PublicRemarks. Gate `ci:publish-listing-share` 9/9. Founding fingerprints `ae66a0f065d3affe2713352b2f71e1b5` / `41fed0ac49bcf207696a8c1990faf07f`.
+- Prod probe on live `cdb35fb11`: 2390 Snowgoose hero **`$5K TENANCY IN COMMON`**, HouseMe no `$4 per sq ft`. 2250 Snowgoose hero **`$3K TENANCY IN COMMON`**, HouseMe no `$3 per sq ft`. After shots `/opt/cursor/artifacts/after_snowgoose2390_{390,1280}.png`, `/opt/cursor/artifacts/after_snowgoose2250_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 2 fixed + 6 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail unmute + Aw Snap reject slice
+
+**Surface:** Cursor cloud `bc-74d9bae3` (`cursor/loop-chain-2026-08-18t11-45-fffc`). **Time:** 2026-08-18 ~11:52 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 196). Claimed parent only as `cursor-loop-chain-bc-74d9bae3-2026-08-18t11-45`. **No product change.** Production stays on last product **`0bcfc7110`** (already READY; dpl `GnLoMc7NzMfxLcNPabcorWJx2qvP`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (188 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Albany Gerig blank navy UNMUTE **rejected** (Spark aerial, `$1.9M`, 190.69 ACRES, +9 more, video=0). Strawberry missing photo **rejected** (View all 12 + Spark field). Strawberry missing specs **rejected** (hero `$435K` + 0.51 ACRES; MLS 220215800 type D, beds/baths/sqft null). Old Farm under-1.5m auto-nav **rejected** (same URL after 8 scrolls; 1-9 of 53). Conestoga / Galium / Cassidy / Black Canyon Aw Snap **rejected** (each 200 + live hero; Black Canyon still same URL after scroll). Hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet UNMUTE-on-still / missing photo / invented beds / auto-nav / Aw Snap did not reproduce. Do not invent a listing or beds.
+- Prod probe on live `0bcfc7110`: Gerig H1 `$1,875,000`; Strawberry H1 `$435,000` + 0.51 ACRES; Conestoga `$739K` 3/2/1798; Galium `$2.1M` 4/4/3318; Cassidy `$320K` 3/2/1462; Black Canyon `$25K` 20 ACRES. After shots `/opt/cursor/artifacts/after_gerig_{390,1280}.png`, `/opt/cursor/artifacts/after_strawberry_{390,1280}.png`, `/opt/cursor/artifacts/after_oldfarm_{390,1280}.png`, `/opt/cursor/artifacts/after_conestoga_390.png`, `/opt/cursor/artifacts/after_galium_390.png`, `/opt/cursor/artifacts/after_cassidy_390.png`, `/opt/cursor/artifacts/after_blackcanyon_390.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail $1000K + land-acres slice
+
+**Surface:** Cursor cloud `bc-146bbab6` (`cursor/loop-chain-2026-08-18t10-55-4a7c`). **Time:** 2026-08-18 ~11:42 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 204). Claimed parent only as `cursor-loop-chain-bc-146bbab6-2026-08-18t10-55`. Product **`0bcfc7110`** landed on **`main`**. Vercel Production **READY** for `0bcfc7110` (`GnLoMc7NzMfxLcNPabcorWJx2qvP`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (196 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Roosevelt `$1000K` **reproduced** then class-fixed. Columbus / Kouns missing acres on hero **reproduced** then class-fixed. Bryant missing photo **rejected** (photo + `$1.1M` / H1 `$1,073,000`). Columbus Aw Snap **rejected** (200, live hero). Rogue “make numbers match” 220208750 **rejected** (hero 4,021 SQFT is MLS 220208751; do not invent 23/22). Bryant Next / Violet blank navy video **rejected** (real photos, no `<video>` / UNMUTE). Hex-only fingerprints (3 fixed + 5 rejected).
+- Class: `formatPriceCompact` / `publishListingHeroCompactPrice` emit `$1.0M` when thousands-round ≥ 1000 (never `$1000K`). `publishListingHeroKeyStats` publishes lot acres only when beds/baths/sqft are absent. Wired ListingHero + listing-detail page. Gate `ci:publish-listing-hero-stats` 4/4. Founding fingerprints `2ceabe03a3cc759cc09d94d2bd1e442a` / `639e24f1d222997d0f59f2e137981de8` / `57b38d188f133fe2c93c05ca6150d5d9`. Do not invent beds or a second MLS row.
+- Prod probe after READY `0bcfc7110`: Roosevelt hero **`$1.0M`** (no `$1000K`); Columbus hero **19.77 ACRES**; Kouns hero **1.35 ACRES** at 390+1280. After shots `/opt/cursor/artifacts/after_roosevelt_{390,1280}.png`, `/opt/cursor/artifacts/after_columbus_{390,1280}.png`, `/opt/cursor/artifacts/after_kouns_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 3 fixed + 5 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + Troon/Bryant reject slice
+
+**Surface:** Cursor cloud `bc-1668f809` (`cursor/loop-chain-2026-08-18t10-39-67fd`). **Time:** 2026-08-18 ~10:55 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 212). Claimed parent only as `cursor-loop-chain-bc-1668f809-2026-08-18t10-39`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (204 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Medford Table Rock / Cave Junction Pinewood / Medford Gayety / Williams Powell Creek 200 not-found homepage shells **rejected** (each 200 + address title/H1 + list price). Troon missing listing history **rejected** (Listing history: Listed Jun 25, 2026 `$1,425,000`). Troon scroll-jump past Rental analysis **rejected** (rental y=9840/9717; scroll 9840→15366 / 9717→12896, no Financial snap). Troon hero-wheel lightbox **rejected** (`Photo lightbox` count 0). Albany Bryant placeholder heading **rejected** (H1 `Bryant Way, Albany, OR 97321 $1,073,000`). Hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet not-found shell / missing history / scroll jump / lightbox-on-wheel / placeholder H1 did not reproduce. Do not invent a fix. Do not invent a listing.
+- Prod probe on live `de3733b74`: Table Rock H1 `$39,900`; Pinewood H1 `$429,000`; Gayety H1 `$389,900`; Powell Creek H1 `$320,000`; Troon H1 `$1,425,000` + history; Bryant H1 `$1,073,000`. After shots `/opt/cursor/artifacts/after_table-rock_{390,1280}.png`, `/opt/cursor/artifacts/after_pinewood_390.png`, `/opt/cursor/artifacts/after_gayety_390.png`, `/opt/cursor/artifacts/after_troon_390_history.png`, `/opt/cursor/artifacts/after_troon_390_rental_precise.png`, `/opt/cursor/artifacts/after_bryant_390.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail not-found + SSL reject slice
+
+**Surface:** Cursor cloud `bc-5bc17e51` (`cursor/loop-chain-2026-08-18t10-16-1314`). **Time:** 2026-08-18 ~10:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 228). Claimed parent only as `cursor-loop-chain-bc-5bc17e51-2026-08-18t10-16`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (220 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Ashland McCall / Phoenix Main / Ashland Strawberry / Chiloquin River Bend / Cave Junction Dick George / Christmas Valley Arrowhead / Prineville High Desert 200 not-found homepage shells **rejected** (each 200 + address title/H1 + list price). Brookings Byrtus SSL timeout **rejected** (200 in 720ms HTML / 1632ms 390; `1101 Byrtus Place` `$1,100,000`). Hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet not-found shell / SSL fail did not reproduce. Do not invent a fix. Do not invent a listing.
+- Prod probe on live `de3733b74`: McCall H1 `$315,000`; Phoenix Main H1 `$1,695,000`; Byrtus H1 `$1,100,000`; High Desert H1 `$1` (MLS ask, not a homepage). After shots `/opt/cursor/artifacts/after_mccall_{390,1280}.png`, `/opt/cursor/artifacts/after_phoenix-main_390.png`, `/opt/cursor/artifacts/after_byrtus_390.png`, `/opt/cursor/artifacts/after_high-desert_390.png`, `/opt/cursor/artifacts/after_strawberry_1280.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — listing-detail not-found + tour-key + history reject slice
+
+**Surface:** Cursor cloud `bc-5b7dd86a` (`cursor/loop-sentinel-2026-08-18t09-50-2db8`). **Time:** 2026-08-18 ~10:05 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 244). Claimed parent only as `cursor-loop-sentinel-bc-5b7dd86a-2026-08-18t09-50`. **No product change.** Production stays on last product **`de3733b74`** (already READY; dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (236 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Hilmer mismatched Spark tour keys **rejected** (all Schedule a tour hrefs `listingKey=220222626`; contact MLS tile loads 61172 Hilmer Creek `$755,000`). Bly Ivory Pine / Albany Columbus / Highway 34 / Bryant / Kamph 200 not-found homepage shells **rejected** (each 200 + address title/H1 + list price). Sprague River Tableland SSL timeout **rejected** (200 in 1570ms; `0 Tableland Road` `$590,000`). Foley missing price/status history **rejected** (reduction line plus Listing history: Listed Aug 16, Pending Aug 2, two price changes). First resolve pass wrote `fleet:fleet:` tags; second pass used hex-only fingerprints (0 fixed + 8 rejected).
+- Class: none. Fleet not-found shell / SSL fail / missing history / mismatched tour keys did not reproduce. Do not invent a fix. Do not invent a listing.
+- Prod probe on live `de3733b74`: Albany Columbus H1 `$1,495,000`; Foley Listing history visible at 390; Hilmer tour key is MLS only. After shots `/opt/cursor/artifacts/after_columbus_{390,1280}.png`, `/opt/cursor/artifacts/after_foley_390_history.png`, `/opt/cursor/artifacts/after_hilmer_390.png`, `/opt/cursor/artifacts/after_tableland_390.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — listing-detail calendar-day slice
+
+**Surface:** Cursor cloud `bc-4c1236cf` (`cursor/loop-chain-2026-08-18t09-14-bc2c`). **Time:** 2026-08-18 ~09:55 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 252). Claimed parent only as `cursor-loop-chain-bc-4c1236cf-2026-08-18t09-14`. Product **`de3733b74`** landed on **`main`**. Vercel Production **READY** for `de3733b74` (`4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (244 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: `/homes-for-sale/bend/21357-kilimanjaro-220222798` stored 08/18–20 printed Mon Aug 17 / Tue 18 / Wed 19 **reproduced** then class-fixed. Providence / Rainier / Hilmer missing history **rejected** (Listing history + Listed dates already on the page). Hale / Verdin / 7th stale Aug 15 open houses **rejected** (`OpenHouses` null, no Open houses section). Albany Violet navy hero / zero photos **rejected** (Spark hero + View all 46; `media_suppressed=false`).
+- Class: `publishCalendarDay` / `publishOpenHouseDay` / `publishHistoryDay` wrap `formatCalendarDay` (noon UTC anchor) so YYYY-MM-DD civil days stay on the stored day in `America/Los_Angeles`. Wired listing-detail Open houses + Property history, OpenHousesGrid, oh-when, KB place-sections, listing banners, open-house clients. Gate `ci:publish-calendar-day` 6/6. Founding fingerprint `e100e9e1a244369ec0d5b7aee1ce11a6`.
+- Prod probe after READY `de3733b74`: Kilimanjaro HTML prints **Aug 18 / Aug 19 / Aug 20** (dpl `4NCw2Hhc7tLrrD5cJ47oTTo2u8zi`). After shot `/opt/cursor/artifacts/after_kilimanjaro_390.png`. First resolve pass wrote `fleet:fleet:` tags that `openPunchLines` cannot match; second pass used hex-only fingerprints (1 fixed + 7 rejected). Parent not completed.
+- Leftover listing-detail + other families stay on the inbox. Do not invent a second calendar-day fix.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — place-pages browse + mixed-stamp + chart-axis slice
+
+**Surface:** Cursor cloud `bc-1afd11d9` (`cursor/loop-sentinel-2026-08-18t08-30-11a1`). **Time:** 2026-08-18 ~09:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 260). Claimed parent only as `cursor-loop-sentinel-bc-1afd11d9-2026-08-18t08-30`. Product **`90155dcf8`** landed on **`main`**. Vercel Production **READY** for `90155dcf8` (`9JQDeR7rQLifd2tj9oxSVeNZ5w66`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (252 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: `/subdivisions/ridge-at-eagle-crest` Browse homes / See homes dropped the plat **reproduced** then class-fixed. `/subdivisions` truncated plat names **reproduced** then class-fixed. `/housing-market` Aug 10 vs Aug 16 stamps **reproduced** then class-fixed. Chart JAN/DEC bunched in the Y gutter **reproduced** then class-fixed. `/neighborhoods/tetherow` 35 vs 28 **rejected** (200 + H1 Page not found). Terrebonne days-to-pending **rejected** (pulse null). Powell Butte this-month median **rejected** (July median sale `$1,263,000`). `/neighborhoods` reused Awbrey aerial **rejected** (three distinct curated photos).
+- Class: `publishPlaceBrowseHref` / `publishPlaceHeroCta` withhold `/homes-for-sale` and `?view=list`. `looksLikeMlsAbbreviation` drops WildflS / SkylinC / Fairway Vill Condo from the A-Z catalog (Triple / Inn Of The 7th stay as recorded English). `publishInstrumentStamp` withholds a mixed Instrument clock. V3Chart x-axis is `grid-column: 2`. Gates `ci:publish-place-browse` 7/7 and `ci:publish-mixed-instrument-stamp` 4/4.
+- Prod probe after READY `90155dcf8`: Ridge hero + Browse homes + list door are `/homes-for-sale/redmond/ridge-at-eagle-crest` (12 cards). Housing-market lead has **no** `updated` (clocks differ); city/SFR stamps are Aug 18. Chart ticks Jan x=134 / Dec x=1169 at 1280. After shots `/opt/cursor/artifacts/after_ridge-at-eagle-crest_{390,1280}.png`, `/opt/cursor/artifacts/after_housing-market_{390,1280}_chart.png`, `/opt/cursor/artifacts/after_subdivisions_{390,1280}_az.png`.
+- Punch dispositions appended (parent not completed): 4 fixed + 4 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list. Known leftovers that this class already killed as instances: `7c15bd27` / `0637cc1d` (same chart-axis + mixed-stamp observations). Next slice should reproduce-or-reject them, not invent a second fix.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4+§6, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — place-pages featured-inventory + reject slice
+
+**Surface:** Cursor cloud `bc-028b80c5` (`cursor/loop-sentinel-2026-08-18t07-30-da07`). **Time:** 2026-08-18 ~08:30 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 268). Claimed parent only as `cursor-loop-sentinel-bc-028b80c5-2026-08-18t07-30`. Product **`9f207c4cc`** landed on **`main`**. Vercel Production **READY** for `9f207c4cc` (`CqDNRaMXqjCVQsqZ6ToXpf74UwFV`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (260 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: `/subdivisions` featured strip zeros **reproduced** then class-fixed. Before: `featuredActive [0,2,12,0,0,5,0,3,0,0,8,0]`, **7 zeros**. After READY: `[14,12,12,11,8,7,6,5,3,3,2,9]`, **0 zeros**. `/subdivisions/brookswood-crossing` 404 **rejected** (200 + H1 + empty-state + sales history). `/subdivisions/brooktree` 404 **rejected** (200 + H1 + listing cards + sales history). `/schools/summit-high` empty map **rejected** (`.v3-field__map` 350×263 / 586×440; 6/9 Google tiles). `/oregon/portland` out-of-area **rejected** (`outsideMarket=true`; 19 all-type / 12 SFR / $505k from `geo_snapshot_mv`). `/housing-market` 5707 vs 5691 **rejected** (ALL-TYPE 5,707; eight type cards including Farm/ranch 11 + Other 5 sum to 5,707). Mix chart slivers **rejected** (8 segments + ordered list). `/communities/tetherow` 35/28 **rejected** (hero **34** homes; **See all 34 Tetherow homes for sale**).
+- Class: `publishFeaturedPlats` prefers the highest verified SFR count per community and does not pad featured tiles with 0 ACTIVE sibling aliases. Wired `/subdivisions` after inventory fetch. Gate `ci:publish-featured-plat-inventory`. Zeros stay on the A-Z index. Do not invent inventory.
+- Prod probe after READY `9f207c4cc`: featured strip **0 zeros** at 390 and 1280 (`[14,12,12,11,8,7,6,5,3,3,2,9]`). Tile shots `/opt/cursor/artifacts/after_subdivisions_{390,1280}_featured_tiles.png`. Also `/opt/cursor/artifacts/after_brookswood-crossing_{390,1280}.png`, `/opt/cursor/artifacts/after_tetherow_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 1 fixed + 7 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4+§6, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages street-0 + venue-city slice
+
+**Surface:** Cursor cloud `bc-d14c774b` (`cursor/loop-chain-2026-08-18t06-04-137f`). **Time:** 2026-08-18 ~07:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 284). Claimed parent only as `cursor-loop-chain-bc-d14c774b-2026-08-18t06-04`. Product **`c3b968afb`** landed on **`main`** (class `cef36790f` + founding-list follow-up). Vercel Production **READY** for `c3b968afb` (`4AmF8K5eMUkDDCffWa43wWd2yYK8`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (276 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: `/central-oregon/events/sunriver-music-festival` “Tower Theatre, Bend in Sunriver” **reproduced** then class-fixed. `/cities/bend/awbrey-butte` cards printed **0 Moonshadow Court** **reproduced** then class-fixed (MLS 220221237 / 220221242 / 220221243). Tower Theatre / Pilot Butte / Tumalo Falls empty map **rejected** (tiles after load). Barclay Meadows Aw Snap **rejected** (200 + H1 + empty-state). Brentwood / Brier Ridge 404 **rejected** (200 + H1).
+- Class: `publishStreetLine` withholds MLS house number 0 and keeps the street name. `publishPlaceInCity` withholds the page city when the venue already names one. Wired dual-pane `splitRowsFromTiles`, KB ticker / featured / map / activity, v3 field titles, listing cards, nearby lifestyle DAL, looking-at. Gates `ci:publish-street-line` 8/8 and `ci:publish-place-in-city` 4/4. Do not invent a house number.
+- Prod probe after READY `c3b968afb`: Awbrey Butte list + ticker print **Moonshadow Court**, 0× `0 Moonshadow`. Festival Where is **Tower Theatre, Bend**, 0× `Bend in Sunriver`. After shots `/opt/cursor/artifacts/after_awbrey-butte_{390,1280}.png`, `/opt/cursor/artifacts/after_sunriver-music-festival_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 2 fixed + 6 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4+§6, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-sentinel) — place-pages chrome-only + Terrebonne days + event map reject slice
+
+**Surface:** Cursor cloud `bc-17952d67` (`cursor/loop-sentinel-2026-08-18t05-50-59a3`). **Time:** 2026-08-18 ~06:05 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 292). Claimed parent only as `cursor-loop-sentinel-bc-17952d67-2026-08-18t05-50`. **No product change.** Production stays on last product **`0f57f5e7c`** (already READY; tip `b35d5eacc` docs). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (284 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: six `/subdivisions/{slug}` chrome-only lines **rejected**. Aubrey Heights / Blue Chip Ranch: H1 + listing cards + sales history. Chase Village / Chloe Estates / Brookswood Estates / Brentwood: H1 + “No active listings…” + sales history. GIS plats exist (`boundaries` 3,213; all six slugs present). `/housing-market` Terrebonne missing days-to-pending **rejected** — pulse city `terrebonne` methodology `v3-2026-05-07` `median_days_to_pending=null` (Metolius also null); page omits unverified days. `/central-oregon/events/bend-farmers-market` empty map **rejected** — `.v3-field__map` 586×440 / 350×263 with 36/33 Google tiles after load. HTML + Playwright (system Chrome) at 390 and 1280; `chromeOnly=false` on every row.
+- Class: none. Fleet chrome-only / invented days / empty map did not reproduce. Do not invent a fix.
+- Prod probe on live `0f57f5e7c`: H1 visible in-viewport (390 h1Top 486; 1280 h1Top 381). Terrebonne row `6 FOR SALE Terrebonne $685,000`. After shots `/opt/cursor/artifacts/after_chloe-estates_{390,1280}.png`, `/opt/cursor/artifacts/after_blue-chip-ranch_{390,1280}.png`, `/opt/cursor/artifacts/after_aubrey-heights_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages subdivision chrome-only reject slice
+
+**Surface:** Cursor cloud `bc-e3dbb660` (`cursor/loop-chain-2026-08-18t04-58-faa9`). **Time:** 2026-08-18 ~05:10 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 308). Claimed parent only as `cursor-loop-chain-bc-e3dbb660-2026-08-18t04-58`. **No product change.** Production stays on **`ab140f397`** (already READY). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (300 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: all eight `/subdivisions/{slug}` chrome-only lines **rejected**. Bella Vista / Blue Ridge / Brookside / Buena Ventura: H1 + “No active listings…” + sales history. Big Sky / Brier Ridge / Black Bear Meadows / Boyd Crossing: H1 + 2 listing cards + sales history. HTML + Playwright (system Chrome) at 390 and 1280; `chromeOnly=false` on every row.
+- Class: none. Fleet chrome-only did not reproduce. Do not invent a fix.
+- Prod probe on live `ab140f397`: H1 visible in-viewport (390 h1Top 486–527; 1280 h1Top 329–381). After shots `/opt/cursor/artifacts/after_bella-vista_{390,1280}.png`, `/opt/cursor/artifacts/after_boyd-crossing_{390,1280}.png`, `/opt/cursor/artifacts/after_big-sky_390.png`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-109/R-110/R-111/R-122, SITE_PAGE_STANDARD §1+§4, git-commit.
+
+# Prior — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
 
 **Surface:** Cursor cloud `bc-812b6297` (`cursor/loop-chain-2026-08-18t02-04-a235`). **Time:** 2026-08-18 ~02:42 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 340). Claimed parent only as `cursor-loop-chain-bc-812b6297-2026-08-18t02-04`. Product **`c2c6c0fb0`** landed on **`main`** (class `0ed74366e` + compile follow-up). Vercel Production **READY** for `c2c6c0fb0` (`7dQpSydh4ZJfEFAGnPrVgttrkuZ8`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open** (332 leftover lines). Release skipped: another session (`cursor-loop-chain-2026-08-18-bc-0a79e0c8`) holds the parent `in_progress`. Do not steal. Do not `completeWorkNode`. Loop stays **ARMED**. Do not start a new ship class from this session.
 

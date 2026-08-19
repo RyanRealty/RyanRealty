@@ -1,5 +1,5 @@
 /**
- * marketing-brain audit: CRM (Follow Up Boss) endpoint.
+ * marketing-brain audit: CRM endpoint.
  *
  * Auth: Authorization: Bearer $CRON_SECRET
  *

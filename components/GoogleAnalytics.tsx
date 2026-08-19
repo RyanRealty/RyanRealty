@@ -5,6 +5,7 @@ import Script from 'next/script'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim()
 const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim()
 
@@ -64,12 +65,16 @@ export default function GoogleAnalytics() {
     return () => window.removeEventListener('cookie-consent', applyConsent)
   }, [])
 
-  const hasGA4 = !!GA4_ID
+  const hasGTM = !!GTM_ID
+  // GTM-WV6R4NZ5 already ships a GA4 Configuration tag (gaawc). A second
+  // gtag('config', G-ST40W4WM6T) doubles page_view and inflates Unassigned
+  // sessions. When GTM is present, consent defaults still run; GA4 config does not.
+  const hasGA4 = !!GA4_ID && !hasGTM
   const hasAdSense = !!ADSENSE_ID
   const hasGoogleAds = !!GOOGLE_ADS_ID
-  if (!hasGA4 && !hasAdSense && !hasGoogleAds) return null
+  if (!hasGA4 && !hasAdSense && !hasGoogleAds && !hasGTM) return null
 
-  const gtagScriptId = hasGA4 ? GA4_ID! : (hasGoogleAds ? GOOGLE_ADS_ID! : null)
+  const gtagScriptId = hasGA4 ? GA4_ID! : (!hasGTM && hasGoogleAds ? GOOGLE_ADS_ID! : null)
 
   return (
     <>
@@ -81,7 +86,7 @@ export default function GoogleAnalytics() {
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
+          gtag('js', new Date()); // hydration-safe — injected gtag bootstrap, not React render clock
           // Default every advertising + analytics category to DENIED. The
           // useEffect above re-applies the stored cookie consent via
           // gtag('consent', 'update', ...) as soon as gtag is ready.

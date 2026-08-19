@@ -3,8 +3,8 @@
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
-  type FubEventPerson,
-} from '@/lib/followupboss'
+  type LeadEventPerson,
+} from '@/lib/crm/send-event'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
@@ -22,7 +22,7 @@ const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
 
-const FUB_USER_MATT = 1
+const CRM_DESK_MATT = 1
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 type BrokerAssignment = { broker: BrokerSlug; userId: number }
@@ -52,7 +52,7 @@ async function assignExpiredLead(): Promise<BrokerAssignment> {
   // Honor ?agent= attribution; default to Matt.
   const attributed = await readAttributedAgentServer()
   if (attributed) return { broker: attributed.broker, userId: attributed.userId }
-  return { broker: 'matt', userId: FUB_USER_MATT }
+  return { broker: 'matt', userId: CRM_DESK_MATT }
 }
 
 /**
@@ -117,7 +117,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     const firstName = name.split(/\s+/)[0] || undefined
     const lastName = name.split(/\s+/).slice(1).join(' ') || undefined
 
-    const person: FubEventPerson = fubPersonId
+    const person: LeadEventPerson = fubPersonId
       ? { id: fubPersonId }
       : {
           firstName,
@@ -191,7 +191,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     }
 
     // ─── Stitch anonymous browsing history to this FUB person ──────────────
-    // Replays prior anonymous visitor_events for this session into FUB and
+    // Replays prior anonymous visitor_events for this session into the CRM and
     // marks the visitor_sessions row identified. Non-blocking, idempotent.
     if (fubPersonId && email) {
       const rrVid = (await cookies()).get('rr_vid')?.value ?? null
@@ -249,7 +249,7 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
 
       // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
       void import('@/lib/crm/enroll')
-        .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }))
+        .then(({ autoEnrollByPersonId }) => autoEnrollByPersonId(fubPersonId, { smsConsent: submission.smsConsent }))
         .catch((e) => console.warn('[expired-lp] instant auto-enroll failed:', e))
 
       // Mirror the canonical assignment ledger row used by the gold-standard

@@ -1,6 +1,6 @@
 ---
 name: document-external-api
-description: "Generate or refresh docs/<api>-api.md for an external API this repo consumes (FUB, SkySlope, Spark, Twilio, ElevenLabs, Meta, Resend). Captures endpoints, request/response shapes, auth, side effects, and verified quirks; cross-references our consumer code and flags drift. Use when documenting an external API, when an integration breaks unexpectedly, or when onboarding a new external service."
+description: "Generate or refresh docs/<api>-api.md for an external API this repo consumes (SkySlope, Spark, Twilio, ElevenLabs, Meta, Resend). Captures endpoints, request/response shapes, auth, side effects, and verified quirks; cross-references our consumer code and flags drift. Use when documenting an external API, when an integration breaks unexpectedly, or when onboarding a new external service. Do not document the decommissioned vendor CRM; live CRM is public.crm_people via sendEvent."
 ---
 
 # Document external API
@@ -15,7 +15,7 @@ API docs written from memory rot. Docs written by scanning the source of truth A
 
 ### 1. Identify the source of truth (in priority order)
 
-1. **Verified quirks already recorded in this repo** — memory files and `docs/` findings (e.g. FUB `/v1/deals` status always 'Active'; FUB blocks POST /v1/emails for integrations; SkySlope internal API cracked via browser token; Meta delivery_estimate flooring). These were established empirically and OUTRANK official docs where they conflict. Fold them in, never contradict them.
+1. **Verified quirks already recorded in this repo** — memory files and `docs/` findings (e.g. SkySlope internal API cracked via browser token; Meta delivery_estimate flooring). These were established empirically and OUTRANK official docs where they conflict. Fold them in, never contradict them. Do not revive decommissioned vendor-CRM API docs.
 2. **Live probing** through already-established client code paths, where a safe read-only call can confirm a shape.
 3. **Official vendor docs** — for coverage of endpoints we haven't touched yet. Mark these entries as unverified-by-us.
 

@@ -6,7 +6,7 @@
 
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { FUB_USER_ID_BY_BROKER, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { CRM_DESK_ID_BY_BROKER, type CrmBrokerSlug } from '@/lib/crm/constants'
 
 export type SetPersonBrokerResult = {
   ok: boolean
@@ -46,12 +46,12 @@ export async function setPersonAssignedBroker(
     opts?.tags ??
     [...existingTags.filter((t) => !t.startsWith('broker:')), `broker:${brokerSlug}`]
 
-  const fubUserId = FUB_USER_ID_BY_BROKER[brokerSlug as CrmBrokerSlug] ?? null
+  const deskId = CRM_DESK_ID_BY_BROKER[brokerSlug as CrmBrokerSlug] ?? null
   const { error: upErr } = await sb
     .from('crm_people')
     .update({
       assigned_broker: brokerSlug,
-      assigned_fub_user_id: fubUserId,
+      assigned_fub_user_id: deskId,
       tags,
       updated_at: new Date().toISOString(),
     })

@@ -4,17 +4,20 @@ import { type ListingCardData } from '@/components/site/ListingCard'
 import { GolfLanding } from '@/components/site/golf/GolfLanding'
 import { GOLF_COMMUNITIES } from '@/data/golf-landing'
 import { getGolfImages, pickGolfImage, getGolfHomesForLanding } from '@/lib/data'
-import { withTimeout } from '../fetch-guards'
+import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 
 /** The on-golf-course preset's purpose-built landing render (see page.tsx call site). */
 export async function renderGolfLanding(city: string) {
-  const [golfRows, golfImages] = await Promise.all([
+  const [golfHomesSettled, golfImages] = await Promise.all([
     // Lightweight golf-homes fetch (search_golf_homes RPC, no full_count window)
     // returns in well under a second. The full search RPC's count(*) OVER ()
     // golf-filters all ~134K Bend rows (~7s, risks a serverless timeout).
-    withTimeout(getGolfHomesForLanding(city, 24), [], 6000),
+    // Settled so a timeout is not painted as "this city has no golf homes".
+    withTimeoutSettled(getGolfHomesForLanding(city, 24), [], 6000),
     withTimeout(getGolfImages(24), []),
   ])
+  const golfRows = golfHomesSettled.data
+  const homesDegraded = golfHomesSettled.degraded
   const heroImage = pickGolfImage(golfImages, city, null)
   const homes = golfRows.map((l): ListingCardData => {
     const street = [l.StreetNumber, l.StreetName].filter(Boolean).join(' ').trim()
@@ -47,9 +50,10 @@ export async function renderGolfLanding(city: string) {
         city={city}
         heroImage={heroImage}
         communities={communities}
-        homes={homes}
+        homes={homesDegraded ? [] : homes}
         totalHomes={0}
         allHomesHref={allHomesHref}
+        homesDegraded={homesDegraded}
       />
       <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>

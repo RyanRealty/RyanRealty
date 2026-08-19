@@ -14,8 +14,7 @@ description: >
   automated daily digest of MLS listings matching saved criteria. This
   producer ALSO handles the Supabase migration that creates the
   listing_alerts + listing_alert_matches tables, the Vercel cron route at
-  /api/cron/listing-alerts-digest, the Resend email template, and the FUB
-  webhook that pauses alerts when a subscriber replies to a broker. This
+  /api/cron/listing-alerts-digest, the Resend email template, and the CRM pause path when a subscriber replies to a broker. This
   producer ships real backend infrastructure: cron jobs, database tables, and
   scheduled email delivery, on top of the saved-search UI.
 action_types:
@@ -35,6 +34,11 @@ thumbnail_uri: null
 example_outputs: []
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # listing-alerts
 
 **Scope.** Buyer-side saved-search infrastructure for Ryan Realty's
@@ -43,16 +47,16 @@ alerts" form on any community LP (Tetherow, Pronghorn, etc.), this
 producer captures the search criteria, stores it, matches it against the
 MLS listings table on a nightly cron, and emails a branded digest of new
 matches. The producer also handles subscriber lifecycle: pause-on-reply
-when the subscriber engages with a broker via FUB, one-click unsubscribe,
+when the subscriber engages with a broker via the CRM, one-click unsubscribe,
 admin reset, criteria edit.
 
 This skill owns the entire saved-search backend: schema migration, API
 routes (subscribe, unsubscribe, criteria-edit), cron job, email template,
-FUB integration. The skill does NOT render the criteria-capture form on
+CRM integration. The skill does NOT render the criteria-capture form on
 the LP. That lives inside the `site-community-page` (or sister) producer.
 This producer receives the form submission and runs the matching engine.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-18
 **Exemplar output:** Working backend across:
 - `supabase/migrations/<ts>_listing_alerts.sql`
@@ -73,11 +77,11 @@ This producer receives the form submission and runs the matching engine.
 
 - `ops:listing_alerts_setup`: one-time DB migration + cron registration + Resend template authoring. Idempotent. Running again checks state and only applies missing pieces.
 - `ops:listing_alerts_digest_send`: nightly cron at 7:00am PT that finds new matches for every active subscriber and sends digest emails.
-- `ops:listing_alerts_pause`: triggered by FUB webhook when a subscriber sends a message to a broker. Auto-pauses for 14 days so we're not double-emailing while a human is engaged.
+- `ops:listing_alerts_pause`: triggered by CRM inbound (`sendEvent`) when a subscriber sends a message to a broker. Auto-pauses for 14 days so we're not double-emailing while a human is engaged.
 - `ops:listing_alerts_unsubscribe`: one-click unsubscribe from any digest email. Updates `listing_alerts.status` to 'unsubscribed', stamps `unsubscribed_at`.
 - Subscriber subscribe endpoint at `/api/listing-alerts/subscribe` (called from the LP form).
 - Criteria edit endpoint for the admin queue (Matt edits criteria on behalf of a subscriber who replied "make it under $2M instead").
-- FUB lead creation on every new subscriber (tags include the LP source + criteria summary).
+- CRM lead creation on every new subscriber (tags include the LP source + criteria summary).
 - GA4 + Meta Pixel event firing on subscribe + unsubscribe.
 - Email template: branded HTML digest with up to 6 matching listing cards (photo, price, address, beds/baths/sqft, days-on-market, "View" link to /lp/listings/<mls>/).
 - Match engine logic: detect new listings (StandardStatus = 'Active' AND CreatedDate > last_sent_at OR ListPrice changed downward by >= 5%).
@@ -100,7 +104,7 @@ This producer receives the form submission and runs the matching engine.
 |---|---|---|
 | `ops:listing_alerts_setup` | none | Idempotent. Checks migration status, cron registration, Resend template. Applies missing pieces. |
 | `ops:listing_alerts_digest_send` | none | Triggered by Vercel cron at 7:00am PT daily. Walks all `status='active'` subscribers, computes matches, emails digests. |
-| `ops:listing_alerts_pause` | `subscriber_email`, `reason` | Triggered by FUB webhook on outbound broker → subscriber message. Pauses for 14 days. |
+| `ops:listing_alerts_pause` | `subscriber_email`, `reason` | Triggered by CRM inbound (`sendEvent`) on outbound broker → subscriber message. Pauses for 14 days. |
 | `ops:listing_alerts_unsubscribe` | `subscriber_email`, `unsubscribe_token` | Triggered by GET request to `/api/listing-alerts/unsubscribe?token=...` from email link. |
 
 ### Payload schema for subscribe (the form submission, not an action_type; this is the inbound API):
@@ -190,7 +194,7 @@ CREATE TABLE IF NOT EXISTS public.listing_alerts (
   pause_reason text,
   unsubscribe_token text NOT NULL DEFAULT replace(gen_random_uuid()::text, '-', ''),
   utm jsonb,
-  fub_lead_id text,
+  crm_person_id integer,
   consent_marketing boolean NOT NULL DEFAULT false,
   consent_sms boolean DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -294,7 +298,7 @@ market in the last 24 hours. Updated daily at 7am Pacific.").
 - POST handler accepts ListingAlertsSubscribePayload
 - Validates required fields + email format + consent_marketing=true
 - Upserts the row in `listing_alerts` (ON CONFLICT (email, source_lp) DO UPDATE)
-- Creates a FUB lead via the FUB API: tag includes `listing-alerts-subscriber`, `community:<slug>` or `city:<slug>`, `source-lp:<source_lp>`, plus the criteria summary in a custom field
+- Creates a CRM lead via the sendEvent / crm_people: tag includes `listing-alerts-subscriber`, `community:<slug>` or `city:<slug>`, `source-lp:<source_lp>`, plus the criteria summary in a custom field
 - Returns 200 with `{ success: true, alert_id }`
 - Fires gtag + fbq events server-side via the existing analytics helpers
 
@@ -303,7 +307,7 @@ market in the last 24 hours. Updated daily at 7am Pacific.").
 
 - GET handler accepts `?token=<unsubscribe_token>`
 - Sets `status='unsubscribed'`, `unsubscribed_at=now()`
-- Tags the FUB lead with `listing-alerts-unsubscribed`
+- Tags the CRM lead with `listing-alerts-unsubscribed`
 - Returns a confirmation HTML page (branded, with a CTA to resubscribe)
 
 **Step 10.** Author the pause endpoint at
@@ -311,9 +315,9 @@ market in the last 24 hours. Updated daily at 7am Pacific.").
 
 - POST handler accepts `{ email, reason, duration_days = 14 }`
 - Sets `status='paused'`, `paused_until=now() + interval '<duration_days> days'`, `pause_reason=<reason>`
-- Triggered by the FUB webhook on outbound broker → subscriber email
+- Triggered by the CRM inbound (`sendEvent`) on outbound broker → subscriber email
 
-The pause endpoint validates a webhook signature header (`FUB_WEBHOOK_SECRET` env var).
+The pause endpoint validates a webhook signature header (`CRON_SECRET` / inbound secret).
 
 **Step 11.** Author the admin queue at
 `app/admin/(protected)/listing-alerts/page.tsx`:
@@ -401,8 +405,8 @@ sends both `email` and `token`).
 | Supabase MCP | migration, subscriber CRUD, match queries | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | Resend | email delivery | `RESEND_API_KEY`, `RESEND_FROM='Ryan Realty <hello@mail.ryan-realty.com>'` |
 | Vercel cron | nightly digest trigger | registered in `vercel.json` |
-| FUB API | create + tag subscribers as buyer leads | `FOLLOWUPBOSS_API_KEY` |
-| FUB webhook | pause-on-broker-engagement | `FUB_WEBHOOK_SECRET` (to validate inbound) |
+| sendEvent / crm_people | create + tag subscribers as buyer leads | in-house CRM (`public.crm_people`) |
+| CRM inbound (`sendEvent`) | pause-on-broker-engagement | inbound webhook secret |
 | React Email | digest template rendering | `@react-email/components` |
 
 ---
@@ -440,12 +444,12 @@ Listing-alerts backend ready (setup PR):
     Cron: /api/cron/listing-alerts-digest at 7:00am PT (14:00 UTC daily)
     Endpoints: subscribe, unsubscribe, pause, edit, admin
     Resend template: lib/listing-alerts/email-template.tsx
-    FUB integration: lead create + tag + pause webhook
+    CRM integration: lead create + tag + pause webhook
 
   TEST PLAN (after PR merge + deploy)
     1. Subscribe a test email via POST /api/listing-alerts/subscribe
     2. Confirm row in listing_alerts table
-    3. Confirm FUB lead created with the right tags
+    3. Confirm CRM lead created with the right tags
     4. Wait for the next 7:00am PT cron tick (or manually trigger)
     5. Confirm digest email delivery
     6. Click the unsubscribe link, confirm row status='unsubscribed'
@@ -502,12 +506,12 @@ pending -> in_production -> executed (DB row updated)
 |---|---|---|
 | Migration already applied | `to_regclass` returns both tables | Skip migration step; continue to cron + Resend setup |
 | Resend API key missing | `RESEND_API_KEY` not in env | Surface to Matt with the exact env var name and the Resend dashboard URL to create a key |
-| FUB API down | POST /v1/people returns 5xx | Insert the subscriber row, log the FUB failure to `executor_response`, retry the FUB lead creation on the next cron tick |
+| sendEvent / crm_people down | sendEvent fails | Insert the subscriber row, log the CRM failure to `executor_response`, retry sendEvent on the next cron tick |
 | Subscriber criteria too broad | More than 50 matches in one digest | Cap the email at 6 cards + a "View N more matches" link to the LP filtered view |
 | Subscriber criteria too narrow | Zero matches for 30+ days | Email a one-time "We haven't found a match in 30 days, want to widen your search?" with a link to the criteria-edit form |
 | Email bounces (hard) | Resend webhook reports bounce | Set `status='unsubscribed'` with `pause_reason='hard_bounce'` |
 | Email bounces (soft) | Resend webhook reports soft bounce | Pause for 7 days; retry next cron tick |
-| Duplicate subscribe | Same email + source_lp arrives twice | UPSERT updates criteria; do NOT duplicate the FUB lead |
+| Duplicate subscribe | Same email + source_lp arrives twice | UPSERT updates criteria; do NOT duplicate the CRM lead |
 | Cron skipped (Vercel deploy in flight) | Daily run missed | Manual ops:listing_alerts_digest_send action picks it up; widen the `since` window to capture missed listings |
 | Listing source SubdivisionName changes | Existing alert's geo filter stops matching after an MLS source rename | Surface to Matt with the alert ID, old name, new name; do not auto-update |
 
@@ -522,7 +526,7 @@ pending -> in_production -> executed (DB row updated)
 - `CLAUDE.md` "Supabase Database, MANDATORY READ before any SQL"
 - `docs/DATABASE_FOR_AI_AGENTS.md`. Listings table mixed-case columns + the SFR-only convention
 - `marketing_brain_skills/brand-voice/VOICE.md`. Email digest copy must pass the same voice guardrail
-- `docs/archive/fub-era/README.md`. FUB integration pattern (we mirror this for the buyer side)
+- `docs/archive/fub-era/README.md`. Archive only; live lead create is `lib/crm/send-event.ts`
 - `docs/MARKETING_LEAD_FLOW.md`. Webhook + dedup detail
 
 **Producers this skill integrates with:**
@@ -530,7 +534,7 @@ pending -> in_production -> executed (DB row updated)
 - `marketing_brain_skills/producers/site-community-page/SKILL.md`. Renders the Custom Alerts form that submits to this producer's /subscribe endpoint
 - `marketing_brain_skills/producers/site-subdivision-page/SKILL.md` (pending). Same, at the subdivision tier
 - `marketing_brain_skills/producers/site-city-page/SKILL.md` (pending). Same, at the city tier
-- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md`. FUB lead creation pattern (reuse the same helper)
+- `marketing_brain_skills/producers/ops-fub-crm/SKILL.md`. Refuse stub. Live lead create is `lib/crm/send-event.ts`
 - `marketing_brain_skills/producers/ops-email-send/SKILL.md`. Resend send pattern (reuse the same client wrapper)
 
 **Sibling backend producers:**

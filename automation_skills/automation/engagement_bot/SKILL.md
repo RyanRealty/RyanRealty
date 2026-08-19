@@ -1,7 +1,12 @@
 ---
 name: engagement_bot
-description: Use this skill whenever the user says "check comments", "pull DMs", "what are people saying on my posts", "draft replies to comments", "triage the inbox", "run the engagement bot", "check for leads in my comments", "any high-intent DMs?", or "push leads from social to FUB". Pulls comments and DMs from 5 platforms every 15 minutes, classifies them by lead intent, drafts replies from voice templates, and pushes high-intent leads to FUB CRM — all for Matt's approval before any reply sends.
+description: KILLED as a live pipeline. /api/cron/engagement-pull does not exist and is not in vercel.json. Do not run this. Do not invent a vendor CRM push.
 ---
+
+# STOP - this pipeline is not wired
+
+There is no `/api/cron/engagement-pull` and no `/api/workers/engagement-pull`. CRM is in-house `public.crm_people` via `sendEvent` in `lib/crm/send-event.ts`. If you loaded this file, stop. Do not invent those routes. Do not call a vendor CRM. Do not set `FOLLOWUPBOSS_API_KEY`.
+
 
 # Engagement Bot
 
@@ -10,8 +15,8 @@ description: Use this skill whenever the user says "check comments", "pull DMs",
 This is NOT an autonomous reply bot. It is a triage assistant. Every drafted reply sits in Matt's
 inbox waiting for approval. The bot pulls comments and DMs from Instagram, Facebook, TikTok,
 YouTube, and LinkedIn every 15 minutes via their APIs. It classifies each message by lead intent
-and question type, drafts a voice-matched reply for high-intent leads, and pushes those leads to
-Follow Up Boss (FUB) CRM with platform + context tags. Matt approves or rejects each draft.
+and question type, drafts a voice-matched reply for high-intent leads. This pipeline is not
+wired. Do not invent a capture path. Live capture is `sendEvent` → `crm_people`. Matt approves or rejects each draft.
 Nothing sends without his explicit action.
 
 **Fair housing commitment:** The bot never screens, scores, or tags based on any protected class
@@ -53,8 +58,8 @@ Each message is stored in `engagement_inbox` before classification.
 | Raw messages | `engagement_inbox` table |
 | Classification | `engagement_inbox.intent_class` + `engagement_inbox.question_type` updated |
 | Draft reply | `engagement_inbox.draft_reply` updated |
-| FUB lead push | POST to FUB API (high-intent leads only) |
-| FUB contact ID | `engagement_inbox.fub_contact_id` updated |
+| CRM lead capture | Not wired on this skill. Live path is `sendEvent` → `crm_people` |
+| CRM person ID | Review at `/admin/crm`. Do not store a vendor contact id. |
 
 ## Pipeline
 
@@ -168,45 +173,11 @@ Grab a slot: {{call_link}}"
 No sycophantic openers (`"Thanks so much for reaching out!"`). No AI-generative rewrite.
 Template fills in values. If no template matches, `draft_reply = null` — Matt writes from scratch.
 
-### Step 4 — Push high-intent lead to FUB
+### Step 4 — Do not invent a CRM push from this skill
 
-For any `intent_class = 'high'` message where `fub_contact_id IS NULL`:
-
-```typescript
-// POST to FUB API
-const response = await fetch('https://api.followupboss.com/v1/people', {
-  method: 'POST',
-  headers: {
-    Authorization: `Basic ${btoa(FUB_API_KEY + ':')}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    firstName: author_display_name || author_handle,
-    source: `Social - ${platform}`,
-    tags: [
-      `social_${platform}`,
-      `intent_high`,
-      question_type,
-      format_tag || 'organic',   // e.g. 'listing_reveal', 'data_viz_video'
-    ],
-    notes: raw_text.slice(0, 500),
-    customFields: [
-      { key: 'social_platform', value: platform },
-      { key: 'social_message', value: raw_text.slice(0, 200) },
-      { key: 'post_url', value: post_url },
-    ],
-  }),
-});
-const { id: fub_id } = await response.json();
-
-// Update engagement_inbox
-await supabase.from('engagement_inbox')
-  .update({ fub_contact_id: fub_id, fub_pushed_at: new Date().toISOString() })
-  .eq('id', message_id);
-```
-
-FUB endpoint: `https://api.followupboss.com/v1/people`
-Auth: HTTP Basic with `FUB_API_KEY` as username, empty password.
+This pipeline is KILLED. Do not POST to a vendor CRM. Do not set `FOLLOWUPBOSS_API_KEY`.
+If a live capture is needed, use `sendEvent` in `lib/crm/send-event.ts` and review the
+person at `/admin/crm`. Do not add that from this skill.
 
 ### Step 5 — Queue for Matt's review
 
@@ -250,8 +221,8 @@ CREATE TABLE IF NOT EXISTS engagement_inbox (
   draft_reply           text,
   review_status         text NOT NULL DEFAULT 'unreviewed',
     -- 'unreviewed' | 'pending_review' | 'sent' | 'skipped' | 'rejected'
-  fub_contact_id        text,
-  fub_pushed_at         timestamptz,
+  crm_person_id         integer,
+  crm_captured_at       timestamptz,
   replied_at            timestamptz,
   created_at            timestamptz NOT NULL DEFAULT now()
 );
@@ -291,8 +262,7 @@ CREATE TABLE IF NOT EXISTS engagement_templates (
 ## Error handling + observability
 
 - **API pull failures:** log to `automation_runs`, retry in next 15-min cycle.
-- **FUB push failures:** 3 retries with 30-second backoff. On failure, `engagement_inbox` row is
-  not lost — FUB push can be retried manually from admin dashboard.
+- **CRM capture (if ever rewired):** use `sendEvent` only. On failure, keep the `engagement_inbox` row.
 - **Classification errors:** if classifier throws, mark `intent_class = 'error'` and skip draft.
   Next cron run retries.
 - **Stale unreviewed items:** messages in `pending_review` for > 72 hours get a daily digest
@@ -301,7 +271,7 @@ CREATE TABLE IF NOT EXISTS engagement_templates (
 Structured log per message:
 ```json
 { "skill": "engagement_bot", "platform": "instagram", "message_id": "...",
-  "intent_class": "high", "fub_pushed": true, "draft_generated": true, "ms": 120 }
+  "intent_class": "high", "crm_captured": false, "draft_generated": true, "ms": 120 }
 ```
 
 ## Configuration
@@ -314,8 +284,8 @@ export const ENGAGEMENT_BOT_CONFIG = {
   // How far back to look on first run (hours)
   initial_lookback_hours: 24,
 
-  // FUB tags appended to every social lead
-  fub_base_tags: ['social_lead', 'ryan_realty'],
+  // CRM tags appended to every social lead if this pipeline is ever rewired
+  crm_base_tags: ['social_lead', 'ryan_realty'],
 
   // Hours until a pending_review message is flagged as stale
   stale_review_hours: 72,
@@ -341,7 +311,6 @@ export const ENGAGEMENT_BOT_CONFIG = {
 | `TIKTOK_ACCESS_TOKEN` | TikTok API access |
 | `YOUTUBE_ACCESS_TOKEN` | YouTube API access |
 | `LINKEDIN_ACCESS_TOKEN` | LinkedIn API access |
-| `FUB_API_KEY` | Follow Up Boss API key |
 | `ALERT_EMAIL` | Matt's email for legal flag alerts |
 | `CRON_SECRET` | Cron authorization |
 
@@ -351,12 +320,6 @@ export const ENGAGEMENT_BOT_CONFIG = {
 ```sql
 UPDATE automation_config SET value = 'false', updated_at = now()
 WHERE key = 'engagement_bot_enabled';
-```
-
-**Kill FUB pushes only:**
-```sql
-UPDATE automation_config SET value = 'false', updated_at = now()
-WHERE key = 'engagement_bot_fub_push_enabled';
 ```
 
 **Kill one platform:**
@@ -373,4 +336,4 @@ bulk-send is ever available.
 
 - `automation_skills/automation/post_scheduler/SKILL.md` — `post_queue` join for context
 - `automation_skills/automation/performance_loop/SKILL.md` — engagement rate feeds scoring
-- `app/api/fub/` — existing FUB integration in repo
+- `lib/crm/send-event.ts` — live CRM capture (`crm_people`). This skill is not that path.

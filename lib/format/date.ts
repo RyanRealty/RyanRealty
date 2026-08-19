@@ -29,6 +29,28 @@ export function formatDateTime(d: string | number | Date | null | undefined): st
   return formatDate(d, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
+const CALENDAR_YMD = /^(\d{4})-(\d{2})-(\d{2})$/
+
+/**
+ * Format a YYYY-MM-DD calendar day without treating it as UTC midnight.
+ * `new Date('2026-08-18')` is 00:00Z, which is the prior Pacific evening.
+ * Noon UTC keeps the civil day the same in America/Los_Angeles.
+ */
+export function formatCalendarDay(
+  ymd: string | null | undefined,
+  opts?: Intl.DateTimeFormatOptions,
+): string {
+  if (ymd == null) return ''
+  const trimmed = String(ymd).trim()
+  if (!trimmed) return ''
+  const match = trimmed.match(CALENDAR_YMD)
+  if (!match) {
+    const formatted = formatDate(trimmed, opts)
+    return formatted === '—' ? '' : formatted
+  }
+  return formatDate(`${match[1]}-${match[2]}-${match[3]}T12:00:00Z`, opts)
+}
+
 /**
  * YYYY-MM-DD calendar-day key for an instant in the brand timezone. Used by the
  * §09 Tasks/Calendar surfaces to group true-instant timestamps (crm_tasks.due_at)

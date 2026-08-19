@@ -24,6 +24,7 @@ import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { sendEmail } from '@/lib/resend'
 import {
   evalAudienceSync,
+  evalMacroSeries,
   evalSkySlopeMirror,
   evalExpired,
   evalFsbo,
@@ -367,6 +368,48 @@ export async function GET(req: NextRequest) {
       pipeline.push(probeFailed('pipeline:skyslope-mirror', 'skyslope_transactions unreadable'))
     } else {
       pipeline.push(evalSkySlopeMirror(freshness.latestSyncedAt, now))
+    }
+  }
+
+  // 9. The macro rate series (Mondays 13:00 UTC). Every public payment figure
+  //     resolves to this through getCalculatorDefaults, and it is the ONE
+  //     statistic on the site nobody here produces — so when it stops arriving
+  //     the calculators keep rendering, quietly, on an old rate. No CI gate can
+  //     see this: ci:stat-source reads the repo on disk and the static chain
+  //     runs without Supabase credentials. Read LIVE with the service client
+  //     rather than through getMarketHistoryWeekly, whose 6h unstable_cache
+  //     would let a watchdog report freshness from a cached copy.
+  //
+  //     Ordered by week_start desc so row 0 is the newest week; its captured_at
+  //     is re-stamped on every upsert, so it tracks the cron run rather than
+  //     the observation date. The value list feeds the flat-series WARN.
+  {
+    try {
+      const { data, error } = await supabase
+        .from('market_history_weekly')
+        .select('week_start, value, captured_at')
+        .eq('geo_type', 'national')
+        .eq('geo_slug', 'us')
+        .eq('metric', 'mortgage_rate_30yr')
+        .order('week_start', { ascending: false })
+        .limit(8)
+      if (error) {
+        pipeline.push(probeFailed('pipeline:macro-rate-series', error.message))
+      } else {
+        const rows = (data ?? []) as { week_start: string; value: number | string; captured_at: string }[]
+        pipeline.push(
+          evalMacroSeries(
+            {
+              latestCapturedAt: rows[0]?.captured_at ?? null,
+              latestWeekStart: rows[0]?.week_start ?? null,
+              recentValues: rows.map((r) => Number(r.value)).filter((v) => Number.isFinite(v)),
+            },
+            now,
+          ),
+        )
+      }
+    } catch (e) {
+      pipeline.push(probeFailed('pipeline:macro-rate-series', e instanceof Error ? e.message : String(e)))
     }
   }
 

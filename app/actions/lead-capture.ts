@@ -1,8 +1,6 @@
 'use server'
 
-import { getSession } from '@/app/actions/auth'
-import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { sendEvent, type FubEventPerson } from '@/lib/followupboss'
+import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
@@ -74,93 +72,6 @@ function partnerSlugFromCampaign(source?: string): 'lender_referral' | 'relocati
   return null
 }
 
-export async function trackHomeValuationCta(campaign?: CampaignInput, sessionId?: string): Promise<void> {
-  const [session, cookiePersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
-  const email = session?.user?.email?.trim() ?? null
-  let person: FubEventPerson | null = null
-  if (email) {
-    person = { emails: [{ value: email }] }
-  } else if (cookiePersonId != null && cookiePersonId > 0) {
-    person = { id: cookiePersonId }
-  }
-  if (!person) return
-
-  const result = await sendEvent({
-    type: 'Seller Inquiry',
-    person,
-    source: websiteSource(),
-    sourceUrl: `${SITE_URL}/sell/valuation`,
-    pageTitle: 'Home Valuation CTA',
-    message: 'home-valuation-cta',
-    campaign,
-  })
-
-  // Native capture returns the crm_people id (null for anonymous no-email
-  // events); fall back to the identity-bridge cookie id for signed-out repeat
-  // visitors so enrichment + stitching still resolve.
-  const resolvedPersonId = (result.ok ? result.personId : null) ?? cookiePersonId ?? null
-
-  // Stitch the anonymous browsing session to this known person at the moment
-  // they click the valuation CTA. rr_vid covers callers that omit sessionId.
-  if (resolvedPersonId) {
-    const rrVid = (await cookies()).get('rr_vid')?.value ?? null
-    await stitchFormSubmitIdentity({
-      personId: resolvedPersonId,
-      email: email ?? '',
-      rrVid,
-      sessionId: sessionId && UUID_V4_RE.test(sessionId) ? sessionId : null,
-    })
-  }
-
-  // A home-valuation CTA is a Seller Inquiry — tag it into the canonical
-  // seller audience (nurture tier; it's a mid-funnel click, not a full submit)
-  // so it enters the workflow + is measured instead of landing untagged.
-  if (resolvedPersonId) {
-    await canonicallyTagLead({
-      fubPersonId: resolvedPersonId,
-      audience: 'seller',
-      source: 'home-valuation',
-      tier: 'nurture',
-    }).catch(() => {})
-  }
-
-  await fireCapiLead({
-    eventName: 'ViewContent',
-    email,
-    eventSourceUrl: `${SITE_URL}/sell/valuation`,
-    contentName: 'home_valuation_cta_click',
-    value: 0,
-  })
-
-  // GA4 Measurement Protocol — fire the CTA-click event distinctly from a
-  // form submission so dashboard pivots don't double-count intent. This is
-  // a mid-funnel signal, not a generate_lead.
-  await fireLeadGenerated({
-    event_name: 'home_valuation_cta_click',
-    lp_variant: 'home-valuation-cta',
-    lead_type: 'cta_click',
-    fub_person_id: resolvedPersonId,
-    extra: {
-      utm_source: campaign?.source,
-      utm_medium: campaign?.medium,
-      utm_campaign: campaign?.campaign,
-    },
-  })
-
-  const partnerSlug = partnerSlugFromCampaign(campaign?.source)
-  if (partnerSlug) {
-    await recordPartnerReferral({
-      partnerSlug,
-      leadSource: 'home_valuation_cta',
-      leadIdentifier: email ?? (resolvedPersonId ? String(resolvedPersonId) : null),
-      campaignSource: campaign?.source ?? null,
-      campaignMedium: campaign?.medium ?? null,
-      estimatedValue: partnerSlug === 'lender_referral' ? 300 : 2500,
-      notes: 'Auto-attributed from valuation CTA campaign source.',
-    })
-  }
-}
-
 export async function submitExitIntentLead(input: {
   email: string
   context?: string
@@ -175,7 +86,7 @@ export async function submitExitIntentLead(input: {
     return { ok: false, error: 'Invalid email' }
   }
 
-  const person: FubEventPerson = { emails: [{ value: email }] }
+  const person: LeadEventPerson = { emails: [{ value: email }] }
 
   const result = await sendEvent({
     type: 'Registration',
@@ -256,7 +167,7 @@ export async function submitExitIntentLead(input: {
 
 /**
  * Submit a contextual page CTA lead (email/phone capture from city, community, or content pages).
- * Creates a General Inquiry in FUB.
+ * Creates a General Inquiry in the CRM.
  */
 export async function submitPageCTA(input: {
   email?: string
@@ -277,7 +188,7 @@ export async function submitPageCTA(input: {
       return { error: 'Please enter a valid email address' }
     }
 
-    let person: FubEventPerson
+    let person: LeadEventPerson
     if (email) {
       person = { emails: [{ value: email }], ...(phone ? { phones: [{ value: phone }] } : {}) }
     } else if (phone) {
@@ -383,7 +294,7 @@ export async function submitRentalLead(input: {
     const firstName = nameParts[0] || undefined
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined
 
-    let person: FubEventPerson
+    let person: LeadEventPerson
     if (email) {
       person = {
         emails: [{ value: email }],
@@ -503,7 +414,7 @@ export async function submitTetherowLead(input: {
     const firstName = nameParts[0] || undefined
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined
 
-    let person: FubEventPerson
+    let person: LeadEventPerson
     if (email) {
       person = {
         emails: [{ value: email }],

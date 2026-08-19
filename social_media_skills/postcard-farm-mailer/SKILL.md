@@ -46,8 +46,8 @@ around a single listing, in one of two moments.  `at_list` (neighbor announcemen
 property hits the market) or `at_sold` (neighbor announcement when it closes). Output is a
 front PDF, back PDF, digital-proof PNGs, a geocoded mailing-list CSV, and a citations.json
 for every figure shown. Does NOT execute the print order, place mail with USPS, dedup against
-prior mailing cohorts beyond the radius query, or wire into the FUB lead capture flow.  those
-are handled by `ops/postcard-print-order/` (TODO) and the FUB inbound webhook respectively.
+prior mailing cohorts beyond the radius query, or wire into the CRM lead capture flow.  those
+are handled by `ops/postcard-print-order/` (TODO) and inbound SMS/voice → `sendEvent` (`crm_people`) respectively.
 
 **Status.** Canonical (v1). Locked 2026-05-14.
 
@@ -63,7 +63,7 @@ are handled by `ops/postcard-print-order/` (TODO) and the FUB inbound webhook re
 |---|---|
 | `CLAUDE.md` §0.  Data Accuracy mandate | Every figure shown (price, sold price, DOM, sale-to-list pct) traces to live Supabase / Spark. Outranks everything. |
 | `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Render PDFs to `out/`, surface to Matt, wait for explicit approval before any print order is placed or any tracked file commits. |
-| `CLAUDE.md` "Voice + content" | Phone discipline (`541.213.6706` direct vs `541.703.3095` FUB-tracked inbound), web `ryan-realty.com`, banned vocab union. |
+| `CLAUDE.md` "Voice + content" | Phone discipline (`541.213.6706` direct vs `541.703.3095` tracked inbound), web `ryan-realty.com`, banned vocab union. |
 | `CLAUDE.md` "Supabase listings Schema" | Mixed-case quoted column names. PostGIS on `"Latitude"` / `"Longitude"`. |
 | `design_system/ryan-realty/SKILL.md` | Heritage register (navy `#102742` monochrome on cream `#faf8f4`), Amboqia display, Geist body, pre-rendered wordmark. |
 | `design_system/ryan-realty/colors_and_type.css` | Authoritative color + type tokens. |
@@ -367,7 +367,7 @@ Address-block side per USPS Domestic Mail Manual section 202.4. Reference: USPS 
 | **Listing-agent headshot** | `x = 400 → x = 540, y = 320 → y = 460` | `assets/team/<slug>.png` (transparent), 140 px wide, vertically centered next to the wordmark. |
 | **Agent name + role** | `x = 560 → x = 1100, y = 340 → y = 440` | Geist 500, 26 px, navy, two lines: `<Full Name>` / `Principal Broker` (or `Broker`). |
 | **Ask copy block** | `x = 75 → x = 1100, y = 540 → y = 940` | Amboqia Boriango, 48 px, navy, line-height 1.15. **at_list:** `Your neighbor's home just hit the market. Curious what yours is worth? Scan or call us.` **at_sold:** `Your neighbor's home just sold for $<sold_price>. Curious what yours is worth? Scan or call us.` |
-| **FUB-tracked phone CTA** | `x = 75 → x = 1100, y = 980 → y = 1040` | Geist 500, 36 px, navy, tabular-nums. Format: `541.703.3095  ·  ryan-realty.com`. **MUST be the FUB-tracked phone, NOT the direct `541.213.6706`.** This is an inbound-lead surface. |
+| **Tracked inbound phone CTA** | `x = 75 → x = 1100, y = 980 → y = 1040` | Geist 500, 36 px, navy, tabular-nums. Format: `541.703.3095  ·  ryan-realty.com`. **MUST be the tracked inbound bio phone, NOT the direct `541.213.6706`.** This is an inbound-lead surface. |
 | **USPS address-block clear zone** | `x = 900 → x = 1700, y = 1700 → y = 2200` | **RESERVED.  no graphics, no text, no background fill other than cream.** This is the recipient address area; the mail house prints into it. Must be at least 4 5/8 × 1 7/8 inches (1387 × 562 px at 300dpi). 6×9 has room; 4×6 is tighter. |
 | **IMb barcode clear zone** | `x = 900 → x = 1700, y = 2220 → y = 2440` | **RESERVED.  no graphics.** Intelligent Mail barcode space per USPS DMM 708.4.0. Min 4 5/8 × 5/8 inches. |
 | **Bottom border** | `y = 2640 → y = 2680` | Hairline navy rule, 2 px tall, full width minus 75 px insets, 0.85 opacity. Aesthetic only. |
@@ -375,8 +375,8 @@ Address-block side per USPS Domestic Mail Manual section 202.4. Reference: USPS 
 ### Back-side rules
 
 - **Phone discipline.** Direct phone `541.213.6706` is used on the FRONT only. The BACK uses
-  the FUB-tracked `541.703.3095` because the back is the inbound-CTA surface.  calls must
-  route through Follow Up Boss for attribution.
+  the tracked inbound `541.703.3095` because the back is the inbound-CTA surface.  calls must
+  land on `crm_people` via the inbound SMS/voice path (`sendEvent` / `/admin/crm`).
 - **No banned vocab.** "Curious," "scan," "call us".  neighbor-tone. No manufactured urgency
   phrasing.
 - **Indicia is a placeholder.** Real permit number comes from the mail house. If unset,
@@ -402,7 +402,7 @@ Any `fail` = non-ship.
 | 7 | Return address present | Ryan Realty + office street + city/state/zip on back top-left |
 | 8 | Front wordmark | `logo-blue.png` (or `logo-white.png` if photo is light-dominant) at 200 px wide top-right |
 | 9 | QR scans | Decode QR with a QR reader; URL matches `ryan-realty.com/listing/<mls_id>?utm_source=postcard&...` |
-| 10 | Phone discipline | Front uses `541.213.6706` (direct). Back uses `541.703.3095` (FUB-tracked). Never reversed |
+| 10 | Phone discipline | Front uses `541.213.6706` (direct). Back uses `541.703.3095` (tracked inbound). Never reversed |
 | 11 | Headline format | Sentence case, ends with period, no exclamation, no address number |
 | 12 | Banned vocab clean | Grep all on-canvas text against `marketing_brain_skills/brand-voice/VOICE.md` union.  zero hits |
 | 13 | Data verified | Every figure traces to `citations.json` with source/filter/value/fetched_at |
@@ -507,7 +507,7 @@ render is not approval.
     executed       ← terminal success for the producer
         │ 48h post-mail-drop
         ▼
-    measured       ← performance_loop attaches QR-scan + inbound-call attribution from FUB
+    measured       ← performance_loop attaches QR-scan + inbound-call attribution from crm_people
 
     killed         ← terminal failure; set if Matt cancels or QA fails after 2 auto-iterations
 ```
@@ -578,7 +578,7 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 ## 13. What not to do
 
 1. **Never invent a sold price.** If `"ClosePrice"` is null, stop and surface. No "approximately."
-2. **Never use the direct phone on the back.** Inbound CTAs route through FUB-tracked
+2. **Never use the direct phone on the back.** Inbound CTAs route through the tracked inbound
    `541.703.3095`. Direct `541.213.6706` is front-side display only.
 3. **Never put text in the USPS address-block or IMb clear zones.** The mail sorter reads
    those rectangles.
@@ -604,7 +604,7 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 **Required reading before executing:**
 - `CLAUDE.md` §0.  Data Accuracy (outranks everything)
 - `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
-- `CLAUDE.md` "Voice + content".  phone discipline (direct vs FUB-tracked)
+- `CLAUDE.md` "Voice + content".  phone discipline (direct vs tracked inbound)
 - `CLAUDE.md` "Supabase listings Schema".  mixed-case quoted columns
 - `design_system/ryan-realty/SKILL.md`.  heritage register
 - `marketing_brain_skills/brand-voice/VOICE.md`.  banned vocab + tone
@@ -624,8 +624,8 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 
 **Downstream actions:**
 - `ops:postcard_print_order`.  mail-house upload + print + USPS drop (separate producer, TBD)
-- FUB inbound webhook.  calls to `541.703.3095` attributed to this campaign via UTM stamps
-  on the QR target URL and the FUB phone-call ingestion pipeline
+- Inbound SMS/voice on `541.703.3095` attributed to this campaign via UTM stamps
+  on the QR target URL and the `sendEvent` capture path into `crm_people`
 
 **Playbooks and pipeline docs:**
 - `automation_skills/content_engine/SKILL.md`.  content routing bus

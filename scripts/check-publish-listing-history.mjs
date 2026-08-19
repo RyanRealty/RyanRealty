@@ -6,6 +6,7 @@
  * status_history + price_history tables and OnMarketDate. Reading only
  * listing_history hides recent listings (empty until strict verify).
  * Founding cases: Borden 220225742, Rockway 220226183, Mountain Breezes 220226708.
+ * Description lock: 65255 Swalley 220207865 fleet:7e278bfeb28c9806649154eeb32c5567.
  *
  *   node scripts/check-publish-listing-history.mjs
  */
@@ -26,6 +27,17 @@ checks.push({
     helper.includes('priceHistory') &&
     helper.includes("event: 'listed'") &&
     helper.includes('onMarketDate'),
+})
+
+checks.push({
+  label: 'publishListingHistoryDescription withholds raw ListPrice dumps',
+  ok:
+    /export function publishListingHistoryDescription/.test(helper) &&
+    /export function publishListingHistoryDeltaLabel/.test(helper) &&
+    helper.includes('7e278bfeb28c9806649154eeb32c5567') &&
+    helper.includes('ListPrice:') &&
+    helper.includes('220207865') &&
+    helper.includes('publishListingHistoryDescription(row.description)'),
 })
 
 const dal = src('lib/data/listings/getListingDetailBundles.ts')
@@ -66,6 +78,22 @@ checks.push({
     /mapPublishedHistoryEvent/.test(action) &&
     /publishedEvent === 'listed'/.test(mapper) &&
     /publishedEvent === 'pending'/.test(mapper),
+})
+
+const historyUi = src('components/site/listing-detail/PropertyHistory.tsx')
+checks.push({
+  label: 'PropertyHistory publishes description + dollar delta labels',
+  ok:
+    /publishListingHistoryDescription/.test(historyUi) &&
+    /publishListingHistoryDeltaLabel/.test(historyUi) &&
+    /publishedDescription/.test(historyUi) &&
+    !/<TabularNumber value=\{dropAmount\}/.test(historyUi),
+})
+
+const note = src('lib/expired-listing-note.ts')
+checks.push({
+  label: 'expired-listing note withholds raw history dumps on the CRM plane',
+  ok: /publishListingHistoryDescription\(row\.description\)/.test(note),
 })
 
 const failed = checks.filter((c) => !c.ok)

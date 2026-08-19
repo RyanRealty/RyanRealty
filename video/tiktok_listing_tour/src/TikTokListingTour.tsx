@@ -42,7 +42,7 @@ import { SingleWordCaption, CaptionWord, SingleWordCaptionProps } from '../../..
 import {
   PORTRAIT_SAFE,
   CAPTION_PORTRAIT,
-} from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+} from '../../../video_production_skills/captions/canonical/safe-zones'
 
 /** Bridge to avoid React 18.3 + TS 5.7 strict FC return-type error on canonical comp. */
 const CaptionBridge = (props: SingleWordCaptionProps): React.ReactElement | null =>

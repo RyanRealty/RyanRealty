@@ -3,7 +3,6 @@
   "app/actions/contact-newsletter.ts",
   "app/actions/newsletter.ts",
   "app/api/cma-drafts/[id]/send/route.ts",
-  "app/api/cma/[slug]/email/route.ts",
   "app/api/cma/[slug]/gmail-draft/route.ts",
   "app/api/cron/crm-sequence-engine/route.ts",
   "app/api/cron/daily-broker-digest/route.ts",

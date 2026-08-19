@@ -3,6 +3,14 @@
  * published in FAQPage JSON-LD. No new claims.
  */
 
+/** One unique control id per contact-sheet field. Nightly locators use these. */
+export const CONTACT_FIELD_IDS = {
+  name: 'contact-name',
+  email: 'contact-email',
+  phone: 'contact-phone',
+  message: 'contact-message',
+} as const
+
 export const CONTACT_FAQ_ITEMS = [
   {
     question: 'What areas does Ryan Realty serve?',

@@ -3,7 +3,7 @@
 /**
  * FUB-clone agent-scope picker. Opens a bottom sheet listing Everyone · Me ·
  * Team members (each with a headshot avatar) plus a search box — matching the
- * Follow Up Boss "Filter Deals" scope sheet (screen ui1_5831). Selecting a scope
+ * Deal-filter scope sheet (screen ui1_5831). Selecting a scope
  * navigates the contacts list with the broker param (carrying the active
  * search/stage/tag/view filters). The trigger shows the current scope.
  *

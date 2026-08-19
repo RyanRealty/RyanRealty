@@ -48,6 +48,17 @@ export const HEARTBEAT_THRESHOLDS = {
   // SkySlope inbound recon mirror: /api/cron/skyslope-mirror-refresh daily
   // 06:20 UTC. 36h = the daily cadence + slack. Vault (tc_deals) stays SoR.
   skySlopeMirrorHours: 36,
+  // National rate series in market_history_weekly: /api/cron/market-history-snapshot
+  // runs MONDAYS 13:00 UTC and this heartbeat runs daily 12:30 UTC, so the
+  // oldest healthy reading is Monday 12:30 — half an hour before the week's
+  // ingest — at 167.5h. 192h (8 days) is that cadence plus a full day of
+  // slack, so ONE missed Monday surfaces on the following Tuesday morning
+  // rather than after a month.
+  macroSeriesHours: 192,
+  // Weeks of identical values that mean the series is being written but is no
+  // longer moving. Weekly PMMS prints a fresh figure essentially every week;
+  // four identical weeks is a provider returning its last observation forever.
+  macroSeriesFlatWeeks: 4,
 } as const
 
 export function ageHours(iso: string | null | undefined, now: Date): number | null {
@@ -227,6 +238,77 @@ export function evalSkySlopeMirror(latestSyncedAt: string | null, now: Date): Pi
       ? 'Inbound SkySlope recon mirror is stale. /api/cron/skyslope-mirror-refresh is dark or SKYSLOPE_* Files API keys are missing. Vault (tc_deals) stays the deal SoR; the mirror is recon only.'
       : undefined,
   }
+}
+
+/**
+ * The macro rate series — the ONE statistic on the site that nobody here
+ * produces. `market_history_weekly` (geo national/us, metric
+ * `mortgage_rate_30yr`, source `freddie:pmms30`) is what every public payment
+ * figure resolves to through getCalculatorDefaults, and the series going dark
+ * looks like nothing at all: the calculators keep rendering, on last week's
+ * rate, then last month's.
+ *
+ * That is not hypothetical. `app_config.mortgage_rate` was hand-entered
+ * 2026-04-14 and still read 6.5% on 2026-08-17 while the ingested series
+ * carried 6.67% for that week — four months of drift, no error, no alert,
+ * nobody looking. This is the watchdog that would have said so on day eight.
+ *
+ * It cannot be a CI gate: a gate reads the repo on disk, and the static
+ * ci:gates chain deliberately runs without Supabase credentials. That is the
+ * half of the one-engine rule ci:stat-source states it cannot cover. It should
+ * not be an admin page either — a page complains only when somebody opens it,
+ * and not opening it is the entire failure.
+ *
+ * Two failure shapes, because recency alone is a liar (same lesson as the
+ * fresh-but-zero GSC channel):
+ *   RED    the newest row is older than the weekly cadence plus a day of slack;
+ *   YELLOW rows keep arriving but carry one identical value across four or
+ *          more weeks — a provider handing back its last observation forever.
+ *
+ * @param input.latestCapturedAt  captured_at of the newest week_start row (the
+ *                                cron re-stamps it on every upsert, so it
+ *                                tracks the run, not the observation date).
+ * @param input.latestWeekStart   week_start of that row, for the message.
+ * @param input.recentValues      values of the most recent weeks, newest first.
+ */
+export function evalMacroSeries(
+  input: {
+    latestCapturedAt: string | null
+    latestWeekStart: string | null
+    recentValues: number[]
+  },
+  now: Date,
+): PipelineCheck {
+  const name = 'pipeline:macro-rate-series'
+  const age = ageHours(input.latestCapturedAt, now)
+  const week = input.latestWeekStart ?? '—'
+  const latest = input.recentValues[0]
+  const shown = Number.isFinite(latest) ? `${latest}%` : 'no value'
+  const value = `mortgage_rate_30yr ${shown}, week ${week}, captured ${formatAge(age)} ago`
+
+  if (age === null || age >= HEARTBEAT_THRESHOLDS.macroSeriesHours) {
+    return {
+      name,
+      status: 'red',
+      value,
+      note:
+        age === null
+          ? 'No 30-yr rate has ever been captured into market_history_weekly. Every public payment figure is running on the hardcoded fallback in lib/data/config.ts. Check /api/cron/market-history-snapshot (Mondays 13:00 UTC) and whether migration 20260722020100_market_history_weekly.sql is applied.'
+          : 'The 30-yr rate series has stopped updating. Mortgage calculators, listing payment estimates and every PITI figure are publishing an old rate with no visible warning — the same silent drift that left app_config.mortgage_rate at April 6.5% through August. Check /api/cron/market-history-snapshot (Mondays 13:00 UTC), then FRED_API_KEY and the Freddie PMMS fallback in lib/market-national-series.ts.',
+    }
+  }
+
+  const flatWeeks = HEARTBEAT_THRESHOLDS.macroSeriesFlatWeeks
+  if (input.recentValues.length >= flatWeeks && new Set(input.recentValues.slice(0, flatWeeks)).size === 1) {
+    return {
+      name,
+      status: 'yellow',
+      value: `${value} · unchanged ${flatWeeks} weeks`,
+      note: `Rows keep landing but the rate has not moved in ${flatWeeks} weeks. A weekly rate that never changes usually means the provider is replaying its last observation, not that the market is flat. Verify the newest value against the primary source before trusting any published payment figure.`,
+    }
+  }
+
+  return { name, status: 'green', value }
 }
 
 /** A probe that could not even run reads as red — a swallowed query error is indistinguishable from a dark pipeline. */

@@ -8,7 +8,7 @@ import { submitSellerLPForm } from '@/app/lp/seller-home-value/actions'
  * to the seller LP action, which creates the FUB person, applies the seller
  * tag taxonomy, and routes the lead to the ATTRIBUTED broker — the
  * BrokerAttributionSetter on the page set the attribution cookie to this broker,
- * so a lead from Rebecca's page lands in FUB assigned to Rebecca. Reuses the
+ * so a lead from Rebecca's page lands in the CRM assigned to Rebecca. Reuses the
  * tested seller pipeline rather than a parallel one.
  */
 export async function submitBrokerSellerLead(

@@ -7,6 +7,7 @@
 import { v3Text, type V3FieldItem, type V3InstrumentFigure } from '@/components/site/v3'
 import { communityImage } from '@/lib/geo-images'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingTileHref } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { ListingTile } from '@/lib/data/types/listing'
@@ -74,7 +75,11 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
     .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
     .flatMap((tile) => {
       if (!tile.listingKey) return []
-      const street = [tile.streetNumber, tile.streetName, tile.streetSuffix].filter(Boolean).join(' ').trim()
+      const street = publishStreetLine({
+        streetNumber: tile.streetNumber,
+        streetName: tile.streetName,
+        streetSuffix: tile.streetSuffix,
+      })
       const meta = [
         tile.beds != null ? `${tile.beds} bd` : null,
         tile.baths != null ? `${tile.baths} ba` : null,

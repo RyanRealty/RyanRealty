@@ -162,6 +162,7 @@ export { getListingDetail } from '@/lib/data/listings/getListingDetail'
 export { getListingPhotos } from '@/lib/data/listings/getListingPhotos'
 export { getListingRawRowByKey } from '@/lib/data/listings/getListingRawRow'
 export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
+
 export { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 export { getPriceDropTiles, getBrokerageListingTiles, getBrokerageListings } from '@/lib/data/listings/getPriceDropTiles'
 export type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'

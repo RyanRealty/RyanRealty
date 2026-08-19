@@ -21,7 +21,7 @@
  *   Forced-alignment JSON lives at public/audio/<slug>/<beat>.words.json.
  *   In the stub (no audio), a mock alignment is used so tsc passes.
  *
- * Safe zones: imported from video_production_skills/safe-zones/canonical/safe-zones.ts
+ * Safe zones: imported from video_production_skills/captions/canonical/safe-zones.ts
  *
  * First frame rule: B1 hero photo is real content (not black / logo card).
  *
@@ -45,7 +45,7 @@ import {
   useVideoConfig,
 } from 'remotion'
 import { SingleWordCaption as SingleWordCaptionBase, type CaptionWord } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
-import { PORTRAIT_SAFE, CAPTION_PORTRAIT } from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+import { PORTRAIT_SAFE, CAPTION_PORTRAIT } from '../../../video_production_skills/captions/canonical/safe-zones'
 
 // Cast canonical SingleWordCaption to a local JSX-compatible type.
 // The canonical component is React.FC but @types/react 18.3.x can produce

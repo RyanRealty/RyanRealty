@@ -11,6 +11,8 @@
  * Same rail as other broker alerts. No fifth inbox.
  */
 
+import { publishStreetLine, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
+
 export const BROKER_ALERT_MAILBOXES = new Set([
   'matt@ryan-realty.com',
   'rebeccapeterson@ryan-realty.com',
@@ -101,12 +103,11 @@ export function formatLookingAtAddress(input: {
   streetNumber?: string | null
   streetName?: string | null
 }): string | null {
-  const fromParts = [input.streetNumber, input.streetName]
-    .map((s) => (s ?? '').trim())
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-  const street = fromParts || (input.street ?? '').trim()
+  const fromParts = publishStreetLine({
+    streetNumber: input.streetNumber,
+    streetName: input.streetName,
+  })
+  const street = fromParts || publishUnparsedStreetLine(input.street)
   return street || null
 }
 

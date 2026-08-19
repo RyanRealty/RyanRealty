@@ -70,6 +70,7 @@ function lowerFirst(s: string): string {
 
 import type { AreaMarket } from '@/lib/area-market'
 import { marketSentence } from '@/lib/area-market'
+import { publishPlaceInCity } from '@/lib/place/publish-place-in-city'
 
 type EventFaqInput = {
   name: string
@@ -103,7 +104,7 @@ export function buildEventFaq(
 
   faq.push({
     question: `Where is ${e.name} held?`,
-    answer: `${e.name} takes place at ${e.venue} in ${e.city}, Central Oregon.`,
+    answer: `${e.name} takes place at ${publishPlaceInCity(e.venue, e.city)}, Central Oregon.`,
   })
 
   if (e.priceInfo) {

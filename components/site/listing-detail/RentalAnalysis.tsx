@@ -2,6 +2,7 @@ import RentalCalculator from '@/components/tools/RentalCalculator'
 import { Body } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { getAreaRentEstimate } from '@/lib/hud-fmr'
+import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
 
 /**
  * Listing-detail RentalAnalysis — KB section style.
@@ -9,8 +10,6 @@ import { getAreaRentEstimate } from '@/lib/hud-fmr'
  *
  * Per CLAUDE.md §0 Data Accuracy: all numbers are labeled estimates.
  */
-
-const TAX_FALLBACK_PCT = 0.0075
 
 function estimateMonthlyRent(price: number): { value: number; low: number; high: number; source: string } {
   const mid = Math.max(500, Math.round((price * 0.005) / 25) * 25)
@@ -46,7 +45,7 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
   const taxes =
     listing.taxAnnualAmount && listing.taxAnnualAmount > 0
       ? listing.taxAnnualAmount
-      : Math.round(price * TAX_FALLBACK_PCT)
+      : Math.round(price * PROPERTY_TAX_RATE_FRACTION)
   const label = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim() || undefined
   const hud = getAreaRentEstimate(listing.city, listing.beds)
   const rent = hud

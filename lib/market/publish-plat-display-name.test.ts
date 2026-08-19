@@ -37,4 +37,12 @@ describe('publishPlatDisplayName', () => {
     expect(looksLikeMlsAbbreviation('OWW2')).toBe(true)
     expect(looksLikeMlsAbbreviation('River Meadows')).toBe(false)
   })
+
+  it('withholds camelCase MLS codes and truncated Village tokens', () => {
+    expect(publishPlatDisplayName('WildflS')).toBeNull()
+    expect(publishPlatDisplayName('SkylinC')).toBeNull()
+    expect(publishPlatDisplayName('Fairway Vill Condo')).toBeNull()
+    expect(looksLikeMlsAbbreviation('WildflS')).toBe(true)
+    expect(looksLikeMlsAbbreviation('SkylinC')).toBe(true)
+  })
 })

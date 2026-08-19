@@ -11,7 +11,7 @@ import {
 // tracked record. These tests lock the PURE rule that gates that conversion:
 // it must fire AT the threshold (>= 5 listing views across >= 2 sessions in 14
 // days), NOT below it, and it must IGNORE any visitor who is already identified
-// (known email / fub person / auth user / existing crm_person) so we never mint
+// (known email / stitched person id / auth user / existing crm_person) so we never mint
 // a duplicate lead. No Supabase here. The .from() reads live in the DAL module.
 
 // A fixed "now" so the 14-day recency window is deterministic across machines.
@@ -142,7 +142,7 @@ describe('isSustainedHotAnonymous (Phase 0.3 conversion gate)', () => {
       expect(e.qualifies).toBe(false)
     })
 
-    it('rejects when a FUB person is already stitched', () => {
+    it('rejects when a stitched person id is already present', () => {
       const signals: SustainedHotAnonymousSignals = {
         listingViewEvents: QUALIFYING_EVENTS,
         identity: { ...NO_IDENTITY, fubPersonId: 12345 },

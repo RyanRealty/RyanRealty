@@ -1,4 +1,5 @@
 import { Eyebrow, H2, Stack } from '@/components/site/primitives'
+import { publishOpenHouseDay } from '@/lib/listing/publish-calendar-day'
 
 /**
  * Listing-detail OpenHouses — upcoming open-house events for THIS
@@ -28,17 +29,7 @@ type Props = {
 }
 
 function formatDay(iso: string | null | undefined): string {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'America/Los_Angeles',
-    })
-  } catch {
-    return iso
-  }
+  return publishOpenHouseDay(iso)
 }
 
 function formatClock(hms: string | null | undefined): string {

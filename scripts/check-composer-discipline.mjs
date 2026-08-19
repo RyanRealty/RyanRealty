@@ -4,7 +4,7 @@
  *
  * Matt directive 2026-07-15: "anytime a text or sms or email is sent I always
  * want it to use the same interface." The canonical surfaces are:
- *   - components/admin/crm/SmsComposer.tsx   (FUB chat bar — every SMS)
+ *   - components/admin/crm/SmsComposer.tsx   (CRM chat bar — every SMS)
  *   - components/admin/crm/EmailComposer.tsx (Gmail-style — every email)
  *   - components/admin/crm/EmailBodyEditor.tsx (the shared editing core, for
  *     bulk hosts that own audience/scheduling)

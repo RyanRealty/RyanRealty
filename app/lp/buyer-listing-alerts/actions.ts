@@ -3,8 +3,8 @@
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
-  type FubEventPerson,
-} from '@/lib/followupboss'
+  type LeadEventPerson,
+} from '@/lib/crm/send-event'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
@@ -24,8 +24,8 @@ const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
 
-const FUB_USER_MATT = 1
-// Rebecca (id 2) + Paul (id 3) remain in FUB but no auto-route per Matt
+const CRM_DESK_MATT = 1
+// Rebecca (id 2) + Paul (id 3) exist as desks but no auto-route per Matt
 // 2026-05-17. Manual reassignment via FUB UI only.
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
@@ -84,7 +84,7 @@ async function assignBuyerLead(
 ): Promise<BrokerAssignment> {
   const attributed = await readAttributedAgentServer()
   if (attributed) return { broker: attributed.broker, userId: attributed.userId, reason: 'agent attribution' }
-  return { broker: 'matt', userId: FUB_USER_MATT, reason: 'default routing' }
+  return { broker: 'matt', userId: CRM_DESK_MATT, reason: 'default routing' }
 }
 
 async function recordBuyerAssignment(params: {
@@ -162,7 +162,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     const firstName = name.split(/\s+/)[0] || undefined
     const lastName = name.split(/\s+/).slice(1).join(' ') || undefined
 
-    const person: FubEventPerson = fubPersonId
+    const person: LeadEventPerson = fubPersonId
       ? { id: fubPersonId }
       : {
           firstName,
@@ -334,7 +334,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
 
       // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
       void import('@/lib/crm/enroll')
-        .then(({ autoEnrollByFubId }) => autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }))
+        .then(({ autoEnrollByPersonId }) => autoEnrollByPersonId(fubPersonId, { smsConsent: submission.smsConsent }))
         .catch((e) => console.warn('[buyer-lp] instant auto-enroll failed:', e))
     }
 

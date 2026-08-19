@@ -25,9 +25,8 @@ import { classifyInboundReply } from '@/lib/crm/reply-intent'
 import { prospectOutreachContext } from '@/lib/crm/prospect-context'
 import { buildEmailIntentNote, emailIntentDedupeKey } from '@/lib/crm/email-intent-note'
 
-// System/notification senders that must never create timeline entries — their
-// mail is platform noise (FUB missed-call alerts, surveys, port updates), not
-// a communication from a contact.
+// System/notification senders that must never create timeline entries — leftover
+// vendor mail is platform noise, not a communication from a contact.
 const BLOCKED_SENDER_DOMAINS = new Set(['followupboss.com'])
 
 export const CRM_MAILBOXES: Array<{ email: string; slug: CrmBrokerSlug }> = [
@@ -61,7 +60,7 @@ const SEND = ['https://www.googleapis.com/auth/gmail.send']
 
 // ── address → person matching ─────────────────────────────────────────────
 
-const SELF_DOMAINS = new Set(['ryan-realty.com', 'mail.ryan-realty.com', 'followupboss.me'])
+const SELF_DOMAINS = new Set(['ryan-realty.com', 'mail.ryan-realty.com'])
 
 export async function loadEmailPersonMap(): Promise<Map<string, number>> {
   const sb = createServiceClient()

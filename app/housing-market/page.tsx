@@ -61,6 +61,7 @@ import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
+import { publishInstrumentStamp } from '@/lib/market/publish-mixed-instrument-stamp'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -323,13 +324,13 @@ export default async function HousingMarketHubPage() {
             )}
             figures={[firstLeadFigure, ...restLeadFigures]}
             source={v3Text(lead.source)}
-            updated={
-              closed?.source === 'mart' && closed.computedAt
-                ? v3Text(formatDate(closed.computedAt))
-                : refreshedAt
-                  ? v3Text(formatDate(refreshedAt))
-                  : undefined
-            }
+            updated={(() => {
+              const stamp = publishInstrumentStamp([
+                closed?.source === 'mart' ? closed.computedAt : null,
+                mosText ? refreshedAt : null,
+              ])
+              return stamp ? v3Text(formatDate(stamp)) : undefined
+            })()}
             action={{
               label: v3Text('Value my home'),
               href: valuationHref('/housing-market'),

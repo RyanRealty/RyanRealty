@@ -33,9 +33,10 @@ export type SellerLeadAlertParams = {
   alreadyKnown: boolean
 }
 
-function fubLink(personId: number | null): string {
-  if (!personId) return '(FUB record pending)'
-  return `https://app.followupboss.com/people/${personId}`
+function crmPersonLink(personId: number | null): string {
+  if (!personId) return '(CRM record pending)'
+  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  return `${site}/admin/people/${personId}`
 }
 
 function tierBadge(classification: SellerLeadAlertParams['classification']): string {
@@ -68,7 +69,7 @@ export async function sendSellerLeadAlertEmail(
   if (params.phone) contactSection.push(`<li>Phone: <a href="tel:${params.phone.replace(/\D/g, '')}">${params.phone}</a></li>`)
 
   const knownNote = params.alreadyKnown
-    ? '<p style="color: #888;">⚠️ This person was already in FUB before this submission (re-engagement).</p>'
+    ? '<p style="color: #888;">⚠️ This person was already in the CRM before this submission (re-engagement).</p>'
     : ''
 
   const html = `
@@ -90,8 +91,8 @@ export async function sendSellerLeadAlertEmail(
 
   <h3>Next step</h3>
   <p>
-    <a href="${fubLink(params.fubPersonId)}" style="display: inline-block; padding: 10px 18px; background: #102742; color: #fff; text-decoration: none; border-radius: 4px;">
-      Open in Follow Up Boss →
+    <a href="${crmPersonLink(params.fubPersonId)}" style="display: inline-block; padding: 10px 18px; background: #102742; color: #fff; text-decoration: none; border-radius: 4px;">
+      Open in CRM →
     </a>
   </p>
 

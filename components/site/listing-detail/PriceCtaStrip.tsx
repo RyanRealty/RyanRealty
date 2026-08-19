@@ -13,6 +13,7 @@ import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingAsk, publishListingDrop } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 
 /**
@@ -42,6 +43,7 @@ type Props = {
     | 'status'
     | 'dom'
     | 'pricePerSqft'
+    | 'propertySubType'
     | 'streetNumber'
     | 'streetName'
     | 'streetSuffix'
@@ -102,6 +104,11 @@ export function PriceCtaStrip({
     ? publishListingAsk(listing.closePrice)
     : publishListingAsk(listing.listPrice)
   const headlinePrice = publishedAsk?.ask ?? null
+  const shareKind = publishListingShareKind(listing.propertySubType)
+  const publishedPpsf = publishListingSharePricePerSqft(
+    listing.propertySubType,
+    listing.pricePerSqft,
+  )
   const publishedDrop = isClosed
     ? null
     : publishListingDrop({
@@ -241,9 +248,10 @@ export function PriceCtaStrip({
             <TabularNumber value={listing.dom} /> days on market
           </Pill>
         ) : null}
-        {listing.pricePerSqft != null ? (
+        {shareKind ? <Pill kind="dom">{shareKind}</Pill> : null}
+        {publishedPpsf != null ? (
           <Pill kind="psqft">
-            <Price value={listing.pricePerSqft} exact />/sqft
+            <Price value={publishedPpsf} exact />/sqft
           </Pill>
         ) : null}
       </div>

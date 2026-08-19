@@ -1,6 +1,7 @@
 /**
  * generate-script.ts — turn a populated VideoProps into the per-scene
  * voiceover script + YouTube publish metadata.
+ * reachability: entry-point parked offline CLI (lib/youtube-market-report)
  *
  * Deterministic template fill-in. Anti-slop validation runs as a hard
  * post-pass; any banned-word hit throws so the orchestrator can decide

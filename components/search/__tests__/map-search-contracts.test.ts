@@ -459,13 +459,13 @@ describe('SearchMapClustered map primitive', () => {
 describe('slug search page: guest save + reachable map-move (2026-06-09)', () => {
   // The high-traffic /homes-for-sale/[...slug] route (every city/preset/community
   // link lands here) must carry BOTH affordances Matt reported missing:
-  //   1. a guest save/alert path (anonymous email -> FUB buyer lead), and
+  //   1. a guest save/alert path (anonymous email -> CRM buyer lead), and
   //   2. a link into the search-as-you-move map (the split view).
   // Pinned at the source level so a future edit that unwires either fails CI
   // instead of silently regressing to "no save + no map" for anonymous buyers.
   const slug = readSrc('app/search/[...slug]/page.tsx')
 
-  it('renders SearchAlertCapture for the guest email -> FUB buyer-lead path', () => {
+  it('renders SearchAlertCapture for the guest email -> CRM buyer-lead path', () => {
     expect(slug).toMatch(/import \{ SearchAlertCapture \}/)
     expect(slug).toMatch(/<SearchAlertCapture/)
     // It must be told the signed-in state (guests only) and the path-derived city.
@@ -645,6 +645,13 @@ describe('Home type two-layer filter (class + MLS sub type)', () => {
     expect(types).toMatch(/SUBTYPE_DISPLAY_LABELS/)
     expect(types).toMatch(/Manufactured On Land/)
   })
+
+  it('beds/baths chips have unique control ids (nightly locators)', () => {
+    const bar = readSrc('components/SearchFilterBar.tsx')
+    expect(bar).toMatch(/filter-beds-\$\{value \|\| 'any'\}/)
+    expect(bar).toMatch(/filter-baths-\$\{value \|\| 'any'\}/)
+    expect(bar).toMatch(/htmlFor=\{id\}/)
+  })
 })
 
 describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
@@ -673,6 +680,37 @@ describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
     for (const rel of ['components/search/MapSearchView.tsx', 'components/search/SearchResults.tsx']) {
       expect(readSrc(rel)).toMatch(/priority=\{cardIndex < 4\}/)
     }
+  })
+})
+
+describe('flagship map timeout + city honesty (runtime crosswalk 2026-08-18)', () => {
+  const page = readSrc('app/search/page.tsx')
+  const view = readSrc('components/search/MapSearchView.tsx')
+
+  it('view=map uses withTimeoutSettled and passes degraded into HideAwareSearchMap', () => {
+    expect(page).toMatch(/view === 'map' \? await withTimeoutSettled\(getSearchMapListings/)
+    expect(page).toMatch(/degraded=\{mapDegraded\}/)
+    expect(page).not.toMatch(/view === 'map' \? await withTimeout\(getSearchMapListings/)
+  })
+
+  it('does not invent filters.city = Bend for split/map', () => {
+    expect(page).toMatch(/city: filters\.city,/)
+    expect(page).toMatch(/city: sp\.city \?\? '',/)
+    expect(page).not.toMatch(/city: filters\.city \|\| \(view !== 'list' \? defaultCity/)
+    expect(page).not.toMatch(/city: sp\.city \?\? \(view !== 'list' \? defaultCity/)
+    expect(page).not.toMatch(/getCityBoundary\(effectiveFilters\.city \|\| defaultCity\)/)
+    expect(page).toMatch(/defaultCity=\{effectiveFilters\.city \?\? ''\}/)
+  })
+
+  it('does not say No homes while filter-match is still in flight', () => {
+    expect(view).toMatch(/const \[matchCountReady, setMatchCountReady\] = useState\(false\)/)
+    expect(view).toMatch(/!matchCountReady && totalCount === 0\s*\n\s*\? 'Updating…'/)
+    expect(view).not.toMatch(/totalCount === 0 && matchCount == null\s*\n\s*\? 'No homes'/)
+  })
+
+  it('keeps empty status as active+pending (does not coerce \'\' to Active)', () => {
+    expect(view).toMatch(/status: f\.status \?\? 'Active'/)
+    expect(view).not.toMatch(/status: f\.status \|\| 'Active'/)
   })
 })
 

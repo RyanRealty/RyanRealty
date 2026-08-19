@@ -186,7 +186,7 @@ Include in your ad copy language that complies with Fair Housing Act: "We comply
 - Add second lead magnet (buyer guide, seller kit, market report)
 - Launch separate campaigns by neighborhood or buyer/seller segment
 - Increase video content (5–10 pieces/month for testing)
-- Implement CRM integration (save leads directly to Follow-Up Boss)
+- Implement CRM integration (save leads via `sendEvent` into `public.crm_people`)
 
 **Campaign Structure Recommendation:**
 - Campaign 1: Lead Generation (Instant Form) — "Get Home Valuation" — $500/month
@@ -391,7 +391,7 @@ Without conversion tracking, Google Ads is flying blind. You can't measure ROI o
 5. Wait 7–14 days for optimization data
 
 **Pro Setup (CRM Integration):**
-- Use Conversions API (not pixel) to send lead data directly from Follow-Up Boss to Google Ads
+- Use Conversions API (not pixel) to send lead data from `crm_people` / CAPI to Google Ads
 - Allows Google to track lead quality (which leads called, booked, converted to sale)
 - More sophisticated; requires dev setup
 
@@ -512,7 +512,7 @@ Reviews directly impact both your position in LSA results and your cost per lead
 
 **How to Build Reviews Fast**
 - Target: 20 reviews in first 90 days
-- Send review request email after every closing (automated via Follow-Up Boss if possible)
+- Send review request email after every closing (CRM task on the `crm_people` row + Resend; review at `/admin/crm`)
 - Offer incentive: "Please leave a Google review; we'll raffle a $25 Starbucks card among reviewers this month"
 - Respond to every review (positive and negative) within 24 hours
 - Keep responses professional, brief, personal (not templated)
@@ -749,7 +749,7 @@ The most cost-efficient path to lead generation combines organic (free, slow) an
 
 **Recommendation for Ryan Realty:**
 - Use Campaigns, not Boosts
-- Why: Full tracking, audience control, and integration with Follow-Up Boss CRM
+- Why: Full tracking, audience control, and integration with the in-house CRM (`crm_people`)
 
 ### Retargeting Organic Viewers with Paid Ads
 

@@ -142,7 +142,7 @@ export async function createSavedSearch(
   // users untracked: resolveCrmPersonId had no row to match yet.
   let crmPersonId: number | null = null
   try {
-    const { sendEvent } = await import('@/lib/followupboss')
+    const { sendEvent } = await import('@/lib/crm/send-event')
     const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
     const searchUrl = `${base}${buildSearchUrlFromFilters(normalizedFilters)}`
     const summary = getFiltersSummary(normalizedFilters)

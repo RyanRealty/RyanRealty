@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { SingleWordCaption } from '../../../video_production_skills/captions/canonical/SingleWordCaption'
-import { CAPTION_PORTRAIT } from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+import { CAPTION_PORTRAIT } from '../../../video_production_skills/captions/canonical/safe-zones'
 
 export type CaptionWord = { text: string; startSec: number; endSec: number }
 

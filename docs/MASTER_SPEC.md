@@ -41,7 +41,7 @@ _Updated by every batch. Anything unresolved goes here with a recommendation pen
 
 4. **Median Bend sale price for revenue math** [CLAUDE.md: Data Accuracy]: The revenue math in section 1.3 uses an estimated Bend median sale price. Per the data accuracy rule, this figure must be verified against a Supabase query (`ryan-realty-platform`, `listings` table, `PropertyType='A'`, `City='Bend'`, `CloseDate` in the trailing 12 months, `median(ClosePrice)`) before the number appears on any consumer-facing surface. **Not a blocker for the spec itself** — it is marked ESTIMATE here — but it must be resolved before section 3 (Data Inventory) ships.
 
-5. **FUB seller vs. buyer routing** [discovery 01: Lead Routing & FUB]: The FUB custom fields include `is_seller_curious` but the spec does not yet define the routing rule that separates seller leads from buyer leads in the CRM pipeline. **Question for Matt:** when a lead submits a home valuation form, which FUB pipeline stage do they enter, and who is notified first? This needs to be codified before the lead-capture forms are built in batch 2/3.
+5. **CRM seller vs. buyer routing** [discovery 01: Lead Routing]: The CRM custom fields include `is_seller_curious` but the spec does not yet define the routing rule that separates seller leads from buyer leads. **Question for Matt:** when a lead submits a home valuation form, which CRM pipeline stage do they enter, and who is notified first? This needs to be codified before the lead-capture forms are built in batch 2/3.
 
 ---
 
@@ -55,7 +55,7 @@ Ryan Realty is a Bend, Oregon residential brokerage owned by principal broker Ma
 
 **The MVP scope.** The public site launches July 1 with: homepage (social-media-feed vertical scroll on mobile), IDX search with map + lifestyle overlays, listing detail pages, neighborhood/community hub pages for all 11 service areas, home valuation tool, market reports hub, "Moving to Bend" relocation hub, agent profile, and blog. Every page ships with schema markup, LCP < 2.5s, and Lighthouse SEO 90+.
 
-**The critical fixes before building.** The existing UI is being discarded entirely [discovery 01: UI rebuild scope]. The backend database is solid — Supabase, Spark API sync, FUB CRM, and all data pipelines are confirmed working [discovery 01: Data Architecture]. The rebuild starts from a clean design system using shadcn/ui radix-nova tokens derived from the Ryan Realty brand handoff ZIP, mapped onto `app/globals.css`.
+**The critical fixes before building.** The existing UI is being discarded entirely [discovery 01: UI rebuild scope]. The backend database is solid — Supabase, Spark API sync, in-house CRM (`public.crm_people`), and all data pipelines are confirmed working [discovery 01: Data Architecture]. The rebuild starts from a clean design system using shadcn/ui radix-nova tokens derived from the Ryan Realty brand handoff ZIP, mapped onto `app/globals.css`.
 
 **Three revenue streams.** (1) Seller commissions — highest value per transaction; driven by the home valuation tool and market reports. (2) Buyer commissions — higher volume, longer cycle; driven by IDX search and behavioral alerts. (3) Display ad revenue — Google AdSense at MVP with standard IAB slots on informational pages only (blog, neighborhood hubs, market hub); lazy-loaded, no above-fold or lead-capture surfaces. Wave-2 migration to Mediavine when monthly sessions clear ~50K. [chat 2026-04-25]
 
@@ -135,7 +135,7 @@ _Placeholder. Wave assignments are spec'd in section 16 (batch 4). Each wave map
 | Design system CSS | `/tmp/ryan-design-extract/ryan-realty-design-system/project/colors_and_type.css` |
 | Brand assets | `/tmp/ryan-design-extract/ryan-realty-design-system/project/assets/` |
 | Agent rules | `/Users/matthewryan/RyanRealty/CLAUDE.md` |
-| CRM (in-house; Follow Up Boss decommissioned 2026-06-24) | `/Users/matthewryan/RyanRealty/lib/crm/` + `/Users/matthewryan/RyanRealty/docs/archive/fub-era/README.md` for the FUB-era history |
+| CRM (in-house `public.crm_people`) | `/Users/matthewryan/RyanRealty/lib/crm/send-event.ts` + `/Users/matthewryan/RyanRealty/docs/archive/fub-era/README.md` for retired-vendor history |
 | Auth & CRM | `/Users/matthewryan/RyanRealty/docs/AUTH_AND_CRM.md` |
 | Data architecture plan | `/Users/matthewryan/RyanRealty/docs/plans/data-architecture-plan.md` |
 | Master plan (gaps/waves) | `/Users/matthewryan/RyanRealty/docs/plans/master-plan.md` |
@@ -183,7 +183,7 @@ The website generates revenue through four mechanisms. A fifth (vendor marketpla
 
 **2. Seller representation (listing).** Matt represents sellers with a listing agreement. Commission is typically 2.5–3% of the sale price, paid from proceeds at close. The website's job is to produce seller leads: homeowners who request a valuation, subscribe to market reports, or contact Matt directly to discuss listing their home. Seller leads are the highest-value lead category per transaction.
 
-**3. Lead generation for the brokerage pipeline.** Both buyer and seller leads flow through the in-house CRM (`public.crm_people`; Follow Up Boss was decommissioned 2026-06-24 — this paragraph predates the cutover and the event vocabulary survives in `lib/followupboss.ts` `sendEvent()`, which now writes natively). The website fires events: Registration, Viewed Property, Viewed Page, Saved Property, Property Inquiry, Visited Website (return visit after 24h+). [discovery 01: Lead Routing & FUB] Lead scoring uses behavior-based points with weekly decay; lead tiers are cold, warm, hot, very_hot. [discovery 01: Lead Routing & FUB; custom-field research archived at `docs/archive/fub-era/README.md`]
+**3. Lead generation for the brokerage pipeline.** Both buyer and seller leads flow through the in-house CRM (`public.crm_people` via `sendEvent()` in `lib/crm/send-event.ts`). The website fires events: Registration, Viewed Property, Viewed Page, Saved Property, Property Inquiry, Visited Website (return visit after 24h+). [discovery 01: Lead Routing] Lead scoring uses behavior-based points with weekly decay; lead tiers are cold, warm, hot, very_hot. [discovery 01: Lead Routing; custom-field research archived at `docs/archive/fub-era/README.md`]
 
 **4. Display ad revenue (Google AdSense at MVP).** Matt identified display ads as a third revenue stream [Matt 2026-04-25; discovery 01: Monetization]. The correct model is Google AdSense with standard IAB display slots on informational pages, lazy-loaded, with reserved ad space so CLS = 0. Facebook Audience Network (FAN) is a potential supplementary channel at launch, primarily for mobile; evaluate at launch. Wave-2 path: when monthly sessions reach the Mediavine threshold (~50K), migrate from AdSense to Mediavine for higher CPMs. NO native sponsorship, NO preferred lenders, NO title companies, NO mortgage brokers — Matt corrected the model 2026-04-25. See section 1.4.3 for slot inventory and placement rules. [chat 2026-04-25]
 
@@ -241,9 +241,9 @@ At 50,000 monthly sessions × 2 pages/session × 2 ad impressions/page × $6 AdS
 
 #### 1.4.1 Seller leads
 
-**How money flows.** A homeowner discovers the site (via organic search for their address, via a YouTube market report video, via an IG post, or via a neighbor referral), visits the home valuation tool, enters their address, and receives an estimate. They leave their email to get the full report. Matt receives a FUB alert. Over the next days/weeks, the homeowner receives market update emails. When they are ready to discuss listing, Matt converts the lead to a listing agreement. At close, Matt collects the listing-side commission: 2.5–3% of the sale price.
+**How money flows.** A homeowner discovers the site (via organic search for their address, via a YouTube market report video, via an IG post, or via a neighbor referral), visits the home valuation tool, enters their address, and receives an estimate. They leave their email to get the full report. Matt receives a CRM alert. Over the next days/weeks, the homeowner receives market update emails. When they are ready to discuss listing, Matt converts the lead to a listing agreement. At close, Matt collects the listing-side commission: 2.5–3% of the sale price.
 
-**Average value per qualified seller lead** (ESTIMATE — verify against Matt's actuals from past 12 months in FUB or closed transaction records before using in any reporting):
+**Average value per qualified seller lead** (ESTIMATE — verify against Matt's actuals from past 12 months in the CRM or closed transaction records before using in any reporting):
 
 At $750,000 median sale, 2.75% commission: $20,625 per closed listing
 At $650,000 median sale, 2.75% commission: $17,875 per closed listing
@@ -252,14 +252,14 @@ If 20% of qualified seller leads convert to a signed listing agreement, and 80% 
 
 **Conversion funnel mapped to features:**
 
-| Funnel stage | Site feature | FUB event fired |
+| Funnel stage | Site feature | CRM event fired |
 |---|---|---|
 | Discovery | Home valuation tool (any page, floating CTA), "What's my home worth?" search landing page, neighborhood market report pages | — |
 | Lead capture | Valuation form (name + email + phone + address + best time to call) | Registration (if new), Property Inquiry (if address submitted) |
 | Lead nurture | Monthly market report email (automated via Resend, phase 4), personalized equity update, "see buyer demand for your address" (phase 2) | Visited Website (return) |
 | Conversion to consult | "Schedule a call" CTA in nurture emails and on seller-specific landing page | — |
-| Listing agreement | FUB pipeline: Lead → Prospect → Active Listing | — |
-| Close | FUB pipeline: Active Listing → Closed | — |
+| Listing agreement | CRM pipeline: Lead → Prospect → Active Listing | — |
+| Close | CRM pipeline: Active Listing → Closed | — |
 
 **KPIs for seller pipeline:**
 
@@ -274,26 +274,26 @@ If 20% of qualified seller leads convert to a signed listing agreement, and 80% 
 
 #### 1.4.2 Buyer leads
 
-**How money flows.** A buyer discovers the site (via search, social, YouTube, or referral), browses listings, saves a search, and registers to get listing alerts. When a listing they've been watching drops in price or a new matching home hits the market, they receive an automated alert (via FUB + email, phase 4). They request a tour. Matt shows the home. The buyer signs a buyer agency agreement. At close, Matt collects the buyer-side commission: 2.5–3% of the purchase price, paid by the seller.
+**How money flows.** A buyer discovers the site (via search, social, YouTube, or referral), browses listings, saves a search, and registers to get listing alerts. When a listing they've been watching drops in price or a new matching home hits the market, they receive an automated alert (via CRM + email, phase 4). They request a tour. Matt shows the home. The buyer signs a buyer agency agreement. At close, Matt collects the buyer-side commission: 2.5–3% of the purchase price, paid by the seller.
 
 **Average value per qualified buyer lead** (ESTIMATE — verify against Matt's actuals):
 
 At $750,000 median purchase, 2.75% commission: $20,625 per closed buyer transaction
 If 20% of qualified buyer leads close (over 12-month cycle, industry midpoint): effective value per qualified buyer lead = $20,625 × 0.20 = **$4,125 per qualified buyer lead** (ESTIMATE).
 
-Note: buyer lead cycle is longer than seller lead cycle (6–18 months from first contact to close for relocators). Lead scoring decay and engagement scoring in the CRM are critical to maintaining pipeline quality over that window. [discovery 01: Lead Routing & FUB; field research (`engagement_streak_days`, `last_active_date`) archived at `docs/archive/fub-era/README.md`]
+Note: buyer lead cycle is longer than seller lead cycle (6–18 months from first contact to close for relocators). Lead scoring decay and engagement scoring in the CRM are critical to maintaining pipeline quality over that window. [discovery 01: Lead Routing; field research (`engagement_streak_days`, `last_active_date`) archived at `docs/archive/fub-era/README.md`]
 
 **Conversion funnel mapped to features:**
 
-| Funnel stage | Site feature | FUB event fired |
+| Funnel stage | Site feature | CRM event fired |
 |---|---|---|
 | Discovery | IDX search (map + list), neighborhood hub pages, "Moving to Bend" relocation hub, blog posts, YouTube/IG CTA landing pages | Viewed Page |
 | Engagement | Listing detail page view (photos, facts, map, similar listings), mortgage calculator | Viewed Property |
 | Lead capture | Saved search registration (email gate after 5 free listing views), listing alert signup, "Schedule a tour" button on listing detail | Registration, Saved Property |
 | Nurture | Automated listing alerts (email, phase 4; SMS alert, phase 2), price-reduction notifications, new-match alerts | Visited Website (return) |
 | Conversion to tour | Tour scheduling (Calendly embed or custom calendar on listing detail page), "Contact Matt" form | Property Inquiry |
-| Buyer agreement | FUB pipeline: Lead → Prospect → Active Buyer | — |
-| Close | FUB pipeline: Active Buyer → Closed | — |
+| Buyer agreement | CRM pipeline: Lead → Prospect → Active Buyer | — |
+| Close | CRM pipeline: Active Buyer → Closed | — |
 
 **KPIs for buyer pipeline:**
 
@@ -360,11 +360,11 @@ This subsection documents paid traffic channels. These are a **cost**, not a rev
 - Search campaigns targeting long-tail keywords: "homes for sale awbrey butte," "bend oregon real estate agent," "redmond oregon homes," "sisters oregon real estate," and similar high-intent local queries. Keyword strategy derived from Google Search Console data (most-clicked organic queries).
 - Display retargeting: remarketing lists from GA4 audiences (site visitors who did not register) → served Display Network ads pointing back to the homepage or a relevant listing/neighborhood page.
 - YouTube discovery: video ads sourced from Matt's YouTube content, targeted to in-market audiences in the Deschutes County DMA and Pacific Northwest relocation markets.
-- Conversion tracking: Google Ads conversion API + GA4 cross-domain attribution, with FUB `registration_source` field as the downstream CRM attribution anchor.
+- Conversion tracking: Google Ads conversion API + GA4 cross-domain attribution, with CRM `registration_source` as the downstream attribution anchor.
 
 **Facebook Ads — social and video.**
 
-- Lookalike audiences built from email list (FUB contacts exported → Meta Custom Audience).
+- Lookalike audiences built from email list (CRM contacts exported → Meta Custom Audience).
 - Video ads sourced from YouTube content repurposed for Meta placement.
 - Marketplace ads for individual listing promotion.
 - Retargeting via Meta Pixel installed on all public pages (excluding /account and /admin). Pixel fires `PageView`, `ViewContent` (listing detail), `Lead` (registration, form submission), `InitiateCheckout` (tour request).
@@ -378,9 +378,9 @@ Allocate based on lead-cost-per-source vs. lead-value-per-source. Spend where CP
 | Signal | Tool |
 |---|---|
 | Paid click → site session | UTM parameters (locked convention in section 1.5) |
-| Site session → registration | GA4 funnel + FUB `registration_source` |
-| Registration → lead | FUB pipeline events |
-| Lead → close | FUB closed-transaction report |
+| Site session → registration | GA4 funnel + CRM `registration_source` |
+| Registration → lead | CRM pipeline events |
+| Lead → close | CRM closed-transaction report |
 | Google Ads conversion | Google Ads Conversion API (server-side, privacy-safe) |
 | Meta conversion | Meta Pixel + Conversions API (CAPI, server-side) |
 
@@ -415,7 +415,7 @@ The website does not stand alone. It is the destination endpoint of a three-chan
 | `utm_campaign` | `market-report`, `neighborhood-tour`, `listing-tour`, `relocation`, `home-valuation`, `bio-link`, `monthly-newsletter` |
 | `utm_content` | Specific content identifier: `{city-slug}`, `{mlsNumber}`, `YYYY-MM`, `{topic-slug}` |
 
-All UTM parameters pass through the site's session attribution logic into the FUB `registration_source` custom field [discovery 01: Lead Routing & FUB, `fub-identity-bridge.ts`]. Attribution persists via cookie through the first FUB event.
+All UTM parameters pass through the site's session attribution logic into the CRM `registration_source` field [discovery 01: Lead Routing]. Attribution persists via cookie through the first CRM event.
 
 **Content cadence (assumptions — Matt to confirm):**
 
@@ -439,25 +439,25 @@ The admin dashboard (section 7, batch 3) surfaces the following metrics. Every m
 
 - Pages per session — GA4
 - Avg session duration — GA4
-- Listing view rate (% of sessions that view at least 1 listing detail page) — GA4 + FUB Viewed Property events
+- Listing view rate (% of sessions that view at least 1 listing detail page) — GA4 + CRM Viewed Property events
 - Saved search rate (% of registered users who have at least 1 saved search) — Supabase `saved_searches` table
 - Valuation tool starts per month — GA4 form-start events
 - Valuation tool completions per month — GA4 form-submit events
 
 **Conversion:**
 
-- New registrations per month (source: Supabase auth.users + FUB Registration events)
-- New leads per month by type (buyer, seller, general) — FUB pipeline
-- Qualified leads per month (lead tier = warm/hot/very_hot in FUB) — FUB custom fields
-- Lead-to-consult rate — FUB pipeline stage tracking
-- Consult-to-agreement rate — FUB pipeline stage tracking
+- New registrations per month (source: Supabase auth.users + CRM Registration events)
+- New leads per month by type (buyer, seller, general) — CRM pipeline
+- Qualified leads per month (lead tier = warm/hot/very_hot in CRM) — CRM custom fields
+- Lead-to-consult rate — CRM pipeline stage tracking
+- Consult-to-agreement rate — CRM pipeline stage tracking
 
 **Revenue:**
 
-- Active deals in pipeline (source: FUB pipeline view)
-- Deals closed month-to-date — FUB closed transactions
-- GCI year-to-date — FUB closed transactions × commission rate
-- Projected GCI next 90 days (deals under agreement × estimated close × avg commission) — FUB
+- Active deals in pipeline (source: CRM pipeline view)
+- Deals closed month-to-date — CRM closed transactions
+- GCI year-to-date — CRM closed transactions × commission rate
+- Projected GCI next 90 days (deals under agreement × estimated close × avg commission) — CRM
 
 **Display ad revenue (AdSense):**
 
@@ -946,7 +946,7 @@ The following tables have direct consumer exposure value — they surface on one
 
 **RLS status: `qual: false`** — this means all inserts are silently blocked for anon and authenticated users. The table exists and the schema is defined, but no lead can reach it through the Supabase client SDK. Any form wired to a direct Supabase client insert call will silently fail — the user sees nothing, Matt gets nothing, and the lead is lost.
 
-**Fix (mandatory before any lead-capture form ships):** Route all listing inquiry inserts through a server-side API endpoint (`/api/inquiries`) that uses `SUPABASE_SERVICE_ROLE_KEY`, not the anon key. The endpoint must also fire the FUB webhook (source, email, name, listing_key) before responding with success. See section 3.6 for the full RLS policy map. [discovery 02 §RLS gaps]
+**Fix (mandatory before any lead-capture form ships):** Route all listing inquiry inserts through a server-side API endpoint (`/api/inquiries`) that uses `SUPABASE_SERVICE_ROLE_KEY`, not the anon key. The endpoint must also call `sendEvent()` in `lib/crm/send-event.ts` (source, email, name, listing_key) before responding with success. See section 3.6 for the full RLS policy map. [discovery 02 §RLS gaps]
 
 **Surfaces:** "Contact about listing" modal on listing detail page, "Request more info" form on neighborhood hub.
 
@@ -956,7 +956,7 @@ The following tables have direct consumer exposure value — they surface on one
 
 **Same issue as `listing_inquiries`.** `qual: false` on all policies. All inserts silently blocked.
 
-**Fix:** Same pattern as above — server-side API endpoint (`/api/valuations`) using service-role key, with FUB webhook fired on successful insert.
+**Fix:** Same pattern as above — server-side API endpoint (`/api/valuations`) using service-role key, with `sendEvent()` fired on successful insert.
 
 **Surfaces:** Home valuation tool form (`/sell`), floating valuation CTA on homepage and city landing pages. [discovery 02 §RLS gaps]
 
@@ -1402,7 +1402,7 @@ The `qual: false` RLS policy means these tables cannot receive any inserts from 
 1. The lead-capture form POSTs to a server-side API route (e.g., `/api/inquiries` or `/api/valuations`).
 2. The API route uses `SUPABASE_SERVICE_ROLE_KEY` (a secret environment variable, never exposed to the client) to construct a Supabase admin client.
 3. The admin client inserts the row into `listing_inquiries` or `valuation_requests`.
-4. Immediately after a successful insert, the API route fires the FUB webhook (`POST https://api.followupboss.com/v1/events`) with the lead data.
+4. Immediately after a successful insert, the API route calls `sendEvent()` in `lib/crm/send-event.ts` with the lead data.
 5. The API route returns `200 OK` to the form.
 6. If the Supabase insert fails, the API route returns `500` and logs the error. The form displays an error message to the user. Under no circumstances should a failed lead insert be silently swallowed.
 
@@ -1646,8 +1646,8 @@ Every URL pattern the site will serve. Hierarchy reflects the navigation tree an
 │   │   └── /new                                         [A]
 │   │   └── /[postSlug]                                   [A]
 │   ├── /market-reports                                   [A] Market report management
-│   ├── /leads                                            [A] Lead inbox (FUB mirror)
-│   ├── /analytics                                        [A] GA4 + FUB KPI dashboard
+│   ├── /leads                                            [A] Lead inbox (CRM)
+│   ├── /analytics                                        [A] GA4 + CRM KPI dashboard
 │   ├── /sync                                             [A] Sync health + manual triggers
 │   ├── /audit-log                                        [A] Admin action audit log
 │   ├── /settings                                         [A] Site settings + AdSense slot config
@@ -1997,4 +1997,4 @@ _Items 1, 2, 3, and 5 from batch 1 are now resolved or updated below. Item 4 (re
 
 4. **Median Bend sale price — OPEN.** The revenue math in section 1.3 uses ESTIMATE values for median sale price. This must be verified before any consumer-facing surface displays a market figure. Query: `SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY "ClosePrice") FROM listings WHERE "PropertyType" = 'A' AND "City" = 'Bend' AND "CloseDate" >= now() - interval '365 days'`. Unresolved until verified in a session with Supabase access.
 
-5. **FUB seller vs. buyer routing — RESOLVED.** Seller leads (valuation form submissions) → FUB stage "New Seller Lead" → notify Matt. Buyer leads (registration, inquiry, tour request) → FUB stage "New Buyer Lead" → on-rotation broker (Matt is default since no other brokers are in rotation at MVP). Tag schema: seller leads tagged `source:valuation-form`; buyer leads tagged `source:registration` or `source:tour-request` or `source:listing-inquiry`. Tag schema to be fully codified in section 10 (Integrations), batch 4. [chat 2026-04-25]
+5. **CRM seller vs. buyer routing — RESOLVED.** Seller leads (valuation form submissions) → CRM stage "New Seller Lead" → notify Matt. Buyer leads (registration, inquiry, tour request) → CRM stage "New Buyer Lead" → on-rotation broker (Matt is default since no other brokers are in rotation at MVP). Tag schema: seller leads tagged `source:valuation-form`; buyer leads tagged `source:registration` or `source:tour-request` or `source:listing-inquiry`. Tag schema to be fully codified in section 10 (Integrations), batch 4. [chat 2026-04-25]

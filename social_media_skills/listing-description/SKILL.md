@@ -22,6 +22,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Listing Description Producer
 
 **Scope:** Generates three text deliverables for a specific MLS listing: (1) Public Remarks
@@ -31,7 +36,7 @@ voice-validated, fair-housing-clean, and compliance-gated. Does not write direct
 MLS - the MLS write API is not available. Matt or the listing agent pastes approved copy
 into COCAR's Matrix web UI manually. See §4 Step 12 for exact paste instructions.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/listing-description/<mls-slug>/` (three text files + contact-sheet)
 

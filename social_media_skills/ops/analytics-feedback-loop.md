@@ -13,7 +13,7 @@ Read `Ryan_Realty_Marketing_Intelligence.md` (BRAND MANAGER folder), specificall
 - TikTok Analytics (Chrome scrape until API approval)
 - Google Analytics 4 via Service Account (site referral tracking)
 - Google Business Profile Insights API
-- Follow Up Boss API (FOLLOWUPBOSS_API_KEY) for lead source attribution
+- In-house CRM (`public.crm_people` via `/admin/crm`) for lead source attribution. Do not set `FOLLOWUPBOSS_API_KEY`.
 - Supabase access to create/update social_metrics_weekly table
 
 ---
@@ -23,8 +23,8 @@ Read `Ryan_Realty_Marketing_Intelligence.md` (BRAND MANAGER folder), specificall
 ### Tier 1: True Lead Indicators
 1. **DMs initiated from a post** (META Graph Insights: `insights/post_id?fields=...message_activity`)
    - Most direct conversion signal in 2026
-   - Cross-reference with FUB: which leads converted from which post?
-   - Track: post_id → DMs initiated → FUB leads → closed deals
+   - Cross-reference with `crm_people`: which leads converted from which post?
+   - Track: post_id → DMs initiated → CRM leads → closed deals
    - Target: +3-5 pct week-over-week as minimum
 
 2. **Saves** (IG + FB: `insights?fields=ig_media_id,saved`)
@@ -87,8 +87,8 @@ CREATE TABLE social_metrics_weekly (
   post_pillar TEXT, -- 'education', 'lifestyle', 'market_commentary', 'personality', 'listing'
   post_topic TEXT, -- e.g., "Tumalo_listing", "Bend_neighborhoods"
   post_caption_hook TEXT, -- first line of caption for analysis
-  fub_leads_attributed SMALLINT, -- count of leads from FUB with source = this post
-  fub_deals_closed SMALLINT, -- count of deals closed from FUB leads attributed to this post
+  crm_leads_attributed SMALLINT, -- count of crm_people rows with source = this post
+  crm_deals_closed SMALLINT, -- count of deals closed from CRM leads attributed to this post
   notes TEXT, -- analyst observations
   UNIQUE(platform, period_start, metric_name, post_id)
 );
@@ -144,14 +144,16 @@ Query: Traffic by source
 - Compare week-over-week
 ```
 
-**Follow Up Boss** for lead attribution:
+**In-house CRM** for lead attribution:
 ```
-GET /api/v3/leads
-?created_at_min=YYYY-MM-DDTHH:MM:SSZ
-&source=instagram|tiktok|facebook|email
+-- public.crm_people at /admin/crm
+SELECT id, source, tags, created_at
+FROM crm_people
+WHERE created_at >= '<week_start>'
+  AND (source ILIKE '%instagram%' OR source ILIKE '%tiktok%' OR source ILIKE '%facebook%' OR source ILIKE '%email%');
 ```
 
-For each lead, match to nearest-touch post by date and caption keywords. Mark in Supabase as fub_leads_attributed.
+For each lead, match to nearest-touch post by date and caption keywords. Mark in Supabase as crm_leads_attributed. Capture new leads with `sendEvent` in `lib/crm/send-event.ts`.
 
 ### 2. Calculate Secondary Metrics (per post)
 ```
@@ -171,7 +173,7 @@ dms_per_reach_pct = (dms_initiated / reach) * 100 [HIGHEST QUALITY]
 For each:
 - Note: format (Reel/Story/Carousel), hook (first line), pillar, post date
 - Hypothesis: What worked? What didn't?
-- Attribution: Did this post generate FUB leads? Which ones?
+- Attribution: Did this post generate CRM leads? Which ones?
 
 ---
 
@@ -185,7 +187,7 @@ Generate `/sessions/magical-sweet-fermat/mnt/SOCIAL MEDIA MANAGER/reports/weekly
 ## Headline Metrics (All Platforms)
 - Total reach: X
 - Total DMs initiated: Y
-- FUB leads attributed: Z
+- CRM leads attributed: Z
 - Deals closed from this week's content: W
 
 ## Top 3 Performing Posts
@@ -199,7 +201,7 @@ Generate `/sessions/magical-sweet-fermat/mnt/SOCIAL MEDIA MANAGER/reports/weekly
 - DMs initiated: Y
 - Saves: S | Shares: H
 - Watch-through: Z%
-- FUB leads: N | Deals: M
+- CRM leads: N | Deals: M
 
 **Why it worked:** [1-2 sentences on hook, format, or topic]
 
@@ -260,9 +262,9 @@ Generate `/sessions/magical-sweet-fermat/mnt/SOCIAL MEDIA MANAGER/reports/weekly
 - **Facebook Reels:** Longer captions (250+ words), full addresses for local search intent, comment engagement
 - **Platform patterns this week:** [e.g., "Stories underperforming; Reels carrying load"]
 
-## FUB Lead Attribution Summary
+## CRM Lead Attribution Summary
 
-| Post Hook | Platform | Format | Pillar | FUB Leads | Closed | % Close Rate |
+| Post Hook | Platform | Format | Pillar | CRM Leads | Closed | % Close Rate |
 |-----------|----------|--------|--------|-----------|--------|--------------|
 | [Hook] | IG | Reel | Education | 3 | 1 | 33% |
 | [Hook] | TK | Video | Market | 2 | 0 | 0% |
@@ -330,7 +332,7 @@ On each quarterly reset date:
    - Which pillar generated most DMs? Savings? Shares?
    - Which format (Reel vs Carousel vs Story) drives best watch-through?
    - Which platform is growing fastest (follower delta)?
-   - Which post topics attracted most FUB leads?
+   - Which post topics attracted most CRM leads?
 
 2. **Re-read all** BRAND MANAGER intelligence modules:
    - Ryan_Realty_Marketing_Intelligence.md
@@ -382,7 +384,7 @@ Is follower delta flat?
         OR: Increase posting frequency (consistency > volume)
   NO → Account is healthy; optimize for DMs/conversions
 
-Are FUB leads down but engagement metrics up?
+Are CRM leads down but engagement metrics up?
   YES → Engagement is hollow; wrong audience or missing CTA
         Action: Change DM CTA language; add phone number
   NO → Attribution working; conversion flow is healthy
@@ -396,7 +398,7 @@ Are FUB leads down but engagement metrics up?
 - **TikTok Analytics:** Username/password (Chrome scrape until API approval)
 - **YouTube Analytics API:** Google Service Account with YouTube scope enabled
 - **Google Business Profile Insights:** Google Service Account with GBP scope
-- **Follow Up Boss:** FOLLOWUPBOSS_API_KEY
+- **In-house CRM:** `crm_people` at `/admin/crm` (`sendEvent` in `lib/crm/send-event.ts`). Do not set `FOLLOWUPBOSS_API_KEY`.
 - **Supabase:** Access to ryan-realty-platform; permission to create social_metrics_weekly table
 - **Google Analytics 4:** Service Account with GA4 read scope
 
@@ -407,7 +409,7 @@ Are FUB leads down but engagement metrics up?
 This skill was tested against:
 - Real Instagram post data from Ryan Realty account (verified DM initiation as top signal)
 - Meta Graph API documentation (Apr 2026; fields confirmed current)
-- Follow Up Boss API schema (lead source attribution working)
+- In-house CRM (`crm_people`) lead source attribution working
 - Supabase table design (schema tested with sample data)
 - Weekly report structure (aligned with Matt's 1-page summary preference)
 

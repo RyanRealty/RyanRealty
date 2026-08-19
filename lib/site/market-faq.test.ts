@@ -94,7 +94,12 @@ describe('buildMarketFaq', () => {
     })
     const active = r.datasetVariables.find((v) => v.name === 'Active Listings')
     expect(active?.value).toBe(88)
-    expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toContain('88 active')
+    expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toBe(
+      'There are 88 active single-family listings in Redmond.',
+    )
+    expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.question).toContain(
+      'single-family',
+    )
   })
 
   it('prints the master HOA when a higher sub-neighborhood estimate is also on file', () => {

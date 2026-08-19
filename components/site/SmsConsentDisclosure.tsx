@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
  * scripts/crm-a2p-resubmit.mjs CONSENT_TEXT) and re-submitting the A2P campaign.
  *
  * The checkbox renders a named form input (`name="smsConsent"`, value "yes").
- * SMS is fail-closed: lib/crm/enroll.ts autoEnrollByFubId only leaves SMS
+ * SMS is fail-closed: lib/crm/enroll.ts autoEnrollByPersonId only leaves SMS
  * enabled when the action passes smsConsent:true; otherwise it suppresses the
  * sms channel. Email + voice are unaffected. Compliance language is exempt from
  * brand-voice styling per CLAUDE.md.

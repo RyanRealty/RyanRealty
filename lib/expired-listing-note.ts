@@ -1,8 +1,11 @@
 /**
  * Pure CRM-note formatter for expired-listing capture.
  * Numbers and dates come from the listings row + listing_history only.
- * Never invents a price cut.
+ * Never invents a price cut. Buyer-facing field dumps stay withheld
+ * via publishListingHistoryDescription (admin-crm plane of the same class).
  */
+
+import { publishListingHistoryDescription } from '@/lib/listing/publish-listing-history'
 
 export type ExpiredNoteListing = {
   ListingKey: string
@@ -170,7 +173,7 @@ function otherHistoryLines(rows: ExpiredNoteHistoryRow[], dropKeys: Set<string>)
     } else if (event && /new\s*listing/i.test(event)) {
       text = 'Listed'
     } else if (typeof row.description === 'string' && row.description.trim()) {
-      text = row.description.trim()
+      text = publishListingHistoryDescription(row.description)
     } else if (event) {
       text = event
     }

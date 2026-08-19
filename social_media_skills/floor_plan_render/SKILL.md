@@ -21,6 +21,11 @@ thumbnail_uri: out/proof/2026-05-17/exemplars/floor_plan_render/sample.png
 example_outputs: []
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Floor Plan Render
 
 **Scope:** Takes a raw floor plan image from MLS or a Matterport scan and produces a clean,
@@ -30,7 +35,7 @@ minimum) and web (1080 px minimum) resolution. This producer does NOT generate 3
 walkthroughs, or animated tours. It does NOT produce floor plans from scratch when no source
 material exists.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/floor_plan_render/<listing-slug>/`
 

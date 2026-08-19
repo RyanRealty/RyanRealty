@@ -1,0 +1,29 @@
+-- APPLIED to production 2026-08-18 (version 20260818214810 UTC) via the Supabase MCP;
+-- recorded post-hoc so migration history matches the database.
+--
+-- THE DEFECT (found by the stat-source gate's adversarial review). The live bodies of
+-- compute_and_cache_period_stats() and build_cache_methodology() had drifted from their
+-- on-disk migrations: the live compute routine read the writer-less
+-- app_config.mortgage_rate key (0.065, hand-typed 2026-04-14, never updated) with a 1.2%
+-- tax fallback, and was rewriting market_stats_cache.affordability_monthly_piti — 11,809
+-- rows, every 6h sweep — at 6.5% while the ingested series carried 6.67%.
+-- build_cache_methodology() stamped the same stale key into cache provenance JSONB.
+--
+-- THE FIX, applied by string surgery on pg_get_functiondef() so ONLY these lines changed
+-- (the on-disk migration bodies were stale, so re-applying them would have regressed the
+-- live behaviour):
+--   compute_and_cache_period_stats:
+--     - SELECT (value)::numeric INTO v_mortgage_rate FROM public.app_config
+--         WHERE key='mortgage_rate' LIMIT 1;
+--     + v_mortgage_rate := public.get_current_mortgage_rate() / 100.0;
+--     - v_default_tax_rate := COALESCE(v_default_tax_rate, 0.012);
+--     + v_default_tax_rate := COALESCE(v_default_tax_rate, 0.0057);  -- see 20260818052949
+--   build_cache_methodology:
+--     - 'mortgage_rate', (SELECT (value)::numeric FROM public.app_config ... )
+--     + 'mortgage_rate', round(public.get_current_mortgage_rate() / 100.0, 6)
+--
+-- Verified after apply: both live bodies use get_current_mortgage_rate(); neither reads
+-- the app_config mortgage key. Cache rows self-correct on the next 6h sweep — no forced
+-- recompute of 11,809 rows.
+--
+-- Remaining app_config macro reader: public.get_mortgage_rate() itself, zero callers.

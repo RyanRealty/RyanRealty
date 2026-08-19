@@ -6,6 +6,7 @@
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
+import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
 
 type Tile = Parameters<typeof splitRowsFromTiles>[0][number]
 
@@ -21,6 +22,8 @@ type Props = {
   centerLonLat?: [number, number]
   viewAllHref?: string
   viewAllLabel?: string
+  /** Place-filtered /homes-for-sale/{city}/… path. Regional inventory is withheld. */
+  browseHref?: string
   dualPaneSubtitle?: string
   mapOnlySubtitle?: string
 }
@@ -33,7 +36,8 @@ export function PlaceInventoryMap({
   totalActive,
   centerLonLat,
   viewAllHref,
-  viewAllLabel,
+  viewAllLabel = `See every ${placeName} home for sale`,
+  browseHref,
   dualPaneSubtitle,
   mapOnlySubtitle,
 }: Props) {
@@ -53,6 +57,7 @@ export function PlaceInventoryMap({
         centerLonLat={centerLonLat}
         viewAllHref={viewAllHref}
         viewAllLabel={viewAllLabel}
+        browseHref={browseHref}
         sectionId="homes"
       />
     )
@@ -65,6 +70,7 @@ export function PlaceInventoryMap({
       fitToFeatures
       showRegionMarkers={false}
       polygons={polygons}
+      browseHref={publishPlaceBrowseHref(browseHref ?? viewAllHref)}
       eyebrow={placeName}
       title={`Homes in\n${placeName}`}
       subtitle={

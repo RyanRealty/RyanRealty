@@ -1,6 +1,6 @@
 ---
 name: experience-rollout
-description: Run ONE quiet, serial revolution of the Ryan Realty Experience System rollout — migrate the next page family to the v3 archetype language, or fix a regression, or wait silently on Matt's review. Use when Matt says "continue the experience rollout", "/experience-rollout", or a /loop firing carries this protocol.
+description: KILLED 2026-08-11. Do not migrate families. Do not grind. If this skill loaded, STOP and point at loop-brief.
 ---
 
 # Experience Rollout — one revolution per invocation

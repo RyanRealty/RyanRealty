@@ -193,7 +193,7 @@ async function LpLeaderboard({ range }: { range: { startDate: string; endDate: s
       <section aria-label="Landing-page conversion leaderboard">
         <SectionHead>Landing-page conversion leaderboard ({range.startDate} to {range.endDate})</SectionHead>
         <p className="av2-note">
-          Ranked by identify rate (visitors who signed in or submitted a form). Identify rate is what tells you whether the LP works. Hot rate is the broker-action signal — sessions that crossed score 100 and fired a FUB task.
+          Ranked by identify rate (visitors who signed in or submitted a form). Identify rate is what tells you whether the LP works. Hot rate is the broker-action signal — sessions that crossed score 100 and fired a hot-lead task.
         </p>
         <DataList
           label="Landing-page conversion leaderboard"

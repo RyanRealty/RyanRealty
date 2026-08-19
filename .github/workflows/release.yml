@@ -23,7 +23,20 @@ jobs:
         with:
           node-version: "20"
 
+      # Same product/buildable idea as scripts/vercel-ignore-build.mjs.
+      # Docs / skills / rules / plans / handoffs-only must not mint a tag.
+      - name: Classify product vs docs-only push
+        id: product
+        env:
+          PRODUCT_DIFF_PREV: ${{ github.event.before }}
+        run: node scripts/should-create-release.mjs
+
+      - name: Skip docs-only GitHub Release
+        if: steps.product.outputs.should_release != 'true'
+        run: echo "Skipping GitHub Release — push has no product/buildable files"
+
       - name: Determine version bump
+        if: steps.product.outputs.should_release == 'true'
         id: version
         run: |
           # Get commits since last tag
@@ -63,6 +76,7 @@ jobs:
           echo "last_tag=$LAST_TAG" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
+        if: steps.product.outputs.should_release == 'true'
         id: changelog
         run: |
           LAST_TAG="${{ steps.version.outputs.last_tag }}"
@@ -106,6 +120,7 @@ jobs:
       # 2026). Release notes live on the GitHub Release; vercel.json
       # ignoreCommand also skips docs/changelog-only diffs as a belt-and-suspenders.
       - name: Create tag and release
+        if: steps.product.outputs.should_release == 'true'
         run: |
           NEW_VERSION="${{ steps.version.outputs.new_version }}"
           git tag "v${NEW_VERSION}"

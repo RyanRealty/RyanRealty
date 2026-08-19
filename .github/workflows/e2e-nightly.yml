@@ -17,15 +17,25 @@ on:
         required: false
         default: "0"
 
+# Failure-issue step needs issues:write — without it create-issue 403s
+# (runs 32016873938 / 32122527433: "Resource not accessible by integration").
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   e2e-nightly:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Full inventory is ~289 routes × 2 tests + admin axe (~729 tests listed).
+    # 30 minutes could not finish a real crawl; 180 covers features + crawl +
+    # CI retries=2 against production.
+    timeout-minutes: 180
 
     env:
       SITE_URL: ${{ github.event.inputs.site_url || vars.SITE_URL || 'https://ryan-realty.com' }}
       # 0 means no cap — all routes in ROUTE_INVENTORY.md
       CRAWL_LIMIT: ${{ github.event.inputs.crawl_limit || '0' }}
+      CI: true
 
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +55,10 @@ jobs:
       - name: Run feature specs against production
         env:
           BASE_URL: ${{ env.SITE_URL }}
-        run: npx playwright test e2e/features/ --project=chromium --reporter=github
+        # Directory arg (exists on disk) — Playwright runs that folder.
+        # Do not pass --reporter=github: that drops the HTML reporter from
+        # playwright.config.ts, which is why artifact uploads were empty.
+        run: npx playwright test features --project=chromium
         continue-on-error: true
         id: e2e_features
 
@@ -53,7 +66,10 @@ jobs:
         env:
           BASE_URL: ${{ env.SITE_URL }}
           CRAWL_LIMIT: ${{ env.CRAWL_LIMIT }}
-        run: npx playwright test e2e/full-crawl.spec.ts --project=chromium --reporter=github
+        # testDir is ./e2e. `e2e/full-crawl.spec.ts` is a regex against
+        # testDir-relative paths, so it never matched `full-crawl.spec.ts`
+        # (runs 32016873938 / 32122527433: "No tests found").
+        run: npx playwright test full-crawl --project=chromium
         continue-on-error: true
         id: e2e_crawl
 
@@ -65,6 +81,8 @@ jobs:
           path: |
             e2e/test-results/
             e2e/html-report/
+            test-results/
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Create or update issue on failure

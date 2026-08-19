@@ -23,6 +23,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # google-ads-copy
 
 **Scope:** Produces a complete Google Ads copy bundle covering Responsive Search Ads
@@ -34,7 +39,7 @@ explicitly triggers the ops producer. This producer writes copy only.
 Does NOT upload assets to Google Ads (that is `ops-google-ads`). Does NOT run paid
 reporting or bid analysis. Does NOT produce Meta ad copy (that is `facebook-lead-gen-ad`).
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `out/google-ads-copy/<campaign-slug>/ads-bundle.txt` + `contact-sheet.html`
 

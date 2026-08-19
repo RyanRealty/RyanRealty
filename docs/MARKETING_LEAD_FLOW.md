@@ -1,10 +1,10 @@
 # Marketing lead flow — Ryan Realty
 
-**Purpose:** Describe **every path** by which a prospect becomes a **known lead** in Follow Up Boss (FUB), what fires to **Meta** (pixel + Conversions API), **GA4**, and **Supabase**, and how weekly automation **observes** pipeline health. This doc is the **lead-centric** companion to **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** (full seller-growth stack).
+**Purpose:** Describe **every path** by which a prospect becomes a **known lead** in the in-house CRM (`public.crm_people`), what fires to **Meta** (pixel + Conversions API), **GA4**, and other **Supabase** tables, and how weekly automation **observes** pipeline health. This doc is the **lead-centric** companion to **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** (full seller-growth stack).
 
-**For AI agents:** Load **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** for architecture, crons, env matrices, and optimization loops. Load **this file** when the question is specifically **how a lead is created**, **what runs on submit**, **deduplication**, or **debugging missing FUB contacts**.
+**For AI agents:** Load **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** for architecture, crons, env matrices, and optimization loops. Load **this file** when the question is specifically **how a lead is created**, **what runs on submit**, **deduplication**, or **debugging a missing `crm_people` row**.
 
-**Session context (2026-05-11):** Seller automation was advanced without CSV audience workflows or manual launch checklists: production **`marketing-optimization-report`** and **`fub-outreach-execution`** crons were triggered successfully; FUB contact snapshots use a **live People API fallback** when `fub_contacts_cache` / `fub_contacts` are absent; **`scripts/build-fb-ad.mjs`** was repaired for the current **`market_stats_cache`** schema; paid campaign creation via **`scripts/create-fb-ad.mjs`** remains gated on **Meta Marketing API token permissions** (`ads_management` + ad account access).
+**Live contract (2026-08-18):** Capture is **`sendEvent()`** in **`lib/crm/send-event.ts`** → **`ensureNativeLead()`**. Follow Up Boss is decommissioned. There is no People API fallback that creates a live vendor contact. Unused `FOLLOWUPBOSS_*` / `NEXT_PUBLIC_FUB_*` names were removed from Vercel (2026-08-18).
 
 ---
 
@@ -15,7 +15,7 @@
 3. [Path A — Meta Lead Ads (native form)](#3-path-a--meta-lead-ads-native-form)
 4. [Path B — Website contact form](#4-path-b--website-contact-form)
 5. [Path C — Home valuation request](#5-path-c--home-valuation-request)
-6. [Path D — Exit intent and valuation CTA (FUB events)](#6-path-d--exit-intent-and-valuation-cta-fub-events)
+6. [Path D — Exit intent and valuation CTA](#6-path-d--exit-intent-and-valuation-cta)
 7. [Path E — Lead landing pages](#7-path-e--lead-landing-pages)
 8. [Path F — Page CTAs](#8-path-f--page-ctas)
 9. [Identity stitching (before and after submit)](#9-identity-stitching-before-and-after-submit)
@@ -32,8 +32,8 @@
 
 | Term | Meaning in this repo |
 |------|----------------------|
-| **Lead** | A identifiable person (email and/or phone) captured with intent (inquiry, valuation, Lead Ad submit, etc.). Operational truth is **FUB Person** + timeline events; Supabase rows are **analytics** unless stated otherwise. |
-| **Conversion event fan-out** | Same user action triggers **FUB** (`sendEvent` or REST), optional **Supabase** insert, **Meta CAPI** (+ browser pixel with matching `event_id`), and **GA4** (via gtag / app helpers) where implemented. Not every path implements every sink. |
+| **Lead** | An identifiable person (email and/or phone) captured with intent. Operational truth is a **`crm_people`** row + timeline / tags / sequence enrollment. Other Supabase tables (`valuation_requests`, `processed_meta_leads`) are **analytics or dedup**, not the CRM record. |
+| **Conversion event fan-out** | Same user action triggers **`sendEvent`** (CRM), optional extra **Supabase** insert, **Meta CAPI** (+ browser pixel with matching `event_id`), and **GA4** where implemented. Not every path implements every sink. |
 | **`event_id`** | Stable id shared between **browser** `fbq('track','Lead',..., { eventID })` and **server** CAPI payload so Meta **deduplicates** one physical conversion. |
 
 ---
@@ -59,14 +59,14 @@ flowchart TB
     end
 
     subgraph DEST["Destinations"]
-        FUB["Follow Up Boss People plus events"]
+        CRM["crm_people via sendEvent"]
         SBV["Supabase valuation_requests"]
         METAUP["Meta CAPI plus Ads"]
         GA4["GA4"]
     end
 
     LA --> WH
-    WH --> FUB
+    WH --> CRM
 
     CLK --> CF
     CLK --> HV
@@ -74,19 +74,19 @@ flowchart TB
     CLK --> EX
     CLK --> PC
 
-    CF --> FUB
+    CF --> CRM
     CF --> CAPI
     CF --> PIX
     CAPI --> METAUP
 
     HV --> SBV
-    HV --> FUB
+    HV --> CRM
     HV --> CAPI
     HV --> PIX
 
-    LI --> FUB
-    EX --> FUB
-    PC --> FUB
+    LI --> CRM
+    EX --> CRM
+    PC --> CRM
 
     PIX --> METAUP
     SITE -. gtag PageView Lead etc .-> GA4
@@ -103,10 +103,10 @@ flowchart TB
 1. Meta `POST`s to **`/api/meta/lead-webhook`** with payload entries for field **`leadgen`**.
 2. Handler verifies **`X-Hub-Signature-256`** using **`META_APP_SECRET`** (if unset, verification is skipped with a warning — **fix in production**).
 3. For each lead id, app **`GET`**s Graph **`/{lead-id}`** with **`META_PAGE_ACCESS_TOKEN`** / **`META_PAGE_TOKEN`** to read **`field_data`**, campaign/ad set names, etc.
-4. Parsed fields map to **`ParsedLead`** (first name, last name, email, phone, optional intent).
-5. **`createFubContact`** **`POST`**s **`https://api.followupboss.com/v1/people`** with source like **`Facebook Lead Ad — {campaign}`**, tags (e.g. **`FB Lead Ad`**), optional **`FUB_PIPELINE_ID`** stage assignment, then adds a **note** with campaign context.
+4. Dedup insert into **`processed_meta_leads`** (unique `leadgen_id`) so Meta retries do not create a second person.
+5. Parsed fields map to name / email / phone / intent. **`sendEvent`** creates or reuses **`crm_people`** (source like **`Facebook Lead Ad — {campaign}`**). **`enrichNativeLead`** writes tags, campaign custom fields, and an origin note. Hot leads get **`createNativeTask`** due in 5 minutes. Buyer leads enroll immediately (email-only until SMS consent exists).
 
-**Important:** This path **does not** go through Next.js contact or valuation server actions. There is **no automatic Supabase `valuation_requests` row** from Lead Ads unless something else records it. **Meta CAPI Lead** for this path is **not** wired in the webhook handler in the same way as site forms (optimization relies on Meta’s native lead + offline conversions patterns elsewhere).
+**Important:** This path **does not** go through Next.js contact or valuation server actions. There is **no automatic Supabase `valuation_requests` row** from Lead Ads unless something else records it. **Meta CAPI Lead** for this path is **not** wired in the webhook the same way as site forms (optimization relies on Meta’s native lead + offline conversions patterns elsewhere).
 
 **Canonical implementation:** `app/api/meta/lead-webhook/route.ts`.
 
@@ -118,15 +118,16 @@ flowchart TB
 
 **Order of operations**
 
-1. **`sendEvent`** (`lib/followupboss`) with type **`General Inquiry`**, person name/email/phone, **`message`** prefixed with **`[inquiryType]`**.
+1. **`sendEvent`** (`lib/crm/send-event`) with type **`General Inquiry`**, person name/email/phone, **`message`** prefixed with **`[inquiryType]`**. If capture fails, a direct **`ensureNativeLead`** fallback still writes the person.
 2. **`sendContactNotification`** (email alert — non-blocking on failure).
-3. **`generateEventId()`** → server **`POST /api/meta-capi`** with **`eventName: 'Lead'`**, hashed PII handled inside route, **`customData.value`** tiered:
+3. **`canonicallyTagLead`** + enrollment (after() so the request can return).
+4. **`generateEventId()`** → server **`POST /api/meta-capi`** with **`eventName: 'Lead'`**, hashed PII handled inside route, **`customData.value`** tiered:
    - **$300** if inquiry type suggests property/listing
    - **$500** if seller/valuation wording
    - **$200** otherwise (general)
-4. Client **`ContactForm.tsx`** on success: **`fbq('track','Lead', { content_name: inquiryType }, { eventID: eventId })`** + **`trackEvent('generate_lead', ...)`**.
+5. Client **`ContactForm.tsx`** on success: **`fbq('track','Lead', { content_name: inquiryType }, { eventID: eventId })`** + **`trackEvent('generate_lead', ...)`**.
 
-**Dedup:** **`eventId`** links CAPI and pixel **`Lead`**.
+**Dedup:** **`eventId`** links CAPI and pixel **`Lead`**. CRM dedup is email-first inside **`ensureNativeLead`**.
 
 ---
 
@@ -146,13 +147,13 @@ flowchart TB
 
 ---
 
-## 6. Path D — Exit intent and valuation CTA (FUB events)
+## 6. Path D — Exit intent and valuation CTA
 
-These fire **FUB events only** (no CAPI block in the snippets reviewed — treat as **mid-funnel signals**, not full Lead CAPI unless extended later).
+These fire **CRM capture only** (no CAPI block in the helpers — treat as **mid-funnel signals**, not full Lead CAPI unless extended later).
 
-| Action | Server helper | FUB event type | Notes |
-|--------|---------------|----------------|-------|
-| Valuation CTA click tracking | **`trackHomeValuationCta`** (`app/actions/lead-capture.ts`) | **`Seller Inquiry`** | Requires session email or **`fub_cid`** cookie person |
+| Action | Server helper | Event type | Notes |
+|--------|---------------|------------|-------|
+| Valuation CTA click tracking | **`trackHomeValuationCta`** (`app/actions/lead-capture.ts`) | **`Seller Inquiry`** | Needs a known email or identity-bridge person |
 | Exit intent popup submit | **`submitExitIntentLead`** | **`Registration`** | Partner referral side effects when campaign hints lender/relocation |
 
 ---
@@ -161,7 +162,7 @@ These fire **FUB events only** (no CAPI block in the snippets reviewed — treat
 
 **Entry:** **`submitLeadLandingForm`** in **`app/actions/lead-landing.ts`**.
 
-**Behavior:** Builds **`Seller Inquiry`** or **`General Inquiry`** from **`audience`** + intent fields; **`sendEvent`** to FUB with campaign block (**`landing_page`**); **`sendContactNotification`**. **No CAPI** in this file path — add here if landing traffic should feed Meta optimization the same way as `/contact`.
+**Behavior:** Builds **`Seller Inquiry`** or **`General Inquiry`** from **`audience`** + intent fields; **`sendEvent`** with campaign block (**`landing_page`**); **`sendContactNotification`**. **No CAPI** in this file path — add here if landing traffic should feed Meta optimization the same way as `/contact`.
 
 ---
 
@@ -175,9 +176,16 @@ These fire **FUB events only** (no CAPI block in the snippets reviewed — treat
 
 ## 9. Identity stitching (before and after submit)
 
-Before forms resolve to a stable FUB person, the stack may set **`fub_cid`** (HTTP-only cookie) via **`FubIdentityBridge`** / **`identifyFubFromEmailClick`**, or associate Google sign-in with **`trackSignedInUser`**. After **`fub_cid`** exists, **`getFubPersonIdFromCookie`** lets server actions attach events to the **same person id**.
+Anonymous browsers carry **`rr_vid`** (middleware). After identify, **`rr_pid`** (httpOnly, 90 days) points at **`crm_people.id`**.
 
-**Deep dive:** **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** §3 and **`app/actions/fub-identity-bridge.ts`**.
+**`PersonIdentityBridge`** (`components/PersonIdentityBridge.tsx`):
+
+- **`?_pid=<crm_people.id>`** — preferred. Stamped on post-cutover outbound mail.
+- **`?_fuid=<legacy id>`** — still honored for already-sent emails; resolved via **`fub_legacy_id`**, then the same native cookie.
+
+Google / Facebook sign-in runs **`trackSignedInUser`** + **`stitchVisitorIdentity`** (`rr_vid` → person / email / auth user). After identify, later server actions attach to that person.
+
+**Deep dive:** **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`** §3 and **`app/actions/identity-bridge.ts`**.
 
 ---
 
@@ -197,18 +205,20 @@ Before forms resolve to a stable FUB person, the stack may set **`fub_cid`** (HT
 
 ## 11. Attribution and dashboard counting
 
-**Seller funnel Facebook attribution** (for **`sellerVisitsFromFacebook30d`** and downstream ratios in **`getDashboardMarketingData`**) counts **`visits`** rows whose **`path`** matches **`utm_source=facebook`**, **`fbclid=`**, or known **Facebook or Instagram or Messenger referrers** (see `app/actions/dashboard.ts` around seller Facebook filters).
+**Seller funnel Facebook attribution** (for **`sellerVisitsFromFacebook30d`** and downstream ratios in **`getDashboardMarketingData`**) counts visit rows whose **`path`** matches **`utm_source=facebook`**, **`fbclid=`**, or known **Facebook or Instagram or Messenger referrers** (see `app/actions/dashboard.ts` around seller Facebook filters).
 
-**GA4:** Pulled into the same dashboard when service account + property access are valid; used for optimization scoring and weekly packets — not for creating FUB rows directly.
+**CRM Facebook capture** on the dashboard is **`crm_people` via `getLeadIntake`** (social channel), not a vendor People API. The packet field is still named `fub` / `facebookContacts30d` in JSON for backward compatibility — the numbers are native.
+
+**GA4:** Pulled into the same dashboard when service account + property access are valid; used for optimization scoring and weekly packets — not for creating CRM rows.
 
 ---
 
 ## 12. Where data lands (quick matrix)
 
-| Path | FUB | Supabase | Meta CAPI Lead | Pixel Lead | GA4 |
-|------|-----|----------|----------------|------------|-----|
-| Lead Ad webhook | Yes People plus Note | No default | Not same as site Lead wiring | N/A on site | Via Meta or campaigns |
-| Contact form | Yes | No dedicated row in snippet | Yes + value tier | Yes dedup | Via tracking helpers |
+| Path | crm_people | Supabase extra | Meta CAPI Lead | Pixel Lead | GA4 |
+|------|------------|----------------|----------------|------------|-----|
+| Lead Ad webhook | Yes + note + task | `processed_meta_leads` | Not same as site Lead wiring | N/A on site | Measurement Protocol `generate_lead` |
+| Contact form | Yes | No dedicated row | Yes + value tier | Yes dedup | Via tracking helpers |
 | Valuation | Yes | **`valuation_requests`** | Yes $500 | Yes dedup | Via tracking helpers |
 | Exit intent / valuation CTA | Yes | No | No in helper | — | — |
 | Lead landing | Yes | No in helper | No | — | — |
@@ -218,9 +228,9 @@ Before forms resolve to a stable FUB person, the stack may set **`fub_cid`** (HT
 
 ## 13. Environment variables by path
 
-**Lead Ad webhook:** **`META_APP_SECRET`**, **`META_PAGE_ACCESS_TOKEN`** / **`META_PAGE_TOKEN`**, **`FUB_API_KEY`** / **`FOLLOWUPBOSS_API_KEY`**, optional **`FUB_PIPELINE_ID`**, optional **`FOLLOWUPBOSS_SYSTEM`** headers.
+**Lead Ad webhook:** **`META_APP_SECRET`**, **`META_PAGE_ACCESS_TOKEN`** / **`META_PAGE_TOKEN`**. No CRM vendor API key.
 
-**Site forms + CAPI:** **`NEXT_PUBLIC_SITE_URL`**, **`META_CAPI_ACCESS_TOKEN`**, pixel id on client (**`NEXT_PUBLIC_META_PIXEL_ID`**), Supabase keys for **`valuation_requests`**.
+**Site forms + CAPI:** **`NEXT_PUBLIC_SITE_URL`**, **`META_CAPI_ACCESS_TOKEN`**, pixel id on client (**`NEXT_PUBLIC_META_PIXEL_ID`**), Supabase keys for **`valuation_requests`** and **`crm_people`**.
 
 **Weekly observability:** **`CRON_SECRET`**, dashboard GA keys — see pipeline doc §9.
 
@@ -230,12 +240,12 @@ Before forms resolve to a stable FUB person, the stack may set **`fub_cid`** (HT
 
 | Symptom | Likely cause | Where to look |
 |---------|----------------|---------------|
-| Lead Ad submits but no FUB person | Webhook URL or **`leadgen`** subscription wrong; **`META_APP_SECRET`** mismatch; Graph token cannot read lead | Meta App Webhooks; logs **`[lead-webhook]`** |
+| Lead Ad submits but no `crm_people` row | Webhook URL or **`leadgen`** subscription wrong; **`META_APP_SECRET`** mismatch; Graph token cannot read lead; no email or phone (no dedup key) | Meta App Webhooks; logs **`[lead-webhook]`** |
 | Duplicate Meta conversions | Missing or mismatched **`event_id`** between **`fbq`** and CAPI | Client form + **`/api/meta-capi`** payload |
 | CAPI always weak match | No **`_fbp`** / **`fbc`** on server request; user blocking cookies | **`meta-capi` route** cookie reads |
-| Valuation in DB but not FUB | **`sendEvent`** failed after insert | **`[valuation] FUB send failed`** logs |
-| Dashboard Facebook visits zero but ads run | **`visits`** path not storing **`fbclid`** or UTM; referrer not classified | **`track-visit`** / landing URLs |
-| Outreach cron zero targets | Legacy Supabase mirror missing | Uses **`fetchMyLeadsFromFubLive`** fallback — see **`lib/followupboss.ts`** |
+| Valuation in DB but no CRM person | **`sendEvent`** failed and **`ensureNativeLead`** fallback also failed | **`[valuation]`** logs |
+| Dashboard Facebook visits zero but ads run | Visit path not storing **`fbclid`** or UTM; referrer not classified | Visit tracker / landing URLs |
+| Sequence never starts | Tags missing `audience:*`; pre-epoch contact; outreach-list source | **`lib/crm/enroll.ts`**, **`/api/cron/crm-auto-enroll`** |
 
 ---
 
@@ -248,10 +258,11 @@ Before forms resolve to a stable FUB person, the stack may set **`fub_cid`** (HT
 | Contact lead | `app/contact/actions.ts`, `app/contact/ContactForm.tsx` |
 | Valuation lead | `app/home-valuation/actions.ts`, `app/home-valuation/ValuationForm.tsx` |
 | Mid-funnel capture | `app/actions/lead-capture.ts`, `app/actions/lead-landing.ts` |
-| FUB SDK-style sends | `lib/followupboss.ts` (`sendEvent`, `fetchMyLeadsFromFubLive`, …) |
-| Visit logging | `app/actions/track-visit.ts` |
+| Native capture | `lib/crm/send-event.ts` (`sendEvent` → `ensureNativeLead`) |
+| Visit / identity | `components/PersonIdentityBridge.tsx`, `app/actions/identity-bridge.ts`, `lib/visitor-backfill.ts` |
 | Marketing dashboard | `app/actions/dashboard.ts` |
-| Weekly packets | `app/api/cron/marketing-optimization-report/route.ts`, `app/api/cron/fub-outreach-execution/route.ts` |
+| Weekly packet | `app/api/cron/marketing-optimization-report/route.ts` |
+| Sequence + enroll | `app/api/cron/crm-auto-enroll/route.ts`, `app/api/cron/crm-sequence-engine/route.ts` |
 | Paid spec automation | `scripts/build-fb-ad.mjs`, `scripts/create-fb-ad.mjs` |
 
-**Also read:** **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`**, **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** (campaign ops), **`.cursor/rules/marketing-advertising-workflow.mdc`**, **`.cursor/skills/facebook-seller-growth/SKILL.md`**, **`docs/marketing/facebook-seller-growth-LEARNINGS.md`**.
+**Also read:** **`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`**, **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** (campaign ops), **`docs/CRM_INTEGRATION.md`**, **`.cursor/rules/marketing-advertising-workflow.mdc`**, **`.cursor/skills/facebook-seller-growth/SKILL.md`**, **`docs/marketing/facebook-seller-growth-LEARNINGS.md`**.

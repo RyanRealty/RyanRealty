@@ -131,10 +131,91 @@ export default async function SearchPage({
     return renderGolfLanding(city)
   }
 
+  const effectiveStatusFilter = (filterOpts.statusFilter && ['active', 'active_and_pending', 'pending', 'closed', 'all'].includes(filterOpts.statusFilter))
+    ? filterOpts.statusFilter
+    : filterOpts.includeClosed
+      ? 'all'
+      : 'active'
+
+  const placeName = subdivision && decodedSubdivision ? getSubdivisionDisplayName(decodedSubdivision) : (city ?? 'Central Oregon')
+  const displayName = preset ? `${placeName} ${preset.shortLabel}` : (presetLabel ?? placeName)
+  const searchPagePath = buildCanonicalPath(city ?? null, decodedSubdivision ?? null, subdivision ?? null, resolved.presetSlug)
+
+  const searchBreadcrumbItems: { label: string; href?: string }[] = [
+    { label: 'Home', href: '/' },
+    { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
+  ]
+  const cityLabel = city ?? (slug[0] ? decodeURIComponent(slug[0]) : '')
+  // Visible breadcrumb hrefs are RELATIVE so they use the client-side router and
+  // are domain-agnostic. (Prefixing siteUrl made every city/subdivision crumb an
+  // absolute URL that, when NEXT_PUBLIC_SITE_URL points at the vercel preview host,
+  // navigated users off production onto the staging domain.) Absolute URLs live in
+  // the JSON-LD BreadcrumbList (SearchPageJsonLd), where schema.org requires them.
+  if (city) searchBreadcrumbItems.push({ label: cityLabel, href: subdivision || resolved.presetSlug ? homesForSalePath(city) : undefined })
+  if (subdivision && decodedSubdivision) searchBreadcrumbItems.push({ label: getSubdivisionDisplayName(decodedSubdivision), href: resolved.presetSlug ? homesForSalePath(city!, decodedSubdivision) : undefined })
+  if (preset) searchBreadcrumbItems.push({ label: preset.shortLabel })
+  if (!city && presetLabel) searchBreadcrumbItems.push({ label: presetLabel })
+
+  const isMapSplitView = (sp.view === 'map' || sp.view === 'split') && (city || hasFilterOnly)
+
+  // Map/split seeds from MapSplitView's own viewport fetch. Do not wait on the
+  // 12s grid listings RPC (or grid-only JSON-LD/banner reads) first.
+  if (isMapSplitView) {
+    const [priceChangeKeys, session] = await Promise.all([
+      IS_PRODUCTION_BUILD
+        ? Promise.resolve(new Set<string>())
+        : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
+      withTimeout(getSession(), null, 600),
+    ])
+    const [savedKeys, likedKeys, prefs] =
+      session?.user
+        ? await Promise.all([
+            withTimeout(getSavedListingKeys(), [], 600),
+            withTimeout(getLikedListingKeys(), [], 600),
+            withTimeout(getBuyingPreferences(), null, 600),
+          ])
+        : ([[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof getBuyingPreferences>>])
+    const gridViewHref = (() => {
+      const params = new URLSearchParams(
+        Object.entries(sp).filter(
+          ([k, v]) => typeof v === 'string' && v !== '' && k !== 'view' && k !== 'poly'
+        ) as [string, string][]
+      )
+      const q = params.toString()
+      return q ? `${searchPagePath}?${q}` : searchPagePath
+    })()
+    return renderMapSplitView({
+      sp,
+      slug,
+      resolved,
+      city,
+      decodedSubdivision,
+      neighborhood,
+      displayName,
+      searchPagePath,
+      searchBreadcrumbItems,
+      savedKeys,
+      likedKeys,
+      priceChangeKeys,
+      session,
+      prefs,
+      effectiveStatusFilter,
+      initialPolygon,
+      presetChips,
+      perPageParam,
+      gridViewCta: (
+        <Button asChild variant="secondary" size="sm" className="shrink-0">
+          <Link href={gridViewHref} aria-label="Switch back to the grid view">
+            Grid view
+          </Link>
+        </Button>
+      ),
+    })
+  }
+
   // Fetch the independent data the clean results page renders in one parallel batch:
-  //   listings (grid + pagination), market stats (header median list price),
-  //   recent price-change keys (map view), session (save-search + map view),
-  //   resort entity keys (JSON-LD + breadcrumb resort flag).
+  //   listings (grid + pagination), recent price-change keys, session
+  //   (save-search), resort entity keys (JSON-LD + breadcrumb resort flag).
   const [listingsResult, priceChangeKeys, session, resortEntityKeys] = await Promise.all([
     // Route through getListingsWithAdvanced: it serves the common city + base-
     // filter case from the slim, resilient-cached listing_tile_mv (sub-second,
@@ -167,10 +248,9 @@ export default async function SearchPage({
     // scope returning degraded is never legitimate — a real city always has
     // inventory — so throw to serve the last good ISR copy instead of caching
     // "no homes in <city>". But a subdivision / neighborhood / preset / filtered
-    // scope can LEGITIMATELY be empty, and a hard throw there just renders a BLANK
-    // error page (the /homes-for-sale/bend/mountain-view bug: a Bend neighborhood
-    // with no exact subdivision-name match). For those, fall through to the
-    // friendly empty state below instead of blanking the page.
+    // scope can LEGITIMATELY be empty, and a hard throw there used to render a
+    // BLANK error page. For those, pass degraded into ListingsResults (honest
+    // retry) instead of blanking the page or painting "No homes match".
     const bareCityScope =
       !!city && !subdivision &&
       filterOpts.minPrice == null && filterOpts.maxPrice == null &&
@@ -183,18 +263,10 @@ export default async function SearchPage({
       )
     }
     console.warn(
-      `[search] listings degraded for a non-bare-city scope — rendering the empty state instead of blanking the page (city=${city ?? 'none'} subdivision=${subdivision ?? 'none'} preset=${resolved.presetSlug ?? 'none'})`,
+      `[search] listings degraded for a non-bare-city scope — rendering the retry state instead of inventing an empty market (city=${city ?? 'none'} subdivision=${subdivision ?? 'none'} preset=${resolved.presetSlug ?? 'none'})`,
     )
   }
   const { listings, totalCount } = listingsResult
-  const effectiveStatusFilter = (filterOpts.statusFilter && ['active', 'active_and_pending', 'pending', 'closed', 'all'].includes(filterOpts.statusFilter))
-    ? filterOpts.statusFilter
-    : filterOpts.includeClosed
-      ? 'all'
-      : 'active'
-
-  const placeName = subdivision && decodedSubdivision ? getSubdivisionDisplayName(decodedSubdivision) : (city ?? 'Central Oregon')
-  const displayName = preset ? `${placeName} ${preset.shortLabel}` : (presetLabel ?? placeName)
   const cityContent = city ? getCityContent(city) : null
   const subdivisionTabContent =
     subdivision && city ? await withTimeout(getSubdivisionTabContent(city, decodedSubdivision!), null, 1200) : null
@@ -205,76 +277,11 @@ export default async function SearchPage({
   const bannerUrl = await resolvePlaceBannerUrl({ city, subdivision, decodedSubdivision })
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const searchPagePath = buildCanonicalPath(city ?? null, decodedSubdivision ?? null, subdivision ?? null, resolved.presetSlug)
-  const [savedKeys, likedKeys, prefs] =
-    session?.user
-      ? await Promise.all([
-          withTimeout(getSavedListingKeys(), [], 600),
-          withTimeout(getLikedListingKeys(), [], 600),
-          withTimeout(getBuyingPreferences(), null, 600),
-        ])
-      : ([[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof getBuyingPreferences>>])
-
-  const searchBreadcrumbItems: { label: string; href?: string }[] = [
-    { label: 'Home', href: '/' },
-    { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
-  ]
-  const cityLabel = city ?? (slug[0] ? decodeURIComponent(slug[0]) : '')
-  // Visible breadcrumb hrefs are RELATIVE so they use the client-side router and
-  // are domain-agnostic. (Prefixing siteUrl made every city/subdivision crumb an
-  // absolute URL that, when NEXT_PUBLIC_SITE_URL points at the vercel preview host,
-  // navigated users off production onto the staging domain.) Absolute URLs live in
-  // the JSON-LD BreadcrumbList (SearchPageJsonLd), where schema.org requires them.
-  if (city) searchBreadcrumbItems.push({ label: cityLabel, href: subdivision || resolved.presetSlug ? homesForSalePath(city) : undefined })
-  if (subdivision && decodedSubdivision) searchBreadcrumbItems.push({ label: getSubdivisionDisplayName(decodedSubdivision), href: resolved.presetSlug ? homesForSalePath(city!, decodedSubdivision) : undefined })
-  if (preset) searchBreadcrumbItems.push({ label: preset.shortLabel })
-  if (!city && presetLabel) searchBreadcrumbItems.push({ label: presetLabel })
-
-  // Map split view: bounds-driven, Bend default; on city/community pages center on that place and scope search
-  if ((sp.view === 'map' || sp.view === 'split') && (city || hasFilterOnly)) {
-    // Grid-view href = the same search with `view`/`poly` dropped, so the toggle
-    // returns to the static grid render of this exact city/preset page.
-    const gridViewHref = (() => {
-      const params = new URLSearchParams(
-        Object.entries(sp).filter(
-          ([k, v]) => typeof v === 'string' && v !== '' && k !== 'view' && k !== 'poly'
-        ) as [string, string][]
-      )
-      const q = params.toString()
-      return q ? `${searchPagePath}?${q}` : searchPagePath
-    })()
-    return renderMapSplitView({
-      sp,
-      slug,
-      resolved,
-      city,
-      decodedSubdivision,
-      displayName,
-      searchPagePath,
-      searchBreadcrumbItems,
-      savedKeys,
-      likedKeys,
-      priceChangeKeys,
-      session,
-      prefs,
-      effectiveStatusFilter,
-      initialPolygon,
-      presetChips,
-      perPageParam,
-      gridViewCta: (
-        <Button asChild variant="secondary" size="sm" className="shrink-0">
-          <Link href={gridViewHref} aria-label="Switch back to the grid view">
-            Grid view
-          </Link>
-        </Button>
-      ),
-    })
-  }
 
   // Clean header copy — data-grounded. Active count = totalCount (the accurate
-  // full_count of the filtered results). The median is intentionally omitted:
-  // the only available source is a city-wide cached value that misrepresents a
-  // price-filtered preset, so per the data-accuracy rule it is cut, not faked.
+  // full_count of the filtered results). Grain is all-types unless the visitor
+  // set a property type; the FAQ below is SFR pulse and must stay labeled as
+  // single-family so the two numbers are not read as the same population.
   const headerCount = totalCount > 0 ? totalCount : null
   const headerPublished = publishSearchCount({
     value: headerCount,
@@ -383,7 +390,7 @@ export default async function SearchPage({
 
       {/* Guest listing-alert capture — anonymous visitors only. Signed-in users
           get the Save-search button in the filter row below instead. This is the
-          email -> FUB buyer-lead path (audience:buyer), now present on the route
+          email -> native buyer-lead path (audience:buyer), now present on the route
           most city/preset links land on, not just the bare /homes-for-sale page. */}
       {(city || hasFilterOnly) && (
         <SearchAlertCapture
@@ -559,6 +566,7 @@ export default async function SearchPage({
         sp={sp}
         searchPagePath={searchPagePath}
         priceChangeKeys={priceChangeKeys}
+        degraded={Boolean(listingsResult.degraded)}
       />
 
       {/* Below-fold SEO depth. Results + filters stay the only above-fold job. */}

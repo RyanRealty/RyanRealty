@@ -3,6 +3,7 @@ import { getSession } from '../../../actions/auth'
 import { getBuyingPreferences } from '../../../actions/buying-preferences'
 import { getCityBoundary } from '../../../actions/cities'
 import { getCommunityBySlug } from '../../../actions/communities'
+import { getListingsWithAdvanced, type AdvancedSort } from '../../../actions/listings'
 import { getViewportSearch, type SearchFilters } from '@/app/actions/search'
 import { subdivisionEntityKey, getSubdivisionDisplayName } from '../../../../lib/slug'
 import { entityKeyToSlug } from '../../../../lib/community-slug'
@@ -21,7 +22,7 @@ import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Breadcrumb } from '@/components/site/v3'
 import SearchFilterBar from '../../../../components/SearchFilterBar'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
-import { withTimeout } from '../fetch-guards'
+import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 import { type ResolvedSearchSlug } from '../resolve-slug'
 import { type SearchParams } from '../page-filters'
 
@@ -53,40 +54,6 @@ function bboxFromGeometry(
   return { west, south, east, north }
 }
 
-/**
- * Settled timeout for inventory reads (SEARCH_UX_WAVE3 P9/P10). Distinguishes
- * true zero homes from timeout/error so MapSearchView can show retry honesty
- * via initialDegraded instead of inventing "0 homes".
- */
-async function withTimeoutSettled<T>(
-  promise: Promise<T>,
-  fallback: T,
-  timeoutMs = 4000
-): Promise<{ data: T; degraded: boolean }> {
-  let settled = false
-  return new Promise((resolve) => {
-    const t = setTimeout(() => {
-      if (settled) return
-      settled = true
-      resolve({ data: fallback, degraded: true })
-    }, timeoutMs)
-    promise.then(
-      (data) => {
-        if (settled) return
-        settled = true
-        clearTimeout(t)
-        resolve({ data, degraded: false })
-      },
-      () => {
-        if (settled) return
-        settled = true
-        clearTimeout(t)
-        resolve({ data: fallback, degraded: true })
-      }
-    )
-  })
-}
-
 /** Map SEO statusFilter values onto the flagship MapSearchView status strings. */
 function statusForMapSearch(effectiveStatusFilter: string): string {
   switch (effectiveStatusFilter) {
@@ -110,6 +77,9 @@ export async function renderMapSplitView(props: {
   resolved: ResolvedSearchSlug
   city: string | undefined
   decodedSubdivision: string | undefined
+  /** Boundary-neighborhood label (grid fast path). When set, map filters on
+   *  this field — not the subdivision-name string. */
+  neighborhood?: string
   displayName: string
   searchPagePath: string
   searchBreadcrumbItems: { label: string; href?: string }[]
@@ -133,6 +103,7 @@ export async function renderMapSplitView(props: {
     resolved,
     city,
     decodedSubdivision,
+    neighborhood: neighborhoodName,
     displayName,
     searchPagePath,
     searchBreadcrumbItems,
@@ -181,9 +152,12 @@ export async function renderMapSplitView(props: {
     (initialPolygon ? [{ type: 'polygon', points: initialPolygon, exclude: false }] : null)
   const hasIncludeShape = initialShapes?.some((s) => !s.exclude) ?? false
 
+  // SearchFilters has no neighborhood key. A boundary neighborhood must not
+  // ride `subdivision` (MLS plat name) — that under-counts the area. The grid
+  // already uses getListingsWithAdvanced({ neighborhood }). Same field here.
   const viewportFilters: SearchFilters = {
     city: city || undefined,
-    subdivision: decodedSubdivision || undefined,
+    subdivision: neighborhoodName ? undefined : decodedSubdivision || undefined,
     minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
     maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
     beds: sp.beds ? Number(sp.beds) : undefined,
@@ -210,17 +184,65 @@ export async function renderMapSplitView(props: {
     sort: sp.sort || 'newest',
   }
 
-  const viewportSettled = await withTimeoutSettled(
-    getViewportSearch(
-      hasIncludeShape ? stripGeoScope(viewportFilters) : viewportFilters,
-      initialBounds,
-      buildShapeSetForSearch(initialShapes, initialBounds)
-    ),
-    { listings: [], totalCount: 0, capped: false },
-    4000
-  )
+  const emptyViewport = { listings: [] as Awaited<ReturnType<typeof getViewportSearch>>['listings'], totalCount: 0, capped: false }
+  const viewportSettled = neighborhoodName && !hasIncludeShape
+    ? await withTimeoutSettled(
+        getListingsWithAdvanced({
+          city,
+          neighborhood: neighborhoodName,
+          minPrice: viewportFilters.minPrice,
+          maxPrice: viewportFilters.maxPrice,
+          minBeds: viewportFilters.beds,
+          minBaths: viewportFilters.baths,
+          maxBeds: viewportFilters.maxBeds,
+          maxBaths: viewportFilters.maxBaths,
+          minSqFt: viewportFilters.minSqFt,
+          maxSqFt: viewportFilters.maxSqFt,
+          lotAcresMin: viewportFilters.lotAcresMin,
+          lotAcresMax: viewportFilters.lotAcresMax,
+          yearBuiltMin: viewportFilters.yearBuiltMin,
+          yearBuiltMax: viewportFilters.yearBuiltMax,
+          propertyType: viewportFilters.propertyType,
+          postalCode: viewportFilters.postalCode,
+          garageMin: viewportFilters.garageMin,
+          newListingsDays: viewportFilters.daysOnMarket ? Number(viewportFilters.daysOnMarket) : undefined,
+          keywords: viewportFilters.keywords,
+          hasPool: viewportFilters.hasPool,
+          hasView: viewportFilters.hasView,
+          hasWaterfront: viewportFilters.hasWaterfront,
+          hasFireplace: viewportFilters.hasFireplace,
+          hasGolfCourse: viewportFilters.hasGolfCourse,
+          statusFilter:
+            viewportFilters.status === 'Sold' ? 'closed'
+            : viewportFilters.status === 'Pending' ? 'pending'
+            : viewportFilters.status === 'Active' ? 'active'
+            : 'active_and_pending',
+          sort: (['newest', 'oldest', 'price_asc', 'price_desc', 'price_per_sqft_asc', 'price_per_sqft_desc', 'year_newest', 'year_oldest'].includes(viewportFilters.sort ?? '')
+            ? viewportFilters.sort
+            : 'newest') as AdvancedSort,
+          limit: 500,
+        }).then((r) => ({
+          listings: r.listings,
+          totalCount: r.totalCount,
+          capped: r.totalCount > r.listings.length,
+          fetchDegraded: Boolean(r.degraded),
+        })),
+        { ...emptyViewport, fetchDegraded: true },
+        4000,
+      )
+    : await withTimeoutSettled(
+        getViewportSearch(
+          hasIncludeShape ? stripGeoScope(viewportFilters) : viewportFilters,
+          initialBounds,
+          buildShapeSetForSearch(initialShapes, initialBounds),
+        ),
+        emptyViewport,
+        4000,
+      )
   const viewport = viewportSettled.data
-  const viewportDegraded = viewportSettled.degraded
+  const viewportDegraded =
+    viewportSettled.degraded ||
+    ('fetchDegraded' in viewport && Boolean(viewport.fetchDegraded))
 
   // Registry URL params ride along so pan/zoom refetches keep advanced filters.
   const registryParamsFromUrl: Record<string, string> = {}
@@ -233,14 +255,16 @@ export async function renderMapSplitView(props: {
   const filters: SearchFiltersInitial = {
     ...registryParamsFromUrl,
     city: city ?? '',
-    subdivision: decodedSubdivision ?? '',
+    subdivision: neighborhoodName ? '' : decodedSubdivision ?? '',
+    neighborhood: neighborhoodName ?? '',
     minPrice: sp.minPrice ?? '',
     maxPrice: sp.maxPrice ?? '',
     beds: sp.beds ?? '',
     baths: sp.baths ?? '',
     maxBeds: sp.maxBeds ?? '',
     maxBaths: sp.maxBaths ?? '',
-    status: status || 'Active',
+    // '' is active+pending (statusForMapSearch). Do not coerce to Active.
+    status: status,
     sort: sp.sort ?? 'newest',
     view: sp.view ?? 'map',
     minSqFt: sp.minSqFt ?? '',

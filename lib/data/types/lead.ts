@@ -1,6 +1,6 @@
 /**
  * Lead types — every lead capture form on the site produces one of these.
- * All leads route to Follow Up Boss (FUB) with per-broker attribution
+ * All leads route to the in-house CRM with per-broker attribution
  * (via the `rr_agent_attribution` cookie).
  */
 

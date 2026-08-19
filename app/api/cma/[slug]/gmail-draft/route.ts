@@ -14,10 +14,9 @@ export const maxDuration = 60
  *
  * Renders the finalized CMA to PDF and creates a DRAFT in the signing broker's
  * Gmail (default matt@ryan-realty.com) addressed to the lead, with the PDF
- * attached and the FUB email-logging address BCC'd. The broker reviews the draft
- * in Gmail and sends it personally — so a human signs off on the one document
- * (real pricing numbers, CLAUDE.md §0) that most affects winning the listing, and
- * FUB logs the email under the lead the moment it's sent.
+ * attached. The broker reviews the draft in Gmail and sends it personally —
+ * so a human signs off on the one document (real pricing numbers, CLAUDE.md §0)
+ * that most affects winning the listing.
  *
  * Mirrors /api/cma/[slug]/email (the Resend path) but produces a reviewable draft
  * instead of an auto-send. Falls back gracefully (ok:false) if the Gmail scope is
@@ -25,8 +24,6 @@ export const maxDuration = 60
  *
  * Body: { to?, subject?, impersonateAs? } — all optional; defaults pulled from public.cmas.
  */
-
-const FUB_BCC = process.env.FUB_BCC_ADDRESS?.trim() || 'ryan.realty@followupboss.me'
 
 interface DraftPayload {
   to?: string
@@ -152,7 +149,6 @@ Ryan Realty
       subject,
       bodyHtml,
       bodyText,
-      bcc: FUB_BCC,
       impersonateAs,
       attachments: [{ filename: `${safeSlug}.pdf`, content: buffer, mimeType: 'application/pdf' }],
     })
@@ -197,7 +193,6 @@ Ryan Realty
       draft_id: res.draftId,
       to,
       impersonate_as: impersonateAs,
-      bcc: FUB_BCC,
       subject,
       pdf_bytes: buffer.byteLength,
     })

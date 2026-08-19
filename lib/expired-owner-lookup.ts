@@ -8,9 +8,8 @@
  *
  * Three lookup strategies, run in order — first hit wins:
  *
- *   1. FUB internal address match — search FUB people whose mailing or
- *      property address contains the listing's street address. Free,
- *      instant, ~30% hit rate for our service area.
+ *   1. CRM address match — search stored people whose mailing or
+ *      property address contains the listing's street address.
  *
  *   2. Apify Deschutes County DIAL scraper — public records lookup
  *      gives owner name + tax mailing address. ~$0.05/lookup. Coverage:
@@ -22,14 +21,13 @@
  *      city, search for an email. Lower hit rate (~30%) and lower
  *      reliability for individuals, but worth trying.
  *
- * If all three fail, the FUB person is created as a placeholder with the
+ * If all three fail, a CRM person is created as a placeholder with the
  * full listing context as a Note, tagged `owner-lookup:pending`. Matt
  * gets the alert + does the manual skiptrace.
  */
 
 import { createClient } from '@supabase/supabase-js'
 import type { CountyOwner, SkipTraceResult } from './owner-resolution.d.ts'
-import { getFubApiKey } from './crm/fub-env'
 
 const APIFY_BASE = 'https://api.apify.com/v2'
 
@@ -42,13 +40,13 @@ export type OwnerLookupResult = {
   ownerPhone?: string
   source?: string
   notes?: string
-  /** All phones returned by skip trace (for FUB notes). */
+  /** All phones returned by skip trace. */
   allPhones?: Array<{ value: string; type?: string; dnc?: boolean }>
-  /** All emails returned by skip trace (for FUB notes). */
+  /** All emails returned by skip trace. */
   allEmails?: string[]
   /** County taxlot when resolved from assessor records. */
   taxlot?: string | null
-  /** TCPA/DNC tags to apply on the FUB person (from BatchData flags). */
+  /** TCPA/DNC tags to apply on the CRM person (from BatchData flags). */
   complianceTags?: string[]
   /** Owner's mailing address differs from the property. */
   absentee?: boolean
@@ -226,47 +224,13 @@ export function ownershipCustomFields(
 }
 
 /**
- * Strategy 1: search FUB people whose mailing address contains the listing's
- * street. Returns the first match.
- *
- * Match approach: we use the FUB API's `?streetAddress=` filter which does a
- * substring search across the addresses[] array. If that filter isn't
- * supported on our tier, we fall back to scanning fub_person_geo.formatted_address
- * (which we populate from geocoding).
+ * Strategy 1: search stored CRM geo rows whose mailing address contains the
+ * listing's street. Returns the first match.
  */
-export async function fubAddressMatch(streetAddress: string, city: string): Promise<OwnerLookupResult | null> {
-  const key = getFubApiKey()?.trim()
-  if (!key) return null
-
+export async function fubAddressMatch(streetAddress: string, _city: string): Promise<OwnerLookupResult | null> {
   const norm = streetAddress.trim().toLowerCase().replace(/\s+/g, ' ')
   if (norm.length < 5) return null
 
-  // Try FUB's native address filter first
-  try {
-    const auth = Buffer.from(`${key}:`).toString('base64')
-    const url = `https://api.followupboss.com/v1/people?streetAddress=${encodeURIComponent(norm)}&limit=5&fields=id,name,addresses,tags`
-    const res = await fetch(url, { headers: { Authorization: `Basic ${auth}` }, cache: 'no-store' })
-    if (res.ok) {
-      const j = (await res.json()) as { people?: Array<{ id: number; name: string; addresses?: Array<{ street?: string; city?: string }> }> }
-      const candidates = j.people ?? []
-      const hit = candidates.find((p) =>
-        (p.addresses ?? []).some((a) => (a.street ?? '').toLowerCase().includes(norm))
-      )
-      if (hit) {
-        return {
-          status: 'matched-fub',
-          fubPersonId: hit.id,
-          ownerName: hit.name,
-          source: 'fub-api-address-filter',
-          notes: `Matched existing FUB person ${hit.id} by mailing address.`,
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('[expired-owner-lookup] FUB address filter failed:', err)
-  }
-
-  // Fallback: scan our geo-tagged people in Supabase
   try {
     const sb = getSupabase()
     const { data } = await sb
@@ -279,12 +243,12 @@ export async function fubAddressMatch(streetAddress: string, city: string): Prom
       return {
         status: 'matched-fub',
         fubPersonId: hit.fub_person_id,
-        source: 'fub-geo-supabase',
-        notes: `Matched FUB person ${hit.fub_person_id} via fub_person_geo.formatted_address (${hit.formatted_address ?? '?'}).`,
+        source: 'crm-geo-supabase',
+        notes: `Matched CRM person ${hit.fub_person_id} via fub_person_geo.formatted_address (${hit.formatted_address ?? '?'}).`,
       }
     }
   } catch (err) {
-    console.warn('[expired-owner-lookup] Supabase fallback match failed:', err)
+    console.warn('[expired-owner-lookup] CRM geo match failed:', err)
   }
 
   return null

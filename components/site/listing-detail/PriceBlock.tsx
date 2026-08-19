@@ -9,6 +9,7 @@ import {
 } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingAsk, publishListingDrop } from '@/lib/listing/publish-listing-ask'
+import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { cn } from '@/lib/utils'
 
 /**
@@ -37,6 +38,7 @@ type Props = {
     | 'pricePerSqft'
     | 'closePricePerSqft'
     | 'priceDropCount'
+    | 'propertySubType'
   >
   className?: string
 }
@@ -56,7 +58,10 @@ export function PriceBlock({ listing, className }: Props) {
   const headlinePrice = isClosed
     ? publishListingAsk(listing.closePrice)?.ask ?? null
     : publishListingAsk(listing.listPrice)?.ask ?? null
-  const ppsqft = isClosed ? listing.closePricePerSqft : listing.pricePerSqft
+  const ppsqft = publishListingSharePricePerSqft(
+    listing.propertySubType,
+    isClosed ? listing.closePricePerSqft : listing.pricePerSqft,
+  )
   const publishedDrop = isClosed
     ? null
     : publishListingDrop({

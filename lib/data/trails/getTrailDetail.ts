@@ -19,6 +19,7 @@ import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
 import { PUBLIC_ACTIVE_STATUSES as ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 const LAT_PAD = 0.022
 const LNG_PAD = 0.028
@@ -74,7 +75,7 @@ const PROJECTION = [
 
 
 function rowToHome(row: RawRow): TrailHomeTile {
-  const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
+  const street = publishStreetLine({ streetNumber: row.StreetNumber, streetName: row.StreetName })
   const cityLine = [[row.City, 'OR'].filter(Boolean).join(', '), row.PostalCode]
     .filter(Boolean)
     .join(' ')

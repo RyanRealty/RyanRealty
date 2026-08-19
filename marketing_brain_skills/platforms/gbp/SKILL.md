@@ -168,7 +168,7 @@ See Section 6 and the canonical voice corpus at `marketing_brain_skills/brand-vo
 
 ### 4e. Booking Links
 
-GBP supports a "Book an appointment" button linked to a scheduling URL. Connect to Calendly or FUB's scheduling page for a free consultation. This converts direction requests and profile views into booked appointments without a phone call. Currently `business_bookings` is ingested but likely shows 0 until this is configured. Low effort, measurable impact.
+GBP supports a "Book an appointment" button linked to a scheduling URL. Connect to Calendly or the CRM scheduling page for a free consultation. This converts direction requests and profile views into booked appointments without a phone call. Currently `business_bookings` is ingested but likely shows 0 until this is configured. Low effort, measurable impact.
 
 ### 4f. Service Area Definition
 
@@ -203,7 +203,7 @@ Google's guidelines: you may ask clients to leave a review. You may NOT offer co
 1. **Post-close text/email.** Send a personalized note within 48 hours of closing. Include the direct GBP review link (`g.page/ryanrealty/review` shortlink or the direct Google Maps URL). Keep it brief.  one sentence asking, one sentence why it helps. Matt's voice: warm, direct, never pushy.
 2. **In-person ask.** At the closing table or final walkthrough, verbally ask. "If you have a few minutes, a Google review makes a huge difference for a small brokerage like ours." The corpus (Response #1: "Reviews like this mean the world to a small business like ours") shows this framing is authentic to Matt's voice.
 3. **Email signature link.** A passive review link in Matt's signature captures clients who want to review but forget. Low friction, no ask required.
-4. **Annual check-in.** For past clients (FUB CRM), include a GBP link in the annual market update email.
+4. **Annual check-in.** For past clients (in-house CRM), include a GBP link in the annual market update email.
 
 **Review velocity target (estimated benchmark for Bend market):**
 - Current: 23 reviews (as of 2026-05-12 corpus pull).

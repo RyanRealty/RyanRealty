@@ -65,7 +65,7 @@
 - [x] Activity feed: `ActivityFeedSection` with Supabase Realtime subscription on `activity_events`; show new_listing / price_drop / status_pending events; graceful fallback if cold *(verified — `ActivityFeedSection` now subscribes via `supabase.channel('activity-feed-home').on('postgres_changes', ...)` on INSERT; debounces refetch via REALTIME_REFETCH_DEBOUNCE_MS=1500ms; shows "Live" pulse indicator when SUBSCRIBED; silent fall-through if env missing, commit 9aca22b)*
 - [x] Social proof + team section: testimonial cards from `lib/testimonials.ts`; team photo from `brokerage_settings.team_image_url` with fallback to `public/images/team.webp` *(verified — `SocialProofSection` receives `TESTIMONIALS` from `lib/testimonials.ts` and `teamImageSrc={getTeamImageSrc(brokerage)}` resolving brokerage_settings.team_image_url first then falling back to `/images/team.webp?v={mtime}`, commit cd51db0)*
 - [x] CTA duo: seller home value (`/lp/seller-home-value`) + buyer listing alerts (`/lp/buyer-listing-alerts`); no modal popup paywall *(verified — `HomeCtaDuo` renders two spec-aligned tiles linking to the canonical LPs; both fire `click_cta` via `trackCtaClick` for GA4 attribution; no modal popup, commit 453476d)*
-- [x] Footer: brokerage legal facts (license #201206613), Matt direct phone `541.213.6706`, FUB-tracked phone `541.703.3095`, `ryan-realty.com`, `@ryanrealtybend` handle, Equal Housing Opportunity logo, fair housing statement *(verified — `components/layout/Footer.tsx` renders the brokerage legal facts block with PRINCIPAL_BROKER_LICENSE=201206613, both phone numbers as tel: links, canonical URL, social handle link, inline EHO SVG mark, and FHA compliance statement, commit 0952810)*
+- [x] Footer: brokerage legal facts (license #201206613), Matt direct phone `541.213.6706`, bio / lead-capture phone `541.703.3095`, `ryan-realty.com`, `@ryanrealtybend` handle, Equal Housing Opportunity logo, fair housing statement *(verified — `components/layout/Footer.tsx` renders the brokerage legal facts block with PRINCIPAL_BROKER_LICENSE=201206613, both phone numbers as tel: links, canonical URL, social handle link, inline EHO SVG mark, and FHA compliance statement, commit 0952810)*
 - [x] `<script type="application/ld+json">` Organization + WebSite schema *(verified — curl of `ryanrealty.vercel.app/` shows `@type":"WebSite"` and `@type":"RealEstateAgent"` JSON-LD blocks)*
 - [x] `robots.txt` allows all; `sitemap.ts` includes all routable pages *(verified — `robots.txt` returns `Allow: /` + disallows admin/dashboard/account; `sitemap.xml` returns 200 with 372KB of URLs including all city, community, listing routes)*
 - [x] Zero raw `<button>`, `<input>`, `<select>`, `<table>` in page or child components (enforced by design token linter) *(enforced by `ci:design-tokens` which exits 0)*
@@ -84,7 +84,7 @@
 - [x] Open houses section when present *(verified — `<OpenHouseSection>` rendered at line 473 from `getOpenHousesWithListings(citySlug)`)*
 - [x] Video tours row when available *(verified — `<VideoToursRow>` rendered at line 524 from `getListingsWithVideosCached`)*
 - [x] Inventory breakdown by type (`InventoryTypeSlider`) *(verified — `<InventoryTypeSlider>` rendered at line 458 from `getCityInventoryBreakdown(citySlug)`)*
-- [x] Schedule showing CTA → FUB per city *(verified — `<GeoCTAWithBroker>` rendered at line 574 with the city broker resolved from `getActiveBrokers`; routes to FUB via the standard contact flow)*
+- [x] Schedule showing CTA → CRM per city *(verified — `<GeoCTAWithBroker>` rendered at line 574 with the city broker resolved from `getActiveBrokers`; routes to `sendEvent()` via the standard contact flow)*
 - [x] SEO: `<title>Homes for Sale in {City}, Oregon | Ryan Realty</title>`; canonical URL; OpenGraph image; FAQ + BreadcrumbList JSON-LD *(verified — `generateMetadata` at line 53 emits the title, canonical, and OpenGraph image; three `application/ld+json` blocks at lines 337/356/368 emit the Organization, BreadcrumbList, and FAQ schemas via `generateBreadcrumbSchema` + `generateFAQSchema`)*
 - [x] `notFound()` for any slug not in the valid list *(verified — `if (!city) notFound()` at line 184)*
 
@@ -120,7 +120,7 @@
 - [x] Price block: `ListPrice` rounded to nearest $1K per brand voice; status pill (`Active` / `Pending` / `Closed` with appropriate color token); DOM integer; price change badge if `total_price_change_pct != 0` *(verified — `formatPrice` in `ShowcaseKeyFacts.tsx` now rounds to nearest $1K via `Math.round(n/1000)*1000` before currency formatting; status pill rendered by `ShowcaseStickyBar`; DOM integer in the key facts grid; price change tracked in `PriceHistoryChart`)*
 - [x] Property specs grid: beds, baths, sqft (`TotalLivingAreaSqFt`), lot size (acres when > 0.5, sqft when smaller), year built, HOA monthly, annual taxes, MLS#; all from listing row; unavailable fields show em-dash placeholder, never blank *(verified — `ShowcaseKeyFacts` renders beds/baths/sqft/lot/type/year built/list price/DOM/MLS; unavailable fields render the em-dash placeholder per the `'—'` returns in `formatNum`/`formatPrice`; `ShowcasePropertyDetails` carries the broader specs + HOA + tax block)*
 - [x] Brand-voice description: `public_remarks` from listing row; displayed in `ShowcaseDescription`; banned-word grep at commit time via `scripts/preflight.ts` (run as pre-commit hook on any file touching listing description rendering); never AI-generated without disclosure *(verified — `ShowcaseDescription` renders `public_remarks` (line 429 of listing page); brand-voice grep is enforced by `scripts/check-banned-words.mjs` in CI for source files. MLS-sourced remarks are passed through as-is per fair-use convention)*
-- [x] Listing agent card: `ShowcaseAgent` component; CTA routes to `/contact?listing={key}&reason=tour` → FUB-wired; listing agent name + office displayed as MLS attribution only (contact info not shown to consumer per current implementation) *(verified — ShowcaseAgent imported + rendered on listing detail page)*
+- [x] Listing agent card: `ShowcaseAgent` component; CTA routes to `/contact?listing={key}&reason=tour` → CRM via `sendEvent()`; listing agent name + office displayed as MLS attribution only (contact info not shown to consumer per current implementation) *(verified — ShowcaseAgent imported + rendered on listing detail page)*
 - [x] Broker headshot: resolve listing agent from `ListAgentEmail`; if matches `matt@ryan-realty.com`, `paulstevenson@ryan-realty.com`, or `rebeccapeterson@ryan-realty.com`, display corresponding transparent PNG from `design_system/ryan-realty/assets/team/{name}.png`; never `.jpg` *(verified — `ShowcaseAgent` resolves agent_email via BROKER_HEADSHOT_BY_EMAIL map and renders the transparent PNG at /images/brokers/{name}.png — the public mirror of the design_system team assets. .jpg never used)*
 - [x] Mortgage calculator: `ShowcasePayment` inline (no modal); inputs: price, down payment %, rate, term; output: estimated monthly PITI; uses `estimated_monthly_piti` from listing row as default seed *(verified — ShowcasePayment imported + rendered on listing detail page)*
 - [x] Map: `ShowcaseMap` with neighborhood polygon overlay from `boundaries`; POI layer (schools, coffee, grocery) optional *(verified — ShowcaseMap imported + rendered on listing detail page)*
@@ -141,20 +141,20 @@
 ### `/lp/seller-home-value` — Seller LP
 - [x] File: `app/lp/seller-home-value/page.tsx` (exists)
 - [x] Market snapshot from `getBendMarketSnapshot()` — verified against `market_stats_cache` at render time, not hard-coded *(verified — `getBendMarketSnapshot` in `app/lp/seller-home-value/data.ts:363` reads from `market_pulse_live` (the freshest cache) via `getLiveMarketPulse({geoType:'city', geoSlug:'bend'})`; pulls medianListPrice, activeCount, newCount30d, marketHealthLabel; no hard-coded figures)*
-- [x] `SellerLPForm` enrolls the lead in the in-house CRM seller sequence *(re-verified 2026-07-24 — `app/lp/seller-home-value/actions.ts` calls `autoEnrollByFubId()` from `lib/crm/enroll.ts` on submit; tags + assignment + enrollment fire in the right order; pause-on-reply lives inside `/api/cron/crm-sequence-engine`. The former FUB seller-workflow spec and its `seller-workflow-pause` cron are both dead — Follow Up Boss was decommissioned 2026-06-24, see `docs/archive/fub-era/README.md`)*
+- [x] `SellerLPForm` enrolls the lead in the in-house CRM seller sequence *(re-verified 2026-07-24 — `app/lp/seller-home-value/actions.ts` calls `autoEnrollByFubId()` from `lib/crm/enroll.ts` on submit; tags + assignment + enrollment fire in the right order; pause-on-reply lives inside `/api/cron/crm-sequence-engine`)*
 - [x] Agent attribution cookie read via `readAttributedAgentServer()` — routes to correct broker when `?agent=` param set *(verified — `app/lp/seller-home-value/actions.ts:114` calls `readAttributedAgentServer()` before assignment; if the cookie carries a broker slug, the lead routes to that broker instead of defaulting to Matt)*
 - [x] `robots: { index: false, follow: false }` *(verified line 19)*
 
 ### `/lp/buyer-listing-alerts` — Buyer LP
 - [x] File: `app/lp/buyer-listing-alerts/page.tsx` (exists)
-- [x] `BuyerLPForm` submits to FUB; contact phone displayed as `541.703.3095` (FUB-tracked) *(verified — BROKER_PHONE constant now dotted)*
+- [x] `BuyerLPForm` submits to the in-house CRM via `sendEvent()`; contact phone displayed as `541.703.3095` (bio / lead-capture) *(verified — BROKER_PHONE constant now dotted)*
 - [x] Agent attribution cookie respected *(verified — `app/lp/buyer-listing-alerts/actions.ts:81` calls `readAttributedAgentServer()` on submit and routes to the attributed broker)*
 - [x] `robots: { index: false, follow: false }` *(verified line 9)*
 
 ### `/lp/expired-listing` — Expired listing LP
 - [x] File: `app/lp/expired-listing/page.tsx` (exists)
 - [x] Content follows `marketing_brain_skills/producers/expired-listing-lp/SKILL.md` voice spec (5-cause audit framework, never pander) *(verified — `app/lp/expired-listing/page.tsx:16` references `docs/voice_guidelines.md §4.7 — never pander, never editorialize`; content composition follows the 5-cause audit framework per the producer SKILL.md)*
-- [x] `ExpiredLPForm` submits to FUB expired workflow; writes to `public.expired_listings` *(verified — `submitExpiredLPForm` in `app/lp/expired-listing/actions.ts:59` calls FUB with the expired workflow tags; the `public.expired_listings` upsert is performed by `/api/cron/detect-expired-listings/route.ts` per spec separation of concerns — the cron writes the audit row before the consumer ever lands on the LP)*
+- [x] `ExpiredLPForm` submits to the in-house CRM expired sequence; writes to `public.expired_listings` *(verified — `submitExpiredLPForm` in `app/lp/expired-listing/actions.ts:59` calls `sendEvent()` with the expired workflow tags; the `public.expired_listings` upsert is performed by `/api/cron/detect-expired-listings/route.ts` per spec separation of concerns — the cron writes the audit row before the consumer ever lands on the LP)*
 - [x] `robots: { index: false, follow: false }` *(verified line 24)*
 
 ### `/housing-market/reports/[slug]` — Monthly market reports
@@ -309,9 +309,9 @@ The following systems exist in this repo but are explicitly out of scope for thi
 - `listing_video_v4/`, `video/` — Remotion video build system
 - `scripts/build_*.py`, `scripts/_*.mjs` — video + flyer generators
 - Transaction coordination: `app/admin/`, SkySlope integration, deal memos
-- FUB cron jobs unrelated to web rendering (seller workflow, expired listing detection, meta lead ingestion)
+- CRM cron jobs unrelated to web rendering (seller sequence, expired listing detection, meta lead ingestion)
 - `app/dashboard/`, `app/marketing/`, `app/reports/` (internal admin views)
-- Email / SMS send path (FUB handles outbound; only the webhook receipt endpoint is in scope)
+- Email / SMS send path (in-house CRM sequences + Resend / Twilio; only the webhook receipt endpoint is in scope)
 - `app/api/cron/` routes not listed explicitly in this spec (46 cron routes out of scope)
 
 ---

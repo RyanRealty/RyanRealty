@@ -101,10 +101,10 @@ const WRITE_PATH_PREFIXES = [
   'app/api/',
   // Admin UI has direct table access by design (internal tool, not consumer-facing).
   'app/admin/',
-  // The TC domain layer owns tc_* state-machine mutations (e.g. the envelope
-  // status compare-and-swap in deal-state.ts). Server-only domain logic, never a
-  // consumer page, so consumer-read protection is unaffected. Matches the target
-  // architecture in docs/plans/TC_ARCHITECTURE_REVIEW.md §4.1.
+  // The TC domain layer owns tc_* state-machine mutations (envelope status,
+  // seal, signing). Server-only domain logic, never a consumer page, so
+  // consumer-read protection is unaffected. Matches the target architecture
+  // in docs/plans/TC_ARCHITECTURE_REVIEW.md §4.1.
   'lib/tc/',
   // The CRM domain layer (lib/crm/) owns sequence-engine runtime state-machine
   // mutations (trigger-dispatch, enrollment side-effects). Server-only, never

@@ -5,6 +5,7 @@
  */
 
 import { listingDetailPath, slugify } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import resortCommunitiesData from '@/data/resort-communities.json'
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
@@ -112,7 +113,11 @@ export function splitRowsFromTiles(
     .filter((t) => Boolean(t.listingKey))
     .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
     .map((t) => {
-      const street = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
+      const street = publishStreetLine({
+        streetNumber: t.streetNumber,
+        streetName: t.streetName,
+        streetSuffix: t.streetSuffix,
+      })
       return {
         key: t.listingKey,
         href: listingDetailPath(

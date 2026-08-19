@@ -5,7 +5,7 @@ description: Audit Ryan Realty's paid Meta Ads performance against the 3-campaig
 
 # marketing-brain: audit-ads
 
-Audits paid Meta Ads performance at both the account and per-campaign level. Compares actual results against the locked 3-campaign playbook, surfaces creative fatigue before it burns budget, and quantifies any gap between Meta Ads conversion counts and FUB qualified seller leads. The output `AdsAuditReport` feeds directly into `generate-briefs` to decide what creative, targeting, or budget changes to propose.
+Audits paid Meta Ads performance at both the account and per-campaign level. Compares actual results against the locked 3-campaign playbook, surfaces creative fatigue before it burns budget, and quantifies any gap between Meta Ads conversion counts and CRM qualified seller leads. The output `AdsAuditReport` feeds directly into `generate-briefs` to decide what creative, targeting, or budget changes to propose.
 
 ---
 
@@ -26,7 +26,7 @@ Every audit is evaluated against the structure locked in `docs/FB_SELLER_CAMPAIG
 | Campaign | Audience type | Daily budget | Role |
 |---|---|---|---|
 | Cold Acquisition | Broad Bend metro | $30 | Find new homeowners who don't know Ryan Realty |
-| Lookalike | 1% Lookalike from FUB past sellers | $20 | 30-50% lower CPL than cold |
+| Lookalike | 1% Lookalike from CRM past sellers | $20 | 30-50% lower CPL than cold |
 | Retargeting | Site visitors to `/sell/*` in last 30 days | $10 | Highest-ROI type, warm leads |
 
 **Total locked budget: $60/day = ~$1,800/month.**
@@ -84,11 +84,11 @@ Returns account-level and per-role `BudgetEfficiency`. Unknown-role campaigns ar
 
 ### 4. `analyzeConversionPath(windowDays, asOfDate)`
 
-Compares Meta Ads `conversions` (sum of `lead` + `offsite_conversion.fb_pixel_purchase` action events, stored as the `conversions` metric) against FUB `qualified_seller_leads` for the same window.
+Compares Meta Ads `conversions` (sum of `lead` + `offsite_conversion.fb_pixel_purchase` action events, stored as the `conversions` metric) against CRM `qualified_seller_leads` for the same window.
 
-**Tracking gap = |meta_conversions - fub_qualified_leads| > 30% of meta_conversions.**
+**Tracking gap = |meta_conversions - crm_qualified_leads| > 30% of meta_conversions.**
 
-A large gap signals a Pixel misconfiguration, a FUB webhook failure, or a Meta attribution discrepancy.
+A large gap signals a Pixel misconfiguration, a CRM inbound (`sendEvent`) failure, or a Meta attribution discrepancy.
 
 ### 5. `findOpportunities(campaigns, fatigue, budget, conversionPath)`
 
@@ -115,7 +115,7 @@ interface AdsAuditReport {
   campaigns: CampaignPerformance[] // one entry per discovered campaign
   fatigue: FatigueSignal           // creative fatigue analysis
   budget: BudgetEfficiency         // spend vs playbook targets
-  conversion_path: ConversionPath  // Meta vs FUB attribution comparison
+  conversion_path: ConversionPath  // Meta vs CRM attribution comparison
   opportunities: Opportunity[]     // max 7, ranked by severity
   generated_at: string             // ISO timestamp
 }
@@ -154,7 +154,7 @@ interface Opportunity {
 | Tag | When emitted |
 |---|---|
 | `test_new_creative` | Creative fatigue confirmed |
-| `check_tracking` | Meta vs FUB conversion gap > 30% |
+| `check_tracking` | Meta vs CRM conversion gap > 30% |
 | `review_targeting` | Campaign CPL > 2x account average |
 | `increase_budget` | Account or role under-pacing vs playbook |
 | `reduce_budget` | Account or role over-pacing vs playbook |
@@ -168,7 +168,7 @@ interface Opportunity {
 Reads only from `public.marketing_channel_daily`:
 - `channel='meta_ads'`, `scope='account'`.  account-level totals (spend, cpm, ctr, conversions)
 - `channel='meta_ads'`, `scope='campaign'`.  per-campaign rows with `metadata.campaign_name`
-- `channel='fub'`, `scope='account'`, `metric='qualified_seller_leads'`.  FUB lead count
+- `channel='fub'`, `scope='account'`, `metric='qualified_seller_leads'`.  CRM lead count
 
 The ingestor (`app/api/cron/marketing-snapshot-meta-ads/route.ts`) must have run for the window. No direct API calls are made from `audit-ads.ts`.
 

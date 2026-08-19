@@ -5,6 +5,8 @@ import SearchMapClustered from '@/components/LazySearchMapClustered'
 import type { ListingForMap } from '@/components/SearchMapClustered'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
+import { Button } from '@/components/ui/button'
+import { Eyebrow, H3, Body } from '@/components/site/primitives'
 
 /**
  * The /search?view=map (map-only) pin layer, made hidden-aware. The split view
@@ -24,12 +26,15 @@ export default function HideAwareSearchMap({
   likedListingKeys,
   placeQuery,
   className,
+  degraded = false,
 }: {
   listings: ListingForMap[]
   savedListingKeys: string[]
   likedListingKeys: string[]
   placeQuery: string
   className?: string
+  /** Timeout/error on the map-only fetch. Empty pins are not "0 homes". */
+  degraded?: boolean
 }) {
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
 
@@ -42,6 +47,30 @@ export default function HideAwareSearchMap({
   }, [])
 
   const visible = useMemo(() => excludeHiddenListings(listings, hiddenKeys), [listings, hiddenKeys])
+
+  if (degraded) {
+    return (
+      <div className={className ?? 'flex h-full w-full items-center justify-center p-8'}>
+        <div className="max-w-md rounded-xl border border-border bg-card p-8 text-center">
+          <Eyebrow>Search delayed</Eyebrow>
+          <H3 className="mt-2">We could not load the map in time</H3>
+          <Body className="mx-auto mt-2 text-muted-foreground">
+            This is a connection or timeout problem, not an empty market. Try again.
+          </Body>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-6"
+            onClick={() => {
+              if (typeof window !== 'undefined') window.location.reload()
+            }}
+          >
+            Reload page
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <SearchMapClustered

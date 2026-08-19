@@ -1,7 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/crm/send-event'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { classifyPropertyGeo, cityFromListingAddress, referralIntakeTags } from '@/lib/referral-geo'

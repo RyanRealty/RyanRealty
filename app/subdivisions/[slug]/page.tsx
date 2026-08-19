@@ -29,6 +29,7 @@
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
+import { publishPlaceHeroCta } from '@/lib/search/publish-place-browse-href'
 import {
   getGeoBoundaryMapData,
   getListingTiles,
@@ -449,6 +450,10 @@ export default async function SubdivisionPage({ params }: Props) {
           videoSrc={null}
           posterSrc={posterSrc}
           mediaCaption={mediaCaption}
+          cta={publishPlaceHeroCta(
+            subdivisionListingsPath(cityName, displayName),
+            `See ${displayName} homes`,
+          )}
         />
         {/* Dual-pane list ↔ map when we have pins; else featured rail or empty. */}
         {useSplit ? (

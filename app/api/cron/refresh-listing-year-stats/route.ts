@@ -1,3 +1,4 @@
+// cron: manual-only operator curl (not registered in vercel.json; refreshes year-finalization MVs)
 import { NextResponse } from 'next/server'
 import { refreshListingYearSyncStats } from '@/lib/refresh-listing-year-sync-stats'
 import { requireCronAuth } from '@/lib/auth/cron-auth'

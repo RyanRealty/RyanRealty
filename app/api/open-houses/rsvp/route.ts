@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/crm/send-event'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { listingDetailPath } from '@/lib/slug'
 

@@ -35,6 +35,7 @@ import {
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { formatDate } from '@/lib/format/date'
 import { homesForSalePath } from '@/lib/slug'
+import { publishPlaceHeroCta } from '@/lib/search/publish-place-browse-href'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
@@ -408,6 +409,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           })}
           videoSrc={null}
           posterSrc={posterSrc}
+          cta={publishPlaceHeroCta(homesForSalePath(cityName), `See ${cityName} homes`)}
         />
 
         {/* Market HUD — live stats from listing_tile_mv (§0). The trend chart
@@ -433,6 +435,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           totalActive={activeCount ?? mapFeatures.length}
           fitToFeatures
           showRegionMarkers={false}
+          browseHref={homesForSalePath(cityName)}
           eyebrow={zip}
           title={`Homes in\n${zip}`}
           subtitle={`Every active single-family listing in ${zip}.`}

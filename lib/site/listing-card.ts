@@ -1,5 +1,6 @@
 import type { ListingBadge, ListingCardData } from '@/components/site/ListingCard'
 import type { ListingTile } from '@/lib/data'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingTileHref, displaySubdivision } from '@/lib/slug'
 
 /**
@@ -16,7 +17,11 @@ export function tileToCardData(
   const key = (t.listingKey ?? t.listNumber ?? '').toString()
   if (!key) return null
   const addressLine =
-    [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ') || 'Address on request'
+    publishStreetLine({
+      streetNumber: t.streetNumber,
+      streetName: t.streetName,
+      streetSuffix: t.streetSuffix,
+    }) || 'Address on request'
   const cityParts: string[] = []
   if (t.city) cityParts.push(`${t.city}, OR`)
   if (t.postalCode) cityParts.push(t.postalCode)
@@ -41,6 +46,8 @@ export function tileToCardData(
     beds: t.beds ?? null,
     baths: t.baths ?? null,
     sqft: t.sqft ?? null,
+    pricePerSqft: t.pricePerSqft ?? null,
+    propertySubType: t.propertySubType ?? null,
     badge,
     tourUrl: t.tourUrl ?? null,
   }

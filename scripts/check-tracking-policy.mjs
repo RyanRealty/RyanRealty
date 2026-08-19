@@ -73,7 +73,6 @@ check('hasAnalyticsConsent exported', /export\s+function\s+hasAnalyticsConsent/.
   'CookieConsentBanner.tsx must export hasAnalyticsConsent() — the analytics consent gate.')
 check('hasMarketingConsent exported', /export\s+function\s+hasMarketingConsent/.test(banner),
   'CookieConsentBanner.tsx must export hasMarketingConsent() — the marketing consent gate.')
-// (FollowUpBossPixel removed at the FUB cutover 2026-06-24 — FUB is decommissioned.)
 for (const rel of ['components/GTMHead.tsx']) {
   const src = read(rel)
   check(`${rel} gates on consent`, /hasAnalyticsConsent|hasMarketingConsent|hasTrackingConsent/.test(src),
@@ -135,7 +134,7 @@ check('Track route records rr_vid on the session', /rr_vid/.test(track),
   'app/api/visitors/track/route.ts must read the rr_vid cookie and persist it on visitor_sessions (links the tracked session to the durable visitor).')
 const backfill = read('lib/visitor-backfill.ts')
 check('Identify backfill writes the identity graph', /visitor_identity_map/.test(backfill),
-  'lib/visitor-backfill.ts must upsert visitor_identity_map at identify so anonymous browsing is stitched to the known FUB person/email (anon->known graph).')
+  'lib/visitor-backfill.ts must upsert visitor_identity_map at identify so anonymous browsing is stitched to the known CRM person/email (anon->known graph).')
 
 // ── 7. Offline-conversion upload (Phase 6 — closed-loop ROAS) ─────────────────
 // Online-sourced leads (they carried a Meta click id -> fbc) that convert OFFLINE

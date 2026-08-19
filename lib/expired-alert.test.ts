@@ -4,8 +4,7 @@ import { crmLink, resolveAlertFrom } from './expired-alert'
 /**
  * Locks the two bugs found in the 2026-07-03 expired-workflow audit:
  *
- *  1. The alert linked to a dead FUB deep-link (app.followupboss.com/people/<id>)
- *     after the FUB cutover. It must link to the in-house CRM lead instead.
+ *  1. The alert must link to the in-house CRM lead, never a retired vendor URL.
  *  2. The alert hard-coded an UNVERIFIED sender (alerts@mail.ryan-realty.com),
  *     so Resend rejected 100% of expired alerts (alert_sent_at was NULL on every
  *     row). It must resolve from RESEND_FROM (the verified sender), and must NOT

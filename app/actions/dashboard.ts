@@ -239,14 +239,8 @@ async function getFubPipelineSnapshot(
   const mattBroker = await getMattBrokerRecord()
   const mattBrokerId = mattBroker?.id ?? null
 
-  // Primary source: in-house CRM (lib/crm/), which replaced FUB as the
-  // execution engine on 2026-06-10. FUB API access was decommissioned
-  // 2026-06-24 (getFubApiKey() always returns undefined — see
-  // lib/crm/fub-env.ts), so crm_people is the live, current source of
-  // lead/pipeline data. The old fub_contacts_cache / fetchMyLeadsFromFubLive
-  // fallback branch was deleted 2026-07-14: the cache stopped syncing at the
-  // cutover and the live fetch was a guaranteed no-op, so the fallback could
-  // only ever produce stale or empty data dressed up as a measurement.
+  // Primary source: in-house CRM (lib/crm/). crm_people is the live source of
+  // lead/pipeline data. The old vendor-cache fallback was deleted 2026-07-14.
   //
   // Paged read: PostgREST caps a single response at 1000 rows regardless of
   // .limit(), so a plain .limit(5000) silently truncated pipeline totals.
@@ -858,11 +852,9 @@ export async function getDashboardMarketingData(): Promise<DashboardMarketingDat
       valuationRateFromFacebookSellerVisits,
     },
     fub: {
-      // FUB API access was decommissioned 2026-06-24 (lib/crm/fub-env.ts) —
-      // "configured" now means the in-house CRM pipeline (crm_people) has
-      // live data, not that a FUB API key is set. contactsSynced30d and
-      // facebookContacts30d are crm_people figures via getLeadIntake (the
-      // dead fub_contacts_cache reads were removed 2026-07-14).
+      // "configured" means the in-house CRM pipeline (crm_people) has live
+      // data. contactsSynced30d and facebookContacts30d are crm_people
+      // figures via getLeadIntake.
       configured: fubPipeline.myLeadsTotal > 0,
       contactsSynced30d,
       facebookContacts30d,

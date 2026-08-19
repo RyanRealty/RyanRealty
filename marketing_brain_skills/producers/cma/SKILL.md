@@ -106,7 +106,7 @@ Pass `docType: 'expired-audit'` to `buildCma` for expired-listing subjects. `reb
 - Formal appraisal. The CMA is priced and labeled throughout as an estimate. The last page carries an explicit disclaimer that it is not a USPAP appraisal
 - Listing agreement, seller net sheet, transaction coordination.  those are separate producers
 - Marketing flyer for the subject after it's listed.  that's `flyer-design` for `content:just_listed_flyer` etc.
-- Email delivery of the finalized PDF.  on finalization the canonical delivery is a **Gmail DRAFT** created via `POST /api/cma/[slug]/gmail-draft` (addressed to the lead, CMA PDF attached, BCC `ryan.realty@followupboss.me` so FUB logs it the moment it's sent). The signing broker reviews the draft in Gmail and sends it personally.  keeps a human on the pricing numbers (CLAUDE.md §0) and lands the email from a real mailbox instead of a no-reply. The Resend path (`ops-email-send` / `/api/cma/[slug]/email`) is the fallback when the `gmail.modify` DWD scope is unavailable. (This also satisfies the old "wire delivery to FUB" item.  the BCC logs the sent email on the lead's record.)
+- Email delivery of the finalized PDF.  on finalization the canonical delivery is a **Gmail DRAFT** created via `POST /api/cma/[slug]/gmail-draft` (addressed to the lead, CMA PDF attached, no vendor BCC; the CRM already has the lead). The signing broker reviews the draft in Gmail and sends it personally.  keeps a human on the pricing numbers (CLAUDE.md §0) and lands the email from a real mailbox instead of a no-reply. The Resend path (`ops-email-send` / `/api/cma/[slug]/email`) is the fallback when the `gmail.modify` DWD scope is unavailable. (This also satisfies the old "wire delivery to the CRM" item.  the BCC logs the sent email on the lead's record.)
 
 ---
 
@@ -492,7 +492,7 @@ Step 7b (2026-06-04) fixed zoning + entitlement. The full rebuild that followed 
 
 10. **QA.  fact-check every figure against the source yourself. A subagent's self-report is not verification.** When a sub-pass rebuilds the analytical pages it WILL miss things (this rebuild left "no water" remnants, mis-placed every map pin, and introduced 78 em-dashes while reporting "done"). Re-grep the rendered HTML for every old/wrong figure (must be 0) and every new figure (must be present), re-measure pagination after ANY edit (each `.page` fits one sheet.  `overflow:hidden` silently CLIPS, so the Step 7a page-fit check is mandatory again), and confirm the map renders with correct pins. **Brand voice on a client doc: em-dashes are banned in prose** (period or comma); the ONLY allowed em-dash is the data-placeholder for an unavailable value in a stats cell. Scan and fix before surfacing.
 
-11. **Delivery reality.  the broker often sends the final client message himself.** A land-CMA lead frequently arrives by text and the broker answers by text. The canonical delivery is still the Gmail draft (Step 15), but the broker may prefer to text the lead a link to the CMA in his own voice. Stage a reviewable draft (a FUB note + task on the lead's record), present the exact wording for review, and let him send it. **A text the broker sends from his phone logs into the FUB timeline but does NOT appear in the FUB `/textMessages` API**.  so "the API shows no sent text" does not mean it was not sent. Read the person's timeline before assuming, and never send a duplicate.
+11. **Delivery reality.  the broker often sends the final client message himself.** A land-CMA lead frequently arrives by text and the broker answers by text. The canonical delivery is still the Gmail draft (Step 15), but the broker may prefer to text the lead a link to the CMA in his own voice. Stage a reviewable draft (a CRM note + task on the lead's record), present the exact wording for review, and let him send it. **A text the broker sends from his phone logs into the CRM timeline but does NOT appear in a vendor text API**.  so "the API shows no sent text" does not mean it was not sent. Read the person's timeline before assuming, and never send a duplicate.
 
 **Step 8.  Build the comp location map endpoint**
 
@@ -683,7 +683,7 @@ const result = await finalizeAndDeliverCma({ slug: 'cma-<slug>' })
 **What this does (in order, all best-effort):**
 
 1. Renders the CMA HTML to a PDF buffer via `renderCmaPdfBuffer(slug)` (puppeteer + @sparticuz/chromium-min, same engine as `/api/cma/<slug>/pdf`). Errors if the PDF exceeds the 25 MB Gmail cap.
-2. Creates a **Gmail DRAFT** in the signing broker's mailbox (`matt@ryan-realty.com` by default, or the broker resolved from `public.cmas.broker_slug` if they're on the `@ryan-realty.com` domain) via `createGmailDraft` (Google DWD / `gmail.modify` scope, verified live 2026-05-29). The draft is addressed to the lead, has the CMA PDF attached, and BCC's `ryan.realty@followupboss.me` so FUB logs it the moment Matt hits Send. **Matt reviews and sends personally.** This is a DRAFT, never an auto-send to the lead.
+2. Creates a **Gmail DRAFT** in the signing broker's mailbox (`matt@ryan-realty.com` by default, or the broker resolved from `public.cmas.broker_slug` if they're on the `@ryan-realty.com` domain) via `createGmailDraft` (Google DWD / `gmail.modify` scope, verified live 2026-05-29). The draft is addressed to the lead, has the CMA PDF attached, No vendor BCC. The CRM already has the lead. **Matt reviews and sends personally.** This is a DRAFT, never an auto-send to the lead.
 3. **Fallback:** if the Gmail DWD scope is unavailable, Resend delivers the PDF to the broker (not the lead) with context to forward manually. The response field `fellBackToResend: true` signals this.
 4. Notifies Matt via Resend (`MATT_ALERT_EMAIL` env var, defaults to `matt@ryan-realty.com`) that the CMA is ready: Gmail-draft confirmation, recommended list price, PDF link at `/api/cma/<slug>/pdf`.
 
@@ -840,7 +840,7 @@ The `measured` step for a CMA is light.  90 days after delivery, the `performanc
 **Future generalizations:**
 - Parameterize the map endpoint to a single `/api/maps/cma/[slug]` route that reads coordinates from the `cmas` + `cma_comps` tables (rather than copying the hardcoded route per CMA).
 - Build a `/admin/cmas` page that lists every row in `public.cmas` with filters by broker and client and links to each `cma.html`.
-- Wire delivery to FUB: when a CMA is finalized, automatically create an FUB note on the client's lead record with a link to the CMA URL.
+- Wire delivery to the CRM: when a CMA is finalized, automatically create a CRM note on the client's lead record with a link to the CMA URL.
 
 ---
 

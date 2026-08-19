@@ -6,6 +6,7 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
+import { publishSearchCount } from '@/lib/search/publish-search-count'
 
 /**
  * Structural input — a full MarketPulse satisfies this, and a geo page can also
@@ -121,12 +122,13 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     datasetVariables.push({ name: 'Median List Price', value: Math.round(pulse.medianListPrice), unitText: 'USD' })
   }
 
-  if (pulse.activeCount != null && pulse.activeCount > 0) {
+  const sfrPublished = publishSearchCount({ value: pulse.activeCount, grain: 'sfr' })
+  if (sfrPublished && sfrPublished.value > 0) {
     faqs.push({
       question: `How many single-family homes are for sale in ${geoName}?`,
-      answer: `There are ${pulse.activeCount.toLocaleString('en-US')} active single-family listings in ${geoName}${asOf}.`,
+      answer: `There are ${sfrPublished.value.toLocaleString('en-US')} active single-family listings in ${geoName}${asOf}.`,
     })
-    datasetVariables.push({ name: 'Active Listings', value: pulse.activeCount })
+    datasetVariables.push({ name: 'Active Listings', value: sfrPublished.value })
   }
 
   const publishedMos = publishMonthsOfSupply({

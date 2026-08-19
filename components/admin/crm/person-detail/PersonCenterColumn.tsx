@@ -341,7 +341,7 @@ function EventCard({ item }: { item: TimelineItem }) {
   const isLeadOrigin = item.kind === 'lead_created'
   const preview = (item.body ?? '').trim()
   const long = preview.length > 220
-  // Legacy Follow Up Boss texts/emails came in with their content redacted at
+  // Legacy imported texts/emails came in with their content redacted at
   // import (payload.contentHidden === true, body null). Show a labeled
   // placeholder instead of a confusingly blank card.
   const contentHidden = !preview && (item.payload as { contentHidden?: unknown } | null)?.contentHidden === true
@@ -442,7 +442,7 @@ function EventCard({ item }: { item: TimelineItem }) {
         ) : contentHidden ? (
           <p className="mt-1 inline-flex items-center gap-1 text-xs italic" style={MUTED}>
             <EyeOff className="h-3 w-3" aria-hidden />
-            Content not synced from Follow Up Boss
+            Content not imported
           </p>
         ) : null}
         {/* MMS media + stored outbound attachments (sent email files / MMS). */}

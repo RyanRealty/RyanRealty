@@ -87,7 +87,7 @@ HARD RULES
 13. Spot-check 3 legacy redirects resolve to a real page (302/301 -> 200):
     /free-home-valuation/ , /testimonials/ , /matt-ryan/
 14. Submit a TEST lead on the seller LP (use an obviously-test name + your email).
-    Then check Follow Up Boss: a new person should appear, tagged with a seller
+    Then check `/admin/crm`: a new `crm_people` row should appear, tagged with a seller
     source (and the source must say ryan-realty.com, not vercel.app).
 15. Confirm GA4 + Meta Pixel fire on the homepage (browser devtools / Meta Pixel
     Helper).
@@ -125,7 +125,7 @@ CRITICAL (a fail here = roll back):
 2. Load https://ryan-realty.com/lp/seller-home-value -> the seller home-value form
    renders (multi-step, not a 404 / "page not found").
 3. Submit a TEST lead on that seller LP (test name + your own email). Then open
-   Follow Up Boss -> confirm a new person appeared within ~1 min, tagged with a seller
+   `/admin/crm` -> confirm a new `crm_people` row appeared within ~1 min, tagged with a seller
    source, and the source/URL says ryan-realty.com (NOT vercel.app).
 
 SEO + TRACKING:
@@ -146,71 +146,7 @@ Summarize as a checklist with PASS/FAIL and one line on anything that failed.
 
 ---
 
-## 3) FUB NURTURE LOOP — close FUNNEL-04 (HISTORICAL — FUB decommissioned 2026-06-24)
+## 3) NURTURE LOOP — FUNNEL-04
 
-> **Superseded.** Follow Up Boss is gone. Live nurture is the in-house CRM
-> (`lib/crm/enroll.ts`, `/admin/crm/sequences`). FUB-era specs: `docs/archive/fub-era/README.md`.
-> The prompt below is kept only as the cutover-era record of what FUNNEL-04 asked for.
-
-```
-You are fixing the most important gap in Ryan Realty's lead system: seller leads are
-TAGGED in Follow Up Boss but never enrolled in any follow-up. A committed audit
-(archived under docs/archive/fub-era/README.md) shows 3,492 people tagged
-`audience:seller` with the master action plan at contactsRunningCount: 0 — it has
-NEVER run. Your job: make new seller leads auto-enroll going forward, then help me
-decide what to do with the backlog. Work in the Follow Up Boss web UI.
-
-FIRST, READ THE LOCKED SPEC (do not invent cadence, names, or tags):
-- docs/archive/fub-era/README.md  (FUB-era UI setup + seller workflow archive)
-Key facts from the spec:
-- Canonical tags: audience:seller, seller:hot|warm|nurture, source:seller-lp,
-  broker:matt|rebecca.
-- FUB BLOCKS API enrollment (POST /v1/actionPlans/{id}/people -> 404). Enrollment MUST
-  happen via FUB's own Automation Rule (tag -> enroll) and the action-plan engine.
-- Action Plan name: "Seller Lead — Master Workflow"
-- Automation Rule name: "Seller LP -> Master Workflow" (when tag `audience:seller` is
-  added -> enroll in that action plan).
-
-STEP 1 — AUDIT (report before changing anything):
-- Does the "Seller Lead — Master Workflow" action plan exist? Is it built per the spec
-  (all steps, pause settings)? What is its isUsed / contactsRunningCount?
-- Does the "Seller LP -> Master Workflow" automation rule exist and is it ACTIVE?
-- Do the 4 seller smart lists exist (Sellers — new today / hot, untouched / warm in
-  flight / recovery candidates)?
-- How many people currently have tag `audience:seller`? How many are enrolled/running
-  in the master plan right now?
-
-STEP 2 — BUILD/ACTIVATE THE FORWARD-LOOKING LOOP (safe — affects only new leads):
-- If missing or incomplete, build the "Seller Lead — Master Workflow" action plan
-  EXACTLY per the archived seller workflow (10-touch cadence, pause-on-reply,
-  tier skip rules). Do not improvise copy — use the spec's templates.
-- Build/activate the "Seller LP -> Master Workflow" automation rule: trigger when tag
-  `audience:seller` is added -> action: enroll in "Seller Lead — Master Workflow".
-- Confirm the automation rule status is ON.
-
-STEP 3 — VERIFY WITH A SYNTHETIC LEAD (no real contacts touched):
-- Create a test person with your own email, add the tag `audience:seller`.
-- Confirm the automation rule fires -> the person enrolls -> the action plan shows them
-  running (contactsRunningCount increments) and step 1 is scheduled.
-- Then remove/stop that test person so they don't get the full sequence.
-
-STEP 4 — THE BACKLOG (3,492 people) — STOP AND GET MY DECISION FIRST:
-DO NOT bulk-enroll the backlog without my explicit go. Enrolling 3,492 (many old/cold)
-into a 10-touch email+SMS sequence risks spam complaints, FUB sending limits, and
-sender-reputation damage. Instead:
-- Build a smart list of `audience:seller` people and break it down: how many created
-  in the last 30 / 90 / 365 days, how many already marked sold/closed/unsubscribed,
-  how many have no recent activity.
-- RECOMMEND a segmented plan to me, e.g.: enroll only recent/active sellers in the
-  full master plan, and put cold contacts in a SHORTER, gentler re-engagement plan (or
-  leave them out). Propose enrolling a small TEST BATCH (10-20) first and watching
-  deliverability before any larger enroll.
-- Only after I explicitly approve a specific segment + plan, do the bulk "Apply Action
-  Plan" from the smart list — and pause to let me watch the first batch.
-
-STEP 5 — ROUND-ROBIN: the audit found 24/26 recent leads went to Matt (round-robin not
-running). Confirm new seller leads alternate between Matt and Rebecca per the spec;
-flag it if assignment is stuck on one person.
-
-Report after each step. Treat Step 4 as a hard stop requiring my confirmation.
-```
+CRM is in-house. Do not build toward Follow Up Boss. Live nurture is `lib/crm/enroll.ts`
+and `/admin/crm/sequences`. Archive: `docs/archive/fub-era/README.md`.

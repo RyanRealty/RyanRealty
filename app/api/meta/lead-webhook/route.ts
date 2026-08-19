@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { sendEvent } from '@/lib/followupboss'
+import { sendEvent } from '@/lib/crm/send-event'
 import { createCmaRequest } from '@/lib/cma-request'
 import { getMetaPageToken } from '@/lib/meta-env'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
-import { normalizeAgentSlug, brokerSlugFromText, FUB_USER_ID_BY_BROKER, type BrokerSlug } from '@/lib/agent-attribution'
+import { normalizeAgentSlug, brokerSlugFromText, CRM_DESK_ID_BY_BROKER, type BrokerSlug } from '@/lib/agent-attribution'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 
@@ -60,7 +60,7 @@ const META_GRAPH_BASE = 'https://graph.facebook.com/v21.0'
 // resolved in the webhook — route all FB-form leads to Matt, matching the
 // "all leads to Matt" default used by the LP paths. Manual reassignment in
 // the CRM still works per-lead.
-const FUB_USER_MATT = 1
+const CRM_DESK_MATT = 1
 
 function getMetaToken(): string {
   // Prefer the System User token (has `leads_retrieval` scope so we can
@@ -543,7 +543,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
     parsed.assignedBroker ??
     brokerSlugFromText(`${parsed.campaignName ?? ''} ${parsed.adSetName ?? ''}`) ??
     'matt'
-  const brokerFubUserId = FUB_USER_ID_BY_BROKER[brokerSlug] ?? FUB_USER_MATT
+  const brokerDeskId = CRM_DESK_ID_BY_BROKER[brokerSlug] ?? CRM_DESK_MATT
 
   if (!parsed.email && !parsed.phone) {
     console.warn(`[lead-webhook] Lead ${leadId} has no email or phone — capture will skip (no dedup key)`)
@@ -577,7 +577,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
         const assignRes = await recordMarketingAssignment({
           audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
           broker: brokerSlug,
-          fubUserId: brokerFubUserId,
+          fubUserId: brokerDeskId,
           fubPersonId: native.personId,
           source: 'meta-lead-form',
           tier: parsed.intent === 'hot' || parsed.intent === 'warm' ? parsed.intent : 'nurture',
@@ -599,7 +599,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   const assignRes = await recordMarketingAssignment({
     audience: parsed.audience === 'buyer' ? 'buyer' : 'seller',
     broker: brokerSlug,
-    fubUserId: brokerFubUserId,
+    fubUserId: brokerDeskId,
     fubPersonId: personId,
     source: 'meta-lead-form',
     tier: parsed.intent === 'hot' || parsed.intent === 'warm' ? parsed.intent : 'nurture',
@@ -620,7 +620,7 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
   // and no-ops. Non-blocking so it never delays the 200 webhook ack.
   if (parsed.audience === 'buyer' && !parsed.possibleRealtor) {
     void import('@/lib/crm/enroll')
-      .then(({ autoEnrollByFubId }) => autoEnrollByFubId(personId, { smsConsent: false }))
+      .then(({ autoEnrollByPersonId }) => autoEnrollByPersonId(personId, { smsConsent: false }))
       .catch((e) => console.warn('[lead-webhook] buyer auto-enroll failed (non-blocking):', e))
   }
 

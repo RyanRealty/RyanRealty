@@ -23,6 +23,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Market Report Blog Producer
 
 **Scope:** Monthly SEO-optimized blog post at ryan-realty.com covering the Bend (or
@@ -34,7 +39,7 @@ page for Bend market report queries. Includes schema.org `BlogPosting` JSON-LD, 
 FAQ section targeting long-tail queries, embedded YouTube video (when available), and
 all stats verified by live Supabase query with citations.json.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Sibling skill:** `social_media_skills/blog-post/SKILL.md` (shorter general blog posts)
 **Exemplar output:** `out/market-report-blog/<city>-<YYYY-MM>/`

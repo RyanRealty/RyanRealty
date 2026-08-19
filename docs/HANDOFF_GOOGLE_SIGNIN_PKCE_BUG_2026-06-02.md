@@ -1,8 +1,10 @@
 # Handoff: Google (OAuth) sign-in fails at the app callback — PKCE `code_verifier` missing
 
+**Historical note (2026-08-18):** sign-in capture is `trackSignedInUser` in `lib/crm/send-event.ts` → `crm_people`. This file is a 2026-06-02 incident log.
+
 **Date:** 2026-06-02
 **Owner of fix:** next coding session (Matt asked to document, not fix, in this session)
-**Severity:** High — Google "Continue with Google" looks enabled but **no one can actually sign in**, and **no Follow Up Boss lead is created** on Google sign-in.
+**Severity:** High — Google "Continue with Google" looks enabled but **no one can actually sign in**, and **no CRM lead is created** on Google sign-in.
 
 ---
 
@@ -79,7 +81,7 @@ This is **not** a Supabase setting, a Google Cloud setting, or a provider toggle
 
 - Click "Continue with Google" on `https://ryan-realty.com/login` → should land **signed in** (redirect to `/` or `next` with `?signed_up=1`), **not** `/auth-error`.
 - GoTrue auth logs (`get_logs` service `auth`, project `dwvlophlbvvygjfxcrhm`) should now show a `POST /token` (grant_type=pkce) `200`.
-- A FUB person for the signing-in email should appear with a `Registration` event **"Signed in (Google)"** (see [`lib/followupboss.ts`](../lib/followupboss.ts) `trackSignedInUser`).
+- A `crm_people` row for the signing-in email should appear (`trackSignedInUser` in [`lib/crm/send-event.ts`](../lib/crm/send-event.ts)).
 
 ---
 

@@ -43,7 +43,7 @@ app/api/cron/marketing-snapshot-<channel>/route.ts
 | Meta Page (FB organic) | `/api/cron/marketing-snapshot-meta-page` | `lib/meta-graph.ts` (TBD) | Pending |
 | Meta Ads (FB paid) | `/api/cron/marketing-snapshot-meta-ads` | `lib/meta-graph.ts` (TBD) | Pending |
 | Instagram | (rolled into Meta Page) | `lib/meta-graph.ts` | Pending |
-| FUB (CRM) | `/api/cron/marketing-snapshot-fub` | `lib/follow-up-boss.ts` | Pending |
+| CRM | `/api/cron/marketing-snapshot-fub` | CRM daily snapshot (legacy channel key `fub`) | Pending |
 | GSC (search console) | `/api/cron/marketing-snapshot-gsc` | `app/actions/search-console-report.ts` | Pending |
 | YouTube | `/api/cron/marketing-snapshot-youtube` | `lib/youtube.ts` | Pending |
 | LinkedIn | `/api/cron/marketing-snapshot-linkedin` | `lib/linkedin.ts` | Pending |
@@ -71,9 +71,9 @@ Every row is `(date, channel, scope, scope_id, metric, value, metadata, source)`
 - `channel`.  default channel grouping (e.g. `organic_social`).
 - `video`.  a single video asset.
 
-**Metric naming.** Snake_case, one concept per metric. Use `sessions` not `Sessions`. Use `lead_events` not `leads` so it's not confused with FUB-confirmed leads (different metric).
+**Metric naming.** Snake_case, one concept per metric. Use `sessions` not `Sessions`. Use `lead_events` not `leads` so it's not confused with CRM-confirmed leads (different metric).
 
-**Source.** The API name, not the channel. `meta_ads_insights_api`, `ga4_data_api`, `gsc_api`, `fub_api_v1`.
+**Source.** The API name, not the channel. `meta_ads_insights_api`, `ga4_data_api`, `gsc_api`, `crm_people`.
 
 **Idempotency.** `(date, channel, scope, scope_id, metric)` is the primary key. Re-running an ingestor for the same date replaces the old rows.
 

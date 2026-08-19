@@ -255,7 +255,7 @@ Structure:
    - "We publish a weekly Bend market read by neighborhood. Reply 'guide' for the next one."
    - "If Bend or Central Oregon is on your radar, reach out."
 
-   Phone in close (FUB-tracked, per CLAUDE.md): `541.703.3095`. Web: `ryan-realty.com`. No
+   Phone in close (tracked inbound bio phone, per CLAUDE.md): `541.703.3095`. Web: `ryan-realty.com`. No
    hashtags anywhere in the body.
 
 LinkedIn-specific voice rules:
@@ -467,7 +467,7 @@ Run before surfacing the draft. Write results to `scorecard.json`. Any `fail` = 
 | 18 | Numbers reconcile | Every number in IG caption + LinkedIn body matches a row in `citations.json` |
 | 19 | Sale-to-list framing | Format matches Step 3 rules (over asking / of list / sold at list) |
 | 20 | LinkedIn angle relevance | If `linkedin_angle` supplied, opening references location, price tier, DOM, or pct.  not generic |
-| 21 | Phone correctness | LinkedIn = `541.703.3095` (FUB-tracked); `541.213.6706` only if explicitly Matt's direct |
+| 21 | Phone correctness | LinkedIn = `541.703.3095` (tracked inbound bio phone); `541.213.6706` only if explicitly Matt's direct |
 | 22 | URL correctness | `ryan-realty.com` (hyphenated, lowercase) |
 
 Cosmetic fails (16-22): auto-fix once and re-run. Beyond one attempt, surface to Matt.
@@ -490,7 +490,7 @@ Data-accuracy fails (1-6, 18): never auto-fix.  go straight to Matt for resoluti
 | Render failure | `ig-single-post` returns non-zero exit | Inherit the error from `ig-single-post`. Do not present a half-built bundle. |
 | Caption exceeds IG body limit | Caption > 2200 chars (IG hard cap) | Auto-trim the lifestyle close. If still over, surface.  H&H structure should never run this long. |
 | Co-listing with another brokerage | Edge case: deal where Ryan Realty co-listed | Out of scope. Surface to Matt; he handles disclosure manually. |
-| FUB phone not configured | LinkedIn body should reference `541.703.3095` but value missing from env | Hard-code from CLAUDE.md "Voice + content".  `541.703.3095` is the documented FUB-tracked bio phone. |
+| Bio phone not configured | LinkedIn body should reference `541.703.3095` but value missing from env | Hard-code from CLAUDE.md "Voice + content".  `541.703.3095` is the documented tracked inbound bio phone. |
 
 **Open spec questions** (handled inline; documented here for the next iteration):
 - Should a follow-up LinkedIn comment (1-2 weeks later) auto-generate from the same close to

@@ -3,8 +3,8 @@
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
-  type FubEventPerson,
-} from '@/lib/followupboss'
+  type LeadEventPerson,
+} from '@/lib/crm/send-event'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { saveAnonymousPartialAddress } from '@/lib/data'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
@@ -29,7 +29,7 @@ import { cookies, headers } from 'next/headers'
  *   audience:seller + seller:hot + source:fsbo-lp + intent:fsbo + broker:<slug>
  *
  * intent:fsbo routes the lead into the CRM's FSBO Recovery sequence via
- * lib/crm/enroll.ts (FUB plan 72). autoEnrollByFubId fires instantly here
+ * lib/crm/enroll.ts (sequence 72). autoEnrollByPersonId fires instantly here
  * so the 30-min delta-cron lag never applies. The pricing report the LP
  * promises is a canonical CMA request (public.cmas draft + brain action),
  * same as the seller LP.
@@ -40,7 +40,7 @@ const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
 
-const FUB_USER_MATT = 1
+const CRM_DESK_MATT = 1
 
 type BrokerSlug = 'matt' | 'rebecca' | 'paul'
 type BrokerAssignment = { broker: BrokerSlug; userId: number }
@@ -85,7 +85,7 @@ async function assignFsboLead(): Promise<BrokerAssignment> {
   // Honor ?agent= attribution cookie; default to Matt (2026-05-17 directive).
   const attributed = await readAttributedAgentServer()
   if (attributed) return { broker: attributed.broker, userId: attributed.userId }
-  return { broker: 'matt', userId: FUB_USER_MATT }
+  return { broker: 'matt', userId: CRM_DESK_MATT }
 }
 
 /**
@@ -160,7 +160,7 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
     const firstName = name.split(/\s+/)[0] || undefined
     const lastName = name.split(/\s+/).slice(1).join(' ') || undefined
 
-    const person: FubEventPerson = fubPersonId
+    const person: LeadEventPerson = fubPersonId
       ? { id: fubPersonId }
       : {
           firstName,
@@ -299,8 +299,8 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
       // Instant CRM mirror + auto-enroll. intent:fsbo already routes to the
       // FSBO Recovery sequence. Awaited so the CMA link can stamp onto the
       // CRM person for sequence merge fields (mirrors the seller LP order).
-      const { autoEnrollByFubId } = await import('@/lib/crm/enroll')
-      await autoEnrollByFubId(fubPersonId, { smsConsent: submission.smsConsent }).catch((e: unknown) =>
+      const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
+      await autoEnrollByPersonId(fubPersonId, { smsConsent: submission.smsConsent }).catch((e: unknown) =>
         console.warn('[fsbo-lp] instant auto-enroll failed:', e),
       )
     }

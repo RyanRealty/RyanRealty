@@ -33,7 +33,7 @@
 //      15s". No LiveTable component exists anywhere in the repo, and the page's
 //      own footnote says it revalidates on navigation. Cut.
 //   2. The footnote used to say "Hot scores fire a 5-minute FUB call task
-//      automatically (cron-driven)". Follow Up Boss was decommissioned
+//      automatically (cron-driven)". That vendor was decommissioned
 //      2026-06-24. /api/cron/visitor-hot-lead-escalation (every 15 min in
 //      vercel.json) calls createNativeTask with dueInMinutes: 5 against
 //      crm_tasks for an identified session, and emails the alert for every hot
@@ -280,8 +280,8 @@ export default async function LiveVisitorsPage({
         engaged 20–49, warm 50–99, hot 100 and up. A session at 100 or more is picked up by the
         hot-lead escalation cron, which runs every 15 minutes: it opens a five-minute call task on
         the contact in the CRM when the session is identified, and emails the alert either way.
-        Follow Up Boss was decommissioned 2026-06-24, so nothing is sent there. &ldquo;Today&rdquo;
-        counts from midnight UTC — that is the window the query uses, not midnight Pacific.
+        &ldquo;Today&rdquo; counts from midnight UTC — that is the window the query uses, not midnight
+        Pacific.
       </p>
     </div>
   )

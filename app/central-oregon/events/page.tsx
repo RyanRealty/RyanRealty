@@ -17,6 +17,7 @@ import type { Metadata } from 'next'
 import { getEventsForIndex, getEventsCount } from '@/lib/data'
 import { EVENT_CATEGORY_LABEL } from '@/data/co-events'
 import { shortEventDate } from '@/lib/events-format'
+import { publishPlaceWithCity } from '@/lib/place/publish-place-in-city'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -58,7 +59,7 @@ export default function EventsIndexPage() {
     const slug = event.slug.trim()
     if (!name || !slug) continue
     const when = shortEventDate(event.nextConfirmedDate) ?? event.recurrence
-    const where = event.venue.includes(event.city) ? event.venue : `${event.venue}, ${event.city}`
+    const where = publishPlaceWithCity(event.venue, event.city)
     rows.push({
       href: `/central-oregon/events/${slug}`,
       when: v3Text(when.trim() || EVENT_CATEGORY_LABEL[event.category]),

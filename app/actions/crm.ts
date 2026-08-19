@@ -19,7 +19,6 @@ import { normalizeCrmPhone } from '@/lib/crm/mirror'
 import {
   CRM_STAGES,
   CRM_BROKERS,
-  FUB_USER_ID_BY_BROKER,
   type CrmBrokerSlug,
 } from '@/lib/crm/constants'
 import { resolveCrmSlugForAccess } from '@/lib/data/brokers/resolveCrmSlug'
@@ -1366,7 +1365,7 @@ export async function createCrmContactAction(formData: FormData): Promise<CrmAct
   if (!firstName) return { ok: false, error: 'First name required' }
   if (!email && !phone) return { ok: false, error: 'An email or a phone number is required' }
 
-  const { sendEvent } = await import('@/lib/followupboss')
+  const { sendEvent } = await import('@/lib/crm/send-event')
   const sent = await sendEvent({
     type: 'General Inquiry',
     source,

@@ -64,9 +64,9 @@ fixed → 10–15m. Blocked → 60m heartbeat, do not invent UI work.
 
 | Lane | Auto without Matt? | Examples |
 |---|---|---|
-| **A — Integrity** | YES | Stale e2e asserts, RBAC scope on reads/writes, double-send/idempotency, suppression holes, conversation reply targeting bugs, dead FUB wiring, orphan cron registration, OREA re-verify tooling if mechanical |
+| **A — Integrity** | YES | Stale e2e asserts, RBAC scope on reads/writes, double-send/idempotency, suppression holes, conversation reply targeting bugs, leftover vendor-CRM wiring, orphan cron registration, OREA re-verify tooling if mechanical |
 | **B — Litmus / engine** | YES to keep green | Re-run litmus recipe; fix regressions that break ≤3 taps / ≤30s CMA kickoff; cron failures; alert deep-link `?intent=cma` |
-| **C — IA / cut list** | NO — propose only | Destination count, delete 59→N pages, kill FUB-parity chrome |
+| **C — IA / cut list** | NO — propose only | Destination count, delete 59→N pages, kill vendor-CRM parity chrome |
 | **D — UI rebuild** | NO until Phase 3 signed | One responsive person tree, Unified SendPanel, inbox mobile/desktop merge |
 | **E — Metric SoT / analytics** | Propose + fix only if single wrong reader is proven | “new leads” multi-definition — fix reader to one DAL after proof |
 
@@ -109,13 +109,13 @@ node scripts/crm-e2e-verify.mjs
 ```
 
 Capture pass/warn/fail. Fix Lane A e2e fails first (including retiring
-`wiring.static` / `mirrorPersonFromFub` if FUB is still decommissioned).
+`wiring.static` / leftover vendor-CRM mirror helpers if they are still imported).
 
 ### 3. Pick next punch item
 
 Order (skip Matt-gated):
 
-1. L4 stale FUB e2e wiring  
+1. L4 stale vendor-CRM e2e wiring  
 2. L3 OREA re-verify (mechanical if scripted; else surface to Matt)  
 3. L5 confirm `CRM_SMS_ALERTS` in prod env — document, do not guess  
 4. S4 RBAC GAP-0 / GAP-W (broker cannot load/mutate out-of-scope person)  

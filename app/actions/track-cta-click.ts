@@ -2,7 +2,7 @@
 
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { sendEvent, type FubEventPerson } from '@/lib/followupboss'
+import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 
 export type TrackCtaClickParams = {
   label: string
@@ -27,7 +27,7 @@ export async function trackCtaClickAction(params: TrackCtaClickParams): Promise<
   const [session, fubPersonId] = await Promise.all([getSession(), getPersonIdFromCookie()])
   const email = session?.user?.email?.trim() || null
 
-  let person: FubEventPerson | null = null
+  let person: LeadEventPerson | null = null
   if (email) {
     person = { emails: [{ value: email }] }
   } else if (fubPersonId != null && fubPersonId > 0) {

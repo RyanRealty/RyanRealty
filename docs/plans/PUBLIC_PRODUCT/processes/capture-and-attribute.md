@@ -425,7 +425,7 @@ confirmed ONE process, not four.
   exposure) but the visitor's actual consent is discarded — the opposite loss to D3's
   race. This door was omitted from this PDS entirely until the 2026-08-11 repair pass.
 - **Naming debt (cosmetic, confirmed):** `autoEnrollByFubId` accepts native ids
-  (`lib/crm/enroll.ts:274-283`), `SendEventParams`/`FubEventPerson` keep the FUB shape
+  (`lib/crm/enroll.ts:274-283`), `SendEventParams`/`LeadEventPerson` keep the FUB shape
   (`lib/followupboss.ts:49-94`), `fubPersonId` variables are native ids throughout.
 
 **Duplicate/parallel paths that should die:** D8's orphaned pipeline; D9's dead

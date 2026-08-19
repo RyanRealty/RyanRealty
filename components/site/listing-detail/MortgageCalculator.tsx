@@ -6,6 +6,7 @@ import {
   Price,
 } from '@/components/site/primitives'
 import { publishFinancingSplit } from '@/lib/finance/publish-down-payment'
+import { PROPERTY_TAX_RATE_PCT } from '@/lib/property-tax-rate'
 
 /**
  * Listing-detail MortgageCalculator — KB section style.
@@ -18,12 +19,19 @@ type Props = {
   listPrice: number | null
   taxAnnualAmount?: number | null
   className?: string
+  /**
+   * Seed rate in PERCENT (6.67 = 6.67%), resolved server-side from
+   * getCalculatorDefaults() — which reads the ingested 30-yr series, not a
+   * hand-typed row. Omitted / null falls back to DEFAULT_RATE_PCT so the
+   * calculator always renders.
+   */
+  ratePct?: number | null
 }
 
+/** Fallback seed only. A real rate arrives as the `ratePct` prop. */
 const DEFAULT_RATE_PCT = 7.0
 const DEFAULT_DOWN_PCT = 20
 const DEFAULT_TERM_YEARS = 30
-const TAX_FALLBACK_PCT = 0.85
 const INSURANCE_PER_300K = 1000
 
 function monthlyPI(principal: number, ratePct: number, termYears: number): number {
@@ -53,10 +61,12 @@ function parsePercent(raw: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
-export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Props) {
+export function MortgageCalculator({ listPrice, taxAnnualAmount, className, ratePct }: Props) {
+  const seedRatePct =
+    typeof ratePct === 'number' && Number.isFinite(ratePct) && ratePct > 0 ? ratePct : DEFAULT_RATE_PCT
   const [priceInput, setPriceInput] = useState(listPrice ? String(listPrice) : '')
   const [downPctInput, setDownPctInput] = useState(String(DEFAULT_DOWN_PCT))
-  const [rateInput, setRateInput] = useState(String(DEFAULT_RATE_PCT))
+  const [rateInput, setRateInput] = useState(String(seedRatePct))
   const [termInput, setTermInput] = useState(String(DEFAULT_TERM_YEARS))
 
   const result = useMemo(() => {
@@ -68,7 +78,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
     const down = split?.downPayment ?? 0
     const principal = split?.loanAmount ?? 0
     const pi = monthlyPI(principal, ratePct, termYears)
-    const taxesPerYear = taxAnnualAmount ?? price * (TAX_FALLBACK_PCT / 100)
+    const taxesPerYear = taxAnnualAmount ?? price * (PROPERTY_TAX_RATE_PCT / 100)
     const insurancePerYear = (price / 300_000) * INSURANCE_PER_300K
     const taxesMonthly = taxesPerYear / 12
     const insuranceMonthly = insurancePerYear / 12

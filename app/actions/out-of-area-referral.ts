@@ -9,7 +9,7 @@
  * channel) and tags the lead `geo:out-of-area` + `referral:candidate`.
  *
  * NOTHING auto-sends to the lead:
- *   - no canonicallyTagLead / autoEnrollByFubId call here, and
+ *   - no canonicallyTagLead / autoEnrollByPersonId call here, and
  *   - the referral:candidate tag hard-gates autoEnrollPerson
  *     (lib/crm/enroll.ts) so the 15-min catch-all cron cannot enroll them
  *     into a drip either.

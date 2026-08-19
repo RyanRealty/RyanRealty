@@ -24,6 +24,7 @@ import { getEventDetail } from '@/lib/data'
 import { CO_EVENTS, getEventBySlug, EVENT_CATEGORY_LABEL } from '@/data/co-events'
 import { CO_VENUES } from '@/data/co-venues'
 import { formatEventDate, buildEventFaq } from '@/lib/events-format'
+import { publishPlaceInCity } from '@/lib/place/publish-place-in-city'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -161,7 +162,7 @@ export default async function EventDetailPage({ params }: Props) {
   quietItems.push({
     kind: 'prose',
     term: 'Where',
-    body: `${event.venue} in ${event.city}.`,
+    body: `${publishPlaceInCity(event.venue, event.city)}.`,
   })
   if (event.priceInfo?.trim()) {
     quietItems.push({ kind: 'prose', term: 'Admission', body: event.priceInfo.trim() })

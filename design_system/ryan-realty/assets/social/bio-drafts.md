@@ -1,6 +1,6 @@
 # Ryan Realty — bio system (v2)
 
-> **Phone in bios:** `541.703.3095` (the brokerage main line, connected to Follow Up Boss for inbound lead tracking — locked by Matt 2026-05-13). Matt's direct line `541.213.6706` is reserved for the listing-agent footer on per-listing collateral, not the brokerage social bios.
+> **Phone in bios:** `541.703.3095` (the brokerage main line — locked by Matt 2026-05-13). Matt's direct line `541.213.6706` is reserved for the listing-agent footer on per-listing collateral, not the brokerage social bios.
 >
 > **Banner:** F1 frame extracted from iStock-1330945786 (Old Mill District drone clip, 3.61s timestamp). Stock subscription license — covered by active sub. No attribution required in bio.
 

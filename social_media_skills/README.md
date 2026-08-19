@@ -61,7 +61,7 @@ Growth operations, community management, advertising, and integrations.
 | api-integration-wrappers.md | API wrappers for Meta, TikTok, and scheduling tools used in the automated pipeline |
 | community-management.md | Comment response playbook, DM handling, and reputation management rules |
 | ads-management.md | Paid social campaign setup, targeting strategy, budget pacing, and reporting |
-| lead-nurture.md | Lead capture and nurture flows from social to CRM (Follow Up Boss) |
+| lead-nurture.md | Lead capture and nurture flows from social to the in-house CRM (`crm_people` via `sendEvent`) |
 
 ---
 

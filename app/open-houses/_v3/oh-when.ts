@@ -1,4 +1,4 @@
-import { formatDate } from '@/lib/format/date'
+import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 
 /** 24h "HH:MM:SS" or "HH:MM" to a short clock. Empty in, empty out. */
 export function formatClock(raw: string | null | undefined): string {
@@ -22,7 +22,7 @@ export function openHouseWhen(
   start: string | null,
   end: string | null,
 ): string {
-  const day = formatDate(`${eventDate}T12:00:00Z`, {
+  const day = publishCalendarDay(eventDate, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

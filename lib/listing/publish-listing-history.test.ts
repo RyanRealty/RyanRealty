@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { publishListingHistory } from './publish-listing-history'
+import {
+  publishListingHistory,
+  publishListingHistoryDeltaLabel,
+  publishListingHistoryDescription,
+} from './publish-listing-history'
 
 describe('publishListingHistory', () => {
   it('Borden: listed from OnMarketDate when listing_history is empty', () => {
@@ -58,5 +62,24 @@ describe('publishListingHistory', () => {
 
   it('does not invent a listed row without OnMarketDate', () => {
     expect(publishListingHistory({ listPrice: 100000 })).toEqual([])
+  })
+
+  it('Swalley: withholds raw ListPrice dump on the published row', () => {
+    const rows = publishListingHistory({
+      listingHistory: [
+        {
+          event: 'pricechange',
+          event_date: '2026-04-01',
+          price: 11_900_000,
+          description: 'ListPrice: 14900000.00 → 11900000.00',
+        },
+      ],
+    })
+    expect(rows[0]?.description).toBeNull()
+    expect(publishListingHistoryDescription('ListPrice: 14900000.00 → 11900000.00')).toBeNull()
+    expect(publishListingHistoryDescription('ListPrice: 1795000.00 → 1595000.00')).toBeNull()
+    expect(publishListingHistoryDescription('Reduced after inspection')).toBe('Reduced after inspection')
+    expect(publishListingHistoryDeltaLabel(3_000_000, 'down')).toBe('$3.0M down')
+    expect(publishListingHistoryDeltaLabel(200_000, 'up')).toBe('$200K up')
   })
 })

@@ -1,6 +1,6 @@
 'use server'
 
-import { sendEvent, type FubEventPerson } from '@/lib/followupboss'
+import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { sendContactNotification } from '@/lib/resend'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
@@ -64,7 +64,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Please enter a valid email address' }
 
     const nameParts = name.split(/\s+/)
-    const person: FubEventPerson = {
+    const person: LeadEventPerson = {
       firstName: nameParts[0] ?? undefined,
       lastName: nameParts.slice(1).join(' ') || undefined,
       emails: [{ value: email }],

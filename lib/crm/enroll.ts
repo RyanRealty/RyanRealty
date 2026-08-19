@@ -73,7 +73,7 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
   // Referral tier (W12): out-of-area referral candidates and fail-closed
   // unclassified property inquiries never enter the standard drip sequences.
   // This single gate covers BOTH the intake fire-and-forget path
-  // (canonicallyTagLead -> autoEnrollByFubId) and the 15-min crm-auto-enroll
+  // (canonicallyTagLead -> autoEnrollByPersonId) and the 15-min crm-auto-enroll
   // catch-all cron, because both funnel through autoEnrollPerson after the
   // tags are written. See lib/referral-geo.ts geoReferralEnrollBlock.
   const referralBlock = geoReferralEnrollBlock(tags)
@@ -284,29 +284,17 @@ export async function renderFirstTouchPreview(
   return { channel: step.channel, body }
 }
 
-/** Resolve a FUB person id to the CRM mirror (mirroring first if needed), then auto-enroll. */
-export async function autoEnrollByFubId(
-  fubPersonId: number,
+/** Resolve crm_people.id first, then fub_legacy_id, then auto-enroll. */
+export async function autoEnrollByPersonId(
+  personId: number,
   opts?: { smsConsent?: boolean },
 ): Promise<AutoEnrollResult> {
   const sb = createServiceClient()
-  let { data } = await sb.from('crm_people').select('id').eq('fub_legacy_id', fubPersonId).maybeSingle()
+  let { data } = await sb.from('crm_people').select('id').eq('id', personId).maybeSingle()
   if (!data) {
-    // Post-FUB-cutover (2026-06-24): most lead-capture paths (LP forms, the
-    // expired/FSBO/seller crons) now create a NATIVE crm_people row via
-    // ensureNativeLead and pass its crm_people.id here — there is no
-    // fub_legacy_id to resolve. Before mirroring (a FUB round-trip that is dead
-    // in production), check whether the id IS already a native crm_people id.
-    const { data: nativeRow } = await sb.from('crm_people').select('id').eq('id', fubPersonId).maybeSingle()
-    if (nativeRow) {
-      data = nativeRow
-    } else {
-      const { mirrorPersonFromFub } = await import('@/lib/crm/mirror')
-      await mirrorPersonFromFub(fubPersonId)
-      ;({ data } = await sb.from('crm_people').select('id').eq('fub_legacy_id', fubPersonId).maybeSingle())
-    }
+    ;({ data } = await sb.from('crm_people').select('id').eq('fub_legacy_id', personId).maybeSingle())
   }
-  if (!data) return { enrolled: false, reason: 'mirror not available' }
+  if (!data) return { enrolled: false, reason: 'person not found' }
   // Fail-closed SMS consent (A2P 10DLC / TCPA, Twilio ticket 27497858): a person
   // is text-eligible ONLY when they actively checked the SMS consent box on a
   // public lead form (the action passes smsConsent:true). Every other caller —
@@ -321,7 +309,7 @@ export async function autoEnrollByFubId(
       await addSuppression({ personId: data.id, channel: 'sms', reason: 'no-sms-consent', source: 'lead-form' })
     }
   } catch (e) {
-    console.error('[autoEnrollByFubId] sms-consent suppression failed', e)
+    console.error('[autoEnrollByPersonId] sms-consent suppression failed', e)
   }
   const result = await autoEnrollPerson(data.id)
   // Instant broker text for site-originated leads (dedupe inside the queue —

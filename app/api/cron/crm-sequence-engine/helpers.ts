@@ -9,7 +9,7 @@ import 'server-only'
 import { attributeSiteLinks, renderCrmMerge, type MergeContext, type MergePersonLike } from '@/lib/crm/merge'
 
 /**
- * A FollowUpBoss-archived email/SMS template imports into crm_templates with its
+ * An archived email/SMS template imports into crm_templates with its
  * subject AND body replaced by the literal placeholder "archived" (FUB's marker
  * for a disabled template). Delivering one sends a contact an email/text that
  * literally reads "archived". This guards the send path: a resolved template

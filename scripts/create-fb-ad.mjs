@@ -20,7 +20,6 @@
  * Requires:
  *   META_AD_ACCOUNT_ID, META_PAGE_ID / META_FB_PAGE_ID, META_PAGE_ACCESS_TOKEN / META_PAGE_TOKEN
  *   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- *   FUB_API_KEY, FUB_PIPELINE_ID
  *
  * Fair Housing Act compliance:
  *   Special ad category HOUSING is enforced by the API client — cannot be skipped.
@@ -32,7 +31,7 @@
  *   [ ] Ad copy passes banned-word check
  *   [ ] Daily budget set correctly
  *   [ ] Status = PAUSED (review before activating)
- *   [ ] FUB webhook verified at /api/meta/lead-webhook
+ *   [ ] Native CRM webhook verified at /api/meta/lead-webhook
  */
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
@@ -102,7 +101,7 @@ if (!period || !/^\d{4}-\d{2}$/.test(period)) {
 }
 
 // ---------------------------------------------------------------------------
-// Env preflight — Meta + FUB keys must be present before we do any work
+// Env preflight — Meta keys must be present before we do any work
 // ---------------------------------------------------------------------------
 
 function checkEnvPreflight() {
@@ -111,12 +110,10 @@ function checkEnvPreflight() {
   const metaAccount = (process.env.META_AD_ACCOUNT_ID || '').trim()
   const metaPage = (process.env.META_PAGE_ID || process.env.META_FB_PAGE_ID || '').trim()
   const metaToken = (process.env.META_PAGE_ACCESS_TOKEN || process.env.META_PAGE_TOKEN || '').trim()
-  const fubKey = (process.env.FUB_API_KEY || process.env.FOLLOWUPBOSS_API_KEY || '').trim()
 
   if (!metaAccount) missing.push('META_AD_ACCOUNT_ID (format: act_XXXXXXXXX — find in Ads Manager → Account Overview)')
   if (!metaPage) missing.push('META_PAGE_ID or META_FB_PAGE_ID (Ryan Realty Facebook Page ID)')
   if (!metaToken) missing.push('META_PAGE_ACCESS_TOKEN or META_PAGE_TOKEN (long-lived page access token)')
-  if (!fubKey) missing.push('FUB_API_KEY or FOLLOWUPBOSS_API_KEY (Follow-Up Boss API → Settings → API)')
 
   if (missing.length > 0) {
     console.error('\n[create-fb-ad] Missing required env vars:')
@@ -125,11 +122,6 @@ function checkEnvPreflight() {
     }
     console.error('\nAdd these to .env.local and re-run.')
     process.exit(1)
-  }
-
-  const pipelineId = (process.env.FUB_PIPELINE_ID || '').trim()
-  if (!pipelineId) {
-    console.warn('[create-fb-ad] WARNING: FUB_PIPELINE_ID not set. Leads will enter FUB without a pipeline. Add FUB_PIPELINE_ID=<id> to .env.local.')
   }
 }
 
@@ -398,11 +390,11 @@ async function main() {
     console.log('Pre-launch QA checklist:')
     console.log('  [ ] Review ad in Ads Manager: ' + previewUrl)
     console.log('  [ ] Verify lead form fields (first/last/email/phone/intent)')
-    console.log('  [ ] Confirm FUB webhook is configured at /api/meta/lead-webhook')
+    console.log('  [ ] Confirm native CRM webhook is configured at /api/meta/lead-webhook')
     console.log('  [ ] Confirm daily budget ($' + spec.ad_set.daily_budget_dollars + '/day)')
     console.log('  [ ] Confirm run length (' + spec.ad_set.run_days + ' days from ' + new Date(spec.ad_set.start_time).toLocaleDateString() + ')')
   } else {
-    console.log('Status: ACTIVE — campaign is live. Leads will route to FUB pipeline ' + (process.env.FUB_PIPELINE_ID || '(unset)'))
+    console.log('Status: ACTIVE — campaign is live. Leads route to native CRM via /api/meta/lead-webhook')
   }
   console.log('='.repeat(60))
 }

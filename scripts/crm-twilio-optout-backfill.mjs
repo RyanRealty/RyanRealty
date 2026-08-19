@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Backfill FUB SMS opt-outs into Twilio via the Consent Management API
-// (Compliance Toolkit). TCPA P0 per crm-e2e SKILL PRIORITY INPUT 2: people
-// tagged contact:do-not-text / compliance:hard-stop in FUB must be registered
-// as opt-out at the Twilio layer too, so a send can never slip past our own
-// gate (lib/crm/suppressions.ts stays the first line of defense).
+// Backfill native CRM SMS opt-outs into Twilio via the Consent Management API
+// (Compliance Toolkit). People tagged contact:do-not-text / compliance:hard-stop
+// on crm_people, plus crm_suppressions rows on sms/all, must be registered as
+// opt-out at the Twilio layer too, so a send can never slip past our own gate
+// (lib/crm/suppressions.ts stays the first line of defense).
 //
 // Endpoint: POST https://accounts.twilio.com/v1/Consents/Bulk
 //   - up to 25 items/request, 100 requests/min
@@ -16,11 +16,12 @@
 //   node scripts/crm-twilio-optout-backfill.mjs            # dry-run: list + count only
 //
 // Scope: full company (all brokers) — compliance syncs are never narrowed.
-// Read-only against FUB; writes only to Twilio consent records.
+// Read-only against crm_people / crm_suppressions; writes only to Twilio.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { createClient } from '@supabase/supabase-js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const env = {};
@@ -29,13 +30,14 @@ for (const line of fs.readFileSync(path.join(ROOT, '.env.local'), 'utf8').split(
   if (i > 0 && !line.startsWith('#')) env[line.slice(0, i).trim()] = line.slice(i + 1).trim();
 }
 
-const FUB_AUTH = 'Basic ' + Buffer.from(`${env.FOLLOWUPBOSS_API_KEY}:`).toString('base64');
+const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const TW_AUTH = 'Basic ' + Buffer.from(`${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`).toString('base64');
 const SERVICE = env.TWILIO_MESSAGING_SERVICE_SID;
 const SMOKE = process.argv.includes('--smoke');
 const EXECUTE = process.argv.includes('--execute');
 
 const OPT_OUT_TAGS = ['contact:do-not-text', 'compliance:hard-stop'];
+const PAGE = 1000;
 
 function toE164(raw) {
   if (!raw) return null;
@@ -48,33 +50,75 @@ function toE164(raw) {
   return null;
 }
 
-async function fubPeopleByTag(tag) {
+async function pageAll(build) {
+  const rows = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build().range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    rows.push(...(data ?? []));
+    if ((data ?? []).length < PAGE) break;
+  }
+  return rows;
+}
+
+async function peopleByOptOutTags() {
+  return pageAll(() =>
+    sb.from('crm_people').select('id,name,phones,tags').overlaps('tags', OPT_OUT_TAGS),
+  );
+}
+
+async function peopleBySmsSuppression() {
+  const rows = await pageAll(() =>
+    sb.from('crm_suppressions').select('person_id').in('channel', ['sms', 'all']).not('person_id', 'is', null),
+  );
+  const ids = [...new Set(rows.map((r) => r.person_id).filter(Boolean))];
   const people = [];
-  let url = `https://api.followupboss.com/v1/people?tags=${encodeURIComponent(tag)}&fields=id,name,phones,tags&limit=100`;
-  while (url) {
-    const res = await fetch(url, { headers: { Authorization: FUB_AUTH, 'X-System': env.FOLLOWUPBOSS_SYSTEM, 'X-System-Key': env.FOLLOWUPBOSS_SYSTEM_KEY } });
-    if (!res.ok) throw new Error(`FUB ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    const data = await res.json();
-    people.push(...(data.people ?? []));
-    url = data._metadata?.nextLink ?? null;
+  for (let i = 0; i < ids.length; i += 200) {
+    const chunk = ids.slice(i, i + 200);
+    const { data, error } = await sb.from('crm_people').select('id,name,phones,tags').in('id', chunk);
+    if (error) throw new Error(error.message);
+    people.push(...(data ?? []));
   }
   return people;
 }
 
-(async () => {
-  // 1. Collect opted-out people from FUB (source of truth for the tags).
-  const byId = new Map();
-  for (const tag of OPT_OUT_TAGS) {
-    const people = await fubPeopleByTag(tag);
-    console.log(`FUB tag "${tag}": ${people.length} people`);
-    for (const p of people) byId.set(p.id, p);
+async function phonesFromContactPoints(personIds) {
+  const byPerson = new Map();
+  for (let i = 0; i < personIds.length; i += 200) {
+    const chunk = personIds.slice(i, i + 200);
+    const { data, error } = await sb
+      .from('crm_contact_points')
+      .select('person_id,value')
+      .eq('kind', 'phone')
+      .in('person_id', chunk);
+    if (error) throw new Error(error.message);
+    for (const row of data ?? []) {
+      const list = byPerson.get(row.person_id) ?? [];
+      list.push(row.value);
+      byPerson.set(row.person_id, list);
+    }
   }
+  return byPerson;
+}
 
-  // 2. Extract + dedupe E.164 phone numbers.
-  const numbers = new Map(); // e164 -> person name (first seen)
+(async () => {
+  const tagged = await peopleByOptOutTags();
+  console.log(`crm_people opt-out tags (${OPT_OUT_TAGS.join(', ')}): ${tagged.length} people`);
+  const suppressed = await peopleBySmsSuppression();
+  console.log(`crm_suppressions sms/all: ${suppressed.length} people`);
+
+  const byId = new Map();
+  for (const p of [...tagged, ...suppressed]) byId.set(p.id, p);
+
+  const extraPhones = await phonesFromContactPoints([...byId.keys()]);
+  const numbers = new Map();
   for (const p of byId.values()) {
-    for (const ph of p.phones ?? []) {
-      const e = toE164(ph.value);
+    const raw = [
+      ...(p.phones ?? []).map((ph) => (typeof ph === 'string' ? ph : ph?.value)),
+      ...(extraPhones.get(p.id) ?? []),
+    ];
+    for (const value of raw) {
+      const e = toE164(value);
       if (e && !numbers.has(e)) numbers.set(e, p.name ?? `person ${p.id}`);
     }
   }
@@ -89,7 +133,6 @@ async function fubPeopleByTag(tag) {
   }
   console.log(`${SMOKE ? 'SMOKE TEST' : 'FULL BACKFILL'}: writing ${targets.length} opt-out consents to ${SERVICE}`);
 
-  // 3. Bulk upsert, 25/request, ≤100 req/min (sleep 700ms between requests).
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   let ok = 0, failed = 0;
   for (let i = 0; i < targets.length; i += 25) {

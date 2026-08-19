@@ -12,7 +12,7 @@ import { fetchListings } from '@/lib/spark-odata'
 import type { SparkListing } from '@/lib/spark-odata'
 import { processSparkListing } from '@/lib/listing-processor'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
-import { sparkToListingRow, sparkHistoryItemToRow as unifiedHistoryItemToRow } from '@/lib/listing-mapper'
+import { sparkToListingRow, sparkHistoryItemToRow as unifiedHistoryItemToRow, type ListingMapperOptions } from '@/lib/listing-mapper'
 import * as Sentry from '@sentry/nextjs'
 
 export type SyncDeltaResult = {
@@ -93,13 +93,12 @@ async function syncListingVideosForRows(
 // Local sparkHistoryItemToRow removed — using unifiedHistoryItemToRow from @/lib/listing-mapper
 const sparkHistoryItemToRow = unifiedHistoryItemToRow
 
-/** Wrap unified mapper to accept a Spark API result object (with StandardFields, Id, and optional CustomFields). */
-function unifiedSparkToRow(result: {
-  StandardFields?: Record<string, unknown>
-  Id?: string
-  CustomFields?: unknown
-}): Record<string, unknown> {
-  return sparkToListingRow(result.StandardFields ?? {}, result.Id, result.CustomFields) as unknown as Record<string, unknown>
+/** Wrap the unified mapper for a Spark result. Call from `.map()` in a LAMBDA, never bare — a bare ref hands `.map`'s index in as `options`. */
+function unifiedSparkToRow(
+  result: { StandardFields?: Record<string, unknown>; Id?: string; CustomFields?: unknown },
+  options?: ListingMapperOptions,
+): Record<string, unknown> {
+  return sparkToListingRow(result.StandardFields ?? {}, result.Id, result.CustomFields, options) as unknown as Record<string, unknown>
 }
 
 export type SyncSparkResult = {
@@ -152,6 +151,7 @@ export async function syncSparkListings(options?: {
   let totalFetched = 0
   let totalUpserted = 0
   let pagesProcessed = 0
+  const mortgageRate = (await (await import('@/lib/data/market/getLiveMortgageRate')).getLiveMortgageRate())?.ratePct ?? null // ONE live-rate read per full sync; null → mapper default
 
   try {
     while (currentPage <= totalPages && pagesProcessed < maxPages) {
@@ -184,7 +184,7 @@ export async function syncSparkListings(options?: {
         totalPages = pagination.TotalPages
       }
 
-      const rows = D.Results.map(unifiedSparkToRow)
+      const rows = D.Results.map((r) => unifiedSparkToRow(r, { mortgageRate }))
       totalFetched += rows.length
 
       const { upsertListingRows } = await import('@/lib/data')

@@ -227,83 +227,56 @@ const publishFacebookReel = async (videoUrl, caption) => {
 
 ---
 
-## 4. Follow Up Boss: Create Lead from IG DM
+## 4. In-house CRM: Create Lead from IG DM
 
-**Purpose:** When someone DMs "strategy", capture them as a lead in FUB
+**Purpose:** When someone DMs "strategy", capture them as a lead in `public.crm_people`
 
-**Auth:** FOLLOWUPBOSS_API_KEY (use as Basic auth username)
-
-**Endpoint:** POST https://api.followupboss.com/v1/people
+**Path:** `sendEvent` in `lib/crm/send-event.ts`. Review at `/admin/crm`. Do not set `FOLLOWUPBOSS_API_KEY`. Do not call `api.followupboss.com`.
 
 **Code (Node.js):**
 
 ```javascript
-const createFUBLead = async (firstName, lastName, email, igDmSource) => {
-  const fubKey = process.env.FOLLOWUPBOSS_API_KEY;
-  const auth = Buffer.from(`${fubKey}:`).toString("base64");
-  
-  const response = await fetch("https://api.followupboss.com/v1/people", {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${auth}`,
-      "Content-Type": "application/json"
+import { sendEvent } from "@/lib/crm/send-event";
+
+const createCrmLead = async (firstName, lastName, email, igDmSource) => {
+  const result = await sendEvent({
+    type: "General Inquiry",
+    source: "Instagram DM",
+    person: {
+      firstName,
+      lastName,
+      emails: email ? [{ value: email }] : undefined,
+      tags: ["Social Lead", "Market Strategy", `dm_keyword:${igDmSource}`],
     },
-    body: JSON.stringify({
-      firstName: firstName,
-      lastName: lastName,
-      emails: [{ value: email }],
-      source: "Instagram DM",
-      tags: ["Social Lead", "Market Strategy"],
-      customFields: {
-        "dm_keyword": igDmSource // e.g., "strategy", "tour", "Bend"
-      }
-    })
+    message: `IG DM keyword: ${igDmSource}`,
   });
-  
-  const lead = await response.json();
-  return lead.id;
+  return result.ok ? result.personId : null;
 };
 ```
 
 **Expected Latency:** 1-2 seconds
 
-**Docs:** [FUB People API](https://api.followupboss.com/docs/people)
+**Admin:** `/admin/crm`
 
 ---
 
-## 5. Follow Up Boss: Add Lead to Action Plan
+## 5. In-house CRM: Enroll Lead in a Sequence
 
-**Purpose:** Enroll newly captured lead into nurture sequence
+**Purpose:** Enroll newly captured lead into a nurture sequence
 
-**Auth:** FOLLOWUPBOSS_API_KEY
+**Path:** `lib/crm/enroll.ts` + `/admin/crm/sequences`. Auto-enroll also runs on `/api/cron/crm-auto-enroll`.
 
 **Code (Node.js):**
 
 ```javascript
-const addLeadToActionPlan = async (personId, actionPlanId) => {
-  const fubKey = process.env.FOLLOWUPBOSS_API_KEY;
-  const auth = Buffer.from(`${fubKey}:`).toString("base64");
-  
-  const response = await fetch(
-    "https://api.followupboss.com/v1/actionPlansPeople",
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${auth}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        personId: personId,
-        actionPlanId: actionPlanId, // Matt's nurture sequence IDs
-        enrollAt: new Date().toISOString()
-      })
-    }
-  );
-  
-  return await response.json();
+import { autoEnrollPerson } from "@/lib/crm/enroll";
+
+const enrollLead = async (personId) => {
+  return autoEnrollPerson(personId);
 };
 ```
 
+Do not call a vendor action-plan API. Sequences are edited at `/admin/crm/sequences`.
 ---
 
 ## 6. Resend: Send Follow-Up Email
@@ -817,7 +790,7 @@ RyanRealty/app/api/social/
   ├── queue-posts.ts (POST /api/social/queue-posts)
   └── _lib/
       ├── instagram.ts (IG API helpers)
-      ├── followupboss.ts (FUB API helpers)
+      ├── send-event.ts (CRM capture helpers)
       └── metrics.ts (Supabase metrics logging)
 ```
 
@@ -867,9 +840,9 @@ const publishViaRoute = async (videoUrl, caption) => {
 - Use Upstash Redis queue to batch posts
 - Retry on 429 with exponential backoff
 
-**Follow Up Boss:**
-- Rate limit: 1,000 calls/hour
-- Safe for single lead capture
+**In-house CRM (`sendEvent` → `crm_people`):**
+- No vendor API. One write per capture via `lib/crm/send-event.ts`
+- Safe for single lead capture. Review at `/admin/crm`
 
 **Synthesia:**
 - Queue: 1 video at a time (auto-queues if concurrent)

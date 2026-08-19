@@ -42,7 +42,6 @@ export const EnvSchema = z.object({
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
-  FOLLOWUPBOSS_API_KEY: z.string().optional(),
   // CRM send/track secrets (CONTACT360 Phase 9.8). Listed so a missing one is
   // visible at boot instead of silently falling back to the service-role key /
   // 'insecure-dev-secret'. EMAIL_TRACKING_SECRET signs the open/click + unsubscribe
@@ -81,7 +80,6 @@ export const optional = [
   'NEXT_PUBLIC_VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
   'RESEND_API_KEY',
-  'FOLLOWUPBOSS_API_KEY',
   'EMAIL_TRACKING_SECRET',
   'CRON_SECRET',
   'CMA_PREVIEW_SECRET',

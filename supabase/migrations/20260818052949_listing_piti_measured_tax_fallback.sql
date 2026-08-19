@@ -1,0 +1,16 @@
+-- APPLIED to production 2026-08-17 (version 20260818052949 UTC) via the Supabase MCP;
+-- recorded post-hoc so migration history matches the database.
+--
+-- Replaces the 1% tax fallback inside compute_listing_derived_fields() with the
+-- MEASURED median of tax_annual_amount / ListPrice on live actives
+-- (StandardStatus='Active', tax_annual_amount > 0, ListPrice > 50000, ratio < 5%,
+-- n = 6,213): p25 0.349% · median 0.569% · mean 0.576% · p75 0.760%. Oregon
+-- Measure 5/50 keeps assessed value below market, so effective tax on LIST price
+-- is low. The declaration this migration introduced:
+--
+--   tax_fallback_pct constant numeric := 0.0057;  -- measured median, n=6213
+--
+-- The full function body is otherwise identical to 20260818045639; only the
+-- fallback constant and its use in monthly_tax changed. Locked to
+-- lib/property-tax-rate.ts by lib/property-tax-rate.test.ts, which reads THIS
+-- file. Change one and the test fails until you change the other.

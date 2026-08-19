@@ -17,7 +17,7 @@ Have available:
 - Existing April content package: `Ryan Realty - Social Media Content Package - April 2026.docx`
 - Tumalo listing assets (7 story frames + Reel + photos in CANVA)
 - Snowdrift Visuals inventory: 19 neighborhood Photo + Video folders in Google Drive
-- Follow Up Boss API: FOLLOWUPBOSS_API_KEY (pull common buyer/seller questions)
+- In-house CRM: `public.crm_people` notes / tags at `/admin/crm` (pull common buyer/seller questions). Do not set `FOLLOWUPBOSS_API_KEY`.
 - Google Sheets Service Account (for exporting calendar to Matt's dashboard)
 - Supabase access (optional: store calendar metadata in content_calendar_monthly table)
 
@@ -101,8 +101,8 @@ Rotate 1 neighborhood per week across platforms:
 
 After 19 weeks, rotate again.
 
-### 3. Follow Up Boss Lead Trends
-Query FUB API weekly for common buyer/seller questions:
+### 3. CRM Lead Trends
+Query `crm_people` + timeline notes weekly for common buyer/seller questions (review at `/admin/crm`):
 - "When should I list my home?", Education: seasonal timing
 - "How much down payment do I need?", Education: financing 101
 - "Is [neighborhood] a good investment?", Education + Local Lifestyle combo
@@ -203,7 +203,7 @@ Generate Markdown file: `/sessions/magical-sweet-fermat/mnt/SOCIAL MEDIA MANAGER
 - **Format**: Reel, Story (IG/FB), Carousel, Static, Video, Text Post, What's New, etc.
 - **Pillar**: Education, Lifestyle, Market Commentary, Personality, Listing
 - **Hook**: First line or first 3 seconds of script (what stops the scroll)
-- **Audio/Asset Source**: "CapCut trending library + Matt VO" or "Snowdrift Visuals + licensed music" or "FUB FAQ #3" or "Listing: [address]"
+- **Audio/Asset Source**: "CapCut trending library + Matt VO" or "Snowdrift Visuals + licensed music" or "CRM FAQ #3" or "Listing: [address]"
 - **Caption Draft**: 1-2 line summary (full caption in separate section below calendar)
 - **Status**: Draft → Brand Review → Scheduled → Posted
 
@@ -331,7 +331,7 @@ Before starting calendar creation, verify:
 - [ ] April content package read (existing structure understood)
 - [ ] Tumalo listing assets catalogued (7 story frames + Reel ready)
 - [ ] Snowdrift 19 neighborhoods inventory verified (Photo + Video subfolders accessible)
-- [ ] FUB API tested (can pull lead data + questions)
+- [ ] CRM read tested (can pull `crm_people` lead data + questions at `/admin/crm`)
 - [ ] Supabase social_metrics_weekly table exists (for post-publish attribution)
 - [ ] Matt's major events/decisions for month documented (no surprises)
 - [ ] CapCut trending library refreshed (April music/audio current)
@@ -348,7 +348,7 @@ If any item unchecked: block calendar generation and resolve first.
 2. **Brand Review:** Run every hook + caption through brand-voice:brand-voice-enforcement
 3. **Pillar Rebalance:** Ensure content mix hits targets (30/20/20/20/10)
 4. **Platform Check:** Verify cadence matches April 2026 benchmarks per platform
-5. **Asset Sourcing:** Confirm all asset sources exist (Snowdrift folder, Aryeo link, FUB data, etc.)
+5. **Asset Sourcing:** Confirm all asset sources exist (Snowdrift folder, Aryeo link, CRM notes, etc.)
 6. **Matt Approval:** Send calendar to Matt with summary page; wait for thumbs-up before scheduling
 7. **Scheduler Setup:** Load calendar into Buffer/Later/Meta Business Suite for auto-publish
 8. **Export to Google Sheets:** Share live calendar view with Matt for at-a-glance tracking
@@ -361,7 +361,7 @@ This skill was tested against:
 - Existing April 2026 content package (pillar mix validated; cadence realistic)
 - Snowdrift Visuals 19-neighborhood inventory (confirmed all Photo + Video subfolders present)
 - Meta Graph API rate limits (monthly calendar scale confirmed under free tier limits)
-- Follow Up Boss API schema (question/lead data pull tested)
+- In-house CRM (`crm_people`) question/lead data pull tested
 - Content pillar theory from Organic_Growth_Intelligence.md (30/20/20/20/10 mix data-backed)
 - Google Sheets API integration (batch update tested; live sheet working)
 - CapCut production workflow (batch video creation timeline: 3-4 hours shoot → 2 days post-prod per week realistic)

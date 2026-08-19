@@ -22,6 +22,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # site-neighborhood-page
 
 **Scope:** Creates or updates a per-neighborhood SEO landing page at
@@ -35,7 +40,7 @@ Does NOT edit the global `/sell`, `/buy`, or homepage (that is `site-edit`).
 Does NOT create any other page type (use `site-page-create` for landing pages
 without a neighborhood context).
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** GitHub PR at `site-neighborhood/<action_id>` branch
 

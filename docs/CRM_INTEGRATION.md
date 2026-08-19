@@ -1,91 +1,78 @@
-# CRM Integration — Follow Up Boss lead flow
+# CRM Integration — native lead flow
 
-**Status 2026-06-17.** Authoritative spec for how leads enter and move through
-Follow Up Boss (FUB), derived from an adversarially-verified 2026 CRM deep-research
-pass (run `wf_eed8569d-ca5`) cross-referenced against the live code. Load-bearing
-invariants are **locked by the `ci:crm-lead-integrity` gate (G49)**. Items that
-change live lead-handling behavior are a **backlog that ships on a careful,
-live-verified pass** (paid-lead paths must not break).
+**Status 2026-08-18.** Authoritative spec for how leads enter the in-house
+CRM (`public.crm_people`). Follow Up Boss is decommissioned (2026-06-24).
+Do not POST to a third-party people or events API. Unused `FOLLOWUPBOSS_*`
+Vercel names were removed 2026-08-18; they were never a live integration after
+the 2026-06-24 cutover.
 
-## The rule that anchors everything: events, not people
+Load-bearing invariants are **locked by `ci:crm-lead-integrity` (G49)**.
 
-Every inbound lead (ads, organic, on-site form) MUST be created via **POST `/v1/events`**,
-never **POST `/v1/people`**. Only `/events`:
-- runs FUB's native **deduplication** (by email, or phone + name),
-- fires **action plans / automations**, and
-- triggers the **speed-to-lead initial auto-text** (Lead Flow).
+## The rule that anchors everything: `sendEvent`, not a people POST
 
-A `/people`-created lead is silently NOT auto-texted, runs no automation, and can
-duplicate. FUB's own docs: *"Do not use POST /v1/people to send leads into Follow
-Up Boss."* (3-0 verified.)
+Every inbound lead (ads, organic, on-site form) MUST be created via
+**`sendEvent()` in `lib/crm/send-event.ts`**, which calls
+**`ensureNativeLead()`** (`lib/data/crm/ensureNativeLead.ts`).
+
+Only that path:
+
+- **dedupes** email-first, then phone (normalized keys on `crm_contact_points`),
+- stamps **`source`** and default **`audience:*` / `source:*` tags**,
+- returns the native **`crm_people.id`** so tagging, enrollment, and notes can run.
+
+A direct insert into `crm_people` (or a leftover third-party `/people` POST)
+skips dedup and enrollment. G49 fails a bare `/people` create outside the
+documented Meta webhook fallback.
 
 ## Flow
 
 ```
-ad / organic / form ──► POST /v1/events (sendEvent)  ─┬─ dedup (email | phone+name)
-   type = Registration / *Inquiry                      ├─ action plan fires
-   person carries email and/or phone                   ├─ Lead Flow initial auto-text (<=5 min)
-   source + campaign stamped                           └─ returns/links the person
+ad / organic / form ──► sendEvent (lib/crm/send-event) ─┬─ ensureNativeLead
+   type = Registration / *Inquiry                        ├─ dedup (email | phone)
+   person carries email and/or phone                     ├─ crm_people row
+   source + optional campaign / broker                   └─ returns personId
         │
-   apply tags / stage / custom fields / assignment (PUT /v1/people/{id})  ← updates, fine
+   canonicallyTagLead + enrichNativeLead (tags, custom, origin note)
         │
-   FUB pipeline ──► close/won ──► [BACKLOG] webhook (dealsUpdated) ──► offline upload to Google/Meta
+   autoEnrollPerson (tag → sequence) + crm-auto-enroll sweep
+        │
+   crm-sequence-engine + crm-scheduled-sends ──► email / SMS / task
+        │
+   close / won ──► [BACKLOG] offline upload to Google / Meta
 ```
 
 ## Principles → status → enforcement
 
-| # | Principle (research-verified, FUB docs) | Status | Enforcement |
+| # | Principle | Status | Enforcement |
 |---|---|---|---|
-| 1 | Inbound leads via **POST /v1/events**, never /v1/people | ⚠️ forms ✅ / Meta webhook ✗ (tracked) | **G49** (locks + tracks the 1 violation) |
-| 2 | Event carries a **dedup identifier** (email and/or phone) | ✅ (sendEvent person always has email) | code review + DAL |
-| 3 | **source** stamped on every event (attribution survives) | ✅ (`SendEventParams.source` required) | **G49 item 3** |
-| 4 | Event **type** is action-plan-eligible (Registration / Seller / Property / General Inquiry), not a passive type | ✅ (forms use Inquiry types) | code review |
-| 5 | **POST /v1/textMessages is log-only**, never a send path | ✅ (no POST today; reads only) | **G49 item 2** (tripwire) |
+| 1 | Inbound leads via **`sendEvent` → `ensureNativeLead`**, never a bare people POST | ✅ forms + Meta webhook (webhook keeps a last-resort `ensureNativeLead` if `sendEvent` cannot resolve an id) | **G49** |
+| 2 | Event carries a **dedup identifier** (email and/or phone) | ✅ (`sendEvent` person always has email on public forms) | code review + DAL |
+| 3 | **`source` stamped on every event** (attribution survives) | ✅ (`SendEventParams.source` required) | **G49 item 3** |
+| 4 | Event **type** is a real capture type (Registration / Seller / Property / General Inquiry), not a silent no-op | ✅ | code review |
+| 5 | SMS goes through the **approved sender + TCPA consent gate**, never a log-only third-party text endpoint | ✅ Twilio + `crm_suppressions` | **G49** + `ci:sms-consent` |
 
-## Backlog — ship on a careful, live-verified pass
+## What runs after capture
 
-1. ~~**Meta Lead Ads webhook → `/v1/events`.**~~ ✅ **DONE 2026-06-17 (events-first, fallback-safe).**
-   `app/api/meta/lead-webhook/route.ts` `createFubContact` now creates leads via `sendEvent`
-   (POST `/v1/events`, type Seller/General Inquiry by audience, person with email+phone+tags,
-   source `Facebook Lead Ad — <campaign>`, campaign object), resolves the person id via
-   `findPersonByEmail`/`findPersonByPhone`, then sets custom fields + stage `Lead` + mirrors.
-   Paid Meta leads now get dedup + action plans + the speed-to-lead auto-text. The original
-   `/people` POST is preserved as a **fallback** if the events path fails, so a lead is never
-   lost. **Verify the first live Meta lead post-deploy** (events 204 + person resolution timing).
-   REMAINING polish: set the FUB pipeline on the events path too (currently only the fallback
-   sets it); confirm `customBuySellIntent` / `customFbCampaignName` custom fields exist in FUB.
-2. **Stamp the `campaign` object on form events.** ✅ **DONE 2026-06-17 across the public
-   lead forms** — seller-home-value, fsbo, contact, home-valuation, expired-listing,
-   buyer-listing-alerts, and tetherow/heath all now capture origin UTMs from the referer and
-   send the structured FUB `campaign` object (source/medium/campaign/content), gated on
-   utm_source. lead-landing already had a richer always-attribute campaign (kept). The
-   remaining sendEvent callers either take `campaign` via a `CampaignInput` param
-   (lead-capture: page-CTA / rental / tetherow / exit-intent) or are internal/admin paths
-   (crm, agents, home, cma, crons) — not public ad-lead forms, so out of scope.
-3. **FUB webhooks + offline-conversion upload (closed-loop ROAS).** No FUB webhook handler
-   exists today. Add one for `dealsUpdated` (close/won) that **decouples**: persist the
-   event (resourceId + uri only — FUB payloads are thin) to a queue table, then a separate
-   process GETs the resource and uploads the conversion to Google (Enhanced Conversions for
-   Leads: GCLID or hashed PII + conversion name + time + Order ID) and Meta CAPI offline.
-   This is the same closed loop as TRACKING_POLICY backlog #2.
-4. **Speed-to-lead config.** Confirm each active Lead Flow source has an initial-text rule
-   with delay ≤ 5 minutes (FUB Admin config, not code). Contact odds drop ~100x from 5 to
-   30 minutes (MIT/InsideSales study).
+1. **`canonicallyTagLead`** (`lib/canonical-lead-tagger.ts`) — `audience:seller` / `audience:buyer`, `source:*`, broker, geo / referral tags.
+2. **`autoEnrollPerson`** (`lib/crm/enroll.ts`) — first matching tag → sequence. Inline on LP / webhook hot paths; **`/api/cron/crm-auto-enroll`** (every 15 min) catches misses. Pre-2026-06-10 historical book is never mass-enrolled.
+3. **`/api/cron/crm-sequence-engine`** — due steps on **active** sequences only (pause-on-reply lives here).
+4. **`/api/cron/crm-scheduled-sends`** — delivers queued touches.
+5. Hot Meta leads get **`createNativeTask`** (`dueInMinutes: 5`) on `crm_tasks`.
+
+Sequences are edited at **`/admin/crm/sequences`**. Broker working surface is **`/admin/crm`**.
 
 ## Avoid
 
-- **Never POST /v1/people to create a lead** (no automations, dupes). Locked by G49.
-- **Never treat POST /v1/textMessages as a send** — it only logs; FUB cannot send for
-  integrations. Real sends go through the approved sender + the TCPA consent gate
-  ([[a2p-sms-consent]] / `ci:sms-consent`).
-- **Never auto-text before a stored consent record** (TCPA prior-express-written-consent
-  is still required in 2026; the one-to-one bundling rule was vacated but core consent stands).
-- **Don't act on FUB webhook payload bodies** beyond resourceId/uri — fetch the resource.
+- **Never create a lead with a third-party People API.** Capture is native.
+- **Never treat a third-party textMessages POST as a send.** Real SMS goes through Twilio + the consent gate (`ci:sms-consent`).
+- **Never auto-text before a stored consent record.**
+- **Do not re-enable Follow Up Boss.** `getFubApiKey()` is hardcoded `undefined`. Lead capture does not wait on that key.
 
 ## References
 
-- Research: deep-research run `wf_eed8569d-ca5` (this session).
-- FUB docs: events-post, people-post, lead-provider-integration-guide, webhooks-guide,
-  textmessages-post; Google Ads Enhanced Conversions for Leads (answer 14274408).
-- Code: `lib/followupboss.ts` (`sendEvent`), `app/api/meta/lead-webhook/route.ts`,
-  `app/lp/*/actions.ts`, `app/contact/actions.ts`.
+- Capture: `lib/crm/send-event.ts`, `lib/data/crm/ensureNativeLead.ts`
+- Tag + enroll: `lib/canonical-lead-tagger.ts`, `lib/crm/enroll.ts`
+- Meta Lead Ads: `app/api/meta/lead-webhook/route.ts`
+- Public forms: `app/lp/*/actions.ts`, `app/contact/actions.ts`, `app/home-valuation/actions.ts`
+- Gate: `scripts/check-crm-lead-integrity.mjs` (`ci:crm-lead-integrity`)
+- Path-by-path marketing map: `docs/MARKETING_LEAD_FLOW.md`

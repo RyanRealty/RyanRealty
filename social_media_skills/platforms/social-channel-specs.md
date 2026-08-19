@@ -241,7 +241,7 @@ description: Master reference for social channel PROFILE SETUP specs — avatar 
 ## Zillow
 
 ### Profile Setup
-- **Account type:** Free agent profile (every licensed agent). Upgrade path: Premier Agent (paid share-of-voice ads), Zillow Pro ($138/mo — integrates Follow Up Boss CRM + premium profile; national launch mid-2026).
+- **Account type:** Free agent profile (every licensed agent). Upgrade path: Premier Agent (paid share-of-voice ads), Zillow Pro ($138/mo — premium profile + Zillow CRM add-ons; national launch mid-2026). Our leads still land in `crm_people`.
 - **Avatar:** Min 330×220 px (alternatively min 180×180 px for circular icon). JPEG preferred. Max 25 MB. Professional headshot, looking directly at camera.
 - **Banner/Cover:** No standard agent profile banner. Zillow Pro Premium Profiles include curated media display.
 - **Name/Display Name:** Full professional name as licensed.
@@ -315,7 +315,7 @@ description: Master reference for social channel PROFILE SETUP specs — avatar 
 ### Features to Enable (Requirements)
 - 15+ verified closed transactions before applying
 - 3 client references prepared
-- 5-minute lead response system (FUB auto-response to Redfin-sourced leads) — mandatory; slower = lead reassigned
+- 5-minute lead response system (in-house CRM first-touch via `/admin/crm` + sequence engine) — mandatory; slower = lead reassigned
 - Complete all Redfin onboarding training before first referral
 - Maintain 4.0+ star rating (program removal if below)
 

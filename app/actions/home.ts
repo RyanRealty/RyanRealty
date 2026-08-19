@@ -8,7 +8,6 @@ import {
   getHotCommunitiesInCity,
 } from '@/app/actions/listings'
 import { getTrendingListingKeys } from '@/app/actions/listing-views'
-import { sendEvent } from '@/lib/followupboss'
 import { getCityListings as getCityListingsDAL } from '@/lib/data'
 import type { HomeTileRow } from '@/app/actions/listings'
 import type { HotCommunity } from '@/app/actions/listings'
@@ -235,17 +234,3 @@ export async function getBlogPostsForHome(): Promise<Array<{
   return []
 }
 
-/** Newsletter signup: push to FUB as lead with tag "newsletter-signup". */
-export async function subscribeNewsletter(email: string): Promise<{ ok: boolean; error?: string }> {
-  const e = email?.trim().toLowerCase()
-  if (!e || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return { ok: false, error: 'Invalid email' }
-  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '')
-  const result = await sendEvent({
-    type: 'Registration',
-    person: { emails: [{ value: e }] },
-    source,
-    message: 'newsletter-signup',
-  })
-  if (result.ok) return { ok: true }
-  return { ok: false, error: result.error ?? 'Subscription failed' }
-}

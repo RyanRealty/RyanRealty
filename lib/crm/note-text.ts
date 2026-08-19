@@ -1,7 +1,7 @@
 /**
  * noteToText — render an imported CRM note body as readable plain text.
  *
- * Notes imported from the retired Follow Up Boss era carry raw HTML in
+ * Notes imported from the retired vendor CRM era carry raw HTML in
  * `crm_timeline.body` (`Notes:<br />`, `<p>`, `&amp;`, …). Both the legacy
  * workspace and the first v2 fold printed that markup literally — 41 visible
  * `<br />` tags on a single real person page (11784, measured 2026-08-07).

@@ -6,7 +6,9 @@ import { hasAnalyticsConsent } from './CookieConsentBanner'
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
 
 /**
- * GTM script in <head>. Only loads when NEXT_PUBLIC_GTM_CONTAINER_ID is set and user has analytics consent.
+ * GTM container. Loads only after analytics consent (ci:tracking-policy).
+ * GA4 is configured inside this container (gaawc). GoogleAnalytics must not
+ * also gtag('config', G-…) or page_view doubles.
  */
 export default function GTMHead() {
   const [consent, setConsent] = useState(false)
@@ -29,7 +31,7 @@ export default function GTMHead() {
     <script
       dangerouslySetInnerHTML={{
         __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], // hydration-safe — GTM bootstrap stamp
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;if(f&&f.parentNode)f.parentNode.insertBefore(j,f);else d.head.appendChild(j);
 })(window,document,'script','dataLayer','${GTM_ID}');`,

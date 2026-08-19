@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDate, formatDateTime } from './date'
+import { formatCalendarDay, formatDate, formatDateTime } from './date'
 
 describe('formatDate (brand timezone, audit p1.4)', () => {
   it('formats an ISO date in America/Los_Angeles', () => {
@@ -17,6 +17,17 @@ describe('formatDate (brand timezone, audit p1.4)', () => {
   })
   it('formatDateTime includes a time', () => {
     expect(formatDateTime('2026-06-22T20:30:00.000Z')).toMatch(/Jun 22, 2026.*\d/)
+  })
+})
+
+describe('formatCalendarDay', () => {
+  it('does not shift YYYY-MM-DD back a Pacific day', () => {
+    expect(formatCalendarDay('2026-08-18', { weekday: 'long', month: 'short', day: 'numeric', year: undefined })).toBe(
+      'Tuesday, Aug 18',
+    )
+    expect(formatDate('2026-08-18', { weekday: 'long', month: 'short', day: 'numeric', year: undefined })).toBe(
+      'Monday, Aug 17',
+    )
   })
 })
 

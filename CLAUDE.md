@@ -210,6 +210,11 @@ focus intent, end cards) and `--rr-cream` `#faf8f4` (primary background). White 
 black `#000000` are allowed only for text-on-photo legibility and scrim layers. Off-brand hex
 is banned.
 
+**One exception accent** (Matt 2026-08-17): `--rr-exception` marks a data exception —
+a drawdown, a decline, a breached threshold — and nothing else. Never decoration, never a
+CTA, never a background, never on a surface that is not showing data. If nothing is wrong,
+use navy.
+
 Retired, do not reintroduce: `--rr-navy-deep` (use `rgba(16,39,66,0.85)` for hover/pressed),
 `--rr-sand` (use `rgba(16,39,66,0.08)` for borders/dividers), `--rr-fir`, `--rr-sky`, and both
 retired golds plus the retired v1 cream — see the migration table below.
@@ -449,8 +454,7 @@ A different model or different settings is a different-sounding voice and a reje
 **Never fall back to the old 0.50/0.75/0.35 values.** Override per-script via `voice_settings`
 in `script.json`.
 
-**Every VO call goes through [`scripts/_voice_lib.py`](scripts/_voice_lib.py) (Python) or
-[`lib/voice/alignment.ts`](lib/voice/alignment.ts) (Node) — no inline ElevenLabs API calls.**
+**Every VO call goes through [`scripts/_voice_lib.py`](scripts/_voice_lib.py) — no inline ElevenLabs API calls.**
 Env: `ELEVENLABS_VOICE_ID`, `ELEVENLABS_VOICE_ID_VICTORIA`, `ELEVENLABS_API_KEY`.
 
 Delivery: sentences short, two clauses max, no commas where Matt wouldn't pause. Split long
@@ -901,8 +905,4 @@ task. Everything else fires on trigger match.
 | CMA / valuation ("what's this property worth", "pricing opinion on…") | [`marketing_brain_skills/producers/cma/SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md) — branded HTML CMA, signed by the broker handling the listing (resolved from `public.brokers`, falls back to Matt). Recorded in `public.cmas` + `cma_comps`. |
 | Public UI/UX grind / next version of the site / page grade | **KILLED 2026-08-16.** Do not run page-grade. The skill is a refuse stub. Look is Matt keep/kill on real pages. Product of record: [`docs/plans/PUBLIC_PRODUCT/PRODUCT.md`](docs/plans/PUBLIC_PRODUCT/PRODUCT.md). |
 
-**The CRM is in-house.** Follow Up Boss was decommissioned 2026-06-24; every lead path now
-writes to `public.crm_people` via `sendEvent()` → `ensureNativeLead`. Docs written before the
-cutover describe an engine that no longer runs — read their "Follow Up Boss" as "the in-house
-CRM", and do not build against the retired workflow docs. Archive index:
-[`docs/archive/fub-era/README.md`](docs/archive/fub-era/README.md).
+**CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Archive: [`docs/archive/fub-era/README.md`](docs/archive/fub-era/README.md).

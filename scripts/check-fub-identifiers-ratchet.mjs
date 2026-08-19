@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
- * TRACK3 ratchet: fubPersonId / FUB_* identifier debt may only shrink.
- * Full rename is multi-session; this gate prevents NEW identifiers landing.
+ * TRACK3 ratchet: leftover identifier debt (fubPersonId / FUB_* / fub_*) may
+ * only shrink. This is not a live CRM — native CRM is crm_people. The gate
+ * only prevents new legacy identifiers landing while the rename finishes.
  *
  * Baseline: scripts/fub-identifiers-baseline.json
  *   node scripts/check-fub-identifiers-ratchet.mjs
  *   node scripts/check-fub-identifiers-ratchet.mjs --write-baseline
+ * Refresh with --write-baseline only after the live total shrinks.
  */
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -56,7 +58,7 @@ if (WRITE) {
     BASELINE,
     JSON.stringify(
       {
-        note: 'TRACK3 fub identifier ratchet — counts may only shrink. Full rename is separate work.',
+        note: 'TRACK3 leftover identifier debt ratchet — counts may only shrink. Not a live CRM.',
         total,
         files: fileSet,
         generatedAt: new Date().toISOString(),
@@ -65,7 +67,7 @@ if (WRITE) {
       2,
     ) + '\n',
   )
-  console.log(`fub-identifiers baseline written: ${total} hits across ${fileSet.length} files`)
+  console.log(`legacy-identifier baseline written: ${total} hits across ${fileSet.length} files`)
   process.exit(0)
 }
 
@@ -82,17 +84,17 @@ if (total > baseTotal) {
   failures.push(`total hits grew ${baseTotal} → ${total}`)
 }
 if (newFiles.length) {
-  failures.push(`NEW files with fub identifiers:\n  ${newFiles.slice(0, 20).join('\n  ')}`)
+  failures.push(`NEW files with leftover identifiers:\n  ${newFiles.slice(0, 20).join('\n  ')}`)
 }
 
-console.log('fub-identifiers ratchet')
-console.log('=======================')
+console.log('legacy-identifier ratchet')
+console.log('=========================')
 console.log(`live: ${total} hits / ${fileSet.length} files · baseline: ${baseTotal} / ${baseFiles.size}`)
 if (failures.length) {
   for (const f of failures) console.error('✗', f)
   process.exit(1)
 }
-console.log('✓ no new fub identifier surface; total ≤ baseline')
+console.log('✓ no new leftover identifier surface; total ≤ baseline')
 if (total < baseTotal) {
   console.log(`  Tip: re-baseline to lock the shrink (${baseTotal - total} hits cleared)`)
 }

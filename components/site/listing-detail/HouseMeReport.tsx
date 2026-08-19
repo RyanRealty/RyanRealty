@@ -21,6 +21,7 @@ import {
   overUnderPhrase,
 } from '@/lib/pricing/public-read-copy'
 import { formatListingHoa, publishListingHoa } from '@/lib/listing/publish-listing-hoa'
+import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { PublishedCmaDownload } from './PublishedCmaDownload.client'
 
 export type HouseMeRowId = 'read' | 'comps' | 'ppsf' | 'dom' | 'true-cost' | 'investment'
@@ -49,6 +50,8 @@ export type HouseMeReportFacts = {
   taxAnnualAmount: number | null
   /** Only a rent figure already on the listing. Never HUD or a 0.5% guess. */
   monthlyRent: number | null
+  /** MLS PropertySubType. Share kinds withhold living-area $/sqft. */
+  propertySubType?: string | null
 }
 
 function isFiniteNumber(v: number | null | undefined): v is number {
@@ -122,8 +125,11 @@ export function buildHouseMeRows(facts: HouseMeReportFacts): HouseMeRow[] {
   }
 
   if (isPositive(facts.listPrice) && isPositive(facts.sqft)) {
-    const ppsf = Math.round(facts.listPrice / facts.sqft)
-    if (ppsf > 0) {
+    const ppsf = publishListingSharePricePerSqft(
+      facts.propertySubType,
+      Math.round(facts.listPrice / facts.sqft),
+    )
+    if (ppsf != null) {
       rows.push({
         id: 'ppsf',
         label: HOUSEME_LABEL_PPSF,

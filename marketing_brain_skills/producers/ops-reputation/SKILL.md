@@ -52,7 +52,7 @@ and the posted content reference in `executor_response`.
 - `ops:review_response`.  draft a response to a GBP (or Zillow/Yelp) review in
   Matt's voice, surface for review, post on approval
 - `ops:review_request`.  send review-request emails to recent closed clients via
-  Resend + log task in FUB
+  Resend + log task in the CRM
 - `ops:gbp_post`.  draft a GBP "What's New" or "Offer" post (80-150 words + photo),
   surface for review, publish on approval
 - `ops:gbp_qna`.  draft an answer to a GBP user question, surface for review,
@@ -73,7 +73,7 @@ and the posted content reference in `executor_response`.
 | action_type | payload fields required | notes |
 |---|---|---|
 | `ops:review_response` | `source_id`, `source`, `source_content`, `rationale` | `source`: 'gbp' \| 'zillow' \| 'yelp' |
-| `ops:review_request` | `source_id`, `lead_ids`, `rationale` | `lead_ids`: FUB person IDs of recent closed clients |
+| `ops:review_request` | `source_id`, `lead_ids`, `rationale` | `lead_ids`: CRM person IDs of recent closed clients |
 | `ops:gbp_post` | `source_id`, `post_type`, `payload.body`, `payload.photo_path`, `rationale` | `post_type`: 'whats_new' \| 'offer' |
 | `ops:gbp_qna` | `source_id`, `source_content`, `rationale` | `source_content`: the user's question text |
 
@@ -85,7 +85,7 @@ interface ReputationPayload {
   source: 'gbp' | 'zillow' | 'yelp';
   source_id: string;
   // review_response: the review ID from the platform API
-  // review_request: the FUB closed transaction ID or MLS ID for context
+  // review_request: the CRM closed transaction ID or MLS ID for context
   // gbp_post: the GBP location name (e.g. 'accounts/123/locations/456')
   // gbp_qna: the GBP question name from the Q&A API
   source_content?: string;       // The review text or question text verbatim
@@ -109,7 +109,7 @@ interface ReputationPayload {
 interface ReputationActionRow {
   id: string;
   action_type: string;           // 'ops:review_response' | 'ops:review_request' | etc.
-  target: string;                // 'gbp:location:<location_id>' or 'fub:person:<id>'
+  target: string;                // 'gbp:location:<location_id>' or 'crm:person:<id>'
   assigned_producer: string;     // 'marketing_brain_skills/producers/ops-reputation'
   payload: ReputationPayload;
   data_evidence: {
@@ -215,11 +215,11 @@ photo_path in `citations.json`.
 
 ### Step 6 (review_request).  Draft review-request email
 
-Loads the client record from FUB by `lead_ids[0]`:
+Loads the client record from the CRM by `lead_ids[0]`:
 ```
-GET https://api.followupboss.com/v1/people/<person_id>
+GET crm_people by id (lib/crm/)
     ?fields=id,firstName,lastName,name,emails,stage,closeDate
-Authorization: Basic <base64(FOLLOWUPBOSS_API_KEY:)>
+# do not call FOLLOWUPBOSS_* . CRM is in-house
 ```
 
 Compose the email using the voice guidelines (warm, specific, no pressure):
@@ -240,7 +240,7 @@ Matt Ryan
 Ryan Realty · 541.213.6706
 ```
 
-Send via Resend (`mail.ryan-realty.com`). Log a FUB task "Review requested.  [date]"
+Send via Resend (`mail.ryan-realty.com`). Log a CRM task "Review requested.  [date]"
 on the person record.
 
 GBP review link format:
@@ -375,9 +375,9 @@ Body: { "answer": { "text": "<draft_text>" } }
 ```
 
 **Review request email:** Send via Resend per the recipe in §4 Step 6.
-After send, create the FUB task via:
+After send, create the CRM task via:
 ```
-POST https://api.followupboss.com/v1/tasks
+POST in-house CRM tasks (lib/crm/)
 Body: {
   "personId": <person_id>,
   "type": "follow_up",
@@ -422,7 +422,7 @@ Action row [action_id] → status: executed.
 | GBP My Business API v4 | Review replies, posts, Q&A | `GBP_ACCESS_TOKEN`, `GBP_LOCATION_NAME` |
 | `lib/google-business-profile.ts` | GBP OAuth, token refresh, API helpers | imported |
 | Resend API | Review request emails | `RESEND_API_KEY` |
-| FUB REST API v1 | Client lookup + task creation | `FOLLOWUPBOSS_API_KEY` |
+| in-house CRM (`crm_people`) | Client lookup + task creation | in-house CRM (`public.crm_people`) |
 | Supabase MCP | Action row updates + stat verification | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 
 ---
@@ -496,7 +496,7 @@ killed          ← voice validation fails after 2 attempts, Matt says "no",
 | Market stat unverifiable | Supabase returns 0 rows | Remove stat from gbp_post. Note removal in surface message. No estimates. |
 | GBP Place ID missing | `GBP_PLACE_ID` env var not set | Halt review_request. Surface: "GBP_PLACE_ID not set.  cannot construct review link. Set this in.env.local." |
 | Resend failure on review_request | Non-200 from Resend | Retry once. If second failure, set status='killed'. Surface with Resend error. |
-| Client has no email in FUB | FUB person record has no email | Skip that person. Note in executor_response. If all skip: report "No email found for any requested client.  review request not sent." |
+| Client has no email in the CRM | CRM person record has no email | Skip that person. Note in executor_response. If all skip: report "No email found for any requested client.  review request not sent." |
 
 ---
 
@@ -513,7 +513,7 @@ killed          ← voice validation fails after 2 attempts, Matt says "no",
 
 **Capabilities used:**
 - `lib/google-business-profile.ts`.  OAuth token management, GBP API helpers
-- `lib/fub.ts` / `lib/followupboss.ts`.  client lookup, task creation
+- `lib/crm/send-event.ts` / `lib/crm/send-event.ts`.  client lookup, task creation
 - Resend API.  review request email delivery
 
 **Brain components that generate ops:review_* and ops:gbp_* action rows:**

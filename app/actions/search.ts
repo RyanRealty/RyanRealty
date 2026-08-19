@@ -32,6 +32,8 @@ import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from 
 export type SearchFilters = {
   city?: string
   subdivision?: string
+  /** Bend district / resort-community label (listing_tile_mv.boundary_neighborhood). */
+  neighborhood?: string
   postalCode?: string
   status?: string
   sort?: string
@@ -89,7 +91,13 @@ function domFromPreset(daysOnMarket: string | undefined): number | undefined {
 function toAdvancedFilters(
   f: SearchFilters,
   overrides?: { limit?: number; offset?: number }
-): AdvancedListingsFilters & { city?: string; subdivision?: string; limit?: number; offset?: number } {
+): AdvancedListingsFilters & {
+  city?: string
+  subdivision?: string
+  neighborhood?: string
+  limit?: number
+  offset?: number
+} {
   const statusFilter: AdvancedListingsFilters['statusFilter'] =
     f.status === 'Sold' ? 'closed'
     : f.status === 'Pending' ? 'pending'
@@ -99,6 +107,7 @@ function toAdvancedFilters(
   return {
     city: f.city,
     subdivision: f.subdivision,
+    neighborhood: f.neighborhood?.trim() || undefined,
     postalCode: f.postalCode?.trim() || undefined,
     minPrice: f.minPrice,
     maxPrice: f.maxPrice,
@@ -170,6 +179,7 @@ function toSearchAllFilter(f: SearchFilters): Omit<SearchListingsAllFilter, 'sta
   return {
     city: f.city?.trim() || undefined,
     subdivision: f.subdivision?.trim() || undefined,
+    neighborhood: f.neighborhood?.trim() || undefined,
     postalCode:
       f.postalCode?.trim() && /^\d{5}$/.test(f.postalCode.trim()) ? f.postalCode.trim() : undefined,
     sort: toDalSort(f.sort),

@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client'
  * stored as a cookie and read back by /auth/callback's exchangeCodeForSession.
  * When OAuth was initiated in a server action, that verifier cookie did not
  * survive to the callback, so the exchange failed locally (no POST /token) and
- * the flow fell through to "Could not sign in" — and no FUB lead was created.
+ * the flow fell through to "Could not sign in" — and no CRM lead was created.
  *
  * Initiating here means the browser client writes the verifier cookie via the
  * same cookie mechanism the server callback reads, on the SAME host the visitor

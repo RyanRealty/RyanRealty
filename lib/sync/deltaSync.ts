@@ -26,9 +26,10 @@
 import { computeNextDeltaCursor } from '@/lib/sync/deltaCursor'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 import { isActiveStatus, isPendingStatus, isClosedStatus } from '@/lib/listing-status'
-import { sparkToListingRow, extractPrivateDetails } from '@/lib/listing-mapper'
+import { sparkToListingRow, extractPrivateDetails, type ListingMapperOptions } from '@/lib/listing-mapper'
 import { fetchSparkListingsPage } from '@/lib/spark'
 import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
+import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
 import { SCHEDULED_EXPIRED_CAPTURE } from '@/lib/expired-listing-select'
 import {
   getSyncState,
@@ -154,8 +155,11 @@ function round2(n: number): number {
  * unit test cannot catch: the raw StandardFields.ListNumber is not the mapped
  * ListNumber). Every ListNumber the core reads flows through here.
  */
-export function resultToMappedRow(result: SparkDeltaResult): Record<string, unknown> {
-  return sparkToListingRow(result.StandardFields ?? {}, result.Id, result.CustomFields)
+export function resultToMappedRow(
+  result: SparkDeltaResult,
+  options?: ListingMapperOptions,
+): Record<string, unknown> {
+  return sparkToListingRow(result.StandardFields ?? {}, result.Id, result.CustomFields, options)
 }
 
 // ── The pure decision heart (unit-tested) ────────────────────────────────────
@@ -177,13 +181,18 @@ export function resultToMappedRow(result: SparkDeltaResult): Record<string, unkn
  *
  * status_active + media_finalized are the action-lane behaviors the cron lane
  * lacks; they are preserved here so neither caller regresses at cutover.
+ *
+ * `mortgageRate` is resolved ONCE per run by the caller (fetchAndPlan) and
+ * handed down here — the plan stays pure, and 7,500 rows in a window do not
+ * produce 7,500 rate reads. Omitting it keeps the mapper's DEFAULT_PITI_RATE.
  */
 export function computeDeltaPlan(
   results: SparkDeltaResult[],
   existingByNum: Map<string, ExistingListingLite>,
-  opts: { nowIso?: string } = {},
+  opts: { nowIso?: string; mortgageRate?: number | null } = {},
 ): DeltaPlan {
   const nowIso = opts.nowIso ?? new Date().toISOString()
+  const mapperOptions: ListingMapperOptions = { mortgageRate: opts.mortgageRate ?? null }
   const plan: DeltaPlan = {
     rowsToUpsert: [],
     privateRows: [],
@@ -199,7 +208,7 @@ export function computeDeltaPlan(
   for (const result of results) {
     plan.counters.fetched++
     const fields = result.StandardFields ?? {}
-    const row = resultToMappedRow(result)
+    const row = resultToMappedRow(result, mapperOptions)
 
     const listNumber = String(row.ListNumber ?? '').trim()
     if (!listNumber) continue // no upsert conflict key -> unpersistable, skip
@@ -380,6 +389,17 @@ async function loadExistingByNum(listNumbers: string[]): Promise<Map<string, Exi
   return map
 }
 
+/** Live 30-yr rate (percent) every row in one run is priced at; null → the
+ *  mapper's DEFAULT_PITI_RATE, never a failed sync. */
+async function resolveRunMortgageRate(): Promise<number | null> {
+  try {
+    const live = await getLiveMortgageRate()
+    return live?.ratePct ?? null
+  } catch {
+    return null
+  }
+}
+
 type PlanContext = {
   plan: DeltaPlan
   sinceIso: string
@@ -434,13 +454,19 @@ async function fetchAndPlan(opts: RunDeltaSyncOptions): Promise<PlanContext> {
   }
 
   // Derive the existing-lookup keys through resultToMappedRow — the SAME mapping
-  // computeDeltaPlan uses for its lookup (see resultToMappedRow).
+  // computeDeltaPlan uses for its lookup (see resultToMappedRow). The rate is
+  // irrelevant to ListNumber, so this pass deliberately does not resolve one.
   const listNumbers = results
     .map((r) => String(resultToMappedRow(r).ListNumber ?? '').trim())
     .filter(Boolean)
   const existingByNum = await loadExistingByNum(listNumbers)
 
-  const plan = computeDeltaPlan(results, existingByNum, { nowIso })
+  // ONE rate read per run, not per listing. A null degrades to the mapper's
+  // default and the sync proceeds — a stale payment estimate is recoverable,
+  // a skipped sync window is not.
+  const mortgageRate = await resolveRunMortgageRate()
+
+  const plan = computeDeltaPlan(results, existingByNum, { nowIso, mortgageRate })
   const truncated = pagesProcessed >= maxPages && page <= totalPages
   return { plan, sinceIso, pagesProcessed, truncated, runStartedAt, nowIso, accessToken }
 }

@@ -13,12 +13,9 @@
  *   4. Compose one key insight (e.g. expired-listing detection cadence), plus
  *      an outreach-adds note when a prospecting batch landed this week.
  *
- * Every figure traces to our own crm_* tables. The FUB smart-list and
- * appointment fetches were deleted 2026-07-14: FUB API access was
- * decommissioned 2026-06-24 (getFubApiKey() is hardcoded undefined — see
- * lib/crm/fub-env.ts), so those calls could only ever return a fabricated
- * zero/empty, which the data-accuracy mandate forbids. The smart-list section
- * of the email now renders its honest empty state ("No smart list data.").
+ * Every figure traces to our own crm_* tables. Retired vendor smart-list
+ * fetches were deleted 2026-07-14. The smart-list section of the email now
+ * renders its honest empty state ("No smart list data.").
  *
  * Brand voice §4.7. Sentence case, no em-dashes, no banned cliches.
  * Auth: Bearer $CRON_SECRET.

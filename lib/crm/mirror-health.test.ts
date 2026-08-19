@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mirrorHealthStatus } from './mirror-health'
 
 // Phase 0.5: the CRM_MIRROR_ENABLED kill switch can silently stop every
-// FUB -> crm_* write. mirrorHealthStatus turns that silent state into a
+// CRM write. mirrorHealthStatus turns that silent state into a
 // queryable, alarmable status (consumed by lib/crm/mirror.ts's loud warn and
 // the future /admin/crm/health board). The semantics must match mirror.ts's
 // mirrorEnabled(): disabled ONLY when CRM_MIRROR_ENABLED is exactly 'false'.
@@ -12,7 +12,7 @@ describe('mirrorHealthStatus (CRM mirror kill-switch alarm)', () => {
     expect(status.enabled).toBe(false)
     expect(status.level).toBe('alarm')
     expect(status.message).toContain('CRM_MIRROR_ENABLED=false')
-    expect(status.message).toContain('NOT mirrored')
+    expect(status.message).toContain('NOT copied')
   })
 
   it('is ok when CRM_MIRROR_ENABLED is unset', () => {

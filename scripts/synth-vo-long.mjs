@@ -39,7 +39,7 @@ const ROOT = resolve(__dirname, '..')
 const OUT = resolve(ROOT, 'out/yt-long')
 const PUB = resolve(ROOT, 'video/market-report-yt-long/public')
 
-// Canonical values from lib/voice/alignment.ts (locked 2026-05-07).
+// Canonical Victoria settings (locked 2026-05-07).
 // Keep in sync — see video_production_skills/elevenlabs_voice/SKILL.md.
 const VICTORIA_VOICE_ID = 'qSeXEcewz7tA0Q0qk9fH'
 const VICTORIA_MODEL_ID = 'eleven_turbo_v2_5'

@@ -5,7 +5,7 @@ description: >
   `/listings/<address-slug>` (e.g. `/listings/1234-nw-riverview-dr`). The page is a
   dedicated marketing surface for one MLS-active listing: hero photo + Amboqia
   headline + price line + 4-spec row, sticky right-rail showing-request form posting
-  to FUB, full MLS photo gallery with lightbox, video embed (if a listing video
+  to the CRM, full MLS photo gallery with lightbox, video embed (if a listing video
   exists), 3D Matterport tour embed (if available), floor plan PDF embed (if
   available), sanitized PublicRemarks, full specs grid, neighborhood + market +
   school context blocks, and an embedded ManyChat widget. Pulled from MLS, Zillow,
@@ -78,7 +78,7 @@ GitHub UI.
 - Setting `export const metadata` for SEO (title, description, OG, canonical, Twitter)
 - Emitting `RealEstateListing` JSON-LD with verified property data
 - Sanitizing `PublicRemarks` against the banned vocab union before render
-- Wiring the showing-request form to `app/actions/lead-capture.ts` with FUB tag
+- Wiring the showing-request form to `app/actions/lead-capture.ts` with CRM tag
 - Embedding the ManyChat widget (DETAILS / SHOWING / OPENHOUSE keyword triggers)
 - TypeScript compile verification (`npx tsc --noEmit`) before PR opens
 - Branch + PR creation; Matt merges via GitHub UI
@@ -331,7 +331,7 @@ app/listings/<slug>/
 ├── page.tsx                          ← main route component (server component)
 ├── _components/
 │   ├── PropertyHero.tsx              ← hero photo + headline + price + 4-spec row
-│   ├── ShowingScheduler.tsx          ← sticky right-rail / bottom-drawer FUB form
+│   ├── ShowingScheduler.tsx          ← sticky right-rail / bottom-drawer CRM form
 │   ├── PhotoGallery.tsx              ← lightbox-enabled MLS gallery
 │   ├── VideoEmbed.tsx                ← conditional listing-tour-video iframe
 │   ├── MatterportEmbed.tsx           ← conditional 3D tour iframe + fallback CTA
@@ -437,15 +437,15 @@ export const metadata: Metadata = {
 - Broker headshot: resolve `ListAgentEmail` → `matt-ryan` / `paul-stevenson` / `rebecca-peterson`,
   use the transparent PNG from `design_system/ryan-realty/assets/team/<slug>.png`
 
-### Step 10.  Wire the showing-request form to FUB
+### Step 10.  Wire the showing-request form to the CRM
 
 Inspect `app/actions/lead-capture.ts` for the current server-action signature.
 Use a server action (`'use server'`) pattern matching the existing codebase. Do NOT
 write a custom fetch to an API route if a server action exists.
 
-Form fields (5-field FUB form):
+Form fields (5-field CRM form):
 
-| field | type | required | FUB mapping |
+| field | type | required | CRM mapping |
 |---|---|---|---|
 | `name` | `<Input type="text">` | yes | `firstName` + `lastName` (split on space) |
 | `email` | `<Input type="email">` | yes | `emails[0].value` |
@@ -453,7 +453,7 @@ Form fields (5-field FUB form):
 | `preferred_time` | `<Input type="datetime-local">` | yes | `notes` prefix `"Preferred showing time:..."` |
 | `message` | `<Textarea>` | no | `notes` body |
 
-Tag the FUB lead with `landing-<slug>` and `mls-<MlsId>` for attribution. Source
+Tag the CRM lead with `landing-<slug>` and `mls-<MlsId>` for attribution. Source
 field: `Property Landing Page`. Pipeline: `Buyer Lead` (or whichever the existing
 lead-capture action uses by default).
 
@@ -894,7 +894,7 @@ WHERE id='<id>';
 - `app/sell/page.tsx`.  server component page with metadata and shadcn components
 - `app/page.tsx`.  complex page with Suspense boundaries
 - `app/sitemap.ts`.  existing sitemap structure to extend
-- `app/actions/lead-capture.ts`.  server action for FUB form posting
+- `app/actions/lead-capture.ts`.  server action for CRM form posting
 
 **Sibling site producers:**
 

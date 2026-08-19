@@ -9,7 +9,7 @@ import { valuationPath } from '@/lib/slug'
 
 /**
  * KB Sell (06) — the primary seller conversion block. Address-capture hands off
- * to the real seller valuation flow (/sell/valuation), which owns the FUB lead
+ * to the real seller valuation flow (/sell/valuation), which owns the native lead
  * write + attribution (Phase 4/6). Show-don't-tell copy; three live proof
  * numbers. Cream split breaks the navy run.
  */

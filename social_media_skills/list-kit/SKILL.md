@@ -443,7 +443,7 @@ SWIPE → | [hook]
 
 Per CLAUDE.md "Voice + content," **don't inject hashtags** into surfaces that don't honor them.
 The kit's captions are for IG / FB / TikTok / Threads / X / Pinterest / YouTube descriptions.
-For blog body, email body, broker email signatures, FUB lead-nurture emails.  caption emission
+For blog body, email body, broker email signatures, CRM sequence emails.  caption emission
 is OUT OF SCOPE for this orchestrator (those are handled by their own producers).
 
 ---

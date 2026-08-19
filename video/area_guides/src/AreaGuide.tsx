@@ -30,7 +30,7 @@ import { SingleWordCaption, CaptionWord, SingleWordCaptionProps } from '../../..
 import {
   PORTRAIT_SAFE,
   CAPTION_PORTRAIT,
-} from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+} from '../../../video_production_skills/captions/canonical/safe-zones'
 import { BEAT_DURATIONS_SEC, CREAM, FPS, HEIGHT, NAVY, WHITE, WIDTH } from './config'
 
 /** Thin bridge to avoid React 18.3 + TS 5.7 strict FC return-type error. */

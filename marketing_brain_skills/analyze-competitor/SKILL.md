@@ -24,6 +24,11 @@ example_outputs: []
 
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # analyze-competitor
 
 **Scope:** Brain-internal per-competitor deep dive skill. Reads from `competitor_intel`
@@ -37,7 +42,7 @@ Does NOT run the weekly data collection scrape (that is `competitor-recon`). Doe
 post content or send alerts (those are content and comms producers). Does NOT audit
 Ryan Realty's own channels (that is `audit-website`, `audit-ads`, `audit-crm`).
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-17
 **Exemplar output:** `marketing_decisions` row with `decision_type='competitor_analysis'`
 

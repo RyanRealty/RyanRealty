@@ -3,13 +3,13 @@ name: funnel-builder
 description: >
   Produces a single coherent Facebook ad -> landing page -> CRM follow-up funnel
   for Ryan Realty, grounded in REAL market data (Supabase DAL), the locked brand
-  voice, the live design system, and the FUB seller workflow. Use when Matt says
+  voice, the live design system, and the in-house CRM seller sequence. Use when Matt says
   "build a funnel for X", "make me a Facebook ad + landing page + follow-up", "I
   want a seller campaign for <neighborhood>", or any request that spans ad + page
   + CRM as one unit. This is a RECIPE the live agent loads and runs in-session.
   It is NOT a REGISTRY producer (producer-freeze G45 compliant) and adds no cron.
 output_type: funnel
-target_platforms: ["fb_feed", "ig_feed", "lp", "fub"]
+target_platforms: ["fb_feed", "ig_feed", "lp", "crm"]
 required_inputs: ["goal", "geography", "avatar", "offer"]
 optional_inputs: ["trigger_event", "objection", "broker_slug", "budget"]
 ---
@@ -50,10 +50,10 @@ above everything.
 | Voice hard-fails (full) | `marketing_brain_skills/brand-voice/VOICE.md` | The ban lists for long-form copy |
 | Voice gate (run it) | `scripts/check-brand-voice.mjs` + `scripts/brand-voice-vocabulary.cjs` | Mechanical banned-word scan |
 | Design system | `design_system/ryan-realty/SKILL.md` + `MANIFEST.md` | Navy #102742 / cream #faf8f4, Amboqia + Geist, asset paths |
-| FB ad spec | `social_media_skills/facebook-lead-gen-ad/SKILL.md` | Lead-form template, creative spec, FUB webhook |
-| FB pipeline (live wiring) | `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` | Meta -> site -> CAPI -> FUB, env vars |
+| FB ad spec | `social_media_skills/facebook-lead-gen-ad/SKILL.md` | Lead-form template, creative spec, CRM inbound (`sendEvent`) |
+| FB pipeline (live wiring) | `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` | Meta -> site -> CAPI -> crm_people, env vars |
 | Competitor design recon | `marketing_brain_skills/competitor-design-recon/SKILL.md` | Adapt a proven layout, don't invent one |
-| FUB seller workflow (LOCKED) | `docs/archive/fub-era/README.md` | Tag schema, 10-touch cadence, API constraint |
+| CRM seller sequence (live) | `lib/crm/enroll.ts` | Tag schema + cadence. Archive: `docs/archive/fub-era/README.md` |
 | Lead-flow detail | `docs/MARKETING_LEAD_FLOW.md` | Per-path lead creation + dedup |
 
 Producer freeze (G45): this is a recipe the live agent loads. Do **not** add a row to
@@ -153,7 +153,7 @@ The winning angle becomes the single idea that the ad, LP, and CRM all carry.
 
 ### B) The landing page (reuse the scaffold — do NOT hand-roll)
 - **Canonical seller funnel:** `app/lp/seller-home-value/` — `page.tsx`, `SellerLPForm.tsx`,
-  `actions.ts` (the `submitSellerLPForm` server action already does FUB create + tag +
+  `actions.ts` (the `submitSellerLPForm` server action already does CRM create + tag +
   assign + custom fields + CMA queue + CAPI/GA4). Fork the page or add a `?variant=` /
   campaign param; reuse `SellerLPForm` rather than rebuilding the submit path.
 - **Components:** `@/components/ui/*` (shadcn) + `components/site/primitives` (display
@@ -167,23 +167,21 @@ The winning angle becomes the single idea that the ad, LP, and CRM all carry.
   - Objection-handling section that answers the brief's #1 fear with a fact.
   - Real testimonials via `lib/testimonials.ts` / ReviewCard — never "[insert testimonial]".
 - **Form fields:** the minimum that still qualifies (address + timeline + contact). Each
-  field justified. Honor known-visitor prefill (`app/actions/fub-identity-bridge.ts`).
+  field justified. Honor known-visitor prefill on the seller LP form.
 
-### C) The CRM follow-up (architecture: `docs/archive/fub-era/README.md`)
-**Hard constraint:** FUB blocks `POST /v1/emails` and `/v1/textMessages` for integrations.
-Our code only **tags, assigns, sets custom fields, creates tasks, fires events** — the
-actual emails/SMS fire from FUB's own action-plan engine, triggered by a FUB Automation
-rule that listens for the `audience:seller` tag. Design the touches; wire the triggers.
+### C) The CRM follow-up (architecture: `lib/crm/enroll.ts`, `/admin/crm/sequences`)
+Leads write through `sendEvent()` in `lib/crm/send-event.ts`. Enrollment is
+`lib/crm/enroll.ts`. Emails/SMS fire from the in-house sequence engine
+(`/api/cron/crm-sequence-engine`), not a vendor action-plan UI.
 
 - **Canonical tag set (every seller lead, exactly):** `audience:seller` + `seller:{tier}`
   (hot/warm/nurture) + `source:{fb-ads-seller | seller-lp}` + `broker:{matt|rebecca|paul}`.
   Add `channel:fb-ads` + `campaign:<sanitized>` when utm_source=facebook.
 - **Assignment:** default Matt (userId 1); honor `readAttributedAgentServer()` cookie for
-  `?agent=rebecca|paul`. Functions in `lib/followupboss.ts`: `findPersonByEmail`,
-  `sendEvent`, `addPersonTags`, `setPersonCustomFields`, `assignPersonToUser`,
-  `createRealtimeTask`. Hot lead -> 5-minute call task.
+  `?agent=rebecca|paul`. Capture via `sendEvent()` in `lib/crm/send-event.ts`.
+  Hot lead -> 5-minute call task.
 - **Compliance gate:** before tagging `audience:seller`, skip if `compliance:hard-stopped`.
-- **Write the actual sequence copy** (these become FUB action-plan templates, in the
+- **Write the actual sequence copy** (these become CRM sequence steps, in the
   client's voice, each echoing the ad's promise): instant confirmation email + SMS, the
   CMA delivery, the 24h "did it make sense", the 3d check-in, the 7d market update, the
   14d case study (use a real §3 comp), the 30d soft check, then 60d -> `seller:long-nurture`.
@@ -238,16 +236,16 @@ approval. A finished build is not approval.
   trail, not a new producer — no REGISTRY change.
 - Ad: launch via the Meta path in `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`.
 - LP: commit the page variant (design-token + mockup-parity gates must pass: `npm run ci:gates`).
-- CRM: confirm the FUB Automation rule for `audience:seller` is live (action-plan templates
-  loaded in FUB UI); our code only tags/assigns/sets-fields/creates-tasks.
+- CRM: confirm the seller sequence is live at `/admin/crm/sequences` and new seller
+  leads enroll via `lib/crm/enroll.ts`.
 - Measurement: the row's published state feeds the marketing-measurement loop (GA4
-  traffic, FUB leads, content_performance).
+  traffic, CRM leads, content_performance).
 
 ---
 
 ## See also
 - `social_media_skills/facebook-lead-gen-ad/SKILL.md` — the ad producer this composes
 - `marketing_brain_skills/brand-voice/VOICE.md` — the voice this enforces
-- `docs/archive/fub-era/README.md` — the CRM architecture this wires
+- `lib/crm/enroll.ts` — the CRM architecture this wires
 - `app/lp/seller-home-value/` — the LP scaffold this reuses
 - `marketing_brain_skills/produce/SKILL.md` — the action-row protocol for the audit trail

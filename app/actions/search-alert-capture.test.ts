@@ -23,7 +23,7 @@ vi.mock('@/lib/rate-limit', () => ({
   getAuthLimiter: () => null,
 }))
 
-vi.mock('@/lib/followupboss', () => ({
+vi.mock('@/lib/crm/send-event', () => ({
   sendEvent: (...args: unknown[]) => h.sendEvent(...args),
 }))
 

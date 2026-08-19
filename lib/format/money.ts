@@ -27,10 +27,12 @@ export function formatPriceExact(n: number | null | undefined): string {
 /** Compact price for tight UI: `$1.2M` / `$895K`. One agreed rounding rule. */
 export function formatPriceCompact(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '—'
-  if (n >= 1_000_000) {
+  const thousands = Math.round(n / 1_000)
+  // $999,900 rounded to thousands is 1000 — never print $1000K.
+  if (n >= 1_000_000 || thousands >= 1_000) {
     const m = n / 1_000_000
     return `$${m.toFixed(m >= 10 ? 0 : 1)}M`
   }
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
+  if (n >= 1_000) return `$${thousands}K`
   return USD0.format(n)
 }

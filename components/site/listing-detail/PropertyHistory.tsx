@@ -1,7 +1,9 @@
+import { Price } from '@/components/site/primitives'
+import { publishHistoryDay } from '@/lib/listing/publish-calendar-day'
 import {
-  Price,
-  TabularNumber,
-} from '@/components/site/primitives'
+  publishListingHistoryDeltaLabel,
+  publishListingHistoryDescription,
+} from '@/lib/listing/publish-listing-history'
 
 /**
  * Listing-detail PropertyHistory — KB section style.
@@ -62,17 +64,7 @@ const EVENT_LABEL: Record<string, string> = {
 const MEANINGFUL_EVENTS = new Set(Object.keys(EVENT_LABEL))
 
 function formatDate(iso: string | null | undefined): string {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'America/Los_Angeles',
-    })
-  } catch {
-    return iso
-  }
+  return publishHistoryDay(iso)
 }
 
 function eventLabel(raw: string | undefined): string {
@@ -132,6 +124,9 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
           }
           const dropAmount = delta && delta < 0 ? Math.abs(delta) : null
           const increaseAmount = delta && delta > 0 ? delta : null
+          const publishedDescription = publishListingHistoryDescription(ev.description)
+          const dropLabel = publishListingHistoryDeltaLabel(dropAmount, 'down')
+          const increaseLabel = publishListingHistoryDeltaLabel(increaseAmount, 'up')
           return (
             <li
               key={`${i}-${ev.event}-${ev.event_date}`}
@@ -166,7 +161,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                 >
                   {formatDate(ev.event_date)}
                 </div>
-                {ev.description ? (
+                {publishedDescription ? (
                   <p
                     style={{
                       marginTop: 4,
@@ -176,7 +171,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                       maxWidth: '60ch',
                     }}
                   >
-                    {ev.description}
+                    {publishedDescription}
                   </p>
                 ) : null}
               </div>
@@ -195,14 +190,14 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                     <Price value={ev.price} />
                   </div>
                 ) : null}
-                {dropAmount ? (
+                {dropLabel ? (
                   <div style={{ fontSize: '0.72rem', color: 'rgba(16,39,66,0.72)', fontVariantNumeric: 'tabular-nums' }}>
-                    <TabularNumber value={dropAmount} fallback="—" />{' down'}
+                    {dropLabel}
                   </div>
                 ) : null}
-                {increaseAmount ? (
+                {increaseLabel ? (
                   <div style={{ fontSize: '0.72rem', color: 'var(--navy, #102742)', fontVariantNumeric: 'tabular-nums' }}>
-                    <TabularNumber value={increaseAmount} />{' up'}
+                    {increaseLabel}
                   </div>
                 ) : null}
               </div>

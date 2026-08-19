@@ -81,7 +81,6 @@ checks.push({
 
 for (const surface of [
   { path: 'components/site/kb/KbResortOverview.tsx', label: 'KB resort membership facts gate through publishFactValue' },
-  { path: 'components/site/CommunityRichContent.tsx', label: 'CommunityRichContent membership facts gate through publishFactValue' },
 ]) {
   const text = src(surface.path)
   checks.push({

@@ -1,7 +1,7 @@
 ---
 name: ops-email-send
 description: >
-  Drafts, validates, and sends bulk and transactional emails to FUB segments
+  Drafts, validates, and sends bulk and transactional emails to CRM segments
   via the Resend API. Validates subject and body against Ryan Realty brand
   voice before surfacing to Matt. Verifies the mail.ryan-realty.com sender
   domain is confirmed in Resend before any send. Every send requires Matt's
@@ -25,15 +25,14 @@ example_outputs: []
 # ops-email-send.  Email Send Operational Producer
 
 **Scope:** Handles the draft, validate, and send pipeline for outbound emails to
-Ryan Realty's FUB segments. Produces newsletter sends, one-off blast emails, and
+Ryan Realty's CRM segments. Produces newsletter sends, one-off blast emails, and
 transactional template updates via the Resend API (`mail.ryan-realty.com` sender).
 Validates content against voice guidelines before surfacing to Matt. Pulls
-recipient count from FUB or Supabase before surfacing. Never sends without Matt's
+recipient count from the CRM or Supabase before surfacing. Never sends without Matt's
 explicit "yes" / "approved" / "go."
 
 Does NOT generate social posts or video.  those go through the content producers.
-Does NOT manage FUB email sequences (sequence config changes are owned by
-`ops-fub-crm`). Does NOT send through FUB's built-in mailer.  Resend is the
+Does NOT manage CRM drip sequences (those live in `lib/crm/` / `/admin/crm/sequences`; `ops-fub-crm` is a refuse stub). Does NOT send through a vendor mailer.  Resend is the
 canonical transactional email provider for Ryan Realty.
 
 **Status:** Canonical
@@ -53,11 +52,11 @@ canonical transactional email provider for Ryan Realty.
   subject line; surface the diff for Matt's review before saving
 
 ### Out of scope
-- FUB action plan / drip sequence emails.  handled by `ops-fub-crm`
+- CRM sequence / drip sequence emails.  handled by `lib/crm/` (`ops-fub-crm` is a refuse stub)
 - Social media DM or comment replies.  handled by the `engagement_bot` capability
 - Email sequence copy creation.  handled by content producers + Matt's approval
 - Sending from any domain other than `mail.ryan-realty.com`
-- Cold-email outreach to purchased lists.  never; FUB segments only
+- Cold-email outreach to purchased lists.  never; CRM segments only
 
 ---
 
@@ -77,7 +76,7 @@ interface EmailSendPayload {
   recipient_segment: string;
   // Named segment: 'past_clients' | 'sphere' | 'cold_seller_leads' |
   // 'hot_seller' | 'warm_seller' | 'nurture_only' | 'all_buyers'
-  //.  OR.  a FUB People API filter object as a JSON string.
+  //.  OR.  a crm_people filter object as a JSON string.
   subject: string;               // Email subject line
   preview_text?: string;         // Preheader text (50-90 chars ideal)
   body_html: string;             // Full HTML body
@@ -161,10 +160,10 @@ can change this state between sessions.
 
 ### Step 4.  Pull recipient count
 
-**Named segment:** Query FUB People API with the appropriate tag/stage filter
-for the segment name. Map segment names to FUB filters:
+**Named segment:** Query crm_people with the appropriate tag/stage filter
+for the segment name. Map segment names to the CRM filters:
 
-| segment | FUB filter |
+| segment | CRM filter |
 |---|---|
 | `past_clients` | `stage=Past Client` |
 | `sphere` | `tag=sphere` |
@@ -175,13 +174,11 @@ for the segment name. Map segment names to FUB filters:
 | `all_buyers` | `stage=Buyer Lead` or `stage=Active Buyer` |
 
 ```
-GET https://api.followupboss.com/v1/people
-    ?<filter_params>&limit=1&fields=id
-Authorization: Basic <base64(FOLLOWUPBOSS_API_KEY:)>
+Count `public.crm_people` by tag/stage. Do not call a vendor People API.
 ```
 
 Extract `totalCount`. If zero: halt and surface "Segment [name] returned 0
-contacts in FUB. Verify the segment name or filter is correct before proceeding."
+contacts in the CRM. Verify the segment name or filter is correct before proceeding."
 
 **Filter string:** Parse the filter JSON and execute the same count query.
 
@@ -363,9 +360,9 @@ Sent.  [action_type] to [segment]
 | tool | purpose | env var / path |
 |---|---|---|
 | Resend API | Email send + template management | `RESEND_API_KEY` |
-| FUB REST API v1 | Recipient count by segment | `FOLLOWUPBOSS_API_KEY` |
+| in-house CRM (`crm_people`) | Recipient count by segment | in-house CRM (`public.crm_people`) |
 | Supabase MCP | Action row updates + data verification | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
-| `lib/fub.ts` | `pushToFub` (event log on send) | imported |
+| `lib/crm/send-event.ts` | event log on send | imported |
 
 ---
 
@@ -428,7 +425,7 @@ killed          ← domain unverified, segment empty, voice validation fails
 |---|---|---|
 | `mail.ryan-realty.com` unverified | Resend domain status != 'verified' | Halt immediately. Surface DNS records needed. Status='killed'. |
 | `RESEND_API_KEY` missing | `process.env.RESEND_API_KEY` undefined | Set status='killed'. "RESEND_API_KEY not set.  no email sent." |
-| Segment returns 0 contacts | FUB totalCount = 0 | Halt. Surface: "Segment [name] returned 0 contacts. Verify segment name." |
+| Segment returns 0 contacts | crm_people count = 0 | Halt. Surface: "Segment [name] returned 0 contacts. Verify segment name." |
 | Voice validation fails (fixable) | Banned word, banned punctuation | Auto-fix and re-validate. Max 2 auto-fix attempts. After 2, surface specific violation to Matt with the rule cited. |
 | Voice validation fails (unfixable) | Brand integrity conflict | Surface to Matt without the broken draft. Provide specific rule citation + suggested rewrite. |
 | Market stat unverifiable | Supabase query returns 0 rows | Remove the stat from the email and note removal in the surface message. No estimates. |
@@ -446,7 +443,7 @@ killed          ← domain unverified, segment empty, voice validation fails
 - `marketing_brain_skills/brand-voice/corpus/gbp_responses.md`.  Matt's voice patterns
 
 **Capabilities used:**
-- `lib/fub.ts`.  segment count queries via FUB People API
+- `lib/crm/send-event.ts`.  segment count queries via crm_people
 - Resend API (`RESEND_API_KEY`).  send + template management
 
 **Brain components that generate ops:email_* action rows:**

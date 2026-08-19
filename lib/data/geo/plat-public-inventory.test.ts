@@ -158,4 +158,13 @@ describe('plat public inventory rollup', () => {
     expect(registryChildPlats().some((p) => p.slug === 'ridge-at-eagle-crest')).toBe(true)
     expect(registryChildPlats().some((p) => p.slug === 'bbr')).toBe(false)
   })
+
+  it('drops camelCase MLS codes from the public A-Z catalog', () => {
+    expect(isDisplayablePlatName('WildflS')).toBe(false)
+    expect(isDisplayablePlatName('SkylinC')).toBe(false)
+    expect(isDisplayablePlatName('Fairway Vill Condo')).toBe(false)
+    expect(isDisplayablePlatName('Triple')).toBe(true)
+    expect(registryChildPlats().some((p) => p.slug === 'wildfls')).toBe(false)
+    expect(registryChildPlats().some((p) => p.slug === 'skylinc')).toBe(false)
+  })
 })

@@ -1,7 +1,12 @@
 ---
 name: ab_testing
-description: Use this skill whenever the user says "run an A/B test", "test thumbnail variants", "split test the hook", "test different captions", "set up a CTA test", "which thumbnail is winning", "check A/B results", "declare the A/B winner", or when a video format skill requests variant testing after generating thumbnails or hooks. Generates and tracks variant combinations for thumbnails, hooks, captions, and CTAs using epsilon-greedy allocation; declares winners after minimum sample thresholds are met.
+description: KILLED as a live pipeline. /api/cron/ab-test-check and /api/workers/ab-test do not exist and are not in vercel.json. Do not run this.
 ---
+
+# STOP - this pipeline is not wired
+
+There is no `/api/cron/ab-test-check` and no `/api/workers/ab-test`. If you loaded this file, stop. Do not invent those routes.
+
 
 # A/B Testing
 
@@ -38,7 +43,7 @@ interface AbTestRequest {
   parent_id: uuid;           // thumbnail_job_id | content_job_id | post_queue_id
   variants: AbVariant[];
   post_queue_ids: uuid[];    // post_queue rows that will carry these variants
-  metric: 'ctr' | 'completion_rate' | 'save_share_rate' | 'fub_click_rate';
+  metric: 'ctr' | 'completion_rate' | 'save_share_rate' | 'crm_lead_rate';
   min_impressions: number;   // default 1000 per variant
   test_duration_hours: number;  // default 24 for thumbnails, 72 for copy tests
   fallback_rule: 'relative_ranking' | 'first_variant';  // if min_impressions not met
@@ -129,7 +134,7 @@ const metricQuery = {
   ctr: 'AVG(ctr)',
   completion_rate: 'AVG(completion_rate)',
   save_share_rate: 'AVG((saves + shares)::float / NULLIF(impressions, 0))',
-  fub_click_rate: 'AVG(fub_clicks::float / NULLIF(impressions, 0))',
+  crm_lead_rate: 'AVG(crm_leads::float / NULLIF(impressions, 0))',
 };
 
 await supabase.rpc('update_ab_variant_metrics', {
@@ -225,11 +230,11 @@ Update `repurpose_engine` copy template defaults for future runs.
 Before declaring a winner, cross-check with `performance_loop` lead-capture data:
 ```typescript
 // If test_type in ('caption', 'hook', 'cta'):
-// Confirm winning variant also has FUB click rate >= median for the format.
-// If a variant wins on saves/shares but has 0 FUB clicks: log warning, do NOT
+// Confirm winning variant also has CRM lead rate >= median for the format.
+// If a variant wins on saves/shares but has 0 CRM leads: log warning, do NOT
 // auto-promote it to default template. Flag for Matt's review.
-const fubClickRate = await getFubClickRate(winner.variant_id);
-if (fubClickRate === 0 && test.test_type !== 'thumbnail') {
+const crmLeadRate = await getCrmLeadRate(winner.variant_id);
+if (crmLeadRate === 0 && test.test_type !== 'thumbnail') {
   await flagForReview(winner, 'high_engagement_zero_leads');
 }
 ```
@@ -243,7 +248,7 @@ CREATE TABLE IF NOT EXISTS ab_tests (
     -- 'thumbnail' | 'hook' | 'caption' | 'cta'
   parent_id                  uuid NOT NULL,
   metric                     text NOT NULL,
-    -- 'ctr' | 'completion_rate' | 'save_share_rate' | 'fub_click_rate'
+    -- 'ctr' | 'completion_rate' | 'save_share_rate' | 'crm_lead_rate'
   min_impressions_per_variant integer NOT NULL DEFAULT 1000,
   test_duration_hours        integer NOT NULL DEFAULT 24,
   fallback_rule              text NOT NULL DEFAULT 'relative_ranking',
@@ -308,7 +313,7 @@ CREATE INDEX IF NOT EXISTS ab_winners_test_idx
 
 
 - **Rule 5 — No engagement-bait optimization.** Step 7 checks that winners drive lead capture,
-  not just vanity engagement. A format that wins on saves but has zero FUB clicks is flagged,
+  not just vanity engagement. A format that wins on saves but has zero CRM leads is flagged,
   not promoted.
 - **Rule 8 — Low-confidence winners marked.** When `confidence = 'low'` (insufficient data),
   `ab_winners.confidence = 'low'` is stored. `repurpose_engine` and `thumbnail_generator` treat
@@ -358,8 +363,8 @@ export const AB_TESTING_CONFIG = {
     cta: 72,
   },
 
-  // Require FUB click rate check before promoting copy winner
-  require_fub_check_for_copy: true,
+  // Require CRM lead-rate check before promoting copy winner
+  require_crm_check_for_copy: true,
 };
 ```
 

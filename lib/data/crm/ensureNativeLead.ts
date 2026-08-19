@@ -12,7 +12,7 @@ type CanonicalAddr = { type?: string | null; street?: string | null; city?: stri
 /**
  * Native-capture fallback on a FUB push failure (CONTACT360 Phase 0.2 — stop a
  * FUB outage from silently dropping leads). Every lead-capture path that pushes
- * to Follow Up Boss (seller LP, FSBO LP, buyer/general LP) relies on FUB to
+ * to the CRM (seller LP, FSBO LP, buyer/general LP) relies on native capture to
  * be the system of record. When the FUB push FAILS — outage, rate-limit, bad
  * key — and we can't even resolve the person back out of FUB, the lead used to
  * vanish: no FUB person, no crm_* row, nothing. This is the shared native

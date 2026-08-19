@@ -141,7 +141,7 @@ async function HotLeadsLane() {
               title={
                 r.fub_person_id ? (
                   <Link href={`/admin/people/${r.fub_person_id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                    {r.identified_email ?? `FUB #${r.fub_person_id}`}
+                    {r.identified_email ?? `Legacy #${r.fub_person_id}`}
                   </Link>
                 ) : (
                   <span>{r.identified_email}</span>
@@ -154,19 +154,6 @@ async function HotLeadsLane() {
                   {r.utm_source || 'direct'}
                   {' · '}
                   {r.ip_city || 'unknown'}
-                  {r.fub_person_id ? (
-                    <>
-                      {' · '}
-                      <a
-                        href={`https://app.followupboss.com/2/people/view/${r.fub_person_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: 'var(--a-accent)' }}
-                      >
-                        FUB ↗
-                      </a>
-                    </>
-                  ) : null}
                   <TagRow tags={r.intent_tags ?? []} />
                 </>
               }
@@ -227,7 +214,7 @@ async function WarmActiveLane() {
               title={
                 r.fub_person_id ? (
                   <Link href={`/admin/people/${r.fub_person_id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                    {r.identified_email ?? `FUB #${r.fub_person_id}`}
+                    {r.identified_email ?? `Legacy #${r.fub_person_id}`}
                   </Link>
                 ) : (
                   <span>{r.identified_email}</span>

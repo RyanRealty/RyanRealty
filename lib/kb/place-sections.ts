@@ -35,8 +35,11 @@
  *     the page file. It stays where the gate can see it, typed `number | null`.
  */
 
+import { activityEventDisplay } from '@/lib/activity/event-label'
 import { formatDate } from '@/lib/format/date'
+import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 import { cityHero } from '@/lib/geo-images'
+import { publishStreetLine, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
 import { listingTileHref } from '@/lib/slug'
 import type { KbActivityItem } from '@/components/site/kb/KbActivity.client'
 import type { KbArticlePost } from '@/components/site/kb/KbArticles'
@@ -154,8 +157,8 @@ export function monthLabel(iso?: string): string {
  * anchors the day so no rounding can walk it across a date boundary.
  */
 export function formatOpenHouseWhen(eventDate: string, start: string | null, end: string | null): string {
-  const day = formatDate(eventDate + 'T12:00:00Z', {
-    weekday: 'short', month: 'short', day: 'numeric', year: undefined, timeZone: 'UTC',
+  const day = publishCalendarDay(eventDate, {
+    weekday: 'short', month: 'short', day: 'numeric', year: undefined,
   })
   const t = (s: string | null) => {
     if (!s) return ''
@@ -169,15 +172,12 @@ export function formatOpenHouseWhen(eventDate: string, start: string | null, end
   return [day, range].filter(Boolean).join(' · ')
 }
 
-/** MLS event_type -> the KB activity row's kind + display label. */
-export const ACTIVITY_KIND: Record<string, { kind: string; label: string }> = {
-  new_listing: { kind: 'new', label: 'New' },
-  price_drop: { kind: 'price_drop', label: 'Price cut' },
-  status_pending: { kind: 'pending', label: 'Pending' },
-  status_closed: { kind: 'sold', label: 'Sold' },
-  back_on_market: { kind: 'new', label: 'Back on market' },
-  status_expired: { kind: 'expired', label: 'Off market' },
-}
+// MLS event_type -> the KB activity row's kind + display label is resolved by
+// `activityEventDisplay` in lib/activity/event-label.ts — the one place that
+// knows the full, open-ended event_type vocabulary. The local ACTIVITY_KIND map
+// that used to live here covered six of the ten types the writer emits and fell
+// back to printing the raw column value, so city / neighborhood / community
+// pages rendered tags like "status_canceled" at visitors.
 
 // ── Builders ─────────────────────────────────────────────────────────────────
 
@@ -189,7 +189,10 @@ export function buildOpenHouseItems(rows: readonly OpenHouseRow[], limit = 6): K
     }),
     photoUrl: oh.photo_url,
     price: oh.list_price,
-    address: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
+    address:
+      publishUnparsedStreetLine(oh.unparsed_address) ??
+      publishStreetLine({ streetNumber: oh.street_number, streetName: oh.street_name }) ??
+      'Address on request',
     cityLine: [oh.city, oh.subdivision_name].filter(Boolean).join(' · '),
     beds: oh.beds_total,
     baths: oh.baths_full,
@@ -212,13 +215,18 @@ export function buildActivityItems(
 ): KbActivityItem[] {
   const { limit = 8, staleNewAfterDays } = opts
   return rows.slice(0, limit).map((a) => {
-    const km = ACTIVITY_KIND[a.event_type] ?? { kind: a.event_type, label: a.event_type }
+    const km = activityEventDisplay(a.event_type)
     const daysOld = a.event_at ? (Date.now() - new Date(a.event_at).getTime()) / 86_400_000 : Infinity
     const staleNew = staleNewAfterDays != null && km.label === 'New' && daysOld > staleNewAfterDays
     return {
       kind: staleNew ? 'listed' : km.kind,
       label: staleNew ? 'Listed' : km.label,
-      address: [a.StreetNumber, a.StreetName, a.StreetSuffix].filter(Boolean).join(' ') || 'Address on request',
+      address:
+        publishStreetLine({
+          streetNumber: a.StreetNumber,
+          streetName: a.StreetName,
+          streetSuffix: a.StreetSuffix,
+        }) || 'Address on request',
       cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
       price: a.ListPrice ?? null,
       imageUrl: a.PhotoURL ?? null,
@@ -278,7 +286,12 @@ export function buildMapPointFeatures(tiles: readonly TileRow[]): KbMapFeature[]
       geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
       properties: {
         p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+        a:
+          publishStreetLine({
+            streetNumber: t.streetNumber,
+            streetName: t.streetName,
+            streetSuffix: t.streetSuffix,
+          }) ?? '',
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
         k: t.listingKey ?? undefined,
         // Popup + pin must open the listing detail page (not a dead info card).
@@ -306,7 +319,12 @@ export function buildMapPointFeatures(tiles: readonly TileRow[]): KbMapFeature[]
 export function buildTickerItems(tiles: readonly TileRow[], fallbackTown: string, limit = 6): KbTickerItem[] {
   return tiles.slice(0, limit).map((t) => ({
     price: t.listPrice,
-    address: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+    address:
+      publishStreetLine({
+        streetNumber: t.streetNumber,
+        streetName: t.streetName,
+        streetSuffix: t.streetSuffix,
+      }) ?? '',
     town: t.city ?? fallbackTown,
   }))
 }

@@ -442,7 +442,7 @@ non-ship.
 | 9 | QR code target | `qr-target.txt` URL returns 200 OK on live HTTP probe; QR decodes to that exact URL when scanned |
 | 10 | QR error correction | EC level Q (25%).  survives weather and partial occlusion |
 | 11 | Listing agent resolution | `ListAgentEmail` mapped to one of matt-ryan / paul-stevenson / rebecca-peterson; name + title correct |
-| 12 | Phone format | Exactly `541.213.6706` (dotted, brand phone.  NOT the FUB bio phone) |
+| 12 | Phone format | Exactly `541.213.6706` (dotted, brand phone.  NOT the tracked inbound bio phone) |
 | 13 | Web format | Exactly `ryan-realty.com` (hyphenated, lowercase) |
 | 14 | Banned vocab | Grep all on-canvas text against `marketing_brain_skills/brand-voice/VOICE.md` §6 union.  zero hits |
 | 15 | No exclamation marks | Grep PDFs for `!`.  zero hits |
@@ -528,7 +528,7 @@ WHERE id='<id>';
 3. **Never use emoji or exclamation marks.** Yard signs are professional trust signals, not flyers for a garage sale.
 4. **Never ship a yard sign with a 404 QR code.** The HTTP probe in Step 5 is a hard pre-condition.
 5. **Never invent the listing agent.** If `ListAgentEmail` doesn't map to a Ryan Realty broker, stop and surface. Co-broke listings don't get Ryan Realty yard signs without explicit confirmation.
-6. **Never use the FUB bio phone (`541.703.3095`) on the sign.** The yard sign uses `541.213.6706`.  Matt's direct, brand voice. The FUB-tracked phone is for inbound-attribution surfaces (social bios, ads) only.
+6. **Never use the tracked inbound bio phone (`541.703.3095`) on the sign.** The yard sign uses `541.213.6706`.  Matt's direct, brand voice. The bio phone is for inbound-attribution surfaces (social bios, ads) only.
 7. **Never auto-upload to a print vendor.** Approval gate is matt-review-draft. Vendor handoff is a separate, Matt-named step.
 8. **Never re-render the main sign when only the rider variant changed.** Cache it. Every Ryan Realty sign on the same property must read identically across status changes.  only the rider band differs.
 9. **Never include a price on the yard sign or rider.** Prices belong on the flyer (handout) and the website (linked via QR). The sign carries identity + status only. (Pricing on physical curb signs creates issues when the price changes mid-listing.  the website is the single source of truth via QR.)

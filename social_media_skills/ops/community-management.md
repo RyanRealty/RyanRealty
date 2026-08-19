@@ -63,7 +63,7 @@ When followers DM specific keywords, deliver the mapped lead magnet + capture co
 - Never: "Schedule a call," "Let's set up an appointment," "When's good for you to meet?" (salesy, puts burden on prospect)
 
 **After capture:**
-1. Add to Follow Up Boss with tag (tag = which nurture sequence)
+1. Capture via `sendEvent` in `lib/crm/send-event.ts` into `public.crm_people` with the sequence tag. Review at `/admin/crm`. Do not open a vendor CRM.
 2. Drop into mapped nurture sequence (email-based, from BRAND MANAGER/.claude/skills/ryan-realty/lead-nurture.md)
 3. Continue DM conversation (don't abandon them post-capture; stay warm 1-2 more messages)
 
@@ -174,7 +174,7 @@ Example responses:
 
 **Escalation process:**
 - Screenshot the comment/DM
-- Create Follow Up Boss task with "ESCALATION, Matt Review Required"
+- Create a CRM task on the `crm_people` row at `/admin/crm` titled "ESCALATION, Matt Review Required"
 - Tag with issue type (Legal, Complaint, Threat, etc.)
 - Matt reviews and determines response strategy
 
@@ -208,7 +208,7 @@ Example responses:
 - DMs received per post (target: 3-5 per 1k followers for engagement-heavy posts)
 - DM response time average (target: <30 min during business hours)
 - DM-to-lead conversion (contacts captured per 20 DMs)
-- Nurture sequence enrollment (contacts added to Follow Up Boss per week)
+- Nurture sequence enrollment (contacts added to `crm_people` and enrolled at `/admin/crm/sequences` per week)
 
 **Weekly check-in:**
 - If DM volume is dropping, problem is hook or CTA (content is weak)
@@ -221,7 +221,7 @@ Example responses:
 
 **DM management:**
 - Instagram native DMs (platform native, not third-party)
-- Follow Up Boss for lead capture + nurture sequence enrollment
+- In-house CRM (`sendEvent` → `crm_people`, sequences at `/admin/crm/sequences`)
 - Calendly for scheduling (always embed in DM when offering call)
 
 **Review management:**
@@ -230,7 +230,7 @@ Example responses:
 - Zillow reviews (if applicable)
 
 **Tracking:**
-- Spreadsheet or Follow Up Boss tags for: Keyword triggered (strategy, buyer, etc.), Capture date, Nurture sequence enrolled, Lead stage
+- Spreadsheet or `crm_people` tags at `/admin/crm` for: Keyword triggered (strategy, buyer, etc.), Capture date, Nurture sequence enrolled, Lead stage
 
 ---
 
@@ -245,7 +245,7 @@ Before marking DM/comment response complete:
 5. **Response time:** Sent within 30-60 minutes for comments, <1 hour for DMs during business hours?
 6. **Escalation routed (if needed):** Legal/compliance/threat questions flagged for Matt?
 7. **Capture ready (if applicable):** If 2+ message DM thread completed, did you ask for email + phone + nurture sequence tag?
-8. **Follow Up Boss tagged (if capture):** Contact added with correct keyword tag (strategy, buyer, moving, etc.)?
+8. **CRM tagged (if capture):** `crm_people` row created via `sendEvent` with the correct keyword tag (strategy, buyer, moving, etc.)?
 
 Mark complete only when verified. Incomplete responses signal to followers that community isn't being managed.
 

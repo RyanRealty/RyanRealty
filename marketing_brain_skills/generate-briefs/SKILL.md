@@ -25,9 +25,9 @@ The most important skill in the marketing brain. Everything upstream.  the four 
 
 | Field | Source | Notes |
 |---|---|---|
-| `websiteAudit` | `auditWebsite()` | GA4, GSC, FUB sessions/leads/SEO |
+| `websiteAudit` | `auditWebsite()` | GA4, GSC, CRM sessions/leads/SEO |
 | `adsAudit` | `auditAds()` | Meta Ads campaigns, fatigue, budget, conversion path |
-| `crmAudit` | `auditCRM()` | FUB leads, pipeline health, north-star metric |
+| `crmAudit` | `auditCRM()` | CRM leads, pipeline health, north-star metric |
 | `channelInsights` | `generateInsightSummary()` per channel | WoW/MoM deltas, anomalies, recommended_actions |
 | `platformTrends` | `gatherPlatformTrends()` | Algorithm signals, format trends, audio trends |
 | `competitorRows` | Supabase `competitor_intel` | Recent competitor SERP and video observations |

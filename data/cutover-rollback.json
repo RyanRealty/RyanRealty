@@ -46,7 +46,7 @@
     "irreversibleStep": "The GoDaddy NS switch is the public point of no easy return (NS-change propagation is bounded by the registrar/TLD TTL and resolver NS caching — can be slower than an A-record change)."
   },
   "rollback": {
-    "trigger": "Any post-cutover smoke fails: site not the new Next.js app, /lp/seller-home-value 404, leads not reaching FUB, OR Google Workspace email stops flowing.",
+    "trigger": "Any post-cutover smoke fails: site not the new Next.js app, /lp/seller-home-value 404, leads not landing in crm_people, OR Google Workspace email stops flowing.",
     "steps": [
       "In GoDaddy, revert the domain nameservers from [novalee, yahir].ns.cloudflare.com back to [eva, jeff].ns.cloudflare.com.",
       "AgentFire's Cloudflare zone was never modified, so reverting NS restores the exact prior state (AgentFire site + Google email + go/seller).",

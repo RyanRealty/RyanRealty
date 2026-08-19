@@ -1,0 +1,35 @@
+{
+  "$comment": "Frozen, shrink-only ledger for check-stat-source.mjs (ci:stat-source). `modules` keys are TS/TSX files that run a compounding or amortization model and still hold a hardcoded MACRO statistic — a mortgage / tax / insurance / treasury / appreciation rate, i.e. a measurement of the world that nobody in this repo controls and that is wrong the day the market moves. `sqlRoutines` keys are the LIVE definitions (last CREATE OR REPLACE in migration order) of SQL routines that still read the writer-less app_config.mortgage_rate key or declare their own macro constant. A file or routine NOT listed may not hold one at all, and a listed one may not grow. Clearing a row means taking the figure from getCalculatorDefaults() in lib/data/config.ts (TS) or get_current_mortgage_rate() in a NEW migration (SQL), then lowering the count in the same commit. `node scripts/check-stat-source.mjs --write` re-syncs after a rebase: it can only LOWER counts and drop cleared rows, and it refuses outright to add a file or raise a count, so it can never launder new debt into the baseline.",
+  "modules": {
+    "app/tools/mortgage-calculator/MortgageCalculator.tsx": {
+      "allowed": 1,
+      "reason": "`loan * 0.005` — a 0.5%/yr PMI rate. This file already takes its mortgage rate, tax and insurance from the engine through props (see its page.tsx), which is why it carries only this row; PMI is the one figure it still invents, and no ingested PMI series exists."
+    },
+    "components/site/listing-detail/MortgageCalculator.tsx": {
+      "allowed": 2,
+      "reason": "DEFAULT_RATE_PCT = 7.0, TAX_FALLBACK_PCT = 0.85, INSURANCE_PER_300K = 1000. Same client-bundle shape as the row above."
+    },
+    "components/tools/AppreciationCalculator.tsx": {
+      "allowed": 1,
+      "reason": "DEFAULT_APPRECIATION_RATE_PCT = 4.5. No ingested appreciation series exists yet, so the engine has nothing to hand it — this row is the tracking of that gap, and the file's own comment already calls the staleness risk out."
+    },
+    "lib/data/dscr/screen.ts": {
+      "allowed": 2,
+      "reason": "DSCR_DEFAULTS: ratePct 6.875 / taxRatePct 1.2 / insuranceRatePct 0.35. The investor rate is a different series from the 30-yr conforming rate, so the engine cannot serve it today; the tax and insurance rates it can."
+    },
+    "lib/listing-tier1.ts": {
+      "allowed": 2,
+      "reason": "Founding defect 1, after two fixes and a file split. `const rate = 0.065` used to sit inline in lib/listing-mapper.ts and implied 6.50% on every listings.estimated_monthly_piti row; the sync now resolves the live rate once per run (lib/data/market/getLiveMortgageRate.ts) and hands it in, and the DB trigger that actually WON that write was repointed at get_current_mortgage_rate() by migration 20260817190000. What is left is DEFAULT_PITI_RATE = 0.065 (the fallback when a caller passes nothing, kept so an un-passed call reproduces a pre-2026-08-17 row byte for byte), INSURANCE_RATE = 0.0035 and TAX_FALLBACK_RATE = 0.012. No ingested insurance or tax series exists, so the engine cannot serve those two yet."
+    },
+    "lib/mortgage.ts": {
+      "allowed": 1,
+      "reason": "DEFAULT_DISPLAY_RATE — an env var with a 7% floor. An env var counts as hardcoded: it is hand-typed by a human with no writer behind it, exactly like the app_config row, and being inlined at build time it is even more frozen."
+    }
+  },
+  "sqlRoutines": {
+    "public.get_mortgage_rate": {
+      "allowed": 1,
+      "reason": "`SELECT (value)::numeric FROM app_config WHERE key = 'mortgage_rate'` (migration 20260414210000). ZERO callers: nothing in the catalog references it and no code calls it as an RPC — but PostgREST grants EXECUTE to anon, so an unseen external caller cannot be ruled out from inside the repo, and whoever calls it gets whatever a human last typed. Retire it, or repoint it at get_current_mortgage_rate(), in a NEW migration."
+    }
+  }
+}

@@ -10,7 +10,7 @@
  *   import {
  *     PORTRAIT_SAFE,
  *     CAPTION_PORTRAIT,
- *   } from '../../../video_production_skills/safe-zones/canonical/safe-zones'
+ *   } from '../../../video_production_skills/captions/canonical/safe-zones'
  *
  *   <div style={{
  *     position: 'absolute',

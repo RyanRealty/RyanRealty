@@ -6,13 +6,7 @@
  * id, or a fresh sign-in), so prior anonymous browsing history attributes
  * correctly and future events on this browser resolve to the right person.
  *
- * Renamed from fub-identity-bridge.ts 2026-07-09 (FUB decommissioned
- * 2026-06-24). Fixed a real bug found in the rename: identifyAuthenticatedSession
- * called the old findPersonByEmail(), which hits FollowUpBoss's API and has
- * unconditionally returned null since the decommission (getFubApiKey() always
- * returns undefined) — every sign-in silently skipped setting the identity
- * cookie and backfilling anonymous history, with no error surfaced. Replaced
- * with the native personIdsByEmailCi() lookup used everywhere else in the CRM.
+ * identifyAuthenticatedSession uses the native personIdsByEmailCi() lookup.
  *
  * visitor_sessions.fub_person_id / visitor_identity_map.fub_person_id are kept
  * as historical column names (Matt directive 2026-07-09) — they now store the

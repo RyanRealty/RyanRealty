@@ -16,6 +16,7 @@ import type { ListingRow } from '@/app/actions/communities'
 import type { ListingTile } from '@/lib/data'
 import { v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 
 /** Pins at or above this count are a map. Below it, the plat is a list. */
@@ -43,10 +44,11 @@ function metaLine(
 /** One active single-family tile as a Field row. Null when it cannot be placed. */
 export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry | null {
   if (tile.lat == null || tile.lng == null) return null
-  const street = [tile.streetNumber, tile.streetName, tile.streetSuffix]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
+  const street = publishStreetLine({
+    streetNumber: tile.streetNumber,
+    streetName: tile.streetName,
+    streetSuffix: tile.streetSuffix,
+  })
   return {
     id: tile.listingKey,
     href: listingDetailPath(
@@ -76,10 +78,11 @@ export function fallbackFieldRows(
   for (const row of rows) {
     const key = row.ListingKey
     if (!key) continue
-    const street = [row.StreetNumber, row.StreetName, row.StreetSuffix]
-      .filter(Boolean)
-      .join(' ')
-      .trim()
+    const street = publishStreetLine({
+      streetNumber: row.StreetNumber,
+      streetName: row.StreetName,
+      streetSuffix: row.StreetSuffix,
+    })
     out.push({
       id: key,
       href: listingDetailPath(

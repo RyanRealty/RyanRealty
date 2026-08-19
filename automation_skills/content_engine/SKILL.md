@@ -34,8 +34,9 @@ action_types:
 
 # Content Engine
 
-**Status:** Canonical  
-**Locked:** 2026-05-17  
+**STOP — video producer SKILLs are gone.** Do not load `video_production_skills/**/SKILL.md` or `social_media_skills/coming-soon-teaser`. Video rules are `CLAUDE.md` §4. Live dispatch is `marketing_brain_actions` + `producer-runtime` (if `PRODUCER_RUNTIME_ENABLED`) or the inbox/weekly writers. Still-live social SKILLs: flyer, list-kit, blog-post, IG, meme_lord, CMA.
+
+**Status:** Partial fossil. Locked 2026-05-17. Video half is dead.  
 
 
 ## Purpose

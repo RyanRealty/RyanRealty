@@ -3,8 +3,7 @@
  *
  * Creates a DRAFT (never sends) in a Ryan Realty mailbox — by default
  * matt@ryan-realty.com — with optional file attachments (e.g. a CMA PDF) and an
- * optional Bcc (e.g. the FUB email-logging address ryan.realty@followupboss.me,
- * so the message is logged in Follow Up Boss the moment Matt hits Send in Gmail).
+ * optional Bcc.
  *
  * Why a draft, not a send: a CMA carries real pricing numbers (CLAUDE.md §0
  * data-accuracy mandate) and lands far better from Matt's real mailbox than a

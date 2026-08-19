@@ -25,6 +25,11 @@ example_outputs:
     surface: "email"
 ---
 
+# STOP - UNUSED / DO NOT DISPATCH
+
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+
+
 # Expired Listing Audit + Landing Page Producer
 
 **Scope:** Two related deliverables:
@@ -32,7 +37,7 @@ example_outputs:
 1. **The shared `/lp/expired-listing` landing page.** Empathy-driven, brand-voice-compliant, framework for the audit. Lives at `app/lp/expired-listing/`. Already shipped.
 2. **Per-listing written audit.** A 1-page email-deliverable that runs the 5-cause diagnostic on a specific expired property: price thesis vs comps, photo quality, MLS description, syndication, agent responsiveness. Triggered by the cron OR direct ask.
 
-**Status:** Canonical
+**Status:** Deprecated
 **Locked:** 2026-05-18
 **Voice:** `marketing_brain_skills/brand-voice/VOICE.md`. Never pander, never editorialize, honest + transparent, never overtly state value, let language speak for itself.
 
@@ -43,7 +48,7 @@ example_outputs:
 **Read these BEFORE writing any expired-listing copy:**
 
 1. `marketing_brain_skills/brand-voice/VOICE.md`. Especially §4.7.
-2. `docs/archive/fub-era/README.md`. FUB-era research that drove LP voice + sentiments (archived, not a build target).
+2. `docs/archive/fub-era/README.md`. Archived LP voice research. Not a build target. Live capture is `sendEvent` → `crm_people`.
 3. `CLAUDE.md` §0.3. Banned words, em-dashes, etc.
 
 **Hard rules for THIS producer specifically:**
@@ -188,7 +193,7 @@ No trace. No figure. Cut, don't estimate.
 | puppeteer-core + @sparticuz/chromium-min | PDF render if requested | same pattern as CMA producer |
 | ops-email-send producer | outbound delivery of the audit once approved | `RESEND_API_KEY`, `mail.ryan-realty.com` sender |
 | scripts/_producer_lib.py | `has_hard_fail()`, `grep_banned_categorized()` for voice lint | in-repo |
-| comms-matt-alert producer | fires when detection cron creates a new FUB record | in-repo |
+| comms-matt-alert producer | fires when detection cron creates a new CRM record | in-repo |
 
 ---
 
@@ -267,7 +272,7 @@ WHERE id='<id>';
 | No comps in window | fewer than 4 comps closed in the property's immediate neighborhood during the active window | Expand to 0.5mi radius. If still under 4, write the audit with "limited comp set" caveat surfaced in the verification trace. |
 | No photo access | Spark photo URLs are gone (listing too old) | Skip cause #2 and mark "photo audit not available." |
 | Banned-word lint fails | `has_hard_fail()` returns true | Refuse to ship. Re-write the offending section. |
-| Owner email missing | no `owner_email` in payload | The audit lives in `public/expired-listings/<slug>/audit.html` and on the FUB person record as a Note. Matt can manually deliver via Gmail or direct mail. |
+| Owner email missing | no `owner_email` in payload | The audit lives in `public/expired-listings/<slug>/audit.html` and on the CRM person record as a Note. Matt can manually deliver via Gmail or direct mail. |
 | Supabase query returns 0 rows | listing too old or ListingKey mismatch | Report to Matt with the exact query. Set `status='killed'` with error in `executor_response`. |
 | Voice validation fails | brand voice checker returns violations | Do not present draft. Fix violations and re-validate. |
 
@@ -277,11 +282,11 @@ WHERE id='<id>';
 
 - `marketing_brain_skills/producers/cma/SKILL.md`. Same architecture pattern (per-property HTML deliverable with verification trace + PDF render)
 - `marketing_brain_skills/producers/ops-email-send/SKILL.md`. For outbound delivery once audit is approved
-- `marketing_brain_skills/producers/comms-matt-alert/SKILL.md`. Fires when the detection cron creates a new FUB record so Matt sees it immediately
+- `marketing_brain_skills/producers/comms-matt-alert/SKILL.md`. Fires when the detection cron creates a new CRM record so Matt sees it immediately
 - `marketing_brain_skills/brand-voice/VOICE.md` §4.7. Voice rules this producer is gated against
-- `docs/archive/fub-era/README.md`. FUB-era research that drove the LP voice + content
+- `docs/archive/fub-era/README.md`. Archived LP voice research. Not a build target.
 - `app/lp/expired-listing/page.tsx`. Live LP source
-- `app/api/cron/detect-expired-listings/route.ts`. Hourly cron that creates FUB records + alerts Matt
+- `app/api/cron/detect-expired-listings/route.ts`. Hourly cron that creates CRM records + alerts Matt
 - `public.expired_listing_intake` Supabase table. Dedupe + audit trail
 
 ---

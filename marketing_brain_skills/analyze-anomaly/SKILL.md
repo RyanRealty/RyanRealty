@@ -174,7 +174,7 @@ Run the same query for the equivalent pre-inflection window to compute contribut
 
 **GSC position at `scope='account'`:** break by query (source scope, scope_id = query string), by page.
 
-**FUB `qualified_seller_leads`:** break by source (scope='source'), by time-of-day bucket (compute from raw timestamps if available via FUB audit data).
+**CRM `qualified_seller_leads`:** break by source (scope='source'), by time-of-day bucket (compute from raw timestamps if available via CRM audit data).
 
 **Meta Ads CPL or spend:** break by campaign (scope='campaign', scope_id = campaign name keyword), by ad creative label if available, by placement.
 
@@ -241,7 +241,7 @@ Based on findings, produce up to 3 recommended actions. Each maps to a valid
 | Creative fatigue on top campaign | `content:fb_lead_gen_ad` | New creative for that campaign |
 | Organic query losing position | `content:seo_blog` or `site:seo_fix` | Target the lost query with new or updated content |
 | Traffic source diversification opportunity | `content:blog_post` | Reduce dependency on flagged source |
-| Lead source quality drop | `ops:fub_audit` | Investigate tag/stage assignments |
+| Lead source quality drop | `ops:crm_audit` | Investigate tag/stage assignments at `/admin/crm` |
 
 ```typescript
 interface RecommendedAction {
@@ -400,7 +400,7 @@ No `ready` or `approved` states. No draft surface.
 - `lib/marketing-brain/diagnose.ts`.  `AnomalyResult`, `DeltaReport`, `Significance`, `InsightSummary` types; `computeDelta()` and `detectAnomalies()` primitives for reference
 - `marketing_brain_skills/audit-website/SKILL.md`.  GA4 and GSC metric dictionary (channel, scope, scope_id patterns)
 - `marketing_brain_skills/audit-ads/SKILL.md`.  Meta Ads metric dictionary (campaign scope patterns, CPL fatigue thresholds)
-- `marketing_brain_skills/audit-crm/SKILL.md`.  FUB metric dictionary (`qualified_seller_leads` north-star definition, seller-tag vocabulary)
+- `marketing_brain_skills/audit-crm/SKILL.md`.  CRM metric dictionary (`qualified_seller_leads` north-star definition, seller-tag vocabulary)
 - `CLAUDE.md` §0.  Data Accuracy: every figure in findings must trace to a live Supabase query
 
 **Downstream consumers:**

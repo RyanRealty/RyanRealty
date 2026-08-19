@@ -149,7 +149,7 @@ Refuse and return to queue if asked to:
 
 - "Just unify / pretty up admin UI" before IA + visual locks
 - Implement `docs/plans/ADMIN_REBUILD/specs/*` as approved design
-- Use CONSOLE_KIT / old ui_kits / FUB screens as the visual target
+- Use CONSOLE_KIT / old ui_kits / a vendor CRM UI as the visual target
 - Import or extend legacy `components/admin/*` as the new system
 - Carry over current nav, route names, destination names, page titles, terminology,
   data groupings, or the mobile tab bar as if they were settled (Matt 2026-08-04:
