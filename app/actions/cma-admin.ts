@@ -26,11 +26,11 @@ import { parsePositiveInt, parsePositiveNumber, resolveCmaClientName } from '@/l
 import {
   attachCmaToPerson,
   getCmaAdminReviewRowBySlug,
-  getPersonForCmaKickoff,
-  searchPeopleByName,
   updateCmaRowFieldsBySlug,
   deleteCmaRowById,
 } from '@/lib/data'
+import { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
+import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 async function requireAdmin(): Promise<string | null> {
