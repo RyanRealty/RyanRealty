@@ -72,7 +72,7 @@ const COOKIES: CookieRow[] = [
     purpose: 'Remembers your cookie choices so we apply them on return visits.',
   },
   {
-    name: 'fub_cid',
+    name: 'rr_pid',
     provider: 'Ryan Realty (first-party)',
     type: 'Marketing',
     duration: '90 days',

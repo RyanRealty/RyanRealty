@@ -1,16 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { hasAnalyticsConsent } from './CookieConsentBanner'
+import { pageTypeFromPath } from '@/lib/analytics/page-type'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
 
 /**
  * GTM container. Loads only after analytics consent (ci:tracking-policy).
- * GA4 is configured inside this container (gaawc). GoogleAnalytics must not
- * also gtag('config', G-…) or page_view doubles.
+ * Pushes page_type onto dataLayer before gtm.js so the Google tag can
+ * stamp every hit. Automatic page_view is off — PageViewTracker owns it.
  */
 export default function GTMHead() {
+  const pathname = usePathname()
+  const pageType = pageTypeFromPath(pathname || '/')
   const [consent, setConsent] = useState(false)
 
   useEffect(() => {
@@ -30,7 +34,8 @@ export default function GTMHead() {
   return (
     <script
       dangerouslySetInnerHTML={{
-        __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        __html: `window.dataLayer=window.dataLayer||[];window.dataLayer.push({page_type:'${pageType.replace(/'/g, "\\'")}'});
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], // hydration-safe — GTM bootstrap stamp
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;if(f&&f.parentNode)f.parentNode.insertBefore(j,f);else d.head.appendChild(j);

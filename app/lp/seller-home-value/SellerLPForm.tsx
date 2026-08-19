@@ -21,7 +21,7 @@ declare global {
 }
 
 export type SellerLPFormProps = {
-  /** When true, server already detected a fub_cid cookie. We treat the visitor as returning. */
+  /** When true, server already detected an rr_pid cookie. We treat the visitor as returning. */
   knownVisitor: boolean
   /** Prefilled name (first or full) if we already know it. */
   prefillName?: string | null

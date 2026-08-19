@@ -2,7 +2,11 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (grok-build) — remotion + brain runtime retired
+# Current — 2026-08-18 (grok-build) — page-tied analytics
+
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Public tracking is layout-owned: `lib/analytics/page-type.ts` is the taxonomy, `PageViewTracker` + `VisitTracker` fire from the root, GTM `GTM-WV6R4NZ5` v5 loads `G-ST40W4WM6T` only. `ci:page-analytics` locks it. Cookies page lists `rr_pid` not `fub_cid`. CMA not touched.
+
+# Prior — 2026-08-18 (grok-build) — remotion + brain runtime retired
 
 **Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Remotion factory deleted. Producer-runtime crons off. `analytics_dim_agent` dropped (`20260818233000`). Revalidate uses `REVALIDATE_SECRET` (set on Vercel prod/preview/dev). Extra Vercel projects `tmp` and `ryan-realty-lps` deleted. GTM already has GA4 `G-ST40W4WM6T`. CMA checkout not touched.
 

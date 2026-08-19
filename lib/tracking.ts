@@ -135,12 +135,10 @@ export function trackPageView(pageType: string, params: Record<string, unknown> 
 }
 
 // ----------------------------------------------------------------------------
-// First-party session id — the key that stitches an anonymous visitor's
-// browsing history to the FUB person they become when they identify.
-// VisitTracker mints this uuid v4 into localStorage on first page view; the
-// lead forms + email-click bridge READ it (never mint) and hand it to the
-// server so backfillSessionToFub() can replay prior anonymous events under
-// the now-known person. Mirrors VisitTracker's key + validation exactly.
+// First-party session id — stitches anonymous browsing to the CRM person
+// they become when they identify. VisitTracker mints this uuid. Lead forms
+// and the email-click bridge read it and the server replays prior events
+// onto crm_people.
 // ----------------------------------------------------------------------------
 
 const RR_SESSION_STORAGE_KEY = 'rr_session_id'

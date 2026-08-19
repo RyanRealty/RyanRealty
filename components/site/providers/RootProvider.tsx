@@ -19,7 +19,7 @@ import { Toaster } from '@/components/ui/sonner'
  *
  * The CookieConsentBanner is hidden on /lp/* routes per the existing
  * brand-consent policy — LP visitors see only the lead form. Analytics
- * scripts + identity bridges still run on LPs (FUB / agent-attribution
+ * scripts + identity bridges still run on LPs (CRM / agent-attribution
  * cookies must hydrate on landing-page hits).
  */
 export function RootProvider({ children }: { children: ReactNode }) {
