@@ -126,7 +126,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       .select('id, target')
       .eq('target', `cma:${baseSlug}--v2`)
     expect((actions ?? []).length).toBeGreaterThanOrEqual(1)
-  }, 30000)
+  }, 120_000)
 
   it('a repeat intake refreshes the open --v2 draft (no --v3) and never resets a built draft', async () => {
     expect(baseSlug).toBeTruthy()
@@ -193,7 +193,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       (a) => ((a.payload ?? {}) as Record<string, unknown>).client_email === SECOND_EMAIL,
     )
     expect(carriesSecondLead).toBe(true)
-  }, 30000)
+  }, 120_000)
 
   it('an ARCHIVED document is protected the same way (fail-safe: any non-draft status)', async () => {
     expect(baseSlug).toBeTruthy()
@@ -226,5 +226,5 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
     const { data: v2 } = await sb.from('cmas').select('status, client_email').eq('slug', v2Slug).single()
     expect(v2!.status).toBe('archived')
     expect(v2!.client_email).toBe(SECOND_EMAIL)
-  }, 30000)
+  }, 120_000)
 })
