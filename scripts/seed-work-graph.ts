@@ -97,14 +97,6 @@ const SEEDS = [
     accept: 'Packet shows a /join conversion figure with a named source.',
   },
   {
-    versionGap: 'G11',
-    domain: 'factory',
-    title: 'Meta audience heartbeat: hold green 7 days',
-    objective: 'INT-007: first green run 2026-08-15T14:03Z; verify daily green through 2026-08-22 then flip FIX to KEEP.',
-    output: 'meta_audience_log shows 7 consecutive daily runs; INTEGRATIONS cell flipped.',
-    accept: 'Seven consecutive ran_at days ending on or after 2026-08-22; map cell updated with evidence.',
-  },
-  {
     versionGap: 'G12',
     domain: 'factory',
     title: 'Video decision docket for Matt: park or rebuild',

@@ -9,7 +9,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { isExpiredUnlearned } from './ledger-draft'
 import { readJoinConversionStats } from './join-conversion'
 import { readLookWalkBaseline } from './look-walk'
-import { readMetaAudienceHold, type MetaAudienceHold } from './meta-audience-hold'
 import { readIntegrationHealth } from './integration-health'
 import { readSearchCompletenessAccept } from './search-completeness'
 import { readVideoDecisionDocket } from './video-docket'
@@ -130,7 +129,6 @@ export type CompanyScoreboardSignals = {
     emailClicks7d: number
     visitorEvents7d: number
     audienceLastRanAt: string | null
-    audienceHold: MetaAudienceHold
     source: string
   }
   cma: {
@@ -269,7 +267,7 @@ export async function collectCompanyScoreboardSignals(
     emailOpenRes,
     emailClickRes,
     visitor7dRes,
-    audienceHold,
+    audienceRunRes,
     cmaRes,
     joinStats,
     ...tokenResults
@@ -301,7 +299,7 @@ export async function collectCompanyScoreboardSignals(
     sb.from('email_events').select('id', { count: 'exact', head: true }).gte('occurred_at', since7d).eq('event', 'open'),
     sb.from('email_events').select('id', { count: 'exact', head: true }).gte('occurred_at', since7d).eq('event', 'click'),
     sb.from('visitor_events').select('id', { count: 'exact', head: true }).gte('event_at', since7d),
-    readMetaAudienceHold(sb, now),
+    sb.from('meta_audience_log').select('ran_at').order('ran_at', { ascending: false }).limit(1),
     sb.from('cmas').select('id', { count: 'exact', head: true }),
     readJoinConversionStats(sb, now),
     ...SOCIAL_TABLES.map((table) =>
@@ -481,7 +479,7 @@ export async function collectCompanyScoreboardSignals(
     emailOpenRes.error ||
     emailClickRes.error ||
     visitor7dRes.error ||
-    audienceHold.status === 'unreadable'
+    audienceRunRes.error
   const identity: CompanyScoreboardSignals['identity'] = {
     status: identityError ? 'unreadable' : 'ok',
     identityMap: identityRes.count ?? 0,
@@ -490,10 +488,9 @@ export async function collectCompanyScoreboardSignals(
     emailOpens7d: emailOpenRes.count ?? 0,
     emailClicks7d: emailClickRes.count ?? 0,
     visitorEvents7d: visitor7dRes.count ?? 0,
-    audienceLastRanAt: audienceHold.lastRanAt,
-    audienceHold,
+    audienceLastRanAt: audienceRunRes.data?.[0]?.ran_at ?? null,
     source:
-      'visitor_identity_map + email_events (event=open|click, 7d) + visitor_events 7d + readMetaAudienceHold',
+      'visitor_identity_map + email_events (event=open|click, 7d) + visitor_events 7d + meta_audience_log.ran_at',
   }
 
   const look = readLookWalkBaseline()

@@ -3,7 +3,6 @@ import {
   ageHours,
   evalAudienceSync,
   evalMacroSeries,
-  evalMetaAudienceHold,
   evalSkySlopeMirror,
   evalExpired,
   evalFsbo,
@@ -141,53 +140,6 @@ describe('evalAudienceSync (36h threshold on max(meta_audience_log.ran_at))', ()
     const never = evalAudienceSync(null, NOW)
     expect(never.status).toBe('red')
     expect(never.note).toContain('META_AUDIENCE_PUSH_ENABLED')
-  })
-})
-
-describe('evalMetaAudienceHold', () => {
-  it('red when unreadable or not current', () => {
-    expect(
-      evalMetaAudienceHold({
-        status: 'unreadable',
-        lastRanAt: null,
-        consecutiveDays: 0,
-        lastDay: null,
-        holdMet: false,
-        current: false,
-      }).status,
-    ).toBe('red')
-    expect(
-      evalMetaAudienceHold({
-        status: 'ok',
-        lastRanAt: daysAgo(3),
-        consecutiveDays: 20,
-        lastDay: '2026-08-13',
-        holdMet: false,
-        current: false,
-      }).status,
-    ).toBe('red')
-  })
-  it('green while holding and when the accept day is met', () => {
-    const holding = evalMetaAudienceHold({
-      status: 'ok',
-      lastRanAt: hoursAgo(1),
-      consecutiveDays: 21,
-      lastDay: '2026-08-16',
-      holdMet: false,
-      current: true,
-    })
-    expect(holding.status).toBe('green')
-    expect(holding.value).toContain('holding 21/7')
-    const met = evalMetaAudienceHold({
-      status: 'ok',
-      lastRanAt: hoursAgo(1),
-      consecutiveDays: 8,
-      lastDay: '2026-08-22',
-      holdMet: true,
-      current: true,
-    })
-    expect(met.status).toBe('green')
-    expect(met.value).toContain('hold met')
   })
 })
 

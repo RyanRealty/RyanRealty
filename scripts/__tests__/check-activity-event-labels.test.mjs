@@ -33,12 +33,6 @@ const FILES = [
   'app/activity/_v3/activity-rows.ts',
   'lib/kb/place-sections.ts',
   'app/actions/activity-feed-shared.ts',
-  'components/activity/ActivityFeedCard.tsx',
-  'components/geo-page/ActivityFeedCard.tsx',
-  'components/site/ActivityFeed.tsx',
-  'components/ActivityFeedCard.tsx',
-  'components/ActivityFeedSlider.tsx',
-  'components/activity/ActivityCelebrationOverlay.tsx',
 ]
 
 function run(args = []) {
@@ -164,8 +158,19 @@ describe('ci:activity-event-labels', () => {
 
   it('E: fails when a consumer renders the raw event_type as text', () => {
     reset()
-    edit('components/site/ActivityFeed.tsx', (t) =>
-      t.replace('{leadFor(item.event_type)}', '{item.event_type}'),
+    // The shipped consumers this once edited were deleted with the g55 orphan
+    // component trees, so the case is carried by a synthesized consumer: the
+    // import is what puts a file in scope, and the JSX is the defect.
+    write(
+      'components/site/RawActivityRow.tsx',
+      [
+        "import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'",
+        '',
+        'export function Row({ item }: { item: ActivityFeedItem }) {',
+        '  return <span>{item.event_type}</span>',
+        '}',
+        '',
+      ].join('\n'),
     )
     const { code, out } = run()
     expect(code).toBe(1)

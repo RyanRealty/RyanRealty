@@ -25,7 +25,6 @@ import { sendEmail } from '@/lib/resend'
 import {
   evalAudienceSync,
   evalMacroSeries,
-  evalMetaAudienceHold,
   evalSkySlopeMirror,
   evalExpired,
   evalFsbo,
@@ -39,7 +38,6 @@ import {
 } from '@/lib/pipeline-heartbeat'
 import { WESTSIDE_AUDIENCE_ID } from '@/lib/meta-westside-audience'
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
-import { readMetaAudienceHold } from '@/lib/data/loop/meta-audience-hold'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -373,13 +371,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 9. INT-007 Meta audience daily hold (CRM + westside ledger).
-  {
-    const hold = await readMetaAudienceHold(supabase, now)
-    pipeline.push(evalMetaAudienceHold(hold))
-  }
-
-  // 10. The macro rate series (Mondays 13:00 UTC). Every public payment figure
+  // 9. The macro rate series (Mondays 13:00 UTC). Every public payment figure
   //     resolves to this through getCalculatorDefaults, and it is the ONE
   //     statistic on the site nobody here produces — so when it stops arriving
   //     the calculators keep rendering, quietly, on an old rate. No CI gate can

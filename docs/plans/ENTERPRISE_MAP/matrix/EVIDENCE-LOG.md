@@ -157,7 +157,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 | crm_sequences | 7 (active 4 / paused 3) |
 | crm_sequence_enrollments | 33 |
 | crm_sequence_sends | 4 (latest claimed_at 2026-07-18) |
-| meta_audience_log | latest ran_at **2026-08-16T09:01:26Z** LIVE CRM received 13980 (G11 probe; June-23 cell was stale) |
+| meta_audience_log | latest ran_at **2026-08-16T09:01:26Z** LIVE CRM received 13980 (June-23 cell was stale). 55 consecutive UTC days at the 2026-08-17 park. |
 
 ### CAP path proofs (disk)
 - Regenerated `inventories/R-cap-path-proofs.json`: CAP-001…035 all **disk_signal true** except **CAP-033** (Grok memory external).
@@ -191,7 +191,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 
 ### INT-007 Meta audience ops
 - Probe 2026-08-16 via `scripts/loop-probe-g11.ts` / `readMetaAudienceHold`. Newest row **2026-08-16T09:01:26Z** audience `120246504502300698` LIVE `add_num_received=13980` `remove 2 of 2`. Distinct UTC days in the last 40 rows run **2026-07-27…2026-08-16** (already ≥7 consecutive). West Side `120244510092910698` also writing (20 of those 40).
-- Disposition stays **FIX** until a consecutive streak ends on or after **2026-08-22** (G11 accept). Daily freshness threshold is 36h. Spend remains Matt-gated.
+- Disposition is **KEEP** as of **2026-08-17**. Matt parked G11 (stop checking Meta); the 2026-08-22 calendar date was the only unmet condition against a 55-day streak. Daily freshness threshold is still 36h via `evalAudienceSync`. Spend remains Matt-gated.
 - The June-23 “stale 7w” cell was a map lie — the log kept writing.
 
 ### INT-005 / CAP-010 email measurement
