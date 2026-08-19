@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getConversationThreadFull, getInboxContactCard } from '@/lib/data/crm/getInboxThread'
+import { getDraftsForPerson } from '@/lib/data/crm/drafts'
 import { requirePersonInScope } from '@/app/actions/crm'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { Button, ThreadBubble } from '@/components/admin/v2'
@@ -42,9 +43,10 @@ export async function MessagesThread({
     )
   }
 
-  const [thread, card] = await Promise.all([
+  const [thread, card, drafts] = await Promise.all([
     getConversationThreadFull(personId, 80),
     getInboxContactCard(personId),
+    getDraftsForPerson(personId, access.brokerSlug),
   ])
   const quiet = inSmsQuietHours()
 
@@ -113,6 +115,9 @@ export async function MessagesThread({
                 : []
             }
             quiet={quiet}
+            draftText={drafts.text?.body ?? ''}
+            draftEmail={drafts.email?.body ?? ''}
+            draftSubject={drafts.email?.subject ?? ''}
           />
         </div>
       </section>

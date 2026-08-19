@@ -9,6 +9,7 @@ import { getDraftsForPerson } from '@/lib/data/crm/drafts'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { EntityTitle } from '@/components/admin/v2'
 import { ComposeSurface } from '@/components/admin/crm/ComposeSurface'
+import { getBrokerSelfComposePreviewAction } from '@/app/admin/(protected)/messages/actions'
 import type { ComposePersonChip } from '@/lib/crm/compose-group'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +17,7 @@ export const dynamic = 'force-dynamic'
 export default async function MessagesNewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ c?: string; channel?: string }>
+  searchParams: Promise<{ c?: string; channel?: string; self?: string; cma?: string }>
 }) {
   const ctx = await requireAdminPage('inbox.send')
   const access = await getCrmAccess()
@@ -25,13 +26,21 @@ export default async function MessagesNewPage({
   const selectedId = Number(sp.c) || null
   const channel = sp.channel === 'email' ? 'email' : 'text'
   const quiet = inSmsQuietHours()
+  const brokerSelf = sp.self === '1'
+  const cmaSlug = (sp.cma ?? '').trim().toLowerCase()
 
   let initialPeople: ComposePersonChip[] = []
   let draftText = ''
   let draftEmail = ''
   let draftSubject = ''
 
-  if (selectedId) {
+  if (brokerSelf) {
+    const preview = await getBrokerSelfComposePreviewAction(cmaSlug)
+    initialPeople = [{ id: 0, name: preview.name, phone: preview.phone, email: preview.email }]
+    draftText = preview.body
+    draftEmail = preview.body
+    draftSubject = preview.subject
+  } else if (selectedId) {
     const scoped = await requirePersonInScope(selectedId, access)
     if (!scoped.ok) notFound()
     const [card, drafts] = await Promise.all([
@@ -70,6 +79,8 @@ export default async function MessagesNewPage({
         draftText={draftText}
         draftEmail={draftEmail}
         draftSubject={draftSubject}
+        cmaSlug={cmaSlug}
+        brokerSelf={brokerSelf}
       />
     </div>
   )

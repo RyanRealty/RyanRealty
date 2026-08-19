@@ -114,3 +114,35 @@ export async function loadGroupMedia(
   }
   return { ok: true, media }
 }
+
+/** Server-side write for library items (disclosure, CMA PDF, vCard). */
+export async function putAttachmentBytes(params: {
+  channel: CrmAttachmentChannel
+  personId: number
+  filename: string
+  contentType: string
+  bytes: Buffer
+}): Promise<{ ok: true; ref: CrmAttachmentRef } | { ok: false; error: string }> {
+  const check = validateAttachmentFile(params.channel, {
+    name: params.filename,
+    sizeBytes: params.bytes.length,
+    contentType: params.contentType,
+  })
+  if (!check.ok) return check
+  const path = attachmentPathFor(params.channel, params.personId, params.filename, Date.now())
+  const sb = createServiceClient()
+  const { error } = await sb.storage.from(BUCKET).upload(path, params.bytes, {
+    contentType: params.contentType,
+    upsert: false,
+  })
+  if (error) return { ok: false, error: error.message }
+  return {
+    ok: true,
+    ref: {
+      path,
+      name: params.filename,
+      sizeBytes: params.bytes.length,
+      contentType: params.contentType,
+    },
+  }
+}

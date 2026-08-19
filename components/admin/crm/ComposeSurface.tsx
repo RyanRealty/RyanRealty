@@ -27,6 +27,7 @@ import {
   type ComposePersonChip,
 } from '@/lib/crm/compose-group'
 import {
+  attachLibraryItemAction,
   saveComposeDraftAction,
   searchComposePeopleAction,
   sendComposeAction,
@@ -42,6 +43,8 @@ export function ComposeSurface({
   draftText = '',
   draftEmail = '',
   draftSubject = '',
+  cmaSlug = '',
+  brokerSelf = false,
 }: {
   initialPeople: ComposePersonChip[]
   initialChannel?: 'text' | 'email'
@@ -49,6 +52,8 @@ export function ComposeSurface({
   draftText?: string
   draftEmail?: string
   draftSubject?: string
+  cmaSlug?: string
+  brokerSelf?: boolean
 }) {
   const [channel, setChannel] = useState<'text' | 'email'>(initialChannel)
   const [people, setPeople] = useState<ComposePersonChip[]>(initialPeople)
@@ -61,6 +66,7 @@ export function ComposeSurface({
   const [body, setBody] = useState(initialChannel === 'email' ? draftEmail : draftText)
   const [subject, setSubject] = useState(draftSubject)
   const [pending, startTransition] = useTransition()
+  const [overrideQuiet, setOverrideQuiet] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [])
 
@@ -108,18 +114,26 @@ export function ComposeSurface({
   const group = packed.isGroup
   const toEmails = emailsForCompose(people)
   const ccEmails = emailsForCompose(ccPeople)
-  const textReady = Boolean(packed.personId && body.trim() && people.every((p) => p.phone))
+  const textReady = brokerSelf
+    ? Boolean(body.trim() && (!quiet || overrideQuiet))
+    : Boolean(packed.personId && body.trim() && people.every((p) => p.phone) && (!quiet || overrideQuiet))
   const emailReady = Boolean(packed.personId && subject.trim() && body.trim() && toEmails.length)
   const canSend = channel === 'email' ? emailReady : textReady
 
   function send() {
-    if (!canSend || !packed.personId) return
+    if (!canSend) return
+    if (!brokerSelf && !packed.personId) return
     const fd = new FormData()
     fd.set('channel', channel)
-    fd.set('personId', String(packed.personId))
     fd.set('body', body.trim())
     fd.set('idempotencyKey', idempotencyKey)
-    if (quiet && channel === 'text') fd.set('overrideQuietHours', '1')
+    if (brokerSelf) {
+      fd.set('brokerSelf', '1')
+      if (cmaSlug) fd.set('cmaSlug', cmaSlug)
+    } else {
+      fd.set('personId', String(packed.personId))
+    }
+    if (quiet && channel === 'text' && overrideQuiet) fd.set('overrideQuietHours', '1')
     if (attachments.ready.length) fd.set('attachments', JSON.stringify(attachments.ready))
     if (channel === 'text') {
       if (packed.extraIds) fd.set('recipientIds', packed.extraIds)
@@ -141,8 +155,25 @@ export function ComposeSurface({
     })
   }
 
-  function saveDraft() {
+  function attachLibrary(kind: 'disclosure' | 'cma' | 'vcard') {
     if (!packed.personId) {
+      toast.error('Add someone first.')
+      return
+    }
+    startTransition(async () => {
+      const res = await attachLibraryItemAction({
+        personId: packed.personId!,
+        channel: channel === 'email' ? 'email' : 'mms',
+        kind,
+        cmaSlug: cmaSlug || undefined,
+      })
+      if (!res.ok) toast.error(res.error)
+      else attachments.addRef(res.ref)
+    })
+  }
+
+  function saveDraft() {
+    if (brokerSelf || !packed.personId) {
       toast.error('Add someone first.')
       return
     }
@@ -170,6 +201,7 @@ export function ComposeSurface({
       <RecipientRow
         label="To"
         people={people}
+        lock={brokerSelf}
         onRemove={removeTo}
         onAdd={() => {
           setAddTarget('to')
@@ -244,8 +276,32 @@ export function ComposeSurface({
 
       {attachments.items.length > 0 ? <AttachmentChips items={attachments.items} onRemove={attachments.remove} /> : null}
 
+      {primaryId && !brokerSelf ? (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <Button type="button" variant="quiet" onClick={() => attachLibrary('disclosure')} disabled={pending}>
+            Agency disclosure
+          </Button>
+          {cmaSlug ? (
+            <Button type="button" variant="quiet" onClick={() => attachLibrary('cma')} disabled={pending}>
+              CMA PDF
+            </Button>
+          ) : null}
+          {channel === 'email' ? (
+            <Button type="button" variant="quiet" onClick={() => attachLibrary('vcard')} disabled={pending}>
+              vCard
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {quiet && channel === 'text' ? (
+        <FilterChip pressed={overrideQuiet} onClick={() => setOverrideQuiet((v) => !v)}>
+          Send anyway. Quiet hours.
+        </FilterChip>
+      ) : null}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8 }}>
-        {primaryId ? (
+        {primaryId && !brokerSelf ? (
           <AttachmentPicker attachments={attachments} accept={channel === 'email' ? EMAIL_ACCEPT : MMS_ACCEPT_ATTR} />
         ) : null}
         <Button type="button" variant="quiet" onClick={saveDraft} disabled={pending || !packed.personId}>
@@ -273,11 +329,13 @@ function RecipientRow({
   people,
   onRemove,
   onAdd,
+  lock = false,
 }: {
   label: string
   people: ComposePersonChip[]
   onRemove: (id: number) => void
   onAdd: () => void
+  lock?: boolean
 }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
@@ -297,14 +355,18 @@ function RecipientRow({
           }}
         >
           {p.name}
-          <IconButton label={`Remove ${p.name}`} onClick={() => onRemove(p.id)} style={{ width: 32, height: 32 }}>
-            <X className="h-3.5 w-3.5" aria-hidden />
-          </IconButton>
+          {lock ? null : (
+            <IconButton label={`Remove ${p.name}`} onClick={() => onRemove(p.id)} style={{ width: 32, height: 32 }}>
+              <X className="h-3.5 w-3.5" aria-hidden />
+            </IconButton>
+          )}
         </span>
       ))}
-      <IconButton label={`Add ${label === 'Cc' ? 'Cc' : 'person'}`} onClick={onAdd} style={{ width: 44, height: 44 }}>
-        <Plus className="h-4 w-4" aria-hidden />
-      </IconButton>
+      {lock ? null : (
+        <IconButton label={`Add ${label === 'Cc' ? 'Cc' : 'person'}`} onClick={onAdd} style={{ width: 44, height: 44 }}>
+          <Plus className="h-4 w-4" aria-hidden />
+        </IconButton>
+      )}
     </div>
   )
 }

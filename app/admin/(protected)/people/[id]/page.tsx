@@ -123,9 +123,9 @@ export default async function PersonPage({
           </a>
         ) : null}
         {card.email ? (
-          <a href={`mailto:${card.email}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-            Email
-          </a>
+          <Link href={`/admin/messages/new?c=${card.personId}&channel=email`}>
+            <Button variant="quiet">Email</Button>
+          </Link>
         ) : null}
         {sp.intent !== 'cma' && sp.kicked !== '1' ? (
           <Link href={`/admin/people/${card.personId}?intent=cma`}>

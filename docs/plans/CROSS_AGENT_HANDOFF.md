@@ -4,7 +4,7 @@
 
 # Current — 2026-08-19 (cursor-cloud) — CRM compose rebase
 
-**Surface:** Cursor Cloud `cursor/site-texting-1eb2` PR **128**. Loop stays **DISARMED**. Rebased onto current `main` (PR 123 + people file + CMA 127 + person-link). CRM compose is the only send path. No Jane/Odessa/Nealon sends. No Gmail fallback. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud `cursor/site-texting-1eb2` PR **128**. Loop stays **DISARMED**. Rebased onto current `main` (PR 123 + people file + CMA 127 + person-link). CRM compose is the only send path. Library attach, group text, Text me opens compose. No Jane/Odessa/Nealon sends. No Gmail fallback. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** crm-e2e, crm-up-to-snuff, admin-product-os, git-commit.
 
@@ -31,10 +31,6 @@
 **Surface:** Cursor Cloud. Loop stays **DISARMED**. Foley investor HOA `$0` vs `$22` **fixed**. Product `main` @ `2ff523f5e`. No CMA. No client mail. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** database-canonical-reference, git-commit.
-
-# Prior — 2026-08-19 (cursor-cloud) — CMA phone open + PDF
-
-**Surface:** Cursor Cloud `cursor/site-texting-1eb2` PR **128**. Loop stays **DISARMED**. Rebased onto `main` after PR 127. CRM compose is the only send path. No Jane/Odessa/Nealon sends. No Gmail fallback. No re-arm. Leave `LOOP_SENTINEL` off.
 
 **Skills read:** admin-product-os, frontend-design, git-commit.
 

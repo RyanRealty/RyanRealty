@@ -30,12 +30,34 @@ export async function searchComposePeopleAction(q: string): Promise<ComposePerso
   }))
 }
 
+async function sendBrokerSelfCompose(
+  formData: FormData,
+  brokerSlug: string | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const body = String(formData.get('body') ?? '').trim()
+  if (!body) return { ok: false, error: 'Write the text first.' }
+  const { resolveActingBrokerPhone, sendWhitelistedBrokerSms } = await import(
+    '@/lib/crm/broker-self-sms'
+  )
+  const dest = await resolveActingBrokerPhone(brokerSlug ?? 'matt')
+  if (!dest.ok) return dest
+  const sent = await sendWhitelistedBrokerSms({ to: dest.to, body })
+  if (!sent.ok) return sent
+  revalidatePath('/admin/messages')
+  revalidatePath('/admin/messages/new')
+  return { ok: true }
+}
+
 export async function sendComposeAction(
   formData: FormData,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const auth = await checkAdminAction('inbox.send')
   const denied = refuseMessagesSend(auth)
   if (denied || !auth.ok) return denied ?? { ok: false, error: 'Unauthorized' }
+
+  if (String(formData.get('brokerSelf') ?? '') === '1') {
+    return sendBrokerSelfCompose(formData, auth.ctx.brokerSlug)
+  }
 
   const personId = Number(formData.get('personId'))
   if (!Number.isFinite(personId) || personId <= 0) {
@@ -88,4 +110,65 @@ export async function sendMessagesSmsAction(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!formData.get('channel')) formData.set('channel', 'text')
   return sendComposeAction(formData)
+}
+
+export async function attachLibraryItemAction(input: {
+  personId: number
+  channel: 'email' | 'mms'
+  kind: 'disclosure' | 'cma' | 'vcard'
+  cmaSlug?: string
+}): Promise<{ ok: true; ref: { path: string; name: string; sizeBytes: number; contentType: string } } | { ok: false; error: string }> {
+  const auth = await checkAdminAction('inbox.send')
+  const denied = refuseMessagesSend(auth)
+  if (denied || !auth.ok) return denied ?? { ok: false, error: 'Unauthorized' }
+  const personId = Number(input.personId)
+  if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'Add someone first.' }
+  const scoped = await requirePersonInScope(personId, {
+    email: auth.ctx.email,
+    role: auth.ctx.role,
+    brokerSlug: auth.ctx.brokerSlug,
+  })
+  if (!scoped.ok) return { ok: false, error: scoped.error }
+  const { stageLibraryAttachment } = await import('@/lib/crm/library-attachments')
+  return stageLibraryAttachment({
+    personId,
+    channel: input.channel === 'mms' ? 'mms' : 'email',
+    kind: input.kind,
+    cmaSlug: input.cmaSlug,
+    brokerSlug: auth.ctx.brokerSlug,
+    brokerEmail: auth.ctx.email,
+  })
+}
+
+export async function getBrokerSelfComposePreviewAction(cmaSlug?: string): Promise<{
+  name: string
+  phone: string | null
+  email: string | null
+  body: string
+  subject: string
+}> {
+  const auth = await checkAdminAction('inbox.send')
+  if (!auth.ok) {
+    return { name: 'Me', phone: null, email: null, body: '', subject: '' }
+  }
+  const { resolveActingBrokerPhone } = await import('@/lib/crm/broker-self-sms')
+  const dest = await resolveActingBrokerPhone(auth.ctx.brokerSlug ?? 'matt')
+  const slug = String(cmaSlug ?? '').trim().toLowerCase()
+  let body = ''
+  if (slug) {
+    const { getCmaAdminRowBySlug } = await import('@/lib/data/cma/documents')
+    const { cmaBrokerSelfTextBody } = await import('@/lib/crm/cma-broker-self-text')
+    const row = await getCmaAdminRowBySlug(slug)
+    body = cmaBrokerSelfTextBody({
+      slug,
+      subjectAddress: typeof row?.subject_address === 'string' ? row.subject_address : null,
+    })
+  }
+  return {
+    name: 'Me',
+    phone: dest.ok ? dest.to : null,
+    email: auth.ctx.email,
+    body,
+    subject: slug ? `CMA draft ${slug}` : '',
+  }
 }

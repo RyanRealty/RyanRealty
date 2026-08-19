@@ -1,9 +1,7 @@
 'use client'
 
-import { useTransition } from 'react'
-import { toast } from 'sonner'
+import Link from 'next/link'
 import { Button } from '@/components/admin/v2'
-import { textCmaReviewLinkToMeAction } from '@/app/actions/cma-admin'
 
 export function CmaTextMeButton({
   slug,
@@ -14,24 +12,12 @@ export function CmaTextMeButton({
   label?: string
   fullWidth?: boolean
 }) {
-  const [pending, startTransition] = useTransition()
-
+  const href = `/admin/messages/new?self=1&channel=text&cma=${encodeURIComponent(slug)}`
   return (
-    <Button
-      type="button"
-      variant="quiet"
-      touch
-      className={fullWidth ? 'w-full' : undefined}
-      disabled={pending || !slug}
-      onClick={() => {
-        startTransition(async () => {
-          const { error } = await textCmaReviewLinkToMeAction(slug)
-          if (error) toast.error(error)
-          else toast.success('Review link texted to your phone.')
-        })
-      }}
-    >
-      {pending ? 'Texting you…' : label}
-    </Button>
+    <Link href={href} className={fullWidth ? 'w-full' : undefined} style={{ textDecoration: 'none' }}>
+      <Button type="button" variant="quiet" touch className={fullWidth ? 'w-full' : undefined} disabled={!slug}>
+        {label}
+      </Button>
+    </Link>
   )
 }

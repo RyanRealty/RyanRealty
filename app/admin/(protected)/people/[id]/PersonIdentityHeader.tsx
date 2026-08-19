@@ -78,11 +78,7 @@ export function PersonIdentityHeader({
           </a>
         ) : null}
         {phone && email ? <span style={{ color: 'var(--a-text-2)' }}> · </span> : null}
-        {email ? (
-          <a href={`mailto:${email}`} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
-            {email}
-          </a>
-        ) : null}
+        {email ? <span>{email}</span> : null}
         {!phone && !email ? <span style={{ color: 'var(--a-text-2)' }}>No contact points</span> : null}
       </div>
       {addressLine ? (
