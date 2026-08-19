@@ -41,10 +41,15 @@
   min-width: 0;
 }
 
+/* Reserve the 2:3 slot before the PNG decodes. width:auto + height:auto
+   + max-height:70vh scored 0.138 CLS on /team and /about in LHCI. */
 .about-faces__photo-link {
   display: flex;
   justify-content: center;
   min-width: 0;
+  width: min(100%, calc(70vh * 2 / 3));
+  aspect-ratio: 2 / 3;
+  margin-inline: auto;
   color: inherit;
   text-decoration: none;
 }
@@ -56,10 +61,8 @@
 
 .about-faces__photo {
   display: block;
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 70vh;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
@@ -135,10 +138,11 @@
 
   .about-faces__grid > li:not(:first-child) .about-faces__photo-link {
     display: flex;
+    width: min(100%, calc(64vh * 2 / 3));
   }
 
-  .about-faces__photo {
-    max-height: 64vh;
+  .about-faces__photo-link {
+    width: min(100%, calc(64vh * 2 / 3));
   }
 
   .about-faces__item {
