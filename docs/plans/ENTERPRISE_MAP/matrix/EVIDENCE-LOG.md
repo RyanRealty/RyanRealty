@@ -308,7 +308,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 
 **green:** 001, 003, 005, 019, 020, 022, 024, 025, 030  
 **red:** 009 GBP, 010 LinkedIn, 012 YouTube, 013 X  
-**dark PARK-adjacent:** 014 Threads, 015 Nextdoor, 016 Pinterest, 018 FUB, 027 RentCast, 028 SchoolDigger  
+**dark PARK-adjacent:** 014 Threads, 015 Nextdoor, 016 Pinterest, 027 RentCast, 028 SchoolDigger (INT-018 is in-house CRM, KEEP)  
 
 ### Explicit PARK list
 1. **INT-014 Threads** — keys only; never connected; no cadence  

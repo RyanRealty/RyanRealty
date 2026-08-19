@@ -185,7 +185,7 @@ All from `@/components/ui/`: `Button`, `Card`, `Input`, `Select`, `Textarea`, `L
 Zero tolerance for raw `<button>`, `<select>`, `<input>`, `<textarea>`, `<label>`, `<hr>`, `<table>` in JSX outside of `components/ui/`. Enforced by `scripts/lint-design-tokens.js` `DISALLOWED_PRIMITIVES` rule.
 
 ### Layer 2 — Layout shell
-`app/layout.tsx`, `components/layout/BreadcrumbStrip.tsx`, site nav, footer, `CookieConsentBanner`, `AgentAttributionBridge`, `FubIdentityBridge`, `MetaPixel`, `GTMHead`/`GTMBody`
+`app/layout.tsx`, `components/layout/BreadcrumbStrip.tsx`, site nav, footer, `CookieConsentBanner`, `AgentAttributionBridge`, `PersonIdentityBridge`, `MetaPixel`, `GTMHead`/`GTMBody`
 
 ### Layer 3 — Listing tile (reusable card)
 `components/ListingTile.tsx` — `ListingTileListing` type (PascalCase keys); used in every slider, grid, search result

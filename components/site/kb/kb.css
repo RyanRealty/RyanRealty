@@ -1770,7 +1770,7 @@ html.lenis, html.lenis body{height:auto;}
 }
 
 /* ===== Listing mobile contact bar — the always-reachable broker CTA on small
-   screens (replaces the retiring FUB floating widget). Fixed to the viewport
+   screens (always-on broker CTA, not a third-party widget). Fixed to the viewport
    bottom, hidden on lg+ (the desktop sticky sidebar card carries it there).
    Slides up once the visitor scrolls past the hero. ===== */
 .kb-root .listing-mobile-cta{

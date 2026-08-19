@@ -2442,7 +2442,7 @@
     "reason": "CLAUDE.md explicitly states 'Canonical platform rule layer lives at social_media_skills/platform-best-practices/SKILL.md.' These five files are a parallel, unregistered platform-playbook set inside marketing_brain_skills/ covering the same ground (GBP, LinkedIn, TikTok, X, YouTube) with no cross-reference reconciling the two locations -- exactly the 'multiples of anything' Matt wants gone."
    },
    {
-    "path": "marketing_brain_skills/tools_registry/REGISTRY.md and marketing_brain_skills/tools_registry/{agentfire-wordpress,apify,classifier,follow-up-boss,ga4,ga4-instrumentation,gbp,gsc,linkedin-api,meta-graph,replicate,resend,spark-mls,supabase,tiktok-api,x-api,youtube-data}/SKILL.md",
+    "path": "marketing_brain_skills/tools_registry/REGISTRY.md and marketing_brain_skills/tools_registry/{agentfire-wordpress,apify,classifier,in-house-crm,ga4,ga4-instrumentation,gbp,gsc,linkedin-api,meta-graph,replicate,resend,spark-mls,supabase,tiktok-api,x-api,youtube-data}/SKILL.md",
     "verdict": "data",
     "lines": 6119,
     "reason": "Zero code references found anywhere in app/, lib/, scripts/ (grep confirmed) -- these are agent-read reference docs, not runtime-loaded machinery. Overlaps substantially with video_production_skills/API_INVENTORY.md, which CLAUDE.md cites as the canonical, verified API-status inventory. Content is inherently tabular (tool/status/endpoint/quota/who-uses-it), belongs as one structured data registry, not 18 near-identical prose files. tools_registry/REGISTRY.md's own 'who uses it' column cites decommissioned producers as active consumers -- see broken_references."

@@ -60,7 +60,7 @@ The first-touch UTMs captured at session start ride along on every backfilled ev
 
 ## 2. What's live now (the identification-gap fix)
 
-Before this fix, `identified_sessions = 0` — the "name with a number" had fired zero times. Root cause: only `/api/fub/identify` (WordPress One-Tap, which had ~0 sign-ins) called the backfill, and the Vercel forms + email-click bridge knew the CRM person id but never captured `rr_session_id` or called backfill.
+Before this fix, `identified_sessions = 0` — the "name with a number" had fired zero times. Root cause: only a retired WordPress identify route called the backfill, and the forms + email-click bridge knew the CRM person id but never captured `rr_session_id` or called backfill.
 
 ### Part A — Vercel app (in-repo)
 
@@ -70,19 +70,19 @@ Before this fix, `identified_sessions = 0` — the "name with a number" had fire
 - `app/lp/seller-home-value/*` (`form_submit`)
 - `app/lp/buyer-listing-alerts/*` (`form_submit`)
 - `app/lp/expired-listing/*` (`form_submit`)
-- `components/FubIdentityBridge.tsx` + `app/actions/fub-identity-bridge.ts` (`email_click_fuid`)
+- `components/PersonIdentityBridge.tsx` + `app/actions/identity-bridge.ts` (`email_click_fuid`)
 - `lib/visitor-backfill.ts` — `email` made optional so the email-click path (CRM person id only) can stitch.
 
-### Part B — WordPress identify snippet
+### Part B — WordPress identify snippet (retired)
 
-`docs/wordpress-fub-identify-snippet.html` now mints/reads `rr_session_id` (`getOrCreateRrSessionId()`) and forwards it as `sessionId` in the `/api/fub/identify` POST. The endpoint already accepts and backfills on it.
+The WordPress identify snippet is deleted. `ryan-realty.com` is the Next app. Identity stitch is `PersonIdentityBridge` + `app/actions/identity-bridge.ts` writing `crm_people`.
 
 ### Per-surface reality
 
 | Surface | Anonymous browsing recorded? | Anonymous → known stitching |
 |---|---|---|
 | **Vercel app** (`ryanrealty.vercel.app`) | **Yes** — `VisitTracker` → `visitor_events` | **Full** end-to-end (record → identify → replay) |
-| **WordPress** (`ryan-realty.com`) | **No** — see §6 | Identification works (CRM person + tags + note); the forwarded `sessionId` is forward-compatible plumbing with nothing to replay yet |
+| **ryan-realty.com** (Next app) | **Yes** — same `VisitTracker` path | **Full** end-to-end (record → identify → replay) |
 
 ---
 
@@ -126,7 +126,7 @@ Content/context: `price_range`, `property_type`, `property_location`, `cta_locat
 
 ### 4.3 Audiences (22) — the "name with a number" + cross-source segments
 
-`All Users`, `Purchasers`, `Property Page Viewers`, `Lead Form Starters`, `Schedule Showing Prospects`, `Leads`, `Property Searchers`, `Active Buyers (3+ listings)`, `CMA Downloaders`, `Engaged Sellers (no convert 30d)`, `Repeat visitors — no conversion`, `Form starters — no submit`, `LP visitors 7d — no conversion`, `LP visitors 30d — no conversion`, `High-intent sellers`, **`Identified leads (FUB person)`** (GA4 audience name; the id is `crm_people.id`), `Real site traffic`, `Google visitors`, `Returning visitors`, **`Identified Google leads`**, `Facebook visitors`, **`Identified Facebook leads`**.
+`All Users`, `Purchasers`, `Property Page Viewers`, `Lead Form Starters`, `Schedule Showing Prospects`, `Leads`, `Property Searchers`, `Active Buyers (3+ listings)`, `CMA Downloaders`, `Engaged Sellers (no convert 30d)`, `Repeat visitors — no conversion`, `Form starters — no submit`, `LP visitors 7d — no conversion`, `LP visitors 30d — no conversion`, `High-intent sellers`, **`Identified leads`** (GA4 audience name; the id is `crm_people.id`), `Real site traffic`, `Google visitors`, `Returning visitors`, **`Identified Google leads`**, `Facebook visitors`, **`Identified Facebook leads`**.
 
 The three bold audiences are the direct answer to "if they continue with Google or Facebook we know who they are": each requires `fub_person_id` to be set alongside the source.
 
@@ -152,7 +152,7 @@ GA4 **Explorations cannot be created by API** — they are UI artifacts. Build t
 ### 5.2 Single-lead deep-dive — "see exactly what they are doing"
 
 - Type: **User exploration** (Explore → User exploration template).
-- Add segment **Identified leads (FUB person)** (GA4 audience name) or filter `fub_person_id` = the specific CRM person id.
+- Add segment **Identified leads** (GA4 audience name) or filter `fub_person_id` = the specific `crm_people.id`.
 - Click a user row → the **user activity timeline** lists every event in sequence with timestamps and parameters (which listings, which LPs, which CTAs).
 - This is the GA4 mirror of the CRM activity log + `/admin/visitors/[sessionId]`.
 
@@ -205,9 +205,9 @@ GA4 **Explorations cannot be created by API** — they are UI artifacts. Build t
 
 > This section is the canonical reference the WordPress snippet comment points at.
 
-**Today:** anonymous browsing on the WordPress site (`ryan-realty.com`) is recorded **nowhere**. `/api/fub/track-page` requires a `fubPersonId` (it only fires *after* identification) and never writes `visitor_sessions` / `visitor_events`. So although the snippet now forwards its `rr_session_id`, there is no prior WP anonymous history to replay — the forwarded id is forward-compatible plumbing only.
+**Today:** `ryan-realty.com` is the Next app. Anonymous browsing is recorded by `VisitTracker` into `visitor_sessions` / `visitor_events`. There is no vendor identify or track-page route.
 
-**Option B (not built):** add a CORS-enabled anonymous page-view capture from WordPress into `visitor_events`, keyed by the WP `rr_session_id`. Then when a WP visitor later identifies (One-Tap / FB), `backfillSessionToFub` would have real WP history to stitch into the CRM.
+**Option B (not built, and not needed for WordPress):** a second anonymous capture surface is unnecessary now that the public site is Next.
 
 **Decision — deferred (over-engineering for now):**
 

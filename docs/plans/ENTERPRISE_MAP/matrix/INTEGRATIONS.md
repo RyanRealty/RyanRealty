@@ -105,7 +105,7 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 | INT-015 | never | n/a | n/a PARK | n/a | — |
 | INT-016 | never | n/a | n/a PARK | n/a | — |
 | INT-017 | ops live 2026-08-16; synced_at still 2026-06-10 | n/a | Mirror only (ok) | stale until first cron | TC |
-| INT-018 | cutover 2026-06-24 | n/a | **must be false as SoR** | n/a | CRM legacy |
+| INT-018 | live `crm_people` / `/admin/crm` | n/a | **SoR is in-house CRM** | n/a | CRM |
 | INT-019…025 | keys present / probed | n/a | yes where used | n/a | per row |
 | INT-021 | models 118 at 2026-08-16 | n/a | yes | n/a | AI |
 | INT-023 | models 12 at 2026-08-16 | n/a | yes | n/a | Grok |
@@ -123,10 +123,10 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 
 | Health | n | IDs |
 |--------|--:|-----|
-| **green** | **18** | 001 Supabase · 003 Vercel · 005 Resend · 009 GBP · 011 TikTok · 012 YouTube · 013 X · 019 ElevenLabs · 020 Apify · 021 OpenAI · 022 Anthropic · 023 xAI · 024 Maps · 025 Upstash · 030 BatchData · 031 Stock · 032 Gen media · 036 AdSense |
+| **green** | **19** | 001 Supabase · 003 Vercel · 005 Resend · 009 GBP · 011 TikTok · 012 YouTube · 013 X · 018 In-house CRM · 019 ElevenLabs · 020 Apify · 021 OpenAI · 022 Anthropic · 023 xAI · 024 Maps · 025 Upstash · 030 BatchData · 031 Stock · 032 Gen media · 036 AdSense |
 | **amber** | **9** | 002 Spark · 004 Twilio · 006 Google SA · 007 Meta · 008 GA4/GTM · 017 SkySlope · 034 Inngest · 035 Google OAuth/CrUX · 037 OTHER/tooling |
 | **red** | **0** | — (2026-08-08 called 009/010/012/013 red from `expires_at` alone; that read ignored refresh tokens + the heartbeat — see EVIDENCE-LOG 2026-08-15 and `process_escape_ledger`) |
-| **dark** | **10** | 010 LinkedIn (parked, no provider refresh token) · 014 Threads · 015 Nextdoor · 016 Pinterest · 018 FUB · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID |
+| **dark** | **9** | 010 LinkedIn (parked, no provider refresh token) · 014 Threads · 015 Nextdoor · 016 Pinterest · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID |
 | **unknown** | **0** | — |
 | **sum** | **37** | |
 
@@ -134,11 +134,11 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 
 | Disposition | n | IDs / notes |
 |-------------|--:|-------------|
-| **KEEP** | 23 | runtime retain (greens + most amber keepers, incl. 009/012/013 auto-refresh + 035 shared OAuth clients) |
+| **KEEP** | 24 | runtime retain (greens + most amber keepers, incl. 009/012/013 auto-refresh + 018 in-house CRM + 035 shared OAuth clients) |
 | **FIX** | 2 | 007 Meta audience heartbeat (first green 2026-08-15, hold 7d) · 017 SkySlope mirror freshness |
 | **RECONNECT** | 0 | none — auto-refresh verified; there is no standing "Matt reconnect" task (Matt 2026-08-15) |
 | **PARK** | 10 | 010 LinkedIn · 014 Threads · 015 Nextdoor · 016 Pinterest · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID · 034 Inngest |
-| **LEGACY_RESIDUE** | 1 | 018 FUB |
+| **LEGACY_RESIDUE** | 0 | — |
 | **TOOLING** | 1 | 037 OTHER bucket |
 
 ## Cron wiring note
@@ -149,5 +149,5 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 ## Evidence sources
 
 - `inventories/D-env-keys.txt`, `P-db-probes.json`, `M-live-db-counts.json`, `E-github-workflows.txt`, `Z-inventory-meta.json`  
-- Code: `lib/{threads,nextdoor,pinterest,tiktok,linkedin,x,youtube,google-business-profile,retiredVendorCrm,inngest,resend,spark,meta-*}.ts`  
+- Code: `lib/{threads,nextdoor,pinterest,tiktok,linkedin,x,youtube,google-business-profile,crm,inngest,resend,spark,meta-*}.ts`  
 - Append detail: `matrix/EVIDENCE-LOG.md` § INT close pass  
