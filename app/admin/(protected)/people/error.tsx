@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Button } from '@/components/admin/v2'
+import { Button, SectionHead } from '@/components/admin/v2'
 import '@/components/admin/v2/admin-v2.css'
 
 export default function PeopleError({
@@ -12,7 +12,7 @@ export default function PeopleError({
 }) {
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <h2 className="av2-lane-head">People</h2>
+      <SectionHead>People</SectionHead>
       <p style={{ color: 'var(--a-text)', marginBottom: 12 }}>
         People did not load. You can still add a contact, or try again.
       </p>

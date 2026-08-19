@@ -1,6 +1,6 @@
 {
   "note": "TRACK3 leftover identifier debt ratchet — counts may only shrink. Not a live CRM.",
-  "total": 670,
+  "total": 669,
   "files": [
     "app/actions/admin-email.ts",
     "app/actions/broker-command-center.ts",
@@ -32,7 +32,6 @@
     "app/admin/(protected)/analytics/social/page.tsx",
     "app/admin/(protected)/crm/page.tsx",
     "app/admin/(protected)/email/campaigns/page.tsx",
-    "app/admin/(protected)/people/[id]/page.tsx",
     "app/admin/(protected)/visitors/_lib/queries.ts",
     "app/admin/(protected)/visitors/[sessionId]/page.tsx",
     "app/admin/(protected)/visitors/live/page.tsx",
@@ -126,5 +125,5 @@
     "lib/seller-lead-alert.ts",
     "lib/visitor-backfill.ts"
   ],
-  "generatedAt": "2026-08-19T14:56:01.005Z"
+  "generatedAt": "2026-08-19T19:25:17.603Z"
 }

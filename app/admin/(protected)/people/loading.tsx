@@ -1,3 +1,4 @@
+import { SectionHead } from '@/components/admin/v2'
 import '@/components/admin/v2/admin-v2.css'
 
 /**
@@ -18,13 +19,13 @@ export default function PeopleLoading() {
           marginBottom: 20,
         }}
       >
-        <h2 className="av2-lane-head" style={{ marginTop: 0 }}>New contact</h2>
+        <SectionHead flush>New contact</SectionHead>
         <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           Opening the add form.
         </p>
       </section>
       <div className="av2-input" style={{ height: 36, marginBottom: 20 }} />
-      <h2 className="av2-lane-head">Recently touched</h2>
+      <SectionHead>Recently touched</SectionHead>
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Loading recent people.</p>
     </div>
   )

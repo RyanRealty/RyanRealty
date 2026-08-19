@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { scopeBroker } from '@/lib/crm/scope'
 import { searchCrmPeople } from '@/lib/data/crm/searchCrmPeople'
-import { StateWord } from '@/components/admin/v2'
+import { SectionHead, StateWord } from '@/components/admin/v2'
 import { AddPersonCard } from '@/components/admin/shared/people-list/AddPersonDialog'
 import '@/components/admin/v2/admin-v2.css'
 
@@ -22,7 +22,7 @@ async function RecentlyTouched({
 
   return (
     <>
-      <h2 className="av2-lane-head">{q ? `Results for "${q}"` : 'Recently touched'}</h2>
+      <SectionHead>{q ? `Results for "${q}"` : 'Recently touched'}</SectionHead>
       <ul className="av2-queue">
         {hits.map((p) => (
           <li key={p.id} className="av2-qrow">
@@ -61,7 +61,7 @@ async function RecentlyTouched({
 function RecentlyTouchedFallback() {
   return (
     <div aria-busy="true" style={{ padding: '8px 0' }}>
-      <h2 className="av2-lane-head">Recently touched</h2>
+      <SectionHead>Recently touched</SectionHead>
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Loading recent people.</p>
     </div>
   )
