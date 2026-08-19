@@ -20,8 +20,10 @@
 'use client'
 
 import { useEffect, useRef, useCallback, RefObject } from 'react'
+import { usePathname } from 'next/navigation'
 import { trackEvent } from '@/lib/tracking'
 import { fireFirstPartyEvent } from '@/components/VisitTracker'
+import { pageTypeFromPath } from '@/lib/analytics/page-type'
 
 type Options = {
   /** A ref to the DOM element to observe. If not provided, only page-level events fire. */
@@ -125,8 +127,10 @@ function installExitIntent(pageType: string) {
 
 export function useEngagementTracking(
   sectionId: string,
-  { ref, pageType = 'page', position = 0 }: Options = {},
+  { ref, pageType, position = 0 }: Options = {},
 ): ReturnValue {
+  const pathname = usePathname()
+  const resolvedPageType = pageType ?? pageTypeFromPath(pathname || '/')
   const firedRef = useRef(false)
 
   // Section-level: IntersectionObserver at 55% threshold
@@ -140,7 +144,7 @@ export function useEngagementTracking(
           firedRef.current = true
           trackEvent('section_view' as Parameters<typeof trackEvent>[0], {
             section_id: sectionId,
-            page_type: pageType,
+            page_type: resolvedPageType,
             position,
           })
         }
@@ -150,25 +154,25 @@ export function useEngagementTracking(
 
     observer.observe(el)
     return () => observer.disconnect()
-  }, [sectionId, pageType, position, ref])
+  }, [sectionId, resolvedPageType, position, ref])
 
   // Page-level events — install once regardless of which section mounts first
   useEffect(() => {
     if (typeof window === 'undefined') return
-    installScrollDepth(pageType)
-    installDwell(pageType)
-    installExitIntent(pageType)
-  }, [pageType])
+    installScrollDepth(resolvedPageType)
+    installDwell(resolvedPageType)
+    installExitIntent(resolvedPageType)
+  }, [resolvedPageType])
 
   const trackInteract = useCallback(
     (action: string) => {
       trackEvent('module_interact' as Parameters<typeof trackEvent>[0], {
         module: sectionId,
         action,
-        page_type: pageType,
+        page_type: resolvedPageType,
       })
     },
-    [sectionId, pageType],
+    [sectionId, resolvedPageType],
   )
 
   return { trackInteract }

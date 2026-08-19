@@ -214,7 +214,7 @@ export default async function Home() {
 
   return (
     <main className="kb-root">
-      <V3SectionTracker pageType="homepage" />
+      <V3SectionTracker />
       <SmoothScrollProvider>
         {/* Hero Layer A (Matt 2026-08-10 exact-match discovery home):
             H1 matches money queries. Live count + median stay in the sub-line. */}

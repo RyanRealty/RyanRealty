@@ -94,7 +94,7 @@ export default function TrailsIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="trails" />
+        <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Trails' }]} />
 

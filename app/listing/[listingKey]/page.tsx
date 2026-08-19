@@ -587,7 +587,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         beds={listing.beds ?? undefined}
         baths={listing.baths ?? undefined}
       />
-      <KbSectionTracker pageType="listing" />
+      <KbSectionTracker />
       <SmoothScrollProvider>
         <KbBreadcrumb trail={breadcrumbs} />
         <ListingDetailShell

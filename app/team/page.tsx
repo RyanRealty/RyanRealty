@@ -132,7 +132,7 @@ export default async function TeamPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="team" />
+        <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Team' }]} />
 

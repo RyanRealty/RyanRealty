@@ -233,7 +233,7 @@ export default async function VideosPage({
     return (
       <>
         <main className={V3_ROOT_CLASS}>
-          <V3SectionTracker pageType="media" />
+          <V3SectionTracker />
           {jsonLd}
           {feedItems.length > 0 ? (
             <>
@@ -282,7 +282,7 @@ export default async function VideosPage({
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="media" />
+        <V3SectionTracker />
         {jsonLd}
         <V3Breadcrumb trail={crumbTrail} />
 

@@ -3,34 +3,45 @@
 import { useEffect, useRef } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
+import { trackPageView } from '@/lib/tracking'
+import { pageTypeFromPath } from '@/lib/analytics/page-type'
 
 /**
- * Fires Meta Pixel PageView on pathname change (not on initial load, since MetaPixel.tsx already fires once).
- * Guards against firing twice on mount.
+ * Layout-owned page analytics. First paint page_view comes from the GTM
+ * Google tag (after consent). This stamps page_type onto dataLayer and
+ * sends page_view on SPA navigations so client routing is not invisible.
  */
 export default function PageViewTracker() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const initialLoadRef = useRef(true)
-  const consentPageviewSentRef = useRef(false)
+  const firstLoadRef = useRef(true)
+  const lastGaPathRef = useRef<string | null>(null)
 
   const query = searchParams?.toString()
   const pagePath = query ? `${pathname}?${query}` : pathname
+  const pageType = pageTypeFromPath(pathname || '/')
 
-  function trackGaPageView(path: string) {
-    if (typeof window === 'undefined' || !window.gtag) return
-    try {
-      window.gtag('event', 'page_view', {
-        page_location: window.location.href,
-        page_path: path,
-        page_title: document.title,
-      })
-    } catch (err) {
-      console.warn('[PageViewTracker] gtag page_view failed:', err)
+  function stampPageType() {
+    if (typeof window === 'undefined') return
+    window.dataLayer = window.dataLayer || []
+    window.dataLayer.push({ page_type: pageType })
+    if (typeof window.gtag === 'function') {
+      window.gtag('set', { page_type: pageType })
     }
   }
 
-  function trackMetaPageView() {
+  function trackGa(path: string) {
+    stampPageType()
+    if (lastGaPathRef.current === path) return
+    lastGaPathRef.current = path
+    trackPageView(pageType, {
+      page_location: typeof window !== 'undefined' ? window.location.href : path,
+      page_path: path,
+      page_title: typeof document !== 'undefined' ? document.title : undefined,
+    })
+  }
+
+  function trackMeta() {
     if (typeof window === 'undefined' || !window.fbq) return
     try {
       window.fbq('track', 'PageView')
@@ -40,33 +51,24 @@ export default function PageViewTracker() {
   }
 
   useEffect(() => {
-    // Skip initial load (MetaPixel already fired PageView once)
-    if (initialLoadRef.current) {
-      initialLoadRef.current = false
-      return
+    const first = firstLoadRef.current
+    if (first) firstLoadRef.current = false
+    // First paint: GTM Google tag sends page_view. We only stamp page_type
+    // so that hit is classified. Later SPA navigations send the page_view.
+    if (hasAnalyticsConsent()) {
+      if (first) stampPageType()
+      else trackGa(pagePath)
     }
-
-    if (hasAnalyticsConsent()) trackGaPageView(pagePath)
-    if (hasMarketingConsent()) trackMetaPageView()
-  }, [pagePath])
+    if (hasMarketingConsent() && !first) trackMeta()
+  }, [pagePath, pageType])
 
   useEffect(() => {
     const onConsent = () => {
-      if (consentPageviewSentRef.current) return
-      let sent = false
-      if (hasAnalyticsConsent()) {
-        trackGaPageView(pagePath)
-        sent = true
-      }
-      if (hasMarketingConsent()) {
-        trackMetaPageView()
-        sent = true
-      }
-      if (sent) consentPageviewSentRef.current = true
+      if (hasAnalyticsConsent()) stampPageType()
     }
     window.addEventListener('cookie-consent', onConsent)
     return () => window.removeEventListener('cookie-consent', onConsent)
-  }, [pagePath])
+  }, [pagePath, pageType])
 
   return null
 }

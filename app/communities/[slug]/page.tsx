@@ -735,7 +735,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         activeCount={activeCount}
         medianPrice={medianListPrice}
       />
-      <KbSectionTracker pageType="community" />
+      <KbSectionTracker />
       <MetadataBlock schemas={communitySchemas} />
       <KbBreadcrumb
         overlay

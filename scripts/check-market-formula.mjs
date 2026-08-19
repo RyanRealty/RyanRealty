@@ -116,9 +116,7 @@ const MOS_ROUNDING_LEDGER = {
   'lib/area-market.ts': 1,
   'lib/cma/market.ts': 1,
   'lib/data/market/market-narrative.ts': 1,
-  'lib/youtube-market-report/citation-builder.ts': 1,
-  'lib/youtube-market-report/generate-script.ts': 2,
-  'lib/youtube-market-report/scene-builders.ts': 3,
+
   'components/site/PriceBandTable.tsx': 1,
 }
 

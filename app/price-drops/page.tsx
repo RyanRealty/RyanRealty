@@ -127,7 +127,7 @@ export default async function PriceDropsRegionPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="price-drops" />
+        <V3SectionTracker />
         <TrackSearchView resultsCount={total} />
         <MetadataBlock schemas={schemas} />
 

@@ -558,8 +558,6 @@ function checkDataflowAndWiring() {
 
   // (B4) every runner that finishes a producer must archive its output.
   const WRITERS = [
-    ['app/api/cron/producer-runtime/route.ts', 'persistDeliverable'],
-    ['app/api/admin/run-producer/[id]/route.ts', 'persistDeliverable'],
     ['scripts/render-worker.mjs', 'persistRenderedDeliverable'],
   ]
   for (const [rel, fnName] of WRITERS) {

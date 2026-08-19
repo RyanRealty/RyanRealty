@@ -6,7 +6,7 @@
  * extraction from the request context.
  *
  * Designed to be called from server actions and route handlers AFTER an
- * upstream lead-capture success (FUB person resolved, table row inserted,
+ * upstream lead-capture success (CRM person resolved, table row inserted,
  * etc.) so we never report a conversion that did not happen.
  *
  * Why this helper exists:
@@ -59,7 +59,9 @@ export type FireLeadParams = {
   value?: number
   /** CAPI event_id for downstream Meta dedup correlation. */
   event_id?: string
-  /** Optional FUB person id when available, useful for cross-system stitching. */
+  /** Optional CRM person id for cross-system stitching. */
+  crm_person_id?: number | null
+  /** @deprecated alias for crm_person_id — leftover Follow Up Boss name. */
   fub_person_id?: number | null
   /** Extra event-scoped params (form fields, intent, etc.). */
   extra?: Record<string, string | number | boolean | undefined | null>
@@ -106,7 +108,7 @@ export async function fireLeadGenerated(params: FireLeadParams): Promise<void> {
         value: params.value,
         currency: params.value ? 'USD' : undefined,
         event_id: params.event_id,
-        fub_person_id: params.fub_person_id ?? undefined,
+        crm_person_id: params.crm_person_id ?? params.fub_person_id ?? undefined,
         ...(params.extra ?? {}),
       },
       userProperties: params.broker_slug ? { assigned_broker: params.broker_slug } : undefined,

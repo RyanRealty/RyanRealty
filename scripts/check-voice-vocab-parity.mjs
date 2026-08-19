@@ -75,7 +75,6 @@ const CONSUMER_MANIFEST = [
   { path: 'lib/email/voice-precheck.ts', kind: 'ts' },
   { path: 'lib/crm/templateVoiceCheck.ts', kind: 'ts' },
   { path: 'lib/marketing-brain/generate-briefs.ts', kind: 'ts' },
-  { path: 'scripts/preflight.ts', kind: 'ts' },
   { path: 'scripts/build-blog-post.mjs', kind: 'js' },
   { path: 'scripts/build-comms-client-update.mjs', kind: 'js' },
   { path: 'scripts/build-agent-coop-eflyer.mjs', kind: 'js' },

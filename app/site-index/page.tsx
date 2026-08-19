@@ -134,7 +134,7 @@ export default async function SiteIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="site_index" />
+        <V3SectionTracker />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

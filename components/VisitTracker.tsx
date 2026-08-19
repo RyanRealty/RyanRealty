@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { trackUserEvent } from '@/app/actions/track-user-event'
 import { hasAnalyticsConsent, getStoredConsent, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
 import { lastThingFromHouse, lastThingFromSearch, writeLastThing } from '@/lib/site/arrival-intent'
+import { listingMlsFromPath, visitorPageCategoryFromPath } from '@/lib/analytics/page-type'
 
 
 // localStorage key for the source-agnostic uuid that lets us stitch a visitor
@@ -66,35 +67,12 @@ export function getOrCreateSessionId(): string | null {
  * which property a visitor looked at.
  */
 function detectListing(pathname: string): { isListing: boolean; mls: string | null } {
-  const p = (pathname || '/').toLowerCase().replace(/\/+$/, '')
-  const segs = p.split('/').filter(Boolean)
-  // Legacy /listing/{key} (excluding the by-address / by-key resolver prefixes).
-  if (segs[0] === 'listing' && segs[1] && segs[1] !== 'by-address' && segs[1] !== 'by-key') {
-    return { isListing: true, mls: decodeURIComponent(segs[1]) }
-  }
-  // Canonical /homes-for-sale/{city}/.../{street}-{mls} — needs city + a listing
-  // segment (>= 3 parts) whose final token ends in a 6+ digit MLS number.
-  if (segs[0] === 'homes-for-sale' && segs.length >= 3) {
-    const m = segs[segs.length - 1].match(/(\d{6,})$/)
-    if (m) return { isListing: true, mls: m[1] }
-  }
-  return { isListing: false, mls: null }
+  const mls = listingMlsFromPath(pathname)
+  return { isListing: mls != null, mls }
 }
 
 function categorizePage(pathname: string): string {
-  const p = (pathname || '/').toLowerCase()
-  if (detectListing(p).isListing) return 'listing_detail'
-  if (/^\/listing\/[^/]+/.test(p)) return 'listing_detail'
-  if (/^\/(search|listings|properties)/.test(p)) return 'search'
-  if (/^\/lp\/seller-home-value|^\/home-valuation|^\/sell(\/|$)/.test(p)) return 'seller_intent'
-  if (/^\/lp\/buyer-listing-alerts|^\/buyers(\/|$)|^\/explore/.test(p)) return 'buyer_intent'
-  if (/^\/lp\/expired-listing/.test(p)) return 'seller_intent'
-  if (/mortgage|affordability/.test(p)) return 'financial_tools'
-  if (/^\/community\/|^\/area-guides?\/|^\/neighborhood\//.test(p)) return 'area_guide'
-  if (/^\/blog/.test(p)) return 'blog'
-  if (/^\/about|^\/contact|^\/team/.test(p)) return 'about'
-  if (p === '/' || p === '') return 'home'
-  return 'other'
+  return visitorPageCategoryFromPath(pathname)
 }
 
 function consentLevel(): 'all' | 'analytics' | 'essential' | 'declined' {

@@ -55,7 +55,7 @@ export default async function ReferAClientPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="refer-a-client" />
+        <V3SectionTracker />
         {[
           {
             type: 'webPage' as const,

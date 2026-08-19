@@ -849,9 +849,7 @@
         "gates": [
           "scripts/check-deliverable-library-scope.mjs"
         ],
-        "crons": [
-          "/api/cron/producer-runtime"
-        ],
+        "crons": [],
         "tests": [
           "lib/marketing-brain/deliverable-library.int.test.ts"
         ],

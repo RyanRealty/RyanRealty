@@ -63,7 +63,7 @@ export const INLINE_RULES = [
 ]
 
 // Dirs to scan (code only).
-const SCAN_DIRS = ['scripts', 'lib', 'video', 'listing_video_v4', 'app']
+const SCAN_DIRS = ['scripts', 'lib', 'app']
 const SCAN_EXTS = ['.py', '.ts', '.tsx', '.mjs', '.js']
 const SKIP_DIRS = new Set(['node_modules', '.next', '.git', '__tests__'])
 const isTestFile = (p) => /\.test\.(py|ts|tsx|mjs|js)$/.test(p)

@@ -81,6 +81,8 @@ const DESIRED_CUSTOM_DIMENSIONS = [
   { parameterName: 'broker_slug',        displayName: 'Broker Slug',        scope: 'EVENT', description: 'Broker the lead was assigned to (matt|rebecca|paul)' },
   { parameterName: 'lead_classification', displayName: 'Lead Classification', scope: 'EVENT', description: 'hot | warm | nurture | unknown' },
   { parameterName: 'lead_type',          displayName: 'Lead Type',          scope: 'EVENT', description: 'seller | buyer | listing_inquiry | exit_intent | page_cta | general | cta_click' },
+  { parameterName: 'page_type',          displayName: 'Page Type',          scope: 'EVENT', description: 'Shared URL taxonomy from lib/analytics/page-type.ts (home, listing, search, city, …)' },
+  { parameterName: 'crm_person_id',      displayName: 'CRM Person ID',      scope: 'EVENT', description: 'Native crm_people.id for stitching identified leads' },
 
   // User-scoped — make every event for an identified person filterable by these
   { parameterName: 'assigned_broker',    displayName: 'Assigned Broker',    scope: 'USER',  description: 'Broker the lead has been routed to (from canonical-lead-tagger)' },

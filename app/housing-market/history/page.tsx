@@ -165,7 +165,7 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="market-report" />
+        <V3SectionTracker />
         <MetadataBlock
           schemas={[
             {

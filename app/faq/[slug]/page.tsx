@@ -100,7 +100,7 @@ export default async function FaqAnswerPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="faq_answer" />
+        <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[

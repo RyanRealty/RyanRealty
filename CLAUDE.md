@@ -329,342 +329,28 @@ or override?" Research sources at `docs/research/best-practices-*.md`.
 
 ---
 
-# §4. Video Build Hard Rules
+# §4. Video — Remotion factory retired (2026-08-18)
 
-**These are the ship-blocker rules for every video build, and they are the ONLY ones.**
-`video_production_skills/` was deleted 2026-06-15 (Matt directive, commit `abd59955`) — 83
-files, every format producer, the manifesto, the viral guardrails. Nothing survives except
-three code modules still imported by the Remotion projects:
-[`SingleWordCaption.tsx`](video_production_skills/captions/canonical/SingleWordCaption.tsx),
-[`safe-zones.ts`](video_production_skills/captions/canonical/safe-zones.ts),
-[`load-amboqia.ts`](video_production_skills/captions/canonical/load-amboqia.ts) (mirrored at
-`video/market-report/src/captions/`). Video producers were removed from the producer registry
-2026-06-14 — a brain row naming one cannot execute. **There is no longer a longer skill to go
-read. If a rule is missing for an edge case, decide it, apply it, and write it into this
-section.**
+The Remotion tree (`video/`, `listing_video_v4/`, `video_production_skills/`,
+`lib/youtube-market-report/`) is deleted. New motion uses **Grok Imagine** and
+**Grok Video** (`lib/grok-video.ts`, `lib/social/imagine-produce.ts`). Do not
+add remotion, `@remotion/*`, or a second video factory.
 
-**§0 outranks everything here.** A pretty render with a wrong number does not ship, even at
-100/100 on the scorecard. Query the primary source live BEFORE scaffolding the BEATS array.
+Live site video stays: `public/videos/cities|communities|hero*.mp4` via
+`data/city-hero-videos.resolved.json`, plus MLS embeds (`lib/video-embed.ts`).
+§0 still applies to any number on screen. Do not invent a listing.
 
-## Format
-1080×1920 portrait, 30 fps, h264 + aac, faststart, file < 100 MB. Captions burned in (~80% of
-short-form viewers are muted). **Length 30–45s for viral cuts, never over 60s;** long-form
-market reports may reach 60s.
+# §5. Marketing brain — producer runtime retired (2026-08-18)
 
-## Hook (first 2 seconds)
-Motion engaged by frame 12 (0.4s) — never static at frame 0. On-screen text by frame 30 (1.0s),
-centered, 64–80px. Payoff by 2.0s, confirmation by 3.0s (TikTok's qualified-view threshold is
-5.0s — the first five seconds decide distribution). First spoken word is content: no "hey,"
-"today," "welcome," "let's talk about." The hook carries a specific element: a number, a place
-name, a contradicting claim, or a visual surprise.
+Hourly SKILL.md producers (`producer-runtime`, `producer-dispatcher`, weekly
+cycle, audit-run, daily-digest) are off. Inbox + `/marketing/request` still
+file a row; they do not execute a producer. CMA, newsletter, CRM, and the
+Facebook seller optimization report stay as TypeScript products.
 
-**Banned openings:** logo, brokerage name, title card on black, "REPRESENTED BY," slow boundary
-draw, agent intro, generic drone with no overlay.
-
-## First frame as thumbnail (t=0) — ship-blocker, locked 2026-05-20
-Platforms auto-generate the feed thumbnail from frame 0 unless a custom cover is supplied. A
-black frame, logo card, blank background, or low-contrast title slide kills click-through
-before the algorithm sees it.
-
-Frame 0 must contain real photo content (hero photography, listing photo, live tile, drone
-shot — not a brand card), a title overlay if needed at thumbnail-readable size (64–80px, not
-body copy), and strong contrast.
-
-**Banned at t=0:** pure black (luma mean < 30/255), pure white, any solid brand-color
-background with no photo, the wordmark alone, a "Coming Up"/"Sponsored by" card, a blurred or
-focus-pull-from-black ramp.
-
-Enforced by [`scripts/check_first_frame.py`](scripts/check_first_frame.py) — **every render
-runs it before the file moves out of `out/`.** Thresholds: luma 30–240, variance ≥ 250,
-saturation ≥ 8 at mid-luma. The script's docstring is the spec.
-
-## Beats + pattern interrupts
-2–3s per beat standard; luxury drone 3–4s MAX; **no beat over 4s**. Minimum 12 beats in a 45s
-video. Three motion types minimum (push_in, push_counter, slow_pan, multi_point_pan,
-gimbal_walk, cinemagraph, parallax). No frozen frames at beat boundaries, no black bars at
-transitions (parent div transparent + Sequence overlap).
-
-Interrupts anchored to real content, not gimmicks: **25%** new visual register or text shock ·
-**50%** hard register shift (exterior → interior, drone → closeup) · **75%** escalation ·
-**final 15%** kinetic stat reveal. No brokerage attribution, logo, or contact info in the
-reveal frame.
-
-Locked 2026-05-07 for market-data video: narrative-only VO (the VO does not recite the numbers
-the screen already shows), caption sync locked to VO timestamps with no padding, multi-color
-line chart on the price beat, and photo diversity (no repeated photo inside one render).
-
-## Text overlays + safe zones
-**Import the constants from [`safe-zones.ts`](video_production_skills/captions/canonical/safe-zones.ts)
-(mirror: [`video/market-report/src/captions/safe-zones.ts`](video/market-report/src/captions/safe-zones.ts))
-— never hardcode coordinates per comp.**
-
-| Aspect | Working safe zone | Avoid |
-|---|---|---|
-| Portrait 1080×1920 | x 90–990, y 280–1480 | top 0–280 (profile pill + follow), right 960–1080 (action column), bottom 1480–1920 (caption box + engagement chrome) |
-| Landscape 1920×1080 | x 90–1830, y 80–1000 | top 0–80 (title overlay), bottom 1000–1080 (control bar) |
-| Square 1080×1080 | x 90–990, y 90–1010 | no major platform overlay |
-
-Body ≥ 48px, headlines 64–80px. Min 2s display per block, max 5–7 words per block. **Any scene
-with readable text holds ≥ 2.5s; a text-heavy opening holds ≥ 3s** — the hook grabs attention
-without flashing by unread. Numbers carry units always: "$3,025,000" not "3,025,000", "4
-bedrooms" not "4 BR". White text + shadow OR a dark pill under text; never white-on-white.
-
-## Captions — HARD RULES (ship-blockers)
-Captions are the most-watched element on muted feeds. Choppy or overlapping captions kill
-retention.
-
-1. **Captions NEVER render over other visual components** — no overlap with stats, numbers,
-   charts, logos, end-card elements, or animated text overlays. If a competing element needs
-   the zone for a beat, the caption is suppressed for that beat.
-2. **A dedicated reserved zone no other component may enter.** Portrait y 1280–1460 (center
-   1370), x 90–990. Landscape y 880–1000 (center 940), x 90–1830. Square y 850–1010 (center
-   930), x 90–990. Constants: `CAPTION_PORTRAIT` / `CAPTION_LANDSCAPE` / `CAPTION_SQUARE`.
-   (The older y 1480–1720 portrait coords sat inside the platform action UI — retired.)
-3. **SINGLE-WORD AMBOQIA** (Matt 2026-05-20, supersedes the sentence-with-highlight rule).
-   ONE word at a time, large, centered, in Amboqia Boriango — never AzoSans, Geist, Anton, or
-   Inter. The word appears at speech start and fades at speech end. No phrase windows, no
-   3-word chunks, no full sentences, no karaoke highlight, no pill background, no gold. White
-   text + soft drop shadow directly on the photo. Canonical component:
-   [`SingleWordCaption.tsx`](video_production_skills/captions/canonical/SingleWordCaption.tsx)
-   (market-report mirror: [`here`](video/market-report/src/captions/SingleWordCaption.tsx)).
-   **Every video with VO uses it — no exceptions, no alternates.**
-4. **Crossfade ≤ 100ms between adjacent words.** Hard cuts flicker and are banned. Gaps under
-   100ms crossfade; gaps over 500ms render true silence. `CROSSFADE_SEC = 0.08`.
-5. **Timing syncs to ElevenLabs `/v1/forced-alignment` word timestamps** — never clock-time
-   slots or `<Sequence>` boundaries. Generate the alignment JSON next to every VO MP3 before
-   rendering; the component reads `{ text, startSec, endSec }` per word.
-6. **No choppy or jittery changes.** No flicker, 1-frame blips, mid-word fade-outs, font-size
-   oscillation, or re-layout jumps. Amboqia loads via `loadAmboqia()` from
-   [`load-amboqia.ts`](video_production_skills/captions/canonical/load-amboqia.ts) before the
-   first render — a caption render without the brand font is a ship-blocker.
-
-*Migration status (2026-07-24):* legacy caption components remain under `video/*` and
-`listing_video_v4` — migrate each to a re-export of the canonical component when touched.
-**Known breakage:** several gate-excluded comps under `video/` import a dead `safe-zones`
-path and do not compile — repoint when next touched.
-
-## VO — ElevenLabs Victoria, mandatory
-**Voice: Victoria, ID `qSeXEcewz7tA0Q0qk9fH`** (locked 2026-04-27, permanent — saved as
-"Victoria — Ryan Realty Anchor"). Middle-aged American, conversational, warm, trustworthy. **No
-other voice, no other vendor, no substituting, no asking.**
-
-**Canonical model + settings (2026-05-07, conversational tuning):** `eleven_turbo_v2_5`,
-stability **`0.40`**, similarity_boost **`0.80`**, style **`0.50`**, `use_speaker_boost: true`.
-A different model or different settings is a different-sounding voice and a rejected render.
-**Never fall back to the old 0.50/0.75/0.35 values.** Override per-script via `voice_settings`
-in `script.json`.
-
-**Every VO call goes through [`scripts/_voice_lib.py`](scripts/_voice_lib.py) — no inline ElevenLabs API calls.**
-Env: `ELEVENLABS_VOICE_ID`, `ELEVENLABS_VOICE_ID_VICTORIA`, `ELEVENLABS_API_KEY`.
-
-Delivery: sentences short, two clauses max, no commas where Matt wouldn't pause. Split long
-sentences into clauses; for very long lines use multiple `segments` rather than one run-on.
-`previous_text` chained across all lines for prosody continuity. Numbers spelled out for
-ingestion ("475,000" → "four hundred seventy five thousand"). IPA phoneme tags work on
-`eleven_turbo_v2_5` and `eleven_flash_v2`, and are silently SKIPPED on `eleven_v3` — use turbo
-for any line needing forced pronunciation. Tricky names: Deschutes (`dəˈʃuːts`, "duh-shoots"),
-Tumalo (`TUM-uh-low`, NOT "TOO-muh-low" — local pronunciation, verified 2026-05-06), Tetherow,
-Awbrey, Terrebonne, Paulina (`pol-EYE-nuh`), Madras (`MAD-russ`).
-
-## Brand in frame
-- **News, market reports, area guides, memes, evergreen:** zero brand. No logo, no "Ryan
-  Realty" text, no phone, no agent name, no URL anywhere in frame.
-- **Listing videos:** the navy logo IS in frame, in the 200px footer bar only (below). No
-  phone, agent name, or URL anywhere else.
-- Colors and fonts per §3. End card uses
-  [`stacked_logo_white.png`](listing_video_v4/public/brand/stacked_logo_white.png) — never
-  text-only Ryan Realty.
-
-**Listing video overlay system (approved 2026-04-28, colors migrated to v2 2026-05-12).** The
-old single-panel approach is dead. TWO layers, both required, byte-identical across every
-video in a batch:
-1. **Text-zone scrim:** `rgba(0,0,0,0.40)` covering ONLY the headline/address/price block. Hard
-   rectangle. **No feathering, no drop shadows, no `text-shadow`, no `filter: drop-shadow()`.**
-   Photo shows through at 60%.
-2. **Logo footer bar:** 200px tall, flush bottom (`y=1720→1920`), cream-tinted over the photo.
-   Navy wordmark from [`logo-blue.png`](design_system/ryan-realty/assets/brand/logo-blue.png),
-   **580px wide**, vertically centered. No gold, no drop shadow.
-
-The strip between the two layers shows clean unobstructed photo — no scrim, no gradient.
-
-## Render hygiene
-```
-cd listing_video_v4 && npx remotion render src/index.ts <CompId> out/<name>.mp4 \
-  --codec h264 --concurrency 1 --crf 22 --image-format=jpeg --jpeg-quality=92
-```
-**Concurrency=1 is required** (Chrome OOMs higher). The audio-codec patch is in place (native
-`aac`, not `libfdk_aac`); ffmpeg/ffprobe symlink to static-ffmpeg. If the audio mix hangs, fall
-back to a video-only render plus
-`ffmpeg -i video.mp4 -i vo.mp3 -c:v copy -c:a aac -shortest`. Pre-render asset audit: verify
-`listing_video_v4/public/v5_library/`, the brand logo, `listing_video_v4/public/fonts/`, and
-every referenced VO mp3 exists.
-
-## Quality gate (run BEFORE asking for approval)
-```
-[ ] ffprobe Duration in [30s, 60s]
-[ ] ffmpeg blackdetect strict (pix_th=0.05) returns ZERO sequences
-[ ] python3 scripts/check_first_frame.py <render.mp4>  ← ship-blocker
-[ ] Frame at 25% has a visual register change
-[ ] Frame at 50% has a pattern interrupt
-[ ] Final 15% is a kinetic reveal
-[ ] No frozen frames at beat boundaries; no black bars at transitions
-[ ] Banned-words grep clean across captions, VO script, source pills
-[ ] All on-screen numbers carry units and trace to citations.json
-[ ] No logo / "Ryan Realty" / phone / agent name in any frame except the end card
-[ ] File size < 100 MB
-```
-
-## Viral scorecard (AFTER the quality gate, BEFORE asking for approval)
-Score 1–10 in each of: hook, retention, text, audio, format, engagement, cover, cta,
-voice/brand, antislop. **Format minimums:** listing video 85 · market data 80 · neighborhood
-80 · meme 75 · earth zoom 85 · news clip 80. Default ship floor 80. Write
-`out/<deliverable>/scorecard.json` and `citations.json` next to the render. Engineer the BEATS
-array against the scorecard from beat 0 — never "score later."
-
-**Auto-zero, ship-blocking regardless of headline score:** a banned word, an unverified number,
-AI without disclosure, or a fair-housing hit.
-
-## Banned-content gate (each one blocks a ship on its own)
-1. No generic real-estate language (§2 applies to captions, VO, on-screen text, and the post
-   caption carrying the video).
-2. **Do not invent a listing.** Subject-property stills and the view from an address are
-   camera or MLS. Place chrome may be generated from a real local still. Prompt-only scenic
-   slop is refuse. Charts render in code. Standard: creative-brain law 1.
-3. VO is ElevenLabs Victoria only, with the pronunciations above.
-4. Music is beat-synced or absent. A bed that fights the edit is worse than silence.
-5. Every number is source-verified per §0 and present in `citations.json`.
-6. A brand-new format gets human review for its first 30 days before running unattended.
-7. No AI-written humor, no engagement bait ("comment YES for the link", "wait for it", fake
-   questions).
-8. Brand visual standards hold in every frame.
-
-## Video review gate — no MP4 ships without Matt (locked 2026-04-27)
-**No rendered video is committed or pushed without Matt's explicit approval.** Applies to
-`listing_video_v4/public/v5_library/` and every other public path, in every format. Source
-changes (`.tsx`, `.py`, skill docs, scorecards, citations.json) push as normal — those are
-infrastructure, not the deliverable.
-
-1. Render to `out/` (untracked). 2. Run the quality gate. 3. Present the local path to Matt.
-4. Wait for explicit ship approval. 5. Only then copy to `public/v5_library/`, add, commit,
-push. Cheaper to fix in `out/` than to revert a public commit.
-
----
-
-# §5. Marketing Brain Architecture
-
-Any agent producing content, writing site copy, mutating ad campaigns, or sending
-communications on behalf of Ryan Realty reads this first.
-
-**Producer freeze lifted 2026-07-21** (G45 deleted); producers still route through the
-action-row protocol, the approval queue, and the voice/QA gates.
-
-## Three invocation modes
-
-| Mode | Matt says | Skill | What happens |
-|---|---|---|---|
-| **Run brain** | "run the brain", "weekly brain", "what should we make" | [`marketing_brain_skills/run/SKILL.md`](marketing_brain_skills/run/SKILL.md) | Full cycle: audits → action rows → dispatch producers in parallel → surface drafts |
-| **Direct produce** | "make a listing video for…", "create a flyer for…" | [`marketing_brain_skills/produce/SKILL.md`](marketing_brain_skills/produce/SKILL.md) | Parse request → one action row → dispatch the matching producer → surface draft |
-| **Read plan** | "show me the brain report", "what's pending" | read-only query | Surface pending rows + statuses, no dispatch |
-
-**Never invoke a producer directly without going through one of the two entry-point skills** —
-they enforce the approval gate and the action-row audit trail.
-
-## The protocol: `marketing_brain_actions`
-
-Every marketing action gets one row in `public.marketing_brain_actions`. Key columns:
-`action_type` (`content:listing_reel`, `site:copy_update`, `ops:meta_ads_pause`, …), `target`
-(`mls:220189422`, `/listings`, `city:Bend`), `assigned_producer` (path to the producer's
-SKILL.md), `payload`, `data_evidence`, `generation_reason`, `executor_response`, `executed_at`.
-`public.content_briefs` is a backward-compat view over it.
-
-```
-pending → in_production → ready → [Matt approves] → approved → executed → measured
-                                                                  │
-                                           killed ◄───────────────┘ (Matt cancels or QA fails)
-```
-
-| prefix | approval | what counts as approval |
-|---|---|---|
-| `content:*` | matt-review-draft | Matt says "ship it" / "approved" / "go" after seeing the draft |
-| `site:*` | matt-review-PR | Matt merges the PR |
-| `ops:*` | matt-explicit | Matt explicitly names the action (never inferred) |
-| `comms:alert`, `analyze:*` | none | internal; surfaced in the digest |
-
-## Execution path
-
-**The canonical path is the cron.** Brain creates `pending` → `producer-dispatcher` →
-`in_production` → `producer-runtime` executes (loads the producer's SKILL.md, calls the
-Messages API, cost-capped $5/row, $15/run, max 3 rows/run) → `ready` → Matt reviews at
-`/admin/approval-queue` → approve → `publisher-sweep` → `executed` →
-`marketing-measurement-loop` → `measured`.
-
-A **one-shot admin trigger** (`POST /api/admin/run-producer/[id]`) runs exactly one row with
-the same logic. The **direct CLI** (`python3 scripts/build_X.py <payload.json>`) is legacy and
-discouraged — guarded by `require_action_row(payload)` in `scripts/_producer_lib.py`, opt-in
-per producer; once a producer calls the guard, rogue invocations refuse unless
-`PRODUCER_ALLOW_ROGUE=1`.
-
-**Cadences come from [`vercel.json`](vercel.json), not from prose** — prose drifted and was
-wrong until 2026-07-24. Read the schedule there. `scripts/check-cron-registered.mjs`
-(`ci:cron-registered`) enforces that every cron route is registered.
-
-**Skill-only producers** (REGISTRY rows marked `⚠️ NO_SCRIPT`) run ONLY via the
-producer-runtime cron, which reads the SKILL.md directly. Cron-callable does not require a
-build script — the SKILL.md IS the recipe.
-
-## Registry + routing
-
-**Path: [`marketing_brain_skills/producers/REGISTRY.md`](marketing_brain_skills/producers/REGISTRY.md).**
-Sections A–F are brain-callable producers; G–I are capabilities and infrastructure. Find the
-row whose `action_types` contains your string; its `path` column is `assigned_producer`.
-**Never hard-code a producer path — always resolve through the registry.**
-
-**Every `content:*` action dispatches through
-[`automation_skills/content_engine/SKILL.md`](automation_skills/content_engine/SKILL.md)**,
-regardless of source. No content producer is invoked directly — the content engine owns
-storyboard → build → QA → Matt review → publish → post-mortem. Skipping it skips the QA gate
-and the viral scorecard. Non-content actions dispatch directly to `assigned_producer/SKILL.md`.
-
-## Producer expertise model — tiered mandatory reads
-
-Every producer reads its own references before executing. **These apply GLOBALLY — every piece
-of content inherits them whether the producer "knows about" the rule or not. If a rule is
-hidden in a skill the producer doesn't load, the rule itself is broken: move it into a tier.**
-
-- **Tier 1 — every producer:** §0 data accuracy · §1 approval model · design system SKILL.md ·
-  brand-voice SKILL.md + voice_guidelines.md (`grep_banned()` / `has_hard_fail()` from
-  `scripts/_producer_lib.py`).
-- **Tier 2 — every content producer, additionally:** the content engine SKILL.md ·
-  platform-best-practices SKILL.md · §4 video hard rules (which replaced the deleted
-  ANTI_SLOP_MANIFESTO and VIRAL_GUARDRAILS).
-- **Tier 3 — video / animated producers, additionally:** §4 captions · §4 safe zones (import,
-  never hardcode) · §4 ElevenLabs settings (through the shared libs, no inline API calls) ·
-  `scripts/check_first_frame.py` before publish.
-- **Tier 4 — flat-design / static-image producers** (FB lead-gen ad, flyer, IG carousel,
-  LinkedIn doc carousel, map card, Google Ads SERP card), additionally:
-  [`competitor-design-recon/SKILL.md`](marketing_brain_skills/competitor-design-recon/SKILL.md)
-  — read `out/design-recon/<format>/recon.md` at build time and adapt a documented pattern
-  instead of inventing layouts.
-- **Tier 5 — the one producer SKILL.md** matching your action_type, resolved through REGISTRY.
-
-The [`TEMPLATE.md`](marketing_brain_skills/producers/TEMPLATE.md) scaffold enumerates these
-tiers and the 10 required sections (scope · action types · payload schema · recipe · tools ·
-output format · approval gate · status flow · failure modes · related skills). Its frontmatter
-must list every `action_types` string the producer handles.
-
-**Recommended pre-render enforcement**, in order: (1) verify the source imports the canonical
-voice + caption/safe-zone libs, (2) run the brand-voice check on all on-screen text + VO,
-(3) render then `check_first_frame.py`, (4) blackdetect + duration.
-
-**Exemplar:** [`social_media_skills/list-kit/SKILL.md`](social_media_skills/list-kit/SKILL.md)
-is the canonical compound-producer pattern — one data pull fans out to 5 parallel deliverables,
-verification trace per figure, kit-manifest.json, approval gate, publish step, asset-library
-registration. Read it before building any new orchestrator-class producer.
-
-*Platform tokens (2026-05-06):* Meta LIVE with publishing scopes; LinkedIn/YouTube/X/GBP
-tokened; TikTok/Pinterest/Threads need a first-time OAuth connect.
-
----
+Human voice canon remains
+[`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).
+Producer template (THE LOOP pointer) remains
+[`marketing_brain_skills/producers/TEMPLATE.md`](marketing_brain_skills/producers/TEMPLATE.md).
 
 # §6. Mechanical guardrails
 
@@ -867,8 +553,7 @@ pulls `main` and reads that file first. See [`AGENTS.md`](AGENTS.md).
 
 **Load skills first.** If a task might match any `SKILL.md` in this repo (`.claude/skills/`,
 `.cursor/skills/`, `marketing_brain_skills/`, `social_media_skills/`, `automation_skills/`) or
-in Cursor's bundled paths, **read that skill before doing the work**. `video_production_skills/`
-is NOT in that list — it holds three code modules and no skills.
+in Cursor's bundled paths, **read that skill before doing the work**.
 
 **Mandatory:** `engineering:code-review` on every meaningful change before ship.
 `engineering:deploy-checklist` before any production deploy. `design:design-system` when
@@ -885,24 +570,23 @@ task. Everything else fires on trigger match.
   `feedback_loop`, `buffer_poster`, `api_knowledge`) and `automation_skills/content_engine/`.
   `repurpose_engine` and `thumbnail_generator` were deleted 2026-06-15. Inbound DM/comment lead
   capture writes to `public.crm_people`.
-- **`video_production_skills/`** — **not a skill library.** Three code modules only.
 
 ## Content routing — which file to load per deliverable
 
 | Trigger | Load this |
 |---|---|
-| Any video build (market report, listing reel, news clip, neighborhood guide, meme) | **§4 of this file** — the complete ruleset. Remotion projects live in `video/` and `listing_video_v4/`. |
+| Any video build | **§4** — Grok Imagine / Grok Video. Remotion factory is gone. |
 | SEO blog post | [`social_media_skills/blog-post/SKILL.md`](social_media_skills/blog-post/SKILL.md). Publishing path is Supabase `blog_posts` rendered by the live Next site. |
 | Paid Meta pipeline, marketing automation, weekly optimization crons, seller funnel | [`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`](docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md) first, then [`docs/MARKETING_LEAD_FLOW.md`](docs/MARKETING_LEAD_FLOW.md), `.cursor/skills/facebook-seller-growth/SKILL.md` |
 | Facebook lead-gen ad | the two docs above for live wiring, then `social_media_skills/facebook-lead-gen-ad/SKILL.md` |
 | Seller LP follow-up workflow | **The in-house CRM sequence engine.** `app/lp/seller-home-value/actions.ts` → `autoEnrollByFubId()` in [`lib/crm/enroll.ts`](lib/crm/enroll.ts); `/api/cron/crm-auto-enroll` sweeps misses; `/api/cron/crm-sequence-engine` fires touches (pause-on-reply lives inside it); `/api/cron/crm-scheduled-sends` delivers. Sequences edited at `/admin/crm/sequences`. |
-| Expired / Canceled / Withdrawn listing workflow | [`marketing_brain_skills/producers/expired-listing-lp/SKILL.md`](marketing_brain_skills/producers/expired-listing-lp/SKILL.md) · `/lp/expired-listing` · `public.expired_listings`. Detection runs inside the delta sync, NOT on a schedule — the `detect-expired-listings` route exists but is not registered in `vercel.json`. Voice: authentic, never salesy, no "most agents do X" framing. |
+| Expired / Canceled / Withdrawn listing workflow | `/lp/expired-listing` · `public.expired_listings`. Detection runs inside the delta sync. |
 | Per-broker agent attribution | `?agent=<slug>` (`matt`, `rebecca`, `paul`, or full-name variants) → `components/AgentAttributionBridge.tsx` writes the `rr_agent_attribution` cookie (90-day). Server: `readAttributedAgentServer()` in `app/actions/agent-attribution-read.ts`. Both LP forms call it and override the default Matt-routing when set. |
 | Broker texts the marketing line (SMS agent) | [`docs/plans/BROKER_SMS_AGENT_2026-07-31.md`](docs/plans/BROKER_SMS_AGENT_2026-07-31.md) · `lib/agent/` |
 | Any PDF a person receives | [`docs/PAGE_CONTRACT.md`](docs/PAGE_CONTRACT.md) |
 | Supabase market-data tables | §7 and the three docs it names |
 | Asset library | manifest at `data/asset-library/manifest.json`, CLI at [`lib/asset-library.mjs`](lib/asset-library.mjs). Photos carry vision grades — search the `vision_*` fields. |
-| CMA / valuation ("what's this property worth", "pricing opinion on…") | [`marketing_brain_skills/producers/cma/SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md) — branded HTML CMA, signed by the broker handling the listing (resolved from `public.brokers`, falls back to Matt). Recorded in `public.cmas` + `cma_comps`. |
+| CMA / valuation | [`lib/cma/`](lib/cma/) + [`marketing_brain_skills/producers/cma/SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md). Recorded in `public.cmas` + `cma_comps`. |
 | Public UI/UX grind / next version of the site / page grade | **KILLED 2026-08-16.** Do not run page-grade. The skill is a refuse stub. Look is Matt keep/kill on real pages. Product of record: [`docs/plans/PUBLIC_PRODUCT/PRODUCT.md`](docs/plans/PUBLIC_PRODUCT/PRODUCT.md). |
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Archive: [`docs/archive/fub-era/README.md`](docs/archive/fub-era/README.md).

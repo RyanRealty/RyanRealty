@@ -89,7 +89,7 @@ export default function DMCAPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="legal" />
+        <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'DMCA' }]} />
 
         <V3Quiet

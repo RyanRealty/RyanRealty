@@ -73,6 +73,10 @@ check('hasAnalyticsConsent exported', /export\s+function\s+hasAnalyticsConsent/.
   'CookieConsentBanner.tsx must export hasAnalyticsConsent() — the analytics consent gate.')
 check('hasMarketingConsent exported', /export\s+function\s+hasMarketingConsent/.test(banner),
   'CookieConsentBanner.tsx must export hasMarketingConsent() — the marketing consent gate.')
+const pageTypeMap = read('lib/analytics/page-type.ts')
+check('Shared page-type map exists', /export function pageTypeFromPath/.test(pageTypeMap),
+  'lib/analytics/page-type.ts must export pageTypeFromPath so every page uses one taxonomy.')
+
 for (const rel of ['components/GTMHead.tsx']) {
   const src = read(rel)
   check(`${rel} gates on consent`, /hasAnalyticsConsent|hasMarketingConsent|hasTrackingConsent/.test(src),

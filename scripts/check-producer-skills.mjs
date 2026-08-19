@@ -47,7 +47,6 @@ const REPORT_ONLY = process.argv.slice(2).includes('--report')
 const PRODUCER_ROOTS = [
   'marketing_brain_skills/producers',
   'social_media_skills',
-  'video_production_skills',
 ]
 
 function findSkillFiles(dir, acc) {

@@ -8,8 +8,8 @@ import { useEffect, useRef } from 'react'
  * On mount, fetches /api/identity/me. If the visitor is known (either via
  * the rr_pid cookie or a signed-in session), this component:
  *
- *   1. Sets GA4 `user_id` via gtag('config', GA4_ID, { user_id: <hash> })
- *      (unlocks GA4 User Explorer + cross-device User reports).
+ *   1. Sets GA4 `user_id` via gtag('set') — never gtag('config'), which
+ *      would fire a second page_view on top of the GTM Google tag.
  *   2. Re-initializes Meta Pixel with advanced matching via
  *      fbq('init', PIXEL_ID, { em: <sha256> }) (strengthens Meta's
  *      person-stitch for ad attribution).
@@ -73,9 +73,10 @@ async function applyIdentity(payload: IdentityPayload): Promise<void> {
   if (GA4_ID && payload.hashedUserId) {
     const gtag = await waitForGlobal(() => window.gtag)
     if (gtag) {
-      // gtag('config') with user_id stamps every subsequent event on this
-      // page with the user_id. Same effect as gtag('set', { user_id }).
-      gtag('config', GA4_ID, { user_id: payload.hashedUserId })
+      // set, not a second measurement-id config: that would fire another page_view.
+      gtag('set', { user_id: payload.hashedUserId })
+      window.dataLayer = window.dataLayer || []
+      window.dataLayer.push({ user_id: payload.hashedUserId })
     }
   }
 

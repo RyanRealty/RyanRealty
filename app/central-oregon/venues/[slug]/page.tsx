@@ -184,7 +184,7 @@ export default async function VenueDetailPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="venues" />
+        <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[

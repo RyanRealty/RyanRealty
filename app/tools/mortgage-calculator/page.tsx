@@ -148,7 +148,7 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="tools" />
+        <V3SectionTracker />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
         <MetadataBlock schemas={schemas} />
 

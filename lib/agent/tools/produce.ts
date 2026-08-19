@@ -31,7 +31,7 @@
  */
 import fs from 'fs'
 import path from 'path'
-import type { AgentContext, AgentTool, ToolOutcome, AgentCitation } from '@/lib/agent/types'
+import type { AgentContext, AgentTool, ToolOutcome } from '@/lib/agent/types'
 import {
   createActionRow,
   listBrokerJobs,
@@ -39,16 +39,8 @@ import {
   appendChangeRequest,
   approveAction,
   unapproveAction,
-  setInProduction,
   type BrokerJobRow,
 } from '@/lib/data/agent/actions'
-import { runProducerRow } from '@/lib/marketing-brain/run-producer-core'
-import {
-  classifyProducerFromDisk,
-  canCloudComplete,
-  buildVisualDeferralEnvelope,
-  type ProducerOutputClass,
-} from '@/lib/marketing-brain/producer-output-class'
 import { inferListingState } from '@/lib/agent/listing-state'
 import { findCmaSubjectByMls, findCmaSubjectByAddress } from '@/lib/data/cma/builderReads'
 
@@ -247,36 +239,6 @@ export function humanStatus(job: BrokerJobRow): string {
 }
 
 // ── shared helpers ───────────────────────────────────────────────────────────
-
-function classifySafe(
-  producerSlug: string,
-): { ok: true; cls: ProducerOutputClass } | { ok: false; error: string } {
-  try {
-    const { cls } = classifyProducerFromDisk(producerSlug, process.cwd())
-    return { ok: true, cls }
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) }
-  }
-}
-
-/** Map a text producer's payload-provenance citations into AgentCitation rows. */
-function mapCitations(raw: unknown[] | undefined): AgentCitation[] {
-  if (!Array.isArray(raw)) return []
-  const out: AgentCitation[] = []
-  for (const c of raw) {
-    if (!c || typeof c !== 'object') continue
-    const rec = c as Record<string, unknown>
-    const figure = typeof rec.figure === 'string' ? rec.figure : null
-    const source = typeof rec.source === 'string' ? rec.source : null
-    if (!figure || !source) continue
-    out.push({
-      figure,
-      source,
-      detail: typeof rec.payload_field === 'string' ? `payload.${rec.payload_field}` : undefined,
-    })
-  }
-  return out
-}
 
 type ResolveResult = { ok: true; job: BrokerJobRow } | { ok: false; result: Record<string, unknown> }
 
@@ -553,37 +515,11 @@ async function handleRunNow(input: Record<string, unknown>, ctx: AgentContext): 
     return { result: { ok: true, already: true, status: job.status, message: `${jobLabel(job)} is already ${humanStatus(job)}.` } }
   }
 
-  const cls = classifySafe(job.assignedProducer)
-  if (!cls.ok) return { result: { ok: false, message: `I can't run that producer: ${cls.error}` } }
-
-  if (!canCloudComplete(cls.cls)) {
-    const envelope = buildVisualDeferralEnvelope({}, cls.cls, job.assignedProducer)
-    const started = await setInProduction(actionId, envelope)
-    if (!started.ok) return { result: { ok: false, message: `Couldn't start that job: ${started.error}` } }
-    return {
-      result: {
-        ok: true,
-        deferred: true,
-        message: 'Started — render takes about 15 minutes, I will text you the link when it is ready.',
-      },
-    }
-  }
-
-  const started = await setInProduction(actionId)
-  if (!started.ok) return { result: { ok: false, message: `Couldn't start that job: ${started.error}` } }
-
-  const ran = await runProducerRow(actionId, { triggeredBy: 'broker_sms' })
-  if (!ran.ok) return { result: { ok: false, message: `That run failed: ${ran.error}` } }
-
   return {
     result: {
-      ok: true,
-      draft_summary: ran.draftSummary,
-      deliverable_text: ran.deliverableText,
-      cost_usd: ran.costUsd,
-      message: `${ran.draftSummary ?? 'Draft ready.'} Reply APPROVE to post, or tell me what to change.`,
+      ok: false,
+      message: 'The old producer runtime is retired. The job is queued. Matt will pick it up.',
     },
-    citations: mapCitations(ran.citations),
   }
 }
 
@@ -610,37 +546,11 @@ async function handleReviseAction(input: Record<string, unknown>, ctx: AgentCont
   const appended = await appendChangeRequest(job.id, feedback, { author: ctx.brokerEmail })
   if (!appended.ok) return { result: { ok: false, message: `Couldn't log that feedback: ${appended.error}` } }
 
-  const cls = classifySafe(job.assignedProducer)
-  if (!cls.ok) return { result: { ok: false, message: `I can't re-run that producer: ${cls.error}` } }
-
-  if (!canCloudComplete(cls.cls)) {
-    const envelope = buildVisualDeferralEnvelope({}, cls.cls, job.assignedProducer)
-    const started = await setInProduction(job.id, envelope)
-    if (!started.ok) return { result: { ok: false, message: `Couldn't restart that job: ${started.error}` } }
-    return {
-      result: {
-        ok: true,
-        deferred: true,
-        message: 'Reworking it now — render takes about 15 minutes, I will text you the updated link.',
-      },
-    }
-  }
-
-  const started = await setInProduction(job.id)
-  if (!started.ok) return { result: { ok: false, message: `Couldn't restart that job: ${started.error}` } }
-
-  const ran = await runProducerRow(job.id, { triggeredBy: 'broker_sms' })
-  if (!ran.ok) return { result: { ok: false, message: `That revision failed: ${ran.error}` } }
-
   return {
     result: {
-      ok: true,
-      draft_summary: ran.draftSummary,
-      deliverable_text: ran.deliverableText,
-      cost_usd: ran.costUsd,
-      message: `${ran.draftSummary ?? 'Updated draft ready.'} Reply APPROVE to post, or tell me what else to change.`,
+      ok: false,
+      message: 'The old producer runtime is retired. I logged the change request. Matt will pick it up.',
     },
-    citations: mapCitations(ran.citations),
   }
 }
 

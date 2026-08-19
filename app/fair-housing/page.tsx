@@ -85,7 +85,7 @@ export default function FairHousingPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="legal" />
+        <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Fair housing' }]} />
 
         <EqualHousing size="large" className="text-primary" />

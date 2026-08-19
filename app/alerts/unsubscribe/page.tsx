@@ -92,7 +92,7 @@ export default async function UnsubscribeAlertsPage({
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="utility" />
+        <V3SectionTracker />
         <V3Quiet id="unsubscribe" heading={heading} headingLevel={1} items={items} />
         {form}
       </main>

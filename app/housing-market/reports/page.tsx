@@ -86,7 +86,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="market-reports" />
+        <V3SectionTracker />
         <MetadataBlock
           schemas={[
             {

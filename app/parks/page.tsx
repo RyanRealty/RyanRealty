@@ -83,7 +83,7 @@ export default function ParksIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="parks" />
+        <V3SectionTracker />
         <MetadataBlock
           schemas={[
             {

@@ -72,7 +72,7 @@ const COOKIES: CookieRow[] = [
     purpose: 'Remembers your cookie choices so we apply them on return visits.',
   },
   {
-    name: 'fub_cid',
+    name: 'rr_pid',
     provider: 'Ryan Realty (first-party)',
     type: 'Marketing',
     duration: '90 days',
@@ -165,7 +165,7 @@ export default function CookiePolicyPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="legal" />
+        <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cookies' }]} />
 
         <V3Quiet

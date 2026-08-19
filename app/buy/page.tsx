@@ -78,7 +78,7 @@ export default async function BuyPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="buy" />
+        <V3SectionTracker />
 
         <MetadataBlock
           schemas={[

@@ -95,7 +95,7 @@ export default async function SellerHomeValuePage({
   const variantKey = v && HERO_VARIANTS[v] ? v : null
   const hero = variantKey ? HERO_VARIANTS[variantKey] : DEFAULT_HERO
 
-  // Detect prior identification via the fub_cid cookie. Server-side check
+  // Detect prior identification via the rr_pid cookie. Server-side check
   // so the visible UX adjusts before first paint.
   const cookiePersonId = await getPersonIdFromCookie()
   const knownVisitor = cookiePersonId != null && cookiePersonId > 0

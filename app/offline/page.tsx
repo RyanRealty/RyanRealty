@@ -38,7 +38,7 @@ export default function OfflinePage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="utility" />
+        <V3SectionTracker />
         <V3Quiet
           id="offline"
           heading="You are offline"

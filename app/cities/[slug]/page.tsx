@@ -458,7 +458,7 @@ export default async function CityDetailPage({ params }: Props) {
         medianPrice={publishedMedian}
         communityCount={communitySnapshots.length}
       />
-      <KbSectionTracker pageType="city" />
+      <KbSectionTracker />
       <MetadataBlock schemas={citySchemas} />
       <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
       <SmoothScrollProvider>

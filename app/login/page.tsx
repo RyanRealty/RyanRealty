@@ -51,7 +51,7 @@ export default async function LoginPage({ searchParams }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="utility" />
+        <V3SectionTracker />
         <V3Quiet
           id="login"
           heading="Sign in"

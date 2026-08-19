@@ -53,7 +53,7 @@ export default async function LuxuryHomesBendPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="luxury-homes-bend" />
+        <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Luxury homes' }]} />
 
         {count > 0 ? (

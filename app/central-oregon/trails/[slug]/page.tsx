@@ -187,7 +187,7 @@ export default async function TrailDetailPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="trails" />
+        <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[

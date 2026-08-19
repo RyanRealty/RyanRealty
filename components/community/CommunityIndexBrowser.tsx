@@ -86,7 +86,7 @@ export default function CommunityIndexBrowser({
   // (design-audit P3).
   const [viewMode, setViewMode] = useState<'az' | 'city'>('az')
   const searchedOnce = useRef(false)
-  const { trackInteract } = useEngagementTracking('all-communities', { pageType: 'geo-hub' })
+  const { trackInteract } = useEngagementTracking('all-communities')
 
   // Group alphabetically once — items arrive pre-sorted from the server.
   const groups = useMemo(() => {

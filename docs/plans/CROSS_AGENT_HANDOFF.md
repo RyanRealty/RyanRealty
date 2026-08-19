@@ -2,7 +2,15 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-18 (grok-build) — runtime crosswalk leftovers closed
+# Current — 2026-08-18 (grok-build) — page-tied analytics
+
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Public tracking is layout-owned. `lib/analytics/page-type.ts` is the only taxonomy (`PUBLIC_PAGE_SEGMENTS` + `pageTypeFromPath`). V3SectionTracker no longer takes a per-page type. `ci:page-analytics` fails a new public page until its first URL segment is on that map. GA4 now has event dimensions `page_type` and `crm_person_id`. Leftover `fub_person_id` dimension was relabeled; site events no longer send that name. Identity bridge uses `gtag('set')` so it does not double `page_view`. GTM `GTM-WV6R4NZ5` still only loads `G-ST40W4WM6T`. CMA not touched.
+
+# Prior — 2026-08-18 (grok-build) — remotion + brain runtime retired
+
+**Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. Remotion factory deleted. Producer-runtime crons off. `analytics_dim_agent` dropped (`20260818233000`). Revalidate uses `REVALIDATE_SECRET` (set on Vercel prod/preview/dev). Extra Vercel projects `tmp` and `ryan-realty-lps` deleted. GTM already has GA4 `G-ST40W4WM6T`. CMA checkout not touched.
+
+# Prior — 2026-08-18 (grok-build) — runtime crosswalk leftovers closed
 
 **Surface:** Grok Build, worktree `/Users/matthewryan/RyanRealty-audit-20260818`. **Time:** 2026-08-18 evening PT. Product land **`0afc2335`** already READY. This follow-up closes leftover audit items (unused modules + hosted stale objects + live Playwright checks). CMA dirty checkout `cursor/cma-client-document-7fc3` was not touched.
 

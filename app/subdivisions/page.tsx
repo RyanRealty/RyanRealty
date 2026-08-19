@@ -115,7 +115,7 @@ export default async function SubdivisionsPage() {
 
   return (
     <main className="kb-root">
-      <KbSectionTracker pageType="index" />
+      <KbSectionTracker />
       <MetadataBlock schemas={schemas} />
       <script
         type="application/ld+json"

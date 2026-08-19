@@ -87,7 +87,7 @@ export default function DataDeletionPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="legal" />
+        <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Delete your data' }]} />
 
         <V3Quiet

@@ -80,7 +80,7 @@ export default async function ActivityPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="feed" />
+        <V3SectionTracker />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <script
           type="application/ld+json"

@@ -1,4 +1,5 @@
 /**
+ * reachability: entry-point G44 process-canon pointer (THE LOOP).
  * Producer output classification + anti-fabrication system prompt.
  *
  * THE PROBLEM THIS SOLVES (root cause of producer slop, found 2026-05-29):

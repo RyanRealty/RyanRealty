@@ -50,7 +50,7 @@ export default async function OurHomesPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="info" />
+        <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Our homes' }]} />
 
         <OurHomesField

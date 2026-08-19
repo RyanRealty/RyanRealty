@@ -444,7 +444,7 @@ export default async function MonthsOfSupplyPage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(definedTermJsonLd) }}
         />
 
-        <V3SectionTracker pageType="market-definition" />
+        <V3SectionTracker />
 
         <V3Breadcrumb
           trail={[

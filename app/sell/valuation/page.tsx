@@ -69,7 +69,7 @@ export default function SellValuationPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="sell-valuation" />
+        <V3SectionTracker />
         <MetadataBlock
           schemas={[
             {

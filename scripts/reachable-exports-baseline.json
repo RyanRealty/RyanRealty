@@ -1,14 +1,13 @@
 {
   "generatedAt": "2026-08-18T20:45:57.000Z",
   "reason": "Pre-gate backlog of components/** and lib/** modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
-  "count": 7,
+  "count": 6,
   "names": [
     "components/site/listing-detail/PriceBlock.tsx",
     "lib/crm/saved-view-seeds.ts",
     "lib/data/crm/captureHotAnonymous.ts",
     "lib/data/crm/getContactIdentityStrip.ts",
     "lib/data/crm/getContactNewsletterDetail.ts",
-    "lib/data/crm/getFirstTouchAttribution.ts",
-    "lib/youtube-market-report/generate-props.ts"
+    "lib/data/crm/getFirstTouchAttribution.ts"
   ]
 }

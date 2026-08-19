@@ -209,7 +209,7 @@ export default async function SalesReportPage({ params }: PageProps) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="reports" />
+        <V3SectionTracker />
         <MetadataBlock
           schemas={[
             {

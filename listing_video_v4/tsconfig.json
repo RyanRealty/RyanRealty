@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "target": "ES2018", "module": "commonjs", "jsx": "react-jsx",
-    "strict": true, "esModuleInterop": true, "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "lib": ["DOM", "ES2018"], "resolveJsonModule": true
-  }
-}

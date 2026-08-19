@@ -42,7 +42,7 @@ export default async function MarketingRequestPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="utility" />
+        <V3SectionTracker />
         <V3Quiet
           id="marketing-request"
           eyebrow="Ryan Realty marketing"

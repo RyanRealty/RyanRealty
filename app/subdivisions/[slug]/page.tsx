@@ -419,7 +419,7 @@ export default async function SubdivisionPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbSectionTracker pageType="subdivision" />
+      <KbSectionTracker />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb
         overlay

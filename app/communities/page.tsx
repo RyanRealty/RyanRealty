@@ -201,7 +201,7 @@ export default async function CommunitiesPage() {
 
   return (
     <main className="kb-root">
-      <KbSectionTracker pageType="index" />
+      <KbSectionTracker />
 
       {/* Structured data: BreadcrumbList + Dataset (aggregate active count) +
           the CollectionPage + ItemList inline script below. */}

@@ -74,7 +74,7 @@ export default function AppreciationToolPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <V3SectionTracker pageType="tools" />
+        <V3SectionTracker />
         <MetadataBlock
           schemas={[
             {
