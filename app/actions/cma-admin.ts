@@ -365,7 +365,7 @@ export async function textCmaReviewLinkToMeAction(slug: string): Promise<{ error
       authorized: Boolean(email),
       broker: access?.brokerSlug ?? 'matt',
       slug,
-      loadRow: (safe) => getCmaAdminRowBySlug(safe),
+      loadRow: (safe) => getCmaAdminReviewRowBySlug(safe),
     })
   } catch (e) {
     console.error('[textCmaReviewLinkToMeAction]', e)
