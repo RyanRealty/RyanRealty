@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import type { AuthUser } from '@/app/actions/auth'
+import { signInPromptSkipReason } from '@/lib/auth/signin-prompt-policy'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { FacebookIcon } from '@/components/icons/AuthProviderIcons'
@@ -75,20 +76,6 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
   const comms = useGoogleCommsConsent()
   const hasNextParam = typeof window !== 'undefined' ? !!searchParams?.get('next') : false
   const pathname = usePathname()
-  const isHome = pathname === '/'
-  // Dedicated landing pages own their own conversion funnel (their own lead form).
-  // The global social sign-in modal must never auto-pop over an /lp/* page.
-  const isLandingPage = (pathname || '').startsWith('/lp/')
-  // /login and /signup ARE the sign-in UI — popping the modal over them (e.g. after
-  // a Save-listing redirect with ?next=) stacks two identical OAuth prompts.
-  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password'
-  // Lead-form pages: a visitor mid tour-request/valuation/contact is the hottest
-  // conversion moment on the site — never interrupt it with an OAuth modal.
-  const isLeadFormPage =
-    pathname === '/contact' ||
-    pathname === '/sell/valuation' ||
-    pathname === '/refer-a-client' ||
-    pathname === '/join'
   // Ad / marketing traffic (Matt directive 2026-06-02): a visitor arriving from a
   // paid click should never be asked to continue with Google or Facebook. Detect
   // the click ids plus any utm_* and suppress the auto-pop for that page load.
@@ -117,10 +104,15 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
       setDismissed()
       return
     }
-    // Never interrupt a landing-page or paid-traffic conversion with the social modal.
-    if (isLandingPage || fromAdClick) return
-    // Never stack the modal over the dedicated auth pages or a lead form.
-    if (isAuthPage || isLeadFormPage) return
+    // Never interrupt listing results (including a $0 warehouse empty state),
+    // landing-page / paid-traffic conversion, auth pages, or a lead form.
+    const skip = signInPromptSkipReason({
+      pathname: pathname || '/',
+      fromAdClick,
+      fromOutreachClick,
+      isNotFound: false,
+    })
+    if (skip) return
     if (hasNextParam) {
       if (!isNotFoundPage()) setShow(true)
       return
@@ -133,7 +125,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
       if (!isNotFoundPage()) setShow(true)
     }, 1000)
     return () => clearTimeout(t)
-  }, [user, hasNextParam, pathname, isHome, isLandingPage, fromAdClick, fromOutreachClick, isAuthPage, isLeadFormPage])
+  }, [user, hasNextParam, pathname, fromAdClick, fromOutreachClick])
 
   async function handleSignIn(provider: 'google' | 'facebook') {
     setLoading(provider)
@@ -153,7 +145,10 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
 
   return (
     <Dialog open={show} onOpenChange={(open) => { if (!open) handleMaybeLater() }}>
-      <DialogContent showCloseButton={false} className="max-w-md overflow-hidden p-0">
+      <DialogContent
+        closeButtonVariant="outline"
+        className="max-w-md overflow-hidden p-0"
+      >
         {/* Benefits-forward treatment (Matt 2026-08-05: the plain prompt sold
             nothing). Same engagement gating; the pitch is now three concrete
             things a signed-in visitor actually gets. */}
