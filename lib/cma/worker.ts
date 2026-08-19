@@ -134,9 +134,9 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
     sellerImprovementsText: str(payload['seller_improvements']),
     personId: linkedPersonId,
     subjectFacts: {
-      beds: parsePositiveInt(homeDetails?.bedrooms ?? homeDetails?.beds ?? null),
-      baths: parsePositiveNumber(homeDetails?.bathrooms ?? homeDetails?.baths ?? null),
-      sqft: parsePositiveInt(homeDetails?.square_feet ?? homeDetails?.sqft ?? null),
+      beds: parsePositiveInt((homeDetails?.bedrooms ?? homeDetails?.beds ?? null) as string | number | null),
+      baths: parsePositiveNumber((homeDetails?.bathrooms ?? homeDetails?.baths ?? null) as string | number | null),
+      sqft: parsePositiveInt((homeDetails?.square_feet ?? homeDetails?.sqft ?? null) as string | number | null),
     },
     clientIntent: isCmaClientIntent(payload['client_intent'])
       ? payload['client_intent']
