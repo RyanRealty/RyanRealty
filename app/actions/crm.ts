@@ -28,6 +28,7 @@ import { buildCrmPeopleQuery, CRM_PEOPLE_SELECT } from '@/lib/data/crm/buildCrmP
 import { savedViewToSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { EMPTY_SEGMENT, type CrmSegment, type CrmNode } from '@/lib/crm/segment-ast'
 import type { TriageItem } from '@/lib/data/crm/getInboundTriage'
+import { createContactAddress, parseCreateContactForm, validateCreateContact } from '@/lib/crm/create-contact'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
 
@@ -153,6 +154,8 @@ export async function listCrmSavedViews(): Promise<CrmSavedView[]> {
 export async function listCrmPeople(filters: CrmListFilters): Promise<{
   rows: CrmPersonRow[]
   total: number
+  /** False when the default All People page skipped the 22k exact COUNT(*). */
+  totalExact: boolean
   page: number
   pageSize: number
   appliedView: CrmSavedView | null
@@ -169,7 +172,7 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
   // filter. A caller with no CRM access sees nothing.
   const access = await getCrmAccess()
   if (!access) {
-    return { rows: [], total: 0, page, pageSize: PAGE_SIZE, appliedView: null }
+    return { rows: [], total: 0, totalExact: true, page, pageSize: PAGE_SIZE, appliedView: null }
   }
   const scope = scopeBroker(access)
   const effectiveBroker = scope ?? filters.broker
@@ -210,10 +213,17 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
 
   const from = (page - 1) * PAGE_SIZE
   const LIST_SELECT = `${CRM_PEOPLE_SELECT},price,timeframe,pond_id`
+  // Default All People is the whole book. An exact COUNT(*) of 22k+ rows is
+  // what left brokers on skeleton loaders. Skip it unless a filter/view
+  // narrows the set (those counts are the pagination contract).
+  const includeCount = Boolean(
+    filters.q || filters.stage || filters.tag || filters.view || filters.pond || filters.neighborhood,
+  )
   let query = buildCrmPeopleQuery(sb, segment, scope, {
     limit: PAGE_SIZE,
     offset: from,
     select: LIST_SELECT,
+    includeCount,
   }).query
 
   // Pond scope (§07): a session overlay on crm_people.pond_id — no segment field,
@@ -255,9 +265,21 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
 
   if (error) {
     console.error('[listCrmPeople]', error.message)
-    return { rows: [], total: 0, page, pageSize: PAGE_SIZE, appliedView }
+    return { rows: [], total: 0, totalExact: includeCount, page, pageSize: PAGE_SIZE, appliedView }
   }
-  return { rows: (data ?? []) as CrmPersonRow[], total: count ?? 0, page, pageSize: PAGE_SIZE, appliedView }
+  const rows = (data ?? []) as CrmPersonRow[]
+  if (!includeCount) {
+    const hasMore = rows.length === PAGE_SIZE
+    return {
+      rows,
+      total: from + rows.length + (hasMore ? 1 : 0),
+      totalExact: false,
+      page,
+      pageSize: PAGE_SIZE,
+      appliedView,
+    }
+  }
+  return { rows, total: count ?? 0, totalExact: true, page, pageSize: PAGE_SIZE, appliedView }
 }
 
 export type CrmOverview = {
@@ -1354,51 +1376,42 @@ export async function listCrmOpenTasks(broker?: string): Promise<CrmOpenTask[]> 
 export async function createCrmContactAction(formData: FormData): Promise<CrmActionResult & { personId?: number }> {
   const access = await requireCrmAccess()
   if (!access.ok) return access
-  const firstName = String(formData.get('firstName') ?? '').trim()
-  const lastName = String(formData.get('lastName') ?? '').trim()
-  const email = String(formData.get('email') ?? '').trim().toLowerCase()
-  const phone = String(formData.get('phone') ?? '').trim()
-  const note = String(formData.get('note') ?? '').trim()
-  const broker = String(formData.get('broker') ?? '').trim() || (access.access.brokerSlug ?? 'matt')
-  // §16 Add Person modal: optional lead source captured at creation time.
-  const source = String(formData.get('source') ?? '').trim() || 'Manual entry'
-  if (!firstName) return { ok: false, error: 'First name required' }
-  if (!email && !phone) return { ok: false, error: 'An email or a phone number is required' }
+  const input = parseCreateContactForm(formData)
+  const valid = validateCreateContact(input)
+  if (!valid.ok) return valid
+  const address = createContactAddress(input)
+  const broker = access.access.brokerSlug ?? 'matt'
 
   const { sendEvent } = await import('@/lib/crm/send-event')
   const sent = await sendEvent({
     type: 'General Inquiry',
-    source,
+    source: 'Manual entry',
     system: 'RyanRealtyPlatform',
     person: {
-      firstName,
-      lastName: lastName || undefined,
-      emails: email ? [{ value: email }] : undefined,
-      phones: phone ? [{ value: phone }] : undefined,
+      firstName: input.firstName,
+      lastName: input.lastName || undefined,
+      emails: input.email ? [{ value: input.email }] : undefined,
+      phones: input.phone ? [{ value: input.phone }] : undefined,
     },
-    message: note || `Added manually in the CRM by ${access.access.email}`,
     brokerAttribution: { brokerSlug: broker },
   })
   if (!sent.ok) return { ok: false, error: `Lead create failed: ${'error' in sent ? sent.error : sent.status}` }
 
-  // Resolve the native CRM id — sendEvent returns it directly post-cutover;
-  // the contact-point lookups below are the belt-and-suspenders fallback.
-  // (The old FUB mirrorPersonByEmail pull was a dead no-op and was deleted.)
   const sb = createServiceClient()
   let personId: number | undefined = sent.personId ?? undefined
-  if (!personId && email) {
+  if (!personId && input.email) {
     const { data: pt } = await sb
       .from('crm_contact_points')
       .select('person_id')
       .eq('kind', 'email')
-      .eq('value', email)
+      .eq('value', input.email)
       .order('person_id', { ascending: false })
       .limit(1)
       .maybeSingle()
     personId = (pt?.person_id as number | undefined) ?? undefined
   }
-  if (!personId && phone) {
-    const digits = phone.replace(/\D/g, '').slice(-10)
+  if (!personId && input.phone) {
+    const digits = input.phone.replace(/\D/g, '').slice(-10)
     const { data: pt } = await sb
       .from('crm_contact_points')
       .select('person_id,value')
@@ -1408,6 +1421,15 @@ export async function createCrmContactAction(formData: FormData): Promise<CrmAct
       .limit(1)
       .maybeSingle()
     personId = (pt?.person_id as number | undefined) ?? undefined
+  }
+  if (personId && address) {
+    const { data: person } = await sb.from('crm_people').select('addresses').eq('id', personId).maybeSingle()
+    const rest = Array.isArray(person?.addresses) ? (person!.addresses as unknown[]).slice(1) : []
+    const { error: addressError } = await sb
+      .from('crm_people')
+      .update({ addresses: [address, ...rest], updated_at: new Date().toISOString() })
+      .eq('id', personId)
+    if (addressError) console.error('[createCrmContactAction] address', addressError.message)
   }
   revalidateCrm(personId)
   return { ok: true, personId }

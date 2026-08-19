@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import '@/components/admin/v2/admin-v2.css'
 
 /**
  * §12.1 People-list loading skeleton
@@ -10,6 +11,11 @@ export default function CrmPeopleLoading() {
   const HEADERS = ['Name', 'Lead Score', 'Agent', 'Last Visit', 'Phone', 'Email', 'Last Activity', 'Tags']
   return (
     <div className="mx-auto max-w-[1600px] px-4 pb-8 pt-2 sm:px-6 sm:py-6" aria-busy>
+      <div className="mb-4">
+        <a href="/admin/people#add-person" className="av2-btn" style={{ textDecoration: 'none' }}>
+          New contact
+        </a>
+      </div>
       {/* Mobile: simple list skeleton */}
       <div className="mt-1 space-y-3 md:hidden">
         <Skeleton className="h-7 w-32" />

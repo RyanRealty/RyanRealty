@@ -179,6 +179,8 @@ export type PeopleListViewProps = {
   sequences: BulkSequenceOption[]
   brokerPicker: BulkPickerOption[]
   filterExportHref: string
+  /** False when the default list skipped the book-wide exact count. */
+  totalExact?: boolean
 }
 
 export default function PeopleListView(props: PeopleListViewProps) {
@@ -188,6 +190,7 @@ export default function PeopleListView(props: PeopleListViewProps) {
     currentBroker, currentPond, myBrokerSlug, canAssignBroker,
     brokers, ponds, stageOptions, tagOptions, neighborhoodOptions, sourceOptions,
     reportAreas, emailTemplates, sequences, brokerPicker, filterExportHref,
+    totalExact = true,
   } = props
 
   const router = useRouter()
@@ -238,6 +241,13 @@ export default function PeopleListView(props: PeopleListViewProps) {
 
   // ── Dialogs ─────────────────────────────────────────────────────────────────
   const [addOpen, setAddOpen] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('add') === '1' || window.location.hash === '#add-person') {
+      setAddOpen(true)
+    }
+  }, [])
   const [exportOpen, setExportOpen] = useState(false)
   const [newListOpen, setNewListOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -365,32 +375,34 @@ export default function PeopleListView(props: PeopleListViewProps) {
               </>
             ) : (
               <>
-                <h1 className="text-xl font-bold" style={{ color: 'var(--a-text)' }}>All People</h1>
+                <h1 className="text-xl font-bold" style={{ color: 'var(--a-text)' }}>Recently updated</h1>
                 <p className="mt-1 text-sm tabular-nums" style={MUTED}>
-                  Showing {total.toLocaleString('en-US')} {total === 1 ? 'person' : 'people'}
+                  {totalExact
+                    ? `Showing ${total.toLocaleString('en-US')} ${total === 1 ? 'person' : 'people'}`
+                    : 'Newest activity first'}
                 </p>
               </>
             )}
           </div>
 
-          {/* §4: "+ New List" (All People) XOR "Update List ↻" (smart list) */}
           <div className="flex shrink-0 items-center gap-2">
-            <IconButton
-              label="Add Person"
+            <Button
               data-tour="crm-add-person"
               onClick={() => setAddOpen(true)}
+              style={BAR_BTN}
             >
               <UserRoundPlus className="h-4 w-4" aria-hidden />
-            </IconButton>
+              New contact
+            </Button>
             {appliedView ? (
               appliedView.canEdit ? (
-                <Button style={BAR_BTN} onClick={runUpdateList} disabled={isPending}>
+                <Button variant="quiet" style={BAR_BTN} onClick={runUpdateList} disabled={isPending}>
                   {isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden />}
                   {updateDone ? 'List updated' : 'Update List'}
                 </Button>
               ) : null
             ) : (
-              <Button style={BAR_BTN} onClick={openNewList}>
+              <Button variant="quiet" style={BAR_BTN} onClick={openNewList}>
                 <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
                 New List
               </Button>
@@ -577,7 +589,10 @@ export default function PeopleListView(props: PeopleListViewProps) {
       />
 
       {/* §16 Add Person */}
-      <AddPersonDialog open={addOpen} onOpenChange={setAddOpen} sources={sourceOptions} />
+      <AddPersonDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+      />
 
       {/* §15 Export Selected People */}
       <ExportPeopleDialog

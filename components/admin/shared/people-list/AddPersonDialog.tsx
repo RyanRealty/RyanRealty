@@ -1,55 +1,39 @@
 'use client'
 
 /**
- * AddPersonDialog — the §16 Add Person modal
- * (docs/fub-crm-spec/05-people-list-and-bulk-actions.md).
- *
- * Minimal quick-create: First/Last name (50/50 row), Email, Phone, lead-source
- * dropdown. "Add person" (lowercase p, §16.5 label correction) is disabled
- * until a first name is entered; submit routes through createCrmContactAction
- * (FUB event + local mirror + dedupe) and navigates to the new Person Detail.
- *
- * 11F: migrated off shadcn onto the admin v2 language (Dialog / TextField /
- * SelectField / Button, design_system/admin/ADMIN_UI.md). Presentation only —
- * the create path, the disabled rule and every user-facing string are
- * unchanged. The v2 Dialog labels itself from a plain `title` string, so the
- * decorative UserRoundPlus glyph that sat beside the heading is gone; it was
- * aria-hidden and carried no meaning.
- *
- * WHEN THE DRAFT IS CLEARED. Radix fired its root onOpenChange only when the
- * USER dismissed the dialog, never when the parent flipped `open` — so Cancel
- * (which just calls the prop) kept whatever had been typed, and only Esc / the
- * close control wiped it. The v2 Dialog routes every close through one
- * onClose, so the two are told apart by the `open` prop as the handler runs:
- * still true = the user dismissed it, already false = the parent closed it.
- * Without that test Cancel destroyed a half-typed person.
+ * New contact quick add. Name, email, phone. Address is a field, never a note.
+ * After save, open person detail for stage, tags, relationships, notes, assignment, property.
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { createCrmContactAction } from '@/app/actions/crm'
-import { Button, Dialog, SelectField, TextField } from '@/components/admin/v2'
+import { Button, Dialog, TextField } from '@/components/admin/v2'
 
-export type AddPersonDialogProps = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  /** Configured lead sources for the §16 dropdown. */
-  sources: Array<{ key: string; label: string }>
-}
-
-export default function AddPersonDialog({ open, onOpenChange, sources }: AddPersonDialogProps) {
+function useAddPersonForm(onCreated: () => void) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [source, setSource] = useState('')
+  const [street, setStreet] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('OR')
+  const [zip, setZip] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const reset = () => {
-    setFirstName(''); setLastName(''); setEmail(''); setPhone(''); setSource(''); setError(null)
+    setFirstName('')
+    setLastName('')
+    setEmail('')
+    setPhone('')
+    setStreet('')
+    setCity('')
+    setState('OR')
+    setZip('')
+    setError(null)
   }
 
   const submit = () => {
@@ -59,65 +43,168 @@ export default function AddPersonDialog({ open, onOpenChange, sources }: AddPers
     fd.set('lastName', lastName.trim())
     fd.set('email', email.trim())
     fd.set('phone', phone.trim())
-    if (source) fd.set('source', source)
+    fd.set('street', street.trim())
+    fd.set('city', city.trim())
+    fd.set('state', state.trim())
+    fd.set('zip', zip.trim())
     startTransition(async () => {
       const res = await createCrmContactAction(fd)
-      if (!res.ok) { setError(res.error ?? 'Could not add the person'); return }
+      if (!res.ok) {
+        setError(res.error ?? 'Could not add the person')
+        return
+      }
       reset()
-      onOpenChange(false)
+      onCreated()
       if (res.personId) router.push(`/admin/people/${res.personId}`)
       else router.refresh()
     })
   }
 
+  return {
+    isPending,
+    firstName, setFirstName,
+    lastName, setLastName,
+    email, setEmail,
+    phone, setPhone,
+    street, setStreet,
+    city, setCity,
+    state, setState,
+    zip, setZip,
+    error,
+    reset,
+    submit,
+  }
+}
+
+function AddPersonFields({ form }: { form: ReturnType<typeof useAddPersonForm> }) {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <TextField
+          label="First name"
+          value={form.firstName}
+          onChange={(e) => form.setFirstName(e.target.value)}
+          autoComplete="off"
+          autoFocus
+        />
+        <TextField
+          label="Last name"
+          value={form.lastName}
+          onChange={(e) => form.setLastName(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
+      <TextField
+        label="Phone"
+        type="tel"
+        value={form.phone}
+        onChange={(e) => form.setPhone(e.target.value)}
+        autoComplete="off"
+        required
+      />
+      <TextField
+        label="Email"
+        type="email"
+        value={form.email}
+        onChange={(e) => form.setEmail(e.target.value)}
+        autoComplete="off"
+        required
+      />
+      <TextField
+        label="Street"
+        name="street"
+        value={form.street}
+        onChange={(e) => form.setStreet(e.target.value)}
+        autoComplete="off"
+      />
+      <div className="grid grid-cols-[1fr_72px_88px] gap-3">
+        <TextField
+          label="City"
+          name="city"
+          value={form.city}
+          onChange={(e) => form.setCity(e.target.value)}
+          autoComplete="off"
+        />
+        <TextField
+          label="State"
+          name="state"
+          value={form.state}
+          onChange={(e) => form.setState(e.target.value)}
+          autoComplete="off"
+        />
+        <TextField
+          label="Zip"
+          name="zip"
+          value={form.zip}
+          onChange={(e) => form.setZip(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+        First name, email, and phone. Address is optional here. Stage, tags, notes, and property go on the person after save.
+      </p>
+      {form.error ? (
+        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }} role="alert">{form.error}</p>
+      ) : null}
+    </div>
+  )
+}
+
+export type AddPersonDialogProps = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export default function AddPersonDialog({
+  open,
+  onOpenChange,
+}: AddPersonDialogProps) {
+  const form = useAddPersonForm(() => onOpenChange(false))
+
   return (
     <Dialog
       open={open}
-      // `open` is still true when the user dismisses the dialog (Esc, the
-      // header Close control) and already false when the close came from the
-      // prop — Cancel and a successful submit. Only the first case clears the
-      // draft, which is the Radix behaviour this replaced.
-      onClose={() => { if (open) reset(); onOpenChange(false) }}
-      title="Add Person"
+      onClose={() => { if (open) form.reset(); onOpenChange(false) }}
+      title="New contact"
       footer={
         <>
-          <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={isPending}>Cancel</Button>
-          <Button onClick={submit} disabled={isPending || !firstName.trim()}>
-            {isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
-            Add person
+          <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={form.isPending}>Cancel</Button>
+          <Button onClick={form.submit} disabled={form.isPending || !form.firstName.trim() || !form.email.trim() || !form.phone.trim()}>
+            {form.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
+            New contact
           </Button>
         </>
       }
     >
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <TextField label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="off" />
-          </div>
-          <div>
-            <TextField label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="off" />
-          </div>
-        </div>
-        <div>
-          <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
-        </div>
-        <div>
-          <TextField label="Phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="off" />
-        </div>
-        <div>
-          <SelectField label="Lead source" value={source} onChange={(e) => setSource(e.target.value)}>
-            {/* The Radix original showed this as a PLACEHOLDER, not a choice.
-                disabled+hidden keeps it as the resting label of an unset
-                select without offering "" back as a selectable option. */}
-            <option value="" disabled hidden>Select a lead source</option>
-            {sources.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-          </SelectField>
-        </div>
-        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-          An email or a phone number is required. If the person already exists, this updates them instead of creating a duplicate.
-        </p>
-        {error ? <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }} role="alert">{error}</p> : null}
-      </div>
+      <AddPersonFields form={form} />
     </Dialog>
+  )
+}
+
+/** Always-visible add form for /admin/people. The primary path. */
+export function AddPersonCard() {
+  const form = useAddPersonForm(() => undefined)
+
+  return (
+    <section
+      id="add-person"
+      aria-label="New contact"
+      style={{
+        border: '1px solid var(--a-border)',
+        borderRadius: 'var(--a-r-lg)',
+        background: 'var(--a-surface)',
+        padding: 16,
+        marginBottom: 20,
+      }}
+    >
+      <h2 className="av2-lane-head" style={{ marginTop: 0 }}>New contact</h2>
+      <AddPersonFields form={form} />
+      <div style={{ marginTop: 12 }}>
+        <Button onClick={form.submit} disabled={form.isPending || !form.firstName.trim() || !form.email.trim() || !form.phone.trim()} touch>
+          {form.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
+          New contact
+        </Button>
+      </div>
+    </section>
   )
 }
