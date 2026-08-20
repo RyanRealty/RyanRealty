@@ -156,6 +156,42 @@ for (const [file, symbol] of WIRED) {
   }
 }
 
+// AN IMPORT IS NOT A CALL. The substring check above passes on a file that
+// imports the publisher and never calls it, which is exactly the shape a
+// regression takes: the body goes back to the raw ListPrice and the import line
+// survives. Proven on this gate 2026-08-19 — RentalAnalysis.tsx reverted to
+// `listing.listPrice ?? 0` with its import intact and the gate stayed green
+// while the page published a 1,571,464% cap rate again. Nothing else catches
+// it: an unused import is a warning to eslint and nothing at all to tsc. So the
+// whole-property surfaces are asserted at the CALL SITE, in the AST.
+for (const [file, symbol] of WIRED.filter(([, s]) => s === 'publishWholePropertyAmount')) {
+  const text = readFileSync(file, 'utf8')
+  const sourceFile = ts.createSourceFile(
+    file,
+    text,
+    ts.ScriptTarget.ES2022,
+    true,
+    file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  )
+  let calls = 0
+  const countCalls = (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === symbol
+    ) {
+      calls++
+    }
+    ts.forEachChild(node, countCalls)
+  }
+  countCalls(sourceFile)
+  if (calls === 0) {
+    failures.push(
+      `wiring: ${file} imports ${symbol} but never calls it. An unused import withholds nothing.`,
+    )
+  }
+}
+
 // The $/sq ft publisher takes the property type, so a caller cannot omit the
 // lease check by forgetting it — the typechecker asks for it by name.
 const shareSrc = readFileSync('lib/listing/publish-listing-share.ts', 'utf8')
