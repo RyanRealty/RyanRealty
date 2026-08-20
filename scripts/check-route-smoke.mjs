@@ -191,6 +191,16 @@ const REFUSAL_ROUTES = [
     name: 'canonical listing URL — refusal body',
   },
   { path: `/listing/by-key/${SMOKE_MISSING_KEY}`, name: 'listing by-key — refusal body' },
+  {
+    // A key too long to be a key. This was a SECOND route into the same blank
+    // 200: getListingDetail validated its input with a throwing zod parse
+    // OUTSIDE its try/catch, so an over-long path segment threw out of the page
+    // render instead of returning null, and the streamed shell turned that into
+    // HTTP 200 with 1,593 characters and no <h1> on ryan-realty.com. A
+    // malformed key is a miss, so it must land on the same refusal.
+    path: `/listing/${'a'.repeat(150)}`,
+    name: 'over-long listing key — refusal body',
+  },
 ]
 
 function checkRefusalBody(body) {

@@ -510,7 +510,18 @@ async function fetchOneOrThrow(listingKey: string): Promise<GetListingDetailResu
  * a healthy listing can never get stuck behind a cached not-found.
  */
 const getListingDetailUncoalesced = async (listingKey: string): Promise<GetListingDetailResult> => {
-  InputSchema.parse({ listingKey })
+  // A key that cannot be a key is a MISS, not an exception (2026-08-19). This
+  // used to be `InputSchema.parse(...)`, outside the try/catch below, so an
+  // empty or over-100-character path segment threw a ZodError out of the page
+  // render. The listing route streams its shell before the page resolves, so
+  // that throw became HTTP 200 with an empty body — measured on
+  // ryan-realty.com: /listing/<150 chars> returned 200 with 1,593 characters of
+  // text and no <h1>, the same blank page a seller-opted-out listing served.
+  // Returning null routes it to the same rendered refusal every other
+  // unresolvable key gets. The throw path below is reserved for TRANSIENT DB
+  // failures, which is the only kind of error a retry can fix; a malformed key
+  // never becomes valid.
+  if (!InputSchema.safeParse({ listingKey }).success) return null
   const cached = unstable_cache(
     () => fetchOneOrThrow(listingKey),
     // v3 cache-key bump 2026-05-31 — evicts poison-null entries cached before the
