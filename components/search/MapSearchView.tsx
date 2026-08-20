@@ -895,6 +895,12 @@ export default function MapSearchView({
                     baths: l.BathroomsTotal,
                     sqft: rowSqft(l),
                     pricePerSqft: cardPricePerSqft(l),
+                    // The card publishes the ask and the $/sq ft, and needs to
+                    // know what kind of listing it is drawing to do it: on a
+                    // commercial lease the price is rent, and on a fractional
+                    // share it buys part of the home.
+                    propertyType: l.PropertyType ?? null,
+                    propertySubType: l.PropertySubType ?? null,
                     badge,
                   }}
                 />

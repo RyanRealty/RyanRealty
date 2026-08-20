@@ -273,6 +273,12 @@ export default function SearchResults({
                     listing.ListPrice && listing.TotalLivingAreaSqFt
                       ? listing.ListPrice / listing.TotalLivingAreaSqFt
                       : null,
+                  // The card publishes the ask and the $/sq ft, and needs to
+                  // know what kind of listing it is drawing to do it: on a
+                  // commercial lease the price is rent, and on a fractional
+                  // share it buys part of the home.
+                  propertyType: listing.PropertyType ?? null,
+                  propertySubType: listing.PropertySubType ?? null,
                 }}
               />
             </div>

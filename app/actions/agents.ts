@@ -188,6 +188,10 @@ function tileToHomeTileRow(tile: ListingTile): HomeTileRow {
     Latitude: tile.lat,
     Longitude: tile.lng,
     StandardStatus: tile.status,
+    // Required on ListingTileRow: a card built from this row publishes an ask,
+    // and on a commercial lease that price is rent per square foot.
+    PropertyType: tile.propertyType,
+    PropertySubType: tile.propertySubType,
     TotalLivingAreaSqFt: tile.sqft,
     OnMarketDate: tile.onMarketDate,
     has_virtual_tour: tile.hasVirtualTour,

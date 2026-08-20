@@ -155,6 +155,11 @@ function tileToViewportRow(t: ListingTile): ListingTileRow {
     OnMarketDate: t.onMarketDate,
     CloseDate: t.closeDate,
     TotalLivingAreaSqFt: t.sqft,
+    // Required on ListingTileRow: every card built from this row publishes an
+    // asking price, and on a commercial lease that price is rent per square
+    // foot. See the field docs in app/actions/listings.ts.
+    PropertyType: t.propertyType,
+    PropertySubType: t.propertySubType,
   }
 }
 

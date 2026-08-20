@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -30,11 +30,18 @@ export type ListingCardData = {
    *  the card opts in via `showPricePerSqft` — search results show it to match
    *  the search mockup; other surfaces stay on the leaner bd/ba/sqft meta. */
   pricePerSqft?: number | null
-  propertySubType?: string | null
-  /** MLS PropertyType code (A–H). Required by the price-per-sqft publisher:
-   *  on 'G' (Commercial Lease) the price field is rent, so a derived
-   *  $/sq ft is a lease rate wearing a sale label. */
-  propertyType?: string | null
+  /**
+   * MLS PropertyType code (A–H) and PropertySubType. REQUIRED, not optional —
+   * the card publishes an asking price and a price per square foot, and both
+   * publishers ask what kind of listing this is. An optional field reads
+   * `undefined` at every call site that forgets it, which is a guard that
+   * always passes: /search?city=Redmond&maxPrice=10000 rendered five
+   * commercial-lease cards at "$1" and "$2" (rent per square foot) beside
+   * homes for sale, because the row shape three mappers built never carried
+   * the code. `null` is a legitimate value; leaving it out is not.
+   */
+  propertyType: string | null
+  propertySubType: string | null
   badge?: { kind: ListingBadge; label: string }
   /** Scalar virtual-tour / video URL. When present and embeddable, the
    *  VideoListingCard plays it inline; otherwise the card links to detail. */
@@ -140,9 +147,13 @@ export default function ListingCard({
       </div>
 
       <div className="px-4 pt-3.5 pb-4">
-        {/* Exact ListPrice. formatPrice thousand-rounds $1,999,900 to $2,000,000. */}
+        {/* Exact ListPrice. formatPrice thousand-rounds $1,999,900 to $2,000,000.
+            Sale-aware: on MLS PropertyType 'G' (Commercial Lease) the price
+            field is rent per square foot, so 213 Active lease tiles rendered a
+            rent rate as a card ask on the search map and in the results list. */}
         <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
-          {formatPublishedAsk(listing.price) ?? '—'}
+          {formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ??
+            '—'}
         </div>
         <div className="text-[13px] text-foreground mt-0.5">{listing.addressLine}</div>
         <div className="text-xs text-muted-foreground mt-px">{listing.cityLine}</div>

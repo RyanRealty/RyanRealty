@@ -98,3 +98,18 @@ export function formatPublishedAsk(listPrice: number | null | undefined): string
   const published = publishListingAsk(listPrice)
   return published ? formatListingAsk(published.ask) : null
 }
+
+/**
+ * The same, for a card that knows what kind of listing it is drawing.
+ *
+ * Null on a commercial lease, where ListPrice is rent per square foot: 213
+ * Active PropertyType 'G' rows sit in listing_tile_mv, and the search map and
+ * results list printed their rent as a card ask ("$3" beside for-sale homes).
+ */
+export function formatPublishedSaleAsk(input: {
+  price: number | null | undefined
+  propertyType: string | null | undefined
+}): string | null {
+  const published = publishListingSaleAsk(input)
+  return published ? formatListingAsk(published.ask) : null
+}

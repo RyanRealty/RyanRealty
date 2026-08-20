@@ -9,6 +9,7 @@
  * index it returns in well under a second.
  */
 import { supabaseAnon } from '@/lib/data/client'
+import { getListingTiles } from '@/lib/data/listings/getListingTiles'
 
 export type GolfHomeRow = {
   ListNumber: string | null
@@ -25,6 +26,18 @@ export type GolfHomeRow = {
   TotalLivingAreaSqFt: number | null
   Latitude: number | null
   Longitude: number | null
+  /**
+   * What kind of listing this is. The landing card publishes an asking price
+   * off ListPrice, and `search_golf_homes` selects a row whose remarks or View
+   * mention golf WITHOUT constraining PropertyType — so 19 fractional-share
+   * rows and 1 commercial lease qualify (listings, 2026-08-19). On a lease the
+   * price is rent per square foot, so the card must be able to withhold it.
+   * The RPC does not return these two columns; they are read from
+   * listing_tile_mv for the same keys rather than changed under the RPC, so
+   * the guard has a real value with no migration to wait on.
+   */
+  PropertyType: string | null
+  PropertySubType: string | null
 }
 
 export async function getGolfHomesForLanding(city: string, limit = 24): Promise<GolfHomeRow[]> {
@@ -35,5 +48,21 @@ export async function getGolfHomesForLanding(city: string, limit = 24): Promise<
     if (error) console.error('[getGolfHomesForLanding]', error.message)
     return []
   }
-  return data as GolfHomeRow[]
+  const rows = data as GolfHomeRow[]
+  const keys = rows.map((r) => r.ListingKey).filter((k): k is string => Boolean(k))
+  if (keys.length === 0) return rows
+  // One indexed read of at most 60 keys. A failure here leaves the codes null,
+  // which the card's publishers read as "unknown" and treat as a sale — so the
+  // read is awaited, not raced, and the tile MV is the same source the search
+  // cards publish from.
+  const tiles = await getListingTiles({ listingKeys: keys, status: 'all', limit: keys.length })
+  const byKey = new Map(tiles.map((t) => [t.listingKey, t]))
+  return rows.map((r) => {
+    const tile = r.ListingKey ? byKey.get(r.ListingKey) : undefined
+    return {
+      ...r,
+      PropertyType: tile?.propertyType ?? null,
+      PropertySubType: tile?.propertySubType ?? null,
+    }
+  })
 }

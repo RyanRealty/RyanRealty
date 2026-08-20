@@ -117,6 +117,11 @@ export function ListingsResults({
             beds: listing.BedroomsTotal ?? null,
             baths: listing.BathroomsTotal ?? null,
             sqft: listing.TotalLivingAreaSqFt ?? null,
+            // The card publishes the ask and the $/sq ft; both publishers ask
+            // what kind of listing this is (a commercial lease carries rent in
+            // ListPrice, a fractional share buys part of the home).
+            propertyType: listing.PropertyType ?? null,
+            propertySubType: listing.PropertySubType ?? null,
             badge:
               publishListingStatusBadge(listing.StandardStatus) ??
               (key && priceChangeKeys.has(key) ? { kind: 'drop' as const, label: 'Price drop' } : undefined),

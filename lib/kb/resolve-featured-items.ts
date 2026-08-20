@@ -1,6 +1,7 @@
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { publishSaleAskAmount } from '@/lib/listing/publish-listing-figure'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import type { KbFeaturedItem } from '@/components/site/kb/types'
 import type { ListingTile } from '@/lib/data'
@@ -59,7 +60,14 @@ export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Pro
     .sort((a, b) => rank(a.m) - rank(b.m))
     .slice(0, limit)
     .map(({ t, m }) => ({
-      price: t.listPrice,
+      // The PUBLISHED sale ask, never the raw ListPrice. This rail is the one
+      // source for the homepage, every city and community page, and the
+      // listing page's "homes for sale nearby" band, and KbFeatured prints
+      // this number as an ask. On MLS PropertyType 'G' (Commercial Lease) the
+      // field is rent per square foot: 725 Broadway Street, Bend published
+      // "$2" in the rail on 735 Purcell's own page (2026-08-19). Withheld
+      // rather than converted — there is no sale price to state.
+      price: publishSaleAskAmount({ price: t.listPrice, propertyType: t.propertyType }),
       address:
         publishStreetLine({
           streetNumber: t.streetNumber,

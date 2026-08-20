@@ -133,22 +133,28 @@ checks.push({
     !/formatPrice\(pulse\.medianListPrice\)/.test(faq),
 })
 
+// The card moved from formatPublishedAsk(number) to the SALE-aware publisher on
+// 2026-08-19: MLS PropertyType 'G' is a Commercial Lease, so its ListPrice is
+// rent per square foot, and /homes-for-sale?city=Redmond&maxPrice=10000 rendered
+// seven lease cards at "$1" and "$2" beside homes for sale.
 const listingCard = src('components/site/ListingCard.tsx')
 checks.push({
-  label: 'search/site ListingCard publishes formatPublishedAsk, not formatPrice',
+  label: 'search/site ListingCard publishes formatPublishedSaleAsk, not formatPrice',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(listingCard) &&
-    /formatPublishedAsk\(listing\.price\)/.test(listingCard) &&
-    !/formatPrice\(listing\.price\)/.test(listingCard),
+    /formatPublishedSaleAsk\(\{[^}]*propertyType: listing\.propertyType/s.test(listingCard) &&
+    !/formatPrice\(listing\.price\)/.test(listingCard) &&
+    !/formatPublishedAsk\(listing\.price\)/.test(listingCard),
 })
 
 const videoCard = src('components/site/VideoListingCard.tsx')
 checks.push({
-  label: 'VideoListingCard publishes formatPublishedAsk, not formatPrice',
+  label: 'VideoListingCard publishes formatPublishedSaleAsk, not formatPrice',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(videoCard) &&
-    /formatPublishedAsk\(listing\.price\)/.test(videoCard) &&
-    !/formatPrice\(listing\.price\)/.test(videoCard),
+    /formatPublishedSaleAsk\(\{[^}]*propertyType: listing\.propertyType/s.test(videoCard) &&
+    !/formatPrice\(listing\.price\)/.test(videoCard) &&
+    !/formatPublishedAsk\(listing\.price\)/.test(videoCard),
 })
 
 const activity = src('components/site/kb/KbActivity.client.tsx')

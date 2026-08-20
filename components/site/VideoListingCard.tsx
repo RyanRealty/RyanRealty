@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
-import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { normalizeEmbed } from '@/lib/video-embed'
 import type { ListingCardData } from '@/components/site/ListingCard'
 import type { VideoEmbed } from '@/lib/data/types/video'
@@ -50,7 +50,7 @@ function toEmbed(norm: NonNullable<ReturnType<typeof normalizeEmbed>>, posterUrl
 
 export default function VideoListingCard({ listing }: { listing: ListingCardData }) {
   const [playing, setPlaying] = useState(false)
-  const ask = formatPublishedAsk(listing.price) ?? 'Price not published'
+  const ask = formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ?? 'Price not published'
 
   // Resolve the tour URL ONCE through the same normalizer the player uses. A
   // null result (no URL) or an 'iframe'/'video-tag' result is playable; a
@@ -66,7 +66,7 @@ export default function VideoListingCard({ listing }: { listing: ListingCardData
         <ListingVideoEmbed videos={toEmbed(norm, listing.photoUrl)} variant="tour" className="p-3" />
         <div className="px-4 pb-4 pt-1">
           <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
-            {formatPublishedAsk(listing.price) ?? '—'}
+            {formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ?? '—'}
           </div>
           <Link href={listing.href} className="text-[13px] text-foreground hover:text-primary">
             {listing.addressLine}
@@ -120,7 +120,7 @@ export default function VideoListingCard({ listing }: { listing: ListingCardData
 
       <div className="px-4 pt-3.5 pb-4">
         <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
-          {formatPublishedAsk(listing.price) ?? '—'}
+          {formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ?? '—'}
         </div>
         <div className="text-[13px] text-foreground mt-0.5">{listing.addressLine}</div>
         <div className="text-xs text-muted-foreground mt-px">{listing.cityLine}</div>

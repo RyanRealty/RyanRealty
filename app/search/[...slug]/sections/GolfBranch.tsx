@@ -38,6 +38,9 @@ export async function renderGolfLanding(city: string) {
       beds: l.BedroomsTotal ?? null,
       baths: l.BathroomsTotal ?? null,
       sqft: l.TotalLivingAreaSqFt ?? null,
+      // The card publishes the ask; on a commercial lease ListPrice is rent.
+      propertyType: l.PropertyType ?? null,
+      propertySubType: l.PropertySubType ?? null,
     }
   })
   const citySlug = cityEntityKey(city)

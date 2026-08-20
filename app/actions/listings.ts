@@ -71,7 +71,20 @@ export type ListingTileRow = {
   Latitude: number | null
   Longitude: number | null
   ModificationTimestamp?: string | null
-  PropertyType?: string | null
+  /**
+   * MLS PropertyType code (A-H) and PropertySubType. REQUIRED, not optional.
+   *
+   * Every card built from this row publishes an asking price, and the search
+   * cards publish a price per square foot too. Both publishers ask what kind of
+   * listing this is: on PropertyType 'G' (Commercial Lease) the price is rent
+   * per square foot, and a fractional sub-type buys part of the home. While
+   * this field was optional, five separate mappers omitted it, every guard read
+   * undefined, and /homes-for-sale?city=Redmond&maxPrice=10000 rendered seven
+   * lease cards at "$1" and "$2" beside homes for sale (2026-08-19). A null
+   * value is legitimate; leaving the field out is not.
+   */
+  PropertyType: string | null
+  PropertySubType: string | null
   StandardStatus?: string | null
   /** Optional: list/on-market date when available (used for history + DOM). */
   OnMarketDate?: string | null
@@ -1092,6 +1105,8 @@ function tileToSearchRow(t: ListingTile): ListingTileRow {
     Longitude: t.lng,
     StandardStatus: t.status,
     TotalLivingAreaSqFt: t.sqft,
+    PropertyType: t.propertyType,
+    PropertySubType: t.propertySubType,
     OnMarketDate: t.onMarketDate,
     CloseDate: t.closeDate,
   }
@@ -1326,6 +1341,8 @@ function tileToHomeTileRow(tile: ListingTile): HomeTileRow {
     Latitude: tile.lat,
     Longitude: tile.lng,
     StandardStatus: tile.status,
+    PropertyType: tile.propertyType,
+    PropertySubType: tile.propertySubType,
     TotalLivingAreaSqFt: tile.sqft,
     OnMarketDate: tile.onMarketDate,
     has_virtual_tour: tile.hasVirtualTour,
@@ -1558,29 +1575,9 @@ export async function getListingsInBounds(
     sort: dalSort,
     limit: polygon && polygon.length >= 3 ? polygonFetchLimit : Math.min(offset + limitClamp + 1, 500),
   })
-  const rows: ListingTileRow[] = tiles.map((t) => ({
-    ListingKey: t.listingKey,
-    ListNumber: t.listNumber,
-    ListPrice: t.listPrice,
-    BedroomsTotal: t.beds,
-    BathroomsTotal: t.baths,
-    StreetNumber: t.streetNumber,
-    StreetName: t.streetName,
-    StreetSuffix: t.streetSuffix ?? null,
-    City: t.city,
-    State: 'OR',
-    PostalCode: t.postalCode,
-    SubdivisionName: t.subdivisionName,
-    PhotoURL: t.photoUrl,
-    Latitude: t.lat,
-    Longitude: t.lng,
-    StandardStatus: t.status,
-    OnMarketDate: t.onMarketDate,
-    CloseDate: t.closeDate,
-    TotalLivingAreaSqFt: t.sqft,
-    ListOfficeName: null,
-    ListAgentName: null,
-  })) as ListingTileRow[]
+  const rows: ListingTileRow[] = tiles.map(
+    (t) => ({ ...tileToSearchRow(t), ListOfficeName: null, ListAgentName: null }),
+  ) as ListingTileRow[]
 
   if (polygon && polygon.length >= 3) {
     const polygonFiltered = rows.filter((row) => {
@@ -1654,29 +1651,9 @@ export async function getViewportListings(
     sort: dalSort,
     limit: fetchLimit,
   })
-  let rows: ListingTileRow[] = tiles.map((t) => ({
-    ListingKey: t.listingKey,
-    ListNumber: t.listNumber,
-    ListPrice: t.listPrice,
-    BedroomsTotal: t.beds,
-    BathroomsTotal: t.baths,
-    StreetNumber: t.streetNumber,
-    StreetName: t.streetName,
-    StreetSuffix: t.streetSuffix ?? null,
-    City: t.city,
-    State: 'OR',
-    PostalCode: t.postalCode,
-    SubdivisionName: t.subdivisionName,
-    PhotoURL: t.photoUrl,
-    Latitude: t.lat,
-    Longitude: t.lng,
-    StandardStatus: t.status,
-    OnMarketDate: t.onMarketDate,
-    CloseDate: t.closeDate,
-    TotalLivingAreaSqFt: t.sqft,
-    ListOfficeName: null,
-    ListAgentName: null,
-  })) as ListingTileRow[]
+  let rows: ListingTileRow[] = tiles.map(
+    (t) => ({ ...tileToSearchRow(t), ListOfficeName: null, ListAgentName: null }),
+  ) as ListingTileRow[]
 
   if (polygon && polygon.length >= 3) {
     rows = rows.filter((row) => {
@@ -2622,6 +2599,7 @@ function tileToListingTileRow(t: ListingTile): ListingTileRow {
     Longitude: t.lng,
     ModificationTimestamp: t.modifiedAt,
     PropertyType: t.propertyType,
+    PropertySubType: t.propertySubType,
     StandardStatus: t.status,
     OnMarketDate: t.onMarketDate,
     ClosePrice: t.closePrice,
