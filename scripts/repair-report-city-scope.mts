@@ -13,13 +13,25 @@
  * the stored rows themselves so the database stops holding a Central Oregon
  * report full of Medford.
  *
- * WHAT IT DOES NOT DO. It does not regenerate the affected weeks. The tile MV
- * no longer carries closings that old (verified 2026-08-19: the 2026-03-08,
- * 03-22, 03-29, 04-12 and 05-10 windows return zero rows today), so a
- * regeneration would replace real, verified Central Oregon closings with an
- * empty page. Every figure this script keeps is an MLS row that closed in the
- * window; every figure it removes is out of area. §0.7 — fewer numbers, all
- * of them true.
+ * WHAT IT DOES NOT DO. It does not regenerate the affected weeks. A weekly
+ * report is a frozen artifact: it states what the feed carried when it was
+ * generated, and MLS closings are reported late, so re-running the generator
+ * would silently rewrite published counts every time it ran. Trimming keeps
+ * each figure exactly as published and removes only the out-of-area sections.
+ *
+ * An earlier draft of this note claimed the tile MV "no longer carries
+ * closings that old (verified: the 2026-03-08, 03-22, 03-29, 04-12 and 05-10
+ * windows return zero rows today)". That was never run. Re-checked live
+ * 2026-08-19 (anon, listing_tile_mv, close_date window, first 1000 rows):
+ * 03-08 179 rows / 89 in area · 03-22 157 / 81 · 03-29 211 / 94 · 04-12 194 /
+ * 87 · 05-10 139 / 71. The MV does carry them, and it carries MORE than the
+ * published counts (69, 77, 87, 86, 66) because closings kept arriving after
+ * each report was written. Regeneration is therefore possible; it is declined
+ * on the frozen-artifact rule above, not on a retention limit.
+ *
+ * Every figure this script keeps is an MLS row that closed in the window;
+ * every figure it removes is out of area. §0.7 — fewer numbers, all of them
+ * true.
  *
  * Idempotent: rerunning on a repaired row is a no-op.
  *
@@ -94,6 +106,10 @@ async function main() {
         console.log(`   SKIPPED — every section is out of area; a blank report is not an improvement.`)
         continue
       }
+      // Flush the backup BEFORE the write, and after every write. The original
+      // wrote it once after the loop, so a mid-loop throw left already-
+      // overwritten rows with no backup on disk.
+      fs.writeFileSync(backupPath, JSON.stringify(backups, null, 2))
       const { error: writeErr } = await sb
         .from('market_reports')
         .update({ content_html: scoped.html })

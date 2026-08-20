@@ -47,6 +47,24 @@
  * Central Oregon allowlist on a DAL call that already carries listing keys —
  * plus a JS re-check. With an explicit `city` the caller has named its own
  * geography, the same contract the closed side of the report uses.
+ *
+ * ─── COVERAGE ───────────────────────────────────────────────────────────────
+ * The table starts on 2026-03-12. Verified live 2026-08-19, anon role, two
+ * query shapes: the earliest row of ANY `event_type` is
+ * 2026-03-12T12:54:05.062Z (`status_closed`), and a count over 2026-02-01 ..
+ * 2026-03-11 across every event type returns 0 while 2026-03-12 .. 2026-03-18
+ * returns 813. A window that opens before that date is not a quiet week, it is
+ * outside the source — and a count over it is a fabricated zero, which is
+ * exactly the shape of the dead-source bug this file replaced. Callers that
+ * publish a pending figure MUST gate on `isPendingWindowCovered` and withhold
+ * the figure when it is false (§0.7: fewer numbers, never a wrong one).
+ * `/reports/sales/<city>/last-year` published "0 pending sales" and "No
+ * pending sales in this period" over calendar 2025 on that fabricated zero.
+ *
+ * The first day is a catch-up batch — the 2026-03-12 rows share a handful of
+ * identical `event_at` stamps — so a window opening exactly on the boundary
+ * carries homes that went pending earlier. That over-counts rather than
+ * fabricates, so the boundary sits on the first row.
  */
 
 import { supabaseAnon } from '@/lib/data/client'
@@ -59,6 +77,23 @@ import { isServiceAreaCity } from '@/lib/data/listings/service-area'
 /** Ceiling on events read for one window. A year of feed-wide pendings is
  *  well under this; the cap exists so a bad date range cannot page forever. */
 const MAX_EVENTS = 20_000
+
+/**
+ * First row in `activity_events` — the day the pending source begins. See the
+ * COVERAGE note above for the live trace.
+ */
+export const PENDING_SOURCE_COVERAGE_START_ISO = '2026-03-12T12:54:05.062Z'
+
+/**
+ * True when a window opens inside the pending source's coverage, so a count
+ * over it is a measurement. False means the source cannot answer for that
+ * window: publish nothing, never zero.
+ */
+export function isPendingWindowCovered(fromIso: string | null | undefined): boolean {
+  const from = Date.parse(fromIso ?? '')
+  if (Number.isNaN(from)) return false
+  return from >= Date.parse(PENDING_SOURCE_COVERAGE_START_ISO)
+}
 /** Keys per hydration call — PostgREST caps any single response at 1,000. */
 const HYDRATE_CHUNK = 500
 

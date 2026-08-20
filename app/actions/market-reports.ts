@@ -435,13 +435,16 @@ async function _fetchSalesReportCardsData(
   return cards
 }
 
-// v2 key: force-evict the "No sales this period" entries cached while
-// listing_tile_mv sat 8 days stale (2026-07 incident) — the data cache
-// survives deploys, so without the bump the wall of empty cards would
-// outlive the fix by up to an hour.
+// v3 key (2026-08-19): every cached card carries pendingCount 0, because the
+// pending path read a listing_history event value that does not exist. The
+// data cache survives deploys, so without the bump the dead-source zeros keep
+// serving for a full revalidate window after the live source lands — the same
+// reason market-report-by-slug went to v2.
+// v2 forced out the "No sales this period" entries cached while
+// listing_tile_mv sat 8 days stale (2026-07 incident).
 const _getSalesReportCardsDataCached = unstable_cache(
   _fetchSalesReportCardsData,
-  ['sales-report-cards-v2'],
+  ['sales-report-cards-v3'],
   { revalidate: 3600, tags: ['market-reports'] },
 )
 

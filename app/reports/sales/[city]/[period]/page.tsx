@@ -7,6 +7,15 @@
  * (getMarketReportDataForLocation) plus session/identity-bridge reads, the PDF
  * export href, and the literal "Closed sales" marker (ci:lead-funnels).
  *
+ * PENDING COVERAGE (§0.7, 2026-08-19). activity_events — the pending source —
+ * begins 2026-03-12, so `last-year` (calendar 2025) has no pending rows to
+ * count. This page published "0" as a Pending sales figure, as a Dataset
+ * variableMeasured value, and as "No pending sales in this period" on all
+ * seven PRIMARY_CITIES. A zero the source cannot measure is a fabricated fact.
+ * The figure, the JSON-LD variable, and the empty-state claim are now all
+ * gated on isPendingWindowCovered; the closed side is untouched. Locked by
+ * ci:publish-report-city-scope.
+ *
  * D9: SalesReportCharts stays an island (chart inventory B5). Do not flatten
  * the daily / price-band / DOM series to a figure.
  *
@@ -22,6 +31,10 @@ import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { SALES_PERIODS, getDateRangeForPeriod, getPeriodLabel, type SalesPeriodSlug } from '@/lib/sales-report-periods'
 import { getMarketReportDataForLocation, type ReportListing } from '@/app/actions/market-reports'
+import {
+  isPendingWindowCovered,
+  PENDING_SOURCE_COVERAGE_START_ISO,
+} from '@/lib/data/listings/getWentPendingInWindow'
 import { getPropertyTypeLabel } from '@/lib/property-type-labels'
 import { PRIMARY_CITIES } from '@/lib/cities'
 import { cityEntityKey, listingDetailPath } from '@/lib/slug'
@@ -160,10 +173,19 @@ export default async function SalesReportPage({ params }: PageProps) {
   const pdfHref = `/api/pdf/report?geoName=${encodeURIComponent(cityName)}&period=${encodeURIComponent(`${periodLabel} / ${dateRangeStr}`)}`
   const cityPath = `/housing-market/${encodeURIComponent(cityEntityKey(cityName))}`
 
+  // §0.7 — the pending source (activity_events) begins 2026-03-12. Over an
+  // earlier window it returns nothing, and a published 0 would be a fabricated
+  // fact, not a measurement. /reports/sales/<city>/last-year shipped exactly
+  // that over calendar 2025. Withhold the figure instead.
+  const pendingCovered = isPendingWindowCovered(start.toISOString())
+  const pendingSourceStartLabel = formatDate(PENDING_SOURCE_COVERAGE_START_ISO)
+
   const datasetVariables: Array<{ name: string; value: string | number; unitText?: string }> = [
     { name: 'Closed sales', value: closed.length },
-    { name: 'Pending sales', value: pending.length },
   ]
+  if (pendingCovered) {
+    datasetVariables.push({ name: 'Pending sales', value: pending.length })
+  }
   if (medianPrice != null) {
     datasetVariables.push({ name: 'Median sale price', value: Math.round(medianPrice), unitText: 'USD' })
   }
@@ -179,12 +201,14 @@ export default async function SalesReportPage({ params }: PageProps) {
       label: v3Text('Closed sales'),
       href: '#closed-sales',
     },
-    {
+  ]
+  if (pendingCovered) {
+    figures.push({
       value: v3Text(String(pending.length)),
       label: v3Text('Pending sales'),
       href: '#pending-sales',
-    },
-  ]
+    })
+  }
   if (medianPrice != null) {
     figures.push({
       value: v3Text(formatPriceExact(medianPrice)),
@@ -252,7 +276,7 @@ export default async function SalesReportPage({ params }: PageProps) {
             headline={v3Text(`${cityName}, ${periodLabel}`)}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(
-              `closed and pending residential sales for ${cityName}, Oregon, ${dateRangeStr}. Median sale price and median days on market are computed from the closed rows on this page. Sourced from Oregon Data Share via Ryan Realty`,
+              `${pendingCovered ? 'closed and pending' : 'closed'} residential sales for ${cityName}, Oregon, ${dateRangeStr}. Median sale price and median days on market are computed from the closed rows on this page. Sourced from Oregon Data Share via Ryan Realty`,
             )}
             action={{
               label: v3Text('Download PDF'),
@@ -318,7 +342,11 @@ export default async function SalesReportPage({ params }: PageProps) {
             eyebrow={v3Text('Pending')}
             heading={v3Text('Went pending')}
             rows={[]}
-            emptyMessage={v3Text(`No pending sales in this period for ${cityName}.`)}
+            emptyMessage={v3Text(
+              pendingCovered
+                ? `No pending sales in this period for ${cityName}.`
+                : `Pending records start ${pendingSourceStartLabel}. This window is earlier.`,
+            )}
           />
         )}
 

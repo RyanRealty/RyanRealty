@@ -139,6 +139,41 @@ checks.push({
     /throw new Error\(`\[getWentPendingInWindow\]/.test(pendingDal),
 })
 
+// ── 4b. A window the pending source cannot answer prints nothing, not 0 ─────
+// `activity_events` begins 2026-03-12 (verified live 2026-08-19, anon, two
+// shapes: earliest row of any event_type 2026-03-12T12:54:05.062Z; count over
+// 2026-02-01..2026-03-11 across every type = 0, over 2026-03-12..18 = 813).
+// /reports/sales/<city>/last-year covers calendar 2025 and published "0" as a
+// visible figure, as a Dataset variableMeasured value, and as "No pending
+// sales in this period" on all seven PRIMARY_CITIES. A zero the source cannot
+// measure is a fabricated fact, the same class as the dead listing_history
+// filter above.
+checks.push({
+  label: 'the pending DAL names its coverage start and exports the predicate',
+  ok:
+    /export const PENDING_SOURCE_COVERAGE_START_ISO = '2026-03-12T12:54:05\.062Z'/.test(pendingDal) &&
+    /export function isPendingWindowCovered\(/.test(pendingDal),
+})
+const salesPage = src('app/reports/sales/[city]/[period]/page.tsx')
+const datasetLiteral = salesPage.match(/const datasetVariables[\s\S]*?\n {2}\]/)?.[0] ?? ''
+const figuresLiteral = salesPage.match(/const figures: V3InstrumentFigure\[\] = \[[\s\S]*?\n {2}\]/)?.[0] ?? ''
+checks.push({
+  label: 'the sales report withholds the pending figure outside the source coverage window',
+  ok:
+    /isPendingWindowCovered/.test(salesPage) &&
+    /const pendingCovered = isPendingWindowCovered\(start\.toISOString\(\)\)/.test(salesPage) &&
+    // the unconditional pushes are gone from both literals
+    datasetLiteral.length > 0 &&
+    !/Pending sales/.test(datasetLiteral) &&
+    figuresLiteral.length > 0 &&
+    !/Pending sales/.test(figuresLiteral) &&
+    // and each one is now inside the coverage branch
+    /if \(pendingCovered\) \{[\s\S]{0,120}datasetVariables\.push\(\{ name: 'Pending sales'/.test(salesPage) &&
+    /if \(pendingCovered\) \{[\s\S]{0,240}label: v3Text\('Pending sales'\)/.test(salesPage) &&
+    // the empty state may not claim zero over a window the source cannot answer
+    /emptyMessage=\{v3Text\(\s*\n?\s*pendingCovered/.test(salesPage),
+})
+
 // ── 5. The behavioural proof cannot be deleted silently ─────────────────────
 const test = src('lib/market/__tests__/report-scope.test.ts')
 checks.push({
@@ -148,6 +183,13 @@ checks.push({
     /'Grants Pass'/.test(test) &&
     /'Klamath Falls'/.test(test) &&
     /scopeReportHtml/.test(test),
+})
+const coverageTest = src('lib/data/listings/went-pending-coverage.test.ts')
+checks.push({
+  label: 'the unit test still pins last-year outside the pending source coverage',
+  ok:
+    /isPendingWindowCovered\('2025-01-01/.test(coverageTest) &&
+    /verdicts\['last-year'\]\)\.toBe\(false\)/.test(coverageTest),
 })
 
 const failed = checks.filter((c) => !c.ok)
