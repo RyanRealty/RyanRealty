@@ -59,8 +59,16 @@ type Props = {
   baths?: number | null
   sqft?: number | null
   acres?: number | null
-  /** MLS PropertySubType. Share kinds print next to the ask. */
-  propertySubType?: string | null
+  /**
+   * Which listing this is. Share kinds print next to the ask, and the badge is
+   * what lets the ask publish at all: "$159,900" is true of a quarter share and
+   * false of the cabin. REQUIRED, not optional — a defaulted `propertySubType`
+   * silently un-badged every hero whose caller forgot it.
+   */
+  propertySubType: string | null
+  subdivisionName: string | null
+  city: string | null
+  listNumber: string | null
   /** Listing coordinates — enables the bottom-left map thumb + expand toggle. */
   lat?: number | null
   lng?: number | null
@@ -109,7 +117,10 @@ export function ListingHero({
   baths,
   sqft,
   acres = null,
-  propertySubType = null,
+  propertySubType,
+  subdivisionName,
+  city,
+  listNumber,
   lat = null,
   lng = null,
   className,
@@ -178,7 +189,12 @@ export function ListingHero({
 
   const compactPrice = publishListingHeroCompactPrice(price)
   const keyStats = publishListingHeroKeyStats({ beds, baths, sqft, acres })
-  const shareKind = publishListingShareKind(propertySubType)
+  const shareKind = publishListingShareKind({
+    propertySubType,
+    subdivisionName,
+    city,
+    listNumber,
+  })
 
   return (
     <div className={cn('flex flex-col', className)}>

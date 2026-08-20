@@ -36,6 +36,7 @@ import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { formatDate } from '@/lib/format/date'
 import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
 import '@/components/site/kb/kb.css'
@@ -168,6 +169,12 @@ export default async function Home() {
     price: t.listPrice,
     address: publishStreetLine({ streetNumber: t.streetNumber, streetName: t.streetName, streetSuffix: t.streetSuffix }) ?? '',
     town: t.city ?? '',
+    shareKind: publishListingShareKind({
+      propertySubType: t.propertySubType,
+      subdivisionName: t.subdivisionName,
+      city: t.city,
+      listNumber: t.listNumber,
+    }),
     href: listingDetailPath(
       t.listingKey,
       { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },

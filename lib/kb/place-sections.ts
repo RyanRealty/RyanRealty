@@ -46,6 +46,7 @@ import type { KbArticlePost } from '@/components/site/kb/KbArticles'
 import type { KbMapFeature } from '@/components/site/kb/KbListingMap.client'
 import type { KbOpenHouseItem } from '@/components/site/kb/KbOpenHouses.client'
 import type { KbTickerItem, KbTownItem } from '@/components/site/kb/types'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 
 /**
  * Central Oregon service area — the only city slugs the "Explore other cities"
@@ -75,6 +76,13 @@ type TileRow = {
   streetSuffix?: string | null
   subdivisionName: string | null
   city: string | null
+  /**
+   * REQUIRED, not optional. buildTickerItems publishes an asking price from
+   * this row, and whether that price buys the whole dwelling is not answerable
+   * without the sub type. An optional field reads `undefined` at the builder
+   * that forgets it, which is a guard that always passes.
+   */
+  propertySubType: string | null
   photoUrl: string | null
   lat: number | null
   lng: number | null
@@ -326,6 +334,12 @@ export function buildTickerItems(tiles: readonly TileRow[], fallbackTown: string
         streetSuffix: t.streetSuffix,
       }) ?? '',
     town: t.city ?? fallbackTown,
+    shareKind: publishListingShareKind({
+      propertySubType: t.propertySubType,
+      subdivisionName: t.subdivisionName,
+      city: t.city,
+      listNumber: t.listNumber,
+    }),
   }))
 }
 

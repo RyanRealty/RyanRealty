@@ -10,34 +10,43 @@
  * Founding fingerprints: ae66a0f065d3affe2713352b2f71e1b5,
  * 41fed0ac49bcf207696a8c1990faf07f.
  *
- * Label is the verified MLS subtype via propertySubTypeDisplayLabel.
- * Do not invent "fractional", "1/5th", or a timeshare label when the
- * feed says Tenancy in Common. Do not parse PublicRemarks.
+ * WHERE THE LABEL COMES FROM. When the feed's own sub type says share, the
+ * label is that sub type via propertySubTypeDisplayLabel. Do not invent
+ * "fractional", "1/5th", or a Timeshare label when the feed says Tenancy in
+ * Common. When the feed says nothing (eight Active quarter shares at Lake Creek
+ * Lodge are filed as "Condominium"), the label is the registry entry's own
+ * reviewed `shareLabel`, which is backed by the quoted remarks recorded beside
+ * it. Either way the string is read from a verified source, never derived from
+ * PublicRemarks at request time.
  *
- * The two sub types this module labels — Tenancy in Common and Timeshare —
- * are enumerated once, in FRACTIONAL_INTEREST_SUB_TYPES inside the figure
- * contract, which the mechanical gate transpiles and executes. This module
- * asks that contract rather than keeping a second copy of the list.
+ * A BADGE IS NOT DECORATION. It is the reason the ask may still publish at all:
+ * "$159,900" is true of a quarter share and false of the cabin, so the page may
+ * print it only while the share label sits beside it. The label and every
+ * withheld whole-property figure therefore ask the same predicate,
+ * listingIsFractionalInterest, in the figure contract the mechanical gate
+ * transpiles and executes.
  */
 
 import {
+  fractionalInterestEntry,
   listingPriceIsFractionalShare,
   publishPricePerSqft,
+  type FractionalInterestSubject,
 } from '@/lib/listing/publish-listing-figure'
 import { propertySubTypeDisplayLabel } from '@/lib/property-type'
 
 /**
- * The sub-type list itself lives in the figure contract
- * (FRACTIONAL_INTEREST_SUB_TYPES), which the mechanical gate transpiles and
- * executes. A second copy here would be a second rule: this module labels the
- * share, the contract decides what a share price may be used for.
+ * The label to print beside the ask, or null when this listing prices a whole
+ * property. The rule itself lives in the figure contract; this module only
+ * chooses which verified string names it.
  */
-export function publishListingShareKind(
-  propertySubType: string | null | undefined,
-): string | null {
-  const raw = (propertySubType ?? '').trim()
-  if (!listingPriceIsFractionalShare(raw)) return null
-  return propertySubTypeDisplayLabel(raw) || raw
+export function publishListingShareKind(subject: FractionalInterestSubject): string | null {
+  const raw = (subject.propertySubType ?? '').trim()
+  if (listingPriceIsFractionalShare(raw)) {
+    return propertySubTypeDisplayLabel(raw) || raw
+  }
+  const entry = fractionalInterestEntry(subject)
+  return entry ? entry.shareLabel : null
 }
 
 /**
@@ -50,13 +59,18 @@ export function publishListingShareKind(
  * numeric plausibility rule (a figure that prints as $0 is not a figure) lives
  * beside it in publishPricePerSqft. Founding cases: 735 Purcell (220174840,
  * lease, published "$0"), and 220218225 Redmond ($500 over 1,405 sq ft).
+ *
+ * The square footage is the WHOLE dwelling's on every row, so a share price
+ * divided by it is a category error rather than a rounding one. MLS 220222478
+ * published "$185 /sqft" from $159,900 over Cabin 10's 866 sq ft.
  */
-export function publishListingSharePricePerSqft(input: {
-  propertyType: string | null | undefined
-  propertySubType: string | null | undefined
-  pricePerSqft: number | null | undefined
-}): number | null {
-  if (publishListingShareKind(input.propertySubType)) return null
+export function publishListingSharePricePerSqft(
+  input: FractionalInterestSubject & {
+    propertyType: string | null | undefined
+    pricePerSqft: number | null | undefined
+  },
+): number | null {
+  if (publishListingShareKind(input)) return null
   return publishPricePerSqft({
     propertyType: input.propertyType,
     pricePerSqft: input.pricePerSqft,

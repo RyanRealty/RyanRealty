@@ -16,9 +16,17 @@ type Props = {
   associationFeeFrequency?: string | null
   taxAnnualAmount?: number | null
   monthlyRent?: number | null
-  propertySubType?: string | null
+  /**
+   * Which listing this is. REQUIRED — see HouseMeReportFacts. The $/sq ft row
+   * divides ListPrice by the whole dwelling's living area, so it must be able
+   * to ask whether that price buys the dwelling.
+   */
+  propertySubType: string | null
   /** MLS PropertyType code (A–H) — 'G' is a lease listing. */
-  propertyType?: string | null
+  propertyType: string | null
+  subdivisionName: string | null
+  city: string | null
+  listNumber: string | null
   hideCmaRequest?: boolean
   className?: string
 }
@@ -37,8 +45,11 @@ export function LivePricingRead({
   associationFeeFrequency = null,
   taxAnnualAmount = null,
   monthlyRent = null,
-  propertySubType = null,
-  propertyType = null,
+  propertySubType,
+  propertyType,
+  subdivisionName,
+  city,
+  listNumber,
   hideCmaRequest,
   className,
 }: Props) {
@@ -56,6 +67,9 @@ export function LivePricingRead({
     monthlyRent,
     propertySubType,
     propertyType,
+    subdivisionName,
+    city,
+    listNumber,
   }
   if (buildHouseMeRows(facts).length === 0) return null
   return (

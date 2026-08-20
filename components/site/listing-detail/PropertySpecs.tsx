@@ -33,6 +33,11 @@ type Props = {
     | 'propertyAge'
     | 'propertyType'
     | 'propertySubType'
+    // The $/sq ft publisher asks which listing this is: the sub type is one of
+    // three dimensions that decide whether ListPrice buys the whole dwelling.
+    | 'subdivisionName'
+    | 'city'
+    | 'listNumber'
     | 'hoaMonthly'
     | 'associationFee'
     | 'associationFeeFrequency'
@@ -213,14 +218,19 @@ function buildGroups(listing: Props['listing']): Group[] {
 
   // ── Financial ───────────────────────────────────────────────────────────────
   const financial: Spec[] = []
-  const publishedPpsf = publishListingSharePricePerSqft({
+  const ppsfSubject = {
     propertyType: listing.propertyType,
     propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
+  }
+  const publishedPpsf = publishListingSharePricePerSqft({
+    ...ppsfSubject,
     pricePerSqft: listing.pricePerSqft,
   })
   const publishedClosePpsf = publishListingSharePricePerSqft({
-    propertyType: listing.propertyType,
-    propertySubType: listing.propertySubType,
+    ...ppsfSubject,
     pricePerSqft: listing.closePricePerSqft,
   })
   if (num(publishedPpsf))

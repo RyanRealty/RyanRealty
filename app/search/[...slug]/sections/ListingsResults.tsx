@@ -122,6 +122,9 @@ export function ListingsResults({
             // ListPrice, a fractional share buys part of the home).
             propertyType: listing.PropertyType ?? null,
             propertySubType: listing.PropertySubType ?? null,
+            subdivisionName: listing.SubdivisionName ?? null,
+            city: listing.City ?? null,
+            listNumber: listing.ListNumber ?? null,
             badge:
               publishListingStatusBadge(listing.StandardStatus) ??
               (key && priceChangeKeys.has(key) ? { kind: 'drop' as const, label: 'Price drop' } : undefined),

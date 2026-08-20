@@ -10,15 +10,30 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { placeListShowingLabel } from '@/lib/explore/place-list-showing'
 import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
 
+/**
+ * A row publishes an asking price above that dwelling's bed and bath counts, so
+ * it makes the same claim a listing card does and carries the same condition:
+ * a fractional ask publishes only with its share label beside it. The subject
+ * fields are REQUIRED and the label is computed here, never passed in — see
+ * components/site/ListingCard.tsx for the same rule at tile size. Rendered
+ * before this: /cities/camp-sherman printed "$249,000 · 13375 Forest Service
+ * Road · 3 bd · 3 ba" over ten quarter shares at Lake Creek Lodge with the
+ * string "Fractional" nowhere on the page.
+ */
 export type PlaceMapListRow = {
   key: string
   href: string
   title: string
   subtitle?: string | null
   price: number | null
+  propertySubType: string | null
+  subdivisionName: string | null
+  city: string | null
+  listNumber: string | null
   photoUrl?: string | null
   lat?: number | null
   lng?: number | null
@@ -105,6 +120,12 @@ export function PlaceMapListSplit({
               <ul className="m-0 list-none p-0">
                 {list.map((row) => {
                   const selected = activeKey === row.key
+                  const shareKind = publishListingShareKind({
+                    propertySubType: row.propertySubType,
+                    subdivisionName: row.subdivisionName,
+                    city: row.city,
+                    listNumber: row.listNumber,
+                  })
                   return (
                     <li
                       key={row.key}
@@ -143,6 +164,11 @@ export function PlaceMapListSplit({
                           <div className="mono-num text-base font-bold">
                             {formatPublishedAsk(row.price) ?? '—'}
                           </div>
+                          {shareKind ? (
+                            <div style={{ fontSize: '0.72rem', color: 'var(--navy-70)' }}>
+                              {shareKind}
+                            </div>
+                          ) : null}
                           <div className="truncate font-semibold" style={{ fontSize: '0.85rem' }}>
                             {row.title}
                           </div>

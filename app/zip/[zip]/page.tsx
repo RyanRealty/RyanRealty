@@ -42,7 +42,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
-import { listingPriceIsFractionalShare } from '@/lib/listing/publish-listing-figure'
+import { listingIsFractionalInterest } from '@/lib/listing/publish-listing-figure'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -220,7 +220,10 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // 387, 97702 12 of 374, 97730 1 of 16 ($191/sq ft against $204). The count
   // and the days-on-market pool keep every active listing — a fractional
   // interest is real inventory; its price is just not this median's subject.
-  const wholeHomeTiles = tiles.filter((t) => !listingPriceIsFractionalShare(t.propertySubType))
+  // The sub type is not the only dimension: eight Active quarter shares at Lake
+  // Creek Lodge (97730) are filed under sub type "Condominium", so this asks
+  // listingIsFractionalInterest, which reads all three.
+  const wholeHomeTiles = tiles.filter((t) => !listingIsFractionalInterest(t))
   const listPrices = wholeHomeTiles
     .map((t) => t.listPrice)
     .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0)

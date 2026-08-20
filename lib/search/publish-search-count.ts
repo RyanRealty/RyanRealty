@@ -16,7 +16,29 @@
  * "in this map view". All-types and SFR must name their type_scope (R-024).
  */
 
-export type SearchCountGrain = 'filter-match' | 'map-viewport' | 'all-types' | 'sfr'
+/**
+ * `sfr` is the city's active single-family inventory — every class-A row on the
+ * market, fractional interests included, because a share on the market is real
+ * inventory.
+ *
+ * `sfr-whole-home-priced` is the subset a price statistic may be computed over:
+ * the rows whose ListPrice is an asking price for a whole dwelling. It exists
+ * because the two were published on one screen under the SAME caption.
+ * /homes-for-sale/sunriver read "Active single-family homes 122" in the hero
+ * over a price ladder captioned "89 active single-family listings, grouped by
+ * asking price", with band notes reading "% of 89 active single-family
+ * listings". Both counts are right — live listing_tile_mv 2026-08-19, Sunriver,
+ * property_type A, Active or Active Under Contract: 122 rows, 33 of them
+ * fractional by sub type, 89 priced whole homes, 0 unpriced — and one label
+ * over two populations is the §0.5 failure. This grain is why the smaller
+ * number now says which population it counted.
+ */
+export type SearchCountGrain =
+  | 'filter-match'
+  | 'map-viewport'
+  | 'all-types'
+  | 'sfr'
+  | 'sfr-whole-home-priced'
 
 export type PublishedSearchCount = {
   value: number
@@ -40,6 +62,10 @@ export function searchCountCaption(grain: SearchCountGrain, value: number): stri
       return singular ? 'home for sale, all types' : 'homes for sale, all types'
     case 'sfr':
       return singular ? 'active single-family listing' : 'active single-family listings'
+    case 'sfr-whole-home-priced':
+      return singular
+        ? 'active single-family listing priced as a whole home'
+        : 'active single-family listings priced as whole homes'
   }
 }
 

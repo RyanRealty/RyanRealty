@@ -43,13 +43,18 @@ export async function GET(request: Request) {
         // The share card carries no sub-type badge, so it prints the price of
         // the WHOLE property or no price at all. MLS 220190868 is a $1
         // fractional interest at Eagle Crest: the card published a "$1" pill
-        // over "3 bed · 2 bath · 1,405 sq ft".
+        // over "3 bed · 2 bath · 1,405 sq ft". MLS 220222478 is a quarter share
+        // of an 866 sq ft cabin at Lake Creek Lodge: the card published a
+        // "$159,900" pill over "3 bed · 2 bath · 866 sq ft".
         const price =
           publishMoneyText(
             publishWholePropertyAmount({
               price: tile.listPrice,
               propertyType: tile.propertyType,
               propertySubType: tile.propertySubType,
+              subdivisionName: tile.subdivisionName,
+              city: tile.city,
+              listNumber: tile.listNumber,
             }),
             'exact',
           ) ?? ''

@@ -50,11 +50,21 @@ export type HouseMeReportFacts = {
   taxAnnualAmount: number | null
   /** Only a rent figure already on the listing. Never HUD or a 0.5% guess. */
   monthlyRent: number | null
-  /** MLS PropertySubType. Share kinds withhold living-area $/sqft. */
-  propertySubType?: string | null
+  /**
+   * Which listing this is. REQUIRED, not optional: this row divides ListPrice
+   * by the WHOLE dwelling's living area, so it must be able to ask whether the
+   * price buys the dwelling. An optional field reads `undefined` at the call
+   * site that forgets it, which is a guard that always passes. `null` is a
+   * legitimate value; leaving the key out is not.
+   */
+  propertySubType: string | null
   /** MLS PropertyType code (A–H) — 'G' is a lease, where the price field is
    *  rent and no sale-shaped $/sq ft may publish. */
-  propertyType?: string | null
+  propertyType: string | null
+  subdivisionName: string | null
+  listNumber: string | null
+  /** The listing's city, which with the subdivision keys the registry. */
+  city: string | null
 }
 
 function isFiniteNumber(v: number | null | undefined): v is number {
@@ -131,6 +141,9 @@ export function buildHouseMeRows(facts: HouseMeReportFacts): HouseMeRow[] {
     const ppsf = publishListingSharePricePerSqft({
       propertyType: facts.propertyType,
       propertySubType: facts.propertySubType,
+      subdivisionName: facts.subdivisionName,
+      city: facts.city,
+      listNumber: facts.listNumber,
       pricePerSqft: facts.listPrice / facts.sqft,
     })
     if (ppsf != null) {

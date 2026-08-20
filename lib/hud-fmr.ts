@@ -64,8 +64,50 @@ export type AreaRentEstimate = {
 
 /**
  * Area rent estimate for a listing's city + bedroom count, from HUD FMR.
- * Returns null when the city is outside the mapped service area (caller then
- * falls back to its own estimate). Bedrooms clamp to HUD's studio..4BR bands.
+ * Returns null when the city is outside the mapped service area, or when the
+ * feed states no bedroom count. Bedrooms clamp to HUD's studio..4BR bands.
+ *
+ * WHY AN UNSTATED BEDROOM COUNT RETURNS NULL RATHER THAN TWO (2026-08-19).
+ * This function read `bedrooms ?? 2` and then labelled its answer with the
+ * count it had substituted. On a row where the feed states no bedrooms that
+ * printed a fabricated number under a sourced label — verified on the rendered
+ * page /listing/20260403195603425451000000 (MLS 220218536, 57379 Beaver Ridge,
+ * Sunriver): "Estimate $1,667 ($1,500–$1,925) · HUD Fair Market Rent (FY2025),
+ * Deschutes County, 2BR", where $1,667 is exactly the Deschutes 2BR row below
+ * and the feed states no bedrooms, no baths and no living area for that
+ * listing. Everything downstream came off it: "Gross rent $1,667", "Cash flow
+ * $1,054/mo", "Cap rate 71.2%", "Cash on cash 324.3%".
+ *
+ * §0 forbids an estimate without a named basis, and §0.7 decides the null case:
+ * publish no figure.
+ *
+ * THE POPULATION IS NOT ONE PROPERTY CLASS (re-counted 2026-08-19, adversarial
+ * review). RentalAnalysis runs on PropertyType 'A', 'B' and 'C' — isRentalEligible
+ * admits all three — so the rows this rule governs are all three. Live `listings`,
+ * StandardStatus Active or Active Under Contract, rows stating no BedroomsTotal:
+ *   'A'  46 of 4,685
+ *   'B'   5 of 228
+ *   'C' 155 of 155        multi-family; the feed never files a bedroom count here
+ * Counter-query (§0 forbids reporting absence from one query shape), the broad
+ * count by class: rows stating a bedroom count — 'C' 0 of 155.
+ *
+ * 193 of those 206 sit in the section's render window (asking price above zero,
+ * at or under the $2,000,000 luxury suppression, not a fractional interest):
+ * 43 'A', 5 'B', 145 'C'. 57 of the 193 are in a city this file maps to a county,
+ * and those are the rows that published the fabricated HUD label — verified on
+ * the rendered page /listing/20260501203559794588000000 (MLS 220220657, a
+ * $299,900 multi-family in Madras, PropertyType 'C'), which read "Estimate $1,143
+ * ($1,025–$1,325) · HUD Fair Market Rent (FY2025), Jefferson County, 2BR" beside
+ * "Cash flow -$1,022/mo" and "Cap rate 2.3%". The other 136 fell through to
+ * RentalAnalysis's price-ratio rent, which labels itself "starting estimate".
+ *
+ * Living area does not rescue any of them on 'A' or 'B' — all 46 and all 5 state
+ * none — but it does exist on 151 of the 155 'C' rows. They are still withheld:
+ * HUD prices by bedroom count, and a square footage is not a bedroom count.
+ *
+ * A stated zero is a studio and still publishes: three Powder Village Condo
+ * rows in Sunriver (220212529, 220205003, 220213995) carry beds 0 over 392–448
+ * sq ft, and HUD prices a studio.
  */
 export function getAreaRentEstimate(
   city: string | null | undefined,
@@ -75,7 +117,8 @@ export function getAreaRentEstimate(
   if (!fips) return null
   const entry = FMR_BY_FIPS[fips]
   if (!entry) return null
-  const idx = Math.max(0, Math.min(4, Math.round(bedrooms ?? 2)))
+  if (typeof bedrooms !== 'number' || !Number.isFinite(bedrooms) || bedrooms < 0) return null
+  const idx = Math.max(0, Math.min(4, Math.round(bedrooms)))
   const value = entry.rents[idx]
   return {
     value,

@@ -116,7 +116,13 @@ export function PriceCtaStrip({
     propertyType: listing.propertyType,
   })
   const headlinePrice = publishedAsk?.ask ?? null
-  const shareKind = publishListingShareKind(listing.propertySubType)
+  const shareSubject = {
+    propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
+  }
+  const shareKind = publishListingShareKind(shareSubject)
   // The alert this strip points at bands on the whole-home price, so the copy
   // may promise a price band only when one exists. 735 Purcell (a commercial
   // sublease publishing no price) and MLS 220190868 (a $1 fractional interest)
@@ -124,13 +130,13 @@ export function PriceCtaStrip({
   // rent rate and a share.
   const alertBandIsPublished =
     publishWholePropertyAmount({
+      ...shareSubject,
       price: isClosed ? listing.closePrice : listing.listPrice,
       propertyType: listing.propertyType,
-      propertySubType: listing.propertySubType,
     }) != null
   const publishedPpsf = publishListingSharePricePerSqft({
+    ...shareSubject,
     propertyType: listing.propertyType,
-    propertySubType: listing.propertySubType,
     pricePerSqft: listing.pricePerSqft,
   })
   const publishedDrop = isClosed

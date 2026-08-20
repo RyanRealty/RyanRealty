@@ -103,6 +103,17 @@ export function splitRowsFromTiles(
     streetSuffix?: string | null
     city: string | null
     subdivisionName: string | null
+    /**
+     * REQUIRED, not optional. Each row publishes an asking price beside that
+     * dwelling's bed and bath counts, and the split list is the inventory
+     * module on every city, neighborhood and subdivision page. Without the sub
+     * type the row cannot say whether the price buys the dwelling:
+     * /cities/camp-sherman printed "$249,000 · 13375 Forest Service Road · 3 bd
+     * · 3 ba" over ten quarter shares on 2026-08-19 with no label anywhere on
+     * the page. An optional field reads `undefined` at the call site that
+     * forgets it, which is a guard that always passes.
+     */
+    propertySubType: string | null
     photoUrl: string | null
     lat: number | null
     lng: number | null
@@ -131,6 +142,10 @@ export function splitRowsFromTiles(
           .filter(Boolean)
           .join(' · '),
         price: t.listPrice,
+        propertySubType: t.propertySubType,
+        subdivisionName: t.subdivisionName,
+        city: t.city,
+        listNumber: t.listNumber ?? null,
         photoUrl: t.photoUrl,
         lat: t.lat,
         lng: t.lng,

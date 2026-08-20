@@ -56,6 +56,11 @@ function emptyFacts(over: Partial<HouseMeReportFacts> = {}): HouseMeReportFacts 
     associationFeeFrequency: null,
     taxAnnualAmount: null,
     monthlyRent: null,
+    propertyType: null,
+    propertySubType: null,
+    subdivisionName: null,
+    city: null,
+    listNumber: null,
     ...over,
   }
 }

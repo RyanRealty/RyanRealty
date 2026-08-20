@@ -5,7 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { normalizeEmbed } from '@/lib/video-embed'
+import { Badge } from '@/components/ui/badge'
 import type { ListingCardData } from '@/components/site/ListingCard'
 import type { VideoEmbed } from '@/lib/data/types/video'
 
@@ -51,6 +53,15 @@ function toEmbed(norm: NonNullable<ReturnType<typeof normalizeEmbed>>, posterUrl
 export default function VideoListingCard({ listing }: { listing: ListingCardData }) {
   const [playing, setPlaying] = useState(false)
   const ask = formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ?? 'Price not published'
+  // Same rule as ListingCard: a fractional ask publishes only with its share
+  // label beside it, and the label is computed from the subject this card
+  // already carries rather than passed in by a caller that can forget.
+  const shareKind = publishListingShareKind({
+    propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
+  })
 
   // Resolve the tour URL ONCE through the same normalizer the player uses. A
   // null result (no URL) or an 'iframe'/'video-tag' result is playable; a
@@ -65,8 +76,11 @@ export default function VideoListingCard({ listing }: { listing: ListingCardData
       <div className="bg-card rounded-xl overflow-hidden shadow-sm ring-1 ring-foreground/10">
         <ListingVideoEmbed videos={toEmbed(norm, listing.photoUrl)} variant="tour" className="p-3" />
         <div className="px-4 pb-4 pt-1">
-          <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
-            {formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ?? '—'}
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
+              {formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ?? '—'}
+            </span>
+            {shareKind ? <Badge variant="soft-neutral">{shareKind}</Badge> : null}
           </div>
           <Link href={listing.href} className="text-[13px] text-foreground hover:text-primary">
             {listing.addressLine}
@@ -119,8 +133,11 @@ export default function VideoListingCard({ listing }: { listing: ListingCardData
       </div>
 
       <div className="px-4 pt-3.5 pb-4">
-        <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
-          {formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ?? '—'}
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
+            {formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ?? '—'}
+          </span>
+          {shareKind ? <Badge variant="soft-neutral">{shareKind}</Badge> : null}
         </div>
         <div className="text-[13px] text-foreground mt-0.5">{listing.addressLine}</div>
         <div className="text-xs text-muted-foreground mt-px">{listing.cityLine}</div>

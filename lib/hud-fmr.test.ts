@@ -34,8 +34,19 @@ describe('getAreaRentEstimate (HUD FMR)', () => {
     expect(getAreaRentEstimate('Bend', 0)?.label).toContain('studio')
   })
 
-  it('defaults missing bedrooms to 2BR', () => {
-    expect(getAreaRentEstimate('Bend', null)?.value).toBe(1667) // Deschutes 2BR
+  // Was "defaults missing bedrooms to 2BR". That default published a bedroom
+  // count the feed never stated, under the label "HUD Fair Market Rent
+  // (FY2025), Deschutes County, 2BR" — verified on the rendered page for MLS
+  // 220218536, where the $1,667 below became "Gross rent $1,667", a 71.2% cap
+  // rate and a 324.3% cash-on-cash return. 46 live Active class-A rows state no
+  // bedroom count. §0.7: publish no figure.
+  it('publishes nothing when the feed states no bedroom count', () => {
+    expect(getAreaRentEstimate('Bend', null)).toBeNull()
+    expect(getAreaRentEstimate('Bend', undefined)).toBeNull()
+    expect(getAreaRentEstimate('Sunriver', null)).toBeNull()
+    // A stated zero is a studio, which HUD prices — three Powder Village Condo
+    // rows in Sunriver carry beds 0 over 392–448 sq ft.
+    expect(getAreaRentEstimate('Sunriver', 0)?.value).toBe(1285)
   })
 
   it('provides a low/high range around the value', () => {

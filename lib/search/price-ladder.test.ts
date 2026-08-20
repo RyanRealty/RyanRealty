@@ -20,9 +20,17 @@ const PULSE_PUBLISH: CityInventoryPublish = {
   source: 'pulse',
 }
 
+/** Place fields for a tile nowhere near a registered fractional-interest property. */
+const AT_PLACE = {
+  subdivisionName: 'Awbrey Butte' as string | null,
+  city: 'Bend' as string | null,
+  listNumber: '220000000' as string | null,
+}
+
 /** n whole-home tiles at one price. */
 function at(price: number, n: number) {
   return Array.from({ length: n }, () => ({
+    ...AT_PLACE,
     listPrice: price,
     propertySubType: 'Single Family Residence' as string | null,
   }))
@@ -31,6 +39,7 @@ function at(price: number, n: number) {
 /** n fractional-interest tiles at one price. */
 function shares(price: number, n: number) {
   return Array.from({ length: n }, () => ({
+    ...AT_PLACE,
     listPrice: price,
     propertySubType: 'Tenancy in Common' as string | null,
   }))
@@ -59,7 +68,9 @@ describe('buildSearchPriceLadder', () => {
     })
     expect(ladder).not.toBeNull()
     expect(ladder!.title).toBe('227 Bend homes at $600–800K')
-    expect(ladder!.line).toBe('980 active single-family listings, grouped by asking price.')
+    expect(ladder!.line).toBe(
+      '980 active single-family listings priced as whole homes, grouped by asking price.',
+    )
     expect(ladder!.caption).toBe('Bend asking prices')
     expect(ladder!.rows).toHaveLength(7)
     expect(ladder!.rows.map((r) => r.value)).toEqual([77, 194, 227, 105, 172, 112, 93])
@@ -142,7 +153,42 @@ describe('buildSearchPriceLadder', () => {
       tiles: BEND,
       published: TILES_PUBLISH(980),
     })
-    expect(String(ladder!.rows[2]!.note)).toBe('23.2% of 980 active single-family listings')
+    expect(String(ladder!.rows[2]!.note)).toBe(
+      '23.2% of 980 active single-family listings priced as whole homes',
+    )
+  })
+
+  it('never wears the page inventory caption — the Sunriver two-population case', () => {
+    // Live listing_tile_mv 2026-08-19, Sunriver, property_type A, Active or
+    // Active Under Contract: 122 rows, 33 fractional by sub type, 89 priced
+    // whole homes, 0 unpriced. The hero printed "Active single-family homes
+    // 122" while this card printed "89 active single-family listings" and band
+    // notes reading "% of 89 active single-family listings" — one caption over
+    // two populations. Both counts are right; only the label was wrong.
+    const sunriver = [
+      ...at(350_000, 9),
+      ...at(500_000, 20),
+      ...at(700_000, 25),
+      ...at(900_000, 15),
+      ...at(1_200_000, 20),
+      ...shares(120_000, 33),
+    ]
+    const ladder = buildSearchPriceLadder({
+      city: 'Sunriver',
+      tiles: sunriver,
+      published: TILES_PUBLISH(122),
+    })
+    expect(ladder!.rows.reduce((n, r) => n + r.value, 0)).toBe(89)
+    expect(ladder!.line).toBe(
+      '89 active single-family listings priced as whole homes, grouped by asking price.',
+    )
+    // The smaller number may never claim the caption the page's 122 wears.
+    expect(ladder!.line).not.toBe('89 active single-family listings, grouped by asking price.')
+    for (const row of ladder!.rows) {
+      expect(String(row.note)).toContain('of 89 active single-family listings priced as whole homes')
+    }
+    expect(ladder!.source).toContain('89 of 122 rows are banded')
+    expect(ladder!.source).toContain('33 of them price a fractional interest rather than a home')
   })
 
   it('withholds the whole card when the tile fetch was capped or failed', () => {
@@ -183,6 +229,7 @@ describe('buildSearchPriceLadder', () => {
     const withBlanks = [
       ...BEND,
       ...Array.from({ length: 4 }, () => ({
+        ...AT_PLACE,
         listPrice: null,
         propertySubType: 'Single Family Residence' as string | null,
       })),

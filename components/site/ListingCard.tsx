@@ -1,7 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
-import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
+import {
+  publishListingShareKind,
+  publishListingSharePricePerSqft,
+} from '@/lib/listing/publish-listing-share'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -42,6 +45,17 @@ export type ListingCardData = {
    */
   propertyType: string | null
   propertySubType: string | null
+  /**
+   * Where the listing sits. REQUIRED for the same reason as the two above: the
+   * card publishes a price per square foot, and the sub type is not the only
+   * dimension that decides whether ListPrice buys the whole dwelling. Eight
+   * Active quarter shares at Lake Creek Lodge are filed under sub type
+   * "Condominium" and published "$185 /sqft" from a share price over the whole
+   * cabin's area. `null` is a legitimate value; leaving the key out is not.
+   */
+  subdivisionName: string | null
+  city: string | null
+  listNumber: string | null
   badge?: { kind: ListingBadge; label: string }
   /** Scalar virtual-tour / video URL. When present and embeddable, the
    *  VideoListingCard plays it inline; otherwise the card links to detail. */
@@ -99,6 +113,26 @@ function PlayGlyph() {
   )
 }
 
+/**
+ * A CARD MAY NOT SHOW A FRACTIONAL ASK UNLABELLED (decided 2026-08-19).
+ *
+ * The listing page may print "$159,900" only because a share label sits beside
+ * it — that is the whole reason the ask survives publishWholePropertyAmount. A
+ * card makes the identical claim in less space and with less context, so the
+ * same condition governs it. Verified on the rendered pages before this:
+ * /cities/camp-sherman and /homes-for-sale/camp-sherman/lake-creek-lodge both
+ * printed "$249,000 · 13375 Forest Service Road · 3 bd · 3 ba · 1,306 sqft"
+ * over ten quarter shares, and the string "Fractional" appeared nowhere on
+ * either page. The beds, baths and square footage in that meta row describe the
+ * whole cabin; the price does not.
+ *
+ * The label is computed HERE from the subject the card already carries, never
+ * passed in beside `badge`. A caller that can omit it is a caller that will:
+ * `badge` is optional by design, and every surface that forgot it would print a
+ * share ask bare. The photo-overlay badge stays what it is — hot / new / drop /
+ * open — because a share label is not a marketing pill; it qualifies the price,
+ * so it renders against the price.
+ */
 export default function ListingCard({
   listing,
   showPricePerSqft = false,
@@ -111,6 +145,12 @@ export default function ListingCard({
   /** LCP: pass for the first few above-the-fold cards on search results (P7). */
   priority?: boolean
 }) {
+  const shareKind = publishListingShareKind({
+    propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
+  })
   return (
     <Link
       href={listing.href}
@@ -151,9 +191,12 @@ export default function ListingCard({
             Sale-aware: on MLS PropertyType 'G' (Commercial Lease) the price
             field is rent per square foot, so 213 Active lease tiles rendered a
             rent rate as a card ask on the search map and in the results list. */}
-        <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
-          {formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ??
-            '—'}
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
+            {formatPublishedSaleAsk({ price: listing.price, propertyType: listing.propertyType }) ??
+              '—'}
+          </span>
+          {shareKind ? <Badge variant="soft-neutral">{shareKind}</Badge> : null}
         </div>
         <div className="text-[13px] text-foreground mt-0.5">{listing.addressLine}</div>
         <div className="text-xs text-muted-foreground mt-px">{listing.cityLine}</div>
@@ -166,6 +209,9 @@ export default function ListingCard({
               ? publishListingSharePricePerSqft({
                   propertyType: listing.propertyType,
                   propertySubType: listing.propertySubType,
+                  subdivisionName: listing.subdivisionName,
+                  city: listing.city,
+                  listNumber: listing.listNumber,
                   pricePerSqft: listing.pricePerSqft,
                 })
               : null

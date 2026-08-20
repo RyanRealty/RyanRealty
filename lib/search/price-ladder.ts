@@ -27,7 +27,10 @@
  *    predicate, and the row counts.
  */
 
-import { listingPriceIsFractionalShare } from '@/lib/listing/publish-listing-figure'
+import {
+  listingIsFractionalInterest,
+  type FractionalInterestSubject,
+} from '@/lib/listing/publish-listing-figure'
 import { CITY_TILE_FETCH_LIMIT, type CityInventoryPublish } from '@/lib/market/publish-city-inventory'
 import { publishSearchCount } from '@/lib/search/publish-search-count'
 
@@ -103,10 +106,10 @@ export type SearchPriceLadder = {
 }
 
 /**
- * The tile fields this needs. `propertySubType` is REQUIRED so no caller can
- * band a set without saying what is in it — see the fractional note below.
+ * The tile fields this needs. The fractional-interest fields are REQUIRED so no
+ * caller can band a set without saying what is in it — see the note below.
  */
-export type PricedTile = { listPrice?: number | null; propertySubType: string | null }
+export type PricedTile = FractionalInterestSubject & { listPrice?: number | null }
 
 /**
  * A FRACTIONAL INTEREST HAS NO PLACE IN AN ASKING-PRICE BAND (§0). MLS
@@ -114,15 +117,20 @@ export type PricedTile = { listPrice?: number | null; propertySubType: string | 
  * whose ListPrice buys a share of a resort home. Banded as homes they pile
  * into the bottom row: measured live 2026-08-19, Active + Active Under
  * Contract class-A rows under $400K —
- *   Sunriver           42 rows, 33 of them fractional  (9 real homes)
+ *   Sunriver           42 rows, 34 of them fractional  (8 real homes)
  *   Redmond            84 rows, 16 fractional
  *   Bend               77 rows, 12 fractional
  *   Black Butte Ranch   4 rows,  4 fractional          (the band is empty)
  * The Sunriver card's own title is the modal band, so it read "42 Sunriver
- * homes under $400K" off nine.
+ * homes under $400K" off eight.
+ *
+ * The 34th Sunriver row is MLS 220218536 at $19,500, a share the feed files
+ * under no sub type at all; it is a reviewed listing entry in the registry, and
+ * it was the cheapest member of the "Under $400K · 9" band this card published
+ * on 2026-08-19 — a band whose own caption said "priced as whole homes".
  */
 function isWholeHomeTile(tile: PricedTile): boolean {
-  return !listingPriceIsFractionalShare(tile.propertySubType)
+  return !listingIsFractionalInterest(tile)
 }
 
 function usablePrices(tiles: readonly PricedTile[]): number[] {
@@ -196,7 +204,11 @@ export function buildSearchPriceLadder(input: {
   if (!span) return null
 
   const total = prices.length
-  const published = publishSearchCount({ value: total, grain: 'sfr' })
+  // NOT grain 'sfr'. That caption belongs to the page's inventory count, which
+  // is every active class-A row including the fractional interests this ladder
+  // drops. Sunriver printed 122 under that caption in the hero and 89 under the
+  // same caption here. `total` is the banded population and says so.
+  const published = publishSearchCount({ value: total, grain: 'sfr-whole-home-priced' })
   if (!published) return null
 
   const rows: SearchPriceLadderRow[] = []
@@ -232,7 +244,11 @@ export function buildSearchPriceLadder(input: {
   const coverageParts: string[] = []
   if (shareCount > 0) {
     coverageParts.push(
-      `${n(shareCount)} of them price a fractional interest rather than a home (MLS sub type Tenancy in Common or Timeshare) and are not banded.`,
+      `${n(shareCount)} of them price a fractional interest rather than a home and are not banded. ` +
+        'Those are the rows the MLS files under sub type Tenancy in Common or Timeshare, plus the ' +
+        'properties and the single listings recorded as selling interests in the reviewed ' +
+        'fractional-interest registry, each carrying the MLS numbers and the quoted remarks it was ' +
+        'verified from.',
     )
   }
   if (unpriced > 0) {
