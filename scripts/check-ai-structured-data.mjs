@@ -79,11 +79,26 @@ const CHECKS = [
   {
     file: 'app/listing/[listingKey]/page.tsx',
     label: 'listing: RealEstateListing + BreadcrumbList',
-    all: ['MetadataBlock', 'realEstateListing', "type: 'breadcrumb'"],
+    all: ['MetadataBlock', 'buildListingJsonLd'],
     why:
-      'The listing page MUST emit RealEstateListing + BreadcrumbList JSON-LD via\n' +
-      '  MetadataBlock (canonical listingDetailPath, listingShareSummary). The shell is\n' +
-      '  layout-only and must not emit a second payload.',
+      'The listing page MUST emit its JSON-LD via MetadataBlock, built by the canonical\n' +
+      '  buildListingJsonLd shaper beside it. The shell is layout-only and must not emit\n' +
+      '  a second payload. The schema types themselves are asserted on the builder below\n' +
+      '  (the same split this gate already uses for the reviews and reports builders).',
+  },
+  {
+    file: 'app/listing/[listingKey]/listing-json-ld.ts',
+    label: 'listing builder: RealEstateListing + BreadcrumbList payload',
+    all: [
+      "type: 'realEstateListing'",
+      "type: 'breadcrumb'",
+      'listingDetailPath',
+      'listingShareSummary',
+    ],
+    why:
+      'The listing JSON-LD builder MUST emit BOTH schema types on the canonical\n' +
+      '  listingDetailPath URL with the listingShareSummary description — that pair is\n' +
+      '  what an AI assistant reads to cite a Ryan Realty listing.',
   },
   {
     file: 'app/blog/[slug]/page.tsx',
@@ -221,12 +236,14 @@ const CHECKS = [
       '  always advertising a live for-sale price on closed or withdrawn homes.',
   },
   {
-    file: 'app/listing/[listingKey]/page.tsx',
-    label: 'listing page: status field on RealEstateListing',
-    all: ['availability', 'listing.status'],
+    file: 'app/listing/[listingKey]/listing-json-ld.ts',
+    label: 'listing builder: status field on RealEstateListing',
+    all: ['availability', 'listing.status', 'publishedSaleAsk'],
     why:
-      'The listing page MUST pass listing.status to the realEstateListing JSON-LD\n' +
-      '  builder as availability so the Offer node reflects live status.',
+      'The listing JSON-LD builder MUST pass listing.status as availability so the Offer\n' +
+      '  node reflects live status, and MUST take the ALREADY-PUBLISHED sale ask rather\n' +
+      '  than a raw ListPrice — 735 Purcell (MLS 220174840) is a commercial lease and\n' +
+      '  shipped offers.price 2.5 on a SingleFamilyResidence.',
   },
   {
     file: 'app/sell/page.tsx',

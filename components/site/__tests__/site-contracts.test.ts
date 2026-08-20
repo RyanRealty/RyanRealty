@@ -134,8 +134,12 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/<KbFooter\b/)
     expect(src).toMatch(/<KbBreadcrumb\b/)
     expect(src).toMatch(/<MetadataBlock\b/)
-    expect(src).toMatch(/type:\s*'realEstateListing'/)
-    expect(src).toMatch(/type:\s*'breadcrumb'/)
+    // The schema array moved to the sibling builder when the page hit its
+    // file-size budget (2026-08-19). Same two payloads, same MetadataBlock.
+    expect(src).toMatch(/buildListingJsonLd\(/)
+    const ld = readSrc('app/listing/[listingKey]/listing-json-ld.ts')
+    expect(ld).toMatch(/type:\s*'realEstateListing'/)
+    expect(ld).toMatch(/type:\s*'breadcrumb'/)
     expect(src).toMatch(/<KbSectionTracker[\s/>]/)
     expect(src).toMatch(/<ListingLikeThisAlerts\b/)
     expect(src).toMatch(/<PriceCtaStrip\b/)

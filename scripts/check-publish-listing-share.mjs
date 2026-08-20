@@ -70,11 +70,16 @@ checks.push({
 })
 
 const card = src('components/site/ListingCard.tsx')
+// The publisher took (propertySubType, pricePerSqft) positionally until
+// 2026-08-19, when propertyType became a REQUIRED third field: on MLS
+// PropertyType 'G' (Commercial Lease) the price is rent, so a derived $/sq ft is
+// a lease rate wearing a sale label. The card must now hand over BOTH fields.
 checks.push({
-  label: 'ListingCard withholds share ppsf when the tile carries a subtype',
+  label: 'ListingCard withholds share ppsf when the tile carries a subtype or a lease type',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-share['"]/.test(card) &&
-    /publishListingSharePricePerSqft\(listing\.propertySubType/.test(card),
+    /publishListingSharePricePerSqft\(\{[^}]*propertySubType:\s*listing\.propertySubType/s.test(card) &&
+    /publishListingSharePricePerSqft\(\{[^}]*propertyType:\s*listing\.propertyType/s.test(card),
 })
 
 const houseme = src('components/site/listing-detail/HouseMeReport.tsx')

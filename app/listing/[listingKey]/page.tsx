@@ -62,7 +62,7 @@ import ListingMobileContactBar from '@/components/site/listing-detail/ListingMob
 import ListingTracker from '@/components/listing/ListingTracker'
 import { ListingAttribution } from '@/components/listing/ListingAttribution'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import type { SchemaInput } from '@/lib/site/json-ld'
+import { buildListingJsonLd } from './listing-json-ld'
 // KB (kinetic-brutalist) shell — Phase 9 page-class migration. Wraps the
 // existing listing-detail composition (ListingDetailShell + its parity-
 // required sections) in the same chrome the homepage/city/community pages
@@ -500,88 +500,16 @@ export default async function ListingDetailPage({ params }: PageProps) {
     />
   ) : null
 
-  // JSON-LD from the fetched listing only (§0). Photos already honor suppression.
-  // Canonical path matches generateMetadata / sitemap / canonical link.
-  const canonicalSubdivisionForLd =
-    listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
-  const canonicalPath = listingDetailPath(
-    listing.listingKey,
-    {
-      streetNumber: listing.streetNumber,
-      streetName: listing.streetName,
-      city: listing.city,
-      state: null,
-      postalCode: listing.postalCode,
-    },
-    {
-      city: listing.boundaryCity ?? listing.city,
-      neighborhood: listing.boundaryNeighborhood,
-      subdivision: canonicalSubdivisionForLd,
-    },
-    { mlsNumber: listing.listNumber },
-  )
-
-  const listingJsonLdSchemas: SchemaInput[] = [
-    {
-      type: 'breadcrumb',
-      items: [
-        { name: 'Home', url: '/' },
-        { name: 'Homes for sale', url: '/homes-for-sale' },
-        ...(listing.city && listing.citySlug
-          ? [{ name: listing.city, url: `/cities/${listing.citySlug}` }]
-          : []),
-        {
-          name: street || `Listing ${listingKey}`,
-          url: canonicalPath,
-        },
-      ],
-    },
-    {
-      type: 'realEstateListing',
-      name: street
-        ? `${street}, ${listing.city ?? ''}, OR ${listing.postalCode ?? ''}`.trim().replace(/,\s*$/, '')
-        : `Listing ${listingKey}`,
-      description: listingShareSummary({
-        price: publishedSaleAsk,
-        beds: listing.beds,
-        baths: listing.baths,
-        sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
-        address: street || undefined,
-        city: street ? undefined : (listing.city ?? undefined),
-      }) || undefined,
-      url: canonicalPath,
-      address: {
-        street: street || undefined,
-        city: listing.city ?? undefined,
-        state: 'OR',
-        postalCode: listing.postalCode ?? undefined,
-        country: 'US',
-      },
-      geo:
-        listing.lat != null && listing.lng != null
-          ? { lat: listing.lat, lng: listing.lng }
-          : undefined,
-      beds: listing.beds ?? undefined,
-      baths: listing.baths ?? undefined,
-      livingAreaSqft: (listing.sqft ?? listing.totalLivingAreaSqFt) ?? undefined,
-      lotSizeSqft: listing.lotSizeSqft ?? undefined,
-      yearBuilt: listing.yearBuilt ?? undefined,
-      // Structured data is published data. A lease rate must not become
-      // offers.price on a SingleFamilyResidence (735 Purcell shipped 2.5).
-      listPrice: publishedSaleAsk ?? undefined,
-      // Photos: already gated by media_suppressed in getListingPhotos().
-      // Cap at 5 per schema.org convention (matching the builder's own slice).
-      photos: photos.length > 0 ? photos.slice(0, 5).map((p) => p.url) : undefined,
-      listingAgent: ctaBroker
-        ? {
-            name: ctaBroker.fullName,
-            email: ctaBroker.email ?? undefined,
-            telephone: ctaBroker.phoneDirect ?? undefined,
-          }
-        : undefined,
-      availability: listing.status ?? undefined,
-    },
-  ]
+  const listingJsonLdSchemas = buildListingJsonLd({
+    listingKey,
+    street,
+    publishedSaleAsk,
+    listing,
+    photoUrls: photos.map((p) => p.url),
+    agent: ctaBroker
+      ? { fullName: ctaBroker.fullName, email: ctaBroker.email, phoneDirect: ctaBroker.phoneDirect }
+      : null,
+  })
 
   return (
     <main className="kb-root">

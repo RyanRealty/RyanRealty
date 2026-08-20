@@ -27,20 +27,34 @@ checks.push({
 })
 
 const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
+// The H1 moved from publishListingAsk(number) to publishListingSaleAsk({price,
+// propertyType}) on 2026-08-19: MLS PropertyType 'G' is a Commercial Lease, so
+// its ListPrice is rent and there is no sale ask to print. 735 Purcell (MLS
+// 220174840) published an H1 of "$3" off a $2.50/sq ft lease rate. The strip
+// must use the SALE-aware publisher, not the bare one.
 checks.push({
-  label: 'PriceCtaStrip H1 and drop gate through publishListingAsk / Drop + Price exact',
+  label: 'PriceCtaStrip H1 and drop gate through publishListingSaleAsk / Drop + Price exact',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(strip) &&
-    /publishListingAsk\(/.test(strip) &&
+    /publishListingSaleAsk\(\{[^}]*propertyType:/s.test(strip) &&
     /publishListingDrop\(/.test(strip) &&
     strip.includes('<Price value={headlinePrice} exact />') &&
     strip.includes('<Price value={publishedDrop.drop} exact />'),
 })
 
+// The JSON-LD moved into a sibling builder when the page hit its file-size
+// budget. The offer must carry the page's ONE published sale ask — exact whole
+// dollars when there is one, withheld when there is not — never a raw ListPrice
+// that may be a lease rate.
 const page = src('app/listing/[listingKey]/page.tsx')
+const ld = src('app/listing/[listingKey]/listing-json-ld.ts')
 checks.push({
-  label: 'listing JSON-LD offer uses listing.listPrice (exact ask)',
-  ok: /listPrice: listing\.listPrice/.test(page),
+  label: 'listing JSON-LD offer uses the published sale ask (exact, or withheld)',
+  ok:
+    /publishListingSaleAsk\(\{[^}]*propertyType:/s.test(page) &&
+    /publishedSaleAsk,/.test(page) &&
+    /listPrice: publishedSaleAsk \?\? undefined/.test(ld) &&
+    !/listPrice: listing\.listPrice/.test(ld),
 })
 
 const split = src('components/site/explore/PlaceMapListSplit.client.tsx')
