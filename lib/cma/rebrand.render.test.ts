@@ -144,8 +144,8 @@ function argsFor(broker: CmaBroker): RenderCmaArgs {
   }
 }
 
-/** Every figure a seller would price against. */
-const PRICE_STRINGS = ['$715,000', '$705,000', '$735,000', '$690,000', '$740,000']
+/** Seller-facing list figures. Method 1/2/3 and expected close stay off the letter. */
+const PRICE_STRINGS = ['$715,000', '$705,000', '$735,000']
 
 describe('CMA re-brand preserves every figure (render-level, W10.3)', () => {
   const a = renderCmaHtml(argsFor(matt))

@@ -33,6 +33,8 @@
 export interface CompExclusionCounts {
   /** A townhome / condo / manufactured / leased-land / co-op against a detached subject (or vice versa). */
   product_type: number
+  /** Whole bathroom count does not match the subject. */
+  bath_count: number
   /** Acreage vs in-town lot, or outside the acreage band. */
   lot_character: number
   resort_premium: number
@@ -49,7 +51,7 @@ export interface CompExclusionCounts {
 }
 
 export function emptyExclusions(): CompExclusionCounts {
-  return { product_type: 0, lot_character: 0, resort_premium: 0, market_area: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0 }
+  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0 }
 }
 
 export function addExclusions(into: CompExclusionCounts, from: CompExclusionCounts): void {
@@ -57,7 +59,7 @@ export function addExclusions(into: CompExclusionCounts, from: CompExclusionCoun
 }
 
 export function totalExclusions(x: CompExclusionCounts): number {
-  return x.product_type + x.lot_character + x.resort_premium + x.market_area + x.distance + x.duplicate + x.self + x.unusable_row
+  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.distance + x.duplicate + x.self + x.unusable_row
 }
 
 /** One rung of the ladder, whether it ran or was skipped. */
@@ -121,6 +123,7 @@ export interface CompSelectionDiagnostics {
 const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   product_type:
     'they are a different product (a townhome, condo, manufactured home, leased-land or co-op sale does not compete with a detached house)',
+  bath_count: 'they have a different whole bathroom count than the subject',
   lot_character: 'their lot character does not match (acreage against an in-town lot, or far outside the acreage band)',
   resort_premium: 'they sit in a resort community the subject is not in (premium contamination, or the reverse)',
   market_area: "they sit outside the subject's neighborhood boundary",

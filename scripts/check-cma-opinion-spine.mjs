@@ -22,6 +22,12 @@ const PATHS = [
   'lib/cma/market-area-chapters.ts',
   'lib/cma/render-pricing-page.ts',
   'lib/cma/band-rivals.ts',
+  'lib/cma/render-css.ts',
+  'lib/cma/render-css-sections.ts',
+  'lib/cma/immersive-css.ts',
+  'lib/cma/opinion-flyers.ts',
+  'lib/cma/render-blocks.ts',
+  'lib/cma/render-use-of-property.ts',
 ]
 
 const BANNED = [
@@ -29,11 +35,18 @@ const BANNED = [
   { re: /what we would do/i, label: 'what we would do' },
   { re: /not the (whole )?ZIP/i, label: 'not the ZIP' },
   { re: /High confidence|Moderate confidence|Low confidence|Confidence:/, label: 'confidence pill' },
+  { re: /flyer-badge/, label: 'flyer capsule' },
+  { re: /border-radius:\s*999/, label: 'pill radius' },
+  { re: /class="chips"/, label: 'chip row' },
+  { re: /function verdictPill|function pill\(/, label: 'verdict pill helper' },
+  { re: /\.vb-pill|\.num-chip|\.prox-chip/, label: 'chip class' },
 ]
 
 const REQUIRED = [
   { path: 'lib/cma/render.ts', needle: 'assembleOpinionPages' },
+  { path: 'lib/cma/render.ts', needle: 'cover-stage' },
   { path: 'lib/cma/immersive.ts', needle: 'assembleOpinionScenes' },
+  { path: 'lib/cma/immersive.ts', needle: 'immersiveHeroNumberHtml' },
   { path: 'lib/cma/build.ts', needle: "from '@/lib/cma/pricing'" },
   { path: 'lib/cma/build.ts', needle: 'computePricing' },
   { path: 'docs/plans/CMA_PRICE_OPINION_SPINE.md', needle: 'lib/pricing/' },

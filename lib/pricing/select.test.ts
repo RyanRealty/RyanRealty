@@ -95,12 +95,16 @@ describe('matchToCompSelection', () => {
 })
 
 describe('pickCompSource', () => {
-  it('stays on the facts set when facts ran, even if n is under 3', () => {
-    expect(pickCompSource({ factsReady: true, comps: [{}, {}] })).toBe('facts')
-    expect(pickCompSource({ factsReady: true, comps: [] })).toBe('facts')
+  it('stays on facts when facts produced at least 3 sales', () => {
+    expect(pickCompSource({ factsReady: true, comps: [{}, {}, {}] })).toBe('facts')
   })
 
-  it('uses the listings ladder only when facts are not ready', () => {
-    expect(pickCompSource({ factsReady: false, comps: [] })).toBe('listings')
+  it('falls back to listings when facts starve under 3', () => {
+    expect(pickCompSource({ factsReady: true, comps: [{}, {}] })).toBe('listings')
+    expect(pickCompSource({ factsReady: true, comps: [] })).toBe('listings')
+  })
+
+  it('uses the listings ladder when facts are not ready', () => {
+    expect(pickCompSource({ factsReady: false, comps: [{}, {}, {}] })).toBe('listings')
   })
 })

@@ -38,7 +38,7 @@ export function whyPage(input: {
   <h2 class="section">${esc(why.heading)}</h2>
   <p>${esc(why.coverSentence)}</p>
   ${chart ? `<div class="chart-block" data-anim="chart">${chart}</div>` : ''}
-  ${bullets ? `<h3 class="subhead">Reading the two ends of the range</h3><ul class="note-list">${bullets}</ul>` : ''}
+  ${bullets ? `<h3 class="subhead">What the sales adjust to</h3><ul class="note-list">${bullets}</ul>` : ''}
   ${why.market ? `<h3 class="subhead">The market case</h3><p>${esc(why.market)}</p>` : ''}
   ${why.ownership ? `<h3 class="subhead">The ownership case</h3><p>${esc(why.ownership)}</p>` : ''}
   ${why.strategy ? `<h3 class="subhead">How the list was set</h3><p>${esc(why.strategy)}</p>` : ''}

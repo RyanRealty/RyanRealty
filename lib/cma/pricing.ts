@@ -1,9 +1,7 @@
 /**
- * CMA pricing engine — the deterministic version of the producer skill's
- * step 9 methodology:
- *
- *   Market-conditions (time) adjustment on EVERY comp first, using the
- *   verified YoY rate from market_stats_cache (never estimated). Then:
+ * Evidence board for a CMA. Cover sale / list / list-band come from
+ * lib/pricing/estimate.ts (the pricing moat). This file still computes
+ * Method 1 / 2 / 3 as checks and the fallback path when facts are missing.
  *
  *   Method 1 — tiered $/sqft: p25 / p50 / p75 of the comps' time-adjusted
  *              $/sqft applied to the subject's sqft.

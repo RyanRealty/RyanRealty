@@ -120,6 +120,26 @@ export function streetToken(address: string): string | null {
 const EXCLUSION_VERB_RE = /\b(exclud\w*|dropp?ed|removed|omitted|discarded|set aside|disregard\w*|left out|not used|no longer)\b/i
 const RETENTION_VERB_RE = /\b(kept|retain\w*|included|anchor\w*|relied on|form the|carry the)\b/i
 
+/**
+ * Seller notes append the judge narrative to the priced set. If the model
+ * called a kept sale excluded, that sentence cannot print. Treat every priced
+ * address as kept and drop the contradicting sentences.
+ */
+export function alignNarrativeToPricedSet(
+  priced: ReadonlyArray<{ listingKey: string; address: string }>,
+  narrative: string,
+): string {
+  if (!narrative.trim() || priced.length === 0) return narrative
+  const comps = priced.map((c) => ({ listingKey: c.listingKey, address: c.address })) as CmaComp[]
+  const verdictByKey = new Map(
+    priced.map((c) => [c.listingKey, { listingKey: c.listingKey, tier: 'strong' as const, reason: 'priced' }]),
+  )
+  const sentences = splitSentences(narrative)
+  const cleaned = sentences.filter((s) => narrativeMismatches(comps, verdictByKey, s).length === 0)
+  if (cleaned.length === 0) return ''
+  return cleaned.join(' ')
+}
+
 export function splitSentences(text: string): string[] {
   return text
     .split(/(?<=[.!?])\s+/)

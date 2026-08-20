@@ -17,6 +17,7 @@
  */
 
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
+import { bathCountCompatible, productTypeCompatible } from '@/lib/cma/market-area'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CmaSiteData } from '@/lib/cma/county'
@@ -53,8 +54,10 @@ export function evaluateAccuracyContract(args: {
   site?: CmaSiteData | null
   minComps: number
   marketContextPresent: boolean
+  subjectSubType?: string | null
+  subjectBaths?: number | null
 }): AccuracyContract {
-  const { comps, pricing, judgment, audit, site, minComps } = args
+  const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths } = args
   const checks: ContractCheck[] = []
   const now = Date.now()
   const maxAgeMs = COMP_MAX_AGE_MONTHS * 30.44 * 86_400_000
@@ -91,6 +94,30 @@ export function evaluateAccuracyContract(args: {
     severity: 'hard',
     pass: pricing.conservative <= pricing.recommended && pricing.recommended <= pricing.highEnd,
     detail: `Conservative $${pricing.conservative.toLocaleString()} ≤ recommended $${pricing.recommended.toLocaleString()} ≤ high end $${pricing.highEnd.toLocaleString()}.`,
+  })
+  const crossType = comps.find((c) => !productTypeCompatible(subjectSubType ?? null, c.propertySubType))
+  checks.push({
+    id: 'product-type-match',
+    severity: 'hard',
+    pass: subjectSubType == null || !crossType,
+    detail:
+      subjectSubType == null
+        ? 'Subject property type was not stored. Product-type gate skipped.'
+        : crossType
+          ? `Comp ${crossType.address} is ${crossType.propertySubType ?? 'an unknown type'} and cannot price a ${subjectSubType}.`
+          : `Every priced sale is the same property type as the subject (${subjectSubType}).`,
+  })
+  const crossBath = comps.find((c) => !bathCountCompatible(subjectBaths ?? null, c.baths))
+  checks.push({
+    id: 'bath-count-match',
+    severity: 'hard',
+    pass: subjectBaths == null || !crossBath,
+    detail:
+      subjectBaths == null
+        ? 'Subject bathroom count was not stored. Bath-count gate skipped.'
+        : crossBath
+          ? `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath and cannot price a ${subjectBaths}-bath house.`
+          : `Every priced sale has the same whole bathroom count as the subject (${subjectBaths}).`,
   })
   checks.push({
     id: 'dispersion-computed',

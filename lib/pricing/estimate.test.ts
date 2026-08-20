@@ -3,6 +3,7 @@ import { computePricing } from '@/lib/cma/pricing'
 import {
   adjustCompAlongMarket,
   applyEngineRecommendedList,
+  currentListAsk,
   estimateClosePrice,
   listPriceFromEngine,
   predictedCloseFromAdjusted,
@@ -174,7 +175,7 @@ describe('estimateClosePrice n<3', () => {
 
   it('keeps the ask haircut on a listed subject with two sales', () => {
     const out = estimateClosePrice({
-      subject,
+      subject: { ...subject, standardStatus: 'Active' },
       subjectStory: 'one',
       comps: [sale(), sale({ listingKey: 'C2' })],
       compStories: ['one', 'one'],
@@ -186,12 +187,31 @@ describe('estimateClosePrice n<3', () => {
     expect(out.compsImpliedClose).toBeNull()
     expect(out.pricing).toBeNull()
   })
+
+  it('ignores a closed last ask and prices from the sales', () => {
+    const out = estimateClosePrice({
+      subject: { ...subject, standardStatus: 'Closed', lastListPrice: 429_000, sqft: 2000 },
+      subjectStory: 'one',
+      comps: [
+        sale({ sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+        sale({ listingKey: 'C2', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+        sale({ listingKey: 'C3', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+      ],
+      compStories: ['one', 'one', 'one'],
+      points,
+      asOf: '2026-01-15',
+      market: null,
+    })
+    expect(out.predictedClose).toBe(out.compsImpliedClose)
+    expect(out.predictedClose).not.toBe(420_000)
+    expect(out.compsImpliedClose).toBeGreaterThan(0)
+  })
 })
 
 describe('estimateClosePrice compsImpliedClose', () => {
   it('keeps the comps-implied close separate from the ask haircut', () => {
     const out = estimateClosePrice({
-      subject,
+      subject: { ...subject, standardStatus: 'Active' },
       subjectStory: 'one',
       comps: [
         sale({ sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
@@ -209,6 +229,15 @@ describe('estimateClosePrice compsImpliedClose', () => {
     expect(out.predictedClose).toBe(686_000)
     expect(out.compsImpliedClose).toBeGreaterThan(0)
     expect(out.compsImpliedClose).not.toBe(out.predictedClose)
+  })
+})
+
+describe('currentListAsk', () => {
+  it('returns the ask only while the home is on the market', () => {
+    expect(currentListAsk({ lastListPrice: 429_000, standardStatus: 'Closed' })).toBeNull()
+    expect(currentListAsk({ lastListPrice: 429_000, standardStatus: 'Expired' })).toBeNull()
+    expect(currentListAsk({ lastListPrice: 438_000, standardStatus: 'Active' })).toBe(438_000)
+    expect(currentListAsk({ lastListPrice: 438_000, standardStatus: 'Pending' })).toBe(438_000)
   })
 })
 
@@ -267,7 +296,7 @@ describe('listPriceFromEngine is the only cover number', () => {
 
   it('does not use Method 3 as the list price when a last ask exists', () => {
     const out = estimateClosePrice({
-      subject: { ...subject, sqft: 1602, lastListPrice: 505_100 },
+      subject: { ...subject, standardStatus: 'Active', sqft: 1602, lastListPrice: 505_100 },
       subjectStory: 'one',
       comps,
       compStories: ['one', 'one', 'one'],
@@ -283,7 +312,7 @@ describe('listPriceFromEngine is the only cover number', () => {
 
   it('writes the engine list onto the CMA cover and leaves a broker override alone', () => {
     const out = estimateClosePrice({
-      subject: { ...subject, sqft: 1602, lastListPrice: 505_100 },
+      subject: { ...subject, standardStatus: 'Active', sqft: 1602, lastListPrice: 505_100 },
       subjectStory: 'one',
       comps,
       compStories: ['one', 'one', 'one'],
@@ -347,7 +376,7 @@ describe('listPriceFromEngine is the only cover number', () => {
     expect(left.predictedClose).toBe(495_000)
 
     const built = priceCmaSet({
-      subject: { ...subject, sqft: 1602, lastListPrice: 505_100 },
+      subject: { ...subject, standardStatus: 'Active', sqft: 1602, lastListPrice: 505_100 },
       adjusted: overridden
         ? [
             { ppsfTimeAdjusted: 270 },
@@ -383,5 +412,56 @@ describe('listPriceFromEngine is the only cover number', () => {
     expect(built?.recommended).toBe(505_000)
     expect(built?.predictedClose).toBe(495_000)
     expect(built?.method3).not.toBe(505_000)
+  })
+
+  it('off-market cover is sale ÷ sale-to-list, not Method 3, and the list band stays a band', () => {
+    const adjusted = [
+      { ppsfTimeAdjusted: 425 },
+      { ppsfTimeAdjusted: 428 },
+      { ppsfTimeAdjusted: 440 },
+    ]
+    const engine = listPriceFromEngine({
+      subjectSqft: 1056,
+      lastAsk: null,
+      adjusted,
+      saleToAskRatios: [1.18],
+      asOfSaleToOriginal: 0.957,
+      qualitySet: true,
+      methodFallback: 458_000,
+    })
+    expect(engine.source).toBe('comps')
+    expect(engine.predictedClose).toBe(452_000)
+    expect(engine.recommendedList).toBe(472_000)
+    expect(engine.conservativeList).toBeLessThan(engine.recommendedList!)
+    expect(engine.highEndList).toBeGreaterThan(engine.recommendedList!)
+
+    const board = computePricing(
+      { ...subject, standardStatus: 'Closed', sqft: 1056, lastListPrice: 429_000 },
+      adjusted.map((row, i) => ({
+        ...sale({ listingKey: `D${i}` }),
+        monthsSinceClose: 2,
+        timeAdjustment: 0,
+        timeAdjustedPrice: row.ppsfTimeAdjusted * 1056,
+        ppsfTimeAdjusted: row.ppsfTimeAdjusted,
+        sizeAdjustment: 0,
+        adjustedPrice: row.ppsfTimeAdjusted * 1056,
+        weight: 1,
+        listPrice: 490_000,
+        mlsNumber: null,
+        propertySubType: 'Single Family Residence',
+        photoUrl: null,
+        publicRemarks: null,
+        viewDescription: null,
+        taxAnnual: null,
+      })),
+      null,
+    )!
+    const cover = applyEngineRecommendedList(board, engine)
+    expect(cover.recommended).toBe(472_000)
+    expect(cover.predictedClose).toBe(452_000)
+    expect(cover.conservative).toBe(engine.conservativeList)
+    expect(cover.highEnd).toBe(engine.highEndList)
+    expect(cover.highEnd).toBeGreaterThan(cover.recommended)
+    expect(cover.method3).not.toBe(cover.recommended)
   })
 })

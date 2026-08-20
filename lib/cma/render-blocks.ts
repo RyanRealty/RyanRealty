@@ -143,10 +143,10 @@ const VERDICT_LABELS: Record<string, string> = {
 /** Capability first: what the parcel CAN do sorts to the top of every list. */
 const VERDICT_RANK: Record<string, number> = { yes: 0, conditional: 1, confirm: 2, unlikely: 3, no: 4 }
 
-function verdictPill(verdict: string): string {
+export function statusMark(verdict: string): string {
   const label = VERDICT_LABELS[verdict] ?? verdict
   const tone = verdict === 'yes' ? ' is-yes' : verdict === 'no' || verdict === 'unlikely' ? ' is-no' : ''
-  return `<span class="verdict${tone}">${esc(label)}</span>`
+  return `<span class="status-mark${tone}">${esc(label)}</span>`
 }
 
 function byCapability<T extends { verdict: string }>(items: readonly T[]): T[] {
@@ -196,8 +196,10 @@ export function collectHighlights(
 export function zoningExplainerBlock(dev: DevelopmentOpportunities | null | undefined): string {
   const z = dev?.zoningExplainer
   if (!z) return ''
-  const chips = (values: readonly string[]) =>
-    values.length > 0 ? `<div class="chips">${values.map((v) => `<span>${esc(v)}</span>`).join('')}</div>` : ''
+  const useList = (values: readonly string[]) =>
+    values.length > 0
+      ? `<ul class="use-list">${values.map((v) => `<li>${esc(v)}</li>`).join('')}</ul>`
+      : ''
   const dimensional =
     z.dimensional.length > 0
       ? `<h3 class="subhead">The numbers the code sets</h3>
@@ -210,10 +212,10 @@ export function zoningExplainerBlock(dev: DevelopmentOpportunities | null | unde
   <p>${esc(z.purpose)}</p>
   <div class="two-col">
     <div>
-      ${z.permittedOutright.length > 0 ? `<h3 class="subhead">Allowed outright</h3>${chips(z.permittedOutright)}` : ''}
+      ${z.permittedOutright.length > 0 ? `<h3 class="subhead">Allowed outright</h3>${useList(z.permittedOutright)}` : ''}
     </div>
     <div>
-      ${z.conditional.length > 0 ? `<h3 class="subhead">Allowed with a conditional use permit</h3>${chips(z.conditional)}` : ''}
+      ${z.conditional.length > 0 ? `<h3 class="subhead">Allowed with a conditional use permit</h3>${useList(z.conditional)}` : ''}
     </div>
   </div>
   ${dimensional}
@@ -228,7 +230,7 @@ export function developmentItemsBlock(dev: DevelopmentOpportunities | null | und
   return byCapability(dev.items)
     .map(
       (it) => `
-  <h3 class="subhead">${esc(it.topic)} ${verdictPill(it.verdict)}</h3>
+  <h3 class="subhead">${esc(it.topic)} ${statusMark(it.verdict)}</h3>
   <p><strong>${esc(it.headline)}</strong></p>
   <p class="small">${esc(it.detail)}</p>
   ${sourceLine(it.citation, it.url)}`,
@@ -283,7 +285,7 @@ export function rentalTenuresBlock(tenures: RentalPotential['tenures']): string 
   return byCapability(tenures)
     .map(
       (t) => `
-  <h3 class="subhead">${esc(t.tenure)} ${verdictPill(t.verdict)}</h3>
+  <h3 class="subhead">${esc(t.tenure)} ${statusMark(t.verdict)}</h3>
   <p><strong>${esc(t.headline)}</strong></p>
   <p>${esc(t.detail)}</p>
   ${t.requirements.length > 0 ? `<ul class="note-list">${t.requirements.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}

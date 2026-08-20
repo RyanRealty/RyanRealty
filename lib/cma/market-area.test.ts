@@ -15,6 +15,8 @@ import {
   lotCharacterCompatible,
   productClass,
   productTypeCompatible,
+  keepSameProductType,
+  bathCountCompatible,
   marketAreaName,
   proximityLabel,
   resolveMarketArea,
@@ -125,11 +127,40 @@ describe('productTypeCompatible — product-class hard exclusion', () => {
 
   it('keeps like for like', () => {
     expect(productTypeCompatible('Single Family Residence', 'Single Family Residence')).toBe(true)
-    expect(productTypeCompatible('Townhouse', 'Condominium')).toBe(true)
+    expect(productTypeCompatible('Townhouse', 'Townhouse')).toBe(true)
+    expect(productTypeCompatible('Condominium', 'Condominium')).toBe(true)
   })
 
-  it('fails OPEN when either side is unknown, like lotCharacterCompatible', () => {
-    expect(productTypeCompatible(null, 'Townhouse')).toBe(true)
-    expect(productTypeCompatible('Single Family Residence', null)).toBe(true)
+  it('does not treat a townhouse and a condo as the same product', () => {
+    expect(productTypeCompatible('Townhouse', 'Condominium')).toBe(false)
+  })
+
+  it('fails CLOSED when either side is unknown — PropertyType A is not a type', () => {
+    expect(productTypeCompatible(null, 'Townhouse')).toBe(false)
+    expect(productTypeCompatible('Single Family Residence', null)).toBe(false)
+  })
+
+  it('still drops townhomes from a band when the subject type was not stored', () => {
+    expect(keepSameProductType(null, 'Townhouse')).toBe(false)
+    expect(keepSameProductType(null, 'Single Family Residence')).toBe(true)
+  })
+})
+
+describe('bathCountCompatible — same whole-bath count', () => {
+  it('rejects a two-bath sale for a one-bath house', () => {
+    expect(bathCountCompatible(1, 2)).toBe(false)
+    expect(bathCountCompatible(1, 1)).toBe(true)
+    expect(bathCountCompatible(2, 2)).toBe(true)
+  })
+
+  it('treats a half bath as the same whole count', () => {
+    expect(bathCountCompatible(1, 1.5)).toBe(true)
+    expect(bathCountCompatible(2, 2.5)).toBe(true)
+    expect(bathCountCompatible(1, 2.5)).toBe(false)
+  })
+
+  it('fails closed when the sale has no bath count and the subject does', () => {
+    expect(bathCountCompatible(1, null)).toBe(false)
+    expect(bathCountCompatible(null, 2)).toBe(true)
   })
 })

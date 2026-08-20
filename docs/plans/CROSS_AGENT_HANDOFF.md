@@ -2,22 +2,21 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (grok local) — ship-speed PR-3+PR-4
+# Current — 2026-08-19 (grok local) — Sunstone seller CMA
 
-**Surface:** Grok local worktree `/Users/matthewryan/RyanRealty-wt-ship-speed-20260819` (`wt/ship-speed-20260819` → `origin/main`). Loop stays **DISARMED**. Do not re-arm. Leave `LOOP_SENTINEL` off. Dirty CMA branch `cursor/cma-client-document-7fc3` at `~/RyanRealty` was not touched.
+**Surface:** Grok local worktree `/Users/matthewryan/RyanRealty-wt-cma-sunstone-20260819` (`wt/cma-sunstone-20260819`). Loop stays **DISARMED**. Do not re-arm. No send. Dirty CMA branch `cursor/cma-client-document-7fc3` was rebased onto `main` here (CRM health commit `b0e9f537` and `origin-dual-remote` left behind).
 
 **Done**
-- PR-1/PR-2 already on `main` (`dbd671c7` / `05beb235` / `31ba25b0`): skip local `next generate` on push; `.husky` Vercel-skippable; `deploy:verify` SKIP on ignoreCommand CANCELED.
-- PR-3: `scripts/ci-lanes.json` (always/path/nightly/cert). `npm run ci:gates` = always ∪ matching path. Nightly is `node scripts/run-ci-gates.mjs --lane=nightly` in `quality.yml`. GitHub path discovery uses `GITHUB_EVENT_BEFORE...GITHUB_SHA` (empty `@{u}...HEAD` on a push checkout is not “no files”). ≥150 clamp dropped. `ci:gates-wired` treats nightly/cert as wired; chain↔lanes drift fails.
-- PR-4: `lib/build-phase.ts` `skippableRail` on city / community / neighborhood blog+activity+open-houses+amenity. Hero inventory kept. Subdivision inventory not skipped. Open-house section hidden at SSG unless items exist.
+- Matcher: no `PRICING_QUALITY_STOP`. Target 8 / max 10. Townhouse ≠ condo ≠ SFR. Parkway/US-97 and Deschutes sides from `data/cma/bend-divide-sides.json`. Zoning cut when both sides known. GLA bracketing.
+- Seller letter: 16 Sunstone chapters. Cover is list range + recommended list. Expected close off the seller HTML. Gate `ci:cma-exemplar`.
+- Gold house **648 SE Douglas** rebuilt to `out/cma-648-se-douglas/cma.html` (gitignored). 19 pages. Matcher returned 6 sales; judge kept 3. R-068 stays **PARTIAL** until Matt ticks the PDF.
 
 **Next**
-- `npm run push` from this worktree then `deploy:verify` (app+lib → Vercel **will** generate; prerender-only failures go red). Escape: `PUSH_FULL_GENERATE=1`.
-- Remaining SSG cost is lifestyle nearby-homes (~186 pages), plat below-fold, housing-market blog — not this ship.
+- Matt opens the Douglas HTML/PDF and ticks the 16 chapters. Reply "ship it" to move the draft into `public/cmas/` and send. Do not auto-send.
 
-**Do not:** mix CMA dirt. Do not re-arm the loop. Do not SMS, publish, spend, or OAuth. Do not invent a listing.
+**Do not:** re-arm the loop. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not clone Tumalo/Robin as the client layout.
 
-**Skills read:** git-commit, DEVELOPMENT_PROCESS, MECHANICAL_GATES, CROSS_AGENT_HANDOFF.
+**Skills read:** CMA producer SKILL, CMA_SUNSTONE_CONTRACT, TDD, git-commit.
 
 # Prior — 2026-08-19 (cursor-cloud) — CRM compose rebase
 

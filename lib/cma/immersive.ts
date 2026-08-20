@@ -6,7 +6,7 @@
 
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
-import { immersiveAnswerHtml } from '@/lib/cma/cover-value'
+import { immersiveAnswerHtml, immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle } from '@/lib/cma/inbound-packet'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
 import { cleanText } from '@/lib/cma/render-blocks'
@@ -50,7 +50,7 @@ ${immersiveStylesheet()}
 <body>
 <div id="bar"><div class="bt">${esc(s.streetAddress)} · ${esc(s.city)}, OR</div><a href="?print=1">Print report</a><div id="prog"></div></div>
 
-<section class="sc hero" id="top">
+<section class="sc hero on" id="top">
   ${heroImg}
   <div class="hero-scrim" aria-hidden="true"></div>
   <div class="in">
@@ -58,12 +58,14 @@ ${immersiveStylesheet()}
     <h1 class="hero-h">${esc(s.streetAddress)}</h1>
     <div class="hero-sub">${esc(s.city)}, ${esc(s.state)} ${esc(s.postalCode ?? '')}${cleanText(s.subdivision) ? ` · ${esc(cleanText(s.subdivision)!)}` : ''}${specs ? ` · ${esc(specs)}` : ''}</div>
     <div class="hero-for">Prepared for ${esc(a.client.name ?? 'the owner')} by ${esc(a.broker.displayName)}, Ryan Realty</div>
+    ${immersiveHeroNumberHtml(a)}
   </div>
   <div class="cue" aria-hidden="true"></div>
 </section>
 
 <section class="sc sc-cream" id="answer">
   <div class="in">
+    <div class="kick r">The list</div>
     ${immersiveAnswerHtml(a)}
   </div>
 </section>

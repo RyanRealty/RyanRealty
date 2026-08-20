@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coverValueBlockHtml, expectedSale, immersiveAnswerHtml } from '@/lib/cma/cover-value'
+import { coverValueBlockHtml, expectedSale, immersiveAnswerHtml, immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject = {
@@ -41,12 +41,12 @@ describe('expectedSale', () => {
 })
 
 describe('cover and immersive value blocks', () => {
-  it('leads with expected sale, the list range, and the search story', () => {
+  it('leads with recommended list and list range, without expected sale', () => {
     const html = coverValueBlockHtml(args)
-    expect(html).toContain('Expected sale')
-    expect(html).toContain('$495,000')
-    expect(html).toContain('List this home $470,000 to $515,000')
-    expect(html).toContain('Recommended list $505,000')
+    expect(html).toContain('Recommended list')
+    expect(html).toContain('$505,000')
+    expect(html).toContain('List $470,000 to $515,000')
+    expect(html).not.toContain('Expected close')
     expect(html).toContain('opened to 1 mile')
     expect(html).not.toMatch(/[—;]/)
     expect(html).not.toMatch(/confidence|not the ZIP/i)
@@ -58,9 +58,19 @@ describe('cover and immersive value blocks', () => {
       pricing: { ...pricing, predictedClose: null },
       tiersUsed: [],
     })
-    expect(html).toContain('Recommended list price')
+    expect(html).toContain('Recommended list')
     expect(html).toContain('$505,000')
+    expect(html).not.toContain('Expected close')
     expect(html).not.toMatch(/stayed inside/)
+  })
+
+  it('puts the recommended list on the immersive hero payoff', () => {
+    const html = immersiveHeroNumberHtml(args)
+    expect(html).toContain('hero-payoff')
+    expect(html).toContain('Recommended list')
+    expect(html).toContain('$505,000')
+    expect(html).not.toContain('Expected close')
+    expect(html).not.toMatch(/[—;]/)
   })
 
   it('names the comp-supported range when the list sits outside it', () => {

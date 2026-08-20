@@ -7,7 +7,8 @@
  *   HTML render → citations → persist to public.cmas (html_content in the
  *   DB, Vercel-safe) + public.cma_comps.
  *
- * Draft only — Matt reviews at /admin/cmas; nothing is sent automatically.
+ * The result row lands as status 'draft' — Matt reviews at /admin/cmas and
+ * nothing is ever sent automatically.
  */
 
 import {
@@ -18,9 +19,7 @@ import {
   getPricingMarketIndex,
   type CmaCompInsert,
 } from '@/lib/data'
-import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
-import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
-import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
+import { resolveCmaSubject } from '@/lib/cma/subject'
 import { selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
@@ -31,18 +30,21 @@ import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summ
 import { getCmaMarketContext, yearMartCite } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
+import { alignNarrativeToPricedSet } from '@/lib/cma/judge-consistency'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { resolveCmaSiteData } from '@/lib/cma/county'
 import { buildCmaExtras } from '@/lib/cma/extras'
 import { computeEquityPosition } from '@/lib/cma/equity'
 import { buildListingPlan } from '@/lib/cma/listing-plan'
-import { getCmaPriorSaleAtAddress, getCmaSubdivisionHistory, getListingPhotosCount } from '@/lib/data/cma/builderReads'
+import { getCmaPriorSaleAtAddress } from '@/lib/data/cma/builderReads'
 import { buildSubdivisionStory, SUBDIVISION_STORY_YEARS } from '@/lib/cma/subdivision-story'
+import { getCmaSubdivisionHistory } from '@/lib/data/cma/builderReads'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
+import { getListingPhotosCount } from '@/lib/data/cma/builderReads'
 import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import {
@@ -151,7 +153,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       await recordBuildFailure(slug, resolved.trace, { stage: 'subject', docType })
       return { ok: false, error: resolved.trace, slug }
     }
-    const subject = applySubjectFactOverrides({ ...resolved.subject, streetAddress: applySlugStreetDirectional(resolved.subject.streetAddress, slug) }, input.subjectFacts)
+    const subject = resolved.subject
 
     // 2 + 3. Comps, market context, and authoritative site data (zoning / well
     // / septic from county + OWRD records — SKILL §3.5/§3.6) in parallel. Site
@@ -288,10 +290,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       if (p && judgment) {
         const excludedCount = selection.comps.length - set.length
         const weakCount = adj.filter((c) => tierByKey.get(c.listingKey) === 'weak').length
+        const narrative = alignNarrativeToPricedSet(set, judgment.narrative)
         p.notes.push(
           `Comparable review: ${set.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review${
             excludedCount ? `, ${excludedCount} excluded as a different market segment` : ''
-          }${weakCount ? `, ${weakCount} down-weighted to bracket the range` : ''}. ${judgment.narrative}`,
+          }${weakCount ? `, ${weakCount} down-weighted to bracket the range` : ''}.${narrative ? ` ${narrative}` : ''}`,
         )
       }
       return { adj, p }
@@ -472,6 +475,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       site,
       minComps: MIN_COMPS,
       marketContextPresent: market != null,
+      subjectSubType: subject.propertySubType,
+      subjectBaths: subject.baths,
     })
     if (!contract.pass) {
       const failed = contract.checks
@@ -903,7 +908,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const upsert = await upsertCmaRowBySlug({
       slug,
       doc_type: docType,
-      subject_address: formatPersistedCmaAddress({ streetAddress: subject.streetAddress, city: subject.city, postalCode: subject.postalCode, slug }),
+      subject_address: `${subject.streetAddress}, ${subject.city}, OR ${subject.postalCode ?? ''}`.trim(),
       subject_listing_key: subject.listingKey,
       subject_subdivision: subject.subdivision,
       subject_city: subject.city,
@@ -915,8 +920,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       client_name: input.client.name,
       client_email: input.client.email,
       client_phone: input.client.phone,
-      client_notes: applyCmaClientIntent(input.client.notes, isCmaClientIntent(input.clientIntent) ? input.clientIntent : parseCmaClientIntent(input.client.notes)),
-      ...(input.personId && Number.isFinite(input.personId) && input.personId > 0 ? { person_id: Math.round(input.personId) } : {}),
+      client_notes: input.client.notes,
       broker_id: broker.id,
       broker_slug: broker.slug,
       value_low: pricing.valueLow,

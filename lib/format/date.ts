@@ -6,6 +6,7 @@
  * The `ci:date-format` gate ratchets new inline date formatting toward zero.
  */
 const TZ = 'America/Los_Angeles'
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
 
 /** Format a date in the brand timezone. Defaults to "Jun 22, 2026"; override via opts. */
 export function formatDate(
@@ -13,7 +14,14 @@ export function formatDate(
   opts?: Intl.DateTimeFormatOptions,
 ): string {
   if (d == null) return '—'
-  const date = d instanceof Date ? d : new Date(d)
+  // MLS CloseDate and other calendar days are YYYY-MM-DD with no clock.
+  // `new Date('2026-06-25')` is UTC midnight, which is the prior day in Pacific.
+  const date =
+    typeof d === 'string' && DATE_ONLY.test(d.trim())
+      ? new Date(`${d.trim()}T12:00:00.000Z`)
+      : d instanceof Date
+        ? d
+        : new Date(d)
   if (Number.isNaN(date.getTime())) return '—'
   return new Intl.DateTimeFormat('en-US', {
     timeZone: TZ,
@@ -29,8 +37,6 @@ export function formatDateTime(d: string | number | Date | null | undefined): st
   return formatDate(d, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-const CALENDAR_YMD = /^(\d{4})-(\d{2})-(\d{2})$/
-
 /**
  * Format a YYYY-MM-DD calendar day without treating it as UTC midnight.
  * `new Date('2026-08-18')` is 00:00Z, which is the prior Pacific evening.
@@ -43,12 +49,11 @@ export function formatCalendarDay(
   if (ymd == null) return ''
   const trimmed = String(ymd).trim()
   if (!trimmed) return ''
-  const match = trimmed.match(CALENDAR_YMD)
-  if (!match) {
+  if (!DATE_ONLY.test(trimmed)) {
     const formatted = formatDate(trimmed, opts)
     return formatted === '—' ? '' : formatted
   }
-  return formatDate(`${match[1]}-${match[2]}-${match[3]}T12:00:00Z`, opts)
+  return formatDate(`${trimmed}T12:00:00Z`, opts)
 }
 
 /**

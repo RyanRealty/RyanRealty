@@ -45,7 +45,7 @@ const market = {
 } as CmaMarketContext
 
 describe('pricingPage', () => {
-  it('leads with the number, then how the matcher works, then the tiers', () => {
+  it('leads with one list sentence, then how the matcher works', () => {
     const page = pricingPage({
       subject,
       comps,
@@ -57,8 +57,7 @@ describe('pricingPage', () => {
     const html = page.body
     expect(html).toContain('How this home is priced')
     expect(html).toContain('How we priced this')
-    expect(html).toContain('Expected sale')
-    expect(html).toContain('$640,000')
+    expect(html).not.toContain('Expected close')
     expect(html).toContain('$655,000')
     expect(html).toContain('We stayed inside the Cascade Vista subdivision')
     expect(html).toContain('The close is the contract price.')
@@ -73,7 +72,16 @@ describe('pricingPage', () => {
     expect(html).toContain('3344 SW Cascade Vista')
     expect(html).toContain('$636,000')
     expect(html).toContain('Recommended list')
-    expect(html).toContain('The three checks')
+    expect(html).toContain('List low')
+    expect(html).toContain('List high')
+    expect(html).toContain('List $639,000 to $669,000. Recommended list $655,000')
+    expect(html).toContain('per square foot')
+    expect(html).not.toContain('Expected close $640,000.')
+    expect(html).not.toContain('The three checks')
+    expect(html).not.toContain('Quick-sale')
+    expect(html).not.toContain('Conservative')
+    expect(html).not.toMatch(/anchors the recommendation/)
+    expect(html).not.toContain('a check against the expected close, not the list')
     expect(html).not.toContain('Method 1 ·')
     expect(html.replace(/&[a-zA-Z]+;/g, '')).not.toMatch(/[—;]/)
   })

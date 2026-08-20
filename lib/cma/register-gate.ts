@@ -115,7 +115,7 @@ export function renderRegisterShell(params: { slug: string; address: string | nu
     <ul class="benefits">
       <li>The recommended list for ${addr}, and why</li>
       <li>Who you are competing with at that price</li>
-      <li>The three sales that set the number</li>
+      <li>The sales that set the number</li>
     </ul>
     <a class="cta" href="${startHref}"><span class="g">G</span> Continue with Google</a>
     ${params.clientName ? `<p class="who">Prepared for ${escapeHtml(params.clientName)}. Sign in to confirm it is you.</p>` : ''}

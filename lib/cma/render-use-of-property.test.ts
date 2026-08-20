@@ -115,6 +115,8 @@ describe('propertyUsePage', () => {
     expect(html).toContain('Cited income figures')
     expect(html).toContain('ORS 320.305')
     expect(html).not.toContain('This land-use line is shown under Rent, not Build.')
+    expect(html).toContain('class="status-mark')
+    expect(html).not.toMatch(/class="verdict|class="chips"|flyer-badge/)
     expect(html.replace(/&[a-zA-Z]+;/g, '')).not.toMatch(/[—;]/)
   })
 })

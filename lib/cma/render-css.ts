@@ -1,11 +1,13 @@
 /**
- * Inline stylesheet for the deterministic CMA renderer — cloned from the
- * canonical exemplar (public/drafts/cma-21042-robin/cma.html): brutalist navy
- * #102742 on cream #faf8f4 editorial, letter-size pages, print-safe.
+ * Inline stylesheet for the deterministic CMA renderer. Client chapters:
+ * docs/plans/CMA_SUNSTONE_CONTRACT.md. Navy #102742 on cream #faf8f4,
+ * letter-size pages, print-safe. Do not clone Robin or Tumalo HTML.
  *
  * The Amboqia display font and brand assets load from absolute site URLs so
  * the stored HTML is self-contained in the browser, the admin iframe, and the
  * puppeteer PDF render.
+ *
+ * Letter register: cream stock, navy type, hairline rules. No capsules.
  */
 
 import { cmaSectionStyles } from '@/lib/cma/render-css-sections'
@@ -32,13 +34,11 @@ export function cmaStylesheet(siteUrl: string): string {
   }
 
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  img { border-radius: 0; }
 
   html, body {
     margin: 0;
     padding: 0;
-    background: var(--cream);
-    border-radius: 0;
+    background: #e8e3d8;
     font-family: 'Geist', system-ui, -apple-system, sans-serif;
     color: var(--navy);
     font-variant-numeric: tabular-nums;
@@ -60,28 +60,40 @@ export function cmaStylesheet(siteUrl: string): string {
   .page {
     background: var(--cream);
     position: relative;
-    border-radius: 0;
-    break-before: page;
-    page-break-before: always;
+    break-before: auto;
+    page-break-before: auto;
   }
-  .page:first-child { break-before: auto; page-break-before: auto; }
+  .page-cover { break-after: page; page-break-after: always; }
+  .page-flyer { break-before: page; page-break-before: always; }
 
   @media screen {
-    /* Web is a page, not a floating letter on a desk. Print takes its box from @page. */
-    html, body { background: var(--cream); border-radius: 0; }
+    /* Screen only: show sheets on a desk. Print takes its box from @page. */
     .page {
-      width: 100%;
-      max-width: 8.5in;
+      width: 8.5in;
       min-height: 0;
-      margin: 0 auto;
-      padding: 28px 24px 40px;
-      box-shadow: none;
-      border-radius: 0;
+      margin: 0.4in auto;
+      padding: 0.4in 0.6in 0.7in 0.6in;
+      box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
     }
+    .page.page-cover { padding: 0; }
+    .cover-stage { min-height: 11in; }
   }
 
   @media screen and (max-width: 700px) {
-    .page { padding: 20px 16px 32px; }
+    html, body { background: var(--cream); }
+    .page {
+      width: 100%;
+      min-height: 0;
+      margin: 0;
+      padding: 20px 16px 32px;
+      box-shadow: none;
+    }
+    .page.page-cover { padding: 0; }
+    .cover-stage { min-height: 100svh; }
+    .cover-title { font-size: 36px; }
+    .cover-mast { top: 20px; left: 18px; right: 18px; }
+    .page-cover .value-block { padding: 20px 18px 24px; }
+    .value-block .vb-price { font-size: 44px; }
   }
 
   .pg-header {
@@ -136,43 +148,101 @@ export function cmaStylesheet(siteUrl: string): string {
   p { font-size: 11px; line-height: 1.45; margin: 0 0 6px 0; }
   .small { font-size: 10px; color: var(--muted); line-height: 1.45; }
 
+  /* Magazine cover: the house is the page. The number sits on the photo. */
+  .page.page-cover {
+    padding: 0;
+  }
+  .cover-stage {
+    position: relative;
+    min-height: 9.9in;
+    background: var(--navy);
+    overflow: hidden;
+  }
+  .cover-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      180deg,
+      rgba(16, 39, 66, 0.58) 0%,
+      rgba(16, 39, 66, 0.12) 38%,
+      rgba(16, 39, 66, 0.82) 100%
+    );
+  }
+  .cover-mast {
+    position: absolute;
+    top: 32px;
+    left: 36px;
+    right: 36px;
+    z-index: 2;
+  }
   .cover-label {
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.20em;
     text-transform: uppercase;
-    color: var(--muted);
+    color: rgba(250, 248, 244, 0.78);
     margin-bottom: 12px;
   }
   .cover-title {
     font-family: 'Amboqia Boriango', Georgia, serif;
     font-size: 52px;
     line-height: 0.95;
-    color: var(--navy);
-    margin: 0 0 6px 0;
+    color: var(--cream);
+    margin: 0 0 8px 0;
   }
   .cover-sub {
     font-size: 16px;
-    color: var(--navy);
+    color: rgba(250, 248, 244, 0.88);
     font-weight: 400;
-    margin-bottom: 18px;
+    margin: 0;
   }
 
   .hero-photo {
+    position: absolute;
+    inset: 0;
     width: 100%;
-    height: 280px;
+    height: 100%;
     object-fit: cover;
-    object-position: center;
+    object-position: center 40%;
     border-radius: 0;
-    overflow: hidden;
-    background: var(--navy-fill);
-    margin-bottom: 6px;
+    background: var(--navy);
+    margin: 0;
     display: block;
   }
   .hero-caption {
-    font-size: 9.5px;
-    color: var(--muted);
+    font-size: 9px;
+    color: rgba(250, 248, 244, 0.52);
     letter-spacing: 0.06em;
-    margin-bottom: 16px;
+    margin: 10px 0 0 0;
+  }
+
+  .page-cover .value-block {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    margin: 0;
+    background: transparent;
+    padding: 28px 36px 32px;
+    border-radius: 0;
+  }
+  .page-cover .vb-detail { display: none; }
+  .page-cover .vb-range {
+    max-width: 36em;
+  }
+  .cover-specs {
+    margin: 14px 0 0 0;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: rgba(250, 248, 244, 0.78);
+  }
+  .cover-presented {
+    margin: 8px 0 0 0;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(250, 248, 244, 0.62);
   }
 
   .value-block {
@@ -199,21 +269,10 @@ export function cmaStylesheet(siteUrl: string): string {
      largest element on the page. */
   .value-block .vb-price {
     font-family: 'Amboqia Boriango', Georgia, serif;
-    font-size: 58px;
+    font-size: 72px;
     line-height: 0.92;
     color: var(--cream);
     margin: 0;
-  }
-  .value-block .vb-pill {
-    flex-shrink: 0;
-    border: 1px solid rgba(250, 248, 244, 0.45);
-    border-radius: 999px;
-    padding: 5px 13px;
-    font-size: 9.5px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--cream);
-    white-space: nowrap;
   }
   .value-block .vb-range {
     margin-top: 12px;
@@ -279,8 +338,6 @@ export function cmaStylesheet(siteUrl: string): string {
     font-size: 9px;
     margin-top: 4px;
   }
-  table.comps col.comp { width: 34%; }
-  table.comps col.num { width: 13.2%; }
   table.comps thead th {
     text-align: left;
     font-weight: 600;
@@ -313,7 +370,7 @@ export function cmaStylesheet(siteUrl: string): string {
     border: 1px solid var(--navy-line);
     border-radius: 0;
     overflow: hidden;
-    background: white;
+    background: var(--cream);
   }
   .comp-card .ph-wrap { position: relative; }
   .comp-card .ph {
@@ -325,43 +382,12 @@ export function cmaStylesheet(siteUrl: string): string {
   }
   /* Proximity is the answer to "why these comps" — it reads on the card, not
      buried in a run-on stats line (comp rework 2026-07-30). */
-  .comp-card .num-chip {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    width: 17px;
-    height: 17px;
-    border-radius: 50%;
-    background: var(--navy);
-    color: var(--cream);
-    font-size: 9px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .comp-card .prox-chip {
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
-    background: var(--navy);
-    color: var(--cream);
-    font-size: 7.5px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    border-radius: 999px;
-  }
   .comp-card .area-tag {
     margin-top: 3px;
     font-size: 7.5px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--navy);
-    background: var(--navy-fill);
-    border-radius: 3px;
-    padding: 2px 5px;
-    display: inline-block;
+    color: var(--muted);
   }
   .comp-card .ph-missing {
     width: 100%;
@@ -411,7 +437,7 @@ export function cmaStylesheet(siteUrl: string): string {
     border: 1px solid var(--navy-line);
     border-radius: 0;
     padding: 16px 14px;
-    background: white;
+    background: var(--cream);
   }
   .tier.featured { background: var(--navy); color: var(--cream); border-color: var(--navy); }
   .tier .t-lbl {
@@ -481,7 +507,7 @@ export function cmaStylesheet(siteUrl: string): string {
     text-decoration: none;
     padding: 13px 22px;
     border: 1px solid var(--navy);
-    border-radius: 10px;
+    border-radius: 0;
   }
   .cta-actions a.ghost { background: transparent; color: var(--navy); }
   .cta-reply-note { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.6; }

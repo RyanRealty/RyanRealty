@@ -68,6 +68,7 @@ export interface CmaComp {
   /** MLS property_sub_type — drives product-class comparability. */
   propertySubType: string | null
   yearBuilt: number | null
+  garageSpaces?: number | null
   photoUrl: string | null
   publicRemarks: string | null
   viewDescription: string | null
@@ -160,7 +161,7 @@ export interface CmaPricing {
   highEnd: number
   valueLow: number
   valueHigh: number
-  /** Engine close. Listed = last ask × 0.98. Unlisted = comps $/sf × GLA. */
+  /** Moat close. Live listing = current ask × 0.98. Off-market = comps $/sf × GLA. */
   predictedClose?: number | null
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
@@ -239,12 +240,6 @@ export interface CmaBuildInput {
   /** cma = standard seller CMA; expired-audit = expired-listing audit (failure
    *  analysis + services + 2.5% net sheet). Same engine, tailored output. */
   docType?: 'cma' | 'expired-audit'
-  /** Native crm_people.id. Persisted on upsert so rebuild cannot drop the link. */
-  personId?: number | null
-  /** Broker-entered facts when MLS is blank or the seller corrected them. */
-  subjectFacts?: { beds?: number | null; baths?: number | null; sqft?: number | null } | null
-  /** Rent-vs-sell. Stored on client_notes as `Intent: sell|rent|both`. */
-  clientIntent?: 'sell' | 'rent' | 'both' | null
 }
 
 export interface CmaBuildResult {

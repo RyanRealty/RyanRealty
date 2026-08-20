@@ -110,7 +110,7 @@
 | R-065 | Closed sales: ClosePrice COALESCE chain; percentile_cont medians; CloseDate windows; SFR convention | data-architecture §1 | LOCKED | — |
 | R-066 | ClosePrice is contract price; seller concessions deduct before commission math | seller net 2026-08-14 | VERIFIED | — |
 | R-067 | Deterministic narratives from cache; no LLM-invented figures; decade archive aggregates cache | DECISIONS-RECORDED §28/§29 | VERIFIED | — |
-| R-068 | CMA beats a real RPR packet: community market not ZIP, closed sales only, no AVM | CMA canon 2026-08-14 | VERIFIED | — |
+| R-068 | Client CMA follows the Sunstone RPR chapter contract (docs/plans/CMA_SUNSTONE_CONTRACT.md + docs/plans/cma-exemplars/56628-sunstone-rpr.pdf): 16 chapters, community market not ZIP, closed sales only, no AVM, no clone of Tumalo/Robin | CMA canon 2026-08-14 | PARTIAL | G16. Gate `ci:cma-exemplar`. VERIFIED only when a rebuilt PDF ticks all 16 chapters. |
 | R-069 | Comp selection: market-area first; product type must match; hard geo exclusions (Parkway/river, zoning, lot character); distance+direction recorded in citations | PROSPECT_TO_CMA; pricing audit 2026-08-14 | PARTIAL | G16 |
 | R-070 | One pricing engine across CMA, BPO, expired-audit; one adjustment contract; matcher rolled into one public product | PROSPECT_TO_CMA; 2026-08-14 | PARTIAL | G16 |
 | R-071 | Pricing guardrails: mapped vs unmapped are different markets; tight-GLA quality stop; 15% same-neighborhood $/sqft cut; one-acre not rural in named cities | pricing audit 2026-08-14 | VERIFIED | — |

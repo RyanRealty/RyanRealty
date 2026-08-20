@@ -35,9 +35,17 @@ import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 
 export function cmaSubjectToPricing(
   subject: CmaSubject,
-  extras: { waterRaw?: unknown; sewerRaw?: unknown; levelsRaw?: unknown; storyClass?: StoryClass } = {},
+  extras: {
+    waterRaw?: unknown
+    sewerRaw?: unknown
+    levelsRaw?: unknown
+    storyClass?: StoryClass
+    zoning?: string | null
+  } = {},
 ): PricingSubject {
   const area = resolveMarketArea(subject.latitude, subject.longitude)
+  const zoningFromSubject =
+    'zoning' in subject ? (subject as CmaSubject & { zoning?: string | null }).zoning : undefined
   return {
     listingKey: subject.listingKey,
     streetAddress: subject.streetAddress,
@@ -61,6 +69,7 @@ export function cmaSubjectToPricing(
     ruralAcreage: isRuralAcreage(subject, area),
     marketArea: area,
     newConstruction: subject.newConstructionYn ?? null,
+    zoning: extras.zoning ?? zoningFromSubject ?? null,
   }
 }
 
@@ -118,7 +127,14 @@ export async function selectPricingComps(
   ])
   const byKey = new Map(pool.map((s) => [s.listingKey, s]))
   for (const s of ruralPool) if (!byKey.has(s.listingKey)) byKey.set(s.listingKey, s)
-  const walked = walkPricingLadder(pricingSubject, [...byKey.values()], { asOf, cells })
+  const walked = walkPricingLadder(
+    pricingSubject,
+    [...byKey.values()].map((s) => ({
+      ...s,
+      marketArea: s.marketArea ?? resolveMarketArea(s.latitude, s.longitude),
+    })),
+    { asOf, cells },
+  )
   return { ...walked, factsReady: true }
 }
 
@@ -209,9 +225,11 @@ export function matchToCompSelection(
   }
 }
 
-/** Facts ran → stay on facts even when n is 0–2. CMA build already fails below 3. */
+/** Facts win when they produced a priceable set. Under 3 sales, use the listings ladder. */
 export function pickCompSource(match: { factsReady: boolean; comps?: unknown[] }): 'facts' | 'listings' {
-  return match.factsReady ? 'facts' : 'listings'
+  const n = match.comps?.length ?? 0
+  if (match.factsReady && n >= 3) return 'facts'
+  return 'listings'
 }
 
 export async function selectCompsPreferringFacts(subject: CmaSubject): Promise<CompSelection> {

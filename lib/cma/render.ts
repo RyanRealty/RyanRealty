@@ -1,7 +1,7 @@
 /**
  * Deterministic CMA HTML renderer — multi-page letter-format document.
- * Price-opinion spine: cover number, then why, rivals, three sales, subdivision,
- * wider-market charts. Same chapters as the immersive view.
+ * Sunstone spine: cover, subject snapshot, facts, then market and comps.
+ * Conditional legal, photos, permits, and seller-net omit when unknown.
  */
 
 import { cmaStylesheet } from '@/lib/cma/render-css'
@@ -78,11 +78,19 @@ interface PageDef {
   meta: string
   body: string
   toc?: string
+  cover?: boolean
+  flyer?: boolean
 }
 
 function wrapPage(page: PageDef): string {
+  if (page.cover) {
+    return `
+<section class="page page-cover">
+  ${page.body}
+</section>`
+  }
   return `
-<section class="page">
+<section class="page${page.flyer ? ' page-flyer' : ''}">
   <header class="pg-header">
     <img src="${SITE_URL}/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
     <div class="pg-meta">${page.meta}</div>
@@ -103,52 +111,56 @@ function heroForSubject(subject: CmaSubject): { src: string | null; caption: str
   return { src: null, caption: 'No MLS photo on file for the subject.' }
 }
 
-function subjectStatStrip(subject: CmaSubject): string {
-  const view = formatClientMlsField(subject.viewDescription)
-  return `
-  <div class="stat-strip">
-    <div class="stat"><div class="lbl">Beds</div><div class="val">${int(subject.beds)}</div></div>
-    <div class="stat"><div class="lbl">Baths</div><div class="val">${dec(subject.baths, subject.baths != null && subject.baths % 1 !== 0 ? 1 : 0)}</div></div>
-    <div class="stat"><div class="lbl">Living Sqft</div><div class="val">${int(subject.sqft)}</div></div>
-    <div class="stat"><div class="lbl">Lot</div><div class="val">${subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} ac` : '—'}</div></div>
-    <div class="stat"><div class="lbl">Year Built</div><div class="val">${subject.yearBuilt ?? '—'}</div></div>
-    ${view ? `<div class="stat"><div class="lbl">View</div><div class="val">${esc(view)}</div></div>` : ''}
-  </div>`
+function coverSpecsLine(subject: CmaSubject): string {
+  const baths =
+    subject.baths == null
+      ? null
+      : subject.baths === 1
+        ? '1 bath'
+        : `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} baths`
+  return [
+    subject.beds != null ? `${subject.beds} bedrooms` : null,
+    baths,
+    subject.sqft != null ? `${int(subject.sqft)} sq ft` : null,
+    cleanText(subject.subdivision),
+    subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,
+    subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} acre lot` : null,
+    formatClientMlsField(subject.viewDescription),
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 function coverPage(a: RenderCmaArgs): PageDef {
   const hero = heroForSubject(a.subject)
-  const docLabel = 'Comparative Market Analysis'
-  const clientLine = a.client.name ? `Prepared for ${esc(a.client.name)}` : docLabel
+  const specs = coverSpecsLine(a.subject)
+  const prepared = [
+    a.client.name ? `Prepared for ${a.client.name}` : null,
+    `Presented by ${a.broker.displayName}`,
+    a.broker.title,
+    a.broker.phone ? dottedPhone(a.broker.phone) ?? a.broker.phone : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   return {
-    meta: `${docLabel} · ${dateLong(a.generatedAtIso)}`,
+    cover: true,
+    meta: `Comparative Market Analysis · ${dateLong(a.generatedAtIso)}`,
     body: `
-  <div class="cover-label">${clientLine}</div>
-  <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
-  <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}${cleanText(a.subject.subdivision) ? ` · ${esc(cleanText(a.subject.subdivision)!)}` : ''}<br/>${esc(composeInboundCoverLine(a.subject.streetAddress))}</div>
-  ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
-  <div class="hero-caption">${esc(hero.caption)}</div>
-  <div class="value-block">
-    ${coverValueBlockHtml(a)}
-  </div>
-  ${subjectStatStrip(a.subject)}
-  <div class="presented-by">
-    Presented by <strong>${esc(a.broker.displayName)}</strong> · ${esc(a.broker.title)} · Ryan Realty${a.broker.phone ? ` · ${esc(a.broker.phone)}` : ''}
+  <div class="cover-stage">
+    ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
+    <div class="cover-veil" aria-hidden="true"></div>
+    <div class="cover-mast">
+      <div class="cover-label">Comparative Market Analysis</div>
+      <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
+      <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}<br/>${esc(composeInboundCoverLine(a.subject.streetAddress))}</div>
+    </div>
+    <div class="value-block">
+      ${coverValueBlockHtml(a)}
+      ${specs ? `<p class="cover-specs">${esc(specs)}</p>` : ''}
+      <p class="cover-presented">${esc(prepared)}</p>
+      <p class="hero-caption">${esc(hero.caption)}</p>
+    </div>
   </div>`,
-  }
-}
-
-function contentsPage(rest: PageDef[], a: RenderCmaArgs): PageDef {
-  const rows = rest
-    .map((p, i) => ({ label: p.toc, page: i + 3 }))
-    .filter((e): e is { label: string; page: number } => Boolean(e.label))
-    .map((e) => `<li><span class="t">${esc(e.label)}</span><span class="d"></span><span class="p">${e.page}</span></li>`)
-    .join('')
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Contents`,
-    body: `
-  <h2 class="section">Contents</h2>
-  <ol class="toc">${rows}</ol>`,
   }
 }
 
@@ -209,6 +221,17 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
   }
 }
 
+function closingPage(a: RenderCmaArgs): PageDef {
+  const disclosure = disclosurePage(a)
+  const next = nextStepPage(a)
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Disclosure`,
+    toc: 'Disclosure and next step',
+    body: `${disclosure.body}
+  ${next.body}`,
+  }
+}
+
 function disclosurePage(a: RenderCmaArgs): PageDef {
   const b = a.broker
   const headshot = b.photoUrl ? (b.photoUrl.startsWith('http') ? b.photoUrl : `${SITE_URL}${b.photoUrl}`) : null
@@ -246,10 +269,9 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   rest.push(...assembleOpinionPages(a))
   const lastListing = expiredAuditPage(a)
   if (lastListing) rest.push(lastListing)
-  rest.push(disclosurePage(a))
-  rest.push(nextStepPage(a))
+  rest.push(closingPage(a))
 
-  const pages: PageDef[] = [coverPage(a), contentsPage(rest, a), ...rest]
+  const pages: PageDef[] = [coverPage(a), ...rest]
   const body = pages.map((p) => wrapPage(p)).join('\n')
   const html = `<!DOCTYPE html>
 <html lang="en">

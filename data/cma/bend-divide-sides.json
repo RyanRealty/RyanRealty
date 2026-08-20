@@ -1,0 +1,54 @@
+{
+  "note": "A5 neighbor-pair table. Centroids from data/bend/bend-neighborhood-polygons.json. Parkway/US-97 ~ lng -121.31. Deschutes west bank vs east bank. Same-side only; unknown fails open.",
+  "parkwayWest": [
+    "tree-farm",
+    "seventh-mountain",
+    "westgate",
+    "broken-top",
+    "deschutes-river-woods",
+    "tetherow",
+    "bend-summit-west",
+    "bend-century-west",
+    "river-bend-estates",
+    "bend-southwest-bend",
+    "bend-awbrey-butte",
+    "bend-river-west",
+    "bend-southern-crossing",
+    "bend-old-bend"
+  ],
+  "parkwayEast": [
+    "bend-southeast-bend",
+    "woodside-ranch",
+    "bend-orchard-district",
+    "bend-boyd-acres",
+    "bend-old-farm-district",
+    "bend-larkspur",
+    "bend-mountain-view",
+    "pronghorn"
+  ],
+  "deschutesWest": [
+    "tree-farm",
+    "westgate",
+    "broken-top",
+    "tetherow",
+    "bend-summit-west",
+    "bend-century-west",
+    "bend-southwest-bend",
+    "bend-awbrey-butte",
+    "bend-river-west",
+    "seventh-mountain",
+    "deschutes-river-woods",
+    "river-bend-estates"
+  ],
+  "deschutesEast": [
+    "bend-old-bend",
+    "bend-southern-crossing",
+    "bend-orchard-district",
+    "bend-southeast-bend",
+    "bend-larkspur",
+    "bend-mountain-view",
+    "bend-boyd-acres",
+    "bend-old-farm-district",
+    "woodside-ranch"
+  ]
+}

@@ -35,6 +35,7 @@ import {
   distanceMiles,
   lotCharacterCompatible,
   productTypeCompatible,
+  bathCountCompatible,
   marketAreaBounds,
   radiusBounds,
   marketAreaName,
@@ -120,6 +121,7 @@ function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
     lotAcres: num(row['lot_size_acres']),
     propertySubType: str(row['property_sub_type']),
     yearBuilt: saneYearBuilt(num(row['year_built'])),
+    garageSpaces: num(row['garage_spaces']),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
     viewDescription: mlsText(row['view_description']),
@@ -346,6 +348,11 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
         continue
       }
 
+      if (!bathCountCompatible(subject.baths, comp.baths)) {
+        rung.excluded.bath_count++
+        continue
+      }
+
       const compArea = resolveMarketArea(comp.latitude, comp.longitude)
       if (tier.sameArea && compArea !== subjectArea) {
         rung.excluded.market_area++
@@ -384,6 +391,11 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   if (x.product_type > 0) {
     trace.push(
       `Excluded ${x.product_type} comp(s) on product type. A townhome, condo, or manufactured home is not comparable to a detached house at any distance, per Fannie Mae B4-1.3-08.`,
+    )
+  }
+  if (x.bath_count > 0) {
+    trace.push(
+      `Excluded ${x.bath_count} sale(s) on bathroom count. A one-bath house is not priced from a two-bath sale.`,
     )
   }
   if (x.lot_character > 0) {
@@ -504,6 +516,8 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     const comp = rowToComp(row, 'broker-selected')
     if (!comp) continue
     if (subject.listingKey && comp.listingKey === subject.listingKey) continue
+    if (!productTypeCompatible(subject.propertySubType, comp.propertySubType)) continue
+    if (!bathCountCompatible(subject.baths, comp.baths)) continue
     if (!byKey.has(comp.listingKey)) byKey.set(comp.listingKey, comp)
   }
   // Most-recent-first, matching the exemplar ordering. No cap, no outlier drop.

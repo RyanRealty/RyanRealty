@@ -243,69 +243,71 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
   return pages
 }
 
-/** Wider market only: 90-day sold, months of supply, new-list trend. */
+/** Wider market only: 90-day sold, months of supply, new-list trend. One scene. */
 export function immersiveWiderMarketChapters(a: MarketChapterArgs): string {
   const area = a.extras?.marketArea
   const sold90 = renderSold90Html(area)
   const inventory = renderInventoryBoardHtml(a.market)
   const trend = renderListingTrendHtml(area)
-  const parts: string[] = []
-  if (sold90) {
-    parts.push(`<section class="sc sc-navy" id="sold-90">
-      <div class="in">
-        <div class="kick r">Last 90 days</div>
-        <h2 class="h r">What ${esc(area!.sold90!.bedsLabel)} homes sold for</h2>
-        <div class="r">${sold90}</div>
-      </div>
-    </section>`)
-  }
-  if (inventory) {
-    parts.push(`<section class="sc sc-cream" id="inventory">
+  if (!sold90 && !inventory && !trend) return ''
+  return `<section class="sc sc-navy" id="wider-market">
       <div class="in">
         <div class="kick r">${esc(a.market?.geoLabel ?? a.subject.city)}</div>
-        <h2 class="h r">How fast this market is moving</h2>
-        <div class="r">${inventory}</div>
+        <h2 class="h r">This market</h2>
+        ${
+          sold90 && area?.sold90
+            ? `<div id="sold-90" class="r">
+          <h3 class="sub r">What ${esc(area.sold90.bedsLabel)} homes sold for</h3>
+          ${sold90}
+        </div>`
+            : ''
+        }
+        ${
+          inventory
+            ? `<div id="inventory" class="r">
+          <h3 class="sub r">How fast this market is moving</h3>
+          ${inventory}
+        </div>`
+            : ''
+        }
+        ${
+          trend
+            ? `<div id="listing-trend" class="r">
+          <h3 class="sub r">New listings and asking prices</h3>
+          ${trend}
+        </div>`
+            : ''
+        }
       </div>
-    </section>`)
-  }
-  if (trend) {
-    parts.push(`<section class="sc sc-cream tight" id="listing-trend">
-      <div class="in">
-        <div class="kick r">Listings over time</div>
-        <h2 class="h r">New listings and asking prices</h2>
-        <div class="r">${trend}</div>
-      </div>
-    </section>`)
-  }
-  return parts.join('\n')
+    </section>`
 }
 
 export function printWiderMarketPages(a: MarketChapterArgs): CmaPageDef[] {
   const area = a.extras?.marketArea
-  const pages: CmaPageDef[] = []
   const sold90 = renderSold90Html(area)
-  if (sold90 && area?.sold90) {
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · 90-day solds`,
-      toc: 'Last 90 days',
-      body: `<h2 class="section">What ${esc(area.sold90.bedsLabel)} homes sold for</h2>${sold90}`,
-    })
-  }
   const inventory = renderInventoryBoardHtml(a.market)
-  if (inventory) {
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · Inventory`,
-      toc: 'How fast this market is moving',
-      body: `<h2 class="section">How fast this market is moving</h2>${inventory}`,
-    })
-  }
   const trend = renderListingTrendHtml(area)
-  if (trend) {
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · Listing trend`,
-      toc: 'New listings over time',
-      body: `<h2 class="section">New listings and asking prices</h2>${trend}`,
-    })
+  const chunks: string[] = []
+  if (sold90 && area?.sold90) {
+    chunks.push(`<h2 class="section">This market</h2>
+  <h3 class="subhead">What ${esc(area.sold90.bedsLabel)} homes sold for</h3>${sold90}`)
   }
-  return pages
+  if (inventory) {
+    chunks.push(
+      `${chunks.length ? '<h3 class="subhead">How fast this market is moving</h3>' : '<h2 class="section">How fast this market is moving</h2>'}${inventory}`,
+    )
+  }
+  if (trend) {
+    chunks.push(
+      `${chunks.length ? '<h3 class="subhead">New listings and asking prices</h3>' : '<h2 class="section">New listings and asking prices</h2>'}${trend}`,
+    )
+  }
+  if (!chunks.length) return []
+  return [
+    {
+      meta: `${esc(a.subject.streetAddress)} · This market`,
+      toc: 'This market',
+      body: chunks.join('\n'),
+    },
+  ]
 }

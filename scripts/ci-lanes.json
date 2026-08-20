@@ -349,6 +349,22 @@
       "docs/DEVELOPMENT_PROCESS.md",
       "scripts/claude-canon-baseline.json"
     ],
+    "ci:cma-exemplar": [
+      "lib/cma/**",
+      "lib/pricing/**",
+      "marketing_brain_skills/producers/cma/**",
+      "docs/plans/CMA*",
+      "docs/plans/cma-exemplars/**",
+      "scripts/check-cma-*.mjs"
+    ],
+    "ci:cma-opinion-spine": [
+      "lib/cma/**",
+      "lib/pricing/**",
+      "marketing_brain_skills/producers/cma/**",
+      "docs/plans/CMA*",
+      "docs/plans/cma-exemplars/**",
+      "scripts/check-cma-*.mjs"
+    ],
     "ci:cma-rebrand-integrity": [
       "lib/cma/**",
       "lib/pricing/**",

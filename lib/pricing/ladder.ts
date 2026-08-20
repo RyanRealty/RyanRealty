@@ -10,9 +10,10 @@
  *      Never a gated / much-more-expensive (or much-cheaper) subdivision.
  *      Never rural vs urban. Age, stories, beds, baths, GLA filter first.
  *
- * Hard exclusions run on EVERY rung. Soft filters (age/story/beds/baths)
- * start tight and loosen as the ladder widens so we do not starve a thin
- * subdivision by being precious about a half-bath.
+ * Hard exclusions run on EVERY rung, including whole bathroom count
+ * (1-bath vs 2-bath is a different buyer). Soft filters (age/story/beds)
+ * start tight and loosen as the ladder widens. A half-bath still matches
+ * the same whole count (1 and 1.5 both floor to 1).
  */
 
 export type AppleStrictness = 'strict' | 'utilities' | 'product_lot'
@@ -107,7 +108,7 @@ export function pricingTierLadder(): PricingTier[] {
       bedSlop: null,
       bathSlop: null,
       disclosure:
-        'The tighter rungs did not fill five sales, so the search opened to 5 miles and 9 months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.',
+        'The tighter rungs did not fill eight sales, so the search opened to 5 miles and 9 months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.',
     },
     {
       name: 'rural-10mi-9mo',
@@ -141,22 +142,12 @@ export function pricingTierLadder(): PricingTier[] {
       ignoreCity: true,
       ruralOnly: true,
       disclosure:
-        'Rural sales inside 10 miles and 9 months were still short of five, so the search extended to 15 miles and 18 months. Older sales carry a larger time adjustment and less weight.',
+        'Rural sales inside 10 miles and 9 months were still short of eight, so the search extended to 15 miles and 18 months. Older sales carry a larger time adjustment and less weight.',
     },
   ]
 }
 
-export const PRICING_TARGET_COMPS = 5
+export const PRICING_TARGET_COMPS = 8
 export const PRICING_MIN_COMPS = 3
-/** Never price on more than five apples. Extra comps dilute the median. */
-export const PRICING_MAX_COMPS = 5
-/** Three same-subdivision (or 1-mile strict) sales are enough. Do not open distance. */
-export const PRICING_QUALITY_STOP = 3
-/** Tight GLA only. ±30% same-street rungs are a size concession, not a quality stop. */
-export const PRICING_TIGHT_SQFT_BAND = 0.15
-
-export function isPricingQualityRung(tier: PricingTier): boolean {
-  const tightSameSub = tier.sameSubdivision && tier.sqftBand <= PRICING_TIGHT_SQFT_BAND
-  const tightMile = tier.maxMiles != null && tier.maxMiles <= 1 && tier.apples === 'strict'
-  return tightSameSub || tightMile
-}
+/** Cap the priced set. Extra comps past ten dilute the median. */
+export const PRICING_MAX_COMPS = 10

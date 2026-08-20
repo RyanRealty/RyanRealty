@@ -17,9 +17,9 @@ required_inputs: ["mls_id OR address"]
 optional_inputs: ["comp_count", "methodology_override"]
 estimated_runtime_min: 15
 cost_usd_estimate: $1-$3 per CMA (Anthropic + comp pulls + Mapbox)
-thumbnail_uri: public/cmas/cma-21042-robin/cma.html
+thumbnail_uri: docs/plans/cma-exemplars/56628-sunstone-rpr.pdf
 example_outputs: []
-    label: "CMA exemplar"
+    label: "CMA client-document contract (Sunstone)"
     surface: "email"
 ---
 
@@ -28,11 +28,10 @@ example_outputs: []
 **Scope:** Per-property Comparative Market Analysis as a 15-page branded HTML deliverable (print-ready as PDF). Subdivision-first comp set, full property flyers per comp, branded location map, and a pricing range with recommended list price. Signed by the broker handling the listing (resolved from `public.brokers`).
 
 **Status:** Canonical
-**Locked:** 2026-05-14
-**Exemplar outputs (two.  use the one that matches your situation):**
+**Locked:** 2026-08-19 (client document). Engine lock 2026-07-11.
+**Client-document spec (the only clone target):** [`docs/plans/CMA_SUNSTONE_CONTRACT.md`](../../../docs/plans/CMA_SUNSTONE_CONTRACT.md). Open every page of `docs/plans/cma-exemplars/56628-sunstone-rpr.pdf`. Those 16 chapters are the seller packet. Our pricing engine still owns the number. Do not copy RPR refined value, RVM, AVM, or ZIP grain.
 
-- `public/cmas/cma-19496-tumalo-reservoir/cma.html` + `/api/cma/cma-19496-tumalo-reservoir/pdf`.  **canonical exemplar for the current rules** (finalized 2026-05-17). Rural acreage subject, 5 closed comps via distance-based RPC, 13 pages with the N+1 / N+2 / Final pricing+rationale+disclosure split, layout-discipline-compliant (zero footer/header bleed), 10.66 MB PDF. Use this as the structural reference for any new CMA.
-- `public/cmas/cma-21042-robin/cma.html` + `/api/cma/cma-21042-robin/pdf`.  earlier reference (Whispering Pines subdivision, 8 closed comps via SubdivisionName filter). Predates the layout discipline rules + the empirical image budget.  useful for sub-division-based comp selection but the page-fit and image-tier work was solved later in the Tumalo build.
+**Do not clone** `public/cmas/cma-19496-tumalo-reservoir/` or `public/cmas/cma-21042-robin/` as the client layout. Tumalo is an engine / land-rules artifact. Robin is history. A prompt that says "fold data density, not RPR look" is wrong.
 
 Draft lives at `public/drafts/cma-<slug>/cma.html` during creation; moves to `public/cmas/<slug>/cma.html` on Matt's ship-it.
 
@@ -106,7 +105,7 @@ Pass `docType: 'expired-audit'` to `buildCma` for expired-listing subjects. `reb
 - Formal appraisal. The CMA is priced and labeled throughout as an estimate. The last page carries an explicit disclaimer that it is not a USPAP appraisal
 - Listing agreement, seller net sheet, transaction coordination.  those are separate producers
 - Marketing flyer for the subject after it's listed.  that's `flyer-design` for `content:just_listed_flyer` etc.
-- Email delivery of the finalized PDF.  on finalization the canonical delivery is a **Gmail DRAFT** created via `POST /api/cma/[slug]/gmail-draft` (addressed to the lead, CMA PDF attached, no vendor BCC; the CRM already has the lead). The signing broker reviews the draft in Gmail and sends it personally.  keeps a human on the pricing numbers (CLAUDE.md §0) and lands the email from a real mailbox instead of a no-reply. The Resend path (`ops-email-send` / `/api/cma/[slug]/email`) is the fallback when the `gmail.modify` DWD scope is unavailable. (This also satisfies the old "wire delivery to the CRM" item.  the BCC logs the sent email on the lead's record.)
+- Email delivery of the finalized PDF.  on finalization the canonical delivery is a **Gmail DRAFT** created via `POST /api/cma/[slug]/gmail-draft` (addressed to the lead, CMA PDF attached, BCC `ryan.realty@followupboss.me` so FUB logs it the moment it's sent). The signing broker reviews the draft in Gmail and sends it personally.  keeps a human on the pricing numbers (CLAUDE.md §0) and lands the email from a real mailbox instead of a no-reply. The Resend path (`ops-email-send` / `/api/cma/[slug]/email`) is the fallback when the `gmail.modify` DWD scope is unavailable. (This also satisfies the old "wire delivery to FUB" item.  the BCC logs the sent email on the lead's record.)
 
 ---
 
@@ -214,7 +213,10 @@ Compute `slug` from the subject address (e.g. `cma-21042-robin`).  kebab-case, �
 **Step 2.  Load mandatory references**
 
 - `CLAUDE.md` §0 (Data Accuracy) and §0.5 (Draft-First, Commit-Last)
-- `design_system/ryan-realty/SKILL.md`.  brand register
+- `design_system/ryan-realty/SKILL.md`.  heritage register (navy on cream, Amboqia + Geist)
+- `.claude/skills/frontend-design/SKILL.md` + `.claude/skills/hallmark/SKILL.md`.  anti-slop. Pills, chips, and badges are product chrome. This document is a principal-broker letter.
+- `docs/plans/CMA_SUNSTONE_CONTRACT.md`.  the only client-document TOC. Open the Sunstone PDF it names.
+- `docs/plans/CMA_PRICE_OPINION_SPINE.md` item 9.  no capsule chrome. Spine does not override the Sunstone chapters.
 - `marketing_brain_skills/brand-voice/VOICE.md`.  voice enforcement (banned words apply to the CMA narrative)
 - This file (you are here)
 
@@ -269,7 +271,9 @@ Every CMA states the property's water source and waste system, verified from rec
 
 Default filter (matches the 21042 Robin exemplar):
 - `SubdivisionName = '<subject subdivision>'`
-- `PropertyType = 'A'` (SFR)
+- `PropertyType = 'A'` (MLS residential bucket, not "detached house")
+- `property_sub_type` exact match to the subject. **Same product type only.** A townhouse, condo, manufactured home, or TIC is never a comp for a Single Family Residence, and a townhouse is never a condo. Unknown subtype fails closed on priced comps, band rivals, and market-area chapters. `PropertyType='A'` mixed 14% attached/manufactured into Bend closed sales and that is how Santorini townhomes appeared next to an SFR.
+- Whole bathroom count must match the subject. A one-bath house is never priced from a two-bath sale. Unknown bath count on the sale fails closed when the subject count is known.
 - `StandardStatus = 'Closed'`
 - `CloseDate >= now() - interval '24 months'`
 - `TotalLivingAreaSqFt BETWEEN <subject_sqft × 0.77> AND <subject_sqft × 1.23>` (±25%)
@@ -333,11 +337,11 @@ Copy assets to `public/drafts/cma-<slug>/assets/`:
 - `Amboqia_Boriango.otf` (display font)
 - `<broker_slug>.png` (transparent headshot from `design_system/ryan-realty/assets/team/`)
 
-The canonical layout (clone from the 21042 Robin exemplar at `public/drafts/cma-21042-robin/cma.html`):
+The canonical layout is the 16-chapter table in `docs/plans/CMA_SUNSTONE_CONTRACT.md` (Sunstone RPR packet). Do not clone Robin or Tumalo HTML. Cover prints list range + recommended list only (no expected sale on the seller page):
 
 | Page | Content (one purpose per page) |
 |------|---------|
-| 1 | **Cover**.  subject hero photo · value range · key stats · "Presented by" line |
+| 1 | **Cover**. House photo is the page. List range + recommended list only. Specs as one hairline, presented-by line. No expected sale, no refined value, no 5-up stat strip. |
 | 2 | **Subject narrative**.  at-a-glance · site & structure · why this matters · listing history |
 | 3 | **Subject flyer**.  hero + 6-photo grid + current/historical MLS remarks + features (off-market badge if not currently Active) |
 | 4 | **Comp location map**.  Google Maps Static via `/api/maps/cma-<slug>` · numbered legend · pin order matches comp flyer order |
@@ -492,7 +496,7 @@ Step 7b (2026-06-04) fixed zoning + entitlement. The full rebuild that followed 
 
 10. **QA.  fact-check every figure against the source yourself. A subagent's self-report is not verification.** When a sub-pass rebuilds the analytical pages it WILL miss things (this rebuild left "no water" remnants, mis-placed every map pin, and introduced 78 em-dashes while reporting "done"). Re-grep the rendered HTML for every old/wrong figure (must be 0) and every new figure (must be present), re-measure pagination after ANY edit (each `.page` fits one sheet.  `overflow:hidden` silently CLIPS, so the Step 7a page-fit check is mandatory again), and confirm the map renders with correct pins. **Brand voice on a client doc: em-dashes are banned in prose** (period or comma); the ONLY allowed em-dash is the data-placeholder for an unavailable value in a stats cell. Scan and fix before surfacing.
 
-11. **Delivery reality.  the broker often sends the final client message himself.** A land-CMA lead frequently arrives by text and the broker answers by text. The canonical delivery is still the Gmail draft (Step 15), but the broker may prefer to text the lead a link to the CMA in his own voice. Stage a reviewable draft (a CRM note + task on the lead's record), present the exact wording for review, and let him send it. **A text the broker sends from his phone logs into the CRM timeline but does NOT appear in a vendor text API**.  so "the API shows no sent text" does not mean it was not sent. Read the person's timeline before assuming, and never send a duplicate.
+11. **Delivery reality.  the broker often sends the final client message himself.** A land-CMA lead frequently arrives by text and the broker answers by text. The canonical delivery is still the Gmail draft (Step 15), but the broker may prefer to text the lead a link to the CMA in his own voice. Stage a reviewable draft (a FUB note + task on the lead's record), present the exact wording for review, and let him send it. **A text the broker sends from his phone logs into the FUB timeline but does NOT appear in the FUB `/textMessages` API**.  so "the API shows no sent text" does not mean it was not sent. Read the person's timeline before assuming, and never send a duplicate.
 
 **Step 8.  Build the comp location map endpoint**
 
@@ -504,7 +508,9 @@ Create `app/api/maps/cma-<slug>/route.ts` (or generalize to a parameterized endp
 
 **Step 9.  Pricing methodology**
 
-Two methods, both must converge within ±5% for the range to be defensible:
+**Cover numbers come from the pricing moat (`lib/pricing/`, `sale_pricing_facts`).** Seller cover prints list range (conservative to high-end) and recommended list only. Predicted close may be computed for admin; it does not print on the seller page (Sunstone contract). Method 1 / 2 / 3 stay on the evidence board as checks. They do not pick the cover. A closed, expired, withdrawn, or canceled ListPrice is not today's ask.
+
+Two older methods remain as checks. Divergence is disclosed. It does not override the moat:
 
 **Method 1.  Tiered $/sqft.** Sort closed comps into "renovated/turnkey" tier and "un-renovated/dated" tier by $/sqft. Apply the renovated tier range to the subject's sqft. Allow a small lot-premium adjustment if subject is materially larger than comps.
 
@@ -527,9 +533,9 @@ This is the appraiser "market conditions adjustment".  the single most important
 
 Size, bed/bath, lot, garage, and condition adjustments follow standard paired-sales logic against the subject. Keep every adjustment defensible.  if you cannot justify it from the data, do not make it.
 
-**Method 3.  time-and-physically-adjusted comp reconciliation.** The similarity-weighted average of the adjusted prices from the grid (weight by size proximity, distance, and recency). This is the third independent estimate, and the one that carries the market-conditions correction.
+**Method 3.  time-and-physically-adjusted comp reconciliation.** The similarity-weighted average of the adjusted prices from the grid (weight by size proximity, distance, and recency). This is a check against the moat close, not the list.
 
-**Convergence + confidence.** All three methods (tiered $/sqft, baseline + value-add, adjusted-comp reconciliation) must land within ±5%. If they diverge more than that, do not average through it.  state which method governs and why, and lower the stated confidence. Confidence (High / Moderate / Supportable-only) is a function of: comp count (≥5 is strong), range dispersion, median comp age (>9 months caps at Moderate), median comp distance (>4 mi caps at Moderate), and method divergence. State the confidence and a one-line reason on the pricing page.  honest uncertainty beats false precision (CLAUDE.md §0).
+**Convergence + confidence.** Methods 1, 2, and 3 are checks. If they diverge more than ±5% from each other, disclose the spread and lower confidence. They do not replace the moat cover numbers. Confidence (High / Moderate / Supportable-only) is a function of: comp count (≥5 is strong), range dispersion, median comp age (>9 months caps at Moderate), median comp distance (>4 mi caps at Moderate), and method divergence. State the confidence and a one-line reason on the pricing page.  honest uncertainty beats false precision (CLAUDE.md §0).
 
 The converged range gets three tiers:
 - **Conservative**.  quick-sale entry, ~30-day close
@@ -598,7 +604,7 @@ Before the draft surfaces (Step 13), an **independent reviewer.  a SEPARATE agen
 3. **Property profile**.  bare-vs-improved, structures, utilities, and dwelling status reconcile to the permit + assessor record (DIAL Permits + Land & Structures), not just the MLS or an owner claim.
 4. **Value drivers traced to PRIMARY records**.  every fact that moves the number (dwelling right / CUP / DR, water rights, buildability, lot-of-record, partition) traces to a primary county record cited in `citations.json`, not asserted.
 5. **No inference stated as fact**.  scan for any definitive claim (zoning, acreage, buildability, entitlement) that lacks a primary-source citation. This is the exact RR10 failure mode.
-6. **Narrative reconciles to data**.  every verdict / pill / sentence is consistent with the number beside it (market verdict matches MoS, the $/acre conclusion matches the comp weighting, the recommended list sits correctly within the range, the methods converge within ±5% or the divergence is explained).
+6. **Narrative reconciles to data**.  every verdict and sentence is consistent with the number beside it (market verdict matches MoS, the $/acre conclusion matches the comp weighting, the recommended list sits correctly within the range, the methods converge within ±5% or the divergence is explained). Do not put status in pills, chips, or badges. The letter register is type plus hairline rules. See `docs/plans/CMA_PRICE_OPINION_SPINE.md` item 9.
 7. **Math foots**.  the adjustment grid, weighted average, $/acre, range, and tier prices all compute from the cited inputs.
 
 **Output:** the reviewer returns a verdict.  **PASS** (every item verified) or **FAIL** with a numbered punch list, each flag carrying the claim, why it is wrong or unverified, and the authoritative source that should govern.
@@ -683,7 +689,7 @@ const result = await finalizeAndDeliverCma({ slug: 'cma-<slug>' })
 **What this does (in order, all best-effort):**
 
 1. Renders the CMA HTML to a PDF buffer via `renderCmaPdfBuffer(slug)` (puppeteer + @sparticuz/chromium-min, same engine as `/api/cma/<slug>/pdf`). Errors if the PDF exceeds the 25 MB Gmail cap.
-2. Creates a **Gmail DRAFT** in the signing broker's mailbox (`matt@ryan-realty.com` by default, or the broker resolved from `public.cmas.broker_slug` if they're on the `@ryan-realty.com` domain) via `createGmailDraft` (Google DWD / `gmail.modify` scope, verified live 2026-05-29). The draft is addressed to the lead, has the CMA PDF attached, No vendor BCC. The CRM already has the lead. **Matt reviews and sends personally.** This is a DRAFT, never an auto-send to the lead.
+2. Creates a **Gmail DRAFT** in the signing broker's mailbox (`matt@ryan-realty.com` by default, or the broker resolved from `public.cmas.broker_slug` if they're on the `@ryan-realty.com` domain) via `createGmailDraft` (Google DWD / `gmail.modify` scope, verified live 2026-05-29). The draft is addressed to the lead, has the CMA PDF attached, and BCC's `ryan.realty@followupboss.me` so FUB logs it the moment Matt hits Send. **Matt reviews and sends personally.** This is a DRAFT, never an auto-send to the lead.
 3. **Fallback:** if the Gmail DWD scope is unavailable, Resend delivers the PDF to the broker (not the lead) with context to forward manually. The response field `fellBackToResend: true` signals this.
 4. Notifies Matt via Resend (`MATT_ALERT_EMAIL` env var, defaults to `matt@ryan-realty.com`) that the CMA is ready: Gmail-draft confirmation, recommended list price, PDF link at `/api/cma/<slug>/pdf`.
 
@@ -815,9 +821,12 @@ The `measured` step for a CMA is light.  90 days after delivery, the `performanc
 - READ: `listings`, `brokers`, `listing_history`, `status_history`, `price_history`
 - WRITE: `marketing_brain_actions` (status transitions), `cmas`, `cma_comps`
 
-**Exemplars (clone the one that matches your situation):**
-- `public/cmas/cma-19496-tumalo-reservoir/cma.html`.  **canonical exemplar for current rules** (finalized 2026-05-17). Rural acreage subject signed by Matt Ryan, 5 closed comps via PostGIS distance RPC, 13 pages with the layout-discipline split, 10.66 MB PDF. The structural reference for any new CMA built under the post-2026-05-17 layout + image-budget rules.
-- `public/cmas/cma-21042-robin/cma.html`.  earlier reference for Kelly Hansen, signed by Matt Ryan (locked 2026-05-14). Whispering Pines subdivision subject, 8 closed comps via SubdivisionName filter. Useful for the sub-division-based comp-selection pattern; the page-fit and image-tier work was solved later in the Tumalo build.
+**Client document (clone this, only this):**
+- `docs/plans/CMA_SUNSTONE_CONTRACT.md` + `docs/plans/cma-exemplars/56628-sunstone-rpr.pdf`. 16 chapters. Our pricing engine. No AVM. No ZIP dump.
+
+**Engine / history only (do not clone as the client layout):**
+- `public/cmas/cma-19496-tumalo-reservoir/cma.html`.  land + engine artifact (finalized 2026-05-17). Rural acreage rules in Step 7b/7c still cite it. Not the seller packet.
+- `public/cmas/cma-21042-robin/cma.html`.  2026-05-14 history. Not the seller packet.
 
 **Known data quirks:**
 
@@ -840,7 +849,7 @@ The `measured` step for a CMA is light.  90 days after delivery, the `performanc
 **Future generalizations:**
 - Parameterize the map endpoint to a single `/api/maps/cma/[slug]` route that reads coordinates from the `cmas` + `cma_comps` tables (rather than copying the hardcoded route per CMA).
 - Build a `/admin/cmas` page that lists every row in `public.cmas` with filters by broker and client and links to each `cma.html`.
-- Wire delivery to the CRM: when a CMA is finalized, automatically create a CRM note on the client's lead record with a link to the CMA URL.
+- Wire delivery to FUB: when a CMA is finalized, automatically create an FUB note on the client's lead record with a link to the CMA URL.
 
 ---
 
@@ -850,6 +859,7 @@ The `measured` step for a CMA is light.  90 days after delivery, the `performanc
 - `CLAUDE.md §0.5 (Draft-First, Commit-Last)`
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md`
+- `docs/plans/CMA_SUNSTONE_CONTRACT.md`
 
 ---
 

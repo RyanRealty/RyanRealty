@@ -12,6 +12,10 @@ describe('formatDate (brand timezone, audit p1.4)', () => {
     expect(formatDate(undefined)).toBe('—')
     expect(formatDate('not-a-date')).toBe('—')
   })
+  it('prints a date-only MLS close day on that calendar day', () => {
+    expect(formatDate('2026-06-25')).toBe('Jun 25, 2026')
+    expect(formatDate('2026-05-01')).toBe('May 1, 2026')
+  })
   it('honors override options', () => {
     expect(formatDate('2026-06-22T20:00:00.000Z', { month: 'long', day: 'numeric', year: 'numeric' })).toBe('June 22, 2026')
   })
@@ -26,7 +30,7 @@ describe('formatCalendarDay', () => {
       'Tuesday, Aug 18',
     )
     expect(formatDate('2026-08-18', { weekday: 'long', month: 'short', day: 'numeric', year: undefined })).toBe(
-      'Monday, Aug 17',
+      'Tuesday, Aug 18',
     )
   })
 })

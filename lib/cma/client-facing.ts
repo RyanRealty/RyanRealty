@@ -19,33 +19,35 @@ import type {
 } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
-import type { ListingPlan, ListingPlanItem } from '@/lib/cma/listing-plan'
 
 const usd = formatPriceExact
 
+/**
+ * The only seller-facing price sentence. List band and recommended list.
+ * Expected close stays off the seller document unless a caller opts in
+ * (admin / evidence board only).
+ */
+export function listPriceLead(
+  p: CmaPricing,
+  opts?: { perSqft?: string | null; includeExpectedClose?: boolean },
+): string {
+  const rec =
+    opts?.perSqft != null && opts.perSqft
+      ? `${usd(p.recommended)} (${opts.perSqft} per square foot)`
+      : usd(p.recommended)
+  const close =
+    opts?.includeExpectedClose === true && p.predictedClose != null && p.predictedClose > 0
+      ? ` Expected close ${usd(p.predictedClose)}.`
+      : ''
+  return `List ${usd(p.conservative)} to ${usd(p.highEnd)}. Recommended list ${rec}.${close}`
+}
+
 /** Pipeline / admin language that must never reach a seller page. */
 const CLIENT_INTERNAL_LEAK =
-  /adversarial|listing\s*key|supabase|claude-|sonnet-|opus-|gpt-4|needs_review|needs review|broker-selected|broker selected|accuracy audit|accuracy contract|comparability model|anthropic|build_summary|market_stats_cache|market_pulse_live|analytics_mart|verification trace|geo_slug|geo_type|methodology_version|rolling_365d|propertytype\s*=|pulled at build time|closedate\s*[≥>=]|listings where |standardstatus|days_to_pending|listprice \d+\.\./i
-
-/** Query / method footnotes that read as SQL, not seller copy. */
-const CLIENT_METHOD_SENTENCE =
-  /supabase|propertytype\s*=|pulled at build time|closedate\s*[≥>=]|listing\s*key|listings where |standardstatus|days_to_pending|listprice \d+\.\.|\b(?:City|PropertyType|SubdivisionName|StandardStatus|CloseDate|ListPrice|ClosePrice)\s*=|^\s*seasonality \w+ median \d|^\s*price band \d+ active vs/i
+  /adversarial|listing\s*key|supabase|claude-|sonnet-|opus-|gpt-4|needs_review|needs review|broker-selected|broker selected|accuracy audit|accuracy contract|comparability model|anthropic|build_summary|market_stats_cache|market_pulse_live|analytics_mart|verification trace|geo_slug|geo_type|methodology_version|rolling_365d/i
 
 export function isClientInternalLeak(text: string | null | undefined): boolean {
   return Boolean(text && CLIENT_INTERNAL_LEAK.test(text))
-}
-
-/** Drop query/method sentences. Keep the seller meaning if one remains. */
-export function stripClientMethodTrace(text: string | null | undefined): string | null {
-  const raw = (text ?? '').trim()
-  if (!raw) return null
-  const kept = raw
-    .split(/(?<=[.!?])\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .filter((s) => !isClientInternalLeak(s) && !CLIENT_METHOD_SENTENCE.test(s))
-  const out = kept.join(' ').replace(/\s+/g, ' ').trim()
-  return out || null
 }
 
 /**
@@ -66,7 +68,6 @@ export function clientPlaceClause(
 
 export function clientFacingNotes(notes: readonly string[], pricing: CmaPricing): string[] {
   return notes
-    .map((n) => stripClientMethodTrace(n) ?? '')
     .map((n) => n.trim())
     .filter(Boolean)
     .filter((n) => !isClientInternalLeak(n))
@@ -78,39 +79,21 @@ export function clientFacingNotes(notes: readonly string[], pricing: CmaPricing)
       if (/pricing-engine list|pricing engine/i.test(n)) {
         return false
       }
+      if (/conservative tier|quick-sale|method\s*[123]\b/i.test(n)) {
+        return false
+      }
+      if (/time adjustment follows|close estimate is|comparable review:|list band is \$/i.test(n)) {
+        return false
+      }
       return true
     })
 }
 
 /** Replace a leaked source string with a seller-safe line. */
 export function clientSourceLine(raw: string | null | undefined, fallback: string): string {
-  const stripped = stripClientMethodTrace(raw)
-  if (!stripped || isClientInternalLeak(stripped)) return fallback
-  return stripped
-}
-
-export function clientFacingPlanItem(item: ListingPlanItem): ListingPlanItem | null {
-  const trigger = stripClientMethodTrace(item.trigger)
-  const action = stripClientMethodTrace(item.action)
-  if (!trigger || !action) return null
-  return {
-    trigger,
-    action,
-    basis: stripClientMethodTrace(item.basis) ?? '',
-  }
-}
-
-/** Render-time plan hygiene so a stored draft cannot leak a query footnote. */
-export function clientFacingListingPlan(plan: ListingPlan | null | undefined): ListingPlan | null {
-  if (!plan) return null
-  const items = plan.items
-    .map(clientFacingPlanItem)
-    .filter((i): i is ListingPlanItem => i != null)
-  if (items.length === 0) return null
-  return {
-    items,
-    source: clientSourceLine(plan.source, 'Figures already computed in this report.'),
-  }
+  const t = (raw ?? '').trim()
+  if (!t || isClientInternalLeak(t)) return fallback
+  return t
 }
 
 export type WhyBullet = { label: string; text: string }
@@ -160,27 +143,8 @@ function pickComps(comps: readonly CmaAdjustedComp[]): {
   return { ceiling, floor, best }
 }
 
-function coverSentence(input: {
-  pricing: CmaPricing
-  failedAsk: number | null
-  hasBest: boolean
-}): string {
-  const p = input.pricing
-  if (input.failedAsk != null && p.recommended < input.failedAsk) {
-    return `Capped under the ${usd(input.failedAsk)} ask that did not sell.`
-  }
-  if (p.priceOverride != null && p.priceOverride > 0 && p.recommended > p.method3) {
-    return `A strategic list above the ${usd(p.method3)} adjusted-sales number, with room to negotiate.`
-  }
-  if (p.priceOverride != null && p.priceOverride > 0 && p.recommended < p.method3) {
-    return `Brought to ${usd(p.recommended)} on review, under the ${usd(p.method3)} adjusted-sales number.`
-  }
-  if (!p.converged && Math.abs(p.recommended - p.method3) <= 5000) {
-    return `The adjusted sales land at ${usd(p.method3)}. That is the number.`
-  }
-  return input.hasBest
-    ? 'The closed sales around this home and the best match land at this number.'
-    : 'The closed sales around this home land at this number.'
+function coverSentence(input: { pricing: CmaPricing }): string {
+  return listPriceLead(input.pricing)
 }
 
 function strategyLine(input: {
@@ -236,36 +200,28 @@ export function whyThisListPrice(input: {
   if (ceiling && floor && ceiling !== floor) {
     bullets.push({
       label: ceiling.address,
-      text: `Sold at ${usd(ceiling.closePrice)}, adjusts to ${usd(ceiling.adjustedPrice)}. That is the top of this set.`,
+      text: `Sold at ${usd(ceiling.closePrice)}. As your house, ${usd(ceiling.adjustedPrice)}. That is the top of this set.`,
     })
     if (best && best !== ceiling && best !== floor) {
       bullets.push({
         label: best.address,
-        text: `The closest match. Adjusted to ${usd(best.adjustedPrice)}.`,
+        text: `The closest match. As your house, ${usd(best.adjustedPrice)}.`,
       })
     }
     bullets.push({
       label: floor.address,
-      text: `Sold at ${usd(floor.closePrice)}, adjusts to ${usd(floor.adjustedPrice)}. That is the floor of this set.`,
+      text: `Sold at ${usd(floor.closePrice)}. As your house, ${usd(floor.adjustedPrice)}. That is the floor of this set.`,
     })
   } else if (best) {
     bullets.push({
       label: best.address,
-      text: `Sold at ${usd(best.closePrice)}, adjusts to ${usd(best.adjustedPrice)}.`,
+      text: `Sold at ${usd(best.closePrice)}. As your house, ${usd(best.adjustedPrice)}.`,
     })
   }
 
-  const sale =
-    input.pricing.predictedClose != null && input.pricing.predictedClose > 0
-      ? input.pricing.predictedClose
-      : input.pricing.recommended
   return {
-    heading: `Why ${usd(sale)}`,
-    coverSentence: coverSentence({
-      pricing: input.pricing,
-      failedAsk,
-      hasBest: Boolean(best && ceiling && floor && best !== ceiling && best !== floor),
-    }),
+    heading: `Why ${usd(input.pricing.recommended)}`,
+    coverSentence: coverSentence({ pricing: input.pricing }),
     bullets,
     market: marketLine(input.market),
     ownership: ownershipLine(input.equity),

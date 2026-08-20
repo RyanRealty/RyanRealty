@@ -4,7 +4,7 @@
  */
 
 import { whyWeKeptComp } from '@/lib/cma/client-facing'
-import { dec, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
+import { dateLong, dec, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 
 const esc = escapeHtml
@@ -48,17 +48,18 @@ export function renderCompStripHtml(comps: readonly CmaAdjustedComp[]): string {
         ? `<img class="comp-ph" src="${esc(photo)}" alt="${esc(c.address)}" />`
         : `<div class="comp-ph is-empty" aria-hidden="true">${pin}</div>`
       return `
-    <article class="comp-row" data-comp="${pin}">
+    <article class="comp-row" data-comp="${pin}" data-pin="${pin}">
       <div class="comp-media">
         ${img}
         <span class="comp-pin">${pin}</span>
       </div>
       <div class="comp-body">
         <div class="comp-addr">${esc(c.address)}</div>
+        <div class="comp-sold-when">Sold ${esc(dateLong(c.closeDate))}</div>
         <div class="comp-nums">
           <div class="comp-n"><span class="comp-nl">Sold</span><span class="comp-nv">${usd(c.closePrice)}</span></div>
           ${ppsf ? `<div class="comp-n"><span class="comp-nl">Sold $/sf</span><span class="comp-nv">${esc(ppsf)}</span></div>` : ''}
-          <div class="comp-n"><span class="comp-nl">Adjusted to subject</span><span class="comp-nv">${usd(c.adjustedPrice)}</span></div>
+          <div class="comp-n"><span class="comp-nl">This sale as your house</span><span class="comp-nv">${usd(c.adjustedPrice)}</span></div>
         </div>
         ${facts ? `<div class="comp-facts">${esc(facts)}</div>` : ''}
         ${c.proximity ? `<div class="comp-facts">${esc(c.proximity)}</div>` : ''}
@@ -78,15 +79,15 @@ export function renderCompMapKeyHtml(subject: CmaSubject, comps: readonly CmaAdj
     subject.sqft != null && subject.sqft > 0 ? `${int(subject.sqft)} sqft` : null,
   ])
   const items = [
-    `<div class="k"><span class="pin subject">S</span><div class="txt"><strong>${esc(subject.streetAddress)}</strong>${subjectLine ? `<br/>${esc(subjectLine)}` : ''}<br/>Subject</div></div>`,
+    `<div class="k" data-pin="subject"><span class="pin subject">S</span><div class="txt"><strong>${esc(subject.streetAddress)}</strong>${subjectLine ? `<br/>${esc(subjectLine)}` : ''}<br/>Subject</div></div>`,
     ...comps.map((c, i) => {
       const why = whyWeKeptComp(c)
       const facts = bedsBathsSqftYear(c)
       const ppsf = soldPpsf(c)
       const time = marketTime(c)
-      const money = joinFacts([usd(c.closePrice), ppsf, `adj ${usd(c.adjustedPrice)}`])
+      const money = joinFacts([`Sold ${dateLong(c.closeDate)}`, usd(c.closePrice), ppsf, `as your house ${usd(c.adjustedPrice)}`])
       const meta = joinFacts([c.proximity, time])
-      return `<div class="k"><span class="pin">${i + 1}</span><div class="txt"><strong>${esc(c.address)}</strong>${money ? `<br/>${esc(money)}` : ''}${facts ? `<br/>${esc(facts)}` : ''}${meta ? `<br/>${esc(meta)}` : ''}<br/>${esc(why.sentence)}</div></div>`
+      return `<div class="k" data-comp="${i + 1}" data-pin="${i + 1}"><span class="pin">${i + 1}</span><div class="txt"><strong>${esc(c.address)}</strong>${money ? `<br/>${esc(money)}` : ''}${facts ? `<br/>${esc(facts)}` : ''}${meta ? `<br/>${esc(meta)}` : ''}<br/>${esc(why.sentence)}</div></div>`
     }),
   ]
   return `<div class="map-key">${items.join('')}</div>`

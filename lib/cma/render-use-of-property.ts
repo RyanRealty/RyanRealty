@@ -8,14 +8,15 @@ import {
   escapeHtml,
   hoaBlock,
   rentalIncomeBlock,
+  statusMark,
   zoningExplainerBlock,
 } from '@/lib/cma/render-blocks'
-import type { DevelopmentOpportunities, DevItem, DevVerdict } from '@/lib/cma/development'
+import type { DevelopmentOpportunities, DevItem } from '@/lib/cma/development'
 import type { RentalPotential, RentalTenure } from '@/lib/cma/rental-potential'
 
 const esc = escapeHtml
 
-export type CmaPageDef = { meta: string; body: string; toc?: string }
+export type CmaPageDef = { meta: string; body: string; toc?: string; flyer?: boolean }
 
 const BUILD_TOPICS = new Set<DevItem['topic']>([
   'Subdivide or partition',
@@ -24,21 +25,7 @@ const BUILD_TOPICS = new Set<DevItem['topic']>([
   'Middle housing',
 ])
 
-const VERDICT_LABELS: Record<string, string> = {
-  yes: 'Allowed',
-  conditional: 'Conditional',
-  unlikely: 'Unlikely',
-  no: 'Not available',
-  confirm: 'Worth exploring',
-}
-
 const VERDICT_RANK: Record<string, number> = { yes: 0, conditional: 1, confirm: 2, unlikely: 3, no: 4 }
-
-function pill(verdict: DevVerdict | string): string {
-  const label = VERDICT_LABELS[verdict] ?? verdict
-  const tone = verdict === 'yes' ? ' is-yes' : verdict === 'no' || verdict === 'unlikely' ? ' is-no' : ''
-  return `<span class="verdict${tone}">${esc(label)}</span>`
-}
 
 function byCapability<T extends { verdict: string }>(items: readonly T[]): T[] {
   return [...items].sort((a, b) => (VERDICT_RANK[a.verdict] ?? 9) - (VERDICT_RANK[b.verdict] ?? 9))
@@ -83,7 +70,7 @@ function glanceRow(dev: DevelopmentOpportunities | null, rental: RentalPotential
       .map(
         (c) => `<div class="glance">
       <div class="g-q">${esc(c.q)}</div>
-      <div class="g-a">${pill(c.verdict)}</div>
+      <div class="g-a">${statusMark(c.verdict)}</div>
     </div>`,
       )
       .join('')}
@@ -95,7 +82,7 @@ function buildCard(item: DevItem): string {
   <article class="use-card" data-verdict="${esc(item.verdict)}">
     <div class="use-card-top">
       <span class="use-topic">${esc(item.topic)}</span>
-      ${pill(item.verdict)}
+      ${statusMark(item.verdict)}
     </div>
     <p class="use-head">${esc(item.headline)}</p>
     <p class="use-detail">${esc(item.detail)}</p>
@@ -111,7 +98,7 @@ function rentCard(t: RentalTenure): string {
   <article class="use-card" data-verdict="${esc(t.verdict)}">
     <div class="use-card-top">
       <span class="use-topic">${esc(t.tenure)} rental</span>
-      ${pill(t.verdict)}
+      ${statusMark(t.verdict)}
     </div>
     <p class="use-head">${esc(t.headline)}</p>
     <p class="use-detail">${esc(t.detail)}</p>

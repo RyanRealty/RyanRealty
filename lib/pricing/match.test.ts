@@ -118,6 +118,15 @@ describe('walkPricingLadder', () => {
     expect(out.comps).toHaveLength(0)
   })
 
+  it('never prices a one-bath house from a two-bath sale', () => {
+    const pool = [
+      sale({ listingKey: 'TWO', baths: 2, address: '14 Kenwood' }),
+      sale({ listingKey: 'ONE', baths: 1, address: '15 Kenwood' }),
+    ]
+    const out = walkPricingLadder(subject({ baths: 1 }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['ONE'])
+  })
+
   it('drops a much more expensive subdivision once the similar-sub rungs run', () => {
     const cells = new Map([
       ['bend:kenwood', { medianPpsf: 400, n: 20 }],
@@ -270,24 +279,131 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).toContain('RURAL')
   })
 
-  it('stops at three same-subdivision apples and does not dilute with a 1-mile sale', () => {
+  it('does not stop at three same-subdivision sales; a fourth same-sub sale still enters until 8', () => {
     const pool = [
       sale({ listingKey: 'A', closeDate: '2026-07-01', address: '10 Kenwood' }),
       sale({ listingKey: 'B', closeDate: '2026-06-20', address: '11 Kenwood' }),
       sale({ listingKey: 'C', closeDate: '2026-06-10', address: '12 Kenwood' }),
-      sale({
-        listingKey: 'FAR',
-        closeDate: '2026-07-15',
-        subdivision: 'Aubrey',
-        subdivisionNorm: 'aubrey',
-        address: '2 Aubrey',
-        latitude: 44.07,
-        longitude: -121.33,
-      }),
+      sale({ listingKey: 'D', closeDate: '2026-03-01', address: '13 Kenwood' }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C'])
-    expect(out.tiersUsed).toEqual(['subdivision-3mo'])
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D'])
+    expect(out.comps).toHaveLength(4)
+  })
+
+  it('excludes a townhouse sale for a detached SFR subject', () => {
+    const pool = [
+      sale({ listingKey: 'TOWN', productClass: 'townhouse', address: '10 Kenwood' }),
+      sale({ listingKey: 'SFR', productClass: 'detached', address: '11 Kenwood' }),
+    ]
+    const out = walkPricingLadder(subject({ productClass: 'detached' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['SFR'])
+  })
+
+  it('excludes a Larkspur sale for an Awbrey Butte subject (Parkway / US-97)', () => {
+    const pool = [
+      sale({
+        listingKey: 'LARK',
+        address: '10 Larkspur',
+        marketArea: 'bend-larkspur',
+      }),
+      sale({
+        listingKey: 'AWBREY',
+        address: '11 Awbrey',
+        marketArea: 'bend-awbrey-butte',
+      }),
+    ]
+    const out = walkPricingLadder(subject({ marketArea: 'bend-awbrey-butte' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['AWBREY'])
+  })
+
+  it('excludes an Old Bend sale for a River West subject (Deschutes)', () => {
+    const pool = [
+      sale({
+        listingKey: 'OLD',
+        address: '10 Old Bend',
+        marketArea: 'bend-old-bend',
+      }),
+      sale({
+        listingKey: 'RIVER',
+        address: '11 River West',
+        marketArea: 'bend-river-west',
+      }),
+    ]
+    const out = walkPricingLadder(subject({ marketArea: 'bend-river-west' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['RIVER'])
+  })
+
+  it('excludes RS vs RM when both zoning strings are set', () => {
+    const pool = [
+      sale({ listingKey: 'RM', address: '10 Kenwood', zoning: 'RM' }),
+      sale({ listingKey: 'RS', address: '11 Kenwood', zoning: ' rs ' }),
+    ]
+    const out = walkPricingLadder(subject({ zoning: 'RS' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['RS'])
+  })
+
+  it('allows a sale when either zoning is missing', () => {
+    const pool = [
+      sale({ listingKey: 'NONE', address: '10 Kenwood', zoning: null }),
+      sale({ listingKey: 'BLANK', address: '11 Kenwood', zoning: '  ' }),
+    ]
+    const out = walkPricingLadder(subject({ zoning: 'RS' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['BLANK', 'NONE'])
+  })
+
+  it('allows same-side Awbrey Butte and River West sales', () => {
+    const pool = [
+      sale({
+        listingKey: 'RIVER',
+        address: '11 River West',
+        marketArea: 'bend-river-west',
+      }),
+    ]
+    const out = walkPricingLadder(subject({ marketArea: 'bend-awbrey-butte' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['RIVER'])
+  })
+
+  it('excludes a condo sale for a townhouse subject', () => {
+    const pool = [
+      sale({ listingKey: 'CONDO', productClass: 'condo', address: '10 Kenwood' }),
+      sale({ listingKey: 'TOWN', productClass: 'townhouse', address: '11 Kenwood' }),
+    ]
+    const out = walkPricingLadder(subject({ productClass: 'townhouse' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['TOWN'])
+  })
+
+  it('pulls in one smaller sale when every selected comp is larger', () => {
+    const larger = Array.from({ length: 8 }, (_, i) =>
+      sale({
+        listingKey: `BIG${i}`,
+        address: `${10 + i} Kenwood`,
+        closeDate: `2026-07-${String(20 - i).padStart(2, '0')}`,
+        sqft: 2200,
+      }),
+    )
+    const smaller = sale({
+      listingKey: 'SMALL',
+      address: '40 Kenwood',
+      closeDate: '2026-06-15',
+      sqft: 1600,
+    })
+    const out = walkPricingLadder(subject({ sqft: 2000 }), [...larger, smaller], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('SMALL')
+    expect(out.comps.some((c) => c.sqft > 2000)).toBe(true)
+    expect(out.comps.filter((c) => c.listingKey.startsWith('BIG'))).toHaveLength(7)
+  })
+
+  it('never keeps more than 10 priced sales', () => {
+    const pool = Array.from({ length: 12 }, (_, i) =>
+      sale({
+        listingKey: `N${i}`,
+        address: `${10 + i} Kenwood`,
+        closeDate: `2026-07-${String(20 - i).padStart(2, '0')}`,
+      }),
+    )
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps).toHaveLength(10)
   })
 
   it('does not treat three wide-GLA same-subdivision sales as a quality stop', () => {

@@ -16,9 +16,10 @@ import {
   type CmaSubdivisionSaleRow,
 } from '@/lib/data/cma/builderReads'
 import { pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
+import { bathCountCompatible, keepSameProductType } from '@/lib/cma/market-area'
 import type { CmaAdjustedComp, CmaSubject, CmaPricing } from '@/lib/cma/types'
-import { getCmaMarketAreaRows } from '@/lib/data/cma/marketAreaReads'
-import { computeMarketArea, type CmaMarketArea } from '@/lib/cma/market-status'
+import { getCmaMarketAreaRows, type CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
+import { computeMarketArea, type CmaMarketArea, type CmaSoldBand } from '@/lib/cma/market-status'
 
 export const MONTH_NAMES = [
   'January',
@@ -90,6 +91,39 @@ export interface CmaPhotoBench {
   source: string
 }
 
+export interface CmaSubjectPhotos {
+  current: string[]
+  historical: string[]
+}
+
+export interface CmaLegalFacts {
+  parcel?: string | null
+  taxlot?: string | null
+  owner?: string | null
+  timeOwned?: string | null
+  vesting?: string | null
+  flood?: { zone: string | null; inSFHA: boolean | null } | null
+}
+
+export interface CmaOwnershipEvent {
+  date: string
+  owner?: string | null
+  event?: string | null
+  price?: number | null
+}
+
+export interface CmaPermitFact {
+  type: string
+  permit: string | null
+  status: string | null
+}
+
+export interface CmaPropertyFactsOverlay {
+  propertyType?: string | null
+  fireplaces?: number | null
+  stories?: string | null
+}
+
 export interface CmaExtras {
   seasonality: CmaSeasonality | null
   band: CmaBandPosition | null
@@ -98,6 +132,13 @@ export interface CmaExtras {
   photoBench: CmaPhotoBench | null
   /** Status grid, 90-day sold band, listing trend. Optional on older rows. */
   marketArea?: CmaMarketArea | null
+  /** Same beds and whole baths, last 90 days. Null when the set is thin. */
+  sold90?: CmaSoldBand | null
+  photos?: CmaSubjectPhotos | null
+  legal?: CmaLegalFacts | null
+  permits?: CmaPermitFact[] | null
+  ownershipHistory?: CmaOwnershipEvent[] | null
+  propertyFacts?: CmaPropertyFactsOverlay | null
 }
 
 function median(values: number[]): number | null {
@@ -195,6 +236,7 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
     photoUrl: row.PhotoURL,
     latitude: row.Latitude,
     longitude: row.Longitude,
+    propertySubType: row.property_sub_type ?? null,
   }
 }
 
@@ -209,22 +251,33 @@ export function computeBandPosition(
   city: string,
   lo: number,
   hi: number,
-  subject?: { latitude: number | null; longitude: number | null } | null,
+  subject?: { latitude: number | null; longitude: number | null; propertySubType?: string | null } | null,
 ): CmaBandPosition | null {
   if (!inv) return null
+  const sameType = (row: CmaBandListingRow) =>
+    keepSameProductType(subject?.propertySubType ?? null, row.property_sub_type ?? null)
+  const hasRows = (inv.activeRows?.length ?? 0) + (inv.pendingRows?.length ?? 0) > 0
+  const activeRows = hasRows ? (inv.activeRows ?? []).filter(sameType) : []
+  const pendingRows = hasRows ? (inv.pendingRows ?? []).filter(sameType) : []
   const raw = [
-    ...(inv.activeRows ?? []).map((r) => rowToRival(r, 'Active')),
-    ...(inv.pendingRows ?? []).map((r) => rowToRival(r, 'Pending')),
+    ...activeRows.map((r) => rowToRival(r, 'Active')),
+    ...pendingRows.map((r) => rowToRival(r, 'Pending')),
   ].filter((r): r is CmaBandRival => r != null)
+  const asks = hasRows
+    ? activeRows.map((r) => Number(r.ListPrice)).filter((n) => Number.isFinite(n) && n > 0)
+    : inv.activeAsks
+  const doms = hasRows
+    ? activeRows.map((r) => Number(r.DaysOnMarket)).filter((n) => Number.isFinite(n) && n >= 0)
+    : inv.activeDaysOnMarket
   return {
     lo,
     hi,
-    activeCount: inv.activeAsks.length,
-    pendingCount: inv.pendingCount,
-    activeMedianAsk: median(inv.activeAsks),
-    activeMedianDom: median(inv.activeDaysOnMarket),
+    activeCount: hasRows ? asks.length : inv.activeAsks.length,
+    pendingCount: hasRows ? pendingRows.length : inv.pendingCount,
+    activeMedianAsk: median(asks),
+    activeMedianDom: median(doms),
     rivals: pickBandRivals(raw, subject),
-    source: `Supabase listings, City='${city}', PropertyType='A', Active + Pending, ListPrice ${lo}..${hi}, pulled at build time`,
+    source: `Supabase listings, City='${city}', same property type${subject?.propertySubType ? ` (${subject.propertySubType})` : ''}, Active + Pending, ListPrice ${lo}..${hi}, pulled at build time`,
   }
 }
 
@@ -244,6 +297,46 @@ export function computeSubdivisionPulse(
     high: Math.max(...prices),
     months,
     source: `Supabase listings, SubdivisionName='${subdivision}', PropertyType='A', Closed, CloseDate ≥ ${sinceIso}: ${prices.length} sales`,
+  }
+}
+
+/** Closed sales in the last 90 days with the same bedroom count and whole baths. Never a ZIP dump. */
+export function computeSold90SameBedsBaths(input: {
+  rows: CmaMarketAreaRow[]
+  subject: Pick<CmaSubject, 'beds' | 'baths' | 'propertySubType' | 'city' | 'subdivision'>
+  asOf?: Date
+}): CmaSoldBand | null {
+  const asOf = input.asOf ?? new Date()
+  const beds = input.subject.beds
+  const baths = input.subject.baths
+  if (beds == null || !Number.isFinite(beds) || beds < 1) return null
+  if (baths == null || !Number.isFinite(baths) || baths <= 0) return null
+  const since90 = new Date(asOf.getTime() - 90 * 24 * 3600e3).toISOString().slice(0, 10)
+  const wholeBaths = Math.floor(baths)
+  const same = input.rows.filter((r) => {
+    if (r.StandardStatus !== 'Closed') return false
+    if ((r.CloseDate ?? '') < since90) return false
+    const price = Number(r.ClosePrice)
+    if (!Number.isFinite(price) || price <= 0) return false
+    if (Number(r.BedroomsTotal) !== beds) return false
+    if (!bathCountCompatible(baths, r.BathroomsTotal)) return false
+    if (!keepSameProductType(input.subject.propertySubType, r.property_sub_type ?? null)) return false
+    return true
+  })
+  const subdivision = input.subject.subdivision?.trim() ?? ''
+  const sub = subdivision ? same.filter((r) => (r.SubdivisionName ?? '').trim() === subdivision) : []
+  const used = sub.length >= 3 ? sub : same
+  const prices = used.map((r) => Number(r.ClosePrice)).filter((n) => Number.isFinite(n) && n > 0)
+  if (prices.length < 3) return null
+  const place = sub.length >= 3 ? subdivision : input.subject.city
+  const bedsLabel = `${beds} bedroom / ${wholeBaths} bath`
+  return {
+    count: prices.length,
+    low: Math.min(...prices),
+    median: median(prices),
+    high: Math.max(...prices),
+    bedsLabel,
+    source: `Oregon Data Share MLS. Closed ${bedsLabel} sales in ${place} in the last 90 days.`,
   }
 }
 
@@ -289,11 +382,12 @@ export async function buildCmaExtras(args: {
 
   const [skinny, bandInv, subRows, areaRows] = await Promise.all([
     getCmaCityClosedSkinny(args.subject.city, since36).catch(() => []),
-    getCmaBandInventory(args.subject.city, lo, hi).catch(() => null),
+    getCmaBandInventory(args.subject.city, lo, hi, args.subject.propertySubType).catch(() => null),
     subdivision ? getCmaSubdivisionClosed(subdivision, since12).catch(() => []) : Promise.resolve([]),
     getCmaMarketAreaRows(args.subject.city, since12).catch(() => []),
   ])
 
+  const photoUrl = args.subject.photoUrl?.trim() ?? ''
   return {
     seasonality: computeSeasonality(skinny, args.subject.city, since36),
     band: computeBandPosition(bandInv, args.subject.city, lo, hi, args.subject),
@@ -307,5 +401,7 @@ export async function buildCmaExtras(args: {
       pricing: args.pricing,
       asOf,
     }),
+    sold90: computeSold90SameBedsBaths({ rows: areaRows, subject: args.subject, asOf }),
+    photos: photoUrl ? { current: [photoUrl], historical: [] } : null,
   }
 }

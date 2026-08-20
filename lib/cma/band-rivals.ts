@@ -18,6 +18,7 @@ export type CmaBandRival = {
   photoUrl: string | null
   latitude: number | null
   longitude: number | null
+  propertySubType?: string | null
 }
 
 export type BandStreetRow = {

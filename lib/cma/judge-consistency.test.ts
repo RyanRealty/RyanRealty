@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkJudgmentConsistency, type CompVerdict } from '@/lib/cma/judge-consistency'
+import { alignNarrativeToPricedSet, checkJudgmentConsistency, type CompVerdict } from '@/lib/cma/judge-consistency'
 import type { CmaComp } from '@/lib/cma/types'
 
 /** Minimal comp whose $/sqft is exactly what the test wants to assert on. */
@@ -228,5 +228,20 @@ describe('checkJudgmentConsistency', () => {
       narrative: '',
     })
     expect(res.violations.some((v) => v.includes('No usable'))).toBe(true)
+  })
+})
+
+describe('alignNarrativeToPricedSet', () => {
+  it('drops a sentence that calls a priced sale excluded', () => {
+    const priced = [
+      { listingKey: 'K', address: '1740 Karena' },
+      { listingKey: 'S', address: '947 6th' },
+    ]
+    const out = alignNarrativeToPricedSet(
+      priced,
+      'Two comparable sales were retained, priced from $420 to $478 per square foot. The Karena sale was excluded because its lot places it in a higher segment.',
+    )
+    expect(out).toContain('Two comparable sales were retained')
+    expect(out).not.toMatch(/Karena sale was excluded/i)
   })
 })

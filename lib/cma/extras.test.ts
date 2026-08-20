@@ -10,8 +10,10 @@ import {
   computeBandPosition,
   computeSubdivisionPulse,
   computePhotoBench,
+  computeSold90SameBedsBaths,
 } from './extras'
 import type { CmaAdjustedComp } from './types'
+import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 
 function closedRow(closeDate: string, dtp: number | null, fin: string | null = '{"Conventional": true}') {
   return { CloseDate: closeDate, days_to_pending: dtp, buyer_financing: fin }
@@ -112,6 +114,50 @@ describe('computeBandPosition', () => {
   it('a failed inventory pull ships nothing', () => {
     expect(computeBandPosition(null, 'Bend', 1, 2)).toBeNull()
   })
+
+  it('drops townhouses and condos when the subject is a detached house', () => {
+    const b = computeBandPosition(
+      {
+        activeAsks: [465000, 438995],
+        activeDaysOnMarket: [17, 40],
+        pendingCount: 1,
+        activeRows: [
+          {
+            ListingKey: 'sfr',
+            StreetNumber: '947',
+            StreetName: '6th',
+            ListPrice: 465000,
+            StandardStatus: 'Active',
+            DaysOnMarket: 17,
+            PhotoURL: null,
+            Latitude: 44.05,
+            Longitude: -121.29,
+            property_sub_type: 'Single Family Residence',
+          },
+          {
+            ListingKey: 'th',
+            StreetNumber: '61737',
+            StreetName: 'Santorini',
+            ListPrice: 438995,
+            StandardStatus: 'Active',
+            DaysOnMarket: 40,
+            PhotoURL: null,
+            Latitude: 44.04,
+            Longitude: -121.28,
+            property_sub_type: 'Townhouse',
+          },
+        ],
+        pendingRows: [],
+      },
+      'Bend',
+      425000,
+      510000,
+      { latitude: 44.05, longitude: -121.29, propertySubType: 'Single Family Residence' },
+    )
+    expect(b!.activeCount).toBe(1)
+    expect(b!.rivals.map((r) => r.address)).toEqual(['947 6th'])
+    expect(b!.rivals.some((r) => /santorini/i.test(r.address))).toBe(false)
+  })
 })
 
 describe('computeSubdivisionPulse', () => {
@@ -157,5 +203,62 @@ describe('computePhotoBench', () => {
     expect(computePhotoBench(null, [comp(30), comp(40), comp(50)])).toBeNull()
     expect(computePhotoBench(0, [comp(30), comp(40), comp(50)])).toBeNull()
     expect(computePhotoBench(12, [comp(30), comp(40)])).toBeNull()
+  })
+})
+
+describe('computeSold90SameBedsBaths', () => {
+  function row(over: Partial<CmaMarketAreaRow> = {}): CmaMarketAreaRow {
+    return {
+      StandardStatus: 'Closed',
+      ListPrice: 480000,
+      ClosePrice: 475000,
+      CloseDate: '2026-07-01',
+      ListDate: '2026-05-01',
+      OnMarketDate: '2026-05-01',
+      TotalLivingAreaSqFt: 1600,
+      BedroomsTotal: 3,
+      BathroomsTotal: 2,
+      DaysOnMarket: 14,
+      CumulativeDaysOnMarket: 14,
+      status_change_timestamp: '2026-07-01',
+      SubdivisionName: 'Heritage Ranch',
+      property_sub_type: 'Single Family Residence',
+      ...over,
+    }
+  }
+  const subject = {
+    beds: 3,
+    baths: 2,
+    propertySubType: 'Single Family Residence',
+    city: 'Redmond',
+    subdivision: 'Heritage Ranch',
+  }
+  const asOf = new Date('2026-08-17T00:00:00Z')
+
+  it('needs three same-bed same-bath closes in 90 days', () => {
+    const band = computeSold90SameBedsBaths({
+      rows: [row(), row({ ClosePrice: 490000, CloseDate: '2026-06-15' }), row({ ClosePrice: 460000, CloseDate: '2026-07-20' })],
+      subject,
+      asOf,
+    })
+    expect(band).not.toBeNull()
+    expect(band!.count).toBe(3)
+    expect(band!.bedsLabel).toBe('3 bedroom / 2 bath')
+    expect(band!.source).toContain('Heritage Ranch')
+    expect(band!.source).not.toMatch(/ZIP/i)
+  })
+
+  it('drops a different bed count and a different whole-bath count', () => {
+    const band = computeSold90SameBedsBaths({
+      rows: [
+        row(),
+        row({ ClosePrice: 490000 }),
+        row({ BedroomsTotal: 2, ClosePrice: 400000 }),
+        row({ BathroomsTotal: 3, ClosePrice: 510000 }),
+      ],
+      subject,
+      asOf,
+    })
+    expect(band).toBeNull()
   })
 })

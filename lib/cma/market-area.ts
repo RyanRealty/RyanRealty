@@ -243,12 +243,48 @@ export function productClass(subType: string | null): ProductClass | null {
  * comparability") after the fact — enforcing it at SELECTION is the fix, since
  * the judge only sees the contaminated set the selector already chose.
  *
- * Unknown fails OPEN on either side, matching lotCharacterCompatible: excluding
- * on absent data silently drops good comps, and the judge is still downstream.
+ * Unknown fails CLOSED. PropertyType='A' mixes detached houses with
+ * townhomes and condos. A missing sub-type used to fail open and that is
+ * how attached product entered an SFR set (the rivals page, and any priced
+ * sale whose subtype was blank). Same product type only. Townhouse is not
+ * a condominium.
  */
+export type AttachedKind = 'townhouse' | 'condo' | 'tic' | 'other-attached'
+
+export function attachedKind(subType: string): AttachedKind {
+  const s = subType.toLowerCase()
+  if (s.includes('town')) return 'townhouse'
+  if (s.includes('condo')) return 'condo'
+  if (s.includes('tenancy')) return 'tic'
+  return 'other-attached'
+}
+
 export function productTypeCompatible(subjectSubType: string | null, compSubType: string | null): boolean {
   const subjectClass = productClass(subjectSubType)
   const compClass = productClass(compSubType)
-  if (subjectClass == null || compClass == null) return true
-  return subjectClass === compClass
+  if (subjectClass == null || compClass == null) return false
+  if (subjectClass !== compClass) return false
+  if (subjectClass === 'attached') {
+    return attachedKind(subjectSubType!) === attachedKind(compSubType!)
+  }
+  return true
+}
+
+/** Rivals and market-area rows. Known subject uses the hard rule. Unknown subject still drops attached product. */
+export function keepSameProductType(subjectSubType: string | null, otherSubType: string | null): boolean {
+  if (productClass(subjectSubType) != null) return productTypeCompatible(subjectSubType, otherSubType)
+  const other = productClass(otherSubType)
+  return other == null || other === 'detached'
+}
+
+/**
+ * Whole bathroom count must match. A one-bath house and a two-bath house
+ * are different buyers. Half baths do not change the whole count (1.0 and
+ * 1.5 both count as one). Unknown on the sale fails closed when the
+ * subject count is known.
+ */
+export function bathCountCompatible(subjectBaths: number | null, compBaths: number | null): boolean {
+  if (subjectBaths == null || !Number.isFinite(subjectBaths) || subjectBaths <= 0) return true
+  if (compBaths == null || !Number.isFinite(compBaths) || compBaths <= 0) return false
+  return Math.floor(subjectBaths) === Math.floor(compBaths)
 }

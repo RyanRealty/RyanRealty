@@ -36,10 +36,11 @@ export function compFlyerPage(
   const vsList = soldVsList(comp)
   const place = clientPlaceClause(comp.subdivision, comp.city)
   return {
+    flyer: true,
     meta: `Comparable Sale ${index + 1} of ${comps.length}${place ? ` · ${esc(place)}` : ''}`,
     toc: index === 0 ? 'Comparable sale detail, one page each' : undefined,
     body: `
-  <div class="flyer-badge">Closed ${monthYear(comp.closeDate)}${comp.daysToOffer != null ? ` · ${int(comp.daysToOffer)}d to offer` : ''} · ${esc(comp.selectionTier)} comp</div>
+  <p class="flyer-kicker">Closed ${monthYear(comp.closeDate)}${comp.daysToOffer != null ? ` · ${int(comp.daysToOffer)}d to offer` : ''}${comp.selectionTier ? ` · ${esc(comp.selectionTier)} comp` : ''}</p>
   <h1 class="flyer-title">${esc(comp.address)}</h1>
   <div class="flyer-sub">${esc(comp.city)}, Oregon${cleanText(comp.subdivision) ? ` · ${esc(cleanText(comp.subdivision)!)}` : ''}${comp.mlsNumber ? ` · MLS ${esc(comp.mlsNumber)}` : ''}${comp.proximity ? ` · ${esc(comp.proximity)} from the subject` : ''}</div>
   ${hero ? `<img class="flyer-hero" src="${esc(hero)}" alt="${esc(comp.address)}" />` : '<div class="flyer-hero is-empty">Photo not retained on the closed listing</div>'}
@@ -47,22 +48,22 @@ export function compFlyerPage(
     <div class="s"><div class="l">Beds</div><div class="v">${int(comp.beds)}</div></div>
     <div class="s"><div class="l">Baths</div><div class="v">${dec(comp.baths, 0)}</div></div>
     <div class="s"><div class="l">Sqft</div><div class="v">${int(comp.sqft)}</div></div>
-    <div class="s"><div class="l">Lot</div><div class="v">${comp.lotAcres != null ? `${dec(comp.lotAcres, 2)} ac` : '—'}</div></div>
-    <div class="s"><div class="l">Year</div><div class="v">${comp.yearBuilt ?? '—'}</div></div>
-    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">${ppsf != null ? usd(ppsf) : '—'}</div></div>
+    <div class="s"><div class="l">Lot</div><div class="v">${comp.lotAcres != null ? `${dec(comp.lotAcres, 2)} ac` : '-'}</div></div>
+    <div class="s"><div class="l">Year</div><div class="v">${comp.yearBuilt ?? '-'}</div></div>
+    <div class="s featured"><div class="l">Sold $/sqft</div><div class="v">${ppsf != null ? usd(ppsf) : '-'}</div></div>
   </div>
   ${remarks ? `<p class="flyer-desc">${esc(remarks)}</p>` : ''}
   <div class="flyer-features">
     <div class="f"><div class="fl">List Price</div><div class="fv">${usd(comp.listPrice)}</div></div>
     <div class="f"><div class="fl">Sold Price</div><div class="fv">${usd(comp.closePrice)}</div></div>
-    <div class="f"><div class="fl">Seller concessions</div><div class="fv">${comp.concessionsAmount != null ? usd(comp.concessionsAmount) : '—'}</div></div>
-    <div class="f"><div class="fl">Seller net from price</div><div class="fv">${comp.sellerNet != null ? usd(comp.sellerNet) : '—'}</div></div>
-    <div class="f"><div class="fl">Sold vs List</div><div class="fv">${vsList ? esc(vsList) : '—'}</div></div>
+    <div class="f"><div class="fl">Seller concessions</div><div class="fv">${comp.concessionsAmount != null ? usd(comp.concessionsAmount) : '-'}</div></div>
+    <div class="f"><div class="fl">Seller net from price</div><div class="fv">${comp.sellerNet != null ? usd(comp.sellerNet) : '-'}</div></div>
+    <div class="f"><div class="fl">Sold vs List</div><div class="fv">${vsList ? esc(vsList) : '-'}</div></div>
     <div class="f"><div class="fl">Close Date</div><div class="fv">${dateLong(comp.closeDate)}</div></div>
-    <div class="f"><div class="fl">Days on Market</div><div class="fv">${comp.daysToOffer != null ? `${int(comp.daysToOffer)} to offer` : '—'}${comp.domTotal != null ? ` · DOM ${int(comp.domTotal)}` : ''}</div></div>
-    <div class="f"><div class="fl">Distance from Subject</div><div class="fv">${comp.proximity ? esc(comp.proximity) : '—'}</div></div>
+    <div class="f"><div class="fl">Days on Market</div><div class="fv">${comp.daysToOffer != null ? `${int(comp.daysToOffer)} to offer` : '-'}${comp.domTotal != null ? ` · DOM ${int(comp.domTotal)}` : ''}</div></div>
+    <div class="f"><div class="fl">Distance from Subject</div><div class="fv">${comp.proximity ? esc(comp.proximity) : '-'}</div></div>
     ${formatClientMlsField(comp.viewDescription) ? `<div class="f"><div class="fl">View</div><div class="fv">${esc(formatClientMlsField(comp.viewDescription)!)}</div></div>` : ''}
-    <div class="f"><div class="fl">Adjusted to Subject</div><div class="fv">${usd(comp.adjustedPrice)}</div></div>
+    <div class="f"><div class="fl">This sale as your house</div><div class="fv">${usd(comp.adjustedPrice)}</div></div>
   </div>
   ${remarks ? '<p class="small">Description quoted from the MLS listing record.</p>' : ''}`,
   }

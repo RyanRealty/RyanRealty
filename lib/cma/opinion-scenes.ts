@@ -5,6 +5,7 @@
 
 import { renderBandRivalsSceneHtml } from '@/lib/cma/band-rivals'
 import { renderCompStripHtml } from '@/lib/cma/comp-strip'
+import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { compsPriceChartSvg } from '@/lib/cma/comps-price-chart'
 import { whyThisListPrice } from '@/lib/cma/client-facing'
@@ -71,13 +72,14 @@ function competitionScene(a: OpinionSceneArgs): string {
 }
 
 function salesScene(a: OpinionSceneArgs): string {
-  const pinMap = renderCompPinMapHtml(a.subject, a.comps)
+  const pinMap = renderCompPinMapHtml(a.subject, a.comps, a.mapDataUri)
   return `
   <section class="sc sc-cream" id="evidence">
     <div class="in wide">
       <div class="kick r">The sales that set it</div>
-      <h2 class="h r">The three sales that set the number</h2>
-      <p class="lede r">Tap a house. The pin lights up.</p>
+      <h2 class="h r">The sales that set the number</h2>
+      <p class="lede r">Subject in the first column. Each kept sale is a column.</p>
+      <div class="r">${renderCompMatrixHtml(a.subject, a.comps)}</div>
       ${pinMap ? `<div class="pin-map-wrap r">${pinMap}</div>` : ''}
       <div class="r">${renderCompStripHtml(a.comps)}</div>
     </div>
@@ -132,7 +134,6 @@ function subdivisionScene(a: OpinionSceneArgs): string {
     <div class="in wide">
       <div class="kick r">This subdivision</div>
       <h2 class="h r">${esc(f.name)}</h2>
-      ${a.mapDataUri ? `<img class="map-img is-plat r" src="${a.mapDataUri}" alt="${esc(f.name)}"/>` : ''}
       <p class="lede r">${int(f.totalSales)} homes have sold in ${esc(f.name)}.</p>
       ${sections ? `<div class="sty-grid">${sections}</div>` : ''}
       <div class="yr r" role="img" aria-label="Median close price by year in ${esc(f.name)}">${yearBars}</div>

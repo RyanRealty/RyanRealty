@@ -13,7 +13,7 @@ describe('CMA register shell — inbound packet', () => {
     expect(html).toContain('Your report on 1842 NW Foo St')
     expect(html).toContain('The recommended list for 1842 NW Foo St, and why')
     expect(html).toContain('Who you are competing with at that price')
-    expect(html).toContain('The three sales that set the number')
+    expect(html).toContain('The sales that set the number')
     expect(html).not.toMatch(/how we would market|listing video|flyers/i)
     expect(html).not.toMatch(/what your home is worth/i)
     expect(html).not.toMatch(/What every listing gets/i)
@@ -23,7 +23,7 @@ describe('CMA register shell — inbound packet', () => {
       'Your report on 1842 NW Foo St is ready',
       'The recommended list for 1842 NW Foo St, and why',
       'Who you are competing with at that price',
-      'The three sales that set the number',
+      'The sales that set the number',
     ]
     for (const line of visible) {
       const voice = checkBrandVoice(line)

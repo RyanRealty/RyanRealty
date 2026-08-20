@@ -37,6 +37,46 @@ function median(values: number[]): number {
   return s.length % 2 === 0 ? (s[mid - 1]! + s[mid]!) / 2 : s[mid]!
 }
 
+/** Interpolated percentile of a sorted-ascending numeric array. */
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0
+  if (sorted.length === 1) return sorted[0]!
+  const idx = (sorted.length - 1) * p
+  const lo = Math.floor(idx)
+  const hi = Math.ceil(idx)
+  const frac = idx - lo
+  return sorted[lo]! * (1 - frac) + sorted[hi]! * frac
+}
+
+function asSaleToList(n: number | null | undefined): number | null {
+  if (n == null || !Number.isFinite(n) || n <= 0) return null
+  return n > 2 ? n / 100 : n
+}
+
+function listFromClose(close: number, ratio: number | null): number {
+  if (ratio != null && ratio > 0) return round1000(close / ratio)
+  return close
+}
+
+/**
+ * Sale band from the same trimmed $/sqft set as the close. These are
+ * contract prices, not list prices.
+ */
+export function saleBandFromAdjusted(
+  subjectSqft: number,
+  adjusted: Array<{ ppsfTimeAdjusted: number }>,
+): { low: number; mid: number; high: number } | null {
+  if (subjectSqft <= 0 || adjusted.length < PRICING_MIN_COMPS) return null
+  const trimmed = trimPpsfOutliers(adjusted)
+  const vals = trimmed.map((r) => r.ppsfTimeAdjusted).filter((n) => n > 0).sort((a, b) => a - b)
+  if (vals.length < PRICING_MIN_COMPS) return null
+  return {
+    low: round1000(percentile(vals, 0.25) * subjectSqft),
+    mid: round1000(percentile(vals, 0.5) * subjectSqft),
+    high: round1000(percentile(vals, 0.75) * subjectSqft),
+  }
+}
+
 function round1000(n: number): number {
   return Math.round(n / 1000) * 1000
 }
@@ -67,17 +107,29 @@ export function predictedCloseFromAdjusted(
 }
 
 /**
- * Listed homes: the close is last ask × 0.98. Comps do not pick the close
- * and do not pick the multiplier. A thin same-subdivision set's sale-to-ask
+ * Live listings only: the close is current ask × 0.98. Comps do not pick
+ * that close or the multiplier. A thin same-subdivision set's sale-to-ask
  * (one nearby sale at 1.18× its own ask) is how a $1.20M list became a
  * $1.418M close estimate. Measured 2024–mid-2026 detached, last_ask × 0.98
- * is inside 10% on 98.31% of 8,648 listed closes. Comp $/sqft still prices
- * an unlisted subject. An ask 40%+ from a tight same-subdivision set is
- * flagged, not substituted.
+ * is inside 10% on 98.31% of 8,648 listed closes.
+ *
+ * A closed, expired, withdrawn, or canceled ListPrice is not today's ask.
+ * Comp $/sqft prices those subjects. An ask 40%+ from a tight
+ * same-subdivision set is flagged, not substituted.
  */
 export const ASK_HAIRCUT = 0.98
 export const ASK_AGREE = 0.2
 export const ASK_OFF_MARKET = 0.4
+const LIVE_ASK = /active|pending|coming/i
+
+/** Current list price, or null when the home is not on the market. */
+export function currentListAsk(
+  subject: Pick<CmaSubject, 'lastListPrice' | 'standardStatus'>,
+): number | null {
+  const ask = subject.lastListPrice
+  if (ask == null || !(ask > 0)) return null
+  return LIVE_ASK.test(subject.standardStatus ?? '') ? ask : null
+}
 
 export function reconcileAskAndComps(opts: {
   compClose: number | null
@@ -176,6 +228,8 @@ export type EngineListResult = {
   predictedClose: number | null
   compsImpliedClose: number | null
   recommendedList: number | null
+  conservativeList: number | null
+  highEndList: number | null
   source: 'ask' | 'comps' | 'none'
   offMarketAsk?: boolean
 }
@@ -190,10 +244,12 @@ export function listPriceFromEngine(opts: {
   adjusted: Array<{ ppsfTimeAdjusted: number }>
   saleToAskRatios: number[]
   asOfSaleToOriginal?: number | null
+  marketSaleToList?: number | null
   qualitySet: boolean
   methodFallback?: number | null
 }): EngineListResult {
-  const compsImpliedClose = predictedCloseFromAdjusted(opts.subjectSqft, opts.adjusted)
+  const band = saleBandFromAdjusted(opts.subjectSqft, opts.adjusted)
+  const compsImpliedClose = band?.mid ?? predictedCloseFromAdjusted(opts.subjectSqft, opts.adjusted)
   const reconciled = reconcileAskAndComps({
     compClose: compsImpliedClose,
     lastAsk: opts.lastAsk,
@@ -201,17 +257,28 @@ export function listPriceFromEngine(opts: {
   })
   const predictedClose = reconciled.close
   const mid = predictedClose ?? opts.methodFallback ?? null
-  const regimeRatio =
-    opts.asOfSaleToOriginal != null && opts.asOfSaleToOriginal > 0 ? opts.asOfSaleToOriginal : null
-  const ratios = opts.saleToAskRatios.filter((n) => Number.isFinite(n) && n > 0)
-  const medianRatio =
-    regimeRatio ?? (ratios.length ? [...ratios].sort((a, b) => a - b)[Math.floor(ratios.length / 2)]! : null)
-  const recommendedList =
-    mid != null && medianRatio != null && medianRatio > 0 ? Math.round(mid / medianRatio / 1000) * 1000 : mid
+  const ratio =
+    asSaleToList(opts.asOfSaleToOriginal) ??
+    asSaleToList(opts.marketSaleToList) ??
+    (() => {
+      const ratios = opts.saleToAskRatios.filter((n) => Number.isFinite(n) && n > 0)
+      return ratios.length >= 3
+        ? [...ratios].sort((a, b) => a - b)[Math.floor(ratios.length / 2)]!
+        : null
+    })()
+  const recommendedList = mid != null ? listFromClose(mid, ratio) : null
+  let conservativeList = band != null ? listFromClose(band.low, ratio) : null
+  let highEndList = band != null ? listFromClose(band.high, ratio) : null
+  if (reconciled.source === 'comps' && recommendedList != null) {
+    if (conservativeList != null && conservativeList > recommendedList) conservativeList = recommendedList
+    if (highEndList != null && highEndList < recommendedList) highEndList = recommendedList
+  }
   return {
     predictedClose,
     compsImpliedClose,
     recommendedList,
+    conservativeList,
+    highEndList,
     source: reconciled.source,
     offMarketAsk: reconciled.offMarketAsk,
   }
@@ -220,7 +287,7 @@ export function listPriceFromEngine(opts: {
 /** Write the engine list onto the CMA cover. A broker override still wins. */
 export function applyEngineRecommendedList(
   pricing: CmaPricing,
-  engine: Pick<EngineListResult, 'recommendedList' | 'predictedClose'>,
+  engine: Pick<EngineListResult, 'recommendedList' | 'predictedClose' | 'conservativeList' | 'highEndList'>,
   opts: { priceOverride?: number | null } = {},
 ): CmaPricing {
   const close =
@@ -232,8 +299,9 @@ export function applyEngineRecommendedList(
   if (list == null || !Number.isFinite(list) || list <= 0) {
     return close != null ? { ...pricing, predictedClose: close } : pricing
   }
-  const conservative = pricing.conservative != null ? Math.min(pricing.conservative, list) : list
-  const highEnd = pricing.highEnd != null ? Math.max(pricing.highEnd, list) : list
+  const conservative =
+    engine.conservativeList != null && engine.conservativeList > 0 ? engine.conservativeList : list
+  const highEnd = engine.highEndList != null && engine.highEndList > 0 ? engine.highEndList : list
   return {
     ...pricing,
     recommended: list,
@@ -271,6 +339,7 @@ export function applyEngineCoverToCmaPricing(
     asOf: string
     usedTiers: string[]
     priceOverride?: number | null
+    marketSaleToList?: number | null
   },
 ): CmaPricing {
   const asOfPpsf = asOfIndexPoint(input.marketIndex, input.asOf)
@@ -287,6 +356,7 @@ export function applyEngineCoverToCmaPricing(
     adjusted: input.adjusted,
     saleToAskRatios,
     asOfSaleToOriginal: asOfPpsf?.saleToOriginal,
+    marketSaleToList: input.marketSaleToList,
     qualitySet,
     methodFallback: pricing.method3 ?? pricing.method1Mid,
   })
@@ -316,13 +386,14 @@ export function priceCmaSet(args: {
   if (!pricing) return null
   return applyEngineCoverToCmaPricing(pricing, {
     subjectSqft: args.subject.sqft ?? 0,
-    lastAsk: args.subject.lastListPrice,
+    lastAsk: currentListAsk(args.subject),
     adjusted: args.adjusted,
     pricingSales: args.selection.pricingSales ?? [],
     marketIndex: args.marketIndex,
     asOf: args.asOf,
     usedTiers: args.selection.tiersUsed,
     priceOverride: args.input.priceOverride,
+    marketSaleToList: args.market?.saleToListRatio,
   })
 }
 
@@ -368,10 +439,11 @@ export function estimateClosePrice(opts: {
     .filter((n): n is number => n != null && n > 0)
   const engine = listPriceFromEngine({
     subjectSqft: opts.subject.sqft ?? 0,
-    lastAsk: opts.subject.lastListPrice,
+    lastAsk: currentListAsk(opts.subject),
     adjusted,
     saleToAskRatios: ratios,
     asOfSaleToOriginal: asOfPpsf?.saleToOriginal,
+    marketSaleToList: opts.market?.saleToListRatio,
     qualitySet,
     methodFallback: pricing?.method3 ?? pricing?.method1Mid ?? null,
   })

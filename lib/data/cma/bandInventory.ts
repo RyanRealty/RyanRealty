@@ -1,14 +1,15 @@
 /**
  * Live competition in the subject's list-price band.
- * Per docs/DATABASE_FOR_AI_AGENTS.md §4: SFR is PropertyType='A'.
- * Names the houses. Does not dump the city.
+ * Per docs/DATABASE_FOR_AI_AGENTS.md §4: PropertyType='A' is the MLS
+ * residential bucket, not "detached house." Townhouses and condos sit
+ * in A. Same property_sub_type only.
  */
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 
 const BAND_SELECT =
-  'ListingKey, StreetNumber, StreetName, ListPrice, StandardStatus, DaysOnMarket, PhotoURL, Latitude, Longitude'
+  'ListingKey, StreetNumber, StreetName, ListPrice, StandardStatus, DaysOnMarket, PhotoURL, Latitude, Longitude, property_sub_type'
 
 export type CmaBandListingRow = {
   ListingKey: string
@@ -20,6 +21,7 @@ export type CmaBandListingRow = {
   PhotoURL: string | null
   Latitude: number | null
   Longitude: number | null
+  property_sub_type?: string | null
 }
 
 export type CmaBandInventory = {
@@ -45,11 +47,13 @@ export async function getCmaBandInventory(
   city: string,
   lo: number,
   hi: number,
+  subjectSubType?: string | null,
 ): Promise<CmaBandInventory | null> {
   const sb = client()
   if (!sb) return null
-  const scoped = (status: 'Active' | 'Pending') =>
-    sb
+  const subType = subjectSubType?.trim() || null
+  const scoped = (status: 'Active' | 'Pending') => {
+    let q = sb
       .from('listings')
       .select(BAND_SELECT, { count: 'exact' })
       .eq('City', city)
@@ -57,7 +61,9 @@ export async function getCmaBandInventory(
       .eq('StandardStatus', status)
       .gte('ListPrice', lo)
       .lte('ListPrice', hi)
-      .limit(40)
+    if (subType) q = q.eq('property_sub_type', subType)
+    return q.limit(40)
+  }
   const [actives, pendings] = await Promise.all([scoped('Active'), scoped('Pending')])
   if (actives.error || pendings.error) {
     console.error('[getCmaBandInventory]', actives.error?.message ?? pendings.error?.message)

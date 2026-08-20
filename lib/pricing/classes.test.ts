@@ -66,12 +66,14 @@ describe('classifyHoa / lot / story / product', () => {
     expect(classifyStory({ 'Three Or More': true }, null)).toBe('three_plus')
     expect(classifyStory(null, null)).toBe('unknown')
   })
-  it('keeps attached / manufactured off a detached subject', () => {
+  it('keeps townhouse, condo, and detached as distinct products', () => {
     expect(classifyProduct('Single Family Residence')).toBe('detached')
-    expect(classifyProduct('Townhouse')).toBe('attached')
+    expect(classifyProduct('Townhouse')).toBe('townhouse')
+    expect(classifyProduct('Condominium')).toBe('condo')
     expect(classifyProduct('Manufactured On Land')).toBe('manufactured')
-    expect(productCompatible('detached', 'attached')).toBe(false)
-    expect(productCompatible('detached', 'unknown')).toBe(true)
+    expect(productCompatible('detached', 'townhouse')).toBe(false)
+    expect(productCompatible('townhouse', 'condo')).toBe(false)
+    expect(productCompatible('detached', 'unknown')).toBe(false)
   })
 })
 

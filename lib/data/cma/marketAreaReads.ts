@@ -28,10 +28,11 @@ export type CmaMarketAreaRow = {
   CumulativeDaysOnMarket: number | null
   status_change_timestamp: string | null
   SubdivisionName: string | null
+  property_sub_type?: string | null
 }
 
 const COLS =
-  'StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName'
+  'StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName, property_sub_type'
 
 type ListingQuery = {
   eq: (col: string, val: string) => ListingQuery

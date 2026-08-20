@@ -1,7 +1,7 @@
 /**
  * Second half of the valuation-document stylesheet: the per-comp flyer, the
  * comp map, and the capability sections added 2026-07-30 (contents, marketing
- * highlights, verdict pills, key/value fact tables) plus the print-fidelity
+ * highlights, status marks, key/value fact tables) plus the print-fidelity
  * rules. Split out of render-css.ts to keep both files inside the file-size
  * budget (ci:file-size-budget); it is concatenated by cmaStylesheet(), so the
  * cascade order is identical to one file.
@@ -9,16 +9,12 @@
 
 export function cmaSectionStyles(): string {
   return `
-  .flyer-badge {
-    display: inline-block;
-    background: var(--navy);
-    color: var(--cream);
-    font-size: 8.5px;
+  .flyer-kicker {
+    font-size: 10px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    padding: 3px 11px;
-    border-radius: 999px;
-    margin-bottom: 8px;
+    color: var(--muted);
+    margin: 0 0 8px 0;
   }
   .flyer-title {
     font-family: 'Amboqia Boriango', Georgia, serif;
@@ -76,7 +72,7 @@ export function cmaSectionStyles(): string {
     margin-bottom: 9px;
     font-size: 9px;
   }
-  .flyer-features .f { background: var(--navy-fill); padding: 4px 8px; border-radius: 5px; color: var(--navy); }
+  .flyer-features .f { background: transparent; padding: 4px 0; border-top: 1px solid var(--navy-line); color: var(--navy); }
   .flyer-features .f .fl {
     font-size: 7.5px;
     letter-spacing: 0.10em;
@@ -100,9 +96,8 @@ export function cmaSectionStyles(): string {
     grid-template-columns: 1.15in 1fr;
     gap: 12px;
     border: 1px solid var(--navy-line);
-    background: #fff;
+    background: var(--cream);
     overflow: hidden;
-    border-radius: 0;
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -140,6 +135,7 @@ export function cmaSectionStyles(): string {
   }
   .comp-body { padding: 7px 9px 8px; }
   .comp-addr { font-size: 12px; font-weight: 600; color: var(--navy); line-height: 1.25; }
+  .comp-sold-when { font-size: 10px; color: var(--navy); margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
   .comp-nums { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 4px; }
   .comp-nl { display: block; font-size: 7.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .comp-nv { font-size: 12px; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
@@ -192,35 +188,30 @@ export function cmaSectionStyles(): string {
     border-left: 3px solid var(--navy);
     border-radius: 0;
     padding: 11px 13px;
-    background: white;
+    background: var(--cream);
   }
   .hl .hl-head { font-size: 12px; font-weight: 600; line-height: 1.3; color: var(--navy); }
   .hl .hl-basis { margin-top: 5px; font-size: 9.5px; line-height: 1.45; color: var(--muted); }
 
-  /* ── Verdict pills + capability chips ─────────────────────────────────── */
-  .verdict {
-    display: inline-block;
-    margin-left: 6px;
-    vertical-align: 1px;
-    background: var(--navy);
-    color: var(--cream);
-    font-size: 7.5px;
+  .status-mark {
+    display: inline;
+    margin-left: 8px;
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.10em;
     text-transform: uppercase;
-    padding: 2px 8px;
-    border-radius: 999px;
-  }
-  .verdict.is-yes { background: var(--navy); }
-  .verdict.is-no { background: transparent; color: var(--muted); border: 1px solid var(--navy-line); }
-  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px 0; }
-  .chips span {
-    font-size: 9px;
-    line-height: 1.2;
     color: var(--navy);
-    background: var(--navy-fill);
-    border-radius: 4px;
-    padding: 3px 7px;
+  }
+  .status-mark.is-no { color: var(--muted); font-weight: 500; }
+  .use-list {
+    margin: 4px 0 8px 1.1em;
+    padding: 0;
+  }
+  .use-list li {
+    font-size: 10.5px;
+    line-height: 1.4;
+    margin-bottom: 3px;
+    color: var(--navy);
   }
   .zone-line { font-size: 14px; margin-bottom: 6px; }
   .src { font-size: 9px; color: var(--muted); margin: 3px 0 10px 0; line-height: 1.4; }
@@ -241,9 +232,15 @@ export function cmaSectionStyles(): string {
   table.kv.is-wide th { width: 26%; }
   table.kv.is-wide td.v { width: 22%; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
   table.kv.compare-board th.v, table.kv.compare-board td.v { width: 18%; text-align: right; }
+  .comp-matrix-wrap { overflow-x: auto; margin: 8px 0 14px; }
+  table.comp-matrix { font-size: 10.5px; }
+  table.comp-matrix th, table.comp-matrix td { padding: 5px 6px; white-space: nowrap; }
+  table.comp-matrix thead th { text-align: right; }
+  table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }
+  table.comp-matrix td.is-diff { font-weight: 600; }
   .trend-svg { width: 100%; height: auto; display: block; }
   .photo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-  .photo-tile { margin: 0; overflow: hidden; border-radius: 0; }
+  .photo-tile { margin: 0; overflow: hidden; }
   .photo-tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0; display: block; }
   .photo-lead { grid-column: 1 / -1; }
   .photo-lead img { aspect-ratio: 16 / 9; }
@@ -255,16 +252,12 @@ export function cmaSectionStyles(): string {
   .status-tile { border: 1px solid var(--navy-line); padding: 8px; }
   .status-tile-n { font-family: var(--display); font-size: 22px; line-height: 1; }
   .status-tile-l { font-size: 9px; color: var(--muted); margin-top: 4px; }
-  .inv-verdict { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 600; }
+  .inv-verdict { display: block; margin-top: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
   .stat2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
   table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
 
   table.comps .sub-cell { font-size: 8px; color: var(--muted); margin-top: 1px; }
-  table.comps-adjust {
-    table-layout: fixed;
-    width: 100%;
-  }
   table.comps-adjust td.num, table.comps-adjust th.v {
     text-align: right;
     font-variant-numeric: tabular-nums;
@@ -324,7 +317,7 @@ export function cmaSectionStyles(): string {
     color: var(--muted);
     margin-bottom: 6px;
   }
-  .glance .g-a .verdict { margin-left: 0; }
+  .glance .g-a .status-mark { margin-left: 0; }
   .use-board {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -343,7 +336,7 @@ export function cmaSectionStyles(): string {
     border-left: 3px solid var(--navy);
     border-radius: 0;
     padding: 11px 13px;
-    background: #fff;
+    background: var(--cream);
     margin-bottom: 9px;
     break-inside: avoid;
     page-break-inside: avoid;
@@ -378,7 +371,7 @@ export function cmaSectionStyles(): string {
   }
 
   .rival-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 12px; }
-  .rival-card { border: 1px solid var(--navy-line); background: #fff; overflow: hidden; break-inside: avoid; }
+  .rival-card { border: 1px solid var(--navy-line); background: var(--cream); overflow: hidden; break-inside: avoid; }
   .rival-ph { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--navy-fill); }
   .rival-ph.is-empty { min-height: 72px; }
   .rival-body { padding: 8px 10px 10px; }

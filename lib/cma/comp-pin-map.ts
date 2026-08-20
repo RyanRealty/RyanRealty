@@ -37,7 +37,11 @@ function project(points: Pt[]): (p: Pt) => { x: number; y: number } {
 export function renderCompPinMapHtml(
   subject: Pick<CmaSubject, 'streetAddress' | 'latitude' | 'longitude'>,
   comps: readonly Pick<CmaAdjustedComp, 'address' | 'latitude' | 'longitude'>[],
+  mapDataUri?: string | null,
 ): string {
+  if (mapDataUri) {
+    return `<img class="pin-map" src="${esc(mapDataUri)}" alt="Comparable sales map" />`
+  }
   const subjectPt = finitePoint(subject.latitude, subject.longitude)
   const pins = comps
     .map((c, i) => {

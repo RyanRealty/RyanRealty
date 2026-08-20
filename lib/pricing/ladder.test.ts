@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isPricingQualityRung, pricingTierLadder } from '@/lib/pricing/ladder'
+import { PRICING_MAX_COMPS, PRICING_TARGET_COMPS, pricingTierLadder } from '@/lib/pricing/ladder'
 
 describe('pricingTierLadder — time before distance', () => {
   it('walks 3 then 6 then 9 months inside the subdivision before any mile ring', () => {
@@ -24,11 +24,8 @@ describe('pricingTierLadder — time before distance', () => {
     }
   })
 
-  it('does not treat a wide-GLA subdivision rung as a quality stop', () => {
-    const byName = Object.fromEntries(pricingTierLadder().map((t) => [t.name, t]))
-    expect(isPricingQualityRung(byName['subdivision-3mo']!)).toBe(true)
-    expect(isPricingQualityRung(byName['subdivision-3mo-wide']!)).toBe(false)
-    expect(isPricingQualityRung(byName['nearby-1mi-3mo']!)).toBe(true)
-    expect(isPricingQualityRung(byName['nearby-2mi-3mo']!)).toBe(false)
+  it('does not stop at three tight sales — target 8, cap 10', () => {
+    expect(PRICING_TARGET_COMPS).toBe(8)
+    expect(PRICING_MAX_COMPS).toBe(10)
   })
 })

@@ -4,7 +4,8 @@
  */
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
+import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
+import { crossesMajorDivide } from '@/lib/pricing/divides'
 import {
   classifyAgeBand,
   hoaCompatible,
@@ -28,9 +29,7 @@ import {
 import {
   PRICING_MAX_COMPS,
   PRICING_MIN_COMPS,
-  PRICING_QUALITY_STOP,
   PRICING_TARGET_COMPS,
-  isPricingQualityRung,
   pricingTierLadder,
   type AppleStrictness,
   type PricingTier,
@@ -60,6 +59,8 @@ export type PricingSubject = {
   /** City of Bend GIS mesh slug, or null outside every polygon. */
   marketArea?: string | null
   newConstruction?: boolean | null
+  /** Zoning of record. Hard cut only when both sides have a non-empty string. */
+  zoning?: string | null
 }
 
 export type PricingSale = {
@@ -97,6 +98,7 @@ export type PricingSale = {
   publicRemarks: string | null
   marketArea?: string | null
   newConstruction?: boolean | null
+  zoning?: string | null
 }
 
 export type SubdivisionCell = {
@@ -144,8 +146,21 @@ function slopOk(subject: number | null, comp: number | null, slop: number | null
   return Math.abs(subject - comp) <= slop
 }
 
+function normalizeZoning(raw: string | null | undefined): string | null {
+  const s = raw?.trim().toUpperCase() ?? ''
+  return s || null
+}
+
+function zoningCompatible(subjectZone: string | null | undefined, saleZone: string | null | undefined): boolean {
+  const a = normalizeZoning(subjectZone)
+  const b = normalizeZoning(saleZone)
+  if (!a || !b) return true
+  return a === b
+}
+
 function applesOk(subject: PricingSubject, sale: PricingSale, level: AppleStrictness): boolean {
   if (!productCompatible(subject.productClass, sale.productClass)) return false
+  if (!bathCountCompatible(subject.baths, sale.baths)) return false
   if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return false
   if (!resortCommunityCompatible(subject.subdivision, sale.subdivision)) return false
   // Water and sewer stay hard on every rung. A well house and a city-water
@@ -153,6 +168,8 @@ function applesOk(subject: PricingSubject, sale: PricingSale, level: AppleStrict
   // make them comparable.
   if (!waterCompatible(subject.waterClass, sale.waterClass)) return false
   if (!sewerCompatible(subject.sewerClass, sale.sewerClass)) return false
+  if (crossesMajorDivide(subject.marketArea, sale.marketArea)) return false
+  if (!zoningCompatible(subject.zoning, sale.zoning)) return false
   if (level === 'product_lot' || level === 'utilities') return true
   return hoaCompatible(subject.hoaClass, sale.hoaClass)
 }
@@ -241,6 +258,92 @@ function passesTier(
   return { ok: true, miles }
 }
 
+const GLA_BRACKET_BAND = 0.25
+
+function toSelected(subject: PricingSubject, sale: PricingSale, asOf: string, tierName: string): SelectedPricingComp {
+  return {
+    ...sale,
+    selectionTier: tierName,
+    proximity: proximityLabel(
+      { lat: subject.latitude, lng: subject.longitude },
+      { lat: sale.latitude, lng: sale.longitude },
+    ),
+    monthsBeforeAsOf: +monthsBetween(asOf, sale.closeDate).toFixed(1),
+  }
+}
+
+function glaWithinBand(subjectSqft: number, saleSqft: number, band: number): boolean {
+  return saleSqft >= subjectSqft * (1 - band) && saleSqft <= subjectSqft * (1 + band)
+}
+
+function saleMiles(subject: PricingSubject, sale: PricingSale): number {
+  return (
+    distanceMiles(
+      { lat: subject.latitude, lng: subject.longitude },
+      { lat: sale.latitude, lng: sale.longitude },
+    ) ?? 0
+  )
+}
+
+function bracketEligible(
+  subject: PricingSubject,
+  sale: PricingSale,
+  asOf: string,
+  wantLarger: boolean,
+): boolean {
+  if (subject.listingKey && sale.listingKey === subject.listingKey) return false
+  if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
+  if (sale.closeDate >= asOf) return false
+  if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return false
+  if (!applesOk(subject, sale, 'product_lot')) return false
+  if (!glaWithinBand(subject.sqft, sale.sqft, GLA_BRACKET_BAND)) return false
+  if (wantLarger) return sale.sqft > subject.sqft
+  return sale.sqft < subject.sqft
+}
+
+/**
+ * After the ladder: if every kept sale sits on one side of the subject's GLA
+ * and the unused pool already has an apples sale on the other side inside
+ * ±25%, swap out the farthest same-side sale. Never invents a comp.
+ */
+function bracketGla(
+  subject: PricingSubject,
+  comps: SelectedPricingComp[],
+  pool: PricingSale[],
+  asOf: string,
+): { comps: SelectedPricingComp[]; note: string | null } {
+  if (comps.length === 0) return { comps, note: null }
+  const allLarger = comps.every((c) => c.sqft > subject.sqft)
+  const allSmaller = comps.every((c) => c.sqft < subject.sqft)
+  if (!allLarger && !allSmaller) return { comps, note: null }
+
+  const kept = new Set(comps.map((c) => c.listingKey))
+  const wantLarger = allSmaller
+  const candidates = pool.filter((sale) => !kept.has(sale.listingKey) && bracketEligible(subject, sale, asOf, wantLarger))
+  if (candidates.length === 0) return { comps, note: null }
+
+  candidates.sort((a, b) => {
+    const size = Math.abs(a.sqft - subject.sqft) - Math.abs(b.sqft - subject.sqft)
+    if (size !== 0) return size
+    return b.closeDate.localeCompare(a.closeDate)
+  })
+  const incoming = candidates[0]!
+
+  const outgoing = comps.reduce((worst, c) => {
+    const size = Math.abs(c.sqft - subject.sqft) - Math.abs(worst.sqft - subject.sqft)
+    if (size > 0) return c
+    if (size < 0) return worst
+    return saleMiles(subject, c) > saleMiles(subject, worst) ? c : worst
+  })
+
+  const next = comps.filter((c) => c.listingKey !== outgoing.listingKey)
+  next.push(toSelected(subject, incoming, asOf, 'gla-bracket'))
+  return {
+    comps: next,
+    note: `GLA bracket: replaced ${outgoing.address} (${outgoing.sqft} sqft) with ${incoming.address} (${incoming.sqft} sqft) so the set is not all ${allLarger ? 'larger' : 'smaller'} than the subject.`,
+  }
+}
+
 function similarity(subject: PricingSubject, sale: PricingSale, asOf: string): number {
   const size = 1 / (1 + Math.abs(sale.sqft - subject.sqft) / subject.sqft)
   const recency = 1 / (1 + monthsBetween(asOf, sale.closeDate) / 9)
@@ -273,7 +376,7 @@ export function walkPricingLadder(
   const byKey = new Map<string, SelectedPricingComp>()
   const tiersUsed: string[] = []
   const trace: string[] = [
-    `As-of ${asOf}. Same subdivision first (3 then 6 then 9 months, then a wider GLA band on the same street), then distance, then similar-performing subdivisions. Hard cuts: product, rural/urban, resort, water, sewer, new vs resale, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
+    `As-of ${asOf}. Same subdivision first (3 then 6 then 9 months, then a wider GLA band on the same street), then distance, then similar-performing subdivisions. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, zoning when both sides have a zone, new vs resale, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
   ]
 
   if (!subject.sqft || subject.sqft < 300) {
@@ -290,15 +393,7 @@ export function walkPricingLadder(
       if (byKey.has(sale.listingKey)) continue
       const { ok, miles } = passesTier(subject, sale, tier, asOf, cells)
       if (!ok) continue
-      byKey.set(sale.listingKey, {
-        ...sale,
-        selectionTier: tier.name,
-        proximity: proximityLabel(
-          { lat: subject.latitude, lng: subject.longitude },
-          { lat: sale.latitude, lng: sale.longitude },
-        ),
-        monthsBeforeAsOf: +monthsBetween(asOf, sale.closeDate).toFixed(1),
-      })
+      byKey.set(sale.listingKey, toSelected(subject, sale, asOf, tier.name))
       added++
     }
     if (added > 0) {
@@ -310,17 +405,17 @@ export function walkPricingLadder(
       )
       if (tier.disclosure) trace.push(tier.disclosure)
     }
-    if (isPricingQualityRung(tier) && byKey.size >= PRICING_QUALITY_STOP) {
-      trace.push(
-        `Stopped at ${byKey.size} apples on ${tier.name}. Three tight sales beat a wider mix.`,
-      )
-      break
-    }
     if (byKey.size >= PRICING_TARGET_COMPS) break
   }
 
   const ranked = [...byKey.values()].sort((a, b) => similarity(subject, b, asOf) - similarity(subject, a, asOf))
-  const comps = ranked.slice(0, PRICING_MAX_COMPS).sort((a, b) => b.closeDate.localeCompare(a.closeDate))
+  const sliced = ranked.slice(0, PRICING_MAX_COMPS)
+  const bracketed = bracketGla(subject, sliced, pool, asOf)
+  if (bracketed.note) {
+    if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
+    trace.push(bracketed.note)
+  }
+  const comps = [...bracketed.comps].sort((a, b) => b.closeDate.localeCompare(a.closeDate))
   const reachedTarget = comps.length >= PRICING_TARGET_COMPS
   if (comps.length < PRICING_MIN_COMPS) {
     trace.push(`Only ${comps.length} comparable sale(s) after the full ladder. The estimate needs broker review.`)

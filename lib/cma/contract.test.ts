@@ -232,4 +232,64 @@ describe('evaluateAccuracyContract', () => {
     expect(check.pass).toBe(false)
     expect(check.detail).toContain('Comp 3 is a townhome')
   })
+
+  it('hard-fails when a townhouse is used to price a single-family house', () => {
+    const comps = [
+      ...tightSet().slice(0, 5).map((c) => ({ ...c, propertySubType: 'Single Family Residence' })),
+      comp({ closePrice: 700000, sqft: 2000, propertySubType: 'Townhouse' }),
+    ]
+    const adjusted = adjustComps(subject({ propertySubType: 'Single Family Residence' }), comps, null)
+    const pricing = computePricing(subject({ propertySubType: 'Single Family Residence' }), adjusted, null)!
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      subjectSubType: 'Single Family Residence',
+    })
+    expect(contract.pass).toBe(false)
+    const check = contract.checks.find((c) => c.id === 'product-type-match')!
+    expect(check.pass).toBe(false)
+    expect(check.detail).toMatch(/Townhouse/)
+  })
+
+  it('passes product-type-match when every priced sale is the same type', () => {
+    const comps = tightSet().map((c) => ({ ...c, propertySubType: 'Single Family Residence' }))
+    const adjusted = adjustComps(subject({ propertySubType: 'Single Family Residence' }), comps, null)
+    const pricing = computePricing(subject({ propertySubType: 'Single Family Residence' }), adjusted, null)!
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      subjectSubType: 'Single Family Residence',
+    })
+    expect(contract.checks.find((c) => c.id === 'product-type-match')!.pass).toBe(true)
+  })
+
+  it('hard-fails when a two-bath sale is used to price a one-bath house', () => {
+    const comps = [
+      ...tightSet().slice(0, 5).map((c) => ({ ...c, baths: 1, propertySubType: 'Single Family Residence' })),
+      comp({ closePrice: 700000, sqft: 2000, baths: 2, propertySubType: 'Single Family Residence' }),
+    ]
+    const subj = subject({ baths: 1, propertySubType: 'Single Family Residence' })
+    const adjusted = adjustComps(subj, comps, null)
+    const pricing = computePricing(subj, adjusted, null)!
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      subjectSubType: 'Single Family Residence',
+      subjectBaths: 1,
+    })
+    expect(contract.pass).toBe(false)
+    expect(contract.checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(false)
+  })
 })

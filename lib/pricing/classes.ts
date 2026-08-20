@@ -30,7 +30,15 @@ export type HoaClass = 'hoa' | 'no_hoa' | 'unknown'
 export type LotClass = 'in_town' | 'large_lot' | 'acreage' | 'ranch' | 'unknown'
 export type StoryClass = 'one' | 'two' | 'three_plus' | 'unknown'
 export type AgeBand = 'new' | 'mid' | 'established' | 'vintage' | 'historic' | 'unknown'
-export type ProductKey = 'detached' | 'attached' | 'manufactured' | 'leased-land' | 'coop' | 'unknown'
+export type ProductKey =
+  | 'detached'
+  | 'townhouse'
+  | 'condo'
+  | 'attached'
+  | 'manufactured'
+  | 'leased-land'
+  | 'coop'
+  | 'unknown'
 
 const SUBDIVISION_SENTINEL =
   /^(n\.?\/?a\.?|none|no|null|other|unknown|tbd|not\s+(in\s+)?(a\s+)?(sub)?division|[-.*]+)$/i
@@ -115,9 +123,9 @@ export function classifyProduct(subType: string | null | undefined): ProductKey 
   if (s.includes('leased land')) return 'leased-land'
   if (s.includes('cooperative') || s.includes('co-op')) return 'coop'
   if (s.includes('manufactured') || s.includes('mobile')) return 'manufactured'
-  if (s.includes('town') || s.includes('condo') || s.includes('tenancy') || s.includes('attached')) {
-    return 'attached'
-  }
+  if (s.includes('town')) return 'townhouse'
+  if (s.includes('condo')) return 'condo'
+  if (s.includes('tenancy') || s.includes('attached')) return 'attached'
   if (s.includes('single family') || s.includes('detached') || s.includes('residence')) return 'detached'
   return 'unknown'
 }
@@ -210,7 +218,7 @@ export function newConstructionCompatible(a: boolean | null, b: boolean | null):
 }
 
 export function productCompatible(a: ProductKey, b: ProductKey): boolean {
-  if (a === 'unknown' || b === 'unknown') return true
+  if (a === 'unknown' || b === 'unknown') return false
   return a === b
 }
 

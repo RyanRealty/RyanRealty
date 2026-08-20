@@ -175,14 +175,12 @@ describe('capability blocks return nothing when their data is absent', () => {
     }
   })
 
-  it('the contents page numbers match the pages that actually render', () => {
-    const { html, pageCount } = renderCmaHtml(bareArgs)
-    // Every contents row points at a page that exists.
-    const rows = [...html.matchAll(/<span class="p">(\d+)<\/span>/g)].map((m) => Number(m[1]))
-    expect(rows.length).toBeGreaterThan(4)
-    for (const n of rows) expect(n).toBeLessThanOrEqual(pageCount)
-    // The cover carries the recommended price as the page's largest element.
+  it('skips a contents sheet and prints the recommended list on the cover', () => {
+    const { html } = renderCmaHtml(bareArgs)
+    expect(html).not.toContain('>Contents<')
+    expect(html).not.toContain('class="toc"')
     expect(html).toContain('class="vb-price">$715,000')
+    expect(html).toContain('Recommended list')
   })
 })
 

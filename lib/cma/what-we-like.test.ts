@@ -194,7 +194,7 @@ describe('the single-doc fold', () => {
     expect(html).not.toMatch(/what your home is worth/i)
     const coverAt = html.indexOf('cover-title')
     const whyAt = html.indexOf('Why $')
-    const salesAt = html.indexOf('The three sales that set the number')
+    const salesAt = html.indexOf('The sales that set the number')
     expect(coverAt).toBeGreaterThan(0)
     expect(whyAt).toBeGreaterThan(coverAt)
     expect(salesAt).toBeGreaterThan(whyAt)
@@ -387,7 +387,7 @@ describe('the subdivision story (print page + immersive scene)', () => {
 
   it('renders the story page with the year table, prose, and source', () => {
     const { html } = renderCmaHtml(args({}, { subdivisionStory: story }))
-    expect(html).toContain('This subdivision, Stone Creek')
+    expect(html).toContain('<h2 class="section">Stone Creek')
     expect(html).toContain('<td>2024</td><td>15</td><td>$590,000</td>')
     expect(html).toContain('A street that sells on consistency')
     expect(html).toContain('as large or larger than 72%')

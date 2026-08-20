@@ -5,6 +5,7 @@
  */
 
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import { keepSameProductType } from '@/lib/cma/market-area'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 
 export type CmaStatusBucket = {
@@ -170,7 +171,9 @@ export function computeMarketArea(input: {
   const since90 = new Date(asOf.getTime() - 90 * 24 * 3600e3).toISOString().slice(0, 10)
 
   const inPriceAndBeds = (row: CmaMarketAreaRow) =>
-    inBand(rowPrice(row), band.lo, band.hi) && inBeds(num(row.BedroomsTotal), beds)
+    inBand(rowPrice(row), band.lo, band.hi) &&
+    inBeds(num(row.BedroomsTotal), beds) &&
+    keepSameProductType(input.subject.propertySubType, row.property_sub_type ?? null)
 
   const comparable = input.rows.filter(inPriceAndBeds)
   const subRows = subdivision ? comparable.filter((r) => (r.SubdivisionName ?? '').trim() === subdivision) : []
