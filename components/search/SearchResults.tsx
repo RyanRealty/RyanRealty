@@ -279,6 +279,9 @@ export default function SearchResults({
                   // share it buys part of the home.
                   propertyType: listing.PropertyType ?? null,
                   propertySubType: listing.PropertySubType ?? null,
+                  subdivisionName: listing.SubdivisionName ?? null,
+                  city: listing.City ?? null,
+                  listNumber: listing.ListNumber ?? null,
                 }}
               />
             </div>

@@ -901,6 +901,9 @@ export default function MapSearchView({
                     // share it buys part of the home.
                     propertyType: l.PropertyType ?? null,
                     propertySubType: l.PropertySubType ?? null,
+                    subdivisionName: l.SubdivisionName ?? null,
+                    city: l.City ?? null,
+                    listNumber: l.ListNumber ?? null,
                     badge,
                   }}
                 />

@@ -42,6 +42,17 @@ export type ListingCardData = {
    */
   propertyType: string | null
   propertySubType: string | null
+  /**
+   * Where the listing sits. REQUIRED for the same reason as the two above: the
+   * card publishes a price per square foot, and the sub type is not the only
+   * dimension that decides whether ListPrice buys the whole dwelling. Eight
+   * Active quarter shares at Lake Creek Lodge are filed under sub type
+   * "Condominium" and published "$185 /sqft" from a share price over the whole
+   * cabin's area. `null` is a legitimate value; leaving the key out is not.
+   */
+  subdivisionName: string | null
+  city: string | null
+  listNumber: string | null
   badge?: { kind: ListingBadge; label: string }
   /** Scalar virtual-tour / video URL. When present and embeddable, the
    *  VideoListingCard plays it inline; otherwise the card links to detail. */
@@ -166,6 +177,9 @@ export default function ListingCard({
               ? publishListingSharePricePerSqft({
                   propertyType: listing.propertyType,
                   propertySubType: listing.propertySubType,
+                  subdivisionName: listing.subdivisionName,
+                  city: listing.city,
+                  listNumber: listing.listNumber,
                   pricePerSqft: listing.pricePerSqft,
                 })
               : null

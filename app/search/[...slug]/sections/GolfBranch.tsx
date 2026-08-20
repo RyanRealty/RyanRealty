@@ -41,6 +41,9 @@ export async function renderGolfLanding(city: string) {
       // The card publishes the ask; on a commercial lease ListPrice is rent.
       propertyType: l.PropertyType ?? null,
       propertySubType: l.PropertySubType ?? null,
+      subdivisionName: l.SubdivisionName ?? null,
+      city: l.City ?? null,
+      listNumber: l.ListNumber ?? null,
     }
   })
   const citySlug = cityEntityKey(city)

@@ -141,6 +141,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       price: listing.listPrice,
       propertyType: listing.propertyType,
       propertySubType: listing.propertySubType,
+      subdivisionName: listing.subdivisionName,
+      city: listing.city,
+      listNumber: listing.listNumber,
     }),
     beds: listing.beds,
     baths: listing.baths,
@@ -216,15 +219,21 @@ export default async function ListingDetailPage({ params }: PageProps) {
     null
 
   // The price OF THE WHOLE HOME, which is not always the ask. On a fractional
-  // interest (65 Active "Tenancy in Common" rows, 1 "Timeshare") the ask buys a
-  // share, so every figure describing the dwelling takes this instead: the
-  // monthly payment, the rental analysis, the median comparison, the
-  // near-this-price alert band, and the JSON-LD offer. MLS 220190868 asks $1 for
-  // a fractional at Eagle Crest and published a 1,571,464% cap rate off it.
+  // interest (65 Active "Tenancy in Common" rows, 1 "Timeshare", plus the rows
+  // the reviewed registry names) the ask buys a share, so every figure
+  // describing the dwelling takes this instead: the monthly payment, the rental
+  // analysis, the median comparison, the near-this-price alert band, and the
+  // JSON-LD offer. MLS 220190868 asks $1 for a fractional at Eagle Crest and
+  // published a 1,571,464% cap rate off it; MLS 220222478 asks $159,900 for a
+  // quarter share of an 866 sq ft cabin and published a 3.5% cap rate,
+  // "Cash needed $31,980" and a SingleFamilyResidence offer at that price.
   const wholePropertyPrice = publishWholePropertyAmount({
     price: listing.listPrice,
     propertyType: listing.propertyType,
     propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
   })
 
   // Place ladder + market grain (Exploration System). See CONTEXT.md.
@@ -258,6 +267,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
             price: listing.listPrice,
             propertyType: listing.propertyType,
             propertySubType: listing.propertySubType,
+            subdivisionName: listing.subdivisionName,
+            city: listing.city,
+            listNumber: listing.listNumber,
           }),
           scope: nearbyScope,
           limit: 14,
@@ -409,6 +421,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
       sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
       acres={listing.lotSizeAcres}
       propertySubType={listing.propertySubType}
+      subdivisionName={listing.subdivisionName}
+      city={listing.city}
+      listNumber={listing.listNumber}
       lat={listing.lat} lng={listing.lng}
     />
   )
@@ -431,6 +446,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
         associationFeeFrequency={listing.associationFeeFrequency}
         taxAnnualAmount={listing.taxAnnualAmount} propertySubType={listing.propertySubType}
         propertyType={listing.propertyType}
+        subdivisionName={listing.subdivisionName}
+        city={listing.city}
+        listNumber={listing.listNumber}
         hideCmaRequest={Boolean(publishedCma)}
       />
       {openHouses.length > 0 ? (

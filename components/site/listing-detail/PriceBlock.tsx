@@ -40,6 +40,11 @@ type Props = {
     | 'priceDropCount'
     | 'propertySubType'
     | 'propertyType'
+    // The $/sq ft publisher asks which listing this is: the sub type is one of
+    // three dimensions that decide whether ListPrice buys the whole dwelling.
+    | 'subdivisionName'
+    | 'city'
+    | 'listNumber'
   >
   historyPrices?: ReadonlyArray<number | null | undefined>
   className?: string
@@ -65,6 +70,9 @@ export function PriceBlock({ listing, historyPrices, className }: Props) {
   const ppsqft = publishListingSharePricePerSqft({
     propertyType: listing.propertyType,
     propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
     pricePerSqft: isClosed ? listing.closePricePerSqft : listing.pricePerSqft,
   })
   const publishedDrop = isClosed

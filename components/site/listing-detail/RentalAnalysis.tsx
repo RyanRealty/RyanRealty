@@ -20,8 +20,13 @@ import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure
  * published "At $1 with 20% down, this property cash-flows $1,310 per month, a
  * 1571464.0% cap rate and 0.0% cash-on-cash return" beside "Cash needed $0";
  * MLS 220225983 (a $3,000 fractional at Inn of the 7th Mountain) published a
- * 225.2% cap rate and a 1,094.0% cash-on-cash return. publishWholePropertyAmount
- * withholds both, and §0.7 makes the withheld case a rendered nothing.
+ * 225.2% cap rate and a 1,094.0% cash-on-cash return. MLS 220222478 (a $159,900
+ * quarter share of an 866 sq ft cabin at Lake Creek Lodge, which the feed files
+ * under sub type "Condominium") published "Cap rate 3.5%", "Cash on cash
+ * -14.3%", "Cash needed $31,980", "Cash flow -$382/mo" and "Gross rent $1,602"
+ * — the HUD three-bedroom rent for the WHOLE cabin against a quarter-share
+ * price. publishWholePropertyAmount withholds all three, and §0.7 makes the
+ * withheld case a rendered nothing.
  */
 
 function estimateMonthlyRent(price: number): { value: number; low: number; high: number; source: string } {
@@ -48,6 +53,9 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
     price: listing.listPrice,
     propertyType: listing.propertyType,
     propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
   })
   if (price == null) return null
   if (!isRentalEligible(listing.propertyType)) return null

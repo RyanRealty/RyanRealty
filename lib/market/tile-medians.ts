@@ -23,16 +23,18 @@
  * zero active count — the caller enforces that by pairing the two.
  */
 
-import { listingPriceIsFractionalShare } from '@/lib/listing/publish-listing-figure'
+import {
+  listingIsFractionalInterest,
+  type FractionalInterestSubject,
+} from '@/lib/listing/publish-listing-figure'
 
 /**
- * The tile fields this needs. `propertySubType` is REQUIRED, not optional, so
- * the typechecker — not a reviewer's memory — makes every caller state which
- * listings it is taking the median of. See the fractional-interest note below.
+ * The tile fields this needs. The fractional-interest fields are REQUIRED, not
+ * optional, so the typechecker — not a reviewer's memory — makes every caller
+ * state which listings it is taking the median of. See the note below.
  */
-export type ListPricedTile = {
+export type ListPricedTile = FractionalInterestSubject & {
   listPrice?: number | string | null
-  propertySubType: string | null
 }
 
 /**
@@ -52,6 +54,16 @@ export type ListPricedTile = {
  * StoneTH in Sunriver is all 16 fractional, so its honest median list is no
  * median at all — this returns null there, and the caller publishes nothing.
  *
+ * The sub type is not the only way a row qualifies, which is why this asks
+ * listingIsFractionalInterest and takes the whole subject. Camp Sherman is the
+ * founding case: its 16 Active class-A rows include 9 quarter shares at Lake
+ * Creek Lodge that the feed files under sub type "Condominium", so the
+ * sub-type-only filter dropped 1 row and published a $249,000 median list on
+ * /cities/camp-sherman, /homes-for-sale/camp-sherman, their Quick facts, their
+ * market module and their FAQ answer. Excluding all 10 Lake Creek Lodge rows
+ * leaves 6 whole homes — $799,000, $895,000, $899,950, $945,000, $975,000,
+ * $1,025,000 — a median of $922,475. The published figure was 3.7x low.
+ *
  * Even sample sizes average the two middle values and round to the dollar, the
  * same convention as the neighborhood/city/community medians this replaces, so
  * a page that renders more than one of them cannot disagree with itself over
@@ -59,7 +71,7 @@ export type ListPricedTile = {
  */
 export function medianListPriceOfTiles(tiles: readonly ListPricedTile[]): number | null {
   const prices = tiles
-    .filter((t) => !listingPriceIsFractionalShare(t.propertySubType))
+    .filter((t) => !listingIsFractionalInterest(t))
     .map((t) => Number(t.listPrice))
     .filter((p) => Number.isFinite(p) && p > 0)
     .sort((a, b) => a - b)
