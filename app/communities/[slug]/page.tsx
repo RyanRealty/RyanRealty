@@ -31,7 +31,7 @@
  * Data ONLY through @/lib/data and @/app/actions/communities. No raw .from() calls.
  */
 
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
 import {
@@ -82,8 +82,8 @@ import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { getDistrictForCity } from '@/data/co-schools'
-import { homesForSalePath, slugify } from '@/lib/slug'
-import { getCanonicalCityForSubdivision, getAllResortCommunities } from '@/lib/data/communities/registry'
+import { homesForSalePath } from '@/lib/slug'
+import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { CONTACT } from '@/lib/brand/contact'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -227,16 +227,23 @@ export default async function CommunityDetailPage({ params }: Props) {
   const cityName = community.city
   const citySlug = community.citySlug
 
-  // A resort has ONE canonical URL: its bare registry slug. A compound slug
-  // (/communities/bend-tetherow) resolves to the same community but bypasses the
-  // alias-aware path and would publish the literal-name undercount, AND duplicates
-  // the bare-slug page. Redirect it to the canonical bare slug. (review BLOCKER)
-  // Member subdivisions (registry subdivision_aliases) consolidate too:
-  // GSC 2026-07 showed "broken top homes for sale" split across
-  // bend-parks-at-broken-top and bend-the-highlands-at-broken-top at pos ~25
-  // while the one real page sat unranked — self-cannibalization
-  // (conversion-audit 2026-07-15 #9). Their active counts already attribute
-  // to the resort ledger, so standalone pages contradicted the counts anyway.
+  // CANONICALIZATION MOVED TO THE EDGE (2026-08-19). Two redirect()s lived here:
+  // a compound slug (/communities/bend-tetherow, and every subdivision_aliases
+  // member — GSC 2026-07 had "broken top homes for sale" split across
+  // bend-parks-at-broken-top and bend-the-highlands-at-broken-top while the one
+  // real page sat unranked) onto the resort's bare slug, and a wrong-city slug
+  // (design-audit #131 — hundreds of Crosswater listings say "Bend") onto the
+  // registry's verified city. Neither could emit a Location header: this segment
+  // has a loading.tsx and app/loading.tsx wraps every route, so React had
+  // flushed HTTP 200 before either threw. Measured on ryan-realty.com
+  // 2026-08-19 (browser UA, redirect:manual): of the 104 registry-derived
+  // compound slugs, 91 served 200 with Location: null and ZERO <h1>, all 91
+  // robots "index, follow" over a "<Community> Homes for Sale | <City>, OR"
+  // <title>, 0 emitting a 3xx. Both hops now resolve in ONE 308 in middleware.ts
+  // via lib/routing/pre-render-hops.ts -> resolveCanonicalCommunitySlug, off the
+  // same registry fields (label + subdivision_aliases, entry city) and the slug
+  // alone. Enforced by scripts/check-streamed-redirect.mjs; parity over the full
+  // slug space is unit-tested in lib/communities/canonical-community-slug.test.ts.
   const subdivisionLc = community.subdivision.toLowerCase().trim()
   const resortMatch = cityResorts(citySlug).find(
     (r) =>
@@ -244,20 +251,6 @@ export default async function CommunityDetailPage({ params }: Props) {
       r.label.toLowerCase().trim() === subdivisionLc ||
       (r.subdivision_aliases ?? []).some((a) => a.toLowerCase().trim() === subdivisionLc),
   )
-  if (resortMatch && slug !== resortMatch.slug) redirect(`/communities/${resortMatch.slug}`)
-
-  // design-audit #131: some subdivisions have listings whose raw MLS City
-  // field disagrees with the community's verified registry city (e.g.
-  // hundreds of Crosswater listings say "Bend" though Crosswater is a
-  // Sunriver-area resort). A slug parsed from the wrong city ("bend-
-  // crosswater") still resolved to a "real" page with real (if partial)
-  // stats -- a second, silently-wrong URL for the same community that the
-  // ledger no longer links to but that could still be reached directly.
-  // Redirect it to the canonical city's slug.
-  const canonicalCity = getCanonicalCityForSubdivision(community.subdivision)
-  if (canonicalCity && canonicalCity.toLowerCase() !== cityName.toLowerCase()) {
-    redirect(`/communities/${slugify(canonicalCity)}-${slugify(community.subdivision)}`)
-  }
 
   // The resort registry entry is the source of truth for is_resort +
   // sub_neighborhoods + subdivision_aliases. Pure/synchronous (registry JSON).

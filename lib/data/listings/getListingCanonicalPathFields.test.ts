@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -136,8 +136,21 @@ describe('getListingCanonicalPathFields', () => {
   })
 })
 
-describe('listing by-key page uses the slim lookup', () => {
-  const src = readFileSync(resolve('app/listing/by-key/[listingKey]/page.tsx'), 'utf8')
+/**
+ * /listing/by-key is a ROUTE HANDLER, not a page (2026-08-19). As a page it
+ * ended in permanentRedirect() after two awaits, and the loading.tsx Suspense
+ * boundary had already flushed HTTP 200 — measured on production:
+ * /listing/by-key/20200228140308644050000000 returned 200, Location: null,
+ * zero <h1>. Only the MISS branch worked, which is why the route-smoke gate was
+ * green. A route handler owns its whole response and can set Location.
+ */
+describe('listing by-key handler uses the slim lookup', () => {
+  const src = readFileSync(resolve('app/listing/by-key/[listingKey]/route.ts'), 'utf8')
+
+  it('is a route handler, not a page', () => {
+    expect(existsSync(resolve('app/listing/by-key/[listingKey]/page.tsx'))).toBe(false)
+    expect(src).toMatch(/export async function GET\(/)
+  })
 
   it('imports getListingCanonicalPathFields from the DAL', () => {
     expect(src).toMatch(/import \{ getListingCanonicalPathFields \} from '@\/lib\/data\/listings\/getListingCanonicalPathFields'/)
@@ -152,10 +165,36 @@ describe('listing by-key page uses the slim lookup', () => {
     expect(src).not.toMatch(/select\(['"]\*['"]\)/)
   })
 
-  it('builds listingDetailPath from the slim columns', () => {
+  it('builds listingDetailPath from the slim columns and 308s to it', () => {
     expect(src).toMatch(/listingDetailPath\(/)
     expect(src).toMatch(/boundary_neighborhood/)
-    expect(src).toMatch(/permanentRedirect\(/)
+    expect(src).toMatch(/redirectTo\(canonicalPathFromFields\(row\), 308\)/)
+  })
+
+  /**
+   * The Location must be ROOT-RELATIVE, the way middleware.ts and next.config.ts
+   * redirects() already emit on this site (production 2026-08-20:
+   * /subdivisions/tetherow -> `location: /communities/tetherow`).
+   *
+   * An absolute Location built in a route handler does not track the request.
+   * Measured on a production build at :3140: `request.nextUrl.clone()` returned
+   * http://localhost:3140/... for a request carrying `Host: ryan-realty.com`,
+   * and https://localhost:3140/... once `x-forwarded-proto: https` was added.
+   * `new URL(path, request.url)` reads the same origin.
+   */
+  it('emits a root-relative Location, never an absolute one', () => {
+    // Assert on CODE, not on the comment that explains the measurement.
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+    expect(code).toMatch(/headers:\s*\{\s*location:/)
+    expect(code).not.toMatch(/NextResponse\.redirect\(/)
+    expect(code).not.toMatch(/request\.nextUrl/)
+    expect(code).not.toMatch(/new URL\(/)
+  })
+
+  it('never renders a body — a miss hands off to the /listing refusal page', () => {
+    expect(src).not.toMatch(/from 'next\/navigation'/)
+    expect(src).toMatch(/redirectTo\(`\/listing\//)
+    expect(src).toMatch(/307/)
   })
 })
 

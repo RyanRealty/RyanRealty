@@ -76,6 +76,7 @@
     "ci:server-type-reexport",
     "ci:sms-consent",
     "ci:stage-truth",
+    "ci:streamed-redirect",
     "ci:toast-discipline",
     "ci:untracked-imports",
     "ci:voice-constructions",
@@ -1168,6 +1169,16 @@
       "app/**/loading.tsx",
       "app/**/page.tsx",
       "components/**"
+    ],
+    "ci:streamed-redirect": [
+      "app/**/page.tsx",
+      "app/**/page.ts",
+      "app/**/loading.tsx",
+      "app/**/layout.tsx",
+      "middleware.ts",
+      "next.config.*",
+      "lib/routing/**",
+      "scripts/streamed-redirect-baseline.json"
     ],
     "ci:subdivision-stats-integrity": [
       "lib/data/**",

@@ -255,10 +255,33 @@ const nextConfig: NextConfig = {
       // enforces the retirement.
       { source: '/reports/explore', destination: '/housing-market', permanent: true },
       { source: '/housing-market/explore', destination: '/housing-market', permanent: true },
-      { source: '/reports/:slug/:geoName', destination: '/housing-market/reports/:slug/:geoName', permanent: true },
+      // The legacy per-geo report (/reports/:slug/:geoName and its
+      // /housing-market/reports/:slug/:geoName re-export) is NOT listed here on
+      // purpose. Its destination needs the geo name slugified, which a static
+      // rule cannot do, and the rule that used to live here 308-ed the family
+      // straight INTO a page that served 200 with zero <h1> (measured
+      // 2026-08-19). Both shapes are now resolved in ONE hop by
+      // lib/routing/pre-render-hops.ts, which middleware.ts runs before render.
       // Single-segment report (e.g. /reports/weekly-2026-05-24) had no rule, so it
       // and /housing-market/reports/:slug both returned 200 = duplicate content.
       { source: '/reports/:slug', destination: '/housing-market/reports/:slug', permanent: true },
+      // /dashboard/* folded onto the /account hub (Matt 2026-06-14, "make
+      // /account the one home"). These were page-body redirect() stubs, which
+      // under Next 16 served 200 with zero <h1> and robots "index, follow"
+      // (measured 2026-08-19: /dashboard, /dashboard/saved, /dashboard/settings,
+      // /dashboard/searches, /dashboard/history, /dashboard/collections,
+      // /dashboard/likes — all Location: null). robots.txt disallows
+      // "/dashboard/", which does not cover the bare /dashboard. Pure path
+      // rewrites, so they belong here, above the streamed shell.
+      { source: '/dashboard', destination: '/account', permanent: true },
+      { source: '/dashboard/saved', destination: '/account/saved-homes', permanent: true },
+      { source: '/dashboard/likes', destination: '/account/saved-homes', permanent: true },
+      { source: '/dashboard/searches', destination: '/account/saved-searches', permanent: true },
+      { source: '/dashboard/history', destination: '/account/history', permanent: true },
+      { source: '/dashboard/settings', destination: '/account/profile', permanent: true },
+      { source: '/dashboard/notifications', destination: '/account/notifications', permanent: true },
+      { source: '/dashboard/collections', destination: '/account/collections', permanent: true },
+      { source: '/dashboard/collections/:id', destination: '/account/collections/:id', permanent: true },
 
       // ── Legacy AgentFire/WordPress cutover 404s ─────────────────────────────
       // URL shapes the sitemap-driven legacy map (middleware + legacy-redirects.json)

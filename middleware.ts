@@ -2,10 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import legacyRedirects from '@/data/legacy-redirects.json'
-import {
-  resolveNeighborhoodAliasRedirect,
-  resolveSubdivisionAreaRedirect,
-} from '@/lib/subdivision-area-redirects'
+import { resolvePreRenderHop } from '@/lib/routing/pre-render-hops'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 import resortCommunitiesRegistry from '@/data/resort-communities.json'
 
@@ -457,49 +454,32 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // ─── (0a) /subdivisions marketing-slug → canonical area (hard 308) ─────
-  // /subdivisions/[slug] serves PLAT slugs only (geo_type='subdivision', e.g.
-  // 'tetherow-phase-1'). A MARKETING-level area name ('awbrey-butte', 'tetherow')
-  // has no plat boundary, so the page notFound()s — which, under Next 16
-  // streaming, ships as a hollow 200 (soft-404): bad UX + an SEO sink. An App
-  // Router page cannot emit a hard 3xx once the shell has streamed, so the real
-  // permanent redirect has to happen HERE, before render. Resolution is a
-  // synchronous lookup in a committed-JSON map (resort registry + City-of-Bend
-  // neighborhoods) — no DB, Edge-safe, no penalty on the ~3,213 valid plats
-  // (they are not in the map → pass straight through). Single hop → 200.
-  // See lib/subdivision-area-redirects.ts.
+  // ─── (0a) Pre-render hops → hard 308, before anything streams ──────────
+  // An App Router page cannot emit a 3xx once the shell has streamed: every
+  // route on this site sits inside the Suspense boundary app/loading.tsx opens,
+  // so React has already flushed HTTP 200 and the headers by the time a page
+  // body throws redirect(). The URL then serves layout chrome with no <h1>, and
+  // only a JS client completes the hop. Measured 2026-08-19 on production
+  // (browser UA, redirect:manual): /communities/bend-broken-top and
+  // /housing-market/reports/city/Bend both returned 200 with Location: null and
+  // zero <h1>. Sweeping the 104 registry-derived compound community slugs (each
+  // community's own city x its label + subdivision_aliases): 91 served that
+  // shell, all 91 robots "index, follow", 0 emitted a 3xx. A wider sweep that
+  // also crosses in wrong-city variants counted 120.
+  //
+  // Every consolidation that needs a lookup or a slug transform therefore lives
+  // in lib/routing/pre-render-hops.ts and is resolved HERE: community canonical
+  // slugs, /subdivisions marketing areas, /neighborhoods aliases, and the legacy
+  // per-geo report. Each resolver is pure, synchronous, committed-JSON only —
+  // Edge-safe, and no penalty on the ~3,213 valid plats (not in the map → pass
+  // straight through). Pure path rewrites stay in next.config.ts redirects().
   if (!pathname.startsWith('/api/')) {
-    const subMatch = pathname.match(/^\/subdivisions\/([^/]+)\/?$/)
-    if (subMatch) {
-      let subSlug = subMatch[1]
-      try {
-        subSlug = decodeURIComponent(subSlug)
-      } catch {
-        /* malformed escape — fall back to the raw segment */
-      }
-      const areaDest = resolveSubdivisionAreaRedirect(subSlug)
-      if (areaDest) {
-        const redirectUrl = url.clone()
-        redirectUrl.pathname = areaDest
-        redirectUrl.search = ''
-        return NextResponse.redirect(redirectUrl, 308)
-      }
-    }
-    const nbhdMatch = pathname.match(/^\/neighborhoods\/([^/]+)\/?$/)
-    if (nbhdMatch) {
-      let nbhdSlug = nbhdMatch[1]
-      try {
-        nbhdSlug = decodeURIComponent(nbhdSlug)
-      } catch {
-        /* malformed escape — fall back to the raw segment */
-      }
-      const nbhdDest = resolveNeighborhoodAliasRedirect(nbhdSlug)
-      if (nbhdDest) {
-        const redirectUrl = url.clone()
-        redirectUrl.pathname = nbhdDest
-        redirectUrl.search = ''
-        return NextResponse.redirect(redirectUrl, 308)
-      }
+    const hopDest = resolvePreRenderHop(pathname)
+    if (hopDest) {
+      const redirectUrl = url.clone()
+      redirectUrl.pathname = hopDest
+      redirectUrl.search = ''
+      return NextResponse.redirect(redirectUrl, 308)
     }
   }
 

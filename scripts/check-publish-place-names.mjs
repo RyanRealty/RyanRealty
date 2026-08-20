@@ -13,7 +13,7 @@
  *
  *   node scripts/check-publish-place-names.mjs
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 
 const checks = []
 
@@ -80,24 +80,26 @@ checks.push({
     href.includes('`/cities/bend/${district.slug}`'),
 })
 
-const alias = src('app/neighborhoods/[slug]/page.tsx')
+// The /neighborhoods/[slug] alias page is GONE (2026-08-19). It existed only to
+// permanentRedirect() the 13 Bend districts, and a page-body redirect under the
+// app/loading.tsx Suspense boundary cannot write a Location header — it served
+// 200 with no <h1>. The hop is a pre-render hop now, and every slug the hop does
+// not claim gets a real Next 404 instead of the old streamed soft-404.
 checks.push({
-  label: '/neighborhoods/[slug] 301s Bend districts through the DAL helper',
-  ok:
-    /from ['"]@\/lib\/data['"]/.test(alias) &&
-    /bendNeighborhoodCanonicalHref/.test(alias) &&
-    /permanentRedirect/.test(alias) &&
-    /generateStaticParams/.test(alias),
+  label: '/neighborhoods/[slug] has no page-body redirect (the hop is pre-render)',
+  ok: !existsSync('app/neighborhoods/[slug]/page.tsx'),
 })
 
 const mw = src('middleware.ts')
 const area = src('lib/subdivision-area-redirects.ts')
+const hops = src('lib/routing/pre-render-hops.ts')
 checks.push({
   label: 'middleware 308s /neighborhoods/{district} before render (Next 16 streaming)',
   ok:
     /export function resolveNeighborhoodAliasRedirect/.test(area) &&
-    /resolveNeighborhoodAliasRedirect/.test(mw) &&
-    /\/neighborhoods\\\//.test(mw),
+    /resolveNeighborhoodAliasRedirect/.test(hops) &&
+    /\/neighborhoods\\\//.test(hops) &&
+    /resolvePreRenderHop/.test(mw),
 })
 
 const failed = checks.filter((c) => !c.ok)

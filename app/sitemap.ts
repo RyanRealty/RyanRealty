@@ -229,21 +229,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     })
   }
 
-  // Motivated sellers -- pillar + per-city pages
-  staticPages.push({
-    url: `${baseUrl}/motivated-sellers`,
-    lastModified: now,
-    changeFrequency: 'daily',
-    priority: 0.8,
-  })
-  for (const citySlug of SITE_CITY_SLUGS) {
-    staticPages.push({
-      url: `${baseUrl}/motivated-sellers/${citySlug}`,
-      lastModified: now,
-      changeFrequency: 'daily',
-      priority: 0.75,
-    })
-  }
+  // /motivated-sellers + /motivated-sellers/<city> are NOT submitted (removed
+  // 2026-08-19). next.config.ts 308s all 11 of them onto the /price-drops pages
+  // already listed above — verified on production: /motivated-sellers/bend ->
+  // 308 /price-drops/bend. A sitemap lists canonical 200 URLs; submitting a
+  // redirect source spends crawl budget to land on a page already in the file.
 
   // City tier — seed from the canonical list of cities that have a real page, so
   // every best-schema city hub is ALWAYS in the sitemap regardless of live
