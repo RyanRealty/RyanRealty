@@ -2,19 +2,19 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-20 (cursor-cloud) — place registry majors + nest
+# Current — 2026-08-20 (grok local) — PR 141 official villages
 
-**Surface:** Cursor Cloud `cursor/place-registry-plats-8e72` (PR 141). Loop stays **DISARMED**. Do not re-arm. No send.
+**Surface:** Grok local `cursor/place-registry-plats-8e72` (PR 141). Loop stays **DISARMED**. Do not re-arm. No send.
 
 **Done**
-- Every featured parent now has `kind` + `nest` (City › Neighborhood › Planned community › Subdivision; skip empty).
-- Added Discovery West, Tree Farm, Westgate, Seventh Mountain CDP, Petrosa, Shevlin Commons from live MLS + county plats. Inn + Widgi nest under Seventh Mountain. Public-only courses rejected in JSON.
-- Tetherow / Awbrey Glen / Pronghorn alias rewrite from the prior commit kept. House A about_prose untouched.
+- Official children for Caldera, Eagle Crest, Brasada, BBR, Pronghorn, Sunriver villages from county plats + published HOA lists + live MLS strings. Not Spark radius.
+- Dropped Cline Falls Oasis / Coppermill / Cline Falls Mob Park (Eagle Crest), Powell Butte View (Brasada), Pace Estate on Sunriver (stays Crosswater), Powder Village on Caldera.
+- House A about_prose untouched.
 
 **Next**
-- Apply `20260820180000_place_registry_plat_aliases.sql` and `20260820190000_place_registry_major_parents.sql` on hosted Supabase with the merge.
+- Apply `20260820180000_place_registry_plat_aliases.sql`, `20260820190000_place_registry_major_parents.sql`, and `20260820200000_place_registry_official_villages.sql` on hosted Supabase with the merge.
 
-**Do not:** re-arm the loop. Do not change House A listing copy. Do not nest Tetherow under Summit West.
+**Do not:** re-arm the loop. Do not change House A listing copy. Do not nest Tetherow under Summit West. Do not merge this branch to main from this session.
 
 **Skills read:** database-canonical-reference, TDD, git-commit.
 

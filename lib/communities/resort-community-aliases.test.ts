@@ -47,6 +47,9 @@ type Community = {
     in_city_plats?: string[]
     levels?: string[]
   }
+  verification?: {
+    method?: string
+  }
 }
 
 type Rejected = { name: string; reason: string }
@@ -235,5 +238,138 @@ describe('resort community aliases — official nest, not radius', () => {
       expect(rejectedNames.some((n) => n.includes(name.toLowerCase())), name).toBe(true)
     }
     expect(rejected.every((r) => r.reason.trim().length > 20)).toBe(true)
+  })
+
+  it('fills official Caldera / Eagle Crest / Brasada / BBR / Pronghorn / Sunriver children without Spark radius', () => {
+    const slugs = [
+      'caldera-springs',
+      'eagle-crest',
+      'brasada-ranch',
+      'black-butte-ranch',
+      'pronghorn',
+      'sunriver',
+    ]
+    for (const slug of slugs) {
+      const method = String(bySlug[slug].verification?.method ?? '')
+      expect(method, slug).not.toMatch(/\/listings\/nearby/)
+      expect(method, slug).toMatch(/county|HOA|RECOA|GIS|plat/i)
+      expect((bySlug[slug].sub_neighborhoods ?? []).length, slug).toBeGreaterThan(0)
+      expect((bySlug[slug].sub_neighborhoods ?? []).every((s) => s.kind === 'toa_marketing' || s.kind === 'recorded_plat')).toBe(true)
+    }
+  })
+
+  it('drops Eagle Crest radius neighbors and keeps the two recorded HOA umbrellas', () => {
+    const aliases = bySlug['eagle-crest'].subdivision_aliases ?? []
+    expect(aliases).toEqual(['Eagle Crest', 'Ridge At Eagle Crest'])
+    for (const name of ['Cline Falls Oasis', 'Coppermill', 'Cline Falls Mob Park']) {
+      expect(aliases).not.toContain(name)
+    }
+    const villages = (bySlug['eagle-crest'].sub_neighborhoods ?? []).map((s) => s.name)
+    expect(villages).toEqual(expect.arrayContaining([
+      'Ridge at Eagle Crest',
+      'West Ridge at Eagle Crest',
+      'The Falls at Eagle Crest',
+      'Desert Sky at Eagle Crest',
+      'Scenic Ridge at Eagle Crest',
+    ]))
+  })
+
+  it('drops Brasada radius neighbor Powell Butte View and lists official ranch neighborhoods', () => {
+    const aliases = bySlug['brasada-ranch'].subdivision_aliases ?? []
+    expect(aliases).toEqual(['Brasada Ranch'])
+    expect(aliases).not.toContain('Powell Butte View')
+    const villages = (bySlug['brasada-ranch'].sub_neighborhoods ?? []).map((s) => s.name)
+    expect(villages).toEqual(expect.arrayContaining([
+      'The Westside',
+      'The Eastside',
+      'The Highlands at Brasada',
+      'Ironwood at Brasada',
+      'Sage Canyon',
+    ]))
+  })
+
+  it('fills Black Butte Ranch from homesite-section plats, not a Spark grab', () => {
+    const aliases = bySlug['black-butte-ranch'].subdivision_aliases ?? []
+    expect(aliases).toEqual(expect.arrayContaining([
+      'Black Butte Ranch',
+      'Bbr',
+      'South Meadow',
+      'Glaze Meadow Homesite Section',
+      'East Meadow Homesite Section',
+      'Golf Course Homesite Section',
+      'Rock Ridge',
+      'Country House Condo',
+    ]))
+    const villages = (bySlug['black-butte-ranch'].sub_neighborhoods ?? []).map((s) => s.name)
+    expect(villages).toEqual(expect.arrayContaining([
+      'Glaze Meadow',
+      'South Meadow',
+      'East Meadow',
+      'Rock Ridge',
+      'Country House',
+    ]))
+  })
+
+  it('adds recorded Pronghorn children on the same parent', () => {
+    const aliases = bySlug.pronghorn.subdivision_aliases ?? []
+    expect(aliases).toEqual(expect.arrayContaining([
+      'Pronghorn',
+      'Juniper Preserve',
+      'Estates At Pronghorn',
+      'Villas At Pronghorn Townhomes',
+      'Core Area At Pronghorn',
+    ]))
+    const villages = (bySlug.pronghorn.sub_neighborhoods ?? []).map((s) => s.name)
+    expect(villages).toEqual(expect.arrayContaining([
+      'Estates at Pronghorn',
+      'Villas at Pronghorn',
+      'Core Area at Pronghorn',
+    ]))
+  })
+
+  it('fills Caldera from county phases and official products, not Powder Village', () => {
+    const aliases = bySlug['caldera-springs'].subdivision_aliases ?? []
+    expect(aliases).toEqual(expect.arrayContaining([
+      'Caldera Springs',
+      'Caldera Springs Phase One',
+      'Caldera Springs Phase Two',
+      'Caldera Springs Phase Three',
+    ]))
+    for (const name of ['Powder Village Condo', 'Business Park', 'Sunriver Business Pa', 'Compound Condominium']) {
+      expect(aliases).not.toContain(name)
+    }
+    const villages = (bySlug['caldera-springs'].sub_neighborhoods ?? []).map((s) => s.name)
+    expect(villages).toEqual(expect.arrayContaining([
+      'Forestbrook',
+      'Lakeside at Caldera Springs',
+      'Caldera Cabins',
+    ]))
+  })
+
+  it('fills official Sunriver villages and drops the Crosswater Pace Estate child', () => {
+    const aliases = bySlug.sunriver.subdivision_aliases ?? []
+    expect(aliases).toEqual(expect.arrayContaining([
+      'Mtn Village East',
+      'Mtn Village West',
+      'River Village',
+      'Meadow Village',
+      'Fairway Crest Village',
+      'Tennis Village',
+      'Deer Park',
+      'Fairway Point Villag',
+      'Fairway Pines',
+      'Alberello',
+      'Eaglewood',
+    ]))
+    expect(aliases).not.toContain('Pace Estate')
+    const villages = (bySlug.sunriver.sub_neighborhoods ?? []).map((s) => s.name)
+    expect(villages).toEqual(expect.arrayContaining([
+      'Mountain Village East',
+      'Mountain Village West',
+      'River Village',
+      'Fairway Point Village',
+      'Stoneridge Townhomes',
+    ]))
+    expect(bySlug.crosswater.subdivision_aliases).toContain('Pace Estate')
   })
 })

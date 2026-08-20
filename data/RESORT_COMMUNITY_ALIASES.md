@@ -2,7 +2,7 @@
 
 `data/resort-communities.json` is the featured major resort / MPC / golf parents and their correct children. Not every subdivision is in a planned community. Do not dump the 1,645 Bend plats into this file.
 
-**Aliases come from a recorded county plat, a published HOA / TOA name, or an MLS `SubdivisionName` that actually files under that parent.** Do not assign children with Spark `/listings/nearby` plus a 2–6 km ≥80% inside-test. That 2026-05-15 method pulled in neighbors.
+**Aliases come from a recorded Deschutes or Crook County plat, a published HOA / TOA name, or an MLS `SubdivisionName` that actually files under that parent.** Do not assign children with Spark `/listings/nearby` plus a 2–6 km ≥80% inside-test. That 2026-05-15 method pulled in neighbors.
 
 ## Nest
 
@@ -47,6 +47,19 @@ Geographic nest is `nest.kind` (`census_cdp` / `bend_district` / `unincorporated
 | `shevlin-commons` | planned_community | Bend › Summit West | Brooks PUD. MLS `Shevlin Commons` (266). Not a Shevlin district. |
 
 Public-only courses and south-gap subdivisions are in the JSON `rejected` array (Lost Tracks, Juniper Golf, Quail Run, Aspen Lakes, Bend Golf Club, Meadow Lakes, Deschutes River Woods, River Rim, Woodside Ranch, River Bend Estates, Sunset View Estates).
+
+## Official villages filled 2026-08-20
+
+County plat + published HOA / resort neighborhood lists. Not Spark radius.
+
+| Parent | Official children | Dropped radius neighbors |
+|---|---|---|
+| Caldera Springs | Recorded Phase One / Two / Three. Forestbrook, Lakeside, Cabins are CSOA products on those plats. | Powder Village Condo, Business Park, Sunriver Business Pa, Compound Condominium |
+| Eagle Crest | MLS umbrellas `Eagle Crest` (east of Cline Falls Hwy) and `Ridge At Eagle Crest` (RECOA). Villages: West Ridge, The Falls, Desert Sky, Creekside, Vista Rim, Highland Parks, Scenic Ridge, Eagle Springs, Eagle Creek, Forest Ridge. | Cline Falls Oasis, Coppermill, Cline Falls Mob Park |
+| Brasada Ranch | One Crook plat `Brasada Ranch`. Villages: Westside, Eastside, The Highlands, Ironwood, Sage Canyon (brasadaranchrealestate.com). | Powell Butte View Estates (separate Crook plat) |
+| Black Butte Ranch | Homesite sections: Glaze Meadow, South Meadow, East Meadow, Golf Course, Rock Ridge, Spring, Aspen Houses, Black Butte Houses, Ranch Houses, plus MLS `Bbr` and Country House Condo. | — |
+| Pronghorn | Same parent as Juniper Preserve. Recorded Estates At Pronghorn, Villas At Pronghorn Townhomes, Core Area At Pronghorn, Residence Club villas. | — |
+| Sunriver | SROA villages from county plats (Mountain Village East/West, River Village, Meadow Village, Fairway Crest, Tennis Village, Deer Park, Forest Park, Overlook Park, Fairway Point Village, Fremont Crossing, Fairway Pines, Alberello, Eaglewood, North Course Estates, Fort Rock Hill) plus MLS truncations (`Mtn Village East`, `StoneTH`, `Fairway Point Villag`, `WildflS`, `SkylinC`). | Pace Estate (Crosswater child) |
 
 ## When you add an alias
 

@@ -327,15 +327,15 @@ These are registered as `geo_type='neighborhood'` in `public.boundaries`. **Thei
 |---|---|---|---|---|---|
 | **Tetherow** | `tetherow` | Bend | Recorded Tetherow plats + MLS `Tetherow` / `Triple` / `Triple Knot`. Not Sunrise Village, Westbrook Meadows, Braeburn, Lodges at Bachelor V, Campbell Road, Roald West, or Redmond Tetherow Crossing. Nest: Deschutes County › Tetherow CDP › community › plat. | 15 | |
 | **Broken Top** | `broken-top` | Bend | 5 (+ Golden Butte + Parks At Broken Top + Overturf Butte + The Highlands at Broken Top) | 16 | |
-| **Eagle Crest** | `eagle-crest` | Redmond | 5 (+ Ridge At Eagle Crest + Cline Falls Oasis + Coppermill + Cline Falls Mob Park) | 54 | |
-| **Pronghorn** | `pronghorn` | Bend | 2 (Pronghorn + Juniper Preserve on the same parent; 2022 resort rebrand) | 14 | Slow-turnover. ~9 SFR sales / year. Not a Bend district. |
-| **Caldera Springs** | `caldera-springs` | Sunriver | 5 (+ Powder Village Condo + Business Park + Sunriver Business Pa + Compound Condominium) | 17 | |
-| **Sunriver** | `sunriver` | Sunriver | **32** (Sunriver + The Ridge + StoneTH + Deer Park + Mtn Village East + River Village + Fairway Crest Village + Forest Park + Meadow Village + Overlook Park + Mtn Village West + Tennis Village + Meadow House + Fairway Vill Condo + Fremont Crossing + Abbot House Condo + Kitty Hawk + Quelah Condos + WildflS + Polehouse + Aquila Lodges + Fairway Island + Cluster Court + Skypark + Mtn View Lodge + Ranch Cabins + SkylinC + Quelah Estates + Aspen Meadows + Pace Estate + Camp Abbot Hangars + Sunriver Lodge) | 37 | MLS has no exact "Sunriver" — every Sunriver listing uses a sub-area name. |
+| **Eagle Crest** | `eagle-crest` | Redmond | 2 (`Eagle Crest` + `Ridge At Eagle Crest`). RECOA villages (West Ridge, The Falls, Desert Sky, …) sit on those umbrellas. Not Cline Falls Oasis, Coppermill, or Cline Falls Mob Park. | 54 | |
+| **Pronghorn** | `pronghorn` | Bend | Pronghorn + Juniper Preserve + Estates At Pronghorn + Villas At Pronghorn Townhomes + Core Area At Pronghorn + Residence Club villas. One parent, 2022 rebrand. | 14 | Slow-turnover. ~9 SFR sales / year. Not a Bend district. |
+| **Caldera Springs** | `caldera-springs` | Sunriver | Caldera Springs + Phase One/Two/Three. Forestbrook / Lakeside / Cabins are products on those plats. Not Powder Village Condo or Sunriver Business Park. | 17 | |
+| **Sunriver** | `sunriver` | Sunriver | Official SROA villages from county plats + MLS truncations (`Mtn Village East`, `Fairway Point Villag`, `StoneTH`, `WildflS`, `SkylinC`, …). Not Pace Estate (Crosswater). | 37 | MLS has no exact "Sunriver" — every Sunriver listing uses a sub-area name. |
 | **Awbrey Glen** | `awbrey-glen` | Bend | 1 (Awbrey Glen). Shevlin* plats are Summit West, not this HOA. | 6 | |
 | **NorthWest Crossing** | `northwest-crossing` | Bend | 8 (+ Skyliner Summit + Shevlin Ridge + Westside Pines + Westside Meadows + Valhalla Heights + Treeline Phase 1 + Outcrop). Discovery West is a separate Summit West parent. | 21 | |
 | **Crosswater** | `crosswater` | Sunriver | 4 (+ Osprey Pointe Condo + Pace Estate + Lisle Acres) | 1 | Ultra-slow turnover; last SFR sale Sep 2025. |
-| **Black Butte Ranch** | `black-butte-ranch` | Sisters | 5 (+ Bbr + South Meadow + Glaze Meadow Homesite Section + Country House Condo) | 23 | |
-| **Brasada Ranch** | `brasada-ranch` | Powell Butte | 2 (+ Powell Butte View) | 25 | |
+| **Black Butte Ranch** | `black-butte-ranch` | Sisters | Homesite sections (Glaze Meadow, South Meadow, East Meadow, Golf Course, Rock Ridge, Spring, Aspen Houses, Black Butte Houses, Ranch Houses) + MLS `Bbr` + Country House Condo. | 23 | |
+| **Brasada Ranch** | `brasada-ranch` | Powell Butte | 1 (`Brasada Ranch`). Official villages Westside, Eastside, The Highlands, Ironwood, Sage Canyon sit on that Crook plat. Not Powell Butte View Estates. | 25 | |
 | **Widgi Creek** | `widgi-creek` | Bend | Widgi Creek + PointsWest + Elkai Woods + Milepost 1. Nests under Seventh Mountain CDP. Inn of the 7th is its own featured tile. | 6 | |
 | **Vandevert Ranch** | `vandevert-ranch` | Bend | 1 (single MLS name) | 0 | Tiny private community. Last SFR sale Jan 2025. |
 | **Three Rivers** | `three-rivers` | Bend | 11 (Oww + DrrhTrs + River Meadows + Sun Dance + Deschutes River Recreation Homesites + Drrh Trs + Deschutes Pines + Blissful Acres + Fountainbleau + Swarens Fancher + OWW2) | 39 | South Deschutes residential area. `is_resort=false`. |
@@ -717,7 +717,7 @@ AND "PropertyType" = 'A';
 
 | Source | Purpose |
 |---|---|
-| `data/resort-communities.json` | Featured major resort / MPC / golf parents + correct children (v4-2026-08-20). Each parent has `kind` + `nest`. Alias rule: county plat / HOA / live MLS, not radius. See `data/RESORT_COMMUNITY_ALIASES.md`. |
+| `data/resort-communities.json` | Featured major resort / MPC / golf parents + correct children (v5-2026-08-20). Each parent has `kind` + `nest`. Alias rule: county plat / HOA / live MLS, not radius. See `data/RESORT_COMMUNITY_ALIASES.md`. |
 | `public.cache_methodology_definitions` | Full audit trail for every cache methodology version |
 | `supabase/migrations/20260515170000_resort_communities_neighborhood_aliases.sql` | Migration that populated resort communities |
 | `supabase/migrations/20260425090000_cache_layer_complete_rewrite.sql` | Cache RPC bodies (`compute_and_cache_period_stats`, `refresh_market_pulse`, `backfill_rolling`) |
