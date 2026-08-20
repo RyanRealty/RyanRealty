@@ -2,12 +2,9 @@
 /**
  * Parallel runner for the static `ci:gates` chain.
  *
- * Integrity: every gate in `package.json` → `ci:gates:chain` still runs.
- * Same npm scripts, same exit codes. The only change is scheduling.
- *
- * Why: the chain is ~200 `npm run X &&` steps. Most are cheap file scans.
- * Sequential npm overhead dominated the local push. Typecheck (ci:commit-compiles)
- * stays serial — concurrent tsc OOMs this repo.
+ * Same npm scripts, same exit codes. Scheduling only — plus lane selection
+ * when `scripts/ci-lanes.json` exists (always ∪ matching path globs).
+ * Missing lanes file → the full `ci:gates:chain` list (do not block diet PRs).
  *
  *   node scripts/run-ci-gates.mjs           # CI + `npm run ci:gates`
  *   node scripts/run-ci-gates.mjs --list    # print the plan
@@ -22,46 +19,25 @@ import { cpus } from 'node:os'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import {
+  parseChain,
+  loadLanes,
+  listChangedFiles,
+  selectGates,
+} from './lib/ci-gates-select.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const LIST_ONLY = process.argv.includes('--list')
 const SERIAL_MODE = process.env.CI_GATES_SERIAL === '1'
+const laneArg = process.argv.find((a) => a.startsWith('--lane='))
+const LANE_MODE = laneArg ? laneArg.slice('--lane='.length) : 'push'
+if (LANE_MODE !== 'push' && LANE_MODE !== 'nightly' && LANE_MODE !== 'cert') {
+  console.error(`ci:gates: unknown --lane=${LANE_MODE} (use push, nightly, or cert)`)
+  process.exit(2)
+}
 
 /** One tsc at a time. Concurrent typechecks OOM and report clean. */
 const SERIAL_GATES = new Set(['ci:commit-compiles'])
-
-function parseChain(pkg) {
-  const raw = pkg.scripts?.['ci:gates:chain']
-  if (typeof raw !== 'string' || !raw.trim()) {
-    throw new Error('package.json scripts["ci:gates:chain"] is missing — that string is the source of truth for which gates run')
-  }
-  const tokens = raw
-    .split('&&')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  const gates = []
-  const seen = new Set()
-  for (const tok of tokens) {
-    const m = tok.match(/^npm run (ci:[\w:-]+)$/)
-    if (!m) {
-      throw new Error(`ci:gates:chain token is not \`npm run ci:…\`: ${tok}`)
-    }
-    const name = m[1]
-    if (name === 'ci:gates' || name === 'ci:gates:chain') {
-      throw new Error(`${name} cannot appear inside ci:gates:chain (recursion)`)
-    }
-    if (seen.has(name)) continue
-    seen.add(name)
-    if (!pkg.scripts?.[name]) {
-      throw new Error(`ci:gates:chain names ${name} but that script does not exist`)
-    }
-    gates.push(name)
-  }
-  if (gates.length < 150) {
-    throw new Error(`ci:gates:chain parsed ${gates.length} gates; expected ≥ 150. Refusing to run a truncated chain.`)
-  }
-  return gates
-}
 
 function concurrency() {
   const forced = Number(process.env.CI_GATES_CONCURRENCY)
@@ -145,18 +121,49 @@ async function runSerial(names) {
 }
 
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
-const gates = parseChain(pkg)
+const chain = parseChain(pkg)
+const lanes = loadLanes(ROOT)
+if ((LANE_MODE === 'nightly' || LANE_MODE === 'cert') && !lanes) {
+  console.error(`ci:gates --lane=${LANE_MODE} requires scripts/ci-lanes.json`)
+  process.exit(2)
+}
+const changedFiles =
+  lanes && LANE_MODE === 'push' ? listChangedFiles({ cwd: ROOT }) : null
+const { selected, skipped } = selectGates({
+  chain,
+  lanes,
+  changedFiles,
+  mode: LANE_MODE,
+})
+const gates = selected
 const parallel = gates.filter((g) => !SERIAL_GATES.has(g))
 const serial = gates.filter((g) => SERIAL_GATES.has(g))
 const pool = concurrency()
 
+function printSelection() {
+  console.log(`ci:gates selected ${selected.length}/${chain.length} · skipped ${skipped.length}`)
+  console.log(`  selected: ${selected.join(' ') || '(none)'}`)
+  console.log(`  skipped: ${skipped.join(' ') || '(none)'}`)
+}
+
 if (LIST_ONLY) {
-  console.log(`ci:gates plan: ${gates.length} unique (${parallel.length} parallel, ${serial.length} serial)`)
+  const reason =
+    LANE_MODE === 'nightly' || LANE_MODE === 'cert'
+      ? ` · lane=${LANE_MODE}`
+      : lanes
+        ? ` · ${skipped.length} skipped (nightly/cert/unmatched path)`
+        : ' · full chain (no scripts/ci-lanes.json)'
+  console.log(
+    `ci:gates plan: ${gates.length} unique (${parallel.length} parallel, ${serial.length} serial)` + reason,
+  )
   console.log(`concurrency: ${SERIAL_MODE ? 1 : pool}`)
   for (const g of parallel) console.log(`  parallel  ${g}`)
   for (const g of serial) console.log(`  serial    ${g}`)
+  for (const g of skipped) console.log(`  skipped   ${g}`)
   process.exit(0)
 }
+
+printSelection()
 
 const t0 = Date.now()
 console.log(
@@ -176,9 +183,9 @@ const results = SERIAL_MODE
     })()
 
 const failed = results.filter((r) => r.code !== 0)
-const skipped = gates.length - results.length
+const skippedAfterFail = gates.length - results.length
 console.log(
   `ci:gates ${failed.length ? 'FAILED' : 'OK'} · ${results.length - failed.length}/${gates.length} passed · ${fmtMs(Date.now() - t0)}` +
-    (skipped ? ` · ${skipped} skipped after first failure` : ''),
+    (skippedAfterFail ? ` · ${skippedAfterFail} skipped after first failure` : ''),
 )
 if (failed.length) process.exit(1)

@@ -2,11 +2,22 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-20 (cursor-cloud) — PR 135 people glance + CI on main
+# Current — 2026-08-19 (grok local) — ship-speed PR-3+PR-4
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. PR **135** merged to `origin/main` @ `f7acf428f`. People glance (Next/Now first paint, one-click relationships), about/team CLS reserve + photo alt, town-door navy ground, reports hop smoke. No Jane/Odessa/Nealon mail. CMA `cma-648-se-douglas` stays `648 SE Douglas`. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Grok local worktree `/Users/matthewryan/RyanRealty-wt-ship-speed-20260819` (`wt/ship-speed-20260819` → `origin/main`). Loop stays **DISARMED**. Do not re-arm. Leave `LOOP_SENTINEL` off. Dirty CMA branch `cursor/cma-client-document-7fc3` at `~/RyanRealty` was not touched.
 
-**Skills read:** frontend-design, git-commit, fix-ci.
+**Done**
+- PR-1/PR-2 already on `main` (`dbd671c7` / `05beb235` / `31ba25b0`): skip local `next generate` on push; `.husky` Vercel-skippable; `deploy:verify` SKIP on ignoreCommand CANCELED.
+- PR-3: `scripts/ci-lanes.json` (always/path/nightly/cert). `npm run ci:gates` = always ∪ matching path. Nightly is `node scripts/run-ci-gates.mjs --lane=nightly` in `quality.yml`. GitHub path discovery uses `GITHUB_EVENT_BEFORE...GITHUB_SHA` (empty `@{u}...HEAD` on a push checkout is not “no files”). ≥150 clamp dropped. `ci:gates-wired` treats nightly/cert as wired; chain↔lanes drift fails.
+- PR-4: `lib/build-phase.ts` `skippableRail` on city / community / neighborhood blog+activity+open-houses+amenity. Hero inventory kept. Subdivision inventory not skipped. Open-house section hidden at SSG unless items exist.
+
+**Next**
+- `npm run push` from this worktree then `deploy:verify` (app+lib → Vercel **will** generate; prerender-only failures go red). Escape: `PUSH_FULL_GENERATE=1`.
+- Remaining SSG cost is lifestyle nearby-homes (~186 pages), plat below-fold, housing-market blog — not this ship.
+
+**Do not:** mix CMA dirt. Do not re-arm the loop. Do not SMS, publish, spend, or OAuth. Do not invent a listing.
+
+**Skills read:** git-commit, DEVELOPMENT_PROCESS, MECHANICAL_GATES, CROSS_AGENT_HANDOFF.
 
 # Prior — 2026-08-19 (cursor-cloud) — CRM compose rebase
 

@@ -48,14 +48,9 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run lint
-      # Canonical gate suite — runs ALL mechanical gates (the same
-      # `ci:gates` developers run locally + pre-push), not a hand-picked
-      # subset. Adding a gate to package.json's `ci:gates` chain now
-      # auto-enforces it here too. Previously CI hand-listed ~13 gates
-      # and silently omitted 9 (no-mojibake, producer-skills,
-      # tool-discipline, geo-imagery, boundary-map, community-page,
-      # community-content, ai-structured-data, design-directives,
-      # hook-tests). Wired 2026-05-30 — gate LAUNCH-15 / DATA-15 / SKILL-12.
+      # Path-aware `ci:gates` (always ∪ matching path). Nightly/cert lanes
+      # run in quality.yml (`--lane=nightly`), not here. Path discovery uses
+      # GITHUB_EVENT_BEFORE...GITHUB_SHA (see scripts/lib/ci-gates-select.mjs).
       # See docs/MECHANICAL_GATES.md.
       - run: npm run ci:gates
       # R-221: PR/main CI is unit+gates only. Live-DB int tests run nightly

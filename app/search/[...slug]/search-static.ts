@@ -5,13 +5,16 @@
  * while still exporting a real (non-empty) generateStaticParams.
  */
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { isProductionBuildPhase } from '@/lib/build-phase'
+
+export { isProductionBuildPhase }
 
 /**
  * True during `next build` static generation. The search page's eager fan-out
  * OOMs the build worker when generateStaticParams pre-renders even 10 bare-city
  * paths. Thin the fan-out in that phase; runtime / ISR keep the full path.
  */
-export const IS_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build'
+export const IS_PRODUCTION_BUILD = isProductionBuildPhase()
 
 /**
  * Pre-render the 10 SITE_CITY_SLUGS bare-city routes. The full

@@ -178,16 +178,17 @@ export default async function SubdivisionPage({ params }: Props) {
 
   // ── PATH 1: GIS boundary (plat polygon for the map) ──────────────────────
   // ── PATH 2: Registry alias + the public SFR inventory SoR ────────────────
-  const [boundaryRead, inventory] = await Promise.all([
+  const [boundaryRead, inventoryRead] = await Promise.all([
     withTimeoutFallbackResult(
       getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
       { polygon: null, pins: [] },
       4500,
       'sub:boundary',
     ),
-    getPlatPublicInventory(slug),
+    withTimeoutFallbackResult(getPlatPublicInventory(slug), null, 4500, 'sub:inventory'),
   ])
   const boundary = boundaryRead.value
+  const inventory = inventoryRead.ok ? inventoryRead.value : null
   const hasBoundary = Boolean(boundary.polygon)
 
   const registryMatch = resolveRegistryAlias(slug)
@@ -213,7 +214,7 @@ export default async function SubdivisionPage({ params }: Props) {
 
   let mapTiles: Awaited<ReturnType<typeof getListingTiles>> = []
   if (boundaryListingKeys.length > 0) {
-    mapTiles = await withTimeoutFallback(
+    const mapTilesRead = await withTimeoutFallbackResult(
       getListingTiles({
         listingKeys: boundaryListingKeys,
         status: 'active',
@@ -224,6 +225,7 @@ export default async function SubdivisionPage({ params }: Props) {
       4500,
       inventoryOk ? 'sub:inventory-tiles' : 'sub:map-pins',
     )
+    mapTiles = mapTilesRead.ok ? mapTilesRead.value : []
   }
   if (inventoryOk) {
     const allowed = new Set(countedKeys)
@@ -233,7 +235,7 @@ export default async function SubdivisionPage({ params }: Props) {
   // notFound: no boundary, no registry alias, no listings anywhere.
   const hasListings = mapTiles.length > 0
   if (!hasBoundary && !registryMatch && !hasListings) {
-    notFound()
+    if (inventoryRead.ok && boundaryRead.ok) notFound()
   }
 
   // ── Name + city display ───────────────────────────────────────────────────

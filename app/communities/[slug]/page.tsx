@@ -86,7 +86,8 @@ import { homesForSalePath, slugify } from '@/lib/slug'
 import { getCanonicalCityForSubdivision, getAllResortCommunities } from '@/lib/data/communities/registry'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { CONTACT } from '@/lib/brand/contact'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { buildTimeRails, skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -273,8 +274,8 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const [
     snapshot, pulse, stats, mktStats, regionPulse, priceHist,
-    boundaryMapData, resortBoundary, allCitySnapshots, communities,
-    blogPosts, openHouses, activity, featuredTiles, citySfrTiles, richContent,
+    boundaryRead, resortBoundary, allCitySnapshots, communities,
+    blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
@@ -287,34 +288,28 @@ export default async function CommunityDetailPage({ params }: Props) {
     withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 3000, 'comm:mktStats'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'comm:regionPulse'),
     withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
-    withTimeoutFallback(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),
+    withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),
     withTimeoutFallback(getResortBoundaryGeoJSON(slug), null, 4500, 'comm:resortBoundary'),
     withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'comm:cities'),
     withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'comm:communities'),
-    withTimeoutFallback(getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'comm:blog'),
-    withTimeoutFallback(getOpenHousesWithListings({ city: cityName }), [], 3500, 'comm:openHouses'),
-    withTimeoutFallback(getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'comm:activity'),
+    skippableRail(() => getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'comm:blog'),
+    skippableRail(() => getOpenHousesWithListings({ city: cityName }), [], 3500, 'comm:openHouses'),
+    skippableRail(() => getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'comm:activity'),
     withTimeoutFallback(getCommunityListings(cityName, community.subdivision, 14), [], 4500, 'comm:featured'),
     // Uncapped active SFR tiles for EVERY MLS city this community lists under
     // (registry mls_cities): Caldera lists under Bend, BBR under its own name —
     // the registry-city-only pull rendered 0 of 31 real homes (2026-07-29). (§0)
     isResortInCity
-      ? withTimeoutFallback(
+      ? withTimeoutFallbackResult(
           Promise.all(
             [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])].map((c) => fetchAllCityActiveSfr(c)),
           ).then((sets) => sets.flat()),
           [], 9000, 'comm:citySfr',
         )
-      : Promise.resolve([] as Awaited<ReturnType<typeof getListingTiles>>),
-    // Rich, verified resort/golf/master-planned content (amenities, drive times,
-    // golf course, membership, builders) from data/resort-community-<slug>.json —
-    // the depth the page is REQUIRED to carry (owner directive). Null when a
-    // community has no config (the page degrades to the data-driven About). (§0)
+      : Promise.resolve({ value: [] as Awaited<ReturnType<typeof getListingTiles>>, ok: true }),
+    // Curated amenity/golf/HOA JSON, or the data-driven About when missing. (§0)
     withTimeoutFallback(getResortCommunityContent(resortSlug), null, 2500, 'comm:content'),
-    // Parent-city monthly price history — the chart's fallback when this community's
-    // own neighborhood close-sale series is too thin for a real multi-year trend
-    // (most subdivisions cache only a handful of recent months). Relabeled as
-    // city-level when used, so no city figure is passed off as the community's. (§0)
+    // Parent-city trend when this community's series is too thin. Relabeled. (§0)
     withTimeoutFallback(getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
     // Approved per-location AREA GUIDE video for THIS community's geo slug (EXACT
     // match, null when the location has no guide video). The slot self-hides when
@@ -346,7 +341,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     .filter((s): s is string => Boolean(s))
   const amenityPosts =
     amenityBlogSlugs.length > 0
-      ? await withTimeoutFallback(getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'comm:amenityPosts')
+      ? await skippableRail(() => getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'comm:amenityPosts')
       : {}
 
   // ── BOUNDARY RELIABILITY (preserved) ──────────────────────────────────────
@@ -355,6 +350,8 @@ export default async function CommunityDetailPage({ params }: Props) {
   // subdivision-name listings instead, and draw only those pins. Never draw the
   // oversized polygon (broken-top drew Tetherow). (preserved from prior page)
   const boundaryReliable = isBoundaryReliable(slug)
+  const boundaryMapData = boundaryRead.value
+  const citySfrTiles = citySfrRead.ok ? citySfrRead.value : []
   const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
 
   // ALIAS-AWARE LISTINGS for a resort. A resort's homes are MLS-tagged under many
@@ -372,27 +369,28 @@ export default async function CommunityDetailPage({ params }: Props) {
   let communityTiles: Awaited<ReturnType<typeof getListingTiles>> = useResortTiles
     ? resortTiles
     : boundaryReliable && boundaryListingKeys.length > 0
-      ? await withTimeoutFallback(
+      ? await withTimeoutFallbackResult(
           getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 200 }),
           [],
           4500,
           'comm:tiles',
-        )
-      : await withTimeoutFallback(
+        ).then((r) => (r.ok ? r.value : []))
+      : await withTimeoutFallbackResult(
           getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: 1500 }),
           [],
           4500,
           'comm:tiles-fallback',
-        )
+        ).then((r) => (r.ok ? r.value : []))
   // For the oversized-boundary fallback (non-resort), narrow the city pull to the
   // real community by MLS subdivision name (the authoritative source for those slugs).
   if (!useResortTiles && (!boundaryReliable || boundaryListingKeys.length === 0)) {
-    const subListings = await withTimeoutFallback(
+    const subListingsRead = await withTimeoutFallbackResult(
       getCommunityListings(cityName, community.subdivision, 200),
       [],
       4500,
       'comm:sub-listings',
     )
+    const subListings = subListingsRead.ok ? subListingsRead.value : []
     const subKeys = new Set(subListings.map((r) => r.ListingKey).filter(Boolean) as string[])
     communityTiles = communityTiles.filter((t) => subKeys.has(t.listingKey))
   }
@@ -404,7 +402,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // the literal-name undercount (Widgi 0 vs true 48, Tetherow 14 vs true 55). (§0)
   // Gate on a NON-EMPTY tile set: if the paginated city SFR fetch timed out, do NOT
   // publish a 0 alias count — fall through to the boundary / community count. (review HIGH)
-  const haveCityTiles = isResortInCity && citySfrTiles.length > 0
+  const haveCityTiles = isResortInCity && citySfrRead.ok && citySfrTiles.length > 0
   const resortSfrCounts = haveCityTiles ? resortActiveSfrCounts(citySlug, citySfrTiles) : new Map<string, number>()
   const aliasAwareCount = haveCityTiles ? resortSfrCounts.get(resortSlug) ?? null : null
 
@@ -420,7 +418,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // the median comes from — never a second, independent chain. The old one ended
   // at `community.medianPrice`, a median CLOSED SALE price, and three community
   // pages published it under "Median list". See lib/market/tile-medians.ts.
-  const reliableBoundaryCount = boundaryReliable ? boundaryMapData.pins.length : null
+  const reliableBoundaryCount = !boundaryRead.ok || !boundaryReliable ? null : boundaryMapData.pins.length
   const activeSet: { count: number | null; tiles: typeof communityTiles | null; median: number | null } =
     aliasAwareCount != null
       ? { count: aliasAwareCount, tiles: resortTiles, median: null }
@@ -840,12 +838,14 @@ export default async function CommunityDetailPage({ params }: Props) {
             approved guide video. Sits after the communities rail, before the
             this-week / activity / FAQ / sell blocks. */}
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={community.name} posterSrc={heroPhoto} />
+        {buildTimeRails(true) || openHouseItems.length > 0 ? (
         <KbOpenHouses
           items={openHouseItems}
           eyebrow={`${cityName} · This week`}
           heading="Open houses"
           viewAllHref={`/open-houses/${citySlug}`}
         />
+        ) : null}
         <KbActivity
           items={activityItems}
           // design-audit TRU-1: the feed is fetched city-wide (cities:[cityName]),

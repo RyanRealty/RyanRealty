@@ -2,8 +2,7 @@
  * Neighborhood detail page — KB (kinetic-brutalist) design, Phase 9 wave 3 of
  * the convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Mirrors the
  * community page section order (components/site/kb/*), fed NEIGHBORHOOD-scoped
- * DAL data, never forked (ci:kb-single-source G50). KbNav + KbFooter carry
- * chrome.
+ * DAL data, never forked (ci:kb-single-source G50). KbNav + KbFooter carry chrome.
  *
  * THE PAGE CONTRACT (docs/KB_CONVERGENCE_ROADMAP.md): KB design + SEO for
  * Google & LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/Neighborhood
@@ -25,7 +24,6 @@
  * ticker · map · buyer alerts (mid) · overview/about · market · subdivisions ·
  * area guide · open houses · activity · SELL · guides · testimonials · team ·
  * other cities · FAQ · footer. Inventory leads; convert before exit links.
- *
  * Data ONLY through @/lib/data and @/app/actions/cities. No raw .from() calls.
  */
 
@@ -72,6 +70,7 @@ import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { buildTimeRails, skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -190,9 +189,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     // apart so a degraded read can never publish a count (§0).
     withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'nbh:boundary'),
     withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'nbh:cities'),
-    withTimeoutFallback(getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'nbh:blog'),
-    withTimeoutFallback(getOpenHousesWithListings({ city: cityName }), [], 3500, 'nbh:openHouses'),
-    withTimeoutFallback(getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'nbh:activity'),
+    skippableRail(() => getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'nbh:blog'),
+    skippableRail(() => getOpenHousesWithListings({ city: cityName }), [], 3500, 'nbh:openHouses'),
+    skippableRail(() => getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'nbh:activity'),
     // Parent-city monthly price history — fallback when this neighborhood's own
     // series is too thin for a real multi-year trend (<8 non-null points OR <2
     // calendar years). Relabeled as city-level when used (§0). (§0)
@@ -268,7 +267,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     .filter((s): s is string => Boolean(s))
   const amenityPosts =
     amenityBlogSlugs.length > 0
-      ? await withTimeoutFallback(getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'nbh:amenityPosts')
+      ? await skippableRail(() => getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'nbh:amenityPosts')
       : {}
 
   const aboutParagraphs: string[] = [neighborhood.description ?? ''].filter(
@@ -543,12 +542,14 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
         {/* Open houses + the feed are fetched city-wide (the MLS carries no
             neighborhood scope on either), so they are labeled with the city (§0). */}
-        <KbOpenHouses
-          items={openHouseItems}
-          eyebrow={openHouseEyebrow}
-          heading="Open houses"
-          viewAllHref={`/open-houses/${citySlug}`}
-        />
+        {buildTimeRails(true) || openHouseItems.length > 0 ? (
+          <KbOpenHouses
+            items={openHouseItems}
+            eyebrow={openHouseEyebrow}
+            heading="Open houses"
+            viewAllHref={`/open-houses/${citySlug}`}
+          />
+        ) : null}
         <KbActivity
           items={activityItems}
           eyebrow={activityEyebrow}

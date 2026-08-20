@@ -76,7 +76,8 @@ import {
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { getPlaceLinks } from '@/lib/place-links'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { buildTimeRails, skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { buildCitySchemas } from './city-schemas'
@@ -149,11 +150,11 @@ export default async function CityDetailPage({ params }: Props) {
   const geoSlug = canonicalCityCacheSlug(slug)
 
   const [
-    pulse, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
+    pulseRead, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
-    cityMeta, mapTiles, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
+    cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
   ] = await Promise.all([
-    withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
+    withTimeoutFallbackResult(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
     withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'city', geoSlug }), null, 3000, 'city:mktStats'),
     withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
@@ -166,16 +167,16 @@ export default async function CityDetailPage({ params }: Props) {
       : Promise.resolve([] as Awaited<ReturnType<typeof getBendNeighborhoodLedger>>),
     withTimeoutFallback(getCityCommunitySnapshots(slug), [], 3000, 'city:commSnaps'),
     withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'city:allCities'),
-    withTimeoutFallback(getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'city:blog'),
-    withTimeoutFallback(getOpenHousesWithListings({ city: cityName }), [], 3500, 'city:openHouses'),
-    withTimeoutFallback(getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'city:activity'),
+    skippableRail(() => getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'city:blog'),
+    skippableRail(() => getOpenHousesWithListings({ city: cityName }), [], 3500, 'city:openHouses'),
+    skippableRail(() => getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'city:activity'),
     withTimeoutFallback(getCityMetadataByName(cityName), null, 3000, 'city:meta'),
     // propertyType:'A' (§0, C-02): every sibling geo map — community, neighborhood,
     // subdivision, zip, homepage — is SFR, and the hero count beside this map is
     // market_pulse_live's SFR activeCount. All-types tiles here made the badge read
     // 1,000 against a hero of 491 on /cities/bend. The 1500 cap also stops binding
     // once the pull is SFR-only.
-    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: CITY_TILE_FETCH_LIMIT }), [], 4500, 'city:mapTiles'),
+    withTimeoutFallbackResult(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: CITY_TILE_FETCH_LIMIT }), [], 4500, 'city:mapTiles'),
     // Wide SFR pool for curateFeaturedTiles below — the old price-desc top-14
     // pull had ONLY luxury outliers in it, so curation ran but had nothing
     // mid-market to pick from (design-audit P2).
@@ -198,13 +199,15 @@ export default async function CityDetailPage({ params }: Props) {
   // §0 UNKNOWN IS NOT ZERO: `?? 0` published a fabricated "0 homes for sale" whenever the pulse read timed out.
   // When the address-set tile fetch is complete (under the cap), publish that
   // count so hero / facts / JSON-LD cannot say 6 against a 24-door list.
+  const pulse = pulseRead.ok ? pulseRead.value : null
+  const mapTiles = mapTilesRead.value
   const publishedInventory = publishCityInventory({
     pulseCount: pulse?.activeCount ?? null,
     pulseMedian: pulse?.medianListPrice ?? null,
     tileCount: mapTiles.length,
     tileMedian: medianListPriceOfTiles(mapTiles),
     tileLimit: CITY_TILE_FETCH_LIMIT,
-    tileFetchOk: mapTiles.length > 0,
+    tileFetchOk: mapTilesRead.ok,
   })
   const activeCount: number | null = publishedInventory.count
   const publishedMedian = publishedInventory.medianListPrice
@@ -545,7 +548,9 @@ export default async function CityDetailPage({ params }: Props) {
         ) : null}
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={cityName} posterSrc={heroPosterSrc} />
         {/* Urgency cluster (this week + live feed) before convert. */}
-        <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
+        {buildTimeRails(true) || openHouseItems.length > 0 ? (
+          <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
+        ) : null}
         <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
         {/* Convert before trust + exit links (E3 CTA clarity). City eyebrow. */}
         <KbSell

@@ -1,0 +1,1243 @@
+{
+  "version": 1,
+  "always": [
+    "ci:brand-voice",
+    "ci:broker-own-book",
+    "ci:commit-compiles",
+    "ci:count-degraded-read",
+    "ci:crm-fail-closed",
+    "ci:crm-scope",
+    "ci:crm-secrets",
+    "ci:crm-sms-safety",
+    "ci:csp",
+    "ci:dal-boundary",
+    "ci:dal-column-quoting",
+    "ci:dal-internal-discipline",
+    "ci:db-timeout-guard",
+    "ci:deliverable-send-chokepoint",
+    "ci:email-send-gated",
+    "ci:entity-scope",
+    "ci:gates-wired",
+    "ci:governed-send",
+    "ci:hidden-exclusion-surfaces",
+    "ci:identity-stitch-paths",
+    "ci:jsonb-cast-guard",
+    "ci:jsonb-contains",
+    "ci:listing-alert-enroll",
+    "ci:listing-figure-publish",
+    "ci:listing-key-lookup",
+    "ci:maps-safety",
+    "ci:market-formula",
+    "ci:no-jsdom-serverless",
+    "ci:no-report-rpc",
+    "ci:no-staging-host",
+    "ci:ods-compliance",
+    "ci:page-dal",
+    "ci:pdf-page-safety",
+    "ci:prerender-db-safety",
+    "ci:private-key-parity",
+    "ci:private-phone",
+    "ci:public-listing-status",
+    "ci:publish-blog-index-list",
+    "ci:publish-blog-mos-verdicts",
+    "ci:publish-blog-related-homes",
+    "ci:publish-blog-report-period",
+    "ci:publish-calendar-day",
+    "ci:publish-complete-month-median",
+    "ci:publish-days-figure",
+    "ci:publish-down-payment",
+    "ci:publish-featured-plat-inventory",
+    "ci:publish-listing-ask",
+    "ci:publish-listing-contact-key",
+    "ci:publish-listing-hero-stats",
+    "ci:publish-listing-hero-video",
+    "ci:publish-listing-history",
+    "ci:publish-listing-hoa",
+    "ci:publish-listing-share",
+    "ci:publish-median-caption",
+    "ci:publish-mixed-instrument-stamp",
+    "ci:publish-months-of-supply",
+    "ci:publish-newsletter-href",
+    "ci:publish-place-browse",
+    "ci:publish-place-hoa",
+    "ci:publish-place-in-city",
+    "ci:publish-place-index-truth",
+    "ci:publish-place-names",
+    "ci:publish-plat-figures",
+    "ci:publish-plat-inventory",
+    "ci:publish-regional-search-href",
+    "ci:publish-report-city-scope",
+    "ci:publish-resort-index-figures",
+    "ci:publish-search-count",
+    "ci:publish-search-status",
+    "ci:publish-sell-valuation",
+    "ci:publish-street-line",
+    "ci:row-cap",
+    "ci:server-type-reexport",
+    "ci:sms-consent",
+    "ci:stage-truth",
+    "ci:toast-discipline",
+    "ci:untracked-imports",
+    "ci:voice-constructions",
+    "ci:voice-constructions-parity",
+    "ci:voice-send-paths"
+  ],
+  "path": {
+    "ci:access-denied": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**",
+      "app/admin/access-denied/**"
+    ],
+    "ci:activity-event-labels": [
+      "lib/activity/**",
+      "lib/sync/deltaSync.ts"
+    ],
+    "ci:ad-brokerage-attribution": [
+      "social_media_skills/**",
+      "lib/social/**",
+      "scripts/build_single_image_posts.py",
+      "app/lp/**"
+    ],
+    "ci:admin-content-authz": [
+      "app/actions/blog.ts",
+      "app/actions/brokerage.ts",
+      "app/actions/geo-places.ts",
+      "app/actions/guides.ts",
+      "app/actions/site-pages.ts",
+      "app/actions/**"
+    ],
+    "ci:admin-contrast": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:admin-curation": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:admin-endpoint-auth": [
+      "lib/auth/**",
+      "middleware.ts",
+      "app/api/**",
+      "app/actions/**",
+      "app/admin/**"
+    ],
+    "ci:admin-mobile-shell": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:admin-nav-ia": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**",
+      "docs/plans/ADMIN_PRODUCT/**"
+    ],
+    "ci:admin-nav-source": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:admin-responsive": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:admin-role-guard": [
+      "app/actions/admin-roles.ts",
+      "lib/auth/**",
+      "middleware.ts",
+      "app/api/**",
+      "app/actions/**",
+      "app/admin/**"
+    ],
+    "ci:admin-ui": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**",
+      "scripts/admin-ui-baseline.json"
+    ],
+    "ci:admin-v2-tokens": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:ai-crawler-access": [
+      "app/**/page.tsx",
+      "app/**/page.ts",
+      "lib/seo/**",
+      "lib/seo*",
+      "app/sitemap.ts",
+      "app/robots.ts",
+      "app/llms.txt/**"
+    ],
+    "ci:ai-query-battery": [
+      "app/**/page.tsx",
+      "app/**/page.ts",
+      "lib/seo/**",
+      "lib/seo*",
+      "app/sitemap.ts",
+      "app/robots.ts",
+      "app/llms.txt/**",
+      "lib/seo/ai-query-map.json",
+      "data/resort-communities.json"
+    ],
+    "ci:ai-structured-data": [
+      "app/**/page.tsx",
+      "app/**/page.ts",
+      "lib/seo/**",
+      "lib/seo*",
+      "app/sitemap.ts",
+      "app/robots.ts",
+      "app/llms.txt/**",
+      "app/about/**",
+      "app/team/**",
+      "app/layout.tsx"
+    ],
+    "ci:alert-capture-disclosure": [
+      "components/**",
+      "app/**/page.tsx",
+      "lib/alerts/**",
+      "lib/listing-alerts/**"
+    ],
+    "ci:approval-stamp-wired": [
+      "app/api/cron/publisher-sweep/**",
+      "app/api/social/publish/**",
+      "lib/social/**"
+    ],
+    "ci:asset-register-dedup": [
+      "lib/asset-library.mjs",
+      "lib/asset-library.ts",
+      "data/asset-library/**"
+    ],
+    "ci:auth-redirect": [
+      "lib/auth/**",
+      "middleware.ts",
+      "app/api/**",
+      "app/actions/**",
+      "app/admin/**",
+      "app/auth/**",
+      "app/login/**"
+    ],
+    "ci:avatar-crop": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:boundary-map": [
+      "lib/boundaries/**",
+      "lib/data/boundaries/**",
+      "data/**boundary**",
+      "app/cities/**",
+      "app/communities/**"
+    ],
+    "ci:boundary-provenance": [
+      "lib/boundaries/**",
+      "lib/data/boundaries/**",
+      "data/**boundary**"
+    ],
+    "ci:boundary-sanity": [
+      "lib/boundaries/**",
+      "lib/data/boundaries/**",
+      "data/**boundary**"
+    ],
+    "ci:breadcrumb": [
+      "components/site/**",
+      "app/**/page.tsx",
+      "lib/kb/**"
+    ],
+    "ci:broker-agent-send-safety": [
+      "lib/agent/**",
+      "lib/crm/**",
+      "app/api/**",
+      "app/actions/**"
+    ],
+    "ci:broker-facts": [
+      "lib/brokers*",
+      "lib/data/brokers/**",
+      "app/team/**",
+      "data/brokers*"
+    ],
+    "ci:broker-published-phone": [
+      "lib/brokers*",
+      "lib/data/brokers/**",
+      "app/team/**",
+      "components/**"
+    ],
+    "ci:bulk-approval-wired": [
+      "app/admin/**",
+      "lib/social/**",
+      "app/api/social/**",
+      "app/actions/**"
+    ],
+    "ci:call-recording-consent": [
+      "lib/crm/**",
+      "lib/twilio/**",
+      "app/api/**",
+      "app/admin/**"
+    ],
+    "ci:canonical-host": [
+      "next.config.*",
+      "app/layout.tsx",
+      "middleware.ts",
+      "lib/canonical*",
+      "lib/seo/**"
+    ],
+    "ci:canonical-integrity": [
+      "lib/slug.ts",
+      "app/**",
+      "next.config.*"
+    ],
+    "ci:canonical-listings": [
+      "lib/slug.ts",
+      "app/**",
+      "lib/listings/**"
+    ],
+    "ci:capture-scope": [
+      "lib/crm/**",
+      "lib/capture/**",
+      "app/lp/**",
+      "components/**"
+    ],
+    "ci:chart-sample-window": [
+      "components/site/v3/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/subdivisions/**",
+      "lib/charts/**",
+      "lib/data/geo/**",
+      "lib/data/market/**",
+      "scripts/check-chart-sample-window.mjs"
+    ],
+    "ci:city-cache-slug": [
+      "lib/geo/**",
+      "data/resort-communities.json",
+      "data/resort-community-*.json",
+      "app/cities/**",
+      "app/communities/**",
+      "lib/data/**"
+    ],
+    "ci:claude-canon": [
+      "CLAUDE.md",
+      "AGENTS.md",
+      "docs/README.md",
+      "docs/FEATURES.md",
+      "docs/MASTER_SPEC.md",
+      "docs/SITE_SPEC.md",
+      "docs/DEVELOPMENT_PROCESS.md",
+      "scripts/claude-canon-baseline.json"
+    ],
+    "ci:cma-rebrand-integrity": [
+      "lib/cma/**",
+      "lib/pricing/**",
+      "lib/bpo/**",
+      "marketing_brain_skills/producers/cma/**",
+      "docs/plans/CMA*",
+      "public/cmas/**"
+    ],
+    "ci:cma-routing": [
+      "lib/cma/**",
+      "lib/pricing/**",
+      "lib/bpo/**",
+      "marketing_brain_skills/producers/cma/**",
+      "docs/plans/CMA*",
+      "public/cmas/**",
+      "scripts/build_cma_wrapper.py"
+    ],
+    "ci:collections-wiring": [
+      "lib/collections/**",
+      "app/**",
+      "components/**"
+    ],
+    "ci:community-content": [
+      "app/communities/**",
+      "lib/community/**",
+      "data/resort-communities.json",
+      "data/resort-community-*.json"
+    ],
+    "ci:community-depth": [
+      "app/communities/**",
+      "lib/community/**",
+      "scripts/community-content-depth-baseline.json"
+    ],
+    "ci:composer-discipline": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:content-freshness": [
+      "lib/testimonials.ts",
+      "lib/content/**",
+      "app/blog/**",
+      "app/**/page.tsx",
+      "components/**",
+      "data/**"
+    ],
+    "ci:content-metadata": [
+      "lib/testimonials.ts",
+      "lib/content/**",
+      "app/blog/**",
+      "app/**/page.tsx",
+      "components/**",
+      "data/**"
+    ],
+    "ci:content-provenance": [
+      "lib/testimonials.ts",
+      "lib/content/**",
+      "app/blog/**",
+      "app/**/page.tsx",
+      "components/**",
+      "data/**"
+    ],
+    "ci:content-schema": [
+      "lib/testimonials.ts",
+      "lib/content/**",
+      "app/blog/**",
+      "app/**/page.tsx",
+      "components/**",
+      "data/**"
+    ],
+    "ci:content-uniqueness": [
+      "lib/testimonials.ts",
+      "lib/content/**",
+      "app/blog/**",
+      "app/**/page.tsx",
+      "components/**",
+      "data/**"
+    ],
+    "ci:crm-add-person": [
+      "lib/crm/**",
+      "app/admin/**",
+      "app/actions/**"
+    ],
+    "ci:crm-lead-integrity": [
+      "lib/crm/**",
+      "app/admin/**",
+      "app/actions/**"
+    ],
+    "ci:crm-mobile-track": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:crm-screen-parity": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:cron-auth": [
+      "app/api/cron/**",
+      "vercel.json",
+      "scripts/cron-registered-baseline.json",
+      "lib/auth/**",
+      "middleware.ts",
+      "app/api/**",
+      "app/actions/**",
+      "app/admin/**"
+    ],
+    "ci:cron-registered": [
+      "app/api/cron/**",
+      "vercel.json",
+      "scripts/cron-registered-baseline.json"
+    ],
+    "ci:css-layers": [
+      "app/globals.css",
+      "design_system/**",
+      "app/**/*.css"
+    ],
+    "ci:currency-format": [
+      "lib/**",
+      "app/**",
+      "components/**"
+    ],
+    "ci:dal-actions-reads": [
+      "app/actions/**",
+      "lib/data/**"
+    ],
+    "ci:date-format": [
+      "lib/**",
+      "app/**",
+      "components/**"
+    ],
+    "ci:days-to-pending-source": [
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**"
+    ],
+    "ci:default-chrome-footer": [
+      "components/site/**",
+      "app/layout.tsx",
+      "app/**/layout.tsx"
+    ],
+    "ci:deliverable-library-scope": [
+      "lib/deliverable*/**",
+      "lib/deliverable*",
+      "app/admin/**"
+    ],
+    "ci:deliverable-share-safety": [
+      "lib/deliverable*/**",
+      "lib/deliverable*",
+      "app/admin/**",
+      "app/actions/**"
+    ],
+    "ci:delta-sync-core": [
+      "lib/sync/**",
+      "app/api/cron/**"
+    ],
+    "ci:design-directives": [
+      "design_system/**",
+      "docs/DESIGN_DIRECTIVES.md",
+      "docs/DESIGN*.md"
+    ],
+    "ci:design-tokens": [
+      "app/**",
+      "components/**",
+      "design_system/**",
+      "app/globals.css"
+    ],
+    "ci:email-brand-tokens": [
+      "lib/email/**",
+      "lib/email-templates/**",
+      "lib/digest-email-templates.tsx",
+      "design_system/**"
+    ],
+    "ci:email-quality": [
+      "lib/email/**",
+      "lib/email-templates/**",
+      "lib/digest-email-templates.tsx"
+    ],
+    "ci:email-tracking": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*",
+      "lib/email/**",
+      "lib/email-templates/**",
+      "lib/digest-email-templates.tsx"
+    ],
+    "ci:embed-csp-parity": [
+      "next.config.*",
+      "middleware.ts",
+      "lib/csp*",
+      "scripts/check-csp.mjs"
+    ],
+    "ci:flyover-video-size": [
+      "public/videos/**",
+      "data/city-hero-videos*",
+      "lib/geo-imagery/**"
+    ],
+    "ci:geo-imagery": [
+      "public/**",
+      "data/city-hero-videos*",
+      "lib/geo-imagery/**",
+      "data/geo*"
+    ],
+    "ci:header-search": [
+      "components/site/**",
+      "lib/search/**",
+      "app/**/layout.tsx"
+    ],
+    "ci:heading-display": [
+      "app/**",
+      "components/**",
+      "design_system/**",
+      "app/globals.css"
+    ],
+    "ci:hero-image": [
+      "design_system/**/hero/**",
+      "app/**",
+      "components/**",
+      "public/images/**"
+    ],
+    "ci:hook-tests": [
+      ".claude/hooks/**",
+      "scripts/__tests__/brand-voice-vocabulary.test.cjs",
+      "scripts/brand-voice-vocabulary.cjs"
+    ],
+    "ci:hydration-safety": [
+      "app/**",
+      "components/**"
+    ],
+    "ci:integration-health": [
+      "docs/plans/ENTERPRISE_MAP/integration-health-probes.json",
+      "lib/data/loop/integration-health.ts",
+      "lib/data/loop/signals.ts",
+      "docs/plans/COMPANY_SCOREBOARD.md"
+    ],
+    "ci:internal-links": [
+      "app/**",
+      "components/**",
+      "lib/site-nav.ts"
+    ],
+    "ci:join-conversion": [
+      "app/join/**",
+      "lib/data/loop/join-conversion.ts",
+      "lib/data/loop/signals.ts",
+      "app/lp/**"
+    ],
+    "ci:kb-a11y-static": [
+      "components/site/kb/**",
+      "lib/kb/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/housing-market/**"
+    ],
+    "ci:kb-breadcrumb-overlay": [
+      "components/site/kb/**",
+      "lib/kb/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/housing-market/**"
+    ],
+    "ci:kb-overlay-hidden": [
+      "components/site/kb/**",
+      "lib/kb/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/housing-market/**"
+    ],
+    "ci:kb-page-contract": [
+      "components/site/kb/**",
+      "lib/kb/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/housing-market/**"
+    ],
+    "ci:kb-shared-shell": [
+      "components/site/kb/**",
+      "lib/kb/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/housing-market/**"
+    ],
+    "ci:kb-single-source": [
+      "components/site/kb/**",
+      "lib/kb/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/housing-market/**"
+    ],
+    "ci:legacy-redirects": [
+      "next.config.*",
+      "app/**",
+      "middleware.ts",
+      "lib/redirects*"
+    ],
+    "ci:look-walk": [
+      "docs/plans/ENTERPRISE_MAP/look-walk-baseline.json",
+      "lib/data/loop/look-walk.ts",
+      "lib/data/loop/signals.ts",
+      "docs/plans/COMPANY_SCOREBOARD.md"
+    ],
+    "ci:loop-skills-canon": [
+      ".claude/skills/**",
+      ".cursor/rules/**"
+    ],
+    "ci:lp-conversion": [
+      "app/lp/**",
+      "components/lp/**",
+      "lib/lp/**"
+    ],
+    "ci:market-cache-geo-scope": [
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**",
+      "lib/geo/**",
+      "data/resort-communities.json",
+      "data/resort-community-*.json",
+      "app/cities/**",
+      "app/communities/**"
+    ],
+    "ci:market-chart-honesty": [
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**",
+      "components/**",
+      "app/housing-market/**",
+      "app/cities/**"
+    ],
+    "ci:market-city-slug-canon": [
+      "lib/geo/**",
+      "data/resort-communities.json",
+      "data/resort-community-*.json",
+      "app/cities/**",
+      "app/communities/**",
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**"
+    ],
+    "ci:market-narrative-integrity": [
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**",
+      "app/housing-market/**",
+      "app/blog/**"
+    ],
+    "ci:market-report-bulk-ledger": [
+      "lib/reports/**",
+      "app/reports/**",
+      "app/admin/**",
+      "docs/plans/**"
+    ],
+    "ci:market-section-nesting": [
+      "app/housing-market/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/reports/**"
+    ],
+    "ci:marketing-request-intake": [
+      "app/marketing/**",
+      "lib/marketing-brain/**",
+      "app/api/**/marketing*"
+    ],
+    "ci:measurement-loop": [
+      "lib/analytics/**",
+      "app/api/**",
+      "components/GoogleAnalytics.tsx"
+    ],
+    "ci:meta-audience-hold": [
+      "lib/data/loop/meta-audience-hold.ts",
+      "lib/data/loop/signals.ts",
+      "docs/plans/ENTERPRISE_MAP/**",
+      "lib/meta/**"
+    ],
+    "ci:meta-token": [
+      "lib/meta/**",
+      "app/api/**",
+      "lib/facebook/**"
+    ],
+    "ci:migration-drift": [
+      "supabase/migrations/**",
+      "docs/DATABASE_SCHEMA_SNAPSHOT.md"
+    ],
+    "ci:mockup-parity": [
+      "app/**/page.tsx",
+      "design_system/**/parity.json",
+      "design_system/**/ui_kits/**"
+    ],
+    "ci:mos-grain-trust": [
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**",
+      "app/**/page.tsx",
+      "lib/market/**"
+    ],
+    "ci:mv-determinism": [
+      "supabase/migrations/**",
+      "supabase/**"
+    ],
+    "ci:naked-verb-headings": [
+      "app/**/page.tsx",
+      "components/**"
+    ],
+    "ci:nav-reachability": [
+      "lib/site-nav.ts",
+      "components/site/**",
+      "app/**/layout.tsx"
+    ],
+    "ci:newsletter-authz": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*",
+      "supabase/migrations/**"
+    ],
+    "ci:newsletter-broker": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*"
+    ],
+    "ci:newsletter-compliance": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*"
+    ],
+    "ci:newsletter-crons": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*",
+      "app/api/cron/**",
+      "vercel.json",
+      "scripts/cron-registered-baseline.json"
+    ],
+    "ci:newsletter-drain-safety": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*"
+    ],
+    "ci:newsletter-events": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*"
+    ],
+    "ci:newsletter-format": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*"
+    ],
+    "ci:newsletter-queue": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*"
+    ],
+    "ci:newsletter-reputation": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*"
+    ],
+    "ci:newsletter-schema": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*",
+      "supabase/migrations/**"
+    ],
+    "ci:newsletter-scope": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*"
+    ],
+    "ci:newsletter-voice-paths": [
+      "lib/newsletter/**",
+      "lib/email/**",
+      "lib/email-templates/newsletter*",
+      "app/admin/**/newsletters**",
+      "app/admin/**/newsletter*",
+      "app/actions/newsletter.ts",
+      "app/actions/contact-newsletter.ts",
+      "app/api/**/*newsletter*",
+      "lib/voice/**",
+      "scripts/brand-voice-vocabulary.cjs",
+      "scripts/gen-brand-voice-consumers.mjs",
+      "lib/brand-voice/**"
+    ],
+    "ci:no-explore-route": [
+      "app/**",
+      "next.config.*",
+      "lib/site-nav.ts"
+    ],
+    "ci:no-visits-reads": [
+      "lib/**",
+      "app/**"
+    ],
+    "ci:page-action-imports": [
+      "app/**/page.tsx",
+      "app/actions/**"
+    ],
+    "ci:page-analytics": [
+      "app/**",
+      "components/**",
+      "lib/analytics/**"
+    ],
+    "ci:person-workspace-single-tree": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:place-hero-grain": [
+      "lib/kb/place-hero-lead.ts",
+      "components/site/kb/**",
+      "lib/kb/**",
+      "app/cities/**",
+      "app/communities/**",
+      "app/housing-market/**"
+    ],
+    "ci:poison-null": [
+      "lib/data/**"
+    ],
+    "ci:price-kind-purity": [
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**",
+      "lib/pricing/**",
+      "lib/cma/**"
+    ],
+    "ci:probe-ua": [
+      "scripts/wait-for-server.mjs",
+      ".github/workflows/**",
+      "middleware.ts"
+    ],
+    "ci:process-canon": [
+      "docs/plans/**",
+      "docs/DEVELOPMENT_PROCESS.md",
+      "CLAUDE.md",
+      "AGENTS.md",
+      "marketing_brain_skills/producers/TEMPLATE.md",
+      "lib/marketing-brain/producer-output-class.ts"
+    ],
+    "ci:producer-registry-resolves": [
+      "marketing_brain_skills/**",
+      "social_media_skills/**",
+      "automation_skills/**",
+      "lib/marketing-brain/**"
+    ],
+    "ci:producer-skills": [
+      "marketing_brain_skills/**",
+      "social_media_skills/**",
+      "automation_skills/**"
+    ],
+    "ci:program-complete": [
+      "docs/plans/PROGRAM_2026-07-21/**",
+      "docs/MECHANICAL_GATES.md",
+      "package.json"
+    ],
+    "ci:pulse-city-remainder": [
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**",
+      "app/cities/**",
+      "app/housing-market/**"
+    ],
+    "ci:redirect-only": [
+      "app/**",
+      "next.config.*"
+    ],
+    "ci:rental-lead-wiring": [
+      "app/lp/**",
+      "lib/crm/**",
+      "app/actions/**"
+    ],
+    "ci:report-export-geo": [
+      "lib/reports/**",
+      "app/reports/**",
+      "lib/geo/**",
+      "data/resort-communities.json",
+      "data/resort-community-*.json",
+      "app/cities/**",
+      "app/communities/**",
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**"
+    ],
+    "ci:report-geo-registry": [
+      "lib/reports/**",
+      "lib/geo/**",
+      "data/resort-communities.json",
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**"
+    ],
+    "ci:requirements-register": [
+      "docs/plans/ENTERPRISE_MAP/REQUIREMENTS.md",
+      "docs/plans/ENTERPRISE_MAP/VERSION-1.md"
+    ],
+    "ci:resort-definitions": [
+      "data/resort-communities.json",
+      "data/resort-community-*.json",
+      "lib/geo/**"
+    ],
+    "ci:resume-toggle": [
+      "app/admin/**",
+      "components/admin/**",
+      "lib/admin/**",
+      "design_system/admin/**",
+      "app/components/admin/**"
+    ],
+    "ci:rsc-fn-props": [
+      "app/**",
+      "components/**"
+    ],
+    "ci:search-completeness-accept": [
+      "docs/plans/ENTERPRISE_MAP/search-completeness-accept.json",
+      "lib/data/loop/search-completeness.ts",
+      "lib/data/loop/signals.ts",
+      "docs/plans/COMPANY_SCOREBOARD.md"
+    ],
+    "ci:search-preset-depth": [
+      "lib/search/**",
+      "app/search/**",
+      "app/homes-for-sale/**"
+    ],
+    "ci:search-registry-generated": [
+      "lib/search/**",
+      "app/search/**",
+      "app/homes-for-sale/**",
+      "data/search*",
+      "scripts/**search*"
+    ],
+    "ci:seo-routes": [
+      "app/**/page.tsx",
+      "app/**/page.ts",
+      "lib/seo/**",
+      "lib/seo*",
+      "app/sitemap.ts",
+      "app/robots.ts",
+      "app/llms.txt/**"
+    ],
+    "ci:seo-shell": [
+      "app/**/page.tsx",
+      "app/**/page.ts",
+      "lib/seo/**",
+      "lib/seo*",
+      "app/sitemap.ts",
+      "app/robots.ts",
+      "app/llms.txt/**",
+      "components/site/kb/**"
+    ],
+    "ci:server-only-imports": [
+      "app/**",
+      "lib/**",
+      "components/**"
+    ],
+    "ci:service-client": [
+      "lib/**",
+      "app/**",
+      "supabase/**"
+    ],
+    "ci:site-index-freshness": [
+      "lib/data/**",
+      "app/site-index/**",
+      "app/**/site-index/**"
+    ],
+    "ci:sitemap-inventory-gate": [
+      "app/**/page.tsx",
+      "app/**/page.ts",
+      "lib/seo/**",
+      "lib/seo*",
+      "app/sitemap.ts",
+      "app/robots.ts",
+      "app/llms.txt/**",
+      "app/sitemap.ts"
+    ],
+    "ci:sitemap-listings-honest": [
+      "app/**/page.tsx",
+      "app/**/page.ts",
+      "lib/seo/**",
+      "lib/seo*",
+      "app/sitemap.ts",
+      "app/robots.ts",
+      "app/llms.txt/**",
+      "app/sitemap.ts",
+      "lib/data/**"
+    ],
+    "ci:sitemap-resolvable": [
+      "app/**/page.tsx",
+      "app/**/page.ts",
+      "lib/seo/**",
+      "lib/seo*",
+      "app/sitemap.ts",
+      "app/robots.ts",
+      "app/llms.txt/**",
+      "app/sitemap.ts"
+    ],
+    "ci:skyslope-mirror": [
+      "lib/tc/**",
+      "lib/data/tc/**",
+      "app/api/cron/skyslope-mirror-refresh/**",
+      "lib/data/loop/**"
+    ],
+    "ci:sms-link-tracking": [
+      "lib/crm/**",
+      "lib/sms/**",
+      "app/api/**"
+    ],
+    "ci:stat-source": [
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**"
+    ],
+    "ci:static-params": [
+      "app/**"
+    ],
+    "ci:streamed-boundary-reclaimer": [
+      "app/**/loading.tsx",
+      "app/**/page.tsx",
+      "components/**"
+    ],
+    "ci:subdivision-stats-integrity": [
+      "lib/data/**",
+      "lib/stats/**",
+      "app/actions/market-stats.ts",
+      "app/housing-market/**",
+      "app/reports/**",
+      "lib/geo/**",
+      "app/communities/**"
+    ],
+    "ci:sync-cursor": [
+      "lib/sync/**",
+      "app/api/cron/**"
+    ],
+    "ci:tool-discipline": [
+      "lib/**",
+      "scripts/**"
+    ],
+    "ci:tracking-policy": [
+      "components/GoogleAnalytics.tsx",
+      "lib/analytics/**",
+      "lib/tracking/**",
+      "app/**",
+      "docs/TRACKING_POLICY.md"
+    ],
+    "ci:valuation-engine": [
+      "lib/cma/**",
+      "lib/pricing/**",
+      "lib/bpo/**",
+      "marketing_brain_skills/producers/cma/**",
+      "docs/plans/CMA*",
+      "public/cmas/**"
+    ],
+    "ci:version-manifest": [
+      "docs/plans/ENTERPRISE_MAP/VERSION-1.md",
+      "docs/plans/ENTERPRISE_MAP/matrix/CAPABILITIES.md",
+      "docs/plans/ENTERPRISE_MAP/matrix/INTEGRATIONS.md"
+    ],
+    "ci:video-docket": [
+      "docs/plans/ENTERPRISE_MAP/video-decision-docket.json",
+      "lib/data/loop/video-docket.ts",
+      "lib/data/loop/signals.ts",
+      "docs/plans/COMPANY_SCOREBOARD.md"
+    ],
+    "ci:vm-parity": [
+      "scripts/**",
+      "scripts/vm-parity-baseline.json"
+    ],
+    "ci:voice-reviewer": [
+      "lib/voice/**",
+      "lib/cma/**",
+      "lib/bpo/**"
+    ],
+    "ci:voice-vocab-parity": [
+      "lib/voice/**",
+      "scripts/brand-voice-vocabulary.cjs",
+      "scripts/gen-brand-voice-consumers.mjs",
+      "lib/brand-voice/**"
+    ],
+    "ci:web-push-durable": [
+      "app/api/push/**",
+      "app/api/cron/crm-alert-drain/**",
+      "public/sw.js"
+    ],
+    "ci:westside-backlog": [
+      "docs/plans/WESTSIDE_BACKLOG.md",
+      "lib/site-nav.ts",
+      "lib/crm/review-ask.ts",
+      "app/cities/**",
+      "app/communities/**"
+    ]
+  },
+  "nightly": [
+    "ci:dead-ui",
+    "ci:file-size-budget",
+    "ci:fub-identifiers",
+    "ci:int-test-residue",
+    "ci:mockup-coverage",
+    "ci:no-mojibake",
+    "ci:public-ui",
+    "ci:public-v3",
+    "ci:reachable-exports",
+    "ci:search-field-completeness",
+    "ci:search-perf-budget",
+    "ci:shadcn-burndown",
+    "ci:voice-rewrite-batch"
+  ],
+  "cert": []
+}

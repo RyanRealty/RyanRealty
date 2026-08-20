@@ -36,6 +36,11 @@ jobs:
 
       - run: npm ci
 
+      # Census / ratchet gates demoted off the push path (scripts/ci-lanes.json
+      # nightly). `npm run ci:gates` never selects them; this job is the runner.
+      - name: Nightly mechanical gates
+        run: node scripts/run-ci-gates.mjs --lane=nightly
+
       - run: npm run build
         env:
           NODE_OPTIONS: --max-old-space-size=6144
