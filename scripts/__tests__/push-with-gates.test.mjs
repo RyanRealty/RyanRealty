@@ -142,6 +142,8 @@ describe('push-with-gates.sh exit-code propagation', () => {
       const { status, output } = runPushScript(staleDir)
 
       expect(output).toMatch(/git push OK/)
+      expect(output).toMatch(/skipping full next generate/)
+      expect(output).not.toMatch(/production build \(Turbopack/)
       expect(status).toBe(0)
       // The remote landed exactly the pushed HEAD.
       expect(git(originDir, 'rev-parse', 'main')).toBe(git(staleDir, 'rev-parse', 'HEAD'))

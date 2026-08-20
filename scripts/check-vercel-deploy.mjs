@@ -15,9 +15,12 @@
  *
  * Behavior:
  *   - Polls Vercel API for the production deployment matching the SHA.
- *   - Waits up to 5 minutes for the state to become READY or ERROR.
+ *   - Waits up to 15 minutes for READY or ERROR (queue + generate).
+ *   - Docs/scripts/skills tips: SKIP (exit 0) if no deploy appears in ~45s
+ *     (Vercel ignoreCommand). CANCELED + a newer production BUILDING/READY
+ *     is SUPERSEDED (exit 0), not a failed compile.
  *   - On ERROR: fetches the last build-log lines and prints them.
- *   - Exit codes: 0 = READY, 1 = ERROR, 2 = TIMEOUT/missing-config.
+ *   - Exit codes: 0 = READY | SKIP | SUPERSEDED, 1 = ERROR, 2 = TIMEOUT/missing-config.
  *
  * Setup (one-time):
  *   - VERCEL_TOKEN in .env.local or shell env (https://vercel.com/account/tokens).
@@ -31,8 +34,16 @@ import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 import { execSync } from 'child_process'
 import { homedir } from 'os'
+import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product-diff.mjs'
+import {
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_SKIP_WAIT_MS,
+  isSkippableTip,
+  findSupersedingDeploy,
+} from './lib/deploy-verify-policy.mjs'
 
-const TIMEOUT_MS = Number(process.env.DEPLOY_VERIFY_TIMEOUT_MS ?? 5 * 60 * 1000)
+const TIMEOUT_MS = Number(process.env.DEPLOY_VERIFY_TIMEOUT_MS ?? DEFAULT_TIMEOUT_MS)
+const SKIP_WAIT_MS = Number(process.env.DEPLOY_VERIFY_SKIP_WAIT_MS ?? DEFAULT_SKIP_WAIT_MS)
 const POLL_INTERVAL_MS = Number(process.env.DEPLOY_VERIFY_POLL_MS ?? 8000)
 
 const argv = process.argv.slice(2)
@@ -192,16 +203,34 @@ async function vercelGet(token, path) {
   return resp.json()
 }
 
-async function findDeploymentForSha(token, projectId, teamId, sha) {
+function normalizeDeploy(d) {
+  if (!d) return null
+  return {
+    id: d.uid ?? d.id,
+    uid: d.uid ?? d.id,
+    state: String(d.state ?? 'UNKNOWN').toUpperCase(),
+    created: Number(d.created ?? d.createdAt ?? 0),
+    url: d.url,
+    inspectorUrl: d.inspectorUrl ?? null,
+    sha: d.meta?.githubCommitSha ?? d.sha,
+    meta: d.meta ?? { githubCommitSha: d.sha },
+  }
+}
+
+async function listProductionDeployments(token, projectId, teamId) {
   const data = await vercelGet(
     token,
     `/v6/deployments?projectId=${projectId}&teamId=${teamId}&limit=20&target=production`,
   )
-  const list = data?.deployments ?? []
+  return (data?.deployments ?? []).map(normalizeDeploy).filter(Boolean)
+}
+
+async function findDeploymentForSha(token, projectId, teamId, sha) {
+  const list = await listProductionDeployments(token, projectId, teamId)
   const want = String(sha || '').toLowerCase()
   return (
     list.find((d) => {
-      const got = String(d?.meta?.githubCommitSha || '').toLowerCase()
+      const got = String(d?.sha || d?.meta?.githubCommitSha || '').toLowerCase()
       return got && want && (got === want || got.startsWith(want) || want.startsWith(got))
     }) ?? null
   )
@@ -252,14 +281,25 @@ async function main() {
     out('no API token found; using Vercel CLI, then GitHub Vercel status, for deploy checks')
   }
 
+  const tipFiles = listChangedFiles()
+  const tipClass = classifyDiff(tipFiles, { skippable: isVercelSkippable })
+  const skippableTip = isSkippableTip(tipClass.status)
+  const waitMs = skippableTip ? SKIP_WAIT_MS : TIMEOUT_MS
+  if (skippableTip) {
+    out(
+      `tip is Next-skippable (${tipClass.status}, ${tipClass.files.length} file(s)) — SKIP if no deploy in ${SKIP_WAIT_MS / 1000}s`,
+    )
+  }
+
   out(`waiting for production deploy of ${sha.slice(0, 7)} (project ${projectId})`)
 
   const startedAt = Date.now()
   let deployment = null
   let lastState = null
   let usingGithubFallback = false
+  let productionList = []
 
-  while (Date.now() - startedAt < TIMEOUT_MS) {
+  while (Date.now() - startedAt < waitMs) {
     if (usingCliFallback) {
       deployment = findDeploymentForShaViaGithub(sha)
       if (deployment && !usingGithubFallback) {
@@ -295,7 +335,26 @@ async function main() {
         out('check production URL: https://ryanrealty.vercel.app')
         process.exit(0)
       }
-      if (state === 'ERROR' || state === 'CANCELED') {
+      if (state === 'CANCELED') {
+        if (!usingCliFallback) {
+          try {
+            productionList = await listProductionDeployments(apiToken, projectId, teamId)
+          } catch {
+            productionList = []
+          }
+        }
+        const newer = findSupersedingDeploy(normalizeDeploy(deployment), productionList, sha)
+        if (newer) {
+          out(
+            `SUPERSEDED in ${(Date.now() - startedAt) / 1000}s — ${deployId} CANCELED; ${newer.uid ?? newer.id} is ${newer.state} (${String(newer.sha || '').slice(0, 7) || 'no sha'})`,
+          )
+          process.exit(0)
+        }
+        err(`deployment CANCELED for SHA ${sha.slice(0, 7)} (id ${deployId}) and no newer production deploy`)
+        err(`inspector: ${deployment.inspectorUrl ?? '(none)'}`)
+        process.exit(1)
+      }
+      if (state === 'ERROR') {
         err(`deployment ${state} for SHA ${sha.slice(0, 7)} (id ${deployId})`)
         err(`inspector: ${deployment.inspectorUrl ?? '(none)'}`)
         if (usingCliFallback) {
@@ -320,7 +379,12 @@ async function main() {
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
   }
 
-  err(`timeout after ${TIMEOUT_MS / 1000}s without READY/ERROR for SHA ${sha.slice(0, 7)}.`)
+  if (skippableTip && !deployment) {
+    out(`SKIP — no production deploy in ${SKIP_WAIT_MS / 1000}s for a Next-skippable tip (ignoreCommand)`)
+    process.exit(0)
+  }
+
+  err(`timeout after ${waitMs / 1000}s without READY/ERROR for SHA ${sha.slice(0, 7)}.`)
   if (deployment) {
     err(`last seen state: ${deployment.state}; inspector: ${deployment.inspectorUrl ?? '(none)'}`)
   }

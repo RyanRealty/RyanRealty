@@ -13,6 +13,9 @@
  *   node scripts/run-ci-gates.mjs --list    # print the plan
  *   CI_GATES_SERIAL=1                       # old one-at-a-time order (bisect)
  *   CI_GATES_CONCURRENCY=8                  # override pool size
+ *
+ * Typecheck (ci:commit-compiles) starts at t=0 alongside the cheap pool so
+ * grep-time is not paid twice. Still one tsc — concurrent typechecks OOM.
  */
 import { spawn } from 'node:child_process'
 import { cpus } from 'node:os'
@@ -159,15 +162,17 @@ const t0 = Date.now()
 console.log(
   SERIAL_MODE
     ? `ci:gates serial · ${gates.length} gates`
-    : `ci:gates parallel ×${pool} · ${parallel.length} cheap, then ${serial.join(', ') || 'no serial'}`,
+    : `ci:gates parallel ×${pool} · ${parallel.length} cheap overlapping ${serial.join(', ') || 'no serial'}`,
 )
 
 const results = SERIAL_MODE
   ? await runSerial(gates)
   : await (async () => {
+      const serialP = serial.length ? runSerial(serial) : Promise.resolve([])
       const cheap = await runPool(parallel, pool)
-      if (cheap.some((r) => r.code !== 0)) return cheap
-      return cheap.concat(await runSerial(serial))
+      const serialResults = await serialP
+      if (cheap.some((r) => r.code !== 0)) return cheap.concat(serialResults)
+      return cheap.concat(serialResults)
     })()
 
 const failed = results.filter((r) => r.code !== 0)

@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-build:
     runs-on: ubuntu-latest
@@ -61,7 +65,11 @@ jobs:
       # this repo's size (SIGABRT mid "Running TypeScript" — same fix as the
       # local push chain). Invisible until 2026-07-17 because the lint step
       # ahead of it failed first from June 24 on.
+      # Push to main: Vercel owns generate. GitHub SSG here was a second/third
+      # copy of the same production compile. Keep the build on pull_request
+      # (no Vercel production generate for PRs when previews are off).
       - run: npm run build
+        if: github.event_name == 'pull_request'
         env:
           NODE_OPTIONS: --max-old-space-size=6144
       # Post-build gates: bundle budget + route smoke. Bundle budget
@@ -70,6 +78,7 @@ jobs:
       # asserting no 404/5xx/blank-page regressions per CLAUDE.md
       # "verify before moving on."
       - run: npm run ci:bundle-budget
+        if: github.event_name == 'pull_request'
       # Was `npm run ci:route-smoke:start`, i.e. start-server-and-test. That
       # wrapper has failed on EVERY pull request since at least 2026-07-25
       # (verified on unrelated branches: same step, same 5:02 wait-on timeout),
@@ -246,6 +255,7 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     needs: lint-and-build
+    if: github.event_name == 'pull_request'
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

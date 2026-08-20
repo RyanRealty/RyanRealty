@@ -1,29 +1,34 @@
 #!/usr/bin/env sh
 # push-with-gates.sh — the canonical push path (`npm run push`).
 #
-# Runs the full local gate chain + production build BEFORE `git push` opens
-# the ssh connection to github.com, then stamps <git-dir>/rr-gates-marker so
+# Runs the local gate chain + eslint BEFORE `git push` opens the ssh
+# connection to github.com, then stamps <git-dir>/rr-gates-marker so
 # .husky/pre-push can verify in milliseconds. Rationale: git advertises refs
 # and holds the connection open BEFORE running pre-push, so a long in-hook
 # chain idles the connection out and the pack write dies with SIGPIPE
 # (exit 141) — observed twice on 2026-07-17.
 #
-# ISOLATED VERIFICATION (default): the chain + build run against the
-# MATERIALIZED HEAD TREE in a persistent detached verify worktree, not the
+# Full local `next build` (SSG of hundreds of pages against live Supabase) is
+# OFF by default. Vercel owns production generate. G46 `ci:commit-compiles`
+# typechecks the committed tree; a prerender throw on a route we did not
+# locally generate fails on Vercel and `deploy:verify` must go red (15m).
+# PUSH_FULL_GENERATE=1 restores the old local SSG. Do not point package.json
+# `"build"` at a compile-only Next flag — that output is not deployable.
+#
+# ISOLATED VERIFICATION when the working tree is DIRTY: the chain runs against
+# the MATERIALIZED HEAD TREE in a persistent detached verify worktree, not the
 # shared working tree. On a box running concurrent agent sessions, another
 # session's uncommitted/untracked edits used to fail gates here (observed:
 # ci:untracked-imports tripped by a sibling session's in-flight file) and
-# the marker certified a tree gates never exactly saw. The verify worktree
-# checks out exactly the commit being pushed, so:
-#   - foreign working-tree state cannot fail or green-wash the chain
-#   - the marker certifies precisely the pushed tree
-# This is a throwaway/reusable VERIFICATION sandbox, not a development
-# worktree — development worktrees are allowed (see AGENTS.md) but must not
-# strand work; no code is authored here (same spirit as G46's
-# `git archive | tar -x` materialization, just incremental + buildable).
+# the marker certified a tree gates never exactly saw. When `git status` is
+# clean, isolate is skipped (that failure mode does not exist; G46 already
+# typechecks HEAD). ci:untracked-imports always runs on the real working tree
+# first — in isolate it is a no-op (no untracked files).
 #
 # Knobs:
-#   PUSH_GATES_IN_PLACE=1     run chain+build in the shared working tree (old behavior)
+#   PUSH_GATES_IN_PLACE=1     run chain in the shared working tree
+#   PUSH_GATES_ISOLATE=1      force the verify worktree even when status is clean
+#   PUSH_FULL_GENERATE=1      local `next build` + bundle budget (old chair wait)
 #   PUSH_GATES_VERIFY_DIR     verify worktree location (default ~/.cache/ryanrealty-gates-verify)
 #   PUSH_GATES_REFRESH_DEPS=1 force re-clone of node_modules into the verify tree
 #   PUSH_GATES_CLEAN=1        nuke the verify worktree first (disk pressure / corrupt .next)
@@ -112,7 +117,7 @@ trap 'die 143 "✗ terminated (SIGTERM) — push aborted. NOTHING landed on the 
 run_chain_and_build() {
   workdir="$1"
 
-  echo "push: full ci:gates static chain (~120 gates) in $workdir…"
+  echo "push: ci:gates static chain in $workdir…"
   ( cd "$workdir" && npm run ci:gates ) || die 1 \
     "✗ ci:gates FAILED — push aborted. Fix the failing gate first." \
     "  NOTHING landed on the remote. Your commits are still local."
@@ -128,31 +133,14 @@ run_chain_and_build() {
     "  NOTHING landed on the remote. Your commits are still local."
   echo "✓ eslint OK"
 
-  # G47 — production build gate (Turbopack, matches Vercel). Doc/json-only
-  # pushes skip it. A "use server" / RSC break passes tsc and ci:gates but
-  # fails the Turbopack build Vercel runs, then silently never deploys
-  # (see docs/plans/crm-golive-execution-2026-06-25.md).
-  if git rev-parse --abbrev-ref @{u} >/dev/null 2>&1; then
-    CHANGED=$(git diff --name-only @{u}.."$SHA" 2>/dev/null)
-  else
-    CHANGED="__force_build__"   # no upstream tracking — build to be safe
-  fi
-
-  if [ -z "$CHANGED" ]; then
-    echo "push: nothing ahead of upstream — skipping build."
-  elif [ "$CHANGED" = "__force_build__" ] || printf '%s\n' "$CHANGED" | grep -qE '\.(ts|tsx|js|jsx|mjs|cjs|css)$|(^|/)next\.config|(^|/)package\.json|(^|/)tsconfig'; then
-    echo "push: production build (Turbopack, matches Vercel) in $workdir…"
-    # Next's type-check phase OOMs at Node's default ~4GB heap at this repo's
-    # size (SIGABRT mid "Running TypeScript", 2026-07-14). 8GB fits the Mac mini.
+  # Local full generate is the chair wait. Default: skip. Vercel SSGs.
+  # PUSH_FULL_GENERATE=1 restores the old Turbopack SSG + bundle budget.
+  if [ "$PUSH_FULL_GENERATE" = "1" ]; then
+    echo "push: production build (Turbopack; PUSH_FULL_GENERATE=1) in $workdir…"
     ( cd "$workdir" && NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}" npm run build ) || die 1 \
       "✗ next build FAILED — this commit would ERROR on Vercel and silently never deploy." \
       "  NOTHING landed on the remote. Your commits are still local."
     echo "✓ next build OK"
-
-    # Bundle budget — the same check CI's lint-and-build job runs after its
-    # build. It only ran in CI until 2026-07-29, so bundle drift passed every
-    # local push and reddened CI for days before anyone looked. Runs only when
-    # a build just ran (needs a fresh .next).
     echo "push: bundle budget (matches CI) in $workdir…"
     ( cd "$workdir" && npm run ci:bundle-budget ) || {
       echo ""
@@ -161,7 +149,7 @@ run_chain_and_build() {
     }
     echo "✓ bundle budget OK"
   else
-    echo "push: only non-buildable files changed — skipping build."
+    echo "push: skipping full next generate (Vercel owns SSG). PUSH_FULL_GENERATE=1 to force locally."
   fi
 }
 
@@ -190,11 +178,36 @@ do_push() {
   echo "✓ git push OK"
 }
 
-# ---------------------------------------------------------------------------
-# In-place fallback (old behavior): chain sees the shared working tree.
-# ---------------------------------------------------------------------------
+# ci:untracked-imports greps git ls-files --others. Isolate is a clean HEAD
+# checkout, so the gate is a no-op there. Run it on the real working tree first.
+# The file check keeps the push-with-gates fixture (stub package.json, no
+# gate scripts) from dying on a missing npm script.
+if [ -f "$REPO_ROOT/scripts/check-untracked-imports.mjs" ]; then
+  echo "push: ci:untracked-imports on the working tree…"
+  ( cd "$REPO_ROOT" && npm run ci:untracked-imports ) || die 1 \
+    "✗ ci:untracked-imports FAILED — a tracked file imports an untracked source file." \
+    "  NOTHING landed on the remote. Your commits are still local."
+  echo "✓ ci:untracked-imports OK"
+fi
+
+# In-place when explicit, or when the working tree is clean (isolate exists so
+# a sibling's untracked file cannot fail YOUR push). PUSH_GATES_ISOLATE=1
+# restores isolate even on a clean tree.
+IN_PLACE=0
 if [ "$PUSH_GATES_IN_PLACE" = "1" ]; then
-  echo "push: PUSH_GATES_IN_PLACE=1 — verifying the shared working tree (foreign session state CAN fail gates here)."
+  IN_PLACE=1
+elif [ "$PUSH_GATES_ISOLATE" = "1" ]; then
+  IN_PLACE=0
+elif [ -z "$(git status --porcelain)" ]; then
+  IN_PLACE=1
+fi
+
+if [ "$IN_PLACE" = "1" ]; then
+  if [ "$PUSH_GATES_IN_PLACE" = "1" ]; then
+    echo "push: PUSH_GATES_IN_PLACE=1 — verifying the shared working tree (foreign session state CAN fail gates here)."
+  else
+    echo "push: working tree clean — verifying in place (isolate is for dirty sibling files)."
+  fi
   run_chain_and_build "$REPO_ROOT"
   node scripts/stamp-gates-marker.mjs || die 1 \
     "✗ could not stamp the pre-push gates marker — push aborted." \

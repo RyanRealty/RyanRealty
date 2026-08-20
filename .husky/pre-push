@@ -12,8 +12,7 @@
 # ci:untracked-imports, then eslint, on foreign uncommitted state).
 #
 # scripts/push-with-gates.sh runs ci:gates + eslint (CI lint parity, added
-# 22e9af2e) + the Turbopack build against the MATERIALIZED tree of the pushed
-# commit in a detached verify worktree, BEFORE invoking git push, then stamps
+# 22e9af2e) against the commit being pushed BEFORE invoking git push, then stamps
 # <git-dir>/rr-gates-marker with that tree hash + timestamp. This hook only
 # verifies the pushed tree matches a fresh marker — milliseconds, so the
 # connection never idles and foreign tree state cannot block a clean push.
