@@ -196,7 +196,7 @@ export function collectHighlights(
 export function zoningExplainerBlock(dev: DevelopmentOpportunities | null | undefined): string {
   const z = dev?.zoningExplainer
   if (!z) return ''
-  const useList = (values: readonly string[]) =>
+  const asList = (values: readonly string[]) =>
     values.length > 0
       ? `<ul class="use-list">${values.map((v) => `<li>${esc(v)}</li>`).join('')}</ul>`
       : ''
@@ -212,10 +212,10 @@ export function zoningExplainerBlock(dev: DevelopmentOpportunities | null | unde
   <p>${esc(z.purpose)}</p>
   <div class="two-col">
     <div>
-      ${z.permittedOutright.length > 0 ? `<h3 class="subhead">Allowed outright</h3>${useList(z.permittedOutright)}` : ''}
+      ${z.permittedOutright.length > 0 ? `<h3 class="subhead">Allowed outright</h3>${asList(z.permittedOutright)}` : ''}
     </div>
     <div>
-      ${z.conditional.length > 0 ? `<h3 class="subhead">Allowed with a conditional use permit</h3>${useList(z.conditional)}` : ''}
+      ${z.conditional.length > 0 ? `<h3 class="subhead">Allowed with a conditional use permit</h3>${asList(z.conditional)}` : ''}
     </div>
   </div>
   ${dimensional}
