@@ -6,8 +6,8 @@ import { aboutFaceFromBroker, aboutPhoneE164 } from '@/app/about/_v3/about-faces
 describe('about faces fold', () => {
   it('names the photo door so pa11y does not see an empty link', () => {
     const src = readFileSync('app/about/_v3/AboutFaces.tsx', 'utf8')
-    expect(src).toContain('aria-label={person.name}')
-    expect(src).toMatch(/alt=""/)
+    expect(src).toContain('alt={person.name}')
+    expect(src).not.toMatch(/alt=""/)
   })
 
   it('reserves the 2:3 cutout box before the png decodes', () => {

@@ -35,17 +35,13 @@ export function AboutFaces({
       <ul className="about-faces__grid">
         {shown.map((person, index) => (
           <li key={person.href} className="about-faces__item">
-            <Link
-              href={person.href}
-              className="about-faces__photo-link"
-              aria-label={person.name}
-            >
+            <Link href={person.href} className="about-faces__photo-link">
               {/* Plain img: owned public/ file, same reason V3Stage states. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="about-faces__photo"
                 src={person.src}
-                alt=""
+                alt={person.name}
                 width={800}
                 height={1200}
                 loading={index === 0 ? 'eager' : 'lazy'}
