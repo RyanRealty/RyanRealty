@@ -683,8 +683,15 @@ const UNLABELLED_ASK_SURFACES_MAX = 10
 // labelled its answer "HUD Fair Market Rent (FY2025), Deschutes County, 2BR" —
 // a bedroom count the feed never stated, published under a sourced label. On
 // MLS 220218536 that produced "Gross rent $1,667", "Cap rate 71.2%" and "Cash
-// on cash 324.3%". 46 live Active class-A rows state no bedroom count, and all
-// 46 state no living area either, so no other sizing exists for them.
+// on cash 324.3%".
+//
+// THE POPULATION IS ALL THREE RENTAL-ELIGIBLE CLASSES (re-counted 2026-08-19).
+// Live Active or Active Under Contract rows stating no BedroomsTotal: 46 of
+// 4,685 'A', 5 of 228 'B', 155 of 155 'C'. 193 sit in the section's render
+// window; 57 of those are in a HUD-mapped city and published the fabricated
+// label — verified on /listing/20260501203559794588000000 (MLS 220220657,
+// Madras multi-family), which read "HUD Fair Market Rent (FY2025), Jefferson
+// County, 2BR" over a building the feed gives no bedroom count for.
 {
   const hudSrc = readFileSync('lib/hud-fmr.ts', 'utf8')
   const hudCode = hudSrc.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1')

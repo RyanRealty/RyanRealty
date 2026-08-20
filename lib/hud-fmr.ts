@@ -79,10 +79,31 @@ export type AreaRentEstimate = {
  * $1,054/mo", "Cap rate 71.2%", "Cash on cash 324.3%".
  *
  * §0 forbids an estimate without a named basis, and §0.7 decides the null case:
- * publish no figure. Population, live `listings` 2026-08-19, Active or Active
- * Under Contract, PropertyType 'A' — 4,688 rows, of which 46 state no bedroom
- * count. All 46 also state no living area, so none of them can be sized any
- * other way either.
+ * publish no figure.
+ *
+ * THE POPULATION IS NOT ONE PROPERTY CLASS (re-counted 2026-08-19, adversarial
+ * review). RentalAnalysis runs on PropertyType 'A', 'B' and 'C' — isRentalEligible
+ * admits all three — so the rows this rule governs are all three. Live `listings`,
+ * StandardStatus Active or Active Under Contract, rows stating no BedroomsTotal:
+ *   'A'  46 of 4,685
+ *   'B'   5 of 228
+ *   'C' 155 of 155        multi-family; the feed never files a bedroom count here
+ * Counter-query (§0 forbids reporting absence from one query shape), the broad
+ * count by class: rows stating a bedroom count — 'C' 0 of 155.
+ *
+ * 193 of those 206 sit in the section's render window (asking price above zero,
+ * at or under the $2,000,000 luxury suppression, not a fractional interest):
+ * 43 'A', 5 'B', 145 'C'. 57 of the 193 are in a city this file maps to a county,
+ * and those are the rows that published the fabricated HUD label — verified on
+ * the rendered page /listing/20260501203559794588000000 (MLS 220220657, a
+ * $299,900 multi-family in Madras, PropertyType 'C'), which read "Estimate $1,143
+ * ($1,025–$1,325) · HUD Fair Market Rent (FY2025), Jefferson County, 2BR" beside
+ * "Cash flow -$1,022/mo" and "Cap rate 2.3%". The other 136 fell through to
+ * RentalAnalysis's price-ratio rent, which labels itself "starting estimate".
+ *
+ * Living area does not rescue any of them on 'A' or 'B' — all 46 and all 5 state
+ * none — but it does exist on 151 of the 155 'C' rows. They are still withheld:
+ * HUD prices by bedroom count, and a square footage is not a bedroom count.
  *
  * A stated zero is a studio and still publishes: three Powder Village Condo
  * rows in Sunriver (220212529, 220205003, 220213995) carry beds 0 over 392–448

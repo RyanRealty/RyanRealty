@@ -235,7 +235,10 @@ export const LEASE_PRICE_PROPERTY_TYPES: ReadonlySet<string> = new Set(['G'])
  * home as far as the record goes. Withholding their asks from a median would be
  * over-withholding, which §0.7 does not license. What the record does NOT
  * support on any of the 46 is a figure computed from a bedroom count the feed
- * never stated — that rule lives in lib/hud-fmr.ts and covers all 46.
+ * never stated — that rule lives in lib/hud-fmr.ts, and its own population is
+ * wider than this one: the rental section runs on PropertyType 'A', 'B' and 'C',
+ * and 206 live Active rows across those three state no bedroom count (46 'A',
+ * 5 'B', 155 of 155 'C'). Re-counted 2026-08-19; see that file's docblock.
  */
 
 /**

@@ -68,13 +68,19 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
   if (price > LUXURY_RENTAL_SUPPRESS) return null
 
   // EVERY FIGURE IN THIS SECTION DESCENDS FROM A MONTHLY RENT, AND A RENT NEEDS
-  // A DWELLING. When the feed states no bedroom count it also states no living
-  // area — 46 live Active class-A rows on 2026-08-19, the same 46 on both
-  // counts — so neither rent path below has an input. getAreaRentEstimate now
-  // returns null on those rows rather than substituting two bedrooms, and
-  // falling through to the price-ratio estimate would only swap one unsourced
-  // rent for another: on MLS 220218536 it reads $500/mo off a $19,500 share.
-  // §0.7 — render nothing.
+  // A DWELLING. HUD prices by bedroom count, so a row stating none has no input
+  // for the sourced path, and falling through to the price-ratio estimate only
+  // swaps one unsourced rent for another: on MLS 220218536 it reads $500/mo off
+  // a $19,500 share. §0.7 — render nothing.
+  //
+  // THE POPULATION SPANS ALL THREE ELIGIBLE CLASSES, not class A alone
+  // (re-counted 2026-08-19). Live Active or Active Under Contract rows stating
+  // no BedroomsTotal: 46 of 4,685 'A', 5 of 228 'B', and 155 of 155 'C' — the
+  // feed never files a bedroom count on multi-family. 193 of those are in this
+  // section's render window (43 'A', 5 'B', 145 'C') and lose it here; 57 of the
+  // 193 are in a HUD-mapped city and were the ones publishing a fabricated
+  // sourced label. See the lib/hud-fmr.ts docblock for the counts and the
+  // rendered page each was verified on.
   if (listing.beds == null) return null
 
   const taxes =
