@@ -165,7 +165,15 @@ run_chain_and_build() {
 # ---------------------------------------------------------------------------
 do_push() {
   set +e
-  git push "$@"
+  # Worktree branches are named wt/* but must land on the tracked upstream
+  # (origin/main). `push.default=current` would mint origin/wt/* instead
+  # (observed 2026-08-19: dbd671c7). `git push @{u}` is parsed as a remote
+  # name and fails. Extra args still pass through.
+  if [ "$#" -eq 0 ]; then
+    git -c push.default=upstream push
+  else
+    git push "$@"
+  fi
   push_rc=$?
   set -e
   if [ "$push_rc" -ne 0 ]; then

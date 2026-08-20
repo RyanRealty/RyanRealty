@@ -26,6 +26,7 @@ describe('isVercelSkippable / isReleaseSkippable', () => {
       'CHANGELOG.md',
       'scripts/check-foo.mjs',
       '.github/workflows/quality.yml',
+      '.husky/pre-push',
     ]
     for (const f of docsOnly) {
       expect(isVercelSkippable(f), f).toBe(true)

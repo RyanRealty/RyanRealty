@@ -16,6 +16,7 @@ export const SKIP_PREFIXES = [
   '.cursor/',
   '.claude/',
   '.github/',
+  '.husky/',
   '.auto-memory/',
   'marketing_brain_skills/',
   'social_media_skills/',
