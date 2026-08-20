@@ -1,4 +1,5 @@
 import { getCityListings, getMarketPulse } from '@/lib/data'
+import type { FractionalInterestSubject } from '@/lib/listing/publish-listing-figure'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import {
   CITY_TILE_FETCH_LIMIT,
@@ -28,7 +29,7 @@ export function loadCitySfrTilesForSearch(city: string) {
 
 export function publishSearchCityInventory(
   pulse: PulseLike,
-  tiles: ReadonlyArray<{ listPrice?: number | null; propertySubType: string | null }>,
+  tiles: ReadonlyArray<FractionalInterestSubject & { listPrice?: number | null }>,
 ): CityInventoryPublish {
   return publishCityInventory({
     pulseCount: pulse?.activeCount ?? null,
@@ -61,7 +62,7 @@ export async function loadSearchCityMarketLayer(args: {
   relatedCitySlug: string | null
   isPlainCityPage: boolean
   isPresetDepthPage: boolean
-  citySfrTiles: ReadonlyArray<{ listPrice?: number | null; propertySubType: string | null }>
+  citySfrTiles: ReadonlyArray<FractionalInterestSubject & { listPrice?: number | null }>
 }): Promise<{
   cityPulse: Awaited<ReturnType<typeof getMarketPulse>> | null
   /**

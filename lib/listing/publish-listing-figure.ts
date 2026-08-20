@@ -87,6 +87,81 @@
 export const LEASE_PRICE_PROPERTY_TYPES: ReadonlySet<string> = new Set(['G'])
 
 /**
+ * THIRD CASE, SAME SHAPE, DIFFERENT KEY (verified live 2026-08-19).
+ *
+ * The sub-type rule above misses eight Active fractional interests because the
+ * feed files them under PropertySubType "Condominium". Every one is a cabin at
+ * Lake Creek Lodge in Camp Sherman, and each says so in its own remarks:
+ *   220218114 $157,900 "25% interest in Camp Sherman!"
+ *   220218115 $157,900 "25% interest in Camp Sherman!"
+ *   220222476 $159,900 "25% interest available in Camp Sherman!"
+ *   220222478 $159,900 "1/4 share in Camp Sherman!"
+ *   220215583 $205,000 "Own a one-quarter share in this charming
+ *     three-bedroom, two-bath cabin"
+ *   220203447 $210,000 "One-quarter shared interest is available"
+ *   220218395 $249,000 "Own a 1/4 share interest"
+ *   220170948 $269,000 "Experience a 1/4 share interest"
+ * /listing/20260529215303245812000000 (220222478) published a 3.5% cap rate,
+ * -14.3% cash-on-cash, "Cash needed $31,980", "Gross rent $1,602" (the HUD
+ * three-bedroom rent for the WHOLE cabin against a quarter-share price),
+ * "$185 /sqft" (a quarter-share price over the whole cabin's 866 sq ft),
+ * "Loan amount $127,920", JSON-LD SingleFamilyResidence offers.price 159900,
+ * and an OG card reading "$159,900" over "3 bed · 2 bath · 866 sq ft". None of
+ * those pages carries a sub-type badge, so nothing on the screen said share.
+ *
+ * WHY THE KEY IS THE PROPERTY, NOT THE REMARK. Remarks are not the record, and
+ * this repo does not parse them at runtime. Cabin 10 proves why: MLS 220222476
+ * (unit "10, U1") and 220222478 ("10, U3") both disclose a quarter share, while
+ * 220222477 ("10, U2") — the same cabin, the same $159,900, the same 866 sq ft,
+ * the same office — discloses nothing. A remark rule would publish one of three
+ * identical products as a whole home and withhold the other two, which is the
+ * §0.5 contradiction it was meant to prevent. A remark rule is also noisy in
+ * the other direction: a share-phrase sweep of all live Active rows returns
+ * ~200 matches that are half-baths, half-acres and rate buydowns.
+ *
+ * The property IS the record. Live `listings`, SubdivisionName 'Lake Creek
+ * Lodge', every status, 2026-08-19: 38 rows, 36 of which disclose a share in
+ * their own remarks, across all three sub types the feed has used there
+ * (Tenancy in Common 20, Condominium 17, Single Family Residence 1). Every
+ * ACTIVE per-cabin row carries a share-index unit number — U1, U2, U3, U4 — and
+ * the resort itself is separately listed as a going business, MLS 220224690 at
+ * $10,000,000 under PropertyType 'F' ("13 charming cabins, an iconic lodge with
+ * an active restaurant"). Cabins at a resort that is itself one for-sale
+ * business are not fee-simple dwellings. The two rows that do not disclose a
+ * share are that resort listing and Cabin 10 U2.
+ *
+ * THE PROPERTY ALSO SELLS WHOLE CABINS, WHICH IS WHY THE EXCEPTION LIST IS PART
+ * OF THE ENTRY AND NOT DECORATION. Counter-query, same table and date: rows at
+ * this subdivision whose own remarks claim a full rather than partial ownership
+ * — 2, both Canceled, both filed under sub type "Condominium" with a bare cabin
+ * number and no share index. MLS 201805357 at $849,500 ("Full interest 3 bed/3
+ * bath cabin", unit "18") and MLS 220194788 at $1,100,000 ("the exclusive
+ * opportunity to own the entire cabin (four-quarter-share interests)", unit
+ * "24"). Both render at /listing/<key> today, so before they were named here
+ * the property rule printed "Fractional interest" beside a whole-cabin ask and
+ * withheld that cabin's verified $/sq ft and JSON-LD offer. §0 forbids a wrong
+ * label as firmly as a wrong number. A whole-property entry is only honest
+ * while every non-share row under it is named below.
+ *
+ * WHY NOT REGISTER EVERY RESORT. A property entry withholds figures for every
+ * row filed under it, so it may only name a property where the whole property
+ * sells interests. Inn Of The 7th in Bend is the counter-example and is
+ * deliberately NOT a property entry: 27 Active Condominium rows there
+ * ($150,000–$352,900) disclose no share at all and are whole-condo sales,
+ * alongside 9 Active Tenancy in Common rows ($3,000–$38,000) the sub-type rule
+ * already catches. Registering that property would delete 27 verified figures.
+ * Its one miss, MLS 220216423, is a listing entry instead.
+ *
+ * ADDING A ROW. A property entry needs: every row ever filed under that
+ * subdivision counted, the share-disclosing share of them counted, at least
+ * three MLS numbers quoted verbatim from the feed, and every row at the
+ * property that is NOT a share named as an exception with its reason. A listing
+ * entry needs its own verbatim remark. The shape is enforced by
+ * scripts/check-listing-figure-publish.mjs, which also executes the rule
+ * against 220222478's real row — an entry without evidence fails the commit.
+ */
+
+/**
  * MLS PropertySubType values whose ListPrice buys a fractional interest in the
  * property rather than the property. Feed strings, matched exactly — see the
  * docblock trace for the per-row evidence.
@@ -96,6 +171,134 @@ export const FRACTIONAL_INTEREST_SUB_TYPES: ReadonlySet<string> = new Set([
   'Timeshare',
 ])
 
+/** One MLS number and the feed's own words, quoted, never paraphrased. */
+export type FractionalInterestEvidence = {
+  listNumber: string
+  /** Verbatim fragment of that listing's PublicRemarks. */
+  remark: string
+}
+
+/**
+ * A property where the listings are interests in the property, not the
+ * property. Keyed on subdivision + city, which is what the feed files a
+ * listing under and what the reviewer verified.
+ */
+export type FractionalInterestProperty = {
+  subdivision: string
+  city: string
+  /** The label the page prints beside the ask. Never wider than the evidence. */
+  shareLabel: string
+  /** ISO date the counts below were pulled. */
+  verifiedOn: string
+  /** Rows in `listings` filed under this subdivision, every status. */
+  rowsAllStatuses: number
+  /** How many of those disclose a share in their own remarks. */
+  rowsDisclosingShare: number
+  evidence: readonly FractionalInterestEvidence[]
+  /** Rows at this property that are NOT share sales, each with its reason. */
+  exceptions: readonly { listNumber: string; why: string }[]
+}
+
+/** A single verified fractional interest at a property that also sells wholes. */
+export type FractionalInterestListing = {
+  listNumber: string
+  city: string
+  shareLabel: string
+  verifiedOn: string
+  evidence: FractionalInterestEvidence
+}
+
+export const FRACTIONAL_INTEREST_PROPERTIES: readonly FractionalInterestProperty[] = [
+  {
+    subdivision: 'Lake Creek Lodge',
+    city: 'Camp Sherman',
+    shareLabel: 'Fractional interest',
+    verifiedOn: '2026-08-19',
+    rowsAllStatuses: 38,
+    rowsDisclosingShare: 36,
+    evidence: [
+      { listNumber: '220218114', remark: '25% interest in Camp Sherman!' },
+      { listNumber: '220218115', remark: '25% interest in Camp Sherman!' },
+      { listNumber: '220222476', remark: '25% interest available in Camp Sherman!' },
+      { listNumber: '220222478', remark: '1/4 share in Camp Sherman!' },
+      { listNumber: '220215583', remark: 'Own a one-quarter share in this charming three-bedroom, two-bath cabin' },
+      { listNumber: '220203447', remark: 'One-quarter shared interest is available' },
+      { listNumber: '220218395', remark: 'Own a 1/4 share interest' },
+      { listNumber: '220170948', remark: 'Experience a 1/4 share interest' },
+      { listNumber: '220220877', remark: 'One-quarter shared interest' },
+    ],
+    exceptions: [
+      {
+        listNumber: '220224690',
+        why: 'The resort itself, not a cabin: PropertyType F at $10,000,000, remarks "13 charming cabins, an iconic lodge with an active restaurant". Its ListPrice is the price of the whole property.',
+      },
+      {
+        listNumber: '201805357',
+        why: 'A whole cabin, not a share: $849,500, sub type Condominium, unit "18", remarks "Full interest 3 bed/3 bath cabin at Historic Lake Creek Lodge" and "Option of 1/4 share with price of $219,000 and 1/2 share with price of $429,000". The ListPrice buys the cabin.',
+      },
+      {
+        listNumber: '220194788',
+        why: 'A whole cabin, not a share: $1,100,000, sub type Condominium, unit "24", remarks "the exclusive opportunity to own the entire cabin (four-quarter-share interests)". The ListPrice buys all four quarters.',
+      },
+    ],
+  },
+]
+
+export const FRACTIONAL_INTEREST_LISTINGS: readonly FractionalInterestListing[] = [
+  {
+    listNumber: '220216423',
+    city: 'Bend',
+    shareLabel: 'Fractional interest',
+    verifiedOn: '2026-08-19',
+    evidence: {
+      listNumber: '220216423',
+      remark: 'Imagine owning a slice of paradise with fractional ownership in a condominium',
+    },
+  },
+]
+
+function normalizeToken(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+/**
+ * The registry lookup key for a listing's place. Exported so the gate builds
+ * keys the same way the runtime does rather than reimplementing the rule.
+ */
+export function fractionalPropertyKey(
+  subdivisionName: string | null | undefined,
+  city: string | null | undefined,
+): string | null {
+  const sub = normalizeToken(subdivisionName)
+  const town = normalizeToken(city)
+  if (!sub || !town) return null
+  return `${sub}|${town}`
+}
+
+const FRACTIONAL_PROPERTY_INDEX: ReadonlyMap<string, FractionalInterestProperty> = new Map(
+  FRACTIONAL_INTEREST_PROPERTIES.flatMap((p) => {
+    const key = fractionalPropertyKey(p.subdivision, p.city)
+    return key ? ([[key, p]] as [string, FractionalInterestProperty][]) : []
+  }),
+)
+
+const FRACTIONAL_LISTING_INDEX: ReadonlyMap<string, FractionalInterestListing> = new Map(
+  FRACTIONAL_INTEREST_LISTINGS.map((l) => [normalizeToken(l.listNumber), l]),
+)
+
+/**
+ * Everything a figure publisher needs to know about which listing it is looking
+ * at. Every field is REQUIRED so the typechecker — not a reviewer's memory —
+ * makes each surface state it. An optional field reads `undefined` at the call
+ * site that forgets it, which is a guard that always passes.
+ */
+export type FractionalInterestSubject = {
+  propertySubType: string | null | undefined
+  subdivisionName: string | null | undefined
+  city: string | null | undefined
+  listNumber: string | null | undefined
+}
+
 /** True when this listing's ListPrice is rent, not an asking sale price. */
 export function listingPriceIsLeaseRate(propertyType: string | null | undefined): boolean {
   const code = (propertyType ?? '').trim().toUpperCase()
@@ -104,8 +307,12 @@ export function listingPriceIsLeaseRate(propertyType: string | null | undefined)
 }
 
 /**
- * True when this listing's ListPrice buys a share of the property, so no figure
- * describing the whole property may be derived from it.
+ * True when the FEED'S OWN SUB TYPE says this ListPrice buys a share.
+ *
+ * This is one of the three ways a listing qualifies, not the whole rule. Ask
+ * `listingIsFractionalInterest` unless you specifically want the sub-type
+ * dimension: eight Active rows are fractional interests under sub type
+ * "Condominium", and this predicate returns false for every one of them.
  */
 export function listingPriceIsFractionalShare(
   propertySubType: string | null | undefined,
@@ -113,6 +320,45 @@ export function listingPriceIsFractionalShare(
   const raw = (propertySubType ?? '').trim()
   if (!raw) return false
   return FRACTIONAL_INTEREST_SUB_TYPES.has(raw)
+}
+
+/**
+ * The registry entry that classifies this listing as a fractional interest, or
+ * null. Returned rather than a bare boolean so the caller can print the entry's
+ * own reviewed label instead of inventing one.
+ */
+export function fractionalInterestEntry(
+  subject: FractionalInterestSubject,
+): FractionalInterestProperty | FractionalInterestListing | null {
+  const listNumber = normalizeToken(subject.listNumber)
+  if (listNumber) {
+    const listed = FRACTIONAL_LISTING_INDEX.get(listNumber)
+    if (listed) return listed
+  }
+  const key = fractionalPropertyKey(subject.subdivisionName, subject.city)
+  if (!key) return null
+  const property = FRACTIONAL_PROPERTY_INDEX.get(key)
+  if (!property) return null
+  // A property entry says the property sells interests. A named exception is a
+  // row at that property verified NOT to be one — the resort itself, sold whole.
+  if (listNumber && property.exceptions.some((e) => normalizeToken(e.listNumber) === listNumber)) {
+    return null
+  }
+  return property
+}
+
+/**
+ * THE ONE QUESTION every whole-property figure asks: does this listing's
+ * ListPrice buy a share of the property rather than the property?
+ *
+ * Three ways to qualify, in one predicate so no surface can answer it with two
+ * out of three: the feed's own sub type, a reviewed property in the registry,
+ * or a reviewed single listing. Verified with the registry's evidence, never by
+ * reading PublicRemarks at request time.
+ */
+export function listingIsFractionalInterest(subject: FractionalInterestSubject): boolean {
+  if (listingPriceIsFractionalShare(subject.propertySubType)) return true
+  return fractionalInterestEntry(subject) != null
 }
 
 /** The three registers the money primitive prints in. */
@@ -221,12 +467,18 @@ export function publishSaleAskAmount(input: {
  *
  * §0.7 decides the null case for the caller: publish no figure. A page with no
  * cap rate is correct; a page with a 1,571,464% one is not.
+ *
+ * The ask stays publishable only because the page prints a share label beside
+ * it. That label comes from publishListingShareKind, which reads the same three
+ * dimensions this does — so a registry-matched row cannot lose its badge while
+ * keeping its ask.
  */
-export function publishWholePropertyAmount(input: {
-  price: number | null | undefined
-  propertyType: string | null | undefined
-  propertySubType: string | null | undefined
-}): number | null {
-  if (listingPriceIsFractionalShare(input.propertySubType)) return null
+export function publishWholePropertyAmount(
+  input: FractionalInterestSubject & {
+    price: number | null | undefined
+    propertyType: string | null | undefined
+  },
+): number | null {
+  if (listingIsFractionalInterest(input)) return null
   return publishSaleAskAmount({ price: input.price, propertyType: input.propertyType })
 }

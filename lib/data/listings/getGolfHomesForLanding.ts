@@ -32,12 +32,17 @@ export type GolfHomeRow = {
    * mention golf WITHOUT constraining PropertyType — so 19 fractional-share
    * rows and 1 commercial lease qualify (listings, 2026-08-19). On a lease the
    * price is rent per square foot, so the card must be able to withhold it.
-   * The RPC does not return these two columns; they are read from
+   * The RPC does not return these three columns; they are read from
    * listing_tile_mv for the same keys rather than changed under the RPC, so
    * the guard has a real value with no migration to wait on.
+   *
+   * `SubdivisionName` is here for the same guard: the sub type is only one of
+   * the three dimensions that decide whether ListPrice buys the whole dwelling,
+   * and eight Active quarter shares are filed under sub type "Condominium".
    */
   PropertyType: string | null
   PropertySubType: string | null
+  SubdivisionName: string | null
 }
 
 export async function getGolfHomesForLanding(city: string, limit = 24): Promise<GolfHomeRow[]> {
@@ -63,6 +68,7 @@ export async function getGolfHomesForLanding(city: string, limit = 24): Promise<
       ...r,
       PropertyType: tile?.propertyType ?? null,
       PropertySubType: tile?.propertySubType ?? null,
+      SubdivisionName: tile?.subdivisionName ?? null,
     }
   })
 }

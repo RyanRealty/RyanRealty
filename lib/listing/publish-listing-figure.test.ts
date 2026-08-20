@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isZeroDollarText,
+  listingIsFractionalInterest,
   listingPriceIsFractionalShare,
   listingPriceIsLeaseRate,
   publishMoneyText,
@@ -120,9 +121,153 @@ describe('listingPriceIsFractionalShare', () => {
   })
 })
 
+/** A listing nowhere near a registered fractional-interest property. */
+const ELSEWHERE = { subdivisionName: 'Awbrey Butte', city: 'Bend', listNumber: '220000000' }
+
+describe('listingIsFractionalInterest', () => {
+  it('catches the sub-type rows the feed labels', () => {
+    expect(
+      listingIsFractionalInterest({ ...ELSEWHERE, propertySubType: 'Tenancy in Common' }),
+    ).toBe(true)
+    expect(listingIsFractionalInterest({ ...ELSEWHERE, propertySubType: 'Timeshare' })).toBe(true)
+  })
+
+  it('catches the eight Lake Creek Lodge quarter shares the feed files as Condominium', () => {
+    // The exact live rows, 2026-08-19. Each says 25% / 1/4 / one-quarter in its
+    // own remarks; none carries a fractional sub type.
+    for (const listNumber of [
+      '220218114',
+      '220218115',
+      '220222476',
+      '220222478',
+      '220215583',
+      '220203447',
+      '220218395',
+      '220170948',
+    ]) {
+      expect(
+        listingIsFractionalInterest({
+          propertySubType: 'Condominium',
+          subdivisionName: 'Lake Creek Lodge',
+          city: 'Camp Sherman',
+          listNumber,
+        }),
+      ).toBe(true)
+    }
+  })
+
+  it('catches Cabin 10 U2, which discloses no share of its own', () => {
+    // 220222477 is unit "10, U2" — same cabin, same $159,900, same 866 sq ft as
+    // 220222476 ("10, U1") and 220222478 ("10, U3"), both of which disclose a
+    // quarter share. A remark rule would publish this one as a whole home and
+    // withhold its two identical siblings. The property is the key, so it does
+    // not.
+    expect(
+      listingIsFractionalInterest({
+        propertySubType: 'Condominium',
+        subdivisionName: 'Lake Creek Lodge',
+        city: 'Camp Sherman',
+        listNumber: '220222477',
+      }),
+    ).toBe(true)
+  })
+
+  it('catches the one reviewed listing at a property that also sells wholes', () => {
+    expect(
+      listingIsFractionalInterest({
+        propertySubType: 'Multi Family',
+        subdivisionName: 'Inn Of The 7th',
+        city: 'Bend',
+        listNumber: '220216423',
+      }),
+    ).toBe(true)
+  })
+
+  it('leaves the 27 whole condos at that same property alone', () => {
+    // Inn Of The 7th is deliberately NOT a property entry: 27 Active
+    // Condominium rows there, $150,000–$352,900, disclose no share.
+    expect(
+      listingIsFractionalInterest({
+        propertySubType: 'Condominium',
+        subdivisionName: 'Inn Of The 7th',
+        city: 'Bend',
+        listNumber: '220999111',
+      }),
+    ).toBe(false)
+  })
+
+  it('exempts the resort itself, which is sold whole', () => {
+    // 220224690, PropertyType F at $10,000,000: "13 charming cabins, an iconic
+    // lodge with an active restaurant". Its ListPrice IS the whole property.
+    expect(
+      listingIsFractionalInterest({
+        propertySubType: null,
+        subdivisionName: 'Lake Creek Lodge',
+        city: 'Camp Sherman',
+        listNumber: '220224690',
+      }),
+    ).toBe(false)
+  })
+
+  it('exempts the two whole cabins the property also sells', () => {
+    // Counter-query, live `listings`, SubdivisionName 'Lake Creek Lodge',
+    // 2026-08-19: 2 rows claim a full rather than partial ownership in their
+    // own remarks. Both are Canceled, both filed under sub type "Condominium"
+    // with a bare cabin number and no U1–U4 share index, and both render at
+    // /listing/<key>. Before they were named, the property rule printed
+    // "Fractional interest" beside a whole-cabin ask.
+    for (const listNumber of ['201805357', '220194788']) {
+      expect(
+        listingIsFractionalInterest({
+          propertySubType: 'Condominium',
+          subdivisionName: 'Lake Creek Lodge',
+          city: 'Camp Sherman',
+          listNumber,
+        }),
+      ).toBe(false)
+    }
+    expect(
+      publishWholePropertyAmount({
+        propertySubType: 'Condominium',
+        subdivisionName: 'Lake Creek Lodge',
+        city: 'Camp Sherman',
+        listNumber: '201805357',
+        price: 849_500,
+        propertyType: 'A',
+      }),
+    ).toBe(849_500)
+  })
+
+  it('matches the property on case and spacing, not on exact feed casing', () => {
+    expect(
+      listingIsFractionalInterest({
+        propertySubType: 'Condominium',
+        subdivisionName: '  lake   creek lodge ',
+        city: 'CAMP SHERMAN',
+        listNumber: '220218114',
+      }),
+    ).toBe(true)
+  })
+
+  it('is false for an ordinary home, and for a partial subject', () => {
+    expect(
+      listingIsFractionalInterest({ ...ELSEWHERE, propertySubType: 'Single Family Residence' }),
+    ).toBe(false)
+    // A cabin number without its town does not match a registry key.
+    expect(
+      listingIsFractionalInterest({
+        propertySubType: 'Condominium',
+        subdivisionName: 'Lake Creek Lodge',
+        city: null,
+        listNumber: null,
+      }),
+    ).toBe(false)
+  })
+})
+
 describe('publishWholePropertyAmount', () => {
   const share = (price: number, propertySubType: string | null) =>
-    publishWholePropertyAmount({ price, propertyType: 'A', propertySubType })
+    publishWholePropertyAmount({ ...ELSEWHERE, price, propertyType: 'A', propertySubType })
 
   it('withholds every fractional interest, at any price', () => {
     // MLS 220190868 published a 1571464.0% cap rate and JSON-LD offers.price 1.
@@ -134,9 +279,32 @@ describe('publishWholePropertyAmount', () => {
     expect(share(215_000, 'Timeshare')).toBeNull()
   })
 
+  it('withholds the Lake Creek Lodge rows the sub type alone would publish', () => {
+    // The founding case. Sub type "Condominium" at $159,900 published a 3.5%
+    // cap rate, "Cash needed $31,980", "$185 /sqft", and a
+    // SingleFamilyResidence offer at that price on 220222478's page.
+    expect(
+      publishWholePropertyAmount({
+        price: 159_900,
+        propertyType: 'A',
+        propertySubType: 'Condominium',
+        subdivisionName: 'Lake Creek Lodge',
+        city: 'Camp Sherman',
+        listNumber: '220222478',
+      }),
+    ).toBeNull()
+    // The same shape published elsewhere is untouched.
+    expect(share(159_900, 'Condominium')).toBe(159_900)
+  })
+
   it('withholds a lease rate', () => {
     expect(
-      publishWholePropertyAmount({ price: 2.5, propertyType: 'G', propertySubType: null }),
+      publishWholePropertyAmount({
+        ...ELSEWHERE,
+        price: 2.5,
+        propertyType: 'G',
+        propertySubType: null,
+      }),
     ).toBeNull()
   })
 
@@ -149,7 +317,12 @@ describe('publishWholePropertyAmount', () => {
   it('withholds a missing or non-positive price', () => {
     expect(share(0, 'Single Family Residence')).toBeNull()
     expect(
-      publishWholePropertyAmount({ price: null, propertyType: 'A', propertySubType: null }),
+      publishWholePropertyAmount({
+        ...ELSEWHERE,
+        price: null,
+        propertyType: 'A',
+        propertySubType: null,
+      }),
     ).toBeNull()
   })
 })

@@ -33,30 +33,42 @@ checks.push({
     // The sub-type list moved into the figure contract 2026-08-19 (one rule,
     // executed by ci:listing-figure-publish); this module must ask it rather
     // than keep a second copy that can drift.
-    /listingPriceIsFractionalShare/.test(helper),
+    /listingPriceIsFractionalShare/.test(helper) &&
+    // …and the sub type is only one of three dimensions. Eight Active
+    // fractional interests carry sub type "Condominium" (Lake Creek Lodge,
+    // Camp Sherman), so a label built from the sub type alone left MLS
+    // 220222478 printing "$159,900" with nothing on the page saying share.
+    /fractionalInterestEntry/.test(helper) &&
+    helper.includes('220222478'),
 })
 
 const hero = src('components/site/listing-detail/ListingHero.tsx')
 checks.push({
-  label: 'ListingHero publishes share kind next to the ask',
+  label: 'ListingHero publishes share kind next to the ask, from the whole subject',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-share['"]/.test(hero) &&
-    /publishListingShareKind\(propertySubType\)/.test(hero) &&
+    /publishListingShareKind\(\{[^}]*propertySubType,[\s\S]{0,120}?subdivisionName,[\s\S]{0,120}?city,[\s\S]{0,120}?listNumber,?\s*\}\)/.test(
+      hero,
+    ) &&
     /\{shareKind\}/.test(hero),
 })
 
 const page = src('app/listing/[listingKey]/page.tsx')
 checks.push({
-  label: 'listing detail passes propertySubType into the hero',
-  ok: /propertySubType=\{listing\.propertySubType\}/.test(page),
+  label: 'listing detail passes the whole share subject into the hero',
+  ok:
+    /propertySubType=\{listing\.propertySubType\}/.test(page) &&
+    /subdivisionName=\{listing\.subdivisionName\}/.test(page) &&
+    /listNumber=\{listing\.listNumber\}/.test(page),
 })
 
 const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
 checks.push({
   label: 'PriceCtaStrip withholds share ppsf and prints the kind',
   ok:
-    /publishListingShareKind\(listing\.propertySubType\)/.test(strip) &&
-    /publishListingSharePricePerSqft\(/.test(strip) &&
+    /const shareSubject = \{[\s\S]{0,300}?subdivisionName: listing\.subdivisionName/.test(strip) &&
+    /publishListingShareKind\(shareSubject\)/.test(strip) &&
+    /publishListingSharePricePerSqft\(\{\s*\.\.\.shareSubject/.test(strip) &&
     /\{shareKind\}/.test(strip) &&
     /publishedPpsf/.test(strip),
 })
@@ -72,6 +84,24 @@ checks.push({
   label: 'PropertySpecs withholds share ppsf',
   ok: /publishListingSharePricePerSqft\(/.test(specs),
 })
+
+// EVERY $/sq ft CALLER HANDS OVER THE PLACE, not just the sub type. MLS
+// 220222478 published "$185 /sqft" — a quarter-share price over the whole
+// cabin's 866 sq ft — because the publisher was asked a narrower question than
+// the one that decides it.
+for (const [label, path] of [
+  ['PriceBlock', 'components/site/listing-detail/PriceBlock.tsx'],
+  ['PropertySpecs', 'components/site/listing-detail/PropertySpecs.tsx'],
+  ['HouseMeReport', 'components/site/listing-detail/HouseMeReport.tsx'],
+  ['ListingCard', 'components/site/ListingCard.tsx'],
+]) {
+  const text = src(path)
+  checks.push({
+    label: `${label} hands the $/sq ft publisher the subdivision, city and MLS number`,
+    ok:
+      /subdivisionName[:=]/.test(text) && /listNumber[:=]/.test(text) && /\bcity[:=]/.test(text),
+  })
+}
 
 const card = src('components/site/ListingCard.tsx')
 // The publisher took (propertySubType, pricePerSqft) positionally until
