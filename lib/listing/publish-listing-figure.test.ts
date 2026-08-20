@@ -209,6 +209,35 @@ describe('listingIsFractionalInterest', () => {
     ).toBe(false)
   })
 
+  it('exempts the two whole cabins the property also sells', () => {
+    // Counter-query, live `listings`, SubdivisionName 'Lake Creek Lodge',
+    // 2026-08-19: 2 rows claim a full rather than partial ownership in their
+    // own remarks. Both are Canceled, both filed under sub type "Condominium"
+    // with a bare cabin number and no U1–U4 share index, and both render at
+    // /listing/<key>. Before they were named, the property rule printed
+    // "Fractional interest" beside a whole-cabin ask.
+    for (const listNumber of ['201805357', '220194788']) {
+      expect(
+        listingIsFractionalInterest({
+          propertySubType: 'Condominium',
+          subdivisionName: 'Lake Creek Lodge',
+          city: 'Camp Sherman',
+          listNumber,
+        }),
+      ).toBe(false)
+    }
+    expect(
+      publishWholePropertyAmount({
+        propertySubType: 'Condominium',
+        subdivisionName: 'Lake Creek Lodge',
+        city: 'Camp Sherman',
+        listNumber: '201805357',
+        price: 849_500,
+        propertyType: 'A',
+      }),
+    ).toBe(849_500)
+  })
+
   it('matches the property on case and spacing, not on exact feed casing', () => {
     expect(
       listingIsFractionalInterest({

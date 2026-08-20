@@ -172,6 +172,26 @@ expect(
   listingIsFractionalInterest({ ...CABIN_10_U3, propertySubType: null, listNumber: '220224690' }),
   false,
 )
+// A property entry is wrong in the other direction too, and this property sells
+// whole cabins as well as quarters. Both rows render at /listing/<key>, and
+// before they were named the page printed "Fractional interest" beside a
+// whole-cabin ask and withheld that cabin's $/sq ft and JSON-LD offer. A wrong
+// label is a §0 failure exactly like a wrong number.
+for (const [listNumber, price, what] of [
+  ['201805357', 849_500, '"Full interest 3 bed/3 bath cabin", unit 18'],
+  ['220194788', 1_100_000, '"own the entire cabin (four-quarter-share interests)", unit 24'],
+]) {
+  expect(
+    `listingIsFractionalInterest ${listNumber} (whole cabin at Lake Creek Lodge — ${what})`,
+    listingIsFractionalInterest({ ...CABIN_10_U3, listNumber }),
+    false,
+  )
+  expect(
+    `publishWholePropertyAmount ${listNumber} (whole cabin, ${what})`,
+    publishWholePropertyAmount({ ...CABIN_10_U3, listNumber, price, propertyType: 'A' }),
+    price,
+  )
+}
 // The one reviewed listing at a property that also sells whole condos.
 expect(
   'listingIsFractionalInterest 220216423 (Inn Of The 7th, listing entry)',

@@ -121,14 +121,27 @@ export const LEASE_PRICE_PROPERTY_TYPES: ReadonlySet<string> = new Set(['G'])
  *
  * The property IS the record. Live `listings`, SubdivisionName 'Lake Creek
  * Lodge', every status, 2026-08-19: 38 rows, 36 of which disclose a share in
- * their own remarks. Every per-cabin row across all three sub types the feed
- * has used there (Tenancy in Common 20, Condominium 17, Single Family Residence
- * 1) carries a share-index unit number — U1, U2, U3, U4 — and the resort itself
- * is separately listed as a going business, MLS 220224690 at $10,000,000 under
- * PropertyType 'F' ("13 charming cabins, an iconic lodge with an active
- * restaurant"). Cabins at a resort that is itself one for-sale business are not
- * fee-simple dwellings. The two rows that do not disclose a share are that
- * resort listing and Cabin 10 U2.
+ * their own remarks, across all three sub types the feed has used there
+ * (Tenancy in Common 20, Condominium 17, Single Family Residence 1). Every
+ * ACTIVE per-cabin row carries a share-index unit number — U1, U2, U3, U4 — and
+ * the resort itself is separately listed as a going business, MLS 220224690 at
+ * $10,000,000 under PropertyType 'F' ("13 charming cabins, an iconic lodge with
+ * an active restaurant"). Cabins at a resort that is itself one for-sale
+ * business are not fee-simple dwellings. The two rows that do not disclose a
+ * share are that resort listing and Cabin 10 U2.
+ *
+ * THE PROPERTY ALSO SELLS WHOLE CABINS, WHICH IS WHY THE EXCEPTION LIST IS PART
+ * OF THE ENTRY AND NOT DECORATION. Counter-query, same table and date: rows at
+ * this subdivision whose own remarks claim a full rather than partial ownership
+ * — 2, both Canceled, both filed under sub type "Condominium" with a bare cabin
+ * number and no share index. MLS 201805357 at $849,500 ("Full interest 3 bed/3
+ * bath cabin", unit "18") and MLS 220194788 at $1,100,000 ("the exclusive
+ * opportunity to own the entire cabin (four-quarter-share interests)", unit
+ * "24"). Both render at /listing/<key> today, so before they were named here
+ * the property rule printed "Fractional interest" beside a whole-cabin ask and
+ * withheld that cabin's verified $/sq ft and JSON-LD offer. §0 forbids a wrong
+ * label as firmly as a wrong number. A whole-property entry is only honest
+ * while every non-share row under it is named below.
  *
  * WHY NOT REGISTER EVERY RESORT. A property entry withholds figures for every
  * row filed under it, so it may only name a property where the whole property
@@ -218,6 +231,14 @@ export const FRACTIONAL_INTEREST_PROPERTIES: readonly FractionalInterestProperty
       {
         listNumber: '220224690',
         why: 'The resort itself, not a cabin: PropertyType F at $10,000,000, remarks "13 charming cabins, an iconic lodge with an active restaurant". Its ListPrice is the price of the whole property.',
+      },
+      {
+        listNumber: '201805357',
+        why: 'A whole cabin, not a share: $849,500, sub type Condominium, unit "18", remarks "Full interest 3 bed/3 bath cabin at Historic Lake Creek Lodge" and "Option of 1/4 share with price of $219,000 and 1/2 share with price of $429,000". The ListPrice buys the cabin.',
+      },
+      {
+        listNumber: '220194788',
+        why: 'A whole cabin, not a share: $1,100,000, sub type Condominium, unit "24", remarks "the exclusive opportunity to own the entire cabin (four-quarter-share interests)". The ListPrice buys all four quarters.',
       },
     ],
   },
