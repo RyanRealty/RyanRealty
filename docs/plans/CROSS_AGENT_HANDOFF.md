@@ -2,17 +2,18 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (grok local) — Sunstone seller CMA
+# Current — 2026-08-19 (grok local) — Sunstone seller CMA LIVE
 
-**Surface:** Grok local worktree `/Users/matthewryan/RyanRealty-wt-cma-sunstone-20260819` (`wt/cma-sunstone-20260819`). Loop stays **DISARMED**. Do not re-arm. No send. Dirty CMA branch `cursor/cma-client-document-7fc3` was rebased onto `main` here (CRM health commit `b0e9f537` and `origin-dual-remote` left behind).
+**Surface:** Grok local worktree `/Users/matthewryan/RyanRealty-wt-cma-sunstone-20260819` (`wt/cma-sunstone-20260819`). Product **`6ed2b5aa`**. Vercel production **READY** `dpl_3YBxhEC38sVWgU6QEJk9NfcgpsJQ`. Loop stays **DISARMED**. Do not re-arm. No send. Dirty CMA branch `cursor/cma-client-document-7fc3` was not mixed (CRM health `b0e9f537` and `origin-dual-remote` left behind).
 
 **Done**
 - Matcher: no `PRICING_QUALITY_STOP`. Target 8 / max 10. Townhouse ≠ condo ≠ SFR. Parkway/US-97 and Deschutes sides from `data/cma/bend-divide-sides.json`. Zoning cut when both sides known. GLA bracketing.
 - Seller letter: 16 Sunstone chapters. Cover is list range + recommended list. Expected close off the seller HTML. Gate `ci:cma-exemplar`.
-- Gold house **648 SE Douglas** rebuilt to `out/cma-648-se-douglas/cma.html` (gitignored). 19 pages. Matcher returned 6 sales; judge kept 3. R-068 stays **PARTIAL** until Matt ticks the PDF.
+- Gold house **648 SE Douglas** rebuilt to `out/cma-648-se-douglas/cma.html` (gitignored). 19 pages. Recommended list **$513,000**. Matcher returned 6 sales; judge kept 3 (Thomas, 947 6th, 135 4th). Permits omitted (no extras). R-068 stays **PARTIAL** until Matt ticks the PDF.
 
 **Next**
-- Matt opens the Douglas HTML/PDF and ticks the 16 chapters. Reply "ship it" to move the draft into `public/cmas/` and send. Do not auto-send.
+- Matt opens `out/cma-648-se-douglas/cma.html` (worktree path below) and ticks the 16 chapters against `docs/plans/cma-exemplars/56628-sunstone-rpr.pdf`. Reply "ship it" to move the draft into `public/cmas/` and send. Do not auto-send.
+- Draft: `/Users/matthewryan/RyanRealty-wt-cma-sunstone-20260819/out/cma-648-se-douglas/cma.html`
 
 **Do not:** re-arm the loop. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not clone Tumalo/Robin as the client layout.
 
