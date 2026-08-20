@@ -151,9 +151,82 @@ const ROUTES = INVENTORY_ROUTES
         : []),
     ]
 
+// REFUSAL ROUTES — the negative half of this gate (added 2026-08-19).
+//
+// A listing URL that cannot resolve is not an edge case: 68 Active rows are
+// non-displayable right now (44 seller internet opt-outs, 24 non-IDX-participant
+// brokers, verified against production Supabase), plus every Coming Soon row and
+// every stale/guessed key. All of them land on getListingDetail(...) === null.
+//
+// Until this gate existed they served HTTP 200 with an EMPTY body. Measured on
+// ryan-realty.com: /listing/20260206214430774501000000 returned 200 with 1,634
+// characters of text — the nav and the footer, no <h1>, no hero, no price. The
+// cause is structural, not a data bug: the route renders dynamically inside the
+// Suspense boundary that loading.tsx creates, React flushes the shell (and with
+// it the 200) before the page resolves, and a notFound() thrown afterwards can
+// only mark the boundary for a client-side swap. Next never writes the
+// not-found body into the already-committed stream.
+//
+// So the assertions here are about the SERVED HTML, which is the only thing a
+// no-JS visitor or a non-rendering crawler ever sees:
+//   - an <h1> exists          -> a real page, not a bare shell
+//   - robots says noindex     -> a 200 we cannot downgrade stays out of the index
+//   - status is not 5xx       -> refusing is not crashing
+//
+// Both directions are checkable: revert the miss path in
+// app/listing/[listingKey]/page.tsx to `notFound()` and these routes fail on the
+// missing <h1>.
+//
+// The sentinel key and MLS number are verified absent from `listings`
+// (ListNumber '999999999', ListingKey '999999999' and 'rr-smoke-no-such-listing'
+// all count 0), so they cannot start passing because a real home moved in.
+const SMOKE_MISSING_KEY = 'rr-smoke-no-such-listing'
+const SMOKE_MISSING_MLS = '999999999'
+const REFUSAL_ROUTES = [
+  { path: `/listing/${SMOKE_MISSING_KEY}`, name: 'listing detail — refusal body' },
+  {
+    // Matches the next.config rewrite /homes-for-sale/:city/:listingSlug([^/]*-[0-9]{5,})
+    // -> /listing/by-address/... This is the shape the sitemap publishes.
+    path: `/homes-for-sale/bend/${SMOKE_MISSING_KEY}-${SMOKE_MISSING_MLS}`,
+    name: 'canonical listing URL — refusal body',
+  },
+  { path: `/listing/by-key/${SMOKE_MISSING_KEY}`, name: 'listing by-key — refusal body' },
+]
+
+function checkRefusalBody(body) {
+  const reasons = []
+  // The discriminator. A bare streamed shell carries the chrome's <h2> menu
+  // titles and nothing else; every real page body on this site opens with one.
+  if (!/<h1[\s>]/i.test(body)) reasons.push('no <h1> in the served HTML (blank shell)')
+  if (!/<meta[^>]+name="robots"[^>]+content="[^"]*noindex/i.test(body)) {
+    reasons.push('no robots noindex (an unresolvable listing URL must not be indexable)')
+  }
+  if (body.includes('Application error')) reasons.push('contains "Application error"')
+  return { ok: reasons.length === 0, reasons }
+}
+
+async function checkRefusal(route, url) {
+  try {
+    const { status, body } = await fetchWithTimeout(url, timeoutFor(route.path))
+    // 404 is the ideal status and 200 is what the streamed shell forces; both
+    // are acceptable as long as a body came with it. 5xx never is.
+    if (status >= 500 || status === 0) {
+      return { ...route, url, ok: false, status, reasons: [`HTTP ${status}`], title: null }
+    }
+    const c = checkRefusalBody(body)
+    const titleMatch = body.match(/<title>([^<]*)<\/title>/i)
+    return { ...route, url, status, ok: c.ok, reasons: c.reasons, title: titleMatch?.[1]?.trim() ?? null }
+  } catch (e) {
+    return { ...route, url, ok: false, status: 0, reasons: [String(e?.message ?? e)], title: null }
+  }
+}
+
 const args = new Set(process.argv.slice(2))
 const REPORT = args.has('--report')
 const JSON_OUT = args.has('--json')
+// Run only the negative half. Used to prove this gate fails in the broken
+// direction without paying for the whole canonical inventory.
+const REFUSALS_ONLY = args.has('--refusals-only')
 
 async function fetchWithTimeout(url, ms, init = {}) {
   const ctrl = new AbortController()
@@ -233,6 +306,7 @@ async function checkFullPage(route, url) {
 
 async function checkRoute(route) {
   const url = BASE + route.path
+  if (route.refusal) return checkRefusal(route, url)
   const skipReason = SKIP_ROUTES.get(route.path)
   if (skipReason) return { ...route, url, ok: true, skipped: true, status: 0, reasons: [skipReason], title: null }
   const hop = HOP_ROUTES.get(route.path)
@@ -258,7 +332,9 @@ async function runWithConcurrency(items, worker, concurrency) {
 }
 
 async function main() {
-  const results = await runWithConcurrency(ROUTES, checkRoute, CONCURRENCY)
+  const refusals = REFUSAL_ROUTES.map((r) => ({ ...r, refusal: true }))
+  const toCheck = REFUSALS_ONLY ? refusals : [...ROUTES, ...refusals]
+  const results = await runWithConcurrency(toCheck, checkRoute, CONCURRENCY)
   const failed = results.filter((r) => !r.ok)
 
   if (JSON_OUT) {

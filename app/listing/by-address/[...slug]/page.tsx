@@ -1,6 +1,9 @@
-import { notFound } from 'next/navigation'
 import ListingDetailPage from '@/app/listing/[listingKey]/page'
 import { generateMetadata as generateListingMetadata } from '@/app/listing/[listingKey]/page'
+import {
+  ListingUnavailable,
+  LISTING_UNAVAILABLE_METADATA,
+} from '@/components/site/listing-detail/ListingUnavailable'
 import { resolveListingKeyFromBreadcrumbPath } from '@/app/actions/listing-detail'
 import type { Metadata } from 'next'
 import { listingKeyFromSlug } from '@/lib/slug'
@@ -56,15 +59,24 @@ async function resolveListingKeyFromPathSegments(slug: string[]): Promise<string
 export default async function ListingByAddressPage({ params }: PageProps) {
   const { slug = [] } = await params
   const listingKey = await resolveListingKeyFromPathSegments(slug)
-  if (!listingKey) notFound()
+  // Rendered refusal, not notFound() — this is the CANONICAL public listing URL
+  // (the one in listings.xml), and a thrown 404 here served a blank 200 body.
+  // See components/site/listing-detail/ListingUnavailable.tsx.
+  if (!listingKey) return <ListingUnavailable />
   return <ListingDetailPage params={Promise.resolve({ listingKey })} />
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug = [] } = await params
   const listingKey = await resolveListingKeyFromPathSegments(slug)
-  if (!listingKey) return {}
+  if (!listingKey) return LISTING_UNAVAILABLE_METADATA
   const base = await generateListingMetadata({ params: Promise.resolve({ listingKey }) })
+  // A refused listing gets NO canonical. The status is stuck at 200 (streamed
+  // shell), so noindex is the only signal doing work, and pairing noindex with
+  // a self-canonical is a contradictory instruction to a crawler.
+  if (base.robots && typeof base.robots === 'object' && 'index' in base.robots && base.robots.index === false) {
+    return base
+  }
   // Self-canonical to the PUBLIC URL the visitor/Googlebot actually requested —
   // this IS the sitemap URL. Overrides the inherited canonical so the pretty URL
   // is the indexed one and there's no canonical/sitemap split.

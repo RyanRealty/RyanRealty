@@ -1,7 +1,11 @@
 import { getListingCanonicalPathFields } from '@/lib/data/listings/getListingCanonicalPathFields'
 import { listingDetailPath, listingKeyFromSlug } from '@/lib/slug'
-import { notFound, permanentRedirect } from 'next/navigation'
+import { permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
+import {
+  ListingUnavailable,
+  LISTING_UNAVAILABLE_METADATA,
+} from '@/components/site/listing-detail/ListingUnavailable'
 
 type PageProps = {
   params: Promise<{ listingKey: string }>
@@ -41,14 +45,16 @@ async function lookupPathFields(listingKey: string) {
 export default async function ListingByKeyPage({ params }: PageProps) {
   const { listingKey } = await params
   const row = await lookupPathFields(listingKey)
-  if (!row) notFound()
+  // Rendered refusal, not notFound() — same streamed-shell reason as the detail
+  // page. See components/site/listing-detail/ListingUnavailable.tsx.
+  if (!row) return <ListingUnavailable />
   permanentRedirect(canonicalPathFromFields(row))
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { listingKey } = await params
   const row = await lookupPathFields(listingKey)
-  if (!row) return { title: 'Listing', robots: { index: false, follow: false } }
+  if (!row) return LISTING_UNAVAILABLE_METADATA
   const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ')
   const title = [street, row.City].filter(Boolean).join(', ') || 'Listing'
   const canonical = canonicalPathFromFields(row)

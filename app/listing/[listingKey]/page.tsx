@@ -1,4 +1,3 @@
-import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import {
   getListingDetail,
@@ -31,6 +30,10 @@ import { getListingPricingRead } from '@/lib/data/pricing/reads'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { LivePricingRead } from '@/components/site/listing-detail/LivePricingRead'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
+import {
+  ListingUnavailable,
+  LISTING_UNAVAILABLE_METADATA,
+} from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
@@ -119,7 +122,13 @@ export const revalidate = 300
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { listingKey } = await params
   const listing = await getListingDetail(listingKey)
-  if (!listing) notFound()
+  // NOT notFound(). This route renders dynamically inside a loading.tsx
+  // Suspense boundary, so the 200 is already committed by the time this
+  // resolves and Next cannot downgrade the status — it only marks the boundary
+  // for a client-side swap, leaving a blank page in the served HTML. The page
+  // body renders <ListingUnavailable /> to match; noindex is what keeps the
+  // unavoidable 200 out of the index. See ListingUnavailable.tsx.
+  if (!listing) return LISTING_UNAVAILABLE_METADATA
 
   const addressFull = listingMlsAddressFull(listing)
   const description = listingShareSummary({
@@ -181,7 +190,13 @@ async function saveListingFromStrip(key: string): Promise<{ saved: boolean; need
 export default async function ListingDetailPage({ params }: PageProps) {
   const { listingKey } = await params
   const listing = await getListingDetail(listingKey)
-  if (!listing) notFound()
+  // The refusal is RENDERED, not thrown. getListingDetail returns null for an
+  // invalid key, a seller internet opt-out, a non-IDX-participant broker, and a
+  // Coming Soon row alike — none of them may show a home. Throwing notFound()
+  // here produced HTTP 200 with an empty body (nav + footer, 1,634 chars) on
+  // ryan-realty.com because the shell had already flushed. See
+  // ListingUnavailable.tsx for the measurement and the mechanism.
+  if (!listing) return <ListingUnavailable />
 
   // The ONE published asking sale price for this page. Withheld on a lease
   // listing (MLS PropertyType 'G' — 735 Purcell, MLS 220174840, is a sublease
