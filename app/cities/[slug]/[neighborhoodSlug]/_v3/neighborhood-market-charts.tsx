@@ -58,6 +58,7 @@ function Chart({ view, id }: { view: NeighborhoodChartView; id: string }) {
       marks={view.marks}
       run={view.run}
       baselineLabel={view.baselineLabel != null ? v3Text(view.baselineLabel) : undefined}
+      sampleKey={view.sampleKey != null ? v3Text(view.sampleKey) : undefined}
     />
   )
 }

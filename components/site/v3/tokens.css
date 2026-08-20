@@ -199,6 +199,10 @@
      is what a phone still gets, and a wide card spends part of its width on
      the names rather than on more empty track. */
   --v3-chart-range-label: clamp(6.5rem, 18%, 10rem);
+  /* The sample gutter, when a range chart draws how many rows each figure was
+     computed over. Wide enough for "n 1,463 (1,300)" and no wider — the n is
+     context for the reading, never the reading. */
+  --v3-chart-range-sample: 6.75rem;
   --v3-chart-mark: 9px;
   --v3-chart-mark-base: 7px;
 

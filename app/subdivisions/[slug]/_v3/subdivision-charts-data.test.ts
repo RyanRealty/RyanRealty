@@ -177,13 +177,21 @@ describe('buildPeerPlatsCard', () => {
       'Deer Park',
       'Mtn Village East',
     ])
-    expect(card!.chart!.rows![0]!.note).toBe('6 closed year to date · small sample')
-    expect(card!.chart!.rows![3]!.note).toBe('10 closed year to date')
+    // market_stats_cache takes sold_count and median_sale_price off the same
+    // closed_sales CTE, so soldCount IS this median's population and is drawn.
+    expect(card!.chart!.sampleKey).toBe('closings year to date')
+    expect(card!.chart!.rows![0]!.sample).toEqual({ n: 6 })
+    expect(card!.chart!.rows![3]!.sample).toEqual({ n: 10 })
+    expect(card!.chart!.rows![0]!.note).toBe('small sample')
+    expect(card!.chart!.rows![3]!.note).toBeUndefined()
+    // The row reading names the plat once, not twice.
+    expect(card!.chart!.rows![0]!.tick).toBe('Meadow Village')
   })
 
   it('names the small samples and the window in the trace', () => {
     const card = buildPeerPlatsCard(peers, 'deer-park', stamp)
     expect(card!.source).toContain(`fewer than ${SMALL_PEER_SOLD_FLOOR} homes`)
+    expect(card!.source).toContain("the closings that plat's median was computed over")
     expect(card!.source).toContain('2026-01-01 to 2026-08-19')
     expect(card!.source).toContain('v3-2026-05-07')
     expect(card!.source).toContain('4 carry an MLS token that is not a place name')

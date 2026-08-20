@@ -49,8 +49,11 @@ describe('V3Chart range rows', () => {
     expect(html).toContain('18 days')
     // Lollipop rows have no base dot.
     expect(html).not.toContain('v3-chart__rangebase')
-    // The hidden reading list still carries every row.
-    expect(html).toContain('Sisters: Sisters, 10 days')
+    // The hidden reading list still carries every row, and names the town ONCE.
+    // On a range chart the series name IS the tick, so prefixing it made a
+    // screen reader announce "Sisters: Sisters, 10 days".
+    expect(html).toContain('<li>Sisters, 10 days</li>')
+    expect(html).not.toContain('Sisters: Sisters')
   })
 
   it('renders dumbbell pairs with base dots and a paired reading', () => {
@@ -153,12 +156,12 @@ describe('V3Chart range rows', () => {
             tick: v3Text('Bend'),
             value: 18,
             label: v3Text('18 days'),
-            note: v3Text('167 closed in 30 days'),
+            note: v3Text('small sample'),
           },
         ],
       }),
     )
-    expect(html).toContain('Bend: 18 days — 167 closed in 30 days')
+    expect(html).toContain('Bend: 18 days \u2014 small sample')
   })
 })
 
@@ -286,5 +289,99 @@ describe('V3ChartSwitch', () => {
         ),
       ),
     ).toThrow(/one panel per item/)
+  })
+})
+
+/**
+ * Sample size. The atom draws n ONLY where the caller could hand it the
+ * population the figure was computed over; ci:chart-sample-window polices which
+ * callers may. These locks cover what the atom itself owes: one written form,
+ * its own column so it can never sit on a dot, a name for what it counted, and
+ * a refusal when that name is missing.
+ */
+describe('V3Chart range sample size', () => {
+  const SAMPLED: V3ChartRangeRow[] = [
+    { tick: v3Text('Bend'), value: 1_285_000, label: v3Text('$1.29M'), sample: { n: 1513 } },
+    { tick: v3Text('Camp Sherman'), value: 900_000, label: v3Text('$900K'), sample: { n: 4 } },
+  ]
+
+  it('draws each n in its own column, under a key that names what it counted', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Median close price by town'),
+        kind: 'range',
+        rows: SAMPLED,
+        sampleKey: v3Text('closings in 2025'),
+      }),
+    )
+    expect(html).toContain('v3-chart__range--sampled')
+    expect((html.match(/v3-chart__rangesample/g) ?? []).length).toBe(2)
+    expect(html).toContain('n = closings in 2025')
+    // Thousands separated, so 1513 is never read as 151.3.
+    expect(html).toContain('n 1,513')
+    expect(html).toContain('n 4')
+    // The reading a screen reader gets carries the same n.
+    expect(html).toContain('<li>Camp Sherman, $900K \u2014 n 4</li>')
+  })
+
+  it('writes a dumbbell sample as current then prior, matching the value pair', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Sale-to-original ask'),
+        kind: 'range',
+        rows: [
+          {
+            tick: v3Text('Bend'),
+            value: 98.45,
+            label: v3Text('98.5%'),
+            baseValue: 97.79,
+            baseLabel: v3Text('97.8%'),
+            sample: { n: 513, baseN: 574 },
+          },
+        ],
+        sampleKey: v3Text('detached closes'),
+      }),
+    )
+    expect(html).toContain('n 513 (574)')
+    expect(html).toContain('98.5% (97.8%) \u2014 n 513 (574)')
+  })
+
+  it('refuses a sample with no key, because an unnamed count names no population', () => {
+    expect(() =>
+      renderToStaticMarkup(
+        createElement(V3Chart, {
+          caption: v3Text('Median close price by town'),
+          kind: 'range',
+          rows: SAMPLED,
+        }),
+      ),
+    ).toThrow(/sampleKey/)
+  })
+
+  it('draws no sample column, and no key, when no row carries one', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Median days to pending by town'),
+        kind: 'range',
+        rows: ROWS,
+        sampleKey: v3Text('closings in the window'),
+      }),
+    )
+    expect(html).not.toContain('v3-chart__range--sampled')
+    expect(html).not.toContain('v3-chart__rangesample')
+    expect(html).not.toContain('n = closings in the window')
+  })
+
+  it('drops a base sample on a lollipop row rather than pairing it with nothing', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Median close price by town'),
+        kind: 'range',
+        rows: [{ tick: v3Text('Bend'), value: 100, label: v3Text('$100K'), sample: { n: 9, baseN: 7 } }],
+        sampleKey: v3Text('closings'),
+      }),
+    )
+    expect(html).toContain('n 9')
+    expect(html).not.toContain('n 9 (7)')
   })
 })

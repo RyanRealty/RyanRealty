@@ -19,6 +19,16 @@ export type MarketPulseSnapshot = {
   months_of_supply: number | null
   market_health_label: string | null
   sold_count_30d: number
+  /**
+   * Closings in the last 90 days — the SAME window and filters the row's
+   * `median_days_to_pending` was measured in, minus that aggregate's own
+   * "carries a list-to-pending value" filter, so it is a SUPERSET of that
+   * median's population and must never be printed as its sample size. It is
+   * projected for one purpose: telling "this town closed nothing in the
+   * window" apart from "it closed too few to publish a median" when the
+   * median is withheld. (§0, shipped refresh_market_pulse, 2026-08-19)
+   */
+  sold_count_90d: number
   new_count_7d: number
   median_active_dom: number | null
   /** Median days LIST->PENDING for homes that went under contract. A different
@@ -36,8 +46,12 @@ export type MarketPulseSnapshot = {
   updated_at: string | null
 }
 
+// v3 keys: the projection grew sold_count_90d. A cached v2 entry holds objects
+// without that field, and `Number(undefined ?? 0)` is 0 — which would make the
+// days-to-pending trace say a town closed nothing when it closed plenty. A
+// shape change gets a new key.
 const COLUMNS =
-  'geo_slug, geo_label, active_count, median_list_price, months_of_supply, market_health_label, sold_count_30d, new_count_7d, median_active_dom, median_days_to_pending, price_reduction_share, methodology_version, updated_at'
+  'geo_slug, geo_label, active_count, median_list_price, months_of_supply, market_health_label, sold_count_30d, sold_count_90d, new_count_7d, median_active_dom, median_days_to_pending, price_reduction_share, methodology_version, updated_at'
 
 function toSnapshot(d: Record<string, unknown>): MarketPulseSnapshot {
   return {
@@ -48,6 +62,7 @@ function toSnapshot(d: Record<string, unknown>): MarketPulseSnapshot {
     months_of_supply: d.months_of_supply != null ? Number(d.months_of_supply) : null,
     market_health_label: (d.market_health_label as string | null) ?? null,
     sold_count_30d: Number(d.sold_count_30d ?? 0),
+    sold_count_90d: Number(d.sold_count_90d ?? 0),
     new_count_7d: Number(d.new_count_7d ?? 0),
     median_active_dom: d.median_active_dom != null ? Number(d.median_active_dom) : null,
     median_days_to_pending: d.median_days_to_pending != null ? Number(d.median_days_to_pending) : null,
@@ -98,7 +113,7 @@ async function fetchMarketPulseCitySnapshots(
  * render hit the DB and a blip rendered empty tiles). */
 export const getMarketPulseCitySnapshots = makeResilientCached(
   fetchMarketPulseCitySnapshots,
-  ['market-pulse-city-snapshots-v2'],
+  ['market-pulse-city-snapshots-v3'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],
@@ -123,7 +138,7 @@ async function fetchAllMarketPulseCitySnapshots(): Promise<MarketPulseSnapshot[]
 
 export const getMarketPulseAllCitySnapshots = makeResilientCached(
   fetchAllMarketPulseCitySnapshots,
-  ['market-pulse-all-city-snapshots-v2'],
+  ['market-pulse-all-city-snapshots-v3'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

@@ -19,6 +19,7 @@ function town(partial: Partial<MarketPulseSnapshot> & { geo_slug: string; geo_la
     months_of_supply: 5,
     market_health_label: null,
     sold_count_30d: 20,
+    sold_count_90d: 60,
     new_count_7d: 5,
     median_active_dom: null,
     median_days_to_pending: 20,
@@ -32,7 +33,9 @@ function town(partial: Partial<MarketPulseSnapshot> & { geo_slug: string; geo_la
 const TOWNS: MarketPulseSnapshot[] = [
   town({ geo_slug: 'bend', geo_label: 'Bend', active_count: 475, months_of_supply: 3.47, median_days_to_pending: 18, price_reduction_share: 6.6, sold_count_30d: 167 }),
   town({ geo_slug: 'redmond', geo_label: 'Redmond', active_count: 180, months_of_supply: 4.25, median_days_to_pending: 20, price_reduction_share: 8.2, sold_count_30d: 30 }),
-  town({ geo_slug: 'terrebonne', geo_label: 'Terrebonne', active_count: 6, months_of_supply: 36, median_days_to_pending: null, price_reduction_share: 16.67, sold_count_30d: 0 }),
+  // Live shape 2026-08-19: Terrebonne's pulse row shows no closings in either
+  // window, so its missing median is "closed nothing", not "withheld".
+  town({ geo_slug: 'terrebonne', geo_label: 'Terrebonne', active_count: 6, months_of_supply: 36, median_days_to_pending: null, price_reduction_share: 16.67, sold_count_30d: 0, sold_count_90d: 0 }),
 ]
 
 const INPUT: CityRankInput = {
@@ -54,9 +57,16 @@ describe('buildMosCard', () => {
     expect(card.rows!.map((r) => r.tick)).toEqual(['Bend', 'Redmond', 'Terrebonne'])
     expect(card.rows![2]!.value).toBe(36)
     expect(card.rows![2]!.label).toBe('36.0 mo')
-    // Population is in the reading, labeled, with small samples named.
-    expect(card.rows![0]!.note).toContain('475 active single-family')
-    expect(card.rows![2]!.note).toContain('small sample')
+    // NO sample size, and no count in the reading: the ratio's denominator is
+    // six months of closings, which the pulse row does not publish. Half a
+    // ratio drawn as "the population" would read as sturdier than it is.
+    expect(card.rows!.every((r) => r.sample === undefined)).toBe(true)
+    expect(card.rows![0]!.note).toBeUndefined()
+    expect(card.rows!.some((r) => /\d/.test(r.note ?? ''))).toBe(false)
+    // A thin town is still flagged, qualitatively, and the trace names the floor.
+    expect(card.rows![2]!.note).toBe('small active inventory')
+    expect(card.source).toContain('No sample size is drawn')
+    expect(card.source).toContain('publishes only the actives')
     // Trace cites the stamp on the rows, not a remembered constant.
     expect(card.source).toContain('methodology v3-2026-05-07')
   })
@@ -89,7 +99,31 @@ describe('buildDtpCard', () => {
     expect(card.title).toBe('Bend pends in 18 days')
     expect(card.rows!.map((r) => r.tick)).toEqual(['Bend', 'Redmond'])
     expect(card.source).toContain('Terrebonne')
-    expect(card.source).toContain('median is undefined')
+  })
+
+  it('draws no sample and no count, and states the window and the floor', () => {
+    const card = buildDtpCard(INPUT)!
+    expect(card.rows!.every((r) => r.sample === undefined)).toBe(true)
+    expect(card.rows!.every((r) => r.note === undefined)).toBe(true)
+    expect(card.source).toContain('closed in the last 90 days')
+    expect(card.source).toContain('fewer than 5 of those is withheld')
+    expect(card.source).toContain('No sample size is drawn')
+  })
+
+  it('separates a town withheld by the floor from one that closed nothing', () => {
+    // Metolius closed 4 homes in the 90-day window and is withheld by the
+    // 5-closing floor; Terrebonne closed none. One sentence covering both
+    // ("no closings in the window") is a fabrication about Metolius.
+    const card = buildDtpCard({
+      ...INPUT,
+      towns: [
+        ...TOWNS,
+        town({ geo_slug: 'metolius', geo_label: 'Metolius', median_days_to_pending: null, sold_count_90d: 4 }),
+      ],
+    })!
+    expect(card.source).toContain('Withheld under the 5-closing floor: Metolius.')
+    expect(card.source).toContain('Omitted, no closings in the 90-day window: Terrebonne.')
+    expect(card.source).not.toMatch(/no closings in the .{0,20}window[^.]*Metolius/)
   })
 
   it('returns null without the subject city', () => {
@@ -107,6 +141,17 @@ describe('buildCutsCard', () => {
     // The region universe is named as broader than the towns charted.
     expect(card.source).toContain('1,801 actives')
     expect(card.source).toContain('broader than')
+  })
+
+  it('draws no sample, and never says the share is "of N active"', () => {
+    const card = buildCutsCard(INPUT)!
+    // The published share divides by actives PLUS active-under-contract; the
+    // row's active_count excludes those, so it is the wrong denominator.
+    expect(card.rows!.every((r) => r.sample === undefined)).toBe(true)
+    expect(card.rows!.some((r) => (r.note ?? '').includes('475'))).toBe(false)
+    expect(card.rows!.some((r) => /of \d/.test(r.note ?? ''))).toBe(false)
+    expect(card.source).toContain('active-under-contract')
+    expect(card.source).toContain('No sample size is drawn')
   })
 
   it('drops the region rule when the region row is missing', () => {
@@ -132,6 +177,16 @@ describe('buildStoCard', () => {
     const bbr = card.rows!.find((r) => r.tick === 'Black Butte Ranch')!
     expect(bbr.baseValue).toBeCloseTo(96, 9)
     expect(bbr.note).toContain('small sample')
+  })
+
+  it('publishes the closings each median was computed over, both sides', () => {
+    const card = buildStoCard(PAIRS, { subjectCitySlug: 'bend', subjectName: 'Bend', factsAsOf: null })!
+    expect(card.sampleKey).toBe('detached closes, Q2 2026 (Q2 2025)')
+    const bend = card.rows!.find((r) => r.tick === 'Bend')!
+    // The RPC's count(*) for the same grouped rows the median came from.
+    expect(bend.sample).toEqual({ n: 514, baseN: 574 })
+    // Every dumbbell row discloses both halves of the pair.
+    expect(card.rows!.every((r) => r.sample?.baseN != null)).toBe(true)
   })
 
   it('returns null without the subject pair', () => {

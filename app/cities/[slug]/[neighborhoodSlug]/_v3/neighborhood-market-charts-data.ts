@@ -91,6 +91,11 @@ export type NeighborhoodChartView = {
   marks?: boolean
   run?: boolean
   baselineLabel?: string
+  /**
+   * Names what the rows' sample counts. Required by the atom whenever a row
+   * carries one — a bare n names no population.
+   */
+  sampleKey?: string
 }
 
 function money(n: number): string {
@@ -325,19 +330,23 @@ export function buildClosedRankCard(
     view: {
       caption: `Median close price by Bend district, ${year}`,
       kind: 'range',
+      // neighborhood_year_pricing_mv takes count(*) and percentile_cont over
+      // the same grouped rows with no further filter, so `closings` is exactly
+      // the population this median was computed over — it can be drawn.
+      sampleKey: `closings in ${year}`,
       rows: yearRows.map((r) => ({
         tick: v3Text(r.geoLabel),
         value: r.medianClose!,
         label: v3Text(money(r.medianClose!)),
-        note: v3Text(
-          `${count(r.closings)} closings in ${year}` +
-            (r.closings < SMALL_YEAR_CLOSINGS_FLOOR ? ' · small sample' : ''),
-        ),
+        sample: { n: r.closings },
+        ...(r.closings < SMALL_YEAR_CLOSINGS_FLOOR ? { note: v3Text('small sample') } : {}),
       })),
     },
     source:
       `${CLOSED_POPULATION_CLAUSE} ${year} is the latest complete year; the running year is excluded so a ` +
-      `full year is never charted against a partial one.`,
+      `full year is never charted against a partial one. The n beside each row is the closings that ` +
+      `district's median was computed over; under ${SMALL_YEAR_CLOSINGS_FLOOR} of them it reads as a ` +
+      `small sample.`,
   }
 }
 
@@ -364,19 +373,23 @@ export function buildAskingRankCard(
     view: {
       caption: 'Median asking price by Bend district, live',
       kind: 'range',
+      // The median is taken over the PRICED actives, so pricedCount is its
+      // population. activeCount is a superset (it counts listings with no
+      // usable price, which the median never saw) and is not drawn.
+      sampleKey: 'priced active single-family listings',
       rows: rows.map((r) => ({
         tick: v3Text(r.label),
         value: r.medianListPrice!,
         label: v3Text(money(r.medianListPrice!)),
-        note: v3Text(
-          `${count(r.activeCount)} active single-family` +
-            (r.activeCount < SMALL_ACTIVE_FLOOR ? ' · small sample' : ''),
-        ),
+        sample: { n: r.pricedCount },
+        ...(r.pricedCount < SMALL_ACTIVE_FLOOR ? { note: v3Text('small sample') } : {}),
       })),
     },
     source:
       `${ACTIVE_POPULATION_CLAUSE} A district with no priced active listing is omitted rather than drawn at ` +
-      'zero. Asking prices are what sellers want today; the closed charts on this page are what buyers paid.',
+      'zero. The n beside each row is the priced listings that median was computed over, which is at or ' +
+      `below the district's active count; under ${SMALL_ACTIVE_FLOOR} of them it reads as a small sample. ` +
+      'Asking prices are what sellers want today; the closed charts on this page are what buyers paid.',
   }
 }
 

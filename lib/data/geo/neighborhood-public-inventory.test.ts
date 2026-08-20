@@ -28,10 +28,28 @@ describe('neighborhood public inventory rollup', () => {
     expect(awbrey?.medianListPrice).toBe(1_200_000)
     expect(awbrey?.listingKeys).toEqual(['a', 'b', 'c'])
     expect(awbrey?.href).toBe('/cities/bend/awbrey-butte')
+    expect(awbrey?.pricedCount).toBe(3)
     expect(oldBend?.activeCount).toBe(1)
     expect(oldBend?.medianListPrice).toBeNull()
+    // The unpriced listing is counted as inventory and NOT as part of a median
+    // it never entered. A rank chart draws pricedCount beside the median for
+    // exactly this reason.
+    expect(oldBend?.pricedCount).toBe(0)
     expect(larkspur?.activeCount).toBe(0)
+    expect(larkspur?.pricedCount).toBe(0)
     expect(larkspur?.listingKeys).toEqual([])
+  })
+
+  it('never reports a priced count above the district count', () => {
+    const rows = rollupNeighborhoodPublicInventory([
+      { geo_slug: 'bend-awbrey-butte', listing_key: 'a', list_price: 900_000 },
+      { geo_slug: 'bend-awbrey-butte', listing_key: 'b', list_price: 0 },
+      { geo_slug: 'bend-awbrey-butte', listing_key: 'c', list_price: null },
+    ])
+    const awbrey = rows.find((r) => r.slug === 'awbrey-butte')!
+    expect(awbrey.activeCount).toBe(3)
+    expect(awbrey.pricedCount).toBe(1)
+    expect(awbrey.pricedCount).toBeLessThanOrEqual(awbrey.activeCount)
   })
 
   it('does not mix a second district into Awbrey Butte', () => {

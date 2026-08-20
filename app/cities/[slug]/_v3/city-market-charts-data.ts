@@ -14,8 +14,27 @@
  *    figure the HUD verdict pill stamps (publishMonthsOfSupply output). When
  *    that publish gate withholds the figure, the whole chart is withheld —
  *    a chart must not print the number the pill refused.
- *  - Each row's native reading carries its population, labeled ("N active
- *    single-family", "N closed in 30 days"), with small samples named.
+ *  - A COUNT MAY ONLY SIT BESIDE A FIGURE WHEN IT IS THE POPULATION THAT
+ *    FIGURE WAS COMPUTED OVER. Checked against the shipped
+ *    refresh_market_pulse definition on 2026-08-19, and three of the four
+ *    rank cards here fail that test, so they publish NO sample size:
+ *      months of supply   actives / (closings in 180 days / 6). The row
+ *                         publishes actives and closings in 30 and 90 days —
+ *                         never the 180-day denominator. Half a ratio is not
+ *                         its population.
+ *      days to pending    median over closings in NINETY days that carry a
+ *                         list-to-pending value, withheld under five of them.
+ *                         sold_count_30d is a different window (Bend 163 vs
+ *                         490); sold_count_90d is a superset of the measured
+ *                         set, not the set.
+ *      price-cut share    divides by actives PLUS active-under-contract.
+ *                         active_count excludes active-under-contract, so it
+ *                         is the wrong denominator (Bend 471 vs the 481 the
+ *                         published 6.65% actually divided by).
+ *    Their traces state the window and the floor instead — CLAUDE.md §0 rule
+ *    7: cut the number, never approximate it. The sale-to-ask card DOES
+ *    publish its n, because city_quarter_sale_to_ask returns count(*) and the
+ *    median over the same grouped rows with no further filter.
  *  - Every card ships a full trace for its collapsed Source disclosure:
  *    table, filter, methodology stamp ON the rows, vintages.
  */
@@ -38,8 +57,18 @@ export const MOS_SCALE_MAX = 14
 
 /** Small-sample floors the chart-room forms name in their readings. */
 export const SMALL_ACTIVE_FLOOR = 10
-export const SMALL_CLOSINGS_FLOOR = 5
 export const SMALL_QUARTER_N_FLOOR = 30
+
+/**
+ * The publication floor market_pulse_live itself applies to
+ * median_days_to_pending: under five measured closings in the 90-day window
+ * the row stores NULL. Stated in the card's trace so a reader knows why a
+ * town is missing, since the count behind it is not published.
+ */
+export const PULSE_DTP_FLOOR = 5
+
+/** The window market_pulse_live measures days-to-pending in. */
+export const PULSE_DTP_WINDOW_DAYS = 90
 
 export type CityChartCard = {
   key: string
@@ -59,6 +88,8 @@ export type CityChartCard = {
   refLabel?: string
   rangeKeyLabel?: string
   rangeBaseKeyLabel?: string
+  /** Names what the rows' sample counts. Required when any row carries one. */
+  sampleKey?: string
   marks?: boolean
 }
 
@@ -141,15 +172,18 @@ export function buildMosCard(input: CityRankInput): CityChartCard | null {
     kind: 'range',
     title,
     displayLine: 'Months of supply by town, live single-family active listings.',
+    // No sample size, and no count in the reading. The published ratio is
+    // actives over closings-in-180-days-divided-by-six; the row publishes the
+    // numerator and two closing windows that are not the denominator. Naming
+    // either half as "the population" would tell a reader a thin town's
+    // reading is sturdier than it is. The trace carries the method instead.
     rows: rows.map((r) => ({
       tick: v3Text(r.town.geo_label),
       value: r.value,
       label: v3Text(`${formatMonthsOfSupply(r.value)} mo`),
-      note: v3Text(
-        `${r.town.active_count.toLocaleString('en-US')} active single-family · ` +
-          `${(r.town.sold_count_30d ?? 0).toLocaleString('en-US')} closed in 30 days` +
-          (r.town.active_count < SMALL_ACTIVE_FLOOR ? ' · small sample' : ''),
-      ),
+      ...(r.town.active_count < SMALL_ACTIVE_FLOOR
+        ? { note: v3Text('small active inventory') }
+        : {}),
     })),
     bands: [
       { from: 0, to: 4, label: v3Text("Seller's ≤4") },
@@ -160,6 +194,10 @@ export function buildMosCard(input: CityRankInput): CityChartCard | null {
     source:
       `market_pulse_live city rows, single-family (${methodologyStamp(rows.map((r) => r.town))}). ` +
       `${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` +
+      ` No sample size is drawn: the ratio rests on two populations, the actives ` +
+      `and the six months of closings under them, and the cache publishes only ` +
+      `the actives. A town with fewer than ${SMALL_ACTIVE_FLOOR} active listings ` +
+      `is marked as a small active inventory.` +
       (bound
         ? ` The ${input.subjectName} row is the same published figure as the verdict above.`
         : universeSplit) +
@@ -168,16 +206,31 @@ export function buildMosCard(input: CityRankInput): CityChartCard | null {
   }
 }
 
-/** Days-to-pending lollipop vs peers. */
+/**
+ * Days-to-pending lollipop vs peers.
+ *
+ * No sample size is drawn. The published median is taken over closings in the
+ * last 90 days that carry a list-to-pending measurement; the row publishes a
+ * 30-day closing count (a different window: Bend 163 against 490) and a
+ * 90-day closing count (a superset of the measured set, since the aggregate
+ * filters again for a non-null measurement). Neither is the population, so
+ * per §0 rule 7 neither is printed. The trace states the window and the floor.
+ */
 export function buildDtpCard(input: CityRankInput): CityChartCard | null {
-  const omitted: string[] = []
+  /** A town with no median, split by WHY — the two reasons are not the same
+   *  claim about the world, and one sentence covering both is false for one
+   *  of them. Metolius closed 4 homes in the window and is withheld by the
+   *  floor; saying it had no closings is a fabrication. */
+  const noClosings: string[] = []
+  const belowFloor: string[] = []
   const rows = input.towns
     .map((t) => {
       const value = isSubject(t, input)
         ? (input.publishedDtp ?? t.median_days_to_pending)
         : t.median_days_to_pending
       if (value == null || !(value > 0)) {
-        omitted.push(t.geo_label)
+        if ((t.sold_count_90d ?? 0) > 0) belowFloor.push(t.geo_label)
+        else noClosings.push(t.geo_label)
         return null
       }
       return { town: t, value }
@@ -197,22 +250,33 @@ export function buildDtpCard(input: CityRankInput): CityChartCard | null {
       tick: v3Text(r.town.geo_label),
       value: r.value,
       label: v3Text(publishDaysLabel(r.value) ?? `${r.value} days`),
-      note: v3Text(
-        `${(r.town.sold_count_30d ?? 0).toLocaleString('en-US')} closed in 30 days` +
-          ((r.town.sold_count_30d ?? 0) < SMALL_CLOSINGS_FLOOR ? ' · small sample' : ''),
-      ),
     })),
     source:
       `market_pulse_live city rows, single-family (${methodologyStamp(rows.map((r) => r.town))}). ` +
-      'Median days from listing to an accepted offer, measured on homes that went under contract.' +
-      (omitted.length > 0
-        ? ` Omitted, no closings in the window so the median is undefined: ${omitted.sort().join(', ')}.`
+      `Median days from listing to an accepted offer, measured on homes that closed in the ` +
+      `last ${PULSE_DTP_WINDOW_DAYS} days and carry a list-to-pending measurement. A town with ` +
+      `fewer than ${PULSE_DTP_FLOOR} of those is withheld by the cache. No sample size is drawn ` +
+      `beside these rows: the count of measured closings is not published, and the counts that ` +
+      `are published cover other windows.` +
+      (belowFloor.length > 0
+        ? ` Withheld under the ${PULSE_DTP_FLOOR}-closing floor: ${belowFloor.sort().join(', ')}.`
+        : '') +
+      (noClosings.length > 0
+        ? ` Omitted, no closings in the ${PULSE_DTP_WINDOW_DAYS}-day window: ${noClosings.sort().join(', ')}.`
         : ''),
     updatedAt: maxUpdatedAt(rows.map((r) => r.town)),
   }
 }
 
-/** Price-cut share by town with the region reference rule. */
+/**
+ * Price-cut share by town with the region reference rule.
+ *
+ * No sample size is drawn, and the reading no longer says "of N active".
+ * refresh_market_pulse divides the cut count by actives PLUS coming-soon PLUS
+ * active-under-contract, while `active_count` counts only actives and coming
+ * soon. Live 2026-08-19: Bend's 6.65% is 32 of 481, and the row publishes 471.
+ * The denominator is not published, so it is not printed.
+ */
 export function buildCutsCard(input: CityRankInput): CityChartCard | null {
   // price_reduction_share is stored as a PERCENT on market_pulse_live
   // (Bend 6.6 = 6.6% — verified live 2026-08-19), not a fraction.
@@ -241,10 +305,9 @@ export function buildCutsCard(input: CityRankInput): CityChartCard | null {
       tick: v3Text(r.town.geo_label),
       value: r.value,
       label: v3Text(`${r.value.toFixed(1)}%`),
-      note: v3Text(
-        `${r.value.toFixed(1)}% of ${r.town.active_count.toLocaleString('en-US')} active single-family` +
-          (r.town.active_count < SMALL_ACTIVE_FLOOR ? ' · small sample' : ''),
-      ),
+      ...(r.town.active_count < SMALL_ACTIVE_FLOOR
+        ? { note: v3Text('small active inventory') }
+        : {}),
     })),
     ...(regionPct != null
       ? { refValue: regionPct, refLabel: `Region ${regionPct.toFixed(1)}%` }
@@ -252,7 +315,11 @@ export function buildCutsCard(input: CityRankInput): CityChartCard | null {
     source:
       `market_pulse_live city rows${input.region ? ' and the central-oregon region row' : ''}, ` +
       `single-family (${methodologyStamp(rows.map((r) => r.town))}). ` +
-      'Share of active listings with at least one price drop.' +
+      'Share of a town’s active, coming-soon, and active-under-contract single-family ' +
+      'listings carrying at least one price drop. No sample size is drawn: that denominator ' +
+      'is not published on the row, and the active count that is published excludes the ' +
+      'under-contract listings the share divides by. A town with fewer than ' +
+      `${SMALL_ACTIVE_FLOOR} active listings is marked as a small active inventory.` +
       (regionPct != null && input.region
         ? ` The region rule is all Central Oregon single-family — ${input.region.active_count.toLocaleString('en-US')} actives, ` +
           `broader than the ${townActive.toLocaleString('en-US')} actives across the ${rows.length} towns charted.`
@@ -278,28 +345,33 @@ export function buildStoCard(
     kind: 'range',
     title: `${opts.subjectName} at ${(subject.currentMedian * 100).toFixed(1)}% of ask`,
     displayLine: `Median sale-to-original-ask by town, detached closes, Q${q} ${prior} vs Q${q} ${cur}.`,
+    // The one card here that CAN show its n. city_quarter_sale_to_ask returns
+    // count(*) and percentile_cont over the same grouped rows with no further
+    // filter, so `closings` is exactly the population each median was taken
+    // over — on both sides of the pair.
     rows: pairs.map((p) => ({
       tick: v3Text(p.city),
       value: p.currentMedian * 100,
       label: v3Text(`${(p.currentMedian * 100).toFixed(1)}%`),
       baseValue: p.priorMedian * 100,
       baseLabel: v3Text(`${(p.priorMedian * 100).toFixed(1)}%`),
-      note: v3Text(
-        `Q${q} ${cur} n=${p.currentClosings} · Q${q} ${prior} n=${p.priorClosings}` +
-          (p.currentClosings < SMALL_QUARTER_N_FLOOR || p.priorClosings < SMALL_QUARTER_N_FLOOR
-            ? ' · small sample'
-            : ''),
-      ),
+      sample: { n: p.currentClosings, baseN: p.priorClosings },
+      ...(p.currentClosings < SMALL_QUARTER_N_FLOOR || p.priorClosings < SMALL_QUARTER_N_FLOOR
+        ? { note: v3Text('small sample') }
+        : {}),
     })),
     refValue: 100,
     refLabel: 'Full ask',
     rangeKeyLabel: `Q${q} ${cur}`,
     rangeBaseKeyLabel: `Q${q} ${prior}`,
+    sampleKey: `detached closes, Q${q} ${cur} (Q${q} ${prior})`,
     source:
       `sale_pricing_facts detached closes, aggregated by the city_quarter_sale_to_ask function. ` +
       `Median sale price as a share of the original ask, Q${q} ${prior} vs Q${q} ${cur} — ` +
       `the latest quarter complete in both years. Towns with at least ` +
-      `${MIN_CLOSINGS_PER_QUARTER} closings on each side; close price 0.1–10x of last ask, 300+ sqft.`,
+      `${MIN_CLOSINGS_PER_QUARTER} closings on each side; close price 0.1–10x of last ask, 300+ sqft. ` +
+      `The n beside each row is the closings that median was computed over, current quarter first. ` +
+      `A row under ${SMALL_QUARTER_N_FLOOR} closings on either side reads as a small sample.`,
     updatedAt: opts.factsAsOf,
   }
 }

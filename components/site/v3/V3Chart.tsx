@@ -58,6 +58,35 @@ export type V3ChartBand = {
   label: V3Text
 }
 
+/**
+ * How many rows a range row's figure was computed over.
+ *
+ * THE RULE, and it is the whole point of the field: `n` may only be the
+ * population THAT figure was computed over — same rows, same window, same
+ * filters. A count off any other window is worse than no count, because it
+ * tells a reader a cross-row comparison is safe when it is not.
+ *
+ * Two live pairings that look right and are not (verified against the shipped
+ * refresh_market_pulse definition, 2026-08-19):
+ *   - median_days_to_pending is the median over closings in the last NINETY
+ *     days that carry a list-to-pending measurement. `sold_count_30d` is a
+ *     thirty-day count — Bend 163 against a real 490, Culver 1 against 5.
+ *   - price_reduction_share divides by actives PLUS active-under-contract.
+ *     `active_count` excludes active-under-contract — Bend 471 against the
+ *     481 the published share actually divided by.
+ *
+ * When the true population is not published, pass nothing. The card's trace
+ * states the window and the floor instead: CLAUDE.md section 0 rule 7 — a
+ * figure that cannot be verified is cut, and a page with fewer numbers is the
+ * correct outcome.
+ */
+export type V3ChartSample = {
+  /** Rows the row's primary figure was computed over. */
+  n: number
+  /** Rows the row's BASE (prior) figure was computed over, on a dumbbell. */
+  baseN?: number
+}
+
 /** One range row: a lollipop dot, or a dumbbell when baseValue is present. */
 export type V3ChartRangeRow = {
   tick: V3Text
@@ -67,11 +96,14 @@ export type V3ChartRangeRow = {
   baseLabel?: V3Text
   /**
    * Context for the row's reading — the population behind the figure
-   * ("475 active single-family · 167 closed in 30 days · small sample").
-   * Carried in the native title and the hidden reading list, never drawn
-   * on the track.
+   * ("475 active single-family · small sample"). Carried in the native title
+   * and the hidden reading list, never drawn on the track. A count named here
+   * is under the same rule as `sample`: it must be the population the figure
+   * was computed over, because a screen reader reads this out as fact.
    */
   note?: V3Text
+  /** The sample size, DRAWN on the row. Read V3ChartSample before setting it. */
+  sample?: V3ChartSample
 }
 
 export type V3ChartKind = 'line' | 'bars' | 'mix' | 'range'
@@ -107,6 +139,13 @@ export type V3ChartProps = {
   refLabel?: V3Text
   /** Per-point dots with a native <title> reading. Lines only. */
   marks?: boolean
+  /**
+   * Range rows only. Names what every row's `sample` counted, drawn ONCE
+   * above the rows ("detached closes in the quarter"). A bare n is not a
+   * reading until the chart says what it counted, so the atom refuses a
+   * sample without this key. Keep it a noun phrase; the atom writes the "n =".
+   */
+  sampleKey?: V3Text
   /** Legend name for the primary dot of a dumbbell row set. */
   rangeKeyLabel?: V3Text
   /** Legend name for the base (prior) dot of a dumbbell row set. */
@@ -155,6 +194,8 @@ function buildAnyPlot(props: V3ChartProps): AnyPlot | null {
         baseValue: r.baseValue,
         baseLabel: r.baseLabel,
         note: r.note,
+        sampleN: r.sample?.n,
+        sampleBaseN: r.sample?.baseN,
       })),
       {
         bands: toPlotBands(props.bands),
@@ -175,25 +216,55 @@ function buildAnyPlot(props: V3ChartProps): AnyPlot | null {
   return buildLinePlot(series, { bands: toPlotBands(props.bands) })
 }
 
-function readings(plot: AnyPlot): { name: string; tick: string; label: string }[] {
+/**
+ * The one way a sample size is written on a chart, so a reader meets the same
+ * form on the city page, the district page, and the plat page. Deliberately
+ * module-private: callers hand the atom NUMBERS and the atom does the writing,
+ * which is what keeps every surface on one answer.
+ */
+function v3ChartSampleReading(n: number, baseN?: number | null): string {
+  const one = (v: number) => v.toLocaleString('en-US')
+  return baseN != null ? `n ${one(n)} (${one(baseN)})` : `n ${one(n)}`
+}
+
+/** A range row's full reading: value, sample, note — the title and the list. */
+function rangeReading(r: RangePlotRowLike): string {
+  const core = r.baseLabel != null ? `${r.label} (${r.baseLabel})` : r.label
+  const sample = r.sampleN != null ? ` — ${v3ChartSampleReading(r.sampleN, r.sampleBaseN)}` : ''
+  return core + sample + (r.note ? ` — ${r.note}` : '')
+}
+
+type RangePlotRowLike = {
+  label: string
+  baseLabel: string | null
+  note: string | null
+  sampleN: number | null
+  sampleBaseN: number | null
+}
+
+/**
+ * The hidden reading list. One entry per drawn value, already formatted.
+ *
+ * A series name only earns a prefix when it is not the tick: on a range or bar
+ * chart the row name IS the tick, and prefixing it made every reading say the
+ * town twice ("River Village: River Village, $1.0M"), which is what a screen
+ * reader then announced.
+ */
+function readings(plot: AnyPlot): { key: string; text: string }[] {
   if (plot.kind === 'line') {
-    return plot.lines.flatMap((line) =>
-      line.points.filter((p) => p.plot).map((p) => ({ name: line.name, tick: p.tick, label: p.label })),
+    return plot.lines.flatMap((line, i) =>
+      line.points
+        .filter((p) => p.plot)
+        .map((p, j) => ({ key: `${i}-${j}-${p.tick}`, text: `${line.name}: ${p.tick}, ${p.label}` })),
     )
   }
   if (plot.kind === 'mix') {
-    return plot.segments.map((s) => ({ name: s.tick, tick: s.tick, label: s.label }))
+    return plot.segments.map((s, i) => ({ key: `${i}-${s.tick}`, text: `${s.tick}, ${s.label}` }))
   }
   if (plot.kind === 'range') {
-    return plot.rows.map((r) => ({
-      name: r.tick,
-      tick: r.tick,
-      label:
-        (r.baseLabel != null ? `${r.label} (${r.baseLabel})` : r.label) +
-        (r.note ? ` — ${r.note}` : ''),
-    }))
+    return plot.rows.map((r, i) => ({ key: `${i}-${r.tick}`, text: `${r.tick}, ${rangeReading(r)}` }))
   }
-  return plot.bars.map((b) => ({ name: b.tick, tick: b.tick, label: b.label }))
+  return plot.bars.map((b, i) => ({ key: `${i}-${b.tick}`, text: `${b.tick}, ${b.label}` }))
 }
 
 export function V3Chart({
@@ -207,6 +278,7 @@ export function V3Chart({
   refValue,
   refLabel,
   marks,
+  sampleKey,
   rangeKeyLabel,
   rangeBaseKeyLabel,
   layout,
@@ -231,6 +303,18 @@ export function V3Chart({
         'the caller curates which years are on. More lines than the validated ' +
         'categorical run cannot keep their identity.',
     )
+  }
+
+  const sampled = (rows ?? []).some((r) => r.sample != null)
+  if (sampled && (sampleKey == null || sampleKey.trim().length === 0)) {
+    throw new Error(
+      'V3Chart: a row carries `sample` but the chart has no `sampleKey`. A bare ' +
+        'n beside a figure is not a reading until the chart names what it counted, ' +
+        'and an unnamed count invites the reader to assume the wrong window.',
+    )
+  }
+  if (sampled && kind !== 'range') {
+    throw new Error('V3Chart: `sample` is a range-row field. Use kind="range".')
   }
 
   const plot = buildAnyPlot({
@@ -276,6 +360,10 @@ export function V3Chart({
           : plot.bars.map((b) => b.tick)
 
   const rangeHasBase = plot.kind === 'range' && plot.rows.some((r) => r.baseXPct != null)
+  // Drawn rows, not input rows: buildRangePlot drops a row with no finite
+  // value, so a chart whose only sampled row was dropped must not keep the
+  // "n = …" key line naming a column that is no longer there.
+  const rangeSampled = plot.kind === 'range' && plot.rows.some((r) => r.sampleN != null)
 
   return (
     <figure
@@ -330,6 +418,10 @@ export function V3Chart({
         <p className="v3-chart__bandkey" aria-hidden="true">
           {plot.bands.map((b) => b.label).join(' · ')}
         </p>
+      ) : null}
+
+      {plot.kind === 'range' && rangeSampled && sampleKey ? (
+        <p className="v3-chart__samplekey">n = {sampleKey}</p>
       ) : null}
 
       {plot.kind === 'line' ? (
@@ -472,6 +564,7 @@ export function V3Chart({
           className={cn(
             'v3-chart__range',
             (plot.bands.length > 0 || plot.ref != null) && 'v3-chart__range--banded',
+            rangeSampled && 'v3-chart__range--sampled',
           )}
           aria-hidden="true"
         >
@@ -509,9 +602,7 @@ export function V3Chart({
             let before = r.baseXPct != null && r.xPct < r.baseXPct
             if (!before && r.xPct > 78) before = true
             if (before && r.xPct < 12) before = false
-            const core =
-              r.baseLabel != null ? `${r.tick}: ${r.label} (${r.baseLabel})` : `${r.tick}: ${r.label}`
-            const reading = r.note ? `${core} — ${r.note}` : core
+            const reading = `${r.tick}: ${rangeReading(r)}`
             return (
               <div
                 key={`${r.index}-${r.tick}`}
@@ -551,6 +642,13 @@ export function V3Chart({
                     {r.label}
                   </span>
                 </span>
+                {rangeSampled ? (
+                  <span className="v3-chart__rangesample">
+                    {r.sampleN != null
+                      ? v3ChartSampleReading(r.sampleN, r.sampleBaseN)
+                      : null}
+                  </span>
+                ) : null}
               </div>
             )
           })}
@@ -558,10 +656,8 @@ export function V3Chart({
       ) : null}
 
       <ol className="v3-chart__data">
-        {readings(plot).map((row, i) => (
-          <li key={`${i}-${row.tick}`}>
-            {row.name}: {row.tick}, {row.label}
-          </li>
+        {readings(plot).map((row) => (
+          <li key={row.key}>{row.text}</li>
         ))}
       </ol>
     </figure>

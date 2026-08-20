@@ -267,6 +267,14 @@
   pointer-events: none;
 }
 
+/* With a sample column the track ends before the right edge, so the band and
+   reference-rule geometry — which is a percentage of the TRACK — has to stop
+   there too. Letting them run the full width would slide every threshold and
+   every reference rule right of the dot it is meant to sit beside. */
+.v3 .v3-chart__range--sampled .v3-chart__rangebands {
+  right: calc(var(--v3-chart-range-sample) + var(--v3-space-sm));
+}
+
 .v3 .v3-chart__rangeband {
   position: absolute;
   top: 0;
@@ -304,6 +312,37 @@
   column-gap: var(--v3-space-sm);
   align-items: center;
   height: var(--v3-chart-row);
+}
+
+/* The sample column. Its own lane, right-aligned, so every n stacks into a
+   readable column and none of them can ever land on top of a dot, a stem, or
+   a band the way a reading appended to the value chip would. */
+.v3 .v3-chart__range--sampled .v3-chart__rangerow {
+  grid-template-columns:
+    var(--v3-chart-range-label)
+    minmax(0, 1fr)
+    var(--v3-chart-range-sample);
+}
+
+.v3 .v3-chart__rangesample {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: right;
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink-muted);
+}
+
+/* Names what the n counted. Without it the column is a number with no noun,
+   which is exactly the reading this whole field exists to prevent. */
+.v3 .v3-chart__samplekey {
+  margin: 0 0 var(--v3-space-2xs);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
 }
 
 .v3 .v3-chart__rangetick {

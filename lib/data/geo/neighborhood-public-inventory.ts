@@ -58,6 +58,13 @@ export type NeighborhoodPublicInventory = {
   geoSlug: string
   /** SFR + PUBLIC_ACTIVE inside the recorded boundary. 0 is a measured empty. */
   activeCount: number
+  /**
+   * How many of those listings carried a usable price — the population
+   * `medianListPrice` was computed over, and a SUBSET of activeCount. A rank
+   * chart may draw this beside the median; it may not draw activeCount, which
+   * counts listings the median never saw.
+   */
+  pricedCount: number
   medianListPrice: number | null
   listingKeys: string[]
   href: string
@@ -104,6 +111,7 @@ export function rollupNeighborhoodPublicInventory(
       slug: n.slug,
       geoSlug,
       activeCount: bucket.keys.length,
+      pricedCount: priced.length,
       medianListPrice: medianListPrice(priced),
       listingKeys: bucket.keys,
       href: `/cities/bend/${n.slug}`,
@@ -146,7 +154,9 @@ async function fetchBendNeighborhoodPublicInventory(): Promise<NeighborhoodPubli
  */
 export const getBendNeighborhoodPublicInventory = makeResilientCached(
   fetchBendNeighborhoodPublicInventory,
-  ['bend-neighborhood-public-inventory-v1'],
+  // v2: the row grew pricedCount. A cached v1 entry has no such field, and an
+  // undefined n would draw as a missing sample beside a median that has one.
+  ['bend-neighborhood-public-inventory-v2'],
   {
     revalidate: 900,
     tags: [cacheTag.city('bend'), cacheTag.market],

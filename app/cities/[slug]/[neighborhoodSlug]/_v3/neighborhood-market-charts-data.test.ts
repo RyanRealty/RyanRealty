@@ -55,9 +55,14 @@ const ALL_DISTRICTS: NeighborhoodYearPricingRow[] = [
 function inv(
   partial: Partial<NeighborhoodPublicInventory> & { slug: string; label: string },
 ): NeighborhoodPublicInventory {
+  // pricedCount defaults to the district count: every active listing carries a
+  // price unless a case deliberately says otherwise. A fixture that set only
+  // activeCount would otherwise describe a district whose median rests on more
+  // listings than the district holds.
   return {
     geoSlug: `bend-${partial.slug}`,
     activeCount: 20,
+    pricedCount: partial.activeCount ?? 20,
     medianListPrice: 700_000,
     listingKeys: [],
     href: `/cities/bend/${partial.slug}`,
@@ -183,9 +188,15 @@ describe('buildClosedRankCard', () => {
     ])
   })
 
-  it('carries the population into every reading and names a small sample', () => {
-    expect(card.view!.rows![0]!.note).toBe('135 closings in 2025')
-    expect(card.view!.rows![2]!.note).toContain('small sample')
+  it('draws the closings each median was computed over, and names them', () => {
+    // neighborhood_year_pricing_mv takes count(*) and the close-price
+    // percentile over the same group with no further filter, so `closings` IS
+    // that median's population and can sit beside it.
+    expect(card.view!.sampleKey).toBe('closings in 2025')
+    expect(card.view!.rows![0]!.sample).toEqual({ n: 135 })
+    expect(card.view!.rows!.every((r) => r.sample != null)).toBe(true)
+    expect(card.view!.rows![2]!.note).toBe('small sample')
+    expect(card.source).toContain('the closings that district')
   })
 
   it('withholds the card when the subject district has no complete year', () => {
@@ -219,6 +230,20 @@ describe('buildAskingRankCard', () => {
   it('omits districts with no priced active listing', () => {
     expect(card.view!.rows!.map((r) => r.tick)).toEqual(['Awbrey Butte', 'Old Bend', 'Larkspur'])
     expect(card.view!.rows![1]!.note).toContain('small sample')
+  })
+
+  it('draws the PRICED count, not the district count, beside the median', () => {
+    const mixed = buildAskingRankCard(
+      [
+        inv({ slug: 'awbrey-butte', label: 'Awbrey Butte', activeCount: 52, pricedCount: 48, medianListPrice: 1_375_000 }),
+        inv({ slug: 'larkspur', label: 'Larkspur', activeCount: 32, pricedCount: 32, medianListPrice: 649_999 }),
+      ],
+      { subjectGeoSlug: 'bend-awbrey-butte', districtName: 'Awbrey Butte' },
+    )!
+    expect(mixed.view!.sampleKey).toBe('priced active single-family listings')
+    // 48, never the 52 listings the median never saw.
+    expect(mixed.view!.rows![0]!.sample).toEqual({ n: 48 })
+    expect(mixed.view!.rows![1]!.sample).toEqual({ n: 32 })
   })
 
   it('separates asking from closed in the trace', () => {

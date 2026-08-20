@@ -108,6 +108,14 @@ export type RangeRowIn = {
   baseLabel?: string
   /** Context for the reading (population, sample size). Pass-through, no geometry. */
   note?: string
+  /**
+   * Rows the primary figure was computed over. Pass-through, no geometry —
+   * the atom formats and draws it. See V3ChartRangeRow.sample for the rule
+   * governing when a caller may supply this at all.
+   */
+  sampleN?: number
+  /** Rows the BASE (prior) figure was computed over, on a dumbbell row. */
+  sampleBaseN?: number
 }
 
 export type RangeBandIn = {
@@ -129,6 +137,10 @@ export type RangePlotRow = {
   stemEndPct: number
   /** Context for the reading, as the caller passed it. */
   note: string | null
+  /** Rows the primary figure was computed over; null when unpublished. */
+  sampleN: number | null
+  /** Rows the base figure was computed over; null on a lollipop row. */
+  sampleBaseN: number | null
   /**
    * True when the row's value sits beyond opts.clampMax and is drawn AT the
    * clamp instead of at scale (the chart-room broken-bar rule: one 36-month
@@ -153,6 +165,14 @@ export type AnyPlot = LinePlot | BarPlot | MixPlot | RangePlot
 
 function isFiniteNumber(value: number): boolean {
   return Number.isFinite(value)
+}
+
+/**
+ * A sample size, or null. A negative or fractional count is not a count of
+ * rows, and drawing one would put a number on the page that no query returned.
+ */
+function countOrNull(value: number | undefined): number | null {
+  return value != null && Number.isInteger(value) && value >= 0 ? value : null
 }
 
 export function linePath(points: readonly PlottedPoint[]): string {
@@ -364,6 +384,10 @@ export function buildRangePlot(
       stemStartPct: base != null ? Math.min(base, x) : 0,
       stemEndPct: base != null ? Math.max(base, x) : x,
       note: r.note ?? null,
+      sampleN: countOrNull(r.sampleN),
+      // A base sample only means something on a row that HAS a base value; on
+      // a lollipop it would render a parenthetical against nothing.
+      sampleBaseN: base != null ? countOrNull(r.sampleBaseN) : null,
       clamped: clampMax != null && r.value > clampMax,
       index,
     }

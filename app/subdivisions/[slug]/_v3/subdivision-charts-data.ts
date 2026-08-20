@@ -361,17 +361,21 @@ export function buildPeerPlatsCard(
         ? `Lowest median in ${stamp.parentLabel}`
         : `Median ${formatPriceCompact(subject.medianSalePrice)} year to date`
 
+  // market_stats_cache takes sold_count as COUNT(*) and median_sale_price as
+  // percentile_cont over the SAME closed_sales CTE, no further filter — so
+  // soldCount is exactly the population this median was computed over and can
+  // be drawn beside it. (Its own methodology stamp calls that row's
+  // sample_size, verified against the shipped writer 2026-08-19.)
   const rows: V3ChartRangeRow[] = withMedian.map((p) => ({
     tick: v3Text(p.name),
     value: p.medianSalePrice,
     label: v3Text(formatPriceCompact(p.medianSalePrice)),
-    note: v3Text(
-      `${n(p.soldCount)} closed year to date` +
-        (p.soldCount < SMALL_PEER_SOLD_FLOOR ? ' · small sample' : ''),
-    ),
+    sample: { n: p.soldCount },
+    ...(p.soldCount < SMALL_PEER_SOLD_FLOOR ? { note: v3Text('small sample') } : {}),
   }))
 
   const thin = withMedian.filter((p) => p.soldCount < SMALL_PEER_SOLD_FLOOR)
+  const sampleClause = ` The n beside each row is the closings that plat's median was computed over.`
   const thinClause =
     thin.length > 0
       ? ` ${n(thin.length)} of the ${n(withMedian.length)} closed fewer than ${SMALL_PEER_SOLD_FLOOR} homes in the window, so those medians read as small samples and are labeled that way.`
@@ -402,6 +406,7 @@ export function buildPeerPlatsCard(
         (stamp.methodologyVersion ? `, methodology ${stamp.methodologyVersion}` : '') +
         '. Single-family closed sales matched on city and MLS subdivision name, one row per plat.' +
         ` ${n(withMedian.length)} of the ${n(peers.length)} named ${stamp.parentLabel} plats publish a median for this window and are charted.` +
+        sampleClause +
         thinClause +
         withheldClause +
         ` The rest closed no single-family sale in the window.` +
@@ -414,6 +419,7 @@ export function buildPeerPlatsCard(
         `Median sale price year to date by plat in ${stamp.parentLabel}, single-family`,
       ),
       kind: 'range',
+      sampleKey: v3Text('closings year to date'),
       rows,
     },
   }

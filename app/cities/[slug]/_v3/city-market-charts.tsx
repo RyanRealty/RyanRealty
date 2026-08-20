@@ -79,6 +79,7 @@ function ChartCard({ card, wide }: { card: CityChartCard; wide: boolean }) {
         rangeBaseKeyLabel={
           card.rangeBaseKeyLabel != null ? v3Text(card.rangeBaseKeyLabel) : undefined
         }
+        sampleKey={card.sampleKey != null ? v3Text(card.sampleKey) : undefined}
         marks={card.marks}
       />
       <V3SourceDisclosure className="mt-3" source={card.source} updatedAt={card.updatedAt} />

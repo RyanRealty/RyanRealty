@@ -81,6 +81,7 @@ export type {
   V3ChartKind,
   V3ChartBand,
   V3ChartRangeRow,
+  V3ChartSample,
 } from './V3Chart'
 
 /**
