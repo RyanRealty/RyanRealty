@@ -58,10 +58,18 @@ const FAMILIES = [
   // URLs (slug ending -{5+digits} or containing ~) -> /listing/by-address/[...].
   // by-address serves the single LARGEST family (one URL per active listing), so
   // it MUST be declared — its deletion would 404 most listing URLs silently.
-  { id: 'homes-for-sale', roots: ['homes-for-sale'], resolvers: ['app/search/page.tsx', 'app/search/[...slug]/page.tsx', 'app/listing/by-key/[listingKey]/page.tsx', 'app/listing/by-address/[...slug]/page.tsx'] },
+  // /listing/by-key is a ROUTE HANDLER, not a page (2026-08-19): as a page its
+  // permanentRedirect() fired after the loading.tsx boundary had flushed, so a
+  // resolving key served 200 with no Location and no <h1>. A handler owns its
+  // whole response and can set the header.
+  { id: 'homes-for-sale', roots: ['homes-for-sale'], resolvers: ['app/search/page.tsx', 'app/search/[...slug]/page.tsx', 'app/listing/by-key/[listingKey]/route.ts', 'app/listing/by-address/[...slug]/page.tsx'] },
   { id: 'open-houses', roots: ['open-houses'], resolvers: ['app/open-houses/page.tsx', 'app/open-houses/[city]/page.tsx'] },
   { id: 'communities', roots: ['communities'], resolvers: ['app/communities/page.tsx', 'app/communities/[slug]/page.tsx'] },
-  { id: 'neighborhoods', roots: ['neighborhoods'], resolvers: ['app/neighborhoods/page.tsx', 'app/neighborhoods/[slug]/page.tsx'] },
+  // /neighborhoods/[slug] is GONE (2026-08-19). It only permanentRedirect()ed the
+  // 13 Bend districts and could not set a Location header under the streaming
+  // shell; middleware 308s them now (lib/routing/pre-render-hops.ts). Only the
+  // index is a real page, and the sitemap emits no /neighborhoods/<slug> URLs.
+  { id: 'neighborhoods', roots: ['neighborhoods'], resolvers: ['app/neighborhoods/page.tsx'] },
   { id: 'subdivisions', roots: ['subdivisions'], resolvers: ['app/subdivisions/page.tsx', 'app/subdivisions/[slug]/page.tsx'] },
   { id: 'oregon', roots: ['oregon'], resolvers: ['app/oregon/[city]/page.tsx'] },
   { id: 'zip', roots: ['zip'], resolvers: ['app/zip/[zip]/page.tsx'] },

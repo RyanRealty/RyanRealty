@@ -393,8 +393,17 @@ describe('design directive contracts', () => {
     // the map/featured/ticker use the resort's alias-matched tiles, not the empty literal-name set
     expect(src).toMatch(/resortTilesForSlug\(citySlug, resortSlug, citySfrTiles\)/)
     expect(src).toMatch(/const useResortTiles = resortTiles\.length > 0/)
-    // a compound resort slug canonicalizes to the bare slug (no duplicate undercounted page)
-    expect(src).toMatch(/redirect\(`\/communities\/\$\{resortMatch\.slug\}`\)/)
+    // A compound resort slug still canonicalizes to the bare slug (no duplicate
+    // undercounted page) — but NOT from the page body. A redirect thrown after
+    // the loading.tsx boundary flushed served 200 with no <h1> for 91 of the 104
+    // registry-derived compound slugs (measured on production 2026-08-19), so
+    // the hop is a pre-render hop now. The page must NOT redirect.
+    expect(src).not.toMatch(/\bredirect\(`\/communities\//)
+    expect(src).toMatch(/import \{ notFound \} from 'next\/navigation'/)
+    const hops = readSrc('lib/routing/pre-render-hops.ts')
+    expect(hops).toMatch(/resolveCanonicalCommunityPath/)
+    expect(hops).toMatch(/'\/communities\/\[slug\]'/)
+    expect(readSrc('middleware.ts')).toMatch(/resolvePreRenderHop\(pathname\)/)
   })
 
   it('D97 — community page preserves boundary reliability (no oversized polygon / count)', () => {

@@ -16,7 +16,8 @@
  *      resort slug, city, and city_slug for listing fetches.
  *   3. Active listings — getPlatPublicInventory(slug) finds SFR + PUBLIC_ACTIVE
  *      homes tagged with that MLS SubdivisionName in the parent city.
- * permanentRedirect fires ONLY for marketing-level slugs (resolveSubdivisionAreaRedirect).
+ * Marketing-level slugs (resolveSubdivisionAreaRedirect) never reach this page:
+ * middleware.ts 308s them before render (lib/routing/pre-render-hops.ts).
  * notFound fires ONLY when all three paths return empty.
  *
  * Section stack (Exploration System 2026-08): breadcrumb · hero · featured ·
@@ -26,7 +27,7 @@
  * Data ONLY through @/lib/data. No raw .from().
  */
 
-import { notFound, permanentRedirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceHeroCta } from '@/lib/search/publish-place-browse-href'
@@ -194,12 +195,13 @@ export default async function SubdivisionPage({ params }: Props) {
   const registryMatch = resolveRegistryAlias(slug)
 
   // ── Redirect: known marketing-area slug → canonical page ─────────────────
-  // Resolve BEFORE notFound so the permanentRedirect control-flow signal is
-  // never swallowed by a try/catch. (same logic as original page)
-  if (!hasBoundary && !registryMatch) {
-    const dest = resolveSubdivisionAreaRedirect(slug)
-    if (dest) permanentRedirect(dest)
-  }
+  // NOT HERE. middleware.ts runs resolveSubdivisionAreaRedirect(slug) on every
+  // /subdivisions/<slug> request before render (lib/routing/pre-render-hops.ts),
+  // so a slug in that map has already been 308-ed and can never reach this
+  // component. The page-body permanentRedirect that used to sit here could not
+  // have set a Location header anyway — this segment renders inside the Suspense
+  // boundary app/loading.tsx opens, so React had already flushed HTTP 200.
+  // Enforced by scripts/check-streamed-redirect.mjs.
 
   // ── PATH 3: Counted set = registry plat inventory (SFR + PUBLIC_ACTIVE) ──
   // Same payload as /subdivisions tiles (getRegistryPlatPublicInventory).

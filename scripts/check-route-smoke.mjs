@@ -301,6 +301,53 @@ async function checkHop(route, url, hop) {
   }
 }
 
+/**
+ * RESOLVING-REDIRECT CHECK — the half the sentinel probes could not reach.
+ *
+ * /listing/by-key/<key> has two branches. The MISS branch was covered above by
+ * SMOKE_MISSING_KEY, and it passed. The branch that RESOLVES a row was never
+ * probed, and it was broken: as a page it ended in permanentRedirect() after two
+ * awaits, so the loading.tsx boundary had already flushed HTTP 200 and Next
+ * could only deliver the hop as an RSC flight instruction. Measured on
+ * ryan-realty.com 2026-08-19 (browser UA, redirect:manual):
+ *
+ *   /listing/by-key/20200228140308644050000000  200, Location: null, 0 <h1>
+ *   /listing/by-key/rr-smoke-no-such-listing    200, refusal body, 1 <h1>  <- the gate's only input
+ *
+ * A gate whose only input cannot reach the broken branch is not a gate. The key
+ * is DISCOVERED from the server under test (first canonical listing URL in its
+ * own /sitemaps/listings.xml), so it is always a row that exists and is never
+ * hardcoded. Failing to obtain one is a FAILURE, not a skip — silence here is
+ * exactly how this defect survived.
+ */
+async function discoverResolvingListingKey() {
+  const { status, body } = await fetchWithTimeout(`${BASE}/sitemaps/listings.xml`, TIMEOUT_MS)
+  if (status !== 200) return { key: null, why: `sitemaps/listings.xml returned HTTP ${status}` }
+  // Canonical detail URLs end in -<mlsNumber>; getListingCanonicalPathFields
+  // accepts an MLS number as well as a ListingKey.
+  const m = body.match(/<loc>[^<]*\/homes-for-sale\/[^<]*?-(\d{5,})<\/loc>/)
+  if (!m) return { key: null, why: 'no canonical listing URL in sitemaps/listings.xml' }
+  return { key: m[1], why: null }
+}
+
+async function checkResolvingRedirect(route, url) {
+  try {
+    const { status, location } = await fetchWithTimeout(url, timeoutFor(route.path), {
+      redirect: 'manual',
+    })
+    const reasons = []
+    if (![301, 302, 307, 308].includes(status)) {
+      reasons.push(`HTTP ${status} (want a 3xx — a resolving key must emit a real redirect)`)
+    }
+    if (!location) reasons.push('no Location header (the shell flushed before the redirect threw)')
+    const pathname = locationPathname(location)
+    if (pathname && pathname === route.path) reasons.push(`Location points back at itself (${pathname})`)
+    return { ...route, url, status, ok: reasons.length === 0, reasons, title: pathname || null }
+  } catch (e) {
+    return { ...route, url, ok: false, status: 0, reasons: [String(e?.message ?? e)], title: null }
+  }
+}
+
 async function checkFullPage(route, url) {
   try {
     const { status, body } = await fetchWithTimeout(url, timeoutFor(route.path))
@@ -316,6 +363,8 @@ async function checkFullPage(route, url) {
 
 async function checkRoute(route) {
   const url = BASE + route.path
+  if (route.predetermined) return { ...route, url, title: null, ...route.predetermined }
+  if (route.resolvingRedirect) return checkResolvingRedirect(route, url)
   if (route.refusal) return checkRefusal(route, url)
   const skipReason = SKIP_ROUTES.get(route.path)
   if (skipReason) return { ...route, url, ok: true, skipped: true, status: 0, reasons: [skipReason], title: null }
@@ -343,7 +392,33 @@ async function runWithConcurrency(items, worker, concurrency) {
 
 async function main() {
   const refusals = REFUSAL_ROUTES.map((r) => ({ ...r, refusal: true }))
-  const toCheck = REFUSALS_ONLY ? refusals : [...ROUTES, ...refusals]
+
+  // The resolving half of every key-shaped redirect route. Discovered, never
+  // hardcoded, and a discovery failure is a gate failure.
+  const discovered = await discoverResolvingListingKey()
+  const resolvingRoutes = discovered.key
+    ? [
+        {
+          path: `/listing/by-key/${discovered.key}`,
+          name: 'listing by-key — RESOLVING key must emit a real 3xx',
+          resolvingRedirect: true,
+        },
+      ]
+    : [
+        {
+          path: '/listing/by-key/<undiscovered>',
+          name: 'listing by-key — RESOLVING key must emit a real 3xx',
+          predetermined: {
+            ok: false,
+            status: 0,
+            reasons: [`could not discover a resolving listing key: ${discovered.why}`],
+          },
+        },
+      ]
+
+  const toCheck = REFUSALS_ONLY
+    ? [...refusals, ...resolvingRoutes]
+    : [...ROUTES, ...refusals, ...resolvingRoutes]
   const results = await runWithConcurrency(toCheck, checkRoute, CONCURRENCY)
   const failed = results.filter((r) => !r.ok)
 
