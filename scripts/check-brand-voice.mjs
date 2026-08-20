@@ -130,11 +130,67 @@ const PUBLIC_COPY_FILE = /^lib\/(?:[^/]+\/)*[^/]*-content\.ts$/
 // rewriting an internal log to satisfy a public-copy gate is the move that
 // makes a gate feel arbitrary and gets it switched off. Function scope keeps
 // the client sentences gated and leaves the log alone.
+// THE TWINS, registered 2026-08-19 in adversarial review. composeCmaEmail was
+// found by reading it; its siblings were found by grepping for every composer
+// of the same shape. All three build a client email in parallel `text` and
+// `html` bodies, which is the divergence that let the CMA text branch keep an
+// em dash after the html branch was rewritten. Registering one and leaving two
+// re-creates the /faq mechanism: one surface fixed, its twin missed, nothing
+// mechanical spanning both.
+//
+// Measured before registering, not assumed: with all three covered the gate
+// reports 2 violations = baseline. These composers are canon-clean today, so
+// this costs nothing now and catches the next edit to them.
 const PUBLIC_COPY_FUNCTIONS = [
   {
     file: 'lib/cma-delivery.ts',
     fn: 'composeCmaEmail',
     why: 'subject + body of the CMA delivery email a homeowner receives',
+  },
+  {
+    file: 'lib/bpo/send.ts',
+    fn: 'buildBody',
+    why: 'subject + text/html bodies of the BPO delivery email a client receives',
+  },
+  {
+    file: 'lib/bpo/send.ts',
+    fn: 'defaultBpoComposeText',
+    why: 'the BPO compose-dialog default a broker sends to a client',
+  },
+  {
+    file: 'lib/cma/inbound-packet.ts',
+    fn: 'composeInboundValuationCopy',
+    why: 'greeting + plan + close of the inbound valuation packet email',
+  },
+  {
+    file: 'lib/cma/inbound-packet.ts',
+    fn: 'composeInboundValuationSubject',
+    why: 'subject line of the inbound valuation packet email',
+  },
+  {
+    file: 'lib/cma/inbound-packet.ts',
+    fn: 'inboundValuationPreview',
+    why: 'inbox preview text of the inbound valuation packet email',
+  },
+  {
+    file: 'lib/cma/inbound-packet.ts',
+    fn: 'inboundValuationMasthead',
+    why: 'masthead line rendered in the inbound valuation packet email',
+  },
+  {
+    file: 'lib/cma/inbound-packet.ts',
+    fn: 'composeInboundNumbersClause',
+    why: 'the value-range sentence a homeowner reads in the packet',
+  },
+  {
+    file: 'lib/cma/inbound-packet.ts',
+    fn: 'inboundImmersiveTitle',
+    why: 'document title of the immersive report the homeowner opens',
+  },
+  {
+    file: 'lib/cma/inbound-packet.ts',
+    fn: 'inboundImmersiveHeroKick',
+    why: 'hero kicker line on the immersive report the homeowner opens',
   },
 ]
 const PUBLIC_COPY_FUNCTION_FILES = new Map()

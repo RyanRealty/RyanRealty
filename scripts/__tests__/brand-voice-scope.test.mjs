@@ -66,8 +66,12 @@ describe('scan scope covers public copy that lives in .ts modules', () => {
     expect(scanned.has(rel)).toBe(true)
   })
 
-  it('reads the client-facing CMA delivery email composer', () => {
-    expect(scanned.has('lib/cma-delivery.ts')).toBe(true)
+  it.each([
+    'lib/cma-delivery.ts',
+    'lib/bpo/send.ts',
+    'lib/cma/inbound-packet.ts',
+  ])('reads the client-facing composer file %s', (rel) => {
+    expect(scanned.has(rel)).toBe(true)
   })
 
   it('does NOT sweep lib/ wholesale', () => {
@@ -75,11 +79,17 @@ describe('scan scope covers public copy that lives in .ts modules', () => {
     // files, overwhelmingly agent prompts, pipeline diagnostics and developer
     // prose. Only the named -content.ts registries and the named composer files
     // are in.
+    //
+    // The composer half is derived from PUBLIC_COPY_FUNCTIONS, not retyped, so
+    // registering a new composer cannot silently widen what this test calls
+    // acceptable — and cannot fail it for a reason the reader has to guess.
+    const composerFiles = new Set(PUBLIC_COPY_FUNCTIONS.map((e) => e.file))
     const libFiles = [...scanned].filter((f) => f.startsWith('lib/'))
     expect(libFiles.length).toBeGreaterThan(0)
-    expect(
-      libFiles.every((f) => f.endsWith('-content.ts') || f === 'lib/cma-delivery.ts')
-    ).toBe(true)
+    const unexpected = libFiles.filter(
+      (f) => !f.endsWith('-content.ts') && !composerFiles.has(f)
+    )
+    expect(unexpected).toEqual([])
   })
 
   it('does not read colocated tests as copy', () => {
