@@ -88,6 +88,44 @@ export function composePersonNextStep(facts: PersonNextFacts): string {
   return 'No next step queued.'
 }
 
+/** List glance: last lead-initiated kind plus any waiting sequence step. */
+export function composeListNextStep(input: {
+  lastActivityKind: string | null
+  sequenceWaiting: PersonNextFacts['sequenceWaiting']
+}): string {
+  const kind = input.lastActivityKind
+  if (kind === 'sms_in') {
+    return composePersonNextStep({
+      unrepliedInbound: { channel: 'sms' },
+      replyIntent: null,
+      triageTask: null,
+      sequenceWaiting: null,
+    })
+  }
+  if (kind === 'email_in') {
+    return composePersonNextStep({
+      unrepliedInbound: { channel: 'email' },
+      replyIntent: null,
+      triageTask: null,
+      sequenceWaiting: null,
+    })
+  }
+  if (kind === 'inquiry' || kind === 'property_inquiry' || kind === 'form_submission') {
+    return composePersonNextStep({
+      unrepliedInbound: null,
+      replyIntent: null,
+      triageTask: { name: kind, type: kind },
+      sequenceWaiting: null,
+    })
+  }
+  return composePersonNextStep({
+    unrepliedInbound: null,
+    replyIntent: null,
+    triageTask: null,
+    sequenceWaiting: input.sequenceWaiting,
+  })
+}
+
 /** Newest-first messages. Unreplied = latest inbound is newer than latest outbound. */
 export function unrepliedInboundFromMessages(
   items: ReadonlyArray<{ kind: string; ts: string; payload?: Record<string, unknown> | null }>,

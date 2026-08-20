@@ -43,7 +43,8 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { getCmaAdminReviewRowBySlug, getPersonForCmaKickoff, listActiveBrokersForCma } from '@/lib/data'
+import { getCmaAdminReviewRowBySlug, listActiveBrokersForCma } from '@/lib/data'
+import { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
 import { parseCmaClientIntent } from '@/lib/cma/client-intent'
 import {
   EntityTitle,

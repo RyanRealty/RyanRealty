@@ -14,9 +14,7 @@ import { getLeadSmsRecipients } from '@/lib/data/crm/getLeadSmsRecipients'
 import { getGroupReplyParticipants } from '@/lib/data/crm/getGroupReplyParticipants'
 import { getAppointmentsForPerson } from '@/lib/data/crm/getAppointments'
 import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
-import { getPersonAwaitingBrokerStep } from '@/lib/data/crm/getBrokerActionQueue'
 import { getDealsForPerson } from '@/lib/data/tc/deal-people'
-import { isTriageTaskCandidate } from '@/lib/data/crm/getInboundTriage'
 import { extractAddressCandidate } from '@/lib/crm/seller-intent'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
@@ -24,13 +22,7 @@ import { renderCrmMerge, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { mapPersonWhoLabels } from '@/lib/crm/person-who-labels'
-import {
-  composePersonNextStep,
-  composePersonNowLine,
-  listingViewIsRecent,
-  replyIntentFromTimeline,
-  unrepliedInboundFromMessages,
-} from '@/lib/crm/person-header-lines'
+import { listingViewIsRecent } from '@/lib/crm/person-header-lines'
 import {
   getCrmAccess,
   getCrmEmailTemplates,
@@ -90,7 +82,6 @@ export async function PersonWorkspace({
     recipientOptions,
     fieldDefs,
     behaviorSummary,
-    awaitingStep,
     personDeals,
   ] = await Promise.all([
     getContactActivityFeed(idNum, 30),
@@ -108,7 +99,6 @@ export async function PersonWorkspace({
     getRecipientOptionsForContact(idNum),
     getCrmFieldDefinitions(),
     getContactBehaviorSummary(idNum),
-    getPersonAwaitingBrokerStep(idNum),
     getDealsForPerson(idNum),
   ])
   const showKickoff = sp.intent === 'cma' || sp.kicked === '1'
@@ -117,23 +107,12 @@ export async function PersonWorkspace({
   const suggestedAddress = extractAddressCandidate(latestInbound)
   const nowMs = Date.now()
   const latestListingView = behaviorSummary.latestListingView
-  const unreplied = unrepliedInboundFromMessages(conversation.items)
-  const openTriageTask =
-    full.tasks.find((t) => !t.completed_at && isTriageTaskCandidate({ name: t.name, type: t.type, origin: null })) ??
-    null
   const whoLabels = mapPersonWhoLabels({
     tags: card.tags,
     stage: card.stage,
     prospectKinds: prospectStory.map((s) => s.kind),
     hasRecentListingView: listingViewIsRecent(latestListingView, nowMs),
   })
-  const nextLine = composePersonNextStep({
-    unrepliedInbound: unreplied ? { channel: unreplied.channel } : null,
-    replyIntent: replyIntentFromTimeline(full.timeline) ?? unreplied?.replyIntent ?? null,
-    triageTask: openTriageTask ? { name: openTriageTask.name, type: openTriageTask.type } : null,
-    sequenceWaiting: awaitingStep,
-  })
-  const nowLine = composePersonNowLine({ latestListingView, nowMs })
 
   // ── B2 fold: daily-use machinery (renders only when the person is in the
   // acting broker's scope — getCrmPersonFull returns the empty bundle
@@ -340,17 +319,6 @@ export async function PersonWorkspace({
 
   return (
     <>
-      <div style={{ margin: '0 0 14px', fontSize: 'var(--a-text-sm)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div>
-          <span style={{ color: 'var(--a-text-2)' }}>Next </span>
-          {nextLine}
-        </div>
-        <div>
-          <span style={{ color: 'var(--a-text-2)' }}>Now </span>
-          {nowLine}
-        </div>
-      </div>
-
       {showKickoff && kicked ? (
         <section aria-label="CMA build" style={{ marginBottom: 16 }}>
           <p style={{ color: 'var(--a-ok)', fontWeight: 500, fontSize: 'var(--a-text-sm)' }}>

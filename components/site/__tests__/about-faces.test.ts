@@ -3,6 +3,21 @@ import { describe, expect, it } from 'vitest'
 import { BROKERS } from '@/lib/brand/contact'
 import { aboutFaceFromBroker, aboutPhoneE164 } from '@/app/about/_v3/about-faces'
 
+describe('about faces fold', () => {
+  it('names the photo door so pa11y does not see an empty link', () => {
+    const src = readFileSync('app/about/_v3/AboutFaces.tsx', 'utf8')
+    expect(src).toContain('alt={person.name}')
+    expect(src).not.toMatch(/alt=""/)
+  })
+
+  it('reserves the 2:3 cutout box before the png decodes', () => {
+    const css = readFileSync('app/about/_v3/about-faces.css', 'utf8')
+    expect(css).toMatch(/\.about-faces__photo-link\s*\{[\s\S]*?aspect-ratio:\s*2\s*\/\s*3/)
+    expect(css).toContain('width: min(100%, calc(70vh * 2 / 3))')
+    expect(css).not.toMatch(/\.about-faces__photo\s*\{[\s\S]*?height:\s*auto/)
+  })
+})
+
 describe('about page copy', () => {
   it('keeps the D11 mission out of How it started', () => {
     const src = readFileSync('app/about/page.tsx', 'utf8')

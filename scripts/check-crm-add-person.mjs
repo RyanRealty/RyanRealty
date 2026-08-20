@@ -106,6 +106,9 @@ if (!/PersonWorkspace/.test(personPage) || !/Suspense/.test(personPage) || !/Per
 if (!/PersonRelationships/.test(personPage) || !/PersonNotesAdd/.test(personPage) || !/FieldEditors/.test(personPage) || !/getPersonNotes/.test(personPage)) {
   fails.push('person detail must first-paint stage, related people, and notes')
 }
+if (!/getPersonGlance/.test(personPage) || !/nextLine/.test(personPage) || !/nowLine/.test(personPage)) {
+  fails.push('person detail must first-paint Next and Now from getPersonGlance')
+}
 if (!/savePersonNoteAction/.test(read('app/admin/(protected)/people/[id]/PersonNotesAdd.tsx'))) {
   fails.push('person notes must save through savePersonNoteAction, not a hanging form post')
 }
@@ -114,8 +117,8 @@ const relAction = read('app/actions/crm-relationships.ts')
 if (!/useState\(true\)/.test(relUi)) {
   fails.push('Related people add form must be open on first paint')
 }
-if (!/Search an existing person/.test(relUi) || !/SIMPLE_RELATIONSHIP_TYPES/.test(relUi)) {
-  fails.push('Relationships add must search an existing person and pick a simple type')
+if (!/Search an existing person/.test(relUi) || !/SIMPLE_RELATIONSHIP_TYPES/.test(relUi) || !/saveHit/.test(relUi)) {
+  fails.push('Relationships add must search an existing person and save on that click')
 }
 if (!/reciprocalType/.test(relAction) || !/crm_relationships/.test(relAction)) {
   fails.push('linkExistingRelationshipAction must write both relationship rows')

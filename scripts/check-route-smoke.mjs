@@ -82,6 +82,13 @@ const ADMIN_TIMEOUT_MS = Number(process.env.SMOKE_ADMIN_TIMEOUT_MS ?? 60_000)
 const SKIP_ROUTES = new Map([
 ])
 
+// Permanent hops in next.config. Fetching them with redirect:follow renders
+// the destination twice under the same 15s public budget — CI aborted both
+// /reports and /housing-market/reports on the same cold start (HTTP 0).
+const HOP_ROUTES = new Map([
+  ['/reports', { status: 308, pathname: '/housing-market/reports' }],
+])
+
 function timeoutFor(path) {
   return path.startsWith('/admin/') ? Math.max(TIMEOUT_MS, ADMIN_TIMEOUT_MS) : TIMEOUT_MS
 }
@@ -148,18 +155,31 @@ const args = new Set(process.argv.slice(2))
 const REPORT = args.has('--report')
 const JSON_OUT = args.has('--json')
 
-async function fetchWithTimeout(url, ms) {
+async function fetchWithTimeout(url, ms, init = {}) {
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), ms)
   try {
     const res = await fetch(url, {
       signal: ctrl.signal,
       headers: { ...CI_PROBE_HEADERS },
+      ...init,
     })
+    if (init.redirect === 'manual') {
+      return { status: res.status, body: '', location: res.headers.get('location') }
+    }
     const body = await res.text()
-    return { status: res.status, body }
+    return { status: res.status, body, location: null }
   } finally {
     clearTimeout(t)
+  }
+}
+
+function locationPathname(location) {
+  if (!location) return ''
+  try {
+    return new URL(location, 'http://127.0.0.1:3000').pathname
+  } catch {
+    return location
   }
 }
 
@@ -173,10 +193,32 @@ function checkBody(body) {
   return { ok: reasons.length === 0, reasons, title: titleMatch?.[1]?.trim() }
 }
 
-async function checkRoute(route) {
-  const url = BASE + route.path
-  const skipReason = SKIP_ROUTES.get(route.path)
-  if (skipReason) return { ...route, url, ok: true, skipped: true, status: 0, reasons: [skipReason], title: null }
+async function checkHop(route, url, hop) {
+  try {
+    const { status, location } = await fetchWithTimeout(url, timeoutFor(route.path), {
+      redirect: 'manual',
+    })
+    const pathname = locationPathname(location)
+    if (status !== hop.status) {
+      return { ...route, url, ok: false, status, reasons: [`HTTP ${status}`], title: null }
+    }
+    if (pathname !== hop.pathname) {
+      return {
+        ...route,
+        url,
+        ok: false,
+        status,
+        reasons: [`Location ${pathname || '(none)'} (want ${hop.pathname})`],
+        title: null,
+      }
+    }
+    return { ...route, url, status, ok: true, reasons: [], title: null }
+  } catch (e) {
+    return { ...route, url, ok: false, status: 0, reasons: [String(e?.message ?? e)], title: null }
+  }
+}
+
+async function checkFullPage(route, url) {
   try {
     const { status, body } = await fetchWithTimeout(url, timeoutFor(route.path))
     if (status !== 200) {
@@ -187,6 +229,19 @@ async function checkRoute(route) {
   } catch (e) {
     return { ...route, url, ok: false, status: 0, reasons: [String(e?.message ?? e)], title: null }
   }
+}
+
+async function checkRoute(route) {
+  const url = BASE + route.path
+  const skipReason = SKIP_ROUTES.get(route.path)
+  if (skipReason) return { ...route, url, ok: true, skipped: true, status: 0, reasons: [skipReason], title: null }
+  const hop = HOP_ROUTES.get(route.path)
+  if (hop) return checkHop(route, url, hop)
+  let result = await checkFullPage(route, url)
+  if (!result.ok && result.status === 0 && /aborted/i.test(result.reasons[0] ?? '')) {
+    result = await checkFullPage(route, url)
+  }
+  return result
 }
 
 async function runWithConcurrency(items, worker, concurrency) {

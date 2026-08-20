@@ -41,7 +41,7 @@ export function AboutFaces({
               <img
                 className="about-faces__photo"
                 src={person.src}
-                alt=""
+                alt={person.name}
                 width={800}
                 height={1200}
                 loading={index === 0 ? 'eager' : 'lazy'}
