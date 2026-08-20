@@ -59,6 +59,7 @@ export function KbTicker({ items }: { items: KbTickerItem[] }) {
               <span className="ticker-price">{price(it.price)}</span>
               <span className="ticker-meta">
                 {it.address} <span className="town">/ {it.town}</span>
+                {it.shareKind ? <span className="town"> / {it.shareKind}</span> : null}
               </span>
               <span className="ticker-star">✶</span>
             </>

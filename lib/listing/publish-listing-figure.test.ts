@@ -326,3 +326,71 @@ describe('publishWholePropertyAmount', () => {
     ).toBeNull()
   })
 })
+
+/**
+ * MLS 220218536, 57379 Beaver Ridge, Sunriver — the row that states nothing:
+ * no sub type, no remarks, no beds, no baths, no living area. It published
+ * "Cap rate 71.2%", "Cash on cash 324.3%", "Cash flow $1,054/mo", "Total
+ * monthly (PITI) $115", "Loan amount $15,600", JSON-LD offers.price 19500 and
+ * og:description "$19,500 · 57379 Beaver Ridge" with no share label anywhere.
+ */
+describe('the row that states nothing (MLS 220218536)', () => {
+  const BEAVER_RIDGE = {
+    propertySubType: null,
+    subdivisionName: 'The Ridge',
+    city: 'Sunriver',
+    listNumber: '220218536',
+  }
+
+  it('is a fractional interest by its own dwelling’s listing history', () => {
+    // Both other dimensions are silent on it: the feed files no sub type, and
+    // The Ridge is deliberately not a registered property.
+    expect(listingPriceIsFractionalShare(null)).toBe(false)
+    expect(listingIsFractionalInterest(BEAVER_RIDGE)).toBe(true)
+    expect(
+      publishWholePropertyAmount({ ...BEAVER_RIDGE, price: 19_500, propertyType: 'A' }),
+    ).toBeNull()
+  })
+
+  it('leaves the whole condos at the same property publishing', () => {
+    // The Ridge sold 9 whole units, $199,000–$399,000, each saying "100%
+    // share" / "100% ownership" in its own remarks; 220218659 is Pending now.
+    // A property entry would have printed "Fractional interest" beside it.
+    const wholeCondo = { ...BEAVER_RIDGE, propertySubType: 'Condominium', listNumber: '220218659' }
+    expect(listingIsFractionalInterest(wholeCondo)).toBe(false)
+    expect(publishWholePropertyAmount({ ...wholeCondo, price: 399_000, propertyType: 'A' })).toBe(
+      399_000,
+    )
+  })
+
+  it('leaves the other 45 silent rows alone — no beds is not a share', () => {
+    // 46 live Active class-A rows state no beds, no baths, no living area and
+    // no remarks. Only this one's address discloses a share. 220218842 asks
+    // $1,600,000 in Awbrey Park and its ask is verified.
+    const awbrey = {
+      propertySubType: null,
+      subdivisionName: 'Awbrey Park',
+      city: 'Bend',
+      listNumber: '220218842',
+    }
+    expect(listingIsFractionalInterest(awbrey)).toBe(false)
+    expect(publishWholePropertyAmount({ ...awbrey, price: 1_600_000, propertyType: 'A' })).toBe(
+      1_600_000,
+    )
+  })
+
+  it('keys the entry on the MLS number, not on the subdivision', () => {
+    // A listing entry withholds from exactly one row. Any other row at The
+    // Ridge answers on its own sub type.
+    expect(
+      listingIsFractionalInterest({ ...BEAVER_RIDGE, listNumber: '220218403' }),
+    ).toBe(false)
+    expect(
+      listingIsFractionalInterest({
+        ...BEAVER_RIDGE,
+        propertySubType: 'Tenancy in Common',
+        listNumber: '220218403',
+      }),
+    ).toBe(true)
+  })
+})

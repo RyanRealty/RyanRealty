@@ -67,6 +67,16 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
   const LUXURY_RENTAL_SUPPRESS = 2_000_000
   if (price > LUXURY_RENTAL_SUPPRESS) return null
 
+  // EVERY FIGURE IN THIS SECTION DESCENDS FROM A MONTHLY RENT, AND A RENT NEEDS
+  // A DWELLING. When the feed states no bedroom count it also states no living
+  // area — 46 live Active class-A rows on 2026-08-19, the same 46 on both
+  // counts — so neither rent path below has an input. getAreaRentEstimate now
+  // returns null on those rows rather than substituting two bedrooms, and
+  // falling through to the price-ratio estimate would only swap one unsourced
+  // rent for another: on MLS 220218536 it reads $500/mo off a $19,500 share.
+  // §0.7 — render nothing.
+  if (listing.beds == null) return null
+
   const taxes =
     listing.taxAnnualAmount && listing.taxAnnualAmount > 0
       ? listing.taxAnnualAmount

@@ -60,6 +60,15 @@ export interface KbTickerItem {
   price: number | null
   address: string
   town: string
+  /**
+   * The share label to print with the price, or null when this ask buys the
+   * whole dwelling. REQUIRED, not optional: the tape runs real asking prices
+   * beside whole-home asks, so a fractional ask with nothing beside it reads as
+   * the price of that address. On /cities/camp-sherman the tape carried
+   * "$249,000 / 13375 Forest Service Road" — a quarter share — between $799,000
+   * and $895,000 whole homes. Resolved through publishListingShareKind.
+   */
+  shareKind: string | null
   /** Listing detail path. When set, the tape item renders as a link — real
    *  prices + addresses styled as content must honor the tap they invite
    *  (design-audit P3). */

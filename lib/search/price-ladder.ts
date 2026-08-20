@@ -117,12 +117,17 @@ export type PricedTile = FractionalInterestSubject & { listPrice?: number | null
  * whose ListPrice buys a share of a resort home. Banded as homes they pile
  * into the bottom row: measured live 2026-08-19, Active + Active Under
  * Contract class-A rows under $400K —
- *   Sunriver           42 rows, 33 of them fractional  (9 real homes)
+ *   Sunriver           42 rows, 34 of them fractional  (8 real homes)
  *   Redmond            84 rows, 16 fractional
  *   Bend               77 rows, 12 fractional
  *   Black Butte Ranch   4 rows,  4 fractional          (the band is empty)
  * The Sunriver card's own title is the modal band, so it read "42 Sunriver
- * homes under $400K" off nine.
+ * homes under $400K" off eight.
+ *
+ * The 34th Sunriver row is MLS 220218536 at $19,500, a share the feed files
+ * under no sub type at all; it is a reviewed listing entry in the registry, and
+ * it was the cheapest member of the "Under $400K · 9" band this card published
+ * on 2026-08-19 — a band whose own caption said "priced as whole homes".
  */
 function isWholeHomeTile(tile: PricedTile): boolean {
   return !listingIsFractionalInterest(tile)
@@ -241,7 +246,9 @@ export function buildSearchPriceLadder(input: {
     coverageParts.push(
       `${n(shareCount)} of them price a fractional interest rather than a home and are not banded. ` +
         'Those are the rows the MLS files under sub type Tenancy in Common or Timeshare, plus the ' +
-        'rows at properties recorded as selling interests in the reviewed fractional-interest registry.',
+        'properties and the single listings recorded as selling interests in the reviewed ' +
+        'fractional-interest registry, each carrying the MLS numbers and the quoted remarks it was ' +
+        'verified from.',
     )
   }
   if (unpriced > 0) {

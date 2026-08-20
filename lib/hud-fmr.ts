@@ -64,8 +64,29 @@ export type AreaRentEstimate = {
 
 /**
  * Area rent estimate for a listing's city + bedroom count, from HUD FMR.
- * Returns null when the city is outside the mapped service area (caller then
- * falls back to its own estimate). Bedrooms clamp to HUD's studio..4BR bands.
+ * Returns null when the city is outside the mapped service area, or when the
+ * feed states no bedroom count. Bedrooms clamp to HUD's studio..4BR bands.
+ *
+ * WHY AN UNSTATED BEDROOM COUNT RETURNS NULL RATHER THAN TWO (2026-08-19).
+ * This function read `bedrooms ?? 2` and then labelled its answer with the
+ * count it had substituted. On a row where the feed states no bedrooms that
+ * printed a fabricated number under a sourced label — verified on the rendered
+ * page /listing/20260403195603425451000000 (MLS 220218536, 57379 Beaver Ridge,
+ * Sunriver): "Estimate $1,667 ($1,500–$1,925) · HUD Fair Market Rent (FY2025),
+ * Deschutes County, 2BR", where $1,667 is exactly the Deschutes 2BR row below
+ * and the feed states no bedrooms, no baths and no living area for that
+ * listing. Everything downstream came off it: "Gross rent $1,667", "Cash flow
+ * $1,054/mo", "Cap rate 71.2%", "Cash on cash 324.3%".
+ *
+ * §0 forbids an estimate without a named basis, and §0.7 decides the null case:
+ * publish no figure. Population, live `listings` 2026-08-19, Active or Active
+ * Under Contract, PropertyType 'A' — 4,688 rows, of which 46 state no bedroom
+ * count. All 46 also state no living area, so none of them can be sized any
+ * other way either.
+ *
+ * A stated zero is a studio and still publishes: three Powder Village Condo
+ * rows in Sunriver (220212529, 220205003, 220213995) carry beds 0 over 392–448
+ * sq ft, and HUD prices a studio.
  */
 export function getAreaRentEstimate(
   city: string | null | undefined,
@@ -75,7 +96,8 @@ export function getAreaRentEstimate(
   if (!fips) return null
   const entry = FMR_BY_FIPS[fips]
   if (!entry) return null
-  const idx = Math.max(0, Math.min(4, Math.round(bedrooms ?? 2)))
+  if (typeof bedrooms !== 'number' || !Number.isFinite(bedrooms) || bedrooms < 0) return null
+  const idx = Math.max(0, Math.min(4, Math.round(bedrooms)))
   const value = entry.rents[idx]
   return {
     value,

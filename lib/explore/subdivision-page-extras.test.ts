@@ -7,10 +7,15 @@ import {
   splitRowsFromTiles,
 } from './subdivision-page-extras'
 
-function tile(listingKey: string, price: number, extras: { lat?: number | null; subdivisionName?: string } = {}) {
+function tile(
+  listingKey: string,
+  price: number,
+  extras: { lat?: number | null; subdivisionName?: string; propertySubType?: string | null } = {},
+) {
   return {
     listingKey,
     listNumber: listingKey,
+    propertySubType: extras.propertySubType ?? 'Single Family Residence',
     listPrice: price,
     beds: 3,
     baths: 2,
@@ -54,6 +59,7 @@ describe('splitRowsFromTiles', () => {
       {
         listingKey: 'moon',
         listNumber: '220221237',
+        propertySubType: 'Single Family Residence',
         listPrice: 2_825_000,
         beds: 4,
         baths: 4,
@@ -108,5 +114,35 @@ describe('place list wiring', () => {
     const src = readFileSync('app/communities/[slug]/page.tsx', 'utf8')
     expect(src).toContain('viewAllHref="#homes"')
     expect(src).toContain("href: '#homes'")
+  })
+})
+
+describe('splitRowsFromTiles carries what the row needs to label a share', () => {
+  it('passes the fractional subject through to the row', () => {
+    // /cities/camp-sherman published "$249,000 · 13375 Forest Service Road ·
+    // 3 bd · 3 ba" over ten quarter shares at Lake Creek Lodge, unlabelled,
+    // because the row shape carried a price and no way to ask what it buys.
+    const [row] = splitRowsFromTiles([
+      {
+        listingKey: '20260421160801623637000000',
+        listNumber: '220220877',
+        propertySubType: 'Tenancy in Common',
+        listPrice: 249_000,
+        beds: 3,
+        baths: 3,
+        streetNumber: '13375',
+        streetName: 'Forest Service',
+        streetSuffix: 'Road',
+        city: 'Camp Sherman',
+        subdivisionName: 'Lake Creek Lodge',
+        photoUrl: null,
+        lat: 44.46,
+        lng: -121.64,
+      },
+    ])
+    expect(row?.propertySubType).toBe('Tenancy in Common')
+    expect(row?.subdivisionName).toBe('Lake Creek Lodge')
+    expect(row?.city).toBe('Camp Sherman')
+    expect(row?.listNumber).toBe('220220877')
   })
 })

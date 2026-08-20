@@ -156,9 +156,86 @@ export const LEASE_PRICE_PROPERTY_TYPES: ReadonlySet<string> = new Set(['G'])
  * subdivision counted, the share-disclosing share of them counted, at least
  * three MLS numbers quoted verbatim from the feed, and every row at the
  * property that is NOT a share named as an exception with its reason. A listing
- * entry needs its own verbatim remark. The shape is enforced by
+ * entry needs verbatim remarks about that dwelling — see the next docblock for
+ * the two kinds and why there are two. The shape is enforced by
  * scripts/check-listing-figure-publish.mjs, which also executes the rule
  * against 220222478's real row — an entry without evidence fails the commit.
+ */
+
+/**
+ * FOURTH CASE: THE ROW THAT SAYS NOTHING (verified live 2026-08-19).
+ *
+ * MLS 220218536, ListingKey 20260403195603425451000000, 57379 Beaver Ridge,
+ * Sunriver, $19,500. The feed states no PropertySubType, no PublicRemarks, no
+ * bedrooms, no baths and no living area for it. So the sub-type dimension is
+ * silent, and a listing entry was unreachable under the rule above, which asked
+ * for the row's OWN remark. /listing/20260403195603425451000000 published
+ *   "Cash flow $1,054/mo", "Cap rate 71.2%", "Cash on cash 324.3%",
+ *   "Cash needed $3,900", "Total monthly (PITI) $115",
+ *   "Loan amount $15,600 · $3,900 down", the near-this-price alert promise,
+ *   JSON-LD SingleFamilyResidence offers.price 19500, and og:description
+ *   "$19,500 · 57379 Beaver Ridge, Sunriver, OR 97707"
+ * with no share label anywhere on the screen.
+ *
+ * THE RULE FOR LISTING ENTRIES CHANGES HERE, DELIBERATELY. "A listing entry
+ * needs its own verbatim remark" was written when the only listing entry had
+ * one. Its purpose is that an entry carries evidence a reviewer can re-run, and
+ * a remark is one kind of that evidence, not the only kind. As written the rule
+ * was weakest exactly where the defect is worst: a row that says nothing is the
+ * row whose page can say nothing. It now reads: a listing entry needs verbatim
+ * remarks ABOUT THAT DWELLING — the row's own, or, when the feed states none
+ * for the row, the same street address's own prior listings. A prior listing at
+ * the same address is the same dwelling; its words describe what that dwelling
+ * sells as. The standard did not widen; it stopped being tied to one row id.
+ *
+ * THE EVIDENCE. Live `listings`, City 'Sunriver', StreetNumber '57379',
+ * StreetName 'Beaver Ridge', every status, 2026-08-19: 4 rows including this
+ * one. Every prior listing of this dwelling sells an interval share, and one
+ * was taken by the same office that holds 220218536 today:
+ *   220185746  Closed    $35,000  Tenancy in Common
+ *              "Seller is willing to split into two1/8 shares and sell, ea.1/8
+ *               for $20k"        — which is this row's $19,500
+ *   220140810  Closed    $17,000  Tenancy in Common, Bend Premier Real Estate
+ *              LLC, the same office as 220218536
+ *              "Great opportunity to own 6 weeks (1/8th share) in a completely
+ *               furnished condo at The Ridge in Sunriver!"
+ *   201506821  Canceled   $6,000
+ *              "Enjoy 4 weeks a year at this wonderful Ridge Condo."
+ * Counter-query, same address and window (§0 forbids reporting absence from one
+ * query shape): rows claiming a whole rather than partial interest — 0. That
+ * office's whole footprint at this property is 2 rows, $17,000 and $19,500,
+ * neither a whole unit.
+ *
+ * WHY NOT REGISTER THE RIDGE AS A PROPERTY. Because the property sells whole
+ * condos, and a property entry claims it does not. Live `listings`,
+ * SubdivisionName 'The Ridge', City 'Sunriver', every status, 2026-08-19: 543
+ * rows — 534 at or under $55,000 and 9 at or above $199,000, with nothing in
+ * between. All 9 are whole units in their own words ("a 100% share of this very
+ * well maintained end unit" 220218659 at $399,000, "100% ownership in a 2 bed,
+ * 2 bath Ridge Condo" 220122622 at $229,000), and 220218659 was listed
+ * 2026-04-06 and is Pending right now. Nine exceptions against Lake Creek
+ * Lodge's three, on a product line the record shows arriving regularly, is a
+ * §0 wrong label waiting on the next whole-condo listing. A listing entry
+ * withholds nothing from any other row, ever.
+ *
+ * THE CLASS, SWEPT AND COUNTED. Live `listings`, Active or Active Under
+ * Contract, PropertyType 'A', 2026-08-19: 4,688 rows, of which 46 state no
+ * bedrooms, no baths, no living area and no remarks — the same 46 rows on all
+ * four counts. Joining each of those 46 to its own street address and reading
+ * every prior remark that matches share language: 220218536 is the only one
+ * whose address discloses a share. The six other addresses that matched are
+ * "1/2 bath" and "1/4 mile" prose — 1565 Wall (Bend, "within 1/4 mile from
+ * parkway access"), 4310 Highland (Klamath Falls), 2363 Dahlia (Medford), 1045
+ * Golden Pheasant (Redmond), 61325 King Josiah (Bend), 1089 Brookdale
+ * (Medford). Read and dismissed, not counted.
+ *
+ * WHAT THOSE OTHER 45 GET INSTEAD, AND WHY IT IS NOT THIS. A row stating no
+ * bedrooms is not thereby a share: 220218842 asks $1,600,000 in Awbrey Park and
+ * 220199852 asks $899,950 in Metolius Meadows, and each ask is the price of a
+ * home as far as the record goes. Withholding their asks from a median would be
+ * over-withholding, which §0.7 does not license. What the record does NOT
+ * support on any of the 46 is a figure computed from a bedroom count the feed
+ * never stated — that rule lives in lib/hud-fmr.ts and covers all 46.
  */
 
 /**
@@ -199,14 +276,44 @@ export type FractionalInterestProperty = {
   exceptions: readonly { listNumber: string; why: string }[]
 }
 
-/** A single verified fractional interest at a property that also sells wholes. */
+/** One prior listing of the SAME dwelling, quoted. */
+export type FractionalInterestPriorListing = FractionalInterestEvidence & {
+  /** StandardStatus on verifiedOn. */
+  status: string
+  listPrice: number
+}
+
+/**
+ * The same dwelling's own listing history, used when the row itself states no
+ * remarks. Keyed on the street line the feed files them all under.
+ */
+export type FractionalInterestAddressEvidence = {
+  /** The street line, verbatim from the feed, that these rows share. */
+  address: string
+  /** Rows in `listings` at that address, every status, on verifiedOn. */
+  rowsAtAddress: number
+  /** The counter-query: rows there claiming a whole rather than partial interest. */
+  rowsClaimingWholeInterest: number
+  priorListings: readonly FractionalInterestPriorListing[]
+}
+
+/**
+ * A single verified fractional interest at a property that also sells wholes.
+ *
+ * Exactly one kind of evidence, and the union makes the typechecker say so:
+ * `evidence` is the row's own verbatim remark; `addressEvidence` is the same
+ * dwelling's prior listings, for a row the feed gives no remarks at all. An
+ * entry with neither does not compile, and one with both does not either.
+ */
 export type FractionalInterestListing = {
   listNumber: string
   city: string
   shareLabel: string
   verifiedOn: string
-  evidence: FractionalInterestEvidence
-}
+} & (
+  | { evidence: FractionalInterestEvidence; addressEvidence?: undefined }
+  | { addressEvidence: FractionalInterestAddressEvidence; evidence?: undefined }
+)
 
 export const FRACTIONAL_INTEREST_PROPERTIES: readonly FractionalInterestProperty[] = [
   {
@@ -253,6 +360,41 @@ export const FRACTIONAL_INTEREST_LISTINGS: readonly FractionalInterestListing[] 
     evidence: {
       listNumber: '220216423',
       remark: 'Imagine owning a slice of paradise with fractional ownership in a condominium',
+    },
+  },
+  {
+    // 57379 Beaver Ridge, Sunriver — the row that states nothing at all. Its own
+    // dwelling's listing history is the evidence; see the fourth-case docblock.
+    listNumber: '220218536',
+    city: 'Sunriver',
+    shareLabel: 'Fractional interest',
+    verifiedOn: '2026-08-19',
+    addressEvidence: {
+      address: '57379 Beaver Ridge',
+      rowsAtAddress: 4,
+      rowsClaimingWholeInterest: 0,
+      priorListings: [
+        {
+          listNumber: '220185746',
+          status: 'Closed',
+          listPrice: 35_000,
+          remark:
+            'Seller is willing to split into two1/8 shares and sell, ea.1/8 for $20k.',
+        },
+        {
+          listNumber: '220140810',
+          status: 'Closed',
+          listPrice: 17_000,
+          remark:
+            'Great opportunity to own 6 weeks (1/8th share) in a completely furnished condo at The Ridge in Sunriver!',
+        },
+        {
+          listNumber: '201506821',
+          status: 'Canceled',
+          listPrice: 6_000,
+          remark: 'Enjoy 4 weeks a year at this wonderful Ridge Condo.',
+        },
+      ],
     },
   },
 ]

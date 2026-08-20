@@ -234,10 +234,95 @@ expect(
   true,
 )
 
+// THE ROW THAT STATES NOTHING, on the branch the defect lived on. MLS
+// 220218536 (57379 Beaver Ridge, Sunriver, $19,500) carries no sub type, no
+// remarks, no beds, no baths and no living area, so both dimensions above are
+// silent on it and /listing/20260403195603425451000000 published "Cap rate
+// 71.2%", "Cash on cash 324.3%", "Cash flow $1,054/mo", "Cash needed $3,900",
+// "Total monthly (PITI) $115", "Loan amount $15,600 · $3,900 down", JSON-LD
+// offers.price 19500 and og:description "$19,500 · 57379 Beaver Ridge" with no
+// share label anywhere. The fields below are that row's real values.
+const BEAVER_RIDGE = {
+  propertySubType: null,
+  subdivisionName: 'The Ridge',
+  city: 'Sunriver',
+  listNumber: '220218536',
+}
+expect(
+  'listingPriceIsFractionalShare(null) — no sub type, so that dimension cannot answer',
+  listingPriceIsFractionalShare(BEAVER_RIDGE.propertySubType),
+  false,
+)
+expect('listingIsFractionalInterest 220218536 (57379 Beaver Ridge, no remark of its own)', listingIsFractionalInterest(BEAVER_RIDGE), true)
+expect(
+  'publishWholePropertyAmount 220218536 ($19,500, sub type null, no remarks)',
+  publishWholePropertyAmount({ ...BEAVER_RIDGE, price: 19_500, propertyType: 'A' }),
+  null,
+)
+// THE RIDGE IS NOT A REGISTERED PROPERTY, and must not become one. It sold 9
+// whole condos ($199,000–$399,000, one Pending right now), so a property entry
+// would print "Fractional interest" beside the next whole-condo ask there.
+// Every other row at the subdivision answers on its own sub type.
+expect(
+  'listingIsFractionalInterest 220218659 (a 100% share at The Ridge, $399,000)',
+  listingIsFractionalInterest({ ...BEAVER_RIDGE, propertySubType: 'Condominium', listNumber: '220218659' }),
+  false,
+)
+expect(
+  'publishWholePropertyAmount 220218659 (whole condo at The Ridge)',
+  publishWholePropertyAmount({
+    ...BEAVER_RIDGE,
+    propertySubType: 'Condominium',
+    listNumber: '220218659',
+    price: 399_000,
+    propertyType: 'A',
+  }),
+  399_000,
+)
+// Its 11 Active siblings are all Tenancy in Common and were already caught.
+expect(
+  'listingIsFractionalInterest 220215789 (1/8 at The Ridge, sub type says so)',
+  listingIsFractionalInterest({ ...BEAVER_RIDGE, propertySubType: 'Tenancy in Common', listNumber: '220215789' }),
+  true,
+)
+// A row stating no sub type ANYWHERE ELSE still publishes. 45 of the 46 live
+// Active class-A rows that state no bedrooms, no baths, no living area and no
+// remarks are ordinary homes — 220218842 asks $1,600,000 in Awbrey Park — and
+// §0.7 does not license deleting a verified ask.
+expect(
+  'listingIsFractionalInterest 220218842 (Awbrey Park, states nothing, not a share)',
+  listingIsFractionalInterest({
+    propertySubType: null,
+    subdivisionName: 'Awbrey Park',
+    city: 'Bend',
+    listNumber: '220218842',
+  }),
+  false,
+)
+expect(
+  'publishWholePropertyAmount 220218842 ($1,600,000 Awbrey Park)',
+  publishWholePropertyAmount({
+    propertySubType: null,
+    subdivisionName: 'Awbrey Park',
+    city: 'Bend',
+    listNumber: '220218842',
+    price: 1_600_000,
+    propertyType: 'A',
+  }),
+  1_600_000,
+)
+
 // EVERY REGISTRY ROW CARRIES ITS EVIDENCE. A guess list is not a verified
 // source under §0.1, so an entry that names no MLS number and quotes no remark
 // fails the commit rather than silently withholding figures.
-const SHARE_PHRASE = /(\b1\/[2-9]\b|\b\d{1,2}%\s+(interest|ownership)|quarter|third|half|fractional|shared? interest)/i
+//
+// The week forms are share vocabulary in THIS feed, not a widening for
+// convenience: The Ridge in Sunriver sells interval ownership and says so in
+// exactly those words — "6-week deeded ownership" (220224950), "12-week
+// fractional ownership" (220223353), "rare 1/8 ownership at The Ridge (6 weeks
+// of annual use)" (220215789), "own 6 weeks (1/8th share)" (220140810).
+const SHARE_PHRASE =
+  /(\b1\/[2-9](?:st|nd|rd|th)?\b|\b\d{1,2}%\s+(interest|ownership)|quarter|third|half|fractional|shared? interest|\b\d{1,2}[-\s]weeks?\b|weeks? of annual use)/i
 for (const p of FRACTIONAL_INTEREST_PROPERTIES ?? []) {
   const where = `${p.subdivision}, ${p.city}`
   if (!p.subdivision?.trim() || !p.city?.trim()) {
@@ -284,17 +369,84 @@ for (const p of FRACTIONAL_INTEREST_PROPERTIES ?? []) {
     }
   }
 }
+// A LISTING ENTRY NEEDS VERBATIM REMARKS ABOUT THAT DWELLING, IN ONE OF EXACTLY
+// TWO KINDS. `evidence` is the row's own remark. `addressEvidence` is the same
+// street address's prior listings, for a row the feed gives no remarks at all —
+// MLS 220218536 is one, and under the older rule ("a listing entry needs its own
+// verbatim remark") it could not be registered at all, which left the rule
+// weakest on the row whose page could say nothing. Both kinds, neither kind, or
+// an address entry that quotes nothing all fail here.
 for (const l of FRACTIONAL_INTEREST_LISTINGS ?? []) {
+  const where = `listing ${l.listNumber}`
   if (!/^\d{6,}$/.test(l.listNumber ?? '')) {
     failures.push('registry: a listing entry must name an MLS number.')
   }
-  if (!SHARE_PHRASE.test(l.evidence?.remark ?? '')) {
+  if (!l.shareLabel?.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(l.verifiedOn ?? '')) {
+    failures.push(`registry: ${where} needs a shareLabel and an ISO verifiedOn date.`)
+  }
+  if (!l.city?.trim()) {
+    failures.push(`registry: ${where} must name the city the row is filed under.`)
+  }
+  const hasOwn = l.evidence != null
+  const hasAddress = l.addressEvidence != null
+  if (hasOwn === hasAddress) {
     failures.push(
-      `registry: listing ${l.listNumber} quotes no share language — "${l.evidence?.remark}".`,
+      `registry: ${where} must carry exactly one kind of evidence — the row's own verbatim remark, or, when the feed states none for it, the same address's prior listings (has ${hasOwn && hasAddress ? 'both' : 'neither'}).`,
     )
   }
-  if (!l.shareLabel?.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(l.verifiedOn ?? '')) {
-    failures.push(`registry: listing ${l.listNumber} needs a shareLabel and an ISO verifiedOn date.`)
+  if (hasOwn && !SHARE_PHRASE.test(l.evidence.remark ?? '')) {
+    failures.push(
+      `registry: ${where} quotes no share language — "${l.evidence.remark}".`,
+    )
+  }
+  if (hasAddress) {
+    const a = l.addressEvidence
+    if (!a.address?.trim()) {
+      failures.push(`registry: ${where} address evidence must name the street line it read.`)
+    }
+    if (!Number.isInteger(a.rowsAtAddress) || a.rowsAtAddress < 2) {
+      failures.push(
+        `registry: ${where} address evidence must count the rows at that address, and there must be a prior listing to read (got ${a.rowsAtAddress}).`,
+      )
+    }
+    // §0 forbids reporting absence from one query shape, so the entry states
+    // the counter-query's answer rather than leaving it unasked. A dwelling
+    // that has ALSO been listed whole is not settled by its history.
+    if (!Number.isInteger(a.rowsClaimingWholeInterest)) {
+      failures.push(
+        `registry: ${where} address evidence must state how many rows at that address claim a whole interest — the counter-query, not just the matches.`,
+      )
+    } else if (a.rowsClaimingWholeInterest > 0) {
+      failures.push(
+        `registry: ${where} address evidence reports ${a.rowsClaimingWholeInterest} row(s) at ${a.address} claiming a whole interest. A dwelling that has been listed whole is not classified by its history alone.`,
+      )
+    }
+    const priors = Array.isArray(a.priorListings) ? a.priorListings : []
+    if (priors.length === 0) {
+      failures.push(
+        `registry: ${where} address evidence quotes no prior listing. The claim is that this dwelling sells as a share; the feed's own words about this dwelling are what say so.`,
+      )
+    }
+    for (const p of priors) {
+      if (!/^\d{6,}$/.test(p.listNumber ?? '')) {
+        failures.push(`registry: ${where} address evidence has a prior listing with no MLS number.`)
+      }
+      if (p.listNumber === l.listNumber) {
+        failures.push(
+          `registry: ${where} address evidence cites the row itself as its own prior listing.`,
+        )
+      }
+      if (!p.status?.trim() || typeof p.listPrice !== 'number' || !(p.listPrice > 0)) {
+        failures.push(
+          `registry: ${where} prior listing ${p.listNumber} must carry the status and asking price it was read at.`,
+        )
+      }
+      if (!SHARE_PHRASE.test(p.remark ?? '')) {
+        failures.push(
+          `registry: ${where} prior listing ${p.listNumber} quotes no share language — "${p.remark}". Quote the feed's own words, never a paraphrase.`,
+        )
+      }
+    }
   }
 }
 
@@ -404,6 +556,156 @@ for (const [file, symbol] of WIRED.filter(([, s]) => s === 'publishWholeProperty
   if (calls === 0) {
     failures.push(
       `wiring: ${file} imports ${symbol} but never calls it. An unused import withholds nothing.`,
+    )
+  }
+}
+
+// THE CARD PRINTS THE SHARE LABEL, AND PRINTS IT FROM THE SUBJECT IT ALREADY
+// HOLDS. A card's ask is the same claim the listing page's is, in less space,
+// and the label is the condition on publishing it at all. Rendered before this
+// rule: /cities/camp-sherman and /homes-for-sale/camp-sherman/lake-creek-lodge
+// printed "$249,000 · 13375 Forest Service Road · 3 bd · 3 ba · 1,306 sqft"
+// over ten quarter shares with the string "Fractional" nowhere on either page.
+// Asserted at the CALL SITE for the reason proven above — an unused import
+// withholds nothing — and the label may not arrive through the optional `badge`
+// prop, which every surface that forgot it would leave empty.
+const SHARE_LABEL_SURFACES = [
+  // The one card shape. Search results, the map list, subdivision browse, golf,
+  // the LP grids, saved and hidden homes, video tiles.
+  'components/site/ListingCard.tsx',
+  // The same card with the tour playing inline. It takes ListingCardData, so it
+  // holds the subject already and has no excuse for a bare share ask.
+  'components/site/VideoListingCard.tsx',
+  // The dual-pane inventory list on every city, neighborhood and subdivision
+  // page. This is the module that printed the Camp Sherman quarter shares.
+  'components/site/explore/PlaceMapListSplit.client.tsx',
+  // The price tape between sections on the homepage, cities, neighborhoods and
+  // communities. It runs a share ask between whole-home asks.
+  'lib/kb/place-sections.ts',
+  'app/page.tsx',
+]
+for (const file of SHARE_LABEL_SURFACES) {
+  const text = readFileSync(file, 'utf8')
+  if (!text.includes(`from '@/lib/listing/publish-listing-share'`)) {
+    failures.push(`wiring: ${file} must resolve its share label through publishListingShareKind.`)
+    continue
+  }
+  const sourceFile = ts.createSourceFile(
+    file,
+    text,
+    ts.ScriptTarget.ES2022,
+    true,
+    file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  )
+  let calls = 0
+  const countCalls = (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'publishListingShareKind'
+    ) {
+      calls++
+    }
+    ts.forEachChild(node, countCalls)
+  }
+  countCalls(sourceFile)
+  if (calls === 0) {
+    failures.push(
+      `wiring: ${file} imports publishListingShareKind and never calls it. A fractional ask with no label beside it is the listing page's defect at tile size.`,
+    )
+  }
+}
+{
+  // The label may not arrive as a caller-supplied field on the card row.
+  // `badge` is optional by design, and every surface that forgot it would print
+  // a share ask bare — which is why ListingCardData already requires the
+  // property type and the place fields.
+  const cardText = readFileSync('components/site/ListingCard.tsx', 'utf8')
+  if (/^\s*(shareKind|shareLabel)\??:/m.test(cardText)) {
+    failures.push(
+      'wiring: components/site/ListingCard.tsx declares the share label as a field on ListingCardData. It must be computed inside the card from the subject it already carries.',
+    )
+  }
+  // The two row shapes feeding the place surfaces take the sub type as a
+  // REQUIRED field, so the typechecker asks rather than a reviewer remembering.
+  for (const [file, shape] of [
+    ['lib/explore/subdivision-page-extras.ts', 'the splitRowsFromTiles tile'],
+    ['lib/kb/place-sections.ts', 'TileRow'],
+  ]) {
+    const text = readFileSync(file, 'utf8')
+    if (!/\n\s*propertySubType: string \| null\n/.test(text)) {
+      failures.push(
+        `wiring: ${file} must take propertySubType as a REQUIRED field on ${shape}. Optional reads undefined at the caller that forgets it.`,
+      )
+    }
+  }
+}
+
+// THE REST OF THE CLASS, COUNTED — AND IT MAY ONLY SHRINK.
+//
+// Sixteen more call sites in ten files publish a per-listing ask and cannot say
+// what it buys, because they take a bare price. Each is the same defect as the
+// Camp Sherman cards, on a different surface: the v3 field items on city,
+// neighborhood, community, subdivision and blog pages, the KB featured rail and
+// activity tape, the builder rail, and the map-pin label.
+//
+// They are NOT converted here because two of them are map pin labels, where the
+// fix is a product decision (a pin cannot carry a second line, so a share pin
+// either shows its label instead of its price or is not drawn) that needs each
+// place-page family rendered to settle. Shipping that unrendered across five
+// page families is the drift §8 forbids. So the population is named and frozen:
+// a new surface may not join it, and the number comes down as each is converted.
+// A gate that lets a known class grow is not a gate.
+const UNLABELLED_ASK_SURFACES_MAX = 10
+{
+  const unlabelled = []
+  for (const f of [...walkFiles('app'), ...walkFiles('components'), ...walkFiles('lib')]) {
+    if (f.endsWith('.test.ts') || f.endsWith('.test.tsx')) continue
+    if (f === 'lib/listing/publish-listing-ask.ts') continue
+    const text = readFileSync(f, 'utf8')
+    if (!/formatPublishedAsk\(|formatPublishedSaleAsk\(/.test(text)) continue
+    if (/publishListingShareKind\s*\(/.test(text)) continue
+    unlabelled.push(f)
+  }
+  if (unlabelled.length > UNLABELLED_ASK_SURFACES_MAX) {
+    failures.push(
+      `unlabelled ask: ${unlabelled.length} files publish a listing ask without resolving publishListingShareKind, over the frozen ${UNLABELLED_ASK_SURFACES_MAX}. New: ${unlabelled.join(', ')}. A share ask with nothing beside it claims the price of the whole dwelling.`,
+    )
+  }
+  if (unlabelled.length < UNLABELLED_ASK_SURFACES_MAX) {
+    failures.push(
+      `unlabelled ask: ${unlabelled.length} files remain, below the recorded ${UNLABELLED_ASK_SURFACES_MAX}. Lower UNLABELLED_ASK_SURFACES_MAX to ${unlabelled.length} so the ratchet holds the ground you just took.`,
+    )
+  }
+}
+
+// A RENT NEEDS A DWELLING. lib/hud-fmr.ts read `bedrooms ?? 2` and then
+// labelled its answer "HUD Fair Market Rent (FY2025), Deschutes County, 2BR" —
+// a bedroom count the feed never stated, published under a sourced label. On
+// MLS 220218536 that produced "Gross rent $1,667", "Cap rate 71.2%" and "Cash
+// on cash 324.3%". 46 live Active class-A rows state no bedroom count, and all
+// 46 state no living area either, so no other sizing exists for them.
+{
+  const hudSrc = readFileSync('lib/hud-fmr.ts', 'utf8')
+  const hudCode = hudSrc.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1')
+  if (/bedrooms\s*\?\?/.test(hudCode)) {
+    failures.push(
+      'wiring: lib/hud-fmr.ts substitutes a bedroom count when the feed states none. A figure labelled "2BR" for a row with no bedrooms is a fabricated basis (§0), not a default.',
+    )
+  }
+  if (!/typeof bedrooms !== 'number'/.test(hudCode)) {
+    failures.push(
+      'wiring: lib/hud-fmr.ts must return null when the bedroom count is not stated.',
+    )
+  }
+  const rentalSrc = readFileSync('components/site/listing-detail/RentalAnalysis.tsx', 'utf8')
+  const rentalCode = rentalSrc.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1')
+  // The section also carries a price-ratio fallback for cities outside the HUD
+  // map. Withholding the HUD figure without this guard would route those 46
+  // rows into it and swap one unsourced rent for another.
+  if (!/listing\.beds\s*==\s*null\)\s*return null/.test(rentalCode)) {
+    failures.push(
+      'wiring: components/site/listing-detail/RentalAnalysis.tsx must render nothing when the feed states no bedroom count. Every figure in the section descends from a monthly rent, and its fallback rent is a price ratio — $500/mo off a $19,500 share on MLS 220218536.',
     )
   }
 }
