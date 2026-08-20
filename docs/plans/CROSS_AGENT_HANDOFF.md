@@ -2,11 +2,11 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (cursor-cloud) — 648 compose on main + R-221 rematch
+# Current — 2026-08-20 (cursor-cloud) — PR 135 people glance + CI on main
 
-**Surface:** Cursor Cloud. Loop stays **DISARMED**. 648 CMA compose is on `origin/main` @ `c58adb790` (PR #134 merged). Do not sit on GitHub Actions. One `ci:gates` per ship. PR CI must be `test:unit`; live-DB `test:int` is nightly. Do not email or text the household. No re-arm. Leave `LOOP_SENTINEL` off.
+**Surface:** Cursor Cloud. Loop stays **DISARMED**. PR **135** merged to `origin/main` @ `f7acf428f`. People glance (Next/Now first paint, one-click relationships), about/team CLS reserve + photo alt, town-door navy ground, reports hop smoke. No Jane/Odessa/Nealon mail. CMA `cma-648-se-douglas` stays `648 SE Douglas`. No re-arm. Leave `LOOP_SENTINEL` off.
 
-**Skills read:** git-commit.
+**Skills read:** frontend-design, git-commit, fix-ci.
 
 # Prior — 2026-08-19 (cursor-cloud) — CRM compose rebase
 
