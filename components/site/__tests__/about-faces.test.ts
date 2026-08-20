@@ -4,6 +4,12 @@ import { BROKERS } from '@/lib/brand/contact'
 import { aboutFaceFromBroker, aboutPhoneE164 } from '@/app/about/_v3/about-faces'
 
 describe('about faces fold', () => {
+  it('names the photo door so pa11y does not see an empty link', () => {
+    const src = readFileSync('app/about/_v3/AboutFaces.tsx', 'utf8')
+    expect(src).toContain('aria-label={person.name}')
+    expect(src).toMatch(/alt=""/)
+  })
+
   it('reserves the 2:3 cutout box before the png decodes', () => {
     const css = readFileSync('app/about/_v3/about-faces.css', 'utf8')
     expect(css).toMatch(/\.about-faces__photo-link\s*\{[\s\S]*?aspect-ratio:\s*2\s*\/\s*3/)
