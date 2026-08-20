@@ -1,8 +1,9 @@
 {
- "version": "v2-2026-05-15",
- "source": "Spark MLS API spatial discovery + Matt-approved manual overrides",
- "verification_trace": "Each child verified \u226580% of its listings inside parent's broad area (per-parent radius 2-6km). Sunriver center hardcoded to 43.875,-121.450 (Matt-approved 2026-05-15). 'The Highlands at Broken Top' assigned to Broken Top via name-override (Matt-approved). 5 unassigned variants (River Forest Acres, North Rim, Skyline, Wildflower, Rock Ridge) are outside any resort community \u2014 they remain stand-alone subdivisions using SubdivisionName text equality. v2 patch (Matt 2026-05-15): Crosswater trimmed to 4 aliases (was 9). Vandevert Ranch promoted to own parent (single name). Three Rivers added as new parent (11 children). Kitty Hawk stays under Sunriver per closest-parent rule. 2026-06-27: 4 communities appended by hand from live MLS subdivision data \u2014 Mt Bachelor Village, Inn of the 7th Mountain, River's Edge, Mountain High. Method: exact MLS SubdivisionName match; center_lon_lat = centroid of that subdivision's listing coordinates (avg Latitude/Longitude over all listings, authoritative MLS data, 2026-06-27). | mls_cities added 2026-07-29: per-community MLS City spellings carrying active alias listings (audit sweep, Supabase listings); communities whose MLS City differs from the registry city were rendering 0 homes.",
- "generated_at": "2026-06-27",
+ "version": "v3-2026-08-20",
+ "source": "County recorded plat + HOA / MLS strings. Not a Spark nearby radius.",
+ "alias_rule": "subdivision_aliases must come from a Deschutes County recorded plat, a published HOA / TOA name, or an MLS SubdivisionName that actually files under that parent. Do not assign children with Spark /listings/nearby plus a 2-6 km >=80% inside-test. That 2026-05-15 method pulled in neighbors (Sunrise Village under Tetherow, Shevlin* under Awbrey Glen). Tetherow Crossing in Redmond is a different plat from Tetherow in the Bend CDP. This file is the 19 featured parents plus their correct children. Do not dump the 1,645 Bend plats into it.",
+ "verification_trace": "v3 (2026-08-20): Tetherow, Awbrey Glen, and Pronghorn aliases rewritten from county GIS plats + TOA / club names + live MLS SubdivisionName counts. Tetherow MLS files as Tetherow (Bend) and Triple (9 Bend rows, Triple Knot truncation). Recorded Tetherow plats from public.boundaries geo_type=subdivision. Shevlin* removed from Awbrey Glen (Summit West plats, not Awbrey Glen HOA). Juniper Preserve added on the Pronghorn parent (2022 resort rebrand; 0 current MLS rows under that string). Older communities still carry Matt-approved 2026-05-15 overrides (Sunriver centroid, Broken Top Highlands name-override, Crosswater trim, Vandevert / Three Rivers splits) plus the 2026-06-27 exact-name additions (Mt Bachelor Village, Inn of the 7th Mountain, River's Edge, Mountain High) and 2026-07-29 mls_cities.",
+ "generated_at": "2026-08-20",
  "communities": [
   {
    "slug": "tetherow",
@@ -15,21 +16,57 @@
     -121.3599,
     44.0306
    ],
+   "nest": {
+    "kind": "census_cdp",
+    "levels": [
+     "Deschutes County",
+     "Tetherow CDP",
+     "Tetherow community",
+     "TOA neighborhood or recorded plat"
+    ],
+    "in_city_plats": [
+     "Tetherow Phase 1",
+     "Tetherow Phase 2",
+     "Tetherow Phase 6",
+     "North Forty At Tetherow"
+    ],
+    "note": "Tetherow is a Census CDP, mostly outside Bend city. Do not nest the community under Summit West or Century West except the four in-city plats listed here. MLS City is still usually Bend."
+   },
    "subdivision_aliases": [
     "Tetherow",
-    "Sunrise Village",
-    "Westbrook Meadows",
-    "Braeburn",
-    "1st On The Hillsites",
-    "Lodges at Bachelor V",
     "Triple",
-    "Campbell Road",
-    "Roald West"
+    "Triple Knot",
+    "Tetherow Phase 1",
+    "Tetherow Phase 2",
+    "Tetherow Phase 3",
+    "Tetherow Phase 4",
+    "Tetherow Phase 5",
+    "Tetherow Phase 6",
+    "Tetherow Phase 7",
+    "Tetherow Cascades Vista Phase 1",
+    "Tetherow Cascades Vista Phase 2",
+    "North Forty At Tetherow",
+    "Tetherow Rim",
+    "Trailhead At Tetherow",
+    "Trailhead At Tetherow Phase 1",
+    "Trailhead At Tetherow Phase 2",
+    "Golf Homes At Tetherow",
+    "Tetherow Vacation Homes Phase Ia",
+    "Tetherow Vacation Homes Phases Ib And II",
+    "Tetherow Vacation Homes Phase III",
+    "Highlands Ridge",
+    "Highlands Ridge, Phases 1 & 2",
+    "Highlands Ridge Phase 3 & 4",
+    "Outrider Overlook",
+    "Outrider Overlook Phase 2"
    ],
    "sub_neighborhoods": [
     {
      "slug": "heath",
      "name": "Heath",
+     "kind": "toa_marketing",
+     "recorded_plat": "Tetherow Phase 1",
+     "source": "TOA marketing name. No Heath-specific recorded plat. Addresses fall in Tetherow Phase 1.",
      "type": "Single-family golf homes",
      "hoa_annual_estimate": 2244,
      "hoa_sub_quarterly": 195,
@@ -48,43 +85,132 @@
       "note": "Approximated from Tetherow Phase 1 polygon centroid (Deschutes County GIS) shifted slightly north toward Hosmer Lake Dr. No Heath-specific recorded plat polygon exists; Heath addresses fall within the Tetherow Phase 1 boundary."
      },
      "data_thin_note": "MLS does not tag Heath separately. SubdivisionName is always 'Tetherow'. Page uses parent Tetherow stats with a footnote."
+    },
+    {
+     "slug": "crescent",
+     "name": "Crescent",
+     "kind": "toa_marketing",
+     "recorded_plat": "North Forty At Tetherow",
+     "source": "TOA / marketing name for the North Forty section.",
+     "type": "Single-family golf homes",
+     "mls_aliases": [
+      "Tetherow"
+     ]
+    },
+    {
+     "slug": "glen",
+     "name": "The Glen",
+     "kind": "toa_marketing",
+     "recorded_plat": "Tetherow Cascades Vista",
+     "source": "Marketing name. Recorded plat is Tetherow Cascades Vista (Phase 1 and Phase 2).",
+     "type": "Single-family golf homes",
+     "mls_aliases": [
+      "Tetherow"
+     ]
+    },
+    {
+     "slug": "tartan-druim",
+     "name": "Tartan Druim",
+     "kind": "toa_marketing",
+     "source": "TOA sub-association (tetherowowners.com/contact). No county plat recorded under this name.",
+     "type": "Gated custom homes",
+     "mls_aliases": [
+      "Tetherow"
+     ]
+    },
+    {
+     "slug": "highlands-ridge",
+     "name": "Highlands Ridge",
+     "kind": "recorded_plat",
+     "recorded_plat": "Highlands Ridge, Phases 1 & 2",
+     "source": "TOA sub-association and Deschutes County GIS plat.",
+     "type": "Planned community"
+    },
+    {
+     "slug": "outrider-overlook",
+     "name": "Outrider Overlook",
+     "kind": "recorded_plat",
+     "recorded_plat": "Outrider Overlook",
+     "source": "TOA sub-association and Deschutes County GIS plat.",
+     "type": "Planned community"
+    },
+    {
+     "slug": "trailhead",
+     "name": "Trailhead",
+     "kind": "toa_marketing",
+     "recorded_plat": "Trailhead At Tetherow",
+     "source": "TOA sub-association. Recorded plats are Trailhead At Tetherow Phase 1 and Phase 2.",
+     "type": "Vacation rental + planned"
+    },
+    {
+     "slug": "triple-knot",
+     "name": "Triple Knot",
+     "kind": "toa_marketing",
+     "source": "TOA sub-association. MLS files 9 Bend rows as SubdivisionName Triple (truncation). Triple Knot is the HOA name.",
+     "type": "Townhomes",
+     "mls_aliases": [
+      "Triple",
+      "Triple Knot"
+     ]
+    },
+    {
+     "slug": "the-rim",
+     "name": "The Rim",
+     "kind": "toa_marketing",
+     "recorded_plat": "Tetherow Rim",
+     "source": "TOA sub-association The Rim. Recorded plat is Tetherow Rim.",
+     "type": "Townhomes"
     }
    ],
-   "child_count": 8,
+   "child_count": 25,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Deschutes County GIS subdivision plats + Tetherow Owners Association contact list + live MLS SubdivisionName counts (2026-08-20). Not Spark nearby + radius.",
+    "mls_strings_verified": [
      {
-      "name": "Sunrise Village",
-      "pct_inside": 99.7
-     },
-     {
-      "name": "Westbrook Meadows",
-      "pct_inside": 99.6
-     },
-     {
-      "name": "Braeburn",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "1st On The Hillsites",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Lodges at Bachelor V",
-      "pct_inside": 100.0
+      "name": "Tetherow",
+      "city": "Bend",
+      "rows": 696
      },
      {
       "name": "Triple",
-      "pct_inside": 100.0
+      "city": "Bend",
+      "rows": 9,
+      "note": "MLS truncation of Triple Knot"
+     }
+    ],
+    "excluded": [
+     {
+      "name": "Tetherow Crossing",
+      "city": "Redmond",
+      "reason": "Different recorded plat. 304 MLS rows in Redmond. Do not mix with Tetherow CDP."
+     },
+     {
+      "name": "Sunrise Village",
+      "reason": "Neighbor plat. County GIS and TOA do not treat it as Tetherow."
+     },
+     {
+      "name": "Westbrook Meadows",
+      "reason": "Radius false positive"
+     },
+     {
+      "name": "Braeburn",
+      "reason": "Radius false positive"
+     },
+     {
+      "name": "1st On The Hillsites",
+      "reason": "Radius false positive"
+     },
+     {
+      "name": "Lodges at Bachelor V",
+      "reason": "Radius false positive"
      },
      {
       "name": "Campbell Road",
-      "pct_inside": 100.0
+      "reason": "Radius false positive"
      },
      {
       "name": "Roald West",
-      "pct_inside": 100.0
+      "reason": "Radius false positive"
      }
     ]
    }
@@ -183,11 +309,13 @@
     44.1911
    ],
    "subdivision_aliases": [
-    "Pronghorn"
+    "Pronghorn",
+    "Juniper Preserve"
    ],
-   "child_count": 0,
+   "display_name": "Pronghorn / Juniper Preserve",
+   "child_count": 1,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "method": "One parent, two labels. Resort rebranded Juniper Preserve in 2022 (The Resort Group). Residential HOA / club still Pronghorn. Live MLS SubdivisionName is Pronghorn (Bend). Juniper Preserve has 0 current listing rows and is kept so a future MLS string and /communities/bend-juniper-preserve consolidate here. Not inside a Bend neighborhood district.",
     "children_with_pct": []
    }
   },
@@ -405,36 +533,31 @@
     44.0838
    ],
    "subdivision_aliases": [
-    "Awbrey Glen",
-    "Shevlin Bluffs",
-    "Shevlin Estates",
-    "Awbrey Court",
-    "Shevlin Court",
-    "The Farm"
+    "Awbrey Glen"
    ],
-   "child_count": 5,
+   "child_count": 0,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Awbrey Glen HOA / MLS umbrella name. Recorded children in county GIS are Awbrey Glen Homesites phases. Shevlin Bluffs, Shevlin Estates, and Shevlin Court were radius neighbors in Summit West, not Awbrey Glen HOA. Awbrey Court and The Farm were the same spatial grab and are not verified Awbrey Glen HOA plats. Shevlin is not a City of Bend neighborhood district.",
+    "excluded": [
      {
       "name": "Shevlin Bluffs",
-      "pct_inside": 100.0
+      "reason": "Summit West recorded plat, not Awbrey Glen HOA"
      },
      {
       "name": "Shevlin Estates",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Awbrey Court",
-      "pct_inside": 95.5
+      "reason": "Summit West recorded plat, not Awbrey Glen HOA"
      },
      {
       "name": "Shevlin Court",
-      "pct_inside": 100.0
+      "reason": "Summit West recorded plat, not Awbrey Glen HOA"
+     },
+     {
+      "name": "Awbrey Court",
+      "reason": "Own recorded plat. Radius neighbor, not verified inside Awbrey Glen HOA"
      },
      {
       "name": "The Farm",
-      "pct_inside": 100.0
+      "reason": "Radius neighbor. No Awbrey Glen Homesites plat by this name"
      }
     ]
    }

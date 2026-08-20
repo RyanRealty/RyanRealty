@@ -23,6 +23,11 @@ export type SubNeighborhood = {
   slug: string
   name: string
   type: string
+  /** TOA / marketing name vs a recorded county plat. */
+  kind?: 'toa_marketing' | 'recorded_plat'
+  /** Recorded plat the marketing name sits on, when known. */
+  recorded_plat?: string
+  source?: string
   hoa_annual_estimate?: number | null
   hoa_sub_quarterly?: number | null
   hoa_master_annual?: number | null
@@ -39,6 +44,7 @@ export type ResortCommunityEntry = {
   city: string
   city_slug: string
   is_resort: boolean
+  display_name?: string
   broad_radius_km: number
   center_lon_lat: [number, number]
   subdivision_aliases: string[]
@@ -50,6 +56,12 @@ export type ResortCommunityEntry = {
   mls_cities?: string[]
   sub_neighborhoods: SubNeighborhood[]
   child_count: number
+  nest?: {
+    kind?: string
+    levels?: string[]
+    in_city_plats?: string[]
+    note?: string
+  }
   character?: string | null
   description?: string | null
   hoa_annual_estimate?: number | null

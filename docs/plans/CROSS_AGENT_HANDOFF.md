@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (grok local) — Sunstone seller CMA LIVE
+# Current — 2026-08-20 (cursor-cloud) — place registry plat aliases
+
+**Surface:** Cursor Cloud `cursor/place-registry-plats-8e72`. Loop stays **DISARMED**. Do not re-arm. No send.
+
+**Done**
+- Tetherow / Awbrey Glen / Pronghorn aliases now come from county plat + HOA + live MLS strings, not the 2026-05-15 Spark radius grab.
+- Tetherow children are recorded plats + MLS `Tetherow` / `Triple` / `Triple Knot`. Radius neighbors and Redmond Tetherow Crossing dropped.
+- Shevlin* removed from Awbrey Glen. Juniper Preserve added on the Pronghorn parent only.
+- Fixture: `lib/communities/resort-community-aliases.test.ts`. Alias rule: `data/RESORT_COMMUNITY_ALIASES.md`. Migration `20260820180000_place_registry_plat_aliases.sql` not applied to hosted yet.
+
+**Next**
+- Apply the `neighborhood_subdivisions` migration on hosted Supabase with the merge. Refresh community pulse after apply.
+
+**Do not:** re-arm the loop. Do not change House A listing copy. Do not nest Tetherow under Summit West.
+
+**Skills read:** database-canonical-reference, TDD, git-commit.
+
+# Prior — 2026-08-19 (grok local) — Sunstone seller CMA LIVE
 
 **Surface:** Grok local worktree `/Users/matthewryan/RyanRealty-wt-cma-sunstone-20260819` (`wt/cma-sunstone-20260819`). Product **`6ed2b5aa`**. Vercel production **READY** `dpl_3YBxhEC38sVWgU6QEJk9NfcgpsJQ`. Loop stays **DISARMED**. Do not re-arm. No send. Dirty CMA branch `cursor/cma-client-document-7fc3` was not mixed (CRM health `b0e9f537` and `origin-dual-remote` left behind).
 

@@ -3,7 +3,7 @@
 **Read this BEFORE writing any SQL or building any market report against the Ryan Realty database.** This is the canonical guide for AI agents (Claude Code, Cursor, scheduled-task agents) and human developers. If something here contradicts older notes, this file wins.
 
 - **Supabase project:** `dwvlophlbvvygjfxcrhm` (hostname `dwvlophlbvvygjfxcrhm.supabase.co`, project name `ryan-realty-platform`)
-- **Source of truth for resort communities:** [data/resort-communities.json](../data/resort-communities.json)
+- **Source of truth for resort communities:** [data/resort-communities.json](../data/resort-communities.json) — aliases from county plat / HOA, not radius ([data/RESORT_COMMUNITY_ALIASES.md](../data/RESORT_COMMUNITY_ALIASES.md))
 - **Methodology current:** `v4-2026-05-15` (rows in `public.cache_methodology_definitions`)
 - **Listings:** 589K+ rows (every MLS listing past + present, Oregon Data Share)
 - **PostGIS:** 3.3.7 installed; polygons live in `public.boundaries`
@@ -114,7 +114,7 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
   public.neighborhood_subdivisions  — parent→child SubdivisionName aliases for resort/neighborhood reports
   public.subdivision_flags    — is_resort flag (entity_key = 'city:slug')
 
-  Registry: data/resort-communities.json (the canonical list — 14 resort/area communities, 100 aliases)
+  Registry: data/resort-communities.json (19 featured parents + plat/HOA children; see data/RESORT_COMMUNITY_ALIASES.md)
 ```
 
 **Three things to internalize:**
@@ -136,7 +136,7 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | `public.boundaries` | 3,251+ | Polygons. `geo_type ∈ {city, neighborhood, subdivision, school_district, park, …}`. **10 cities** (TIGER/Line), **28 neighborhoods** (14 Bend districts + 14 resort communities), **3,213 subdivisions** (Deschutes County GIS plats), **6 school districts** (Oregon Dept. of Education, W2.7). PostGIS geometry in `polygon` (MULTIPOLYGON, SRID 4326). **Trails are NOT a `boundaries` geo_type** — see `public.trail_lines`. |
 | `public.trail_lines` | 18 | **Authoritative trail LINEWORK** (MultiLineString 4326) from USFS / BPRD / BLM. W2.7 decision (2026-07-24): do **not** invent a `geo_type='trail'` polygon corridor — that would be buffered geometry we made up. Keep trails here; `ci:boundary-provenance` bans `trail` as a boundaries geo_type. |
 | **`public.listing_boundary_xref_mv`** ⭐ | ~9.3K | **Precomputed listing→boundary spatial join** (mig `20260529020000`). ONE row per (boundary, on-market listing inside it): `(geo_type, geo_slug, listing_key, lat, lng, list_price, standard_status, property_type)`. Overlapping polygons (e.g. a Bend district AND the Tetherow resort, both `geo_type='neighborhood'`) each get their own row, so resort listings are correctly attributed even though their MLS `SubdivisionName` aliases collapse the `listing_tile_mv.boundary_neighborhood` column to the Bend district. **This is what the `listings_in_boundary` RPC reads** — a trivial indexed lookup, NOT a request-time `ST_Within`. Refreshed CONCURRENTLY by `/api/cron/refresh-mvs` (≤15 min). The boundary-map pins + "homes for sale" cards on every city/neighborhood/community page come from here via the `getGeoBoundaryMapData` DAL. |
-| `public.neighborhood_subdivisions` | 1,686 | Parent → child SubdivisionName aliases. For each `neighborhood_slug`, lists the `subdivision_label` values that aggregate under it. Resort communities (e.g. `tetherow`) have multiple aliases (Tetherow, Sunrise Village, Braeburn, …). Bend neighborhoods (e.g. `bend-awbrey-butte`) have many subdivision-plat names that fall inside the City of Bend district polygon. |
+| `public.neighborhood_subdivisions` | 1,686 | Parent → child SubdivisionName aliases. For each `neighborhood_slug`, lists the `subdivision_label` values that aggregate under it. Resort aliases come from county plat / HOA / live MLS strings (`data/RESORT_COMMUNITY_ALIASES.md`), not a spatial radius. Tetherow children are recorded Tetherow plats + MLS `Tetherow` / `Triple`. Bend neighborhoods (e.g. `bend-awbrey-butte`) have many subdivision-plat names that fall inside the City of Bend district polygon. |
 | `public.subdivision_flags` | 14 | `entity_key='city:slug'`, `is_resort` boolean. Used by consumer code to route a (city, subdivision) request to the neighborhood-level cache for resort/area communities. |
 | `public.geo_places` | 0 | Optional hierarchy table (country → state → city → neighborhood → community). Not actively used. |
 | `public.cities` | 0 | City master list. Currently unused; `slugify(city_field)` is the canonical city slug. |
@@ -325,13 +325,13 @@ These are registered as `geo_type='neighborhood'` in `public.boundaries`. **Thei
 
 | Community | Slug | City | Aliases | Active SFR today | Active inventory note |
 |---|---|---|---|---|---|
-| **Tetherow** | `tetherow` | Bend | 9 (Tetherow + Sunrise Village + Westbrook Meadows + Braeburn + 1st On The Hillsites + Lodges at Bachelor V + Triple + Campbell Road + Roald West) | 15 | |
+| **Tetherow** | `tetherow` | Bend | Recorded Tetherow plats + MLS `Tetherow` / `Triple` / `Triple Knot`. Not Sunrise Village, Westbrook Meadows, Braeburn, Lodges at Bachelor V, Campbell Road, Roald West, or Redmond Tetherow Crossing. Nest: Deschutes County › Tetherow CDP › community › plat. | 15 | |
 | **Broken Top** | `broken-top` | Bend | 5 (+ Golden Butte + Parks At Broken Top + Overturf Butte + The Highlands at Broken Top) | 16 | |
 | **Eagle Crest** | `eagle-crest` | Redmond | 5 (+ Ridge At Eagle Crest + Cline Falls Oasis + Coppermill + Cline Falls Mob Park) | 54 | |
-| **Pronghorn** | `pronghorn` | Bend | 1 (single MLS name) | 14 | Slow-turnover. ~9 SFR sales / year. |
+| **Pronghorn** | `pronghorn` | Bend | 2 (Pronghorn + Juniper Preserve on the same parent; 2022 resort rebrand) | 14 | Slow-turnover. ~9 SFR sales / year. Not a Bend district. |
 | **Caldera Springs** | `caldera-springs` | Sunriver | 5 (+ Powder Village Condo + Business Park + Sunriver Business Pa + Compound Condominium) | 17 | |
 | **Sunriver** | `sunriver` | Sunriver | **32** (Sunriver + The Ridge + StoneTH + Deer Park + Mtn Village East + River Village + Fairway Crest Village + Forest Park + Meadow Village + Overlook Park + Mtn Village West + Tennis Village + Meadow House + Fairway Vill Condo + Fremont Crossing + Abbot House Condo + Kitty Hawk + Quelah Condos + WildflS + Polehouse + Aquila Lodges + Fairway Island + Cluster Court + Skypark + Mtn View Lodge + Ranch Cabins + SkylinC + Quelah Estates + Aspen Meadows + Pace Estate + Camp Abbot Hangars + Sunriver Lodge) | 37 | MLS has no exact "Sunriver" — every Sunriver listing uses a sub-area name. |
-| **Awbrey Glen** | `awbrey-glen` | Bend | 6 (+ Shevlin Bluffs + Shevlin Estates + Awbrey Court + Shevlin Court + The Farm) | 6 | |
+| **Awbrey Glen** | `awbrey-glen` | Bend | 1 (Awbrey Glen). Shevlin* plats are Summit West, not this HOA. | 6 | |
 | **NorthWest Crossing** | `northwest-crossing` | Bend | 8 (+ Skyliner Summit + Shevlin Ridge + Westside Pines + Westside Meadows + Valhalla Heights + Treeline Phase 1 + Outcrop) | 21 | |
 | **Crosswater** | `crosswater` | Sunriver | 4 (+ Osprey Pointe Condo + Pace Estate + Lisle Acres) | 1 | Ultra-slow turnover; last SFR sale Sep 2025. |
 | **Black Butte Ranch** | `black-butte-ranch` | Sisters | 5 (+ Bbr + South Meadow + Glaze Meadow Homesite Section + Country House Condo) | 23 | |
@@ -389,9 +389,9 @@ FROM public.market_pulse_live
 WHERE geo_type='city' AND geo_slug='bend' AND property_type='A';
 ```
 
-### 3c. Bend neighborhoods (14)
+### 3c. Bend neighborhoods (13 official districts + undesignated)
 
-City of Bend Neighborhood Districts. Polygons from City of Bend GIS (authoritative, [data/bend-neighborhood-districts.geojson](../data/bend-neighborhood-districts.geojson)).
+City of Bend has 13 official Neighborhood Districts (bendoregon.gov/neighborhood-districts). Shevlin is not a district. Polygons from City of Bend GIS (authoritative, [data/bend-neighborhood-districts.geojson](../data/bend-neighborhood-districts.geojson)). `bend-undesignated` is our catch-all, not a City district.
 
 | Slug | Label | Notes |
 |---|---|---|
@@ -701,7 +701,7 @@ AND "PropertyType" = 'A';
 
 | Situation | What to do |
 |---|---|
-| New SubdivisionName variant appears in MLS that we don't recognize | Add to `data/resort-communities.json` if it belongs to a resort community, otherwise it'll naturally show up in subdivision-level queries. Run migration after editing the registry. |
+| New SubdivisionName variant appears in MLS that we don't recognize | Add to `data/resort-communities.json` only when a county plat or HOA source says it belongs to that parent (`data/RESORT_COMMUNITY_ALIASES.md`). Otherwise it stays a stand-alone subdivision. Run the `neighborhood_subdivisions` migration after editing the registry. |
 | New resort community needs to be tracked | Edit `data/resort-communities.json`, regenerate `supabase/migrations/<ts>_resort_communities_neighborhood_aliases.sql`, apply. |
 | Bend neighborhood polygon needs an update | See [docs/seo-neighborhood-polygon-fix-2026-05-14.md](seo-neighborhood-polygon-fix-2026-05-14.md). Source: City of Bend GIS authoritative GeoJSON. |
 | Cache numbers look wrong | Check `methodology_version` on the row first. If it matches `v4-2026-05-15`, the rule set is current — debug the underlying RPC. If stale, trigger a fresh `compute_and_cache_period_stats` call. |
@@ -715,7 +715,7 @@ AND "PropertyType" = 'A';
 
 | Source | Purpose |
 |---|---|
-| `data/resort-communities.json` | The 14-community parent→child registry (v2-2026-05-15) |
+| `data/resort-communities.json` | The 19 featured parents + correct children (v3-2026-08-20). Alias rule: county plat / HOA / live MLS, not radius. See `data/RESORT_COMMUNITY_ALIASES.md`. |
 | `public.cache_methodology_definitions` | Full audit trail for every cache methodology version |
 | `supabase/migrations/20260515170000_resort_communities_neighborhood_aliases.sql` | Migration that populated resort communities |
 | `supabase/migrations/20260425090000_cache_layer_complete_rewrite.sql` | Cache RPC bodies (`compute_and_cache_period_stats`, `refresh_market_pulse`, `backfill_rolling`) |

@@ -6,8 +6,8 @@
  * The golf/resort/master-planned community pages are built on hard-won spatial
  * data work: a curated registry (data/resort-communities.json) whose
  * subdivision_aliases + center/radius are the only thing that makes the
- * alias-aware active-SFR count correct (Widgi 0 vs true 48, Tetherow 14 vs true
- * 55). That count, the golf ledger, and the hover photos are all wired into the
+ * alias-aware active-SFR count correct (Widgi 0 vs true 48). Aliases must
+ * come from county plat / HOA / live MLS, not a Spark radius grab. That count, the golf ledger, and the hover photos are all wired into the
  * city page via a small set of §0 helpers. Any of these can silently regress:
  *   - a registry edit drops an alias array, center, radius, or city_slug
  *   - a refactor renames/removes resortActiveSfrCounts / cityResorts / the
