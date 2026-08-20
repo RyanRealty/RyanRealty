@@ -89,6 +89,47 @@ describe('getListingCanonicalPathFields', () => {
     expect(await getListingCanonicalPathFields('missing')).toBeNull()
   })
 
+  /**
+   * IDX display permissions (ODS Rule B/G, NAR 7.58) — added 2026-08-19.
+   *
+   * getListingDetail already refuses these rows, so the detail page renders
+   * "This home may no longer be on the market". This lookup did not, and it
+   * feeds /listing/by-key, whose generateMetadata publishes the street address
+   * in the <title> and a self-canonical to the pretty URL. Measured live before
+   * the gate: https://ryan-realty.com/homes-for-sale/listing/220215050 (MLS
+   * 220215050, permit_internet_yn = false) served
+   * `<title>1801 Rosa Parks, Portland | …</title>`. 110 rows carry one of these
+   * flags today (68 of them Active), so this is a class, not one row.
+   */
+  it('selects the display-permission columns so the gate has data to read', async () => {
+    setSb(mockSb(slimRow))
+    await getListingCanonicalPathFields('220189422')
+    expect(lastSelect).toContain('permit_internet_yn')
+    expect(lastSelect).toContain('permit_address_internet_yn')
+    expect(lastSelect).toContain('idx_participant')
+  })
+
+  it.each([
+    ['permit_internet_yn', 'seller opted out of internet display'],
+    ['permit_address_internet_yn', 'seller opted out of address display'],
+    ['idx_participant', 'listing broker is not an IDX participant'],
+  ])('returns null when %s is false (%s)', async (flag) => {
+    setSb(mockSb({ ...slimRow, [flag]: false }))
+    expect(await getListingCanonicalPathFields('220189422')).toBeNull()
+  })
+
+  it('still returns the row when the permission flags are absent or true', async () => {
+    setSb(
+      mockSb({
+        ...slimRow,
+        permit_internet_yn: true,
+        permit_address_internet_yn: null,
+        idx_participant: null,
+      })
+    )
+    expect(await getListingCanonicalPathFields('220189422')).toEqual(slimRow)
+  })
+
   it('returns null when the client is unavailable', async () => {
     setSb(null)
     expect(await getListingCanonicalPathFields('RK-1')).toBeNull()
