@@ -188,7 +188,6 @@ export {
   getListingKeysWithPriceChangeSince,
   getHeroPhotosByListingKeys,
   getOpenHousesInRange,
-  getPendingListingHistoryEvents,
   resolveCommunityChainBySlug,
 } from '@/lib/data/listings/getListingDetailBundles'
 export type {

@@ -1,8 +1,14 @@
 'use server'
 
 import { unstable_cache } from 'next/cache'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getListingTiles } from '@/lib/data'
+// Imported from its module rather than the '@/lib/data' barrel on purpose: that
+// barrel is frozen by the ci:file-size-budget ratchet (audit p2.2), which may
+// only shrink. app/page.tsx and app/sitemap.ts read DAL submodules the same way.
+import {
+  getWentPendingInWindow,
+  type WentPendingListing,
+} from '@/lib/data/listings/getWentPendingInWindow'
 import {
   SALES_PERIODS,
   getDateRangeForPeriod,
@@ -10,6 +16,7 @@ import {
   type SalesPeriodSlug,
 } from '@/lib/sales-report-periods'
 import { getPropertyTypeSegmentKey } from '@/lib/property-type'
+import { scopeReportCities } from '@/lib/market/report-scope'
 
 function median(values: number[]): number | null {
   if (values.length === 0) return null
@@ -125,11 +132,9 @@ function closedListingToReportListing(r: ListingRow): ReportListing {
  * Returns data grouped by city.
  */
 async function getClosedSalesFromListings(
-  supabase: SupabaseClient,
   periodStart: Date,
   periodEnd: Date
 ): Promise<MarketReportByCity[]> {
-  void supabase
   const startStr = periodStart.toISOString().slice(0, 10)
   const endStr = periodEnd.toISOString().slice(0, 10)
   // DAL: closed-sales window via listing_tile_mv close_date range. DOM
@@ -177,102 +182,82 @@ async function getClosedSalesFromListings(
   }))
 }
 
+/** Build one ReportListing from a listing that went pending in the window. */
+function wentPendingToReportListing(row: WentPendingListing): ReportListing {
+  return {
+    listing_key: row.listingKey,
+    event: 'Pending',
+    event_date: row.pendingAt,
+    city: row.city,
+    price: row.listPrice,
+    description: row.streetLine,
+    property_type: row.propertyType,
+    days_on_market: null,
+    photo_url: null,
+  }
+}
+
 /**
- * Fetch pending events from listing_history for the date range, then attach city from listings (match by ListingKey or ListNumber).
+ * Listings that went pending in the date range, grouped by city.
+ *
+ * Source: `activity_events`, `event_type = 'status_pending'`, via the DAL. The
+ * previous source — `listing_history` filtered `event ILIKE '%Pending%'` — was
+ * dead: that column carries no Pending value in any window (verified live
+ * 2026-08-19: 0 matching rows out of 3,900,150; the vocabulary is FieldChange,
+ * NewListing, BackOnMarket, …), so it returned [] every time and every
+ * published report showed zero pendings while the page copy promised them.
+ * `listings.pending_timestamp` is the more precise column but is unindexed and
+ * does not answer for the anon role the public page reads with. See
+ * lib/data/listings/getWentPendingInWindow.ts for the full trace.
  */
-async function getPendingFromHistory(
-  supabase: SupabaseClient,
+async function getPendingFromListings(
   periodStart: Date,
   periodEnd: Date
 ): Promise<MarketReportByCity[]> {
   const startStr = periodStart.toISOString().slice(0, 10)
   const endStr = periodEnd.toISOString().slice(0, 10)
-  void supabase
-  const { getPendingListingHistoryEvents } = await import('@/lib/data')
-  const rows = await getPendingListingHistoryEvents({
+  const rows = await getWentPendingInWindow({
     fromIso: `${startStr}T00:00:00.000Z`,
     toIso: `${endStr}T23:59:59.999Z`,
   })
   if (rows.length === 0) return []
 
-  const keys = [...new Set(rows.map((r) => r.listing_key).filter(Boolean))]
-  // DAL: lookup by listing_key + list_number across listing_tile_mv. The
-  // two parallel queries (byListingKey + byListNumber) were resolving the
-  // join in either direction; the DAL listingKeys filter only matches on
-  // listing_key, so we issue a second call to handle the ListNumber side.
-  // Both go through the indexed MV (sub-50ms total).
-  const tilesByKey = await getListingTiles({
-    listingKeys: keys.slice(0, 5000),
-    status: 'all',
-    limit: 500,
-  })
-  // For ListNumber lookups, fetch a broader window and post-filter
-  const tilesAllStatus = await getListingTiles({
-    listingKeys: keys.slice(0, 5000),
-    status: 'all',
-    limit: 500,
-  })
-  const combined = [
-    ...tilesByKey.map((t) => ({
-      ListingKey: t.listingKey,
-      ListNumber: t.listNumber,
-      City: t.city,
-      PropertyType: t.propertyType,
-    })),
-    ...tilesAllStatus
-      .filter((t) => t.listNumber && keys.includes(t.listNumber))
-      .map((t) => ({
-        ListingKey: t.listingKey,
-        ListNumber: t.listNumber,
-        City: t.city,
-        PropertyType: t.propertyType,
-      })),
-  ]
-  const keyToCity = new Map<string, string>()
-  const keyToPropertyType = new Map<string, string | null>()
-  for (const L of combined) {
-    const r = L as { ListingKey?: string | null; ListNumber?: string | null; City?: string | null; PropertyType?: string | null }
-    const city = (r.City ?? '').trim()
-    const pt = r.PropertyType?.trim() || null
-    if (r.ListingKey) {
-      keyToCity.set(r.ListingKey, city)
-      keyToPropertyType.set(r.ListingKey, pt)
-    }
-    if (r.ListNumber) {
-      keyToCity.set(r.ListNumber, city)
-      keyToPropertyType.set(r.ListNumber, pt)
-    }
-  }
   const byCity = new Map<string, ReportListing[]>()
   for (const row of rows) {
-    if (!isIndustryStandardReportPropertyType(keyToPropertyType.get(row.listing_key) ?? null)) continue
-    if (!isValidEventDate(row.event_date)) continue
-    const city = keyToCity.get(row.listing_key) ?? 'Other'
+    if (!isIndustryStandardReportPropertyType(row.propertyType)) continue
+    if (!isValidEventDate(row.pendingAt)) continue
+    const city = (row.city ?? '').trim() || 'Other'
     if (!byCity.has(city)) byCity.set(city, [])
-    byCity.get(city)!.push({
-      listing_key: row.listing_key,
-      event: row.event,
-      event_date: row.event_date,
-      city: city === 'Other' ? null : city,
-      price: row.price,
-      description: row.description,
-      property_type: keyToPropertyType.get(row.listing_key) ?? null,
-      days_on_market: null,
-      photo_url: null,
-    })
+    byCity.get(city)!.push(wentPendingToReportListing(row))
   }
   const cities = [...byCity.keys()].filter((c) => c !== 'Other').sort((a, b) => a.localeCompare(b))
   if (byCity.has('Other')) cities.push('Other')
   return cities.map((city) => ({
     city,
-    pending: (byCity.get(city) ?? []).sort((a, b) => (b.event_date ?? '').localeCompare(a.event_date ?? '')),
+    pending: (byCity.get(city) ?? []).sort((a, b) =>
+      (b.event_date ?? '').localeCompare(a.event_date ?? '')
+    ),
     closed: [],
   }))
 }
 
 /**
- * Fetch market report data by city: closed sales from listings table (CloseDate), pending from listing_history.
- * Uses the same listings table source as report RPCs so reports show data when Spark sync populates CloseDate.
+ * Market report data by city for a date window: closed sales from
+ * `listing_tile_mv` (close_date), pending from `activity_events`
+ * (`status_pending`), both through the DAL.
+ *
+ * SCOPE (§0, 2026-08-19). The result is filtered to the Central Oregon
+ * service area before it is returned, because every consumer of this function
+ * publishes it under a Central Oregon claim. The MLS feed and
+ * `listing_tile_mv` are statewide (76,925 Medford rows, 40,851 Grants Pass,
+ * 34,304 Klamath Falls, verified live), and `getListingTiles` applies its own
+ * allowlist only when the caller passes no geographic predicate — an
+ * incidental filter, not a scope. Seven published reports carried Southern
+ * Oregon and Willamette Valley cities under "Here's what happened in the
+ * Central Oregon real estate market last week, by city"; weekly-2026-05-24
+ * put 26 out-of-area cities and roughly half of its 274 closings under that
+ * sentence. The filter is `scopeReportCities` — one geography, from
+ * lib/central-oregon.ts.
  */
 export async function getMarketReportData(
   periodStart: Date,
@@ -282,22 +267,23 @@ export async function getMarketReportData(
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim()) return []
 
-  const supabase = createClient(url, anonKey)
   const [closedByCity, pendingByCity] = await Promise.all([
-    getClosedSalesFromListings(supabase, periodStart, periodEnd),
-    getPendingFromHistory(supabase, periodStart, periodEnd),
+    getClosedSalesFromListings(periodStart, periodEnd),
+    getPendingFromListings(periodStart, periodEnd),
   ])
   const citySet = new Set<string>([
     ...closedByCity.map((c) => c.city),
     ...pendingByCity.map((c) => c.city),
   ])
-  const cities = [...citySet].filter((c) => c !== 'Other').sort((a, b) => a.localeCompare(b))
-  if (citySet.has('Other')) cities.push('Other')
-  return cities.map((city) => {
+  const cities = [...citySet].sort((a, b) => a.localeCompare(b))
+  const merged = cities.map((city) => {
     const closed = closedByCity.find((c) => c.city === city)?.closed ?? []
     const pending = pendingByCity.find((c) => c.city === city)?.pending ?? []
     return { city, pending, closed }
   })
+  // The 'Other' bucket (blank `City`) drops out here too: a section nobody can
+  // attribute cannot be shown to be in area.
+  return scopeReportCities(merged)
 }
 
 /**
@@ -305,13 +291,11 @@ export async function getMarketReportData(
  * Same source as report RPCs (CloseDate + StandardStatus).
  */
 async function getClosedSalesForLocation(
-  supabase: SupabaseClient,
   city: string,
   periodStart: Date,
   periodEnd: Date,
   subdivision?: string | null
 ): Promise<ReportListing[]> {
-  void supabase
   const startStr = periodStart.toISOString().slice(0, 10)
   const endStr = periodEnd.toISOString().slice(0, 10)
   // DAL: closed-sales for a city (and optional subdivision) via listing_tile_mv.
@@ -346,7 +330,10 @@ async function getClosedSalesForLocation(
 
 /**
  * Pending and closed listing events for a single location and custom date range.
- * Closed from listings table (CloseDate); pending from listing_history (matched by ListingKey or ListNumber).
+ * Closed from `listing_tile_mv` (close_date); pending from `activity_events`
+ * (`status_pending`). Both sides take the caller's city (and optional
+ * subdivision) as their geography — the caller has named it, so the
+ * service-area allowlist does not apply here.
  */
 export async function getMarketReportDataForLocation(
   city: string,
@@ -358,78 +345,24 @@ export async function getMarketReportDataForLocation(
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim()) return { pending: [], closed: [] }
 
-  const supabase = createClient(url, anonKey)
   const startStr = periodStart.toISOString().slice(0, 10)
   const endStr = periodEnd.toISOString().slice(0, 10)
 
   const [closed, pendingRows] = await Promise.all([
-    getClosedSalesForLocation(supabase, city, periodStart, periodEnd, subdivision),
-    (async () => {
-      void supabase
-      const { getPendingListingHistoryEvents } = await import('@/lib/data')
-      return getPendingListingHistoryEvents({
-        fromIso: `${startStr}T00:00:00.000Z`,
-        toIso: `${endStr}T23:59:59.999Z`,
-      })
-    })(),
+    getClosedSalesForLocation(city, periodStart, periodEnd, subdivision),
+    getWentPendingInWindow({
+      fromIso: `${startStr}T00:00:00.000Z`,
+      toIso: `${endStr}T23:59:59.999Z`,
+      city: city.trim() || null,
+      subdivision: subdivision?.trim() || null,
+    }),
   ])
 
-  if (pendingRows.length === 0) return { pending: [], closed }
-
-  const keys = [...new Set(pendingRows.map((r) => r.listing_key).filter(Boolean))]
-  // DAL: read tiles by listing_key from listing_tile_mv. Same dual-lookup
-  // pattern as above — listing_key filter is direct; list_number resolves
-  // via post-fetch filter since the DAL doesn't accept ListNumber lookups.
-  const tilesByKey = await getListingTiles({
-    listingKeys: keys.slice(0, 5000),
-    status: 'all',
-    limit: 500,
-  })
-  const combined = tilesByKey.map((t) => ({
-    ListingKey: t.listingKey,
-    ListNumber: t.listNumber,
-    City: t.city,
-    SubdivisionName: t.subdivisionName,
-    PropertyType: t.propertyType,
-  }))
-  const cityTrim = city.trim().toLowerCase()
-  const subdivTrim = subdivision?.trim()?.toLowerCase() ?? null
-  const keyToMatch = new Map<string, boolean>()
-  const keyToPropertyType = new Map<string, string | null>()
-  for (const L of combined) {
-    const r = L as { ListingKey?: string | null; ListNumber?: string | null; City?: string | null; SubdivisionName?: string | null; PropertyType?: string | null }
-    const listCity = (r.City ?? '').trim().toLowerCase()
-    const listSub = (r.SubdivisionName ?? '').trim().toLowerCase()
-    const match = listCity === cityTrim && (subdivTrim == null || listSub === subdivTrim)
-    const pt = r.PropertyType?.trim() || null
-    if (r.ListingKey) {
-      keyToMatch.set(r.ListingKey, match)
-      keyToPropertyType.set(r.ListingKey, pt)
-    }
-    if (r.ListNumber) {
-      keyToMatch.set(r.ListNumber, match)
-      keyToPropertyType.set(r.ListNumber, pt)
-    }
-  }
-  const pending: ReportListing[] = []
-  for (const row of pendingRows) {
-    if (!keyToMatch.get(row.listing_key)) continue
-    const propertyType = keyToPropertyType.get(row.listing_key) ?? null
-    if (!isIndustryStandardReportPropertyType(propertyType)) continue
-    if (!isValidEventDate(row.event_date)) continue
-    pending.push({
-      listing_key: row.listing_key,
-      event: row.event,
-      event_date: row.event_date,
-      city: city.trim(),
-      price: row.price,
-      description: row.description,
-      property_type: propertyType,
-      days_on_market: null,
-      photo_url: null,
-    })
-  }
-  pending.sort((a, b) => (b.event_date ?? '').localeCompare(a.event_date ?? ''))
+  const pending = pendingRows
+    .filter((row) => isIndustryStandardReportPropertyType(row.propertyType))
+    .filter((row) => isValidEventDate(row.pendingAt))
+    .map(wentPendingToReportListing)
+    .sort((a, b) => (b.event_date ?? '').localeCompare(a.event_date ?? ''))
   return { pending, closed }
 }
 
@@ -534,46 +467,10 @@ export async function getSalesReportCardsData(cities: readonly string[]): Promis
   }
 }
 
-/**
- * Get the latest report by slug (for display).
- */
-export async function getMarketReportBySlug(slug: string): Promise<{
-  slug: string
-  period_type: string
-  period_start: string
-  period_end: string
-  title: string
-  image_storage_path: string | null
-  content_html: string | null
-  created_at: string
-} | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return null
-  const supabase = createClient(url, anonKey)
-  const { data } = await supabase.from('market_reports').select('*').eq('slug', slug).maybeSingle()
-  return data as typeof data & { period_start: string; period_end: string } | null
-}
-
-/** Public URL for a report image (storage path in banners bucket). */
-export async function getReportImageUrl(imageStoragePath: string | null): Promise<string | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  if (!url?.trim() || !imageStoragePath?.trim()) return null
-  return `${url.replace(/\/$/, '')}/storage/v1/object/public/banners/${imageStoragePath}`
-}
-
-/**
- * List recent reports for index/archive.
- */
-export async function listMarketReports(limit = 20): Promise<Array<{ slug: string; title: string; period_start: string; period_end: string; created_at: string }>> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !anonKey?.trim()) return []
-  const supabase = createClient(url, anonKey)
-  const { data } = await supabase
-    .from('market_reports')
-    .select('slug, title, period_start, period_end, created_at')
-    .order('created_at', { ascending: false })
-    .limit(limit)
-  return (data ?? []) as Array<{ slug: string; title: string; period_start: string; period_end: string; created_at: string }>
-}
+// getMarketReportBySlug / getReportImageUrl / listMarketReports were DELETED
+// here 2026-08-19. They were uncached duplicates of the DAL readers in
+// lib/data/market/getMarketReports.ts (the canonical ones every page already
+// imports from '@/lib/data'), left behind when the read paths moved. Keeping a
+// second getMarketReportBySlug that returns raw `content_html` would be a way
+// around the report's geographic scope, which is applied in the DAL reader.
+// Read a report through '@/lib/data'.

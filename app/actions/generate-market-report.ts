@@ -196,7 +196,7 @@ async function alertGeneratorFailure(reason: string): Promise<void> {
       intro:
         'The weekly generator (/api/cron/market-report) hit a condition that would have published a blank or broken report, so it refused and alerted instead of failing silently (conversion-audit 2026-07-15 #6).',
       context:
-        'Generator: app/actions/generate-market-report.ts. Data: getMarketReportData (listing_tile_mv + listing_history). Rerun: GET /api/cron/market-report with the cron bearer.',
+        'Generator: app/actions/generate-market-report.ts. Data: getMarketReportData — closed from listing_tile_mv, pending from activity_events (status_pending), scoped to Central Oregon by lib/market/report-scope.ts. Rerun: GET /api/cron/market-report with the cron bearer.',
     })
   } catch (e) {
     console.error('[generateWeeklyMarketReport] alert send failed:', e)

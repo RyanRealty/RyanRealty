@@ -12,6 +12,7 @@
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { scopeReportHtml } from '@/lib/market/report-scope'
 
 export type MarketReportRow = {
   slug: string
@@ -43,12 +44,31 @@ async function _getMarketReportBySlugUncached(slug: string): Promise<MarketRepor
     .maybeSingle()
 
   if (error) throw new Error(`[getMarketReportBySlug] ${error.message}`)
-  return (data as MarketReportRow | null) ?? null
+  const row = (data as MarketReportRow | null) ?? null
+  if (!row) return null
+
+  // GEOGRAPHIC SCOPE (§0, 2026-08-19). Seven published bodies carry Southern
+  // Oregon and Willamette Valley city sections under a Central Oregon claim —
+  // weekly-2026-05-24 stored 38 cities and 274 closings, 26 of those cities
+  // out of area. The generator no longer produces them, but stored rows are
+  // stored rows, so the scope is enforced on the way out too. Applying it in
+  // this reader means every consumer of a report body — the page prose, the
+  // opening statistic, any section parser — works from one scoped document
+  // and none of them has to remember.
+  const scoped = scopeReportHtml(row.content_html)
+  if (scoped.removedCities.length > 0) {
+    console.warn(
+      `[getMarketReportBySlug] ${row.slug}: dropped ${scoped.removedCities.length} out-of-area section(s): ${scoped.removedCities.join(', ')}`,
+    )
+  }
+  return { ...row, content_html: row.content_html == null ? null : scoped.html }
 }
 
+// v2 key: the data cache survives deploys, so without the bump the unscoped
+// bodies stay served for a full revalidate window after the fix ships.
 export const getMarketReportBySlug = makeResilientCached(
   _getMarketReportBySlugUncached,
-  ['market-report-by-slug-v1'],
+  ['market-report-by-slug-v2'],
   { revalidate: CACHE_WINDOWS.marketReport, tags: [cacheTag.market] },
   null,
 )

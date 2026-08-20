@@ -300,33 +300,14 @@ export async function getListingDetailVideos(listingKey: string): Promise<Listin
 // embedding generator, no UI. The listing_embeddings table + the
 // match_listings_semantic RPC drop via migration 20260722213000.
 
-/** Pending events from listing_history in a date window. */
-export async function getPendingListingHistoryEvents(options: {
-  fromIso: string
-  toIso: string
-}): Promise<Array<{
-  listing_key: string
-  event: string
-  event_date: string | null
-  price: number | null
-  description: string | null
-}>> {
-  const sb = supabaseAnon()
-  if (!sb) return []
-  const { data } = await sb
-    .from('listing_history')
-    .select('listing_key, event, event_date, price, description')
-    .gte('event_date', options.fromIso)
-    .lte('event_date', options.toIso)
-    .ilike('event', '%Pending%')
-  return (data ?? []) as Array<{
-    listing_key: string
-    event: string
-    event_date: string | null
-    price: number | null
-    description: string | null
-  }>
-}
+// getPendingListingHistoryEvents was DELETED 2026-08-19. It read
+// `listing_history` filtered `event ILIKE '%Pending%'`, and that column has no
+// such value — verified live over 3,900,010 rows, the vocabulary is
+// FieldChange, Photo, OpenHouse, NewListing, Document, TextChange,
+// BackOnMarket, Video, VirtualTour, CopyListing. It returned [] in every
+// window, which is why every published weekly report shows zero pendings. The
+// live signal is `listings.pending_timestamp` —
+// lib/data/listings/getWentPendingInWindow.ts. Do not reinstate this filter.
 
 /** Return the set of listing_keys that have a price-change event since the given ISO timestamp. */
 export async function getListingKeysWithPriceChangeSince(sinceIso: string): Promise<Set<string>> {
