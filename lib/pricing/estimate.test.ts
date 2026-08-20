@@ -366,6 +366,7 @@ describe('listPriceFromEngine is the only cover number', () => {
             publicRemarks: null,
             viewDescription: null,
             taxAnnual: null,
+            domTotal: c.cdom,
           }))
         : [],
       null,
@@ -398,6 +399,7 @@ describe('listPriceFromEngine is the only cover number', () => {
             publicRemarks: null,
             viewDescription: null,
             taxAnnual: null,
+            domTotal: 10,
           }))
         : [],
       market: null,
@@ -453,6 +455,7 @@ describe('listPriceFromEngine is the only cover number', () => {
         publicRemarks: null,
         viewDescription: null,
         taxAnnual: null,
+        domTotal: 10,
       })),
       null,
     )!

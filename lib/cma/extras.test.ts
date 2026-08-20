@@ -155,8 +155,9 @@ describe('computeBandPosition', () => {
       { latitude: 44.05, longitude: -121.29, propertySubType: 'Single Family Residence' },
     )
     expect(b!.activeCount).toBe(1)
-    expect(b!.rivals.map((r) => r.address)).toEqual(['947 6th'])
-    expect(b!.rivals.some((r) => /santorini/i.test(r.address))).toBe(false)
+    const rivals = b!.rivals ?? []
+    expect(rivals.map((r) => r.address)).toEqual(['947 6th'])
+    expect(rivals.some((r) => /santorini/i.test(r.address))).toBe(false)
   })
 })
 
