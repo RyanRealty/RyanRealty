@@ -1,6 +1,20 @@
 {
   "$schema": "Per marketing_brain_skills/producers/site-community-page/SKILL.md §4 ResortCommunityConfig",
   "version": "v1-2026-05-18",
+  "kind": "planned_and_golf",
+  "city": "Bend",
+  "city_slug": "bend",
+  "nest": {
+    "kind": "census_cdp",
+    "cdp": "Tetherow",
+    "levels": [
+      "Deschutes County",
+      "Tetherow CDP",
+      "Tetherow community",
+      "TOA neighborhood or recorded plat"
+    ],
+    "note": "Tetherow is a Census CDP, mostly outside Bend city. Do not nest under Summit West or Century West except Phase 1, Phase 2, Phase 6, and North Forty At Tetherow. House A about_prose is unchanged."
+  },
   "source": "Manual authoring from verified public sources (Tetherow Resort, TOA, Golf Digest, Conde Nast, Bend Bulletin, Source Weekly, KTVZ, Troon, Tetherow blog, Wikipedia). Extended 2026-08-03 with long-form about_prose covering founding history, David McLay Kidd, trail access, architecture, wildfire history, HOA/rental structure, and current dining, each claim traced in the top-level `sources` array. Frozen market figures (median close price, sale-to-list ratio, active inventory counts) removed from about_prose per CLAUDE.md §0, those figures are owned exclusively by the live components rendered on the page.",
   "last_modified": "2026-08-03T00:00:00Z",
   "sources": [

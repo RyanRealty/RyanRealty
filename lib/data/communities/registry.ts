@@ -19,6 +19,16 @@ import rawRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 // Types
 // ---------------------------------------------------------------------------
 
+export type CommunityKind =
+  | 'planned_community'
+  | 'golf_community'
+  | 'planned_and_golf'
+  | 'public_golf'
+  | 'cdp'
+  | 'resort_village'
+
+export type NestKind = 'census_cdp' | 'bend_district' | 'unincorporated'
+
 export type SubNeighborhood = {
   slug: string
   name: string
@@ -44,6 +54,8 @@ export type ResortCommunityEntry = {
   city: string
   city_slug: string
   is_resort: boolean
+  /** Community class. Geographic nest is `nest`, not this field. */
+  kind?: CommunityKind
   display_name?: string
   broad_radius_km: number
   center_lon_lat: [number, number]
@@ -57,7 +69,10 @@ export type ResortCommunityEntry = {
   sub_neighborhoods: SubNeighborhood[]
   child_count: number
   nest?: {
-    kind?: string
+    kind?: NestKind
+    neighborhood?: string
+    cdp?: string
+    parent_slug?: string
     levels?: string[]
     in_city_plats?: string[]
     note?: string

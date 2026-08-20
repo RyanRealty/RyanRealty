@@ -2,18 +2,17 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-20 (cursor-cloud) — place registry plat aliases
+# Current — 2026-08-20 (cursor-cloud) — place registry majors + nest
 
-**Surface:** Cursor Cloud `cursor/place-registry-plats-8e72`. Loop stays **DISARMED**. Do not re-arm. No send.
+**Surface:** Cursor Cloud `cursor/place-registry-plats-8e72` (PR 141). Loop stays **DISARMED**. Do not re-arm. No send.
 
 **Done**
-- Tetherow / Awbrey Glen / Pronghorn aliases now come from county plat + HOA + live MLS strings, not the 2026-05-15 Spark radius grab.
-- Tetherow children are recorded plats + MLS `Tetherow` / `Triple` / `Triple Knot`. Radius neighbors and Redmond Tetherow Crossing dropped.
-- Shevlin* removed from Awbrey Glen. Juniper Preserve added on the Pronghorn parent only.
-- Fixture: `lib/communities/resort-community-aliases.test.ts`. Alias rule: `data/RESORT_COMMUNITY_ALIASES.md`. Migration `20260820180000_place_registry_plat_aliases.sql` not applied to hosted yet.
+- Every featured parent now has `kind` + `nest` (City › Neighborhood › Planned community › Subdivision; skip empty).
+- Added Discovery West, Tree Farm, Westgate, Seventh Mountain CDP, Petrosa, Shevlin Commons from live MLS + county plats. Inn + Widgi nest under Seventh Mountain. Public-only courses rejected in JSON.
+- Tetherow / Awbrey Glen / Pronghorn alias rewrite from the prior commit kept. House A about_prose untouched.
 
 **Next**
-- Apply the `neighborhood_subdivisions` migration on hosted Supabase with the merge. Refresh community pulse after apply.
+- Apply `20260820180000_place_registry_plat_aliases.sql` and `20260820190000_place_registry_major_parents.sql` on hosted Supabase with the merge.
 
 **Do not:** re-arm the loop. Do not change House A listing copy. Do not nest Tetherow under Summit West.
 

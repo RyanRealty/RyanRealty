@@ -21,6 +21,7 @@ const ROOT = join(__dirname, '..', '..')
 const SEED_MIGRATIONS = [
   '20260625171000_crm_report_areas.sql',
   '20260707101000_crm_report_areas_bend_districts.sql',
+  '20260820191000_crm_report_areas_major_parents.sql',
 ] as const
 
 /** Parse the seeded (key, label, ...) tuples out of a migration's VALUES block. */
@@ -56,8 +57,8 @@ describe('crm_report_areas seed', () => {
     expect(seeded).toEqual(builtSubset)
   })
 
-  it('seeds 38 areas (7 cities + 18 resort communities + 13 Bend districts)', () => {
-    expect(readAllSeededRows()).toHaveLength(38)
+  it('seeds 44 areas (7 cities + 24 featured communities + 13 Bend districts)', () => {
+    expect(readAllSeededRows()).toHaveLength(44)
   })
 
   it('protects Bend, the report engine anchor geography', () => {

@@ -114,7 +114,7 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
   public.neighborhood_subdivisions  — parent→child SubdivisionName aliases for resort/neighborhood reports
   public.subdivision_flags    — is_resort flag (entity_key = 'city:slug')
 
-  Registry: data/resort-communities.json (19 featured parents + plat/HOA children; see data/RESORT_COMMUNITY_ALIASES.md)
+  Registry: data/resort-communities.json (featured major resort / MPC / golf parents + plat/HOA children; see data/RESORT_COMMUNITY_ALIASES.md)
 ```
 
 **Three things to internalize:**
@@ -332,13 +332,15 @@ These are registered as `geo_type='neighborhood'` in `public.boundaries`. **Thei
 | **Caldera Springs** | `caldera-springs` | Sunriver | 5 (+ Powder Village Condo + Business Park + Sunriver Business Pa + Compound Condominium) | 17 | |
 | **Sunriver** | `sunriver` | Sunriver | **32** (Sunriver + The Ridge + StoneTH + Deer Park + Mtn Village East + River Village + Fairway Crest Village + Forest Park + Meadow Village + Overlook Park + Mtn Village West + Tennis Village + Meadow House + Fairway Vill Condo + Fremont Crossing + Abbot House Condo + Kitty Hawk + Quelah Condos + WildflS + Polehouse + Aquila Lodges + Fairway Island + Cluster Court + Skypark + Mtn View Lodge + Ranch Cabins + SkylinC + Quelah Estates + Aspen Meadows + Pace Estate + Camp Abbot Hangars + Sunriver Lodge) | 37 | MLS has no exact "Sunriver" — every Sunriver listing uses a sub-area name. |
 | **Awbrey Glen** | `awbrey-glen` | Bend | 1 (Awbrey Glen). Shevlin* plats are Summit West, not this HOA. | 6 | |
-| **NorthWest Crossing** | `northwest-crossing` | Bend | 8 (+ Skyliner Summit + Shevlin Ridge + Westside Pines + Westside Meadows + Valhalla Heights + Treeline Phase 1 + Outcrop) | 21 | |
+| **NorthWest Crossing** | `northwest-crossing` | Bend | 8 (+ Skyliner Summit + Shevlin Ridge + Westside Pines + Westside Meadows + Valhalla Heights + Treeline Phase 1 + Outcrop). Discovery West is a separate Summit West parent. | 21 | |
 | **Crosswater** | `crosswater` | Sunriver | 4 (+ Osprey Pointe Condo + Pace Estate + Lisle Acres) | 1 | Ultra-slow turnover; last SFR sale Sep 2025. |
 | **Black Butte Ranch** | `black-butte-ranch` | Sisters | 5 (+ Bbr + South Meadow + Glaze Meadow Homesite Section + Country House Condo) | 23 | |
 | **Brasada Ranch** | `brasada-ranch` | Powell Butte | 2 (+ Powell Butte View) | 25 | |
-| **Widgi Creek** | `widgi-creek` | Bend | 6 (+ Inn Of The 7th + 7th Mtn Golf Village + PointsWest + Elkai Woods + Milepost 1) | 6 | |
+| **Widgi Creek** | `widgi-creek` | Bend | Widgi Creek + PointsWest + Elkai Woods + Milepost 1. Nests under Seventh Mountain CDP. Inn of the 7th is its own featured tile. | 6 | |
 | **Vandevert Ranch** | `vandevert-ranch` | Bend | 1 (single MLS name) | 0 | Tiny private community. Last SFR sale Jan 2025. |
 | **Three Rivers** | `three-rivers` | Bend | 11 (Oww + DrrhTrs + River Meadows + Sun Dance + Deschutes River Recreation Homesites + Drrh Trs + Deschutes Pines + Blissful Acres + Fountainbleau + Swarens Fancher + OWW2) | 39 | South Deschutes residential area. `is_resort=false`. |
+
+Featured registry parents beyond the original 14 cache rows (same alias rule; `kind` + `nest` in `data/resort-communities.json`): Discovery West (Summit West, not NWX), Tree Farm, Westgate, Seventh Mountain CDP, Petrosa, Shevlin Commons (Summit West, not a Shevlin district), Mt Bachelor Village, Inn of the 7th Mountain, River's Edge, Mountain High, Crooked River Ranch. Public-only courses are in the JSON `rejected` array.
 
 **Pattern for querying a resort community market report:**
 
@@ -715,7 +717,7 @@ AND "PropertyType" = 'A';
 
 | Source | Purpose |
 |---|---|
-| `data/resort-communities.json` | The 19 featured parents + correct children (v3-2026-08-20). Alias rule: county plat / HOA / live MLS, not radius. See `data/RESORT_COMMUNITY_ALIASES.md`. |
+| `data/resort-communities.json` | Featured major resort / MPC / golf parents + correct children (v4-2026-08-20). Each parent has `kind` + `nest`. Alias rule: county plat / HOA / live MLS, not radius. See `data/RESORT_COMMUNITY_ALIASES.md`. |
 | `public.cache_methodology_definitions` | Full audit trail for every cache methodology version |
 | `supabase/migrations/20260515170000_resort_communities_neighborhood_aliases.sql` | Migration that populated resort communities |
 | `supabase/migrations/20260425090000_cache_layer_complete_rewrite.sql` | Cache RPC bodies (`compute_and_cache_period_stats`, `refresh_market_pulse`, `backfill_rolling`) |

@@ -1,8 +1,8 @@
 {
- "version": "v3-2026-08-20",
+ "version": "v4-2026-08-20",
  "source": "County recorded plat + HOA / MLS strings. Not a Spark nearby radius.",
- "alias_rule": "subdivision_aliases must come from a Deschutes County recorded plat, a published HOA / TOA name, or an MLS SubdivisionName that actually files under that parent. Do not assign children with Spark /listings/nearby plus a 2-6 km >=80% inside-test. That 2026-05-15 method pulled in neighbors (Sunrise Village under Tetherow, Shevlin* under Awbrey Glen). Tetherow Crossing in Redmond is a different plat from Tetherow in the Bend CDP. This file is the 19 featured parents plus their correct children. Do not dump the 1,645 Bend plats into it.",
- "verification_trace": "v3 (2026-08-20): Tetherow, Awbrey Glen, and Pronghorn aliases rewritten from county GIS plats + TOA / club names + live MLS SubdivisionName counts. Tetherow MLS files as Tetherow (Bend) and Triple (9 Bend rows, Triple Knot truncation). Recorded Tetherow plats from public.boundaries geo_type=subdivision. Shevlin* removed from Awbrey Glen (Summit West plats, not Awbrey Glen HOA). Juniper Preserve added on the Pronghorn parent (2022 resort rebrand; 0 current MLS rows under that string). Older communities still carry Matt-approved 2026-05-15 overrides (Sunriver centroid, Broken Top Highlands name-override, Crosswater trim, Vandevert / Three Rivers splits) plus the 2026-06-27 exact-name additions (Mt Bachelor Village, Inn of the 7th Mountain, River's Edge, Mountain High) and 2026-07-29 mls_cities.",
+ "alias_rule": "subdivision_aliases must come from a Deschutes County recorded plat, a published HOA / TOA name, or an MLS SubdivisionName that actually files under that parent. Do not assign children with Spark /listings/nearby plus a 2-6 km >=80% inside-test. This file is the featured major resort / MPC / golf parents plus their correct children. Do not dump the 1,645 Bend plats into it. Public-only golf courses are listed in rejected, not as parents.",
+ "verification_trace": "v4 (2026-08-20): Every parent labeled with kind + nest (City › Neighborhood › Planned community › Subdivision; skip empty). Added Discovery West, Tree Farm, Westgate, Seventh Mountain CDP, Petrosa, Shevlin Commons from live MLS + county plats + Brooks / Census sources. Inn and Widgi nest under Seventh Mountain CDP. Public-only courses rejected. Tetherow / Awbrey Glen / Pronghorn alias rewrite from v3 kept.",
  "generated_at": "2026-08-20",
  "communities": [
   {
@@ -11,13 +11,14 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 4.0,
+   "broad_radius_km": 4,
    "center_lon_lat": [
     -121.3599,
     44.0306
    ],
    "nest": {
     "kind": "census_cdp",
+    "cdp": "Tetherow",
     "levels": [
      "Deschutes County",
      "Tetherow CDP",
@@ -72,10 +73,10 @@
      "hoa_sub_quarterly": 195,
      "hoa_master_annual": 1464,
      "hoa_manager": "TOA (Tetherow Owners Association)",
-     "lot_size_note": "Golf-frontage \u00bd-acre and larger lots",
+     "lot_size_note": "Golf-frontage ½-acre and larger lots",
      "character": "Original Tetherow phase. Established build-out feel. Direct course frontage on the McLay Kidd holes. Heath sits on the north side of Tetherow Phase 1, anchored by Hosmer Lake Drive and Cartwright.",
-     "description": "Original Tetherow phase. Single-family golf homes on \u00bd-acre and larger lots fronting the McLay Kidd course. Established built-out feel.",
-     "image_hint": "Heath at Tetherow course-frontage exterior \u2014 hand-pick from a Hosmer Lake or Cartwright MLS photo set",
+     "description": "Original Tetherow phase. Single-family golf homes on ½-acre and larger lots fronting the McLay Kidd course. Established built-out feel.",
+     "image_hint": "Heath at Tetherow course-frontage exterior — hand-pick from a Hosmer Lake or Cartwright MLS photo set",
      "mls_aliases": [
       "Tetherow"
      ],
@@ -213,7 +214,8 @@
       "reason": "Radius false positive"
      }
     ]
-   }
+   },
+   "kind": "planned_and_golf"
   },
   {
    "slug": "broken-top",
@@ -235,24 +237,34 @@
    ],
    "child_count": 4,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
     "children_with_pct": [
      {
       "name": "Golden Butte",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Parks At Broken Top",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Overturf Butte",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "The Highlands at Broken Top",
-      "pct_inside": 100.0
+      "pct_inside": 100
      }
+    ]
+   },
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "bend_district",
+    "neighborhood": "Century West",
+    "levels": [
+     "City of Bend",
+     "Century West",
+     "Broken Top"
     ]
    }
   },
@@ -262,7 +274,7 @@
    "city": "Redmond",
    "city_slug": "redmond",
    "is_resort": true,
-   "broad_radius_km": 6.0,
+   "broad_radius_km": 6,
    "center_lon_lat": [
     -121.2759,
     44.2674
@@ -276,11 +288,11 @@
    ],
    "child_count": 4,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
     "children_with_pct": [
      {
       "name": "Ridge At Eagle Crest",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Cline Falls Oasis",
@@ -288,13 +300,23 @@
      },
      {
       "name": "Coppermill",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Cline Falls Mob Park",
-      "pct_inside": 100.0
+      "pct_inside": 100
      }
     ]
+   },
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "census_cdp",
+    "cdp": "Eagle Crest",
+    "levels": [
+     "Deschutes County",
+     "Eagle Crest CDP"
+    ],
+    "note": "Redmond-area CDP. No official Redmond neighborhood set."
    }
   },
   {
@@ -303,7 +325,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 3.0,
+   "broad_radius_km": 3,
    "center_lon_lat": [
     -121.1714,
     44.1911
@@ -317,6 +339,15 @@
    "verification": {
     "method": "One parent, two labels. Resort rebranded Juniper Preserve in 2022 (The Resort Group). Residential HOA / club still Pronghorn. Live MLS SubdivisionName is Pronghorn (Bend). Juniper Preserve has 0 current listing rows and is kept so a future MLS string and /communities/bend-juniper-preserve consolidate here. Not inside a Bend neighborhood district.",
     "children_with_pct": []
+   },
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "unincorporated",
+    "note": "Not inside a City of Bend neighborhood district. One parent, two labels (Pronghorn / Juniper Preserve).",
+    "levels": [
+     "Deschutes County",
+     "Pronghorn"
+    ]
    }
   },
   {
@@ -325,7 +356,7 @@
    "city": "Sunriver",
    "city_slug": "sunriver",
    "is_resort": true,
-   "broad_radius_km": 4.0,
+   "broad_radius_km": 4,
    "center_lon_lat": [
     -121.4351,
     43.8505
@@ -335,12 +366,22 @@
    ],
    "child_count": 0,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test. Corrected 2026-06-27: removed Powder Village Condo (condo community, PropertyType=A avg close $288K, geographically adjacent but distinct), Business Park, Sunriver Business Pa (commercial, 0 active SFR), Compound Condominium (0 active SFR). These were incorrectly assigned by spatial proximity; they are Sunriver-area subdivisions, not Caldera Springs residential phases. Caldera Springs = 29 active SFR, avg list $2.05M (verified live MLS 2026-06-27).",
+    "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test. Corrected 2026-06-27: removed Powder Village Condo (condo community, PropertyType=A avg close $288K, geographically adjacent but distinct), Business Park, Sunriver Business Pa (commercial, 0 active SFR), Compound Condominium (0 active SFR). These were incorrectly assigned by spatial proximity; they are Sunriver-area subdivisions, not Caldera Springs residential phases. Caldera Springs = 29 active SFR, avg list $2.05M (verified live MLS 2026-06-27).",
     "children_with_pct": []
    },
    "mls_cities": [
     "Bend"
-   ]
+   ],
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "unincorporated",
+    "note": "Adjacent to Sunriver. Not a City of Bend district. MLS City is often Bend.",
+    "levels": [
+     "Deschutes County",
+     "Sunriver area",
+     "Caldera Springs"
+    ]
+   }
   },
   {
    "slug": "sunriver",
@@ -348,7 +389,7 @@
    "city": "Sunriver",
    "city_slug": "sunriver",
    "is_resort": true,
-   "broad_radius_km": 5.0,
+   "broad_radius_km": 5,
    "center_lon_lat": [
     -121.45,
     43.875
@@ -388,15 +429,15 @@
    ],
    "child_count": 31,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
     "children_with_pct": [
      {
       "name": "The Ridge",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "StoneTH",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Deer Park",
@@ -408,7 +449,7 @@
      },
      {
       "name": "River Village",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Fairway Crest Village",
@@ -420,19 +461,19 @@
      },
      {
       "name": "Meadow Village",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Overlook Park",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Mtn Village West",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Tennis Village",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Meadow House",
@@ -440,23 +481,23 @@
      },
      {
       "name": "Fairway Vill Condo",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Fremont Crossing",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Abbot House Condo",
-      "pct_inside": 98.0
+      "pct_inside": 98
      },
      {
       "name": "Kitty Hawk",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Quelah Condos",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "WildflS",
@@ -464,7 +505,7 @@
      },
      {
       "name": "Polehouse",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Aquila Lodges",
@@ -472,31 +513,31 @@
      },
      {
       "name": "Fairway Island",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Cluster Court",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Skypark",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Mtn View Lodge",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Ranch Cabins",
-      "pct_inside": 95.0
+      "pct_inside": 95
      },
      {
       "name": "SkylinC",
-      "pct_inside": 95.0
+      "pct_inside": 95
      },
      {
       "name": "Quelah Estates",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Aspen Meadows",
@@ -504,22 +545,32 @@
      },
      {
       "name": "Pace Estate",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Camp Abbot Hangars",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Sunriver Lodge",
-      "pct_inside": 100.0
+      "pct_inside": 100
      }
     ]
    },
    "mls_cities": [
     "Sunriver",
     "Bend"
-   ]
+   ],
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "census_cdp",
+    "cdp": "Sunriver",
+    "levels": [
+     "Deschutes County",
+     "Sunriver CDP",
+     "Sunriver"
+    ]
+   }
   },
   {
    "slug": "awbrey-glen",
@@ -527,7 +578,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 3.0,
+   "broad_radius_km": 3,
    "center_lon_lat": [
     -121.3532,
     44.0838
@@ -560,6 +611,16 @@
       "reason": "Radius neighbor. No Awbrey Glen Homesites plat by this name"
      }
     ]
+   },
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "bend_district",
+    "neighborhood": "Awbrey Butte",
+    "levels": [
+     "City of Bend",
+     "Awbrey Butte",
+     "Awbrey Glen"
+    ]
    }
   },
   {
@@ -568,7 +629,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 4.0,
+   "broad_radius_km": 4,
    "center_lon_lat": [
     -121.3525,
     44.0611
@@ -585,37 +646,48 @@
    ],
    "child_count": 7,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
     "children_with_pct": [
      {
       "name": "Skyliner Summit",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Shevlin Ridge",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Westside Pines",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Westside Meadows",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Valhalla Heights",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Treeline Phase 1",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Outcrop",
-      "pct_inside": 100.0
+      "pct_inside": 100
      }
     ]
+   },
+   "kind": "planned_community",
+   "nest": {
+    "kind": "bend_district",
+    "neighborhood": "Summit West",
+    "levels": [
+     "City of Bend",
+     "Summit West",
+     "NorthWest Crossing"
+    ],
+    "note": "True Brooks MPC in Summit West, not Century West. Discovery West is adjacent and is not NWX."
    }
   },
   {
@@ -624,7 +696,7 @@
    "city": "Sunriver",
    "city_slug": "sunriver",
    "is_resort": true,
-   "broad_radius_km": 4.0,
+   "broad_radius_km": 4,
    "center_lon_lat": [
     -121.4482,
     43.8514
@@ -637,30 +709,40 @@
    ],
    "child_count": 3,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
     "children_with_pct": [
      {
       "name": "Osprey Pointe Condo",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "note": "Matt-curated 2026-05-15"
      },
      {
       "name": "Pace Estate",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "note": "Matt-curated 2026-05-15"
      },
      {
       "name": "Lisle Acres",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "note": "Matt-curated 2026-05-15"
      }
     ],
-    "matt_directive_2026_05_15": "Crosswater is its own specific community. Osprey Pointe Condo, Pace Estate, Lisle Acres are part of Crosswater. Oww/DrrhTrs/Deschutes River Recreation Homesites are NOT Crosswater \u2014 they are Three Rivers."
+    "matt_directive_2026_05_15": "Crosswater is its own specific community. Osprey Pointe Condo, Pace Estate, Lisle Acres are part of Crosswater. Oww/DrrhTrs/Deschutes River Recreation Homesites are NOT Crosswater — they are Three Rivers."
    },
    "mls_cities": [
     "Bend",
     "Sunriver"
-   ]
+   ],
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "census_cdp",
+    "cdp": "Sunriver",
+    "levels": [
+     "Deschutes County",
+     "Sunriver CDP",
+     "Crosswater"
+    ]
+   }
   },
   {
    "slug": "black-butte-ranch",
@@ -668,7 +750,7 @@
    "city": "Sisters",
    "city_slug": "sisters",
    "is_resort": true,
-   "broad_radius_km": 5.0,
+   "broad_radius_km": 5,
    "center_lon_lat": [
     -121.6564,
     44.3642
@@ -682,30 +764,40 @@
    ],
    "child_count": 4,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
     "children_with_pct": [
      {
       "name": "Bbr",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "South Meadow",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Glaze Meadow Homesite Section",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Country House Condo",
-      "pct_inside": 100.0
+      "pct_inside": 100
      }
     ]
    },
    "mls_cities": [
     "Black Butte Ranch",
     "Sisters"
-   ]
+   ],
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "census_cdp",
+    "cdp": "Black Butte Ranch",
+    "levels": [
+     "Deschutes County",
+     "Black Butte Ranch CDP"
+    ],
+    "note": "Sisters-area CDP. No official Sisters neighborhood set."
+   }
   },
   {
    "slug": "brasada-ranch",
@@ -713,7 +805,7 @@
    "city": "Powell Butte",
    "city_slug": "powell-butte",
    "is_resort": true,
-   "broad_radius_km": 5.0,
+   "broad_radius_km": 5,
    "center_lon_lat": [
     -121.0389,
     44.162
@@ -724,12 +816,22 @@
    ],
    "child_count": 1,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
     "children_with_pct": [
      {
       "name": "Powell Butte View",
       "pct_inside": 89.7
      }
+    ]
+   },
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "unincorporated",
+    "note": "Powell Butte area. Not a Bend district. No official Powell Butte neighborhood set.",
+    "levels": [
+     "Crook County",
+     "Powell Butte",
+     "Brasada Ranch"
     ]
    }
   },
@@ -739,7 +841,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 3.0,
+   "broad_radius_km": 3,
    "center_lon_lat": [
     -121.3851,
     44.0053
@@ -752,7 +854,7 @@
    ],
    "child_count": 5,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
+    "method": "Spark /listings/nearby + closest-parent assignment + ≥80% inside-test",
     "children_with_pct": [
      {
       "name": "Inn Of The 7th",
@@ -760,21 +862,33 @@
      },
      {
       "name": "7th Mtn Golf Village",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "PointsWest",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Elkai Woods",
-      "pct_inside": 100.0
+      "pct_inside": 100
      },
      {
       "name": "Milepost 1",
-      "pct_inside": 100.0
+      "pct_inside": 100
      }
     ]
+   },
+   "kind": "public_golf",
+   "nest": {
+    "kind": "census_cdp",
+    "cdp": "Seventh Mountain",
+    "levels": [
+     "Deschutes County",
+     "Seventh Mountain CDP",
+     "Widgi Creek"
+    ],
+    "parent_slug": "seventh-mountain",
+    "note": "Public golf plus a small residential cluster. PointsWest, Elkai Woods, and Milepost 1 file here. Inn of the 7th Mountain stays its own featured tile under the same CDP."
    }
   },
   {
@@ -783,7 +897,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 2.0,
+   "broad_radius_km": 2,
    "center_lon_lat": [
     -121.443611,
     43.837479
@@ -796,6 +910,15 @@
     "method": "Single-name community (matches Pronghorn pattern). Centroid from 71 MLS listings tagged 'Vandevert Ranch'.",
     "children_with_pct": [],
     "matt_directive_2026_05_15": "Vandevert Ranch is its own specific community, not a Crosswater child."
+   },
+   "kind": "planned_community",
+   "nest": {
+    "kind": "unincorporated",
+    "note": "South Deschutes, near Three Rivers / Sunriver. Not a Crosswater child.",
+    "levels": [
+     "Deschutes County",
+     "Vandevert Ranch"
+    ]
    }
   },
   {
@@ -804,7 +927,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": false,
-   "broad_radius_km": 5.0,
+   "broad_radius_km": 5,
    "center_lon_lat": [
     -121.4715,
     43.8336
@@ -824,61 +947,61 @@
    ],
    "child_count": 11,
    "verification": {
-    "method": "Spark /listings/nearby scan from composite center, \u226560% inside-test, Sunriver/Crosswater/Caldera/Vandevert subs excluded per Matt directive",
+    "method": "Spark /listings/nearby scan from composite center, ≥60% inside-test, Sunriver/Crosswater/Caldera/Vandevert subs excluded per Matt directive",
     "children_with_pct": [
      {
       "name": "Oww",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "total": 976
      },
      {
       "name": "DrrhTrs",
-      "pct_inside": 81.0,
+      "pct_inside": 81,
       "total": 877
      },
      {
       "name": "River Meadows",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "total": 589
      },
      {
       "name": "Sun Dance",
-      "pct_inside": 99.0,
+      "pct_inside": 99,
       "total": 140
      },
      {
       "name": "Deschutes River Recreation Homesites",
-      "pct_inside": 66.0,
+      "pct_inside": 66,
       "total": 297
      },
      {
       "name": "Drrh Trs",
-      "pct_inside": 80.0,
+      "pct_inside": 80,
       "total": 205
      },
      {
       "name": "Deschutes Pines",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "total": 16
      },
      {
       "name": "Blissful Acres",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "total": 14
      },
      {
       "name": "Fountainbleau",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "total": 7
      },
      {
       "name": "Swarens Fancher",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "total": 6
      },
      {
       "name": "OWW2",
-      "pct_inside": 100.0,
+      "pct_inside": 100,
       "total": 7
      }
     ],
@@ -887,7 +1010,18 @@
    "mls_cities": [
     "Bend",
     "La Pine"
-   ]
+   ],
+   "kind": "planned_community",
+   "nest": {
+    "kind": "census_cdp",
+    "cdp": "Three Rivers",
+    "levels": [
+     "Deschutes County",
+     "Three Rivers CDP",
+     "Three Rivers"
+    ],
+    "note": "South-county recreational community. is_resort is false so generic aliases do not enter the golf ledger."
+   }
   },
   {
    "slug": "mt-bachelor-village",
@@ -895,7 +1029,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 2.0,
+   "broad_radius_km": 2,
    "center_lon_lat": [
     -121.336,
     44.0331
@@ -907,6 +1041,16 @@
    "verification": {
     "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
     "children_with_pct": []
+   },
+   "kind": "resort_village",
+   "nest": {
+    "kind": "bend_district",
+    "neighborhood": "Century West",
+    "levels": [
+     "City of Bend",
+     "Century West",
+     "Mt Bachelor Village"
+    ]
    }
   },
   {
@@ -915,7 +1059,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 2.0,
+   "broad_radius_km": 2,
    "center_lon_lat": [
     -121.3887,
     44.0009
@@ -928,6 +1072,18 @@
    "verification": {
     "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
     "children_with_pct": []
+   },
+   "kind": "resort_village",
+   "nest": {
+    "kind": "census_cdp",
+    "cdp": "Seventh Mountain",
+    "levels": [
+     "Deschutes County",
+     "Seventh Mountain CDP",
+     "Inn of the 7th Mountain"
+    ],
+    "parent_slug": "seventh-mountain",
+    "note": "Featured tile under the Seventh Mountain CDP. Do not duplicate this geography on the CDP parent."
    }
   },
   {
@@ -936,7 +1092,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 2.0,
+   "broad_radius_km": 2,
    "center_lon_lat": [
     -121.3137,
     44.0799
@@ -949,6 +1105,17 @@
    "verification": {
     "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
     "children_with_pct": []
+   },
+   "kind": "public_golf",
+   "nest": {
+    "kind": "bend_district",
+    "neighborhood": "Awbrey Butte",
+    "levels": [
+     "City of Bend",
+     "Awbrey Butte",
+     "River's Edge"
+    ],
+    "note": "Public golf plus a small residential village. City of Bend GIS places the village centroid in Awbrey Butte."
    }
   },
   {
@@ -957,7 +1124,7 @@
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
-   "broad_radius_km": 2.0,
+   "broad_radius_km": 2,
    "center_lon_lat": [
     -121.3048,
     44.0053
@@ -969,6 +1136,16 @@
    "verification": {
     "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
     "children_with_pct": []
+   },
+   "kind": "planned_and_golf",
+   "nest": {
+    "kind": "bend_district",
+    "neighborhood": "Southeast Bend",
+    "levels": [
+     "City of Bend",
+     "Southeast Bend",
+     "Mountain High"
+    ]
    }
   },
   {
@@ -977,7 +1154,7 @@
    "city": "Terrebonne",
    "city_slug": "terrebonne",
    "is_resort": false,
-   "broad_radius_km": 3.0,
+   "broad_radius_km": 3,
    "center_lon_lat": [
     -121.2811,
     44.4268
@@ -987,7 +1164,244 @@
    ],
    "verification": {
     "method": "Exact MLS SubdivisionName match; centroid from listing coords (live MLS 2026-06-27). Large rural planned community (Terrebonne), not a resort (is_resort=false)."
+   },
+   "kind": "planned_community",
+   "nest": {
+    "kind": "census_cdp",
+    "cdp": "Crooked River Ranch",
+    "levels": [
+     "Jefferson County / Deschutes County",
+     "Crooked River Ranch CDP"
+    ],
+    "note": "Terrebonne-area CDP. No official Terrebonne neighborhood set. is_resort is false."
    }
+  },
+  {
+   "slug": "discovery-west",
+   "label": "Discovery West",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "kind": "planned_community",
+   "broad_radius_km": 2,
+   "center_lon_lat": [
+    -121.3679,
+    44.059
+   ],
+   "nest": {
+    "kind": "bend_district",
+    "neighborhood": "Summit West",
+    "levels": [
+     "City of Bend",
+     "Summit West",
+     "Discovery West"
+    ],
+    "note": "Brooks MPC west of NorthWest Crossing. Not NWX. Live MLS files as Discovery West Phase 1–9."
+   },
+   "subdivision_aliases": [
+    "Discovery West Phase 1",
+    "Discovery West Phase 2",
+    "Discovery West Phase 3",
+    "Discovery West Phase 4",
+    "Discovery West Phase 5",
+    "Discovery West Phase 6 & 7",
+    "Discovery West Phase 8 & 9"
+   ],
+   "child_count": 7,
+   "verification": {
+    "method": "Live MLS SubdivisionName 2026-08-20 (321 Bend rows across seven phase strings). County GIS plats match the same phases. Brooks Discovery West. Point-in-polygon: Summit West. Not in NWX aliases."
+   }
+  },
+  {
+   "slug": "tree-farm",
+   "label": "Tree Farm",
+   "display_name": "The Tree Farm",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "kind": "planned_community",
+   "broad_radius_km": 2,
+   "center_lon_lat": [
+    -121.381,
+    44.0604
+   ],
+   "nest": {
+    "kind": "unincorporated",
+    "note": "Brooks planned community west of the Bend city mesh, adjacent to Summit West / Shevlin Park. Not a City of Bend district. Polygon lives in data/bend/bend-neighborhood-polygons.json.",
+    "levels": [
+     "Deschutes County",
+     "The Tree Farm"
+    ]
+   },
+   "subdivision_aliases": [
+    "Tree Farm"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Live MLS SubdivisionName 2026-08-20: Tree Farm | Bend (69 rows). County plat geo_slug=tree-farm. Brooks: 533 acres, fifty two-acre homesites."
+   }
+  },
+  {
+   "slug": "westgate",
+   "label": "Westgate",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "kind": "planned_community",
+   "broad_radius_km": 2,
+   "center_lon_lat": [
+    -121.3711,
+    44.0696
+   ],
+   "nest": {
+    "kind": "unincorporated",
+    "note": "Planned community in the gap west of Summit West, between Tree Farm and the city mesh. Not a City of Bend district. Grants Pass Westgate is a different plat.",
+    "levels": [
+     "Deschutes County",
+     "Westgate"
+    ]
+   },
+   "subdivision_aliases": [
+    "Westgate"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Live MLS 2026-08-20: Westgate | Bend (132 rows). County GIS has Westgate Phases 1–8; MLS umbrella is Westgate. Centroid from Bend-only listings (Grants Pass rows excluded)."
+   }
+  },
+  {
+   "slug": "seventh-mountain",
+   "label": "Seventh Mountain",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": false,
+   "kind": "cdp",
+   "broad_radius_km": 2,
+   "center_lon_lat": [
+    -121.383974,
+    44.005497
+   ],
+   "nest": {
+    "kind": "census_cdp",
+    "cdp": "Seventh Mountain",
+    "levels": [
+     "Deschutes County",
+     "Seventh Mountain CDP",
+     "Seventh Mountain"
+    ],
+    "note": "Census CDP southwest of Bend. Inn of the 7th Mountain and Widgi Creek are featured tiles under this CDP. Do not copy their MLS aliases onto this parent."
+   },
+   "subdivision_aliases": [
+    "Seventh Mountain"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Census CDP. Live MLS has 0 rows named Seventh Mountain. Inn Of The 7th (894) and 7th Mtn Golf Village (143) stay on inn-of-the-7th-mountain. Widgi Creek / PointsWest / Elkai Woods / Milepost 1 stay on widgi-creek."
+   }
+  },
+  {
+   "slug": "petrosa",
+   "label": "Petrosa",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "kind": "planned_community",
+   "broad_radius_km": 2,
+   "center_lon_lat": [
+    -121.253,
+    44.0909
+   ],
+   "nest": {
+    "kind": "unincorporated",
+    "note": "Brooks east-Bend planned community. 200 sampled listing points sit outside the City of Bend neighborhood mesh (nearest official district is Boyd Acres).",
+    "levels": [
+     "Deschutes County",
+     "Petrosa"
+    ]
+   },
+   "subdivision_aliases": [
+    "Petrosa"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Live MLS 2026-08-20: Petrosa | Bend (450 rows). County GIS has Petrosa Phases 1–6. MLS umbrella is Petrosa. Brooks eastside MPC."
+   }
+  },
+  {
+   "slug": "shevlin-commons",
+   "label": "Shevlin Commons",
+   "city": "Bend",
+   "city_slug": "bend",
+   "is_resort": true,
+   "kind": "planned_community",
+   "broad_radius_km": 2,
+   "center_lon_lat": [
+    -121.3719,
+    44.0782
+   ],
+   "nest": {
+    "kind": "bend_district",
+    "neighborhood": "Summit West",
+    "levels": [
+     "City of Bend",
+     "Summit West",
+     "Shevlin Commons"
+    ],
+    "note": "Brooks PUD in Summit West. This is a planned community, not a City of Bend Shevlin district. Shevlin Bluffs / Estates / Court are separate Summit West plats, not this HOA."
+   },
+   "subdivision_aliases": [
+    "Shevlin Commons"
+   ],
+   "child_count": 0,
+   "verification": {
+    "method": "Live MLS 2026-08-20: Shevlin Commons | Bend (266 rows). County plat Shevlin Commons P.U.D. Phases I–III. Point-in-polygon: Summit West."
+   }
+  }
+ ],
+ "rejected": [
+  {
+   "name": "Lost Tracks",
+   "reason": "Public golf course in Bend. 0 MLS SubdivisionName rows. Not a residential MPC."
+  },
+  {
+   "name": "Juniper Golf",
+   "reason": "Public golf course in Redmond. 0 MLS SubdivisionName rows. Not a residential MPC."
+  },
+  {
+   "name": "Quail Run",
+   "reason": "Public golf course in La Pine. Bend-tagged Quail Run rows centroid far south of the city mesh. Not a featured MPC."
+  },
+  {
+   "name": "Aspen Lakes",
+   "reason": "Public golf course in Sisters. Residential plats Aspen Lakes Golf Est and Rim At Aspen Lakes stay ordinary subdivisions, not a featured course-named parent."
+  },
+  {
+   "name": "Bend Golf Club",
+   "reason": "Public / private club course. 26 MLS rows at the club name. Not a residential MPC."
+  },
+  {
+   "name": "Meadow Lakes",
+   "reason": "Public golf course in Prineville. Meadow Lakes Estate is a residential plat and stays a subdivision, not a featured course-named parent."
+  },
+  {
+   "name": "Deschutes River Woods",
+   "reason": "Unincorporated rural residential CDP south of Bend. Not a planned community or golf community."
+  },
+  {
+   "name": "River Rim",
+   "reason": "Large Southwest Bend subdivision (970+ MLS rows). Not a resort, golf community, or Brooks-style MPC. Stays subdivision grain."
+  },
+  {
+   "name": "Woodside Ranch",
+   "reason": "South-Bend gap plats in the polygon file. Established subdivision cluster, not a major resort/MPC/golf parent."
+  },
+  {
+   "name": "River Bend Estates",
+   "reason": "South-Bend gap polygon filler. Not a major resort/MPC/golf parent."
+  },
+  {
+   "name": "Sunset View Estates",
+   "reason": "South-Bend gap subdivision. Not a major resort/MPC/golf parent."
   }
  ]
 }
