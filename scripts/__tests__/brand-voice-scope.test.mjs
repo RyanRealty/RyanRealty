@@ -4,7 +4,12 @@ import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 
-import { collectScannedFiles, findSelfPraiseViolations } from '../check-brand-voice.mjs'
+import {
+  collectScannedFiles,
+  findSelfPraiseViolations,
+  functionScopeRanges,
+  PUBLIC_COPY_FUNCTIONS,
+} from '../check-brand-voice.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const require = createRequire(import.meta.url)
@@ -61,16 +66,69 @@ describe('scan scope covers public copy that lives in .ts modules', () => {
     expect(scanned.has(rel)).toBe(true)
   })
 
+  it('reads the client-facing CMA delivery email composer', () => {
+    expect(scanned.has('lib/cma-delivery.ts')).toBe(true)
+  })
+
   it('does NOT sweep lib/ wholesale', () => {
-    // Measured 2026-08-06: lib/ as a whole reports 305 violations that are logs,
-    // errors and developer prose. Only the named -content.ts registries are in.
+    // Re-measured 2026-08-19: lib/ as a whole reports 170 violations across 69
+    // files, overwhelmingly agent prompts, pipeline diagnostics and developer
+    // prose. Only the named -content.ts registries and the named composer files
+    // are in.
     const libFiles = [...scanned].filter((f) => f.startsWith('lib/'))
     expect(libFiles.length).toBeGreaterThan(0)
-    expect(libFiles.every((f) => f.endsWith('-content.ts'))).toBe(true)
+    expect(
+      libFiles.every((f) => f.endsWith('-content.ts') || f === 'lib/cma-delivery.ts')
+    ).toBe(true)
   })
 
   it('does not read colocated tests as copy', () => {
     expect([...scanned].some((f) => /\.(test|spec)\.[cm]?[jt]sx?$/.test(f))).toBe(false)
+  })
+})
+
+describe('function-scoped public copy', () => {
+  /**
+   * composeCmaEmail builds the homeowner's CMA delivery email in two parallel
+   * bodies. The html branch was rewritten to the canon; the text branch kept
+   * "The full report is attached — it walks through..." and shipped. The file
+   * cannot be covered wholesale (it also holds an internal errors[] row with an
+   * em dash, bound for the admin queue, and baselines only shrink), so scope is
+   * the function body. These pin that the line is drawn where it is claimed.
+   */
+  it('every named composer resolves in its file', () => {
+    for (const { file, fn } of PUBLIC_COPY_FUNCTIONS) {
+      const src = readFileSync(join(ROOT, file), 'utf8')
+      expect(functionScopeRanges(src, [fn]), `${file} → ${fn}`).not.toBeNull()
+    }
+  })
+
+  it('fails resolution when the composer is renamed', () => {
+    // A rename must break the gate loudly, not quietly drop the copy.
+    const src = readFileSync(join(ROOT, 'lib/cma-delivery.ts'), 'utf8')
+    expect(functionScopeRanges(src, ['composeCmaEmailRenamed'])).toBeNull()
+  })
+
+  it('covers the sent body and excludes the internal queue log', () => {
+    const src = readFileSync(join(ROOT, 'lib/cma-delivery.ts'), 'utf8')
+    const ranges = functionScopeRanges(src, ['composeCmaEmail'])
+    const covers = (needle) => {
+      const at = src.indexOf(needle)
+      expect(at, `not found: ${needle}`).toBeGreaterThan(-1)
+      return ranges.some((r) => at >= r.start && at < r.end)
+    }
+    expect(covers('The full report is attached')).toBe(true)
+    expect(covers('no assigned broker email available')).toBe(false)
+  })
+
+  it('keeps the two bodies of the sent email on the same sentences', () => {
+    const src = readFileSync(join(ROOT, 'lib/cma-delivery.ts'), 'utf8')
+    for (const sentence of [
+      'The full report is attached. It walks through the comparable sales we used, what we adjusted for, and where the number could move.',
+      'If you want to talk through it, or have us walk through in person, just reply to this email or call. No pressure either way.',
+    ]) {
+      expect(src.split(sentence).length - 1, sentence).toBe(2)
+    }
   })
 })
 

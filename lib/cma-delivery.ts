@@ -627,9 +627,9 @@ export function composeCmaEmail(params: {
     '',
     `Based on actual recent sales near you, our best estimate is ${value}${range}.`,
     '',
-    `The full report is attached — it walks through the comparable sales we used, what we adjusted for, and where the number could move.`,
+    `The full report is attached. It walks through the comparable sales we used, what we adjusted for, and where the number could move.`,
     '',
-    `If you want to talk through it — or if you'd rather we walk through in person — just reply to this email or call. No pressure either way.`,
+    `If you want to talk through it, or have us walk through in person, just reply to this email or call. No pressure either way.`,
     '',
     brokerName ? brokerName : 'Ryan Realty',
     brokerEmail || '',
@@ -638,8 +638,8 @@ export function composeCmaEmail(params: {
     .filter((l) => l !== null && l !== undefined)
     .join('\n')
 
-  // Brand-voice compliant: no exclamation marks, no em-dashes-as-punctuation
-  // (em-dash allowed as a data placeholder), tabular nums on the figures.
+  // Same sentences as `text` above: both are sent, so change one, change both.
+  // No `!`, no em dash as punctuation (it stays as the formatUsd null placeholder).
   const html = `
 <div style="font-family:${EMAIL_FONT_STACK};font-size:16px;line-height:1.55;color:#102742;max-width:580px;margin:0 auto">
   <p>${greeting}</p>

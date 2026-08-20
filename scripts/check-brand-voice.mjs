@@ -82,18 +82,67 @@ const ts = require('typescript')
 //   data/**            17 .ts registry modules, every one of them page copy.
 //                      Adds 0 violations today: the 35 dashes in them are all
 //                      inside /** */ and // comments, which the scanner strips.
-//   lib/**/*-content.ts  the 5 named content registries. lib/ WHOLESALE stays
-//                      out for the reason measured above; -content.ts is the
+//   lib/**/*-content.ts  the 5 named content registries. -content.ts is the
 //                      repo's existing name for a public registry, and
 //                      ci:voice-constructions already documents data/ and the
 //                      lib/ content registries as public-copy surfaces. This
 //                      widening makes the two gates agree on what is public.
+//
+// lib/ WHOLESALE STAYS OUT, re-measured 2026-08-19 rather than inherited. The
+// number quoted for this decision was 305, taken 2026-08-06 against a much
+// larger vocabulary; D11 has emptied most of those lists since, so the figure
+// was stale the moment it became the justification. Today lib/ as a whole
+// reports 170 violations across 69 files, and the top of that list is agent
+// prompts, LLM instructions, pipeline diagnostics, and 12 hits inside
+// lib/brand-voice/generated-vocabulary.ts — the rule mirror flagging itself for
+// containing the rules. The conclusion survived the re-measurement: a gate whose
+// output is mostly developer prose is a gate people learn to override. Named
+// scope, not a sweep.
 const SCAN_DIRS = ['app', 'components', 'data']
 
 // Files outside SCAN_DIRS that are public copy by naming convention. Matched
 // against the repo-relative path so a new lib/<surface>-content.ts is covered
 // the day it is written, not the day someone remembers this list.
 const PUBLIC_COPY_FILE = /^lib\/(?:[^/]+\/)*[^/]*-content\.ts$/
+
+// PUBLIC COPY THAT LIVES INSIDE ONE FUNCTION, added 2026-08-19.
+//
+// Some client-facing sentences are not in a registry file at all: they are
+// assembled inside a composer in a lib/ module that ALSO holds internal logs and
+// queue plumbing. The file cannot be covered wholesale and the copy cannot be
+// left uncovered, so scope is the FUNCTION BODY, resolved from the TypeScript
+// AST. Literals outside the named function are not read.
+//
+// FOUND BY, and the reason this is not a hypothetical: composeCmaEmail builds
+// the CMA delivery email in two parallel bodies, `text` and `html`. The html
+// branch was rewritten to the canon; the text branch was not, and kept
+// "The full report is attached — it walks through..." plus a second em-dash
+// sentence, in an email a homeowner receives. Nothing could see it. This gate
+// stopped at app/components/data, ci:voice-constructions checks sentence SHAPES
+// and not punctuation, and ci:voice-send-paths lists lib/cma/build.ts (the
+// report prose) but not the delivery email, so no runtime checkBrandVoice ran
+// on the string that was actually sent.
+//
+// WHY NOT JUST ADD THE FILE. Measured today, not recalled: adding
+// lib/cma-delivery.ts wholesale costs one more baseline entry for
+// `no assigned broker email available — review needed in admin queue`, an
+// internal errors[] row bound for the admin queue. Baselines only shrink, and
+// rewriting an internal log to satisfy a public-copy gate is the move that
+// makes a gate feel arbitrary and gets it switched off. Function scope keeps
+// the client sentences gated and leaves the log alone.
+const PUBLIC_COPY_FUNCTIONS = [
+  {
+    file: 'lib/cma-delivery.ts',
+    fn: 'composeCmaEmail',
+    why: 'subject + body of the CMA delivery email a homeowner receives',
+  },
+]
+const PUBLIC_COPY_FUNCTION_FILES = new Map()
+for (const entry of PUBLIC_COPY_FUNCTIONS) {
+  const forFile = PUBLIC_COPY_FUNCTION_FILES.get(entry.file) ?? []
+  forFile.push(entry.fn)
+  PUBLIC_COPY_FUNCTION_FILES.set(entry.file, forFile)
+}
 
 const EXCLUDED_DIRS = new Set(['node_modules', '.next', 'out', 'build', 'dist', '__tests__'])
 const FILE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx'])
@@ -473,6 +522,8 @@ export {
   isDebugOutput,
   isProseSentence,
   stripInterpolations,
+  functionScopeRanges,
+  PUBLIC_COPY_FUNCTIONS,
 }
 
 function normalize(p) {
@@ -579,6 +630,43 @@ function extractJsxText(content) {
   return out
 }
 
+// Byte ranges of the named functions in a PUBLIC_COPY_FUNCTIONS file, from the
+// TS AST. Covers `function f()`, `export function f()`, and `const f = () =>`.
+//
+// Returns null when a name is not found, and the caller turns that into a gate
+// FAILURE rather than an empty scan. A composer that gets renamed or split must
+// not silently fall out of coverage — that is the same silent-under-enforcement
+// mechanism this whole pass exists to close.
+function functionScopeRanges(content, fnNames) {
+  let sf
+  try {
+    sf = ts.createSourceFile('scan.tsx', content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  } catch {
+    return null
+  }
+  const found = new Map()
+  const visit = (node) => {
+    let name = null
+    if (ts.isFunctionDeclaration(node) && node.name) name = node.name.text
+    else if (
+      ts.isVariableDeclaration(node) &&
+      node.name &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))
+    ) {
+      name = node.name.text
+    }
+    if (name && fnNames.includes(name)) {
+      found.set(name, { start: node.getStart(sf), end: node.getEnd() })
+    }
+    node.forEachChild(visit)
+  }
+  visit(sf)
+  if (found.size !== fnNames.length) return null
+  return [...found.values()]
+}
+
 // A string literal is a code-mechanical token when it appears as an
 // import path (`from '<...>'`) or as the argument to `require()` or
 // `import()`. Those are NOT user-facing prose and matching banned
@@ -640,9 +728,30 @@ function scanFile(absPath) {
   }
   const lines = content.split('\n')
 
+  // Function-scoped files: only literals inside the named composer bodies are
+  // public copy. A missing name is a hard failure, never a silent empty scan.
+  const scopedFns = PUBLIC_COPY_FUNCTION_FILES.get(relPath)
+  let scopeRanges = null
+  if (scopedFns) {
+    scopeRanges = functionScopeRanges(content, scopedFns)
+    if (!scopeRanges) {
+      console.error(
+        `\n✖ brand-voice cannot find the public-copy composer it is told to gate.\n` +
+          `  ${relPath} should define ${scopedFns.map((f) => `"${f}"`).join(', ')}.\n` +
+          `  If it was renamed or split, update PUBLIC_COPY_FUNCTIONS in\n` +
+          `  scripts/check-brand-voice.mjs. Client-facing copy does not get to\n` +
+          `  leave coverage by being moved.\n`
+      )
+      process.exit(1)
+    }
+  }
+  const inScope = (startIndex) =>
+    !scopeRanges || scopeRanges.some((r) => startIndex >= r.start && startIndex < r.end)
+
   const literals = extractStringLiterals(content)
   const violations = []
   for (const lit of literals) {
+    if (!inScope(lit.startIndex)) continue
     const lineNum = content.slice(0, lit.startIndex).split('\n').length
     const lineText = lines[lineNum - 1] ?? ''
     // Skip if this string literal is on an import line.
@@ -670,6 +779,7 @@ function scanFile(absPath) {
   // scanner. Same banned-word + banned-move checks. (Import-line / mechanical-
   // literal skips don't apply: JSX text is never an import path or config value.)
   for (const frag of extractJsxText(content)) {
+    if (!inScope(frag.startIndex)) continue
     const lineNum = content.slice(0, frag.startIndex).split('\n').length
     const snippet = frag.value.trim().slice(0, 80)
     const lower = frag.value.toLowerCase()
@@ -709,6 +819,20 @@ export function collectScannedFiles() {
     for (const file of walk(libDir)) {
       if (PUBLIC_COPY_FILE.test(normalize(relative(ROOT, file)))) files.push(file)
     }
+  }
+  // Files covered only inside a named composer (PUBLIC_COPY_FUNCTIONS). Listed
+  // explicitly so a deleted or moved file fails loudly here rather than
+  // quietly dropping the copy it carries.
+  for (const rel of PUBLIC_COPY_FUNCTION_FILES.keys()) {
+    const abs = join(ROOT, rel)
+    if (!existsSync(abs)) {
+      console.error(
+        `\n✖ brand-voice is told to gate ${rel}, and that file does not exist.\n` +
+          `  Update PUBLIC_COPY_FUNCTIONS in scripts/check-brand-voice.mjs.\n`
+      )
+      process.exit(1)
+    }
+    files.push(abs)
   }
   return files
 }
