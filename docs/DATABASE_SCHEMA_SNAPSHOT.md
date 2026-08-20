@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-19T18:58:54.763Z
+**Generated:** 2026-08-20T02:01:11.596Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -355,7 +355,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 15,676**
+### `market_stats_cache` · **rows ≈ 14,381**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -532,7 +532,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 323**
+### `cmas` · **rows ≈ 324**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -621,7 +621,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 294**
+### `expired_listings` · **rows ≈ 296**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -680,7 +680,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 742**
+### `marketing_brain_actions` · **rows ≈ 743**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -3542,6 +3542,18 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 |---|---|---|---|
 | `mv_name` | text | no |  |
 | `refreshed_at` | timestamp with time zone | no | now() |
+
+### `neighborhood_year_pricing_mv`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `geo_slug` | text | yes |  |
+| `geo_label` | text | yes |  |
+| `year` | integer | yes |  |
+| `closings` | integer | yes |  |
+| `median_close` | numeric | yes |  |
+| `median_ppsf` | numeric | yes |  |
+| `total_volume` | numeric | yes |  |
 
 ### `neighborhoods`
 
