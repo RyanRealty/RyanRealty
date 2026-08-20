@@ -184,11 +184,35 @@ function scanFile(rel) {
     if (!ts.isObjectLiteralExpression(node)) return
     const sample = propNamed(node, 'sample')
     if (!sample) return
-    // Only a V3Chart range-row sample: `{ n: … }`.
-    const init = sample.initializer
-    if (!ts.isObjectLiteralExpression(init) || !propNamed(init, 'n')) return
+    // A V3Chart RANGE ROW, not any object that happens to hold a `sample`
+    // property (lib/newsletter and the FSBO/expired processors each carry an
+    // unrelated one). The row shape is what identifies it: tick + value.
+    const isRangeRow = propNamed(node, 'tick') != null && propNamed(node, 'value') != null
+    if (!isRangeRow) return
 
     const at = `${rel}:${line(sample)}`
+    // The registry can only read a count it can see. A sample built by a helper
+    // call, or folded in behind a spread, is a population claim this gate cannot
+    // check — and silently skipping it would let any wrong count through by
+    // changing shape. Refuse the shape instead (CLAUDE.md §6: a gate that
+    // cannot fail is not a gate).
+    const init = sample.initializer
+    if (!ts.isObjectLiteralExpression(init)) {
+      problems.push(
+        `${at}: this range row's \`sample\` is not an object literal, so the population it ` +
+          `claims cannot be read here. Write \`sample: { n: <the count> }\` inline in the ` +
+          `builder that computes the figure.`,
+      )
+      return
+    }
+    if (!propNamed(init, 'n')) {
+      problems.push(
+        `${at}: this range row's \`sample\` has no literal \`n:\` property — a spread or a ` +
+          `computed key hides which count is being drawn. Name the count inline.`,
+      )
+      return
+    }
+
     const fn = enclosingBuilder(sample)
     if (!fn) {
       problems.push(`${at}: a chart sample sits outside any function, so this gate cannot tell which figure it belongs to.`)

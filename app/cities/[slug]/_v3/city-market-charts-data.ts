@@ -107,7 +107,7 @@ export type CityRankInput = {
    * The inventory count the page prints (publishCityInventory output —
    * usually the broader city-ADDRESS tile universe, not the pulse city
    * count). Used only to NAME the universe split in the trace when the two
-   * differ; every chart row names its own pulse population regardless.
+   * differ; every chart row is computed on its own pulse population regardless.
    */
   displayedActiveCount?: number | null
 }
@@ -159,7 +159,7 @@ export function buildMosCard(input: CityRankInput): CityChartCard | null {
     input.displayedActiveCount != null &&
     input.displayedActiveCount !== subject.town.active_count
       ? ` The page's inventory count (${input.displayedActiveCount.toLocaleString('en-US')}) uses the broader ` +
-        `${input.subjectName}-address universe; each row here names its own pulse city population.`
+        `${input.subjectName}-address universe; each row here is computed on its own pulse city population.`
       : ''
   const fmt = formatMonthsOfSupply(subject.value)
   const title =
