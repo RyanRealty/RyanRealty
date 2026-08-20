@@ -562,6 +562,7 @@ describe('design directive contracts', () => {
     expect(fill).toMatch(/opacity:\s*1/)
     expect(fill).not.toMatch(/opacity:\s*0/)
     expect(css).not.toMatch(/town-row:hover \.town-fill\{opacity:1\}/)
+    expect(css).toMatch(/town-row:has\(\.town-fill\)\{background:var\(--navy\)/)
   })
 
   it('D99 — homepage market HUD is live pulse, not a second sale-series caption (§0)', () => {

@@ -443,7 +443,9 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .town-fill::after{content:"";position:absolute;inset:0;background:rgba(16,39,66,.5);}
 /* Photographs stay visible at rest (fleet core-home 2026-08-16: opacity:0
    at rest rendered the six town doors as plain text rows). Cream type sits
-   on the navy scrim. Hover still shifts the name. */
+   on the navy scrim. The row itself must also be navy — pa11y measures the
+   parent box, not the sibling photo, and scored cream-on-cream as 1:1. */
+.kb-root .town-row:has(.town-fill){background:var(--navy);color:var(--cream);}
 .kb-root .town-row:has(.town-fill) .town-name,
 .kb-root .town-row:has(.town-fill) .town-stats{color:var(--cream);}
 .kb-root .town-arr{display:none;}
@@ -451,6 +453,7 @@ html.lenis, html.lenis body{height:auto;}
   .kb-root .town-arr{display:block;position:absolute;right:2px;top:50%;transform:translateY(-50%);z-index:2;font-size:1.4rem;line-height:1;opacity:.7;}
 }
 @media(hover:hover){.kb-root .town-row:hover .town-name{transform:translateX(18px);}}
+.kb-root .town-row.lit{background:var(--navy);}
 .kb-root .town-row.lit .town-fill{opacity:1;}
 .kb-root .town-row.lit .town-name{color:var(--cream);}
 .kb-root .town-row.lit .town-stats{color:var(--cream);}
