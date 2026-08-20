@@ -168,17 +168,32 @@ describe('listing by-key handler uses the slim lookup', () => {
   it('builds listingDetailPath from the slim columns and 308s to it', () => {
     expect(src).toMatch(/listingDetailPath\(/)
     expect(src).toMatch(/boundary_neighborhood/)
-    expect(src).toMatch(/NextResponse\.redirect\(/)
-    // Host-correct Location: nextUrl, not request.url (which behind a proxy can
-    // be the internal deployment host).
-    expect(src).toMatch(/request\.nextUrl\.clone\(\)/)
-    expect(src).not.toMatch(/redirect\(\s*new URL\(/)
-    expect(src).toMatch(/308/)
+    expect(src).toMatch(/redirectTo\(canonicalPathFromFields\(row\), 308\)/)
+  })
+
+  /**
+   * The Location must be ROOT-RELATIVE, the way middleware.ts and next.config.ts
+   * redirects() already emit on this site (production 2026-08-20:
+   * /subdivisions/tetherow -> `location: /communities/tetherow`).
+   *
+   * An absolute Location built in a route handler does not track the request.
+   * Measured on a production build at :3140: `request.nextUrl.clone()` returned
+   * http://localhost:3140/... for a request carrying `Host: ryan-realty.com`,
+   * and https://localhost:3140/... once `x-forwarded-proto: https` was added.
+   * `new URL(path, request.url)` reads the same origin.
+   */
+  it('emits a root-relative Location, never an absolute one', () => {
+    // Assert on CODE, not on the comment that explains the measurement.
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+    expect(code).toMatch(/headers:\s*\{\s*location:/)
+    expect(code).not.toMatch(/NextResponse\.redirect\(/)
+    expect(code).not.toMatch(/request\.nextUrl/)
+    expect(code).not.toMatch(/new URL\(/)
   })
 
   it('never renders a body — a miss hands off to the /listing refusal page', () => {
     expect(src).not.toMatch(/from 'next\/navigation'/)
-    expect(src).toMatch(/to\(request, `\/listing\//)
+    expect(src).toMatch(/redirectTo\(`\/listing\//)
     expect(src).toMatch(/307/)
   })
 })

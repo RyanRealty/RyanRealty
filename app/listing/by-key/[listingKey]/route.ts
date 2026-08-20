@@ -66,27 +66,36 @@ async function lookupPathFields(listingKey: string) {
 }
 
 /**
- * Build the redirect target off `request.nextUrl`, the same source middleware.ts
- * uses. `new URL(path, request.url)` would take the origin from `request.url`,
- * which behind a proxy can be the internal deployment host — a Location header
- * pointing somewhere the visitor cannot follow.
+ * Emit a ROOT-RELATIVE Location, the way middleware.ts and next.config.ts
+ * redirects() already do on this site (production, 2026-08-20:
+ * `/subdivisions/tetherow` -> `location: /communities/tetherow`;
+ * `/reports` -> `location: /housing-market/reports`). RFC 7231 §7.1.2 allows a
+ * relative reference and the client resolves it against the URL it asked for,
+ * so the hop cannot land on a host the request never named.
+ *
+ * An absolute Location built here would not track the request. Measured on a
+ * production build at :3140: `request.nextUrl.clone()` returned
+ * `http://localhost:3140/...` for a request carrying `Host: ryan-realty.com`,
+ * and `https://localhost:3140/...` once `x-forwarded-proto: https` was added —
+ * a Location no visitor can follow. `new URL(path, request.url)` reads the same
+ * origin. A relative header removes the question.
  */
-function to(request: NextRequest, pathname: string): URL {
-  const url = request.nextUrl.clone()
-  url.pathname = pathname
-  url.search = ''
-  url.hash = ''
-  return url
+function redirectTo(pathname: string, status: 307 | 308): NextResponse {
+  return new NextResponse(null, {
+    status,
+    headers: { location: pathname },
+  })
 }
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ listingKey: string }> },
 ) {
+  void request
   const { listingKey } = await context.params
   const row = await lookupPathFields(listingKey)
   if (!row) {
-    return NextResponse.redirect(to(request, `/listing/${String(listingKey ?? '').trim()}`), 307)
+    return redirectTo(`/listing/${encodeURIComponent(String(listingKey ?? '').trim())}`, 307)
   }
-  return NextResponse.redirect(to(request, canonicalPathFromFields(row)), 308)
+  return redirectTo(canonicalPathFromFields(row), 308)
 }
