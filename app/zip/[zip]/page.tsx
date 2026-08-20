@@ -42,6 +42,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
+import { listingPriceIsFractionalShare } from '@/lib/listing/publish-listing-figure'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -210,10 +211,20 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // in the hero AND in the Dataset JSON-LD Google reads. null = unknown.
   const tiles = tilesRead.value
   const activeCount: number | null = tilesRead.ok ? tiles.length : null
-  const listPrices = tiles
+  // §0 A SHARE PRICE IS NOT A HOME PRICE. PropertyType 'A' carries the MLS
+  // fractional-interest sub types, whose ListPrice buys a share of a resort
+  // home while the square footage is the whole home's. Live counts 2026-08-19:
+  // 33 of the 257 Active 'A' rows in 97707 are fractional, and including them
+  // published a median list of $775,000 against a whole-home median of
+  // $812,500 (4.6% low) and $407/sq ft against $429 (5.0% low). 97756 16 of
+  // 387, 97702 12 of 374, 97730 1 of 16 ($191/sq ft against $204). The count
+  // and the days-on-market pool keep every active listing — a fractional
+  // interest is real inventory; its price is just not this median's subject.
+  const wholeHomeTiles = tiles.filter((t) => !listingPriceIsFractionalShare(t.propertySubType))
+  const listPrices = wholeHomeTiles
     .map((t) => t.listPrice)
     .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0)
-  const pricePerSqfts = tiles
+  const pricePerSqfts = wholeHomeTiles
     .map((t) => t.pricePerSqft)
     .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0)
   const doms = tiles

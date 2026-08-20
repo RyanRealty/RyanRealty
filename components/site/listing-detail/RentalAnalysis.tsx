@@ -5,12 +5,23 @@ import { getAreaRentEstimate } from '@/lib/hud-fmr'
 import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishRentalHoaMonthly } from '@/lib/listing/publish-listing-hoa'
+import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 
 /**
  * Listing-detail RentalAnalysis — KB section style.
  * Navy sec-head, Amboqia heading. RentalCalculator interactive island preserved.
  *
  * Per CLAUDE.md §0 Data Accuracy: all numbers are labeled estimates.
+ *
+ * THE PRICE THIS SECTION NEEDS IS THE WHOLE HOME'S. Every other input it feeds
+ * the engine describes the whole dwelling — the HUD area rent for its bed
+ * count, its tax bill, its HOA — so a price that buys a share of it returns the
+ * yield of nothing. MLS 220190868 (a $1 fractional interest at Eagle Crest)
+ * published "At $1 with 20% down, this property cash-flows $1,310 per month, a
+ * 1571464.0% cap rate and 0.0% cash-on-cash return" beside "Cash needed $0";
+ * MLS 220225983 (a $3,000 fractional at Inn of the 7th Mountain) published a
+ * 225.2% cap rate and a 1,094.0% cash-on-cash return. publishWholePropertyAmount
+ * withholds both, and §0.7 makes the withheld case a rendered nothing.
  */
 
 function estimateMonthlyRent(price: number): { value: number; low: number; high: number; source: string } {
@@ -33,8 +44,12 @@ function isRentalEligible(propertyType: string | null): boolean {
 }
 
 export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
-  const price = listing.listPrice ?? 0
-  if (!price || price <= 0) return null
+  const price = publishWholePropertyAmount({
+    price: listing.listPrice,
+    propertyType: listing.propertyType,
+    propertySubType: listing.propertySubType,
+  })
+  if (price == null) return null
   if (!isRentalEligible(listing.propertyType)) return null
   // design-audit: a HUD apartment Fair Market Rent applied to a multi-million
   // estate produces an absurd headline cash flow (e.g. -$63,117/mo on an $11.9M

@@ -28,7 +28,7 @@ export function loadCitySfrTilesForSearch(city: string) {
 
 export function publishSearchCityInventory(
   pulse: PulseLike,
-  tiles: ReadonlyArray<{ listPrice?: number | null }>,
+  tiles: ReadonlyArray<{ listPrice?: number | null; propertySubType: string | null }>,
 ): CityInventoryPublish {
   return publishCityInventory({
     pulseCount: pulse?.activeCount ?? null,
@@ -61,7 +61,7 @@ export async function loadSearchCityMarketLayer(args: {
   relatedCitySlug: string | null
   isPlainCityPage: boolean
   isPresetDepthPage: boolean
-  citySfrTiles: ReadonlyArray<{ listPrice?: number | null }>
+  citySfrTiles: ReadonlyArray<{ listPrice?: number | null; propertySubType: string | null }>
 }): Promise<{
   cityPulse: Awaited<ReturnType<typeof getMarketPulse>> | null
   /**

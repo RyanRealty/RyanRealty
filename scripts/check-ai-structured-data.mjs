@@ -238,12 +238,14 @@ const CHECKS = [
   {
     file: 'app/listing/[listingKey]/listing-json-ld.ts',
     label: 'listing builder: status field on RealEstateListing',
-    all: ['availability', 'listing.status', 'publishedSaleAsk'],
+    all: ['availability', 'listing.status', 'wholePropertyPrice'],
     why:
       'The listing JSON-LD builder MUST pass listing.status as availability so the Offer\n' +
-      '  node reflects live status, and MUST take the ALREADY-PUBLISHED sale ask rather\n' +
-      '  than a raw ListPrice — 735 Purcell (MLS 220174840) is a commercial lease and\n' +
-      '  shipped offers.price 2.5 on a SingleFamilyResidence.',
+      '  node reflects live status, and MUST take the already-published WHOLE-PROPERTY\n' +
+      '  price rather than a raw ListPrice or the page’s badged ask — 735 Purcell\n' +
+      '  (MLS 220174840) is a commercial lease and shipped offers.price 2.5, and MLS\n' +
+      '  220190868 is a $1 fractional interest that shipped offers.price 1, both on a\n' +
+      '  SingleFamilyResidence. A machine node carries no sub-type badge.',
   },
   {
     file: 'app/sell/page.tsx',

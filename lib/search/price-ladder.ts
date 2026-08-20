@@ -27,6 +27,7 @@
  *    predicate, and the row counts.
  */
 
+import { listingPriceIsFractionalShare } from '@/lib/listing/publish-listing-figure'
 import { CITY_TILE_FETCH_LIMIT, type CityInventoryPublish } from '@/lib/market/publish-city-inventory'
 import { publishSearchCount } from '@/lib/search/publish-search-count'
 
@@ -101,12 +102,33 @@ export type SearchPriceLadder = {
   rows: SearchPriceLadderRow[]
 }
 
-/** The only tile field this needs. Structural, so any tile shape satisfies it. */
-export type PricedTile = { listPrice?: number | null }
+/**
+ * The tile fields this needs. `propertySubType` is REQUIRED so no caller can
+ * band a set without saying what is in it — see the fractional note below.
+ */
+export type PricedTile = { listPrice?: number | null; propertySubType: string | null }
+
+/**
+ * A FRACTIONAL INTEREST HAS NO PLACE IN AN ASKING-PRICE BAND (§0). MLS
+ * PropertyType 'A' carries the sub types "Tenancy in Common" and "Timeshare",
+ * whose ListPrice buys a share of a resort home. Banded as homes they pile
+ * into the bottom row: measured live 2026-08-19, Active + Active Under
+ * Contract class-A rows under $400K —
+ *   Sunriver           42 rows, 33 of them fractional  (9 real homes)
+ *   Redmond            84 rows, 16 fractional
+ *   Bend               77 rows, 12 fractional
+ *   Black Butte Ranch   4 rows,  4 fractional          (the band is empty)
+ * The Sunriver card's own title is the modal band, so it read "42 Sunriver
+ * homes under $400K" off nine.
+ */
+function isWholeHomeTile(tile: PricedTile): boolean {
+  return !listingPriceIsFractionalShare(tile.propertySubType)
+}
 
 function usablePrices(tiles: readonly PricedTile[]): number[] {
   const out: number[] = []
   for (const tile of tiles) {
+    if (!isWholeHomeTile(tile)) continue
     const price = Number(tile.listPrice)
     if (Number.isFinite(price) && price > 0) out.push(price)
   }
@@ -204,10 +226,22 @@ export function buildSearchPriceLadder(input: {
       : `${peakCount} homes ${peakBand.titlePhrase}`
 
   const rowCount = input.tiles.length
+  const n = (v: number) => v.toLocaleString('en-US')
+  const shareCount = input.tiles.filter((t) => !isWholeHomeTile(t)).length
+  const unpriced = rowCount - shareCount - total
+  const coverageParts: string[] = []
+  if (shareCount > 0) {
+    coverageParts.push(
+      `${n(shareCount)} of them price a fractional interest rather than a home (MLS sub type Tenancy in Common or Timeshare) and are not banded.`,
+    )
+  }
+  if (unpriced > 0) {
+    coverageParts.push(`${n(unpriced)} carried no asking price and are not banded.`)
+  }
   const priceCoverage =
-    total === rowCount
-      ? `All ${rowCount.toLocaleString('en-US')} rows carried an asking price.`
-      : `${total.toLocaleString('en-US')} of ${rowCount.toLocaleString('en-US')} rows carried an asking price. The ${(rowCount - total).toLocaleString('en-US')} without one are not banded.`
+    coverageParts.length === 0
+      ? `All ${n(rowCount)} rows carried an asking price.`
+      : `${n(total)} of ${n(rowCount)} rows are banded: ${coverageParts.join(' ')}`
 
   return {
     title,

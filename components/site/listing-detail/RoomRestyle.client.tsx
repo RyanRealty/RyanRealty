@@ -540,7 +540,9 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
               <div className="mt-4">
                 {alertState === 'done' ? (
                   <p className="text-sm" style={{ color: 'var(--navy)' }}>
-                    Alert set. New {city} listings near this price band will hit your inbox.
+                    {priceBandAroundListPrice(listPrice).maxPrice
+                      ? `Alert set. New ${city} listings near this price band will hit your inbox.`
+                      : `Alert set. New ${city} listings will hit your inbox.`}
                   </p>
                 ) : (
                   <form

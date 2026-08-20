@@ -43,17 +43,22 @@ checks.push({
 })
 
 // The JSON-LD moved into a sibling builder when the page hit its file-size
-// budget. The offer must carry the page's ONE published sale ask — exact whole
-// dollars when there is one, withheld when there is not — never a raw ListPrice
-// that may be a lease rate.
+// budget. The offer must carry an exact, already-published figure — withheld
+// when there is none — never a raw ListPrice that may be a lease rate.
+//
+// Narrowed 2026-08-19 from the page's sale ask to its WHOLE-PROPERTY price. The
+// visible ask is printed beside a "Tenancy in common" badge; a machine node has
+// no badge, and MLS 220190868 (a $1 fractional interest at Eagle Crest) shipped
+// offers.price 1 on a SingleFamilyResidence.
 const page = src('app/listing/[listingKey]/page.tsx')
 const ld = src('app/listing/[listingKey]/listing-json-ld.ts')
 checks.push({
-  label: 'listing JSON-LD offer uses the published sale ask (exact, or withheld)',
+  label: 'listing JSON-LD offer uses the published whole-property price (exact, or withheld)',
   ok:
     /publishListingSaleAsk\(\{[^}]*propertyType:/s.test(page) &&
-    /publishedSaleAsk,/.test(page) &&
-    /listPrice: publishedSaleAsk \?\? undefined/.test(ld) &&
+    /publishWholePropertyAmount\(\{[^}]*propertySubType:/s.test(page) &&
+    /wholePropertyPrice,/.test(page) &&
+    /listPrice: wholePropertyPrice \?\? undefined/.test(ld) &&
     !/listPrice: listing\.listPrice/.test(ld),
 })
 

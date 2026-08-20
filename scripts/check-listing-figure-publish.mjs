@@ -14,6 +14,16 @@
  * ListPrice 2.5 is rent per square foot, and the nearest-thousand money rule
  * turned every value under $500 into "$0". Every gate in the chain was green.
  *
+ * The same day, /listing/20240827010740567422000000 (MLS 220190868, a $1
+ * fractional interest at Eagle Crest, MLS PropertySubType "Tenancy in Common")
+ * published on one screen:
+ *   rental analysis "At $1 with 20% down, this property cash-flows $1,310 per
+ *     month, a 1571464.0% cap rate and 0.0% cash-on-cash return"
+ *   monthly payment "Loan amount $1 · — down" / "Total monthly (PITI) $40"
+ *   JSON-LD SingleFamilyResidence, offers.price 1
+ * A share price is not the price of the home. 65 Active rows carry that sub
+ * type, plus 1 Timeshare; a further 213 Active rows are lease-priced.
+ *
  * WHAT IT CHECKS.
  *  1. THE CONTRACT, EXECUTED. lib/listing/publish-listing-figure.ts is
  *     import-free on purpose: this gate transpiles it and RUNS the adversarial
@@ -49,7 +59,14 @@ const js = ts.transpileModule(source, {
 }).outputText
 const mod = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`)
 
-const { publishMoneyText, publishPricePerSqft, publishSaleAskAmount, listingPriceIsLeaseRate } = mod
+const {
+  publishMoneyText,
+  publishPricePerSqft,
+  publishSaleAskAmount,
+  publishWholePropertyAmount,
+  listingPriceIsLeaseRate,
+  listingPriceIsFractionalShare,
+} = mod
 
 function expect(label, actual, wanted) {
   const ok = Object.is(actual, wanted)
@@ -84,6 +101,35 @@ expect('publishPricePerSqft in-park manufactured 10.84', publishPricePerSqft({ p
 expect('publishPricePerSqft commercial sale 7.45', publishPricePerSqft({ propertyType: 'F', pricePerSqft: 7.45 }), 7)
 expect('publishSaleAskAmount $1,695,000 condo', publishSaleAskAmount({ price: 1_695_000, propertyType: 'A' }), 1_695_000)
 
+// A fractional interest publishes no WHOLE-PROPERTY figure. These are the three
+// Active rows whose JSON-LD advertised a single-family residence at a share
+// price, plus the top of the range — the sub type decides, never the amount.
+expect('listingPriceIsFractionalShare(Tenancy in Common)', listingPriceIsFractionalShare('Tenancy in Common'), true)
+expect('listingPriceIsFractionalShare(Timeshare)', listingPriceIsFractionalShare('Timeshare'), true)
+expect('listingPriceIsFractionalShare(Single Family Residence)', listingPriceIsFractionalShare('Single Family Residence'), false)
+// A co-op share carries the exclusive right to one whole unit, so its price is
+// the whole unit's. 52 rows, $33,000–$829,000.
+expect('listingPriceIsFractionalShare(Stock Cooperative)', listingPriceIsFractionalShare('Stock Cooperative'), false)
+expect('listingPriceIsFractionalShare(null)', listingPriceIsFractionalShare(null), false)
+
+const share = (price, propertySubType) =>
+  publishWholePropertyAmount({ price, propertyType: 'A', propertySubType })
+expect('publishWholePropertyAmount 220190868 ($1 fractional)', share(1, 'Tenancy in Common'), null)
+expect('publishWholePropertyAmount 220157653 ($250 fractional)', share(250, 'Tenancy in Common'), null)
+expect('publishWholePropertyAmount 220218225 ($500 fractional)', share(500, 'Tenancy in Common'), null)
+expect('publishWholePropertyAmount 220224253 ($295,000 1/3 share)', share(295_000, 'Tenancy in Common'), null)
+expect('publishWholePropertyAmount 220221076 ($215,000 quarter timeshare)', share(215_000, 'Timeshare'), null)
+expect(
+  'publishWholePropertyAmount 735 Purcell (lease)',
+  publishWholePropertyAmount({ price: 2.5, propertyType: 'G', propertySubType: null }),
+  null,
+)
+// The whole-home rows still publish, including a fee-simple home cheaper than
+// every share above. Withholding is per sub type, not per price.
+expect('publishWholePropertyAmount $1,695,000 condo', share(1_695_000, 'Condominium'), 1_695_000)
+expect('publishWholePropertyAmount $8,500 in-park manufactured', share(8_500, 'In Park'), 8_500)
+expect('publishWholePropertyAmount no sub type', share(475_000, null), 475_000)
+
 // ── 2. The wiring ──────────────────────────────────────────────────────────
 const WIRED = [
   ['components/site/primitives/Price.tsx', 'publishMoneyText'],
@@ -94,6 +140,14 @@ const WIRED = [
   // ListPrice, so 725 Broadway Street (a Bend commercial lease) published "$2"
   // as an ask in the rail on 735 Purcell's own page.
   ['lib/kb/resolve-featured-items.ts', 'publishSaleAskAmount'],
+  // The whole-property surfaces. Each one makes a claim about the DWELLING —
+  // its yield, its monthly cost, its machine-readable offer, its share card,
+  // its price-band promise — so each takes the whole-property price, never the
+  // ask. MLS 220190868 asks $1 for a fractional interest at Eagle Crest.
+  ['app/listing/[listingKey]/page.tsx', 'publishWholePropertyAmount'],
+  ['components/site/listing-detail/RentalAnalysis.tsx', 'publishWholePropertyAmount'],
+  ['components/site/listing-detail/PriceCtaStrip.tsx', 'publishWholePropertyAmount'],
+  ['app/api/og/route.tsx', 'publishWholePropertyAmount'],
 ]
 for (const [file, symbol] of WIRED) {
   const text = readFileSync(file, 'utf8')
@@ -111,7 +165,17 @@ if (!/publishListingSharePricePerSqft\(input:\s*\{[^}]*propertyType:/s.test(shar
   )
 }
 
-// ── 3. No second money formatter on the listing surface ────────────────────
+// The structured data takes the whole-property price by name. A machine node
+// carries no "Tenancy in common" badge, so the ask the page prints beside that
+// badge is not the figure an ingester may read as the price of the home.
+const jsonLdSrc = readFileSync('app/listing/[listingKey]/listing-json-ld.ts', 'utf8')
+if (!/wholePropertyPrice:\s*number \| null/.test(jsonLdSrc) || /publishedSaleAsk/.test(jsonLdSrc)) {
+  failures.push(
+    'wiring: buildListingJsonLd must take wholePropertyPrice — the offer and the priced description may not be built from a badged share ask.',
+  )
+}
+
+// ── 3. No second rule on the listing surface ───────────────────────────────
 // Scoped to the surface this contract governs. `$${Math.round(x / 1000) * 1000}`
 // is the exact expression that printed "$0" three times on the Purcell history;
 // a private copy of it beside the primitive reopens the class. Fifteen files
@@ -128,12 +192,28 @@ const LISTING_SURFACE = (f) =>
   f === 'components/site/primitives/Price.tsx'
 const SELF = new Set([CONTRACT, 'scripts/check-listing-figure-publish.mjs'])
 const THOUSAND_ROUND_CURRENCY = /\$\$\{[^}]*Math\.round\([^}]*\/\s*1000\s*\)\s*\*\s*1000/
+// Second rule, same idea in the sub-type dimension: ONE fractional-interest
+// list, in the contract this gate executes. A private copy on the surface
+// drifts silently — the page keeps withholding while the copy decides
+// something else.
+const SUBTYPE_LITERALS = /['"]Tenancy in Common['"][\s\S]{0,120}['"]Timeshare['"]/
 for (const file of [...walkFiles('app'), ...walkFiles('components'), ...walkFiles('lib')]) {
   if (SELF.has(file) || !LISTING_SURFACE(file)) continue
   if (file.endsWith('.test.ts') || file.endsWith('.test.tsx')) continue
-  if (THOUSAND_ROUND_CURRENCY.test(readFileSync(file, 'utf8'))) {
+  const text = readFileSync(file, 'utf8')
+  if (THOUSAND_ROUND_CURRENCY.test(text)) {
     failures.push(
       `second formatter: ${file} renders thousand-rounded currency itself. That expression published "$0" on 735 Purcell — render through the Price primitive / publishMoneyText.`,
+    )
+  }
+  // Prose may name the sub types; code may not re-declare them. Comments are
+  // stripped first so a docblock citing 220190868 is not a violation.
+  const code = text
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1')
+  if (SUBTYPE_LITERALS.test(code)) {
+    failures.push(
+      `second rule: ${file} declares its own fractional sub-type list. The one list lives in ${CONTRACT} (FRACTIONAL_INTEREST_SUB_TYPES).`,
     )
   }
 }
@@ -144,10 +224,13 @@ if (failures.length > 0) {
   console.error(
     '\n  §0.7: publish a figure you have verified, or publish no figure. A positive amount',
   )
-  console.error('  printed as $0, or a lease rate printed under a sale label, is neither.')
+  console.error(
+    '  printed as $0, a lease rate printed under a sale label, or a share price read as the',
+  )
+  console.error('  price of the whole home, is none of them.')
   process.exit(1)
 }
 
 console.log(
-  `✓ listing figure publish contract — money never publishes $0, lease listings publish no sale figure (${WIRED.length} surfaces wired)`,
+  `✓ listing figure publish contract — money never publishes $0, lease and fractional-share listings publish no whole-home figure (${WIRED.length} surfaces wired)`,
 )

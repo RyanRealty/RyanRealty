@@ -48,16 +48,71 @@
  */
 
 /**
+ * SECOND CASE, SAME SHAPE (verified live 2026-08-19, dev render of the real
+ * page). 1824 Redtail Hawk Drive, Redmond — MLS 220190868, ListingKey
+ * 20240827010740567422000000 — is a fractional interest at Eagle Crest whose
+ * ListPrice is 1. /listing/20240827010740567422000000 published
+ *   rental analysis "At $1 with 20% down, this property cash-flows $1,310 per
+ *     month, a 1571464.0% cap rate and 0.0% cash-on-cash return"
+ *     beside "Cash needed $0" and "Loan payment - $0"
+ *   monthly payment "Loan amount $1 · — down" / "Total monthly (PITI) $40"
+ *   JSON-LD SingleFamilyResidence, offers.price 1, description "$1 · 3 bed,
+ *     2 bath · 1,405 sq ft"
+ *
+ * The ask is not the defect. $1 is what the listing asks for the interest it
+ * offers, and the page prints "Tenancy in common" beside it. The defect is
+ * every figure that reads that number as the value, the cost, or the yield of
+ * the WHOLE HOME: the square footage, the beds, the HUD area rent and the tax
+ * bill all describe the whole dwelling, so dividing any of them by a share
+ * price is a category error, not a rounding error.
+ *
+ * Basis for the sub-type list (live listings table, 2026-08-19). Every Active
+ * row of both sub types is a fractional interest in the feed's own remarks,
+ * at the bottom AND the top of the price range:
+ *   Tenancy in Common — 65 Active (ListPrice $1 to $295,000), 7 Pending,
+ *     4 Withdrawn, 317 Canceled, 554 Expired, 1,059 Closed. 220190868 "This
+ *     fractional…", 220157653 "4 week fractional", 220220877 "One-quarter
+ *     shared interest", 220224253 "1/3 share of this vacation home".
+ *   Timeshare — 1 Active, 1 Canceled, 10 Closed. 220221076 at $215,000:
+ *     "One-quarter ownership".
+ * Stock Cooperative (52 rows, $33,000–$829,000) is deliberately NOT here: co-op
+ * shares carry the exclusive right to one whole unit, so that price is the ask
+ * for the whole dwelling.
+ */
+
+/**
  * MLS PropertyType codes whose ListPrice is a lease rate rather than a sale
  * price. Read from the feed's own PropertyTypeLabel — see the docblock trace.
  */
 export const LEASE_PRICE_PROPERTY_TYPES: ReadonlySet<string> = new Set(['G'])
+
+/**
+ * MLS PropertySubType values whose ListPrice buys a fractional interest in the
+ * property rather than the property. Feed strings, matched exactly — see the
+ * docblock trace for the per-row evidence.
+ */
+export const FRACTIONAL_INTEREST_SUB_TYPES: ReadonlySet<string> = new Set([
+  'Tenancy in Common',
+  'Timeshare',
+])
 
 /** True when this listing's ListPrice is rent, not an asking sale price. */
 export function listingPriceIsLeaseRate(propertyType: string | null | undefined): boolean {
   const code = (propertyType ?? '').trim().toUpperCase()
   if (!code) return false
   return LEASE_PRICE_PROPERTY_TYPES.has(code)
+}
+
+/**
+ * True when this listing's ListPrice buys a share of the property, so no figure
+ * describing the whole property may be derived from it.
+ */
+export function listingPriceIsFractionalShare(
+  propertySubType: string | null | undefined,
+): boolean {
+  const raw = (propertySubType ?? '').trim()
+  if (!raw) return false
+  return FRACTIONAL_INTEREST_SUB_TYPES.has(raw)
 }
 
 /** The three registers the money primitive prints in. */
@@ -142,4 +197,36 @@ export function publishSaleAskAmount(input: {
   const raw = input.price
   if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) return null
   return Math.round(raw)
+}
+
+/**
+ * The price OF THE WHOLE PROPERTY, or null.
+ *
+ * This is the input every figure that describes the dwelling must take: the
+ * investment analysis, the monthly cost of ownership, the machine-readable
+ * offer, the "homes near this price" band, the comparison against a place
+ * median. It is stricter than publishSaleAskAmount by exactly one rule — a
+ * fractional interest is withheld — because the two publish different claims
+ * from the same field:
+ *
+ *   publishSaleAskAmount  "this listing asks $295,000"        — true of a 1/3
+ *                                                               share, and the
+ *                                                               page prints the
+ *                                                               sub type beside
+ *                                                               it
+ *   publishWholePropertyAmount
+ *                         "this home is worth / costs / earns
+ *                          against $295,000"                  — false of the
+ *                                                               same row
+ *
+ * §0.7 decides the null case for the caller: publish no figure. A page with no
+ * cap rate is correct; a page with a 1,571,464% one is not.
+ */
+export function publishWholePropertyAmount(input: {
+  price: number | null | undefined
+  propertyType: string | null | undefined
+  propertySubType: string | null | undefined
+}): number | null {
+  if (listingPriceIsFractionalShare(input.propertySubType)) return null
+  return publishSaleAskAmount({ price: input.price, propertyType: input.propertyType })
 }

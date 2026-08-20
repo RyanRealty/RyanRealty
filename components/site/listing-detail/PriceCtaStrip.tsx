@@ -14,6 +14,7 @@ import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingDrop, publishListingHistoryPrices, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
+import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
@@ -116,6 +117,17 @@ export function PriceCtaStrip({
   })
   const headlinePrice = publishedAsk?.ask ?? null
   const shareKind = publishListingShareKind(listing.propertySubType)
+  // The alert this strip points at bands on the whole-home price, so the copy
+  // may promise a price band only when one exists. 735 Purcell (a commercial
+  // sublease publishing no price) and MLS 220190868 (a $1 fractional interest)
+  // both read "…lists in this city near this price" over a band built from a
+  // rent rate and a share.
+  const alertBandIsPublished =
+    publishWholePropertyAmount({
+      price: isClosed ? listing.closePrice : listing.listPrice,
+      propertyType: listing.propertyType,
+      propertySubType: listing.propertySubType,
+    }) != null
   const publishedPpsf = publishListingSharePricePerSqft({
     propertyType: listing.propertyType,
     propertySubType: listing.propertySubType,
@@ -317,7 +329,9 @@ export function PriceCtaStrip({
         Get free alerts for homes like this <span className="arr">→</span>
       </a>
       <p className="mt-2 text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
-        Free email when a new home lists in this city near this price. Unsubscribe any time.
+        {alertBandIsPublished
+          ? 'Free email when a new home lists in this city near this price. Unsubscribe any time.'
+          : 'Free email when a new home lists in this city. Unsubscribe any time.'}
       </p>
     </div>
   )

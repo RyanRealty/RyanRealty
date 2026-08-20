@@ -23,6 +23,7 @@ import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
 import { getPublishedCmaForListing } from '@/lib/data/cma/getPublishedCma'
@@ -131,9 +132,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!listing) return LISTING_UNAVAILABLE_METADATA
 
   const addressFull = listingMlsAddressFull(listing)
+  // The share card and the meta description travel WITHOUT the "Tenancy in
+  // common" badge that qualifies the price on the page, so they take the
+  // whole-property price: a pasted link to MLS 220190868 read "$1 · 3 bed,
+  // 2 bath · 1,405 sq ft" for a fractional interest at Eagle Crest.
   const description = listingShareSummary({
-    price: publishListingSaleAsk({ price: listing.listPrice, propertyType: listing.propertyType })
-      ?.ask ?? null,
+    price: publishWholePropertyAmount({
+      price: listing.listPrice,
+      propertyType: listing.propertyType,
+      propertySubType: listing.propertySubType,
+    }),
     beds: listing.beds,
     baths: listing.baths,
     sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
@@ -207,6 +215,18 @@ export default async function ListingDetailPage({ params }: PageProps) {
     publishListingSaleAsk({ price: listing.listPrice, propertyType: listing.propertyType })?.ask ??
     null
 
+  // The price OF THE WHOLE HOME, which is not always the ask. On a fractional
+  // interest (65 Active "Tenancy in Common" rows, 1 "Timeshare") the ask buys a
+  // share, so every figure describing the dwelling takes this instead: the
+  // monthly payment, the rental analysis, the median comparison, the
+  // near-this-price alert band, and the JSON-LD offer. MLS 220190868 asks $1 for
+  // a fractional at Eagle Crest and published a 1,571,464% cap rate off it.
+  const wholePropertyPrice = publishWholePropertyAmount({
+    price: listing.listPrice,
+    propertyType: listing.propertyType,
+    propertySubType: listing.propertySubType,
+  })
+
   // Place ladder + market grain (Exploration System). See CONTEXT.md.
   const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
   const featuredGeoName = marketGeo?.name ?? listing.city ?? 'Nearby'
@@ -232,7 +252,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
         getRelatedListings({
           anchorKey: listing.listingKey,
           excludeListNumber: listing.listNumber,
-          subjectPrice: listing.listPrice,
+          // Price proximity for the onward rail. A share price would anchor it
+          // to the cheapest inventory nearby; null falls back to place order.
+          subjectPrice: publishWholePropertyAmount({
+            price: listing.listPrice,
+            propertyType: listing.propertyType,
+            propertySubType: listing.propertySubType,
+          }),
           scope: nearbyScope,
           limit: 14,
         }),
@@ -393,7 +419,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <PlaceIdentityLine place={placeContext} />
       <LivePricingRead
         read={pricingRead}
-        listPrice={publishedSaleAsk}
+        listPrice={wholePropertyPrice}
         listingKey={listing.listingKey}
         subjectAddress={street}
         sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
@@ -428,7 +454,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           RoomRestyle next-step, and ListingAlertCoach. Single mount only. */}
       <ListingLikeThisAlerts
         city={listing.city}
-        listPrice={listing.listPrice}
+        listPrice={wholePropertyPrice}
         beds={listing.beds}
       />
       {photos.some((p) => p.url) ? (
@@ -436,7 +462,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           photos={photos.map((p) => ({ url: p.url, caption: p.caption ?? null }))}
           listingKey={contactKey}
           city={listing.city}
-          listPrice={listing.listPrice}
+          listPrice={wholePropertyPrice}
           beds={listing.beds}
         />
       ) : null}
@@ -447,7 +473,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         lifestyleLine={buildLifestyleLine({ city: listing.city })}
         addressLine={street}
         photoUrl={photos[0]?.url ?? listing.photoUrl}
-        price={listing.listPrice}
+        price={publishedSaleAsk}
         beds={listing.beds}
         baths={listing.baths}
         sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
@@ -460,7 +486,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           hubHref={marketHubHref}
           pulse={marketPulse}
           stats={marketStats}
-          thisListPrice={listing.listPrice}
+          thisListPrice={wholePropertyPrice}
           chartCitySlug={listing.citySlug ?? null}
         />
       ) : null}
@@ -481,12 +507,19 @@ export default async function ListingDetailPage({ params }: PageProps) {
         title="Trails and golf nearby"
       />
       {history.length > 0 ? <PropertyHistory history={history} mode="meaningful-only" /> : null}
-      {/* The money block: what it costs to own, then what it could earn. */}
-      <MortgageCalculator
-        listPrice={publishedSaleAsk}
-        taxAnnualAmount={listing.taxAnnualAmount}
-        ratePct={calcDefaults?.mortgageRate ?? null}
-      />
+      {/* The money block: what it costs to own, then what it could earn. Both
+          are statements about the whole home, so both are withheld when the
+          price is not the whole home's. Seeding the calculator with no price
+          did not withhold it — 735 Purcell (lease) published "Total monthly
+          (PITI) $2,076" with an empty price field, which is the tax bill
+          wearing a payment label. */}
+      {wholePropertyPrice != null ? (
+        <MortgageCalculator
+          listPrice={wholePropertyPrice}
+          taxAnnualAmount={listing.taxAnnualAmount}
+          ratePct={calcDefaults?.mortgageRate ?? null}
+        />
+      ) : null}
       <RentalAnalysis listing={listing} />
       {/* Our opinion of value. Renders ONLY for a document Matt published per
           row (published_to_listing) that also passed its own audit — the guard
@@ -518,7 +551,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const listingJsonLdSchemas = buildListingJsonLd({
     listingKey,
     street,
-    publishedSaleAsk,
+    wholePropertyPrice,
     listing,
     photoUrls: photos.map((p) => p.url),
     agent: ctaBroker

@@ -13,18 +13,30 @@
  * Label is the verified MLS subtype via propertySubTypeDisplayLabel.
  * Do not invent "fractional", "1/5th", or a timeshare label when the
  * feed says Tenancy in Common. Do not parse PublicRemarks.
+ *
+ * The two sub types this module labels — Tenancy in Common and Timeshare —
+ * are enumerated once, in FRACTIONAL_INTEREST_SUB_TYPES inside the figure
+ * contract, which the mechanical gate transpiles and executes. This module
+ * asks that contract rather than keeping a second copy of the list.
  */
 
-import { publishPricePerSqft } from '@/lib/listing/publish-listing-figure'
+import {
+  listingPriceIsFractionalShare,
+  publishPricePerSqft,
+} from '@/lib/listing/publish-listing-figure'
 import { propertySubTypeDisplayLabel } from '@/lib/property-type'
 
-const SHARE_SUBTYPES = new Set(['Tenancy in Common', 'Timeshare'])
-
+/**
+ * The sub-type list itself lives in the figure contract
+ * (FRACTIONAL_INTEREST_SUB_TYPES), which the mechanical gate transpiles and
+ * executes. A second copy here would be a second rule: this module labels the
+ * share, the contract decides what a share price may be used for.
+ */
 export function publishListingShareKind(
   propertySubType: string | null | undefined,
 ): string | null {
   const raw = (propertySubType ?? '').trim()
-  if (!SHARE_SUBTYPES.has(raw)) return null
+  if (!listingPriceIsFractionalShare(raw)) return null
   return propertySubTypeDisplayLabel(raw) || raw
 }
 

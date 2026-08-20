@@ -20,9 +20,20 @@ const PULSE_PUBLISH: CityInventoryPublish = {
   source: 'pulse',
 }
 
-/** n tiles at one price. */
+/** n whole-home tiles at one price. */
 function at(price: number, n: number) {
-  return Array.from({ length: n }, () => ({ listPrice: price }))
+  return Array.from({ length: n }, () => ({
+    listPrice: price,
+    propertySubType: 'Single Family Residence' as string | null,
+  }))
+}
+
+/** n fractional-interest tiles at one price. */
+function shares(price: number, n: number) {
+  return Array.from({ length: n }, () => ({
+    listPrice: price,
+    propertySubType: 'Tenancy in Common' as string | null,
+  }))
 }
 
 /**
@@ -169,14 +180,21 @@ describe('buildSearchPriceLadder', () => {
   })
 
   it('ignores rows with no asking price and says so in the trace', () => {
-    const withBlanks = [...BEND, ...Array.from({ length: 4 }, () => ({ listPrice: null }))]
+    const withBlanks = [
+      ...BEND,
+      ...Array.from({ length: 4 }, () => ({
+        listPrice: null,
+        propertySubType: 'Single Family Residence' as string | null,
+      })),
+    ]
     const ladder = buildSearchPriceLadder({
       city: 'Bend',
       tiles: withBlanks,
       published: TILES_PUBLISH(984),
     })
     expect(ladder!.rows.reduce((n, r) => n + r.value, 0)).toBe(980)
-    expect(ladder!.source).toContain('980 of 984 rows carried an asking price')
+    expect(ladder!.source).toContain('980 of 984 rows are banded')
+    expect(ladder!.source).toContain('4 carried no asking price and are not banded.')
   })
 
   it('states full price coverage when every row is priced', () => {
@@ -210,5 +228,29 @@ describe('buildSearchPriceLadder', () => {
       '$400–600K',
       '$600–800K',
     ])
+  })
+})
+
+describe('buildSearchPriceLadder — fractional interests', () => {
+  it('bands homes only, and says so in the source trace', () => {
+    // Live Sunriver 2026-08-19: 42 class-A rows under $400K, 33 of them
+    // fractional. The card titled itself off the 42.
+    const tiles = [
+      ...shares(15_000, 33),
+      ...at(350_000, 9),
+      ...at(500_000, 30),
+      ...at(700_000, 40),
+      ...at(900_000, 20),
+    ]
+    const ladder = buildSearchPriceLadder({
+      city: 'Sunriver',
+      tiles,
+      published: { count: tiles.length, medianListPrice: 812_500, source: 'tiles' },
+    })
+    expect(ladder).not.toBeNull()
+    expect(ladder!.rows.map((r) => r.value)).toEqual([9, 30, 40, 20])
+    expect(ladder!.title).toBe('40 Sunriver homes at $600–800K')
+    expect(ladder!.rows.reduce((n, r) => n + r.value, 0)).toBe(99)
+    expect(ladder!.source).toContain('33 of them price a fractional interest')
   })
 })

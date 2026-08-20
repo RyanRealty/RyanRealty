@@ -6,11 +6,19 @@
  * shaper with no fetching in it. Same two schemas, same field-for-field output.
  *
  * STRUCTURED DATA IS PUBLISHED DATA. Google ingests `offers.price` exactly as it
- * ingests the H1, so this builder takes the ALREADY-PUBLISHED sale ask
- * (publishListingSaleAsk) rather than the raw ListPrice. 735 Purcell Boulevard,
- * Bend (MLS 220174840) is a commercial sublease whose ListPrice 2.5 is a rent
- * rate per square foot; it shipped as offers.price 2.5 on a
- * SingleFamilyResidence. When the ask is withheld the offer is withheld with it.
+ * ingests the H1, so this builder takes an already-published figure rather than
+ * the raw ListPrice. 735 Purcell Boulevard, Bend (MLS 220174840) is a commercial
+ * sublease whose ListPrice 2.5 is a rent rate per square foot; it shipped as
+ * offers.price 2.5 on a SingleFamilyResidence.
+ *
+ * The figure it takes is the WHOLE-PROPERTY price, which is stricter than the
+ * page's published ask. A machine node carries no qualifier: the visible page
+ * prints "Tenancy in common" next to the $1 ask on MLS 220190868, while the
+ * JSON-LD said SingleFamilyResidence, offers.price 1, description "$1 · 3 bed,
+ * 2 bath · 1,405 sq ft" — a $1 single-family home, ingested as fact. Three
+ * Active fractional-interest rows published exactly that (220190868 at 1,
+ * 220157653 at 250, 220218225 at 500). When the whole-property price is
+ * withheld the offer and the priced description are withheld with it.
  *
  * Photos are already gated by media_suppressed inside getListingPhotos(); the
  * cap at 5 matches the builder's own slice.
@@ -24,8 +32,12 @@ export type ListingJsonLdInput = {
   listingKey: string
   /** Street line as the page prints it. */
   street: string
-  /** The page's ONE published asking sale price, or null when withheld. */
-  publishedSaleAsk: number | null
+  /**
+   * The price of the WHOLE property, or null when withheld (a lease rate, a
+   * fractional interest, or no price at all). Never the raw ListPrice, and
+   * never the page's badged share ask.
+   */
+  wholePropertyPrice: number | null
   listing: {
     listingKey: string
     listNumber: string | null
@@ -74,7 +86,7 @@ export function listingCanonicalPath(listing: ListingJsonLdInput['listing']): st
 }
 
 export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
-  const { listing, street, listingKey, publishedSaleAsk, photoUrls, agent } = input
+  const { listing, street, listingKey, wholePropertyPrice, photoUrls, agent } = input
   const canonicalPath = listingCanonicalPath(listing)
   const livingArea = listing.sqft ?? listing.totalLivingAreaSqFt
 
@@ -97,7 +109,7 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
         : `Listing ${listingKey}`,
       description:
         listingShareSummary({
-          price: publishedSaleAsk,
+          price: wholePropertyPrice,
           beds: listing.beds,
           baths: listing.baths,
           sqft: livingArea,
@@ -121,7 +133,7 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
       livingAreaSqft: livingArea ?? undefined,
       lotSizeSqft: listing.lotSizeSqft ?? undefined,
       yearBuilt: listing.yearBuilt ?? undefined,
-      listPrice: publishedSaleAsk ?? undefined,
+      listPrice: wholePropertyPrice ?? undefined,
       photos: photoUrls.length > 0 ? photoUrls.slice(0, 5) : undefined,
       listingAgent: agent
         ? {

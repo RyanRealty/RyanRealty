@@ -23,12 +23,34 @@
  * zero active count — the caller enforces that by pairing the two.
  */
 
-/** The only tile field this needs. Structural, so any tile shape satisfies it. */
-export type ListPricedTile = { listPrice?: number | string | null }
+import { listingPriceIsFractionalShare } from '@/lib/listing/publish-listing-figure'
+
+/**
+ * The tile fields this needs. `propertySubType` is REQUIRED, not optional, so
+ * the typechecker — not a reviewer's memory — makes every caller state which
+ * listings it is taking the median of. See the fractional-interest note below.
+ */
+export type ListPricedTile = {
+  listPrice?: number | string | null
+  propertySubType: string | null
+}
 
 /**
  * Median of the positive, finite list prices in `tiles`. Returns null when no
  * tile carries a usable price — never 0, never a guess.
+ *
+ * A FRACTIONAL INTEREST IS NOT A PRICED HOME (§0). The MLS sub types "Tenancy
+ * in Common" and "Timeshare" sit inside PropertyType 'A', and their ListPrice
+ * buys a share of a resort home, so a median that counts them describes
+ * nothing. Measured live 2026-08-19, Active 'A' rows by subdivision, published
+ * median against whole-home median:
+ *   Mt Bachelor Village  $512,000 → $650,000   (3 of 12 rows fractional)
+ *   Inn Of The 7th       $204,500 → $259,000   (9 of 36)
+ *   Eagle Crest          $547,000 → $629,450   (16 of 72)
+ *   Black Butte Ranch    $925,000 → $995,000   (4 of 31)
+ *   ZIP 97707 Sunriver   $775,000 → $812,500   (33 of 257)
+ * StoneTH in Sunriver is all 16 fractional, so its honest median list is no
+ * median at all — this returns null there, and the caller publishes nothing.
  *
  * Even sample sizes average the two middle values and round to the dollar, the
  * same convention as the neighborhood/city/community medians this replaces, so
@@ -37,6 +59,7 @@ export type ListPricedTile = { listPrice?: number | string | null }
  */
 export function medianListPriceOfTiles(tiles: readonly ListPricedTile[]): number | null {
   const prices = tiles
+    .filter((t) => !listingPriceIsFractionalShare(t.propertySubType))
     .map((t) => Number(t.listPrice))
     .filter((p) => Number.isFinite(p) && p > 0)
     .sort((a, b) => a - b)

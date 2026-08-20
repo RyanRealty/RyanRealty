@@ -29,7 +29,11 @@ checks.push({
     helper.includes('220188968') &&
     helper.includes('Tenancy in Common') &&
     helper.includes('Timeshare') &&
-    helper.includes('Do not invent'),
+    helper.includes('Do not invent') &&
+    // The sub-type list moved into the figure contract 2026-08-19 (one rule,
+    // executed by ci:listing-figure-publish); this module must ask it rather
+    // than keep a second copy that can drift.
+    /listingPriceIsFractionalShare/.test(helper),
 })
 
 const hero = src('components/site/listing-detail/ListingHero.tsx')

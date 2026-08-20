@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   isZeroDollarText,
+  listingPriceIsFractionalShare,
   listingPriceIsLeaseRate,
   publishMoneyText,
   publishPricePerSqft,
   publishSaleAskAmount,
+  publishWholePropertyAmount,
 } from './publish-listing-figure'
 
 describe('listingPriceIsLeaseRate', () => {
@@ -98,5 +100,56 @@ describe('publishSaleAskAmount', () => {
   it('withholds a missing or non-positive price', () => {
     expect(publishSaleAskAmount({ price: null, propertyType: 'A' })).toBeNull()
     expect(publishSaleAskAmount({ price: 0, propertyType: 'A' })).toBeNull()
+  })
+})
+
+describe('listingPriceIsFractionalShare', () => {
+  it('is true for the two sub types whose price buys a share', () => {
+    expect(listingPriceIsFractionalShare('Tenancy in Common')).toBe(true)
+    expect(listingPriceIsFractionalShare('Timeshare')).toBe(true)
+    expect(listingPriceIsFractionalShare(' Tenancy in Common ')).toBe(true)
+  })
+
+  it('is false for whole-dwelling sub types, including a co-op share', () => {
+    // A Stock Cooperative share carries the exclusive right to one whole unit.
+    for (const t of ['Single Family Residence', 'Condominium', 'Stock Cooperative', 'In Park']) {
+      expect(listingPriceIsFractionalShare(t)).toBe(false)
+    }
+    expect(listingPriceIsFractionalShare(null)).toBe(false)
+    expect(listingPriceIsFractionalShare('')).toBe(false)
+  })
+})
+
+describe('publishWholePropertyAmount', () => {
+  const share = (price: number, propertySubType: string | null) =>
+    publishWholePropertyAmount({ price, propertyType: 'A', propertySubType })
+
+  it('withholds every fractional interest, at any price', () => {
+    // MLS 220190868 published a 1571464.0% cap rate and JSON-LD offers.price 1.
+    expect(share(1, 'Tenancy in Common')).toBeNull()
+    expect(share(250, 'Tenancy in Common')).toBeNull()
+    expect(share(500, 'Tenancy in Common')).toBeNull()
+    // 220224253 is a 1/3 share; 220221076 is a quarter ownership.
+    expect(share(295_000, 'Tenancy in Common')).toBeNull()
+    expect(share(215_000, 'Timeshare')).toBeNull()
+  })
+
+  it('withholds a lease rate', () => {
+    expect(
+      publishWholePropertyAmount({ price: 2.5, propertyType: 'G', propertySubType: null }),
+    ).toBeNull()
+  })
+
+  it('publishes the whole-dwelling rows, including ones cheaper than a share', () => {
+    expect(share(1_695_000, 'Condominium')).toBe(1_695_000)
+    expect(share(8_500, 'In Park')).toBe(8_500)
+    expect(share(475_000, null)).toBe(475_000)
+  })
+
+  it('withholds a missing or non-positive price', () => {
+    expect(share(0, 'Single Family Residence')).toBeNull()
+    expect(
+      publishWholePropertyAmount({ price: null, propertyType: 'A', propertySubType: null }),
+    ).toBeNull()
   })
 })

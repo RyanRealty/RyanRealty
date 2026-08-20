@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@supabase/supabase-js'
 import { getListingTiles } from '@/lib/data'
+import { publishMoneyText, publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -39,7 +40,19 @@ export async function GET(request: Request) {
           const heroMap = await getHeroPhotosByListingKeys([tile.listingKey])
           photoUrl = heroMap.get(tile.listingKey)
         }
-        const price = tile.listPrice != null && tile.listPrice > 0 ? `$${tile.listPrice.toLocaleString()}` : ''
+        // The share card carries no sub-type badge, so it prints the price of
+        // the WHOLE property or no price at all. MLS 220190868 is a $1
+        // fractional interest at Eagle Crest: the card published a "$1" pill
+        // over "3 bed · 2 bath · 1,405 sq ft".
+        const price =
+          publishMoneyText(
+            publishWholePropertyAmount({
+              price: tile.listPrice,
+              propertyType: tile.propertyType,
+              propertySubType: tile.propertySubType,
+            }),
+            'exact',
+          ) ?? ''
         const stats = [tile.beds, tile.baths, tile.sqft].filter(Boolean)
         const statsStr = stats.length ? `${tile.beds ?? '—'} bed · ${tile.baths ?? '—'} bath${tile.sqft ? ` · ${tile.sqft.toLocaleString()} sq ft` : ''}` : ''
         return new ImageResponse(
