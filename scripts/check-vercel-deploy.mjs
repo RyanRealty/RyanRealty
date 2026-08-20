@@ -336,6 +336,12 @@ async function main() {
         process.exit(0)
       }
       if (state === 'CANCELED') {
+        if (skippableTip) {
+          out(
+            `SKIP — Next-skippable tip; Vercel canceled/ignored ${deployId} in ${(Date.now() - startedAt) / 1000}s`,
+          )
+          process.exit(0)
+        }
         if (!usingCliFallback) {
           try {
             productionList = await listProductionDeployments(apiToken, projectId, teamId)

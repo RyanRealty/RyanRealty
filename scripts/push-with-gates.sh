@@ -206,7 +206,7 @@ if [ "$PUSH_GATES_IN_PLACE" = "1" ]; then
   IN_PLACE=1
 elif [ "$PUSH_GATES_ISOLATE" = "1" ]; then
   IN_PLACE=0
-elif [ -z "$(git status --porcelain)" ]; then
+elif [ -z "$(git status --porcelain --untracked-files=no)" ]; then
   IN_PLACE=1
 fi
 
