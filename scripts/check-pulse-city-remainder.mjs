@@ -74,12 +74,21 @@ for (const surface of surfaces) {
  * page's own TOWN_ORDER so a new town door cannot slip past this.
  */
 {
+  // home-d renders <HomeDHero> and reads its town doors from SITE_CITY_SLUGS
+  // (lib/central-oregon.ts) instead of a page-local TOWN_ORDER, so the hero
+  // match accepts either component and the town list falls back to that
+  // registry — the doors still come from exactly the list this reads.
   const text = src('app/page.tsx')
-  const heroMatch = /<KbHero\b[\s\S]*?\/>/.exec(text)
+  const heroMatch = /<(?:KbHero|HomeDHero)\b[\s\S]*?\/>/.exec(text)
   const hero = heroMatch ? heroMatch[0] : ''
   const leadMatch = /\blead=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(hero)
   const lead = (leadMatch?.[1] ?? leadMatch?.[2] ?? '').toLowerCase()
-  const townOrder = /const TOWN_ORDER = \[([^\]]*)\]/.exec(text)?.[1] ?? ''
+  const townOrder =
+    /const TOWN_ORDER = \[([^\]]*)\]/.exec(text)?.[1] ??
+    /export const SITE_CITY_SLUGS[^=]*=\s*\[([^\]]*)\]/.exec(
+      src('lib/central-oregon.ts'),
+    )?.[1] ??
+    ''
   const towns = [...townOrder.matchAll(/'([^']+)'/g)].map((m) => m[1].replace(/-/g, ' '))
   const named = towns.filter((town) => lead.includes(town))
   checks.push({
