@@ -211,7 +211,12 @@ export function hoodPeers(selfSlug: string): HoodDPeer[] {
   })
 }
 
-type Amenity = { category?: string; name?: string; description?: string; access?: string }
+type Amenity = {
+  category?: string
+  name?: string
+  description?: string | null
+  access?: string | null
+}
 
 function matchByName<T extends { name: string }>(name: string, rows: readonly T[]): T | undefined {
   const key = keyName(name).replace(/ and mirror pond$/, '')

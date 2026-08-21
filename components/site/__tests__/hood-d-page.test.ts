@@ -34,9 +34,9 @@ describe('hood-d Bend district restyle', () => {
   })
 
   it('SEO H1 is {District} homes for sale', () => {
-    const hero = read('components/site/hood-d/HoodDHero.tsx')
-    expect(hero).toMatch(/\$\{name\} homes for sale/)
-    expect(hero).not.toMatch(/Homes for Sale/)
+    const page = read('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
+    expect(page).toMatch(/headline=\{`\$\{neighborhood\.name\} homes for sale`\}/)
+    expect(page).not.toMatch(/titleBottom="Homes for Sale"/)
   })
 
   it('keeps Spark inventory, place-graph children, and Chart Room', () => {

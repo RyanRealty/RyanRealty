@@ -287,6 +287,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           cityName={cityName}
           cityHref={`/cities/${citySlug}`}
           name={neighborhood.name}
+          headline={`${neighborhood.name} homes for sale`}
           lead={hoodLead({ name: neighborhood.name, cityName, prose })}
           data={{
             activeCount,

@@ -7,6 +7,7 @@ export function HoodDHero({
   cityName,
   cityHref,
   name,
+  headline,
   lead,
   data,
   posterSrc,
@@ -16,6 +17,7 @@ export function HoodDHero({
   cityName: string
   cityHref: string
   name: string
+  headline: string
   lead: string
   data: HoodDHeroData
   posterSrc: string
@@ -31,7 +33,6 @@ export function HoodDHero({
     median !== '—' ? `${median} median` : null,
     pendingDays ? `${pendingDays} pending` : null,
   ].filter(Boolean)
-  const heading = `${name} homes for sale`
 
   return (
     <section className="hood-d-hero" id="top">
@@ -47,7 +48,7 @@ export function HoodDHero({
           <span aria-hidden="true">›</span>
           <span>{name}</span>
         </p>
-        <h1 className="hood-d-display">{heading}</h1>
+        <h1 className="hood-d-display">{headline}</h1>
         <p className="hood-d-hero-lead">{lead}</p>
         {stats.length > 0 ? <p className="hood-d-hero-stats">{stats.join(' · ')}</p> : null}
         <div className="hood-d-hero-ctas">
