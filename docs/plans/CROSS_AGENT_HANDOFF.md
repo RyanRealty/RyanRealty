@@ -51,6 +51,17 @@ run exists for the new SHA before waiting on it.
 
 **Grok bots:** I cannot delete sidebar agents. New bots read the brain, then one door.
 
+# Prior — 2026-08-21 (claude worktree) — ship pipeline maximized (every agent, read this)
+
+**Surface:** `main` @ `8a7c659b`. The push→live cycle is now ~5–6 min total (was 30–40 this morning). What changed for HOW YOU SHIP:
+
+- **`npm run push` auto-recovers origin races.** Non-fast-forward (another agent pushed while your gates ran) is exit 7 → `scripts/push-retry.sh` fetches, rebases (conflicts abort loudly), and re-verifies the new HEAD, 3 attempts max. Stop hand-rebasing on rejection — just read the verdict line.
+- **G46 typecheck is incremental** (~/.cache/rr-commit-check tsbuildinfo; 55–80s → 9–15s warm). `COMMIT_COMPILES_NO_CACHE=1` forces cold.
+- **`npm run deploy:verify` prints build telemetry** (compile · SSG · rail-timeout count from the REAL build log) and **exits 1 if the build-cost class returns** (SSG > 300s or > 50 rail timeouts). Do not work around it — fix the regression or get Matt's explicit OK with `BUILD_TELEMETRY_ALLOW_SLOW=1`.
+- **`/api/cron/warm-geo-pages`** (every 10 min) warms the on-demand geo tail once per deployment (crm_try_cron_lease keyed on the deploy SHA). Do not add per-request warming loops elsewhere.
+- The build is ALREADY Turbopack (Next 16 default; `next build --webpack` only if you need the Serwist SW). Do not "switch it to Turbopack".
+- Worktree agents: never reference `<repo>/node_modules` in scripts — use `scripts/lib/resolve-node-modules.mjs` (JS or CLI). The stub broke 5 pipeline paths on 2026-08-21.
+
 # Prior — 2026-08-21 (claude worktree) — Vercel build cost: SSG fan-out zeroed (G70)
 
 **Surface:** merged to `main` from worktree `bold-jang-cc92e0`. **Every agent that touches `app/`: the build-time SSG budget is now gated (`ci:ssg-budget`, G70).**
