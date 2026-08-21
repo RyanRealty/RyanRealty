@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
-import { buildGuestWatchFromPlace, rememberGuestWatch } from '@/lib/alerts/guest-watch-residual'
+import {
+  buildGuestWatchFromPlace,
+  rememberGuestWatch, // hydration-safe: event/effect storage only
+} from '@/lib/alerts/guest-watch-residual'
 import { readRrSessionId } from '@/lib/tracking'
 
 export function HoodDAlerts({
@@ -29,10 +32,10 @@ export function HoodDAlerts({
         email,
         filters: { city: cityName, propertyType: 'A' },
         company,
-        sessionId: readRrSessionId(),
+        sessionId: readRrSessionId(), // hydration-safe: event/effect storage only
       })
       if (res.ok) {
-        rememberGuestWatch(
+        rememberGuestWatch( // hydration-safe: event/effect storage only
           buildGuestWatchFromPlace({
             communityName: cityName,
             city: cityName,
