@@ -46,10 +46,6 @@ const surfaces = [
     label: 'city page gates KbSell median through publishSellMedian',
   },
   {
-    path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    label: 'neighborhood page gates KbSell median through publishSellMedian',
-  },
-  {
     path: 'app/zip/[zip]/page.tsx',
     label: 'ZIP page gates KbSell median through publishSellMedian',
   },
@@ -78,6 +74,19 @@ checks.push({
   ok: /KbSell/.test(homepage)
     ? /from ['"]@\/lib\/market\/publish-median-caption['"]/.test(homepage) &&
       /publishSellMedian\(/.test(homepage)
+    : true,
+})
+
+// Hood-d replaced KbSell on the neighborhood page with HoodDAsk, which prints
+// no median; the only neighborhood median left is the compare table, captioned
+// by its place-name column headers. Same trap: KbSell returning to the page
+// re-arms the publishSellMedian requirement.
+const hoodPage = src('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
+checks.push({
+  label: 'neighborhood page gates KbSell median through publishSellMedian',
+  ok: /KbSell/.test(hoodPage)
+    ? /from ['"]@\/lib\/market\/publish-median-caption['"]/.test(hoodPage) &&
+      /publishSellMedian\(/.test(hoodPage)
     : true,
 })
 

@@ -85,12 +85,12 @@ for (const file of pageFiles(ROOT)) {
   // side (docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.7).
   const hasFooter = isV3
     ? /<V3Footer\b/.test(src) || /\bV3Footer\b/.test(code)
-    : /<KbFooter\b/.test(src) || /\bKbFooter\b/.test(code) || /<HomeDFooter\b/.test(src)
+    : /<KbFooter\b/.test(src) || /\bKbFooter\b/.test(code) || /<HoodDFooter\b/.test(src) || /<HomeDFooter\b/.test(src)
   if (!hasFooter) {
     fails.push(
       isV3
         ? `${file} opens the v3 token scope but does NOT render <V3Footer> (shared footer required)`
-        : `${file} renders .kb-root but does NOT render <KbFooter> or <HomeDFooter> (shared footer required)`,
+        : `${file} renders .kb-root but does NOT render <KbFooter>, <HoodDFooter>, or <HomeDFooter> (shared footer required)`,
     )
   }
   if (/<KbNav\b/.test(code) || /<V3Chrome\b/.test(code)) {

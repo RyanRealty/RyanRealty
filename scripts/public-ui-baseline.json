@@ -194,9 +194,9 @@
       "v3": 1
     },
     "app/cities/[slug]/[neighborhoodSlug]/page.tsx": {
-      "kb": 23,
+      "kb": 4,
       "legacy": 3,
-      "explore": 2
+      "v3": 1
     },
     "app/cities/[slug]/page.tsx": {
       "kb": 24,

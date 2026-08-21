@@ -330,7 +330,7 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/CITY_RESORT_LEDGER_IMG\[c\.slug\]/)
   })
 
-  it('D93 — activity section is "Latest market activity" with per-row listing thumbnails', () => {
+  it('D93 — city activity section is "Latest market activity" with per-row listing thumbnails', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     // The heading is the same seven characters shorter of a literal: V3Ledger types
     // `heading` as the branded V3Text, so `heading="Latest market activity"` is a
@@ -348,12 +348,11 @@ describe('design directive contracts', () => {
     // untrue before the section was cut. The community node now carries a door
     // to the surface that owns the feed instead of a mislabelled copy of it.
     // See design_system/ryan-realty/ui_kits/community/parity.json.
-    for (const page of [
-      'app/cities/[slug]/page.tsx',
-      'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    ]) {
-      expect(readSrc(page)).toMatch(/buildActivityItems\(/)
-    }
+    // The Bend district template (hood-d, 2026-08-20) made the same cut: the
+    // feed is city-wide and the kit is the district page, so a "Live · River
+    // West" rail over Bend rows would be untrue. City pages still own the feed.
+    expect(readSrc('app/cities/[slug]/page.tsx')).toMatch(/buildActivityItems\(/)
+    expect(readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')).not.toMatch(/<KbActivity/)
     const act = readSrc('components/site/kb/KbActivity.client.tsx')
     expect(act).toMatch(/act-thumb/)
     expect(act).toMatch(/imageUrl\?: string \| null/)
