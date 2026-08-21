@@ -2,7 +2,7 @@
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
   "status": "home-d-2026-08-20",
-  "note": "Visual restyle of the live `/` template to home-d section objects. Live DAL only. Hero video + Old Mill poster kept.",
+  "note": "Visual restyle of the live `/` template to home-d section objects. Live DAL only. Hero video + Old Mill poster kept. Market Desk HUD is not in the lock.",
   "requiredComponents": [
     { "name": "HomeDHero", "section": "full-bleed video hero + live count + search" },
     { "name": "HomeDTowns", "section": "town list + city polygon map" },
@@ -10,7 +10,6 @@
     { "name": "HomeDLuxury", "section": "one featured house + live price rail" },
     { "name": "HomeDJournal", "section": "magazine split from live blog" },
     { "name": "HomeDParks", "section": "one park full-bleed + official named list" },
-    { "name": "KbMarketHud", "section": "live market figures" },
     { "name": "HomeDFooter", "section": "navy footer" }
   ]
 }

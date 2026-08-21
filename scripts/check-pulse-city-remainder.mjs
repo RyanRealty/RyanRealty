@@ -79,7 +79,7 @@ for (const surface of surfaces) {
   // match accepts either component and the town list falls back to that
   // registry — the doors still come from exactly the list this reads.
   const text = src('app/page.tsx')
-  const heroMatch = /<(?:KbHero|HomeDHero)\b[\s\S]*?\/>/.exec(text)
+  const heroMatch = /<(?:HomeDHero|KbHero)\b[\s\S]*?\/>/.exec(text)
   const hero = heroMatch ? heroMatch[0] : ''
   const leadMatch = /\blead=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(hero)
   const lead = (leadMatch?.[1] ?? leadMatch?.[2] ?? '').toLowerCase()

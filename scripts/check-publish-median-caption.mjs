@@ -47,10 +47,6 @@ const surfaces = [
     label: 'neighborhood page gates KbSell median through publishSellMedian',
   },
   {
-    path: 'app/page.tsx',
-    label: 'homepage gates KbSell median through publishSellMedian',
-  },
-  {
     path: 'app/zip/[zip]/page.tsx',
     label: 'ZIP page gates KbSell median through publishSellMedian',
   },
@@ -69,6 +65,18 @@ for (const surface of surfaces) {
       /publishSellMedian\(/.test(text),
   })
 }
+
+// Home-d has no KbSell block, so / prints no sell median. The trap stays
+// armed: if KbSell returns to the homepage it must gate through
+// publishSellMedian again.
+const homepage = src('app/page.tsx')
+checks.push({
+  label: 'homepage gates KbSell median through publishSellMedian',
+  ok: /KbSell/.test(homepage)
+    ? /from ['"]@\/lib\/market\/publish-median-caption['"]/.test(homepage) &&
+      /publishSellMedian\(/.test(homepage)
+    : true,
+})
 
 const fact = src('lib/market/publish-fact-value.ts')
 checks.push({
