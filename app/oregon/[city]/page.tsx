@@ -1,3 +1,4 @@
+// @no-static-params — build-time fan-out budgeted to zero (ci:ssg-budget); ISR on demand
 /**
  * /oregon/[city] — the out-of-market referral tier, on the components/site/v3 barrel.
  *
@@ -104,11 +105,13 @@ type Params = { city: string }
 export const dynamicParams = true
 export const revalidate = 3600
 
+// Build-time prerender is intentionally empty (ci:ssg-budget). Seeding the top
+// 25 out-of-area cities ran a live Supabase query inside `next build` and then
+// prerendered 25 pages against timeout-capped rails. Indexability is decided at
+// render time (renderable/noindex logic below); with dynamicParams=true +
+// revalidate=3600 every URL still serves, rendered on first request.
 export async function generateStaticParams(): Promise<Array<{ city: string }>> {
-  // Seed the indexable top set (>= 5 active, top 25 by count). Long-tail
-  // out-of-area cities SSR on demand via dynamicParams and render noindex.
-  const indexable = await getIndexableOutOfAreaCities()
-  return indexable.map((c) => ({ city: c.slug }))
+  return []
 }
 
 function normalizeSlug(raw: string): string {

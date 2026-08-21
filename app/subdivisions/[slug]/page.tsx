@@ -1,5 +1,6 @@
 // @no-parity — derived subdivision page (no standalone mockup; reuses KB section library)
 // brand-voice:exempt
+// @no-static-params — build-time fan-out budgeted to zero (ci:ssg-budget); ISR on demand
 /**
  * Subdivision detail page — KB (kinetic-brutalist) design system, Phase 9 wave
  * extension. Plat-level subdivision boundary pages linked from KbResortOverview
@@ -78,17 +79,19 @@ import '@/components/site/kb/kb.css'
 
 export const dynamicParams = true
 export const revalidate = 60
+// Worst-case first render chains 4 sequential rail stages (~22s of timeout
+// ceilings) — above Vercel's 15s default function cap.
+export const maxDuration = 60
 
+// Build-time prerender is intentionally empty (ci:ssg-budget). The ~100 alias
+// pages each chain 4 sequential timeout-capped Supabase stages; prerendering
+// them was the largest single cost of `next build` on Vercel and, when queries
+// timed out under build concurrency, baked empty rails into the deployed HTML.
+// With dynamicParams=true + revalidate=60 every URL still serves — rendered on
+// first request with warm runtime caches, exactly like non-alias slugs always
+// have.
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  const communities = (resortCommunitiesData as { communities: ResortEntry[] }).communities
-  const slugs = new Set<string>()
-  for (const entry of communities) {
-    for (const alias of entry.subdivision_aliases) {
-      const slug = slugify(alias)
-      if (!resolveSubdivisionAreaRedirect(slug)) slugs.add(slug)
-    }
-  }
-  return [...slugs].map((slug) => ({ slug }))
+  return []
 }
 
 type Props = { params: Promise<{ slug: string }> }

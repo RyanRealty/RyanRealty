@@ -657,13 +657,22 @@ describe('place-family indexes', () => {
     expect(nav).toMatch(/label: 'All subdivisions'/)
   })
 
-  it('neighborhood and plat detail generateStaticParams are not empty stubs', () => {
+  it('neighborhood detail generateStaticParams is not an empty stub', () => {
     const neighborhood = readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
-    const plat = readSrc('app/subdivisions/[slug]/page.tsx')
     expect(neighborhood).toMatch(/BEND_NEIGHBORHOOD_DISTRICTS/)
     expect(neighborhood).not.toMatch(/generateStaticParams[\s\S]{0,200}return\s*\[\s*\]/)
+  })
+
+  it('plat detail holds the G70 zero build-time fan-out and still serves every slug', () => {
+    // Deliberately inverted from the neighborhood contract above: build-time
+    // prerender of ~100 plat pages was the top Vercel build cost and baked
+    // empty rails into deployed HTML (ci:ssg-budget). On-demand ISR needs the
+    // resolution path + dynamicParams, so those stay asserted.
+    const plat = readSrc('app/subdivisions/[slug]/page.tsx')
     expect(plat).toMatch(/resolveSubdivisionAreaRedirect/)
-    expect(plat).not.toMatch(/generateStaticParams[\s\S]{0,80}return\s*\[\s*\]/)
+    expect(plat).toMatch(/export const dynamicParams = true/)
+    expect(plat).toMatch(/export const revalidate = 60/)
+    expect(plat).toMatch(/generateStaticParams[\s\S]{0,80}return\s*\[\s*\]/)
   })
 })
 

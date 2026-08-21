@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
+import { resolvingNodeModules } from './__tests__/lib/resolve-node-modules.mjs'
 
 /**
  * Break-tests for ci:entity-scope (scripts/check-entity-scope.mjs, G66).
@@ -141,7 +142,7 @@ rmSync(SANDBOX, { recursive: true, force: true })
 mkdirSync(join(SANDBOX, 'scripts'), { recursive: true })
 cpSync(join(REPO, 'scripts/check-entity-scope.mjs'), GATE)
 if (!existsSync(join(SANDBOX, 'node_modules'))) {
-  symlinkSync(join(REPO, 'node_modules'), join(SANDBOX, 'node_modules'), 'dir')
+  symlinkSync(resolvingNodeModules(), join(SANDBOX, 'node_modules'), 'dir')
 }
 if (!existsSync(join(SANDBOX, 'package.json'))) {
   writeFileSync(join(SANDBOX, 'package.json'), '{"type":"module"}\n')

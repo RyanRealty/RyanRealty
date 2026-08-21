@@ -43,7 +43,15 @@ run exists for the new SHA before waiting on it.
 
 **Grok bots:** I cannot delete sidebar agents. New bots read the brain, then one door.
 
-# Prior — 2026-08-19 (grok local) — Sunstone seller CMA LIVE
+# Prior — 2026-08-21 (claude worktree) — Vercel build cost: SSG fan-out zeroed (G70)
+
+**Surface:** merged to `main` from worktree `bold-jang-cc92e0`. **Every agent that touches `app/`: the build-time SSG budget is now gated (`ci:ssg-budget`, G70).**
+
+**What:** Vercel build profiling showed "Generating static pages (644)" ate 11.2 of 14 min — ~125 `subdivisions/[slug]` + `oregon/[city]` pages each chaining sequential 3000–9000ms timeout-capped Supabase rails; 352 rail timeouts in one peak-hours build, which also baked EMPTY rails into deployed HTML. Both routes now hold `generateStaticParams → return []` (on-demand ISR, same URLs, same content, `dynamicParams=true` + short `revalidate`). Do NOT re-seed their fan-out; the gate fails the commit. If a build gets slow again, profile first: `vercel inspect --logs <deploy-url>` and grep `withTimeoutFallback.*timed out`. Full rationale: `docs/MECHANICAL_GATES.md` G70.
+
+**Also true:** sitemaps are already off the build path (dynamic + warm-sitemaps cron); build cache restores fine; the 30–40 min push-to-live wall clock was build-queue serialization — shrinking the build shrinks it.
+
+
 
 
 **Surface:** Grok local worktree `/Users/matthewryan/RyanRealty-wt-cma-sunstone-20260819` (`wt/cma-sunstone-20260819`). Product **`6ed2b5aa`**. Vercel production **READY** `dpl_3YBxhEC38sVWgU6QEJk9NfcgpsJQ`. Loop stays **DISARMED**. Do not re-arm. No send. Dirty CMA branch `cursor/cma-client-document-7fc3` was not mixed (CRM health `b0e9f537` and `origin-dual-remote` left behind).

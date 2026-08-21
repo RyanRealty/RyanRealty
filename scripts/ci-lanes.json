@@ -1249,6 +1249,9 @@
       "lib/crm/review-ask.ts",
       "app/cities/**",
       "app/communities/**"
+    ],
+    "ci:ssg-budget": [
+      "app/**"
     ]
   },
   "nightly": [
