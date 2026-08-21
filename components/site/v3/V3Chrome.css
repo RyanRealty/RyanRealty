@@ -245,6 +245,50 @@
   }
 }
 
+.v3-chrome__signin {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-chrome__signin:hover,
+.v3-chrome__signin:focus-visible,
+.v3-chrome__signin[aria-current='page'] {
+  text-decoration-color: currentColor;
+}
+
+.v3-chrome__phone {
+  display: none;
+}
+
+@media (min-width: 56.25rem) {
+  .v3-chrome__phone {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    padding: 0 var(--v3-space-xs);
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body-sm);
+    font-weight: var(--v3-weight-medium);
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+  }
+}
+
+.v3.v3-chrome--home .v3-chrome__caret,
+.v3.v3-chrome--home .v3-chrome__menu-btn,
+.v3.v3-chrome--home .v3-chrome__close,
+.v3.v3-chrome--home .v3-chrome__panel {
+  border-radius: 0;
+}
+
 /* The one ask ---------------------------------------------------------------
    V3Button owns the look. Only the horizontal padding changes here, and only so
    the label fits beside the wordmark and the menu control at 390. The selector
