@@ -14,6 +14,21 @@
   }
 }
 
+.home-d {
+  scroll-padding-top: 5rem;
+}
+
+.home-d-section,
+.home-d-lux,
+.home-d-parks,
+.home-d-alerts {
+  scroll-margin-top: 5rem;
+}
+
+#journal.home-d-section {
+  padding-top: 6.5rem;
+}
+
 .home-d .home-d-wrap {
   width: 100%;
   max-width: var(--home-d-measure);
