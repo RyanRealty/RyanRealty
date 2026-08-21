@@ -112,8 +112,10 @@ describe('place list wiring', () => {
 
   it('sends the community counted-set door to the on-page list', () => {
     const src = readFileSync('app/communities/[slug]/page.tsx', 'utf8')
-    expect(src).toContain('viewAllHref="#homes"')
-    expect(src).toContain("href: '#homes'")
+    const kb = readFileSync('components/site/community/CommunityKbView.tsx', 'utf8')
+    expect(src).toContain('homesHref="#homes"')
+    expect(kb).toContain('viewAllHref="#homes"')
+    expect(kb).toContain("href: '#homes'")
   })
 })
 

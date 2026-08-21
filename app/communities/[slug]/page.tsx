@@ -48,8 +48,15 @@ import {
   getResortCommunityBySlug,
   getBlogPostsBySlugs,
   getAreaGuideVideo,
+  getReviews,
 } from '@/lib/data'
 import { allCommunities } from '@/lib/data'; import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { isFeaturedCommunitySlug } from '@/lib/communities/featured-slugs'
+import { buildCommDGroundTiles } from '@/lib/communities/comm-d-ground'
+import { buildCommDChartRoom, buildCommDRankRows } from '@/lib/communities/comm-d-chart-room'
+import { formatPriceExact } from '@/lib/format/money'
+import { CommunityFeaturedView } from '@/components/site/comm-d/CommunityFeaturedView'
+import { CommunityKbView } from '@/components/site/community/CommunityKbView'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
@@ -85,42 +92,14 @@ import { getDistrictForCity } from '@/data/co-schools'
 import { homesForSalePath } from '@/lib/slug'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { CONTACT } from '@/lib/brand/contact'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
-import { buildTimeRails, skippableRail } from '@/lib/build-phase'
+import { skippableRail } from '@/lib/build-phase'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbAbout } from '@/components/site/kb/KbAbout'
-import { KbResortOverview } from '@/components/site/kb/KbResortOverview'
-import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
-// KbListingMap remains in the parity contract; PlaceInventoryMap composes dual-pane.
-import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
-import { PlaceInventoryMap } from '@/components/site/explore/PlaceInventoryMap'
-import { KbTicker } from '@/components/site/kb/KbTicker.client'
-import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
-import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
+import type { KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
-import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
-import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
-import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
-import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
-import { KbActivity } from '@/components/site/kb/KbActivity.client'
-import { KbArticles } from '@/components/site/kb/KbArticles'
-import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
-import { KbTeam } from '@/components/site/kb/KbTeam.client'
-import { KbBuyCta } from '@/components/site/kb/KbBuyCta.client'
-import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
-import { CommunityGolfLinks } from '@/components/site/explore/CommunityGolfLinks'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbSchools } from '@/components/site/kb/KbSchools'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { MetadataBlock } from '@/components/site/MetadataBlock'; import { MarketSources } from '@/components/site/MarketSources'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import CommunityPageTracker from '@/components/community/CommunityPageTracker'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { kbMoneyFull } from '@/components/site/kb/types'
 import type {
   KbTownItem,
@@ -128,7 +107,6 @@ import type {
   KbFeaturedItem,
   KbMarketData,
 } from '@/components/site/kb/types'
-import { TESTIMONIALS } from '@/lib/testimonials'
 import '@/components/site/kb/kb.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
@@ -269,7 +247,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     snapshot, pulse, stats, mktStats, regionPulse, priceHist,
     boundaryRead, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
-    cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
+    cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts, reviews,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -323,6 +301,12 @@ export default async function CommunityDetailPage({ params }: Props) {
       null,
       4500,
       'comm:cityCoreCharts',
+    ),
+    withTimeoutFallback(
+      getReviews(8),
+      { reviews: [], count: 0, averageRating: 0, source: 'google' as const },
+      2500,
+      'comm:reviews',
     ),
   ])
 
@@ -643,9 +627,12 @@ export default async function CommunityDetailPage({ params }: Props) {
     refreshedAt: pulse?.refreshedAt ?? snapshot?.refreshedAt ?? null,
     // Extended fields — community-specific grounded questions.
     soldCount12mo: publishSoldCount({ value: stats?.soldCount, grain: 'neighborhood' }),
-    subdivisionAliases: registryEntry?.subdivision_aliases?.length
-      ? registryEntry.subdivision_aliases
-      : null,
+    subdivisionAliases:
+      isFeaturedCommunitySlug(slug)
+        ? null
+        : registryEntry?.subdivision_aliases?.length
+          ? registryEntry.subdivision_aliases
+          : null,
     hoaMasterAnnual: richContent?.hoaMasterAnnual ?? null,
     hoaAnnualEstimate: registryEntry?.hoa_annual_estimate ?? null,
     hoaSubEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate) ?? null,
@@ -716,214 +703,142 @@ export default async function CommunityDetailPage({ params }: Props) {
   }
 
   const communityLabel = `${community.name} · ${cityName}`
+  const listingsHref = homesForSalePath(cityName, community.subdivision)
+  const heroLead = placeHeroLead({
+    placeName: community.name, parentName: cityName, activeCount,
+    knownSuffix: 'Live inventory from the regional MLS.',
+  })
+  const contactHref = `/contact?inquiryType=Buying&message=${encodeURIComponent(`Interested in ${community.name}. Please get in touch.`)}`
+  const strContactHref = `/contact?inquiryType=Buying&message=${encodeURIComponent(`I have questions about short-term rental rules in ${community.name}.`)}`
 
-  return (
-    <main className="kb-root">
-      <CommunityPageTracker
-        slug={slug}
-        communityName={community.name}
-        city={cityName}
-        activeCount={activeCount}
-        medianPrice={medianListPrice}
-      />
+  if (isFeaturedCommunitySlug(slug)) {
+    const groundFacts = [
+      richContent?.architect?.trim() || null,
+      richContent?.acres != null && richContent.acres > 0
+        ? `${Math.round(richContent.acres).toLocaleString('en-US')} acres`
+        : null,
+    ].filter((value): value is string => Boolean(value))
+    const featuredLead = groundFacts.length > 0 ? `${groundFacts.join('. ')}.` : `Homes in ${community.name}.`
+    const asks = [
+      activeCount != null ? { kicker: 'Homes', value: `${activeCount.toLocaleString('en-US')} for sale` } : null,
+      medianListPrice != null ? { kicker: 'Ask', value: formatPriceExact(medianListPrice) } : null,
+      daysFact ? { kicker: 'Days', value: daysFact } : null,
+      { kicker: 'City', value: cityName },
+    ].filter((row): row is { kicker: string; value: string } => row != null)
+    const homes = featuredItems.filter((item) => item.img).slice(0, 4)
+    const rankRows = buildCommDRankRows({
+      cityName,
+      selfSlug: slug,
+      rows: communities.map((row) => ({
+        slug: row.slug,
+        city: row.city,
+        subdivision: row.subdivision,
+        medianPrice: row.medianPrice,
+      })),
+    })
+    const chartCards = buildCommDChartRoom({
+      name: community.name,
+      cityName,
+      slug,
+      communityHistory: priceHist,
+      cityHistory: cityPriceHist,
+      communitySeriesSparse: chartIsCityLevel,
+      rankRows,
+    })
+    const groundTiles = buildCommDGroundTiles({
+      heroPhoto,
+      courseImage: richContent?.courseImage,
+      signatureHoleImage: richContent?.signatureHoleImage,
+      architect: richContent?.architect,
+      acres: richContent?.acres,
+      founded: richContent?.founded,
+    })
+    return (
+      <div className="kb-root">
       <KbSectionTracker />
       <MetadataBlock schemas={communitySchemas} />
-      <KbBreadcrumb
-        overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Communities', href: '/communities' },
-          ...(cityName ? [{ label: cityName, href: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
-          { label: community.name },
-        ]}
+      <CommunityFeaturedView
+        slug={slug}
+        name={community.name}
+        cityName={cityName}
+        activeCount={activeCount}
+        medianListPrice={medianListPrice}
+        asks={asks}
+        heroPhoto={heroPhoto}
+        posterAlt={`${community.name} in ${cityName}, Oregon`}
+        mediaCaption={mediaCaption}
+        heroLead={featuredLead}
+        homesHref="#homes"
+        listingsHref={listingsHref}
+        groundTiles={groundTiles}
+        homes={homes}
+        aboutParagraphs={aboutParagraphs}
+        mapGeo={mapGeo}
+        mapPolygons={mapPolygons}
+        centerLonLat={registryEntry?.center_lon_lat ?? undefined}
+        chartCards={chartCards}
+        schoolDistrictName={schoolDistrictInfo?.district ?? null}
+        schoolDistrictSlug={schoolDistrictInfo?.districtSlug ?? null}
+        rating={reviews.averageRating}
+        reviewCount={reviews.count}
+        faqs={faqs}
       />
-      <SmoothScrollProvider>
-        <KbHero
-          data={{
-            activeCount,
-            medianListPrice,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
-          }}
-          eyebrow={communityLabel}
-          titleTop={community.name}
-          titleBottom="Homes for Sale"
-          lead={placeHeroLead({
-            placeName: community.name, parentName: cityName, activeCount,
-            knownSuffix: 'Live inventory from the regional MLS.',
-          })}
-          videoSrc={null}
-          posterSrc={heroPhoto}
-          // Fix 6: descriptive alt text for the hero image. (§0)
-          posterAlt={`${community.name} in ${cityName}, Oregon`}
-          mediaCaption={mediaCaption}
-          cta={{ href: '#homes', label: `See ${community.name} homes` }}
-        />
-        {/* Overview directly after the hero (Matt 2026-07-29, supersedes the
-            inventory-first order): hero → overview → homes → map → market. */}
-        <KbResortOverview
-          content={richContent}
-          name={community.name}
-          postsBySlug={amenityPosts}
-          aliases={registryEntry?.subdivision_aliases ?? []}
-          publishedHoa={publishedHoa}
-        />
-        {richContent ? null : aboutParagraphs.length > 0 ? (
-          <KbAbout
-            eyebrow={communityLabel}
-            heading={`Living in ${community.name}`}
-            paragraphs={aboutParagraphs}
-            facts={aboutFacts}
-          />
-        ) : null}
-        <KbFeatured
-          items={featuredItems}
-          eyebrow={`${community.name} · For sale`}
-          viewAllHref="#homes"
-          viewAllLabel={`See every ${community.name} home for sale`} viewAllPlace={community.name}
-          totalCount={activeCount || null}
-        />
-        <KbTicker items={tickerItems} />
-        {/* Fix 3: freshness signal near the stats, crawled by search engines.
-            asOfLabel is the real refreshedAt timestamp, never invented. (§0) */}
-        {asOfLabel ? (
-          <p className="community-freshness-signal" aria-label={`Market data freshness: ${asOfLabel}`}>
-            Market data updated {asOfLabel}
-          </p>
-        ) : null}
-        {/* Fix 5: Brand phone — visible on every community page, above the fold in
-            the content flow. Uses CONTACT.phoneDirect (the canonical Twilio line,
-            the public brokerage number — same as the footer). Sourced from
-            lib/brand/contact.ts (never hardcoded). (§0) */}
-        <p className="community-contact-line">
-          Questions about {community.name}?{' '}
-          <a href={`tel:${CONTACT.phoneDirectTel}`} className="community-contact-phone">
-            {CONTACT.phoneDirect}
-          </a>
-        </p>
-        <PlaceInventoryMap
-          tiles={communityTiles}
-          mapGeo={mapGeo}
-          polygons={mapPolygons}
-          placeName={community.name}
-          totalActive={activeCount ?? mapFeatures.length}
-          centerLonLat={registryEntry?.center_lon_lat ?? undefined}
-          viewAllHref={homesForSalePath(cityName, community.subdivision)}
-        />
-        {/* ONE market section (Matt 2026-07-29): core charts render INSIDE the
-            HUD section, not a second stacked headed section. */}
-        <KbMarketHud
-          data={marketData}
-          eyebrow={`${community.name} · The market`} geoName={community.name} asOf={pulse?.refreshedAt ?? null}
-          chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
-        >
-          {coreCharts ? (
-            <div className="pt-10" aria-label={`${community.name} market trend charts`}>
-              <MarketCoreCharts
-                data={coreCharts}
-                heading={`${community.name} market trends`}
-                scopeLabel={coreChartsScopeLabel}
-              />
-            </div>
-          ) : null}
-        </KbMarketHud>
-        <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
-        {/* Per-location area guide video — self-hides when this community has no
-            approved guide video. Sits after the communities rail, before the
-            this-week / activity / FAQ / sell blocks. */}
-        <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={community.name} posterSrc={heroPhoto} />
-        {buildTimeRails(true) || openHouseItems.length > 0 ? (
-        <KbOpenHouses
-          items={openHouseItems}
-          eyebrow={`${cityName} · This week`}
-          heading="Open houses"
-          viewAllHref={`/open-houses/${citySlug}`}
-        />
-        ) : null}
-        <KbActivity
-          items={activityItems}
-          // design-audit TRU-1: the feed is fetched city-wide (cities:[cityName]),
-          // so a "Live · Tetherow" label over Bend/Petrosa listings was untrue.
-          // Label the real scope — the city — not the community.
-          eyebrow={`Live · ${cityName}`}
-          heading="Latest market activity"
-          viewAllHref="/housing-market"
-          viewAllLabel="Full market pulse"
-        />
-        {/* Schools district — sourced exclusively from data/co-schools.ts
-            getDistrictForCity(). Specific school names/attendance zones are NOT
-            shown because per-address boundary data is not in the system. (§0) */}
-        <KbSchools communityName={community.name} districtName={schoolDistrictInfo?.district ?? null} districtSlug={schoolDistrictInfo?.districtSlug ?? null} />
-        <CommunityGolfLinks communitySlug={slug} communityName={community.name} />
-        <KbArticles
-          posts={articlePosts}
-          eyebrow="Guides and news"
-          heading={`${community.name} real estate guides`}
-          subtitle={`Housing news, market data, and buyer and seller advice for ${community.name} and ${cityName}.`}
-        />
-        <KbExploreTowns
-          towns={otherCityItems}
-          eyebrow="Central Oregon"
-          title="Other cities"
-          sectionId="nearby"
-          cta={{ href: '/cities', label: 'Every city' }}
-        />
-        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
-        <KbTeam />
-        {/* Buyer CTA — surfaces a direct "See all homes" path and contact link so
-            buyers get equal weight alongside the seller valuation block below.
-            listingsHref: homesForSalePath builds the canonical /homes-for-sale/[city]
-            URL. community.subdivision is the MLS name; for resorts, the registry
-            aliases make the search inclusive of all tagged sub-neighborhoods. (§0) */}
-        <KbBuyCta
-          communityName={community.name}
-          listingsHref={homesForSalePath(cityName, community.subdivision)}
-          contactHref={`/contact?inquiryType=Buying&message=${encodeURIComponent(`Interested in ${community.name}. Please get in touch.`)}`}
-        />
-        {/* Listing-alert email capture — reuses submitSearchAlertSignup + the
-            canonical listing_alerts table (same path as SearchAlertCapture on
-            /search). City + subdivision prefilled from community data so the
-            alert matches what the visitor is looking at. No new backend. (§0) */}
-        <KbCommunityAlerts
-          communityName={community.name}
-          city={cityName}
-          subdivision={community.subdivision}
-        />
-        {/* Seller conversion — address capture hands off to /sell/valuation. */}
-        <KbSell
-          data={{
-            medianListPrice: sellMedian?.value ?? null,
-            medianCaption: sellMedian?.caption ?? null,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
-            soldCount30d: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
-          }}
-          eyebrow={`Sell in ${community.name}`}
-        />
-        {/* Second-home / investment note — resort pages only. Generic framing:
-            confirms the community is a popular second-home / vacation destination
-            and that STR potential exists and varies by HOA. No specific STR rules,
-            permit caps, occupancy limits, or income figures (§0 hard rule). (§0) */}
-        {isResort ? (
-          <div className="comm-str-note" aria-label={`${community.name} second home information`}>
-            <div className="comm-str-note-inner">
-              <span className="comm-str-label">Second homes</span>
-              <p className="comm-str-text">
-                Short-term rental potential in {community.name} varies by HOA rules, community covenants, and Oregon regulations.{' '}
-                <a href={`/contact?inquiryType=Buying&message=${encodeURIComponent(`I have questions about short-term rental rules in ${community.name}.`)}`}>
-                  Reach out for current rental guidelines
-                </a>
-                {' '}before you assume what is permitted or what it could earn.
-              </p>
-            </div>
-          </div>
-        ) : null}
-        {faqs.length > 0 ? (
-          <section id="faq" aria-label={`${community.name} real estate questions`}>
-            <FAQBlock items={faqs} eyebrow="Common questions" title={`${community.name} real estate questions`} />
-          </section>
-        ) : null}
-        <MarketSources sources={['ods']} /><KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      </div>
+    )
+  }
+
+  return (
+    <div className="kb-root">
+    <KbSectionTracker />
+    <MetadataBlock schemas={communitySchemas} />
+    <CommunityKbView
+      slug={slug}
+      name={community.name}
+      cityName={cityName}
+      citySlug={citySlug}
+      subdivision={community.subdivision}
+      activeCount={activeCount}
+      medianListPrice={medianListPrice}
+      medianDaysToPending={pulse?.medianDaysToPending ?? null}
+      heroPhoto={heroPhoto}
+      posterAlt={`${community.name} in ${cityName}, Oregon`}
+      mediaCaption={mediaCaption}
+      communityLabel={communityLabel}
+      heroLead={heroLead}
+      richContent={richContent}
+      amenityPosts={amenityPosts}
+      aliases={registryEntry?.subdivision_aliases ?? []}
+      publishedHoa={publishedHoa}
+      aboutParagraphs={aboutParagraphs}
+      aboutFacts={aboutFacts}
+      featuredItems={featuredItems}
+      tickerItems={tickerItems}
+      asOfLabel={asOfLabel}
+      communityTiles={communityTiles}
+      mapGeo={mapGeo}
+      mapPolygons={mapPolygons}
+      centerLonLat={registryEntry?.center_lon_lat ?? undefined}
+      listingsHref={listingsHref}
+      marketData={marketData}
+      chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
+      coreCharts={coreCharts}
+      coreChartsScopeLabel={coreChartsScopeLabel}
+      communityItems={communityItems}
+      areaGuideVideo={areaGuideVideo}
+      openHouseItems={openHouseItems}
+      activityItems={activityItems}
+      schoolDistrictName={schoolDistrictInfo?.district ?? null}
+      schoolDistrictSlug={schoolDistrictInfo?.districtSlug ?? null}
+      articlePosts={articlePosts}
+      otherCityItems={otherCityItems}
+      sellMedian={sellMedian}
+      soldCount30d={publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' })}
+      isResort={isResort}
+      faqs={faqs}
+      refreshedAt={pulse?.refreshedAt ?? null}
+      contactHref={contactHref}
+      strContactHref={strContactHref}
+    />
+    </div>
   )
 }
-

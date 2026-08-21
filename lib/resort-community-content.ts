@@ -75,6 +75,13 @@ export type ResortBuilder = {
   website?: string | null
 }
 
+function asLocalAsset(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const raw = value.trim()
+  if (!raw.startsWith('/') || raw.startsWith('//')) return null
+  return raw
+}
+
 export type ResortCommunityContent = {
   slug: string
   name: string
@@ -92,6 +99,10 @@ export type ResortCommunityContent = {
   membershipOfficePhone?: string | null
   hoaMasterAnnual?: number | null
   hoaBoard?: Record<string, unknown> | null
+  /** Authored local paths from the config. Never remote URLs. */
+  heroImage?: string | null
+  courseImage?: string | null
+  signatureHoleImage?: string | null
 }
 
 /** Coerce the `about_prose` field (string OR string[]) to a clean paragraph array. */
@@ -166,5 +177,8 @@ export async function getResortCommunityContent(
     hoaMasterAnnual:
       typeof c.hoa_master_assessment_annual === 'number' ? c.hoa_master_assessment_annual : null,
     hoaBoard: (c.hoa_board as Record<string, unknown>) ?? null,
+    heroImage: asLocalAsset(c.hero_image),
+    courseImage: asLocalAsset(c.course_image),
+    signatureHoleImage: asLocalAsset(c.signature_hole_image),
   }
 }
