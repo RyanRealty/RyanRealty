@@ -79,6 +79,7 @@
     "ci:streamed-redirect",
     "ci:toast-discipline",
     "ci:untracked-imports",
+    "ci:vercel-config",
     "ci:voice-constructions",
     "ci:voice-constructions-parity",
     "ci:voice-send-paths"
