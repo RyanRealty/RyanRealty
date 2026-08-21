@@ -55,7 +55,7 @@ function readRouteSrc(routeDir: string): string {
 }
 
 describe('design directive contracts', () => {
-  it('D74 — primary nav renders at 15px (text-[15px])', () => {
+  it('D74 — primary nav renders at 15px', () => {
     // Nav triggers moved from SiteHeader into the MegaMenu client component
     // (editorial mega-menu redesign, 2026-06-03). The 15px directive is unchanged.
     const src = readSrc('components/site/nav/MegaMenu.tsx')
@@ -565,25 +565,29 @@ describe('design directive contracts', () => {
     expect(featured).toMatch(/listingsHref/)
   })
 
-  it('D103 — homepage opens on photographed homes, towns, and the region map', () => {
+  it('D103 — homepage opens on home-d objects: hero, towns map, golf list, luxury rail, journal, parks', () => {
     const page = readSrc('app/page.tsx')
     expect(page).not.toMatch(/from ['"]@\/components\/site\/v3\/ArrivalIntent/)
     expect(page).not.toMatch(/<ArrivalIntent/)
     expect(page).not.toMatch(/What are you trying to do/)
-    expect(page).toMatch(/<KbHero/)
-    expect(page).toMatch(/<KbExploreTowns/)
-    expect(page).toMatch(/<KbFeatured/)
-    expect(page).toMatch(/<KbListingMap/)
-    expect(page).toMatch(/<KbCommunities/)
+    expect(page).toMatch(/<HomeDHero/)
+    expect(page).toMatch(/<HomeDTowns/)
+    expect(page).toMatch(/<HomeDGolf/)
+    expect(page).toMatch(/<HomeDLuxury/)
+    expect(page).toMatch(/<HomeDJournal/)
+    expect(page).toMatch(/<HomeDParks/)
+    expect(page).not.toMatch(/<KbExploreTowns/)
+    expect(page).not.toMatch(/<KbFeatured/)
+    expect(page).not.toMatch(/<KbCommunities/)
+    expect(page).not.toMatch(/<KbListingMap/)
   })
 
   it('D103b — town-door photographs are visible at rest (not hover-only)', () => {
-    const css = readSrc('components/site/kb/kb.css')
-    const fill = css.match(/\.kb-root \.town-fill\{[^}]+\}/)?.[0] ?? ''
-    expect(fill).toMatch(/opacity:\s*1/)
-    expect(fill).not.toMatch(/opacity:\s*0/)
-    expect(css).not.toMatch(/town-row:hover \.town-fill\{opacity:1\}/)
-    expect(css).toMatch(/town-row:has\(\.town-fill\)\{background:var\(--navy\)/)
+    const towns = readSrc('components/site/home-d/HomeDTowns.client.tsx')
+    expect(towns).toMatch(/home-d-thumb/)
+    expect(towns).not.toMatch(/opacity:\s*0/)
+    const css = readSrc('components/site/home-d/home-d.css')
+    expect(css).toMatch(/\.home-d-thumb/)
   })
 
   it('D99 — homepage market HUD is live pulse, not a second sale-series caption (§0)', () => {
