@@ -42,4 +42,7 @@ export type HomeDPark = {
   img: string | null
 }
 
-export type HomeDLuxuryItem = KbFeaturedItem
+export type HomeDLuxuryItem = KbFeaturedItem & {
+  propertySubType: string | null
+  listNumber: string | null
+}

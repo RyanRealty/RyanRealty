@@ -460,6 +460,13 @@
   font-size: 0.95rem;
 }
 
+.home-d-lux-share {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.55em;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
 .home-d-lux-play {
   flex: none;
   min-height: 2.5rem;

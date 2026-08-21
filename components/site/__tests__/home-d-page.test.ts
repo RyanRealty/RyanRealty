@@ -47,6 +47,15 @@ describe('home-d homepage restyle', () => {
     expect(chrome).toMatch(/isHome && SIGN_IN/)
   })
 
+  it('luxury asks resolve a share label through publishListingShareKind', () => {
+    const page = read('app/page.tsx')
+    const luxury = read('components/site/home-d/HomeDLuxury.client.tsx')
+    expect(page).toMatch(/from ['"]@\/lib\/listing\/publish-listing-share['"]/)
+    expect(page).toMatch(/publishListingShareKind\s*\(/)
+    expect(luxury).toMatch(/publishListingShareKind\s*\(/)
+    expect(luxury).toMatch(/formatPublishedAsk\s*\(/)
+  })
+
   it('each home-d section is a different object, not a second photo-tile grid', () => {
     const towns = read('components/site/home-d/HomeDTowns.client.tsx')
     const golf = read('components/site/home-d/HomeDGolf.client.tsx')

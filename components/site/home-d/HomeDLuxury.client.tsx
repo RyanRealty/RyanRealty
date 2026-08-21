@@ -3,7 +3,17 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import type { HomeDLuxuryItem } from './types'
+
+function shareKindFor(item: HomeDLuxuryItem) {
+  return publishListingShareKind({
+    propertySubType: item.propertySubType,
+    subdivisionName: item.sub,
+    city: item.city,
+    listNumber: item.listNumber,
+  })
+}
 
 export function HomeDLuxury({ items }: { items: HomeDLuxuryItem[] }) {
   const shown = useMemo(() => items.filter((it) => it.img && it.price != null).slice(0, 8), [items])
@@ -14,6 +24,7 @@ export function HomeDLuxury({ items }: { items: HomeDLuxuryItem[] }) {
   if (!featured) return null
 
   const featuredAsk = formatPublishedAsk(featured.price)
+  const featuredShare = shareKindFor(featured)
   const place = [featured.address, featured.sub || featured.city].filter(Boolean).join(' · ')
 
   return (
@@ -28,7 +39,12 @@ export function HomeDLuxury({ items }: { items: HomeDLuxuryItem[] }) {
         <span className="home-d-lux-scrim" aria-hidden="true" />
         <span className="home-d-lux-meta">
           <span>
-            {featuredAsk ? <span className="home-d-lux-price home-d-display">{featuredAsk}</span> : null}
+            {featuredAsk ? (
+              <span className="home-d-lux-price home-d-display">
+                {featuredAsk}
+                {featuredShare ? <span className="home-d-lux-share"> {featuredShare}</span> : null}
+              </span>
+            ) : null}
             {place ? <span className="home-d-lux-addr">{place}</span> : null}
           </span>
           {featured.video || featured.tour ? <span className="home-d-lux-play">Play</span> : null}
@@ -38,6 +54,7 @@ export function HomeDLuxury({ items }: { items: HomeDLuxuryItem[] }) {
         <div className="home-d-lux-rail">
           {rail.map((it) => {
             const ask = formatPublishedAsk(it.price)
+            const share = shareKindFor(it)
             const line = [it.address, it.sub || it.city].filter(Boolean).join(' · ')
             return (
               <Link
@@ -47,7 +64,12 @@ export function HomeDLuxury({ items }: { items: HomeDLuxuryItem[] }) {
                 onMouseEnter={() => setActiveHref(it.href)}
                 onFocus={() => setActiveHref(it.href)}
               >
-                {ask ? <span className="home-d-lux-rail-price home-d-display">{ask}</span> : null}
+                {ask ? (
+                  <span className="home-d-lux-rail-price home-d-display">
+                    {ask}
+                    {share ? <span className="home-d-lux-share"> {share}</span> : null}
+                  </span>
+                ) : null}
                 {line ? <span className="home-d-lux-rail-addr">{line}</span> : null}
               </Link>
             )

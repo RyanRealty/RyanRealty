@@ -12,6 +12,8 @@ import {
   pulseCityHrefSlug,
 } from '@/lib/market/pulse-city-remainder'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
+import { listingDetailPath } from '@/lib/slug'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
@@ -197,9 +199,33 @@ export default async function Home() {
     .filter((t) => t.photoUrl && t.listPrice != null)
     .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
     .slice(0, 8)
-  const luxuryItems = (await resolveFeaturedItems(luxuryTiles, 8)).sort(
-    (a, b) => (b.price ?? 0) - (a.price ?? 0),
+  const luxuryByHref = new Map(
+    luxuryTiles.map((t) => [
+      listingDetailPath(
+        t.listingKey,
+        { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },
+        { city: t.city, subdivision: t.subdivisionName },
+        { mlsNumber: t.listNumber },
+      ),
+      t,
+    ]),
   )
+  const luxuryItems = (await resolveFeaturedItems(luxuryTiles, 8))
+    .sort((a, b) => (b.price ?? 0) - (a.price ?? 0))
+    .map((item) => {
+      const tile = luxuryByHref.get(item.href)
+      publishListingShareKind({
+        propertySubType: tile?.propertySubType ?? null,
+        subdivisionName: tile?.subdivisionName ?? item.sub,
+        city: tile?.city ?? item.city,
+        listNumber: tile?.listNumber ?? null,
+      })
+      return {
+        ...item,
+        propertySubType: tile?.propertySubType ?? null,
+        listNumber: tile?.listNumber ?? null,
+      }
+    })
 
   const journal: HomeDPost[] = journalRaw.map((p) => ({
     title: p.title,
