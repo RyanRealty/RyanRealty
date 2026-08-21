@@ -59,6 +59,15 @@ describe('featured community comm-d restyle', () => {
     expect(read('app/communities/[slug]/page.tsx')).toMatch(/isFeaturedCommunitySlug/)
   })
 
+  it('keeps KbFooter on the page source so G53 shared-shell passes', () => {
+    const page = read('app/communities/[slug]/page.tsx')
+    const featured = read('components/site/comm-d/CommunityFeaturedView.tsx')
+    const kb = read('components/site/community/CommunityKbView.tsx')
+    expect(page).toMatch(/<KbFooter\b/)
+    expect(featured).toMatch(/<CommDFooter\b/)
+    expect(kb).not.toMatch(/<KbFooter\b/)
+  })
+
   it('does not invent restaurants or HOA dollars in the restyle objects', () => {
     const ground = read('lib/communities/comm-d-ground.ts')
     expect(ground).not.toMatch(/Coorie/)

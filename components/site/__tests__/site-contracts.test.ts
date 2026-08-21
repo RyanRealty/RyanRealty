@@ -381,6 +381,7 @@ describe('design directive contracts', () => {
     const featured = readSrc('components/site/comm-d/CommunityFeaturedView.tsx')
     const kb = readSrc('components/site/community/CommunityKbView.tsx')
     expect(src).toMatch(/className="kb-root"/)
+    expect(src).toMatch(/<KbFooter\b/)
     expect(src).toMatch(/<KbSectionTracker/)
     expect(src).toMatch(/<MetadataBlock/)
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)

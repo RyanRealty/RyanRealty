@@ -57,6 +57,7 @@ import { buildCommDChartRoom, buildCommDRankRows } from '@/lib/communities/comm-
 import { formatPriceExact } from '@/lib/format/money'
 import { CommunityFeaturedView } from '@/components/site/comm-d/CommunityFeaturedView'
 import { CommunityKbView } from '@/components/site/community/CommunityKbView'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
@@ -839,6 +840,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       contactHref={contactHref}
       strContactHref={strContactHref}
     />
+    <KbFooter towns={[]} />
     </div>
   )
 }

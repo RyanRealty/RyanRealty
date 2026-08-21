@@ -13,7 +13,6 @@ import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
 import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import type { KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
@@ -310,7 +309,6 @@ export function CommunityKbView(props: {
           </section>
         ) : null}
         <MarketSources sources={['ods']} />
-        <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>
   )
