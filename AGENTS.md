@@ -10,9 +10,10 @@ This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to au
 
 Every session — Claude Code, Cursor, or Grok — starts here:
 
-0. **`docs/plans/CROSS_AGENT_HANDOFF.md` Current block** (≤18 lines) — what the other surface left. Do not read the Prior novel unless you need a named SHA.
-1. **`npx tsx scripts/loop-brief.ts`** — durable work graph + ship class. That is next work. Not `orchestrate.ts`. Not `docs/SITE_SPEC.md`.
-2. **`docs/DATA_ACCESS_LAYER.md`** when the task touches listings/stats — every page calls `@/lib/data/*`; raw `.from('listings')` outside `lib/data/` is banned.
+0. **`docs/GROK_BOT_BRAIN.md`** if you are a Grok Bot / Grok Build teammate — map only, then open the one door for this job. Do not load the whole canon.
+1. **`docs/plans/CROSS_AGENT_HANDOFF.md` Current block** (≤18 lines) — what the other surface left. Do not read the Prior novel unless you need a named SHA.
+2. **`npx tsx scripts/loop-brief.ts`** — durable work graph + ship class. That is next work. Not `orchestrate.ts`. Not `docs/SITE_SPEC.md`.
+3. **`docs/DATA_ACCESS_LAYER.md`** when the task touches listings/stats — every page calls `@/lib/data/*`; raw `.from('listings')` outside `lib/data/` is banned.
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
 
@@ -78,6 +79,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 | Backlog / next task | `npx tsx scripts/loop-brief.ts` (work graph). `task-registry.json` / `orchestrate.ts` are complete (49/49) — do not pick work from them. |
 | Optional handoff notes | `~/.claude/plans/HANDOFF-*.md` — add or update when switching tools with context the repo does not carry |
 | **Cross-agent continuity (required when switching)** | **`docs/plans/CROSS_AGENT_HANDOFF.md`** — update the **Current** table before you stop or when Matt moves to the other tool. The other agent must **read it after `git pull`** before deep work. |
+| **Grok Bot / Grok Build fleet** | **`docs/GROK_BOT_BRAIN.md`** — index. Company dump is `docs/GROK_BOT_COMPANY.md`. Do not paste either into a mega system prompt. |
 | **Global skill index (Cursor + Claude)** | **`~/.claude/GLOBAL_SKILLS_REGISTRY.md`** — full path list of every `SKILL.md` on this machine (plugins, repo, TC, Cowork notes). **Git mirror:** `docs/plans/GLOBAL_SKILLS_REGISTRY.md`. **Cursor stub:** `~/.cursor/GLOBAL_SKILLS_REGISTRY.md`. |
 | **Database reference (required before ANY SQL or market-report work)** | **[`docs/DATABASE_FOR_AI_AGENTS.md`](docs/DATABASE_FOR_AI_AGENTS.md)** — every table grouped by purpose, the cache model (`market_pulse_live` 10-min freshness, `market_stats_cache` 6-hour freshness), 14 resort communities + 14 Bend neighborhoods + city/region levels, the `listings` 800-field reality with mixed-case quoting rules, methodology versioning, slug formats. Source-of-truth registry: **[`data/resort-communities.json`](data/resort-communities.json)**. Don't aggregate raw `listings` for market reports — use the cache. |
 
