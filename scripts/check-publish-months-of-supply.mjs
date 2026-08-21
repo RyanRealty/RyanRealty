@@ -43,10 +43,6 @@ const surfaces = [
     label: 'city page gates HUD + FAQ MOS through publishMonthsOfSupply',
   },
   {
-    path: 'app/page.tsx',
-    label: 'homepage HUD gates MOS through publishMonthsOfSupply',
-  },
-  {
     path: 'app/housing-market/[...slug]/page.tsx',
     label: 'housing-market geo gates MOS through publishMonthsOfSupply',
   },
@@ -88,6 +84,18 @@ for (const surface of surfaces) {
       /publishMonthsOfSupply\(/.test(text),
   })
 }
+
+// Home-d dropped the Market Desk HUD, so / shows no MOS figure. The trap stays
+// armed: any HUD or MOS reference returning to the homepage must gate through
+// publishMonthsOfSupply again.
+const homepage = src('app/page.tsx')
+checks.push({
+  label: 'homepage HUD gates MOS through publishMonthsOfSupply',
+  ok: /KbMarketHud|monthsOfSupply/.test(homepage)
+    ? /from ['"]@\/lib\/market\/publish-months-of-supply['"]/.test(homepage) &&
+      /publishMonthsOfSupply\(/.test(homepage)
+    : true,
+})
 
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
