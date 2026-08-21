@@ -28,7 +28,6 @@ import { HomeDParks } from '@/components/site/home-d/HomeDParks.client'
 import { HomeDAlerts } from '@/components/site/home-d/HomeDAlerts.client'
 import { HomeDFooter } from '@/components/site/home-d/HomeDFooter'
 import { HomeDDock } from '@/components/site/home-d/HomeDDock.client'
-import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { formatDate } from '@/lib/format/date'
 import type { KbMarketData } from '@/components/site/kb/types'
 import type { HomeDCommunity, HomeDPark, HomeDPost, HomeDTown } from '@/components/site/home-d/types'
@@ -323,7 +322,6 @@ export default async function Home() {
           <HomeDParks featured={parks[0]!} parks={parks} note={parksNote} />
         ) : null}
         <HomeDAlerts />
-        <KbMarketHud data={marketData} asOf={pulse?.updatedAt ?? null} />
         <HomeDFooter towns={towns} communities={communityItems} />
         <HomeDDock rating={reviews.averageRating} reviewCount={reviews.count} />
       </SmoothScrollProvider>
