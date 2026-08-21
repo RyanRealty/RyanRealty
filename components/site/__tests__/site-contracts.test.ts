@@ -581,17 +581,17 @@ describe('design directive contracts', () => {
     expect(css).toMatch(/\.home-d-thumb/)
   })
 
-  it('D99 — homepage market HUD is live pulse, not a second sale-series caption (§0)', () => {
+  it('D99 — home-d lock: the Market Desk HUD stays off the homepage', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/from ['"]@\/components\/site\/kb\/KbMarketHud/)
-    expect(page).toMatch(/<KbMarketHud/)
+    expect(page).not.toMatch(/from ['"]@\/components\/site\/kb\/KbMarketHud/)
+    expect(page).not.toMatch(/<KbMarketHud/)
     const charts = readSrc('app/housing-market/_v3/market-charts.ts')
     expect(charts).toMatch(/Median sale price by month, recent years/)
   })
 
-  it('D101 — homepage market HUD stays on the live pulse, not a second chart atom', () => {
+  it('D101 — homepage builds no second sale-series chart atom', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/<KbMarketHud/)
+    expect(page).not.toMatch(/<KbMarketHud/)
     expect(page).not.toMatch(/buildRegionMedianChart/)
   })
 
