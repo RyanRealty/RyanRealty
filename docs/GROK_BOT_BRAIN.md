@@ -2,7 +2,7 @@
 
 This is the index a Grok Bot or Grok Build teammate opens first. It is not the second brain. The repo is.
 
-Do not paste this file, `CLAUDE.md`, or `AGENTS.md` into one mega system prompt. Open the one door for this job. THE LOOP stays **DISARMED**. Do not re-arm sentinel. Do not invent a parallel backlog.
+Do not paste this file, `CLAUDE.md`, or `AGENTS.md` into one mega system prompt. Open the one door for this job. THE LOOP is **armed** on current main (Matt 2026-08-21). Work graph is `loop-brief` + ENTERPRISE_MAP. Do not invent a parallel backlog. Disarm word is "disarm the loop".
 
 Company dump (who we are, kit, hard no's): [`docs/GROK_BOT_COMPANY.md`](GROK_BOT_COMPANY.md).
 

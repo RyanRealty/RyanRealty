@@ -1,9 +1,20 @@
-> **GROK BOTS:** start at `docs/GROK_BOT_BRAIN.md`. Do not load this whole file. Loop stays DISARMED.
+> **GROK BOTS:** start at `docs/GROK_BOT_BRAIN.md`. Do not load this whole file. Matt asked 2026-08-21 to re-arm the loop on current main.
 > **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.6.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next ship class), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-19 (grok local) — Sunstone seller CMA LIVE
+# Current — 2026-08-21 — kit on main; re-arm the loop
+
+**Surface:** `origin/main`. Home-d shipped (PR 146). Locked pack `design_system/ryan-realty/locked/`. Brain `docs/GROK_BOT_BRAIN.md` (PR 148). CRM is ryan-realty.com.
+
+**Loop:** Sentinel default-on (`LOOP_SENTINEL_DEFAULT_OFF = false`). 10-min heartbeat launches one ship class from `loop-brief` after this lands on production. Hard limits stay: no outbound, no posts, no ad spend, no OAuth, no SkySlope, no newsletter. Public restyles stay Grok Build, not Cursor.
+
+**Do not:** send the 648 CMA. Never the 648 household. Do not invent listings, parks, HOA, counts, or routes. Do not start a second work graph. Work graph stays `loop-brief` + ENTERPRISE_MAP.
+
+**Grok bots:** I cannot delete sidebar agents. New bots read the brain, then one door.
+
+# Prior — 2026-08-19 (grok local) — Sunstone seller CMA LIVE
+
 
 **Surface:** Grok local worktree `/Users/matthewryan/RyanRealty-wt-cma-sunstone-20260819` (`wt/cma-sunstone-20260819`). Product **`6ed2b5aa`**. Vercel production **READY** `dpl_3YBxhEC38sVWgU6QEJk9NfcgpsJQ`. Loop stays **DISARMED**. Do not re-arm. No send. Dirty CMA branch `cursor/cma-client-document-7fc3` was not mixed (CRM health `b0e9f537` and `origin-dual-remote` left behind).
 
