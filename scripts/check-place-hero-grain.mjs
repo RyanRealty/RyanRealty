@@ -28,8 +28,14 @@ checks.push({
 
 const pages = [
   {
+    // hood-d never prefixes the count into the lead: HoodDHero prints the
+    // count in its own stats line ("{N} homes · ..."), so the KbHero
+    // "N homes for sale in ${cityName}" pairing cannot occur. The forbidden
+    // lead pattern stays banned regardless.
     path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    label: 'neighborhood page uses placeHeroLead (not in ${cityName})',
+    label: 'neighborhood page uses hoodLead (not in ${cityName})',
+    helper: 'hoodLead',
+    helperFrom: './_v3/hood-d-model',
     forbid: /lead=\{`in \$\{cityName\}/,
   },
   {
@@ -39,7 +45,9 @@ const pages = [
   },
   {
     path: 'app/cities/[slug]/page.tsx',
-    label: 'city page uses placeHeroLead',
+    label: 'city page uses cityHeroLead (city grain)',
+    helper: 'cityHeroLead',
+    helperFrom: './_v3/city-d-data',
   },
   {
     path: 'app/subdivisions/[slug]/page.tsx',
@@ -53,13 +61,11 @@ const pages = [
 
 for (const page of pages) {
   const text = src(page.path)
-  const importsHelper = /from ['"]@\/lib\/kb\/place-hero-lead['"]/.test(text) && /placeHeroLead\(/.test(text)
-  // hood-d never prefixes the count into the lead: HoodDHero prints the count
-  // in its own stats line ("{N} homes · ..."), so the KbHero "N homes for sale
-  // in ${cityName}" pairing cannot occur. The page may satisfy this check with
-  // the hood-d shape instead of placeHeroLead; the forbidden pattern stays
-  // banned either way.
-  const hoodDShape = /<HoodDHero\b/.test(text) && /hoodLead\(/.test(text)
+  const helperName = page.helper ?? 'placeHeroLead'
+  const helperFrom = page.helperFrom ?? '@/lib/kb/place-hero-lead'
+  const fromRe = new RegExp(`from ['"]${helperFrom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`)
+  const callRe = new RegExp(`${helperName}\\(`)
+  const importsHelper = fromRe.test(text) && callRe.test(text)
   const forbidden = page.forbid ? page.forbid.test(text) : false
   checks.push({
     label: page.label,

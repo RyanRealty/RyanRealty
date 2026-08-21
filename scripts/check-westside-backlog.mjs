@@ -46,10 +46,14 @@ checks.push({
     /KB_TOP_NAV[\s\S]*luxury-homes-bend/.test(nav),
 })
 
-const popular = src('components/site/kb/KbPopularSearches.tsx')
+// city-d deleted the popular-searches rail. The city page's luxury door now
+// arrives through the shared footer columns — whose /luxury-homes-bend link
+// the site-nav check above already locks — so this pins the city-d footer to
+// that source instead of the retired rail.
+const cityFooter = src('components/site/city-d/CityDFooter.tsx')
 checks.push({
-  label: 'city popular-searches rail links /luxury-homes-bend',
-  ok: popular.includes('href="/luxury-homes-bend"'),
+  label: 'city-d footer renders the shared KB_FOOTER_COLUMNS (carries /luxury-homes-bend)',
+  ok: /KB_FOOTER_COLUMNS/.test(cityFooter) && /from ['"]@\/lib\/site-nav['"]/.test(cityFooter),
 })
 
 const cities = src('app/cities/page.tsx')
