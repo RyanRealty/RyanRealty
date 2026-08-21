@@ -75,7 +75,7 @@ for (const surface of surfaces) {
  */
 {
   const text = src('app/page.tsx')
-  const heroMatch = /<(?:HomeDHero|KbHero)\b[\s\S]*?\/>/.exec(text)
+  const heroMatch = /<KbHero\b[\s\S]*?\/>/.exec(text)
   const hero = heroMatch ? heroMatch[0] : ''
   const leadMatch = /\blead=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(hero)
   const lead = (leadMatch?.[1] ?? leadMatch?.[2] ?? '').toLowerCase()
@@ -89,6 +89,7 @@ for (const surface of surfaces) {
   checks.push({
     label: 'homepage hero lead names the region, not the town doors',
     ok:
+      towns.length > 0 &&
       lead.length > 0 &&
       named.length === 0 &&
       /central oregon/.test(lead),

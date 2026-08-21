@@ -185,9 +185,6 @@ const SAVED =
     ? { href: ACCOUNT_GROUP.links[0].href, label: ACCOUNT_GROUP.label }
     : null
 
-const SIGN_IN =
-  ACCOUNT_GROUP?.links.find((link) => link.href === '/login') ?? null
-
 /**
  * The filled seller ask. Only the LABEL is fixed at module scope: the href is
  * built per render by valuationHref(path) so the ask carries
@@ -523,10 +520,8 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
 
   if (hidden) return null
 
-  const isHome = path === '/'
-
   return (
-    <header id={id} className={cn(V3_ROOT_CLASS, 'v3-chrome', isHome && 'v3-chrome--home', className)}>
+    <header id={id} className={cn(V3_ROOT_CLASS, 'v3-chrome', className)}>
       <div className="v3-chrome__bar">
         <Link href="/" className="v3-chrome__mark" aria-label={NAME.home}>
           <Wordmark />
@@ -539,15 +534,7 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
         </nav>
 
         <div className="v3-chrome__actions">
-          {isHome && SIGN_IN ? (
-            <Link
-              href={SIGN_IN.href}
-              className="v3-chrome__signin"
-              aria-current={isCurrentPath(path, SIGN_IN.href) ? 'page' : undefined}
-            >
-              Sign in
-            </Link>
-          ) : SAVED ? (
+          {SAVED ? (
             <Link
               href={SAVED.href}
               className="v3-chrome__saved"
@@ -556,12 +543,6 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
               <IconBookmark />
               <span>{SAVED.label}</span>
             </Link>
-          ) : null}
-
-          {isHome ? (
-            <a href={`tel:${CONTACT.phoneDirectTel}`} className="v3-chrome__phone">
-              {CONTACT.phoneDirect}
-            </a>
           ) : null}
 
           {chromeShowsSellerAsk(path) ? (

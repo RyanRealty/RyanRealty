@@ -57,7 +57,7 @@ const CITY_LINKS: NavLink[] = [
   { href: '/cities/madras', label: 'Madras' },
 ]
 
-export const COMMUNITY_LINKS: NavLink[] = [
+const COMMUNITY_LINKS: NavLink[] = [
   { href: '/communities/tetherow', label: 'Tetherow' },
   { href: '/communities/broken-top', label: 'Broken Top' },
   { href: '/communities/northwest-crossing', label: 'NorthWest Crossing' },

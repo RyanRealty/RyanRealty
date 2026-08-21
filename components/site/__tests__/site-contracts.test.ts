@@ -557,42 +557,20 @@ describe('design directive contracts', () => {
     expect(page).toMatch(/homesForSalePath\(cityName, community\.subdivision\)/)
   })
 
-  it('D103 — homepage opens on home-d objects: hero, towns map, golf list, luxury rail, journal, parks', () => {
-    const page = readSrc('app/page.tsx')
-    expect(page).not.toMatch(/from ['"]@\/components\/site\/v3\/ArrivalIntent/)
-    expect(page).not.toMatch(/<ArrivalIntent/)
-    expect(page).not.toMatch(/What are you trying to do/)
-    expect(page).toMatch(/<HomeDHero/)
-    expect(page).toMatch(/<HomeDTowns/)
-    expect(page).toMatch(/<HomeDGolf/)
-    expect(page).toMatch(/<HomeDLuxury/)
-    expect(page).toMatch(/<HomeDJournal/)
-    expect(page).toMatch(/<HomeDParks/)
-    expect(page).not.toMatch(/<KbExploreTowns/)
-    expect(page).not.toMatch(/<KbFeatured/)
-    expect(page).not.toMatch(/<KbCommunities/)
-    expect(page).not.toMatch(/<KbListingMap/)
-  })
+  // D103/D103b (home-d section objects) retired with the home-d revert
+  // (Matt, 2026-08-21): / is back on the homepage-v6 template.
 
-  it('D103b — town-door photographs are visible at rest (not hover-only)', () => {
-    const towns = readSrc('components/site/home-d/HomeDTowns.client.tsx')
-    expect(towns).toMatch(/home-d-thumb/)
-    expect(towns).not.toMatch(/opacity:\s*0/)
-    const css = readSrc('components/site/home-d/home-d.css')
-    expect(css).toMatch(/\.home-d-thumb/)
-  })
-
-  it('D99 — home-d lock: the Market Desk HUD stays off the homepage', () => {
+  it('D99 — homepage market HUD is live pulse, not a second sale-series caption (§0)', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).not.toMatch(/from ['"]@\/components\/site\/kb\/KbMarketHud/)
-    expect(page).not.toMatch(/<KbMarketHud/)
+    expect(page).toMatch(/from ['"]@\/components\/site\/kb\/KbMarketHud/)
+    expect(page).toMatch(/<KbMarketHud/)
     const charts = readSrc('app/housing-market/_v3/market-charts.ts')
     expect(charts).toMatch(/Median sale price by month, recent years/)
   })
 
-  it('D101 — homepage builds no second sale-series chart atom', () => {
+  it('D101 — homepage market HUD stays on the live pulse, not a second chart atom', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).not.toMatch(/<KbMarketHud/)
+    expect(page).toMatch(/<KbMarketHud/)
     expect(page).not.toMatch(/buildRegionMedianChart/)
   })
 

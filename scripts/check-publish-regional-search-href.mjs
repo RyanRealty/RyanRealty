@@ -50,17 +50,12 @@ checks.push({
     /publishRegionalSearchHref\(/.test(map),
 })
 
-// Home-d hands the regional door to its sections as cta={{ href:
-// publishRegionalSearchHref() }} instead of viewAllHref. The invariant is the
-// same: every regional CTA routes through the helper, and the Bend-injecting
-// /homes-for-sale door is never hardcoded anywhere on /.
 const home = src('app/page.tsx')
 checks.push({
   label: 'homepage does not hardcode the Bend-injecting /homes-for-sale door on regional CTAs',
   ok:
-    !/href[:=]\s*\{?['"]\/homes-for-sale['"]/.test(home) &&
-    /from ['"]@\/lib\/search\/publish-regional-search-href['"]/.test(home) &&
-    /publishRegionalSearchHref\(\)/.test(home),
+    !/cta=\{\{\s*href:\s*['"]\/homes-for-sale['"]/.test(home) &&
+    /viewAllHref=\{publishRegionalSearchHref\(\)\}/.test(home),
 })
 
 const footer = src('components/site/kb/KbFooter.client.tsx')

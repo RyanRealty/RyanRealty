@@ -1,15 +1,19 @@
 {
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
-  "status": "home-d-2026-08-20",
-  "note": "Visual restyle of the live `/` template to home-d section objects. Live DAL only. Hero video + Old Mill poster kept. Market Desk HUD is not in the lock.",
+  "status": "restored-kb-2026-08-15",
+  "note": "Working homepage restored: KbHero, towns, communities, featured homes, region map, ticker, sell, reviews, team, market HUD. ArrivalIntent quiz unmounted 2026-08-16 (Matt CHANGE / R-218).",
   "requiredComponents": [
-    { "name": "HomeDHero", "section": "full-bleed video hero + live count + search" },
-    { "name": "HomeDTowns", "section": "town list + city polygon map" },
-    { "name": "HomeDGolf", "section": "one community photo + hover name list" },
-    { "name": "HomeDLuxury", "section": "one featured house + live price rail" },
-    { "name": "HomeDJournal", "section": "magazine split from live blog" },
-    { "name": "HomeDParks", "section": "one park full-bleed + official named list" },
-    { "name": "HomeDFooter", "section": "navy footer" }
+    { "name": "KbHero", "section": "drone/photo hero + live count" },
+    { "name": "KbExploreTowns", "section": "towns ledger" },
+    { "name": "KbCommunities", "section": "resort and planned communities rail" },
+    { "name": "KbFeatured", "section": "photographed homes for sale" },
+    { "name": "KbListingMap", "section": "region listing map" },
+    { "name": "KbTicker", "section": "live listing tape" },
+    { "name": "KbSell", "section": "seller address ask" },
+    { "name": "KbTestimonials", "section": "Google reviews" },
+    { "name": "KbTeam", "section": "the three brokers" },
+    { "name": "KbMarketHud", "section": "live market figures" },
+    { "name": "KbFooter", "section": "footer" }
   ]
 }
