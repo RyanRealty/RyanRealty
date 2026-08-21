@@ -131,10 +131,6 @@ jobs:
       # not timing-sensitive — while performance/LCP assert at "warn" (printed,
       # never fatal) until 2-3 real runner samples validate the estimated CI
       # hardware headroom in lighthouserc.cjs. Promote perf/LCP there, not here.
-      - name: Lighthouse CI
-        if: github.event_name == 'pull_request'
-        run: npm run ci:lighthouse
-
       # G23 — pa11y-ci. The Lighthouse a11y category covers aggregate
       # scoring but misses specific WCAG 2.1 failures that show up at
       # component-level (missing alt text, unlabeled inputs, contrast
@@ -147,9 +143,18 @@ jobs:
       # production build measures 8/8 with 0 errors — WCAG rule evaluation is
       # not CPU-timing-sensitive, so CI hardware cannot flake it the way perf
       # numbers can.
+      #
+      # RUNS BEFORE LIGHTHOUSE (2026-08-21): a pa11y run scheduled after
+      # Lighthouse's 24 passes flaked on a tree whose local prod build measured
+      # 8/8 with the same config — pa11y now takes the fresh server first, and
+      # Lighthouse (whose own runs are averaged) absorbs the loaded tail.
       - name: pa11y-ci accessibility
         if: github.event_name == 'pull_request'
         run: npm run ci:a11y
+
+      - name: Lighthouse CI
+        if: github.event_name == 'pull_request'
+        run: npm run ci:lighthouse
 
       # NO explicit teardown step for the smoke server, deliberately.
       #
