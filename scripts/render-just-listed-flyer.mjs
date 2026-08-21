@@ -29,6 +29,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas'
+import { resolvingNodeModules } from './lib/resolve-node-modules.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
@@ -113,7 +114,8 @@ function wrapText(ctx, text, maxW, maxLines) {
 }
 
 function registerFlyerFonts() {
-  const geistDir = join(REPO_ROOT, 'node_modules/geist/dist/fonts/geist-sans')
+  // Not REPO_ROOT/node_modules — a stub in git worktrees (scripts/lib/resolve-node-modules.mjs).
+  const geistDir = join(resolvingNodeModules(), 'geist/dist/fonts/geist-sans')
   const geistBold = join(geistDir, 'Geist-Bold.ttf')
   const geistRegular = join(geistDir, 'Geist-Regular.ttf')
   const geistSemi = join(geistDir, 'Geist-SemiBold.ttf')
