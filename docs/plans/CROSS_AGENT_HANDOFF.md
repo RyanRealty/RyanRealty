@@ -1,3 +1,4 @@
+> **GROK BOTS:** start at `docs/GROK_BOT_BRAIN.md`. Do not load this whole file. Loop stays DISARMED.
 > **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.6.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next ship class), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
