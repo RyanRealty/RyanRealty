@@ -203,3 +203,6 @@ docs/design-audit/assets/fix-*.png
 
 # Lighthouse CI run artifacts (local + CI, never committed)
 .lighthouseci/
+
+# eslint cache dropped by the push chain
+.eslintcache

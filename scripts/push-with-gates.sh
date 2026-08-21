@@ -281,18 +281,25 @@ fi
 # breaks the Turbopack build — see memory reference_worktree_node_modules_turbopack).
 # Re-cloned only when the verify tree's package-lock.json stops matching the
 # lockfile the current clone was made for.
+#
+# Clone source is NOT $REPO_ROOT/node_modules: in a git worktree that is a
+# stub and packages resolve by walking up to the main checkout. Cloning the
+# stub would hand the verify tree a dependency-less node_modules and every
+# TS-importing gate dies there (same class as the check-commit-compiles
+# squatter-tsc failure, 2026-08-21).
+NODE_MODULES_SRC=$(node "$REPO_ROOT/scripts/lib/resolve-node-modules.mjs" 2>/dev/null || echo "$REPO_ROOT/node_modules")
 LOCK_SNAPSHOT="$VERIFY_DIR/node_modules/.rr-lock-snapshot"
 if [ "$PUSH_GATES_REFRESH_DEPS" = "1" ] || [ ! -d "$VERIFY_DIR/node_modules" ] || ! cmp -s "$VERIFY_DIR/package-lock.json" "$LOCK_SNAPSHOT"; then
-  echo "push: cloning node_modules into verify tree…"
+  echo "push: cloning node_modules into verify tree (from $NODE_MODULES_SRC)…"
   rm -rf "$VERIFY_DIR/node_modules"
   # macOS APFS clone (`cp -c`) is not portable. Linux uses reflink when the
   # filesystem supports it; otherwise a plain archive copy.
-  if cp -Rc "$REPO_ROOT/node_modules" "$VERIFY_DIR/node_modules" 2>/dev/null; then
+  if cp -Rc "$NODE_MODULES_SRC" "$VERIFY_DIR/node_modules" 2>/dev/null; then
     :
-  elif cp -a --reflink=auto "$REPO_ROOT/node_modules" "$VERIFY_DIR/node_modules" 2>/dev/null; then
+  elif cp -a --reflink=auto "$NODE_MODULES_SRC" "$VERIFY_DIR/node_modules" 2>/dev/null; then
     :
   else
-    cp -a "$REPO_ROOT/node_modules" "$VERIFY_DIR/node_modules"
+    cp -a "$NODE_MODULES_SRC" "$VERIFY_DIR/node_modules"
   fi
   cp -f "$VERIFY_DIR/package-lock.json" "$LOCK_SNAPSHOT"
 fi

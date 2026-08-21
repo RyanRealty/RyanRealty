@@ -1,5 +1,6 @@
 import { dirname } from 'node:path'
 import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
 
 /**
  * The node_modules directory that actually resolves packages for this repo.
@@ -16,4 +17,9 @@ export function resolvingNodeModules() {
   let dir = dirname(createRequire(import.meta.url).resolve('typescript'))
   while (dir !== dirname(dir) && !dir.endsWith('/node_modules')) dir = dirname(dir)
   return dir
+}
+
+// CLI mode for shell callers (push-with-gates.sh): print the directory.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  console.log(resolvingNodeModules())
 }

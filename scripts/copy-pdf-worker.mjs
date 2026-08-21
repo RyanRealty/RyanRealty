@@ -7,9 +7,12 @@
 import { copyFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { resolvingNodeModules } from './lib/resolve-node-modules.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const src = join(root, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs')
+// Not root/node_modules — in a git worktree that is a stub; resolve the
+// node_modules Node actually loads from (scripts/lib/resolve-node-modules.mjs).
+const src = join(resolvingNodeModules(), 'pdfjs-dist/build/pdf.worker.min.mjs')
 const dest = join(root, 'public/pdf.worker.min.mjs')
 
 if (!existsSync(src)) {
