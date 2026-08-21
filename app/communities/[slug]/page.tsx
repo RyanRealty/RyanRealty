@@ -56,6 +56,7 @@ import { buildCommDGroundTiles } from '@/lib/communities/comm-d-ground'
 import { buildCommDChartRoom, buildCommDRankRows } from '@/lib/communities/comm-d-chart-room'
 import { formatPriceExact } from '@/lib/format/money'
 import { CommunityFeaturedView } from '@/components/site/comm-d/CommunityFeaturedView'
+import { V3Breadcrumb } from '@/components/site/v3'
 import { CommunityKbView } from '@/components/site/community/CommunityKbView'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
@@ -758,6 +759,14 @@ export default async function CommunityDetailPage({ params }: Props) {
       <div className="kb-root">
       <KbSectionTracker />
       <MetadataBlock schemas={communitySchemas} />
+      <main>
+      <V3Breadcrumb
+        trail={[
+          { label: 'Places', href: '/cities' },
+          { label: cityName, href: `/cities/${citySlug}` },
+          { label: community.name },
+        ]}
+      />
       <CommunityFeaturedView
         slug={slug}
         name={community.name}
@@ -784,6 +793,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         reviewCount={reviews.count}
         faqs={faqs}
       />
+      </main>
       </div>
     )
   }

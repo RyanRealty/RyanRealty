@@ -48,7 +48,7 @@ export function CommunityFeaturedView(props: {
   faqs: Array<{ question: string; answer: string }>
 }) {
   return (
-    <main className="comm-d">
+    <div className="comm-d">
       <CommunityPageTracker
         slug={props.slug}
         communityName={props.name}
@@ -106,6 +106,6 @@ export function CommunityFeaturedView(props: {
         <CommDFooter cityName={props.cityName} />
         <CommDDock rating={props.rating} reviewCount={props.reviewCount} />
       </SmoothScrollProvider>
-    </main>
+    </div>
   )
 }
