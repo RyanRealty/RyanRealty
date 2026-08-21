@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildTimeRails, isProductionBuildPhase, skippableRail } from './build-phase'
+import {
+  buildTimeRails,
+  hotRailTimeoutMs,
+  isProductionBuildPhase,
+  skippableRail,
+  skippableRailResult,
+} from './build-phase'
 
 const savedPhase = process.env.NEXT_PHASE
 
@@ -69,5 +75,49 @@ describe('skippableRail', () => {
     )
     await expect(skippableRail(start, [] as string[], 20, 'test:rail-timeout')).resolves.toEqual([])
     expect(start).toHaveBeenCalledOnce()
+  })
+})
+
+describe('skippableRailResult', () => {
+  it('skips during production build with ok: false so the fallback reads as degraded, not empty', async () => {
+    process.env.NEXT_PHASE = 'phase-production-build'
+    const start = vi.fn(async () => ({ pins: ['real'] }))
+    await expect(
+      skippableRailResult(start, { pins: [] as string[] }, 50, 'test:railResult'),
+    ).resolves.toEqual({ value: { pins: [] }, ok: false })
+    expect(start).not.toHaveBeenCalled()
+  })
+
+  it('fetches at runtime and reports ok: true for a real value', async () => {
+    delete process.env.NEXT_PHASE
+    const start = vi.fn(async () => ({ pins: ['real'] }))
+    await expect(
+      skippableRailResult(start, { pins: [] as string[] }, 50, 'test:railResult'),
+    ).resolves.toEqual({ value: { pins: ['real'] }, ok: true })
+  })
+
+  it('reports ok: false on a runtime timeout', async () => {
+    delete process.env.NEXT_PHASE
+    const start = vi.fn(
+      () =>
+        new Promise<string[]>((resolve) => {
+          setTimeout(() => resolve(['late']), 80)
+        }),
+    )
+    await expect(
+      skippableRailResult(start, [] as string[], 20, 'test:railResult-timeout'),
+    ).resolves.toEqual({ value: [], ok: false })
+  })
+})
+
+describe('hotRailTimeoutMs', () => {
+  it('triples the leash during production build', () => {
+    process.env.NEXT_PHASE = 'phase-production-build'
+    expect(hotRailTimeoutMs(3500)).toBe(10500)
+  })
+
+  it('passes the runtime value through outside the build', () => {
+    delete process.env.NEXT_PHASE
+    expect(hotRailTimeoutMs(3500)).toBe(3500)
   })
 })

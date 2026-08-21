@@ -184,7 +184,12 @@ describe('design directive contracts', () => {
     expect(src).not.toMatch(/inBoundaryCount \?\? pulse\?\.activeCount \?\? neighborhood\.activeCount/)
     expect(src).not.toMatch(/activeCount \?\? mapFeatures\.length/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
-    expect(src).toMatch(/withTimeoutFallbackResult\s*\(\s*getGeoBoundaryMapData/)
+    // Either Result-shaped guard: the boundary read must carry `.ok` so a
+    // degraded read can never publish a count. skippableRailResult adds the
+    // SSG skip (G70 follow-up) on the same Result contract.
+    expect(src).toMatch(
+      /(?:withTimeoutFallbackResult|skippableRailResult)\s*\(\s*(?:\(\)\s*=>\s*)?getGeoBoundaryMapData/,
+    )
     expect(src).not.toMatch(/activeCount(?::[^=]*)?=[\s\S]{0,80}\?\?\s*0\b/)
   })
 

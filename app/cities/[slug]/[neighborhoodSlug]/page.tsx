@@ -69,8 +69,8 @@ import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
-import { buildTimeRails, skippableRail } from '@/lib/build-phase'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { buildTimeRails, hotRailTimeoutMs, skippableRail, skippableRailResult } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -180,14 +180,19 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     inventoryRead,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
-    withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'nbh:stats'),
-    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3000, 'nbh:mktStats'),
+    // Hot-path core figures (HUD, about facts, FAQ): a build timeout would
+    // bake the fallback into the static HTML, so the build leash is 3×.
+    withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug, periodType: 'rolling_365d' }), null, hotRailTimeoutMs(3500), 'nbh:stats'),
+    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, hotRailTimeoutMs(3000), 'nbh:mktStats'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'nbh:regionPulse'),
     withTimeoutFallback(getPriceHistory('neighborhood', boundaryNeighborhoodSlug, 'monthly', 60), [], 4500, 'nbh:priceHistory'),
     // Result variant: a timed-out boundary yields `{ pins: [] }`, which is
     // indistinguishable from a genuinely empty neighborhood. `.ok` keeps them
-    // apart so a degraded read can never publish a count (§0).
-    withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'nbh:boundary'),
+    // apart so a degraded read can never publish a count (§0). Skipped during
+    // SSG (it timed out on 8 of ~14 build renders anyway) — the polygon overlay
+    // and schema centroid refill on first revalidate; counts come from the
+    // inventory read, never from pins.
+    skippableRailResult(() => getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'nbh:boundary'),
     withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'nbh:cities'),
     skippableRail(() => getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'nbh:blog'),
     skippableRail(() => getOpenHousesWithListings({ city: cityName }), [], 3500, 'nbh:openHouses'),
@@ -197,7 +202,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     // calendar years). Relabeled as city-level when used (§0). (§0)
     withTimeoutFallback(getPriceHistory('city', cityGeoSlug, 'monthly', 60), [], 4500, 'nbh:cityPriceHistory'),
     // Subdivisions within this neighborhood — drives the KbExploreTowns ledger.
-    withTimeoutFallback(getCommunitiesInNeighborhood(neighborhood.id, cityName), [], 3500, 'nbh:communities'),
+    skippableRail(() => getCommunitiesInNeighborhood(neighborhood.id, cityName), [], 3500, 'nbh:communities'),
     // Rich, verified neighborhood depth from
     // data/resort-community-{citySlug}-{neighborhoodSlug}.json — the same curated
     // source the resort LPs render, keyed by the boundary slug. Null until

@@ -31,7 +31,7 @@ import {
   latestCompleteQuarter,
   pairCityQuarterRows,
 } from '@/lib/data/pricing/getCityQuarterSaleToAsk'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { skippableRail } from '@/lib/build-phase'
 import {
   buildCutsCard,
   buildDtpCard,
@@ -97,11 +97,14 @@ export async function CityMarketCharts({
 }: CityMarketChartsProps) {
   const now = new Date()
   const { quarter, year: quarterYear } = latestCompleteQuarter(now)
+  // Skipped during SSG (yearPricing + quarterSto timed out on 7 of 7 build
+  // renders): empty rows → no cards → the whole chart room renders nothing in
+  // the build HTML and ISR refills it on first revalidate.
   const [towns, region, yearRows, quarterRows] = await Promise.all([
-    withTimeoutFallback(getMarketPulseAllCitySnapshots(), [], 3500, 'city:townPulse'),
-    withTimeoutFallback(getMarketPulseRegionSnapshot('central-oregon'), null, 3000, 'city:regionRow'),
-    withTimeoutFallback(getCityYearPricing({ citySlug }), [], 4000, 'city:yearPricing'),
-    withTimeoutFallback(getCityQuarterSaleToAsk(quarter), [], 4000, 'city:quarterSto'),
+    skippableRail(() => getMarketPulseAllCitySnapshots(), [], 3500, 'city:townPulse'),
+    skippableRail(() => getMarketPulseRegionSnapshot('central-oregon'), null, 3000, 'city:regionRow'),
+    skippableRail(() => getCityYearPricing({ citySlug }), [], 4000, 'city:yearPricing'),
+    skippableRail(() => getCityQuarterSaleToAsk(quarter), [], 4000, 'city:quarterSto'),
   ])
 
   const rankInput: CityRankInput = {

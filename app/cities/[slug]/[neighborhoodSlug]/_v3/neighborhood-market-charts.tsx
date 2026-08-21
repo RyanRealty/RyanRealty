@@ -30,7 +30,7 @@ import {
   getAllNeighborhoodYearPricing,
 } from '@/lib/data/geo/getNeighborhoodYearPricing'
 import { getBendNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { skippableRail } from '@/lib/build-phase'
 import {
   buildAskingRankCard,
   buildClosedRankCard,
@@ -98,9 +98,11 @@ export async function NeighborhoodMarketCharts({
   geoSlug,
   districtName,
 }: NeighborhoodMarketChartsProps) {
+  // Skipped during SSG: empty rows → no cards → the chart room renders
+  // nothing in the build HTML and ISR refills it on first revalidate.
   const [yearRows, inventory] = await Promise.all([
-    withTimeoutFallback(getAllNeighborhoodYearPricing(), [], 4000, 'nbh:yearPricing'),
-    withTimeoutFallback(getBendNeighborhoodPublicInventory(), [], 3500, 'nbh:inventoryBatch'),
+    skippableRail(() => getAllNeighborhoodYearPricing(), [], 4000, 'nbh:yearPricing'),
+    skippableRail(() => getBendNeighborhoodPublicInventory(), [], 3500, 'nbh:inventoryBatch'),
   ])
 
   const currentYear = new Date().getUTCFullYear()

@@ -2,11 +2,16 @@
  * `next build` static-generation phase.
  *
  * Geo pages fan out DAL reads (blog strip, activity, open houses, amenity
- * posts) that ISR will refill. Those rails must not run during SSG — and a
- * skipped / timed-out read must never publish as "0 homes". Hero inventory,
- * MOS, and median stay on the hot path.
+ * posts, chart rooms, boundary maps, subdivision ledgers) that ISR will
+ * refill. Those rails must not run during SSG — and a skipped / timed-out
+ * read must never publish as "0 homes". Hero inventory, MOS, and median stay
+ * on the hot path.
  */
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import {
+  withTimeoutFallback,
+  withTimeoutFallbackResult,
+  type TimeoutFallbackResult,
+} from '@/lib/with-timeout-fallback'
 
 export function isProductionBuildPhase(): boolean {
   return process.env.NEXT_PHASE === 'phase-production-build'
@@ -32,4 +37,28 @@ export function skippableRail<T>(
 ): Promise<T> {
   if (!buildTimeRails(true)) return Promise.resolve(fallback)
   return withTimeoutFallback(start(), fallback, timeoutMs, logLabel)
+}
+
+/**
+ * skippableRail for reads that feed a published figure: a build-phase skip is
+ * a degraded read (`ok: false`), never a measured empty (§0).
+ */
+export function skippableRailResult<T>(
+  start: () => Promise<T>,
+  fallback: T,
+  timeoutMs: number,
+  logLabel?: string,
+): Promise<TimeoutFallbackResult<T>> {
+  if (!buildTimeRails(true)) return Promise.resolve({ value: fallback, ok: false })
+  return withTimeoutFallbackResult(start(), fallback, timeoutMs, logLabel)
+}
+
+/**
+ * Timeout for hot-path rails (core figures that DO fetch during SSG). At
+ * build, a timeout persists the fallback into the deployed HTML until the
+ * first revalidate — so tolerate 3× the runtime latency there, where only
+ * build minutes are at stake, not a user's request.
+ */
+export function hotRailTimeoutMs(runtimeMs: number): number {
+  return isProductionBuildPhase() ? runtimeMs * 3 : runtimeMs
 }
