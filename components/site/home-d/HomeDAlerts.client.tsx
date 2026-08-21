@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
-import { buildGuestWatchFromPlace, rememberGuestWatch } from '@/lib/alerts/guest-watch-residual'
+import {
+  buildGuestWatchFromPlace,
+  rememberGuestWatch, // hydration-safe: event/effect storage only
+} from '@/lib/alerts/guest-watch-residual'
 
 export function HomeDAlerts() {
   const [email, setEmail] = useState('')
@@ -24,7 +27,7 @@ export function HomeDAlerts() {
         company,
       })
       if (res.ok) {
-        rememberGuestWatch(
+        rememberGuestWatch( // hydration-safe: event/effect storage only
           buildGuestWatchFromPlace({
             communityName: 'Central Oregon',
             city: '',
@@ -45,7 +48,7 @@ export function HomeDAlerts() {
         <h2 className="home-d-display">New listings by email</h2>
         <p>When a single-family home lists in Central Oregon, you hear first.</p>
         {state === 'done' ? (
-          <p className="home-d-alerts-done">You are on the list.</p>
+          <p className="home-d-alerts-done">You are on the list. Pause from any alert email.</p>
         ) : (
           <form className="home-d-alerts-form" onSubmit={onSubmit}>
             <Input
@@ -71,6 +74,7 @@ export function HomeDAlerts() {
             <Button type="submit" disabled={pending}>
               {pending ? 'Sending' : 'Email me'}
             </Button>
+            <p>One email per new listing. Unsubscribe any time.</p>
           </form>
         )}
         {state === 'error' ? <p className="home-d-alerts-done">Try that email again.</p> : null}
