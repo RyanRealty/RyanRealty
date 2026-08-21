@@ -3,7 +3,37 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-21 — kit on main; re-arm the loop
+# Current — 2026-08-21 (Claude Code) — all four locked restyles LIVE
+
+**Surface:** `origin/main`. Home (#146 `f66ac340`), River West hood-d (#144
+`c4f0bbec`), Redmond city-d + Tetherow comm-d (batched, #143+#145 `666983b2`)
+all merged, deployed, and verified in a real browser on ryan-realty.com. Matt
+pinged per page. Market Desk is gone from `/`; journal H2 clears the nav.
+
+**Gate re-anchors that rode along** (each keeps its trap armed): publish
+months-of-supply / median-caption / regional-search-href homepage checks went
+conditional on the retired components; pulse-city-remainder reads
+SITE_CITY_SLUGS; days-figure → hood-d-model; place-hero-grain parameterized
+helper (cityHeroLead/hoodLead); place-browse → CommunityKbView+FeaturedView;
+westside luxury door → CityDFooter/KB_FOOTER_COLUMNS; kb-shared-shell accepts
+all register footers; D93 activity feed retired from city+hood; D99/D101 lock
+the HUD off `/`. pa11y hero fix = navy background under hero media (WCAG walks
+ancestors, cannot see a sibling scrim) on home-d/hood-d/comm-d.
+
+**CI de-flake `22e35a42`:** /admin/ routes out of the PR-blocking smoke
+(SMOKE_INCLUDE_ADMIN=1 restores), pa11y before Lighthouse. Vercel push-to-live
+measured ~11.5 min with warm cache (log of dpl_5qnLLnb...); a task is queued to
+cut SSG further (ISR the 1-minute-revalidate tail, PR preview builds + promote).
+
+**Open in the restyle program:** listing House A and resort Sunriver proofs had
+no PRs — not started. The crank (rolling the kits across all cities/hoods/
+communities) awaits Matt's review of the four live proofs.
+
+**Do not:** put KbMarketHud or KbSell back on `/`. GitHub dropped PR
+synchronize events twice today — after any retrigger push, VERIFY a workflow
+run exists for the new SHA before waiting on it.
+
+# Prior — 2026-08-21 — kit on main; re-arm the loop
 
 **Surface:** `origin/main`. Home-d shipped (PR 146). Locked pack `design_system/ryan-realty/locked/`. Brain `docs/GROK_BOT_BRAIN.md` (PR 148). CRM is ryan-realty.com.
 
