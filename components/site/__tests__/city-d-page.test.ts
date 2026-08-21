@@ -84,7 +84,7 @@ describe('city-d city template restyle', () => {
 
   it('hero cream type sits on a navy fallback so contrast is not cream-on-cream', () => {
     const css = read('components/site/city-d/city-d.css')
-    expect(css).toMatch(/\.city-d-hero \{[^}]*background-color:\s*var\(--navy\)/s)
+    expect(css).toMatch(/\.city-d-hero \{[\s\S]*?background-color:\s*var\(--navy\)/)
     expect(css).toMatch(/\.city-d-hero h1,\s*\n\.city-d-hero h1 span/)
   })
 
