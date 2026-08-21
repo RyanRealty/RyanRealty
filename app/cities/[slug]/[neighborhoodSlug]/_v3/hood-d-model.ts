@@ -14,6 +14,7 @@ import { cityHero, communityImage } from '@/lib/geo-images'
 import { listingDetailPath, slugify } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type {
   HoodDChild,
@@ -75,6 +76,7 @@ export function hoodHomes(
     subdivisionName: string | null
     photoUrl?: string | null
     propertyType?: string | null
+    propertySubType?: string | null
   }>,
 ): HoodDHome[] {
   return [...tiles]
@@ -106,7 +108,16 @@ export function hoodHomes(
             { mlsNumber: t.listNumber },
           ),
           img: photo,
-          priceLabel: formatPublishedAsk(t.listPrice) ?? 'Price on request',
+          priceLabel: (() => {
+            const ask = formatPublishedAsk(t.listPrice) ?? 'Price on request'
+            const share = publishListingShareKind({
+              propertySubType: t.propertySubType,
+              subdivisionName: t.subdivisionName,
+              city: t.city,
+              listNumber: t.listNumber,
+            })
+            return share ? `${ask} · ${share}` : ask
+          })(),
           address: street || t.subdivisionName?.trim() || 'Address withheld',
           meta: meta || null,
         } satisfies HoodDHome,
