@@ -153,11 +153,26 @@ if (!fs.existsSync(dstModules)) {
 // The `exclude` list in the base config already covers scripts/, video/,
 // out/ remains excluded.
 
+// Incremental cache: tsbuildinfo persists across runs in ~/.cache so a push
+// that changed 3 files typechecks in seconds, not 60-80s. Correct on a fresh
+// materialized tree because tsbuildinfo validates by file CONTENT hash — any
+// drifted file is fully re-checked, and cached semantic diagnostics replay for
+// unchanged ones. Backstops if the cache ever lied: the same tsc runs fresh in
+// CI, and a broken commit fails the Vercel build with deploy:verify going red.
+// COMMIT_COMPILES_NO_CACHE=1 forces a from-scratch check.
+const CACHE_DIR = path.join(os.homedir(), '.cache', 'rr-commit-check');
+const CACHE_BUILDINFO = path.join(CACHE_DIR, 'tsbuildinfo');
+const TMP_BUILDINFO = path.join(TMP, '.tsbuildinfo.check');
+const useCache = process.env.COMMIT_COMPILES_NO_CACHE !== '1';
+if (useCache && fs.existsSync(CACHE_BUILDINFO)) {
+  try { fs.copyFileSync(CACHE_BUILDINFO, TMP_BUILDINFO); } catch { /* cold run */ }
+}
+
 const wrapperTsconfig = {
   extends: './tsconfig.json',
   compilerOptions: {
-    incremental: false,
-    tsBuildInfoFile: undefined,
+    incremental: true,
+    tsBuildInfoFile: './.tsbuildinfo.check',
     baseUrl: '.',
     paths: {
       '@/*': ['./*'],
@@ -195,6 +210,7 @@ try {
   npxBin = execSync('which npx', { encoding: 'utf8' }).trim();
 } catch { /* use 'npx' */ }
 
+const tscT0 = Date.now();
 const tscResult = spawnSync(
   npxBin,
   ['tsc', '--noEmit', '-p', path.join(TMP, 'tsconfig.check.json')],
@@ -213,9 +229,19 @@ const tscResult = spawnSync(
 );
 
 const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+const tscSecs = ((Date.now() - tscT0) / 1000).toFixed(1);
+
+// Persist the buildinfo for the next run — on failure too: diagnostics for
+// unchanged files replay from it, and fixed files re-check by content hash.
+if (useCache && !tscResult.signal && !tscResult.error && fs.existsSync(TMP_BUILDINFO)) {
+  try {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+    fs.copyFileSync(TMP_BUILDINFO, CACHE_BUILDINFO);
+  } catch { /* cache is a convenience */ }
+}
 
 if (tscResult.status === 0) {
-  console.log(`PASS  (${elapsed}s)\n`);
+  console.log(`PASS  (${elapsed}s, tsc ${tscSecs}s${useCache ? ', incremental' : ''})\n`);
   console.log('✓  COMMIT IS SELF-CONTAINED — all referenced symbols exist in the committed tree.\n');
   process.exit(0);
 } else {

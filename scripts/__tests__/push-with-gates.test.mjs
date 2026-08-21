@@ -119,15 +119,18 @@ afterAll(() => {
 
 describe('push-with-gates.sh exit-code propagation', () => {
   it(
-    'exits non-zero and says so when git push is rejected (non-fast-forward)',
+    'exits 7 (retryable) and says so when git push is rejected (non-fast-forward)',
     () => {
+      // Contract since 2026-08-21: non-fast-forward is the ONE retryable
+      // failure — exit 7 so push-retry.sh (npm run push) can fetch + rebase +
+      // re-verify. Every other push failure keeps its own non-zero status.
       const before = git(originDir, 'rev-parse', 'main')
       const { status, output } = runPushScript(staleDir)
 
       expect(output).toMatch(/\[rejected\]/)
       expect(status).not.toBe(0)
-      expect(status).toBe(1)
-      expect(output).toMatch(/git push FAILED/)
+      expect(status).toBe(7)
+      expect(output).toMatch(/origin moved during verification/)
       // The rejection must not have moved the remote.
       expect(git(originDir, 'rev-parse', 'main')).toBe(before)
     },

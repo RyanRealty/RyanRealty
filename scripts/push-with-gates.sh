@@ -164,23 +164,37 @@ run_chain_and_build() {
 # verdict line and exit code are stated explicitly, never inherited.
 # ---------------------------------------------------------------------------
 do_push() {
+  PUSH_LOG="${TMPDIR:-/tmp}/rr-push-$$.out"
   set +e
   # Worktree branches are named wt/* but must land on the tracked upstream
   # (origin/main). `push.default=current` would mint origin/wt/* instead
   # (observed 2026-08-19: dbd671c7). `git push @{u}` is parsed as a remote
   # name and fails. Extra args still pass through.
   if [ "$#" -eq 0 ]; then
-    git -c push.default=upstream push
+    git -c push.default=upstream push >"$PUSH_LOG" 2>&1
   else
-    git push "$@"
+    git push "$@" >"$PUSH_LOG" 2>&1
   fi
   push_rc=$?
+  cat "$PUSH_LOG"
   set -e
   if [ "$push_rc" -ne 0 ]; then
+    # Exit 7 = the one benign, retryable failure: origin advanced while gates
+    # ran (multi-agent pushes collide daily). push-retry.sh (`npm run push`)
+    # sees 7, rebases, and re-verifies the new HEAD from scratch. Every other
+    # failure keeps its own status and is terminal.
+    if grep -qE "non-fast-forward|fetch first|behind its remote" "$PUSH_LOG"; then
+      rm -f "$PUSH_LOG"
+      die 7 \
+        "✗ git push rejected: origin moved during verification (non-fast-forward)." \
+        "  npm run push auto-recovers this; direct callers: git fetch + rebase, re-run."
+    fi
+    rm -f "$PUSH_LOG"
     die "$push_rc" \
       "✗ git push FAILED (exit $push_rc) — NOTHING landed on the remote." \
       "  Non-fast-forward? git fetch + rebase onto the remote branch, then re-run: npm run push"
   fi
+  rm -f "$PUSH_LOG"
   # The ONLY place this flag is set. Everything else exits non-zero.
   PUSH_COMPLETED=1
   echo "✓ git push OK"
