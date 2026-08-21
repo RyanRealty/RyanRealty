@@ -6,7 +6,7 @@
  * Data (§0, real listings only):
  *   - No geo  -> getCentralOregonHomeVideoTours() (pre-built video_tours_cache,
  *     price_desc, falls back to a live fetch).
- *   - city / community -> getListingsWithVideos({ ..., sort: 'price_desc' }).
+ *   - city / community -> getListingsWithVideosCached({ ..., sort: 'price_desc' }).
  *
  * Renders nothing when there are no video listings for the context, so it is
  * safe to place unconditionally.
@@ -14,7 +14,7 @@
 import { VideoSlider, type VideoSlideItem } from './VideoSlider.client'
 import {
   getCentralOregonHomeVideoTours,
-  getListingsWithVideos,
+  getListingsWithVideosCached,
 } from '@/app/actions/videos'
 
 type Props = {
@@ -37,7 +37,7 @@ export async function VideoTourRail({
   const scoped = !city?.trim() && !community?.trim()
   let rows = scoped
     ? await getCentralOregonHomeVideoTours()
-    : await getListingsWithVideos({
+    : await getListingsWithVideosCached({
         ...(city?.trim() ? { city: city.trim() } : {}),
         ...(community?.trim() ? { community: community.trim() } : {}),
         sort: 'price_desc',

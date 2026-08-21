@@ -1,6 +1,7 @@
 /**
  * Extract a playable tour or video URL from Spark/RESO `details` JSONB (or raw Spark row).
- * Keep in sync with sync pipeline and `getListingsWithVideos`.
+ * Keep in sync with sync pipeline and `fetchListingsWithVideos` (served via
+ * `getListingsWithVideosCached` / `getSubdivisionVideoTours`).
  */
 export type VideoTourSource = 'virtual_tour' | 'listing_video'
 

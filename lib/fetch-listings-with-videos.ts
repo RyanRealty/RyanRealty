@@ -107,6 +107,23 @@ export async function fetchListingsWithVideos(
   void supabase
   void applyFiltersAndOrder
   const { getListingVideoCandidates } = await import('@/lib/data')
+
+  // The broad (no-tour-filter) candidates query is needed by BOTH the
+  // top-up pass below and the zero-match legacy fallback; it used to run
+  // twice with identical args on the common single-plat no-match path.
+  // Fetch it at most once per call.
+  let broadCandidateRows: Array<Record<string, unknown>> | null = null
+  const loadBroadCandidateRows = async () => {
+    if (broadCandidateRows === null) {
+      broadCandidateRows = await getListingVideoCandidates({
+        cities: citiesList,
+        statusAll,
+        sort: filters?.sort === 'price_desc' ? 'price_desc' : 'newest',
+        limit: candidateLimit,
+      })
+    }
+    return broadCandidateRows
+  }
   // 1) listings with has_virtual_tour=true
   const tourRows = await getListingVideoCandidates({
     withVirtualTour: true,
@@ -124,12 +141,7 @@ export async function fetchListingsWithVideos(
 
   if (listRows.length < candidateLimit) {
     // 2) broad listings query (newest or price_desc)
-    const broadRows = await getListingVideoCandidates({
-      cities: citiesList,
-      statusAll,
-      sort: filters?.sort === 'price_desc' ? 'price_desc' : 'newest',
-      limit: candidateLimit,
-    })
+    const broadRows = await loadBroadCandidateRows()
     for (const row of broadRows) {
       const k = resolveListingKeyFromRow(row)
       if (!k || seenKeys.has(k)) continue
@@ -225,7 +237,7 @@ export async function fetchListingsWithVideos(
 
   if (rows.length === 0) {
     void ACTIVE_STATUS_OR
-    const { getAnyListingVideoRows, getListingVideoCandidates } = await import('@/lib/data')
+    const { getAnyListingVideoRows } = await import('@/lib/data')
     const legacyVideos = await getAnyListingVideoRows(candidateLimit)
     const legacyVideoByKey = new Map(
       legacyVideos.map((r) => [
@@ -234,12 +246,7 @@ export async function fetchListingsWithVideos(
       ])
     )
 
-    const legacyListings = await getListingVideoCandidates({
-      cities: citiesList,
-      statusAll,
-      sort: filters?.sort === 'price_desc' ? 'price_desc' : 'newest',
-      limit: candidateLimit,
-    })
+    const legacyListings = await loadBroadCandidateRows()
     const legacyErr: { message: string } | null = null
     if (legacyErr) {
       console.error('[fetchListingsWithVideos] legacy listings', legacyErr)

@@ -59,7 +59,7 @@ import { SubdivisionSchools } from './SubdivisionSchools'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
-import { getListingsWithVideos } from '@/app/actions/videos'
+import { getSubdivisionVideoTours } from '@/lib/data'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { cityHero } from '@/lib/geo-images'
@@ -362,12 +362,7 @@ export default async function SubdivisionPage({ params }: Props) {
   // => never show the rail (the fallback would be unrelated). (§0 — honest scope)
   const subdivisionVideoTours = registryMatch
     ? await withTimeoutFallback(
-        getListingsWithVideos({
-          community: registryMatch.canonicalName,
-          city: registryMatch.city,
-          status: 'active',
-          limit: 12,
-        }),
+        getSubdivisionVideoTours(registryMatch.canonicalName, registryMatch.city, 12),
         [],
         4500,
         'sub:video-tours',
