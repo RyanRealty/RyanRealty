@@ -30,6 +30,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { resolvingNodeModules } from './lib/resolve-node-modules.mjs'
 import { createClient } from '@supabase/supabase-js'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
@@ -75,7 +76,7 @@ async function loadMapper() {
   const out = join(dir, 'listing-mapper.mjs')
   try {
     execFileSync(
-      join(ROOT, 'node_modules/.bin/esbuild'),
+      join(resolvingNodeModules(), '.bin/esbuild'),
       [join(ROOT, 'lib/listing-mapper.ts'), '--bundle', '--format=esm', '--platform=node', `--outfile=${out}`, '--log-level=error'],
       { stdio: 'pipe' },
     )

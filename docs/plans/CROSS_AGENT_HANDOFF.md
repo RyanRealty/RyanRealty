@@ -51,6 +51,12 @@ run exists for the new SHA before waiting on it.
 
 **Grok bots:** I cannot delete sidebar agents. New bots read the brain, then one door.
 
+# Prior — 2026-08-21 (claude worktree) — runtime rail class: video-tours fixed, pricing index is a trap
+
+**Surface:** `main` @ `8793f648`. The `sub:video-tours` rail (worst runtime offender, 85 SSG timeouts historically) is fixed: subdivision pages read `getSubdivisionVideoTours` from `@/lib/data` (300s cache; `ci:page-action-imports` ratchet is why it lives there), VideoTourRail uses `getListingsWithVideosCached`, the cascade no longer double-queries, and `idx_listings_city_vt_modts` cut the candidates query 1368→416ms cold (migration 20260821190000, applied live via pg_cron CONCURRENTLY).
+
+**Do NOT re-add** a covering index on `sale_pricing_facts` for `city_year_pricing`/`city_quarter_sale_to_ask` — built and measured 2026-08-21: 5.75s (planner prefers its random I/O) vs 1.77s seq scan. Reverted; details in the migration file header. Those RPCs are SSG-skipped + 6h-cached and inside budget. Profiling method when a rail is slow: `-- audit:`-prefixed `EXPLAIN (ANALYZE, BUFFERS)` of the exact query shape via the Supabase MCP — static index-gap guesses were wrong 3 of 5 times.
+
 # Prior — 2026-08-21 (claude worktree) — ship pipeline maximized (every agent, read this)
 
 **Surface:** `main` @ `8a7c659b`. The push→live cycle is now ~5–6 min total (was 30–40 this morning). What changed for HOW YOU SHIP:

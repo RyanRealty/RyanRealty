@@ -49,6 +49,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
+import { resolvingNodeModules } from './lib/resolve-node-modules.mjs'
 
 const REPORT = process.argv.includes('--report')
 const JSON_OUT = process.argv.includes('--json')
@@ -89,7 +90,7 @@ async function loadRegistry() {
   const out = join(dir, 'm.mjs')
   try {
     execFileSync(
-      join(process.cwd(), 'node_modules/.bin/esbuild'),
+      join(resolvingNodeModules(), '.bin/esbuild'),
       [src, '--bundle', '--format=esm', '--platform=node', `--outfile=${out}`, '--log-level=error'],
       { stdio: 'pipe' },
     )

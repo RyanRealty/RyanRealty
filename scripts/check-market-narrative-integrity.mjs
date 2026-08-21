@@ -25,6 +25,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
+import { resolvingNodeModules } from './lib/resolve-node-modules.mjs'
 
 const MODULE = 'lib/data/market/market-narrative.ts'
 const problems = []
@@ -36,7 +37,7 @@ async function load() {
   const out = join(dir, 'm.mjs')
   try {
     execFileSync(
-      join(process.cwd(), 'node_modules/.bin/esbuild'),
+      join(resolvingNodeModules(), '.bin/esbuild'),
       [src, '--bundle', '--format=esm', '--platform=node', `--outfile=${out}`, '--log-level=error'],
       { stdio: 'pipe' },
     )

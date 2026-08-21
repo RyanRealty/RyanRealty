@@ -27,6 +27,7 @@ const ROW_CACHE = join(SANDBOX, 'rows.json')
 
 const FILES = [
   'scripts/check-view-preset-equivalence.mjs',
+  'scripts/lib/resolve-node-modules.mjs',
   'tsconfig.json',
   'lib/search-presets.ts',
   'lib/listing-status-public.ts',

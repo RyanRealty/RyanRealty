@@ -92,6 +92,7 @@ import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
+import { resolvingNodeModules } from './lib/resolve-node-modules.mjs'
 
 const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 const PRESETS_MODULE = 'lib/search-presets.ts'
@@ -155,7 +156,7 @@ async function loadModule(relPath) {
   const out = join(dir, 'm.mjs')
   try {
     execFileSync(
-      join(ROOT, 'node_modules/.bin/esbuild'),
+      join(resolvingNodeModules(), '.bin/esbuild'),
       [
         src,
         '--bundle',
