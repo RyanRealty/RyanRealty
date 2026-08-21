@@ -3,7 +3,15 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-21 (Claude Code) — all four locked restyles LIVE
+# Current — 2026-08-21 (Claude worktree) — SSG rail timeouts zeroed (G70 round 2)
+
+**Surface:** `main` `9162c204`, deployed `dpl_C7NtuaxP3KRrpzR9CE9qHKS8dqmn` READY, verified in a real browser on ryan-realty.com.
+
+**What:** after G70, `app/cities/[slug]` + `[neighborhoodSlug]` still logged ~44 rail timeouts per build (`city:yearPricing`/`city:quarterSto` on 7/7 city pages, `nbh:boundary` 8, `nbh:communities` 7 of ~14 — already baking empty into deployed HTML). Chart-room, boundary, and subdivision-ledger rails now skip during SSG via `skippableRail`/`skippableRailResult` (`lib/build-phase.ts`); ISR refills at `revalidate=60`. Core figures (`nbh:stats`, `nbh:mktStats` — HUD/facts/FAQ) stay hot with `hotRailTimeoutMs` (3× leash at build only). Measured on the deploy: **0 timeouts** (was 44/352), SSG **76s** (was 3.6/11.2 min), build total **3 min**. Refill verified live: Redmond chart room full; Awbrey Butte + Southeast Bend refill chart room, polygon, subdivisions, open houses, activity on the first revalidate cycle.
+
+**Rule when extending:** skip any rail that collapses-to-nothing per §0; never skip an indexable core figure — lengthen its build leash with `hotRailTimeoutMs` instead. `skippableRailResult` preserves the degraded-vs-empty `.ok` contract; the site-contracts §0 test accepts either Result-shaped guard.
+
+# Prior — 2026-08-21 (Claude Code) — all four locked restyles LIVE
 
 **Surface:** `origin/main`. Home (#146 `f66ac340`), River West hood-d (#144
 `c4f0bbec`), Redmond city-d + Tetherow comm-d (batched, #143+#145 `666983b2`)
