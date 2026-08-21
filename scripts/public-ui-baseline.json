@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 218,
-    "legacyPages": 10,
-    "mixedPages": 44
+    "nonV3ImportSites": 197,
+    "legacyPages": 9,
+    "mixedPages": 45
   },
   "frozenNoindexLps": [
     "app/lp/tetherow/heath/page.tsx"
@@ -58,17 +58,8 @@
     "app/compare/page.tsx",
     "app/contact/page.tsx",
     "app/cookies/page.tsx",
-    "app/dashboard/collections/[id]/page.tsx",
-    "app/dashboard/collections/page.tsx",
-    "app/dashboard/history/page.tsx",
-    "app/dashboard/likes/page.tsx",
     "app/dashboard/marketing/inbox/page.tsx",
     "app/dashboard/marketing/page.tsx",
-    "app/dashboard/notifications/page.tsx",
-    "app/dashboard/page.tsx",
-    "app/dashboard/saved/page.tsx",
-    "app/dashboard/searches/page.tsx",
-    "app/dashboard/settings/page.tsx",
     "app/data-deletion/page.tsx",
     "app/dmca/page.tsx",
     "app/fair-housing/page.tsx",
@@ -80,14 +71,12 @@
     "app/housing-market/central-oregon/page.tsx",
     "app/housing-market/history/page.tsx",
     "app/housing-market/page.tsx",
-    "app/housing-market/reports/[slug]/[geoName]/page.tsx",
     "app/housing-market/reports/[slug]/page.tsx",
     "app/housing-market/reports/archive/[city]/page.tsx",
     "app/housing-market/reports/page.tsx",
     "app/join/page.tsx",
     "app/listing/[listingKey]/page.tsx",
     "app/listing/by-address/[...slug]/page.tsx",
-    "app/listing/by-key/[listingKey]/page.tsx",
     "app/lp/bend/page.tsx",
     "app/lp/buyer-listing-alerts/page.tsx",
     "app/lp/central-oregon-golf/page.tsx",
@@ -103,6 +92,7 @@
     "app/motivated-sellers/[city]/page.tsx",
     "app/motivated-sellers/page.tsx",
     "app/neighborhoods/page.tsx",
+    "app/newsletter/page.tsx",
     "app/newsletter/unsubscribe/page.tsx",
     "app/offline/page.tsx",
     "app/open-houses/[city]/page.tsx",
@@ -117,7 +107,6 @@
     "app/privacy/page.tsx",
     "app/pulse/page.tsx",
     "app/refer-a-client/page.tsx",
-    "app/reports/[slug]/[geoName]/page.tsx",
     "app/reports/[slug]/page.tsx",
     "app/reports/page.tsx",
     "app/reports/sales/[city]/[period]/page.tsx",
@@ -205,9 +194,9 @@
       "v3": 1
     },
     "app/cities/[slug]/[neighborhoodSlug]/page.tsx": {
-      "kb": 23,
+      "kb": 4,
       "legacy": 3,
-      "explore": 2
+      "v3": 1
     },
     "app/cities/[slug]/page.tsx": {
       "kb": 24,
@@ -315,6 +304,9 @@
     "app/neighborhoods/page.tsx": {
       "legacy": 2,
       "kb": 5
+    },
+    "app/newsletter/page.tsx": {
+      "v3": 1
     },
     "app/newsletter/unsubscribe/page.tsx": {
       "v3": 1
