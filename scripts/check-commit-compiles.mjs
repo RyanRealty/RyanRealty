@@ -39,6 +39,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolvingNodeModules } from './lib/resolve-node-modules.mjs';
 
 // ── config ────────────────────────────────────────────────────────────────────
 
@@ -125,8 +126,14 @@ if (mode === 'head') {
 }
 
 // ── 2. symlink node_modules ───────────────────────────────────────────────────
+//
+// Not REPO_ROOT/node_modules: in a git worktree that is a stub and imports
+// resolve by walking up to the main checkout. The materialized tree in
+// os.tmpdir() has no such upward path, so `npx tsc` fell through to the
+// squatter `tsc` package (observed 2026-08-21). Link the directory Node
+// actually resolves typescript from.
 
-const srcModules = path.join(REPO_ROOT, 'node_modules');
+const srcModules = resolvingNodeModules();
 const dstModules = path.join(TMP, 'node_modules');
 if (!fs.existsSync(dstModules)) {
   fs.symlinkSync(srcModules, dstModules);

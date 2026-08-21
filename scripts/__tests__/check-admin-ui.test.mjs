@@ -3,7 +3,7 @@ import { writeFileSync, mkdirSync, rmSync, cpSync, symlinkSync, existsSync } fro
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
-import { resolvingNodeModules } from './lib/resolve-node-modules.mjs'
+import { resolvingNodeModules } from '../lib/resolve-node-modules.mjs'
 
 /**
  * Break-tests for ci:admin-ui (scripts/check-admin-ui.mjs, G65).

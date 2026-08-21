@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
-import { resolvingNodeModules } from './__tests__/lib/resolve-node-modules.mjs'
+import { resolvingNodeModules } from './lib/resolve-node-modules.mjs'
 
 /**
  * Break-tests for ci:entity-scope (scripts/check-entity-scope.mjs, G66).

@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, symlinkSync } f
 import { join, dirname, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
-import { resolvingNodeModules } from './lib/resolve-node-modules.mjs'
+import { resolvingNodeModules } from '../lib/resolve-node-modules.mjs'
 
 /**
  * Break-tests for ci:toast-discipline (scripts/check-toast-read-discipline.mjs, G62).
