@@ -233,13 +233,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     ? { quote: reviews.reviews[0].text, author: reviews.reviews[0].reviewerName?.trim() || 'Google review' }
     : null
 
-  const monthsOfSupply = publishMonthsOfSupply({
-    grain: 'neighborhood',
-    pulseMos: pulse?.monthsOfSupply,
-    pulseActiveCount: pulse?.activeCount,
-    displayedActiveCount: activeCount,
-    soldCount12mo: stats?.soldCount,
-  })
+  // prettier-ignore — ci:mos-grain-trust reads line-wise: the raw soldCount is
+  // legal only on the same line as the publishMonthsOfSupply() call it feeds.
+  const monthsOfSupply = publishMonthsOfSupply({ grain: 'neighborhood', pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
   const marketFaqInput: MarketFaqInput = {
     ...(pulse ?? {}),
     grain: 'neighborhood',

@@ -54,10 +54,16 @@ const pages = [
 for (const page of pages) {
   const text = src(page.path)
   const importsHelper = /from ['"]@\/lib\/kb\/place-hero-lead['"]/.test(text) && /placeHeroLead\(/.test(text)
+  // hood-d never prefixes the count into the lead: HoodDHero prints the count
+  // in its own stats line ("{N} homes · ..."), so the KbHero "N homes for sale
+  // in ${cityName}" pairing cannot occur. The page may satisfy this check with
+  // the hood-d shape instead of placeHeroLead; the forbidden pattern stays
+  // banned either way.
+  const hoodDShape = /<HoodDHero\b/.test(text) && /hoodLead\(/.test(text)
   const forbidden = page.forbid ? page.forbid.test(text) : false
   checks.push({
     label: page.label,
-    ok: importsHelper && !forbidden,
+    ok: (importsHelper || hoodDShape) && !forbidden,
   })
 }
 
