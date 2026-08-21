@@ -45,12 +45,20 @@ checks.push({
     /publishPlaceBrowseHref\(browseHref \?\? viewAllHref\)/.test(inventory),
 })
 
+// comm-d extracted the community page body into CommunityKbView (map door
+// viewAllHref) and CommunityFeaturedView (map door browseHref); the page still
+// computes the community-scoped listings path and hands it to both views.
 const community = src('app/communities/[slug]/page.tsx')
+const communityView = src('components/site/community/CommunityKbView.tsx')
+const featuredView = src('components/site/comm-d/CommunityFeaturedView.tsx')
 checks.push({
   label: 'community PlaceInventoryMap opens the community listings path',
   ok:
-    /viewAllHref=\{homesForSalePath\(cityName, community.subdivision\)\}/.test(community) &&
-    /<PlaceInventoryMap/.test(community),
+    /const listingsHref = homesForSalePath\(cityName, community\.subdivision\)/.test(community) &&
+    /listingsHref=\{listingsHref\}/.test(community) &&
+    /<PlaceInventoryMap/.test(communityView) &&
+    /viewAllHref=\{listingsHref\}/.test(communityView) &&
+    /browseHref=\{props\.listingsHref\}/.test(featuredView),
 })
 
 const map = src('components/site/kb/KbListingMapImpl.tsx')

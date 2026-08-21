@@ -327,12 +327,16 @@ describe('design directive contracts', () => {
   // ── Phase 9 wave 2: community page (golf/resort/master-planned) ──────────────
   it('D95 — community page carries the PAGE CONTRACT', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
+    const featured = readSrc('components/site/comm-d/CommunityFeaturedView.tsx')
+    const kb = readSrc('components/site/community/CommunityKbView.tsx')
     expect(src).toMatch(/className="kb-root"/)
-    expect(src).toMatch(/<CommunityPageTracker/)
+    expect(src).toMatch(/<KbFooter\b/)
     expect(src).toMatch(/<KbSectionTracker/)
     expect(src).toMatch(/<MetadataBlock/)
-    expect(src).toMatch(/<KbResortOverview/)
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
+    expect(featured).toMatch(/<CommunityPageTracker/)
+    expect(kb).toMatch(/<CommunityPageTracker/)
+    expect(kb).toMatch(/<KbResortOverview/)
   })
 
   it('D96 — community resort count + listings are ALIAS-AWARE (Widgi shows ~48, not 0) (§0)', () => {
@@ -499,11 +503,15 @@ describe('design directive contracts', () => {
 
   it('D114 — community Homes and Market doors keep the place filter', () => {
     const page = readSrc('app/communities/[slug]/page.tsx')
+    const featured = readSrc('components/site/comm-d/CommunityFeaturedView.tsx')
+    const kb = readSrc('components/site/community/CommunityKbView.tsx')
     // Counted-set door is this page's list (#homes). The literal-name browse
     // undercounts alias-aware resorts, so "See every" must not leave the set.
-    expect(page).toMatch(/viewAllHref="#homes"/)
-    expect(page).toMatch(/href: '#homes'/)
+    expect(page).toMatch(/homesHref="#homes"/)
+    expect(kb).toMatch(/viewAllHref="#homes"/)
+    expect(kb).toMatch(/href: '#homes'/)
     expect(page).toMatch(/homesForSalePath\(cityName, community\.subdivision\)/)
+    expect(featured).toMatch(/listingsHref/)
   })
 
   it('D103 — homepage opens on home-d objects: hero, towns map, golf list, luxury rail, journal, parks', () => {
@@ -553,8 +561,11 @@ describe('design directive contracts', () => {
 
   it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
+    const kb = readSrc('components/site/community/CommunityKbView.tsx')
+    const featured = readSrc('components/site/comm-d/CommunityFeaturedView.tsx')
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
-    expect(src).toMatch(/<KbResortOverview/)
+    expect(kb).toMatch(/<KbResortOverview/)
+    expect(featured).toMatch(/groundTiles/)
     const overview = readSrc('components/site/kb/KbResortOverview.tsx')
     expect(overview).toMatch(/amenities|At a glance|Membership|Builders/)
   })
