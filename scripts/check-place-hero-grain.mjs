@@ -39,7 +39,9 @@ const pages = [
   },
   {
     path: 'app/cities/[slug]/page.tsx',
-    label: 'city page uses placeHeroLead',
+    label: 'city page uses cityHeroLead (city grain)',
+    helper: 'cityHeroLead',
+    helperFrom: './_v3/city-d-data',
   },
   {
     path: 'app/subdivisions/[slug]/page.tsx',
@@ -53,7 +55,11 @@ const pages = [
 
 for (const page of pages) {
   const text = src(page.path)
-  const importsHelper = /from ['"]@\/lib\/kb\/place-hero-lead['"]/.test(text) && /placeHeroLead\(/.test(text)
+  const helperName = page.helper ?? 'placeHeroLead'
+  const helperFrom = page.helperFrom ?? '@/lib/kb/place-hero-lead'
+  const fromRe = new RegExp(`from ['"]${helperFrom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`)
+  const callRe = new RegExp(`${helperName}\\(`)
+  const importsHelper = fromRe.test(text) && callRe.test(text)
   const forbidden = page.forbid ? page.forbid.test(text) : false
   checks.push({
     label: page.label,

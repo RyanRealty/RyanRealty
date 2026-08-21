@@ -105,9 +105,10 @@ describe('place list wiring', () => {
     expect(src).toContain("from '@/lib/explore/place-list-showing'")
   })
 
-  it('keeps the city page on an explicit preview cap', () => {
+  it('city-d restyle does not mount the dual-pane listing preview', () => {
     const src = readFileSync('app/cities/[slug]/page.tsx', 'utf8')
-    expect(src).toContain('CITY_PLACE_LIST_CAP')
+    expect(src).not.toContain('PlaceMapListSplit')
+    expect(src).not.toContain('CITY_PLACE_LIST_CAP')
   })
 
   it('sends the community counted-set door to the on-page list', () => {

@@ -41,10 +41,7 @@ const surfaces = [
     path: 'app/communities/[slug]/page.tsx',
     label: 'community page gates KbSell median through publishSellMedian',
   },
-  {
-    path: 'app/cities/[slug]/page.tsx',
-    label: 'city page gates KbSell median through publishSellMedian',
-  },
+
   {
     path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
     label: 'neighborhood page gates KbSell median through publishSellMedian',
@@ -102,7 +99,6 @@ checks.push({
 
 for (const surface of [
   { path: 'app/communities/[slug]/page.tsx', label: 'community charts pass toPublicCoreChartSeries' },
-  { path: 'app/cities/[slug]/page.tsx', label: 'city charts pass toPublicCoreChartSeries' },
   { path: 'components/site/listing-detail/NeighborhoodMarketContext.tsx', label: 'listing market charts pass toPublicCoreChartSeries' },
 ]) {
   const text = src(surface.path)
@@ -113,6 +109,20 @@ for (const surface of [
       /toPublicCoreChartSeries\(/.test(text),
   })
 }
+
+checks.push({
+  label: 'city-d does not mount KbSell',
+  ok: !/<KbSell/.test(src('app/cities/[slug]/page.tsx')),
+})
+
+const cityCharts = src('app/cities/[slug]/_v3/city-market-charts.tsx')
+checks.push({
+  label: 'city Chart Room Time/Relate/Rank live on the city template',
+  ok:
+    /buildYearCard\(/.test(cityCharts) &&
+    /buildRelateCard\(/.test(cityCharts) &&
+    /buildMosCard\(/.test(cityCharts),
+})
 
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {

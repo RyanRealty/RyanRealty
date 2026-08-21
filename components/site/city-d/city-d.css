@@ -1,0 +1,572 @@
+/* City template restyle. Scoped under .city-d. Tokens inherit from .kb-root. */
+
+.city-d {
+  --city-d-measure: 70rem;
+  --city-d-gutter: 1rem;
+  --city-d-hair: var(--navy-12);
+  padding-bottom: 5.75rem;
+  background: var(--cream);
+  color: var(--navy);
+}
+
+@media (min-width: 48rem) {
+  .city-d {
+    --city-d-gutter: 1.5rem;
+  }
+}
+
+.city-d .city-d-wrap {
+  width: 100%;
+  max-width: var(--city-d-measure);
+  margin: 0 auto;
+  padding: 0 var(--city-d-gutter);
+}
+
+.city-d-display {
+  font-family: var(--font-amboqia-safe), serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.02;
+  text-transform: none;
+}
+
+.city-d-eyebrow {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--navy-70);
+}
+
+.city-d :where(a, button, img, .city-d-btn, .city-d-nearby-card, .city-d-chart, .city-d-kpi, .city-d-walk) {
+  border-radius: 0;
+}
+
+@layer base {
+  .city-d a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+/* Hero */
+
+.city-d-hero {
+  position: relative;
+  min-height: min(78svh, 42rem);
+  display: flex;
+  align-items: flex-end;
+  overflow: clip;
+  color: var(--cream);
+}
+
+.city-d-hero-media,
+.city-d-hero-media video,
+.city-d-hero-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.city-d-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(16, 39, 66, 0.28) 0%, transparent 34%, rgba(16, 39, 66, 0.72) 100%);
+}
+
+.city-d-hero-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: var(--city-d-measure);
+  margin: 0 auto;
+  padding: 5.5rem var(--city-d-gutter) 3.25rem;
+}
+
+.city-d-hero h1 {
+  margin: 0;
+  color: var(--cream);
+  font-size: clamp(2.35rem, 6vw, 4.4rem);
+  text-shadow: 0 2px 26px rgba(16, 39, 66, 0.45);
+}
+
+.city-d-hero h1 span {
+  display: block;
+}
+
+.city-d-hero-homes {
+  font-size: 0.42em;
+  letter-spacing: 0;
+  margin-top: 0.15em;
+}
+
+.city-d-hero-lead {
+  max-width: 38ch;
+  margin: 1rem 0 0;
+  color: var(--cream);
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-shadow: 0 1px 12px rgba(16, 39, 66, 0.5);
+}
+
+.city-d-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  margin-top: 1.15rem;
+  padding: 0.65rem 1.15rem;
+  background: var(--cream);
+  color: var(--navy);
+  border: 1px solid var(--cream);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.city-d-btn:hover {
+  background: var(--background);
+}
+
+.city-d-hero-caption {
+  margin: 0.75rem 0 0;
+  color: var(--cream-muted);
+  font-size: 0.75rem;
+}
+
+/* Sections */
+
+.city-d-section {
+  padding: 3.25rem 0;
+}
+
+@media (min-width: 48rem) {
+  .city-d-section {
+    padding: 4.25rem 0;
+  }
+}
+
+.city-d-section h2 {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.85rem, 3.4vw, 2.75rem);
+  color: var(--navy);
+}
+
+.city-d-prose {
+  max-width: 62ch;
+  margin: 1rem 0 0;
+  color: var(--navy);
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+
+.city-d-prose p + p {
+  margin-top: 0.9rem;
+}
+
+/* Nearby: two named photos, not a tile grid */
+
+.city-d-nearby-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .city-d-nearby-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.city-d-nearby-card {
+  position: relative;
+  min-height: 16rem;
+  display: block;
+  overflow: clip;
+  color: var(--cream);
+}
+
+.city-d-nearby-card img {
+  width: 100%;
+  height: 100%;
+  min-height: 16rem;
+  object-fit: cover;
+}
+
+@media (min-width: 48rem) {
+  .city-d-nearby-card,
+  .city-d-nearby-card img {
+    min-height: 22rem;
+  }
+}
+
+.city-d-nearby-scrim {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 46%;
+  background: linear-gradient(180deg, transparent, rgba(16, 39, 66, 0.78));
+  pointer-events: none;
+}
+
+.city-d-nearby-meta {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1;
+}
+
+.city-d-nearby-name {
+  display: block;
+  font-size: clamp(1.6rem, 3vw, 2.35rem);
+  color: var(--cream);
+}
+
+.city-d-nearby-town {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--cream);
+  font-size: 0.8125rem;
+}
+
+/* Market */
+
+.city-d-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1.5rem 0 1.75rem;
+}
+
+@media (min-width: 48rem) {
+  .city-d-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.city-d-kpi {
+  padding: 0.9rem 1rem;
+  background: var(--background);
+  border: 1px solid var(--city-d-hair);
+}
+
+.city-d-kpi-value {
+  display: block;
+  font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  color: var(--navy);
+}
+
+.city-d-kpi-label {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--navy-70);
+}
+
+.city-d-charts {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.city-d-chart {
+  padding: 1.15rem 1rem 0.85rem;
+  background: var(--background);
+  border: 1px solid var(--city-d-hair);
+}
+
+.city-d-chart h3 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  color: var(--navy);
+}
+
+.city-d-chart .v3,
+.city-d-chart .v3 * {
+  border-radius: 0;
+}
+
+/* Schools */
+
+.city-d-schools {
+  margin: 1.25rem 0 0;
+  border-top: 1px solid var(--city-d-hair);
+}
+
+.city-d-school {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--city-d-hair);
+  font-size: 0.95rem;
+}
+
+.city-d-school-name {
+  font-weight: 600;
+}
+
+.city-d-school-grades,
+.city-d-school-district {
+  color: var(--navy-70);
+  font-size: 0.8125rem;
+}
+
+.city-d-school-district {
+  text-align: right;
+}
+
+@media (max-width: 47.99rem) {
+  .city-d-school {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .city-d-school-district {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+
+.city-d-schools-note {
+  margin: 1rem 0 0;
+  color: var(--navy-70);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Reviews */
+
+.city-d-review {
+  margin: 1.25rem 0 0;
+  max-width: 46ch;
+}
+
+.city-d-review blockquote {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.city-d-review footer {
+  margin-top: 0.85rem;
+  color: var(--navy-70);
+  font-size: 0.8125rem;
+}
+
+.city-d-stars {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+}
+
+/* Walk closer */
+
+.city-d-walk {
+  background: var(--navy);
+  color: var(--cream);
+  padding: 2.75rem 0;
+}
+
+.city-d-walk-row {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 48rem) {
+  .city-d-walk-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+.city-d-walk h2 {
+  margin: 0;
+  color: var(--cream);
+  font-size: clamp(1.85rem, 3.6vw, 2.75rem);
+}
+
+.city-d-walk p {
+  margin: 0.45rem 0 0;
+  color: var(--cream-muted);
+  font-size: 0.95rem;
+}
+
+.city-d-walk-phone {
+  display: block;
+  margin: 0 0 0.75rem;
+  color: var(--cream);
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.city-d-walk-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.city-d-walk-actions a {
+  min-height: 2.75rem;
+  min-width: 5.5rem;
+  padding: 0.55rem 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: 1px solid var(--cream);
+}
+
+.city-d-walk-call {
+  background: var(--cream);
+  color: var(--navy);
+}
+
+.city-d-walk-text {
+  background: transparent;
+  color: var(--cream);
+}
+
+/* Footer */
+
+.city-d-footer {
+  background: var(--navy);
+  color: var(--cream);
+  padding: 3rem 0 2rem;
+}
+
+.city-d-footer-grid {
+  display: grid;
+  gap: 2rem;
+}
+
+@media (min-width: 56.25rem) {
+  .city-d-footer-grid {
+    grid-template-columns: minmax(12rem, 18rem) repeat(3, minmax(0, 1fr));
+  }
+}
+
+.city-d-footer-logo {
+  display: block;
+  width: auto;
+  height: 1.75rem;
+}
+
+.city-d-footer-phone {
+  display: inline-block;
+  margin-top: 1rem;
+  color: var(--cream);
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.city-d-footer h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+}
+
+.city-d-footer nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+@layer base {
+  .city-d-footer a {
+    color: var(--cream);
+    font-size: 0.875rem;
+  }
+}
+
+.city-d-footer-places {
+  margin-top: 2rem;
+}
+
+.city-d-footer-places-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.15rem;
+}
+
+.city-d-footer-legal {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--cream-12);
+  color: var(--cream-muted);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.city-d-footer-legal p {
+  margin: 0 0 0.5rem;
+}
+
+.city-d-footer-legal a {
+  margin-right: 0.85rem;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+/* Dock */
+
+.city-d-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem 1rem;
+  flex-wrap: wrap;
+  min-height: 3.25rem;
+  padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  background: var(--navy);
+  color: var(--cream);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  .city-d-dock a {
+    color: var(--cream);
+    font-weight: 600;
+  }
+}
+
+.city-d-dock-rating {
+  font-family: var(--font-amboqia-safe), serif;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+}
+
+.city-d-dock-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.city-d-dock-actions a {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--cream-40);
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-d-hero-media video {
+    display: none;
+  }
+}

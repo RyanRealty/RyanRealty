@@ -7,8 +7,10 @@ import {
   buildCutsCard,
   buildDtpCard,
   buildMosCard,
+  buildRelateCard,
   buildStoCard,
   buildYearCard,
+  relatePeerSlug,
   type CityRankInput,
 } from './city-market-charts-data'
 
@@ -214,5 +216,50 @@ describe('buildYearCard', () => {
 
   it('returns null with fewer than two complete years', () => {
     expect(buildYearCard(YEARS.slice(1), { subjectName: 'Bend', currentYear: 2026, factsAsOf: null })).toBeNull()
+  })
+})
+
+describe('buildRelateCard', () => {
+  const YEARS: CityYearPricingRow[] = [
+    { citySlug: 'redmond', city: 'Redmond', year: 2021, closings: 40, medianClose: 460000, medianPpsf: 250, medianDaysToOffer: 5, medianSaleToOriginal: 1, newConstructionCount: 2, newConstructionShare: 0.05 },
+    { citySlug: 'redmond', city: 'Redmond', year: 2022, closings: 40, medianClose: 531000, medianPpsf: 260, medianDaysToOffer: 9, medianSaleToOriginal: 1, newConstructionCount: 2, newConstructionShare: 0.05 },
+    { citySlug: 'redmond', city: 'Redmond', year: 2026, closings: 40, medianClose: 528000, medianPpsf: 270, medianDaysToOffer: 20, medianSaleToOriginal: 0.98, newConstructionCount: 2, newConstructionShare: 0.05 },
+    { citySlug: 'bend', city: 'Bend', year: 2021, closings: 80, medianClose: 680500, medianPpsf: 350, medianDaysToOffer: 5, medianSaleToOriginal: 1, newConstructionCount: 4, newConstructionShare: 0.05 },
+    { citySlug: 'bend', city: 'Bend', year: 2022, closings: 80, medianClose: 765000, medianPpsf: 360, medianDaysToOffer: 7, medianSaleToOriginal: 1, newConstructionCount: 4, newConstructionShare: 0.05 },
+  ]
+
+  it('overlays this city and Bend on shared complete years only', () => {
+    const card = buildRelateCard(YEARS, {
+      subjectSlug: 'redmond',
+      subjectName: 'Redmond',
+      peerSlug: 'bend',
+      currentYear: 2026,
+      factsAsOf: null,
+    })!
+    expect(card.key).toBe('relate')
+    expect(card.title).toBe('Redmond beside Bend')
+    expect(card.series).toHaveLength(2)
+    expect(card.series![0]!.points.map((p) => p.tick)).toEqual(['2021', '2022'])
+    expect(String(card.series![1]!.name)).toContain('Bend')
+    expect(card.source).toContain('relate overlay')
+    expect(card.source).toContain('not a fitted line')
+  })
+
+  it('returns null when the peer has no overlapping complete years', () => {
+    expect(
+      buildRelateCard(YEARS.filter((r) => r.citySlug === 'redmond'), {
+        subjectSlug: 'redmond',
+        subjectName: 'Redmond',
+        peerSlug: 'bend',
+        currentYear: 2026,
+        factsAsOf: null,
+      }),
+    ).toBeNull()
+  })
+
+  it('uses Redmond as the Bend page peer', () => {
+    expect(relatePeerSlug('bend')).toBe('redmond')
+    expect(relatePeerSlug('redmond')).toBe('bend')
+    expect(relatePeerSlug('sisters')).toBe('bend')
   })
 })
