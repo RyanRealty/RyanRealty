@@ -58,6 +58,9 @@
   display: flex;
   align-items: flex-end;
   overflow: clip;
+  /* Solid navy under the photo so cream type still contrasts when the
+     image is ignored (pa11y /cities/bend: cream-on-cream 1:1). */
+  background-color: var(--navy);
   color: var(--cream);
 }
 
@@ -87,11 +90,18 @@
   max-width: var(--city-d-measure);
   margin: 0 auto;
   padding: 5.5rem var(--city-d-gutter) 3.25rem;
+  color: var(--cream);
+}
+
+.city-d-hero h1,
+.city-d-hero h1 span,
+.city-d-hero-lead,
+.city-d-hero-caption {
+  color: var(--cream);
 }
 
 .city-d-hero h1 {
   margin: 0;
-  color: var(--cream);
   font-size: clamp(2.35rem, 6vw, 4.4rem);
   text-shadow: 0 2px 26px rgba(16, 39, 66, 0.45);
 }
@@ -109,7 +119,6 @@
 .city-d-hero-lead {
   max-width: 38ch;
   margin: 1rem 0 0;
-  color: var(--cream);
   font-size: 1.05rem;
   font-weight: 500;
   line-height: 1.4;
@@ -189,6 +198,7 @@
   min-height: 16rem;
   display: block;
   overflow: clip;
+  background-color: var(--navy);
   color: var(--cream);
 }
 
