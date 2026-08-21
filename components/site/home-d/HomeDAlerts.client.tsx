@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
-import { buildGuestWatchFromPlace, rememberGuestWatch } from '@/lib/alerts/guest-watch-residual'
+import {
+  buildGuestWatchFromPlace,
+  rememberGuestWatch, // hydration-safe: event/effect storage only
+} from '@/lib/alerts/guest-watch-residual'
 
 export function HomeDAlerts() {
   const [email, setEmail] = useState('')
@@ -24,7 +27,7 @@ export function HomeDAlerts() {
         company,
       })
       if (res.ok) {
-        rememberGuestWatch(
+        rememberGuestWatch( // hydration-safe: event/effect storage only
           buildGuestWatchFromPlace({
             communityName: 'Central Oregon',
             city: '',
