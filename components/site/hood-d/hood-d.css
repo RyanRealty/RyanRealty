@@ -111,6 +111,10 @@
   display: flex;
   align-items: flex-end;
   overflow: clip;
+  /* Navy under the media: the district photo covers it once painted, so this
+     is the loading frame and the computable background for the cream hero text
+     (WCAG contrast walks ancestors and cannot read a sibling scrim). */
+  background: var(--navy);
   color: var(--cream);
 }
 
@@ -153,8 +157,10 @@
   text-shadow: 0 1px 10px rgba(16, 39, 66, 0.45);
 }
 
-.hood-d-crumb a {
-  color: var(--cream);
+@layer base {
+  .hood-d-crumb a {
+    color: var(--cream);
+  }
 }
 
 .hood-d-crumb span[aria-hidden] {
@@ -329,12 +335,14 @@
   margin-top: 1.25rem;
 }
 
-.hood-d-homes-actions a {
-  color: var(--navy);
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+@layer base {
+  .hood-d-homes-actions a {
+    color: var(--navy);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
 
 /* Map: list + polygon */
@@ -441,15 +449,17 @@
   list-style: none;
 }
 
-.hood-d-chips a {
-  display: inline-flex;
-  min-height: 2.25rem;
-  align-items: center;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--hood-d-hair);
-  color: var(--navy);
-  font-size: 0.8125rem;
-  font-weight: 600;
+@layer base {
+  .hood-d-chips a {
+    display: inline-flex;
+    min-height: 2.25rem;
+    align-items: center;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--hood-d-hair);
+    color: var(--navy);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
 }
 
 .hood-d-chips a:hover {
@@ -515,15 +525,17 @@
   list-style: none;
 }
 
-.hood-d-list li,
-.hood-d-list a {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.05rem 0;
-  border-bottom: 1px solid var(--hood-d-hair);
-  font-weight: 600;
-  color: var(--navy);
+@layer base {
+  .hood-d-list li,
+  .hood-d-list a {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.05rem 0;
+    border-bottom: 1px solid var(--hood-d-hair);
+    font-weight: 600;
+    color: var(--navy);
+  }
 }
 
 .hood-d-list-side {
@@ -799,12 +811,14 @@
   gap: 0.4rem;
 }
 
-.hood-d-ask-actions a {
-  min-height: 2.5rem;
-  padding: 0.45rem 0.95rem;
-  border: 1px solid var(--cream);
-  color: var(--cream);
-  font-weight: 600;
+@layer base {
+  .hood-d-ask-actions a {
+    min-height: 2.5rem;
+    padding: 0.45rem 0.95rem;
+    border: 1px solid var(--cream);
+    color: var(--cream);
+    font-weight: 600;
+  }
 }
 
 /* Alerts */

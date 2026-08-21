@@ -48,8 +48,10 @@ const surfaces = [
     label: 'city about-facts gate days through publishDaysLabel',
   },
   {
-    path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    label: 'neighborhood about-facts gate days through publishDaysLabel',
+    // hood-d moved the neighborhood day-figure assembly out of page.tsx into
+    // the _v3 model, following the city/neighborhood *-sections.ts pattern.
+    path: 'app/cities/[slug]/[neighborhoodSlug]/_v3/hood-d-model.ts',
+    label: 'neighborhood compare facts gate days through publishDaysLabel',
   },
   {
     path: 'app/cities/[slug]/_v3/city-sections.ts',
