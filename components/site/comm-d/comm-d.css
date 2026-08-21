@@ -82,6 +82,10 @@
   display: flex;
   align-items: flex-end;
   overflow: clip;
+  /* Navy under the media: the course photo covers it once painted, so this is
+     the loading frame and the computable background for the cream hero text
+     (WCAG contrast walks ancestors and cannot read a sibling scrim). */
+  background: var(--navy);
   color: var(--cream);
 }
 
