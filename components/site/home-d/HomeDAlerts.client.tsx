@@ -48,7 +48,7 @@ export function HomeDAlerts() {
         <h2 className="home-d-display">New listings by email</h2>
         <p>When a single-family home lists in Central Oregon, you hear first.</p>
         {state === 'done' ? (
-          <p className="home-d-alerts-done">You are on the list.</p>
+          <p className="home-d-alerts-done">You are on the list. Pause from any alert email.</p>
         ) : (
           <form className="home-d-alerts-form" onSubmit={onSubmit}>
             <Input
@@ -74,6 +74,7 @@ export function HomeDAlerts() {
             <Button type="submit" disabled={pending}>
               {pending ? 'Sending' : 'Email me'}
             </Button>
+            <p>One email per new listing. Unsubscribe any time.</p>
           </form>
         )}
         {state === 'error' ? <p className="home-d-alerts-done">Try that email again.</p> : null}
