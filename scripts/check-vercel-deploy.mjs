@@ -261,6 +261,72 @@ function formatLogTail(events) {
   return lines.slice(-40)
 }
 
+// ── build telemetry — the tripwire for the 2026-08-21 build-cost class ───────
+//
+// Reads the READY deployment's build log and extracts the three numbers that
+// define build health: compile time, "Generating static pages" duration, and
+// withTimeoutFallback rail-timeout count. Founding baseline after the G70 +
+// skippableRail work: compile ~53s, SSG ~76s (499 pages), 0 timeouts — down
+// from 11.2min SSG and 352 timeouts. Thresholds are set at "the class came
+// back", not at noise level: SSG > 300s or > 50 rail timeouts returns true
+// (deploy:verify exits 1) so the regression is caught the day it ships, from
+// the REAL build log — no static gate can see this. BUILD_TELEMETRY_ALLOW_SLOW=1
+// acknowledges a known-slow deploy. Fails open: telemetry unavailable (no
+// token, API error) never blocks a READY verdict.
+const SSG_ALERT_SECONDS = 300
+const RAIL_TIMEOUT_ALERT = 50
+
+function durationToSeconds(raw) {
+  const m = /([\d.]+)\s*(min|m|s)/.exec(raw)
+  if (!m) return null
+  const n = Number(m[1])
+  return m[2] === 's' ? n : n * 60
+}
+
+async function reportBuildTelemetry(apiToken, teamId, deployId) {
+  try {
+    const qs = teamId ? `?builds=1&limit=3000&teamId=${teamId}` : '?builds=1&limit=3000'
+    const res = await fetch(`https://api.vercel.com/v3/deployments/${deployId}/events${qs}`, {
+      headers: { authorization: `Bearer ${apiToken}` },
+    })
+    if (!res.ok) return false
+    const events = await res.json()
+    if (!Array.isArray(events)) return false
+    const texts = events.map((e) => e?.payload?.text ?? e?.text ?? '').filter(Boolean)
+
+    let compileSecs = null
+    let ssgSecs = null
+    let ssgPages = null
+    let timeouts = 0
+    for (const t of texts) {
+      const compiled = /Compiled successfully in ([\d.]+\s*(?:min|m|s))/.exec(t)
+      if (compiled) compileSecs = durationToSeconds(compiled[1])
+      const ssg = /✓ Generating static pages[^(]*\((\d+)\/\d+\) in ([\d.]+\s*(?:min|m|s))/.exec(t)
+      if (ssg) {
+        ssgPages = Number(ssg[1])
+        ssgSecs = durationToSeconds(ssg[2])
+      }
+      if (t.includes('timed out after')) timeouts += 1
+    }
+    if (ssgSecs == null && compileSecs == null) return false
+
+    out(
+      `build telemetry: compile ${compileSecs ?? '?'}s · SSG ${ssgSecs ?? '?'}s` +
+        `${ssgPages ? ` (${ssgPages} pages)` : ''} · ${timeouts} rail timeout(s)`,
+    )
+    const regressed = (ssgSecs != null && ssgSecs > SSG_ALERT_SECONDS) || timeouts > RAIL_TIMEOUT_ALERT
+    if (regressed && process.env.BUILD_TELEMETRY_ALLOW_SLOW !== '1') {
+      out('✗ BUILD REGRESSION — the deploy is READY but the build-cost class returned:')
+      out(`  SSG ${ssgSecs}s (alert > ${SSG_ALERT_SECONDS}s) · ${timeouts} rail timeouts (alert > ${RAIL_TIMEOUT_ALERT}).`)
+      out('  See docs/MECHANICAL_GATES.md G70. BUILD_TELEMETRY_ALLOW_SLOW=1 acknowledges a known-slow deploy.')
+      return true
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
 async function main() {
   const fileEnv = loadEnvLocal()
   const apiToken = (
@@ -333,7 +399,10 @@ async function main() {
         const url = deployment.url ? `https://${deployment.url}` : '(no url)'
         out(`READY in ${(Date.now() - startedAt) / 1000}s — ${url}`)
         out('check production URL: https://ryanrealty.vercel.app')
-        process.exit(0)
+        const regressed = usingCliFallback
+          ? false
+          : await reportBuildTelemetry(apiToken, teamId, deployId)
+        process.exit(regressed ? 1 : 0)
       }
       if (state === 'CANCELED') {
         if (skippableTip) {

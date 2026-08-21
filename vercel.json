@@ -94,6 +94,10 @@
       "schedule": "30 12 * * *"
     },
     {
+      "path": "/api/cron/loop-sentinel",
+      "schedule": "*/10 * * * *"
+    },
+    {
       "path": "/api/cron/market-history-snapshot",
       "schedule": "0 13 * * 1"
     },
@@ -170,10 +174,6 @@
       "schedule": "15 9 * * 0"
     },
     {
-      "path": "/api/cron/snapshot-active-inventory",
-      "schedule": "30 8 * * *"
-    },
-    {
       "path": "/api/cron/refresh-market-stats",
       "schedule": "0 7 * * *"
     },
@@ -202,8 +202,8 @@
       "schedule": "30 8 * * *"
     },
     {
-      "path": "/api/cron/skyslope-mirror-refresh",
-      "schedule": "20 6 * * *"
+      "path": "/api/cron/review-ask-on-close",
+      "schedule": "0 16 * * *"
     },
     {
       "path": "/api/cron/saved-search-alerts",
@@ -212,6 +212,14 @@
     {
       "path": "/api/cron/seller-lead-attribution",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/skyslope-mirror-refresh",
+      "schedule": "20 6 * * *"
+    },
+    {
+      "path": "/api/cron/snapshot-active-inventory",
+      "schedule": "30 8 * * *"
     },
     {
       "path": "/api/cron/snapshot-channels",
@@ -238,6 +246,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/warm-geo-pages",
+      "schedule": "*/10 * * * *"
+    },
+    {
       "path": "/api/cron/warm-sitemaps",
       "schedule": "0 * * * *"
     },
@@ -248,14 +260,6 @@
     {
       "path": "/api/cron/westside-cohort-digest",
       "schedule": "0 15 * * 1"
-    },
-    {
-      "path": "/api/cron/review-ask-on-close",
-      "schedule": "0 16 * * *"
-    },
-    {
-      "path": "/api/cron/loop-sentinel",
-      "schedule": "*/10 * * * *"
     }
   ]
 }
