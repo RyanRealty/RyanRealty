@@ -46,7 +46,7 @@ Listing with a video: full-bleed playing hero, price/facts overlay, Call/Tour/Sa
 
 Public restyles: Grok Build on the bot computer, separate worktrees off main, one merge at a time. Not Cursor cloud unless Matt says so. Ping him only when the page is live on ryan-realty.com.
 
-THE LOOP is disarmed. Do not re-arm. Do not send live client mail, book calls, or spend money without a human check.
+THE LOOP is armed (2026-08-21). It may push and deploy. It must not send live client mail, book calls, or spend money. Disarm word is "disarm the loop".
 
 Matt does not tap mechanical steps. Agents have blanket approval to do the work.
 

@@ -32,7 +32,7 @@ const BOOT_GUARD_MIN = 15
 
 const LOOP_PROMPT = `Run the loop for ONE SHIP CLASS. You are a loop-sentinel iteration for Ryan Realty (THE LOOP — docs/DEVELOPMENT_PROCESS.md is canon). A ship class is the set the brief prints under SHIP CLASS: same-category fleet findings (same domain + surface family) that share one rebuild. Planned G-rows and Matt ADD/CHANGE stay a class of one.
 
-Boot: read docs/plans/CROSS_AGENT_HANDOFF.md (Current block), then run \`npx tsx scripts/loop-brief.ts\` and follow it exactly. Claim EVERY node in the served ship class (claimShipClass, or claimWorkNode on each id). Load the required reads once. For each node: reproduce-or-reject, fix the class on every blast-radius plane, accept locally against that node's own accept test.
+Boot: read docs/GROK_BOT_BRAIN.md (map only), then docs/plans/CROSS_AGENT_HANDOFF.md (Current block), then run \`npx tsx scripts/loop-brief.ts\` and follow it exactly. If the served ship class is a public restyle of a live template (home/city/neighborhood/community/listing look), do not implement it here — block with reason "public restyle is Grok Build, not Cursor" and finish cleanly. Claim EVERY node in the served ship class (claimShipClass, or claimWorkNode on each id). Load the required reads once. For each node: reproduce-or-reject, fix the class on every blast-radius plane, accept locally against that node's own accept test.
 
 DO NOT run \`npm run push\` or \`npm run deploy:verify\` after an individual node. Commit locally if you need restore points. After every node in the served class is locally accepted or blocked with a concrete reason: ONE \`npm run push\`, ONE \`npm run deploy:verify\` to READY, hosted migrations in the same delivery. Then complete every shipped node with that READY SHA as evidence and update the handoff Current block. If the brief caps the class, do the printed set only — leftovers stay open for the next iteration of the same class. R-221: do not poll GitHub Actions. One ci:gates per ship.
 
@@ -76,12 +76,10 @@ async function fetchNewestRunStatus(agentId: string, apiKey: string): Promise<Ru
 }
 
 /**
- * Default OFF (Matt 2026-08-19: "Disarm the loop").
- * Leftover Vercel LOOP_SENTINEL=on must not re-arm — this agent could not
- * write that env (no VERCEL_TOKEN; Vercel MCP unauthenticated).
- * Do not flip this unless Matt says "arm the loop".
+ * Default ON (Matt 2026-08-21: "wire in the loop again" on current main).
+ * Still honors LOOP_SENTINEL=off. Disarm word is "disarm the loop".
  */
-export const LOOP_SENTINEL_DEFAULT_OFF = true
+export const LOOP_SENTINEL_DEFAULT_OFF = false
 
 export function isLoopSentinelDisarmed(): boolean {
   return LOOP_SENTINEL_DEFAULT_OFF || process.env.LOOP_SENTINEL === 'off'
@@ -95,7 +93,7 @@ export function isLoopSentinelDisarmed(): boolean {
  */
 export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean }): Promise<SentinelDecision> {
   // Kill switch. Matt arms with "arm the loop" and disarms with "disarm the loop".
-  // Disarmed 2026-08-19 — default off so cron hits still no-op.
+  // Armed 2026-08-21 — default on. LOOP_SENTINEL=off still no-ops.
   if (isLoopSentinelDisarmed()) {
     return { action: 'skipped', reason: 'kill switch (LOOP_SENTINEL=off)' }
   }
