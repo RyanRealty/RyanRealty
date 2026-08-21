@@ -19,10 +19,25 @@ import rawRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 // Types
 // ---------------------------------------------------------------------------
 
+export type CommunityKind =
+  | 'planned_community'
+  | 'golf_community'
+  | 'planned_and_golf'
+  | 'public_golf'
+  | 'cdp'
+  | 'resort_village'
+
+export type NestKind = 'census_cdp' | 'bend_district' | 'unincorporated'
+
 export type SubNeighborhood = {
   slug: string
   name: string
   type: string
+  /** TOA / marketing name vs a recorded county plat. */
+  kind?: 'toa_marketing' | 'recorded_plat'
+  /** Recorded plat the marketing name sits on, when known. */
+  recorded_plat?: string
+  source?: string
   hoa_annual_estimate?: number | null
   hoa_sub_quarterly?: number | null
   hoa_master_annual?: number | null
@@ -39,6 +54,9 @@ export type ResortCommunityEntry = {
   city: string
   city_slug: string
   is_resort: boolean
+  /** Community class. Geographic nest is `nest`, not this field. */
+  kind?: CommunityKind
+  display_name?: string
   broad_radius_km: number
   center_lon_lat: [number, number]
   subdivision_aliases: string[]
@@ -50,6 +68,15 @@ export type ResortCommunityEntry = {
   mls_cities?: string[]
   sub_neighborhoods: SubNeighborhood[]
   child_count: number
+  nest?: {
+    kind?: NestKind
+    neighborhood?: string
+    cdp?: string
+    parent_slug?: string
+    levels?: string[]
+    in_city_plats?: string[]
+    note?: string
+  }
   character?: string | null
   description?: string | null
   hoa_annual_estimate?: number | null

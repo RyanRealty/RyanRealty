@@ -60,6 +60,15 @@ describe('resortActiveSfrCounts', () => {
     expect(widgi.length).toBe(resortActiveSfrCounts('bend', tiles).get('widgi-creek'))
   })
 
+  it('does not bucket Redmond Tetherow Crossing under Bend Tetherow', () => {
+    const tiles = [
+      { subdivisionName: 'Tetherow', propertyType: 'A' },
+      { subdivisionName: 'Tetherow Crossing', propertyType: 'A' },
+      { subdivisionName: 'Tetherow Crossing Phase II', propertyType: 'A' },
+    ]
+    expect(resortActiveSfrCounts('bend', tiles).get('tetherow')).toBe(1)
+  })
+
   it('token-boundary match: a foreign subdivision sharing leading chars is NOT bucketed', () => {
     // "Tetherow" is a Tetherow alias; "Tetherowville" shares the prefix but has no
     // word boundary, so it must NOT count toward tetherow. A real phase ("Tetherow

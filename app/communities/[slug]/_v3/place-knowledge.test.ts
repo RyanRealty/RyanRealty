@@ -22,7 +22,7 @@ describe('master-plan belonging Quiet', () => {
         name: 'Tetherow',
       } as ResortCommunityContent,
       registry: {
-        subdivision_aliases: ['Tetherow', 'Sunrise Village', 'Roald West'],
+        subdivision_aliases: ['Tetherow', 'Tetherow Cascades Vista Phase 1', 'North Forty At Tetherow'],
       },
       schoolDistrictName: null,
       schoolDistrictSlug: null,
@@ -43,7 +43,7 @@ describe('master-plan belonging Quiet', () => {
       aboutParagraphs: [],
       content: null,
       registry: {
-        subdivision_aliases: ['Tetherow', 'Sunrise Village', 'Roald West'],
+        subdivision_aliases: ['Tetherow', 'Tetherow Cascades Vista Phase 1', 'North Forty At Tetherow'],
       },
       schoolDistrictName: null,
       schoolDistrictSlug: null,
@@ -53,8 +53,8 @@ describe('master-plan belonging Quiet', () => {
       amenityPosts: {},
     })
     const hrefs = items.flatMap((item) => ('href' in item ? [item.href] : []))
-    expect(hrefs).toContain('/subdivisions/sunrise-village')
-    expect(hrefs).toContain('/subdivisions/roald-west')
+    expect(hrefs).toContain('/subdivisions/tetherow-cascades-vista-phase-1')
+    expect(hrefs).toContain('/subdivisions/north-forty-at-tetherow')
     expect(hrefs).not.toContain('/subdivisions/tetherow')
   })
 })

@@ -4,7 +4,7 @@ import resortRegistry from '@/data/resort-communities.json' assert { type: 'json
 // homes are MLS-tagged under many different SubdivisionName values (e.g. Widgi
 // Creek's homes are tagged "Inn Of The 7th", "7th Mtn Golf Village", "PointsWest",
 // "Elkai Woods", "Milepost 1" — almost nothing is literally "Widgi Creek"). The
-// registry `subdivision_aliases` is the curated spatial truth for each resort, so a
+// registry `subdivision_aliases` is the curated plat/HOA list for each resort, so a
 // literal-name count (geo_snapshot_mv / getCommunitiesForIndex) badly undercounts
 // every resort (Widgi 0 vs true 48, Tetherow 14 vs true 55). This buckets the city's
 // active SFR tiles into resorts by matching each tile's SubdivisionName against the
@@ -25,6 +25,16 @@ interface ResortEntry {
 }
 
 /**
+ * Recorded plats that share a parent-name prefix but are a different place.
+ * "Tetherow" + word-boundary would otherwise swallow Redmond's Tetherow Crossing.
+ */
+const FOREIGN_SUBDIVISION_PREFIXES = ['tetherow crossing'] as const
+
+function isForeignSubdivision(sub: string): boolean {
+  return FOREIGN_SUBDIVISION_PREFIXES.some((prefix) => sub === prefix || sub.startsWith(`${prefix} `))
+}
+
+/**
  * Token-boundary alias match: the subdivision equals the alias OR begins with the
  * alias followed by a space (a phase suffix like "Inn Of The 7th Mountain" or
  * "Tetherow Phase 2"). Stricter than a bare startsWith — a generic alias like
@@ -33,6 +43,7 @@ interface ResortEntry {
  * "Braeburnwood"). Keeps every real match in the current data unchanged. (§0)
  */
 function aliasMatches(sub: string, prefix: string): boolean {
+  if (isForeignSubdivision(sub)) return false
   return sub === prefix || sub.startsWith(prefix + ' ')
 }
 

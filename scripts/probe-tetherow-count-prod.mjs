@@ -11,14 +11,22 @@ const URL = 'https://ryan-realty.com/communities/tetherow'
 const OUT = 'out/tetherow-count-prod'
 const ALIAS_SLUGS = new Set([
   'tetherow',
-  'sunrise-village',
-  'westbrook-meadows',
-  'braeburn',
-  '1st-on-the-hillsites',
-  'lodges-at-bachelor-v',
   'triple',
-  'campbell-road',
-  'roald-west',
+  'triple-knot',
+  'tetherow-phase-1',
+  'tetherow-phase-2',
+  'tetherow-phase-3',
+  'tetherow-phase-4',
+  'tetherow-phase-5',
+  'tetherow-phase-6',
+  'tetherow-phase-7',
+  'tetherow-cascades-vista-phase-1',
+  'tetherow-cascades-vista-phase-2',
+  'north-forty-at-tetherow',
+  'tetherow-rim',
+  'trailhead-at-tetherow',
+  'highlands-ridge',
+  'outrider-overlook',
 ])
 
 function listingSlug(href) {
