@@ -105,18 +105,15 @@ describe('place list wiring', () => {
     expect(src).toContain("from '@/lib/explore/place-list-showing'")
   })
 
-  it('city-d restyle does not mount the dual-pane listing preview', () => {
+  it('keeps the city page on an explicit preview cap', () => {
     const src = readFileSync('app/cities/[slug]/page.tsx', 'utf8')
-    expect(src).not.toContain('PlaceMapListSplit')
-    expect(src).not.toContain('CITY_PLACE_LIST_CAP')
+    expect(src).toContain('CITY_PLACE_LIST_CAP')
   })
 
   it('sends the community counted-set door to the on-page list', () => {
     const src = readFileSync('app/communities/[slug]/page.tsx', 'utf8')
-    const kb = readFileSync('components/site/community/CommunityKbView.tsx', 'utf8')
-    expect(src).toContain('homesHref="#homes"')
-    expect(kb).toContain('viewAllHref="#homes"')
-    expect(kb).toContain("href: '#homes'")
+    expect(src).toContain('viewAllHref="#homes"')
+    expect(src).toContain("href: '#homes'")
   })
 })
 

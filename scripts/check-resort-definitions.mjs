@@ -28,7 +28,6 @@ import { readFileSync } from 'node:fs'
 
 const REGISTRY = 'data/resort-communities.json'
 const CITY_PAGE = 'app/cities/[slug]/page.tsx'
-const CITY_D_DATA = 'app/cities/[slug]/_v3/city-d-data.ts'
 const COMMUNITY_PAGE = 'app/communities/[slug]/page.tsx'
 const HELPER = 'lib/kb/resort-active-counts.ts'
 
@@ -125,11 +124,6 @@ if (registry) {
 let cityPageSrc = ''
 try {
   cityPageSrc = readFileSync(CITY_PAGE, 'utf8')
-  try {
-    cityPageSrc += `\n${readFileSync(CITY_D_DATA, 'utf8')}`
-  } catch (e) {
-    fails.push(`${CITY_D_DATA}: cannot read city-d data (${e.message})`)
-  }
 } catch (e) {
   fails.push(`${CITY_PAGE}: cannot read city page (${e.message})`)
 }

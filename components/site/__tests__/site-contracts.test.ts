@@ -199,17 +199,22 @@ describe('design directive contracts', () => {
     expect(neighborhoods).not.toMatch(/stats\?\.activeCount \?\? 0/)
   })
 
-  it('D83/D85 — city-d nearby uses official resorts, not invented districts', () => {
+  it('D83/D85 — defined neighborhoods section sources designated Bend polygons only', () => {
+    // Route-wide: the polygon read moved to app/cities/[slug]/_v3/city-places.ts
+    // (2026-08-12) to clear the 600-line floor. See readRouteSrc.
     const src = readRouteSrc('app/cities/[slug]')
-    expect(src).toMatch(/nearbyPlacesForCity/)
-    expect(src).toMatch(/cityResorts\(slug\)/)
-    expect(src).not.toMatch(/withinCityItems/)
+    expect(src).toMatch(/bendNeighborhoodPolygons/)
+    // Experience System Geo archetype v3.1 uses editorial index rows (no tile
+    // RelatedAreas) for neighborhoods — bendNeighborhoodItems still drives the section.
+    expect(src).toMatch(/bendNeighborhoodItems/)
   })
 
-  it('D85 — city-d nearby is a named-place object, not a neighborhood tile grid', () => {
+  it('D85 — golf & master-planned communities are a SEPARATE section from neighborhoods', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    expect(src).toMatch(/<CityDNearby/)
-    expect(src).not.toMatch(/<KbExploreTowns/)
+    // distinct item list + its own section (editorial index rows, not RelatedAreas tiles)
+    expect(src).toMatch(/golfCommunityItems/)
+    expect(src).toMatch(/master-planned/)
+    // the old combined "neighborhoods and communities" list must be gone
     expect(src).not.toMatch(/withinCityItems/)
   })
 
@@ -245,64 +250,110 @@ describe('design directive contracts', () => {
     expect(withoutGolf).not.toMatch(/['"`]\/lp\/[^'"`]*\.(jpg|jpeg|png|webp)/)
   })
 
-  it('D80 — city-d does not invent a journal rail; live reviews stay', () => {
+  it('D80 — city page surfaces a blog/guides section from real posts', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    expect(src).not.toMatch(/<KbArticles/)
-    expect(src).toMatch(/getReviews/)
-    expect(src).toMatch(/<CityDReviews/)
+    expect(src).toMatch(/getRecentBlogPosts/)
+    // The RENDERER changed register, the section did not (P9, 2026-08-12). The route
+    // moved onto components/site/v3, whose barrel law forbids importing the KB
+    // register, so the guides section is a V3Ledger of real posts instead of
+    // <KbArticles>. The directive is that the city page surfaces published posts for
+    // that city — fetching them and rendering nothing still fails here, which is the
+    // defect this contract exists to catch.
+    expect(src).toMatch(/buildArticlePosts\(blogPosts\)/)
+    expect(src).toMatch(/<KbArticles/)
+    expect(src).toMatch(/articlePosts/)
   })
 
-  it('D84 — city-d footer lists live city doors, not a /places index', () => {
+  it('D84 — city page has a separate "Explore other cities" section', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    expect(src).toMatch(/footerCityLinks/)
-    expect(src).toMatch(/<CityDFooter/)
-    expect(src).not.toMatch(/href: '\/places'/)
+    expect(src).toMatch(/otherCityItems/)
+    expect(src).toMatch(/Explore other cities/)
   })
 
   it('D87 — multi-word city geo_keys are slugified (La Pine, Powell Butte not dropped)', () => {
-    const data = readSrc('app/cities/[slug]/_v3/city-d-data.ts')
-    expect(data).toMatch(/replace\(\/\\s\+\/g, '-'\)/)
-    expect(data).toMatch(/'la-pine'/)
+    // The "explore other cities" ledger moved into the shared place-section
+    // module (one copy for city + neighborhood + community), so the slugify +
+    // service-area allowlist contract is asserted at its new home. The city page
+    // still normalizes geo_key spaces for its own community-snapshot lookup.
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    expect(src).toMatch(/replace\(\/\\s\+\/g, '-'\)/)
     const shared = readSrc('lib/kb/place-sections.ts')
+    // geo_key spaces normalized before the service-area match + in the href
     expect(shared).toMatch(/replace\(\/\\s\+\/g, '-'\)/)
     expect(shared).toMatch(/'la-pine'/)
     expect(shared).toMatch(/href: `\/cities\/\$\{cs\}`/)
   })
 
-  it('D88 — city-d nearby is at most two official named places with photos', () => {
-    const src = readSrc('app/cities/[slug]/_v3/city-d-data.ts')
-    expect(src).toMatch(/nearbyPlacesForCity/)
-    expect(src).toMatch(/if \(out\.length >= 2\)/)
-    expect(src).toMatch(/cityComms|communities/)
-  })
-
-  it('D89 — city-d nearby photos resolve from the verified community image map', () => {
-    const src = readSrc('app/cities/[slug]/_v3/city-d-data.ts')
-    expect(src).toMatch(/communityImage\(resort\.slug\)/)
-    expect(src).toMatch(/CITY_RESORT_LEDGER_IMG/)
-    expect(src).toMatch(/if \(!img\) continue/)
-  })
-
-  it('D90/D92 — resort active counts stay alias-aware and uncapped on city-d nearby (§0)', () => {
+  it('D88 — communities rail renders ALL the city communities (built from cityComms, not a curated 3)', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    expect(src).toMatch(/resortActiveSfrCounts\(slug, resortTiles\)/)
-    expect(src).toMatch(/fetchAllCityActiveSfr\(cityName\)/)
-    expect(src).toMatch(/cityResorts\(slug\)/)
-    expect(src).toMatch(/CITY_RESORT_LEDGER_IMG/)
+    // rail maps over the full city community set, not CITY_COMMUNITIES[slug] alone.
+    // The ROW TYPE is route-local now (P9, 2026-08-12): KbCommunityItem is a plain
+    // data shape, but importing it puts a components/site/kb module specifier back on
+    // a page the roll just took off that register, which ci:public-ui counts as debt
+    // on this exact page. CityCommunityItem in app/cities/[slug]/_v3/city-sections.ts
+    // carries the same fields. The source of the list — `= cityComms` — is the part
+    // this directive is about and it is unchanged.
+    expect(src).toMatch(/const communityItems: KbCommunityItem\[\] = cityComms/)
+    // marquee/video cards float to the front, then by active count
+    expect(src).toMatch(/\.sort\(\(a, b\) => \(a\.video \? 0 : 1\)/)
   })
 
-  it('D93 — city-d and hood-d retired the activity feed; the shared shaping keeps thumbnails', () => {
-    // The locked city and district restyles (2026-08-20/21) both cut "Latest
-    // market activity": the lock's recently-sold band does that job, and a
-    // "Live · <district>" rail over city-wide rows was untrue at district
-    // grain. Re-mounting the feed on either page reopens that without the
-    // lock, so the cut is the contract.
-    expect(readSrc('app/cities/[slug]/page.tsx')).not.toMatch(/<KbActivity/)
-    expect(readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')).not.toMatch(/<KbActivity/)
-    // The row shaping stays in the shared place-section module for the
-    // surfaces that still mount the feed, and the thumbnail contract holds.
+  it('D89 — neighborhood ledger hover photos are boundary-verified (real home inside the polygon)', () => {
+    // Route-wide for the reason in readRouteSrc. The lookup is asserted by its KEY —
+    // the polygon's own slug — because that is the directive: a district gets the
+    // photo of a real home inside ITS boundary or no photo at all, never a
+    // wrong-place one. The local variable holding the map may be called
+    // neighborhoodPhotos or photos.
+    const src = readRouteSrc('app/cities/[slug]')
+    expect(src).toMatch(/assignNeighborhoodPhotos/)
+    expect(src).toMatch(/(?:neighborhoodPhotos|photos)\.get\(c\.slug\)/)
+    // and no stand-in when the polygon has no in-boundary listing photo
+    expect(src).toMatch(/\.get\(c\.slug\) \?\? ''/)
+  })
+
+  it('D90/D92 — resort active counts are ALIAS-AWARE, UNCAPPED, and shared by rail + golf ledger (§0)', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    // counted from the registry aliases, not the literal community name (which
+    // undercounts every resort — Widgi 0 vs true 48, Tetherow 14 vs true 43)
+    expect(src).toMatch(/resortActiveSfrCounts\(slug, resortTiles\)/)
+    // sourced from a PAGINATED fetch past the 1000-row cap (Bend has ~1044 SFR)
+    expect(src).toMatch(/fetchAllCityActiveSfr\(cityName\)/)
+    // golf ledger uses the alias-aware count + is_resort membership (drops Three Rivers)
+    expect(src).toMatch(/activeCount: resortSfrCounts\.get\(c\.slug\)/)
+    // Route-local row type for the same reason D88 states: KbTownItem is a plain data
+    // shape, but importing it re-adds KB register debt to a page the P9 roll just took
+    // off that register. CityPlaceItem carries the same fields. `= cityResorts(slug)`
+    // — the is_resort registry membership that drops Three Rivers — is unchanged.
+    expect(src).toMatch(/golfCommunityItems: KbTownItem\[\] = cityResorts\(slug\)/)
+    expect(src).toMatch(/resortSfrCounts = resortActiveSfrCounts\(slug, resortTiles\)/)
+    // golf/master-planned hover photos resolve from the curated resort image map
+    expect(src).toMatch(/CITY_RESORT_LEDGER_IMG\[c\.slug\]/)
+  })
+
+  it('D93 — activity section is "Latest market activity" with per-row listing thumbnails', () => {
+    const src = readSrc('app/cities/[slug]/page.tsx')
+    // The heading is the same seven characters shorter of a literal: V3Ledger types
+    // `heading` as the branded V3Text, so `heading="Latest market activity"` is a
+    // compile error on the v3 register and the only spelling that exists is the
+    // v3Text() constructor (P9, 2026-08-12). The section name is unchanged.
+    expect(src).toMatch(/heading="Latest market activity"/)
+    // The row shaping moved into the shared place-section module, so all three
+    // place pages (city / neighborhood / community) inherit the thumbnail.
     const shared = readSrc('lib/kb/place-sections.ts')
     expect(shared).toMatch(/imageUrl: a\.PhotoURL/)
+    // app/communities/[slug]/page.tsx left this list on 2026-08-12 with the P9
+    // migration to components/site/v3. The feed was fetched city-wide there
+    // (cities: [cityName]) while the section was labelled with the COMMUNITY's
+    // name, so "Live · Tetherow" sat over Bend and Petrosa rows — the label was
+    // untrue before the section was cut. The community node now carries a door
+    // to the surface that owns the feed instead of a mislabelled copy of it.
+    // See design_system/ryan-realty/ui_kits/community/parity.json.
+    for (const page of [
+      'app/cities/[slug]/page.tsx',
+      'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+    ]) {
+      expect(readSrc(page)).toMatch(/buildActivityItems\(/)
+    }
     const act = readSrc('components/site/kb/KbActivity.client.tsx')
     expect(act).toMatch(/act-thumb/)
     expect(act).toMatch(/imageUrl\?: string \| null/)
@@ -327,16 +378,12 @@ describe('design directive contracts', () => {
   // ── Phase 9 wave 2: community page (golf/resort/master-planned) ──────────────
   it('D95 — community page carries the PAGE CONTRACT', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
-    const featured = readSrc('components/site/comm-d/CommunityFeaturedView.tsx')
-    const kb = readSrc('components/site/community/CommunityKbView.tsx')
     expect(src).toMatch(/className="kb-root"/)
-    expect(src).toMatch(/<KbFooter\b/)
+    expect(src).toMatch(/<CommunityPageTracker/)
     expect(src).toMatch(/<KbSectionTracker/)
     expect(src).toMatch(/<MetadataBlock/)
+    expect(src).toMatch(/<KbResortOverview/)
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
-    expect(featured).toMatch(/<CommunityPageTracker/)
-    expect(kb).toMatch(/<CommunityPageTracker/)
-    expect(kb).toMatch(/<KbResortOverview/)
   })
 
   it('D96 — community resort count + listings are ALIAS-AWARE (Widgi shows ~48, not 0) (§0)', () => {
@@ -503,15 +550,11 @@ describe('design directive contracts', () => {
 
   it('D114 — community Homes and Market doors keep the place filter', () => {
     const page = readSrc('app/communities/[slug]/page.tsx')
-    const featured = readSrc('components/site/comm-d/CommunityFeaturedView.tsx')
-    const kb = readSrc('components/site/community/CommunityKbView.tsx')
     // Counted-set door is this page's list (#homes). The literal-name browse
     // undercounts alias-aware resorts, so "See every" must not leave the set.
-    expect(page).toMatch(/homesHref="#homes"/)
-    expect(kb).toMatch(/viewAllHref="#homes"/)
-    expect(kb).toMatch(/href: '#homes'/)
+    expect(page).toMatch(/viewAllHref="#homes"/)
+    expect(page).toMatch(/href: '#homes'/)
     expect(page).toMatch(/homesForSalePath\(cityName, community\.subdivision\)/)
-    expect(featured).toMatch(/listingsHref/)
   })
 
   it('D103 — homepage opens on home-d objects: hero, towns map, golf list, luxury rail, journal, parks', () => {
@@ -561,11 +604,8 @@ describe('design directive contracts', () => {
 
   it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
-    const kb = readSrc('components/site/community/CommunityKbView.tsx')
-    const featured = readSrc('components/site/comm-d/CommunityFeaturedView.tsx')
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
-    expect(kb).toMatch(/<KbResortOverview/)
-    expect(featured).toMatch(/groundTiles/)
+    expect(src).toMatch(/<KbResortOverview/)
     const overview = readSrc('components/site/kb/KbResortOverview.tsx')
     expect(overview).toMatch(/amenities|At a glance|Membership|Builders/)
   })

@@ -58,7 +58,7 @@ checks.push({
     /from ['"]@\/lib\/market\/publish-city-inventory['"]/.test(cityPage) &&
     /publishCityInventory\(/.test(cityPage) &&
     /CITY_TILE_FETCH_LIMIT/.test(cityPage) &&
-    /cityHeroLead\(/.test(cityPage),
+    /placeHeroLead\(\{ placeName: cityName, activeCount \}\)/.test(cityPage),
 })
 
 const hero = src('lib/market/publish-place-hero.ts')

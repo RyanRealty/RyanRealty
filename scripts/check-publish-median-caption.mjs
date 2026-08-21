@@ -41,7 +41,14 @@ const surfaces = [
     path: 'app/communities/[slug]/page.tsx',
     label: 'community page gates KbSell median through publishSellMedian',
   },
-
+  {
+    path: 'app/cities/[slug]/page.tsx',
+    label: 'city page gates KbSell median through publishSellMedian',
+  },
+  {
+    path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+    label: 'neighborhood page gates KbSell median through publishSellMedian',
+  },
   {
     path: 'app/zip/[zip]/page.tsx',
     label: 'ZIP page gates KbSell median through publishSellMedian',
@@ -74,19 +81,6 @@ checks.push({
     : true,
 })
 
-// Hood-d replaced KbSell on the neighborhood page with HoodDAsk, which prints
-// no median; the only neighborhood median left is the compare table, captioned
-// by its place-name column headers. Same trap: KbSell returning to the page
-// re-arms the publishSellMedian requirement.
-const hoodPage = src('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
-checks.push({
-  label: 'neighborhood page gates KbSell median through publishSellMedian',
-  ok: /KbSell/.test(hoodPage)
-    ? /from ['"]@\/lib\/market\/publish-median-caption['"]/.test(hoodPage) &&
-      /publishSellMedian\(/.test(hoodPage)
-    : true,
-})
-
 const fact = src('lib/market/publish-fact-value.ts')
 checks.push({
   label: 'publishFactValue withholds em-dash and blank facts',
@@ -116,6 +110,7 @@ checks.push({
 
 for (const surface of [
   { path: 'app/communities/[slug]/page.tsx', label: 'community charts pass toPublicCoreChartSeries' },
+  { path: 'app/cities/[slug]/page.tsx', label: 'city charts pass toPublicCoreChartSeries' },
   { path: 'components/site/listing-detail/NeighborhoodMarketContext.tsx', label: 'listing market charts pass toPublicCoreChartSeries' },
 ]) {
   const text = src(surface.path)
@@ -126,20 +121,6 @@ for (const surface of [
       /toPublicCoreChartSeries\(/.test(text),
   })
 }
-
-checks.push({
-  label: 'city-d does not mount KbSell',
-  ok: !/<KbSell/.test(src('app/cities/[slug]/page.tsx')),
-})
-
-const cityCharts = src('app/cities/[slug]/_v3/city-market-charts.tsx')
-checks.push({
-  label: 'city Chart Room Time/Relate/Rank live on the city template',
-  ok:
-    /buildYearCard\(/.test(cityCharts) &&
-    /buildRelateCard\(/.test(cityCharts) &&
-    /buildMosCard\(/.test(cityCharts),
-})
 
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {

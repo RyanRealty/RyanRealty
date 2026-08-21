@@ -28,14 +28,8 @@ checks.push({
 
 const pages = [
   {
-    // hood-d never prefixes the count into the lead: HoodDHero prints the
-    // count in its own stats line ("{N} homes · ..."), so the KbHero
-    // "N homes for sale in ${cityName}" pairing cannot occur. The forbidden
-    // lead pattern stays banned regardless.
     path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    label: 'neighborhood page uses hoodLead (not in ${cityName})',
-    helper: 'hoodLead',
-    helperFrom: './_v3/hood-d-model',
+    label: 'neighborhood page uses placeHeroLead (not in ${cityName})',
     forbid: /lead=\{`in \$\{cityName\}/,
   },
   {
@@ -45,9 +39,7 @@ const pages = [
   },
   {
     path: 'app/cities/[slug]/page.tsx',
-    label: 'city page uses cityHeroLead (city grain)',
-    helper: 'cityHeroLead',
-    helperFrom: './_v3/city-d-data',
+    label: 'city page uses placeHeroLead',
   },
   {
     path: 'app/subdivisions/[slug]/page.tsx',
@@ -61,15 +53,11 @@ const pages = [
 
 for (const page of pages) {
   const text = src(page.path)
-  const helperName = page.helper ?? 'placeHeroLead'
-  const helperFrom = page.helperFrom ?? '@/lib/kb/place-hero-lead'
-  const fromRe = new RegExp(`from ['"]${helperFrom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`)
-  const callRe = new RegExp(`${helperName}\\(`)
-  const importsHelper = fromRe.test(text) && callRe.test(text)
+  const importsHelper = /from ['"]@\/lib\/kb\/place-hero-lead['"]/.test(text) && /placeHeroLead\(/.test(text)
   const forbidden = page.forbid ? page.forbid.test(text) : false
   checks.push({
     label: page.label,
-    ok: (importsHelper || hoodDShape) && !forbidden,
+    ok: importsHelper && !forbidden,
   })
 }
 
