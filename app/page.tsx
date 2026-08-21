@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { getRegionPulse, getListingTiles } from '@/lib/data'
+import { getRegionPulse, getListingTiles, getBoundaryGeoJSON, getRecentBlogPosts, getParks, getReviews } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
@@ -12,34 +12,30 @@ import {
   pulseCityHrefSlug,
 } from '@/lib/market/pulse-city-remainder'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
-import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
-import { buildMapPointFeatures } from '@/lib/kb/place-sections'
-import { listingDetailPath } from '@/lib/slug'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
-import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { V3SectionTracker } from '@/components/site/v3/V3SectionTracker.client'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
-import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
-import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
-import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
-import { KbTicker } from '@/components/site/kb/KbTicker.client'
-import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
-import { KbTeam } from '@/components/site/kb/KbTeam.client'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
+import { HomeDHero } from '@/components/site/home-d/HomeDHero.client'
+import { HomeDTowns } from '@/components/site/home-d/HomeDTowns.client'
+import { HomeDGolf } from '@/components/site/home-d/HomeDGolf.client'
+import { HomeDLuxury } from '@/components/site/home-d/HomeDLuxury.client'
+import { HomeDJournal } from '@/components/site/home-d/HomeDJournal'
+import { HomeDParks } from '@/components/site/home-d/HomeDParks.client'
+import { HomeDAlerts } from '@/components/site/home-d/HomeDAlerts.client'
+import { HomeDFooter } from '@/components/site/home-d/HomeDFooter'
+import { HomeDDock } from '@/components/site/home-d/HomeDDock.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { formatDate } from '@/lib/format/date'
-import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
-import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
-import { TESTIMONIALS } from '@/lib/testimonials'
-import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
+import type { KbMarketData } from '@/components/site/kb/types'
+import type { HomeDCommunity, HomeDPark, HomeDPost, HomeDTown } from '@/components/site/home-d/types'
+import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
+import { COMMUNITY_LINKS } from '@/lib/site-nav'
+import { valuationHref } from '@/lib/site/valuation-href'
 import '@/components/site/kb/kb.css'
+import '@/components/site/home-d/home-d.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -49,20 +45,13 @@ const D11_HOMEPAGE_LEAD =
   'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
 
 /**
- * Homepage — the kinetic-brutalist design (navy + cream, Amboqia + Geist, GSAP +
- * Lenis motion). CHROME: Global PublicNav in app/layout.tsx owns the top bar
- * (KbNav from lib/site-nav.ts). This page owns KbFooter only — do not re-mount
- * KbNav. Do not remount a second intent bar. HideChrome is only for the
- * not-found footer edge case / CSS hide if still used. Global JSON-LD,
- * VisitTracker, and auth bridges still run. Every
- * figure is live from the DAL (§0). ISR cache at 60s.
- *
- * Promoted from the /concept/kb preview 2026-06-17 (Matt-approved design).
+ * Homepage — home-d visual restyle of the live `/` template.
+ * CHROME: Global V3Chrome in app/layout.tsx owns the top bar. This page owns
+ * HomeDFooter + HomeDDock. Every figure is live from the DAL (§0). ISR 60s.
  */
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  // Layer A discovery shell (Matt 2026-08-10): exact-match money query language.
   title: 'Homes for Sale in Central Oregon | Bend, Redmond, Sisters, Sunriver',
   description:
     `Active homes for sale in ${D11_HOMEPAGE_LEAD} Closed comps from the regional MLS.`,
@@ -83,7 +72,6 @@ export const metadata: Metadata = {
   },
 }
 
-const TOWN_ORDER = ['bend', 'la-pine', 'redmond', 'sunriver', 'sisters', 'terrebonne']
 const TOWN_IMG: Record<string, string> = {
   bend: '/images/kb/bend-drake-park-aerial.jpg',
   'la-pine': '/images/kb/vandevert-ranch.jpg',
@@ -93,22 +81,54 @@ const TOWN_IMG: Record<string, string> = {
   terrebonne: '/images/kb/smith-rock-terrebonne.jpg',
 }
 
-// Each featured community resolves its silent Area Guide clip (graded + hosted
-// by scripts/sync-city-videos.mjs) via `videoSlug` → data/city-hero-videos.resolved.json.
-// Caldera Springs IS the Sunriver-area community, so the Sunriver card plays the
-// real Caldera Springs guide (a Sunriver-area video) — not a mismatched still.
-const COMM_FEATURED = [
-  { match: 'tetherow', town: 'Bend', img: '/images/kb/tetherow-golf-aerial.jpg', videoSlug: 'tetherow' },
-  { match: 'caldera', town: 'Sunriver', img: '/images/kb/caldera-springs.jpg', videoSlug: 'caldera-springs' },
-  { match: 'broken top', town: 'Bend', img: '/images/kb/broken-top.jpg', videoSlug: 'broken-top' },
-  { match: 'northwest crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
-]
+const COMM_IMG: Record<string, string> = {
+  tetherow: '/images/kb/tetherow-golf-aerial.jpg',
+  'broken-top': '/images/kb/broken-top.jpg',
+  'caldera-springs': '/images/kb/caldera-springs.jpg',
+  'northwest-crossing': '/images/kb/northwest-crossing.jpg',
+  'three-rivers': '/images/kb/three-rivers.jpg',
+  'vandevert-ranch': '/images/kb/vandevert-ranch.jpg',
+}
+
+const PARK_IMG: Record<string, string> = {
+  'drake-park': '/images/kb/bend-drake-park-aerial.jpg',
+  'smith-rock': '/images/kb/smith-rock-terrebonne.jpg',
+}
+
+const SITE_CITY_SET = new Set(SITE_CITY_SLUGS)
+
+const titleCaseName = (s: string) => s.replace(/\b[a-z]/g, (ch) => ch.toUpperCase())
 
 const monthLabel = (iso?: string) =>
   iso ? formatDate(iso, { month: 'short', day: undefined, year: undefined, timeZone: 'UTC' }) : ''
 
+function communityPhoto(slug: string, heroImageUrl: string | null): string | null {
+  const key = Object.keys(COMM_IMG).find((k) => slug.includes(k))
+  if (key) return COMM_IMG[key]
+  return heroImageUrl?.trim() || null
+}
+
+function golfKey(name: string) {
+  return name.toLowerCase().replace(/\s+resort$/i, '').replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+function officialRank(slug: string, subdivision: string) {
+  const href = `/communities/${slug}`
+  const byHref = COMMUNITY_LINKS.findIndex((l) => l.href === href)
+  if (byHref >= 0) return byHref
+  const want = golfKey(subdivision)
+  const byName = COMMUNITY_LINKS.findIndex((l) => golfKey(l.label) === want)
+  if (byName >= 0) return byName
+  const bySlug = COMMUNITY_LINKS.findIndex((l) => {
+    const key = l.href.split('/').pop() ?? ''
+    if (slug === key) return true
+    return SITE_CITY_SLUGS.some((city) => slug === `${city}-${key}`)
+  })
+  return bySlug >= 0 ? bySlug : 999
+}
+
 export default async function Home() {
-  const [pulse, cities, communities, tiles, mktStats, priceHist, cityPulse] = await Promise.all([
+  const [pulse, cities, communities, tiles, mktStats, priceHist, cityPulse, journalRaw, reviews] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
@@ -116,20 +136,19 @@ export default async function Home() {
     getMarketStatsCacheRowForGeo({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getMarketPulseAllCitySnapshots().catch(() => []),
+    getRecentBlogPosts({ limit: 4 }).catch(() => []),
+    getReviews(8).catch(() => ({ reviews: [], count: 0, averageRating: 0, source: 'google' as const })),
   ])
 
-  const sellMedian = publishSellMedian({
-    placeMedian: pulse?.medianListPrice ?? null,
-    grain: 'region',
-    placeName: 'Central Oregon',
-  })
-
-  const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
-  const towns: KbTownItem[] = TOWN_ORDER.map((slug): KbTownItem | null => {
-    const c = cityBySlug.get(slug)
-    if (!c) return null
-    return { name: c.name, activeCount: c.activeCount, medianPrice: c.medianPrice, href: `/cities/${slug}`, img: TOWN_IMG[slug] }
-  }).filter((t): t is KbTownItem => t !== null)
+  const liveCities = sortCitiesWithPrimaryFirst(cities).filter((c) => SITE_CITY_SET.has(c.slug))
+  const towns: HomeDTown[] = liveCities.map((c) => ({
+    name: c.name,
+    slug: c.slug,
+    activeCount: c.activeCount,
+    medianPrice: c.medianPrice,
+    href: `/cities/${c.slug}`,
+    img: TOWN_IMG[c.slug] || null,
+  }))
   const townRemainder = formatPulseCityRemainderPublic(
     namePulseCityRemainder({
       regionActive: pulse?.activeCount,
@@ -142,59 +161,92 @@ export default async function Home() {
     }),
   )
 
-  const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
-  // DB rows carry raw MLS casing ("caldera springs") — display headline gets
-  // title case; already-cased names (NorthWest Crossing) pass through.
-  const titleCaseName = (s: string) => s.replace(/\b[a-z]/g, (ch) => ch.toUpperCase())
-  const communityItems: KbCommunityItem[] = COMM_FEATURED.map((f): KbCommunityItem | null => {
-    const c = communities.find((x) => x.subdivision.toLowerCase().includes(f.match))
-    if (!c) return null
-    const cv = communityVideos[f.videoSlug]
-    return {
-      name: titleCaseName(c.subdivision),
-      activeCount: c.activeCount,
-      town: f.town,
-      href: `/communities/${c.slug}`,
-      img: f.img,
-      video: cv?.video ? { url: cv.video, embedType: 'video-tag' as const } : null,
-    }
-  }).filter((x): x is KbCommunityItem => x !== null)
-
-  const mapFeatures = buildMapPointFeatures(tiles)
-  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
-
-  // Each tape item links to its listing (design-audit: real prices + addresses
-  // styled as content must honor the tap they invite).
-  const tickerItems: KbTickerItem[] = tiles.slice(0, 6).map((t) => ({
-    price: t.listPrice,
-    address: publishStreetLine({ streetNumber: t.streetNumber, streetName: t.streetName, streetSuffix: t.streetSuffix }) ?? '',
-    town: t.city ?? '',
-    shareKind: publishListingShareKind({
-      propertySubType: t.propertySubType,
-      subdivisionName: t.subdivisionName,
-      city: t.city,
-      listNumber: t.listNumber,
+  const polygonRows = await Promise.all(
+    towns.map(async (t) => {
+      const geometry = await getBoundaryGeoJSON({ geoType: 'city', geoSlug: t.slug }).catch(() => null)
+      if (!geometry) return null
+      return { slug: t.slug, name: t.name, href: t.href, geometry }
     }),
-    href: listingDetailPath(
-      t.listingKey,
-      { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },
-      { city: t.city, subdivision: t.subdivisionName },
-      { mlsNumber: t.listNumber },
-    ),
+  )
+  const polygons = polygonRows.filter((row): row is NonNullable<typeof row> => row !== null)
+
+  const golfSource = communities.filter((c) => officialRank(c.slug, c.subdivision) < 999)
+  golfSource.sort((a, b) => {
+    const ia = officialRank(a.slug, a.subdivision)
+    const ib = officialRank(b.slug, b.subdivision)
+    if (ia !== ib) return ia - ib
+    return b.activeCount - a.activeCount || a.subdivision.localeCompare(b.subdivision)
+  })
+  const seenGolf = new Set<string>()
+  const communityItems: HomeDCommunity[] = []
+  for (const c of golfSource) {
+    const key = golfKey(c.subdivision)
+    if (!key || seenGolf.has(key)) continue
+    seenGolf.add(key)
+    communityItems.push({
+      name: titleCaseName(c.subdivision.replace(/\s+resort$/i, '').trim()),
+      town: c.city,
+      href: `/communities/${c.slug}`,
+      img: communityPhoto(c.slug, c.heroImageUrl),
+      activeCount: c.activeCount,
+    })
+    if (communityItems.length >= 10) break
+  }
+
+  const luxuryTiles = [...tiles]
+    .filter((t) => t.photoUrl && t.listPrice != null)
+    .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
+    .slice(0, 8)
+  const luxuryItems = (await resolveFeaturedItems(luxuryTiles, 8)).sort(
+    (a, b) => (b.price ?? 0) - (a.price ?? 0),
+  )
+
+  const journal: HomeDPost[] = journalRaw.map((p) => ({
+    title: p.title,
+    href: `/blog/${p.slug}`,
+    excerpt: p.excerpt,
+    dateLabel: p.publishedAt
+      ? formatDate(p.publishedAt, { month: 'short', day: 'numeric', year: 'numeric' })
+      : null,
   }))
 
-  // Featured homes — shared resolver classifies each home's MLS media into a
-  // clean autoplay background video or a "Tour" badge (see resolve-featured-items).
-  // Curated mix, not raw price-desc (design-audit): 2 luxury heroes + the home
-  // closest to each town's live median + fill, deduped by street/subdivision.
-  const featured = curateFeaturedTiles(
-    tiles,
-    towns.map((t) => ({ name: t.name, medianPrice: t.medianPrice })),
-    9,
-  )
-  // 9 cards (hero + pair + two rows of thirds) so the per-town mid-market
-  // picks survive the resolver's video-first ordering.
-  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featured, 9)
+  const parkGroups = getParks()
+  const allParks = parkGroups.flatMap((g) => g.parks)
+  const parkBySlug = new Map(allParks.map((p) => [p.slug, p]))
+  const featuredParkRecord = parkBySlug.get('drake-park') ?? allParks[0] ?? null
+  const parkListSlugs = ['shevlin-park', 'smith-rock', 'tumalo', 'riverbend-park', 'farewell-bend-park']
+  const parks: HomeDPark[] = []
+  if (featuredParkRecord) {
+    parks.push({
+      name: featuredParkRecord.name,
+      slug: featuredParkRecord.slug,
+      href: `/parks/${featuredParkRecord.slug}`,
+      city: featuredParkRecord.city,
+      detail: featuredParkRecord.amenities.find((a) => /mirror pond/i.test(a))
+        ? 'Mirror Pond'
+        : featuredParkRecord.acres != null
+          ? `${featuredParkRecord.acres.toLocaleString('en-US')} acres`
+          : featuredParkRecord.city,
+      img: PARK_IMG[featuredParkRecord.slug] ?? null,
+    })
+  }
+  for (const slug of parkListSlugs) {
+    const p = parkBySlug.get(slug)
+    if (!p || parks.some((row) => row.slug === p.slug)) continue
+    parks.push({
+      name: p.name,
+      slug: p.slug,
+      href: `/parks/${p.slug}`,
+      city: p.city,
+      detail: p.acres != null ? `${p.acres.toLocaleString('en-US')} acres` : p.city,
+      img: PARK_IMG[p.slug] ?? null,
+    })
+  }
+  const riverbend = parkBySlug.get('riverbend-park')
+  const parksNote =
+    riverbend?.amenities.some((a) => /off-leash/i.test(a))
+      ? 'Closest official off-leash area is Riverbend Park.'
+      : null
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const marketData: KbMarketData = {
@@ -205,7 +257,6 @@ export default async function Home() {
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: publishMonthsOfSupply({
-      // getRegionPulse — the central-oregon row, written by refresh_market_pulse.
       grain: 'region',
       pulseMos: pulse?.monthsOfSupply,
       pulseActiveCount: pulse?.activeCount,
@@ -223,77 +274,32 @@ export default async function Home() {
   }
 
   return (
-    <main className="kb-root">
+    <main className="kb-root home-d">
       <V3SectionTracker />
       <SmoothScrollProvider>
-        {/* Hero Layer A (Matt 2026-08-10 exact-match discovery home):
-            H1 matches money queries. Live count + median stay in the sub-line. */}
-        <KbHero
+        <HomeDHero
           data={{
             activeCount: pulse?.activeCount ?? null,
             medianListPrice: pulse?.medianListPrice ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
-          eyebrow="Central Oregon Real Estate"
           titleTop="Central Oregon"
           titleBottom="Homes for Sale"
-          lead="across Central Oregon. Live list prices and days on market."
+          lead="Homes for sale across Central Oregon. Live list prices and days on market."
           cta={{ href: publishRegionalSearchHref(), label: 'See homes' }}
+          ctaSecondary={{ href: valuationHref('/'), label: 'Value my home' }}
         />
-        {/* C-07: the homepage was the only one of four callers omitting `title`, so
-            it inherited the placeholder default and rendered a naked verb, "EXPLORE".
-            The eyebrow had been given scent copy to compensate for a heading that said
-            nothing — the fix belongs one line down. "The six towns" also went: it reads
-            as a claim about the region, and the site carries Prineville and Madras too. */}
-        <KbExploreTowns
-          towns={towns}
-          eyebrow="By town"
-          title={'Where the sales\nare happening'}
-          notes={townRemainder}
-          cta={{ href: publishRegionalSearchHref(), label: 'See homes for sale' }}
-        />
-        <KbCommunities communities={communityItems} eyebrow="Resorts and planned communities" />
-        <KbFeatured
-          items={featuredItems}
-          eyebrow="Listed right now"
-          viewAllHref={publishRegionalSearchHref()}
-        />
-        {/* Mid-page buyer capture (E2 craft): navy band after inventory so the
-            homepage is not sell-only until deep scroll. propertyType A = SFR
-            across the regional MLS — honest Central Oregon filter without a
-            single-city lie. hasNarrowingFilter accepts propertyType alone. */}
-        <KbCommunityAlerts
-          communityName="Central Oregon"
-          city=""
-          extraFilters={{ propertyType: 'A' }}
-          headline="Central Oregon"
-          body="Enter your email. When a single-family home hits the market in Bend, Redmond, Sisters, Sunriver, or nearby, you hear first."
-        />
-        {/* fitToFeatures frames the actual inventory — the REGION box in this
-            wide container padded half the visible map out to the Willamette
-            Valley with zero pins (design-audit). */}
-        <KbListingMap
-          geojson={mapGeo}
-          totalActive={pulse?.activeCount ?? mapFeatures.length}
-          fitToFeatures
-          browseHref={publishRegionalSearchHref()}
-        />
-        <KbTicker items={tickerItems} />
-        {/* KbSell (the one seller-conversion surface) sits ahead of the review
-            stack + team + market HUD — as section 10 of 11 it never surfaced in
-            a 10-viewport mobile scroll (design-audit P2). */}
-        <KbSell
-          data={{
-            medianListPrice: sellMedian?.value ?? null,
-            medianCaption: sellMedian?.caption ?? null,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
-            soldCount30d: pulse?.soldCount30d ?? null,
-          }}
-        />
-        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
-        <KbTeam />
+        <HomeDTowns towns={towns} polygons={polygons} notes={townRemainder} />
+        <HomeDGolf communities={communityItems} />
+        <HomeDLuxury items={luxuryItems} />
+        <HomeDJournal posts={journal} />
+        {featuredParkRecord && parks.length > 0 ? (
+          <HomeDParks featured={parks[0]!} parks={parks} note={parksNote} />
+        ) : null}
+        <HomeDAlerts />
         <KbMarketHud data={marketData} asOf={pulse?.updatedAt ?? null} />
-        <KbFooter towns={towns} />
+        <HomeDFooter towns={towns} communities={communityItems} />
+        <HomeDDock rating={reviews.averageRating} reviewCount={reviews.count} />
       </SmoothScrollProvider>
     </main>
   )
