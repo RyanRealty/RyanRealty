@@ -3,9 +3,7 @@ import type { Metadata } from 'next'
 import { getRegionPulse, getListingTiles, getBoundaryGeoJSON, getRecentBlogPosts, getParks, getReviews } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
-import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
-import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import {
   formatPulseCityRemainderPublic,
   namePulseCityRemainder,
@@ -14,8 +12,6 @@ import {
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { listingDetailPath } from '@/lib/slug'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
-import { buildYearSeries } from '@/lib/kb/year-series'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { V3SectionTracker } from '@/components/site/v3/V3SectionTracker.client'
@@ -29,7 +25,6 @@ import { HomeDAlerts } from '@/components/site/home-d/HomeDAlerts.client'
 import { HomeDFooter } from '@/components/site/home-d/HomeDFooter'
 import { HomeDDock } from '@/components/site/home-d/HomeDDock.client'
 import { formatDate } from '@/lib/format/date'
-import type { KbMarketData } from '@/components/site/kb/types'
 import type { HomeDCommunity, HomeDPark, HomeDPost, HomeDTown } from '@/components/site/home-d/types'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
@@ -129,13 +124,11 @@ function officialRank(slug: string, subdivision: string) {
 }
 
 export default async function Home() {
-  const [pulse, cities, communities, tiles, mktStats, priceHist, cityPulse, journalRaw, reviews] = await Promise.all([
+  const [pulse, cities, communities, tiles, cityPulse, journalRaw, reviews] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
-    getMarketStatsCacheRowForGeo({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
-    getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getMarketPulseAllCitySnapshots().catch(() => []),
     getRecentBlogPosts({ limit: 4 }).catch(() => []),
     getReviews(8).catch(() => ({ reviews: [], count: 0, averageRating: 0, source: 'google' as const })),
@@ -272,31 +265,6 @@ export default async function Home() {
     riverbend?.amenities.some((a) => /off-leash/i.test(a))
       ? 'Closest official off-leash area is Riverbend Park.'
       : null
-
-  const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const marketData: KbMarketData = {
-    active: pulse?.activeCount ?? null,
-    closed30: pulse?.soldCount30d ?? null,
-    new30: pulse?.newCount30d ?? null,
-    medianList: pulse?.medianListPrice ?? null,
-    saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
-    daysToPending: pulse?.medianDaysToPending ?? null,
-    monthsSupply: publishMonthsOfSupply({
-      grain: 'region',
-      pulseMos: pulse?.monthsOfSupply,
-      pulseActiveCount: pulse?.activeCount,
-      displayedActiveCount: pulse?.activeCount,
-    }),
-    trend: priceHist
-      .slice(-13)
-      .filter((p) => p.medianSalePrice != null)
-      .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
-    byTown: towns
-      .filter((t) => t.medianPrice != null)
-      .map((t) => ({ name: t.name, median: t.medianPrice as number })),
-    countyMedian: pulse?.medianListPrice ?? null,
-    yearSeries: buildYearSeries(priceHist, 5),
-  }
 
   return (
     <main className="kb-root home-d">
