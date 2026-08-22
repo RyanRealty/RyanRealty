@@ -1,7 +1,7 @@
 # Market Truth — build spec (verified)
 
 **Status:** spec · rewritten 2026-08-22 against verified facts only
-**Companion:** `PLAN.md` (why) · `EXECUTE.md` (how, and the live board)
+**Companion:** `PLAN.md` (why) · `REGISTRY.md` (segments + stats as predicates) · `DDL.sql` (schema) · `EXECUTE.md` (how, and the live board)
 
 ## Evidence standard
 
@@ -388,12 +388,26 @@ balance point — **keep them**, but print the threshold sentence and window on 
 
 ---
 
-## 5. Still to write before this is buildable
+## 5. Buildable — the three gaps are closed
 
-1. **Registry predicates** — every stat above as real SQL, not English.
-2. **DDL** — columns, types, keys and indexes for `market_fact_sale`, `market_fact_listing_span`,
-   `place_membership`.
-3. **Segment predicates** — the exact definition of each of D7's segments.
+1. **Registry predicates** → `REGISTRY.md` §3 — every stat as SQL, with population, floor, grain and
+   earliest year.
+2. **DDL** → `DDL.sql` — `market_service_area`, `place_membership`, `market_fact_sale`,
+   `market_fact_listing_span`, `market_metric`.
+3. **Segment predicates** → `REGISTRY.md` §1 — all twelve of D7's segments as predicates.
+
+Two further decisions locked while writing them:
+
+| # | Decision | Consequence |
+|---|---|---|
+| D11 | **Historical inventory: point estimate where `listing_history` recovers the span, labeled band where it does not.** | ~73% of relisted listings recover; the rest publish as a range with a stated reason. |
+| D12 | **Feature prevalence publishes as a floor, labeled "at least".** | No explicit negative exists — `fireplace_yn` is true 175,832 / NULL 419,547 / **false 0**. `garage_yn` is genuinely three-state and publishes as a true share. |
+
+And one definition settled that all three depend on: **the service area is a city list, not a county
+filter.** County is unusable — Bend rows carry Deschutes, NULL and even Crook; Terrebonne spans three
+counties. `market_service_area` in `DDL.sql` replaces the three disagreeing definitions
+(`is_central_oregon_city` 16 names, `pricing_is_central_oregon_city` 14, `analytics_service_area_cities`
+24) and adds **Metolius**, a real city with 14 closes and 17 actives that the pricing corpus omits.
 
 ## 6. Canon corrections this forces
 
