@@ -1,0 +1,214 @@
+# Market Truth — execution brief
+
+**Point any agent at this file.** It is self-contained: read it, read `SPEC.md`, and start at the
+first unchecked box in §4. Do not re-plan; the plan is settled. Do not re-litigate the definitions;
+Matt locked them (SPEC §0).
+
+**Read order:** `CLAUDE.md` §0 + §7 → `SPEC.md` (all of it) → this file → `PLAN.md` only if you want
+the background story.
+
+---
+
+## 1. The one-paragraph brief
+
+Ryan Realty publishes market statistics from **9 independent computation engines** producing **38
+distinct stats**, with no stat owned by any single layer. The same label resolves to different
+numbers depending on which page a client opens — "days on market" is four different measurements on
+Bend today (25, 58, 62, 64); "months of supply" says seller's market on the site and balanced in the
+admin builder. Your job is to replace all of it with **one fact layer, one membership rule, one
+metric registry, one read function, and gates that make the old way impossible** — without moving a
+single published number until the reconciliation has been shown to Matt.
+
+Matt is a licensed Oregon principal broker. A wrong published stat is a compliance risk, not a bug.
+`CLAUDE.md` §0 outranks everything in this file.
+
+---
+
+## 2. Non-negotiables
+
+1. **Verify before you assert.** Two claims in the original forensics were wrong and were caught only
+   because someone re-derived them (SPEC §1.7, §1.1). If you cannot reproduce a number with your own
+   query, do not build on it. A null result is a fact about your query first — run a second,
+   differently-shaped check before concluding something does not exist.
+2. **Nothing public changes** until step 5. Build alongside the existing writers, never in place of
+   them, until a reconciliation report has been reviewed.
+3. **Every figure carries provenance** — rows counted, method, window actually used, computed_at,
+   confidence. A figure without a trace does not ship.
+4. **`-- audit: <reason>`** prefixes any raw SQL against a DAL-guarded table.
+5. **Mixed-case columns are double-quoted in raw SQL** (`"ClosePrice"`, `"CloseDate"`, `"City"`,
+   `"StandardStatus"`, `"OnMarketDate"`) and bare in supabase-js. Getting this wrong returns nothing
+   silently.
+6. **Work on `main`.** Commit and push each step. Use a clean worktree if the main checkout has
+   another session's uncommitted work (see §6).
+7. **Never use `--no-verify`.** If a hook fails on someone else's work, use a clean worktree.
+
+---
+
+## 3. What you are building
+
+```
+listings (+ listing_history)          ← raw, untouched
+        │
+        ├─► market_fact_sale           one row per closed sale, cleaned, scoped, stamped
+        ├─► market_fact_listing_span   one row per on-market episode (from listing_history)
+        │
+        ├─► place_membership           one row per (listing, place) — listed AND sold alike
+        │
+        ├─► metric registry (code)     each stat declared once: formula, population, min_n,
+        │                              grains, earliest_year, window policy, exclusions
+        │
+        ├─► compute job                evaluates registry per (geo × segment × window × metric)
+        │                              writes value + provenance + publishable + reason
+        │
+        └─► getMetric()                the ONLY read path for every consumer
+```
+
+Full detail in `SPEC.md` §3. Do not invent an alternative architecture.
+
+---
+
+## 4. Steps
+
+Work top to bottom. Tick a box only when its **Done when** clause is literally true.
+
+### Step 1 — `market_fact_sale`
+
+Generalise `sale_pricing_facts` (already one row per closed CO residential sale, 1996+, with
+normalised product/lot/story/water/sewer/HOA classes) to cover **all segments** (SPEC D7).
+
+- [ ] Apply the mandatory exclusions of SPEC §3.4 — service-area scope, `PropertyType='G'`
+      (commercial lease, median ClosePrice $2.01), fractional interests (TIC/timeshare/deeded week,
+      median $/sqft $19.01), order-of-magnitude price typos, $1 auction lists, retroactive off-market
+      entries, duplicate parcel+date events (~0.5–1%), `sqft <= 0` for $/sqft only.
+- [ ] Record every exclusion as a **counted, queryable reason** — never a silent `WHERE`.
+- [ ] Stamp `complete_through` so a half-ingested month can never be read as complete.
+- [ ] Fix the refresh: a **recency lane** (last 90 days, every run) plus the slow full-history lane.
+      Today the full sweep takes ~23 days and recent closes enter the corpus weeks late.
+
+**Done when:** a query returns, per year 1997→now, the row count kept and the count excluded by each
+named reason; and `complete_through` is within 48 hours.
+
+### Step 2 — `market_fact_listing_span`
+
+One row per on-market episode, reconstructed from `listing_history` (3.9M events, 546,300 listings).
+
+- [ ] Emit `span_source` (`history` | `listing_row`) and `first_on_market_confidence`
+      (`recovered` | `assumed`). ~74.5% of relisted listings have history predating the current
+      `OnMarketDate`, recovering a median 61 days (SPEC §1.7).
+- [ ] Never read `status_change_timestamp` — corrupted by bulk platform-migration stamps.
+      `off_market_date` survived intact.
+- [ ] Flag the 28,169 listings whose `off_market_date` precedes their on-market date, and the 150
+      zombie Actives whose own payload says Expired/Cancelled/Pending/Closed.
+
+**Done when:** reconstructing active inventory for 2026-08-10 lands within 1% of the stored snapshot,
+and a per-year table shows what share of spans are `recovered` vs `assumed`.
+
+### Step 3 — `place_membership`
+
+- [ ] Cities resolve by **MLS city text** (SPEC D5). Sub-city places by polygon, falling back to alias.
+- [ ] `is_primary` resolves multi-polygon overlap — **19.5% of sales sit inside 2+ subdivision
+      polygons (max 8)**, 17.3% inside 2+ neighborhoods. Smallest containing polygon wins. Only
+      primary rows may be summed.
+- [ ] Cover **listed and sold alike** from the same table — this is what makes SPEC §1.4's absorption
+      defect structurally impossible.
+- [ ] One canonical hyphen slug alphabet. Today `market_stats_cache` uses `la pine` and `boundaries`
+      uses `la-pine`, which is why `tumalo` and `crooked river ranch` publish 449 and 446 rows of
+      permanent zero.
+- [ ] Stamp `method` and `confidence`. A polygon we have not checked is `unverified` (Broken Top's
+      boundary measures 17.96 sq mi against Bend's 35.45).
+
+**Done when:** a disagreement report exists comparing membership against every current attribution
+path, with counts per place and per disagreement type.
+
+### Step 4 — Registry + compute job (shadow)
+
+- [ ] Encode the ~30 stats of SPEC §4, each with formula, population predicate, `min_n`, allowed
+      grains, `earliest_year` (SPEC §2), window policy, exclusions and rounding.
+- [ ] Vocabulary declared once: `detached` = `PropertyType='A' AND property_sub_type='Single Family
+      Residence'`; `active` = `StandardStatus='Active'` only; `closed` = the §3.4 predicate;
+      `service_area` = one city/county set.
+- [ ] Sample floors: **5** for a range, **10** for a median, **30** for a delta or a verdict. Window
+      ladder 12→24→36 months, **the window used printed on the figure**, then refuse with a reason.
+- [ ] Days on market = `purchase_contract_date − OnMarketDate`, named `days_to_contract` so it can
+      never be confused (SPEC D2). List-to-close survives only as a separately-labelled stat.
+- [ ] Write to a **shadow store**. Nothing repointed.
+
+**Done when:** a reconciliation report lists every live figure beside its shadow value, the delta, and
+a one-line reason for each difference — defect found, or definition changed.
+
+### Step 5 — Migrate consumers (Matt reviews the delta report first)
+
+- [ ] **`/sell` is migration #1** — it currently publishes "a seller's market · 489 homes · 3.6
+      months" against a true 988 homes / 4.52 months / balanced.
+- [ ] Then CMA and BPO — the subdivision speed statistic there can never render today
+      (`lib/cma/subdivision-story.ts` reads the empty `CumulativeDaysOnMarket`), and the CMA computes
+      market-area chapters over the whole A bucket while the cache figures beside them are SFR-only.
+- [ ] Then place pages, market hub, newsletter, video producers, JSON feeds, admin.
+- [ ] Each surface proves reconciliation before it flips.
+
+### Step 6 — Gates (baseline may only shrink)
+
+- [ ] No writer computes geography inline.
+- [ ] No consumer reads a market store directly.
+- [ ] Every rendered figure carries provenance.
+- [ ] Mixed-method membership ⇒ non-publishable (retires `lib/market/geo-grain-trust.ts`).
+- [ ] `min_n` and window policy live only in the registry.
+- [ ] Dead-column gate: `CumulativeDaysOnMarket`, consumer-surface `"DaysOnMarket"`, and any
+      `mls_source = 'central_oregon'` filter (it is a constant on 100% of rows, including all 93,233
+      Jackson County ones).
+- [ ] **Freshness gate** — a metric whose `complete_through` is older than its window fails rather
+      than serving stale data. This is the gate that would have caught the dead cube cron and the
+      boundary job that stopped on 2026-04-30.
+
+### Step 7 — Repairs folded in (not hotfixes, per SPEC D8)
+
+- [ ] Restart boundary assignment (4.3% coverage on Actives since 2026-05-01).
+- [ ] Restart the analytics cube cron (has never run; calendar 2026 has 0 rows).
+- [ ] Normalise `buyer_financing` (April-2026 format break, 26 `[object Object]` rows).
+- [ ] `close_price_per_sqft = 0` → NULL on 65,577 rows.
+- [ ] Quarantine the 883 structurally bare rows and 150 zombie Actives.
+- [ ] Retire the two permanent-zero geographies; unify the slug alphabet.
+- [ ] Correct `lib/property-type.ts`: **E = Farm** (not commercial), **G = commercial Lease**.
+- [ ] Instrument listing/place views through `user_events`; drop the empty `listing_views` table.
+
+### Step 8 — Canon corrections
+
+- [ ] `CLAUDE.md` §0 — "SFR convention is `PropertyType='A'`" is wrong per D1. Restate.
+- [ ] `CLAUDE.md` §7 — remove `CumulativeDaysOnMarket` from the quoted-column list; add the
+      `"DaysOnMarket"` warning.
+- [ ] `docs/DATABASE_FOR_AI_AGENTS.md` — mark CDOM dead, `mls_source` a constant, `listings` a
+      two-market table.
+
+### Step 9 — Then, and only then, the moat
+
+- [ ] Granular surfaces: every segment × every grain, sample-gated.
+- [ ] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
+      fastest to contract, most price cuts, most new inventory.
+- [ ] Agent/office share — **internal only** (Matt, 2026-08-22): admin and listing presentations, not
+      the public site. Resolve `office_id` first; every row is currently unresolved and the MLS
+      placeholder "No Office" ranks as a brokerage.
+
+---
+
+## 5. Definition of done for the whole program
+
+- One read path. `getMetric()` is the only way any surface obtains a market figure.
+- Every published figure traces to rows, method and window.
+- The same question asked twice, anywhere in the estate, returns the same number.
+- A new metric is a registry entry, and it is correct on arrival because it inherits membership,
+  windows, floors and provenance.
+- The gates make the old way fail the build.
+
+---
+
+## 6. Practical notes
+
+- The main checkout often carries another session's uncommitted work. If a pre-commit hook fails on
+  files you did not touch, create a clean worktree off `origin/main`, do the work there, commit
+  (hooks run clean), `npm run push`, then `git push origin HEAD:main` and remove the worktree.
+- `npm run push` runs gates + lint + stamps a marker before the SSH push. If it fails on
+  `ci:process-canon`, someone landed unregistered plan docs — register them in
+  `docs/DEVELOPMENT_PROCESS.md` "Registered plan documents" rather than bypassing.
+- Supabase project id: `dwvlophlbvvygjfxcrhm`.
+- Do not query `information_schema` — read `docs/DATABASE_SCHEMA_SNAPSHOT.md`.
+- Post progress by ticking boxes in this file and committing it. This file is the live board.

@@ -134,10 +134,22 @@ No stat has a single owner.** Measured today, on Bend:
 ### 1.7 Inventory history
 
 Active inventory **can** be reconstructed: `OnMarketDate → off_market_date` is ~99.8% populated back
-to 1995, and reconstructing 2026-08-10 returns 3,362 against a stored 3,376 (**0.4% error**). But it
-is a **band, not a point**: on all 112,892 relisted listings `OnMarketDate` was overwritten with the
-back-on-market date (median 164 days of hidden earlier market time). Bend SFR in March 2015 is
-**747–960**, a band spanning months-of-supply **3.32 to 4.27** — which straddles the verdict line.
+to 1995, and reconstructing 2026-08-10 returns 3,362 against a stored 3,376 (**0.4% error**).
+
+**[corrected 2026-08-22 — Matt challenged this and was right.]** An earlier draft said the pre-relist
+market period was *unrecoverable* because `OnMarketDate` is overwritten with the back-on-market date on
+all 112,892 relisted listings. The overwrite is real (verified: `OnMarketDate = back_on_market_timestamp`
+on 112,892 of 112,892) — but that is **correct MLS behaviour, not a data defect**, and the earlier
+episode is **not** lost. `listing_history` holds 3,901,379 events across 546,300 listings and covers
+**112,389 of 112,892 relisted listings (99.6%)**. On a 3,905-row sample, **74.5% carry history events
+predating the current `OnMarketDate`**, recovering a median of **61 days** and a p90 of **381 days** of
+earlier market time.
+
+**Consequence for the build:** span reconstruction reads `listing_history`, not the `listings` row
+alone. `market_fact_listing_span` emits one row per on-market episode with `span_source`
+(`history` | `listing_row`) and `first_on_market_confidence` (`recovered` | `assumed`). Historical
+inventory is therefore a **point estimate for ~3 in 4 listings** and a band only for the ~25% with no
+predating history — not a band across the board.
 
 `status_change_timestamp` is corrupted by bulk platform-migration stamps and must never be used for
 historical timing; `off_market_date` survived intact. 28,169 listings (4.7%) have `off_market_date`
