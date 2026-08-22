@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-21T19:21:14.247Z
+**Generated:** 2026-08-22T22:46:41.859Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -286,7 +286,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 75,911**
+### `similar_listings_mv` · **rows ≈ 76,446**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -355,7 +355,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 14,633**
+### `market_stats_cache` · **rows ≈ 14,759**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -532,7 +532,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 334**
+### `cmas` · **rows ≈ 341**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -621,7 +621,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 307**
+### `expired_listings` · **rows ≈ 314**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -680,7 +680,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 753**
+### `marketing_brain_actions` · **rows ≈ 760**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -3381,6 +3381,61 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 
+### `market_fact_listing_span`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | no |  |
+| `episode_no` | smallint | no |  |
+| `on_market_date` | date | no |  |
+| `off_market_date` | date | yes |  |
+| `end_reason` | text | yes |  |
+| `list_price` | numeric | yes |  |
+| `span_source` | text | no |  |
+| `first_on_market_confidence` | text | no |  |
+| `computed_at` | timestamp with time zone | no | now() |
+
+### `market_fact_sale`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | no |  |
+| `list_number` | text | yes |  |
+| `city_proper` | text | yes |  |
+| `city_slug` | text | yes |  |
+| `county` | text | yes |  |
+| `postal_code` | text | yes |  |
+| `latitude` | numeric | yes |  |
+| `longitude` | numeric | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+| `segment` | text | yes |  |
+| `close_price` | numeric | yes |  |
+| `list_price` | numeric | yes |  |
+| `original_list_price` | numeric | yes |  |
+| `living_sqft` | numeric | yes |  |
+| `lot_acres` | numeric | yes |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `year_built` | smallint | yes |  |
+| `close_date` | date | yes |  |
+| `contract_date` | date | yes |  |
+| `on_market_date` | date | yes |  |
+| `list_date` | date | yes |  |
+| `ppsf` | numeric | yes |  |
+| `days_to_contract` | integer | yes |  |
+| `days_to_close` | integer | yes |  |
+| `sale_to_final_list` | numeric | yes |  |
+| `sale_to_orig_list` | numeric | yes |  |
+| `concession_amount` | numeric | yes |  |
+| `concession_reported` | boolean | yes |  |
+| `buyer_financing` | text | yes |  |
+| `is_publishable` | boolean | no | true |
+| `exclusion_reasons` | ARRAY | no | '{}'::text[] |
+| `complete_through` | date | no |  |
+| `source_updated_at` | timestamp with time zone | yes |  |
+| `computed_at` | timestamp with time zone | no | now() |
+
 ### `market_history_weekly`
 
 | Column | Type | Nullable | Default |
@@ -3393,6 +3448,28 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `source` | text | no |  |
 | `captured_at` | timestamp with time zone | no | now() |
 | `observation_date` | date | yes |  |
+
+### `market_metric`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `stat_id` | text | no |  |
+| `geo_type` | text | no |  |
+| `geo_slug` | text | no |  |
+| `segment` | text | no |  |
+| `period_end` | date | no |  |
+| `window_months` | smallint | no |  |
+| `definition_id` | text | no |  |
+| `value` | numeric | yes |  |
+| `value_text` | text | yes |  |
+| `sample_n` | integer | no |  |
+| `method` | text | no |  |
+| `excluded_n` | integer | no | 0 |
+| `complete_through` | date | no |  |
+| `is_publishable` | boolean | no |  |
+| `withheld_reason` | text | yes |  |
+| `is_floor` | boolean | no | false |
+| `computed_at` | timestamp with time zone | no | now() |
 
 ### `market_narratives`
 
@@ -3427,6 +3504,15 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `image_storage_path` | text | yes |  |
 | `content_html` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `market_service_area`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `city_proper` | text | no |  |
+| `city_slug` | text | no |  |
+| `tier` | text | no |  |
+| `note` | text | yes |  |
 
 ### `marketing_assignments`
 
@@ -3780,6 +3866,21 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `is_coming` | boolean | no | false |
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `place_membership`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | no |  |
+| `geo_type` | text | no |  |
+| `geo_slug` | text | no |  |
+| `method` | text | no |  |
+| `confidence` | text | no | 'unverified'::text |
+| `is_primary` | boolean | no | false |
+| `polygon_acres` | numeric | yes |  |
+| `effective_from` | date | no |  |
+| `effective_to` | date | yes |  |
+| `computed_at` | timestamp with time zone | no | now() |
 
 ### `post_sync_pipeline_runs`
 
