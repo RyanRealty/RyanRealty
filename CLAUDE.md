@@ -44,8 +44,7 @@ outranks speed, style, cost, and every other instruction in this file.
 2. **Pull the query fresh.** Re-run the SQL/API call in this session. Never reuse a hard-coded
    value from a prior script without re-confirming.
 3. **Print the raw result.** Show row counts, the date window, the filter
-   (`PropertyType='A'` for SFR, geography, status, close-date range). The number in the
-   deliverable must equal the number in the printout.
+   (segment, geography, status, close-date range). The printed number must equal the shipped one.
 4. **Cross-check math.** Derived stats (months of supply, YoY %, absorption, median,
    price/sqft) get recomputed and the computation shown.
 5. **Reconcile narrative to data.** Every sentence, subhead, verdict, and pill must be
@@ -62,7 +61,7 @@ outranks speed, style, cost, and every other instruction in this file.
 - **Months of supply** = `active_listings / (closed_last_6_months / 6)`.
   **Thresholds: ≤ 4 seller's · 4–6 balanced · ≥ 6 buyer's.** The verdict pill must match the
   number. Enforced by `scripts/check-market-formula.mjs`.
-- **SFR convention** is `PropertyType='A'`. YTD windows, apples-to-apples periods. YoY = the
+- **SFR** = `property_sub_type='Single Family Residence'` (bare `'A'` is a mixed bucket — MARKET_TRUTH D1). YTD windows, apples-to-apples periods. YoY = the
   same window across two years, never Q1 vs full-year.
 - **Never round in a way that changes the narrative.** $474,500 → `$475K` is fine;
   $474,500 → `$500K` is not.
@@ -463,7 +462,7 @@ does not exist."
 
 Quoted: `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`,
 `"Longitude"`, `"TotalLivingAreaSqFt"`, `"PhotoURL"`, `"SubdivisionName"`, `"ClosePrice"`,
-`"CloseDate"`, `"CumulativeDaysOnMarket"`, `"BedroomsTotal"`, `"BathroomsTotal"`.
+`"CloseDate"`, `"BedroomsTotal"`, `"BathroomsTotal"`.
 Bare (lower-case): `year_built`, `pending_timestamp`, `price_per_sqft`.
 
 ```sql
