@@ -1,9 +1,18 @@
-# Market Truth — build spec
+# Market Truth — build spec (verified)
 
-**Status:** spec · 2026-08-22 · plan of record for the market-data plane
-**Evidence:** 36 agents, 1,088 live queries, 106 findings; every load-bearing claim independently
-re-derived by a second agent. Corrections from that second pass are marked **[corrected]**.
-**Companion:** `PLAN.md` (why) · this file (what to build).
+**Status:** spec · rewritten 2026-08-22 against verified facts only
+**Companion:** `PLAN.md` (why) · `EXECUTE.md` (how, and the live board)
+
+## Evidence standard
+
+Every factual sentence below was **independently re-derived by a second agent running its own
+queries**, not carried over from the original forensic pass. Of 116 load-bearing claims produced by
+that pass, 114 were re-checked: **9 stood as written, 104 required amendment, 2 were false.** A 91%
+correction rate is why nothing here is stated on a single agent's word, and why an earlier draft of
+this file — which was built before that verification — was wrong in several places that are corrected
+inline and marked **[was wrong]**.
+
+Anything the verification could not establish is absent from this document rather than softened.
 
 ---
 
@@ -11,383 +20,390 @@ re-derived by a second agent. Corrections from that second pass are marked **[co
 
 | # | Decision | Consequence |
 |---|---|---|
-| D1 | **"Single family" = detached only.** The `PropertyType='A'` bucket becomes "All residential". | Fixes a 20.8% overstatement of SFR count and a $35,000 understatement of the SFR median. **Supersedes CLAUDE.md §0's "SFR convention is `PropertyType='A'`".** |
-| D2 | **Days on market = days to contract**, history restated. | Published DOM drops ~40 days and finally measures time to an accepted offer. |
-| D3 | **Reconcile behind the scenes, then migrate surfaces.** | No public number moves until the delta and its reason have been shown to Matt. |
-| D4 | **Thin cells: widen the window, then refuse — always labeled.** | 12mo → 24mo → 36mo to reach the floor; the window is printed on the figure. If 36mo still fails, publish the refusal and offer the parent place. |
-| D5 | **MLS city text is truth for cities; polygons decide sub-city places only.** | Matches how the market talks. 24.4% of homes sold as "Bend" sit outside city limits (La Pine 71.6%, Terrebonne 85.0%) and stay counted as Bend. |
-| D6 | **Southern Oregon excluded from every published stat; rows retained.** | Service-area scope becomes a required argument, not an optional filter. |
-| D7 | **All segments published** wherever the sample floor is cleared: detached, condo, townhome, manufactured-on-land, manufactured-in-park, multifamily 2–4, land, farm, commercial sale, commercial lease, business. | Commercial *lease* prices are rent — they may never enter a sale median. |
-| D8 | **No live fixes yet.** The `/sell` defect and the rest roll in with this plan. | Recorded in §7 as the first migration, not a hotfix. |
+| D1 | **"Single family" = detached only.** `PropertyType='A'` becomes "All residential". | The A bucket is 366,106 detached against 36,230 manufactured-on-land, 11,244 condominium, 10,871 townhouse, 2,006 tenancy-in-common, 318 leased-land, 53 stock-cooperative. **Supersedes CLAUDE.md §0.** |
+| D2 | **Days on market = days to contract**, history restated. | See §2 — the correct basis is already computed in one place and wrong in others. |
+| D3 | **Reconcile behind the scenes, then migrate surfaces.** | No public number moves before its delta and reason are reviewed. |
+| D4 | **Thin cells: widen 12→24→36 months, always labeled, then refuse.** | Enforced in the layer, never per surface. |
+| D5 | **MLS city text is truth for cities; polygons decide sub-city places only.** | This is also the fix for the live `/sell` defect (§1.1). |
+| D6 | **Southern Oregon excluded from every published stat; rows retained.** | Scope becomes a required argument. |
+| D7 | **All segments published** where the sample floor clears. | Commercial *lease* is rent and may never enter a sale median. |
+| D8 | **No live fixes yet** — repairs roll in as migrations. | |
+| D9 | **Agent/office analytics internal only.** | Admin and listing presentations, not the public site. |
+| D10 | **Instrument view tracking through `user_events`; retire `listing_views`.** | |
 
 ---
 
-## 1. What is actually true about this data
+## 1. Verified: what is wrong right now
 
-### 1.1 The table is two markets
+### 1.1 `/sell` publishes a wrong market verdict
 
-`public.listings` is not a Central Oregon table. Closed `PropertyType='A'` rows by county:
-Deschutes 129,292 · **Jackson 93,233** · **Josephine 25,106** · Klamath 17,306 · Crook 11,880 ·
-Jefferson 9,540 · null 7,923. `mls_source` reads `central_oregon` on **100% of rows including all
-93,233 Jackson ones**, so it is a constant, not a source tag — and it invites filters that do nothing.
+The page reads **"Bend housing market: a seller's market · 489 HOMES FOR SALE · 3.6 MONTHS OF SUPPLY."**
 
-**Central Oregon history begins 1997.** The 127 closed rows dated 1993–1995 and 98.3% of 1996 are
-Southern Oregon; Deschutes has exactly 3 closed A sales before 1997.
+MLS `City` is a **postal/mailing** city; the `boundaries` city layer is TIGER/Line incorporated
+places and CDPs. Of 17,608 geocoded closed Bend sales since 2021, **4,773 (27.1%)** fall outside the
+Bend city-limits polygon — 4,295 inside no city polygon at all and 478 physically inside another
+place (Sunriver CDP 415, Tumalo CDP 63).
 
-**Klamath switches on in 2010–2011** (37 closes in 2009 → 700 in 2011) at roughly a third of
-Deschutes prices, manufacturing a fake −7.3% YoY in any unscoped series where the county-scoped
-series moved −1.8%. **[corrected]** the causal attribution and price-gap magnitude were overstated;
-the coverage break itself reproduces exactly.
+`refresh_market_pulse()` computes city inventory as
+`property_sub_type='Single Family Residence' AND "PropertyType"='A' AND "City"=<canonical> AND
+ST_Within(point, boundaries.polygon)`. The polygon clause drops every city-addressed home outside
+incorporated limits: Bend keeps **488 of 781** active detached listings (62.5%).
 
-### 1.2 Days on market has never meant what we published
+**[was wrong]** The earlier draft blamed the stalled `boundary_city` column job and said the shortfall
+was "roughly half" against 988 homes. Both are incorrect. The 988 was the wider `PropertyType='A'`
+bucket, not detached; the true shortfall is **37.5%**. And the column job is not what feeds this page
+— the site reads `listing_boundary_xref_mv`, refreshed by its own cron, whose coverage is flat across
+the window. **The cause is the deliberate polygon filter, and D5 is the fix.**
 
-`"DaysOnMarket"` equals `CloseDate − ListDate − 1` in **95.0%** of closed rows, in **every year
-1996–2026** — it is list-to-**close**, escrow included. Median gap is exactly 1 in all 34 years.
+The truncation is **non-uniform and directionally biased**: it drops 37.5% of actives but only 20.9%
+of closes, because the excluded unincorporated ring runs at **8.03 months of supply**. Removing it
+does not merely shrink the number — it pushes the ratio toward "seller's market."
 
-| Year | Published DOM | True days to contract |
+Published **3.52–3.54 months → "seller's market."** MLS-city basis **4.46–4.51 → balanced.**
+
+Other cities on the same filter: Redmond 191/277 (69%), Prineville 83/183 (45%), Sisters 35/113
+(31%), **Terrebonne 6/52 actives (11.5%)**.
+
+**Terrebonne is a live divide-by-zero.** 60 detached closes carry a Terrebonne address in the trailing
+year but only 6 sit inside the CDP polygon, and **zero closed inside it in the last 180 days** — so
+`refresh_market_pulse` writes `months_of_supply = NULL`, and `lib/cma/market.ts` falls back to
+`active/(sold365/12)` = 12.0 months, a **buyer's-market verdict that clamps the High End tier on every
+Terrebonne CMA**, computed off six sales.
+
+### 1.2 One label, several numbers — measured today on Bend
+
+| Label | Value | What it actually measures |
 |---|---|---|
-| 2021 | 51 | 6 |
-| 2022 | 53 | 11 |
-| 2024 | 63 | 25 |
-| 2025 | 69 | 29 |
+| `market_stats_cache.median_dom` | **25** | list-to-**pending** — the correct industry basis |
+| `market_pulse_live.median_active_dom` | **58** | age of unsold inventory — not a sold statistic |
+| `listings."DaysOnMarket"` | **62** | list-to-**close**, escrow included |
+| hand-computed list-to-close | **63–64** | the same measurement as the row above |
 
-Because escrow length is near-constant, this does not merely inflate the level — it **erases the
-signal**, compressing a 6.4× real swing in market speed into a fake 1.6×. The raw MLS payload carries
-no `DaysOnMarket` key at all, so this is our own ingest synthesising it: **we own the bug.**
+**[was wrong]** The earlier draft said "every DOM figure we publish is wrong for the entire history"
+and that the cache figure's lineage was unverifiable. Both refuted. **The cache is right**; its writer
+is `compute_and_cache_period_stats` using `COALESCE(days_to_pending, pending_timestamp − OnMarketDate)`,
+and it reproduces exactly. The defect is the raw column and the paths that read it — the video
+market-report producer and `get_beacon_metrics`.
 
-`"CumulativeDaysOnMarket"` is dead — 500 non-null of 594,650 rows (0.084%), zero in every non-Closed
-status. **CLAUDE.md's own quoted-column list names it**, steering code at a dead column. One
-client-facing consequence: `lib/cma/subdivision-story.ts` computes its subdivision speed figure from
-CDOM with no fallback, so it operates on an all-NaN array — **that statistic can never render.**
+The `DaysOnMarket` column equals `CloseDate − ListDate − 1` in 95% of rows across all 34 years, and
+`DaysOnMarket` correlates with list-to-close at **r = 1.000** (within one day on 98.8% of rows).
 
-### 1.3 One label, many numbers
+**The signal loss is the real damage.** Escrow is acyclical — 39 days in the hottest year (2021),
+31 in the slowest (2025) — so bolting it on compresses a genuine **6.4× swing** in market speed into
+a fake **1.6×**. From 2021 to 2025 real time-to-contract rose **540%**; the column moved 50%.
 
-**38 distinct market statistics render across the estate from 9 independent computation engines.
-No stat has a single owner.** Measured today, on Bend:
+### 1.3 Sale-to-list is published on the wrong basis, wrong statistic
 
-- **"Days on market"** is four different measurements: **25, 58, 62, 64**.
-- **"Months of supply"**: the site says **3.56 / seller's market**; the admin report builder says
-  **4.5 / balanced**. A 26% delta and an opposite verdict.
-- **"Sale to list"**: **98.2%** on the seller landing page, **95.7%** on the city market page *and
-  inside the client's CMA* — median on one plane, clamped average on the other.
-- **"Bend"** itself is two populations — polygon vs MLS city text — moving the published median from
-  **$720,000 to $760,000**.
-- The client-facing **CMA** computes its market-area chapters over the whole A bucket while every
-  cache figure on the same document is SFR-only: **382 non-SFR sales, 15.0%**, inside one document.
+`listings.sale_to_list_ratio` is **ClosePrice ÷ OriginalListPrice** (verified: matches original on
+17,411/17,411 rows). The cache aggregates it as `AVG(LEAST(2.0, GREATEST(0.5, ratio)))` — a **clamped
+mean against the original list price**.
 
-### 1.4 Live defects (fixed as migrations, per D8)
+Published **95.7%**. The consensus metric — median of close ÷ **final** list — is **99.3%**. A
+**3.57-point understatement**, of which 1.90 points is the basis and 1.67 is mean-versus-median skew.
+45.2% of sales had a price change (41.4% reduced, 3.8% increased).
 
-| Defect | Evidence | Effect |
-|---|---|---|
-| **`/sell` publishes a wrong verdict** | Page reads "a seller's market · 489 HOMES FOR SALE · 3.6 MONTHS OF SUPPLY". Truth: **988** active Bend SFR → **4.52 months → balanced**. | Sellers are told to list on a false signal. §0 violation. |
-| **Boundary assignment stopped ~2026-04-30** | Of Actives on market since 2026-05-01, **184 of 4,328 (4.3%)** have `boundary_city`. Overall 3,441 of 7,628. | Root cause of the halved inventory. Widens daily. |
-| **The cube's cron has never run** | All 1,985 rows carry four `computed_at` stamps from two manual runs (2026-08-10, 2026-08-15). **Calendar 2026 has 0 rows** — 3,462 closed CO sales missing. | `/housing-market` frozen at 2025. |
-| **April-2026 ingest regression** | 883 structurally bare rows (no sqft/beds/year_built/county/subtype) incl. **124 Actives**; `buyer_financing` flipped format and emitted 26 `[object Object]`; 400 rows with unrecoverable NULL subtype. **[corrected]** the "fake 5.3pp SFR-share drop" was overstated. | Current-window data damaged. |
-| **Two live geographies with permanent zero sample** | `market_stats_cache` holds 449 rows for `tumalo` and 446 for `crooked river ranch`, `sold_count = 0` in every period, because two slug alphabets (`la pine` vs `la-pine`) never join. | Published places that can never have a number. |
-| **`close_price_per_sqft` = 0 instead of NULL** on 65,577 closed rows | Legacy backfill stopped April 2026, never remediated. | One row encodes "unknown" two different ways. |
+`sale_to_final_list_ratio` already exists on the row and is already medianed correctly by the YouTube
+report path. **Two registry entries, never one label.**
 
-### 1.5 Field traps that silently corrupt medians
+### 1.4 Months of supply disagrees across paths and crosses the verdict line
 
-- **`"TotalLivingAreaSqFt"` is a misnomer.** The RETS payload has no such key (0 of 3,000 sampled);
-  the mapper falls back to `BuildingAreaTotal`, which omits finished below-grade area on 2–5% of
-  closes a year by a median 624 sq ft. Those homes' $/sqft is overstated ~32% — and this lands on the
-  **CMA**, where it becomes a valuation error on a named address.
-- **Fractional interests sit inside `PropertyType='A'`** — Tenancy in Common, timeshare, deeded weeks
-  — pairing a per-share price with whole-unit square footage. Median $/sqft **$19.01**. Sunriver's
-  active median list reads **$649,000 against $780,500 clean (−16.8%)**; Camp Sherman is 17.16% of
-  SFR closings.
-- **`PropertyType='G'` is commercial LEASE.** `ClosePrice` holds a rent or $/sf rate, median **$2.01**;
-  **595 already clear the repo's `>= 1000` floor.** `E` is **Farm**, not commercial —
-  `lib/property-type.ts` maps E–H to "Commercial" and is wrong.
-- **Mean sale-to-list is unusable** — $1 auction list prices give Central Oregon SFR 2022 a mean of
-  **6,927%**. Median only, with an outlier rule.
-- **Order-of-magnitude ClosePrice typos survive `>= 1000`** — 18 since 2015; one makes Sunriver's 2026
-  average SFR sale $894,790 instead of $817,718 and its top sale $7.6M instead of $3.55M.
-- **Price-per-sqft has three defensible definitions spreading 18%** on the same Bend data.
-- **`OriginalListPrice` is a copy of `ListPrice` for the whole 1990s** — sale-to-original and
-  price-cut metrics cannot start before 2002/2003. Sale-to-**final**-list is safe from 1997.
-- **Concessions do not exist before 2013**, and after 2013 the computable rate is a reporting-rate
-  curve, not a market signal (two defensible formulas give 44.9%→99.9% and 3.2%→38.3%).
-- **Subtypes appear over time.** Townhouse does not exist before 2003 — all 7,772 townhouse sales are
-  2003+, so pre-2003 townhomes are filed inside SFR. Land subtypes (Agriculture/Recreational/
-  Rangeland) begin 2020.
-- **1990s duplicate closed sales: ~0.5–1%** **[corrected]** — the original 6% was 6–12× overstated.
+`market_pulse_live` reports 488 active / **3.54 months → "seller's market."**
+`get_beacon_metrics` (the `/admin/reports` builder) reports 794 current / **4.5 → "balanced."**
+A 27% delta across the §0 threshold. The repo's own cross-path tolerance is **1%**.
 
-### 1.6 Geography mechanics
+Three active-count definitions coexist *inside the cache layer alone*: 488 (status + subtype +
+polygon), 453 (`end_of_period_inventory`, an interval reconstruction), 794 (`status LIKE '%active%'`,
+which admits Active Under Contract).
 
-- **`City` text is clean** — 309 distinct values, no case or whitespace collisions.
-- **Coordinates are clean and near-complete from 2016** (872 nulls in 77,250 closed service-area
-  sales); polygon hit rate is flat across the decade (93.6% 2016–20 vs 93.7% 2021+), so **one
-  membership rule can cover the modern era — membership need not be era-dependent.**
-- **Polygon coverage is Deschutes-only.** All 3,213 subdivision polygons come from Deschutes County
-  GIS. Crook is 12.6% attributable, Jefferson 0.02%, Klamath 0%.
-- **No tie-break rule exists and 1 in 5 sales is inside more than one polygon** — 19.5% inside 2+
-  subdivisions (max 8), 17.3% inside 2+ neighborhoods (max 5). Summing over polygons double-counts.
-- **`listing_boundary_xref_mv` hard-filters to Active/Coming Soon/Pending**, so the neighborhood
-  *sold* side has always run on subdivision text. **[corrected]** a second, all-status polygon path
-  exists and already carries **67,179 closed sales** — the membership job builds on that, not a new one.
-- **`SubdivisionName` is a weak key** — only 23.1% of closed rows slug-match a county plat and 26.5%
-  match the curated registry.
-- **The 28 "neighborhood" polygons mix three registers** — City of Bend official districts, resort/HOA
-  communities, and county-plat unions — and one is literally named `bend-undesignated`.
+### 1.5 Seasonality is unhandled and can flip a verdict
 
-### 1.7 Inventory history
+Closed volume swings **1.75×** across the calendar year (Aug 607.0 avg vs Jan 346.6, 2019–2025;
+1.74× detrended). The trailing-6-month MoS denominator therefore swings **1.32×** purely by which
+month the window ends — enough to move months of supply 32% on flat supply and cross both the 4.0 and
+6.0 thresholds. No seasonal adjustment exists anywhere in the codebase; the only seasonal code
+(`computeSeasonality` in `lib/cma/extras.ts`) is descriptive and adjusts no figure.
 
-Active inventory **can** be reconstructed: `OnMarketDate → off_market_date` is ~99.8% populated back
-to 1995, and reconstructing 2026-08-10 returns 3,362 against a stored 3,376 (**0.4% error**).
+The median-price seasonal index runs 0.950 (Jan) to 1.037 (Aug), and single-month seasonal steps reach
+**+3.3%** and **−3.4%** — larger than the month-over-month deltas the CRM report actually emails.
 
-**[corrected 2026-08-22 — Matt challenged this and was right.]** An earlier draft said the pre-relist
-market period was *unrecoverable* because `OnMarketDate` is overwritten with the back-on-market date on
-all 112,892 relisted listings. The overwrite is real (verified: `OnMarketDate = back_on_market_timestamp`
-on 112,892 of 112,892) — but that is **correct MLS behaviour, not a data defect**, and the earlier
-episode is **not** lost. `listing_history` holds 3,901,379 events across 546,300 listings and covers
-**112,389 of 112,892 relisted listings (99.6%)**. On a 3,905-row sample, **74.5% carry history events
-predating the current `OnMarketDate`**, recovering a median of **61 days** and a p90 of **381 days** of
-earlier market time.
+### 1.6 Mix is uncontrolled, and at small-city grain it flips signs
 
-**Consequence for the build:** span reconstruction reads `listing_history`, not the `listings` row
-alone. `market_fact_listing_span` emits one row per on-market episode with `span_source`
-(`history` | `listing_row`) and `first_on_market_confidence` (`recovered` | `assumed`). Historical
-inventory is therefore a **point estimate for ~3 in 4 listings** and a band only for the ~25% with no
-predating history — not a band across the board.
+**37% of Bend's published −3.7% year-over-year move is composition, not price.** At smaller grain the
+sign inverts: La Pine publishes **−2.6%** where constant-mix is **+1.5%**; **75%** of Prineville's
+published +6.0% is mix. No computation path applies any mix control.
 
-`status_change_timestamp` is corrupted by bulk platform-migration stamps and must never be used for
-historical timing; `off_market_date` survived intact. 28,169 listings (4.7%) have `off_market_date`
-before their on-market date. 150 Actives (1.97%) are zombies whose own payload says otherwise.
+Partial disclosure does exist and the spec must not claim otherwise — median $/sqft is published
+beside the median, the `/housing-market` hub publishes a composition chart, and a mix-immune
+repeat-sales read runs on one landing page.
 
-### 1.8 The pricing engine's exposure
+### 1.7 Geography: overlap, coverage, and a fix that already exists
 
-The valuation engine consumes five market inputs and **four are currently unsafe**:
+`listing_boundary_xref_mv_src` is a bare `JOIN boundaries ON ST_Within(point, polygon)` with **no
+tie-break** — one listing emits one row per containing polygon. Of 36,536 service-area closed sales
+since 2021 with coordinates: **19.5% fall inside 2+ subdivision polygons** (max 8) and **17.3% inside
+2+ neighborhood polygons** (max 5). Cities never overlap. Summing across polygons inflates totals
+**1.33×** at subdivision grain and **1.50×** at neighborhood grain. Coverage fails the other way too:
+26.1% sit in no subdivision polygon, 49.5% in no neighborhood polygon.
 
-- The comp pool is **hard-capped at 800 rows ordered by close_date DESC**, so Bend's 18-month ladder
-  can only see the most recent **~6.4 months**; the rural statewide pool sees **2.9 months** — exactly
-  the segment the wide rungs exist for.
-- `pricing_market_index` is a **single all-product median** mixing detached, townhome/condo,
-  manufactured and leased-land $/sqft (up to an 18.5 $/sqft gap that itself moves monthly).
-- The **current month is always partially ingested** and is read as complete — it is the "to" end of
-  every time factor.
-- `sale_pricing_facts` is refreshed by a full-table sweep taking **~23 days**, so recent sales enter
-  the corpus weeks late.
-- **Three service-area places have no pricing corpus at all** — `tumalo`, `crooked-river-ranch`,
-  `metolius`.
-- For a subject that is currently listed, the whole comp engine is decoration: the close estimate is
-  **last ask × 0.98**, a constant that is measurably mis-calibrated.
+**The fix already exists and only needs porting.** Smallest-polygon-wins
+(`ORDER BY ST_Area(polygon) ASC LIMIT 1`) is used by the CRM person geo resolver
+(`fub_person_geo_and_lookup_rpc`, `crm_geo_backfill_candidates`). It was never applied to the listing
+layer. `listings.boundary_subdivision` is populated on **0.34%** of those sales.
+
+**The 28 neighborhood polygons are not a partition.** They mix three registers — 14 City of Bend GIS
+districts (one literally `bend-undesignated`), 12 resort/HOA communities derived from Spark alias
+name-matching, 2 county-plat unions. **57 pairs overlap** (broken-top ∩ northwest-crossing = 4,044
+acres). The discovery-derived polygons are grossly oversized — **broken-top 11,496 acres,
+brasada-ranch 16,126, three-rivers 15,703**. `bend-southeast-bend` **fails `ST_IsValid`**. Two slugs
+collide across tiers (eagle-crest, sunriver). **32.5% of active listings inside any neighborhood
+polygon fall inside two or more.**
+
+Polygon coverage is Deschutes-only: all 3,213 subdivision polygons come from Deschutes County GIS;
+Crook is 12.6% attributable, Jefferson 0.02%, Klamath 0%.
+
+**[was wrong]** The "two slug alphabets, six never join" claim is substantially incorrect. Eleven of
+twenty cache city slugs fail an exact join, but **only two** are caused by the space-vs-hyphen split
+— the other **nine have no `boundaries` row under any spelling**, which is missing geometry, not a
+spelling mismatch. The alphabets are already reconciled in code by `lib/market/city-cache-slug.ts`
+across ~18 call sites, pinned by a test and by the `ci:city-cache-slug` gate. No code path joins the
+two directly.
+
+### 1.8 The analytics cube has never been refreshed by its cron
+
+All 1,985 rows of `analytics_mart_market_annual` carry one of four `computed_at` stamps from two
+ad-hoc backfills (2026-08-10, 2026-08-15). `analytics_inventory_snapshot` has a single stamp and 24
+rows. The crons have been registered in `vercel.json` since 2026-08-10 and have **never written a row**.
+The cube stops at 2025 while **3,464 Central Oregon sales have already closed in 2026**.
+
+Its labels are wrong: `type_scope='sfr'` is `PropertyType='A'` verbatim — Bend 2025 counts 2,535 as
+single-family where 2,182 are detached, the rest being 152 townhouse, 99 manufactured-on-land, 86
+condominium, 9 tenancy-in-common and one timeshare. `type_scope='multi'` collapses B+C, and B
+(manufactured in park / on leased land) is **42.1%** of that bucket.
+
+Cube and cache disagree by **+49.9% to +52.1%** on Bend sold count because they count different
+universes and different geographies, and **neither matches the repo's declared SFR convention**.
+
+**[was wrong]** "Two live surfaces give different answers to how many homes sold this year" —
+refuted as a numeric conflict. Where both can answer they agree exactly (mart 2024 = RPC 2024 =
+5,707). The hub is pinned to 2024, and on a mart miss it renders an explicit "did not return"
+state rather than a wrong number. The real defect is narrower: the explorer can report 2026 and the
+hub structurally cannot reach it.
+
+The feature cube publishes **fireplace prevalence as a measured share when no explicit negative
+exists anywhere** — `fireplace_yn` is true 175,832 / NULL 419,547 / **false 0**, and `fireplaces_total`
+is 100% NULL. The published 62.89% is a floor. The site's own search flags mark **74.6%** of the same
+cohort as having a fireplace — a 663-row gap published as "no fireplace."
+
+The office dimension is joined **by name, not key**: `office_id` is NULL on all 12,035 rows despite
+the FK. Name matching resolves 416 of 898 strings (46.3%) but **90.4% of sides**. The MLS sentinel
+**"No Office" has its own dim row and is never suppressed** — it ranks #2 in one year and #3 in 2025
+buy-side on 356 sides.
+
+### 1.9 Field traps
+
+- **`"TotalLivingAreaSqFt"` is a misnomer** — no such RETS key; populated from `BuildingAreaTotal`,
+  omitting finished below-grade area. Lands on the CMA as a valuation error on a named address.
+- **Fractional interests sit inside `PropertyType='A'`** — Tenancy in Common (2,006 rows, median list
+  $35,000). Sunriver's class-A median reads **$65,000 (8.8%) low**; Camp Sherman is 17.16% of its
+  detached closings.
+- **`PropertyType='G'` is commercial LEASE** — 4,335 rows whose price is rent; median list **$1.25**,
+  98.2% under $10,000; remarks confirm ("3,200 sqft @ $3,200/mo" with ClosePrice=3200). **595 already
+  clear the repo's `>= 1000` closed-sale filter.**
+- **`E` is Farm, not commercial.** `lib/property-type.ts` maps E–H to "Commercial", hiding ~1,000
+  genuine house-on-acreage sales from every residential statistic.
+- **The market-report property-type filter is inert** — `getPropertyTypeSegmentKey` substring-matches
+  human words while the caller feeds it a single MLS letter, so **A through H all pass** a filter
+  whose docstring promises to exclude land and manufactured homes.
+- **Mean sale-to-list is unusable** — $1 auction lists produce ratios in the millions of percent.
+- **Order-of-magnitude ClosePrice typos survive `>= 1000`.**
+- **Price-per-sqft has four defensible methods spreading 17.9% on Bend** (median-of-ratios $391,
+  aggregate $432, mean-of-ratios $428, median-over-median $366). Bend is the worst case; other cities
+  spread 5.2–10.2%. The stored `close_price_per_sqft` column **is** the per-home ratio.
+- **Concessions**: no flag column exists — the Yes/No lives only in `details->>'Concessions'`, so
+  every consumer infers incidence from a NULL. Published copy calls the cache's
+  `median_concessions_amount` "the median seller concession" when it is the median **among sales that
+  had one**.
+- **April 2026 ingest incident**: 29.7% of that month's closings lost the concessions flag, 32.8% lost
+  `buyer_financing`. The format flip happened **in our own mapper, not at the MLS** — the raw feed
+  value in `details` is format-invariant and is the correct source of truth.
+
+### 1.10 Pricing engine
+
+- **The comp pool is hard-capped at 800 rows** ordered by close date (`lib/pricing/select.ts` →
+  `facts.ts:145`, the only caller). For a median Bend detached subject, 2,411 sales are eligible
+  across the nominal 18-month window — the ladder sees the most recent 800.
+- **Two time-adjustment models are live on the same subjects, plus a silent third.** The CMA walks
+  the monthly index only when `usePath` is true; every broker-curated CMA falls back to the
+  straight-line YoY smear, and the **BPO never uses the index at all**. The third case: a city can
+  return index rows while having **zero months at n ≥ 8**, so every comp gets factor 1.0 while the
+  document still prints "Time adjustment follows the monthly path." For a 12-month-old Redmond comp
+  the two models differ by **7.9 points and opposite signs** (+6.4% index vs −1.5% smear) — about
+  $40,000 on a $500,000 comp. `render-market-page.ts:124` tells the seller the YoY rate "is the time
+  adjustment on every sale in the grid," which is false whenever the index path is active.
+- **The close-to-list conversion is one month's citywide median sale-to-original**, unweighted. It is
+  gated at n ≥ 8, which blocks the worst case but still admits 8–10-sale months producing **+10.6% to
+  +11.8%** list markups.
+- **The current month is always partially ingested and read as complete.**
+- **`sale_pricing_facts` has no recency lane** — a pure keyset sweep, and the cron drains only
+  8 × 200 rows per run against 149,535 qualifying rows.
+- **Metolius is a genuine recoverable gap**: a live service-area city with **324 detached closes**
+  sitting in `listings`, absent from both `sale_pricing_facts` and `pricing_market_index`. Tumalo and
+  Crooked River Ranch are a different case — they never occur as MLS city values.
+- **For a listed subject the headline close is `lastAsk × 0.98`**, hard-overriding comps.
+  **[was wrong]** "The comp engine is decoration" is overstated — comps still drive the public
+  over/under stamp, the conservative and high-end list rails, seller net and days-to-offer.
+
+### 1.11 Small-sample suppression exists but its floor is too low
+
+**[was wrong]** An earlier draft said suppression is "violated at scale." It is **implemented and
+holding** — no row at n ≤ 2 publishes a median, and every row at n < 5 suppresses DOM, $/sqft and
+sale-to-list. The real finding is that the floor is set at **n ≥ 3**, so the 1,286 thin medians are
+exactly n=3 (708 rows) and n=4 (578 rows), never n=2. That is a threshold disagreement with the
+industry convention (n ≥ 10), not an absent guard.
+
+The thinness itself is real: **57.6% of neighborhood rows (4,253/7,390) and 88.1% of subdivision rows
+(89/101)** sit on fewer than 10 closed sales.
+
+**515 of 680 Bend subdivisions (75.7%) never reach 10 detached sales even over 36 months.**
 
 ---
 
 ## 2. What is computable, and from when
 
-| Metric family | Earliest trustworthy | Gate |
+| Metric family | Earliest | Gate |
 |---|---|---|
-| Median / mean close price, volume, sold count | **1997** | service-area scope required |
-| Sale-to-**final**-list ratio | **1997** | median only; outlier rule |
-| Price per square foot | **1997** | sqft > 0; below-grade caveat; one definition |
-| Days to contract | **2006** | `purchase_contract_date` is a copy of CloseDate pre-2003; 2003–05 carries negative escrow |
-| Sale-to-**original**-list, price-cut rate, relist rate | **2002–03** | OLP=LP through the 1990s |
-| Buyer-financing mix | **2004** (near-complete **2020**) | April-2026 format break must be normalised |
-| Concessions | **2013**, as a *reported* rate only | never as a market signal without the denominator stated |
-| Subtype segmentation | **2003** (townhome), **2020** (land subtypes) | pre-dates filed inside parent |
-| Active inventory / months of supply — current | **now** | membership must be live |
-| Active inventory — historical | **1995 as a band** | relist overwrite; publish band or refuse |
+| Median/mean close, volume, sold count | **1997** | service-area scope required; CO history starts 1997 (1993–96 is Southern Oregon) |
+| Sale-to-**final**-list (median) | **1997** | median only; outlier rule |
+| Price per square foot | **1997** | sqft > 0; one declared method; below-grade caveat |
+| Days to contract | **2006** | `purchase_contract_date` copies CloseDate pre-2003; 2003–05 has negative escrow |
+| Sale-to-**original**-list, price-cut rate, relist rate | **2002–03** | OLP = LP through the 1990s |
+| Buyer-financing mix | **2004** (near-complete 2020) | April-2026 format break normalised from `details` |
+| Concessions | **2013**, as a *reported* rate | denominator must be stated |
+| Subtype segmentation | **2003** townhome, **2020** land subtypes | pre-2003 townhomes were filed as **Condominium**, not SFR — condo share halves exactly as townhouse ramps, while SFR share stays flat |
+| Active inventory / MoS, current | **now** | membership must be live |
+| Active inventory, historical | **1995** | point estimate where history recovers the span, band otherwise (§3.2) |
 
 ---
 
 ## 3. Architecture
 
-### 3.1 Foundation: extend `sale_pricing_facts`, do not build a new cube
+### 3.1 Foundation
 
-`sale_pricing_facts` is already "the pricing moat SoR — one row per closed Central Oregon residential
-sale, every year we have (1996+), no close-date floor," carrying city + slug, postal code, county,
-subdivision and a normalised subdivision, lat/lng, type and subtype, beds, baths, sqft, year built,
-lot acres, plus normalised **product / lot / story / water / sewer / HOA classes**. That is the atomic
-fact grain, already indexed for city-by-date, subdivision-by-date and an "apples" composite.
+Extend **`sale_pricing_facts`** — already one row per closed Central Oregon residential sale, 1996+,
+carrying city/slug, postal code, county, subdivision + normalised subdivision, lat/lng, type, subtype,
+beds, baths, sqft, year built, lot acres, and normalised product/lot/story/water/sewer/HOA classes.
+Do **not** extend `analytics_mart_market_annual` (§1.8).
 
-`analytics_mart_market_annual` is **not** the thing to extend: two geo grains, five type buckets,
-annual only, `type_scope='sfr'` is 17.5% non-SFR and `type_scope='multi'` is mostly manufactured homes.
+Build `market_fact_sale` (all segments per D7, scope as a column, exclusions applied and *counted*,
+`complete_through` stamped, plus a recency refresh lane) and `market_fact_listing_span`.
 
-**Build:**
-- `market_fact_sale` — generalise `sale_pricing_facts`: all segments (D7), service-area scope as a
-  column, cleaning predicates applied and *recorded*, `complete_through` stamped.
-- `market_fact_listing_span` — one row per on-market interval from `OnMarketDate`/`off_market_date`,
-  so active inventory is derivable as of any date, carrying a `relist_gap_unknown` flag (§1.7).
+### 3.2 `place_membership`
 
-### 3.2 `place_membership` — one answer to "is this home in this place"
+One row per (listing, place), covering listed and sold alike:
+`listing_key · geo_type · geo_slug · method (city_text|polygon|alias) · confidence · effective_from ·
+effective_to · is_primary`.
 
-One row per (listing, place), covering **on-market and closed alike**:
-`listing_key · geo_type · geo_slug · method (city_text | polygon | alias) · confidence
-(verified | unverified) · effective_from · effective_to · is_primary`.
+- Cities resolve by **MLS city text** (D5). Sub-city by polygon, then alias.
+- **`is_primary` = smallest containing polygon**, porting the rule that already exists in the CRM geo
+  resolver. Only primary rows may be summed (§1.7).
+- Polygons that fail `ST_IsValid` or are unverified are marked and cannot back a published ratio.
+- One canonical hyphen slug alphabet.
 
-Rules:
-- **Cities resolve by MLS city text** (D5). Sub-city places resolve by polygon, falling back to alias.
-- **`is_primary` resolves the 19.5% multi-polygon overlap** — smallest containing polygon wins, and
-  only primary rows may be summed. No metric may double-count.
-- Actives and closes resolve through the **same** rows, so a mixed-method ratio is impossible.
-- A place whose members were resolved by more than one method is **non-publishable for ratio metrics**,
-  set by the layer, not remembered by a reviewer.
-- Slugs are canonical hyphen-form; one alphabet, enforced.
+**Span reconstruction reads `listing_history`.** On all 112,892 relisted listings the `listings` row
+resets `OnMarketDate` and `ListDate` to the back-on-market date — correct MLS behaviour, not a defect
+— but the pre-gap interval survives: `listing_history` covers **99.5%** of them and **73.0%** carry
+events dated before `OnMarketDate` (median **102 days** earlier), including explicit `NewListing`
+events (37.1%) and Active→Expired→Active transitions (29.7%). Emit `span_source` and
+`first_on_market_confidence`.
 
-### 3.3 The metric registry — declared once, in code
+Never read `status_change_timestamp` (bulk migration stamps: 51,506 rows on 2020-02-28 alone).
 
-Each metric is one entry: `stat_id · label · formula · population predicate · required inputs ·
-min_n · allowed grains · earliest_year · window policy · rounding · outlier rule`.
-Adding a metric is adding an entry; it inherits membership, windowing, sample floors, provenance and
-publishability automatically.
+### 3.3 Metric registry
 
-**Vocabulary defined once here, not per writer:**
-- `detached` = `PropertyType='A' AND property_sub_type='Single Family Residence'` (D1)
-- `active` = `StandardStatus='Active'` only — never Coming Soon, never Active Under Contract
-- `closed` = `StandardStatus ILIKE '%Closed%' AND ClosePrice >= 1000` **plus** the exclusions of §3.4
-- `service_area` = one county/city set, defined once (D6)
+Each stat declared once: `stat_id · label · formula · population predicate · required inputs ·
+min_n · allowed grains · earliest_year · window policy · rounding · outlier rule`. Vocabulary defined
+once — `detached`, `active` (Active only, never Coming Soon, never Active Under Contract),
+`closed` (§3.4), `service_area`.
 
-### 3.4 Mandatory exclusions before any median or ratio
+### 3.4 Mandatory exclusions
 
-1. Non-service-area rows (D6).
-2. `PropertyType='G'` (commercial lease) from every sale statistic.
-3. Fractional interests — Tenancy in Common, timeshare, deeded week — from residential medians.
-4. Order-of-magnitude ClosePrice typos (ratio test against list price and against segment median).
-5. `$1`-class auction list prices from any ratio.
-6. Retroactive off-market entries (`DaysOnMarket = 0` and same-day contract) — flagged, excluded from
-   speed metrics, retained for volume.
-7. Duplicate closed events on the same parcel and date (~0.5–1%).
-8. Rows with `sqft <= 0` from $/sqft only — counted and the exclusion published.
+Non-service-area rows · `PropertyType='G'` (lease) from every sale statistic · fractional interests
+from residential medians · order-of-magnitude price typos · $1-class auction lists from every ratio ·
+retroactive off-market entries (flagged, excluded from speed, retained for volume) · duplicate
+parcel+date events · `sqft <= 0` from $/sqft only, with the exclusion counted and published.
 
-### 3.5 One compute job, one read function
+### 3.5 Compute and read
 
-The job evaluates the registry per (geo, window, segment, metric) and writes one row per figure with
-**provenance**: rows counted, method, definition id, window actually used, `computed_at`, confidence,
-publishable, and the reason when not.
+One job writes value **plus provenance** (rows counted, method, definition id, window used,
+`computed_at`, confidence, publishable, reason). One `getMetric({stat, geoType, geoSlug, segment,
+window})` is the only read path.
 
-`getMetric({ stat, geoType, geoSlug, segment, window })` → `{ value, provenance, publishable, reason }`.
-Every consumer calls this: place pages, charts, market reports, CMA, BPO, newsletter, video producers,
-the JSON feed, admin. The 18 DAL paths and 9 engines collapse into one.
+### 3.6 Sample and window policy (D4)
 
-### 3.6 Sample-size and window policy (D4)
+Range **n ≥ 5** · median **n ≥ 10** · delta or verdict **n ≥ 30**. Ladder 12 → 24 → 36 months,
+**window printed on the figure**, then refuse with a reason.
 
-| Statistic class | min_n |
-|---|---|
-| A range (low–high) | 5 |
-| A median (price, $/sqft, sale-to-list, days to contract) | 10 |
-| A YoY / MoM delta, or a market verdict | 30 |
+**Subdivision is the comp/CMA grain, not the published-statistic grain** (§1.11). Subdivision pages
+show counts and individual sales; price statistics publish at neighborhood and city.
 
-Window ladder: 12mo → 24mo → 36mo, stopping at the first that clears `min_n`. **The window used is
-printed on the figure.** If 36mo fails, the layer returns `publishable: false` with a reason, and the
-surface shows the refusal plus the parent place.
-
-**Subdivision is the CMA / comp grain, not the published-statistic grain.** 515 of 680 Bend
-subdivisions (75.7%) never reach 10 closed detached sales even over 36 months. Subdivision pages show
-counts and individual recent sales; price *statistics* publish at neighborhood and city.
-
-Today's cache violates this at scale: **57.6% of neighborhood rows and 88.1% of subdivision rows are
-built on fewer than 10 closed sales.**
+Seasonality (§1.5): publish months of supply with its window stated, store the 12-month variant
+alongside, and seasonally adjust count metrics only — never price, DOM or sale-to-list.
 
 ### 3.7 Gates
 
-1. **No writer computes geography inline** — fails any market-metric SQL resolving membership from
-   `boundaries`, `SubdivisionName` or `"City"` instead of `place_membership`.
-2. **No consumer reads a market store directly** — extends the DAL-boundary gate to
-   `market_stats_cache`, `market_pulse_live`, `market_history_weekly`, `analytics_mart_*`.
-3. **Every rendered figure carries provenance** — a figure without a trace fails the build.
-4. **Mixed-method membership ⇒ non-publishable**, enforced in the layer. Retires
-   `geo-grain-trust.ts` as a compensating control.
-5. **`min_n` and window policy live in the registry**, never per surface.
-6. **Dead-column gate** — fails any read of `CumulativeDaysOnMarket` or `"DaysOnMarket"` on a
-   consumer surface, and any `mls_source = 'central_oregon'` filter (it is a constant).
-7. **Freshness gate** — a metric whose `complete_through` is older than its window fails rather than
-   silently serving stale data. This is what would have caught the dead cube cron and the stalled
-   boundary job on day one.
+1. No writer computes geography inline.
+2. No consumer reads a market store directly.
+3. Every rendered figure carries provenance.
+4. Mixed-method or non-primary membership ⇒ non-publishable.
+5. `min_n` and window policy live only in the registry.
+6. Dead-column gate: `CumulativeDaysOnMarket` (500 non-null of 595,379), consumer-surface
+   `"DaysOnMarket"`, and any `mls_source='central_oregon'` filter (a constant on 100% of rows).
+7. **Freshness gate** — a metric whose `complete_through` predates its window fails rather than
+   serving stale data. This catches the dead cube cron and any future stall.
+8. **Overlap gate** — a sum over polygons that does not filter `is_primary` fails.
 
 ---
 
-## 4. The stat registry, v1
+## 4. Registry v1
 
-Seeded from the 38 statistics found rendering today, deduplicated to one definition each. Names are
-chosen so two different things can never share a label.
+**Price** median_close · median_ppsf (median of per-home ratios, method declared) · median_list_active ·
+total_volume · price_band_distribution
+**Speed** median_days_to_contract · median_days_to_close (labelled) · median_age_active_inventory
+**Negotiation** median_sale_to_final_list · median_sale_to_original_list · pct_with_price_cut ·
+median_price_cut_pct · median_concession_reported (denominator stated)
+**Supply** active_count · new_listings (relist-excluded) · pending_count · closed_count ·
+months_of_supply (6-month base, threshold sentence and window mandatory) · months_of_supply_12mo ·
+absorption_rate
+**Mix** segment_share · bedroom_distribution · cash_share · financing_mix (2004+)
+**Movement** yoy_median_price · mom_median_price · yoy_sold_count · yoy_days_to_contract
 
-**Price** — median_close · mean_close (internal only) · median_ppsf (median of per-home
-ClosePrice/sqft, sqft>0) · median_list_active · total_volume · price_band_distribution
-**Speed** — median_days_to_contract (D2) · median_days_to_close (labelled as such) ·
-median_age_active_inventory · pct_under_contract_in_30d
-**Negotiation** — median_sale_to_final_list · median_sale_to_original_list · pct_with_price_cut ·
-median_price_cut_pct · median_concession_reported (with denominator stated)
-**Supply** — active_count · new_listings (relist-excluded, 90-day window; 17.6% of raw new listings
-are relists) · pending_count · closed_count · months_of_supply (6-month denominator, house
-convention, threshold sentence mandatory) · months_of_supply_12mo (stored alongside) ·
-absorption_rate · pct_price_reduced_active
-**Mix** — segment_share · bedroom_distribution · cash_share · financing_mix (2004+)
-**Movement** — yoy_median_price · mom_median_price · yoy_sold_count · yoy_days_to_contract
+Each entry carries its earliest year (§2), `min_n` (§3.6) and exclusions (§3.4). **§5 of `EXECUTE.md`
+step 4 is where these get written as real predicates — that work is not yet done.**
 
-Each entry carries its earliest year (§2), its min_n (§3.6), its exclusions (§3.4), and — where the
-industry has a genuine dispute (supply denominator, balance point) — the choice made and why.
-
-Industry alignment, verified: days on market is measured **list-to-contract** (Redfin/NAR/Altos);
-months of supply is inventory over a monthly sales pace; **medians beat means** for price and
-sale-to-list; price-per-sqft is the **median of per-home ratios**; count metrics get seasonally
-adjusted while price/DOM/sale-to-list do not; thin samples are **suppressed or widened, never
-published raw**. Our verdict thresholds (≤4 seller's · 4–6 balanced · ≥6 buyer's) are stricter than
-NAR's six-month balance point — **keep them** (they are gated and internally consistent) but print the
-threshold sentence and the window on every verdict.
+Industry alignment, verified: DOM is list-to-contract; months of supply is inventory over a monthly
+sales pace; medians beat means for price and sale-to-list; $/sqft is the median of per-home ratios;
+count metrics get seasonally adjusted, price/DOM/sale-to-list do not; thin samples are suppressed or
+widened. Our thresholds (≤4 seller's · 4–6 balanced · ≥6 buyer's) are stricter than NAR's six-month
+balance point — **keep them**, but print the threshold sentence and window on every verdict.
 
 ---
 
-## 5. Granularity — the moat, honestly
+## 5. Still to write before this is buildable
 
-Every metric is computable at: **region · county · city · neighborhood/district · planned community ·
-subdivision (counts and sales only) · zip**, crossed with **segment** (D7) and **window**.
+1. **Registry predicates** — every stat above as real SQL, not English.
+2. **DDL** — columns, types, keys and indexes for `market_fact_sale`, `market_fact_listing_span`,
+   `place_membership`.
+3. **Segment predicates** — the exact definition of each of D7's segments.
 
-Leaderboards become a query against the layer, not a new pipeline: best performing (YoY median),
-most expensive (median), biggest movers, fastest to contract, most price cuts, most new inventory.
-Verified available today at neighborhood grain over 27 places — Orchard District **+8.8%** YoY through
-Tetherow **−26.1%**, sold_count ≥ 8.
+## 6. Canon corrections this forces
 
-`activity_events` backs motion sections now — 11,024 price drops, 10,483 new listings, 6,179 pendings,
-5,172 closings, fresh daily. **"Most viewed" is not backed** — `listing_views` is empty and
-`user_events.listing_view` holds 192 events; instrument before promising it.
+- CLAUDE.md §0 — "SFR convention is `PropertyType='A'`" is wrong per D1.
+- CLAUDE.md §7 — the quoted-column list names `CumulativeDaysOnMarket`, a dead column.
+- `docs/DATABASE_FOR_AI_AGENTS.md` — CDOM dead, `mls_source` a constant, `listings` two markets.
+- `lib/property-type.ts` and `lib/data/analytics/property-type-labels.ts` — E is Farm, G is Lease,
+  and the two files contradict each other and the docs.
 
----
+## 7. Open for Matt
 
-## 6. Pricing-engine requirements
-
-The layer must guarantee the valuation engine: comp selection **paged in SQL, never a 800-row
-truncated pool**; a **product-class-keyed** index (`city_slug × product_class × month`); a
-**staleness bound** so a missing index month returns null instead of a silent factor of 1.0; a
-`complete_through` stamp so a half-ingested month is never the "to" end of a time factor; a **recency
-lane** so recent closes enter within a day rather than 23; **pricing geography resolved by
-membership** so Tumalo, Crooked River Ranch and Metolius stop having no corpus; and a **served
-close-to-last-ask ratio** replacing the hard-coded 0.98.
-
----
-
-## 7. Sequence (D3)
-
-1. **`place_membership` + `market_fact_*` built and backfilled alongside today's writers.** No reads
-   switched. Every disagreement with current attribution recorded.
-2. **Registry + compute job write to a shadow store.** Reconcile every live figure; each difference is
-   either a defect found or a definition recorded. Matt reviews the delta report.
-3. **Migrate consumers one surface at a time**, each proving reconciliation before it flips.
-   **`/sell` is migration #1** — it carries the wrong verdict (§1.4). CMA and BPO follow, because the
-   subdivision speed statistic there can never render today.
-4. **Gates land as each bypass class reaches zero**, with a baseline that may only shrink.
-5. **Then** the granular surfaces and leaderboards.
-
-Repairs folded into step 1 rather than shipped as hotfixes (D8): restart boundary assignment, restart
-the cube cron, normalise `buyer_financing`, null out `close_price_per_sqft = 0`, quarantine the 883
-bare rows and the 150 zombie Actives, retire the two zero-sample geographies, unify the slug alphabet,
-and correct `lib/property-type.ts` (E = Farm, G = Lease).
-
----
-
-## 8. Canon changes this forces
-
-- **CLAUDE.md §0** — "SFR convention is `PropertyType='A'`" is wrong (D1) and must be restated.
-- **CLAUDE.md §7** — the quoted-column list names `CumulativeDaysOnMarket`, a dead column; remove it
-  and add the `DaysOnMarket` warning.
-- **`docs/DATABASE_FOR_AI_AGENTS.md`** — mark CDOM dead, `mls_source` a constant, and `listings` a
-  two-market table.
-
-## 9. Still open
-
-1. Do agent/office analytics (`analytics_mart_office_share_annual`, currently wired to nothing — every
-   `office_id` unresolved, MLS sentinel "No Office" ranked as a brokerage) belong in the public cube?
-2. Turn on listing-view instrumentation and retire the dead `listing_views` table?
-3. Historical inventory publishes as a **band** (§1.7) — publish the band, or refuse pre-2016
-   months-of-supply entirely?
+1. Pre-2016 inventory where history does not recover the span — publish the band, or refuse?
+2. Publish the "no fireplace" class at all, given no explicit negative exists (§1.8)?
