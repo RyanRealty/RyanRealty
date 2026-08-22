@@ -419,5 +419,9 @@ counties. `market_service_area` in `DDL.sql` replaces the three disagreeing defi
 
 ## 7. Open for Matt
 
-1. Pre-2016 inventory where history does not recover the span — publish the band, or refuse?
-2. Publish the "no fireplace" class at all, given no explicit negative exists (§1.8)?
+None. DECISIONS.md wins.
+
+- Q1 (pre-2016 unrecoverable spans) — the era was wrong. Unprovable spans are **2021-onward**.
+  Treatment is D11 (labeled band) plus the ODS 60-day CDOM reset. Do not re-ask.
+- Q2 (no-fireplace class) — closed by D13: no. Coverage threshold for positives: OMB 70%
+  item-response as the house analog (DECISIONS, 2026-08-22 audit).

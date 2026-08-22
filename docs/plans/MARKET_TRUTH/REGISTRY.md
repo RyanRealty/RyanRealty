@@ -45,30 +45,47 @@ class-A median **$65,000 (8.8%) low** and are 17.16% of Camp Sherman's detached 
 
 ### 2.1 `closed` — the base population for every sold statistic
 
+The pre-audit draft put `row_number() OVER (...)` in `WHERE`. That is invalid Postgres
+(`42P20`). Duplicate suppression is a `DISTINCT ON` (or a CTE), not a filter clause.
+
 ```sql
-"StandardStatus" ILIKE '%Closed%'
-AND "ClosePrice" >= 1000
-AND "CloseDate" IS NOT NULL
-AND public.market_in_service_area("City")          -- SPEC D6; county is NOT a usable key
-AND "PropertyType" <> 'G'                          -- lease rent is not a sale price
-AND (property_sub_type IS NULL OR property_sub_type NOT IN
-     ('Tenancy in Common','Timeshare','Residential Leased Land','Stock Cooperative'))
-AND NOT (   -- order-of-magnitude price typos
-      "ListPrice" > 0 AND (
-        "ClosePrice" / "ListPrice" BETWEEN 9 AND 11
-     OR "ListPrice" / "ClosePrice" BETWEEN 9 AND 11
-     OR "ListPrice" / "ClosePrice" > 500 ))
-AND NOT (   -- duplicate closed event on the same parcel and date, keep one
-      parcel_number IS NOT NULL AND parcel_number <> ''
-      AND row_number() OVER (PARTITION BY btrim(parcel_number), "CloseDate"::date
-                             ORDER BY "ModificationTimestamp" DESC) > 1 )
+SELECT DISTINCT ON (
+  CASE
+    WHEN parcel_number IS NOT NULL AND btrim(parcel_number) <> ''
+      THEN btrim(parcel_number) || '|' || "CloseDate"::date::text
+    ELSE "ListingKey"
+  END
+)
+  *
+FROM public.listings
+WHERE "StandardStatus" ILIKE '%Closed%'
+  AND "ClosePrice" >= 1000
+  AND "CloseDate" IS NOT NULL
+  AND public.market_in_service_area("City")
+  AND "PropertyType" IS DISTINCT FROM 'G'
+  AND (property_sub_type IS NULL OR property_sub_type NOT IN
+       ('Tenancy in Common','Timeshare','Residential Leased Land','Stock Cooperative'))
+  AND NOT (
+        "ListPrice" > 0 AND (
+          "ClosePrice" / "ListPrice" BETWEEN 9 AND 11
+       OR "ListPrice" / "ClosePrice" BETWEEN 9 AND 11
+       OR "ListPrice" / "ClosePrice" > 500 ))
+ORDER BY
+  CASE
+    WHEN parcel_number IS NOT NULL AND btrim(parcel_number) <> ''
+      THEN btrim(parcel_number) || '|' || "CloseDate"::date::text
+    ELSE "ListingKey"
+  END,
+  "ModificationTimestamp" DESC NULLS LAST;
 ```
 
-**Retroactive off-market entries** — `"CloseDate" < "ListDate"` (14,360 rows, 3.80%; all carry
-`DaysOnMarket = 0`) — are **not** an ingest bug. They are after-the-fact MLS comp entry for
-pocket and office-exclusive sales, 70–79% of which close at exactly the list price. They are
-**retained for volume and price, excluded from every speed statistic**, flagged
-`exclusion_reason = 'retroactive_entry'` on the speed side only.
+Partial exclusions are an **array**, applied per `stat_id` — never a row-level `is_publishable=false`
+that drops the sale from volume (AUDIT B2).
+
+**Retroactive off-market entries** — `"CloseDate"::date < "ListDate"::date` (14,412 rows on
+2026-08-22) — are **not** an ingest bug. They are after-the-fact MLS comp entry for pocket and
+office-exclusive sales. They are **retained for volume and price, excluded from every speed
+statistic**, flagged `exclusion_reasons ⊇ {'retroactive_entry'}` on the speed side only.
 
 ### 2.2 `active` — the base population for every inventory statistic
 
@@ -79,7 +96,9 @@ AND public.market_in_service_area("City")
 AND "PropertyType" <> 'G'
 ```
 
-Coming Soon is **never** inventory. Pending is counted separately.
+Coming Soon is **never** inventory. Pending is counted separately. Live
+`refresh_market_pulse` currently counts `IN ('Active','Coming Soon')` — that is a defect the
+migration must not copy (AUDIT B4).
 
 **No city polygon filter.** That filter is what makes `/sell` publish a wrong verdict: it keeps 488
 of 781 Bend detached actives and biases the ratio toward "seller's market" because the excluded ring
@@ -144,7 +163,7 @@ mean of 6,927%.
 | stat_id | formula | min_n | earliest | notes |
 |---|---|---|---|---|
 | `active_count` | `count(*)`, population `active` | 1 | now | One definition. Today three coexist inside the cache alone (488 / 453 / 794). |
-| `new_listings` | `count(*)` of episodes starting in window, **excluding relists within 90 days** | 5 | 1997 | 17.6% of trailing-12-month new listings are the same parcel returning. Publish raw and de-duplicated during migration. |
+| `new_listings` | `count(*)` of episodes starting in window, **excluding relists within 90 days** | 5 | 1997 | 90 days is a **new-listing de-dupe**, not the DOM/CDOM reset. CDOM / first-on-market reset is **60 days off-market** (Oregon Data Share §3-20). Publish raw and de-duplicated during migration. |
 | `pending_count` | `count(*)` where status Pending or Active Under Contract | 1 | now | Never inside `active_count`. |
 | `closed_count` | `count(*)`, population `closed` | 1 | 1997 | |
 | `months_of_supply` | `active_count / (closed_count_180d / 6.0)` | 30 | now | House convention. **Must print its window and the threshold sentence.** The 6-month denominator swings 1.32× by window end-month from seasonality alone — enough to cross 4.0 and 6.0. |

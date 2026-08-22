@@ -160,3 +160,33 @@ Two gaps:
    objects are real and the dimensions are simply unread.
 
 Not a blocker for MARKET_TRUTH. Blocks any place-hero design work.
+
+---
+
+## D14 — published region list is the live 16 · **ADOPTED** (audit 2026-08-22)
+
+Default-to-industry plus measured impact. Notify, do not ask.
+
+`market_service_area` is the 16-name `is_central_oregon_city` set (case-insensitive city text), not
+the invented 18-city list. Mitchell (Wheeler) is not this housing market. Switching 16→18 moved
+trailing-365d type-A median $608,000 → $605,680 on six Mitchell sales; detached median unchanged.
+
+`CENTRAL_OREGON_CITY_SLUGS` (24) stays the **site/SEO allowlist**. `pricing_is_central_oregon_city`
+(14) stays the pricing-corpus filter until Metolius is added there (324 type-A / 246 detached in
+`listings`, 0 facts rows).
+
+`"City" = 'Crooked River'` (2,460 closed ≥$1k, last qualifying A close 2019) is still out of the
+16. That is AUDIT F16 — include-or-document, do not silently drop.
+
+## D15 — CDOM / first-on-market reset is 60 days · **ADOPTED** (ODS §3-20)
+
+Oregon Data Share Rules (Aug 2024) §3-20: CDOM does not reset unless the property has been off
+market 60 days. Cancel-and-relist inside 60 days is forbidden. 90 days remains only as the
+`new_listings` de-dupe window, never as a DOM/CDOM reset.
+
+## D16 — feature-share coverage floor · **ADOPTED** (OMB analog)
+
+No RESO/NAR number exists. House analog: OMB Statistical Policy Directive No. 2 item-response
+70%. Below that, positives publish only as a D12 floor ("at least") or not at all. Of the 16 YN
+fields, only `garage_yn` (72.9% coverage) clears 70%. D13 (never publish a negative from NULL)
+stands and is not sufficient by itself.

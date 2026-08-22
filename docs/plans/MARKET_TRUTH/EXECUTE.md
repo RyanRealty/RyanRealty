@@ -22,6 +22,11 @@ to Matt, and do not start Phase B.
 Do not re-plan; the plan is settled. Do not re-litigate the definitions; Matt locked them
 (SPEC §0, D1–D12). Everything else is open to the audit.
 
+**Phase A status (2026-08-22):** `AUDIT-FINDINGS.md` is on `origin/main` (`fba6435d`). Verdict:
+safe to build from after the listed blocker fixes. Those fixes are in `DDL.sql` / `REGISTRY.md` /
+this file / `SPEC.md` §7 / `DECISIONS.md` as of the Phase B package patch. Do not re-run the audit
+unless the findings file is missing.
+
 **Read order:** `CLAUDE.md` §0 + §7 → `docs/DATA_COVERAGE_INDEX.md` → `SPEC.md` (all of it) →
 `REGISTRY.md` (the predicates you will implement) → `DDL.sql` → `AUDIT-FINDINGS.md` → this file →
 `PLAN.md` only if you want the background story.
@@ -92,11 +97,19 @@ Work top to bottom. Tick a box only when its **Done when** clause is literally t
 
 ### Step 0 — apply `DDL.sql`
 
-- [ ] Apply the schema after the audit's blockers are cleared. It has never been run
+- [x] Apply the schema after the audit's blockers are cleared. It has never been run
       (`AUDIT.md` §2.2) — expect to fix it, and record what you changed.
 
 **Done when:** all five objects exist and the `place_membership` one-primary index holds against a
 backfill dry run.
+
+Applied 2026-08-22 as `supabase/migrations/20260822230000_market_truth_foundation.sql` on hosted
+`dwvlophlbvvygjfxcrhm`. Five tables + `market_in_service_area()` (STABLE, 16 cities). RLS on, anon
+revoked. Dry-run: 27,018 current-primary subdivision rows for 2021+ service-area closed geocoded
+sales (matches the 27,018 in-any-subdivision count); unique index held (27,018 listings = 27,018
+current primaries). Changes from the un-applied draft: 16-city seed not 18; `exclusion_reasons
+text[]`; `complete_through` on the sale fact; `definition_id` in `market_metric` PK; one-current-
+primary unique; date-only span CHECK; RLS/`REVOKE`.
 
 ### Step 1 — `market_fact_sale`
 
@@ -168,13 +181,19 @@ a one-line reason for each difference — defect found, or definition changed.
 
 ### Step 5 — Migrate consumers (Matt reviews the delta report first)
 
-- [ ] **`/sell` is migration #1** — it currently publishes "a seller's market · 489 homes · 3.6
-      months" against a true 988 homes / 4.52 months / balanced.
+- [ ] **`/sell` is migration #1** — live 2026-08-22: **"a seller's market · 488 homes · 3.5 months"**
+      from the city-limits polygon (pulse 488 / 3.54). MLS-city **detached** (D1) is **775 homes /
+      4.42 months / balanced**. The 988 / 4.52 figure is the mixed `PropertyType='A'` bucket and
+      was marked `[was wrong]` in SPEC — do not migrate to it (AUDIT B3).
 - [ ] Then CMA and BPO — the subdivision speed statistic there can never render today
       (`lib/cma/subdivision-story.ts` reads the empty `CumulativeDaysOnMarket`), and the CMA computes
       market-area chapters over the whole A bucket while the cache figures beside them are SFR-only.
 - [ ] Then place pages, market hub, newsletter, video producers, JSON feeds, admin.
 - [ ] Each surface proves reconciliation before it flips.
+
+**Done when:** `/sell` reads `getMetric` for active count, months of supply, and verdict; the three
+figures match the shadow recon report Matt reviewed; JSON-LD / `/data/market` for Bend still agree
+with the page. Other surfaces remain on the old store until their own recon line exists.
 
 ### Step 6 — Gates (baseline may only shrink)
 
@@ -190,6 +209,9 @@ a one-line reason for each difference — defect found, or definition changed.
       than serving stale data. This is the gate that would have caught the dead cube cron and the
       boundary job that stopped on 2026-04-30.
 
+**Done when:** each gate has a failing fixture in `scripts/` (or `ci:*`) and a counted allowlist
+that may only shrink. Gate 2's baseline is the frozen inventory of direct cache/pulse reads.
+
 ### Step 7 — Repairs folded in (not hotfixes, per SPEC D8)
 
 - [ ] Restart boundary assignment (4.3% coverage on Actives since 2026-05-01).
@@ -201,6 +223,9 @@ a one-line reason for each difference — defect found, or definition changed.
 - [ ] Correct `lib/property-type.ts`: **E = Farm** (not commercial), **G = commercial Lease**.
 - [ ] Instrument listing/place views through `user_events`; drop the empty `listing_views` table.
 
+**Done when:** each repair has a counted before/after query in the commit, and 883 structurally
+bare is either found and quarantined or struck from the list (AUDIT: unverified).
+
 ### Step 8 — Canon corrections
 
 - [ ] `CLAUDE.md` §0 — "SFR convention is `PropertyType='A'`" is wrong per D1. Restate.
@@ -208,6 +233,10 @@ a one-line reason for each difference — defect found, or definition changed.
       `"DaysOnMarket"` warning.
 - [ ] `docs/DATABASE_FOR_AI_AGENTS.md` — mark CDOM dead, `mls_source` a constant, `listings` a
       two-market table.
+
+**Done when:** `rg CumulativeDaysOnMarket CLAUDE.md` is empty; `"DaysOnMarket"` warning is in §7;
+`DATABASE_FOR_AI_AGENTS.md` states CDOM dead, `mls_source` constant, two-market table. (SFR
+restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 ### Step 9 — Then, and only then, the moat
 
@@ -217,6 +246,10 @@ a one-line reason for each difference — defect found, or definition changed.
 - [ ] Agent/office share — **internal only** (Matt, 2026-08-22): admin and listing presentations, not
       the public site. Resolve `office_id` first; every row is currently unresolved and the MLS
       placeholder "No Office" ranks as a brokerage.
+
+**Done when:** leaderboards are registry queries with `min_n` inherited; office share is behind
+admin auth; `office_id` is populated or "No Office" is suppressed; no public surface lists a
+brokerage rank.
 
 ---
 
