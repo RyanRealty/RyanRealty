@@ -1,0 +1,162 @@
+# Market Truth — decisions log
+
+Live record of decisions Matt has made and of findings that **correct the other package files**.
+Where this file and `SPEC.md` / `REGISTRY.md` disagree, **this file wins** — it is newer.
+
+Read this before Phase A. Two of its entries invalidate questions the older files still ask.
+
+---
+
+## Standing rule (Matt, 2026-08-22) — default to the industry, do not ask
+
+> "Default to what the industry does before asking me any questions."
+
+Applies to every methodology and convention decision in this package. Research the settled industry
+answer (RESO Data Dictionary, MLS rulebooks, NAR, published vendor methodology, USPAP / Fannie Mae
+UAD, federal statistical suppression standards, Oregon Real Estate Agency rules), adopt it, write it
+into `REGISTRY.md` **with its citation**, and tell Matt what was adopted. That is a notification, not
+a question.
+
+Escalate to Matt only when:
+- the industry genuinely disagrees with itself and no dominant practice exists,
+- following the convention would conflict with §0 data accuracy, or
+- the choice is business positioning rather than methodology.
+
+A question phrased as four plausible options is a tell that the research step was skipped.
+
+---
+
+## D13 — never publish a negative feature class · **DECIDED** (Matt, 2026-08-22)
+
+A missing value is **unknown**, never **absent**. No surface may publish "X% have no <feature>",
+"N homes without <feature>", or any equivalent inferred from NULL.
+
+Positives remain publishable as a **floor** ("at least X%"), per D12.
+
+### What forced it — the full 16-field scan
+
+Measured 2026-08-22 across all 595,380 `public.listings` rows. **This supersedes the
+fireplace-only framing in `SPEC.md` §1.8**, which was one example, not the finding.
+
+| Field | true | explicit false | NULL | % NULL | Class |
+|---|---:|---:|---:|---:|---|
+| `spa_yn` | 0 | 0 | 595,380 | 100.0% | **dead** |
+| `carport_yn` | 0 | 0 | 595,380 | 100.0% | **dead** |
+| `home_warranty_yn` | 0 | 0 | 595,380 | 100.0% | **dead** |
+| `property_attached_yn` | 0 | 0 | 595,380 | 100.0% | **dead** |
+| `waterfront_yn` | 1,407 | **0** | 593,973 | 99.8% | positive-only |
+| `fireplace_yn` | 175,833 | **0** | 419,547 | 70.5% | positive-only |
+| `pool_yn` | 2,623 | 1,430 | 591,327 | 99.3% | has-false, hollow |
+| `basement_yn` | 1,003 | 7,759 | 586,618 | 98.5% | has-false, hollow |
+| `horse_yn` | 14,959 | 42,067 | 538,354 | 90.4% | has-false, hollow |
+| `senior_community_yn` | 6,830 | 122,473 | 466,077 | 78.3% | has-false, hollow |
+| `new_construction_yn` | 31,084 | 205,763 | 358,533 | 60.2% | has-false, thin |
+| `heating_yn` | 467,786 | 1,316 | 126,278 | 21.2% | has-false, suspect¹ |
+| `cooling_yn` | 295,287 | 37,438 | 262,655 | 44.1% | has-false, usable |
+| `irrigation_water_rights_yn` | 40,501 | 323,196 | 231,683 | 38.9% | has-false, usable |
+| `association_yn` | 143,906 | 221,467 | 230,007 | 38.6% | has-false, usable |
+| `garage_yn` | 361,662 | 72,624 | 161,094 | 27.1% | has-false, usable |
+
+¹ `heating_yn` false = 1,316 against 467,786 true. In Central Oregon a home without heating is not
+plausible at that rate; treat the false values as data entry, not measurement.
+
+### Why D13 as stated is necessary but **not sufficient**
+
+The presence of an explicit `false` does not make a negative publishable. `pool_yn` records 1,430
+explicit falses and would pass a naive "has false" test — off **0.7% coverage**. A "homes without a
+pool" share from that is arithmetic on noise.
+
+So the registry needs **two** tests, not one:
+
+1. **Does the field record explicit `false` at all?** No → positives are a floor, negatives never
+   publish. (D13, decided.)
+2. **Is coverage high enough that a share means anything?** ← **threshold still open**, being
+   researched, not to be asked of Matt.
+
+`property_attached_yn` at 100% NULL is worth flagging separately: it is the field a naive
+implementation would use to split attached from detached housing. It is empty. **D1's
+`property_sub_type` predicate is the only viable route** — do not "improve" it by reaching for this
+column.
+
+---
+
+## Correction — the unrecoverable-DOM problem is **2021-onward**, not pre-2016
+
+`SPEC.md` §7 Q1 asks about "pre-2016 inventory where history does not recover the span." **That
+framing is wrong and the question as written should be discarded.** Measured 2026-08-22, closed
+sales by era, classified by whether the on-market span is trustworthy:
+
+| Era | closed sales | clean (no recovery needed) | recovered from history | **span unprovable** | % untrustworthy |
+|---|---:|---:|---:|---:|---:|
+| 1995–2005 | 109,046 | 94,730 | 12,923 | 1,393 | **1.3%** |
+| 2006–2015 | 112,318 | 88,846 | 18,360 | 5,112 | **4.6%** |
+| 2016–2020 | 81,130 | 65,472 | 10,379 | 5,279 | **6.5%** |
+| 2021–2026 | 76,800 | 62,706 | 812 | **13,282** | **17.3%** |
+
+`OnMarketDate` is non-NULL on every closed row in all four eras, so the gap is entirely the relist
+class. History recovery *collapses* in the recent era — 812 recovered against 13,282 unprovable.
+
+The problem is therefore **in the window every published figure actually uses**, not in the archive.
+Any treatment that "excludes the unprovable" removes 17.3% of recent sales, and they skew toward
+slow-moving listings — so exclusion makes the published market look faster than it is.
+
+**Status: being researched, not escalated.** Matt was asked and answered *"I really don't know the
+answer to this, and I guess I'm going to have to ask for what the rest of the industry would do"* —
+which is what produced the standing rule above. The industry's own convention (DOM vs cumulative
+DOM, and the off-market reset threshold that governs it) is the answer to adopt.
+
+Note for whoever implements: the MLS ships a `CumulativeDaysOnMarket` column and it is **dead** —
+500 non-null values out of 595,380, none outside Closed. CDOM must be computed from
+`listing_history`, which is what `market_fact_listing_span` exists to do. `CLAUDE.md` was corrected
+on 2026-08-22 (`526dac93`) to stop naming that column.
+
+---
+
+## In flight — two research workflows (2026-08-22)
+
+Both were launched to answer the two threshold questions **without** going back to Matt. If this
+session ended before they landed, their results are recoverable from disk.
+
+| Question | Run ID | Transcript |
+|---|---|---|
+| DOM / relist industry standard | `wf_a1275209-fca` | `…/subagents/workflows/wf_a1275209-fca` |
+| Feature-coverage publishing threshold | `wf_9cb1e686-ddd` | `…/subagents/workflows/wf_9cb1e686-ddd` |
+
+Transcript root:
+`/Users/matthewryan/.claude/projects/-Users-matthewryan-RyanRealty/1bd66673-6a54-4b59-99f7-99a97805f482/`
+
+Read `journal.jsonl` in the transcript dir for each agent's actual return value. Scripts are under
+`…/workflows/scripts/` and can be resumed with
+`Workflow({scriptPath, resumeFromRunId})` — unchanged agent calls return cached results instantly.
+
+**When the results land:** adopt the industry convention, write it into `REGISTRY.md` with the
+citation, resolve `SPEC.md` §7, and tell Matt what was adopted. Do not re-ask him.
+
+---
+
+## Also settled
+
+- **`SPEC.md` §7 Q2** ("publish the no-fireplace class?") — **closed by D13.** No.
+- **`SPEC.md` §7 Q1** ("pre-2016 band or refuse?") — **superseded** by the correction above. The
+  era is wrong and the answer is the industry convention, not a Matt decision.
+
+So `SPEC.md` §7 has **no open questions for Matt**. Both are now research-and-adopt.
+
+---
+
+## Unrelated open item — Imagine place heroes
+
+**65 of 145 landed.** `public.asset_library` holds 65 rows at `source='grok-imagine'`, all
+registered 2026-08-22, all with a live `file_url` and `file_size_bytes`, all `approval='approved'`,
+all vision-graded, none with empty `geo_tags`. 145 MB total, 2.2 MB average, spanning 77 distinct
+place tags (Bend neighborhoods, the resort communities, the outlying cities).
+
+Two gaps:
+1. **80 images are unaccounted for** against the 145 that were generated. Either they were never
+   uploaded, or 145 was never the real count. Verify against the generating workspace before
+   assuming loss.
+2. **`width` and `height` are NULL on all 65 rows.** Crop discipline for the hero aspects cannot be
+   checked programmatically until those are backfilled — `file_size_bytes` is populated, so the
+   objects are real and the dimensions are simply unread.
+
+Not a blocker for MARKET_TRUTH. Blocks any place-hero design work.

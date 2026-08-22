@@ -2,6 +2,10 @@
 
 **This is the single entry point. Point one agent at this file and it runs the whole job.**
 
+**Read `DECISIONS.md` first.** It is newer than every other file here and it *overrides* them.
+It closes both questions `SPEC.md` §7 still lists as open, and it corrects a load-bearing era claim
+in `SPEC.md` about which years have unrecoverable on-market spans.
+
 Two phases, in order, without stopping to ask:
 
 **Phase A — audit (always first).** Execute `AUDIT.md` in full. Produce `AUDIT-FINDINGS.md`, commit
