@@ -14,6 +14,7 @@ Company dump (who we are, kit, hard no's): [`docs/GROK_BOT_COMPANY.md`](GROK_BOT
 | **Work graph** | `npx tsx scripts/loop-brief.ts`, then [`docs/plans/CROSS_AGENT_HANDOFF.md`](plans/CROSS_AGENT_HANDOFF.md) **Current** only (≤18 lines). Enterprise Map photograph: [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](plans/ENTERPRISE_MAP/SESSION_HANDOFF.md) |
 | **Public restyle** | [`design_system/ryan-realty/locked/LOCKED.md`](../design_system/ryan-realty/locked/LOCKED.md) + the PNGs in that folder. Live data stays on Spark / place graph / Chart Room. Same URLs. No new routes |
 | **CRM** | Live product is ryan-realty.com (`lib/crm`, `/admin/crm`). Compose and send from the site. Test as matt@ / marketing@ / admin@ only. Never the 648 household |
+| **Imagine place photos** | [`design_system/ryan-realty/imagine-place-heroes/`](../design_system/ryan-realty/imagine-place-heroes/) (same files at `/workspace/place-heroes/`). Live home when shipped: `asset_library` + `hero_image_url` on the place row. Do not write live URLs from this folder |
 
 Listings or stats also need [`docs/DATA_ACCESS_LAYER.md`](DATA_ACCESS_LAYER.md). Database shape: [`docs/DATABASE_FOR_AI_AGENTS.md`](DATABASE_FOR_AI_AGENTS.md).
 

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-06-19T20:28:13.625Z",
+  "updated_at": "2026-08-22T13:56:50.857Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -45401,6 +45401,2920 @@
       "surface_tags": [],
       "vision_grade": null,
       "file_path": "public/asset-library/photos/curated/4db4da4d-e7b4-4d2f-a372-df365ab7c563.JPG"
+    },
+    {
+      "id": "b2196211-e791-4477-985a-26dc2ad6c1be",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-cairn",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "cairn"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/b2196211-e791-4477-985a-26dc2ad6c1be.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/b2196211-e791-4477-985a-26dc2ad6c1be.png",
+      "file_size_bytes": 139375,
+      "geo_tags": [
+        "cairn",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty cairn place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:23.608+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub cairn. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/b2196211-e791-4477-985a-26dc2ad6c1be.png"
+    },
+    {
+      "id": "df383d74-c775-4a01-9d32-e23291a1d098",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-chalet",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "chalet"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/df383d74-c775-4a01-9d32-e23291a1d098.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/df383d74-c775-4a01-9d32-e23291a1d098.png",
+      "file_size_bytes": 148988,
+      "geo_tags": [
+        "chalet",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty chalet place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:23.917+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub chalet. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/df383d74-c775-4a01-9d32-e23291a1d098.png"
+    },
+    {
+      "id": "87d9bd66-3ba0-408f-8485-05471fd285e6",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-crescent",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "crescent"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/87d9bd66-3ba0-408f-8485-05471fd285e6.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/87d9bd66-3ba0-408f-8485-05471fd285e6.png",
+      "file_size_bytes": 148965,
+      "geo_tags": [
+        "crescent",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty crescent place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:24.167+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub crescent. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/87d9bd66-3ba0-408f-8485-05471fd285e6.png"
+    },
+    {
+      "id": "07f604ee-8d4e-436e-aa5c-ca0b1289b276",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-heath",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "heath"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/07f604ee-8d4e-436e-aa5c-ca0b1289b276.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/07f604ee-8d4e-436e-aa5c-ca0b1289b276.png",
+      "file_size_bytes": 161867,
+      "geo_tags": [
+        "heath",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty heath place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:24.409+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub heath. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/07f604ee-8d4e-436e-aa5c-ca0b1289b276.png"
+    },
+    {
+      "id": "c2c09c61-58c9-432d-8b13-9f0a15396c97",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-highlands-ridge",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "highlands-ridge"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/c2c09c61-58c9-432d-8b13-9f0a15396c97.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/c2c09c61-58c9-432d-8b13-9f0a15396c97.png",
+      "file_size_bytes": 154865,
+      "geo_tags": [
+        "highlands-ridge",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty highlands-ridge place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:24.674+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub highlands-ridge. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/c2c09c61-58c9-432d-8b13-9f0a15396c97.png"
+    },
+    {
+      "id": "da03bf27-28c5-49ec-9ef5-6b4206350804",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-north-forty",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "north-forty"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/da03bf27-28c5-49ec-9ef5-6b4206350804.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/da03bf27-28c5-49ec-9ef5-6b4206350804.png",
+      "file_size_bytes": 147312,
+      "geo_tags": [
+        "north-forty",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty north-forty place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:24.904+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub north-forty. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/da03bf27-28c5-49ec-9ef5-6b4206350804.png"
+    },
+    {
+      "id": "f517b1d4-7f19-4b5c-bede-9164e117e023",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-outrider-overlook",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "outrider-overlook"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/f517b1d4-7f19-4b5c-bede-9164e117e023.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/f517b1d4-7f19-4b5c-bede-9164e117e023.png",
+      "file_size_bytes": 151056,
+      "geo_tags": [
+        "outrider-overlook",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty outrider-overlook place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:25.171+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub outrider-overlook. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/f517b1d4-7f19-4b5c-bede-9164e117e023.png"
+    },
+    {
+      "id": "e9b8e450-33d5-4bfa-b419-b7c46fb30ccd",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-tartan-druim",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "tartan-druim"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/e9b8e450-33d5-4bfa-b419-b7c46fb30ccd.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/e9b8e450-33d5-4bfa-b419-b7c46fb30ccd.png",
+      "file_size_bytes": 166011,
+      "geo_tags": [
+        "tartan-druim",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty tartan-druim place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:25.483+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub tartan-druim. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/e9b8e450-33d5-4bfa-b419-b7c46fb30ccd.png"
+    },
+    {
+      "id": "664064c1-b91b-4da2-ab20-4d13ab802a83",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-the-glen",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "the-glen"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/664064c1-b91b-4da2-ab20-4d13ab802a83.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/664064c1-b91b-4da2-ab20-4d13ab802a83.png",
+      "file_size_bytes": 168513,
+      "geo_tags": [
+        "the-glen",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty the-glen place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:25.826+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub the-glen. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/664064c1-b91b-4da2-ab20-4d13ab802a83.png"
+    },
+    {
+      "id": "8d38fe66-5f20-40e4-9c6d-82d1d6fabaac",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-the-rim",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "the-rim"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/8d38fe66-5f20-40e4-9c6d-82d1d6fabaac.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/8d38fe66-5f20-40e4-9c6d-82d1d6fabaac.png",
+      "file_size_bytes": 126202,
+      "geo_tags": [
+        "the-rim",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty the-rim place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:26.072+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub the-rim. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/8d38fe66-5f20-40e4-9c6d-82d1d6fabaac.png"
+    },
+    {
+      "id": "08370d71-370f-4620-9381-48085547af1c",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-trailhead",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "trailhead"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/08370d71-370f-4620-9381-48085547af1c.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/08370d71-370f-4620-9381-48085547af1c.png",
+      "file_size_bytes": 153274,
+      "geo_tags": [
+        "trailhead",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty trailhead place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:26.338+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub trailhead. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/08370d71-370f-4620-9381-48085547af1c.png"
+    },
+    {
+      "id": "37d9038b-905f-4812-b050-828bc7ebebf1",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-sub-tetherow-triple-knot",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "sub",
+        "place_slug": "triple-knot"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/37d9038b-905f-4812-b050-828bc7ebebf1.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/37d9038b-905f-4812-b050-828bc7ebebf1.png",
+      "file_size_bytes": 145539,
+      "geo_tags": [
+        "triple-knot",
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "village"
+      ],
+      "search_query": "Ryan Realty triple-knot place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:26.555+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for sub triple-knot. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/37d9038b-905f-4812-b050-828bc7ebebf1.png"
+    },
+    {
+      "id": "fb507dc2-4c86-43bc-b050-44209e475856",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-bend",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "bend"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/fb507dc2-4c86-43bc-b050-44209e475856.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/fb507dc2-4c86-43bc-b050-44209e475856.png",
+      "file_size_bytes": 2877884,
+      "geo_tags": [
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty bend place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:26.991+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city bend. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/fb507dc2-4c86-43bc-b050-44209e475856.png"
+    },
+    {
+      "id": "c7c9ecc4-69fa-4060-98e1-698a88e9b165",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-crooked-river-ranch",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "crooked-river-ranch"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/c7c9ecc4-69fa-4060-98e1-698a88e9b165.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/c7c9ecc4-69fa-4060-98e1-698a88e9b165.png",
+      "file_size_bytes": 3199547,
+      "geo_tags": [
+        "crooked-river-ranch",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty crooked-river-ranch place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:27.584+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city crooked-river-ranch. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/c7c9ecc4-69fa-4060-98e1-698a88e9b165.png"
+    },
+    {
+      "id": "2d91c329-a071-456d-a66c-ac4c0d7c7048",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-culver",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "culver"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/2d91c329-a071-456d-a66c-ac4c0d7c7048.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/2d91c329-a071-456d-a66c-ac4c0d7c7048.png",
+      "file_size_bytes": 2660913,
+      "geo_tags": [
+        "culver",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty culver place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:28.006+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city culver. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/2d91c329-a071-456d-a66c-ac4c0d7c7048.png"
+    },
+    {
+      "id": "4b097ab0-2320-41e0-bdaf-8bf2a4d7b073",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-la-pine",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "la-pine"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/4b097ab0-2320-41e0-bdaf-8bf2a4d7b073.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/4b097ab0-2320-41e0-bdaf-8bf2a4d7b073.png",
+      "file_size_bytes": 2579476,
+      "geo_tags": [
+        "la-pine",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty la-pine place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:28.33+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city la-pine. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/4b097ab0-2320-41e0-bdaf-8bf2a4d7b073.png"
+    },
+    {
+      "id": "bde5c2b6-33a3-4e5b-ac65-c5f436248503",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-madras",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "madras"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/bde5c2b6-33a3-4e5b-ac65-c5f436248503.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/bde5c2b6-33a3-4e5b-ac65-c5f436248503.png",
+      "file_size_bytes": 2738405,
+      "geo_tags": [
+        "madras",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty madras place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:28.702+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city madras. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/bde5c2b6-33a3-4e5b-ac65-c5f436248503.png"
+    },
+    {
+      "id": "8db679a2-859d-418f-a632-954751911eea",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-powell-butte",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "powell-butte"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/8db679a2-859d-418f-a632-954751911eea.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/8db679a2-859d-418f-a632-954751911eea.png",
+      "file_size_bytes": 2763142,
+      "geo_tags": [
+        "powell-butte",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty powell-butte place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:29.29+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city powell-butte. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/8db679a2-859d-418f-a632-954751911eea.png"
+    },
+    {
+      "id": "cd77486c-b5d3-4906-b6a7-2918990829d6",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-prineville",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "prineville"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/cd77486c-b5d3-4906-b6a7-2918990829d6.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/cd77486c-b5d3-4906-b6a7-2918990829d6.png",
+      "file_size_bytes": 2920045,
+      "geo_tags": [
+        "prineville",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty prineville place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:29.965+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city prineville. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/cd77486c-b5d3-4906-b6a7-2918990829d6.png"
+    },
+    {
+      "id": "a1ea0cc5-4c61-4a2b-88c2-052db0ebbddf",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-redmond",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "redmond"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/a1ea0cc5-4c61-4a2b-88c2-052db0ebbddf.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/a1ea0cc5-4c61-4a2b-88c2-052db0ebbddf.png",
+      "file_size_bytes": 2904749,
+      "geo_tags": [
+        "redmond",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty redmond place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:30.335+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city redmond. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/a1ea0cc5-4c61-4a2b-88c2-052db0ebbddf.png"
+    },
+    {
+      "id": "bce3797a-5dd6-4968-9e72-4fd42841e7b1",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-sisters",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "sisters"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/bce3797a-5dd6-4968-9e72-4fd42841e7b1.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/bce3797a-5dd6-4968-9e72-4fd42841e7b1.png",
+      "file_size_bytes": 2631216,
+      "geo_tags": [
+        "sisters",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty sisters place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:30.733+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city sisters. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/bce3797a-5dd6-4968-9e72-4fd42841e7b1.png"
+    },
+    {
+      "id": "25203b45-bace-48e3-b073-7435e93f39bd",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-sunriver",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "sunriver"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/25203b45-bace-48e3-b073-7435e93f39bd.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/25203b45-bace-48e3-b073-7435e93f39bd.png",
+      "file_size_bytes": 2543294,
+      "geo_tags": [
+        "sunriver",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty sunriver place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:31.032+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city sunriver. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/25203b45-bace-48e3-b073-7435e93f39bd.png"
+    },
+    {
+      "id": "072d5b63-3b0a-42cf-b62a-4d516c2e2c81",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-terrebonne",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "terrebonne"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/072d5b63-3b0a-42cf-b62a-4d516c2e2c81.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/072d5b63-3b0a-42cf-b62a-4d516c2e2c81.png",
+      "file_size_bytes": 2621568,
+      "geo_tags": [
+        "terrebonne",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty terrebonne place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:31.351+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city terrebonne. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/072d5b63-3b0a-42cf-b62a-4d516c2e2c81.png"
+    },
+    {
+      "id": "cf4813d3-1314-463c-9cc0-c5782dc6de41",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-city-tumalo",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "city",
+        "place_slug": "tumalo"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/cf4813d3-1314-463c-9cc0-c5782dc6de41.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/cf4813d3-1314-463c-9cc0-c5782dc6de41.png",
+      "file_size_bytes": 2845328,
+      "geo_tags": [
+        "tumalo",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty tumalo place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:31.733+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for city tumalo. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/cf4813d3-1314-463c-9cc0-c5782dc6de41.png"
+    },
+    {
+      "id": "f87f4315-fff3-406c-afca-0fb7117c2b00",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-awbrey-glen",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "awbrey-glen"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/f87f4315-fff3-406c-afca-0fb7117c2b00.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/f87f4315-fff3-406c-afca-0fb7117c2b00.png",
+      "file_size_bytes": 2611178,
+      "geo_tags": [
+        "awbrey-glen",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty awbrey-glen place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:32.335+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community awbrey-glen. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/f87f4315-fff3-406c-afca-0fb7117c2b00.png"
+    },
+    {
+      "id": "6b115538-1866-4a39-936e-e471ee65ffba",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-black-butte-ranch",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "black-butte-ranch"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/6b115538-1866-4a39-936e-e471ee65ffba.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/6b115538-1866-4a39-936e-e471ee65ffba.png",
+      "file_size_bytes": 3109797,
+      "geo_tags": [
+        "black-butte-ranch",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty black-butte-ranch place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:32.719+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community black-butte-ranch. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/6b115538-1866-4a39-936e-e471ee65ffba.png"
+    },
+    {
+      "id": "4538b162-3228-464c-97f2-1e9763b70da6",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-brasada-ranch",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "brasada-ranch"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/4538b162-3228-464c-97f2-1e9763b70da6.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/4538b162-3228-464c-97f2-1e9763b70da6.png",
+      "file_size_bytes": 2764762,
+      "geo_tags": [
+        "brasada-ranch",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty brasada-ranch place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:33.056+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community brasada-ranch. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/4538b162-3228-464c-97f2-1e9763b70da6.png"
+    },
+    {
+      "id": "fb951298-f71e-4e3e-9e0e-f8729d2ec308",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-brasada",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "brasada"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/fb951298-f71e-4e3e-9e0e-f8729d2ec308.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/fb951298-f71e-4e3e-9e0e-f8729d2ec308.png",
+      "file_size_bytes": 2764762,
+      "geo_tags": [
+        "brasada",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty brasada place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:33.383+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community brasada. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/fb951298-f71e-4e3e-9e0e-f8729d2ec308.png"
+    },
+    {
+      "id": "d8effb78-908e-4828-9e16-fe9cc09287bb",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-broken-top",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "broken-top"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/d8effb78-908e-4828-9e16-fe9cc09287bb.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/d8effb78-908e-4828-9e16-fe9cc09287bb.png",
+      "file_size_bytes": 2926411,
+      "geo_tags": [
+        "broken-top",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty broken-top place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:33.739+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community broken-top. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/d8effb78-908e-4828-9e16-fe9cc09287bb.png"
+    },
+    {
+      "id": "c7e3a738-eda2-4604-af81-ef7fc11aaa45",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-caldera-springs",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "caldera-springs"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/c7e3a738-eda2-4604-af81-ef7fc11aaa45.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/c7e3a738-eda2-4604-af81-ef7fc11aaa45.png",
+      "file_size_bytes": 2555765,
+      "geo_tags": [
+        "caldera-springs",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty caldera-springs place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:34.09+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community caldera-springs. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/c7e3a738-eda2-4604-af81-ef7fc11aaa45.png"
+    },
+    {
+      "id": "99b8d1e2-ae73-49e5-a07e-6a1704a5928a",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-caldera",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "caldera"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/99b8d1e2-ae73-49e5-a07e-6a1704a5928a.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/99b8d1e2-ae73-49e5-a07e-6a1704a5928a.png",
+      "file_size_bytes": 2867776,
+      "geo_tags": [
+        "caldera",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty caldera place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:34.646+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community caldera. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/99b8d1e2-ae73-49e5-a07e-6a1704a5928a.png"
+    },
+    {
+      "id": "e6fb27d9-af67-4339-81e8-4993321324ba",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-crooked-river-ranch",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "crooked-river-ranch"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/e6fb27d9-af67-4339-81e8-4993321324ba.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/e6fb27d9-af67-4339-81e8-4993321324ba.png",
+      "file_size_bytes": 3199547,
+      "geo_tags": [
+        "crooked-river-ranch",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty crooked-river-ranch place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:35.336+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community crooked-river-ranch. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/e6fb27d9-af67-4339-81e8-4993321324ba.png"
+    },
+    {
+      "id": "7a3c2344-269d-408a-b23c-856ea8fc7464",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-crosswater",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "crosswater"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/7a3c2344-269d-408a-b23c-856ea8fc7464.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/7a3c2344-269d-408a-b23c-856ea8fc7464.png",
+      "file_size_bytes": 2687989,
+      "geo_tags": [
+        "crosswater",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty crosswater place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:35.706+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community crosswater. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/7a3c2344-269d-408a-b23c-856ea8fc7464.png"
+    },
+    {
+      "id": "e0442e4f-8a72-4d9f-9786-745bc2e51911",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-discovery-west",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "discovery-west"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/e0442e4f-8a72-4d9f-9786-745bc2e51911.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/e0442e4f-8a72-4d9f-9786-745bc2e51911.png",
+      "file_size_bytes": 2615669,
+      "geo_tags": [
+        "discovery-west",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty discovery-west place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:36.083+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community discovery-west. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/e0442e4f-8a72-4d9f-9786-745bc2e51911.png"
+    },
+    {
+      "id": "f6bf2883-c586-4a3f-9487-2e6ffe9502db",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-eagle-crest",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "eagle-crest"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/f6bf2883-c586-4a3f-9487-2e6ffe9502db.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/f6bf2883-c586-4a3f-9487-2e6ffe9502db.png",
+      "file_size_bytes": 2721050,
+      "geo_tags": [
+        "eagle-crest",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty eagle-crest place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:36.472+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community eagle-crest. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/f6bf2883-c586-4a3f-9487-2e6ffe9502db.png"
+    },
+    {
+      "id": "9bc832f7-c985-41ab-b3f3-4a69a59e6d09",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-inn-of-the-7th-mountain",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "inn-of-the-7th-mountain"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/9bc832f7-c985-41ab-b3f3-4a69a59e6d09.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/9bc832f7-c985-41ab-b3f3-4a69a59e6d09.png",
+      "file_size_bytes": 2946345,
+      "geo_tags": [
+        "inn-of-the-7th-mountain",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty inn-of-the-7th-mountain place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:36.853+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community inn-of-the-7th-mountain. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/9bc832f7-c985-41ab-b3f3-4a69a59e6d09.png"
+    },
+    {
+      "id": "147a874d-82ba-430d-9d20-8129ec1f2c2d",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-juniper-preserve",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "juniper-preserve"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/147a874d-82ba-430d-9d20-8129ec1f2c2d.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/147a874d-82ba-430d-9d20-8129ec1f2c2d.png",
+      "file_size_bytes": 2871479,
+      "geo_tags": [
+        "juniper-preserve",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty juniper-preserve place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:37.408+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community juniper-preserve. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/147a874d-82ba-430d-9d20-8129ec1f2c2d.png"
+    },
+    {
+      "id": "e9136255-f131-4318-a469-36df754279db",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-mountain-high",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "mountain-high"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/e9136255-f131-4318-a469-36df754279db.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/e9136255-f131-4318-a469-36df754279db.png",
+      "file_size_bytes": 2936732,
+      "geo_tags": [
+        "mountain-high",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty mountain-high place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:37.808+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community mountain-high. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/e9136255-f131-4318-a469-36df754279db.png"
+    },
+    {
+      "id": "029eef2a-1daf-40fe-aaa0-23876bb20cad",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-mt-bachelor-village",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "mt-bachelor-village"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/029eef2a-1daf-40fe-aaa0-23876bb20cad.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/029eef2a-1daf-40fe-aaa0-23876bb20cad.png",
+      "file_size_bytes": 2981140,
+      "geo_tags": [
+        "mt-bachelor-village",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty mt-bachelor-village place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:38.5+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community mt-bachelor-village. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/029eef2a-1daf-40fe-aaa0-23876bb20cad.png"
+    },
+    {
+      "id": "3ccba2f5-7cbc-4577-91d0-7983be00b9d6",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-northwest-crossing",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "northwest-crossing"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/3ccba2f5-7cbc-4577-91d0-7983be00b9d6.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/3ccba2f5-7cbc-4577-91d0-7983be00b9d6.png",
+      "file_size_bytes": 3146890,
+      "geo_tags": [
+        "northwest-crossing",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty northwest-crossing place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:38.938+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community northwest-crossing. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/3ccba2f5-7cbc-4577-91d0-7983be00b9d6.png"
+    },
+    {
+      "id": "5829da8a-a424-4381-9376-6c0f02a4e5e9",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-petrosa",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "petrosa"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/5829da8a-a424-4381-9376-6c0f02a4e5e9.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/5829da8a-a424-4381-9376-6c0f02a4e5e9.png",
+      "file_size_bytes": 2861869,
+      "geo_tags": [
+        "petrosa",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty petrosa place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:39.503+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community petrosa. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/5829da8a-a424-4381-9376-6c0f02a4e5e9.png"
+    },
+    {
+      "id": "82a00188-e82a-4462-962a-ca0fc79b67ac",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-pronghorn",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "pronghorn"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/82a00188-e82a-4462-962a-ca0fc79b67ac.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/82a00188-e82a-4462-962a-ca0fc79b67ac.png",
+      "file_size_bytes": 2871479,
+      "geo_tags": [
+        "pronghorn",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty pronghorn place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:39.996+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community pronghorn. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/82a00188-e82a-4462-962a-ca0fc79b67ac.png"
+    },
+    {
+      "id": "19f6f162-1009-4bfe-85ee-4dad4c5b250d",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-rivers-edge",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "rivers-edge"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/19f6f162-1009-4bfe-85ee-4dad4c5b250d.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/19f6f162-1009-4bfe-85ee-4dad4c5b250d.png",
+      "file_size_bytes": 2716007,
+      "geo_tags": [
+        "rivers-edge",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty rivers-edge place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:40.444+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community rivers-edge. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/19f6f162-1009-4bfe-85ee-4dad4c5b250d.png"
+    },
+    {
+      "id": "346c65cc-862c-4781-8d0a-d835be081692",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-seventh-mountain",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "seventh-mountain"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/346c65cc-862c-4781-8d0a-d835be081692.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/346c65cc-862c-4781-8d0a-d835be081692.png",
+      "file_size_bytes": 2798187,
+      "geo_tags": [
+        "seventh-mountain",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty seventh-mountain place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:40.856+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community seventh-mountain. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/346c65cc-862c-4781-8d0a-d835be081692.png"
+    },
+    {
+      "id": "69561ab8-0702-4ef5-8d10-e60d38b02274",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-shevlin-commons",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "shevlin-commons"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/69561ab8-0702-4ef5-8d10-e60d38b02274.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/69561ab8-0702-4ef5-8d10-e60d38b02274.png",
+      "file_size_bytes": 2706896,
+      "geo_tags": [
+        "shevlin-commons",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty shevlin-commons place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:41.201+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community shevlin-commons. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/69561ab8-0702-4ef5-8d10-e60d38b02274.png"
+    },
+    {
+      "id": "dd96da7a-9874-460c-8165-a990e93e045d",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-sunriver",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "sunriver"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/dd96da7a-9874-460c-8165-a990e93e045d.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/dd96da7a-9874-460c-8165-a990e93e045d.png",
+      "file_size_bytes": 2543294,
+      "geo_tags": [
+        "sunriver",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty sunriver place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:41.563+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community sunriver. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/dd96da7a-9874-460c-8165-a990e93e045d.png"
+    },
+    {
+      "id": "9d5cdb00-a17d-4692-a8f5-68f7242e8d56",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-tetherow",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "tetherow"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/9d5cdb00-a17d-4692-a8f5-68f7242e8d56.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/9d5cdb00-a17d-4692-a8f5-68f7242e8d56.png",
+      "file_size_bytes": 2634581,
+      "geo_tags": [
+        "tetherow",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty tetherow place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:42.029+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community tetherow. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/9d5cdb00-a17d-4692-a8f5-68f7242e8d56.png"
+    },
+    {
+      "id": "bb8a3db3-2274-4fdc-84b9-797f424a6d00",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-three-rivers",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "three-rivers"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/bb8a3db3-2274-4fdc-84b9-797f424a6d00.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/bb8a3db3-2274-4fdc-84b9-797f424a6d00.png",
+      "file_size_bytes": 3318209,
+      "geo_tags": [
+        "three-rivers",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty three-rivers place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:42.663+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community three-rivers. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/bb8a3db3-2274-4fdc-84b9-797f424a6d00.png"
+    },
+    {
+      "id": "a76ff36d-e403-4cda-af34-b598c207a978",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-tree-farm",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "tree-farm"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/a76ff36d-e403-4cda-af34-b598c207a978.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/a76ff36d-e403-4cda-af34-b598c207a978.png",
+      "file_size_bytes": 3190834,
+      "geo_tags": [
+        "tree-farm",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty tree-farm place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:43.406+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community tree-farm. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/a76ff36d-e403-4cda-af34-b598c207a978.png"
+    },
+    {
+      "id": "e7263fbd-2a2e-490c-b207-cc3fde1cfbb6",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-vandevert-ranch",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "vandevert-ranch"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/e7263fbd-2a2e-490c-b207-cc3fde1cfbb6.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/e7263fbd-2a2e-490c-b207-cc3fde1cfbb6.png",
+      "file_size_bytes": 2952513,
+      "geo_tags": [
+        "vandevert-ranch",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty vandevert-ranch place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:43.959+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community vandevert-ranch. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/e7263fbd-2a2e-490c-b207-cc3fde1cfbb6.png"
+    },
+    {
+      "id": "58540dca-0fe7-4096-81be-267d07c8024a",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-westgate",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "westgate"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/58540dca-0fe7-4096-81be-267d07c8024a.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/58540dca-0fe7-4096-81be-267d07c8024a.png",
+      "file_size_bytes": 2651408,
+      "geo_tags": [
+        "westgate",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty westgate place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:44.659+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community westgate. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/58540dca-0fe7-4096-81be-267d07c8024a.png"
+    },
+    {
+      "id": "e9625bb0-86f5-4dc8-a9eb-ee8457bdde8d",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-community-widgi-creek",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "community",
+        "place_slug": "widgi-creek"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/e9625bb0-86f5-4dc8-a9eb-ee8457bdde8d.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/e9625bb0-86f5-4dc8-a9eb-ee8457bdde8d.png",
+      "file_size_bytes": 2859955,
+      "geo_tags": [
+        "widgi-creek",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial",
+        "golf",
+        "course"
+      ],
+      "search_query": "Ryan Realty widgi-creek place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:45.093+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for community widgi-creek. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card",
+        "golf"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/e9625bb0-86f5-4dc8-a9eb-ee8457bdde8d.png"
+    },
+    {
+      "id": "41215199-b411-46a5-9edc-2ff3ebf554e6",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-awbrey-butte",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "awbrey-butte"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/41215199-b411-46a5-9edc-2ff3ebf554e6.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/41215199-b411-46a5-9edc-2ff3ebf554e6.png",
+      "file_size_bytes": 2738090,
+      "geo_tags": [
+        "awbrey-butte",
+        "bend-awbrey-butte",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty awbrey-butte place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:45.66+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood awbrey-butte. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/41215199-b411-46a5-9edc-2ff3ebf554e6.png"
+    },
+    {
+      "id": "9d6ebfad-0cb3-40d6-8193-1b26e94b703a",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-boyd-acres",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "boyd-acres"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/9d6ebfad-0cb3-40d6-8193-1b26e94b703a.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/9d6ebfad-0cb3-40d6-8193-1b26e94b703a.png",
+      "file_size_bytes": 3112568,
+      "geo_tags": [
+        "boyd-acres",
+        "bend-boyd-acres",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty boyd-acres place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:46.007+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood boyd-acres. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/9d6ebfad-0cb3-40d6-8193-1b26e94b703a.png"
+    },
+    {
+      "id": "125e2d6b-48f2-4fec-a4d3-c2bced71145b",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-century-west",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "century-west"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/125e2d6b-48f2-4fec-a4d3-c2bced71145b.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/125e2d6b-48f2-4fec-a4d3-c2bced71145b.png",
+      "file_size_bytes": 3394832,
+      "geo_tags": [
+        "century-west",
+        "bend-century-west",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty century-west place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:46.397+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood century-west. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/125e2d6b-48f2-4fec-a4d3-c2bced71145b.png"
+    },
+    {
+      "id": "960e35f9-7d22-47cc-a29b-65ad947b2a8f",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-larkspur",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "larkspur"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/960e35f9-7d22-47cc-a29b-65ad947b2a8f.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/960e35f9-7d22-47cc-a29b-65ad947b2a8f.png",
+      "file_size_bytes": 2218945,
+      "geo_tags": [
+        "larkspur",
+        "bend-larkspur",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty larkspur place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:46.907+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood larkspur. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/960e35f9-7d22-47cc-a29b-65ad947b2a8f.png"
+    },
+    {
+      "id": "1d857e29-a437-4a99-80e7-64ea887077e8",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-mountain-view",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "mountain-view"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/1d857e29-a437-4a99-80e7-64ea887077e8.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/1d857e29-a437-4a99-80e7-64ea887077e8.png",
+      "file_size_bytes": 2976024,
+      "geo_tags": [
+        "mountain-view",
+        "bend-mountain-view",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty mountain-view place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:47.256+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood mountain-view. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/1d857e29-a437-4a99-80e7-64ea887077e8.png"
+    },
+    {
+      "id": "1c23a98d-a7b0-4614-8484-5d88ab993a5c",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-old-bend",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "old-bend"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/1c23a98d-a7b0-4614-8484-5d88ab993a5c.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/1c23a98d-a7b0-4614-8484-5d88ab993a5c.png",
+      "file_size_bytes": 2891874,
+      "geo_tags": [
+        "old-bend",
+        "bend-old-bend",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty old-bend place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:47.83+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood old-bend. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/1c23a98d-a7b0-4614-8484-5d88ab993a5c.png"
+    },
+    {
+      "id": "992a47b2-eccf-4e53-8e0f-5f1cf81cf4a1",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-old-farm",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "old-farm"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/992a47b2-eccf-4e53-8e0f-5f1cf81cf4a1.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/992a47b2-eccf-4e53-8e0f-5f1cf81cf4a1.png",
+      "file_size_bytes": 2662044,
+      "geo_tags": [
+        "old-farm",
+        "bend-old-farm",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty old-farm place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:48.186+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood old-farm. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/992a47b2-eccf-4e53-8e0f-5f1cf81cf4a1.png"
+    },
+    {
+      "id": "a809bd4b-976b-4cba-a96e-28bfc62f14b0",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-orchard",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "orchard"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/a809bd4b-976b-4cba-a96e-28bfc62f14b0.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/a809bd4b-976b-4cba-a96e-28bfc62f14b0.png",
+      "file_size_bytes": 2790010,
+      "geo_tags": [
+        "orchard",
+        "bend-orchard",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty orchard place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:48.711+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood orchard. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/a809bd4b-976b-4cba-a96e-28bfc62f14b0.png"
+    },
+    {
+      "id": "c2982822-e651-4ad6-ba6a-f8f160f18fca",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-river-west",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "river-west"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/c2982822-e651-4ad6-ba6a-f8f160f18fca.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/c2982822-e651-4ad6-ba6a-f8f160f18fca.png",
+      "file_size_bytes": 2780244,
+      "geo_tags": [
+        "river-west",
+        "bend-river-west",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty river-west place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:49.053+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood river-west. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/c2982822-e651-4ad6-ba6a-f8f160f18fca.png"
+    },
+    {
+      "id": "9d4ad4ef-e23a-4090-9237-ecb52771e2f4",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-southeast-bend",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "southeast-bend"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/9d4ad4ef-e23a-4090-9237-ecb52771e2f4.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/9d4ad4ef-e23a-4090-9237-ecb52771e2f4.png",
+      "file_size_bytes": 2533527,
+      "geo_tags": [
+        "southeast-bend",
+        "bend-southeast-bend",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty southeast-bend place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:49.424+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood southeast-bend. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/9d4ad4ef-e23a-4090-9237-ecb52771e2f4.png"
+    },
+    {
+      "id": "32069854-b0df-431f-aaca-7f216edce416",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-southern-crossing",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "southern-crossing"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/32069854-b0df-431f-aaca-7f216edce416.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/32069854-b0df-431f-aaca-7f216edce416.png",
+      "file_size_bytes": 2829360,
+      "geo_tags": [
+        "southern-crossing",
+        "bend-southern-crossing",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty southern-crossing place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:50.04+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood southern-crossing. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/32069854-b0df-431f-aaca-7f216edce416.png"
+    },
+    {
+      "id": "50c8f6a8-9841-4902-ae20-58bc99d4a51c",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-southwest-bend",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "southwest-bend"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/50c8f6a8-9841-4902-ae20-58bc99d4a51c.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/50c8f6a8-9841-4902-ae20-58bc99d4a51c.png",
+      "file_size_bytes": 3016333,
+      "geo_tags": [
+        "southwest-bend",
+        "bend-southwest-bend",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty southwest-bend place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:50.427+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood southwest-bend. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/50c8f6a8-9841-4902-ae20-58bc99d4a51c.png"
+    },
+    {
+      "id": "16f2fe63-a003-47c9-b05f-b14dd3ad381d",
+      "type": "photo",
+      "source": "grok-imagine",
+      "source_id": "imagine-place-neighborhood-summit-west",
+      "license": "owned",
+      "license_metadata": {
+        "created": "2026-08-21",
+        "generator": "Grok Imagine",
+        "place_kind": "neighborhood",
+        "place_slug": "summit-west"
+      },
+      "creator": null,
+      "creator_url": null,
+      "storage_bucket": "asset-library",
+      "storage_object_path": "photos/grok-imagine/16f2fe63-a003-47c9-b05f-b14dd3ad381d.png",
+      "file_url": "https://dwvlophlbvvygjfxcrhm.supabase.co/storage/v1/object/public/asset-library/photos/grok-imagine/16f2fe63-a003-47c9-b05f-b14dd3ad381d.png",
+      "file_size_bytes": 3000478,
+      "geo_tags": [
+        "summit-west",
+        "bend-summit-west",
+        "bend",
+        "central-oregon"
+      ],
+      "subject_tags": [
+        "landscape",
+        "exterior",
+        "aerial"
+      ],
+      "search_query": "Ryan Realty summit-west place hero",
+      "width": null,
+      "height": null,
+      "duration_sec": null,
+      "registered_at": "2026-08-22T13:56:50.817+00:00",
+      "last_used_at": null,
+      "used_in": [],
+      "approval": "approved",
+      "notes": "Grok Imagine place hero for neighborhood summit-west. Matt directed into asset_library 2026-08-22.",
+      "surface_tags": [
+        "hero",
+        "card"
+      ],
+      "vision_grade": null,
+      "file_path": "public/asset-library/photos/grok-imagine/16f2fe63-a003-47c9-b05f-b14dd3ad381d.png"
     }
   ]
 }
