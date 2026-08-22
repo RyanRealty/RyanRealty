@@ -1,14 +1,17 @@
 # Market Truth — adversarial audit brief
 
-**Point a fresh agent at this file. Your job is to break this work, not to validate it.**
+**Phase A of `EXECUTE.md`. Your job is to break this work, not to validate it.**
+
+You were sent here by `EXECUTE.md`. Finish this brief, then return there and begin Phase B — unless
+your verdict is "not safe to build from," in which case stop and report to Matt.
 
 The package (`PLAN.md`, `SPEC.md`, `REGISTRY.md`, `DDL.sql`, `EXECUTE.md`) was produced by a prior
 agent for a licensed Oregon principal broker. It will govern every market number the business
 publishes, feeds client-facing CMAs and BPOs, and touches the broker's license. **Assume it is wrong
 until your own queries say otherwise.**
 
-Do not build anything. Do not fix anything. Audit, report, stop. `EXECUTE.md` is the build brief and
-it runs *after* this.
+During this phase: do not build, do not fix. Audit and report. Fixes happen in Phase B, informed by
+what you find here.
 
 ---
 
@@ -169,7 +172,9 @@ Rank blockers first. A blocker is anything that would put a wrong number in fron
 regulator.
 
 Commit the findings file, register it if the process-canon gate asks, and push. Do not modify the
-other five files — the build phase does that, informed by your findings.
+other five files during Phase A — the build phase does that, informed by your findings.
+
+Then return to `EXECUTE.md` and begin Phase B at Step 0.
 
 ---
 

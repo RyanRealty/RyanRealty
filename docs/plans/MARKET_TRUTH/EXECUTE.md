@@ -1,14 +1,22 @@
 # Market Truth — execution brief
 
-**Point any agent at this file to BUILD.** It is self-contained: read it, read `SPEC.md` and
-`REGISTRY.md`, and start at the first unchecked box in §4. Do not re-plan; the plan is settled. Do
-not re-litigate the definitions; Matt locked them (SPEC §0, D1–D12).
+**This is the single entry point. Point one agent at this file and it runs the whole job.**
 
-> **Gate: the adversarial audit runs first.** `AUDIT.md` must have produced
-> `AUDIT-FINDINGS.md` with a verdict, and every **blocker** in it must be resolved, before step 1
-> begins. The package was written by an agent whose own first draft had a 91% claim-correction rate;
-> the audit exists because of that. If `AUDIT-FINDINGS.md` does not exist, run `AUDIT.md` instead of
-> this file.
+Two phases, in order, without stopping to ask:
+
+**Phase A — audit (always first).** Execute `AUDIT.md` in full. Produce `AUDIT-FINDINGS.md`, commit
+it, push it. You are auditing another agent's work adversarially; the brief explains why that is
+warranted and where to look. **Do not build during Phase A.**
+
+**Phase B — build.** Begin only when `AUDIT-FINDINGS.md` exists and every finding marked **blocker**
+is resolved — either fixed in the package files, or explicitly waived in writing by Matt. Then work
+`§4` top to bottom from the first unchecked box.
+
+If Phase A returns a verdict of **"no — not safe to build from"**, stop at the end of Phase A, report
+to Matt, and do not start Phase B.
+
+Do not re-plan; the plan is settled. Do not re-litigate the definitions; Matt locked them
+(SPEC §0, D1–D12). Everything else is open to the audit.
 
 **Read order:** `CLAUDE.md` §0 + §7 → `docs/DATA_COVERAGE_INDEX.md` → `SPEC.md` (all of it) →
 `REGISTRY.md` (the predicates you will implement) → `DDL.sql` → `AUDIT-FINDINGS.md` → this file →
