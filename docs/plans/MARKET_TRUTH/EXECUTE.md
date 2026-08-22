@@ -1,11 +1,18 @@
 # Market Truth — execution brief
 
-**Point any agent at this file.** It is self-contained: read it, read `SPEC.md`, and start at the
-first unchecked box in §4. Do not re-plan; the plan is settled. Do not re-litigate the definitions;
-Matt locked them (SPEC §0).
+**Point any agent at this file to BUILD.** It is self-contained: read it, read `SPEC.md` and
+`REGISTRY.md`, and start at the first unchecked box in §4. Do not re-plan; the plan is settled. Do
+not re-litigate the definitions; Matt locked them (SPEC §0, D1–D12).
 
-**Read order:** `CLAUDE.md` §0 + §7 → `SPEC.md` (all of it) → this file → `PLAN.md` only if you want
-the background story.
+> **Gate: the adversarial audit runs first.** `AUDIT.md` must have produced
+> `AUDIT-FINDINGS.md` with a verdict, and every **blocker** in it must be resolved, before step 1
+> begins. The package was written by an agent whose own first draft had a 91% claim-correction rate;
+> the audit exists because of that. If `AUDIT-FINDINGS.md` does not exist, run `AUDIT.md` instead of
+> this file.
+
+**Read order:** `CLAUDE.md` §0 + §7 → `docs/DATA_COVERAGE_INDEX.md` → `SPEC.md` (all of it) →
+`REGISTRY.md` (the predicates you will implement) → `DDL.sql` → `AUDIT-FINDINGS.md` → this file →
+`PLAN.md` only if you want the background story.
 
 ---
 
@@ -71,6 +78,14 @@ Full detail in `SPEC.md` §3. Do not invent an alternative architecture.
 
 Work top to bottom. Tick a box only when its **Done when** clause is literally true.
 
+### Step 0 — apply `DDL.sql`
+
+- [ ] Apply the schema after the audit's blockers are cleared. It has never been run
+      (`AUDIT.md` §2.2) — expect to fix it, and record what you changed.
+
+**Done when:** all five objects exist and the `place_membership` one-primary index holds against a
+backfill dry run.
+
 ### Step 1 — `market_fact_sale`
 
 Generalise `sale_pricing_facts` (already one row per closed CO residential sale, 1996+, with
@@ -93,8 +108,8 @@ named reason; and `complete_through` is within 48 hours.
 One row per on-market episode, reconstructed from `listing_history` (3.9M events, 546,300 listings).
 
 - [ ] Emit `span_source` (`history` | `listing_row`) and `first_on_market_confidence`
-      (`recovered` | `assumed`). ~74.5% of relisted listings have history predating the current
-      `OnMarketDate`, recovering a median 61 days (SPEC §1.7).
+      (`recovered` | `assumed`). **73.0%** of relisted listings carry history predating the current
+      `OnMarketDate`, recovering a median **102 days** (SPEC §3.2). `listing_history` covers 99.5%.
 - [ ] Never read `status_change_timestamp` — corrupted by bulk platform-migration stamps.
       `off_market_date` survived intact.
 - [ ] Flag the 28,169 listings whose `off_market_date` precedes their on-market date, and the 150
@@ -111,9 +126,10 @@ and a per-year table shows what share of spans are `recovered` vs `assumed`.
       primary rows may be summed.
 - [ ] Cover **listed and sold alike** from the same table — this is what makes SPEC §1.4's absorption
       defect structurally impossible.
-- [ ] One canonical hyphen slug alphabet. Today `market_stats_cache` uses `la pine` and `boundaries`
-      uses `la-pine`, which is why `tumalo` and `crooked river ranch` publish 449 and 446 rows of
-      permanent zero.
+- [ ] One canonical hyphen slug alphabet. `market_stats_cache` uses `la pine`, `boundaries` uses
+      `la-pine`. Note the verified scope: only **2 of 20** city slugs fail for that reason — the other
+      9 misses have no `boundaries` row at all, and the alphabets are already reconciled in code by
+      `lib/market/city-cache-slug.ts` under the `ci:city-cache-slug` gate.
 - [ ] Stamp `method` and `confidence`. A polygon we have not checked is `unverified` (Broken Top's
       boundary measures 17.96 sq mi against Bend's 35.45).
 
@@ -122,15 +138,17 @@ path, with counts per place and per disagreement type.
 
 ### Step 4 — Registry + compute job (shadow)
 
-- [ ] Encode the ~30 stats of SPEC §4, each with formula, population predicate, `min_n`, allowed
-      grains, `earliest_year` (SPEC §2), window policy, exclusions and rounding.
-- [ ] Vocabulary declared once: `detached` = `PropertyType='A' AND property_sub_type='Single Family
-      Residence'`; `active` = `StandardStatus='Active'` only; `closed` = the §3.4 predicate;
-      `service_area` = one city/county set.
-- [ ] Sample floors: **5** for a range, **10** for a median, **30** for a delta or a verdict. Window
-      ladder 12→24→36 months, **the window used printed on the figure**, then refuse with a reason.
-- [ ] Days on market = `purchase_contract_date − OnMarketDate`, named `days_to_contract` so it can
-      never be confused (SPEC D2). List-to-close survives only as a separately-labelled stat.
+- [ ] Implement **`REGISTRY.md` §3** verbatim — all 28 stats with their formula, population, `min_n`,
+      grains and earliest year. The predicates are written; do not re-derive them, but DO run them
+      (they have never been executed — see `AUDIT.md` §2.1).
+- [ ] Vocabulary from `REGISTRY.md` §1–§2: the twelve segment predicates, the `closed` and `active`
+      populations, and `market_service_area` (a **city list**, not a county filter — county is
+      unusable, see `DDL.sql`).
+- [ ] Sample floors and window ladder per `REGISTRY.md` §2.3 — but treat them as **proposals the
+      audit may move** (`AUDIT.md` §2.4).
+- [ ] Days on market = `purchase_contract_date − OnMarketDate`, named `days_to_contract` (D2),
+      earliest **2006**. Note `market_stats_cache.median_dom` is ALREADY the correct list-to-pending
+      basis — the defect is the raw `"DaysOnMarket"` column and the video and beacon paths.
 - [ ] Write to a **shadow store**. Nothing repointed.
 
 **Done when:** a reconciliation report lists every live figure beside its shadow value, the delta, and
