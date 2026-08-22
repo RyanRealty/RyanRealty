@@ -92,6 +92,22 @@ export async function GET(request: Request) {
     console.error('[refresh-sale-pricing-facts] index', idxErr.message)
     return NextResponse.json({ ok: false, error: idxErr.message, upserted }, { status: 500 })
   }
+  // Market Truth recency lane (last 90 days). Full-history is a separate
+  // invocation of refresh_market_fact_sale(null). Fail closed so a stall is
+  // visible; pricing rows above already committed.
+  const since = new Date()
+  since.setUTCDate(since.getUTCDate() - 90)
+  const sinceIso = since.toISOString().slice(0, 10)
+  const { data: factSale, error: factSaleErr } = await supabase.rpc('refresh_market_fact_sale', {
+    p_since: sinceIso,
+  })
+  if (factSaleErr) {
+    console.error('[refresh-sale-pricing-facts] market_fact_sale', factSaleErr.message)
+    return NextResponse.json(
+      { ok: false, error: factSaleErr.message, upserted, indexes: idx },
+      { status: 500 },
+    )
+  }
   let listingReads = { stamped: 0, skipped: 0, due: 0 }
   try {
     listingReads = await stampListingPricingReadsBatch(done ? 24 : 6)
@@ -106,6 +122,7 @@ export async function GET(request: Request) {
     waterReclassUpdated,
     newConstructionBackfilled,
     listingReads,
+    marketFactSale: factSale,
     done,
     indexes: idx,
     duration_ms: Date.now() - started,

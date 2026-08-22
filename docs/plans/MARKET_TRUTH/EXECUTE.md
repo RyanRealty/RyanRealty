@@ -116,17 +116,27 @@ primary unique; date-only span CHECK; RLS/`REVOKE`.
 Generalise `sale_pricing_facts` (already one row per closed CO residential sale, 1996+, with
 normalised product/lot/story/water/sewer/HOA classes) to cover **all segments** (SPEC D7).
 
-- [ ] Apply the mandatory exclusions of SPEC §3.4 — service-area scope, `PropertyType='G'`
+- [x] Apply the mandatory exclusions of SPEC §3.4 — service-area scope, `PropertyType='G'`
       (commercial lease, median ClosePrice $2.01), fractional interests (TIC/timeshare/deeded week,
       median $/sqft $19.01), order-of-magnitude price typos, $1 auction lists, retroactive off-market
       entries, duplicate parcel+date events (~0.5–1%), `sqft <= 0` for $/sqft only.
-- [ ] Record every exclusion as a **counted, queryable reason** — never a silent `WHERE`.
-- [ ] Stamp `complete_through` so a half-ingested month can never be read as complete.
-- [ ] Fix the refresh: a **recency lane** (last 90 days, every run) plus the slow full-history lane.
+- [x] Record every exclusion as a **counted, queryable reason** — never a silent `WHERE`.
+- [x] Stamp `complete_through` so a half-ingested month can never be read as complete.
+- [x] Fix the refresh: a **recency lane** (last 90 days, every run) plus the slow full-history lane.
       Today the full sweep takes ~23 days and recent closes enter the corpus weeks late.
 
 **Done when:** a query returns, per year 1997→now, the row count kept and the count excluded by each
 named reason; and `complete_through` is within 48 hours.
+
+Loaded 2026-08-22 via `refresh_market_fact_sale(since, until)` year batches.
+`complete_through = 2026-08-21` (Pacific yesterday). Recency lane hooked on the existing
+`/api/cron/refresh-sale-pricing-facts` 6-hour cron (`p_since = today-90`). Keep-one only
+collapses a **real** parcel + same close date + same rounded close price (AUDIT: raw parcel
+ate new-construction parent lots). `price_typo` drops the row (close is the digit-shift);
+`price_typo_list` / `auction_list` / `retroactive_entry` / `sqft_nonpositive` stay on
+publishable rows for per-stat exclusion. 1997–2026 closed rows in the table, queryable as
+`unnest(exclusion_reasons)` grouped by `extract(year from close_date)`. Concession flag from
+`details` is **not** in this lane (TOAST timeout on full history).
 
 ### Step 2 — `market_fact_listing_span`
 
