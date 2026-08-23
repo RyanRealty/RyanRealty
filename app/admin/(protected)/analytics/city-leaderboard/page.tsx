@@ -11,6 +11,7 @@ import {
   type LeaderboardRow,
 } from '@/lib/data/market-truth/leaderboards'
 import { STAT_BY_ID } from '@/lib/data/market-truth/registry'
+import { formatPriceExact } from '@/lib/format/money'
 import { DataList, Loading, Trouble } from '../_components/v2/kit'
 
 export const dynamic = 'force-dynamic'
@@ -38,15 +39,6 @@ function formatSignedPct(ratio: number): string {
 function formatSharePct(ratio: number): string {
   if (!Number.isFinite(ratio)) return '—'
   return `${(ratio * 100).toFixed(1)}%`
-}
-
-function formatMoney(n: number): string {
-  if (!Number.isFinite(n)) return '—'
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(n)
 }
 
 function formatDays(n: number): string {
@@ -208,7 +200,7 @@ async function CityBoards() {
         label="Most expensive cities by median list"
         rows={expensive}
         valueHeader="Median list"
-        formatValue={formatMoney}
+        formatValue={formatPriceExact}
         empty={emptyCopy('median_list_active', 'median list (active)')}
       />
       <RankBoard
