@@ -23,6 +23,8 @@ export type FileCommsAttachment = {
 
 export type FileCommsInput = {
   personIds: number[]
+  /** From/To/Cc so other-side agents file onto the deal without being our clients. */
+  emails?: string[]
   channel: 'mail' | 'sms'
   actor: string
   title?: string | null
@@ -43,12 +45,32 @@ export type FileCommsResult = {
 
 export async function fileCommsToVault(input: FileCommsInput): Promise<FileCommsResult> {
   const personIds = [...new Set(input.personIds.filter((id) => Number.isFinite(id) && id > 0))]
-  if (!personIds.length) return { filed: false, documentIds: [], checklistItemIds: [], skipped: 'no-person' }
+  const emails = [...new Set((input.emails ?? []).map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@')))]
+  if (!personIds.length && !emails.length) {
+    return { filed: false, documentIds: [], checklistItemIds: [], skipped: 'no-person' }
+  }
 
   const deals = []
   for (const pid of personIds) {
     const links = await getDealsForPerson(pid)
     deals.push(...links)
+  }
+  const sb = createServiceClient()
+  if (emails.length) {
+    const { data: contactHits } = await sb
+      .from('tc_deal_contacts')
+      .select('deal_id, tc_deals(address, stage)')
+      .in('email', emails)
+    for (const row of contactHits ?? []) {
+      const deal = (row as { tc_deals?: { address?: string; stage?: string } }).tc_deals
+      if (!row.deal_id || !deal) continue
+      deals.push({
+        dealId: String(row.deal_id),
+        address: String(deal.address ?? ''),
+        stage: String(deal.stage ?? ''),
+        cycleId: null,
+      })
+    }
   }
   const unique = new Map(deals.map((d) => [d.dealId, d]))
   const haystack = commsHaystack({
@@ -57,7 +79,6 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
     filenames: input.filenames ?? input.attachments?.map((a) => a.name),
   })
   let picked = pickDealForComms([...unique.values()], haystack)
-  const sb = createServiceClient()
   if (!picked) {
     const { data: live } = await sb
       .from('tc_deals')

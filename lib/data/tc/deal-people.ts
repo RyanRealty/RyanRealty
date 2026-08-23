@@ -77,7 +77,7 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
   const { data: deal } = await sb.from('tc_deals').select('id, broker_name, address').eq('id', dealId).maybeSingle()
   if (!deal) return
   const broker = (deal.broker_name ?? '').trim().toLowerCase()
-  const { data: cycles } = await sb.from('tc_cycles').select('raw, buyers, sellers').eq('deal_id', dealId)
+  const { data: cycles } = await sb.from('tc_cycles').select('kind, raw, buyers, sellers').eq('deal_id', dealId)
   const { extractPartiesFromCycleRaw } = await import('@/lib/tc/cycle-contacts')
   const parties = (cycles ?? []).flatMap((c) => {
     const fromRaw = extractPartiesFromCycleRaw(c.raw)
@@ -91,11 +91,35 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
     return [...fromRaw, ...names('buyer', c.buyers), ...names('seller', c.sellers)]
   })
   const seen = new Set<string>()
-  const { data: existing } = await sb.from('tc_deal_people').select('person_id').eq('deal_id', dealId)
+  const { data: existing } = await sb.from('tc_deal_people').select('person_id, role').eq('deal_id', dealId)
   const have = new Set((existing ?? []).map((r) => Number(r.person_id)))
+  const { ourRoleFromCycles, isOtherSideParty } = await import('@/lib/tc/representation')
+  const ourRole = ourRoleFromCycles(
+    (cycles ?? []).map((c) => String(c.kind ?? '')),
+    (existing ?? []).map((r) => r.role as 'buyer' | 'seller' | 'other'),
+  )
+  const { data: existingContacts } = await sb.from('tc_deal_contacts').select('name, email').eq('deal_id', dealId)
+  const haveContact = new Set(
+    (existingContacts ?? []).map((c) => `${(c.name ?? '').trim().toLowerCase()}|${(c.email ?? '').trim().toLowerCase()}`),
+  )
   const { ensureNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
   for (const p of parties) {
     if (p.name.trim().toLowerCase() === broker) continue
+    if (isOtherSideParty(ourRole, p.role)) {
+      const key = `${p.name.trim().toLowerCase()}|`
+      if ([...haveContact].some((k) => k.startsWith(key))) continue
+      await sb.from('tc_deal_contacts').insert({
+        deal_id: dealId,
+        role: 'other_party',
+        name: p.name,
+        email: p.email,
+        phone: p.phone,
+        notes: 'Other-side principal — represented by another broker. Not our CRM client.',
+        source: 'manual',
+      })
+      haveContact.add(`${p.name.trim().toLowerCase()}|${(p.email ?? '').toLowerCase()}`)
+      continue
+    }
     let email = p.email
     const phone = p.phone
     if (!email && !phone) {

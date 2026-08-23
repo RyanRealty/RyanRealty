@@ -289,7 +289,23 @@ export async function syncMailboxWindow(params: {
         const candidates = new Map<number, 'in' | 'out'>()
         for (const a of from) { const pid = emailMap.get(a); if (pid) candidates.set(pid, 'in') }
         for (const a of toCc) { const pid = emailMap.get(a); if (pid && !candidates.has(pid)) candidates.set(pid, 'out') }
-        if (!candidates.size) continue
+        if (!candidates.size) {
+          try {
+            const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
+            await fileCommsToVault({
+              personIds: [],
+              emails: [...from, ...toCc],
+              channel: 'mail',
+              actor: `gmail:${brokerSlug}`,
+              title: headerOf(meta, 'Subject'),
+              body: meta.snippet ?? null,
+              dedupeKey: `mail:meta:${meta.id}`,
+            })
+          } catch (err) {
+            console.warn('[gmail-sync] vault auto-file (contact/address) failed', err)
+          }
+          continue
+        }
 
         // matched → fetch full body once
         const fullMsg = await gmail.users.messages.get({ userId: 'me', id: meta.id!, format: 'full' })
@@ -343,6 +359,7 @@ export async function syncMailboxWindow(params: {
           }
           await fileCommsToVault({
             personIds: [...candidates.keys()],
+            emails: [...from, ...toCc],
             channel: 'mail',
             actor: `gmail:${brokerSlug}`,
             title: subject,

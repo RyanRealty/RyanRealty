@@ -17,6 +17,7 @@ export const TC_CONTACT_ROLES = [
   'home_warranty',
   'attorney',
   'misc',
+  'other_party',
 ] as const
 export type TcContactRole = (typeof TC_CONTACT_ROLES)[number]
 
@@ -32,6 +33,7 @@ export const TC_CONTACT_ROLE_LABEL: Record<string, string> = {
   home_warranty: 'Home warranty',
   attorney: 'Attorney',
   misc: 'Other',
+  other_party: 'Other-side party',
 }
 
 export type TcContact = {
