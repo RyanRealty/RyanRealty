@@ -1,7 +1,7 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
@@ -11,10 +11,7 @@ import { EMPTY_PROPERTY_FACTS, brokerRoleFromDealParties, seedChecklistItems } f
 import { getDealParties } from '@/lib/data/tc/deal-people'
 
 function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key, { auth: { persistSession: false } })
+  return createServiceClient()
 }
 
 async function requireDeal(propertyKey: string) {
