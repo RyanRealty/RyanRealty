@@ -19,7 +19,7 @@ import {
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { formatDate } from '@/lib/format/date'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
-import { Button, QueueRow, SectionHead, TextField, VerdictLine } from '@/components/admin/v2'
+import { Button, HiddenField, QueueRow, SectionHead, TextField, VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
@@ -173,7 +173,7 @@ export default async function ClosingsPage({
       ) : null}
 
       <form method="GET" className="av2-rfilters" style={{ margin: '0 0 14px' }}>
-        {mineOnly ? <input type="hidden" name="mine" value="1" /> : null}
+        {mineOnly ? <HiddenField name="mine" value="1" /> : null}
         <TextField
           label="Search deals"
           name="q"

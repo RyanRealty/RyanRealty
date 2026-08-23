@@ -45,17 +45,22 @@ export type DealContactCopy = {
   notes: string | null
 }
 
+const DEAL_COLS = 'id, property_key, address, city, state, broker_name, stage, stage_detail'
+
 function client() {
   return createServiceClient()
 }
 
-export async function getDealByPropertyKey(propertyKey: string): Promise<TcDealActionRow | null> {
-  const { data } = await client()
-    .from('tc_deals')
-    .select('id, property_key, address, city, state, broker_name, stage, stage_detail')
-    .eq('property_key', propertyKey)
-    .maybeSingle()
-  if (!data) return null
+function mapDeal(data: {
+  id: unknown
+  property_key: unknown
+  address: unknown
+  city: unknown
+  state: unknown
+  broker_name: unknown
+  stage: unknown
+  stage_detail: unknown
+}): TcDealActionRow {
   return {
     id: String(data.id),
     property_key: String(data.property_key),
@@ -66,6 +71,16 @@ export async function getDealByPropertyKey(propertyKey: string): Promise<TcDealA
     stage: String(data.stage ?? ''),
     stage_detail: data.stage_detail == null ? null : String(data.stage_detail),
   }
+}
+
+export async function getDealByPropertyKey(propertyKey: string): Promise<TcDealActionRow | null> {
+  const { data } = await client().from('tc_deals').select(DEAL_COLS).eq('property_key', propertyKey).maybeSingle()
+  return data ? mapDeal(data) : null
+}
+
+export async function getDealById(dealId: string): Promise<TcDealActionRow | null> {
+  const { data } = await client().from('tc_deals').select(DEAL_COLS).eq('id', dealId).maybeSingle()
+  return data ? mapDeal(data) : null
 }
 
 export async function listDealPropertyKeys(): Promise<string[]> {

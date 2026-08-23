@@ -618,6 +618,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/crm/settings/team/TeamAccess.tsx',
   'app/admin/(protected)/deals/[key]/DealStageControls.tsx',
   'app/admin/(protected)/deals/[key]/ListingFileActions.tsx',
+  'app/admin/(protected)/deals/[key]/DealOffers.tsx',
   'app/admin/(protected)/deals/[key]/ChecklistControls.tsx',
   'app/admin/(protected)/deals/[key]/CommissionControls.tsx',
   'app/admin/(protected)/deals/[key]/DealContacts.tsx',

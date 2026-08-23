@@ -6,9 +6,6 @@
     "app/admin/(protected)/audiences/page.tsx": {
       "h2": 1
     },
-    "app/admin/(protected)/closings/page.tsx": {
-      "h2": 3
-    },
     "app/admin/(protected)/content/page.tsx": {
       "h2": 1
     },

@@ -1,36 +1,19 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
-import { OFFER_STATUSES, type DealOffer, type OfferStatus } from '@/lib/tc/offers'
+import { OFFER_STATUSES, type OfferStatus } from '@/lib/tc/offers'
 import { acceptListingContract } from '@/app/actions/tc-listings'
 import { syncDealCalendar } from '@/lib/tc/deal-calendar'
+import { getDealById } from '@/lib/data/tc/listing-action-reads'
+import { getDealOffer, getLatestSaleCycle } from '@/lib/data/tc/listDealOffers'
 
 function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key, { auth: { persistSession: false } })
-}
-
-function mapOffer(r: Record<string, unknown>): DealOffer {
-  return {
-    id: String(r.id),
-    dealId: String(r.deal_id),
-    buyerName: String(r.buyer_name ?? ''),
-    buyerAgent: (r.buyer_agent as string | null) ?? null,
-    price: r.price == null ? null : Number(r.price),
-    earnestMoney: r.earnest_money == null ? null : Number(r.earnest_money),
-    financingType: (r.financing_type as string | null) ?? null,
-    closeDate: r.close_date ? String(r.close_date).slice(0, 10) : null,
-    contingencies: (r.contingencies as string | null) ?? null,
-    status: r.status as OfferStatus,
-    submittedAt: r.submitted_at ? String(r.submitted_at).slice(0, 10) : null,
-  }
+  return createServiceClient()
 }
 
 async function requireDeal(dealId: string) {
@@ -40,8 +23,7 @@ async function requireDeal(dealId: string) {
   if (!email || !role || (role.role !== 'superuser' && role.role !== 'broker')) {
     return { error: 'Not authorized' as const }
   }
-  const supabase = getServiceSupabase()
-  const { data: deal } = await supabase.from('tc_deals').select('*').eq('id', dealId).maybeSingle()
+  const deal = await getDealById(dealId)
   if (!deal) return { error: 'Deal not found' as const }
   const ctx = await getAdminCapabilityContext()
   if (
@@ -54,13 +36,7 @@ async function requireDeal(dealId: string) {
   ) {
     return { error: 'Not authorized' as const }
   }
-  return { supabase, deal, email }
-}
-
-export async function listDealOffers(dealId: string): Promise<DealOffer[]> {
-  const supabase = getServiceSupabase()
-  const { data } = await supabase.from('tc_offers').select('*').eq('deal_id', dealId).order('created_at')
-  return (data ?? []).map((r) => mapOffer(r as Record<string, unknown>))
+  return { supabase: getServiceSupabase(), deal, email }
 }
 
 export async function saveDealOffer(input: {
@@ -119,7 +95,7 @@ export async function acceptDealOffer(
   const auth = await requireDeal(dealId)
   if ('error' in auth) return { ok: false, error: auth.error }
   const { supabase, deal, email } = auth
-  const { data: offer } = await supabase.from('tc_offers').select('*').eq('id', offerId).eq('deal_id', dealId).maybeSingle()
+  const offer = await getDealOffer(dealId, offerId)
   if (!offer) return { ok: false, error: 'Offer not found' }
 
   if (deal.stage === 'active_listing') {
@@ -130,22 +106,15 @@ export async function acceptDealOffer(
   await supabase.from('tc_offers').update({ status: 'rejected', updated_at: new Date().toISOString() }).eq('deal_id', dealId).neq('id', offerId)
   await supabase.from('tc_offers').update({ status: 'accepted', updated_at: new Date().toISOString() }).eq('id', offerId)
 
-  const { data: sales } = await supabase
-    .from('tc_cycles')
-    .select('id, buyers')
-    .eq('deal_id', dealId)
-    .eq('kind', 'sale')
-    .order('created_at', { ascending: false })
-    .limit(1)
-  const sale = sales?.[0]
+  const sale = await getLatestSaleCycle(dealId)
   if (sale) {
-    const buyers = Array.isArray(sale.buyers) && sale.buyers.length ? sale.buyers : [offer.buyer_name]
+    const buyers = Array.isArray(sale.buyers) && sale.buyers.length ? sale.buyers : [offer.buyerName]
     await supabase
       .from('tc_cycles')
       .update({
         sale_price: offer.price,
-        escrow_closing_date: offer.close_date,
-        earnest_money: offer.earnest_money != null ? { amount: offer.earnest_money } : null,
+        escrow_closing_date: offer.closeDate,
+        earnest_money: offer.earnestMoney != null ? { amount: offer.earnestMoney } : null,
         buyers,
       })
       .eq('id', sale.id)
@@ -155,7 +124,7 @@ export async function acceptDealOffer(
     deal_id: dealId,
     actor: email,
     action: 'offer_accepted',
-    detail: { offerId, buyer: offer.buyer_name, price: offer.price },
+    detail: { offerId, buyer: offer.buyerName, price: offer.price },
   })
   await syncDealCalendar(dealId)
   revalidatePath('/admin/closings')
