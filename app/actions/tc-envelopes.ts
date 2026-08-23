@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
+import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import {
   generateSigningToken,
   isSignableRole,
@@ -819,7 +821,7 @@ export async function getEnvelopesOverview(): Promise<EnvelopeOverviewRow[]> {
   const supabase = getServiceSupabase()
   const { data: envs } = await supabase
     .from('tc_envelopes')
-    .select('*, tc_cycles(deal_id, tc_deals(address, property_key))')
+    .select('*, tc_cycles(deal_id, tc_deals(address, property_key, broker_name))')
     .order('created_at', { ascending: false })
     .limit(200)
   if (!envs?.length) return []
@@ -837,7 +839,16 @@ export async function getEnvelopesOverview(): Promise<EnvelopeOverviewRow[]> {
     recipsByEnv.set(r.envelope_id, arr)
   }
 
-  return (envs as DbRow[]).map((e) => {
+  const ctx = await getAdminCapabilityContext()
+  return (envs as DbRow[])
+    .filter((e) =>
+      dealVisibleToBroker({
+        role: ctx?.role ?? 'broker',
+        brokerSlug: ctx?.brokerSlug ?? null,
+        dealBrokerName: e.tc_cycles?.tc_deals?.broker_name ?? null,
+      }),
+    )
+    .map((e) => {
     const rs = (recipsByEnv.get(e.id) ?? []).map(mapRecipient)
     const signable = rs.filter((r) => isSignableRole(r.role, r.actionRequired))
     const deal = e.tc_cycles?.tc_deals

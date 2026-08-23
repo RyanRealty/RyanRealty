@@ -12,7 +12,7 @@ function deal(over: Partial<ClosingDealRow>): ClosingDealRow {
     propertyKey: 'k',
     address: 'Addr',
     city: 'Bend',
-    brokerName: 'Matt',
+    brokerName: 'Matt Ryan',
     stage: 'pending',
     stageDetail: null,
     cycleId: 'c1',

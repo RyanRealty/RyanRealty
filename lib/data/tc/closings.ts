@@ -42,6 +42,7 @@ export type LiveDealCycle = {
   propertyKey: string
   address: string
   stage: string
+  brokerName: string | null
 }
 
 const LIVE_STAGES = new Set(['pending', 'pre_contract', 'active_listing'])
@@ -55,6 +56,7 @@ export function liveDealCyclesFromBoard(deals: readonly ClosingDealRow[]): LiveD
       propertyKey: d.propertyKey,
       address: d.address,
       stage: d.stage,
+      brokerName: d.brokerName,
     }))
     .sort((a, b) => a.address.localeCompare(b.address))
 }

@@ -22,6 +22,8 @@ import {
 } from '@/components/admin/v2'
 import { getTcFormLibraryBoard, type FormFreshness } from '@/lib/data'
 import { getLiveDealCycles } from '@/lib/data/tc/closings'
+import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
+import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { formatDateTime } from '@/lib/format/date'
 import { buildFormCatalogCheckScript } from '@/lib/tc/form-catalog-script'
 import { CheckFormCatalog } from './CheckFormCatalog'
@@ -105,7 +107,18 @@ export default async function TcFormsPage({ searchParams }: Props) {
   await requireAdminPage('transactions.edit')
   const { q, lib: expanded, fresh: freshRaw } = await searchParams
   const fresh = parseFresh(freshRaw)
-  const [libraries, liveDeals] = await Promise.all([getTcFormLibraryBoard(q), getLiveDealCycles()])
+  const [libraries, liveDealsAll, ctx] = await Promise.all([
+    getTcFormLibraryBoard(q),
+    getLiveDealCycles(),
+    getAdminCapabilityContext(),
+  ])
+  const liveDeals = liveDealsAll.filter((d) =>
+    dealVisibleToBroker({
+      role: ctx?.role ?? 'broker',
+      brokerSlug: ctx?.brokerSlug ?? null,
+      dealBrokerName: d.brokerName,
+    }),
+  )
 
   const populated = libraries.filter((l) => l.forms.length > 0)
   const total = libraries.reduce((s, l) => s + l.forms.length, 0)

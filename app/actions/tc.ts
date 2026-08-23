@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
+import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 
 /**
  * TC system actions — Ryan Realty's own transaction system of record
@@ -103,6 +105,17 @@ export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
     .eq('property_key', propertyKey)
     .maybeSingle()
   if (!deal) return null
+  const ctx = await getAdminCapabilityContext()
+  if (
+    !ctx ||
+    !dealVisibleToBroker({
+      role: ctx.role,
+      brokerSlug: ctx.brokerSlug,
+      dealBrokerName: (deal as { broker_name?: string | null }).broker_name,
+    })
+  ) {
+    return null
+  }
 
   const { data: cycles } = await supabase
     .from('tc_cycles')

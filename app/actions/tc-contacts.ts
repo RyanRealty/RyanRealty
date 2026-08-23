@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { TC_CONTACT_ROLES, type TcContact } from '@/lib/tc/contact-roles'
+import { extractContactsFromCycleRaw } from '@/lib/tc/cycle-contacts'
 
 /**
  * Deal team & contacts (tc-builder rung 15). A deal's co-agents + every party
@@ -31,7 +32,40 @@ async function authorize() {
   return { ok: true as const, actor: session?.user?.email ?? 'admin' }
 }
 
+async function ensureContactsFromCycleRaw(dealId: string): Promise<void> {
+  const supabase = getServiceSupabase()
+  const { count } = await supabase
+    .from('tc_deal_contacts')
+    .select('id', { count: 'exact', head: true })
+    .eq('deal_id', dealId)
+  if ((count ?? 0) > 0) return
+  const { data: cycles } = await supabase.from('tc_cycles').select('raw').eq('deal_id', dealId)
+  const seen = new Set<string>()
+  const extracted = (cycles ?? [])
+    .flatMap((c) => extractContactsFromCycleRaw(c.raw))
+    .filter((row) => {
+      const key = `${row.role}|${(row.email ?? '').toLowerCase()}|${(row.name ?? '').toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  if (!extracted.length) return
+  const { error } = await supabase.from('tc_deal_contacts').insert(
+    extracted.map((row) => ({
+      deal_id: dealId,
+      role: row.role,
+      name: row.name,
+      company: row.company,
+      email: row.email,
+      phone: row.phone,
+      source: 'skyslope_raw',
+    })),
+  )
+  if (error) console.error('[ensureContactsFromCycleRaw]', error.message)
+}
+
 export async function getDealContacts(dealId: string): Promise<TcContact[]> {
+  await ensureContactsFromCycleRaw(dealId)
   const supabase = getServiceSupabase()
   const { data } = await supabase
     .from('tc_deal_contacts')

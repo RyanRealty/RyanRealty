@@ -18,6 +18,7 @@ import {
 } from '@/lib/data/tc/closings'
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { formatDate } from '@/lib/format/date'
+import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { Button, QueueRow, TextField, VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
@@ -71,14 +72,17 @@ export default async function ClosingsPage({
 }: {
   searchParams: Promise<{ q?: string }>
 }) {
-  await requireAdminPage('transactions.view')
+  const ctx = await requireAdminPage('transactions.view')
   const { q } = await searchParams
   const nowMs = Date.now()
   const [board, mirror] = await Promise.all([getClosingsBoard(), getSkySlopeMirrorFreshness()])
-  const visible = q?.trim() ? board.deals.filter((d) => closingMatchesQuery(d, q)) : board.deals
+  const scoped = board.deals.filter((d) =>
+    dealVisibleToBroker({ role: ctx.role, brokerSlug: ctx.brokerSlug, dealBrokerName: d.brokerName }),
+  )
+  const visible = q?.trim() ? scoped.filter((d) => closingMatchesQuery(d, q)) : scoped
 
   const incomplete = incompleteInFlight(visible)
-  const inEscrow = visible.filter((d) => d.stage === 'pending')
+  const inEscrow = visible.filter((d) => d.stage === 'pending' || d.stage === 'pre_contract')
   const activeListings = visible
     .filter((d) => d.stage === 'active_listing')
     .sort((a, b) => String(a.expirationDate ?? '9999').localeCompare(String(b.expirationDate ?? '9999')))
@@ -189,7 +193,7 @@ export default async function ClosingsPage({
             {inEscrow.map((d) => (
               <QueueRow
                 key={d.id}
-                kind={d.itemsInReview > 0 ? 'Sign-off' : 'Escrow'}
+                kind={d.itemsInReview > 0 ? 'Sign-off' : d.stage === 'pre_contract' ? 'Pre-contract' : 'Escrow'}
                 kindTone={d.itemsInReview > 0 ? 'slow' : 'accent'}
                 title={d.address}
                 context={rowContext(d, nowMs)}
