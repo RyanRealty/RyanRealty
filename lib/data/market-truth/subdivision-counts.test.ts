@@ -64,22 +64,28 @@ describe('subdivision counts-only grain', () => {
     expect(page).not.toMatch(/getDetachedMarket/)
   })
 
-  it('extra types print active counts only — no MOS, median, or verdict', () => {
+  it('extra types print counts only — no MOS, median, or verdict', () => {
     const items = subdivisionExtraItems([
-      { segment: 'land', activeCount: 3 },
-      { segment: 'condo', activeCount: 0 },
-      { segment: 'manufactured_land', activeCount: 2 },
+      { segment: 'land', activeCount: 3, pendingCount: 1, closedCount: 8 },
+      { segment: 'condo', activeCount: null, pendingCount: null, closedCount: null },
+      { segment: 'manufactured_land', activeCount: 2, pendingCount: 2, closedCount: 10 },
+      { segment: 'farm', activeCount: null, pendingCount: 1, closedCount: null },
     ])
-    expect(items.map((i) => i.key)).toEqual(['land', 'manufactured_land'])
+    expect(items.map((i) => i.key)).toEqual(['land', 'manufactured_land', 'farm'])
     expect(items[0]?.label).toContain('lots')
-    expect(items.map((i) => i.label).join(' ')).not.toMatch(/month/i)
-    expect(items.map((i) => i.label).join(' ')).not.toMatch(/\$/)
+    expect(items[0]?.bits).toBe('1 pending · now · 8 closed · 12 months')
+    expect(items[2]?.label).toContain('pending')
+    expect(items.map((i) => `${i.label} ${i.bits ?? ''}`).join(' ')).not.toMatch(/months of supply/i)
+    expect(items.map((i) => `${i.label} ${i.bits ?? ''}`).join(' ')).not.toMatch(/\$/)
     const src = readFileSync(resolve('lib/data/market-truth/subdivision-counts.ts'), 'utf8')
     expect(src).toMatch(/PUBLIC_PLACE_SEGMENTS/)
+    expect(src).toMatch(/pending_count/)
+    expect(src).toMatch(/closed_count/)
     expect(src).not.toMatch(/months_of_supply/)
     expect(src).not.toMatch(/median_list/)
     const ui = readFileSync(resolve('app/subdivisions/[slug]/PublicSubdivisionCounts.tsx'), 'utf8')
     expect(ui).toMatch(/Other product types/)
+    expect(ui).toMatch(/item\.bits/)
     expect(ui).not.toMatch(/publicSegmentDisplayBits/)
   })
 })

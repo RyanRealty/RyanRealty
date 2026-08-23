@@ -229,7 +229,7 @@ median, MOS, or verdict at this grain. 2026-08-23z: public plat
 history, charts, and stats withhold closed-sale prices through
 `publishSubdivisionClosedPrice`. Live list median of on-market
 inventory stays a different population. Extra product types at this
-grain overlay **active counts** only.
+grain overlay **active / pending / closed counts** only.
 
 ---
 

@@ -1,7 +1,7 @@
 /**
  * Subdivision grain publishes counts only (REGISTRY §4). Prices, MOS, and
  * verdict stay off this grain. getMetric is the read path. Miss omits.
- * Extra product types are active counts beside the detached strip.
+ * Extra product types overlay active / pending / closed counts.
  */
 import { getMetric } from '@/lib/data/market-truth/getMetric'
 import {
@@ -12,7 +12,9 @@ import {
 
 export type SubdivisionExtraCount = {
   segment: PublicPlaceSegment
-  activeCount: number
+  activeCount: number | null
+  pendingCount: number | null
+  closedCount: number | null
 }
 
 export type SubdivisionCounts = {
@@ -62,19 +64,65 @@ export function subdivisionCountItems(row: SubdivisionCounts): SubdivisionCountI
   return items
 }
 
-export type SubdivisionExtraItem = { key: PublicPlaceSegment; value: string; label: string }
+export type SubdivisionExtraItem = {
+  key: PublicPlaceSegment
+  value: string
+  label: string
+  bits: string | null
+}
+
+function extraLead(
+  row: SubdivisionExtraCount,
+): { n: number; kind: 'active' | 'pending' | 'closed'; label: string } | null {
+  if (row.activeCount != null && row.activeCount >= 1) {
+    return {
+      n: row.activeCount,
+      kind: 'active',
+      label: `${publicSegmentNoun(row.segment, row.activeCount)} for sale · recorded plat`,
+    }
+  }
+  if (row.pendingCount != null && row.pendingCount >= 1) {
+    return {
+      n: row.pendingCount,
+      kind: 'pending',
+      label: `${publicSegmentNoun(row.segment, row.pendingCount)} pending · now · recorded plat`,
+    }
+  }
+  if (row.closedCount != null && row.closedCount >= 1) {
+    return {
+      n: row.closedCount,
+      kind: 'closed',
+      label: `${publicSegmentNoun(row.segment, row.closedCount)} closed · 12 months · recorded plat`,
+    }
+  }
+  return null
+}
 
 export function subdivisionExtraItems(
   extras: readonly SubdivisionExtraCount[],
 ): SubdivisionExtraItem[] {
   const items: SubdivisionExtraItem[] = []
   for (const row of extras) {
-    if (row.activeCount < 1) continue
-    const noun = publicSegmentNoun(row.segment, row.activeCount)
+    const lead = extraLead(row)
+    if (!lead) continue
+    const bits: string[] = []
+    if (lead.kind === 'active') {
+      if (row.pendingCount != null && row.pendingCount >= 1) {
+        bits.push(`${row.pendingCount.toLocaleString('en-US')} pending · now`)
+      }
+      if (row.closedCount != null && row.closedCount >= 1) {
+        bits.push(`${row.closedCount.toLocaleString('en-US')} closed · 12 months`)
+      }
+    } else if (lead.kind === 'pending') {
+      if (row.closedCount != null && row.closedCount >= 1) {
+        bits.push(`${row.closedCount.toLocaleString('en-US')} closed · 12 months`)
+      }
+    }
     items.push({
       key: row.segment,
-      value: row.activeCount.toLocaleString('en-US'),
-      label: `${noun} for sale · recorded plat`,
+      value: lead.n.toLocaleString('en-US'),
+      label: lead.label,
+      bits: bits.length ? bits.join(' · ') : null,
     })
   }
   return items
@@ -108,20 +156,46 @@ export async function getSubdivisionCounts(geoSlug: string): Promise<Subdivision
       segment: 'detached',
       windowMonths: 12,
     }),
-    ...PUBLIC_PLACE_SEGMENTS.map((segment) =>
+    ...PUBLIC_PLACE_SEGMENTS.flatMap((segment) => [
       getMetric({
         stat: 'active_count',
         geoType: 'subdivision',
         geoSlug: slug,
         segment,
       }),
-    ),
+      getMetric({
+        stat: 'pending_count',
+        geoType: 'subdivision',
+        geoSlug: slug,
+        segment,
+      }),
+      getMetric({
+        stat: 'closed_count',
+        geoType: 'subdivision',
+        geoSlug: slug,
+        segment,
+        windowMonths: 12,
+      }),
+    ]),
   ])
 
   const extras: SubdivisionExtraCount[] = []
   PUBLIC_PLACE_SEGMENTS.forEach((segment, i) => {
-    const n = publishedCount(extraRows[i]?.isPublishable ? extraRows[i]?.value : null)
-    if (n != null) extras.push({ segment, activeCount: n })
+    const base = i * 3
+    const activeN = publishedCount(extraRows[base]?.isPublishable ? extraRows[base]?.value : null)
+    const pendingN = publishedCount(
+      extraRows[base + 1]?.isPublishable ? extraRows[base + 1]?.value : null,
+    )
+    const closedN = publishedCount(
+      extraRows[base + 2]?.isPublishable ? extraRows[base + 2]?.value : null,
+    )
+    if (activeN == null && pendingN == null && closedN == null) return
+    extras.push({
+      segment,
+      activeCount: activeN,
+      pendingCount: pendingN,
+      closedCount: closedN,
+    })
   })
 
   return {

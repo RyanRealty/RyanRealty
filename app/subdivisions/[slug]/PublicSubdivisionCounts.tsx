@@ -48,6 +48,7 @@ export function PublicSubdivisionCounts({
                   <span>
                     <b>{item.value}</b> {item.label}
                   </span>
+                  {item.bits ? <b>{item.bits}</b> : null}
                 </span>
               </li>
             ))}

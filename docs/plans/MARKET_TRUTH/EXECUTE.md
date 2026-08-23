@@ -460,6 +460,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23aa landed: `/subdivisions/oregon-water-wonderland-unit-2` 20 detached / 2 manufactured on land / 3 lots. `/subdivisions/fourth-sister-condominium` 6 condos, no detached strip. No MOS or median. Bend detached still **774**. County unpublished.
 
+### Grind 2026-08-23ab — subdivision extra pending/closed counts
+
+**Done when:** GIS plat extra-type rows print pending-now and closed-12-month **counts** when publishable, beside the on-market extra count; no MOS, median, or verdict; miss omits. County unpublished. Workers do not tick this file.
+
+2026-08-23ab landed: `/subdivisions/oregon-water-wonderland-unit-2` 3 lots + 1 pending · now · 8 closed · 12 months; 2 manufactured on land + 2 pending · now · 10 closed · 12 months. `/subdivisions/hearthstone-phase-1` 6 townhomes + 2 pending · now · 1 closed · 12 months. `/subdivisions/fourth-sister-condominium` 6 condos, no extra bits. No MOS or median. Bend detached still **774**. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
@@ -477,7 +483,8 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
       Neighborhood MOS publishes only when 180-day closes clear min_n 30
       (Sunriver 7.47, Three Rivers 11.17). Pulse MOS stays untrusted.
       Subdivision grain is counts-only (3462 cells; no prices/MOS).
-      Extra-segment active counts overlay GIS plat pages sample-gated.
+      Extra-segment active / pending / closed counts overlay GIS plat pages
+      sample-gated.
       County unpublished. `commercial_lease` (G) stays out.
 - [x] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
       fastest to contract, most price cuts, most new inventory.
