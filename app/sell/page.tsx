@@ -32,17 +32,12 @@
 import type { Metadata } from 'next'
 import {
   getBrokerageTrackRecord,
-  getMarketPulse,
+  getSellBendMarket,
   getSurfaceImage,
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import {
-  marketVerdict,
-  MOS_METHODOLOGY_CLAUSE,
-  MOS_THRESHOLD_CLAUSE,
-} from '@/lib/market/classify'
-import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath, valuationPath } from '@/lib/slug'
@@ -97,8 +92,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SellPage() {
-  const [pulse, heroSrc, trackRecord] = await Promise.all([
-    getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
+  const [bend, heroSrc, trackRecord] = await Promise.all([
+    getSellBendMarket(),
     getSurfaceImage('hero', {
       geoTags: ['central-oregon'],
       seed: ROUTE_PATH,
@@ -107,44 +102,32 @@ export default async function SellPage() {
     getBrokerageTrackRecord(),
   ])
 
-  const mosRaw =
-    pulse?.monthsOfSupply != null && pulse.monthsOfSupply > 0 ? pulse.monthsOfSupply : null
-  const verdict = marketVerdict(mosRaw)
-  const mosLabel = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
-
   const bendFigures: V3InstrumentFigure[] = []
-  if (pulse?.medianListPrice != null) {
+  if (bend?.medianListPrice != null) {
     bendFigures.push({
-      value: v3Text(formatPrice(pulse.medianListPrice)),
+      value: v3Text(formatPrice(bend.medianListPrice)),
       label: v3Text('median list price'),
       href: '/housing-market/bend',
     })
   }
-  if (pulse != null) {
+  if (bend != null) {
     bendFigures.push({
-      value: v3Text(pulse.activeCount.toLocaleString('en-US')),
+      value: v3Text(bend.activeCount.toLocaleString('en-US')),
       label: v3Text('homes for sale'),
       href: listingsBrowsePath(),
     })
   }
-  if (mosLabel != null) {
+  if (bend != null) {
     bendFigures.push({
-      value: v3Text(mosLabel),
+      value: v3Text(bend.mosLabel),
       label: v3Text('months of supply'),
       href: '/months-of-supply',
-    })
-  }
-  if (pulse?.medianDaysToPending != null) {
-    bendFigures.push({
-      value: v3Text(String(pulse.medianDaysToPending)),
-      label: v3Text('median days to pending'),
-      href: '/housing-market/bend',
     })
   }
   const [firstBendFigure, ...restBendFigures] = bendFigures
 
   const bendTrace =
-    mosLabel != null
+    bend != null
       ? `${BEND_MARKET_TRACE_SCOPE} ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`
       : BEND_MARKET_TRACE_SCOPE
 
@@ -204,6 +187,22 @@ export default async function SellPage() {
     },
     { type: 'faqPage', items: FAQ_ITEMS },
   ]
+  if (bend != null) {
+    schemas.push({
+      type: 'dataset',
+      name: 'Bend housing market snapshot',
+      description:
+        'Detached single-family homes whose MLS City is Bend. Active count, months of supply, and market verdict from Market Truth. Not the city-limits polygon.',
+      url: ROUTE_PATH,
+      dateModified: bend.computedAt,
+      spatialCoverageName: 'Bend, Oregon',
+      variableMeasured: [
+        { name: 'Homes for sale', value: bend.activeCount },
+        { name: 'Months of supply', value: bend.mosLabel, unitText: 'months' },
+        { name: 'Market verdict', value: bend.verdictLabel },
+      ],
+    })
+  }
 
   const posterSrc = heroSrc ?? SELL_POSTER
 
@@ -232,19 +231,15 @@ export default async function SellPage() {
           <SellValueForm pagePath={ROUTE_PATH} />
         </SellCapture>
 
-        {firstBendFigure ? (
+        {bend && firstBendFigure ? (
           <V3Instrument
             id="bend-market"
             level={2}
             eyebrow={v3Text('Bend, Oregon')}
-            headline={v3Text(
-              verdict.kind === 'unknown'
-                ? 'Bend housing market'
-                : `Bend housing market: a ${verdict.label}`,
-            )}
+            headline={v3Text(`Bend housing market: a ${bend.verdictLabel}`)}
             figures={[firstBendFigure, ...restBendFigures]}
             source={v3Text(bendTrace)}
-            updated={pulse?.refreshedAt ? v3Text(formatDate(pulse.refreshedAt)) : undefined}
+            updated={v3Text(formatDate(bend.computedAt))}
             action={{
               label: v3Text('Value my home'),
               href: FORM_ANCHOR,

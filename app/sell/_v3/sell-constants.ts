@@ -168,7 +168,7 @@ export const SELL_REVIEW_AUTHORS = [
 ] as const
 
 export const BEND_MARKET_TRACE_SCOPE =
-  'live MLS through Oregon Data Share, single-family homes in Bend.'
+  'live MLS through Oregon Data Share, detached single-family homes whose MLS City is Bend, not the city-limits polygon.'
 
 export const TRACK_RECORD_TRACE =
   'Central Oregon MLS, homes listed by Ryan Realty, StandardStatus Closed, ClosePrice.'

@@ -208,15 +208,18 @@ Shadow job `compute_market_metrics_shadow` wrote **728** `mt-v1` cells on 2026-0
 (`complete_through=2026-08-21`). Reader: `getMetric()` in `lib/data/market-truth/getMetric.ts`.
 Registry constants in `lib/data/market-truth/registry.ts` (30 `stat_id`s including
 `market_verdict`). Numeric closed + active stats are computed; mix/feature/YoY cells are
-registry-declared and land as a follow-on compute. Recon: `RECON.md`. `/sell` still reads
-pulse (D3).
+registry-declared and land as a follow-on compute. Recon: `RECON.md`. `/sell` reads
+`getMetric` as of 2026-08-23.
 
 ### Step 5 — Migrate consumers (Matt reviews the delta report first)
 
-- [ ] **`/sell` is migration #1** — live 2026-08-22: **"a seller's market · 488 homes · 3.5 months"**
+- [x] **`/sell` is migration #1** — live 2026-08-22: **"a seller's market · 488 homes · 3.5 months"**
       from the city-limits polygon (pulse 488 / 3.54). MLS-city **detached** (D1) is **775 homes /
       4.42 months / balanced**. The 988 / 4.52 figure is the mixed `PropertyType='A'` bucket and
       was marked `[was wrong]` in SPEC — do not migrate to it (AUDIT B3).
+      Flipped 2026-08-23: `/sell` reads `getSellBendMarket()` → `getMetric` (detached, MLS City
+      Bend). Live cells: **775 / 4.45 / balanced**. Dataset JSON-LD and `/data/market/city/bend`
+      overlay the same three. Never falls back to pulse.
 - [ ] Then CMA and BPO — the subdivision speed statistic there can never render today
       (`lib/cma/subdivision-story.ts` reads the empty `CumulativeDaysOnMarket`), and the CMA computes
       market-area chapters over the whole A bucket while the cache figures beside them are SFR-only.

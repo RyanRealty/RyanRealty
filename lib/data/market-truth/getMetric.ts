@@ -1,6 +1,7 @@
 /**
  * The only read path for a Market Truth figure.
- * Shadow store: public.market_metric. Nothing public is repointed yet (D3).
+ * Shadow store: public.market_metric. /sell Bend (active, months of supply,
+ * verdict) reads this. Other public surfaces stay on pulse until their recon.
  */
 import { createServiceClient } from '@/lib/data/client'
 import { DEFINITION_ID, STAT_BY_ID } from '@/lib/data/market-truth/registry'

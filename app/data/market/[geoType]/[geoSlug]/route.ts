@@ -158,12 +158,15 @@ export async function GET(
       },
       available: true,
       degraded: false,
-      note: null,
+      note: feed.note,
       period: {
         collectionPeriod: 'current snapshot, not a date range',
         collectedAt: feed.collectedAt,
         refreshFrequency: '10-15 minutes',
-        propertyType: "SFR only (MLS PropertyType = 'A')",
+        propertyType:
+          feed.geoType === 'city' && feed.geoSlug === 'bend'
+            ? "Detached single-family (PropertyType='A' AND property_sub_type='Single Family Residence')"
+            : "SFR only (MLS PropertyType = 'A')",
       },
       figures: feed.figures,
       methodology: feed.methodology,

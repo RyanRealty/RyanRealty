@@ -1,6 +1,6 @@
 # Market Truth — shadow reconciliation
 
-**As-of 2026-08-22.** Shadow store: `market_metric` `definition_id='mt-v1'`, computed by `compute_market_metrics_shadow`. Nothing public is repointed (D3). `getMetric()` in `lib/data/market-truth/getMetric.ts` is the only reader of this store.
+**As-of 2026-08-22, flipped 2026-08-23.** Shadow store: `market_metric` `definition_id='mt-v1'`, computed by `compute_market_metrics_shadow`. `/sell` Bend (active count, months of supply, verdict) plus Dataset JSON-LD and `/data/market/city/bend` read `getMetric()`. Other public surfaces still pulse.
 
 Population: REGISTRY `detached` (`PropertyType='A'` AND `property_sub_type='Single Family Residence'`) and `all_residential`. Geography: `place_membership` `is_primary`. Active: `StandardStatus='Active'` exact. Months of supply: `active / (closed_180d / 6)`.
 
@@ -14,7 +14,7 @@ Frozen live comparison set for this report: `market_pulse_live` city rows (`prop
 | months of supply | 3.54 | **4.45** | +0.91 | Same clip. The excluded ring runs ~8 months, so dropping it pushes the ratio toward seller. |
 | verdict | seller's | **balanced** | verdict flips | House bins ≤4 seller / 4–6 balanced / ≥6 buyer. |
 
-JSON-LD / `/data/market` for Bend still agree with the live page (both on pulse). Do not flip until Matt reviews this table.
+Flipped 2026-08-23 after Matt's go-ahead. `/sell`, Dataset JSON-LD, and `/data/market/city/bend` all read `getSellBendMarket()` (775 / 4.45 / balanced). Pulse 488 / 3.54 remains on unmigrated surfaces.
 
 ## Pulse city inventory vs shadow detached
 
@@ -48,6 +48,6 @@ Pulse keys cities on `lower("City")` (space form). Shadow keys hyphen slugs. Joi
 
 ## What this report is not
 
-- A flip. `/sell` still reads pulse.
+- Every remaining surface. `/sell` now reads getMetric. CMA, place pages, newsletter, video, and the rest stay on pulse until their own recon line.
 - Every one of the ~72 named figures AUDIT F21 counted. Those surfaces stay on the old store until they have a row in a follow-on recon.
 - Neighborhood / subdivision price stats. REGISTRY §4: neighborhood polygons are unverified; subdivision publishes counts and sales, not prices.

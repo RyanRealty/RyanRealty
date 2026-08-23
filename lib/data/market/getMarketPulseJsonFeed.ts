@@ -23,6 +23,7 @@
  */
 
 import { getMarketPulseRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
+import { getSellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE, type MarketKind } from '@/lib/market/classify'
 
 /** geo_type values market_pulse_live actually carries (verified live 2026-08-03: city, neighborhood, region). */
@@ -103,7 +104,7 @@ export type MarketPulseJsonFeedResult =
       collectedAt: string | null
       figures: MarketPulseJsonFigures
       methodology: MarketPulseJsonMethodology
-      note: null
+      note: string | null
     }
   | {
       status: 'not_found'
@@ -210,7 +211,7 @@ export async function getMarketPulseJsonFeed(input: {
     cacheMethodologyVersion: toStr(row.methodology_version),
   }
 
-  return {
+  const found: Extract<MarketPulseJsonFeedResult, { status: 'found' }> = {
     status: 'found',
     geoType,
     geoSlug: toStr(row.geo_slug) ?? geoSlug,
@@ -220,4 +221,31 @@ export async function getMarketPulseJsonFeed(input: {
     methodology,
     note: null,
   }
+
+  if (geoType === 'city' && geoSlug === 'bend') {
+    const mt = await getSellBendMarket()
+    if (mt) {
+      found.figures.activeListings = mt.activeCount
+      found.figures.monthsOfSupply = mt.monthsOfSupply
+      found.figures.medianListPrice = mt.medianListPrice
+      found.figures.marketHealthLabel = mt.verdictLabel
+      found.methodology.verdict = mt.verdictLabel
+      found.methodology.verdictKind = mt.verdictKind
+      found.methodology.propertyTypeConvention =
+        "Detached single-family (PropertyType='A' AND property_sub_type='Single Family Residence'). MLS City text, not the city-limits polygon."
+      found.note =
+        'activeListings, monthsOfSupply, medianListPrice, and verdict are Market Truth mt-v1 detached MLS-city. Remaining figures are the pulse type-A polygon series until their recon line exists.'
+      found.collectedAt = mt.computedAt
+    } else {
+      found.figures.activeListings = null
+      found.figures.monthsOfSupply = null
+      found.figures.medianListPrice = null
+      found.methodology.verdict = 'unknown'
+      found.methodology.verdictKind = 'unknown'
+      found.note =
+        'Market Truth Bend detached cells were not publishable. The three /sell figures are withheld rather than falling back to the pulse polygon series.'
+    }
+  }
+
+  return found
 }
