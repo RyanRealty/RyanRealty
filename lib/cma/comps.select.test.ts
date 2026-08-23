@@ -65,7 +65,8 @@ describe('selectComps — SQL filter follows the subject product type', () => {
   it('asks the pool for SFR on a detached subject', async () => {
     await selectComps(subject({ propertySubType: 'Single Family Residence' }))
     expect(selectCmaCompsPool.mock.calls.length).toBeGreaterThan(0)
-    for (const [opts] of selectCmaCompsPool.mock.calls) {
+    const detachedCalls = selectCmaCompsPool.mock.calls as Array<[{ propertySubType?: string }]>
+    for (const [opts] of detachedCalls) {
       expect(opts.propertySubType).toBe('Single Family Residence')
     }
   })
@@ -73,7 +74,8 @@ describe('selectComps — SQL filter follows the subject product type', () => {
   it('asks the pool for Townhouse on a townhouse subject, never SFR', async () => {
     const result = await selectComps(subject({ propertySubType: 'Townhouse' }))
     expect(selectCmaCompsPool.mock.calls.length).toBeGreaterThan(0)
-    for (const [opts] of selectCmaCompsPool.mock.calls) {
+    const townhouseCalls = selectCmaCompsPool.mock.calls as Array<[{ propertySubType?: string }]>
+    for (const [opts] of townhouseCalls) {
       expect(opts.propertySubType).toBe('Townhouse')
       expect(opts.propertySubType).not.toBe('Single Family Residence')
     }
