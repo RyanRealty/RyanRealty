@@ -2,6 +2,7 @@
 
 import { type SupabaseClient } from '@supabase/supabase-js'
 import { getMetaPageTokenTrimmed } from '@/lib/meta-env'
+import { marketVerdict } from '@/lib/market/classify'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getGA4Summary } from './ga4-report'
 import {
@@ -414,16 +415,9 @@ type BendMarketContext = DashboardMarketingData['bendMarketContext']
 async function getBendMarketContext(supabase: SupabaseClient): Promise<BendMarketContext> {
   void supabase
   try {
-    const { getMarketPulseRowForGeo } = await import('@/lib/data')
-    const data = await getMarketPulseRowForGeo({
-      geoType: 'city',
-      geoSlug: 'bend',
-      propertyType: 'A',
-      columns:
-        'active_count, median_list_price, months_of_supply, sold_count_30d, median_close_price_90d, market_health_label',
-    })
-
-    if (!data) {
+    const { getCityDetachedMarket } = await import('@/lib/data')
+    const mt = await getCityDetachedMarket('bend')
+    if (!mt) {
       return {
         available: false,
         activeListings: null,
@@ -432,25 +426,19 @@ async function getBendMarketContext(supabase: SupabaseClient): Promise<BendMarke
         soldCount30d: null,
         medianClosePrice90d: null,
         marketHealthLabel: null,
-        error: 'No Bend pulse row',
+        error: 'No publishable Bend detached market',
       }
     }
 
-    const row = data as Record<string, unknown>
-    const numOrNull = (v: unknown): number | null => {
-      const n = Number(v)
-      return Number.isFinite(n) ? n : null
-    }
-
+    const verdict = marketVerdict(mt.monthsOfSupply)
     return {
       available: true,
-      activeListings: numOrNull(row.active_count),
-      medianListPrice: numOrNull(row.median_list_price),
-      monthsOfSupply: numOrNull(row.months_of_supply),
-      soldCount30d: numOrNull(row.sold_count_30d),
-      medianClosePrice90d: numOrNull(row.median_close_price_90d),
-      marketHealthLabel:
-        typeof row.market_health_label === 'string' ? row.market_health_label : null,
+      activeListings: mt.activeCount,
+      medianListPrice: mt.medianListPrice,
+      monthsOfSupply: mt.monthsOfSupply,
+      soldCount30d: null,
+      medianClosePrice90d: null,
+      marketHealthLabel: verdict.kind === 'unknown' ? null : verdict.label,
       error: null,
     }
   } catch (err) {
@@ -462,7 +450,7 @@ async function getBendMarketContext(supabase: SupabaseClient): Promise<BendMarke
       soldCount30d: null,
       medianClosePrice90d: null,
       marketHealthLabel: null,
-      error: err instanceof Error ? err.message : 'Bend pulse fetch failed',
+      error: err instanceof Error ? err.message : 'Bend market fetch failed',
     }
   }
 }

@@ -6,12 +6,14 @@
  * 11F: taken off shadcn and onto the LOCKED admin v2 language
  * (design_system/admin/ADMIN_UI.md). Presentation only — every figure this
  * screen prints is market data a broker may publish from (§0), so nothing about
- * how one is produced, filtered or formatted moved.
+ * how one is produced, filtered or formatted moved — except live inventory
+ * and months of supply, which getReportMetrics now overlays from
+ * getCityDetachedMarket (null / em dash on miss; never the RPC /12 MOS).
  *
  * Carried over verbatim: filtersForSegment and the three segment flags, the
  * "Pick a city" validation, the breakdown fan-out and its null-drop, every
  * getReportMetrics / getReportPriceBands call and argument, the slice(0, 6)
- * price-band windows, the toLocaleString options on every number, and every
+ * price-band windows, the toLocaleString options on period numbers, and every
  * metric / band label (including "Median sale price" / "Median sale $/sqft").
  *
  * Substitutions, and why each one (match CustomReportBuilder + DateRangePicker):
@@ -33,6 +35,7 @@ import {
   type ReportPriceBandsResult,
   type ReportFilters,
 } from '@/app/actions/reports'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import {
   REPORT_PROPERTY_TYPE_SEGMENTS,
   REPORT_PROPERTY_TYPE_FILTER_OPTIONS,
@@ -97,9 +100,15 @@ function metricRows(m: ReportMetrics): ReportGridRow[] {
         `$${Number(m.median_ppsf).toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
       ],
     },
-    { key: 'active', cells: ['Current listings', m.current_listings] },
+    { key: 'active', cells: ['Current listings', m.current_listings ?? '—'] },
     { key: 'sales12', cells: ['Sales (prior 12 mo)', m.sales_12mo] },
-    { key: 'inventory', cells: ['Inventory (months)', m.inventory_months ?? '—'] },
+    {
+      key: 'inventory',
+      cells: [
+        'Inventory (months)',
+        m.inventory_months != null ? formatMonthsOfSupply(m.inventory_months) : '—',
+      ],
+    },
   ]
 }
 

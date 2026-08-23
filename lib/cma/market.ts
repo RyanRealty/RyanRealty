@@ -98,24 +98,25 @@ export async function getCmaMarketContext(
   const sold365 = num(stats.sold_count) ?? 0
   const cityTruth =
     geoType === 'city' ? await getCityDetachedMarket(stats.geo_slug) : null
-  const active = cityTruth?.activeCount ?? num(pulse?.active_count)
-  // Canonical MoS first (the published pulse figure), 365d-pace derivation only
-  // when the pulse row is missing it. Keep the RAW (unrounded) value for the
-  // verdict classification — rounding before binning flips a true 4.04 into a
-  // seller's-market verdict (or 5.96 into a buyer's) that the number itself
-  // contradicts. Display the rounded figure; classify off the raw one.
+  // City grain: MT only. Pulse 488 / 3.54 / seller must not fill a miss.
+  const active =
+    cityTruth?.activeCount ?? (geoType === 'city' ? null : num(pulse?.active_count))
   let rawMonthsOfSupply =
     cityTruth?.monthsOfSupply ??
-    publishMonthsOfSupply({
-      grain: geoType,
-      pulseMos: num(pulse?.months_of_supply),
-      pulseActiveCount: active,
-      displayedActiveCount: active,
-      soldCount12mo: sold365,
-    })
+    (geoType === 'city'
+      ? null
+      : publishMonthsOfSupply({
+          grain: geoType,
+          pulseMos: num(pulse?.months_of_supply),
+          pulseActiveCount: active,
+          displayedActiveCount: active,
+          soldCount12mo: sold365,
+        }))
   let mosFormula = cityTruth
     ? 'getMetric months_of_supply mt-v1 detached MLS-city (same path as /sell)'
-    : 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))'
+    : geoType === 'city'
+      ? 'withheld: city detached cell missing (no pulse fallback)'
+      : 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))'
   // THE 12-MONTH FALLBACK IS THE SAME CLOSED SERIES, so it may only run at a
   // grain whose closes are attributed the way its actives are. At 'neighborhood'
   // both sold_count and the pulse MoS come off a subdivision-name text join that

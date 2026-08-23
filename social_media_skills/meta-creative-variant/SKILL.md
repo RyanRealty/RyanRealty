@@ -166,17 +166,20 @@ Extract:
 
 **Step 4 - Pull fresh market context if not in payload**
 
-If `payload.market_context` is not provided:
-```sql
-SELECT median_sale_price, active_count, months_supply, median_dom,
-       median_sale_price_yoy_pct, stats_date
-FROM market_stats_cache
-WHERE city = '<payload.city or Bend>'
-  AND property_type = 'A'
-ORDER BY stats_date DESC LIMIT 1;
-```
+If `payload.market_context` is not provided, pull city MOS, active count, and market
+verdict from `getCityDetachedMarket('<city-slug>')`
+(`lib/data/market-truth/getSellBendMarket.ts`, D1 detached, MLS City, exact Active).
+Same three figures as `/sell`. City days on market from
+`getMetric({ stat: 'median_days_to_contract', geoType: 'city', geoSlug: '<city-slug>',
+segment: 'detached' })` (D2). Label it days to contract.
 
-Apply the MoS verdict threshold (<=4 seller, 4-6 balanced, >=6 buyer). Use this for any "market insight" angle variants. Every stat used in ad copy traces to this query.
+Do not query `listings` for city MOS or city DOM. Do not treat `PropertyType='A'` as
+single family. Do not read `CumulativeDaysOnMarket` or `"DaysOnMarket"` as a city median.
+A miss withholds. Never fall back to pulse 488 / 3.54.
+
+Apply the MoS verdict threshold (<=4 seller, 4-6 balanced, >=6 buyer) to the Market
+Truth MoS cell. Use this for any "market insight" angle variants. Every stat used in
+ad copy traces to this pull.
 
 **Step 5 - Select creative angles for this variant set**
 
@@ -266,9 +269,9 @@ For each market stat used in any variant's copy:
       "figures": [
         {
           "figure": "$699K median price",
-          "source": "Supabase market_stats_cache",
-          "filter": "city='Bend', property_type='A', ORDER BY stats_date DESC LIMIT 1",
-          "column": "median_sale_price",
+          "source": "getMetric median_close",
+          "filter": "geoType='city', geoSlug='bend', segment='detached', definition_id='mt-v1'",
+          "column": "median_close",
           "value": 699000,
           "fetched_at": "<ISO>"
         }

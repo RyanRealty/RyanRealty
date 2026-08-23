@@ -140,7 +140,7 @@ export async function getListingPhotosCount(listingKey: string): Promise<number 
   return data.photos_count != null ? Number(data.photos_count) : null
 }
 
-/** Closed SFR comp pool for one selection tier. The builder composes tiers. */
+/** Closed comp pool for one selection tier. The builder composes tiers. */
 export async function selectCmaCompsPool(opts: {
   /**
    * City bound. NULL is deliberate and means "any mailing city": on a rural
@@ -165,6 +165,12 @@ export async function selectCmaCompsPool(opts: {
    */
   bounds?: { latMin: number; latMax: number; lngMin: number; lngMax: number } | null
   limit?: number
+  /**
+   * Subject's product type for the SQL eq. Detached callers pass
+   * 'Single Family Residence' (D1). Townhouse callers pass 'Townhouse'.
+   * Omit rather than defaulting to SFR — a missing type must not force detached.
+   */
+  propertySubType?: string | null
 }): Promise<CmaListingRow[]> {
   const sb = client()
   if (!sb) return []
@@ -178,6 +184,8 @@ export async function selectCmaCompsPool(opts: {
     .gt('ClosePrice', 0)
     .gte('TotalLivingAreaSqFt', opts.sqftMin)
     .lte('TotalLivingAreaSqFt', opts.sqftMax)
+  const subType = opts.propertySubType?.trim() || null
+  if (subType) q = q.eq('property_sub_type', subType)
   if (opts.cityIlike?.trim()) q = q.ilike('City', opts.cityIlike.trim())
   if (opts.subdivisionIlike?.trim()) q = q.ilike('SubdivisionName', opts.subdivisionIlike.trim())
   if (opts.postalCode?.trim()) q = q.eq('PostalCode', opts.postalCode.trim())

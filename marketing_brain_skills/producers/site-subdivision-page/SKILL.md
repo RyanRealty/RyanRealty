@@ -212,24 +212,29 @@ launch since the parent community page already shows the location.
 **Step 6.** Pull live market data filtered to this sub-plat:
 
 a. **Sub-plat-specific market stats (if sample size allows):**
+
+Do not compute a market-median DOM from `CumulativeDaysOnMarket`. Do not treat
+`PropertyType='A'` as single family. Subdivision / community MOS stays withheld
+(REGISTRY §4). If the page needs a city MOS, active count, or verdict, call
+`getCityDetachedMarket('<parent-city-slug>')` (D1 detached, same three figures as
+`/sell`). If it needs city days on market, call `getMetric` `median_days_to_contract`
+(D2). A miss withholds. Never fall back to pulse 488 / 3.54.
+
+Closed-count and median close for the sub-plat may still come from listings filtered
+to this sub-plat's aliases AND `property_sub_type='Single Family Residence'` AND
+`"PropertyType"='A'`. If `sold_12mo < 3`, omit the KPI block from the page. Do not
+substitute parent-community MOS from pulse or from CDOM.
+
 ```sql
-WITH sub_listings AS (
-  SELECT *
-  FROM listings
-  WHERE "SubdivisionName" = '<sub_mls_alias>' OR "SubdivisionName" = ANY('<aliases>'::text[])
-)
 SELECT
   COUNT(*) FILTER (WHERE "StandardStatus" IN ('Closed', 'Sold') AND "CloseDate" >= NOW() - INTERVAL '365 days') AS sold_12mo,
   PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "ClosePrice") FILTER (WHERE "StandardStatus" IN ('Closed', 'Sold') AND "CloseDate" >= NOW() - INTERVAL '365 days') AS median_close_12mo,
-  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "CumulativeDaysOnMarket") FILTER (WHERE "StandardStatus" IN ('Closed', 'Sold') AND "CloseDate" >= NOW() - INTERVAL '365 days') AS median_dom_12mo,
   COUNT(*) FILTER (WHERE "StandardStatus" = 'Active') AS active_count
-FROM sub_listings
-WHERE "PropertyType" = 'A';
+FROM listings
+WHERE ("SubdivisionName" = '<sub_mls_alias>' OR "SubdivisionName" = ANY('<aliases>'::text[]))
+  AND "PropertyType" = 'A'
+  AND property_sub_type = 'Single Family Residence';
 ```
-
-If `sold_12mo < 3`, omit the KPI block from the page and use the parent
-community's stats with a footnote: "Heath data thin (X sales in 12 months);
-representative numbers below are Tetherow-wide."
 
 b. **Sub-plat active inventory:**
 ```sql

@@ -1,12 +1,12 @@
 /**
  * ExpiredMarketStatStrip — compact live market stat row for the expired LP.
  *
- * Framed as "What the market looks like for your re-list" — shows median
- * days to pending + active SFR inventory for Bend using the existing
- * getMarketPulse DAL function (city:bend). Data-accuracy compliant:
+ * Framed as "What the market looks like for your re-list". Bend city active
+ * count is market_metric mt-v1 detached (MLS City) via getMarketPulse overlay.
+ * Median days to pending stays the pulse series. Data-accuracy compliant:
  *   - Only renders when values are non-null.
  *   - Tabular numerals.
- *   - Shows "updated" label with ISO date of the last pulse refresh.
+ *   - Shows "updated" label with ISO date of the last refresh.
  *   - Falls back to null render when the DAL returns nothing.
  *
  * Server component — no interactivity.
@@ -52,7 +52,7 @@ export function ExpiredMarketStatStrip({ pulse, className }: Props) {
   if (activeCount != null && activeCount > 0) {
     stats.push({
       value: activeCount.toLocaleString('en-US'),
-      label: 'Active SFR listings in Bend',
+      label: 'Active detached listings in Bend',
     })
   }
 
@@ -81,7 +81,7 @@ export function ExpiredMarketStatStrip({ pulse, className }: Props) {
       </div>
       {updatedLabel ? (
         <p className="mt-3 text-xs text-muted-foreground/70">
-          Updated {updatedLabel} · Bend SFR · market_pulse_live
+          Updated {updatedLabel} · Bend detached · MLS City
         </p>
       ) : null}
     </aside>

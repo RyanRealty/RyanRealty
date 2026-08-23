@@ -3,15 +3,16 @@ name: market-report-blog
 description: >
   Produces the SEO-optimized monthly market report blog post for ryan-realty.com
   (AgentFire WordPress REST API). Companion text to the market-data-video and
-  youtube-long-form-market-report. Pulls live data from market_pulse_live and
-  market_stats_cache. Length 1500-2500 words with schema.org BlogPosting JSON-LD
+  youtube-long-form-market-report. Pulls live city MOS/DOM from
+  getCityDetachedMarket / getMetric (D1 detached, D2 days_to_contract). Length
+  1500-2500 words with schema.org BlogPosting JSON-LD
   and FAQ section for SEO.
 action_types:
   - content:market_report_blog
 output_type: text
 target_platforms: ['agentfire_blog', 'gbp', 'email']
 asset_destination: "out/blog-posts/<date>/"
-auto_inputs: ['market_stats_cache', 'market_pulse_live', 'listing_history']
+auto_inputs: ['getCityDetachedMarket', 'getMetric', 'listing_history']
 required_inputs: "['city or neighborhood', 'report_period (monthly|quarterly)']"
 optional_inputs: ['include_charts (default true)', 'min_words (default 1200)']
 estimated_runtime_min: 25
@@ -32,8 +33,9 @@ Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not di
 
 **Scope:** Monthly SEO-optimized blog post at ryan-realty.com covering the Bend (or
 specified city) residential real estate market. Companion piece to the market-data-video
-short-form video and the youtube-long-form-market-report. Pulls the same data from
-Supabase `market_pulse_live` and `market_stats_cache`. Longer than the standard blog-post
+short-form video and the youtube-long-form-market-report. City MOS, active count, and
+verdict come from `getCityDetachedMarket`. City days on market come from `getMetric`
+`median_days_to_contract`. Longer than the standard blog-post
 producer output (1500-2500 words vs 800-1500) because this post is the primary SEO landing
 page for Bend market report queries. Includes schema.org `BlogPosting` JSON-LD, a 4-6 item
 FAQ section targeting long-tail queries, embedded YouTube video (when available), and
@@ -137,7 +139,7 @@ Before producing any copy or data pull:
 - `design_system/ryan-realty/SKILL.md` (brand register, voice, fonts)
 - `marketing_brain_skills/brand-voice/VOICE.md` (full load - 1500-2500 word long-form)
 - `social_media_skills/blog-post/SKILL.md` (sibling skill - inherit SEO spec §3 fully)
-- `video_production_skills/market-data-video/SKILL.md` §22 (data dictionary for market_stats_cache and market_pulse_live columns)
+- `lib/data/market-truth/getSellBendMarket.ts` and `lib/data/market-truth/getMetric.ts` (D1 detached city MOS, D2 days_to_contract)
 
 **Step 3 - Verify WordPress env vars before any work**
 
@@ -163,60 +165,26 @@ node scripts/analytics/content-market-claims.mjs --year=2024 --type=all --json
 - Source table: `analytics_mart_market_annual` (`geo_type=region`, `geo_slug=central-oregon`)
 - Site twin: `getCoMarketAnnual({ year, typeScope })` in `lib/data/analytics/getCoMarketAnnual.ts`
 - If the script exits non-zero or `ok: false`: **omit the annual claim**. Do not invent volume or hand-SQL raw `listings` for annual aggregates in this skill.
-- Monthly pulse medians / DOM / inventory are **not** replaced by this cube. Use 4b below.
+- Monthly city medians / DOM / inventory are **not** replaced by this cube. Use 4b below.
 
-### 4b. Monthly city pulse (primary for month-window posts)
+### 4b. Monthly city market (primary for month-window posts)
 
-Primary source: `market_pulse_live` and `market_stats_cache`.
+City MOS, active count, and market verdict: `getCityDetachedMarket('<city-slug>')` from
+`lib/data/market-truth/getSellBendMarket.ts` (D1 detached, MLS City, exact Active). Same
+three figures as `/sell`.
 
-```sql
--- Primary stats from market_stats_cache (most recent row for city + SFR):
-SELECT
-  median_sale_price, active_count, months_supply, median_dom,
-  closed_count_ytd, median_sale_price_yoy_pct,
-  active_count_yoy_pct, months_supply_yoy_pct,
-  stats_date
-FROM market_stats_cache
-WHERE city = '<city>'
-  AND property_type = 'A'
-ORDER BY stats_date DESC
-LIMIT 1;
+City days on market: `getMetric({ stat: 'median_days_to_contract', geoType: 'city',
+geoSlug: '<city-slug>', segment: 'detached' })` from `lib/data/market-truth/getMetric.ts`
+(D2). Label it days to contract.
 
--- Cross-check with market_pulse_live (real-time):
-SELECT
-  median_list_price_active, active_count, new_listings_30d,
-  price_reduced_30d, pending_count, pending_to_active_ratio,
-  fetched_at
-FROM market_pulse_live
-WHERE city = '<city>'
-  AND property_type = 'A'
-ORDER BY fetched_at DESC
-LIMIT 1;
+Other city cells (median close, YoY, new listings) also go through `getMetric` with
+`segment: 'detached'`. Do not query `listings` for city MOS or city DOM. Do not treat
+`PropertyType='A'` as single family. Do not read `CumulativeDaysOnMarket` or
+`"DaysOnMarket"` as a city median. A miss (`null` or `isPublishable === false`)
+withholds. Never fall back to pulse 488 / 3.54.
 
--- Months of supply verification (canonical formula):
--- active_count / (closed_last_6_months / 6)
-SELECT COUNT(*) as closed_6mo
-FROM listings
-WHERE "City" = '<city>'
-  AND "PropertyType" = 'A'
-  AND "StandardStatus" = 'Closed'
-  AND "CloseDate" >= now() - interval '6 months';
--- MoS = active_count / (closed_6mo / 6)
--- Thresholds: <=4 seller, 4-6 balanced, >=6 buyer
--- Market verdict must match computed MoS, not the cached value if they differ
-
--- YoY comparison (same window last year):
-SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "ClosePrice") AS median_prev_year
-FROM listings
-WHERE "City" = '<city>'
-  AND "PropertyType" = 'A'
-  AND "StandardStatus" = 'Closed'
-  AND "CloseDate" >= date_trunc('year', now()) - interval '1 year'
-  AND "CloseDate" < date_trunc('year', now());
-```
-
-If any Supabase figure differs from market_pulse_live by >1%, surface the discrepancy
-to Matt before proceeding (Spark x Supabase reconciliation gate per CLAUDE.md §0).
+MoS thresholds stay <=4 seller, 4-6 balanced, >=6 buyer. The verdict must match the
+Market Truth `months_of_supply` cell, not a pulse or listings recomputation.
 
 **Step 5 - Determine SEO keyword and title**
 
@@ -265,13 +233,13 @@ Deep-dive section (H2: "Median sale price") (200-250 words):
 
 Deep-dive section (H2: "Inventory and months of supply") (200-250 words):
 - Explain months of supply in plain English for a buyer or seller reading this. Define it. Apply it: "With X months of supply, Bend is a [seller/balanced/buyer] market by the standard definition."
-- Month-over-month trend if available from market_stats_cache history.
+- Month-over-month trend only if `getMetric` returns a publishable YoY or MoM cell.
 
 Deep-dive section (H2: "Days on market") (150-200 words):
 - What DOM tells a seller vs a buyer. The current median and what it means in practice.
 
 Deep-dive section (H2: "New listings and pending activity") (150-200 words):
-- New listings 30 days from market_pulse_live.
+- New listings from `getMetric({ stat: 'new_listings', geoType: 'city', geoSlug: '<city-slug>', segment: 'detached' })`. Omit if the cell misses.
 - Pending-to-active ratio as a leading indicator of where prices are heading.
 
 Neighborhood breakdown section (H2: "Which Bend neighborhoods are most active?") (250-300 words):
@@ -387,9 +355,9 @@ One entry per figure in the post:
   "figures": [
     {
       "figure": "$699,000 median sale price",
-      "source": "Supabase market_stats_cache",
-      "filter": "city='Bend', property_type='A', ORDER BY stats_date DESC LIMIT 1",
-      "column": "median_sale_price",
+      "source": "getMetric median_close",
+      "filter": "geoType='city', geoSlug='bend', segment='detached', definition_id='mt-v1'",
+      "column": "median_close",
       "value": 699000,
       "row_count": 1,
       "fetched_at": "<ISO>"
@@ -537,7 +505,7 @@ measured
 |---|---|---|
 | WordPress credentials unset | `WP_AGENTFIRE_USER`, `WP_AGENTFIRE_APP_PASSWORD`, or `WP_AGENTFIRE_SITE_URL` missing | Build draft locally. Surface blockers clearly in contact sheet: "Cannot publish until WordPress Application Password is configured. Go to ryan-realty.com/wp-admin > Users > Profile > Application Passwords." Do NOT set status='killed' - the draft is still valuable. |
 | Naming convention mismatch | Code uses `AGENTFIRE_WP_USER` vs `WP_AGENTFIRE_USER` | Use `WP_AGENTFIRE_USER` (the `app/` layer convention). Note the inconsistency in the contact sheet for Matt to resolve. |
-| Market data Spark/Supabase delta >1% | Reconciliation gate triggers | Surface both values + delta to Matt. Do not publish until resolved. |
+| Market Truth city cell missing | `getCityDetachedMarket` or `getMetric` returns null / not publishable | Withhold the figure. Never fall back to pulse 488 / 3.54 or listings CDOM. |
 | Voice gate fails | Banned word or punctuation found | Rewrite and re-validate. Never surface a failing draft. |
 | YouTube URL returns 404 | `payload.youtube_url` is invalid | Skip the video embed. Note in contact sheet: "YouTube video URL not reachable - embedded video omitted. Add the correct URL when available and update the post." |
 | Word count below 1500 | Draft is under minimum | Add depth to FAQ section or expand the neighborhood breakdown. Do not pad with filler sentences. |
@@ -557,7 +525,7 @@ measured
 - `social_media_skills/blog-post/SKILL.md` - sibling (shorter general posts; inherit SEO spec §3)
 - `automation_skills/content_engine/SKILL.md` - content routing
 - `social_media_skills/platform-best-practices/SKILL.md` - 2026 platform rule layer
-- `video_production_skills/market-data-video/SKILL.md` §22 - canonical data dictionary (all column names)
+- `lib/data/market-truth/getSellBendMarket.ts` and `lib/data/market-truth/getMetric.ts` - city MOS / DOM (D1 detached, D2 days_to_contract)
 - `video_production_skills/youtube-long-form-market-report/SKILL.md` - companion video (same data)
 - `video_production_skills/monthly-market-report-orchestrator/SKILL.md` - calling orchestrator
 

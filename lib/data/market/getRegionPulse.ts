@@ -12,7 +12,7 @@
  * `updatedAt` is exposed so callers can render a freshness pill.
  */
 import { getMarketPulseRowForGeo } from './getMarketStatsCacheRows'
-import { applyDetachedOverlay, getDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
+import { overlayDetachedMarket, withholdDetachedHeadlines, getDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type RegionPulse = {
@@ -73,14 +73,14 @@ export const getRegionPulse = makeResilientCached(
       updatedAt: String(row.updated_at ?? ''),
     }
     try {
-      const mt = await getDetachedMarket('region', 'central-oregon')
-      if (mt) return applyDetachedOverlay(pulse, mt)
+      // Hit: overlay detached. Miss/throw: withhold active/MOS/verdict/median.
+      // Days to pending, new 30d, sold 30d stay. Do not crash the homepage.
+      return overlayDetachedMarket(pulse, await getDetachedMarket('region', 'central-oregon'))
     } catch {
-      /* keep pulse */
+      return withholdDetachedHeadlines(pulse)
     }
-    return pulse
   },
-  ['region-pulse-central-oregon-v3-mt-detached'],
+  ['region-pulse-central-oregon-v4-mt-withhold'],
   { revalidate: 300, tags: ['market-pulse', 'region-pulse'] },
   null,
 )

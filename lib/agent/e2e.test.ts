@@ -97,7 +97,7 @@ describe('golden: market Q&A with §0 tracing', () => {
         input_schema: { type: 'object', properties: {} },
         handler: async () => ({
           result: { city: 'Redmond', active: 214, medianList: 525000, mos: 3.2 },
-          citations: [{ figure: '$525,000', source: 'market_pulse_live city/redmond' }],
+          citations: [{ figure: '$525,000', source: 'market_metric mt-v1 detached geo_type=city geo_slug=redmond median_list_active=525000' }],
         }),
       },
     ]

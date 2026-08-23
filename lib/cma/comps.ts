@@ -35,12 +35,14 @@ import {
   distanceMiles,
   lotCharacterCompatible,
   productTypeCompatible,
+  keepSameProductType,
   bathCountCompatible,
   marketAreaBounds,
   radiusBounds,
   marketAreaName,
   proximityLabel,
   resolveMarketArea,
+  compPoolPropertySubType,
 } from '@/lib/cma/market-area'
 import {
   addExclusions,
@@ -242,6 +244,8 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
 
   const tiers = compTierLadder(subdivisionIlike)
   const ruralAcreage = isRuralAcreage(subject, subjectArea)
+  const sqlSubType = compPoolPropertySubType(subject.propertySubType)
+  const subTypeSql = sqlSubType ? ` AND property_sub_type='${sqlSubType}'` : ''
 
   for (const tier of tiers) {
     const skip =
@@ -301,6 +305,7 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       lotMax,
       bounds: tierBounds,
       limit: tierBounds ? 500 : 100,
+      propertySubType: sqlSubType,
     })
     rung.rows_returned = rows.length
     let added = 0
@@ -339,11 +344,12 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
         continue
       }
 
-      // HARD EXCLUSION at every tier: a townhome, condo, or manufactured home
-      // does not compete with a detached house for the same buyer. PropertyType
-      // 'A' mixes all of them, so without this the selector hands the judge a
-      // contaminated set and the audit fails the build after the fact.
-      if (!productTypeCompatible(subject.propertySubType, comp.propertySubType)) {
+      // HARD EXCLUSION at every tier. SQL already eq's the subject's product
+      // type; keepSameProductType is belt-and-suspenders if a mixed row slips in.
+      if (
+        !productTypeCompatible(subject.propertySubType, comp.propertySubType) ||
+        !keepSameProductType(subject.propertySubType, comp.propertySubType)
+      ) {
         rung.excluded.product_type++
         continue
       }
@@ -379,7 +385,7 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
     addExclusions(excludedTotals, rung.excluded)
     ladder.push(rung)
     trace.push(
-      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='A' AND ClosePrice>0 AND CloseDate>='${closeDateGte}'${tier.ignoreCity ? '' : ` AND City ILIKE '${subject.city}'`}${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''} AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${lotMax}` : ''}` +
+      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='A'${subTypeSql} AND ClosePrice>0 AND CloseDate>='${closeDateGte}'${tier.ignoreCity ? '' : ` AND City ILIKE '${subject.city}'`}${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''} AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${lotMax}` : ''}` +
         `${tier.sameArea ? ` AND market area = ${subjectAreaName}` : ''}${tier.maxMiles != null ? ` AND distance <= ${tier.maxMiles} miles` : ''}. Returned ${rows.length} rows, ${added} new comps.`,
     )
     if (added > 0) tiersUsed.push(tier.name)
@@ -516,7 +522,11 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     const comp = rowToComp(row, 'broker-selected')
     if (!comp) continue
     if (subject.listingKey && comp.listingKey === subject.listingKey) continue
-    if (!productTypeCompatible(subject.propertySubType, comp.propertySubType)) continue
+    if (
+      !productTypeCompatible(subject.propertySubType, comp.propertySubType) ||
+      !keepSameProductType(subject.propertySubType, comp.propertySubType)
+    )
+      continue
     if (!bathCountCompatible(subject.baths, comp.baths)) continue
     if (!byKey.has(comp.listingKey)) byKey.set(comp.listingKey, comp)
   }

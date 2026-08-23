@@ -8,7 +8,8 @@
 
 import { supabaseAnon } from '@/lib/data/client'
 import {
-  applyDetachedOverlay,
+  overlayDetachedMarket,
+  withholdDetachedHeadlines,
   cityDetachedSlug,
   getDetachedMarkets,
 } from '@/lib/data/market-truth/getSellBendMarket'
@@ -165,15 +166,18 @@ export async function getMarketPulseRowsByGeoType(options: {
       .map((r) => {
         const slug = String(r.geo_slug ?? r.geo_label ?? '')
         const mt = map.get(`${options.geoType}:${cityDetachedSlug(slug)}`)
-        if (!mt) return r
-        return applyDetachedOverlay(
+        return overlayDetachedMarket(
           r as { active_count?: number; months_of_supply?: number | null; median_list_price?: number | null },
           mt,
         ) as Record<string, unknown>
       })
       .sort((a, b) => Number(b.active_count ?? 0) - Number(a.active_count ?? 0))
   } catch {
-    return rows
+    return rows.map((r) =>
+      withholdDetachedHeadlines(
+        r as { active_count?: number; months_of_supply?: number | null; median_list_price?: number | null },
+      ),
+    ) as Array<Record<string, unknown>>
   }
 }
 

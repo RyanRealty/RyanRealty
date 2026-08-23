@@ -1,7 +1,8 @@
 'use client'
 
 // @no-parity — internal admin surface, no public mockup contract
-// 11F: v2 language only; report math and labels unchanged (§0 published figures).
+// 11F: v2 language only. Period sales stay on the RPC; live inventory + MOS
+// come from getCityDetachedMarket via getReportMetrics (em dash on miss).
 
 import { useState, useCallback } from 'react'
 import {
@@ -34,6 +35,7 @@ import {
   type ReportColumn,
   type ReportGridRow,
 } from '@/components/admin/v2'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { ReportTimeSeriesChart } from './ReportTimeSeriesChart'
 
 type Props = { cities: string[] }
@@ -100,9 +102,15 @@ function metricRows(m: ReportMetrics): ReportGridRow[] {
       key: 'ppsf',
       cells: ['Median $/sqft', `$${Number(m.median_ppsf).toLocaleString('en-US', { maximumFractionDigits: 2 })}`],
     },
-    { key: 'active', cells: ['Current listings', m.current_listings] },
+    { key: 'active', cells: ['Current listings', m.current_listings ?? '—'] },
     { key: 'sales12', cells: ['Sales (prior 12 mo)', m.sales_12mo] },
-    { key: 'inventory', cells: ['Inventory (months)', m.inventory_months ?? '—'] },
+    {
+      key: 'inventory',
+      cells: [
+        'Inventory (months)',
+        m.inventory_months != null ? formatMonthsOfSupply(m.inventory_months) : '—',
+      ],
+    },
   ]
 }
 

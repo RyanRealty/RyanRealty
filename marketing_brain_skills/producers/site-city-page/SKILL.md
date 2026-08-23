@@ -25,7 +25,7 @@ action_types:
 output_type: web-page
 target_platforms: []
 asset_destination: app/lp/[city]/page.tsx
-auto_inputs: ['market_stats_cache', 'listings', 'boundaries', 'data/resort-communities.json']
+auto_inputs: ['getCityDetachedMarket', 'getMetric', 'listings', 'boundaries', 'data/resort-communities.json']
 required_inputs: ['city_slug']
 optional_inputs: ['hero_image_override', 'sections_to_update']
 estimated_runtime_min: 40
@@ -79,7 +79,7 @@ The city page links to those, doesn't substitute for them.
 - Route registration in `app/sitemap.ts` with `priority: 0.9` (top of the stack), `changeFrequency: 'daily'`
 - JSON-LD `City` (or `Place`) + `RealEstateAgent` schemas with full geo + areaServed coordinates
 - ISR config: `export const revalidate = 21600` (6 hours)
-- Live Supabase data: city-wide market_stats_cache, active inventory, recent closings, peer-city comparison
+- Live city MOS/DOM from getCityDetachedMarket / getMetric, active inventory, recent closings, peer-city comparison
 - Map: city-wide Google Static Map at zoom 11-12 with named landmarks pinned
 - Tile grid of every named resort community + neighborhood inside the city, each linking to its own LP (or "coming soon" if not built yet)
 - Top-of-the-funnel KPIs: city-wide median, sold count, DOM, active inventory
@@ -194,40 +194,29 @@ For each community, look up its `boundaries.geo_slug` to verify the route at
 
 **Step 5.** Pull live city-wide market data:
 
-a. **City-wide rolling-365d stats:**
-```sql
-SELECT
-  sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio,
-  median_ppsf, end_of_period_inventory, methodology_version,
-  period_start, period_end, computed_at
-FROM market_stats_cache
-WHERE geo_slug = '<city_slug>'
-  AND period_type = 'rolling_365d'
-ORDER BY period_end DESC
-LIMIT 1;
-```
+a. **City MOS, active count, verdict, days to contract:**
 
-If `geo_slug='bend'` doesn't exist in `market_stats_cache`, compute on the fly:
+City MOS, active count, and market verdict: `getCityDetachedMarket('<city_slug>')` from
+`lib/data/market-truth/getSellBendMarket.ts` (D1 detached, MLS City, exact Active). Same
+three figures as `/sell`.
 
-```sql
-SELECT
-  COUNT(*) FILTER (WHERE "StandardStatus" IN ('Closed', 'Sold') AND "CloseDate" >= NOW() - INTERVAL '365 days') AS sold_12mo,
-  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "ClosePrice") FILTER (WHERE "StandardStatus" IN ('Closed', 'Sold') AND "CloseDate" >= NOW() - INTERVAL '365 days') AS median_close,
-  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "CumulativeDaysOnMarket") FILTER (WHERE "StandardStatus" IN ('Closed', 'Sold') AND "CloseDate" >= NOW() - INTERVAL '365 days') AS median_dom,
-  COUNT(*) FILTER (WHERE "StandardStatus" = 'Active') AS active_count
-FROM listings
-WHERE "City" = '<city_name>' AND "PropertyType" = 'A';
-```
+City days on market: `getMetric({ stat: 'median_days_to_contract', geoType: 'city',
+geoSlug: '<city_slug>', segment: 'detached' })` from `lib/data/market-truth/getMetric.ts`
+(D2). Label it days to contract.
 
-b. **City-wide active inventory (for the active grid + tile):**
-```sql
-SELECT COUNT(*) AS active_count,
-       MIN("ListPrice") AS min_price,
-       MAX("ListPrice") AS max_price,
-       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "ListPrice") AS median_list
-FROM listings
-WHERE "City" = '<city_name>' AND "StandardStatus" = 'Active' AND "PropertyType" = 'A';
-```
+Do not query `listings` for city MOS or city DOM. Do not treat `PropertyType='A'` as
+single family. Do not read `CumulativeDaysOnMarket` or `"DaysOnMarket"` as a city median.
+Do not compute on the fly from listings. A miss (`null` or `isPublishable === false`)
+withholds the KPI. Never fall back to pulse 488 / 3.54.
+
+Other city cells (median close, median list, YoY) also go through `getMetric` with
+`segment: 'detached'`.
+
+b. **City-wide active inventory (for the active grid + tile, not the KPI count):**
+The published city active count is `getCityDetachedMarket('<city_slug>').activeCount`.
+Use that number in the KPI bar. The listing grid below is inventory cards, not the
+MOS numerator. Filter cards to detached (`property_sub_type='Single Family Residence'`
+and `"PropertyType"='A'`), never `PropertyType='A'` alone as "SFR".
 
 c. **Featured active inventory (cap 12 for the tile section):**
 ```sql
@@ -236,22 +225,21 @@ SELECT
   "BedroomsTotal", "BathroomsTotal", "TotalLivingAreaSqFt",
   "PhotoURL", "SubdivisionName"
 FROM listings
-WHERE "City" = '<city_name>' AND "StandardStatus" = 'Active' AND "PropertyType" = 'A'
+WHERE "City" = '<city_name>' AND "StandardStatus" = 'Active'
+  AND "PropertyType" = 'A'
+  AND property_sub_type = 'Single Family Residence'
 ORDER BY "ListPrice" DESC
 LIMIT 12;
 ```
 
+This grid is listing cards. The published city active count and MOS still come from
+`getCityDetachedMarket`, never from `COUNT(*)` on this query.
+
 d. **Peer-city comparison:**
-```sql
-SELECT
-  geo_slug, geo_label, sold_count, median_sale_price, median_dom,
-  avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory
-FROM market_stats_cache
-WHERE geo_slug IN ('bend', 'redmond', 'sisters', 'la-pine', 'tumalo', 'terrebonne', 'madras')
-  AND geo_slug != '<city_slug>'
-  AND period_type = 'rolling_365d'
-ORDER BY median_sale_price DESC;
-```
+For each peer slug (`bend`, `redmond`, `sisters`, `la-pine`, `tumalo`, `terrebonne`,
+`madras` except the current city), call `getCityDetachedMarket('<peer>')` for MOS,
+active count, and verdict. Call `getMetric` `median_days_to_contract` for days to
+contract. Omit a peer whose cell misses. Never fill a miss from pulse or listings.
 
 **Step 6.** Generate map asset. City-wide zoom (10-12 depending on city size):
 
@@ -340,7 +328,7 @@ City page ready: /lp/<slug>/
     Route: /lp/<slug>/
     City: <city_name>, Oregon
     H1: <hero_headline> (with dynamic month-year)
-    KPI sourced from market_stats_cache (ISR 6h)
+    KPI sourced from getCityDetachedMarket / getMetric (D1 detached, D2 days_to_contract)
     Active inventory: <n> homes city-wide
     Communities tiled: <n>
     Neighborhoods matrixed: <n>
@@ -348,8 +336,9 @@ City page ready: /lp/<slug>/
 
   VERIFICATION TRACE
     Live queries:
-      • market_stats_cache geo_slug='<slug>' period='rolling_365d' -> 1 row
-      • listings city-wide active -> <n>
+      • getCityDetachedMarket('<slug>') -> active / MOS / verdict
+      • getMetric median_days_to_contract city/<slug>/detached -> days to contract
+      • listings city-wide detached active cards -> <n>
       • Per-community counts -> <list>
       • Peer cities -> <n>
       • boundaries geo_slug='<slug>' centroid -> (<lat>, <lng>)
@@ -390,7 +379,7 @@ Same as community-page: pending → in_production → ready → approved → exe
 | Communities tile grid empty | No `/lp/<community>/` routes exist for this city | Render tile grid with all "coming soon" placeholders; note in PR |
 | Active inventory thin | < 5 active homes | Render with "Limited city-wide inventory right now" callout |
 | Voice / TS fail | as elsewhere | Kill after 2 iterations |
-| Peer comparison cities not in cache | No market_stats_cache rows for peers | Omit peer rows; note in PR |
+| Peer comparison city cell missing | `getCityDetachedMarket` or `getMetric` miss for a peer | Omit that peer. Never fill from pulse 488 / 3.54 or listings CDOM. |
 
 ---
 

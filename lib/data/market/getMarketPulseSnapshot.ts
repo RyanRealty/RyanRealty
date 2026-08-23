@@ -11,7 +11,8 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import {
-  applyDetachedOverlay,
+  overlayDetachedMarket,
+  withholdDetachedHeadlines,
   cityDetachedSlug,
   getDetachedMarket,
   getDetachedMarkets,
@@ -94,12 +95,10 @@ export async function getMarketPulseRegionSnapshot(
   if (error || !data) return null
   const snap = toSnapshot(data as Record<string, unknown>)
   try {
-    const mt = await getDetachedMarket('region', regionSlug)
-    if (mt) return applyDetachedOverlay(snap, mt)
+    return overlayDetachedMarket(snap, await getDetachedMarket('region', regionSlug))
   } catch {
-    /* keep pulse */
+    return withholdDetachedHeadlines(snap)
   }
-  return snap
 }
 
 /** Inner fetch for city snapshots. THROWS on a query error so the resilient
@@ -129,10 +128,10 @@ async function overlayCitySnapshots(snaps: MarketPulseSnapshot[]): Promise<Marke
     )
     return snaps.map((s) => {
       const mt = map.get(`city:${cityDetachedSlug(s.geo_slug || s.geo_label)}`)
-      return mt ? applyDetachedOverlay(s, mt) : s
+      return overlayDetachedMarket(s, mt)
     })
   } catch {
-    return snaps
+    return snaps.map((s) => withholdDetachedHeadlines(s))
   }
 }
 
@@ -141,7 +140,7 @@ async function overlayCitySnapshots(snaps: MarketPulseSnapshot[]): Promise<Marke
  * render hit the DB and a blip rendered empty tiles). */
 export const getMarketPulseCitySnapshots = makeResilientCached(
   fetchMarketPulseCitySnapshots,
-  ['market-pulse-city-snapshots-v4-mt-detached'],
+  ['market-pulse-city-snapshots-v5-mt-withhold'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],
@@ -166,7 +165,7 @@ async function fetchAllMarketPulseCitySnapshots(): Promise<MarketPulseSnapshot[]
 
 export const getMarketPulseAllCitySnapshots = makeResilientCached(
   fetchAllMarketPulseCitySnapshots,
-  ['market-pulse-all-city-snapshots-v4-mt-detached'],
+  ['market-pulse-all-city-snapshots-v5-mt-withhold'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

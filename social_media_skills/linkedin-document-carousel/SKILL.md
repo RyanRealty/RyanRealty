@@ -216,8 +216,21 @@ Resolve the listing agent from `"ListAgentFullName"` / `"ListAgentEmail"` to one
 `matt-ryan`, `paul-stevenson`, `rebecca-peterson`. If unresolvable, surface to caller.  do not
 guess.
 
-If `topic_type !== 'listing'`: pull the relevant market_stats_cache / market_pulse_live row(s)
-for the geography in the payload. Print the raw row(s) for the verification trace.
+If `topic_type === 'market_brief'` (city or region): city MOS, active count, and market
+verdict come from `getCityDetachedMarket('<city-slug>')`
+(`lib/data/market-truth/getSellBendMarket.ts`, D1 detached, MLS City, exact Active). Same
+three figures as `/sell`. City days on market is
+`getMetric({ stat: 'median_days_to_contract', geoType: 'city', geoSlug: '<city-slug>',
+segment: 'detached' })` (D2). Label it days to contract. A miss withholds. Never fall
+back to pulse 488 / 3.54.
+
+If `topic_type === 'neighborhood_insight'`: neighborhood and community MOS stay withheld.
+Do not invent a median from `listings` CDOM or `PropertyType='A'`.
+
+Do not query `listings` for city MOS or city DOM. Do not treat `PropertyType='A'` as
+single family. Do not read `CumulativeDaysOnMarket` or `"DaysOnMarket"` as a city median.
+The listing SELECT above may keep a per-listing day count only as that listing's own
+days, never as a market median.
 
 **Step 4.  Build the per-slide content plan**
 
@@ -245,7 +258,7 @@ the figure. The build pipeline only renders from this config.
       "kicker": "MEDIAN $/SQFT · TUMALO RURAL · LAST 12 MONTHS",
       "primary_stat": "$362",
       "supporting": "↓ 8.0% vs Bend SFR median $/sqft of $393",
-      "source": "Supabase market_pulse_live · 2026-05-14T14:00:00Z"
+      "source": "getMetric median_ppsf · 2026-05-14T14:00:00Z"
     }
     //... index 3 through slide_count
   ]
@@ -258,15 +271,15 @@ Per CLAUDE.md §0, every figure in the config must trace to a live source pull i
 
 For every slide that contains a number, percentage, day count, or other claim:
 
-- Identify the source: live Supabase (`listings`, `market_pulse_live`, `market_stats_cache`),
-  Spark MLS API (`SPARK_API_BASE_URL` + `SPARK_API_KEY`), or a named primary source (NAR,
-  ORMLS, Case-Shiller, Census, BLS, FRED, OHCS, Redfin Data Center, AEI, NAHB).
-- Re-run the query fresh in this session.
-- Print the raw result (row count, date window, filter).
-- Cross-check derived stats (months of supply = active / (closed_last_6_months / 6); YoY%;
-  median; price/sqft) and show the computation.
-- Reconcile the figure to the slide's claim. A "seller's market" verdict next to 4.3 MoS is a
-  fail.
+- Identify the source: city MOS / active / verdict from `getCityDetachedMarket`, city
+  days to contract from `getMetric`, Spark MLS API (`SPARK_API_BASE_URL` + `SPARK_API_KEY`)
+  for listing facts, or a named primary source (NAR, ORMLS, Case-Shiller, Census, BLS,
+  FRED, OHCS, Redfin Data Center, AEI, NAHB).
+- Re-run the pull fresh in this session.
+- Print the raw result (row count, date window, filter, `isPublishable`).
+- Do not recompute city months of supply from raw `listings`. Do not use pulse 488 / 3.54.
+- Reconcile the figure to the slide's claim. A "seller's market" verdict next to a
+  balanced MoS cell is a fail.
 
 If a stat can't be verified, cut the slide or rephrase to a qualitative claim that doesn't
 require the number. Never approximate.
@@ -345,12 +358,12 @@ One entry per figure shown anywhere on any slide. Required for the QA gate.
       "slide": 2,
       "figure": "$362",
       "label": "Median $/sqft.  Tumalo rural.  last 12 months",
-      "source": "Supabase market_pulse_live",
-      "filter": "geography='tumalo_rural', period='last_12_months', property_type='A'",
-      "column": "median_price_per_sqft",
+      "source": "getMetric median_ppsf",
+      "filter": "geoType='city', geoSlug='bend', segment='detached', definition_id='mt-v1'",
+      "column": "median_ppsf",
       "value": 362,
       "fetched_at": "2026-05-14T14:00:00Z",
-      "query": "SELECT median_price_per_sqft FROM market_pulse_live WHERE geography='tumalo_rural' AND period='last_12_months' AND property_type='A';"
+      "query": "getMetric({ stat: 'median_ppsf', geoType: 'city', geoSlug: 'bend', segment: 'detached' })"
     }
   ]
 }
@@ -457,7 +470,7 @@ The headline data points that prove the thesis. One primary stat per slide.
   Comparison or delta with Unicode arrow: `↓ 8.0% vs Bend SFR median $/sqft of $393`. Always a
   signed arrow when the figure is a delta.
 - **Source line** (Geist 400, 14 px, `rgba(16,39,66,0.55)`, centered, `48 px` above footer):
-  `Source: <source_label> · <period>`. E.g. `Source: Supabase market_pulse_live · 2026-05-14`.
+  `Source: <source_label> · <period>`. E.g. `Source: getCityDetachedMarket · 2026-05-14`.
 
 No chart graphics on these slides. The number IS the visual. Charts (if used at all) belong on
 the dedicated chart slide (§7.4).

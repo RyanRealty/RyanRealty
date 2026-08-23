@@ -110,12 +110,12 @@ interface CMANarrativePayload {
   pricing_method_2_summary: string // 1-2 sentence description of baseline + value-add result
   outlier_explanations?: string[]  // If any comps were excluded or weighted, explain why
 
-  // Market context (live, from market_stats_cache):
+  // Market context (live, from getCityDetachedMarket / getMetric, D1 detached):
   bend_active_count: number
   bend_mos: number                 // months of supply
   bend_mos_verdict: string         // 'seller' | 'balanced' | 'buyer'
   bend_median_price: number
-  bend_dom_median: number
+  bend_dom_median: number          // days to contract (D2), not CDOM
 
   // Broker:
   broker_display_name: string      // 'Matt Ryan'
@@ -174,17 +174,18 @@ The payload figures came from the parent cma producer which already verified the
 Supabase. However, the narrative producer must confirm each figure used in prose maps
 to the payload exactly. Do not alter figures. Do not round in a way that changes meaning.
 
-Cross-check the market context figures against market_stats_cache:
-```sql
-SELECT city_median_price, city_active_count, city_months_supply, city_dom_median
-FROM market_stats_cache
-WHERE city = 'Bend' AND property_type = 'A'
-ORDER BY stats_date DESC LIMIT 1;
-```
+Cross-check the market context figures against Market Truth, not pulse and not
+`PropertyType='A'` listings:
 
-If any market figure in the payload differs from the cache by >1%, flag to the parent
-cma producer before proceeding. The payload wins if it has a more recent query timestamp;
-the cache wins if the payload timestamp is >24 hours old.
+- `getCityDetachedMarket('bend')` for MOS, active count, verdict (D1 detached, MLS City,
+  exact Active). Same three figures as `/sell`.
+- `getMetric({ stat: 'median_days_to_contract', geoType: 'city', geoSlug: 'bend',
+  segment: 'detached' })` for days to contract (D2).
+
+A miss withholds. Never fall back to pulse 488 / 3.54. Do not read
+`CumulativeDaysOnMarket` as a city median. If any payload city MOS/DOM figure differs
+from the live cell, flag to the parent cma producer before proceeding. The live
+Market Truth cell wins.
 
 **Step 4 - Draft the cover letter**
 
@@ -228,7 +229,7 @@ Structure:
 2. Method 2 paragraph (3-4 sentences): summarize the baseline + value-add methodology. Cite the unimproved baseline and the documented improvement value-add. Reference `pricing_method_2_summary` from payload.
 3. Convergence paragraph (2-3 sentences): note that both methods converge within the stated range, and explain the three tiers (Conservative, Recommended, High End) in plain English.
 4. Outlier explanation (if `outlier_explanations` is populated): one paragraph per outlier explaining why that comp was weighted differently or excluded. Be specific: "65258 Old Bend Redmond Hwy closed at $1,450,000 in February 2026, which is 18% above the cluster median. This comp was weighted at 50% due to its waterfront parcel, which the subject does not share."
-5. Verification trace: one sentence naming the data source and date range. "Comp data sourced from Supabase listings table, 24-month close window, Whispering Pines subdivision, PropertyType='A'."
+5. Verification trace: one sentence naming the data source and date range. Comp data sourced from Supabase listings, 24-month close window, same `property_sub_type` as the subject. City MOS from `getCityDetachedMarket`. City days to contract from `getMetric`.
 
 **Step 7 - Draft the disclosure statement**
 

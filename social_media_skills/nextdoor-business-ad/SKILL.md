@@ -138,25 +138,21 @@ For each neighborhood in `payload.target_neighborhoods`, read the relevant §1.x
 
 If `payload.market_stat` is provided, verify it live before including it in copy.
 
-For a DOM stat:
-```sql
-SELECT
-  AVG("CumulativeDaysOnMarket")::int AS avg_dom,
-  COUNT(*) AS closed_count,
-  "SubdivisionName"
-FROM listings
-WHERE "StandardStatus" = 'Closed'
-  AND "PropertyType" = 'A'
-  AND "CloseDate" >= date_trunc('year', now())
-  AND "City" = 'Bend'
-GROUP BY "SubdivisionName"
-ORDER BY closed_count DESC;
-```
+City MOS, active count, and market verdict: `getCityDetachedMarket('<city-slug>')` from
+`lib/data/market-truth/getSellBendMarket.ts` (D1 detached, MLS City, exact Active). Same
+three figures as `/sell`.
 
-Match against neighborhood subdivision aliases from the Supabase
-`neighborhood_subdivisions` table (populated by migration 20260515170000). If the
-figure in the payload does not match the live query within 5%, use the live figure.
-If no verifiable stat exists for the target neighborhood, omit the stat from copy.
+City days on market: `getMetric({ stat: 'median_days_to_contract', geoType: 'city',
+geoSlug: '<city-slug>', segment: 'detached' })` from `lib/data/market-truth/getMetric.ts`
+(D2). Label it days to contract.
+
+Do not query `listings` for city MOS or city DOM. Do not treat `PropertyType='A'` as
+single family. Do not read `CumulativeDaysOnMarket` or `"DaysOnMarket"` as a city or
+neighborhood median. Neighborhood and community MOS stay withheld. A miss (`null` or
+`isPublishable === false`) withholds. Never fall back to pulse 488 / 3.54.
+
+If the figure in the payload does not match the live Market Truth cell, use the live
+figure. If no verifiable city cell exists, omit the stat from copy.
 
 **Step 5: Draft the post body**
 

@@ -309,9 +309,21 @@ CLAUDE.md §0, every figure on the page traces to a live query in this session.
 Six queries, in this order:
 
 a. **Rolling-365d market stats:**
+
+Community MOS stays withheld. Do not compute a market-median DOM from
+`CumulativeDaysOnMarket` on the listing rows below. Do not treat `PropertyType='A'`
+as single family. If the page needs a city MOS, active count, or verdict, call
+`getCityDetachedMarket('<parent-city-slug>')` (D1 detached, same three figures as
+`/sell`). City days on market: `getMetric` `median_days_to_contract` (D2). A miss
+withholds. Never fall back to pulse 488 / 3.54.
+
+Sold count, median sale, and ppsf at community grain may still come from
+`market_stats_cache` when those cells exist. Do not publish a community months of
+supply or community median DOM from cache `median_dom` or from listings CDOM.
+
 ```sql
 SELECT
-  sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio,
+  sold_count, median_sale_price, avg_sale_to_list_ratio,
   median_ppsf, end_of_period_inventory, methodology_version,
   period_start, period_end, computed_at
 FROM market_stats_cache
@@ -322,6 +334,9 @@ LIMIT 1;
 ```
 
 b. **Active inventory (live count + grid):**
+Per-listing `CumulativeDaysOnMarket` on a card is that listing's own days, never a
+community or city median. Do not roll it up into MOS or market DOM.
+
 ```sql
 SELECT
   "ListingId", "ListPrice", "StreetNumber", "StreetName",
@@ -331,6 +346,7 @@ SELECT
 FROM listings
 WHERE "StandardStatus" IN ('Active', 'ActiveUnderContract', 'Pending')
   AND "PropertyType" = 'A'
+  AND property_sub_type = 'Single Family Residence'
   AND "SubdivisionName" = ANY('<resort_communities.json mls_aliases>'::text[])
 ORDER BY "ListPrice" DESC
 LIMIT 12;
@@ -354,10 +370,12 @@ LIMIT 8;
 ```
 
 d. **Comparison row vs peer communities (configurable per resort):**
+Do not select or publish `median_dom` or months of supply at community grain.
+
 ```sql
 SELECT
   geo_slug, geo_label,
-  sold_count, median_sale_price, median_dom,
+  sold_count, median_sale_price,
   avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory
 FROM market_stats_cache
 WHERE geo_slug = ANY('<peer_slugs>'::text[])
@@ -462,7 +480,7 @@ Critical sections of the page:
 7. **Architect / signature angle** (from `architect` + `course_rankings` in
    config).
 8. **Location** with the Google Static Map + drive-time anchors.
-9. **Live market pulse** KPI grid (8 cards, all from `market_stats_cache`).
+9. **Live market pulse** KPI grid. Community MOS and community median DOM withheld. City MOS/DOM only via `getCityDetachedMarket` / `getMetric`.
 10. **HOA table** by sub-neighborhood (from `sub_neighborhoods` in config) +
     HOA meta cards + board roster (board roster lives in a separate JSON if
     available, otherwise omitted with a "Not publicly disclosed" note).

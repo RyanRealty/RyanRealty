@@ -51,8 +51,9 @@ const BUYER_LP_REVIEWS = TESTIMONIALS.filter((t) =>
 )
 
 export default async function BuyerLPPage() {
-  // Live data — active listing count for Bend SFR (market_pulse_live) +
-  // per-community active/pending counts (geo_snapshot_mv). Both via existing
+  // Live data — Bend city active/median list are market_metric mt-v1 detached
+  // via getMarketPulse overlay; days to pending stays market_pulse_live.
+  // Per-community active/pending counts from geo_snapshot_mv. Both via existing
   // DAL functions, both graceful-null. CLAUDE.md §0 Data Accuracy: live
   // values or the em-dash placeholder, never an invented number.
   const [bendPulse, communitySnapshots, sunriverCitySnap, liveBendRaw] = await Promise.all([
@@ -130,7 +131,8 @@ export default async function BuyerLPPage() {
       }
     })
 
-  // Market authority band — 3 live stat cards from the Bend pulse.
+  // Market authority band — 3 live stat cards. Bend city active and median
+  // list are mt-v1 detached via overlay; time to pending is still pulse.
   const authorityStats: Array<{ value: string; label: string; sub: string }> = [
     {
       value: activeCount != null && activeCount > 0 ? activeCount.toLocaleString('en-US') : MDASH,

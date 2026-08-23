@@ -175,7 +175,7 @@ function main() {
   )
 
   const compute = readFileSync(
-    'supabase/migrations/20260823120000_compute_market_metrics_all_segments.sql',
+    'supabase/migrations/20260823140000_compute_market_metrics_yoy_mix.sql',
     'utf8',
   )
   add(

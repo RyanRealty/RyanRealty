@@ -310,13 +310,22 @@ writes `user_events.event_type='listing_view'`.
 `DATABASE_FOR_AI_AGENTS.md` states CDOM dead, `mls_source` constant, two-market table. (SFR
 restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
+### Grind 2026-08-23c — remaining factory + leftover consumers
+
+**Done when a real user can open `/sell`, `/cities/bend`, `/housing-market/bend`, a Bend CMA, and a newsletter city block and see the same detached active / MoS / verdict; YoY and mix cells exist in `market_metric` so leaderboards are not empty; a townhouse CMA does not SQL-force SFR comps; a `getDetachedMarket` miss cannot print pulse 488 as if it were detached.**
+
+2026-08-23c landed: YoY/mix/feature cells (**5110** mt-v1 rows); city overlay miss withholds MOS/verdict; OG/dashboard/admin inventory from detached; CMA comps SQL by subject subtype; producer recipes no longer median CDOM for city MOS. Zip grain is next (plan: go). County withheld (F18). `getCityLeaderboard` still has no UI.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
       2026-08-23: city + region cells now cover 11 REGISTRY segments
       (detached, condo, townhome, manufactured_land, manufactured_park,
       multifamily_2_4, land, farm, commercial_sale, business, all_residential).
-      Shadow compute wrote **2638** mt-v1 cells (`period_end=2026-08-23`).
+      Shadow compute wrote **5110** mt-v1 cells (`period_end=2026-08-23`) including
+      YoY, segment_share, bedroom_distribution, cash_share, financing_mix,
+      feature_share (floors). Bend detached YoY median **−1.94%**.
+      Zip grain membership is GO (PostalCode, not polygons). County is not.
       Bend detached still **774 / 4.47 / balanced**. Bend condo 66 / 12.8 / buyer.
       Bend townhome 78 / 3.6 / seller. Public readers stay on detached.
       Neighborhood / community / subdivision grains stay unpublished

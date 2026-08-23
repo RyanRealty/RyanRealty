@@ -32,7 +32,7 @@ When the trend scan returns a new candidate, find the closest entry below. If no
 
 **Best templates:** `distracted_boyfriend`, `pov_youre_a`, `pull_quote_card`
 
-**Data anchor:** Active listings, sold last 30 days, months of supply, DOM. Bend-specific.
+**Data anchor:** Bend detached city cells from `getCityDetachedMarket('bend')` (active count, months of supply, verdict) and `getMetric` `median_days_to_contract` (D2). A miss withholds. Never pulse 488.
 
 **Compliance:** None major. Stay on the math.
 

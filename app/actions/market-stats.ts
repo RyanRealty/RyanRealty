@@ -3,6 +3,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugify, subdivisionEntityKey } from '@/lib/slug'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { marketVerdict } from '@/lib/market/classify'
 import type { CityMarketStats } from '@/app/actions/listings'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/lib/data/geo/report-cities'
 
@@ -38,13 +39,14 @@ export type MarketPulseRow = {
   geo_slug: string
   geo_label: string
   active_count: number
-  pending_count: number
+  pending_count: number | null
   new_count_7d: number
-  new_count_30d: number
+  new_count_30d: number | null
   median_list_price: number | null
   avg_list_price: number | null
   market_health_score: number | null
   market_health_label: string | null
+  months_of_supply: number | null
   updated_at: string
 }
 
@@ -69,28 +71,38 @@ export async function getLiveMarketPulse(input: {
   geoType: MarketGeoType
   geoSlug: string
   /**
-   * MLS property type code. `market_pulse_live` is keyed by
-   * (geo_type, geo_slug, property_type) — `refresh_market_pulse()` upserts
-   * 6 rows per geo (A=Residential, B=Manufactured, C=Multi-Family, D=Land,
-   * E=Commercial, F=Farm/Ranch). For "homes for sale" surfaces (city/community
-   * pages, hero stats) the residential aggregate `'A'` is canonical.
-   * Default `'A'` keeps existing call sites working.
+   * Kept for call-site compatibility. The overlaid reader is SFR type A
+   * (`getMarketPulse`); city/region rows inherit Market Truth detached
+   * active / MoS / verdict so OG cards cannot print pulse 488 / seller
+   * next to `/sell` 774 / balanced.
    */
   propertyType?: string
 }): Promise<MarketPulseRow | null> {
-  void createServiceClient
-  const { getMarketPulseRowForGeo } = await import('@/lib/data')
+  void input.propertyType
   try {
-    const data = await getMarketPulseRowForGeo({
+    const { getMarketPulse } = await import('@/lib/data')
+    const pulse = await getMarketPulse({
       geoType: input.geoType,
       geoSlug: input.geoSlug,
-      propertyType: input.propertyType ?? 'A',
     })
-    return (data as MarketPulseRow | null) ?? null
+    if (!pulse) return null
+    const verdict = marketVerdict(pulse.monthsOfSupply)
+    return {
+      geo_type: pulse.geoType as MarketGeoType,
+      geo_slug: pulse.geoSlug,
+      geo_label: pulse.geoSlug,
+      active_count: pulse.activeCount,
+      pending_count: null,
+      new_count_7d: pulse.newThisWeek,
+      new_count_30d: null,
+      median_list_price: pulse.medianListPrice,
+      avg_list_price: null,
+      market_health_score: null,
+      market_health_label: verdict.kind === 'unknown' ? null : verdict.label,
+      months_of_supply: pulse.monthsOfSupply,
+      updated_at: pulse.refreshedAt,
+    }
   } catch (e) {
-    // getMarketPulseRowForGeo now throws on a transient DB error (so cached
-    // callers can't poison-cache null). This is an uncached per-request read, so
-    // preserve the prior null-on-error contract rather than surfacing the throw.
     console.warn('[market-stats] getLiveMarketPulse failed:', e)
     return null
   }
@@ -112,8 +124,8 @@ function pulseToMarketStats(
     avgSalePrice: cached?.avg_sale_price ?? null,
     medianSalePrice: cached?.median_sale_price ?? null,
     avgDom: cached?.median_dom ?? null,
-    newListingsLast30Days: pulse.new_count_30d,
-    pendingCount: pulse.pending_count,
+    newListingsLast30Days: pulse.new_count_30d ?? 0,
+    pendingCount: pulse.pending_count ?? 0,
     closedLast12Months: cached?.sold_count ?? 0,
   }
 }

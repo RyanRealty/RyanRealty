@@ -144,22 +144,21 @@ Action row killed.
 **Step 4: Verify any market stat used in copy**
 
 If `payload.market_stat_override` is set, or if the recipe would naturally include a
-figure (e.g., "Bend homes sold in X days"), verify the figure live:
+city MOS, active count, verdict, or days-on-market figure, verify it live from Market
+Truth. Do not query `listings` for city MOS or city DOM. Do not treat `PropertyType='A'`
+as single family. Do not read `CumulativeDaysOnMarket` or `"DaysOnMarket"` as a city
+median.
 
-```sql
-SELECT
-  AVG("CumulativeDaysOnMarket")::int AS avg_dom,
-  COUNT(*) AS closed_count
-FROM listings
-WHERE "StandardStatus" = 'Closed'
-  AND "PropertyType" = 'A'
-  AND "CloseDate" >= date_trunc('year', now())
-  AND "CloseDate" < now()
-  AND "City" = 'Bend';
-```
+City MOS, active count, and market verdict: `getCityDetachedMarket('<city-slug>')` from
+`lib/data/market-truth/getSellBendMarket.ts` (D1 detached, MLS City, exact Active). Same
+three figures as `/sell`.
 
-Produce a one-line verification trace per figure. Unverifiable stats are cut, not
-estimated. Per CLAUDE.md §0 rule 7.
+City days on market: `getMetric({ stat: 'median_days_to_contract', geoType: 'city',
+geoSlug: '<city-slug>', segment: 'detached' })` from `lib/data/market-truth/getMetric.ts`
+(D2). Label it days to contract.
+
+A miss (`null` or `isPublishable === false`) withholds. Never fall back to pulse 488 / 3.54.
+Unverifiable stats are cut, not estimated. Per CLAUDE.md §0 rule 7.
 
 **Step 5: Draft RSA headlines (up to 15, 30 chars max each)**
 
@@ -258,10 +257,10 @@ SL01 Title (XX chars): <text>
 ```json
 [
   {
-    "figure": "38 days avg. DOM",
-    "source": "Supabase listings",
-    "filter": "PropertyType='A', City='Bend', CloseDate YTD, StandardStatus='Closed'",
-    "column": "CumulativeDaysOnMarket",
+    "figure": "38 days median days to contract",
+    "source": "getMetric median_days_to_contract",
+    "filter": "geoType='city', geoSlug='bend', segment='detached', definition_id='mt-v1'",
+    "column": "median_days_to_contract",
     "value": 38,
     "fetched_at": "<ISO>"
   }
@@ -391,7 +390,7 @@ measured
 | failure | symptoms | recovery |
 |---|---|---|
 | Strategy doc missing | `Q3-2026-strategy.md` not found | Set `status='killed'`; surface BLOCKED message; request Phase 5B completion |
-| Market stat unverifiable | Supabase returns 0 rows | Cut the stat from copy; document in contact sheet; continue |
+| Market stat unverifiable | `getCityDetachedMarket` or `getMetric` miss, or cell not publishable | Cut the stat from copy; document in contact sheet; continue. Never fall back to pulse 488 / 3.54. |
 | Character count overflow | A headline exceeds 30 chars | Auto-truncate at last full word; flag in contact sheet; re-validate |
 | Voice validation fail | Banned word or banned punctuation in draft | Fix and re-check; max 2 auto-iterations; if 3rd fail, kill and report |
 | Supabase MCP error | Action row update fails | Retry once; if second attempt fails, surface to Matt with the raw error |

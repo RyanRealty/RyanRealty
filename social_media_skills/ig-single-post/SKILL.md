@@ -419,8 +419,10 @@ out/ig-single-post/<slug>/
 }
 ```
 
-S8 / S9 / S10 stats may trace to Supabase tables (`market_pulse_live`, `market_stats_cache`),
-named primary sources (NAR, ORMLS, Case-Shiller), or an external press URL (S9).
+S8 / S10 city MOS, active count, and verdict trace to `getCityDetachedMarket`. City
+days on market traces to `getMetric` `median_days_to_contract` (D2). A miss withholds.
+Never fall back to pulse 488 / 3.54. S9 traces to an external press URL. Named primary
+sources (NAR, ORMLS, Case-Shiller) are allowed when the figure is not a city MOS/DOM.
 
 ---
 

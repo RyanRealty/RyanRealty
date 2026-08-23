@@ -70,7 +70,7 @@ Pass `docType: 'expired-audit'` to `buildCma` for expired-listing subjects. `reb
 
 **Every CMA build runs through `lib/cma/build.ts` (`buildCma`). This is the only path. The retired LLM producer-runtime and the retired `scripts/build_cma_wrapper.py` are both dead (G47). The pipeline is a hybrid, and the process is enforced by code, not by this document:**
 
-1. **Deterministic data + math (§0-safe).** Subject resolution, tiered comp selection, market context from the cache tables, time/size adjustments, and the three-method pricing reconciliation are pure code (`lib/cma/{subject,comps,market,pricing}.ts`). No LLM touches a number.
+1. **Deterministic data + math (§0-safe).** Subject resolution, tiered comp selection, city market context from `getCityDetachedMarket` / `getMetric` (D1 detached, D2 days_to_contract, never pulse 488), time/size adjustments, and the three-method pricing reconciliation are pure code (`lib/cma/{subject,comps,market,pricing}.ts`). No LLM touches a number.
 2. **LLM comparability judgment (`lib/cma/judge.ts`).** One Claude pass (Sonnet, ~$0.02 to $0.15 on `ANTHROPIC_API_KEY`, fail-open) reviews the FULL feature set of subject + every candidate comp: beds/baths, year built, lot, garage, view, tax, list-vs-sold, days-to-offer, DOM, and public-remarks condition/renovation language. It classifies each comp `strong` / `weak` / `exclude` with a per-comp reason plus a client-grade comparability narrative. This is the judgment layer the deterministic math cannot provide.
 3. **Verdicts change the math.** `exclude` comps are dropped before any pricing (never below the comp floor). `weak` comps carry half weight in the Method 3 reconciliation. The narrative renders with the pricing rationale. Verdicts, cost, and model are recorded in `build_summary.judgment` and `citations.comp_judgment`.
 4. **Adversarial accuracy audit (`lib/cma/audit.ts`). Every CMA is attacked before release (Matt directive 2026-07-11).** A second, independent LLM pass that shares no prompt with the builder receives the finished analysis (subject, priced comps with adjustments/weights/tiers, exclusions + reasons, the three methods, the narrative) and tries to REFUTE it: non-comparable comps that survived, unsupported exclusions, adjustment/weight inconsistencies, a recommendation the comps do not support (especially at or above the subject's failed list price), narrative claims that do not trace to data, market-verdict mismatches. Verdict `pass` / `review` / `fail` with per-finding severity + evidence, recorded in `build_summary.audit` and `citations.adversarial_audit`, and stamped into the rendered pricing notes. Anything but a clean `pass`, or the audit being unavailable, forces `needs_review`.
@@ -285,25 +285,21 @@ Also pull every comp's `pending_timestamp`, `OnMarketDate`, `CloseDate`, `DaysOn
 
 **Step 4.5.  Pull the subject's market-conditions context (makes the valuation time-aware)**
 
-A comp that closed 11 months ago in a moving market is not the same data point as one that closed last month. Treating them identically is the single biggest way a CMA goes stale. Before pricing, pull the subject geo's verified market context. Use the cache, never aggregate raw `listings` (CLAUDE.md §Supabase): `market_stats_cache` (6-hour freshness) for the tightest matching geo, and `market_pulse_live` (10-min) for the city/region.
+A comp that closed 11 months ago in a moving market is not the same data point as one that closed last month. Treating them identically is the single biggest way a CMA goes stale. Before pricing, pull the subject geo's verified market context. Do not aggregate raw `listings` for city MOS or city DOM. Do not treat `PropertyType='A'` as single family. Do not read `CumulativeDaysOnMarket` or `"DaysOnMarket"` as a city median.
 
-```sql
--- Resolve subject geo tightest-first: subdivision/neighborhood slug, then city.
-SELECT geo_type, geo_slug, median_price_per_sqft_closed, yoy_median_price_delta_pct,
-       median_dom, avg_sale_to_list_ratio, months_of_supply,
-       pct_sold_over_asking, pct_sold_under_asking, methodology_version, computed_at
-FROM market_stats_cache
-WHERE geo_slug = '<subject geo slug>'   -- neighborhood e.g. 'bend-awbrey-butte', else city 'bend'
-ORDER BY computed_at DESC
-LIMIT 1;
-```
+**City grain (required when the subject is in a city):**
+- MOS, active count, and market verdict: `getCityDetachedMarket('<city-slug>')` from `lib/data/market-truth/getSellBendMarket.ts` (D1 detached, MLS City, exact Active). Same three figures as `/sell`.
+- Days on market: `getMetric({ stat: 'median_days_to_contract', geoType: 'city', geoSlug: '<city-slug>', segment: 'detached' })` (D2). Label it days to contract.
+- A miss (`null` or `isPublishable === false`) withholds. Never fall back to pulse 488 / 3.54.
 
-Capture and trace (citations.json) for the subject's geo:
-- `median_price_per_sqft_closed`.  the market $/sqft rate, the anchor for Step 9 Method 3
-- `yoy_median_price_delta_pct`.  the time-trend rate that drives the per-comp market-conditions adjustment (Step 9)
-- `median_dom` + days-to-offer, `avg_sale_to_list_ratio`, `months_of_supply`, `pct_sold_over_asking` / `pct_sold_under_asking`.  the Market-context page
+**Neighborhood / community grain:** MOS stays withheld. Do not invent a median from listings CDOM.
 
-This context drives three things: (1) the per-comp market-conditions (time) adjustment in Step 9, (2) the new Market-context page in the layout, and (3) the defensibility of the High-End tier.  a buyer's market (MoS ≥ 6, homes closing under asking) does not support an aggressive High End, and the CMA must say so out loud. If no cache row exists at any geo level (rare), note it explicitly and price on physically-adjusted comps alone with no time adjustment.  never fabricate a trend rate (CLAUDE.md §0).
+Capture and trace (citations.json) for the subject's city:
+- `getCityDetachedMarket` `monthsOfSupply`, `activeCount`, `verdictLabel`
+- `getMetric` `median_days_to_contract`
+- YoY $/sqft from `getMetric({ stat: 'yoy_median_price', ... segment: 'detached' })` when publishable
+
+This context drives three things: (1) the per-comp market-conditions (time) adjustment in Step 9, (2) the Market-context page in the layout, and (3) the defensibility of the High-End tier. A buyer's market (MoS ≥ 6, homes closing under asking) does not support an aggressive High End, and the CMA must say so out loud. If the city cell misses, note it explicitly and price on physically-adjusted comps alone with no time adjustment. Never fabricate a trend rate (CLAUDE.md §0).
 
 **Step 5.  Pull photo arrays for subject + comps**
 
@@ -347,7 +343,7 @@ The canonical layout is the 16-chapter table in `docs/plans/CMA_SUNSTONE_CONTRAC
 | 4 | **Comp location map**.  Google Maps Static via `/api/maps/cma-<slug>` · numbered legend · pin order matches comp flyer order |
 | 5 | **Comp summary**.  subject row at top + 4×2 thumbnail grid + full data table + per-comp adjustment grid (market-conditions / size / beds-baths / lot-garage-condition → adjusted $) |
 | 6 → N | **Comp flyers**.  one full page per comp (hero + 6-photo grid + public_remarks + features). N scales with comp count (6 comps → flyers 6-11; 8 comps → flyers 6-13). |
-| N+1 | **Market context**.  the subject geo's verified conditions from `market_stats_cache` / `market_pulse_live`: months of supply + seller/balanced/buyer verdict, median days to offer, sale-to-list ratio, YoY $/sqft trend, % sold over/under asking.  with the source trace. Frames why the recommended list sits where it does. |
+| N+1 | **Market context**. City MOS + verdict + active count from `getCityDetachedMarket` (D1, same path as `/sell`). City days to contract from `getMetric` `median_days_to_contract` (D2). A miss withholds. Never pulse 488 / 3.54. Neighborhood MOS stays withheld. |
 | N+2 | **Pricing strategy**.  Method 1 ($/sqft tier) + Method 2 (baseline + value-add) + Method 3 (time-and-physically-adjusted comp reconciliation) + converged range (3 tiers: Conservative / Recommended / High End) + the confidence statement |
 | N+3 | **Why this list price**.  outlier explanations (if any high or low comps need context) + market-conditions rationale + listing-history rationale + verification trace (data sources) |
 | N+4 | **Disclosure + broker signature**.  disclosure paragraphs + Amboqia-script broker signature + transparent headshot + license # (phone/email are tappable tel:/mailto: links) |
@@ -524,7 +520,7 @@ time_adjustment     = comp.ClosePrice × (yoy_median_price_delta_pct / 100) × (
 time_adjusted_price = comp.ClosePrice + time_adjustment
 ```
 
-This is the appraiser "market conditions adjustment".  the single most important reason two CMAs of the same house can differ, and the gap the old recipe ignored. Show it as an explicit line in the adjustment grid. The YoY rate traces to `market_stats_cache` (Step 4.5).  never estimate it.
+This is the appraiser "market conditions adjustment".  the single most important reason two CMAs of the same house can differ, and the gap the old recipe ignored. Show it as an explicit line in the adjustment grid. The YoY rate traces to `getMetric` `yoy_median_price` (Step 4.5). Never estimate it. Never fall back to pulse.
 
 **Per-comp adjustment grid (appraiser-style.  required on the comp summary page).** Every comp gets a transparent ledger, not just a final number. A seller reading this CMA should see exactly how each comp was reconciled to their home:
 
@@ -551,7 +547,7 @@ The subject row at the top of the comp summary table should populate List with t
 **Step 11.  QA gate (per CLAUDE.md §0)**
 
 - Every figure in the deliverable traces to a Supabase query run in this session.  write `out/cma-<slug>/citations.json`
-- Every comp number (close price, $/sqft, lot, beds/baths, close date, DOM/days-to-offer) matches Supabase exactly, AND every market-context figure (months of supply, YoY $/sqft trend, sale-to-list, % over/under asking, median DOM) traces to `market_stats_cache` / `market_pulse_live` with `geo_slug` + `methodology_version` + `computed_at` recorded in citations.json. The market verdict (seller / balanced / buyer) must match the months-of-supply number against the thresholds (≤ 4 seller, 4-6 balanced, ≥ 6 buyer)
+- Every comp number (close price, $/sqft, lot, beds/baths, close date, DOM/days-to-offer) matches Supabase exactly, AND every city market-context figure (months of supply, active count, verdict, days to contract) traces to `getCityDetachedMarket` / `getMetric` with `segment='detached'` recorded in citations.json. The market verdict (seller / balanced / buyer) must match the months-of-supply number against the thresholds (≤ 4 seller, 4-6 balanced, ≥ 6 buyer). A miss withholds. Never fall back to pulse 488 / 3.54.
 - Per-comp adjustment grid: each line (market-conditions/time, size, beds-baths, lot/garage/condition) is shown and defensible, and the math foots to the adjusted price. The market-conditions adjustment uses the verified YoY rate from Step 4.5, never an estimate
 - Three-method convergence: Methods 1, 2, and 3 land within ±5%, or the divergence is explained on the pricing page and confidence is lowered accordingly. The stated confidence (High / Moderate / Supportable-only) matches the comp count, dispersion, recency, and distance per Step 9
 - Brand voice check: banned words from CLAUDE.md §"Voice + content" (`stunning`, `nestled`, `breathtaking`, `must-see`, etc.) must not appear in CMA narrative.  they're fine in MLS-pulled `public_remarks` (those are quoted text)

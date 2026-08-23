@@ -86,8 +86,9 @@ const AUDIT_COVERAGE = [
 ]
 
 export default async function ExpiredListingPage() {
-  // Live Bend SFR pulse for the re-list market stat strip.
-  // Falls back to null gracefully — strip is suppressed when unavailable.
+  // Live Bend detached (MLS City mt-v1 overlay via getMarketPulse) for the
+  // re-list market stat strip. Falls back to null gracefully — strip is
+  // suppressed when unavailable.
   const bendPulse = await getMarketPulse({ geoType: 'city', geoSlug: 'bend' })
 
   return (

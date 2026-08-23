@@ -13,11 +13,12 @@
  *     read through `getCityMarketDetail` at `period_type='rolling_365d'`. Trailing
  *     12-month window for median price, DOM, YoY, and the email's "homes sold"
  *     line — populated for every subscribable area (cities AND resorts).
- *   - Live inventory + MoS for cities: `getCityDetachedMarket` (Market Truth
- *     detached, same three figures as `/sell`). Pulse overlay is the fallback
- *     if a city cell is missing. Resort neighborhoods still read `getMarketPulse`
- *     (`refresh_community_market_pulse`); MoS at that grain is withheld
- *     (`geo-grain-trust`).
+ *   - Live inventory + MoS for cities: `getDetachedMarkets` (Market Truth
+ *     detached, same three figures as `/sell`). A city miss does not fall
+ *     back to pulse 488 / 3.54 / seller — live headlines stay empty and the
+ *     block uses rolling_365d inventory/MOS. Resort neighborhoods still read
+ *     `getMarketPulse` (`refresh_community_market_pulse`); MoS at that grain
+ *     is withheld (`geo-grain-trust`).
  *
  * Months of supply (CLAUDE.md §0): MoS = active / (closed_6mo / 6). Thresholds:
  * <= 4 sellers, 4-6 balanced, >= 6 buyers. The returned `marketVerdict` is
@@ -44,7 +45,7 @@
  * for resort communities.
  *
  * DAL boundary (G1): this module reads ONLY through other DAL functions
- * (getCityMarketDetail, getCityDetachedMarket, getMarketPulse). It contains
+ * (getCityMarketDetail, getDetachedMarkets, getMarketPulse). It contains
  * no raw `.from()`.
  */
 
@@ -384,8 +385,8 @@ export function buildAreaBlock(args: {
  *
  * For each slug: resolve geo_type, pull the trailing-12-month historical row
  * (getCityMarketDetail at rolling_365d) and live inventory (city: Market Truth
- * detached; resort neighborhood: getMarketPulse). Areas with no cache data
- * are OMITTED. The result preserves input order, de-duped by slug.
+ * detached only — no pulse headline fallback; resort neighborhood: getMarketPulse).
+ * Areas with no cache data are OMITTED. The result preserves input order, de-duped by slug.
  *
  * The send engine (Phase B) calls this, then renderMarketReportEmail, then the
  * suppression-gated send path.
@@ -428,9 +429,9 @@ export async function getMarketReportData(
 
       const [detail, pulse, trendPoints] = await Promise.all([
         getCityMarketDetail({ geoType, geoSlug: cacheSlug, periodType: 'rolling_365d' }),
-        mt
-          ? Promise.resolve(null)
-          : getMarketPulse({ geoType, geoSlug: cacheSlug }),
+        geoType === 'neighborhood'
+          ? getMarketPulse({ geoType, geoSlug: cacheSlug })
+          : Promise.resolve(null),
         getMarketTrend(geoType, cacheSlug, 12),
       ])
 

@@ -33,7 +33,7 @@ The agent handles everything from here.
 
 ### Stage 2: GENERATE (AI Asset Creation)
 
-> **SFR-default rule (Matt directive 2026-05-07):** every market-data query in this pipeline filters `"PropertyType" = 'A'` (single-family residential) unless the trigger explicitly specifies an alternative scope. The cache headline `sold_count` blends all property types — for SFR-only headlines read `property_type_breakdown->>'A'` from the cache row, or read the dedicated `*_sfr` columns if/when they're added to `market_stats_cache`. Canonical source: `video_production_skills/market-data-video/SKILL.md` §22.
+> **Detached city MOS/DOM (D1/D2):** city months of supply, active count, and verdict come from `getCityDetachedMarket('<city-slug>')`. City days on market come from `getMetric({ stat: 'median_days_to_contract', geoType: 'city', geoSlug: '<city-slug>', segment: 'detached' })`. Do not treat `PropertyType='A'` as single family. Do not query `listings` for city MOS or city DOM. Do not read `CumulativeDaysOnMarket` as a city median. A miss withholds. Never fall back to pulse 488 / 3.54.
 
 **Image Generation (starting frames):**
 - Real listing photos from Rich/Framed Visuals (preferred for listings)

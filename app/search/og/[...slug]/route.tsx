@@ -2,8 +2,10 @@ import { ImageResponse } from 'next/og'
 import { getPresetBySlug } from '@/lib/search-presets'
 import { getLiveMarketPulse } from '@/app/actions/market-stats'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
-export const runtime = 'edge'
+// Node: getLiveMarketPulse → getMarketPulse uses unstable_cache (not Edge-safe).
+export const runtime = 'nodejs'
 
 function unslug(value: string): string {
   return value
@@ -29,15 +31,18 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
     : null
 
   const active = pulse?.active_count != null ? Math.round(Number(pulse.active_count)).toLocaleString() : 'N/A'
-  const pending = pulse?.pending_count != null ? Math.round(Number(pulse.pending_count)).toLocaleString() : 'N/A'
+  const mos =
+    pulse?.months_of_supply != null && Number.isFinite(Number(pulse.months_of_supply))
+      ? `${formatMonthsOfSupply(Number(pulse.months_of_supply))} mo supply`
+      : 'N/A'
   const median = pulse?.median_list_price ? `$${Math.round(Number(pulse.median_list_price)).toLocaleString()}` : 'N/A'
   const label = pulse?.market_health_label ?? 'Live'
 
   const bars = [
     Number(pulse?.active_count ?? 0) / 120,
-    Number(pulse?.pending_count ?? 0) / 80,
+    Number(pulse?.months_of_supply ?? 0) / 8,
     Number(pulse?.new_count_7d ?? 0) / 30,
-    Number(pulse?.new_count_30d ?? 0) / 90,
+    Number(pulse?.median_list_price ?? 0) / 1_000_000,
   ].map((value) => Math.max(0.08, Math.min(1, Number.isFinite(value) ? value : 0.08)))
 
   const image = new ImageResponse(
@@ -58,11 +63,13 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontSize: 24, opacity: 0.85 }}>Ryan Realty Search Snapshot</span>
           <span style={{ marginTop: 8, fontSize: 52, fontWeight: 700, lineHeight: 1.08 }}>{title}</span>
-          <span style={{ marginTop: 8, fontSize: 22, opacity: 0.9 }}>{label} market signal</span>
+          <span style={{ marginTop: 8, fontSize: 22, opacity: 0.9 }}>
+            {label === 'Live' ? 'Live market signal' : label}
+          </span>
         </div>
 
         <div style={{ display: 'flex', gap: 14 }}>
-          {[`Active ${active}`, `Pending ${pending}`, `Median list ${median}`].map((text) => (
+          {[`Active ${active}`, mos, `Median list ${median}`].map((text) => (
             <div
               key={text}
               style={{

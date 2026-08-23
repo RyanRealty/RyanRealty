@@ -196,21 +196,17 @@ Each template has a JSON spec in `templates/registry.json` with the base image p
 
 ### Step 4.  Data anchor (when applicable)
 
-If the meme references a market figure (rates, median price, months of supply, DOM, inventory count, sale-to-list, absorption), pull it live from Supabase per CLAUDE.md verification rules:
+If the meme references a city market figure (median price, months of supply, DOM, inventory count, sale-to-list, absorption), pull it live from Market Truth per CLAUDE.md verification rules. Do not query `listings` for city MOS or city DOM. Do not treat `PropertyType='A'` as single family. Do not read `CumulativeDaysOnMarket` or `"DaysOnMarket"` as a city median.
 
-```sql
--- Example: months of supply for SFR Bend, last 30 days
-SELECT
-  COUNT(*) FILTER (WHERE Status = 'A') AS active,
-  COUNT(*) FILTER (WHERE Status = 'C' AND CloseDate >= CURRENT_DATE - INTERVAL '30 days') AS sold_30d,
-  ROUND(
-    COUNT(*) FILTER (WHERE Status = 'A')::numeric
-    / NULLIF(COUNT(*) FILTER (WHERE Status = 'C' AND CloseDate >= CURRENT_DATE - INTERVAL '30 days'), 0),
-    2
-  ) AS months_of_supply
-FROM listings
-WHERE PropertyType = 'A' AND City = 'Bend';
-```
+City MOS, active count, and market verdict: `getCityDetachedMarket('<city-slug>')` from
+`lib/data/market-truth/getSellBendMarket.ts` (D1 detached, MLS City, exact Active). Same
+three figures as `/sell`.
+
+City days on market: `getMetric({ stat: 'median_days_to_contract', geoType: 'city',
+geoSlug: '<city-slug>', segment: 'detached' })` from `lib/data/market-truth/getMetric.ts`
+(D2). Label it days to contract.
+
+A miss (`null` or `isPublishable === false`) withholds. Never fall back to pulse 488 / 3.54.
 
 Print the raw result. Save to `out/meme_lord/<slug>/citations.json`:
 
@@ -218,11 +214,10 @@ Print the raw result. Save to `out/meme_lord/<slug>/citations.json`:
 {
   "figures": [
     {
-      "value": "2.1 months",
-      "source": "Supabase ryan-realty-platform.listings",
-      "filter": "PropertyType='A', City='Bend', CloseDate >= 2026-03-26",
-      "rows": 188,
-      "computed": "active / sold_30d = 394 / 188 = 2.1",
+      "value": "4.5 months",
+      "source": "getCityDetachedMarket('bend')",
+      "filter": "geoType='city', geoSlug='bend', segment='detached', definition_id='mt-v1'",
+      "stat": "months_of_supply",
       "pulled_at": "2026-04-26T09:14:00-07:00"
     }
   ]

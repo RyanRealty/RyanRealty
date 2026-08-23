@@ -5,14 +5,17 @@ import { createClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugify, subdivisionEntityKey } from '@/lib/slug'
 import { getAllCitySnapshots } from '@/lib/data'
+import { getCityDetachedMarket, type SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 
 export type ReportMetrics = {
   sold_count: number
   median_price: number
   median_dom: number
   median_ppsf: number
-  current_listings: number
+  /** Live detached actives from Market Truth. Null on miss — never the RPC count. */
+  current_listings: number | null
   sales_12mo: number
+  /** Live detached MoS from Market Truth (same path as /sell). Null on miss — never the RPC /12 figure. */
   inventory_months: number | null
 }
 
@@ -33,9 +36,46 @@ export type ReportFilters = {
 }
 
 /**
+ * Live inventory + months of supply for the city builders.
+ *
+ * Period sales stay on get_city_period_metrics (arbitrary window, optional mix).
+ * Current listings and inventory months are a different question — the same
+ * detached MLS-city snapshot /sell prints — so they come from
+ * getCityDetachedMarket. An MT miss (no publishable cell, throw, or a
+ * subdivision grain MT does not write) withholds both fields. Never ship the
+ * RPC's mixed-type /12 inventory_months as "inventory months".
+ */
+function overlayReportLiveInventory(
+  rpc: ReportMetrics,
+  mt: Pick<SellBendMarket, 'activeCount' | 'monthsOfSupply'> | null,
+): ReportMetrics {
+  return {
+    ...rpc,
+    current_listings: mt ? mt.activeCount : null,
+    inventory_months: mt ? mt.monthsOfSupply : null,
+  }
+}
+
+async function liveInventoryForCityReport(
+  city: string,
+  subdivision?: string | null,
+): Promise<Pick<SellBendMarket, 'activeCount' | 'monthsOfSupply'> | null> {
+  if (subdivision?.trim()) return null
+  try {
+    return await getCityDetachedMarket(city)
+  } catch {
+    return null
+  }
+}
+
+/**
  * Metrics for a city (and optional subdivision) and date range.
  * Optional property type and price range filters.
- * Result is cached 3600s (revalidate tag: market-reports).
+ *
+ * Period fields (sold_count, median_price, median_dom, median_ppsf, sales_12mo)
+ * come from get_city_period_metrics, cached 3600s (revalidate tag: market-reports).
+ * Live current_listings + inventory_months are overlaid from getCityDetachedMarket
+ * outside that cache so a miss is not stored as a number.
  * Throws on RPC error so unstable_cache never stores a poison result.
  */
 const _fetchReportMetrics = unstable_cache(
@@ -98,7 +138,8 @@ export async function getReportMetrics(
       filters?.minPrice ?? null,
       filters?.maxPrice ?? null,
     )
-    return { data }
+    const mt = await liveInventoryForCityReport(city, subdivision)
+    return { data: overlayReportLiveInventory(data, mt) }
   } catch (err) {
     return { data: null, error: err instanceof Error ? err.message : String(err) }
   }

@@ -1,7 +1,10 @@
 /**
  * Detached snapshot from Market Truth (D1, MLS City text / region).
  * /sell, CMA city grain, and city/region pulse overlays share this so they
- * cannot disagree. A miss withholds rather than falling back to pulse.
+ * cannot disagree. A publishable snapshot overlays as today. A miss or throw
+ * withholds active / months of supply / verdict / median — it does not ship
+ * pulse 488 / 3.54 / seller as detached. Days to pending, new this week, and
+ * sold 30d stay on the pulse series. /sell never falls back.
  */
 import { createServiceClient } from '@/lib/data/client'
 import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
@@ -152,7 +155,7 @@ export async function getSellBendMarket(): Promise<SellBendMarket | null> {
   return getCityDetachedMarket('bend')
 }
 
-export function applyDetachedOverlay<T extends {
+type OverlayRow = {
   activeCount?: number
   active_count?: number
   monthsOfSupply?: number | null
@@ -164,7 +167,9 @@ export function applyDetachedOverlay<T extends {
   refreshedAt?: string
   updated_at?: string | null
   updatedAt?: string
-}>(row: T, mt: SellBendMarket): T {
+}
+
+export function applyDetachedOverlay<T extends OverlayRow>(row: T, mt: SellBendMarket): T {
   const next = { ...row }
   if ('activeCount' in next) next.activeCount = mt.activeCount
   if ('active_count' in next) next.active_count = mt.activeCount
@@ -178,4 +183,31 @@ export function applyDetachedOverlay<T extends {
   if ('updated_at' in next) next.updated_at = mt.computedAt
   if ('updatedAt' in next) next.updatedAt = mt.computedAt
   return next
+}
+
+/**
+ * Strip the overlay fields so a city/region miss cannot publish pulse
+ * 488 / 3.54 / seller as detached. Active stays a number (0) because
+ * MarketPulse / snapshot types are non-nullable; display paths that
+ * check `> 0` omit it. Days to pending, new this week, sold 30d, and
+ * the pulse clock are not overlay fields — leave them.
+ */
+export function withholdDetachedHeadlines<T extends OverlayRow>(row: T): T {
+  const next = { ...row }
+  if ('activeCount' in next) next.activeCount = 0 as T['activeCount']
+  if ('active_count' in next) next.active_count = 0 as T['active_count']
+  if ('monthsOfSupply' in next) next.monthsOfSupply = null as T['monthsOfSupply']
+  if ('months_of_supply' in next) next.months_of_supply = null as T['months_of_supply']
+  if ('medianListPrice' in next) next.medianListPrice = null as T['medianListPrice']
+  if ('median_list_price' in next) next.median_list_price = null as T['median_list_price']
+  if ('marketHealthLabel' in next) next.marketHealthLabel = null as T['marketHealthLabel']
+  if ('market_health_label' in next) next.market_health_label = null as T['market_health_label']
+  return next
+}
+
+export function overlayDetachedMarket<T extends OverlayRow>(
+  row: T,
+  mt: SellBendMarket | null | undefined,
+): T {
+  return mt ? applyDetachedOverlay(row, mt) : withholdDetachedHeadlines(row)
 }

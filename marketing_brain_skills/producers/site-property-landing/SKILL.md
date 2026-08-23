@@ -303,19 +303,22 @@ ORDER BY ST_Distance(
 LIMIT 5;
 ```
 
-**Market context** (1-2 city/neighborhood stats):
+**Market context** (1-2 city stats, never a neighborhood MOS):
 
-```sql
-SELECT median_sale_price, median_days_on_market, yoy_price_pct, period_label
-FROM market_pulse_live
-WHERE city = '<City>'
-  AND property_type = 'A'
-ORDER BY period_end DESC
-LIMIT 1;
-```
+City MOS, active count, and market verdict: `getCityDetachedMarket('<city-slug>')`
+(`lib/data/market-truth/getSellBendMarket.ts`, D1 detached, MLS City, exact Active).
+Same three figures as `/sell`.
 
-Every stat used on the page gets a verification trace per Step 5. If the row is
-missing or stale (`period_end` older than 60 days), skip the market section.
+City days on market: `getMetric({ stat: 'median_days_to_contract', geoType: 'city',
+geoSlug: '<city-slug>', segment: 'detached' })` (D2). Label it days to contract.
+
+Do not query `listings` for city MOS or city DOM. Do not treat `PropertyType='A'` as
+single family. Do not read `CumulativeDaysOnMarket` as a city median. The listing
+SELECT above may keep a per-listing day count only as that listing's own days.
+
+A miss withholds. Skip the market section. Never fall back to pulse 488 / 3.54.
+
+Every stat used on the page gets a verification trace per Step 5.
 
 **School district info.** Resolve via `place_attractions` rows where
 `category = 'school'`, or via an external schools API if configured (`GREATSCHOOLS_API_KEY`).
@@ -339,7 +342,7 @@ app/listings/<slug>/
 │   ├── PropertyDescription.tsx       ← sanitized PublicRemarks block
 │   ├── SpecsGrid.tsx                 ← full feature list from listings row
 │   ├── NeighborhoodContext.tsx       ← subdivision_descriptions + place_attractions
-│   ├── MarketContext.tsx             ← city/neighborhood stats from market_pulse_live
+│   ├── MarketContext.tsx             ← city stats from getCityDetachedMarket / getMetric
 │   ├── SchoolDistrict.tsx            ← schools block
 │   ├── ManychatWidget.tsx            ← embedded chat with keyword triggers
 │   └── PropertyFooter.tsx            ← navy band, broker contact, MLS#, Equal Housing
@@ -413,7 +416,7 @@ export const metadata: Metadata = {
 | 7 | Description | `<PropertyDescription>` | Sanitized PublicRemarks (banned vocab stripped per Step 6) |
 | 8 | Specs grid | `<SpecsGrid>` | Full feature list.  2-column responsive grid using `<Card>` cells |
 | 9 | Neighborhood | `<NeighborhoodContext>` | Conditional on `subdivision_descriptions` row + `place_attractions` |
-| 10 | Market context | `<MarketContext>` | Conditional on fresh `market_pulse_live` row (≤60 days) |
+| 10 | Market context | `<MarketContext>` | Conditional on publishable `getCityDetachedMarket` / `getMetric` cells |
 | 11 | Schools | `<SchoolDistrict>` | Conditional on data availability |
 | 12 | ManyChat widget | `<ManychatWidget>` | Keyword triggers: DETAILS, SHOWING, OPENHOUSE |
 | 13 | Footer | `<PropertyFooter>` | Navy band, broker contact, MLS# disclosure, Equal Housing |
@@ -862,7 +865,7 @@ WHERE id='<id>';
 | Lead-capture action signature drift | `app/actions/lead-capture.ts` changed since producer was written | Read the current action file in this session. Adapt the form server action call. If the API changed in a breaking way (renamed export, new required arg), escalate to Matt before guessing. |
 | Sitemap parse error | `app/sitemap.ts` uses an unexpected structure | Read the file. Adapt the append logic to match the current structure. Never rewrite the whole sitemap from scratch. |
 | Matterport URL invalid | `listing_videos.matterport_url` returns 404 | Omit the 3D tour section. Render only the "Schedule a virtual showing" fallback CTA. Document in PR. |
-| Market context stale | `market_pulse_live.period_end` older than 60 days | Skip the market section entirely. Do not show stale data. Document in PR. |
+| Market context missing | `getCityDetachedMarket` or `getMetric` returns null / not publishable | Skip the market section entirely. Never fall back to pulse 488 / 3.54. Document in PR. |
 | ManyChat widget ID missing | `MANYCHAT_WIDGET_ID` env var not set | Render the page without the widget. Document in PR. Do not block the build. |
 | Photo download fails | MLS CDN returns 4xx/5xx | Retry once with 5s backoff. If still failing, use the MLS CDN URL directly (no local mirror) and document in PR. |
 | **Open spec question**.  sold-archive transitions | When `"StandardStatus"='Closed'` is reached, who transitions the page to "Sold" archive state? | This producer accepts an `update` action for a `Closed` listing.  the page renders a "Sold" pill in the hero and updates the schema.org availability to `OutOfStock`. The trigger for emitting that update action is owned by a separate listing-status watcher (out of scope here). Document as a known follow-up in PR. |

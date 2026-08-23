@@ -16,6 +16,8 @@ import {
   productClass,
   productTypeCompatible,
   keepSameProductType,
+  compPoolPropertySubType,
+  DETACHED_PROPERTY_SUB_TYPE,
   bathCountCompatible,
   marketAreaName,
   proximityLabel,
@@ -143,6 +145,28 @@ describe('productTypeCompatible — product-class hard exclusion', () => {
   it('still drops townhomes from a band when the subject type was not stored', () => {
     expect(keepSameProductType(null, 'Townhouse')).toBe(false)
     expect(keepSameProductType(null, 'Single Family Residence')).toBe(true)
+  })
+})
+
+describe('compPoolPropertySubType — comps SQL by the subject, not mixed A', () => {
+  it('pins detached subjects to D1 SFR even when the MLS wording varies', () => {
+    expect(compPoolPropertySubType('Single Family Residence')).toBe(DETACHED_PROPERTY_SUB_TYPE)
+    expect(compPoolPropertySubType('Detached')).toBe('Single Family Residence')
+    expect(compPoolPropertySubType('Single Family Residence')).not.toBeNull()
+  })
+
+  it('does not SQL-force SFR for a townhouse, condo, or manufactured subject', () => {
+    expect(compPoolPropertySubType('Townhouse')).toBe('Townhouse')
+    expect(compPoolPropertySubType('Condominium')).toBe('Condominium')
+    expect(compPoolPropertySubType('Manufactured On Land')).toBe('Manufactured On Land')
+    expect(compPoolPropertySubType('Townhouse')).not.toBe('Single Family Residence')
+    expect(compPoolPropertySubType('Condominium')).not.toBe(DETACHED_PROPERTY_SUB_TYPE)
+  })
+
+  it('does not invent SFR when the subject type is unknown', () => {
+    expect(compPoolPropertySubType(null)).toBeNull()
+    expect(compPoolPropertySubType('')).toBeNull()
+    expect(compPoolPropertySubType('   ')).toBeNull()
   })
 })
 

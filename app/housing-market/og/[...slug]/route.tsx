@@ -1,7 +1,9 @@
 import { ImageResponse } from 'next/og'
 import { getCachedStats, getLiveMarketPulse } from '@/app/actions/market-stats'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 
-export const runtime = 'edge'
+// Node: getLiveMarketPulse → getMarketPulse uses unstable_cache (not Edge-safe).
+export const runtime = 'nodejs'
 
 function unslug(value: string): string {
   return value
@@ -17,7 +19,9 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
   const communityName = slug?.[1] ? unslug(slug[1]) : null
   const geoName = communityName ?? cityName
   const geoType = communityName ? 'subdivision' : 'city'
-  const geoSlug = communityName ? (slug?.[1] ?? '') : (slug?.[0] ?? '')
+  const geoSlug = communityName
+    ? (slug?.[1] ?? '')
+    : canonicalCityCacheSlug(slug?.[0] ?? '')
 
   const [stats, pulse] = await Promise.all([
     getCachedStats({ geoType, geoSlug, periodType: 'monthly' }),
@@ -26,7 +30,7 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
 
   const medianSale = stats?.median_sale_price ? `$${Math.round(Number(stats.median_sale_price)).toLocaleString()}` : 'N/A'
   const dom = stats?.median_dom != null ? `${Math.round(Number(stats.median_dom))} days` : 'N/A'
-  const health = stats?.market_health_label ?? 'N/A'
+  const health = pulse?.market_health_label ?? 'N/A'
   const active = pulse?.active_count != null ? Math.round(Number(pulse.active_count)).toLocaleString() : 'N/A'
 
   const bars = [
@@ -65,7 +69,7 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
           {[
             `Median sale price ${medianSale}`,
             `Median DOM ${dom}`,
-            `Market health ${health}`,
+            health === 'N/A' ? 'Market health N/A' : health,
             `Active inventory ${active}`,
           ].map((text) => (
             <div

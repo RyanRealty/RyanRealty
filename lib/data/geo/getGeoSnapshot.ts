@@ -74,7 +74,12 @@ function rowToSnapshot(row: GeoSnapshotMvRow): GeoSnapshot {
 // The MV counts by MLS City and includes Active Under Contract. Pulse is
 // polygon-clipped mixed type A (Bend 488 / seller). Market Truth is MLS-city
 // detached exact-Active (Bend ~774 / balanced) — the same three figures /sell
-// publishes. City snapshots take MT when present, then pulse, then the MV.
+// publishes. City snapshots overlay MT when the detached cell is publishable.
+// A miss or throw does NOT zero activeSfrCount and does NOT return null:
+// city pages 404 on a null snapshot (`if (!snapshot) notFound()`), and
+// generateMetadata uses the same read. MV then pulse stay for existence.
+// Pulse 488 on that miss path is not Market Truth — hole: index/menu can
+// still print polygon inventory when the detached cell is missing.
 // Community/neighborhood stay on the MV (REGISTRY §4: polygons unrepaired).
 
 async function fetchPulseCityMap(): Promise<Map<string, PulseCityRow>> {
@@ -122,6 +127,7 @@ async function overlayOneCityDetached(snap: GeoSnapshot): Promise<GeoSnapshot> {
   if (snap.geoType !== 'city') return snap
   try {
     const mt = await getCityDetachedMarket(snap.geoKey)
+    // Miss: keep MV/pulse counts so the city door still exists. Do not 404.
     return mt ? withDetachedMarket(snap, mt) : snap
   } catch {
     return snap
@@ -136,6 +142,7 @@ async function overlayCitySnapshotsDetached(snaps: GeoSnapshot[]): Promise<GeoSn
     )
     return snaps.map((s) => {
       const mt = map.get(`city:${cityDetachedSlug(s.geoKey)}`)
+      // Miss: keep MV/pulse counts (existence). Pulse 488 is not Market Truth.
       return mt ? withDetachedMarket(s, mt) : s
     })
   } catch {
@@ -212,9 +219,10 @@ const getGeoSnapshotUncoalesced = async (input: GeoSnapshotInput): Promise<GeoSn
   const cached = unstable_cache(
     () => fetchOneOrThrow(parsed),
     // v5 cache-key bump 2026-08-23 — city snapshots overlay Market Truth
-    // detached so homepage/index/menu cannot print pulse 488 next to /sell.
-    // v4 (2026-08-17) pulse-only city doors (Tumalo). v3 (2026-07-08) pulse
-    // override. v2 (2026-05-31) poison-null eviction.
+    // detached when the cell is publishable. Miss keeps MV/pulse counts
+    // (existence; do not 404). Not bumped for withhold: that count path
+    // did not change. v4 pulse-only city doors. v3 pulse override. v2
+    // poison-null eviction.
     ['geo-snapshot-v5-mt-detached', parsed.geoType, parsed.geoKey],
     {
       revalidate:

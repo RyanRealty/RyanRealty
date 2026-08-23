@@ -181,8 +181,13 @@ If any payload copy fails:
 If any section body contains price figures, inventory counts, days on market, median
 values, or any other real estate statistics:
 
-- Pull the figure from Supabase (`market_pulse_live`, `market_stats_cache`, or
-  `listings`) in this session
+- City MOS, active count, and verdict: `getCityDetachedMarket('<city-slug>')` (D1
+  detached, same three figures as `/sell`).
+- City days on market: `getMetric({ stat: 'median_days_to_contract', geoType: 'city',
+  geoSlug: '<city-slug>', segment: 'detached' })` (D2). Label it days to contract.
+- Do not query `listings` for city MOS or city DOM. Do not treat `PropertyType='A'` as
+  single family. Do not read `CumulativeDaysOnMarket` as a city median. A miss
+  withholds. Never fall back to pulse 488 / 3.54.
 - Per CLAUDE.md §0: produce a one-line verification trace per figure
 - If the figure cannot be verified: remove it from the section body rather than
   publishing an unverified stat

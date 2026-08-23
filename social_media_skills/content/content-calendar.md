@@ -74,10 +74,15 @@ Have available:
 ## Topic Pipeline Sources
 
 ### 1. Market Intelligence (Supabase listing_history)
-Query Bend SFR (PropertyType='A') metrics for monthly commentary:
+Query Bend detached city metrics for monthly commentary via
+`getCityDetachedMarket('bend')` (D1 MOS, active count, verdict) and
+`getMetric({ stat: 'median_days_to_contract', geoType: 'city', geoSlug: 'bend',
+segment: 'detached' })` (D2 days to contract). Do not treat `PropertyType='A'` as
+single family. Do not read `CumulativeDaysOnMarket` as a city median. A miss
+withholds. Never fall back to pulse 488 / 3.54.
 - New listings count (compare month-over-month)
 - Average price by neighborhood
-- Days on market (trending up/down?)
+- Days to contract (trending up/down?)
 - Sale price vs list price (discount/markup percentage)
 - Inventory snapshot (supply analysis)
 

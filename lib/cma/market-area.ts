@@ -277,6 +277,22 @@ export function keepSameProductType(subjectSubType: string | null, otherSubType:
   return other == null || other === 'detached'
 }
 
+/** D1: detached is this MLS value, not PropertyType A. */
+export const DETACHED_PROPERTY_SUB_TYPE = 'Single Family Residence'
+
+/**
+ * `property_sub_type` the comps SQL should eq. Detached always pins D1 SFR.
+ * Townhouse / condo / manufactured pass through the subject's MLS value.
+ * Null subject type does not force SFR — JS keepSameProductType still applies.
+ */
+export function compPoolPropertySubType(subjectSubType: string | null): string | null {
+  const cls = productClass(subjectSubType)
+  if (cls === 'detached') return DETACHED_PROPERTY_SUB_TYPE
+  const trimmed = subjectSubType?.trim() || ''
+  if (cls != null && trimmed) return trimmed
+  return null
+}
+
 /**
  * Whole bathroom count must match. A one-bath house and a two-bath house
  * are different buyers. Half baths do not change the whole count (1.0 and

@@ -261,8 +261,11 @@ Subject: `<neighborhood_name> market update: thought of you`
 Body:
 1. Genuine opener: reference the specific transaction by street address and approximate
    year. One sentence.
-2. What's happening: one verified market observation from the neighborhood (median,
-   DOM, active count). Cite the source range (e.g., "YTD 2026 sales in NW Crossing").
+2. What's happening: one verified city market observation from
+   `getCityDetachedMarket('<city-slug>')` (MOS, active count, verdict) or
+   `getMetric` `median_days_to_contract` (D2). Neighborhood MOS stays withheld.
+   Do not read `CumulativeDaysOnMarket` as a market median. A miss withholds.
+   Never fall back to pulse 488 / 3.54.
 3. Home value note: the estimated current value paragraph (or the omission language
    if data is insufficient).
 4. Offer: "If you're ever curious about a full comparison, I'm glad to put one together

@@ -4,13 +4,17 @@
  * Reads from `public.market_pulse_live` (10–15 minute freshness per
  * docs/DATABASE_FOR_AI_AGENTS.md). Surfaces "what's happening right now"
  * for the homepage activity feed and LP route badges.
+ *
+ * City/region: overlay a publishable detached snapshot. A miss or throw
+ * withholds active / MOS / verdict / median (not pulse 488 / 3.54 / seller
+ * as Market Truth). Days to pending, new this week, sold 30d stay.
  */
 
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached, readOrThrow } from '@/lib/data/cache/resilient'
-import { applyDetachedOverlay, getDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
+import { overlayDetachedMarket, withholdDetachedHeadlines, getDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import type { GeoType, IsoTimestamp } from '@/lib/data/types/shared'
 import type { MarketPulse } from '@/lib/data/types/market'
 
@@ -65,22 +69,22 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
   }
   if (geoType === 'city' || geoType === 'region') {
     try {
-      const mt = await getDetachedMarket(geoType, geoSlug)
-      if (mt) return applyDetachedOverlay(pulse, mt)
+      // Hit: overlay detached. Miss/throw: withhold active/MOS/verdict/median
+      // so pulse 488 / 3.54 / seller is not published as Market Truth.
+      // Days to pending, new this week, sold 30d stay on this row.
+      return overlayDetachedMarket(pulse, await getDetachedMarket(geoType, geoSlug))
     } catch {
-      /* keep pulse rather than fail the page */
+      return withholdDetachedHeadlines(pulse)
     }
   }
   return pulse
 }
 
-// v4 cache-key bump 2026-05-31 — evicts poison-null entries cached before the
-// throw-on-error fix (prior v2/v3 bumps were the same class of bug via different
-// triggers). makeResilientCached: error throws (never cached) + one uncached
-// retry before falling back to null.
+// v6 2026-08-23 — city/region miss withholds overlay fields (v5 overlaid only
+// on hit and kept pulse headlines on miss). v4/v5 were poison-null evictions.
 export const getMarketPulse = makeResilientCached(
   fetchMarketPulse,
-  ['market-pulse-v5-mt-detached'],
+  ['market-pulse-v6-mt-withhold'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],
