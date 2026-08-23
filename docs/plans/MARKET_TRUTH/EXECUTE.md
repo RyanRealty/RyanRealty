@@ -466,6 +466,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23ab landed: `/subdivisions/oregon-water-wonderland-unit-2` 3 lots + 1 pending · now · 8 closed · 12 months; 2 manufactured on land + 2 pending · now · 10 closed · 12 months. `/subdivisions/hearthstone-phase-1` 6 townhomes + 2 pending · now · 1 closed · 12 months. `/subdivisions/fourth-sister-condominium` 6 condos, no extra bits. No MOS or median. Bend detached still **774**. County unpublished.
 
+### Grind 2026-08-23ac — neighborhood extra pending/closed counts
+
+**Done when:** community and neighborhood extra-type rows print pending-now and closed-12-month **counts** when publishable, beside the on-market extra count; MOS still only when publishable; miss omits. County unpublished. Workers do not tick this file.
+
+2026-08-23ac landed: `/communities/sunriver` 31 condos + 5 pending · now · 32 closed · 12 months; 6 townhomes + 1 pending · 2 closed. `/communities/three-rivers` 48 lots + 9 pending · 48 closed; 15 manufactured on land + 4 pending · 26 closed. `/cities/bend/larkspur` 3 condos + 1 pending · 2 closed. Extra MOS still 0. Shared reader also prints leftover bits on city extras (Bend 66 condos + 7 pending · 67 closed). Bend detached still **774**. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
@@ -484,7 +490,8 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
       (Sunriver 7.47, Three Rivers 11.17). Pulse MOS stays untrusted.
       Subdivision grain is counts-only (3462 cells; no prices/MOS).
       Extra-segment active / pending / closed counts overlay GIS plat pages
-      sample-gated.
+      sample-gated. Neighborhood extra types overlay pending/closed counts
+      beside on-market extras; extra MOS still 0 publishable.
       County unpublished. `commercial_lease` (G) stays out.
 - [x] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
       fastest to contract, most price cuts, most new inventory.

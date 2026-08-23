@@ -35,6 +35,9 @@ describe('getPublicPlaceSegments', () => {
     expect(SRC).not.toMatch(/'commercial_lease'/)
     expect(SRC).toMatch(/'neighborhood'/)
     expect(SRC).not.toMatch(/'all_residential'/)
+    expect(SRC).toMatch(/pending_count/)
+    expect(SRC).toMatch(/closed_count/)
+    expect(SRC).toMatch(/PUBLIC_SEGMENT_STATS/)
   })
 
   it('omits a miss instead of printing 0', () => {
@@ -67,7 +70,16 @@ describe('getPublicPlaceSegments', () => {
       medianList: 326000,
       monthsOfSupply: 12.8,
       verdict: 'buyer',
-    })).toEqual(['$326,000', '12.8 months', "buyer's"])
+      pendingCount: 5,
+      closedCount: 32,
+    })).toEqual(['$326,000', '12.8 months', "buyer's", '5 pending · now', '32 closed · 12 months'])
+    expect(publicSegmentDisplayBits({
+      medianList: 589000,
+      monthsOfSupply: null,
+      verdict: null,
+      pendingCount: 5,
+      closedCount: 32,
+    })).toEqual(['$589,000', '5 pending · now', '32 closed · 12 months'])
     expect(publicSegmentDisplayBits({
       medianList: null,
       monthsOfSupply: null,
@@ -81,6 +93,8 @@ describe('getPublicPlaceSegments', () => {
           medianList: 326000,
           monthsOfSupply: 12.8,
           verdict: 'buyer',
+          pendingCount: 5,
+          closedCount: 32,
           sampleN: 40,
         },
         {
@@ -89,6 +103,8 @@ describe('getPublicPlaceSegments', () => {
           medianList: null,
           monthsOfSupply: null,
           verdict: null,
+          pendingCount: null,
+          closedCount: null,
           sampleN: null,
         },
       ],

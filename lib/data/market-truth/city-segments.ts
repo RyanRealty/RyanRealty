@@ -32,6 +32,8 @@ function emptyRow(segment: string): CitySegmentRow {
     medianList: null,
     monthsOfSupply: null,
     verdict: null,
+    pendingCount: null,
+    closedCount: null,
     sampleN: null,
   }
 }

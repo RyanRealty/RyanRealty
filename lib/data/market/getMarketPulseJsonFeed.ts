@@ -124,6 +124,8 @@ export type MarketPulseJsonExtraSegment = {
   medianList: number | null
   monthsOfSupply: number | null
   verdict: string | null
+  pendingCount: number | null
+  closedCount: number | null
 }
 
 export type MarketPulseJsonMethodology = {
@@ -335,6 +337,8 @@ function jsonExtraSegments(rows: readonly PublicSegmentRow[]): MarketPulseJsonEx
       medianList: row.medianList,
       monthsOfSupply: row.monthsOfSupply,
       verdict: row.verdict,
+      pendingCount: row.pendingCount,
+      closedCount: row.closedCount,
     })
   }
   return out

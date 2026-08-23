@@ -221,6 +221,8 @@ describe('getMarketPulseJsonFeed', () => {
         medianList: 326000,
         monthsOfSupply: 12.8,
         verdict: 'buyer',
+        pendingCount: 5,
+        closedCount: 32,
         sampleN: 40,
       },
     ])
@@ -234,6 +236,8 @@ describe('getMarketPulseJsonFeed', () => {
         medianList: 326000,
         monthsOfSupply: 12.8,
         verdict: 'buyer',
+        pendingCount: 5,
+        closedCount: 32,
       },
     ])
     expect(result.note).toMatch(/Extra product types/)

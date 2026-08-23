@@ -1,7 +1,8 @@
 /**
  * Public place-page extra segments (Step 9). Detached stays the HUD.
  * The mixed all-types bucket is omitted (it double-counts). Lease inventory
- * stays out. Neighborhood extra types are inventory; MOS only when publishable. Miss omits the row.
+ * stays out. Extra types overlay inventory plus pending/closed counts.
+ * MOS only when publishable. Miss omits the row.
  */
 import { createServiceClient } from '@/lib/data/client'
 import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
@@ -25,6 +26,12 @@ export const PUBLIC_PLACE_SEGMENTS = [
   'farm',
   'commercial_sale',
   'business',
+] as const
+
+export const PUBLIC_SEGMENT_STATS = [
+  ...BOARD_STATS,
+  'pending_count',
+  'closed_count',
 ] as const
 
 export type PublicPlaceSegment = (typeof PUBLIC_PLACE_SEGMENTS)[number]
@@ -98,11 +105,19 @@ export function publicSegmentDisplayBits(row: {
   medianList: number | null
   monthsOfSupply: number | null
   verdict: string | null
+  pendingCount?: number | null
+  closedCount?: number | null
 }): string[] {
   return [
     row.medianList != null ? formatPriceExact(row.medianList) : null,
     row.monthsOfSupply != null ? `${formatMonthsOfSupply(row.monthsOfSupply)} months` : null,
     publicSegmentVerdictLabel(row.verdict),
+    row.pendingCount != null && row.pendingCount >= 1
+      ? `${row.pendingCount.toLocaleString('en-US')} pending · now`
+      : null,
+    row.closedCount != null && row.closedCount >= 1
+      ? `${row.closedCount.toLocaleString('en-US')} closed · 12 months`
+      : null,
   ].filter((bit): bit is string => Boolean(bit))
 }
 
@@ -154,7 +169,7 @@ export async function getPublicPlaceSegments(opts: {
     .eq('geo_type', opts.geoType)
     .eq('geo_slug', geoSlug)
     .in('segment', [...PUBLIC_PLACE_SEGMENTS])
-    .in('stat_id', [...BOARD_STATS])
+    .in('stat_id', [...PUBLIC_SEGMENT_STATS])
     .eq('is_publishable', true)
     .not('value', 'is', null)
 

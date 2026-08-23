@@ -27,6 +27,8 @@ export type CitySegmentRow = {
   medianList: number | null
   monthsOfSupply: number | null
   verdict: string | null
+  pendingCount: number | null
+  closedCount: number | null
   sampleN: number | null
 }
 
@@ -45,6 +47,7 @@ export type RawSegmentCell = {
 
 export function preferredWindow(statId: string): number {
   if (statId === 'months_of_supply' || statId === 'market_verdict') return 6
+  if (statId === 'closed_count') return 12
   return 0
 }
 
@@ -103,9 +106,13 @@ export function collapseCitySegmentRows(
     const median = best.get(`${segment}:median_list_active`)
     const mos = best.get(`${segment}:months_of_supply`)
     const verdict = best.get(`${segment}:market_verdict`)
+    const pending = best.get(`${segment}:pending_count`)
+    const closed = best.get(`${segment}:closed_count`)
     const activeCount = asNumber(active?.value)
     const medianList = asNumber(median?.value)
     const monthsOfSupply = asNumber(mos?.value)
+    const pendingCount = asNumber(pending?.value)
+    const closedCount = asNumber(closed?.value)
     const verdictText =
       verdict?.value_text != null && String(verdict.value_text).trim() !== ''
         ? String(verdict.value_text)
@@ -116,6 +123,8 @@ export function collapseCitySegmentRows(
       medianList,
       monthsOfSupply,
       verdict: verdictText,
+      pendingCount: pendingCount == null || pendingCount < 1 ? null : Math.round(pendingCount),
+      closedCount: closedCount == null || closedCount < 1 ? null : Math.round(closedCount),
       sampleN: pickSampleN({ active, median, mos, verdict }),
     }
   })

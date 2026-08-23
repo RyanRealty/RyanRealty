@@ -112,8 +112,36 @@ describe('getCitySegmentBoard', () => {
     expect(farm?.medianList).toBeNull()
     expect(farm?.monthsOfSupply).toBeNull()
     expect(farm?.verdict).toBeNull()
+    expect(farm?.pendingCount).toBeNull()
+    expect(farm?.closedCount).toBeNull()
     expect(farm?.sampleN).toBeNull()
     expect(SRC).toMatch(/A missing cell is null, never 0/)
+  })
+
+  it('closed_count prefers the 12-month window over 24/36', () => {
+    const cell = (
+      partial: Partial<RawSegmentCell> & Pick<RawSegmentCell, 'stat_id' | 'value' | 'window_months'>,
+    ): RawSegmentCell => ({
+      segment: 'condo',
+      value_text: null,
+      sample_n: 32,
+      period_end: '2026-08-23',
+      computed_at: '2026-08-23T01:00:00Z',
+      complete_through: '2026-08-22',
+      is_publishable: true,
+      ...partial,
+    })
+    const rows = collapseCitySegmentRows([
+      cell({ stat_id: 'closed_count', value: 100, window_months: 36 }),
+      cell({ stat_id: 'closed_count', value: 64, window_months: 24 }),
+      cell({ stat_id: 'closed_count', value: 32, window_months: 12 }),
+      cell({ stat_id: 'pending_count', value: 5, window_months: 0 }),
+      cell({ stat_id: 'active_count', value: 31, window_months: 0 }),
+    ])
+    const condo = rows.find((r) => r.segment === 'condo')
+    expect(condo?.activeCount).toBe(31)
+    expect(condo?.pendingCount).toBe(5)
+    expect(condo?.closedCount).toBe(32)
   })
 
   it('opts.segments limits the board without filling other sale rows', () => {
