@@ -38,6 +38,11 @@ import {
   getMarketStats,
 } from '@/lib/data'
 import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
+import {
+  EMPTY_SUBDIVISION_COUNTS,
+  getSubdivisionCounts,
+} from '@/lib/data/market-truth/subdivision-counts'
+import { PublicSubdivisionCounts } from './PublicSubdivisionCounts'
 import { SubdivisionExploreTail } from '@/components/site/explore/SubdivisionExploreTail'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import {
@@ -182,7 +187,7 @@ export default async function SubdivisionPage({ params }: Props) {
 
   // ── PATH 1: GIS boundary (plat polygon for the map) ──────────────────────
   // ── PATH 2: Registry alias + the public SFR inventory SoR ────────────────
-  const [boundaryRead, inventoryRead] = await Promise.all([
+  const [boundaryRead, inventoryRead, mtCounts] = await Promise.all([
     withTimeoutFallbackResult(
       getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
       { polygon: null, pins: [] },
@@ -190,6 +195,7 @@ export default async function SubdivisionPage({ params }: Props) {
       'sub:boundary',
     ),
     withTimeoutFallbackResult(getPlatPublicInventory(slug), null, 4500, 'sub:inventory'),
+    withTimeoutFallback(getSubdivisionCounts(slug), EMPTY_SUBDIVISION_COUNTS, 3500, 'sub:mtCounts'),
   ])
   const boundary = boundaryRead.value
   const inventory = inventoryRead.ok ? inventoryRead.value : null
@@ -471,6 +477,7 @@ export default async function SubdivisionPage({ params }: Props) {
             `See ${displayName} homes`,
           )}
         />
+        <PublicSubdivisionCounts placeName={displayName} row={mtCounts} />
         {/* Dual-pane list ↔ map when we have pins; else featured rail or empty. */}
         {useSplit ? (
           <PlaceMapListSplit

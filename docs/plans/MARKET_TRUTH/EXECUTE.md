@@ -440,7 +440,13 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 **Done when:** neighborhood MOS cells inherit registry min_n from the same `is_primary` membership as actives (proof: Sunriver 56 / 45 / 7.47); `/communities/sunriver` and neighborhood JSON overlay leftover + extra types; pulse MOS is withheld unless headlines assemble; MOS below min_n omits (Tetherow 16 closes); compute runs on a 6-hour cron. County unpublished. Workers do not tick this file.
 
-2026-08-23x landed: neighborhood MOS same-source proof (membership actives = cell MOS). Detached MOS publishable **15** / withheld **13** (`below_min_n`). Sunriver **7.47** (n=45), Three Rivers **11.17** (n=36), Tetherow withheld (n=16). Leftover + extra types on community/neighborhood HUDs and neighborhood JSON. Pulse MOS untrusted. Cron `/api/cron/compute-neighborhood-metrics` at `40 */6`. Bend detached still **774**. County unpublished.
+2026-08-23x landed: neighborhood MOS same-source proof (membership actives = cell MOS). Detached MOS publishable **15** / withheld **13** (`below_min_n`). Sunriver **7.47** (n=45), Three Rivers **11.17** (n=36), Tetherow withheld (n=16). Leftover + extra types on community/neighborhood HUDs and neighborhood JSON. Pulse MOS untrusted. Cron `/api/cron/compute-neighborhood-metrics` at `40 */6`. Bend detached still **774**. County unpublished. HUD+FAQ MOS gated through `publishMonthsOfSupply({ source: 'market-truth' })`.
+
+### Grind 2026-08-23y — subdivision counts-only grain
+
+**Done when:** dedicated compute writes subdivision `active_count` / `pending_count` / `closed_count` from `place_membership is_primary` (no medians, no MOS, no verdict); a timeout cannot wipe city/neighborhood cells; `/subdivisions/{gis-slug}` prints labeled counts when publishable; MLS-name hero inventory stays the listing SoR. County unpublished. Workers do not tick this file.
+
+2026-08-23y landed: `compute_market_metrics_subdivision_shadow` wrote **3462** count cells in 5.6s (`period_end=2026-08-23`; 1179 active / 481 pending / 1802 closed; no price/MOS/verdict). Bend detached still **774**. Neighborhood MOS still **15** publishable. `/subdivisions/oregon-water-wonderland-unit-2` prints 20 active / 4 pending / 24 closed, labeled recorded plat. Cron `/api/cron/compute-subdivision-metrics` at `50 */6`. County unpublished.
 
 ### Step 9 — Then, and only then, the moat
 
@@ -458,6 +464,7 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
       Neighborhood leftover and extra types overlay sample-gated.
       Neighborhood MOS publishes only when 180-day closes clear min_n 30
       (Sunriver 7.47, Three Rivers 11.17). Pulse MOS stays untrusted.
+      Subdivision grain is counts-only (3462 cells; no prices/MOS).
       County unpublished. `commercial_lease` (G) stays out.
 - [x] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
       fastest to contract, most price cuts, most new inventory.

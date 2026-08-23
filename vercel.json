@@ -198,6 +198,10 @@
       "schedule": "40 */6 * * *"
     },
     {
+      "path": "/api/cron/compute-subdivision-metrics",
+      "schedule": "50 */6 * * *"
+    },
+    {
       "path": "/api/cron/refresh-similar-listings",
       "schedule": "30 4 * * *"
     },

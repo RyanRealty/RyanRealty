@@ -203,6 +203,24 @@ function main() {
       !/geo_type = 'subdivision'/.test(nbhCompute) &&
       !/neighborhood_mos_unpublished/.test(nbhCompute),
   )
+  const subCompute = readFileSync(
+    'supabase/migrations/20260823260000_compute_market_metrics_subdivision.sql',
+    'utf8',
+  )
+  add(
+    'gate 4c: subdivision compute is counts-only and does not wipe other grains',
+    /compute_market_metrics_subdivision_shadow/.test(subCompute) &&
+      /AND geo_type = 'subdivision'/.test(subCompute) &&
+      /'active_count'/.test(subCompute) &&
+      /'pending_count'/.test(subCompute) &&
+      /'closed_count'/.test(subCompute) &&
+      !/median_close/.test(subCompute) &&
+      !/months_of_supply/.test(subCompute) &&
+      !/market_verdict/.test(subCompute) &&
+      !/commercial_lease/.test(subCompute) &&
+      !/geo_type = 'neighborhood'/.test(subCompute) &&
+      !/geo_type = 'city'/.test(subCompute),
+  )
   add(
     'gate 1: place_membership is the geography writer (ST_Within lives there)',
     (() => {

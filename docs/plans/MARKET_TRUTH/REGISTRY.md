@@ -223,6 +223,9 @@ the new hulls (397 batches, **2,680,623** rows). Nested remainder is
 `is_primary` = smallest containing neighborhood — do not ST_Difference a community
 out of a city district. Neighborhood MOS publishes only when 180-day closes
 clear min_n (same membership as actives). Pulse MOS stays untrusted.
+2026-08-23y: subdivision cells are counts only (`active_count`,
+`pending_count`, `closed_count`) from `is_primary` membership. No
+median, MOS, or verdict at this grain.
 
 ---
 
