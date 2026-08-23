@@ -37,4 +37,16 @@ describe('ZIP page Market Truth overlay', () => {
     expect(overlay).toMatch(/tileActiveCount/)
     expect(overlay).toContain('!(mtActiveRounded === 0 && tiles.length > 0)')
   })
+
+  it('does not print 12-month new_listings as New · 30 days', () => {
+    expect(PAGE).toMatch(/new30: tileNew30/)
+    expect(PAGE).not.toMatch(/mtNewVal/)
+    expect(PAGE).not.toMatch(/publishedNew30/)
+    expect(PAGE).toMatch(/New listings last 30 days/)
+    expect(PAGE).toMatch(/getPublicDetachedPace/)
+    expect(PAGE).toMatch(/getPublicPlaceSegments/)
+    expect(PAGE).toMatch(/PublicPaceStats/)
+    expect(PAGE).toMatch(/PublicProductTypes/)
+    expect(PAGE).toMatch(/geoType: 'zip'/)
+  })
 })

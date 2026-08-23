@@ -40,6 +40,9 @@ describe('getPublicPlaceSegments', () => {
     expect(publicSegmentBrowseHref(null, 'condo')).toBe(
       '/homes-for-sale?propertySubTypes=Condominium',
     )
+    expect(publicSegmentBrowseHref('bend', 'condo', { postalCode: '97701' })).toBe(
+      '/homes-for-sale/bend?postalCode=97701&propertySubTypes=Condominium',
+    )
     expect(publicSegmentNoun('condo', 1)).toBe('condo')
     expect(publicSegmentNoun('condo', 66)).toBe('condos')
     expect(publicSegmentNoun('townhome', 78)).toBe('townhomes')
@@ -99,8 +102,10 @@ describe('public place pages', () => {
     expect(market).toMatch(/getPublicPlaceSegments/)
     expect(figures).toMatch(/buildPublicSegmentFigures/)
     expect(figures).toMatch(/publicSegmentBrowseHref/)
+    const zip = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
     expect(hub).toMatch(/getPublicPlaceSegments/)
     expect(hub).toMatch(/publicSegmentDisplayBits/)
+    expect(zip).toMatch(/getPublicPlaceSegments/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
     expect(strip).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })

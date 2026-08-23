@@ -33,6 +33,10 @@ import {
   getPriceHistory,
 } from '@/lib/data'
 import { getMetric } from '@/lib/data/market-truth/getMetric'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
+import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { formatDate } from '@/lib/format/date'
 import { homesForSalePath } from '@/lib/slug'
@@ -194,7 +198,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     mtMedianCell,
     mtMosCell,
     mtVerdictCell,
-    mtNewCell,
+    publicSegments,
+    publicPace,
   ] = await Promise.all([
     withTimeoutFallback(
       getSurfaceImage('hero', {
@@ -225,7 +230,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     zipMt('median_list_active'),
     zipMt('months_of_supply'),
     zipMt('market_verdict'),
-    zipMt('new_listings'),
+    withTimeoutFallback(getPublicPlaceSegments({ geoType: 'zip', geoSlug: zip }), [], 3000, 'zip:publicSegments'),
+    withTimeoutFallback(getPublicDetachedPace({ geoType: 'zip', geoSlug: zip }), EMPTY_PUBLIC_PACE, 3000, 'zip:publicPace'),
   ])
 
   // ── LIVE STATS — tiles for map/featured; HUD overlays Market Truth on HIT ─
@@ -275,7 +281,6 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   const mtActiveVal = zipMetricValue(mtActiveCell)
   const mtMedianVal = zipMetricValue(mtMedianCell)
   const mtMosVal = zipMetricValue(mtMosCell)
-  const mtNewVal = zipMetricValue(mtNewCell)
   const mtActiveRounded = mtActiveVal != null ? Math.round(mtActiveVal) : null
   const mtHit =
     mtActiveRounded != null &&
@@ -283,7 +288,6 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     !(mtActiveRounded === 0 && tiles.length > 0)
   const activeCount: number | null = mtHit ? mtActiveRounded : tileActiveCount
   const publishedMedianList: number | null = mtHit ? mtMedianVal : medianListPrice
-  const publishedNew30: number | null = mtHit && mtNewVal != null ? Math.round(mtNewVal) : tileNew30
   const publishedMos: number | null = mtHit && mtMosVal != null ? mtMosVal : null
   const sellMedian = publishSellMedian({
     placeMedian: publishedMedianList,
@@ -319,12 +323,13 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
 
   // ── MARKET HUD ────────────────────────────────────────────────────────────
   // HIT: market_metric mt-v1 detached ZIP PostalCode (getMetric). MISS: live
-  // tiles for active/medianList/new30/medianDomActive; monthsSupply stays null.
+  // tiles for active/medianList/medianDomActive; monthsSupply stays null.
+  // new30 is tile 30-day new, never 12-month leftover new_listings.
   // closed30/saleToList stay null. Do not invent daysToPending from active DOM.
   const marketData: KbMarketData = {
     active: activeCount,
     closed30: null,
-    new30: publishedNew30,
+    new30: tileNew30,
     medianList: publishedMedianList,
     saleToList: null,
     // §0 `medianDom` is the median days CURRENTLY-ACTIVE listings have been on
@@ -409,8 +414,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   if (medianDom != null) {
     datasetStats.push({ name: 'Median days on market', value: Math.round(medianDom), unitText: 'days' })
   }
-  if (publishedNew30 != null) {
-    datasetStats.push({ name: 'New listings last 30 days', value: publishedNew30, unitText: 'listings' })
+  if (tileNew30 != null) {
+    datasetStats.push({ name: 'New listings last 30 days', value: tileNew30, unitText: 'listings' })
   }
 
   const schemas: SchemaInput[] = [
@@ -493,7 +498,15 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           eyebrow={`${zip} · The market`} geoName={`ZIP ${zip}`}
           chartScopeLabel={`${cityName} (city)`}
           asOf={hudAsOf}
-        />
+        >
+          <PublicProductTypes
+            cityName={zip}
+            citySlug={canonicalCityCacheSlug(citySlug)}
+            postalCode={zip}
+            rows={publicSegments}
+          />
+          <PublicPaceStats cityName={zip} row={publicPace} />
+        </KbMarketHud>
 
         <KbFeatured
           items={featuredItems}

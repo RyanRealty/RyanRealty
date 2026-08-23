@@ -81,7 +81,7 @@ export function publicPaceHasRow(row: PublicPaceRow): boolean {
 }
 
 export async function getPublicDetachedPace(opts: {
-  geoType: 'city' | 'region'
+  geoType: 'city' | 'region' | 'zip'
   geoSlug: string
 }): Promise<PublicPaceRow> {
   const geoSlug = hyphenSlug(opts.geoSlug)

@@ -8,10 +8,12 @@ import {
 export function PublicProductTypes({
   cityName,
   citySlug,
+  postalCode,
   rows,
 }: {
   cityName: string
   citySlug: string
+  postalCode?: string | null
   rows: readonly PublicSegmentRow[]
 }) {
   if (rows.length === 0) return null
@@ -27,7 +29,7 @@ export function PublicProductTypes({
           return (
             <li className="mkt-bar" key={row.segment}>
               <a
-                href={publicSegmentBrowseHref(citySlug, row.segment)}
+                href={publicSegmentBrowseHref(citySlug, row.segment, { postalCode })}
                 className="bhd"
                 style={{ color: 'inherit', textDecoration: 'none' }}
               >

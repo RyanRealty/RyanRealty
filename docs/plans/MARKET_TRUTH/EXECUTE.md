@@ -346,6 +346,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23h landed: `getPublicDetachedPace` reads 12-month mt-v1 leftover cells. `/cities/bend` HUD panel 28 / 2,095 / 2,956 / 46.6% / 64. `/housing-market/bend` same figures, labeled 12 months. Pulse 30-day closed and days-to-pending stay. Neighborhood MOS and county stay unpublished.
 
+### Grind 2026-08-23i — zip condo/townhome + 12-month pace; do not label leftover as 30-day
+
+**Done when:** `/zip/97701` shows sample-gated condo/townhome from Market Truth beside the detached HUD, plus labeled 12-month leftover pace (days to contract 27, closed 564, new listings 784). HUD "New · 30 days" is tile 30-day new, not 12-month `new_listings`. A miss omits the row. Neighborhood MOS and county stay unpublished. Workers do not tick this file.
+
+2026-08-23i landed: `/zip/97701` HUD 176 detached / 8 condos / 18 townhomes ($436,998 · 2.1 months · seller's). 12-month pace 27 / 564 / 784 / 46.8% / 65. New · 30 days is 63 (tiles), not 784. Neighborhood MOS and county stay unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

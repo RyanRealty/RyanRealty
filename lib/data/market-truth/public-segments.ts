@@ -44,11 +44,19 @@ export function publicSegmentNoun(segment: string, count: number): string {
   return count === 1 ? n.one : n.many
 }
 
-export function publicSegmentBrowseHref(citySlug: string | null, segment: string): string {
+export function publicSegmentBrowseHref(
+  citySlug: string | null,
+  segment: string,
+  opts?: { postalCode?: string | null },
+): string {
   const sub = SUBTYPE_QUERY[segment as PublicPlaceSegment]
   const path = citySlug?.trim() ? `/homes-for-sale/${hyphenSlug(citySlug)}` : '/homes-for-sale'
-  if (!sub) return path
-  return `${path}?propertySubTypes=${encodeURIComponent(sub)}`
+  const params = new URLSearchParams()
+  const zip = opts?.postalCode?.replace(/\D/g, '').slice(0, 5)
+  if (zip && zip.length === 5) params.set('postalCode', zip)
+  if (sub) params.set('propertySubTypes', sub)
+  const q = params.toString()
+  return q ? `${path}?${q}` : path
 }
 
 export function publicSegmentVerdictLabel(verdict: string | null): string | null {
@@ -71,7 +79,7 @@ export function publicSegmentDisplayBits(row: {
 }
 
 export async function getPublicPlaceSegments(opts: {
-  geoType: 'city' | 'region'
+  geoType: 'city' | 'region' | 'zip'
   geoSlug: string
 }): Promise<PublicSegmentRow[]> {
   const geoSlug = hyphenSlug(opts.geoSlug)
