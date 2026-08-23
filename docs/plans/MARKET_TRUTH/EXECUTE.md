@@ -394,6 +394,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23p landed: `/data/market/city/bend` leftover 311 pending / 28 days to contract / 2,095 closed / $760,000; pulse sold 30d 136 and days-to-pending 18 stay. Tetherow JSON leftover null. `/months-of-supply` leftover 32 days to contract · 12 months beside 14.2 condos MOS. Neighborhood MOS still unpublished. County unpublished.
 
+### Grind 2026-08-23q — leftover + extra segments on plain city search
+
+**Done when:** `/homes-for-sale/bend` prints labeled 12-month leftover pace and sample-gated extra product types beside the pulse HUD. Pulse 30-day sold and typical days to pending stay. Preset and subdivision search pages do not fetch leftover. Neighborhood MOS unpublished. County unpublished. Workers do not tick this file.
+
+2026-08-23q landed: `/homes-for-sale/bend` leftover 311 pending / days to contract · 12 months / 2,095 closed beside extra inventory 66 condos · 12.8 months and 78 townhomes · 3.6 months. Pulse typical days to pending and closed last 30 days stay. `/homes-for-sale/bend/under-500k` has no leftover band. Neighborhood MOS still unpublished. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

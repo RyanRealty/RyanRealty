@@ -1,6 +1,8 @@
 import { getCityListings, getMarketPulse } from '@/lib/data'
 import type { FractionalInterestSubject } from '@/lib/listing/publish-listing-figure'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
+import { getPublicPlaceSegments, type PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import {
   CITY_TILE_FETCH_LIMIT,
   publishCityInventory,
@@ -81,14 +83,33 @@ export async function loadSearchCityMarketLayer(args: {
    * complete and did not hit the row ceiling).
    */
   priceLadder: SearchPriceLadder | null
+  publicPace: PublicPaceRow
+  publicSegments: PublicSegmentRow[]
 }> {
-  const cityPulse =
-    (args.isPlainCityPage || args.isPresetDepthPage) && args.relatedCitySlug
-      ? await getMarketPulse({
-          geoType: 'city',
-          geoSlug: canonicalCityCacheSlug(args.relatedCitySlug),
-        }).catch(() => null)
-      : null
+  const cacheSlug = args.relatedCitySlug ? canonicalCityCacheSlug(args.relatedCitySlug) : ''
+  const wantPulse = Boolean((args.isPlainCityPage || args.isPresetDepthPage) && cacheSlug)
+  const wantLeftover = Boolean(args.isPlainCityPage && cacheSlug)
+  const [cityPulse, publicPace, publicSegments] = await Promise.all([
+    wantPulse
+      ? getMarketPulse({ geoType: 'city', geoSlug: cacheSlug }).catch(() => null)
+      : Promise.resolve(null),
+    wantLeftover
+      ? withTimeoutFallback(
+          getPublicDetachedPace({ geoType: 'city', geoSlug: cacheSlug }),
+          EMPTY_PUBLIC_PACE,
+          3000,
+          'search:publicPace',
+        )
+      : Promise.resolve(EMPTY_PUBLIC_PACE),
+    wantLeftover
+      ? withTimeoutFallback(
+          getPublicPlaceSegments({ geoType: 'city', geoSlug: cacheSlug }),
+          [],
+          3000,
+          'search:publicSegments',
+        )
+      : Promise.resolve([] as PublicSegmentRow[]),
+  ])
   const publishedCityInventory =
     args.isPlainCityPage && args.city
       ? publishSearchCityInventory(cityPulse, args.citySfrTiles)
@@ -106,5 +127,13 @@ export async function loadSearchCityMarketLayer(args: {
           published: publishedCityInventory,
         })
       : null
-  return { cityPulse, cityFaqInput, publishedCityInventory, cityMarketFaq, priceLadder }
+  return {
+    cityPulse,
+    cityFaqInput,
+    publishedCityInventory,
+    cityMarketFaq,
+    priceLadder,
+    publicPace,
+    publicSegments,
+  }
 }
