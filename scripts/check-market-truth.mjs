@@ -175,14 +175,16 @@ function main() {
   )
 
   const compute = readFileSync(
-    'supabase/migrations/20260823010000_compute_market_metrics_shadow.sql',
+    'supabase/migrations/20260823120000_compute_market_metrics_all_segments.sql',
     'utf8',
   )
   add(
     'gate 4: shadow compute does not write neighborhood or subdivision price stats',
     !/geo_type = 'neighborhood'/.test(compute) &&
       !/geo_type = 'subdivision'/.test(compute) &&
-      /FROM public\.market_service_area/.test(compute),
+      /FROM public\.market_service_area/.test(compute) &&
+      /'condo'/.test(compute) &&
+      /'townhome'/.test(compute),
   )
   add(
     'gate 1: place_membership is the geography writer (ST_Within lives there)',

@@ -223,19 +223,18 @@ registry-declared and land as a follow-on compute. Recon: `RECON.md`. `/sell` re
 - [x] Then CMA and BPO — city-grain live stats match `/sell` (`getCityDetachedMarket`).
       Subdivision pace uses `days_to_pending`. Extras filter detached (D1). Comps still
       fetch PropertyType A then `keepSameProductType` in memory.
-- [ ] Then place pages, market hub, newsletter, video producers, JSON feeds, admin.
-      2026-08-23: city and region `getMarketPulse` / snapshots / JSON feed overlay
-      `getDetachedMarket` so header, hub, homepage, and `/data/market` cannot
-      print pulse 488 next to `/sell`. City HUD / FAQ / Dataset use
-      `getCityDetachedMarket` for active, MoS, and median; the map grid stays
-      the address-set doors, now detached.
-      Same day: `getGeoSnapshot` city rows, browse-city counts, mega menu, and
-      the cities index overlay the same detached cells. Newsletter / CRM emails
-      (`getMarketReportData`) read `getDetachedMarkets` for city grain. GBP
-      drafts already ride `getRegionPulse` overlay. Neighborhood / community
-      MOS stays withheld (`geo-grain-trust` / REGISTRY §4). Neighborhood
-      inventory stays the address-set, not pulse.
-- [ ] Each surface proves reconciliation before it flips.
+- [x] Then place pages, market hub, newsletter, video producers, JSON feeds, admin.
+      City/region public figures, hub, JSON feed, newsletter/CRM city blocks,
+      GBP drafts, mega menu, and the cities index share detached `getMetric`
+      cells with `/sell`. Neighborhood / community MOS stays withheld
+      (`geo-grain-trust` / REGISTRY §4). Inventory on those pages is the
+      address-set, not pulse. CMA comps still fetch PropertyType A then
+      `keepSameProductType` in memory.
+- [x] Each surface proves reconciliation before it flips.
+      Local webpack 2026-08-23: `/` Bend 774 / $915,000; `/cities` same plus
+      balanced; `/cities/bend` HUD 4.5 months balanced $915,000; `/sell` and
+      `/housing-market/bend` 774 / 4.5 / balanced. Pulse 488 absent. Hub
+      region 1,825 / 5.7. Residual "seller" copy is the MOS_THRESHOLD_CLAUSE.
 
 **Done when:** `/sell` reads `getMetric` for active count, months of supply, and verdict; the three
 figures match the shadow recon report Matt reviewed; JSON-LD / `/data/market` for Bend still agree
@@ -314,6 +313,14 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
+      2026-08-23: city + region cells now cover 11 REGISTRY segments
+      (detached, condo, townhome, manufactured_land, manufactured_park,
+      multifamily_2_4, land, farm, commercial_sale, business, all_residential).
+      Shadow compute wrote **2638** mt-v1 cells (`period_end=2026-08-23`).
+      Bend detached still **774 / 4.47 / balanced**. Bend condo 66 / 12.8 / buyer.
+      Bend townhome 78 / 3.6 / seller. Public readers stay on detached.
+      Neighborhood / community / subdivision grains stay unpublished
+      (REGISTRY §4 polygons unrepaired). `commercial_lease` (G) stays out.
 - [x] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
       fastest to contract, most price cuts, most new inventory.
 - [x] Agent/office share — **internal only** (Matt, 2026-08-22): admin and listing presentations, not
