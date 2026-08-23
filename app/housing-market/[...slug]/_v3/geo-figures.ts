@@ -19,6 +19,12 @@ import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/class
 import { formatPrice, formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
+  publicSegmentBrowseHref,
+  publicSegmentDisplayBits,
+  publicSegmentNoun,
+  type PublicSegmentRow,
+} from '@/lib/data/market-truth/public-segments'
+import {
   v3Text,
   type V3ChartPoint,
   type V3ChartProps,
@@ -103,6 +109,26 @@ export function buildLiveFigures(pulse: MarketPulse | null, mosText: string | nu
     `${clauses.join('. ')}.` + (mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
 
   return { figures, trace }
+}
+
+/** Condo and townhome counts. Miss is omitted, never 0. Detached HUD stays separate. */
+export function buildPublicSegmentFigures(
+  rows: readonly PublicSegmentRow[],
+  citySlug: string,
+): V3InstrumentFigure[] {
+  const figures: V3InstrumentFigure[] = []
+  for (const row of rows) {
+    if (row.activeCount == null || row.activeCount <= 0) continue
+    const bits = publicSegmentDisplayBits(row)
+    figures.push({
+      value: v3Text(row.activeCount.toLocaleString('en-US')),
+      label: v3Text(
+        [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
+      ),
+      href: publicSegmentBrowseHref(citySlug, row.segment),
+    })
+  }
+  return figures
 }
 
 /**

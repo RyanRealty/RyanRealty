@@ -85,9 +85,10 @@ function pickSampleN(cells: {
 
 export function collapseCitySegmentRows(
   rows: RawSegmentCell[],
-  opts?: { stale?: (row: RawSegmentCell) => boolean },
+  opts?: { stale?: (row: RawSegmentCell) => boolean; segments?: readonly string[] },
 ): CitySegmentRow[] {
   const stale = opts?.stale
+  const segments = opts?.segments ?? SALE_SEGMENTS
   const best = new Map<string, RawSegmentCell>()
   for (const row of rows) {
     if (!row.is_publishable || row.value == null) continue
@@ -97,7 +98,7 @@ export function collapseCitySegmentRows(
     if (!prev || preferSegmentCell(row, prev)) best.set(key, row)
   }
 
-  return SALE_SEGMENTS.map((segment) => {
+  return segments.map((segment) => {
     const active = best.get(`${segment}:active_count`)
     const median = best.get(`${segment}:median_list_active`)
     const mos = best.get(`${segment}:months_of_supply`)

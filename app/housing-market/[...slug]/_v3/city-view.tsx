@@ -29,7 +29,9 @@ import {
   buildExploreItems,
   buildFaqItems,
   buildLiveFigures,
+  buildPublicSegmentFigures,
 } from './geo-figures'
+import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 
 type Props = {
   cityName: string
@@ -46,6 +48,7 @@ type Props = {
   closedTrace: string | null
   chart?: V3ChartProps
   sheet: ReactNode
+  publicSegments?: readonly PublicSegmentRow[]
 }
 
 export function CityMarketView({
@@ -63,9 +66,11 @@ export function CityMarketView({
   closedTrace,
   chart,
   sheet,
+  publicSegments = [],
 }: Props) {
   const live = buildLiveFigures(pulse, mosText, cityName)
-  const figures = [...live.figures, ...closedFigures]
+  const segmentFigures = buildPublicSegmentFigures(publicSegments, citySlug)
+  const figures = [...live.figures, ...segmentFigures, ...closedFigures]
   const [firstFigure, ...restFigures] = figures
   const cityLedger = buildCityLedger(snapshots, citySlug)
   const [firstCityRow, ...restCityRows] = cityLedger.rows
@@ -89,6 +94,9 @@ export function CityMarketView({
 
   const traceParts = [
     live.figures.length > 0 ? live.trace.replace(/\.$/, '') : null,
+    segmentFigures.length > 0
+      ? 'condo and townhome counts are Market Truth mt-v1, sample-gated, not the detached HUD'
+      : null,
     closedTrace,
   ].filter((part): part is string => Boolean(part))
   const trace =

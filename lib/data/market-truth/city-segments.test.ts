@@ -115,6 +115,33 @@ describe('getCitySegmentBoard', () => {
     expect(farm?.sampleN).toBeNull()
     expect(SRC).toMatch(/A missing cell is null, never 0/)
   })
+
+  it('opts.segments limits the board without filling other sale rows', () => {
+    const cell = (
+      partial: Partial<RawSegmentCell> & Pick<RawSegmentCell, 'segment' | 'stat_id' | 'value'>,
+    ): RawSegmentCell => ({
+      value_text: null,
+      sample_n: 40,
+      window_months: 0,
+      period_end: '2026-08-23',
+      computed_at: '2026-08-23T01:00:00Z',
+      complete_through: '2026-08-22',
+      is_publishable: true,
+      ...partial,
+    })
+    const rows = collapseCitySegmentRows(
+      [
+        cell({ segment: 'detached', stat_id: 'active_count', value: 774 }),
+        cell({ segment: 'condo', stat_id: 'active_count', value: 66 }),
+        cell({ segment: 'townhome', stat_id: 'active_count', value: 78 }),
+      ],
+      { segments: ['condo', 'townhome'] },
+    )
+    expect(rows).toHaveLength(2)
+    expect(rows.map((row) => row.segment)).toEqual(['condo', 'townhome'])
+    expect(rows.find((row) => row.segment === 'condo')?.activeCount).toBe(66)
+    expect(rows.find((row) => row.segment === 'townhome')?.activeCount).toBe(78)
+  })
 })
 
 describe('admin city-segment board', () => {

@@ -58,6 +58,12 @@ import {
 } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import {
+  getPublicPlaceSegments,
+  publicSegmentBrowseHref,
+  publicSegmentDisplayBits,
+  publicSegmentNoun,
+} from '@/lib/data/market-truth/public-segments'
+import {
   getCoMarketAnnual,
   getCoMarketAnnualSeries,
   MART_FLOOR_YEAR,
@@ -140,6 +146,7 @@ export default async function HousingMarketHubPage() {
     nationalSeries,
     coAnnualSfr,
     concessionQuarters,
+    publicSegments,
   ] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
     getMarketPulseAllCitySnapshots(),
@@ -150,6 +157,7 @@ export default async function HousingMarketHubPage() {
     getNationalIndexSeries(),
     getCoMarketAnnualSeries({ fromYear: MART_FLOOR_YEAR, toYear: lastFullYear, typeScope: 'sfr' }),
     getConcessionsQuarterly(),
+    getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
   ])
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
@@ -212,6 +220,17 @@ export default async function HousingMarketHubPage() {
   const historyPath = lead.historyPath
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
   const sfrFollow = buildSfrFollowFigures(regionPulse)
+  for (const row of publicSegments) {
+    if (row.activeCount == null || row.activeCount <= 0) continue
+    const bits = publicSegmentDisplayBits(row)
+    sfrFollow.push({
+      value: v3Text(row.activeCount.toLocaleString('en-US')),
+      label: v3Text(
+        [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
+      ),
+      href: publicSegmentBrowseHref(null, row.segment),
+    })
+  }
   const [firstSfrFigure, ...restSfrFigures] = sfrFollow
 
   // M1 AEO: the mart-backed size and composition questions, appended to the same FAQ
@@ -437,7 +456,9 @@ export default async function HousingMarketHubPage() {
             headline={v3Text('Single-family list inventory')}
             figures={[firstSfrFigure, ...restSfrFigures]}
             source={v3Text(
-              'live MLS through Oregon Data Share, single-family homes across the Central Oregon region. Not ALL-TYPE closed sales',
+              publicSegments.length > 0
+                ? 'live MLS through Oregon Data Share. Single-family figures are the region detached HUD. Condo and townhome counts are Market Truth mt-v1, sample-gated'
+                : 'live MLS through Oregon Data Share, single-family homes across the Central Oregon region. Not ALL-TYPE closed sales',
             )}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             action={{

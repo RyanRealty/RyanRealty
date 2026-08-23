@@ -334,6 +334,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23f landed: `getDetachedOverlays` + `overlayDetachedLayers` — inventory and MOS are independent. Pulse/JSON/browse use that. Admin `/admin/analytics/city-segments` reads 11 sale segments from `market_metric` mt-v1. Neighborhood MOS and county stay unpublished.
 
+### Grind 2026-08-23g — public city condo/townhome (Step 9 start)
+
+**Done when:** `/cities/bend` and `/housing-market/bend` show sample-gated condo and townhome inventory from Market Truth (Bend condo 66 / 12.8 / buyer, townhome 78 / 3.6 / seller) next to the detached HUD; a miss omits the row (not 0); labels name the segment; detached HUD stays 774 / 4.5 / balanced. Neighborhood MOS and county stay unpublished. Public city hero stays detached houses. Workers do not tick this file.
+
+2026-08-23g landed: `getPublicPlaceSegments` reads publishable mt-v1 condo/townhome cells. `/cities/bend` HUD extra panel 66 condos $326,000 · 12.8 months · buyer's / 78 townhomes $699,000 · 3.6 months · seller's beside detached 774 / 4.5 / balanced. `/housing-market/bend` and the region hub print the same sample-gated figures. Madras omits condos (no 0). Neighborhood MOS and county stay unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

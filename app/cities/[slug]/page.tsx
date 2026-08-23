@@ -37,6 +37,7 @@ import {
   getAreaGuideVideo,
   getCityDetachedMarket,
 } from '@/lib/data'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
@@ -83,6 +84,7 @@ import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { buildCitySchemas } from './city-schemas'
 import { CityMarketCharts } from './_v3/city-market-charts'
+import { PublicProductTypes } from './PublicProductTypes'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -154,6 +156,7 @@ export default async function CityDetailPage({ params }: Props) {
     pulseRead, detached, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
+    publicSegments,
   ] = await Promise.all([
     withTimeoutFallbackResult(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
@@ -193,6 +196,7 @@ export default async function CityDetailPage({ params }: Props) {
     // Tabbed core-chart module series (24-month cache-fed trends). Null on a
     // blip → the module renders nothing under the HUD. (§0)
     withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
+    withTimeoutFallback(getPublicPlaceSegments({ geoType: 'city', geoSlug: slug }), [], 3000, 'city:publicSegments'),
   ])
 
   // Hero — Bend reuses the homepage video; otherwise the VERIFIED cityHero photo
@@ -519,14 +523,12 @@ export default async function CityDetailPage({ params }: Props) {
             page adopted this the day it was asked for; the city page was the last
             stacker (C-17). */}
         <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={pulse?.refreshedAt ?? null} byTownKind="neighborhood">
+          <PublicProductTypes cityName={cityName} citySlug={slug} rows={publicSegments} />
           {coreCharts ? (
             <div className="pt-10" aria-label={`${cityName} market trend charts`}>
               <MarketCoreCharts data={toPublicCoreChartSeries(coreCharts)} heading={`${cityName} market trends`} />
             </div>
           ) : null}
-          {/* The approved chart-room town charts (Unit CITY 2026-08-19) — same
-              market section, additive under the core trends. Subject rows are
-              bound to the SAME published figures the HUD prints (§0). */}
           <CityMarketCharts
             citySlug={slug}
             geoSlug={geoSlug}
