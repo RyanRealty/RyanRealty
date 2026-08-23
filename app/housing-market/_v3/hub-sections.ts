@@ -64,7 +64,7 @@ export function buildCityLedger(
   for (const label of CITY_LABELS) {
     const slug = CITY_SLUG[label]
     const snapshot = snapshotByLabel.get(label)
-    if (!slug || !snapshot || snapshot.median_list_price == null) continue
+    if (!slug || !snapshot || snapshot.median_list_price == null || snapshot.active_count == null) continue
     rowed.add(label)
     rows.push({
       href: `/housing-market/${slug}`,
@@ -87,6 +87,9 @@ export function buildCityLedger(
     const slug = CITY_SLUG[label]
     if (!snapshot) {
       return { label, slug, fact: `${label} returned no market row in the latest sync` }
+    }
+    if (snapshot.active_count == null) {
+      return { label, slug, fact: `${label} has no published active single-family count` }
     }
     if (snapshot.active_count === 0) {
       return { label, slug, fact: `${label} shows no active single-family listings` }
@@ -216,7 +219,7 @@ export function buildSfrFollowFigures(pulse: MarketPulse | null): V3InstrumentFi
       href: '/housing-market/central-oregon',
     })
   }
-  if (pulse != null && pulse.activeCount > 0) {
+  if (pulse != null && pulse.activeCount != null && pulse.activeCount > 0) {
     figures.push({
       value: v3Text(pulse.activeCount.toLocaleString('en-US')),
       label: v3Text('homes for sale, single-family'),

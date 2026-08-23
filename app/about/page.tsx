@@ -94,7 +94,7 @@ export default async function AboutPage() {
   for (const label of ABOUT_CITY_LABELS) {
     const slug = ABOUT_CITY_SLUG[label]
     const snapshot = snapshotByLabel.get(label)
-    if (!slug || !snapshot || snapshot.median_list_price == null) continue
+    if (!slug || !snapshot || snapshot.median_list_price == null || snapshot.active_count == null) continue
     rowed.add(label)
     const price = formatPrice(snapshot.median_list_price)
     if (price === '\u2014') continue
@@ -111,6 +111,9 @@ export default async function AboutPage() {
   const cityFootnotes = ABOUT_CITY_LABELS.filter((label) => !rowed.has(label)).map((label) => {
     const snapshot = snapshotByLabel.get(label)
     if (!snapshot) return { label, fact: `${label} returned no market row in the latest sync` }
+    if (snapshot.active_count == null) {
+      return { label, fact: `${label} has no published active single-family count` }
+    }
     if (snapshot.active_count === 0) {
       return { label, fact: `${label} shows no active single-family listings` }
     }

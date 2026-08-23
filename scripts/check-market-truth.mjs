@@ -175,7 +175,7 @@ function main() {
   )
 
   const compute = readFileSync(
-    'supabase/migrations/20260823140000_compute_market_metrics_yoy_mix.sql',
+    'supabase/migrations/20260823150000_compute_market_metrics_zip_leftover.sql',
     'utf8',
   )
   add(
@@ -184,7 +184,11 @@ function main() {
       !/geo_type = 'subdivision'/.test(compute) &&
       /FROM public\.market_service_area/.test(compute) &&
       /'condo'/.test(compute) &&
-      /'townhome'/.test(compute),
+      /'townhome'/.test(compute) &&
+      /'zip'/.test(compute) &&
+      /new_listings/.test(compute) &&
+      /pct_with_price_cut/.test(compute) &&
+      /mom_median_price/.test(compute),
   )
   add(
     'gate 1: place_membership is the geography writer (ST_Within lives there)',

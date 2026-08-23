@@ -4,26 +4,30 @@
  */
 import { createServiceClient } from '@/lib/data/client'
 import { DEFINITION_ID, STAT_BY_ID } from '@/lib/data/market-truth/registry'
+import {
+  collapseLeaderboardRows,
+  type LeaderboardRow,
+  type RawLeaderboardRow,
+} from '@/lib/data/market-truth/leaderboard-collapse'
 
-export type LeaderboardRow = {
-  geoSlug: string
-  value: number
-  sampleN: number
-  windowMonths: number
-}
+export type { LeaderboardRow } from '@/lib/data/market-truth/leaderboard-collapse'
+export { collapseLeaderboardRows } from '@/lib/data/market-truth/leaderboard-collapse'
 
 export async function getCityLeaderboard(opts: {
   stat: string
   segment?: string
   limit?: number
+  /** Default false (value DESC). True for fastest-to-contract and largest YoY drop. */
+  ascending?: boolean
 }): Promise<LeaderboardRow[]> {
   const spec = STAT_BY_ID.get(opts.stat)
   if (!spec) return []
   const minN = spec.minN
+  const limit = opts.limit ?? 16
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('market_metric')
-    .select('geo_slug, value, sample_n, window_months')
+    .select('geo_slug, value, sample_n, window_months, period_end, computed_at')
     .eq('definition_id', DEFINITION_ID)
     .eq('stat_id', opts.stat)
     .eq('geo_type', 'city')
@@ -31,13 +35,10 @@ export async function getCityLeaderboard(opts: {
     .eq('is_publishable', true)
     .gte('sample_n', minN)
     .not('value', 'is', null)
-    .order('value', { ascending: false })
-    .limit(opts.limit ?? 16)
+    .limit(Math.max(limit * 8, 96))
   if (error) throw new Error(`getCityLeaderboard: ${error.message}`)
-  return (data ?? []).map((r) => ({
-    geoSlug: String(r.geo_slug),
-    value: Number(r.value),
-    sampleN: Number(r.sample_n),
-    windowMonths: Number(r.window_months),
-  }))
+  return collapseLeaderboardRows((data ?? []) as RawLeaderboardRow[], {
+    ascending: opts.ascending ?? false,
+    limit,
+  })
 }

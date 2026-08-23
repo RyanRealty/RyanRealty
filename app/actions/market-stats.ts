@@ -38,7 +38,8 @@ export type MarketPulseRow = {
   geo_type: MarketGeoType
   geo_slug: string
   geo_label: string
-  active_count: number
+  /** Null when the overlay withheld the count. Unknown is not zero. */
+  active_count: number | null
   pending_count: number | null
   new_count_7d: number
   new_count_30d: number | null
@@ -118,7 +119,7 @@ function pulseToMarketStats(
   cached: CachedStatRow | null
 ): CityMarketStats {
   return {
-    count: pulse.active_count,
+    count: pulse.active_count ?? 0,
     avgListPrice: pulse.avg_list_price,
     medianListPrice: pulse.median_list_price,
     avgSalePrice: cached?.avg_sale_price ?? null,
@@ -170,7 +171,8 @@ export async function getMarketStatsForCity(
     getLiveMarketPulse({ geoType: 'city', geoSlug }),
     getCachedStats({ geoType: 'city', geoSlug }),
   ])
-  if (pulse) return pulseToMarketStats(pulse, cached)
+  if (pulse && pulse.active_count != null) return pulseToMarketStats(pulse, cached)
+  if (cached) return cachedToMarketStats(cached)
   return getQuickCityCount(cityName)
 }
 

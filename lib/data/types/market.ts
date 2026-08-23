@@ -30,7 +30,8 @@ export type MarketStats = {
 export type MarketPulse = {
   geoType: GeoType
   geoSlug: Slug
-  activeCount: number
+  /** Null when unknown (city/region overlay miss). Unknown is not zero. */
+  activeCount: number | null
   medianListPrice: Currency | null
   newThisWeek: number
   /** Approximation of price-drop activity as a percent (0-100). */

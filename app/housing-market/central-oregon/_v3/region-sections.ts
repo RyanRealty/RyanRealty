@@ -72,7 +72,7 @@ export function buildCityLedger(
   for (const label of CITY_LABELS) {
     const slug = CITY_SLUG[label]
     const snapshot = byLabel.get(label)
-    if (!slug || !snapshot || snapshot.median_list_price == null) continue
+    if (!slug || !snapshot || snapshot.median_list_price == null || snapshot.active_count == null) continue
     rowed.add(label)
     rows.push({
       href: `/housing-market/${slug}`,
@@ -95,6 +95,9 @@ export function buildCityLedger(
     const slug = CITY_SLUG[label]
     if (!snapshot) {
       return { label, slug, fact: `${label} returned no market row in the latest sync` }
+    }
+    if (snapshot.active_count == null) {
+      return { label, slug, fact: `${label} has no published active single-family count` }
     }
     if (snapshot.active_count === 0) {
       return { label, slug, fact: `${label} shows no active single-family listings` }

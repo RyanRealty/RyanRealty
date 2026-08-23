@@ -89,10 +89,12 @@ async function marketStatsHandler(input: Record<string, unknown>, _ctx: AgentCon
 
   if (pulse) {
     const refreshedAt = pulse.refreshedAt
-    citations.push({
-      figure: `${pulse.activeCount} active`,
-      source: liveInventoryCitation(geoType, geoSlug, 'active_count', pulse.activeCount, refreshedAt),
-    })
+    if (pulse.activeCount != null) {
+      citations.push({
+        figure: `${pulse.activeCount} active`,
+        source: liveInventoryCitation(geoType, geoSlug, 'active_count', pulse.activeCount, refreshedAt),
+      })
+    }
     if (pulse.medianListPrice != null) {
       const medianStat = usesDetachedOverlay(geoType) ? 'median_list_active' : 'median_list_price'
       citations.push({

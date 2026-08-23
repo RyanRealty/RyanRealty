@@ -60,6 +60,12 @@ const REPORT_GROUPS: ReportGroup[] = [
         title: 'Custom report builder',
         desc: 'Any location, any date range — metrics, price bands, time series, pending and closed.',
       },
+      {
+        href: '/admin/analytics/city-leaderboard',
+        icon: '🏙️',
+        title: 'City market ranks',
+        desc: 'Detached YoY, price, speed, price-cuts, and new inventory by city from Market Truth.',
+      },
     ],
   },
   {

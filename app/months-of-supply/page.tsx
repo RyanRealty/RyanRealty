@@ -249,7 +249,7 @@ export default async function MonthsOfSupplyPage() {
       href: MOS_REGION_REPORT,
     })
   }
-  if (regionPulse != null) {
+  if (regionPulse != null && regionPulse.activeCount != null && regionPulse.activeCount > 0) {
     regionFigures.push({
       value: v3Text(regionPulse.activeCount.toLocaleString('en-US')),
       label: v3Text('active single-family listings'),
@@ -276,7 +276,11 @@ export default async function MonthsOfSupplyPage() {
   // already on screen. An exact identity of those numbers, not a second source. It
   // needs a months of supply above zero, because inverting a zero divides by it.
   const worked =
-    regionPulse && regionMos != null && regionMos > 0
+    regionPulse &&
+    regionPulse.activeCount != null &&
+    regionPulse.activeCount > 0 &&
+    regionMos != null &&
+    regionMos > 0
       ? {
           active: regionPulse.activeCount,
           mos: regionMos,
@@ -298,7 +302,11 @@ export default async function MonthsOfSupplyPage() {
     rowed.add(label)
     cityRows.push({
       href: MOS_CITY_REPORT[label],
-      when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
+      when: v3Text(
+        snapshot.active_count != null
+          ? `${snapshot.active_count.toLocaleString('en-US')} for sale`
+          : 'active count unpublished',
+      ),
       what: v3Text(label),
       detail:
         verdict.kind === 'unknown' ? undefined : v3Text(capitalize(verdict.label)),
@@ -326,6 +334,7 @@ export default async function MonthsOfSupplyPage() {
     (label) => {
       const snapshot = snapshotByLabel.get(label)
       if (!snapshot) return `${label} returned no market row in the latest sync`
+      if (snapshot.active_count == null) return `${label} has no published active single-family count`
       return `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published months of supply`
     },
   )

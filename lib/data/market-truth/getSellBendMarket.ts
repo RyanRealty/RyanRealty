@@ -156,8 +156,8 @@ export async function getSellBendMarket(): Promise<SellBendMarket | null> {
 }
 
 type OverlayRow = {
-  activeCount?: number
-  active_count?: number
+  activeCount?: number | null
+  active_count?: number | null
   monthsOfSupply?: number | null
   months_of_supply?: number | null
   medianListPrice?: number | null
@@ -187,15 +187,16 @@ export function applyDetachedOverlay<T extends OverlayRow>(row: T, mt: SellBendM
 
 /**
  * Strip the overlay fields so a city/region miss cannot publish pulse
- * 488 / 3.54 / seller as detached. Active stays a number (0) because
- * MarketPulse / snapshot types are non-nullable; display paths that
- * check `> 0` omit it. Days to pending, new this week, sold 30d, and
- * the pulse clock are not overlay fields — leave them.
+ * 488 / 3.54 / seller as detached. Active is null, not 0: unknown is
+ * not zero. Display paths that check `!= null` omit it; paths that
+ * printed 0 homes were treating a miss as empty inventory. Days to
+ * pending, new this week, sold 30d, and the pulse clock are not
+ * overlay fields — leave them.
  */
 export function withholdDetachedHeadlines<T extends OverlayRow>(row: T): T {
   const next = { ...row }
-  if ('activeCount' in next) next.activeCount = 0 as T['activeCount']
-  if ('active_count' in next) next.active_count = 0 as T['active_count']
+  if ('activeCount' in next) next.activeCount = null as T['activeCount']
+  if ('active_count' in next) next.active_count = null as T['active_count']
   if ('monthsOfSupply' in next) next.monthsOfSupply = null as T['monthsOfSupply']
   if ('months_of_supply' in next) next.months_of_supply = null as T['months_of_supply']
   if ('medianListPrice' in next) next.medianListPrice = null as T['medianListPrice']

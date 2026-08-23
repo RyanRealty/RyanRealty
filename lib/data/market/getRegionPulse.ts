@@ -16,7 +16,8 @@ import { overlayDetachedMarket, withholdDetachedHeadlines, getDetachedMarket } f
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type RegionPulse = {
-  activeCount: number
+  /** Null when the detached overlay misses. Unknown is not zero. */
+  activeCount: number | null
   pendingCount: number
   newCount30d: number
   medianListPrice: number | null
@@ -60,7 +61,7 @@ export const getRegionPulse = makeResilientCached(
     }
 
     const pulse: RegionPulse = {
-      activeCount: toNum(row.active_count) ?? 0,
+      activeCount: toNum(row.active_count),
       pendingCount: toNum(row.pending_count) ?? 0,
       newCount30d: toNum(row.new_count_30d) ?? 0,
       medianListPrice: toNum(row.median_list_price),
@@ -80,7 +81,7 @@ export const getRegionPulse = makeResilientCached(
       return withholdDetachedHeadlines(pulse)
     }
   },
-  ['region-pulse-central-oregon-v4-mt-withhold'],
+  ['region-pulse-central-oregon-v5-mt-null-withhold'],
   { revalidate: 300, tags: ['market-pulse', 'region-pulse'] },
   null,
 )

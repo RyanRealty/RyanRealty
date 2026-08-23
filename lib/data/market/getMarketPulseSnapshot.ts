@@ -21,7 +21,8 @@ import {
 export type MarketPulseSnapshot = {
   geo_slug: string
   geo_label: string
-  active_count: number
+  /** Null when the detached overlay misses. Unknown is not zero. */
+  active_count: number | null
   median_list_price: number | null
   months_of_supply: number | null
   market_health_label: string | null
@@ -64,7 +65,7 @@ function toSnapshot(d: Record<string, unknown>): MarketPulseSnapshot {
   return {
     geo_slug: String(d.geo_slug ?? ''),
     geo_label: String(d.geo_label ?? ''),
-    active_count: Number(d.active_count ?? 0),
+    active_count: d.active_count == null ? null : Number(d.active_count),
     median_list_price: d.median_list_price != null ? Number(d.median_list_price) : null,
     months_of_supply: d.months_of_supply != null ? Number(d.months_of_supply) : null,
     market_health_label: (d.market_health_label as string | null) ?? null,
@@ -140,7 +141,7 @@ async function overlayCitySnapshots(snaps: MarketPulseSnapshot[]): Promise<Marke
  * render hit the DB and a blip rendered empty tiles). */
 export const getMarketPulseCitySnapshots = makeResilientCached(
   fetchMarketPulseCitySnapshots,
-  ['market-pulse-city-snapshots-v5-mt-withhold'],
+  ['market-pulse-city-snapshots-v6-mt-null-withhold'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],
@@ -165,7 +166,7 @@ async function fetchAllMarketPulseCitySnapshots(): Promise<MarketPulseSnapshot[]
 
 export const getMarketPulseAllCitySnapshots = makeResilientCached(
   fetchAllMarketPulseCitySnapshots,
-  ['market-pulse-all-city-snapshots-v5-mt-withhold'],
+  ['market-pulse-all-city-snapshots-v6-mt-null-withhold'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

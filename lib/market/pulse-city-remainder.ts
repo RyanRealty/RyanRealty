@@ -16,7 +16,8 @@
 
 export type PulseCityCount = {
   label: string
-  active: number
+  /** Null when the overlay withheld the count. Unknown is not zero. */
+  active: number | null
   slug?: string
 }
 
@@ -42,11 +43,14 @@ export function namePulseCityRemainder(input: {
   allCities: readonly PulseCityCount[]
 }): PulseCityRemainder {
   const displayed = new Set(input.displayedLabels.map((label) => label.trim()).filter(Boolean))
-  const displayedSum = input.allCities
+  const counted = input.allCities.filter(
+    (city): city is PulseCityCount & { active: number } => city.active != null,
+  )
+  const displayedSum = counted
     .filter((city) => displayed.has(city.label))
     .reduce((sum, city) => sum + city.active, 0)
-  const allCitySum = input.allCities.reduce((sum, city) => sum + city.active, 0)
-  const omitted = input.allCities
+  const allCitySum = counted.reduce((sum, city) => sum + city.active, 0)
+  const omitted = counted
     .filter((city) => !displayed.has(city.label) && city.active > 0)
     .map((city) => ({
       label: city.label,

@@ -81,7 +81,7 @@ describe('getSellBendMarket', () => {
 
     const miss = overlayDetachedMarket(pulse, null)
     expect(miss).toEqual(withholdDetachedHeadlines(pulse))
-    expect(miss.activeCount).toBe(0)
+    expect(miss.activeCount).toBeNull()
     expect(miss.monthsOfSupply).toBeNull()
     expect(miss.marketHealthLabel).toBeNull()
     expect(miss.medianListPrice).toBeNull()

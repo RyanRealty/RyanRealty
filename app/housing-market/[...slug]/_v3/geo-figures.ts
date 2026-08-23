@@ -67,7 +67,7 @@ export type CityLedger = {
 export function buildLiveFigures(pulse: MarketPulse | null, mosText: string | null, geoName: string): LiveSection {
   const medianListPrice =
     pulse?.medianListPrice != null && pulse.medianListPrice > 0 ? pulse.medianListPrice : null
-  const activeCount = pulse != null && pulse.activeCount > 0 ? pulse.activeCount : null
+  const activeCount = pulse != null && pulse.activeCount != null && pulse.activeCount > 0 ? pulse.activeCount : null
 
   const figures: V3InstrumentFigure[] = []
   if (medianListPrice != null) {
@@ -191,7 +191,7 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[], currentCitySlu
     const slug = COMPARISON_CITY_SLUG[label]
     if (!slug || slug === currentCitySlug) continue
     const snapshot = byLabel.get(label)
-    if (!snapshot || snapshot.median_list_price == null) continue
+    if (!snapshot || snapshot.median_list_price == null || snapshot.active_count == null) continue
     rowed.add(label)
     rows.push({
       href: `/housing-market/${slug}`,
@@ -211,6 +211,9 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[], currentCitySlu
   ).map((label) => {
     const snapshot = byLabel.get(label)
     if (!snapshot) return { label, fact: `${label} returned no market row in the latest sync` }
+    if (snapshot.active_count == null) {
+      return { label, fact: `${label} has no published active single-family count` }
+    }
     if (snapshot.active_count === 0) {
       return { label, fact: `${label} shows no active single-family listings` }
     }

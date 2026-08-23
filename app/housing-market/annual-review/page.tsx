@@ -395,7 +395,7 @@ export default async function AnnualReviewPage() {
   if (mosRaw != null) {
     edges.push({ label: 'Months of supply, defined', href: '/months-of-supply' })
   }
-  if (regionPulse != null && regionPulse.activeCount > 0) {
+  if (regionPulse != null && regionPulse.activeCount != null && regionPulse.activeCount > 0) {
     edges.push({ label: 'Browse homes for sale', href: listingsBrowsePath() })
   }
   // The two seller doors, the only surviving descendants of the KB page's KbSell

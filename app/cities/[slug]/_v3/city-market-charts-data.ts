@@ -181,7 +181,7 @@ export function buildMosCard(input: CityRankInput): CityChartCard | null {
       tick: v3Text(r.town.geo_label),
       value: r.value,
       label: v3Text(`${formatMonthsOfSupply(r.value)} mo`),
-      ...(r.town.active_count < SMALL_ACTIVE_FLOOR
+      ...(r.town.active_count != null && r.town.active_count < SMALL_ACTIVE_FLOOR
         ? { note: v3Text('small active inventory') }
         : {}),
     })),
@@ -287,14 +287,14 @@ export function buildCutsCard(input: CityRankInput): CityChartCard | null {
       return { town: t, value: share }
     })
     .filter((r): r is { town: MarketPulseSnapshot; value: number } => r != null)
-    .sort((a, b) => b.value - a.value || b.town.active_count - a.town.active_count)
+    .sort((a, b) => b.value - a.value || (b.town.active_count ?? -1) - (a.town.active_count ?? -1))
   if (rows.length < 2) return null
   const subject = rows.find((r) => isSubject(r.town, input))
   if (!subject) return null
 
   const regionShare = input.region?.price_reduction_share
   const regionPct = regionShare != null && regionShare >= 0 ? regionShare : null
-  const townActive = rows.reduce((n, r) => n + r.town.active_count, 0)
+  const townActive = rows.reduce((n, r) => n + (r.town.active_count ?? 0), 0)
 
   return {
     key: 'cuts',
@@ -305,7 +305,7 @@ export function buildCutsCard(input: CityRankInput): CityChartCard | null {
       tick: v3Text(r.town.geo_label),
       value: r.value,
       label: v3Text(`${r.value.toFixed(1)}%`),
-      ...(r.town.active_count < SMALL_ACTIVE_FLOOR
+      ...(r.town.active_count != null && r.town.active_count < SMALL_ACTIVE_FLOOR
         ? { note: v3Text('small active inventory') }
         : {}),
     })),
@@ -320,7 +320,7 @@ export function buildCutsCard(input: CityRankInput): CityChartCard | null {
       'is not published on the row, and the active count that is published excludes the ' +
       'under-contract listings the share divides by. A town with fewer than ' +
       `${SMALL_ACTIVE_FLOOR} active listings is marked as a small active inventory.` +
-      (regionPct != null && input.region
+      (regionPct != null && input.region && input.region.active_count != null && townActive > 0
         ? ` The region rule is all Central Oregon single-family — ${input.region.active_count.toLocaleString('en-US')} actives, ` +
           `broader than the ${townActive.toLocaleString('en-US')} actives across the ${rows.length} towns charted.`
         : ''),

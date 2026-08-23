@@ -134,7 +134,7 @@ export default async function CitiesPage() {
   // absent so the geo_snapshot_mv fallback can answer honestly.
   const pulseBySlug = new Map(
     citySnapshots
-      .filter((s) => s.active_count > 0 || s.median_list_price != null)
+      .filter((s) => (s.active_count != null && s.active_count > 0) || s.median_list_price != null)
       .map((s) => [s.geo_slug.replace(/\s+/g, '-'), s]),
   )
   // Unfiltered pulse, keyed the same way — Tumalo and Crooked River Ranch are

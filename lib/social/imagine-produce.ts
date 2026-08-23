@@ -51,12 +51,15 @@ export function listingDraftCaption(listing: {
 }
 
 export function gbpDraftCaption(pulse: {
-  activeCount: number
+  activeCount: number | null
   medianListPrice: number | null
   closedLast30Days: number
   monthsOfSupply: number | null
 }): string {
-  const parts = [`Central Oregon. ${pulse.activeCount} active listings.`]
+  const parts =
+    pulse.activeCount != null
+      ? [`Central Oregon. ${pulse.activeCount} active listings.`]
+      : ['Central Oregon.']
   if (pulse.medianListPrice != null && Number.isFinite(pulse.medianListPrice)) {
     parts.push(`Median list ${usd(pulse.medianListPrice)}.`)
   }

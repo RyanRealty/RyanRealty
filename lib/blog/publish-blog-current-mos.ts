@@ -35,7 +35,7 @@ export const BLOG_CURRENT_MOS_PLACES: readonly BlogCurrentMosPlace[] = [
 
 export type BlogCurrentMosPulse = {
   monthsOfSupply: number | null
-  activeCount: number
+  activeCount: number | null
   refreshedAt: string | null
 }
 

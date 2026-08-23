@@ -101,7 +101,7 @@ export function buildRegionFigures(
       href: '/months-of-supply',
     })
   }
-  if (pulse != null && pulse.activeCount > 0) {
+  if (pulse != null && pulse.activeCount != null && pulse.activeCount > 0) {
     figures.push({
       value: v3Text(pulse.activeCount.toLocaleString('en-US')),
       label: v3Text('active single-family listings'),
@@ -154,7 +154,9 @@ export function buildInventoryLedger(
         slug: city.slug,
         fact: !snapshot
           ? `${city.label} returned no live market row in the latest sync`
-          : snapshot.active_count === 0
+          : snapshot.active_count == null
+            ? `${city.label} has no published active single-family count`
+            : snapshot.active_count === 0
             ? `${city.label} shows no active single-family listings`
             : `${city.label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median list price`,
       })
@@ -165,6 +167,14 @@ export function buildInventoryLedger(
       snapshot.months_of_supply != null && snapshot.months_of_supply > 0
         ? snapshot.months_of_supply
         : null
+    if (snapshot.active_count == null) {
+      missing.push({
+        label: city.label,
+        slug: city.slug,
+        fact: `${city.label} has no published active single-family count`,
+      })
+      continue
+    }
     rows.push({
       href: `/housing-market/${city.slug}`,
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} active`),

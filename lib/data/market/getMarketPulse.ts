@@ -58,7 +58,7 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
   const pulse: MarketPulse = {
     geoType: row.geo_type as GeoType,
     geoSlug: row.geo_slug as string,
-    activeCount: (row.active_count as number) ?? 0,
+    activeCount: row.active_count == null ? null : Number(row.active_count),
     medianListPrice: row.median_list_price as number | null,
     newThisWeek: (row.new_count_7d as number) ?? 0,
     priceDropsThisWeek: Math.round(((row.price_reduction_share as number) ?? 0) * 100),
@@ -80,11 +80,12 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
   return pulse
 }
 
-// v6 2026-08-23 — city/region miss withholds overlay fields (v5 overlaid only
-// on hit and kept pulse headlines on miss). v4/v5 were poison-null evictions.
+// v7 2026-08-23 — city/region miss withholds active as null (v6 wrote 0;
+// unknown is not zero). v6 withheld overlay fields (v5 overlaid only on
+// hit and kept pulse headlines on miss). v4/v5 were poison-null evictions.
 export const getMarketPulse = makeResilientCached(
   fetchMarketPulse,
-  ['market-pulse-v6-mt-withhold'],
+  ['market-pulse-v7-mt-null-withhold'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

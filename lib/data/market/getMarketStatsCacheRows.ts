@@ -167,7 +167,7 @@ export async function getMarketPulseRowsByGeoType(options: {
         const slug = String(r.geo_slug ?? r.geo_label ?? '')
         const mt = map.get(`${options.geoType}:${cityDetachedSlug(slug)}`)
         return overlayDetachedMarket(
-          r as { active_count?: number; months_of_supply?: number | null; median_list_price?: number | null },
+          r as { active_count?: number | null; months_of_supply?: number | null; median_list_price?: number | null },
           mt,
         ) as Record<string, unknown>
       })
@@ -175,7 +175,7 @@ export async function getMarketPulseRowsByGeoType(options: {
   } catch {
     return rows.map((r) =>
       withholdDetachedHeadlines(
-        r as { active_count?: number; months_of_supply?: number | null; median_list_price?: number | null },
+        r as { active_count?: number | null; months_of_supply?: number | null; median_list_price?: number | null },
       ),
     ) as Array<Record<string, unknown>>
   }

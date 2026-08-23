@@ -12,12 +12,12 @@
  * tracking (KbSectionTracker + section/interaction events). Every figure live (§0).
  *
  * DATA ACCURACY (CLAUDE.md §0):
- *   ZIP codes have NO market_pulse_live / market_stats_cache rows — those are keyed
- *   by city and region. Every stat is derived live from the listing_tile_mv tiles
- *   returned by ONE getZipListings call (propertyType 'A' = SFR). Nothing is
- *   fabricated. The KbMarketHud trend chart uses the PARENT CITY's getPriceHistory
- *   when this ZIP's own listing history is sparse — relabeled so no city figure is
- *   passed off as a ZIP stat.
+ *   HUD overlays getMetric (geoType zip, segment detached) when a market_metric
+ *   mt-v1 cell is publishable (PostalCode membership). A miss keeps live
+ *   listing_tile_mv tiles from ONE getZipListings call (propertyType 'A').
+ *   Never print 0 from a miss. UNKNOWN IS NOT ZERO. Map + featured stay tiles.
+ *   Do not cite pulse. The KbMarketHud trend chart uses the PARENT CITY's
+ *   getPriceHistory when ZIP history is sparse — relabeled, never as a ZIP stat.
  *
  * Section stack: breadcrumb · hero · market hud · featured · map · free
  * listing_alerts (ZIP+SFR) · subdivisions · other ZIPs · sell · footer.
@@ -32,6 +32,7 @@ import {
   getSurfaceImage,
   getPriceHistory,
 } from '@/lib/data'
+import { getMetric } from '@/lib/data/market-truth/getMetric'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { formatDate } from '@/lib/format/date'
 import { homesForSalePath } from '@/lib/slug'
@@ -139,6 +140,11 @@ function median(values: number[]): number | null {
   return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!
 }
 
+function zipMetricValue(metric: Awaited<ReturnType<typeof getMetric>>): number | null {
+  if (metric != null && metric.isPublishable && metric.value != null) return metric.value
+  return null
+}
+
 const monthLabel = (iso?: string) =>
   iso ? formatDate(iso, { month: 'short', day: undefined, year: undefined, timeZone: 'UTC' }) : ''
 
@@ -171,8 +177,25 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   const cityName = ZIP_CITY_NAME[zip] ?? 'Bend'
   const zipPageUrl = `/zip/${zip}`
 
+  const zipMt = (stat: string) =>
+    withTimeoutFallback(
+      getMetric({ stat, geoType: 'zip', geoSlug: zip, segment: 'detached' }),
+      null,
+      3000,
+      `zip:mt:${stat}`,
+    )
+
   // Surface-tagged hero photo seeded by ZIP for per-page variety. (§D86)
-  const [zipHeroRaw, tilesRead, cityPriceHist] = await Promise.all([
+  const [
+    zipHeroRaw,
+    tilesRead,
+    cityPriceHist,
+    mtActiveCell,
+    mtMedianCell,
+    mtMosCell,
+    mtVerdictCell,
+    mtNewCell,
+  ] = await Promise.all([
     withTimeoutFallback(
       getSurfaceImage('hero', {
         geoTags: ['central-oregon'],
@@ -183,34 +206,33 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       3000,
       'zip:hero',
     ),
-    // ONE fetch feeds all derived stats: hero lede, market HUD, featured grid,
-    // map, and subdivision explorer. limit=5000 captures the complete ZIP (no
-    // ZIP in this service area has anywhere near 5000 active SFR). Per §0, we
-    // never report a fetch cap as if it were the real inventory count.
+    // ONE tile fetch feeds map + featured + miss-path HUD. limit=5000 captures
+    // the complete ZIP. Per §0, never report a fetch cap as inventory.
     withTimeoutFallbackResult(
       getZipListings(zip, { status: 'active', propertyType: 'A', limit: 5000 }),
       [] as Awaited<ReturnType<typeof getZipListings>>,
       5000,
       'zip:tiles',
     ),
-    // Parent city price history — the chart source since ZIP-level sales are
-    // not cached in market_stats_cache. Always relabeled as city-level so no
-    // city figure is presented as the ZIP's own trend. (§0)
+    // Parent city price history — chart only, always relabeled as city-level. (§0)
     withTimeoutFallback(
       getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60),
       [] as Awaited<ReturnType<typeof getPriceHistory>>,
       4500,
       'zip:cityPriceHistory',
     ),
+    zipMt('active_count'),
+    zipMt('median_list_active'),
+    zipMt('months_of_supply'),
+    zipMt('market_verdict'),
+    zipMt('new_listings'),
   ])
 
-  // ── LIVE STATS — derived from the single tile fetch (§0) ──────────────────
-  // §0 UNKNOWN IS NOT ZERO: this ONE read feeds every figure on the page, and
-  // its `[]` fallback is indistinguishable from a ZIP with no inventory. A
-  // degraded read published "0 active single-family listings in 97701" as fact,
-  // in the hero AND in the Dataset JSON-LD Google reads. null = unknown.
+  // ── LIVE STATS — tiles for map/featured; HUD overlays Market Truth on HIT ─
+  // §0 UNKNOWN IS NOT ZERO: the tile `[]` fallback is indistinguishable from a
+  // ZIP with no inventory. A degraded read must not publish "0 homes". null = unknown.
   const tiles = tilesRead.value
-  const activeCount: number | null = tilesRead.ok ? tiles.length : null
+  const tileActiveCount: number | null = tilesRead.ok ? tiles.length : null
   // §0 A SHARE PRICE IS NOT A HOME PRICE. PropertyType 'A' carries the MLS
   // fractional-interest sub types, whose ListPrice buys a share of a resort
   // home while the square footage is the whole home's. Live counts 2026-08-19:
@@ -235,21 +257,42 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0)
 
   const medianListPrice = median(listPrices)
-  const sellMedian = publishSellMedian({
-    placeMedian: medianListPrice,
-    grain: 'zip',
-    placeName: zip,
-  })
   const medianPricePerSqft = median(pricePerSqfts)
   const medianDom = median(doms)
 
   const now = Date.now()
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
-  const newLast30Days = tiles.filter((t) => {
-    if (!t.onMarketDate) return false
-    const d = Date.parse(t.onMarketDate)
-    return Number.isFinite(d) && now - d >= 0 && now - d <= THIRTY_DAYS_MS
-  }).length
+  const tileNew30: number | null = tilesRead.ok
+    ? tiles.filter((t) => {
+        if (!t.onMarketDate) return false
+        const d = Date.parse(t.onMarketDate)
+        return Number.isFinite(d) && now - d >= 0 && now - d <= THIRTY_DAYS_MS
+      }).length
+    : null
+
+  // Headline HIT: publishable active_count + median_list_active. A publishable
+  // 0 that contradicts visible pins is a disagree — keep tiles, never print 0.
+  const mtActiveVal = zipMetricValue(mtActiveCell)
+  const mtMedianVal = zipMetricValue(mtMedianCell)
+  const mtMosVal = zipMetricValue(mtMosCell)
+  const mtNewVal = zipMetricValue(mtNewCell)
+  const mtActiveRounded = mtActiveVal != null ? Math.round(mtActiveVal) : null
+  const mtHit =
+    mtActiveRounded != null &&
+    mtMedianVal != null &&
+    !(mtActiveRounded === 0 && tiles.length > 0)
+  const activeCount: number | null = mtHit ? mtActiveRounded : tileActiveCount
+  const publishedMedianList: number | null = mtHit ? mtMedianVal : medianListPrice
+  const publishedNew30: number | null = mtHit && mtNewVal != null ? Math.round(mtNewVal) : tileNew30
+  const publishedMos: number | null = mtHit && mtMosVal != null ? mtMosVal : null
+  const sellMedian = publishSellMedian({
+    placeMedian: publishedMedianList,
+    grain: 'zip',
+    placeName: zip,
+  })
+  const hudAsOf = mtHit
+    ? (mtActiveCell?.provenance.computedAt ?? mtVerdictCell?.provenance.computedAt)
+    : undefined
 
   // ── FEATURED + MAP ────────────────────────────────────────────────────────
   // Featured: top 14 by list price, resolved through the shared video/tour resolver.
@@ -275,26 +318,25 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
   // ── MARKET HUD ────────────────────────────────────────────────────────────
-  // ZIP codes have no cached market rows. Stats come from live tiles (active
-  // count, median list, median DOM, new-30d) and the parent city's price history
-  // for the trend chart. §0: closed30/saleToList/monthsSupply are null — not
-  // cached at ZIP level, never fabricated.
+  // HIT: market_metric mt-v1 detached ZIP PostalCode (getMetric). MISS: live
+  // tiles for active/medianList/new30/medianDomActive; monthsSupply stays null.
+  // closed30/saleToList stay null. Do not invent daysToPending from active DOM.
   const marketData: KbMarketData = {
     active: activeCount,
     closed30: null,
-    new30: newLast30Days,
-    medianList: medianListPrice,
+    new30: publishedNew30,
+    medianList: publishedMedianList,
     saleToList: null,
     // §0 `medianDom` is the median days CURRENTLY-ACTIVE listings have been on
     // market, NOT days-to-pending. Feeding it here rendered "Pending in 62 days"
     // on 97703 where Bend's real median-to-pending is 15 — a 3-5x overstatement
     // of market speed. They are different populations: the homes that sell fast
-    // leave the active set, so active DOM is systematically larger. No
-    // market_pulse_live row exists at ZIP scope (city and region only), so the
-    // honest figure is the active one, under its own label.
+    // leave the active set, so active DOM is systematically larger. Keep
+    // daysToPending null unless a publishable median_days_to_contract cell exists
+    // (HUD labels that field "pending" — do not overlay speed under the wrong name).
     daysToPending: null,
     medianDomActive: medianDom,
-    monthsSupply: null,
+    monthsSupply: publishedMos,
     trend: cityPriceHist
       .slice(-13)
       .filter((p) => p.medianSalePrice != null)
@@ -329,17 +371,19 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     .map((z) => ({
       name: `${z} · ${ZIP_AREA[z] ?? 'Central Oregon'}`,
       href: `/zip/${z}`,
-      activeCount: 0,
+      activeCount: null,
       medianPrice: null,
       img: '',
     }))
 
   // ── HERO LEDE ─────────────────────────────────────────────────────────────
-  const ledeParts: string[] = activeCount == null
-    ? [`Active single-family listings in ${zip}.`]
-    : [`${activeCount} active single-family ${activeCount === 1 ? 'listing' : 'listings'} in ${zip}.`]
-  if (medianListPrice != null) {
-    ledeParts.push(`Median list price $${(Math.round(medianListPrice / 1000) * 1000).toLocaleString()}.`)
+  const heroActive: number | null = activeCount || null
+  const listingNoun = mtHit ? 'detached single-family' : 'single-family'
+  const ledeParts: string[] = heroActive == null
+    ? [`Active ${listingNoun} listings in ${zip}.`]
+    : [`${heroActive} active ${listingNoun} ${heroActive === 1 ? 'listing' : 'listings'} in ${zip}.`]
+  if (publishedMedianList != null) {
+    ledeParts.push(`Median list price $${(Math.round(publishedMedianList / 1000) * 1000).toLocaleString()}.`)
   }
   if (medianDom != null) {
     ledeParts.push(`Median ${Math.round(medianDom)} days on market.`)
@@ -349,11 +393,15 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // ── STRUCTURED DATA (JSON-LD) ─────────────────────────────────────────────
   // Breadcrumb + Place + Dataset. §0: only emit stats when non-null and verified.
   type StatValue = { name: string; value: string | number; unitText?: string }
-  const datasetStats: StatValue[] = activeCount == null
+  const datasetStats: StatValue[] = heroActive == null
     ? []
-    : [{ name: 'Active single-family listings', value: activeCount, unitText: 'listings' }]
-  if (medianListPrice != null) {
-    datasetStats.push({ name: 'Median list price', value: medianListPrice, unitText: 'USD' })
+    : [{
+        name: mtHit ? 'Active detached single-family listings' : 'Active single-family listings',
+        value: heroActive,
+        unitText: 'listings',
+      }]
+  if (publishedMedianList != null) {
+    datasetStats.push({ name: 'Median list price', value: publishedMedianList, unitText: 'USD' })
   }
   if (medianPricePerSqft != null) {
     datasetStats.push({ name: 'Median price per sq ft', value: Math.round(medianPricePerSqft), unitText: 'USD' })
@@ -361,7 +409,9 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   if (medianDom != null) {
     datasetStats.push({ name: 'Median days on market', value: Math.round(medianDom), unitText: 'days' })
   }
-  datasetStats.push({ name: 'New listings last 30 days', value: newLast30Days, unitText: 'listings' })
+  if (publishedNew30 != null) {
+    datasetStats.push({ name: 'New listings last 30 days', value: publishedNew30, unitText: 'listings' })
+  }
 
   const schemas: SchemaInput[] = [
     {
@@ -381,8 +431,12 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     },
     {
       type: 'dataset',
-      name: `Active single-family market snapshot for ZIP ${zip}`,
-      description: `Live market statistics for active SFR listings in ${zip}, ${area}, Central Oregon. Derived from the Oregon RMLS feed via Ryan Realty.`,
+      name: mtHit
+        ? `Detached single-family market snapshot for ZIP ${zip}`
+        : `Active single-family market snapshot for ZIP ${zip}`,
+      description: mtHit
+        ? `${lede} Source: market_metric mt-v1 detached ZIP PostalCode.`
+        : `${lede} Derived from the Oregon RMLS feed via Ryan Realty.`,
       url: zipPageUrl,
       spatialCoverageName: `ZIP ${zip} · ${area}`,
       variableMeasured: datasetStats,
@@ -411,18 +465,19 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       <SmoothScrollProvider>
         <KbHero
           data={{
-            activeCount,
-            medianListPrice,
+            activeCount: heroActive,
+            medianListPrice: publishedMedianList,
             medianDaysToPending: null,
             medianDomActive: medianDom,
           }}
+          countNoun={mtHit ? 'detached homes for sale' : undefined}
           eyebrow={`${zip} · ${area} · Oregon`}
           titleTop="Homes for sale in"
           titleBottom={zip}
           lead={placeHeroLead({
             placeName: zip,
             parentName: area,
-            activeCount,
+            activeCount: heroActive,
             knownSuffix: 'Live inventory from the regional MLS.',
             unknownSuffix: 'Live inventory from the regional MLS.',
           })}
@@ -431,13 +486,13 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           cta={publishPlaceHeroCta(homesForSalePath(cityName), `See ${cityName} homes`)}
         />
 
-        {/* Market HUD — live stats from listing_tile_mv (§0). The trend chart
-            sources from the parent city's price history since ZIP-level sales
-            are not cached; the data is city-scoped, not fabricated as ZIP. */}
+        {/* Market HUD — HIT: market_metric mt-v1 detached ZIP PostalCode.
+            MISS: listing_tile_mv. Trend chart is parent-city, labeled as city. */}
         <KbMarketHud
           data={marketData}
           eyebrow={`${zip} · The market`} geoName={`ZIP ${zip}`}
           chartScopeLabel={`${cityName} (city)`}
+          asOf={hudAsOf}
         />
 
         <KbFeatured
@@ -446,12 +501,12 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           viewAllHref={homesForSalePath(cityName)}
           viewAllLabel={`See every ${cityName} home for sale`}
           viewAllPlace={cityName}
-          totalCount={activeCount || null}
+          totalCount={tileActiveCount || null}
         />
 
         <KbListingMap
           geojson={mapGeo}
-          totalActive={activeCount ?? mapFeatures.length}
+          totalActive={tileActiveCount ?? mapFeatures.length}
           fitToFeatures
           showRegionMarkers={false}
           browseHref={homesForSalePath(cityName)}
@@ -505,6 +560,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           eyebrow={`Sell in ${area}`}
         />
 
+        {/* Overlay source when HUD hits: market_metric mt-v1 detached ZIP PostalCode. Do not cite pulse. */}
         <MarketSources sources={['ods']} />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>

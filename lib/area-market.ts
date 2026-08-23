@@ -14,7 +14,8 @@
 export type AreaMarket = {
   city: string
   medianListPrice: number | null
-  activeCount: number
+  /** Null when unknown. Unknown is not zero. */
+  activeCount: number | null
   monthsOfSupply: number | null
   medianDaysToPending: number | null
 }
@@ -45,7 +46,7 @@ export function money(n: number | null): string | null {
 export function marketSentence(m: AreaMarket): string | null {
   const cls = marketClass(m.monthsOfSupply)
   const price = money(m.medianListPrice)
-  if (!price && m.activeCount === 0) return null
+  if (!price && (m.activeCount == null || m.activeCount === 0)) return null
 
   const parts: string[] = []
   if (cls && m.monthsOfSupply != null) {

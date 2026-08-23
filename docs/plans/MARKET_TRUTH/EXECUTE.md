@@ -314,7 +314,17 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 **Done when a real user can open `/sell`, `/cities/bend`, `/housing-market/bend`, a Bend CMA, and a newsletter city block and see the same detached active / MoS / verdict; YoY and mix cells exist in `market_metric` so leaderboards are not empty; a townhouse CMA does not SQL-force SFR comps; a `getDetachedMarket` miss cannot print pulse 488 as if it were detached.**
 
-2026-08-23c landed: YoY/mix/feature cells (**5110** mt-v1 rows); city overlay miss withholds MOS/verdict; OG/dashboard/admin inventory from detached; CMA comps SQL by subject subtype; producer recipes no longer median CDOM for city MOS. Zip grain is next (plan: go). County withheld (F18). `getCityLeaderboard` still has no UI.
+2026-08-23c landed: YoY/mix/feature cells (**5110** mt-v1 rows); city overlay miss withholds MOS/verdict; OG/dashboard/admin inventory from detached; CMA comps SQL by subject subtype; producer recipes no longer median CDOM for city MOS.
+
+### Grind 2026-08-23d — close the remaining factory + admin board + zip
+
+**Done when:** zip cells exist in `market_metric` (PostalCode membership, sample-gated, no county/neighborhood/subdivision prices); leftover honest stats that have columns are written (`new_listings`, price-cut, days_to_close, sale_to_original, mom with stated seasonality); Matt can open an admin city leaderboard and see YoY ranks from `getCityLeaderboard`; overlay miss does not print 0 homes; `/zip/[zip]` HUD uses getMetric when publishable. Neighborhood MOS and county stay unpublished (REGISTRY §4, F18). Workers do not tick this file.
+
+2026-08-23d landed: shadow compute `20260823150000` wrote **14512** mt-v1 cells (`period_end=2026-08-23`, `zip_scope=canonical_10`). Bend detached still **774 / 4.47 / balanced**, YoY **−1.94%**. Canonical ZIP detached actives: 97701 176, 97702 247, 97703 227, 97707 180, 97739 170, 97741 82, 97754 181, 97756 274, 97759 141, 97760 51. Leftover Bend detached 12mo: new_listings 2956, price-cut share 46.6%, median cut 5.9%, days-to-close 64, sale-to-original 96.9%, unadjusted MoM **−0.65%** (method states ±3.4% seasonal). Neighborhood/subdivision/county cells **0**. Overlay miss withholds `activeCount: null` (not 0). `/admin/analytics/city-leaderboard` reads `getCityLeaderboard` (one city per rank, 12mo preferred). `/zip/[zip]` HUD overlays getMetric when publishable.
+
+### Grind 2026-08-23e — remaining miss/existence holes (next)
+
+**Done when:** a city MT miss cannot print pulse/MV polygon inventory (488) on `/cities`, mega-menu, or homepage town rows as if it were detached; existence still does not 404 the city page. Neighborhood MOS and county stay unpublished.
 
 ### Step 9 — Then, and only then, the moat
 

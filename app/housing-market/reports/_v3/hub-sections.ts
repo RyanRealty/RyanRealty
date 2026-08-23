@@ -45,7 +45,7 @@ export function buildRegionFigures(
       href: '/housing-market',
     })
   }
-  if (pulse.activeCount > 0) {
+  if (pulse.activeCount != null && pulse.activeCount > 0) {
     figures.push({
       value: v3Text(pulse.activeCount.toLocaleString('en-US')),
       label: v3Text('homes for sale'),

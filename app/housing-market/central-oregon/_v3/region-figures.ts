@@ -87,7 +87,7 @@ export function buildRegionInstruments(
 ): RegionInstruments {
   const medianListPrice =
     pulse?.medianListPrice != null && pulse.medianListPrice > 0 ? pulse.medianListPrice : null
-  const activeCount = pulse != null && pulse.activeCount > 0 ? pulse.activeCount : null
+  const activeCount = pulse != null && pulse.activeCount != null && pulse.activeCount > 0 ? pulse.activeCount : null
   const daysToPending =
     pulse?.medianDaysToPending != null && pulse.medianDaysToPending > 0
       ? pulse.medianDaysToPending

@@ -299,7 +299,7 @@ export function buildAreaBlock(args: {
   } | null
   /** From getMarketPulse (cities + resort neighborhoods); null on miss. */
   pulse: {
-    activeCount: number
+    activeCount: number | null
     monthsOfSupply: number | null
     refreshedAt: string | null
   } | null
