@@ -5,13 +5,12 @@
  * app/cities/[slug]/_v3/city-market-charts.tsx). Additive: the year table it
  * sits above is unchanged.
  *
- * Three cards, all drawn by the V3Chart series atom through V3ChartCard. No
+ * Two cards, all drawn by the V3Chart series atom through V3ChartCard. No
  * new chart component and no second geometry (lib/charts/plot.ts):
- *   1. The plat's own record, price against volume on a segmented control.
- *   2. The plat's median beside the market it sits inside, city when the
- *      parent city is known and carried in the mart, region otherwise.
- *   3. The rank form: this plat among the sibling plats of its resort
- *      community, every row carrying its own year-to-date population.
+ *   1. The plat's own record: homes sold by year (counts only).
+ *   2. The rank form: this plat among the sibling plats of its resort
+ *      community, ranked by year-to-date closed count.
+ * Closed-sale medians stay off this grain (REGISTRY §4).
  *
  * A plat is a small-sample geography. Every floor and every withheld year is
  * stated in subdivision-charts-data.ts and named in each card's Source trace.
@@ -20,7 +19,6 @@
 
 import { slugify } from '@/lib/slug'
 import { V3_ROOT_CLASS, V3ChartCard, type V3ChartCardProps } from '@/components/site/v3'
-import { getMartAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
 import { getMarketStatsCacheRowsForGeos } from '@/lib/data/market/getMarketStatsCacheRows'
 import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
@@ -29,13 +27,8 @@ import resortCommunitiesData from '@/data/resort-communities.json'
 import {
   buildPeerPlatsCard,
   buildPlatHistoryCard,
-  buildPlatVsAreaCard,
-  type AreaSeries,
   type PeerPlatRow,
 } from './subdivision-charts-data'
-
-const REGION_SLUG = 'central-oregon'
-const REGION_LABEL = 'Central Oregon'
 
 type ResortEntry = {
   slug: string
@@ -52,15 +45,14 @@ function resortEntryFor(resortSlug: string | null): ResortEntry | null {
   return communities.find((c) => c.slug === resortSlug) ?? null
 }
 
-/** The cache columns the rank card's rows and its trace both need. */
+/** The cache columns the rank card's rows and its trace both need. Count only. */
 const PEER_COLUMNS =
-  'geo_slug, geo_label, sold_count, median_sale_price, period_start, period_end, methodology_version, computed_at'
+  'geo_slug, geo_label, sold_count, period_start, period_end, methodology_version, computed_at'
 
 type PeerCacheRow = {
   geo_slug?: string | null
   geo_label?: string | null
   sold_count?: number | null
-  median_sale_price?: number | string | null
   period_start?: string | null
   period_end?: string | null
   methodology_version?: string | null
@@ -81,8 +73,6 @@ export type SubdivisionMarketChartsProps = {
 export async function SubdivisionMarketCharts({
   slug,
   platName,
-  citySlug,
-  cityName,
   resortSlug,
   history,
 }: SubdivisionMarketChartsProps) {
@@ -93,23 +83,9 @@ export async function SubdivisionMarketCharts({
     ? [...new Set(resort.subdivision_aliases.map((a) => slugify(a)))]
     : []
 
-  const [cityRows, regionRows, peerRows] = await Promise.all([
-    citySlug
-      ? withTimeoutFallback(
-          getMartAnnualSeries({ geoType: 'city', geoSlug: citySlug, typeScope: 'sfr' }),
-          [],
-          4000,
-          'sub:mart-city',
-        )
-      : Promise.resolve([]),
-    withTimeoutFallback(
-      getMartAnnualSeries({ geoType: 'region', geoSlug: REGION_SLUG, typeScope: 'sfr' }),
-      [],
-      4000,
-      'sub:mart-region',
-    ),
+  const peerRows =
     peerSlugs.length > 1
-      ? withTimeoutFallback(
+      ? await withTimeoutFallback(
           getMarketStatsCacheRowsForGeos({
             geoType: 'subdivision',
             geoSlugs: peerSlugs,
@@ -120,17 +96,7 @@ export async function SubdivisionMarketCharts({
           4000,
           'sub:peer-stats',
         )
-      : Promise.resolve([]),
-  ])
-
-  // Prefer the parent city. A plat with no derived city, or a city the cube
-  // does not carry, is compared to the region rather than to nothing.
-  const area: AreaSeries | null =
-    cityRows.length >= 2 && citySlug
-      ? { label: cityName, slug: citySlug, kind: 'city', rows: cityRows }
-      : regionRows.length >= 2
-        ? { label: REGION_LABEL, slug: REGION_SLUG, kind: 'region', rows: regionRows }
-        : null
+      : []
 
   const currentYear = new Date().getUTCFullYear()
 
@@ -148,12 +114,10 @@ export async function SubdivisionMarketCharts({
       unnamedCount += 1
       continue
     }
-    const median = raw.median_sale_price == null ? null : Number(raw.median_sale_price)
     peers.push({
       slug: peerSlug,
       name,
       soldCount: Number(raw.sold_count ?? 0),
-      medianSalePrice: median != null && Number.isFinite(median) ? median : null,
     })
     if (raw.period_start && (periodStart == null || raw.period_start < periodStart)) {
       periodStart = raw.period_start
@@ -170,10 +134,6 @@ export async function SubdivisionMarketCharts({
   const cards: V3ChartCardProps[] = []
   const historyCard = buildPlatHistoryCard(history, { platName, currentYear })
   if (historyCard) cards.push(historyCard)
-  if (area) {
-    const areaCard = buildPlatVsAreaCard(history, area, { platName, currentYear })
-    if (areaCard) cards.push(areaCard)
-  }
   if (resort && peers.length > 0) {
     const peerCard = buildPeerPlatsCard(peers, slug, {
       parentLabel: resort.label,

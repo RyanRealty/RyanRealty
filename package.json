@@ -412,6 +412,7 @@
     "ci:publish-down-payment": "node scripts/check-publish-down-payment.mjs",
     "ci:publish-plat-inventory": "node scripts/check-publish-plat-inventory.mjs",
     "ci:publish-plat-figures": "node scripts/check-publish-plat-figures.mjs",
+    "ci:publish-subdivision-closed-price": "node scripts/check-publish-subdivision-closed-price.mjs",
     "ci:publish-place-names": "node scripts/check-publish-place-names.mjs",
     "ci:publish-street-line": "node scripts/check-publish-street-line.mjs",
     "ci:publish-place-in-city": "node scripts/check-publish-place-in-city.mjs",

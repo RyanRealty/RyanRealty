@@ -225,7 +225,10 @@ out of a city district. Neighborhood MOS publishes only when 180-day closes
 clear min_n (same membership as actives). Pulse MOS stays untrusted.
 2026-08-23y: subdivision cells are counts only (`active_count`,
 `pending_count`, `closed_count`) from `is_primary` membership. No
-median, MOS, or verdict at this grain.
+median, MOS, or verdict at this grain. 2026-08-23z: public plat
+history, charts, and stats withhold closed-sale prices through
+`publishSubdivisionClosedPrice`. Live list median of on-market
+inventory stays a different population.
 
 ---
 

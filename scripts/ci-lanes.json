@@ -73,6 +73,7 @@
     "ci:publish-search-status",
     "ci:publish-sell-valuation",
     "ci:publish-street-line",
+    "ci:publish-subdivision-closed-price",
     "ci:row-cap",
     "ci:server-type-reexport",
     "ci:sms-consent",

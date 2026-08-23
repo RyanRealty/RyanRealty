@@ -96,6 +96,9 @@ const POPULATION = {
   // median_sale_price is percentile_cont over the same CTE. The writer's own
   // methodology stamp calls sold_count that row's sample_size.
   medianSalePrice: 'soldCount',
+  // Plat peer rank (REGISTRY §4) draws the count itself. The figure and its
+  // population are the same COUNT(*) over that CTE — no further filter.
+  soldCount: 'soldCount',
 
   // Bend district public inventory: the median is taken over the listings with
   // a usable price, which rollupNeighborhoodPublicInventory counts separately

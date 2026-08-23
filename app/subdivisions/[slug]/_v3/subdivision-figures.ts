@@ -37,20 +37,22 @@ import { v3Text, type V3InstrumentFigure, type V3ChartProps, type V3ChartPoint }
 import { formatPrice, formatPriceExact } from '@/lib/format/money'
 import type { MarketPulse, MarketStats } from '@/lib/data'
 import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
+import { publishSubdivisionClosedPrice } from '@/lib/market/publish-subdivision-closed-price'
 
 /**
- * The plat's own closed statistics. The guard is the KB section's own guard, a
- * median or a sold count, so a row carrying nothing but a days-on-market value
- * does not open a section that used to stay shut.
+ * The plat's own closed statistics. Closed-sale prices go through
+ * publishSubdivisionClosedPrice and stay null (REGISTRY §4). A sold count or
+ * days-on-market still opens the band.
  */
 export function platStatsFigures(stats: MarketStats | null): V3InstrumentFigure[] {
   if (!stats) return []
-  if (stats.medianSalePrice == null && stats.soldCount == null) return []
+  if (stats.soldCount == null && stats.medianDaysOnMarket == null) return []
   const figures: V3InstrumentFigure[] = []
-  if (stats.medianSalePrice != null) {
+  const publishedMedian = publishSubdivisionClosedPrice(stats.medianSalePrice)
+  if (publishedMedian != null) {
     figures.push({
-      value: v3Text(formatPrice(stats.medianSalePrice)),
-      label: v3Text('median sale price'),
+      value: v3Text(formatPrice(publishedMedian)),
+      label: v3Text('closed median'),
     })
   }
   if (stats.medianDaysOnMarket != null) {
@@ -65,12 +67,12 @@ export function platStatsFigures(stats: MarketStats | null): V3InstrumentFigure[
       label: v3Text('homes sold'),
     })
   }
-  if (stats.yoyChangePct != null) {
-    const pct = stats.yoyChangePct
-    const sign = pct > 0 ? '+' : pct < 0 ? '-' : ''
+  const publishedYoy = publishSubdivisionClosedPrice(stats.yoyChangePct)
+  if (publishedYoy != null) {
+    const sign = publishedYoy > 0 ? '+' : publishedYoy < 0 ? '-' : ''
     figures.push({
-      value: v3Text(`${sign}${Math.abs(pct).toFixed(1)}%`),
-      label: v3Text('median price, year over year'),
+      value: v3Text(`${sign}${Math.abs(publishedYoy).toFixed(1)}%`),
+      label: v3Text('closed median, year over year'),
     })
   }
   return figures

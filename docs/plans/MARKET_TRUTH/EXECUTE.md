@@ -448,6 +448,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23y landed: `compute_market_metrics_subdivision_shadow` wrote **3462** count cells in 5.6s (`period_end=2026-08-23`; 1179 active / 481 pending / 1802 closed; no price/MOS/verdict). Bend detached still **774**. Neighborhood MOS still **15** publishable. `/subdivisions/oregon-water-wonderland-unit-2` prints 20 active / 4 pending / 24 closed, labeled recorded plat. Cron `/api/cron/compute-subdivision-metrics` at `50 */6`. County unpublished.
 
+### Grind 2026-08-23z — withhold subdivision closed-sale prices
+
+**Done when:** `/subdivisions/[slug]` yearly history, chart-room, and stats band publish closed counts only; `publishSubdivisionClosedPrice` withholds median close and YoY of that median; vs-area median card is gone; peer rank is by sold count. Live list median of the plat's own on-market inventory stays on `publishPlatFigures`. County unpublished. Workers do not tick this file.
+
+2026-08-23z landed: `/subdivisions/kitty-hawk` 52 closings 1997–2024, no median column, chart source "No median price is charted". `/subdivisions/ridge-at-eagle-crest` and `/subdivisions/sunrise-village` same withhold. Peer rank is sold count. Gate `ci:publish-subdivision-closed-price`. Bend detached still **774**. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
