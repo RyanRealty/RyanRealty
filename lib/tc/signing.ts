@@ -11,6 +11,8 @@
  * numbers. The sealer converts to pdf-lib's bottom-left point space.
  */
 import { createHash, randomBytes } from 'node:crypto'
+import type { BrokerRole } from './required-documents'
+import { isOtherSideRecipientRole } from './representation'
 
 export const SIGN_FIELD_TYPES = [
   'signature',
@@ -165,6 +167,8 @@ export function seedPartyEnvelopeRecipients(input: {
   brokerSigningOrder?: number
   /** When the form has been read, only these roles Need to sign. Others receive a copy. */
   requiredRoles?: readonly RecipientRole[]
+  /** Listing vs buyer file. Other-side principals are never NeedsToSign. */
+  ourRole?: BrokerRole
 }): Array<{
   envelope_id: string
   role: string
@@ -174,7 +178,9 @@ export function seedPartyEnvelopeRecipients(input: {
   action_required: ActionRequired
 }> {
   const required = input.requiredRoles
+  const ourRole = input.ourRole
   const mustSign = (role: RecipientRole): ActionRequired => {
+    if (ourRole && isOtherSideRecipientRole(ourRole, role)) return 'ReceivesACopy'
     if (required?.length) return required.includes(role) ? 'NeedsToSign' : 'ReceivesACopy'
     // Form not identified yet — do not email the broker until the form says they sign.
     if (role === 'SellerAgent' || role === 'BuyerAgent' || role === 'Broker') return 'ReceivesACopy'
@@ -235,6 +241,8 @@ const VENDOR_ENVELOPE_ROLE: Record<string, RecipientRole> = {
 export function seedVendorEnvelopeRecipients(input: {
   envelopeId: string
   contacts: ReadonlyArray<{ role: string; name: string | null; email: string | null }>
+  /** Other-side agent is copy-only. They get the PDF after our clients sign. */
+  otherSideAgentRole?: RecipientRole | null
 }): Array<{
   envelope_id: string
   role: string
@@ -253,7 +261,10 @@ export function seedVendorEnvelopeRecipients(input: {
     action_required: ActionRequired
   }> = []
   for (const c of input.contacts) {
-    const role = VENDOR_ENVELOPE_ROLE[c.role]
+    const role =
+      c.role === 'other_agent' && input.otherSideAgentRole
+        ? input.otherSideAgentRole
+        : VENDOR_ENVELOPE_ROLE[c.role]
     if (!role) continue
     const name = (c.name ?? '').trim()
     const email = (c.email ?? '').trim().toLowerCase()
@@ -292,13 +303,21 @@ export function applyUniquePartyEmails<T extends { name: string; email: string }
   })
 }
 
-export const ENVELOPE_STATUSES = ['draft', 'sent', 'partially_signed', 'completed', 'voided'] as const
+export const ENVELOPE_STATUSES = [
+  'draft',
+  'sent',
+  'partially_signed',
+  'awaiting_other_side',
+  'completed',
+  'voided',
+] as const
 export type EnvelopeStatus = (typeof ENVELOPE_STATUSES)[number]
 
 export const ENVELOPE_STATUS_LABEL: Record<EnvelopeStatus, string> = {
   draft: 'Draft',
   sent: 'Out for signature',
   partially_signed: 'Partially signed',
+  awaiting_other_side: 'Awaiting other side',
   completed: 'Completed',
   voided: 'Voided',
 }

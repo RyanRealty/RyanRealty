@@ -22,6 +22,7 @@ import {
   seedPartyEnvelopeRecipients,
   seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
+  ENVELOPE_STATUSES,
 } from './signing'
 
 describe('SIGN_FIELD_TYPES', () => {
@@ -47,6 +48,14 @@ describe('SIGN_FIELD_TYPES', () => {
     expect(sql).toContain("'time_signed'")
     expect(sql).toContain('invite_subject')
     expect(sql).toContain('invite_body')
+  })
+  it('envelope status includes awaiting the other side signed PDF', () => {
+    const sql = readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260824010000_tc_envelope_awaiting_other_side.sql'),
+      'utf8',
+    )
+    expect(sql).toContain('awaiting_other_side')
+    expect(ENVELOPE_STATUSES).toContain('awaiting_other_side')
   })
 })
 
@@ -211,6 +220,21 @@ describe('seedPartyEnvelopeRecipients', () => {
     expect(rows.find((r) => r.role === 'Seller')?.action_required).toBe('NeedsToSign')
     expect(rows.find((r) => r.role === 'Buyer')?.action_required).toBe('ReceivesACopy')
     expect(rows.find((r) => r.role === 'SellerAgent')?.action_required).toBe('ReceivesACopy')
+  })
+
+  it('listing sale agreement never sends a signing link to the buyer', () => {
+    const rows = seedPartyEnvelopeRecipients({
+      envelopeId: 'e1',
+      buyers: ['Tyler Nicoll'],
+      sellers: ['Mary Bowman'],
+      brokerName: 'Matt Ryan',
+      brokerEmail: 'matt@ryan-realty.com',
+      cycleKind: 'listing',
+      ourRole: 'listing',
+      requiredRoles: ['Buyer', 'Seller'],
+    })
+    expect(rows.find((r) => r.role === 'Seller')?.action_required).toBe('NeedsToSign')
+    expect(rows.find((r) => r.role === 'Buyer')?.action_required).toBe('ReceivesACopy')
   })
 
   it('does not email the listing broker until the form says they sign', () => {

@@ -88,7 +88,10 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   }
   const savedSignable = recipients.filter((r) => r.id && isSignableRole(r.role, r.actionRequired))
   const completedIds = new Set(detail.recipients.filter((r) => r.completedAt).map((r) => r.id))
-  const envelopeOut = detail.status === 'sent' || detail.status === 'partially_signed'
+  const envelopeOut =
+    detail.status === 'sent' ||
+    detail.status === 'partially_signed' ||
+    detail.status === 'awaiting_other_side'
 
   // --- recipient editing ---
   function updateRecipient(idx: number, patch: Partial<RecipientInput>) {
@@ -421,6 +424,11 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
             ) : null}
             {detail.incompletePrepareMessage ? (
               <p className="text-xs text-foreground">{detail.incompletePrepareMessage}</p>
+            ) : null}
+            {detail.status === 'awaiting_other_side' ? (
+              <p className="text-xs text-foreground">
+                Our clients have signed. The signed PDF goes to the other side. This is not fully executed until they send the signed copy back and it is filed.
+              </p>
             ) : null}
             <label className="flex items-start gap-2 text-xs text-muted-foreground">
               <input

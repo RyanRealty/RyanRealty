@@ -236,7 +236,7 @@ export async function listInFlightEnvelopes(cycleId: string): Promise<InFlightEn
     .from('tc_envelopes')
     .select('id, name, status')
     .eq('cycle_id', cycleId)
-    .in('status', ['sent', 'partially_signed'])
+    .in('status', ['sent', 'partially_signed', 'awaiting_other_side'])
   if (!envs?.length) return []
   const ids = envs.map((e) => String(e.id))
   const { data: docs } = await client()

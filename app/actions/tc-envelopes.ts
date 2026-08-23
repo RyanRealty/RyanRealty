@@ -9,6 +9,7 @@ import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
 import { getDealContacts } from '@/app/actions/tc-contacts'
 import { dealFactsFromRows, mapDealFactsToFillValues, resolveFactKey } from '@/lib/tc/oref-fill'
+import { otherSideAgentEnvelopeRole, ourRoleFromCycleKind } from '@/lib/tc/representation'
 import {
   generateSigningToken,
   isSignableRole,
@@ -394,6 +395,7 @@ export async function createEnvelopeFromDocuments(
     brokerEmail: auth.email,
     cycleKind,
     requiredRoles,
+    ourRole: ourRoleFromCycleKind(cycleKind),
   })
   const withEmail = applyUniquePartyEmails(
     recipients,
@@ -402,6 +404,7 @@ export async function createEnvelopeFromDocuments(
   const vendors = seedVendorEnvelopeRecipients({
     envelopeId: env.id,
     contacts: await getDealContacts(String(cycle.deal_id)),
+    otherSideAgentRole: otherSideAgentEnvelopeRole(ourRoleFromCycleKind(cycleKind)),
   })
   const allRecipients = [...withEmail, ...vendors]
   if (allRecipients.length) await supabase.from('tc_envelope_recipients').insert(allRecipients)
@@ -480,6 +483,7 @@ export async function createEnvelopeFromTemplate(
       brokerEmail: auth.email,
       cycleKind: (cycle as DbRow).kind,
       requiredRoles,
+      ourRole: ourRoleFromCycleKind((cycle as DbRow).kind),
     }),
     await peopleEmailsByNames(
       [...((cycle.buyers ?? []) as string[]), ...((cycle.sellers ?? []) as string[])],
@@ -493,6 +497,7 @@ export async function createEnvelopeFromTemplate(
   const vendors = seedVendorEnvelopeRecipients({
     envelopeId: env.id,
     contacts: await getDealContacts(String(cycle.deal_id)),
+    otherSideAgentRole: otherSideAgentEnvelopeRole(ourRoleFromCycleKind((cycle as DbRow).kind)),
   })
   if (vendors.length) await supabase.from('tc_envelope_recipients').insert(vendors)
   const recipientByRole = (role: SignerRole): string | null => {
@@ -764,7 +769,9 @@ export async function sendEnvelope(
   if (!signable.length) return { ok: false, error: 'Add at least one signer' }
 
   for (const r of recipients) {
-    if (coerceActionRequired(r.action_required, r.role) === 'NoAction') continue
+    const action = coerceActionRequired(r.action_required, r.role)
+    if (action === 'NoAction') continue
+    if (action === 'ReceivesACopy' && !isValidEmail(r.email)) continue
     if (!isValidEmail(r.email)) return { ok: false, error: `Missing or invalid email for ${r.name || r.role}` }
   }
   const fieldsByRecip = new Map<string, DbRow[]>()

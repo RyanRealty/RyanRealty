@@ -6,6 +6,8 @@ import {
   commsHaystack,
   scoreDealHaystack,
   pdfMmsParts,
+  looksLikeReturnedSignedPacket,
+  shouldCompleteFromOtherSideReturn,
 } from './file-comms'
 
 describe('pickDealForComms', () => {
@@ -96,5 +98,29 @@ describe('pdfMmsParts', () => {
       mediaSid: `ME${String(i).padStart(32, '0')}`,
     }))
     expect(pdfMmsParts(many)).toHaveLength(3)
+  })
+})
+
+describe('looksLikeReturnedSignedPacket', () => {
+  it('matches other-side executed PDFs, not SkySlope completion mail', () => {
+    expect(looksLikeReturnedSignedPacket('SW 45th - Signed SPD attached.pdf')).toBe(true)
+    expect(looksLikeReturnedSignedPacket('Please see the attached executed repair addendum')).toBe(true)
+    expect(
+      looksLikeReturnedSignedPacket('Envelope completed: You have documents to sign from noreply@skyslope.com'),
+    ).toBe(false)
+    expect(
+      shouldCompleteFromOtherSideReturn({
+        haystack: 'Signed SPD.pdf',
+        hasPdf: true,
+        fromOtherSide: true,
+      }),
+    ).toBe(true)
+    expect(
+      shouldCompleteFromOtherSideReturn({
+        haystack: 'Signed SPD.pdf',
+        hasPdf: true,
+        fromOtherSide: false,
+      }),
+    ).toBe(false)
   })
 })

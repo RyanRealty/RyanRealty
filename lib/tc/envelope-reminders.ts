@@ -38,7 +38,12 @@ export function pickEnvelopeReminders(
   const due: EnvelopeReminderCandidate[] = []
   for (const c of candidates) {
     if (!c.remindersEnabled) continue
-    if (c.envelopeStatus !== 'sent' && c.envelopeStatus !== 'partially_signed') continue
+    if (
+      c.envelopeStatus !== 'sent' &&
+      c.envelopeStatus !== 'partially_signed'
+    ) {
+      continue
+    }
     if (c.completedAt || c.declinedAt) continue
     if (!isSignableRole(c.role, c.actionRequired)) continue
     if (!isValidEmail(c.email)) continue

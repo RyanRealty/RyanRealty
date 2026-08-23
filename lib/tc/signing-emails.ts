@@ -73,16 +73,32 @@ export async function sendCompletionCopy(params: {
   pdf: Buffer
   pdfName: string
   replyTo?: string
+  /** our_side: listing/buyer-side packet to the other broker. executed: fully signed copy. */
+  packet?: 'executed' | 'our_side'
 }): Promise<{ id?: string; error?: string }> {
-  const body = `
+  const otherSide = params.packet === 'our_side'
+  const body = otherSide
+    ? `
+    <p style="margin:0 0 12px;">Hi ${escapeHtml(params.recipientName)},</p>
+    <p style="margin:0 0 12px;">Our clients have signed ${escapeHtml(params.envelopeName)} for ${escapeHtml(params.propertyAddress)}. The signed PDF is attached.</p>
+    <p style="margin:0;">Please have your clients sign and send the executed copy back. We will file it on the deal when it arrives.</p>
+  `
+    : `
     <p style="margin:0 0 12px;">Hi ${escapeHtml(params.recipientName)},</p>
     <p style="margin:0 0 12px;">Every party has signed the documents for ${escapeHtml(params.propertyAddress)}. A completed copy is attached for your records.</p>
     <p style="margin:0;">The attached PDF includes a certificate of completion with the signing record.</p>
   `
   return sendEmail({
     to: params.to,
-    subject: `Your signed documents for ${params.propertyAddress}`,
-    html: shell({ heading: `Your signed documents for ${params.propertyAddress}`, bodyHtml: body }),
+    subject: otherSide
+      ? `Signed documents for ${params.propertyAddress}`
+      : `Your signed documents for ${params.propertyAddress}`,
+    html: shell({
+      heading: otherSide
+        ? `Signed documents for ${params.propertyAddress}`
+        : `Your signed documents for ${params.propertyAddress}`,
+      bodyHtml: body,
+    }),
     replyTo: params.replyTo,
     attachments: [{ filename: params.pdfName, content: params.pdf }],
   })

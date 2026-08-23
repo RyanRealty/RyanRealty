@@ -53,6 +53,7 @@ const STATUS_STATE: Record<EnvelopeStatus, AdminState> = {
   draft: 'waiting',
   sent: 'accent',
   partially_signed: 'slow',
+  awaiting_other_side: 'slow',
   completed: 'ok',
   voided: 'down',
 }
@@ -108,12 +109,14 @@ export default async function SigningDashboard() {
     acc[e.status] = (acc[e.status] ?? 0) + 1
     return acc
   }, {})
-  const active = envelopes.filter((e) => e.status === 'sent' || e.status === 'partially_signed')
+  const active = envelopes.filter(
+    (e) => e.status === 'sent' || e.status === 'partially_signed' || e.status === 'awaiting_other_side',
+  )
   const ALL_PREVIEW = 8
   const allPreview = envelopes.slice(0, ALL_PREVIEW)
   const allRest = envelopes.slice(ALL_PREVIEW)
 
-  const SUMMARY: EnvelopeStatus[] = ['sent', 'partially_signed', 'completed', 'draft']
+  const SUMMARY: EnvelopeStatus[] = ['sent', 'partially_signed', 'awaiting_other_side', 'completed', 'draft']
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>

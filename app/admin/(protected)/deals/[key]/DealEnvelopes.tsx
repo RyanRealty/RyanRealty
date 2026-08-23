@@ -43,6 +43,7 @@ const STATUS_STATE: Record<EnvelopeStatus, AdminState> = {
   draft: 'waiting',
   sent: 'accent',
   partially_signed: 'slow',
+  awaiting_other_side: 'slow',
   completed: 'ok',
   voided: 'down',
 }

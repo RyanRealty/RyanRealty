@@ -11,6 +11,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   generateSigningToken,
   isSignableRole,
+  isValidEmail,
   coerceActionRequired,
   recipientRoleLabel,
   type EnvelopeField,
@@ -18,6 +19,13 @@ import {
 import { incompleteFormMessage } from './required-fields'
 import { sealEnvelope, type SealDocumentInput, type SealRecipientSummary } from './seal-pdf'
 import { sendSigningInvite, sendCompletionCopy, sendBrokerSignedNotice } from './signing-emails'
+import { getFormSourcesForEnvelope } from '@/lib/data/tc/envelope-form-sources'
+import { unionRequiredSignerRoles } from './required-signers'
+import {
+  needsOtherSideReturn,
+  otherSideAgentEnvelopeRole,
+  ourRoleFromCycleKind,
+} from './representation'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DbRow = Record<string, any>
@@ -58,6 +66,25 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
         action: 'envelope_seal_blocked',
         detail: { envelopeId, reason: incomplete },
       })
+      return false
+    }
+    const { data: envRow } = await supabase
+      .from('tc_envelopes')
+      .select('cycle_id')
+      .eq('id', envelopeId)
+      .maybeSingle()
+    const { data: cycleRow } = envRow?.cycle_id
+      ? await supabase.from('tc_cycles').select('kind').eq('id', envRow.cycle_id).maybeSingle()
+      : { data: null }
+    const ourRole = ourRoleFromCycleKind(cycleRow?.kind == null ? null : String(cycleRow.kind))
+    let required: string[] = []
+    try {
+      required = unionRequiredSignerRoles(await getFormSourcesForEnvelope(envelopeId))
+    } catch (err) {
+      console.warn('[tc] other-side requirement read failed:', err instanceof Error ? err.message : err)
+    }
+    if (needsOtherSideReturn(ourRole, required)) {
+      await sealAndCompleteEnvelope(supabase, envelopeId, { awaitOtherSide: true })
       return false
     }
     await sealAndCompleteEnvelope(supabase, envelopeId)
@@ -102,13 +129,18 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
 }
 
 /** Flatten signatures, append the certificate, store the executed doc, notify. */
-export async function sealAndCompleteEnvelope(supabase: Sb, envelopeId: string): Promise<void> {
+export async function sealAndCompleteEnvelope(
+  supabase: Sb,
+  envelopeId: string,
+  opts?: { awaitOtherSide?: boolean },
+): Promise<void> {
   const { data: env } = await supabase.from('tc_envelopes').select('*').eq('id', envelopeId).maybeSingle()
   if (!env || env.status === 'completed') return
+  if (opts?.awaitOtherSide && env.status === 'awaiting_other_side') return
 
   const { data: cycle } = await supabase
     .from('tc_cycles')
-    .select('id, deal_id, source_guid, broker_name, tc_deals(address, property_key)')
+    .select('id, deal_id, kind, source_guid, broker_name, tc_deals(address, property_key)')
     .eq('id', env.cycle_id)
     .maybeSingle()
   const address = (cycle as DbRow)?.tc_deals?.address ?? 'transaction'
@@ -213,8 +245,53 @@ export async function sealAndCompleteEnvelope(supabase: Sb, envelopeId: string):
     bytes: bytes.byteLength,
     content_type: 'application/pdf',
     source_uploaded_at: sealedAtIso,
-    classification: { source: 'envelope_executed', envelope_id: envelopeId },
+    classification: {
+      source: opts?.awaitOtherSide ? 'envelope_our_side_signed' : 'envelope_executed',
+      envelope_id: envelopeId,
+    },
   })
+
+  if (opts?.awaitOtherSide) {
+    await supabase
+      .from('tc_envelopes')
+      .update({
+        status: 'awaiting_other_side',
+        sealed_sha256: sha256,
+        certificate_storage_path: storagePath,
+      })
+      .eq('id', envelopeId)
+    const ourRole = ourRoleFromCycleKind((cycle as DbRow)?.kind)
+    const agentRole = otherSideAgentEnvelopeRole(ourRole)
+    const pdfBuf = Buffer.from(bytes)
+    const pdfName = `${sealName}.pdf`.replace(/[^\w.\- ]+/g, '')
+    const agent = ((recips ?? []) as DbRow[]).find(
+      (r) => r.role === agentRole && isValidEmail(String(r.email ?? '')),
+    )
+    if (agent) {
+      await sendCompletionCopy({
+        to: String(agent.email).trim().toLowerCase(),
+        recipientName: agent.name || 'there',
+        envelopeName: env.name,
+        propertyAddress: address,
+        pdf: pdfBuf,
+        pdfName,
+        packet: 'our_side',
+      })
+    }
+    await supabase.from('tc_events').insert({
+      deal_id: (cycle as DbRow)?.deal_id ?? null,
+      cycle_id: env.cycle_id,
+      document_id: execDocId,
+      actor: 'system',
+      action: 'envelope_sent_to_other_side',
+      detail: {
+        envelope: env.name,
+        other_agent: agent?.email ?? null,
+        sha256_prefix: sha256.slice(0, 12),
+      },
+    })
+    return
+  }
 
   await supabase
     .from('tc_envelopes')

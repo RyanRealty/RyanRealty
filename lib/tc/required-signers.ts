@@ -178,7 +178,7 @@ export function sendBlockedBySignerKnowledge(
 }
 
 export function inFlightEnvelopeBlocksCompletion(status: string | null | undefined): boolean {
-  return status === 'sent' || status === 'partially_signed'
+  return status === 'sent' || status === 'partially_signed' || status === 'awaiting_other_side'
 }
 
 export function inFlightCompletionBlock(input: {
@@ -204,6 +204,9 @@ export function inFlightCompletionBlock(input: {
 
 export function inFlightCompletionMessage(block: { name: string; status: string } | null): string | null {
   if (!block) return null
+  if (block.status === 'awaiting_other_side') {
+    return `${block.name} is waiting on the other side's signed PDF. Our signatures are not fully executed until that copy is filed.`
+  }
   const state = block.status === 'partially_signed' ? 'Partially signed' : 'Out for signature'
   return `${block.name} is ${state.toLowerCase()}. One party signing is not fully executed. Wait until every required signer has signed.`
 }

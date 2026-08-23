@@ -104,6 +104,21 @@ export function commsHaystack(input: {
 export type MmsCommsPart = { mediaSid: string; contentType: string; url: string }
 
 /** Twilio MMS PDFs to fetch immediately (URLs expire). Cap 3, same as Gmail. */
+/** Other-side agent sending back an executed PDF (Signed SPD, executed addendum). Not our SkySlope notices. */
+export function looksLikeReturnedSignedPacket(haystack: string): boolean {
+  const h = haystack.toLowerCase()
+  if (/noreply@skyslope\.com/.test(h)) return false
+  return /\b(signed|executed|fully[\s-]*executed)\b/.test(h)
+}
+
+export function shouldCompleteFromOtherSideReturn(input: {
+  haystack: string
+  hasPdf: boolean
+  fromOtherSide: boolean
+}): boolean {
+  return input.hasPdf && input.fromOtherSide && looksLikeReturnedSignedPacket(input.haystack)
+}
+
 export function pdfMmsParts(media: readonly MmsCommsPart[]): MmsCommsPart[] {
   return media
     .filter((m) => {

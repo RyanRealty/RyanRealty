@@ -12,6 +12,7 @@ import {
   matchChecklistItems,
   pickDealForComms,
   scoreDealHaystack,
+  shouldCompleteFromOtherSideReturn,
 } from '@/lib/tc/file-comms'
 
 export type FileCommsAttachment = {
@@ -182,6 +183,51 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
       filenames: input.filenames ?? input.attachments?.map((a) => a.name) ?? [],
     },
   })
+
+  const { data: otherContacts } = await sb
+    .from('tc_deal_contacts')
+    .select('email, role')
+    .eq('deal_id', picked.dealId)
+    .in('role', ['other_agent', 'other_party'])
+  const otherEmails = new Set(
+    (otherContacts ?? [])
+      .map((c) => String(c.email ?? '').trim().toLowerCase())
+      .filter((e) => e.includes('@')),
+  )
+  const fromOtherSide = emails.some((e) => otherEmails.has(e))
+  if (
+    shouldCompleteFromOtherSideReturn({
+      haystack,
+      hasPdf: documentIds.length > 0,
+      fromOtherSide,
+    })
+  ) {
+    const { data: waiting } = await sb
+      .from('tc_envelopes')
+      .select('id, name')
+      .eq('cycle_id', cycleId)
+      .eq('status', 'awaiting_other_side')
+    const returnedId = documentIds[0]
+    const now = new Date().toISOString()
+    for (const env of waiting ?? []) {
+      await sb
+        .from('tc_envelopes')
+        .update({
+          status: 'completed',
+          completed_at: now,
+          executed_document_id: returnedId,
+        })
+        .eq('id', env.id)
+      await sb.from('tc_events').insert({
+        deal_id: picked.dealId,
+        cycle_id: cycleId,
+        document_id: returnedId,
+        actor: input.actor,
+        action: 'envelope_completed_from_return',
+        detail: { envelope: env.name, channel: input.channel, title: input.title ?? null },
+      })
+    }
+  }
 
   return {
     filed: true,

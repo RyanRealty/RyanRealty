@@ -121,6 +121,7 @@ describe('inFlightEnvelopeBlocksCompletion', () => {
   it('blocks while one party has signed and the other has not', () => {
     expect(inFlightEnvelopeBlocksCompletion('partially_signed')).toBe(true)
     expect(inFlightEnvelopeBlocksCompletion('sent')).toBe(true)
+    expect(inFlightEnvelopeBlocksCompletion('awaiting_other_side')).toBe(true)
     expect(inFlightEnvelopeBlocksCompletion('completed')).toBe(false)
     expect(inFlightEnvelopeBlocksCompletion('draft')).toBe(false)
   })

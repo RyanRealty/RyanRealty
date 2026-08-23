@@ -8,6 +8,8 @@ export const TC_EVENT_LABEL: Record<string, string> = {
   envelope_drafted: 'Envelope drafted',
   envelope_sent: 'Envelope sent',
   envelope_completed: 'Envelope completed',
+  envelope_sent_to_other_side: 'Signed PDF sent to other side',
+  envelope_completed_from_return: 'Other side returned signed PDF',
   envelope_reminder_sent: 'Signing reminder sent',
   envelope_voided: 'Envelope voided',
   envelope_seal_blocked: 'Envelope not complete',
