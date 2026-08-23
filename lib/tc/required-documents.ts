@@ -286,6 +286,53 @@ export function anticipateDocuments(
 }
 
 /** Which property facts are still unknown — surfaced as "confirm" prompts. */
+export const EMPTY_PROPERTY_FACTS: PropertyFacts = {
+  yearBuilt: null,
+  hasWell: null,
+  hasSeptic: null,
+  hasHOA: null,
+  isCondo: null,
+  isManufactured: null,
+  isVacantLand: null,
+  hasSolar: null,
+  isTenantOccupied: null,
+  isShortSale: null,
+  isSellerCarried: null,
+  financing: null,
+}
+
+/** Party roles on a new deal → anticipated-docs BrokerRole. */
+export function brokerRoleFromDealParties(roles: ReadonlyArray<'buyer' | 'seller' | 'other'>): BrokerRole {
+  const hasBuyer = roles.includes('buyer')
+  const hasSeller = roles.includes('seller')
+  if (hasBuyer && hasSeller) return 'dual'
+  if (hasSeller) return 'listing'
+  if (hasBuyer) return 'buyer'
+  return 'unknown'
+}
+
+export type ChecklistSeedRow = {
+  name: string
+  type_name: string
+  status: 'required' | 'optional'
+  sort_order: number
+}
+
+/**
+ * Checklist rows for a new cycle. Uses the same Oregon matrix as anticipated-docs.
+ * Conditional rules only seed when facts already trigger them (unknown facts stay
+ * off the checklist until MLS/intake lights them; the predictor still shows them).
+ * `verify` rules seed as optional.
+ */
+export function seedChecklistItems(role: BrokerRole, facts: PropertyFacts): ChecklistSeedRow[] {
+  return DOC_RULES.filter((r) => r.applies(role, facts)).map((r, i) => ({
+    name: r.label,
+    type_name: r.orefForm ? `OREF ${r.orefForm}` : r.id,
+    status: r.severity === 'required' ? 'required' : 'optional',
+    sort_order: i,
+  }))
+}
+
 export function unknownFacts(facts: PropertyFacts): string[] {
   const labels: Record<keyof PropertyFacts, string> = {
     yearBuilt: 'Year built (lead-based paint)',

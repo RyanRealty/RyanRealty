@@ -11,6 +11,11 @@ import {
   propertyKeyForInhouseDeal,
   type DealPersonRole,
 } from '@/lib/tc/deal-people'
+import {
+  EMPTY_PROPERTY_FACTS,
+  brokerRoleFromDealParties,
+  seedChecklistItems,
+} from '@/lib/tc/required-documents'
 
 export type DealParty = {
   id: string
@@ -234,12 +239,29 @@ export async function createDealWithPeople(
     return { data: null, error: 'Could not attach people to the deal.' }
   }
 
+  const role = brokerRoleFromDealParties(parties.map((p) => p.role))
+  const checklist = seedChecklistItems(role, EMPTY_PROPERTY_FACTS)
+  if (checklist.length) {
+    const { error: checkErr } = await sb.from('tc_checklist_items').insert(
+      checklist.map((row) => ({
+        cycle_id: cycleId,
+        name: row.name,
+        type_name: row.type_name,
+        status: row.status,
+        sort_order: row.sort_order,
+      })),
+    )
+    if (checkErr) {
+      console.error('[createDealWithPeople] checklist', checkErr)
+    }
+  }
+
   await sb.from('tc_events').insert({
     deal_id: dealId,
     cycle_id: cycleId,
     actor: input.actor,
     action: 'deal_created',
-    detail: { propertyKey, parties },
+    detail: { propertyKey, parties, role, checklist: checklist.length },
   })
 
   return { data: { dealId, propertyKey }, error: null }

@@ -7,9 +7,9 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | Surface | Label | Notes |
 |---|---|---|
 | `lib/tc/` | EXISTS | Engine: anticipated-docs, banking days, commissions, signing tokens, OREF fill, SkySlope inbound/mirror, seal. |
-| Anticipated-docs | EXISTS | `lib/tc/required-documents.ts`. Deal UI “Documents anticipated”. Does **not** seed checklist rows. Native deals often `role=unknown`. |
-| New-deal checklist from OR library | MISSING | `createDealWithPeople` does not insert `tc_checklist_items`. `checklist_type` is a SkySlope string, unused as template. |
-| `createEnvelopeFromTemplate` | THEATER | Defined in `app/actions/tc-envelopes.ts`. **Zero UI callers.** Deal “New envelope” uses `createEnvelopeFromDocuments` (uploaded PDFs). |
+| Anticipated-docs | EXISTS | Predictor on the deal page. In-house create also seeds checklist rows from the same matrix. |
+| New-deal checklist from OR library | EXISTS (this branch) | `createDealWithPeople` seeds `tc_checklist_items` from `seedChecklistItems` (Oregon matrix × deal parties). MLS facts still light conditionals later via anticipated-docs. |
+| `createEnvelopeFromTemplate` | EXISTS (this branch) | Deal New envelope → Form library picks production blanks (OR/OREF/ODS, samples omitted) and calls `createEnvelopeFromTemplate`. |
 | `createDraftEnvelope` | THEATER | Recipients only; no docs/fields. Zero UI callers. |
 | Envelope from uploaded PDFs | EXISTS | Deal envelopes + composer. |
 | `/admin/forms` | EXISTS browse / THEATER use-on-deal | Left rail Closings → Forms. No add-to-envelope. |
@@ -36,9 +36,12 @@ Nuance: deal log is **not** “only SkySlope import” for native deals. For mig
 
 Now that the live role list is filed:
 
-1. Align envelope recipient roles to the live Forms enum (or keep a mapping table) **or** ship `createEnvelopeFromTemplate` UI using current invented roles then remap — prefer mapping from `ROLE_LIST.md`.
-2. Library-driven checklist seed on **new** deal (OR primary + deal type + property facts). Anticipated-docs is the predictor, not the seed.
-3. Inbound mail → `tc_documents` / `tc_events` / matching checklist item.
-4. Twilio (and CRM person timeline) → `tc_events` on the matching deal.
-5. Put sign-off (and signing) on the left rail.
-6. Listing pipeline (grid + expiration) is a later Vault slice; Closings already has an active-listing lens.
+Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose.
+
+Still missing:
+
+1. Inbound mail → `tc_documents` / `tc_events` / matching checklist item.
+2. Twilio (and CRM person timeline) → `tc_events` on the matching deal.
+3. `action_required` column (Needs to sign / Receives a copy / No action) instead of storing copy-only as `cc`.
+4. Listing pipeline (grid + expiration); Closings already has an active-listing lens.
+5. Merge/deploy this branch so production rail and composer match.

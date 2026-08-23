@@ -28,7 +28,7 @@ See `SUITE_LEFTOVERS.md` and `LISTINGS_MAP.md`. Working Documents already filed 
 - Vault Closings + Sign-off live as Matt. 17 / 14 overdue / 3 deals confirmed. See `VAULT_LIVE_2026-08-23.md`.
 - Breeze look-only. 52 clients; 3480 listing packet OREF SPDS filled + OR LBP canceled. See `BREEZE_WALK.md`. Do not clone Breeze.
 - Closed-to-Archive page 3: 712 SW 1st St Madras only.
-- **Code on this branch:** Closings rail unparks Signing (brokers) and Sign-off (superuser). Envelope picker uses live Forms roles (`Buyer`, `SellerAgent`, `LoanOfficer`, …) with legacy-code normalize. Production still shows old rail/roles until this ships.
+- **Code on this branch:** Closings rail unparks Signing (brokers) and Sign-off (superuser). Envelope picker uses live Forms roles. New in-house deals seed a checklist from the Oregon matrix. Deal New envelope has Form library → `createEnvelopeFromTemplate`. Production still the old surfaces until this ships.
 
 ## Still blocked / not this pass
 

@@ -4,9 +4,9 @@
 //
 // 11F: off shadcn, onto the LOCKED admin v2 language
 // (design_system/admin/ADMIN_UI.md). Presentation only —
-// createEnvelopeFromDocuments, the picked-document set, the "Pick at least one
-// document" guard, the error strings and the router.push to the composer are
-// carried over unchanged.
+// createEnvelopeFromDocuments still owns uploaded PDFs. Form library calls
+// createEnvelopeFromTemplate (production blanks only). Guards, error strings
+// and router.push to the composer are unchanged.
 //
 // The five Badge fills became StateWords: an envelope status IS a status, which
 // is what .av2-state is for (text plus colour, never colour alone). The
@@ -16,7 +16,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button, Dialog, StateWord, TextField, ToolbarCheck, type AdminState } from '@/components/admin/v2'
-import { createEnvelopeFromDocuments, type EnvelopeSummary } from '@/app/actions/tc-envelopes'
+import {
+  createEnvelopeFromDocuments,
+  createEnvelopeFromTemplate,
+  type EnvelopeSummary,
+  type EnvelopeTemplateOption,
+} from '@/app/actions/tc-envelopes'
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
 
 export type DealEnvelopesCycle = {
@@ -36,20 +41,32 @@ const STATUS_STATE: Record<EnvelopeStatus, AdminState> = {
   voided: 'down',
 }
 
-export function DealEnvelopes({ cycles }: { cycles: DealEnvelopesCycle[] }) {
+export function DealEnvelopes({
+  cycles,
+  templates,
+}: {
+  cycles: DealEnvelopesCycle[]
+  templates: EnvelopeTemplateOption[]
+}) {
   return (
     <div className="av2-pane">
       <p style={{ margin: 0, fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>
         Envelopes &amp; signing
       </p>
       {cycles.map((c) => (
-        <CycleEnvelopes key={c.cycleId} cycle={c} />
+        <CycleEnvelopes key={c.cycleId} cycle={c} templates={templates} />
       ))}
     </div>
   )
 }
 
-function CycleEnvelopes({ cycle }: { cycle: DealEnvelopesCycle }) {
+function CycleEnvelopes({
+  cycle,
+  templates,
+}: {
+  cycle: DealEnvelopesCycle
+  templates: EnvelopeTemplateOption[]
+}) {
   return (
     <div
       style={{
@@ -65,7 +82,7 @@ function CycleEnvelopes({ cycle }: { cycle: DealEnvelopesCycle }) {
         >
           {cycle.label}
         </p>
-        <NewEnvelopeDialog cycle={cycle} />
+        <NewEnvelopeDialog cycle={cycle} templates={templates} />
       </div>
       {cycle.envelopes.length ? (
         <ul className="space-y-1.5" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -103,13 +120,25 @@ function CycleEnvelopes({ cycle }: { cycle: DealEnvelopesCycle }) {
   )
 }
 
-function NewEnvelopeDialog({ cycle }: { cycle: DealEnvelopesCycle }) {
+function NewEnvelopeDialog({
+  cycle,
+  templates,
+}: {
+  cycle: DealEnvelopesCycle
+  templates: EnvelopeTemplateOption[]
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [source, setSource] = useState<'docs' | 'library'>('docs')
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const rows = source === 'docs' ? cycle.documents : templates.map((t) => ({
+    id: t.id,
+    name: `${t.libraryCode} ${t.formNumber ?? ''} ${t.name}`.replace(/\s+/g, ' ').trim(),
+  }))
+  const canOpen = cycle.documents.length > 0 || templates.length > 0
 
   function toggle(id: string) {
     setPicked((s) => {
@@ -120,14 +149,23 @@ function NewEnvelopeDialog({ cycle }: { cycle: DealEnvelopesCycle }) {
     })
   }
 
+  function switchSource(next: 'docs' | 'library') {
+    setSource(next)
+    setPicked(new Set())
+    setError(null)
+  }
+
   async function create() {
     if (!picked.size) {
-      setError('Pick at least one document')
+      setError(source === 'library' ? 'Pick at least one form' : 'Pick at least one document')
       return
     }
     setBusy(true)
     setError(null)
-    const res = await createEnvelopeFromDocuments(cycle.cycleId, [...picked], name.trim() || undefined)
+    const res =
+      source === 'library'
+        ? await createEnvelopeFromTemplate(cycle.cycleId, [...picked], name.trim() || undefined)
+        : await createEnvelopeFromDocuments(cycle.cycleId, [...picked], name.trim() || undefined)
     setBusy(false)
     if (!res.ok || !res.envelopeId) {
       setError(res.error ?? 'Could not create envelope')
@@ -139,7 +177,7 @@ function NewEnvelopeDialog({ cycle }: { cycle: DealEnvelopesCycle }) {
 
   return (
     <>
-      <Button variant="quiet" disabled={!cycle.documents.length} onClick={() => setOpen(true)}>
+      <Button variant="quiet" disabled={!canOpen} onClick={() => setOpen(true)}>
         New envelope
       </Button>
       <Dialog
@@ -162,12 +200,22 @@ function NewEnvelopeDialog({ cycle }: { cycle: DealEnvelopesCycle }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button variant={source === 'docs' ? 'primary' : 'quiet'} onClick={() => switchSource('docs')}>
+            Uploaded PDFs
+          </Button>
+          <Button variant={source === 'library' ? 'primary' : 'quiet'} onClick={() => switchSource('library')}>
+            Form library
+          </Button>
+        </div>
         <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-          Pick the PDF documents to send for signature.
+          {source === 'library'
+            ? 'Copy licensed blanks onto this deal as a draft envelope. Review and send from Signing. Samples are omitted.'
+            : 'Pick the PDF documents already on this cycle to send for signature.'}
         </p>
         <div className="max-h-64 space-y-1.5 overflow-y-auto">
-          {cycle.documents.length ? (
-            cycle.documents.map((d) => (
+          {rows.length ? (
+            rows.map((d) => (
               <ToolbarCheck
                 key={d.id}
                 checked={picked.has(d.id)}
@@ -197,7 +245,9 @@ function NewEnvelopeDialog({ cycle }: { cycle: DealEnvelopesCycle }) {
             ))
           ) : (
             <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-              No documents on this cycle yet. Upload one first.
+              {source === 'library'
+                ? 'No production blanks in the catalog yet. Ingest a current published form, or use an uploaded PDF.'
+                : 'No documents on this cycle yet. Upload one first, or use Form library.'}
             </p>
           )}
         </div>
