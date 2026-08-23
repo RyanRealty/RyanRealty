@@ -74,26 +74,50 @@ export async function getDealParties(dealId: string): Promise<DealParty[]> {
 /** Attach buyers/sellers who have an email or phone on the SkySlope file. Never the deal broker. */
 export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
   const sb = client()
-  const { data: deal } = await sb.from('tc_deals').select('id, broker_name').eq('id', dealId).maybeSingle()
+  const { data: deal } = await sb.from('tc_deals').select('id, broker_name, address').eq('id', dealId).maybeSingle()
   if (!deal) return
   const broker = (deal.broker_name ?? '').trim().toLowerCase()
-  const { data: cycles } = await sb.from('tc_cycles').select('raw').eq('deal_id', dealId)
+  const { data: cycles } = await sb.from('tc_cycles').select('raw, buyers, sellers').eq('deal_id', dealId)
   const { extractPartiesFromCycleRaw } = await import('@/lib/tc/cycle-contacts')
-  const parties = (cycles ?? []).flatMap((c) => extractPartiesFromCycleRaw(c.raw))
+  const parties = (cycles ?? []).flatMap((c) => {
+    const fromRaw = extractPartiesFromCycleRaw(c.raw)
+    const names = (role: 'buyer' | 'seller', list: unknown) => {
+      if (!Array.isArray(list)) return []
+      return list
+        .map((n) => String(n ?? '').trim())
+        .filter((n) => n && !n.includes('{'))
+        .map((name) => ({ name, role, email: null as string | null, phone: null as string | null }))
+    }
+    return [...fromRaw, ...names('buyer', c.buyers), ...names('seller', c.sellers)]
+  })
   const seen = new Set<string>()
   const { data: existing } = await sb.from('tc_deal_people').select('person_id').eq('deal_id', dealId)
   const have = new Set((existing ?? []).map((r) => Number(r.person_id)))
   const { ensureNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
   for (const p of parties) {
     if (p.name.trim().toLowerCase() === broker) continue
-    if (!p.email && !p.phone) continue
+    let email = p.email
+    const phone = p.phone
+    if (!email && !phone) {
+      try {
+        const { findPartyEmailInMailboxes } = await import('@/lib/tc/mailbox-harvest-run')
+        email = await findPartyEmailInMailboxes({
+          partyName: p.name,
+          address: String((deal as { address?: string }).address ?? ''),
+          brokerName: deal.broker_name,
+        })
+      } catch (err) {
+        console.warn('[ensureDealPartiesFromFile] harvest', p.name, err)
+      }
+    }
+    if (!email && !phone) continue
     const key = p.name.trim().toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)
     const got = await ensureNativeLead({
       name: p.name,
-      email: p.email,
-      phone: p.phone,
+      email,
+      phone,
       source: 'vault-deal',
     })
     if (!got.personId || have.has(got.personId)) continue
