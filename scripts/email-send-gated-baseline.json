@@ -69,17 +69,17 @@
       "kind": "internal",
       "reason": "Internal: new seller-lead alert to Matt's inbox (MATT_ALERT_EMAIL), not the lead. Permanently allowlisted."
     },
-    "lib/tc/signing-emails.ts:103": {
+    "lib/tc/signing-emails.ts:107": {
       "kind": "internal",
-      "reason": "1:1 transactional: signing-progress / completion notice to a transaction party for one specific envelope they are a signer/broker on. CAN-SPAM transactional-message exemption; consent established by being a signing party (ESIGN/Oregon UETA). Not a marketing send. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal."
+      "reason": "1:1 transactional: signing-progress / completion notice to a transaction party for one specific envelope they are a signer/broker on. CAN-SPAM transactional-message exemption; consent established by being a signing party (ESIGN/Oregon UETA). Not a marketing send. Line shifted 2026-08-23 when Edit message (custom subject/body) was added to sendSigningInvite."
     },
-    "lib/tc/signing-emails.ts:54": {
+    "lib/tc/signing-emails.ts:60": {
       "kind": "internal",
-      "reason": "1:1 transactional: e-signature request to a specific signer for one specific envelope and property. CAN-SPAM transactional-message exemption; the recipient is a named party to the transaction. Not a marketing send. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal."
+      "reason": "1:1 transactional: e-signature request to a specific signer for one specific envelope and property. CAN-SPAM transactional-message exemption; the recipient is a named party to the transaction. Not a marketing send. Line shifted 2026-08-23 when Edit message (custom subject/body) was added to sendSigningInvite."
     },
-    "lib/tc/signing-emails.ts:78": {
+    "lib/tc/signing-emails.ts:82": {
       "kind": "internal",
-      "reason": "1:1 transactional: completed-and-signed copy (sealed PDF + certificate) to a transaction party for one specific envelope. CAN-SPAM transactional-message exemption. Not a marketing send. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal."
+      "reason": "1:1 transactional: completed-and-signed copy (sealed PDF + certificate) to a transaction party for one specific envelope. CAN-SPAM transactional-message exemption. Not a marketing send. Line shifted 2026-08-23 when Edit message (custom subject/body) was added to sendSigningInvite."
     },
     "lib/cma-delivery.ts:389": {
       "kind": "internal",
