@@ -211,10 +211,15 @@ totals 1.33× at subdivision grain and 1.50× at neighborhood grain.
 replaced with Deschutes County GIS plat unions — Northwest Crossing **4,857 → 342 acres**,
 Eagle Crest **6,371 → 1,643**, Caldera Springs **3,942 → 1,019**, Black Butte Ranch
 **2,659 → 1,185**, Pronghorn **1,583 → 370**, Crosswater **1,012 → 512**, Vandevert Ranch
-**1,072 → 397**. Overlap pairs **25 → 12** (10,000 m² floor). Remainder: Sunriver / Three
-Rivers / Brasada / Widgi Creek hulls (no complete plat set) plus nested community-in-district
-pairs (Awbrey Glen ⊂ Awbrey Butte, Broken Top ⊂ Century West). `bend-undesignated` still
-exists. MOS stays unpublished.
+**1,072 → 397**. Overlap pairs **25 → 12** (10,000 m² floor). 2026-08-23u: remaining Spark
+hulls replaced from official GIS — Sunriver **10,113 → 3,744** (Deschutes Unincorporated
+Communities), Three Rivers **15,703 → 2,520** (Deschutes River Recreation Homesites plat
+union), Widgi Creek **1,276 → 317** (Inn of the 7th Mountain unincorporated community),
+Brasada Ranch **16,126 → 888** (Crook County GIS subdivision). Overlap pairs **12 → 4**,
+all nested community-in-district (Awbrey Glen ⊂ Awbrey Butte, Broken Top ⊂ Century West,
+Northwest Crossing ⊂ Summit West, Northwest Crossing ∩ River West sliver).
+`bend-undesignated` still exists. MOS stays unpublished. `place_membership` not yet rebuilt
+against the new hulls.
 
 ---
 
