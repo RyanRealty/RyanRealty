@@ -68,9 +68,10 @@ export async function harvestDealMailboxFacts(input: {
 }): Promise<{
   otherAgent: { name: string; email: string } | null
   escrowNumber: string | null
+  lender: { name: string; email: string } | null
   offers: ReturnType<typeof import('./mailbox-harvest').harvestOffersFromMail>
 }> {
-  const { harvestOtherSideAgent, harvestEscrowNumber, harvestOffersFromMail, gmailQueryForAddress } =
+  const { harvestOtherSideAgent, harvestEscrowNumber, harvestOffersFromMail, harvestLender, gmailQueryForAddress } =
     await import('./mailbox-harvest')
   const tokens = addressTokens(input.address)
   const q = gmailQueryForAddress(tokens)
@@ -87,6 +88,7 @@ export async function harvestDealMailboxFacts(input: {
   return {
     otherAgent: harvestOtherSideAgent(headers),
     escrowNumber: harvestEscrowNumber(headers),
+    lender: harvestLender(headers),
     offers: harvestOffersFromMail(headers),
   }
 }

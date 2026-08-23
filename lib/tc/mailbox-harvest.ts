@@ -16,12 +16,13 @@ function normName(s: string): string {
 export function parseMailboxHeader(raw: string | null | undefined): Array<{ name: string; email: string }> {
   if (!raw?.trim()) return []
   const out: Array<{ name: string; email: string }> = []
-  const re = /(?:"?([^"<,]+)"?\s*)?<([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>/g
+  const re =
+    /(?:"([^"]+)"|([^<,]+))?\s*<([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>/g
   let m: RegExpExecArray | null
   while ((m = re.exec(raw))) {
-    const email = m[2].trim().toLowerCase()
+    const email = m[3].trim().toLowerCase()
     if (HOUSE.test(email)) continue
-    const name = (m[1] ?? '').replace(/\\"/g, '').trim()
+    const name = (m[1] ?? m[2] ?? '').replace(/\\"/g, '').trim()
     out.push({ name, email })
   }
   if (!out.length) {
@@ -59,30 +60,32 @@ export function gmailQueryForParty(partyName: string, addressTokens: readonly st
   return addr ? `${quoted} (${addr})` : quoted
 }
 
-export function gmailQueryForAddress(addressTokens: readonly string[]): string {
-  return addressTokens.filter(Boolean).slice(0, 2).map((t) => `"${t}"`).join(' ')
+export function gmailQueryForAddress(tokens: readonly string[]): string {
+  const uniq = [...new Set(tokens.filter(Boolean))]
+  const street = uniq.slice(0, 2).map((t) => `"${t}"`).join(' ')
+  if (!street) return ''
+  return street
 }
 
 const VENDOR =
   /@(?:westerntitle|inhere|skyslope|flexmls|flexmail|realtorpro|noreplydistribution)\./i
 
-/** Unique outside broker who wrote us about this file (Tiffany, Joel). */
+/** Unique outside broker who wrote us an Offer thread (Tiffany, Joel). Not vendors or trades. */
 export function harvestOtherSideAgent(headers: readonly MailHeader[]): { name: string; email: string } | null {
   const counts = new Map<string, { name: string; n: number }>()
   for (const h of headers) {
-    const sub = (h.subject ?? '').toLowerCase()
-    const offerish = /offer/.test(sub)
+    if (!/offer/i.test(h.subject ?? '')) continue
     for (const p of parseMailboxHeader(h.from)) {
       if (VENDOR.test(p.email) || !p.name) continue
+      if (/heating|hvac|sign|flexmls|havenlifestyle/i.test(`${p.email} ${p.name}`)) continue
       const cur = counts.get(p.email) ?? { name: p.name, n: 0 }
-      cur.n += offerish ? 3 : 1
+      cur.n++
       counts.set(p.email, cur)
     }
   }
-  const ranked = [...counts.entries()].sort((a, b) => b[1].n - a[1].n)
-  if (!ranked.length) return null
-  if (ranked.length > 1 && ranked[0][1].n === ranked[1][1].n) return null
-  return { name: ranked[0][1].name, email: ranked[0][0] }
+  if (counts.size !== 1) return null
+  const [email, v] = [...counts.entries()][0]
+  return { name: v.name, email }
 }
 
 export function harvestEscrowNumber(headers: readonly MailHeader[]): string | null {
@@ -110,22 +113,57 @@ export function harvestOfferPrice(text: string): number | null {
   return Number.isFinite(n) && n >= 1000 ? Math.round(n) : null
 }
 
+export function harvestEarnestMoney(text: string): number | null {
+  const m = text.match(/\bEM\b[^$\d]{0,12}\$\s*([\d,]+)/i)
+  if (!m) return null
+  const n = Number(m[1].replace(/,/g, ''))
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+/** Loan officer on title distribution (Andy Zook), not title/TC/house. */
+export function harvestLender(headers: readonly MailHeader[]): { name: string; email: string } | null {
+  const counts = new Map<string, { name: string; n: number }>()
+  for (const h of headers) {
+    const blob = `${h.subject ?? ''} ${h.to ?? ''} ${h.cc ?? ''}`
+    if (!/\b(WT\d+|order\s*#|title document)/i.test(blob)) continue
+    for (const p of [...parseMailboxHeader(h.to), ...parseMailboxHeader(h.cc)]) {
+      if (VENDOR.test(p.email) || /bridgetownfiles|westerntitle/i.test(p.email)) continue
+      if (!/loan|mortgage|nmls/i.test(p.email) && !/loan|zook|lender/i.test(p.name)) continue
+      const cur = counts.get(p.email) ?? { name: p.name || p.email, n: 0 }
+      cur.n++
+      counts.set(p.email, cur)
+    }
+  }
+  if (counts.size !== 1) return null
+  const [email, v] = [...counts.entries()][0]
+  return { name: v.name, email }
+}
+
 export function harvestOffersFromMail(headers: readonly MailHeader[]): Array<{
   buyerAgent: string
   agentEmail: string
   price: number | null
+  earnestMoney: number | null
   subject: string
 }> {
-  const out: Array<{ buyerAgent: string; agentEmail: string; price: number | null; subject: string }> = []
+  const out: Array<{
+    buyerAgent: string
+    agentEmail: string
+    price: number | null
+    earnestMoney: number | null
+    subject: string
+  }> = []
   for (const h of headers) {
     const sub = h.subject ?? ''
     if (!/offer/i.test(sub)) continue
     const from = parseMailboxHeader(h.from)[0]
     if (!from || VENDOR.test(from.email)) continue
+    const blob = `${sub} ${h.snippet ?? ''}`
     out.push({
       buyerAgent: from.name,
       agentEmail: from.email,
-      price: harvestOfferPrice(`${sub} ${h.snippet ?? ''}`),
+      price: harvestOfferPrice(blob),
+      earnestMoney: harvestEarnestMoney(blob),
       subject: sub.slice(0, 180),
     })
   }

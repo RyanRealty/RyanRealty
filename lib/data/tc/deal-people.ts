@@ -157,12 +157,13 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
   }
 
   const needsAgent = (existingContacts ?? []).every((c) => c.role !== 'other_agent' || !c.email)
+  const needsLender = (existingContacts ?? []).every((c) => c.role !== 'lender' && c.role !== 'loan_officer')
   const needsEscrow = (cycles ?? []).some((c) => !c.escrow_number)
   const { count: offerCount } = await sb
     .from('tc_offers')
     .select('id', { count: 'exact', head: true })
     .eq('deal_id', dealId)
-  if (!needsAgent && !needsEscrow && (offerCount ?? 0) > 0) return
+  if (!needsAgent && !needsEscrow && !needsLender && (offerCount ?? 0) > 0) return
   try {
     const { harvestDealMailboxFacts } = await import('@/lib/tc/mailbox-harvest-run')
     const facts = await harvestDealMailboxFacts({
@@ -173,11 +174,20 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
     if (facts.otherAgent) {
       const { data: agents } = await sb
         .from('tc_deal_contacts')
-        .select('id, email')
+        .select('id, email, name')
         .eq('deal_id', dealId)
         .eq('role', 'other_agent')
-      const blank = (agents ?? []).find((a) => !a.email)
-      if (blank) {
+      const named = (agents ?? []).find(
+        (a) => (a as { name?: string }).name && facts.otherAgent &&
+          String((a as { name?: string }).name).toLowerCase().includes(facts.otherAgent.name.split(' ').at(-1)?.toLowerCase() ?? '---'),
+      )
+      const blank = named ?? (agents ?? []).find((a) => !a.email)
+      if (named && !named.email) {
+        await sb
+          .from('tc_deal_contacts')
+          .update({ email: facts.otherAgent.email, name: facts.otherAgent.name })
+          .eq('id', named.id)
+      } else if (!named && blank && (agents ?? []).length === 1) {
         await sb
           .from('tc_deal_contacts')
           .update({ email: facts.otherAgent.email, name: facts.otherAgent.name })
@@ -198,6 +208,15 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
         await sb.from('tc_cycles').update({ escrow_number: facts.escrowNumber }).eq('id', cycle.id)
       }
     }
+    if (facts.lender && needsLender) {
+      await sb.from('tc_deal_contacts').insert({
+        deal_id: dealId,
+        role: 'lender',
+        name: facts.lender.name,
+        email: facts.lender.email,
+        source: 'manual',
+      })
+    }
     if ((offerCount ?? 0) === 0) {
       for (const o of facts.offers) {
         await sb.from('tc_offers').insert({
@@ -205,6 +224,7 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
           buyer_name: 'Buyer (via agent)',
           buyer_agent: o.buyerAgent,
           price: o.price,
+          earnest_money: o.earnestMoney,
           status: 'received',
         })
       }

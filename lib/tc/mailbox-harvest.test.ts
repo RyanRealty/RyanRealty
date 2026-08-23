@@ -7,6 +7,9 @@ import {
   harvestEscrowNumber,
   harvestOfferPrice,
   harvestOffersFromMail,
+  harvestEarnestMoney,
+  harvestLender,
+  gmailQueryForAddress,
 } from './mailbox-harvest'
 
 describe('parseMailboxHeader', () => {
@@ -76,7 +79,28 @@ describe('harvestOffersFromMail', () => {
       buyerAgent: 'Tiffany Clark',
       agentEmail: 'realestatetiffany@gmail.com',
       price: 519000,
+      earnestMoney: 5250,
     })
+  })
+})
+
+describe('harvestEarnestMoney', () => {
+  it('reads EM - $5250', () => {
+    expect(harvestEarnestMoney('Sale Price - $519K EM - $5250 Seller concession')).toBe(5250)
+  })
+})
+
+describe('harvestLender', () => {
+  it('reads Andy Zook off a title distribution To line', () => {
+    expect(
+      harvestLender([
+        {
+          from: 'WTE Distribution <noreplydistribution@westerntitle.com>',
+          to: '"Zook, Andy" <andy@a2zhomeloans.net>, "Ryan, Matt" <matt@ryan-realty.com>, "Clark, Tiffany" <realestatetiffany@gmail.com>',
+          subject: 'Order #WT0286975 - 20702 Beaumont Drive',
+        },
+      ]),
+    ).toEqual({ name: 'Zook, Andy', email: 'andy@a2zhomeloans.net' })
   })
 })
 
@@ -84,5 +108,12 @@ describe('gmailQueryForParty', () => {
   it('quotes the person and ORs address tokens', () => {
     expect(gmailQueryForParty('Hunter Allen', ['5663', 'Impala'])).toContain('"Hunter Allen"')
     expect(gmailQueryForParty('Hunter Allen', ['5663', 'Impala'])).toContain('"Impala"')
+  })
+})
+
+describe('gmailQueryForAddress', () => {
+  it('scopes the street to offer/title mail', () => {
+    expect(gmailQueryForAddress(['20702', 'Beaumont'])).toContain('Beaumont')
+    expect(gmailQueryForAddress(['20702', '20702', 'beaumont'])).toContain('beaumont')
   })
 })
