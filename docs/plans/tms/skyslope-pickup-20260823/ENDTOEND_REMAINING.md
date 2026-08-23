@@ -12,7 +12,7 @@ A broker opens Vault and uses it as the file without SkySlope:
 6. **Calendar** — CRM calendar already has listing expiration / accepted / close. Google write is attempted; DWD `calendar` scope is the named credential stop if it still fails.
 7. **Tyler Nicoll** stays other-side. We do not invent a personal email.
 
-Shipped this pass: new file, Full Name + Time, Edit message, broker file name, MLS fact seed, live CHECK + invite columns.
+Shipped this pass (on production after Vercel `a95e57f1`): new file, Full Name + Time, Edit message, broker file name, MLS fact seed, live CHECK + invite columns. Verified 2026-08-23: Closings New file (Seller/Buyer, Open file requires email), Beaumont offer PDFs on the file, Tyler Nicoll labeled other-side.
 
 Credential stops (unchanged unless Admin grants them):
 
