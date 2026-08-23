@@ -7,6 +7,7 @@
  */
 import type { BrokerRole } from './required-documents'
 import { isOtherSideRecipientRole } from './representation'
+import { entriesFromDocumentText, identifyFormFromName } from './form-identity'
 import { readRequiredSigners, type FormSignerSource } from './required-signers'
 import type { RecipientRole } from './signing'
 
@@ -86,12 +87,20 @@ export function classifyExecutionState(input: {
   requiredRoles: readonly RecipientRole[]
   signedRoles: readonly RecipientRole[]
   ourRole: BrokerRole
+  /** 043 EFA / 042 pamphlet: one obligated party signing is complete. */
+  anyPartySufficient?: boolean
 }): ExecutionState {
   if (!input.identified) return 'unknown'
   if (!input.signatureForm) return 'not_a_signature_form'
   const required = input.requiredRoles
-  if (!required.length) return 'unknown'
   const signed = input.signedRoles
+  if (input.anyPartySufficient) {
+    if (hasRole(signed, 'Buyer') || hasRole(signed, 'Seller') || required.some((r) => hasRole(signed, r))) {
+      return 'fully_executed'
+    }
+    return signed.length ? 'unknown' : 'unsigned'
+  }
+  if (!required.length) return 'unknown'
   const allRequiredSigned = required.every((r) => hasRole(signed, r))
   if (allRequiredSigned) return 'fully_executed'
   const ours = ourObligatedRoles(input.ourRole, required)
@@ -113,13 +122,19 @@ export function classifyFromFormAndText(input: {
   pageText: string
   ourRole: BrokerRole
 }): ExecutionState {
-  const read = readRequiredSigners({ ...input.form, pageText: input.pageText })
+  const source = { ...input.form, pageText: input.pageText }
+  const read = readRequiredSigners(source)
+  const entries = entriesFromDocumentText(input.pageText)
+  const named = identifyFormFromName(input.form.documentName)
+  const entry = entries[0] ?? named
+  const anyPartySufficient = !!entry?.signers.some((s) => s === 'single_party' || s === 'acknowledger')
   return classifyExecutionState({
-    identified: read.identified,
-    signatureForm: read.signatureForm,
+    identified: read.identified || anyPartySufficient,
+    signatureForm: read.signatureForm || anyPartySufficient,
     requiredRoles: read.roles,
     signedRoles: signedRolesFromPdfText(input.pageText),
     ourRole: input.ourRole,
+    anyPartySufficient,
   })
 }
 

@@ -61,6 +61,19 @@ describe('classifyExecutionState', () => {
     ).toBe('fully_executed')
   })
 
+  it('043 electronic-funds: one party signing is fully executed', () => {
+    expect(
+      classifyExecutionState({
+        identified: true,
+        signatureForm: true,
+        requiredRoles: ['Seller'],
+        signedRoles: ['Buyer'],
+        ourRole: 'listing',
+        anyPartySufficient: true,
+      }),
+    ).toBe('fully_executed')
+  })
+
   it('015 listing agreement: sellers only is fully executed', () => {
     expect(
       classifyExecutionState({
