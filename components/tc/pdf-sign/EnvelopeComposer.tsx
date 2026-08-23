@@ -15,6 +15,7 @@ import {
   sendEnvelope,
   voidEnvelope,
   setEnvelopeReminders,
+  resendRecipientInvite,
   type EnvelopeDetail,
   type RecipientInput,
   type FieldInput,
@@ -81,6 +82,8 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     return RECIPIENT_COLORS[idx % RECIPIENT_COLORS.length]
   }
   const savedSignable = recipients.filter((r) => r.id && isSignableRole(r.role, r.actionRequired))
+  const completedIds = new Set(detail.recipients.filter((r) => r.completedAt).map((r) => r.id))
+  const envelopeOut = detail.status === 'sent' || detail.status === 'partially_signed'
 
   // --- recipient editing ---
   function updateRecipient(idx: number, patch: Partial<RecipientInput>) {
@@ -212,6 +215,14 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     setStatus('Sent for signature')
   }
 
+  async function remind(recipientId: string) {
+    setBusy(true)
+    setStatus(null)
+    const res = await resendRecipientInvite(recipientId)
+    setBusy(false)
+    setStatus(res.ok ? 'Reminder sent' : res.error ?? 'Could not send reminder')
+  }
+
   async function handleVoid() {
     const reason = window.prompt('Reason for voiding this envelope?') ?? ''
     setBusy(true)
@@ -314,6 +325,17 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                     <Input type="number" min={1} className="h-7 w-16 text-xs" value={r.signingOrder} disabled={readonly}
                       onChange={(e) => updateRecipient(i, { signingOrder: parseInt(e.target.value || '1', 10) })} />
                   </div>
+                ) : null}
+                {readonly && envelopeOut && r.id && isSignableRole(r.role, r.actionRequired) && !completedIds.has(r.id) ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 w-full"
+                    disabled={busy}
+                    onClick={() => remind(r.id!)}
+                  >
+                    Send reminder
+                  </Button>
                 ) : null}
               </div>
             ))}
