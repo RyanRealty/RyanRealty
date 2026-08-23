@@ -10,10 +10,15 @@
 // file until cutover.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { getClosingsBoard, type ClosingDealRow } from '@/lib/data/tc/closings'
+import {
+  closingMatchesQuery,
+  getClosingsBoard,
+  incompleteInFlight,
+  type ClosingDealRow,
+} from '@/lib/data/tc/closings'
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { formatDate } from '@/lib/format/date'
-import { QueueRow, VerdictLine } from '@/components/admin/v2'
+import { Button, QueueRow, TextField, VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,8 +40,11 @@ function rowContext(d: ClosingDealRow, nowMs: number): string {
   const bits: string[] = []
   if (d.partyNames.length) bits.push(d.partyNames.join(', '))
   if (d.brokerName) bits.push(d.brokerName)
+  if (d.mlsNumber) bits.push(`MLS ${d.mlsNumber}`)
+  if (d.escrowNumber) bits.push(`escrow ${d.escrowNumber}`)
   const p = price(d.salePrice ?? d.listingPrice)
   if (p) bits.push(p)
+  if (d.itemsRequired > 0) bits.push(`${d.itemsRequired} required`)
   if (d.stage === 'pending') {
     const days = daysUntil(d.escrowClosingDate, nowMs)
     if (days != null)
@@ -58,19 +66,26 @@ function rowContext(d: ClosingDealRow, nowMs: number): string {
   return bits.join(' · ')
 }
 
-export default async function ClosingsPage() {
+export default async function ClosingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
   await requireAdminPage('transactions.view')
+  const { q } = await searchParams
   const nowMs = Date.now()
   const [board, mirror] = await Promise.all([getClosingsBoard(), getSkySlopeMirrorFreshness()])
+  const visible = q?.trim() ? board.deals.filter((d) => closingMatchesQuery(d, q)) : board.deals
 
-  const inEscrow = board.deals.filter((d) => d.stage === 'pending')
-  const activeListings = board.deals
+  const incomplete = incompleteInFlight(visible)
+  const inEscrow = visible.filter((d) => d.stage === 'pending')
+  const activeListings = visible
     .filter((d) => d.stage === 'active_listing')
     .sort((a, b) => String(a.expirationDate ?? '9999').localeCompare(String(b.expirationDate ?? '9999')))
-  const closed = board.deals
+  const closed = visible
     .filter((d) => d.stage === 'closed')
     .sort((a, b) => String(b.actualClosingDate ?? '').localeCompare(String(a.actualClosingDate ?? '')))
-  const dead = board.deals.filter((d) => d.stage === 'dead')
+  const dead = visible.filter((d) => d.stage === 'dead')
   // LIVE deals only — closed/dead deals carry stale in_review rows (first
   // render counted 248 vs the true 17; a verdict must equal its lanes' sum).
   const signoffWaits = [...inEscrow, ...activeListings].reduce((n, d) => n + d.itemsInReview, 0)
@@ -124,6 +139,48 @@ export default async function ClosingsPage() {
           </VerdictLine>
         )}
       </div>
+
+      <form method="GET" className="av2-rfilters" style={{ margin: '0 0 14px' }}>
+        <TextField
+          label="Search deals"
+          name="q"
+          defaultValue={q ?? ''}
+          placeholder="Address, MLS, escrow, agent, or party…"
+        />
+        <Button type="submit" touch style={{ alignSelf: 'flex-end' }}>
+          Search
+        </Button>
+      </form>
+      {q?.trim() ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 14px' }}>
+          {visible.length} match{visible.length === 1 ? '' : 'es'} for “{q.trim()}”.{' '}
+          <Link href="/admin/closings" style={{ color: 'var(--a-accent)' }}>
+            Clear
+          </Link>
+        </p>
+      ) : null}
+
+      {incomplete.length > 0 && (
+        <section aria-label="Incomplete checklists">
+          <h2 className="av2-lane-head">Incomplete checklists</h2>
+          <ul className="av2-queue">
+            {incomplete.map((d) => (
+              <QueueRow
+                key={`inc-${d.id}`}
+                kind="Incomplete"
+                kindTone="slow"
+                title={d.address}
+                context={rowContext(d, nowMs)}
+                action={
+                  <Link href={dealHref(d)} className="av2-btn" style={{ textDecoration: 'none' }}>
+                    Open deal
+                  </Link>
+                }
+              />
+            ))}
+          </ul>
+        </section>
+      )}
 
       {inEscrow.length > 0 && (
         <section aria-label="In escrow">

@@ -29,8 +29,11 @@ export interface ClosingDealRow {
   salePrice: number | null
   listingPrice: number | null
   expirationDate: string | null
+  mlsNumber: string | null
+  escrowNumber: string | null
   itemsTotal: number
   itemsInReview: number
+  itemsRequired: number
   partyNames: string[]
 }
 
@@ -56,6 +59,50 @@ export function liveDealCyclesFromBoard(deals: readonly ClosingDealRow[]): LiveD
     .sort((a, b) => a.address.localeCompare(b.address))
 }
 
+export function closingSearchHaystack(d: ClosingDealRow): string {
+  return [
+    d.address,
+    d.city ?? '',
+    d.brokerName ?? '',
+    d.mlsNumber ?? '',
+    d.escrowNumber ?? '',
+    d.propertyKey,
+    ...d.partyNames,
+  ]
+    .join(' ')
+    .toLowerCase()
+}
+
+export function closingMatchesQuery(d: ClosingDealRow, q: string): boolean {
+  const needle = q.trim().toLowerCase()
+  if (!needle) return true
+  return closingSearchHaystack(d).includes(needle)
+}
+
+/** SkySlope Incomplete Checklist: in-flight deals still holding required rows. */
+export function incompleteInFlight(deals: readonly ClosingDealRow[]): ClosingDealRow[] {
+  return deals
+    .filter((d) => LIVE_STAGES.has(d.stage) && d.itemsRequired > 0)
+    .sort((a, b) => b.itemsRequired - a.itemsRequired || a.address.localeCompare(b.address))
+}
+
+function asNameList(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  return v.map((x) => String(x ?? '').trim()).filter(Boolean)
+}
+
+function newestCycle(cycles: readonly Row[], dealId: string, stage: string): Row | undefined {
+  const prefer = stage === 'active_listing' ? 'listing' : stage === 'pending' || stage === 'pre_contract' ? 'sale' : null
+  const mine = cycles.filter((c) => c.deal_id === dealId)
+  const pool = prefer ? mine.filter((c) => c.kind === prefer) : mine
+  const use = pool.length ? pool : mine
+  let best: Row | undefined
+  for (const c of use) {
+    if (!best || String(c.created_at ?? '') > String(best.created_at ?? '')) best = c
+  }
+  return best
+}
+
 export interface ClosingsBoard {
   deals: ClosingDealRow[]
   unreadable: boolean
@@ -79,7 +126,7 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
   const cyclesRes = await sb
     .from('tc_cycles')
     .select(
-      'id, deal_id, kind, contract_acceptance_date, escrow_closing_date, actual_closing_date, sale_price, listing_price, expiration_date, created_at',
+      'id, deal_id, kind, contract_acceptance_date, escrow_closing_date, actual_closing_date, sale_price, listing_price, expiration_date, created_at, mls_number, escrow_number, buyers, sellers',
     )
     .in('deal_id', dealIds)
   if (cyclesRes.error) {
@@ -98,35 +145,30 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
     return { deals: [], unreadable: true }
   }
 
-  const counts = new Map<string, { total: number; inReview: number }>()
+  const counts = new Map<string, { total: number; inReview: number; required: number }>()
   for (const it of items ?? []) {
-    const dealId = cycleToDeal.get(it.cycle_id as string)
-    if (!dealId) continue
-    const c = counts.get(dealId) ?? { total: 0, inReview: 0 }
+    const cycleId = String(it.cycle_id)
+    const c = counts.get(cycleId) ?? { total: 0, inReview: 0, required: 0 }
     if (it.status !== 'optional') c.total++
     if (it.status === 'in_review') c.inReview++
-    counts.set(dealId, c)
-  }
-
-  // Newest cycle wins the board row (a deal can re-cycle: listing → sale).
-  const newestCycle = new Map<string, Row>()
-  for (const c of cycles) {
-    const dealId = c.deal_id as string
-    const prev = newestCycle.get(dealId)
-    if (!prev || String(c.created_at ?? '') > String(prev.created_at ?? '')) newestCycle.set(dealId, c)
+    if (it.status === 'required') c.required++
+    counts.set(cycleId, c)
   }
 
   const rows: ClosingDealRow[] = (deals as Row[]).map((d) => {
     const id = d.id as string
-    const cy = newestCycle.get(id)
-    const ct = counts.get(id) ?? { total: 0, inReview: 0 }
+    const stage = String(d.stage ?? 'closed')
+    const cy = newestCycle(cycles, id, stage)
+    const ct = (cy?.id ? counts.get(String(cy.id)) : null) ?? { total: 0, inReview: 0, required: 0 }
+    const linked = namesByDeal.get(id) ?? []
+    const cycleParties = [...asNameList(cy?.sellers), ...asNameList(cy?.buyers)]
     return {
       id,
       propertyKey: String(d.property_key ?? ''),
       address: String(d.address ?? 'Unknown property'),
       city: (d.city as string | null) ?? null,
       brokerName: (d.broker_name as string | null) ?? null,
-      stage: String(d.stage ?? 'closed'),
+      stage,
       stageDetail: (d.stage_detail as string | null) ?? null,
       cycleId: cy?.id ? String(cy.id) : null,
       cycleKind: (cy?.kind as string | null) ?? null,
@@ -136,9 +178,12 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
       salePrice: (cy?.sale_price as number | null) ?? null,
       listingPrice: (cy?.listing_price as number | null) ?? null,
       expirationDate: (cy?.expiration_date as string | null) ?? null,
+      mlsNumber: (cy?.mls_number as string | null) ?? null,
+      escrowNumber: (cy?.escrow_number as string | null) ?? null,
       itemsTotal: ct.total,
       itemsInReview: ct.inReview,
-      partyNames: namesByDeal.get(id) ?? [],
+      itemsRequired: ct.required,
+      partyNames: linked.length ? linked : cycleParties,
     }
   })
 

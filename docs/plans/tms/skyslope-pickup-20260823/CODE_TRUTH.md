@@ -15,7 +15,7 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | `/admin/forms` | EXISTS browse + use-on-deal **this branch** | Left rail Closings → Forms. Production blanks have **Use on deal** → `createEnvelopeFromTemplate` on an in-flight cycle. |
 | `/admin/sign-off` | EXISTS; on Closings rail **this branch** | Live queue + 7-banking-day clock. Superuser `transactions.signoff`. Production 23 Aug still footer-only until deploy. |
 | `/admin/signing` | EXISTS; on Closings rail **this branch** | Brokers: `transactions.view`. `esign.send` stays parked. Empty on 22 Aug walk. |
-| `/admin/closings` | EXISTS | `tc_deals` board. Active-listing **lens**, not Manage Listings. |
+| `/admin/closings` | EXISTS | `tc_deals` board. Active-listing **lens** with MLS + expiration. Search (address/MLS/escrow/agent/party). Incomplete-checklist lane. Parties fall back to cycle buyers/sellers when `tc_deal_people` is empty (SkySlope imports). |
 | Listing pipeline grid | PARTIAL (this branch) | `/admin/listings` = MLS. Closings active-listing lens now shows listing expiration (soonest first). Not a 14-col Manage Listings clone. |
 | `tc_events` | EXISTS | Append-only. Writers: native TC, SkySlope migrate, **this branch** Gmail `mail_filed` + Twilio `sms_filed`. |
 | Email → Vault auto-file | EXISTS (this branch) | `lib/tc/file-comms.ts` + `file-comms-write.ts`. Gmail `syncMailboxWindow` after CRM person match. PDFs (cap 3) → `tc-documents` `inbox/` + matching checklist. Fail-open. Address-only fallback needs score ≥ 2 (SkySlope-migrated deals often lack `tc_deal_people`). |

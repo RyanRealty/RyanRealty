@@ -48,7 +48,7 @@ This is **not** the green **Create Listing** button on Manage Listings (forbidde
 
 | SkySlope | Vault today |
 |---|---|
-| Manage Listings grid | **MISSING.** `/admin/listings` is MLS inventory. Closings has an `active_listing` **lens** on `tc_deals.stage`. |
+| Manage Listings grid | **PARTIAL.** `/admin/listings` is MLS inventory. Closings active-listing lens shows MLS #, expiration, parties from the listing cycle, and search. Row kebabs (Accept/Assign/Duplicate/Withdraw/Merge) are not cloned. |
 | Listing folder vs sale folder | `tc_cycles.kind` `'listing'` vs `'sale'`. Listing cycles can show on a deal as “Listing folder”. |
 | Checklist Type “Residential — Standard” (seen on 3480 documents) | `tc_cycles.checklist_type` is a copied string, **not** a template table. Native create does not seed `tc_checklist_items` from OR/OREF library. |
 | Expiration date on grid | Impala deal file walk (22 Aug) had expires 2026-12-31 — matches this grid. Closings active-listing lens now prints `tc_cycles.expiration_date` (this branch). |
