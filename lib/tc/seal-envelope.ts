@@ -15,6 +15,7 @@ import {
   recipientRoleLabel,
   type EnvelopeField,
 } from './signing'
+import { incompleteFormMessage } from './required-fields'
 import { sealEnvelope, type SealDocumentInput, type SealRecipientSummary } from './seal-pdf'
 import { sendSigningInvite, sendCompletionCopy, sendBrokerSignedNotice } from './signing-emails'
 
@@ -38,6 +39,27 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
   const allSigned = signable.length > 0 && signable.every((r) => r.completed_at)
 
   if (allSigned) {
+    const { data: fieldRows } = await supabase
+      .from('tc_envelope_fields')
+      .select('type, required, recipient_id, value')
+      .eq('envelope_id', envelopeId)
+    const incomplete = incompleteFormMessage(
+      ((fieldRows ?? []) as DbRow[]).map((f) => ({
+        type: String(f.type ?? ''),
+        required: f.required !== false,
+        recipientId: f.recipient_id ?? null,
+        value: f.value ?? null,
+      })),
+    )
+    if (incomplete) {
+      await supabase.from('tc_envelopes').update({ status: 'partially_signed' }).eq('id', envelopeId)
+      await supabase.from('tc_events').insert({
+        actor: 'system',
+        action: 'envelope_seal_blocked',
+        detail: { envelopeId, reason: incomplete },
+      })
+      return false
+    }
     await sealAndCompleteEnvelope(supabase, envelopeId)
     return true
   }

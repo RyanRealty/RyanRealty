@@ -24,6 +24,7 @@ import {
   type EnvelopeStatus,
   type RecipientRole,
   type SignFieldType,
+  type SignFieldValue,
 } from '@/lib/tc/signing'
 import { sendSigningInvite } from '@/lib/tc/signing-emails'
 import { createHash } from 'node:crypto'
@@ -40,6 +41,7 @@ import {
 import { getFormSourcesForEnvelope } from '@/lib/data/tc/envelope-form-sources'
 import { extractPdfPagesText } from '@/lib/tc/pdf-page-text'
 import { entriesFromDocumentText, formNumberFromClassification, identifyFormFromName } from '@/lib/tc/form-identity'
+import { incompletePrepareMessage } from '@/lib/tc/required-fields'
 
 /**
  * TC envelope composer + lifecycle (Phase 2b). Build an envelope from PDF
@@ -129,6 +131,7 @@ export type EnvelopeDetail = EnvelopeSummary & {
   missingSignerRoles: RecipientRole[]
   formRead: boolean
   unreadSignersMessage: string | null
+  incompletePrepareMessage: string | null
 }
 
 function mapRecipient(r: DbRow): EnvelopeRecipient {
@@ -260,6 +263,14 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     signerRead,
     rs.map((r) => ({ role: r.role, actionRequired: r.actionRequired })),
   )
+  const prepareMessage = incompletePrepareMessage(
+    mappedFields.map((f) => ({
+      type: f.type,
+      required: f.required,
+      recipientId: f.recipientId,
+      value: f.value,
+    })),
+  )
 
   return {
     id: env.id,
@@ -284,6 +295,7 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     missingSignerRoles,
     formRead: signerRead.identified,
     unreadSignersMessage,
+    incompletePrepareMessage: prepareMessage,
   }
 }
 
@@ -614,6 +626,7 @@ export type FieldInput = {
   w: number
   h: number
   required?: boolean
+  value?: SignFieldValue | null
 }
 
 /** Replace all placed fields on a draft envelope. */
@@ -641,6 +654,7 @@ export async function saveEnvelopeFields(
       w: clamp01(f.w),
       h: clamp01(f.h),
       required: f.required ?? true,
+      value: f.value ?? null,
     }))
     const { error } = await supabase.from('tc_envelope_fields').insert(rows)
     if (error) return { ok: false, error: error.message }
@@ -722,7 +736,7 @@ export async function sendEnvelope(
 
   const [{ data: recips }, { data: fields }, { data: envDocs }, { data: cycle }] = await Promise.all([
     supabase.from('tc_envelope_recipients').select('*').eq('envelope_id', envelopeId),
-    supabase.from('tc_envelope_fields').select('id, recipient_id, type').eq('envelope_id', envelopeId),
+    supabase.from('tc_envelope_fields').select('id, recipient_id, type, required, value').eq('envelope_id', envelopeId),
     supabase.from('tc_envelope_documents').select('id').eq('envelope_id', envelopeId),
     supabase
       .from('tc_cycles')
@@ -752,6 +766,16 @@ export async function sendEnvelope(
   }
   const hasSignature = ((fields ?? []) as DbRow[]).some((f) => f.type === 'signature')
   if (!hasSignature) return { ok: false, error: 'Place at least one signature field' }
+
+  const prepareMsg = incompletePrepareMessage(
+    ((fields ?? []) as DbRow[]).map((f) => ({
+      type: String(f.type ?? ''),
+      required: f.required !== false,
+      recipientId: f.recipient_id ?? null,
+      value: f.value ?? null,
+    })),
+  )
+  if (prepareMsg) return { ok: false, error: prepareMsg }
 
   const signerRead = unionRequiredSignerReads(await getFormSourcesForEnvelope(envelopeId))
   const blocked = sendBlockedBySignerKnowledge(

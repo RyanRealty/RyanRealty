@@ -10,6 +10,7 @@ import {
   type SignFieldValue,
 } from '@/lib/tc/signing'
 import { advanceOrSeal } from '@/lib/tc/seal-envelope'
+import { fieldValueIsComplete } from '@/lib/tc/required-fields'
 
 /**
  * Public, token-gated signing actions. NO admin auth — the per-recipient token
@@ -224,10 +225,9 @@ export async function submitSigning(
   for (const f of fieldRows) {
     if (!f.required || isSenderAnnotation(f.type)) continue
     const v = valueById.get(f.id)
-    if (!v) return { ok: false, error: 'Please complete every required field before finishing.' }
-    if ((v.kind === 'signature' || v.kind === 'initials') && !v.png) return { ok: false, error: 'A signature is incomplete.' }
-    if ((v.kind === 'text' || v.kind === 'date_signed') && !v.text?.trim()) return { ok: false, error: 'A required field is empty.' }
-    if (v.kind === 'checkbox' && !v.checked) return { ok: false, error: 'A required checkbox is unchecked.' }
+    if (!fieldValueIsComplete(String(f.type ?? ''), v ?? null)) {
+      return { ok: false, error: 'Please complete every required field before finishing.' }
+    }
   }
 
   const { ip } = await clientMeta()

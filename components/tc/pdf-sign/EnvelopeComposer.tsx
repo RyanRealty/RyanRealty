@@ -67,6 +67,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       w: f.w,
       h: f.h,
       required: f.required,
+      value: f.value,
     }))
   )
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(
@@ -146,6 +147,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         w: size.w,
         h: size.h,
         required: !isSenderAnnotation(activeType),
+        value: null,
       },
     ])
   }
@@ -189,6 +191,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       w: f.w,
       h: f.h,
       required: f.required,
+      value: f.value ?? null,
     }))
     const fRes = await saveEnvelopeFields(detail.id, fieldPayload)
     if (!fRes.ok) {
@@ -416,6 +419,9 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
             {detail.unreadSignersMessage ? (
               <p className="text-xs text-foreground">{detail.unreadSignersMessage}</p>
             ) : null}
+            {detail.incompletePrepareMessage ? (
+              <p className="text-xs text-foreground">{detail.incompletePrepareMessage}</p>
+            ) : null}
             <label className="flex items-start gap-2 text-xs text-muted-foreground">
               <input
                 type="checkbox"
@@ -547,7 +553,11 @@ function FieldChip({
         window.addEventListener('pointerup', onUp)
       }}
     >
-      <span className="pointer-events-none truncate px-0.5">{SIGN_FIELD_LABEL[field.type]}</span>
+      <span className="pointer-events-none truncate px-0.5">
+        {field.value && 'text' in field.value && field.value.text
+          ? field.value.text
+          : SIGN_FIELD_LABEL[field.type]}
+      </span>
       {!readonly ? (
         <button
           onClick={(e) => {
