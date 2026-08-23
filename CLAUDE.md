@@ -465,6 +465,11 @@ Quoted: `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"L
 `"CloseDate"`, `"BedroomsTotal"`, `"BathroomsTotal"`.
 Bare (lower-case): `year_built`, `pending_timestamp`, `price_per_sqft`.
 
+**`"DaysOnMarket"` is not days-to-contract.** It is list-to-close (escrow included) and
+tracks `"CloseDate" - "OnMarketDate"` minus one day. Never publish it as "days on market".
+The headline speed stat is `days_to_contract` (D2). The MLS cumulative-days field is dead
+(500 non-null of ~595k, all Closed) — do not read it.
+
 ```sql
 -- correct
 SELECT "StreetNumber", "ListPrice", year_built FROM listings

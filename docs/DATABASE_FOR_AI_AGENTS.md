@@ -451,8 +451,15 @@ FROM public.listings WHERE "City" = 'Bend';
 SELECT ListingKey, ListPrice, BedroomsTotal FROM listings WHERE StandardStatus = 'Active';
 ```
 
+`listings` is a **two-market table**: Central Oregon and Southern Oregon rows live together.
+`mls_source` is a **constant** (`central_oregon` on 100% of rows, including Jackson County) —
+never filter on it. Scope is MLS `"City"` via `market_in_service_area` / `is_central_oregon_city`.
+
 **Quoted (Spark PascalCase) columns:**
-`"ListingKey"`, `"ListNumber"`, `"StreetNumber"`, `"StreetName"`, `"City"`, `"StateOrProvince"`, `"PostalCode"`, `"Latitude"`, `"Longitude"`, `"ListPrice"`, `"OriginalListPrice"`, `"ClosePrice"`, `"OnMarketDate"`, `"CloseDate"`, `"StandardStatus"`, `"PropertyType"`, `"SubdivisionName"`, `"BedroomsTotal"`, `"BathroomsTotal"`, `"TotalLivingAreaSqFt"`, `"PhotoURL"`, `"PublicRemarks"`, `"CumulativeDaysOnMarket"`, `"DaysOnMarket"`, `"ModificationTimestamp"`.
+`"ListingKey"`, `"ListNumber"`, `"StreetNumber"`, `"StreetName"`, `"City"`, `"StateOrProvince"`, `"PostalCode"`, `"Latitude"`, `"Longitude"`, `"ListPrice"`, `"OriginalListPrice"`, `"ClosePrice"`, `"OnMarketDate"`, `"CloseDate"`, `"StandardStatus"`, `"PropertyType"`, `"SubdivisionName"`, `"BedroomsTotal"`, `"BathroomsTotal"`, `"TotalLivingAreaSqFt"`, `"PhotoURL"`, `"PublicRemarks"`, `"DaysOnMarket"`, `"ModificationTimestamp"`.
+
+**Dead / do not read:** `"CumulativeDaysOnMarket"` (500 non-null of ~595k, all Closed).
+**`"DaysOnMarket"` is list-to-close, not days-to-contract** — do not publish it as DOM.
 
 **Snake_case (computed/promoted) columns — no quoting required:**
 `year_built`, `pending_timestamp`, `price_per_sqft`, `close_price_per_sqft`, `sale_to_list_ratio`, `days_to_pending`, `days_pending_to_close`, `property_age`, `lot_size_acres`, `lot_size_sqft`, `tax_annual_amount`, `hoa_monthly`, `estimated_monthly_piti`, `school_district`, `boundary_city`, `boundary_neighborhood`, `boundary_subdivision`.

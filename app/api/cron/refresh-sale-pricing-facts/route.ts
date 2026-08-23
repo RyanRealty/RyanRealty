@@ -130,6 +130,21 @@ export async function GET(request: Request) {
     spanAfter = marketFactSpan.last_key
     if (span?.done) break
   }
+  const { data: shadow, error: shadowErr } = await supabase.rpc('compute_market_metrics_shadow')
+  if (shadowErr) {
+    console.error('[refresh-sale-pricing-facts] compute_market_metrics_shadow', shadowErr.message)
+    return NextResponse.json(
+      {
+        ok: false,
+        error: shadowErr.message,
+        upserted,
+        indexes: idx,
+        marketFactSale: factSale,
+        marketFactSpan,
+      },
+      { status: 500 },
+    )
+  }
   let listingReads = { stamped: 0, skipped: 0, due: 0 }
   try {
     listingReads = await stampListingPricingReadsBatch(done ? 24 : 6)
@@ -146,6 +161,7 @@ export async function GET(request: Request) {
     listingReads,
     marketFactSale: factSale,
     marketFactSpan,
+    marketMetricShadow: shadow,
     done,
     indexes: idx,
     duration_ms: Date.now() - started,

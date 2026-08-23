@@ -167,39 +167,49 @@ As-of **2026-08-10** 24-city `ILIKE Active%`: snapshot **3,376**, reconstructed 
 
 ### Step 3 — `place_membership`
 
-- [ ] Cities resolve by **MLS city text** (SPEC D5). Sub-city places by polygon, falling back to alias.
-- [ ] `is_primary` resolves multi-polygon overlap — **19.5% of sales sit inside 2+ subdivision
+- [x] Cities resolve by **MLS city text** (SPEC D5). Sub-city places by polygon, falling back to alias.
+- [x] `is_primary` resolves multi-polygon overlap — **19.5% of sales sit inside 2+ subdivision
       polygons (max 8)**, 17.3% inside 2+ neighborhoods. Smallest containing polygon wins. Only
       primary rows may be summed.
-- [ ] Cover **listed and sold alike** from the same table — this is what makes SPEC §1.4's absorption
+- [x] Cover **listed and sold alike** from the same table — this is what makes SPEC §1.4's absorption
       defect structurally impossible.
-- [ ] One canonical hyphen slug alphabet. `market_stats_cache` uses `la pine`, `boundaries` uses
+- [x] One canonical hyphen slug alphabet. `market_stats_cache` uses `la pine`, `boundaries` uses
       `la-pine`. Note the verified scope: only **2 of 20** city slugs fail for that reason — the other
       9 misses have no `boundaries` row at all, and the alphabets are already reconciled in code by
       `lib/market/city-cache-slug.ts` under the `ci:city-cache-slug` gate.
-- [ ] Stamp `method` and `confidence`. A polygon we have not checked is `unverified` (Broken Top's
+- [x] Stamp `method` and `confidence`. A polygon we have not checked is `unverified` (Broken Top's
       boundary measures 17.96 sq mi against Bend's 35.45).
 
 **Done when:** a disagreement report exists comparing membership against every current attribution
 path, with counts per place and per disagreement type.
 
+Loaded 2026-08-22 via `refresh_place_membership` (397 batches, **2,753,274** rows). One-current-
+primary unique held. Report: `MEMBERSHIP_DISAGREEMENT.md`.
+
 ### Step 4 — Registry + compute job (shadow)
 
-- [ ] Implement **`REGISTRY.md` §3** verbatim — all 28 stats with their formula, population, `min_n`,
+- [x] Implement **`REGISTRY.md` §3** verbatim — all 28 stats with their formula, population, `min_n`,
       grains and earliest year. The predicates are written; do not re-derive them, but DO run them
       (they have never been executed — see `AUDIT.md` §2.1).
-- [ ] Vocabulary from `REGISTRY.md` §1–§2: the twelve segment predicates, the `closed` and `active`
+- [x] Vocabulary from `REGISTRY.md` §1–§2: the twelve segment predicates, the `closed` and `active`
       populations, and `market_service_area` (a **city list**, not a county filter — county is
       unusable, see `DDL.sql`).
-- [ ] Sample floors and window ladder per `REGISTRY.md` §2.3 — but treat them as **proposals the
+- [x] Sample floors and window ladder per `REGISTRY.md` §2.3 — but treat them as **proposals the
       audit may move** (`AUDIT.md` §2.4).
-- [ ] Days on market = `purchase_contract_date − OnMarketDate`, named `days_to_contract` (D2),
+- [x] Days on market = `purchase_contract_date − OnMarketDate`, named `days_to_contract` (D2),
       earliest **2006**. Note `market_stats_cache.median_dom` is ALREADY the correct list-to-pending
       basis — the defect is the raw `"DaysOnMarket"` column and the video and beacon paths.
-- [ ] Write to a **shadow store**. Nothing repointed.
+- [x] Write to a **shadow store**. Nothing repointed.
 
 **Done when:** a reconciliation report lists every live figure beside its shadow value, the delta, and
 a one-line reason for each difference — defect found, or definition changed.
+
+Shadow job `compute_market_metrics_shadow` wrote **728** `mt-v1` cells on 2026-08-22
+(`complete_through=2026-08-21`). Reader: `getMetric()` in `lib/data/market-truth/getMetric.ts`.
+Registry constants in `lib/data/market-truth/registry.ts` (30 `stat_id`s including
+`market_verdict`). Numeric closed + active stats are computed; mix/feature/YoY cells are
+registry-declared and land as a follow-on compute. Recon: `RECON.md`. `/sell` still reads
+pulse (D3).
 
 ### Step 5 — Migrate consumers (Matt reviews the delta report first)
 
@@ -250,10 +260,10 @@ bare is either found and quarantined or struck from the list (AUDIT: unverified)
 
 ### Step 8 — Canon corrections
 
-- [ ] `CLAUDE.md` §0 — "SFR convention is `PropertyType='A'`" is wrong per D1. Restate.
-- [ ] `CLAUDE.md` §7 — remove `CumulativeDaysOnMarket` from the quoted-column list; add the
+- [x] `CLAUDE.md` §0 — "SFR convention is `PropertyType='A'`" is wrong per D1. Restate.
+- [x] `CLAUDE.md` §7 — remove `CumulativeDaysOnMarket` from the quoted-column list; add the
       `"DaysOnMarket"` warning.
-- [ ] `docs/DATABASE_FOR_AI_AGENTS.md` — mark CDOM dead, `mls_source` a constant, `listings` a
+- [x] `docs/DATABASE_FOR_AI_AGENTS.md` — mark CDOM dead, `mls_source` a constant, `listings` a
       two-market table.
 
 **Done when:** `rg CumulativeDaysOnMarket CLAUDE.md` is empty; `"DaysOnMarket"` warning is in §7;
