@@ -35,6 +35,7 @@ import {
   unionRequiredSignerRoles,
   type FormSignerSource,
 } from '@/lib/tc/required-signers'
+import { getFormSourcesForEnvelope } from '@/lib/data/tc/envelope-form-sources'
 
 /**
  * TC envelope composer + lifecycle (Phase 2b). Build an envelope from PDF
@@ -243,7 +244,7 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     signedAt: f.signed_at,
   }))
 
-  const requiredSignerRoles = unionRequiredSignerRoles(await formSourcesForEnvelope(supabase, envelopeId))
+  const requiredSignerRoles = unionRequiredSignerRoles(await getFormSourcesForEnvelope(envelopeId))
   const missingSignerRoles = missingRequiredSignerRoles(
     requiredSignerRoles,
     rs.map((r) => ({ role: r.role, actionRequired: r.actionRequired })),
@@ -271,27 +272,6 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     requiredSignersLabel: requiredSignersLabel(requiredSignerRoles),
     missingSignerRoles,
   }
-}
-
-async function formSourcesForEnvelope(
-  supabase: ReturnType<typeof getServiceSupabase>,
-  envelopeId: string,
-): Promise<FormSignerSource[]> {
-  const { data: envDocs } = await supabase
-    .from('tc_envelope_documents')
-    .select('form_version_id')
-    .eq('envelope_id', envelopeId)
-  const ids = ((envDocs ?? []) as DbRow[]).map((d) => d.form_version_id).filter(Boolean) as string[]
-  if (!ids.length) return []
-  const { data: forms } = await supabase
-    .from('tc_form_versions')
-    .select('form_number, signer_profile, field_map')
-    .in('id', ids)
-  return ((forms ?? []) as DbRow[]).map((f) => ({
-    formNumber: f.form_number ?? null,
-    signerProfile: f.signer_profile ?? null,
-    fieldMap: (f.field_map ?? []) as FormSignerSource['fieldMap'],
-  }))
 }
 
 // ---------------------------------------------------------------------------
@@ -723,7 +703,7 @@ export async function sendEnvelope(
   const hasSignature = ((fields ?? []) as DbRow[]).some((f) => f.type === 'signature')
   if (!hasSignature) return { ok: false, error: 'Place at least one signature field' }
 
-  const requiredRoles = unionRequiredSignerRoles(await formSourcesForEnvelope(supabase, envelopeId))
+  const requiredRoles = unionRequiredSignerRoles(await getFormSourcesForEnvelope(envelopeId))
   const missingRoles = missingRequiredSignerRoles(
     requiredRoles,
     recipients.map((r) => ({ role: r.role, actionRequired: r.action_required })),
