@@ -77,7 +77,10 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
   const { data: deal } = await sb.from('tc_deals').select('id, broker_name, address').eq('id', dealId).maybeSingle()
   if (!deal) return
   const broker = (deal.broker_name ?? '').trim().toLowerCase()
-  const { data: cycles } = await sb.from('tc_cycles').select('kind, raw, buyers, sellers').eq('deal_id', dealId)
+  const { data: cycles } = await sb
+    .from('tc_cycles')
+    .select('id, kind, raw, buyers, sellers, escrow_number')
+    .eq('deal_id', dealId)
   const { extractPartiesFromCycleRaw } = await import('@/lib/tc/cycle-contacts')
   const parties = (cycles ?? []).flatMap((c) => {
     const fromRaw = extractPartiesFromCycleRaw(c.raw)
@@ -98,7 +101,7 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
     (cycles ?? []).map((c) => String(c.kind ?? '')),
     (existing ?? []).map((r) => r.role as 'buyer' | 'seller' | 'other'),
   )
-  const { data: existingContacts } = await sb.from('tc_deal_contacts').select('name, email').eq('deal_id', dealId)
+  const { data: existingContacts } = await sb.from('tc_deal_contacts').select('name, email, role').eq('deal_id', dealId)
   const haveContact = new Set(
     (existingContacts ?? []).map((c) => `${(c.name ?? '').trim().toLowerCase()}|${(c.email ?? '').trim().toLowerCase()}`),
   )
@@ -151,6 +154,63 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
       role: p.role,
     })
     if (!error) have.add(got.personId)
+  }
+
+  const needsAgent = (existingContacts ?? []).every((c) => c.role !== 'other_agent' || !c.email)
+  const needsEscrow = (cycles ?? []).some((c) => !c.escrow_number)
+  const { count: offerCount } = await sb
+    .from('tc_offers')
+    .select('id', { count: 'exact', head: true })
+    .eq('deal_id', dealId)
+  if (!needsAgent && !needsEscrow && (offerCount ?? 0) > 0) return
+  try {
+    const { harvestDealMailboxFacts } = await import('@/lib/tc/mailbox-harvest-run')
+    const facts = await harvestDealMailboxFacts({
+      dealId,
+      address: String(deal.address ?? ''),
+      brokerName: deal.broker_name,
+    })
+    if (facts.otherAgent) {
+      const { data: agents } = await sb
+        .from('tc_deal_contacts')
+        .select('id, email')
+        .eq('deal_id', dealId)
+        .eq('role', 'other_agent')
+      const blank = (agents ?? []).find((a) => !a.email)
+      if (blank) {
+        await sb
+          .from('tc_deal_contacts')
+          .update({ email: facts.otherAgent.email, name: facts.otherAgent.name })
+          .eq('id', blank.id)
+      } else if (!(agents ?? []).length) {
+        await sb.from('tc_deal_contacts').insert({
+          deal_id: dealId,
+          role: 'other_agent',
+          name: facts.otherAgent.name,
+          email: facts.otherAgent.email,
+          source: 'manual',
+        })
+      }
+    }
+    if (facts.escrowNumber) {
+      const cycle = (cycles ?? []).find((c) => !c.escrow_number) ?? (cycles ?? [])[0]
+      if (cycle?.id && !cycle.escrow_number) {
+        await sb.from('tc_cycles').update({ escrow_number: facts.escrowNumber }).eq('id', cycle.id)
+      }
+    }
+    if ((offerCount ?? 0) === 0) {
+      for (const o of facts.offers) {
+        await sb.from('tc_offers').insert({
+          deal_id: dealId,
+          buyer_name: 'Buyer (via agent)',
+          buyer_agent: o.buyerAgent,
+          price: o.price,
+          status: 'received',
+        })
+      }
+    }
+  } catch (err) {
+    console.warn('[ensureDealPartiesFromFile] mailbox facts', err)
   }
 }
 

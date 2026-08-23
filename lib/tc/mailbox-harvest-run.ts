@@ -19,7 +19,13 @@ async function headersForQuery(mailbox: string, query: string): Promise<MailHead
     })
     const headers = m.data.payload?.headers ?? []
     const get = (n: string) => headers.find((h) => h.name?.toLowerCase() === n.toLowerCase())?.value ?? ''
-    out.push({ from: get('From'), to: get('To'), cc: get('Cc'), subject: get('Subject') })
+    out.push({
+      from: get('From'),
+      to: get('To'),
+      cc: get('Cc'),
+      subject: get('Subject'),
+      snippet: m.data.snippet ?? '',
+    })
   }
   return out
 }
@@ -53,3 +59,34 @@ export async function findPartyEmailInMailboxes(input: {
 }
 
 export { parseMailboxHeader }
+
+/** Fill other-side agent, escrow #, and inbound offers from broker mail about this address. */
+export async function harvestDealMailboxFacts(input: {
+  dealId: string
+  address: string
+  brokerName: string | null
+}): Promise<{
+  otherAgent: { name: string; email: string } | null
+  escrowNumber: string | null
+  offers: ReturnType<typeof import('./mailbox-harvest').harvestOffersFromMail>
+}> {
+  const { harvestOtherSideAgent, harvestEscrowNumber, harvestOffersFromMail, gmailQueryForAddress } =
+    await import('./mailbox-harvest')
+  const tokens = addressTokens(input.address)
+  const q = gmailQueryForAddress(tokens)
+  const headers: MailHeader[] = []
+  if (q) {
+    for (const box of mailboxesForDeal(input.brokerName)) {
+      try {
+        headers.push(...(await headersForQuery(box, q)))
+      } catch (err) {
+        console.warn('[mailbox-harvest facts]', box, err)
+      }
+    }
+  }
+  return {
+    otherAgent: harvestOtherSideAgent(headers),
+    escrowNumber: harvestEscrowNumber(headers),
+    offers: harvestOffersFromMail(headers),
+  }
+}
