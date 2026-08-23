@@ -176,10 +176,8 @@ export const DESTINATIONS: NavDestination[] = [
     icon: 'handshake',
     capability: 'transactions.view',
     defaultOpen: true,
-    // Signing + Sign-off unparked 2026-08-23 (product bar: brokers prepare +
-    // send; Matt verifies). Pages were already live; they were footer/Oversight
-    // links only. `esign.send` stays parked — compose is visible, live send
-    // remains the existing envelope action gate.
+    // Signing + Sign-off unparked 2026-08-23. `esign.send` unparked the same
+    // day — compose Send is the live send path (capability matches the action).
     children: [
       { label: 'Board', href: '/admin/closings', icon: 'handshake', capability: 'transactions.view' },
       { label: 'Production', href: '/admin/closings/production', icon: 'bar-chart', capability: 'transactions.view' },

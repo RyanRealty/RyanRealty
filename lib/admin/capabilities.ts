@@ -16,9 +16,9 @@ import type { AdminRoleType } from '@/app/actions/admin-roles'
  *
  * The enum is append-only and co-located: each domain spec adds its capabilities
  * here as it lands. This v1 set reflects Matt's locked decisions (2026-07-16):
- *  - D1 e-sign: `esign.send` stays parked (send still gated until a proven
- *    round-trip). `transactions.signoff` UNPARKED 2026-08-23 — principal
- *    queue is live and belongs on the Closings rail (Matt 2026-08-21 bar).
+ *  - D1 e-sign: `esign.send` UNPARKED 2026-08-23 — composer Send is live
+ *    (Matt complete-remaining /endtoend). `transactions.signoff` unparked
+ *    same day on the Closings rail.
  *  - D3 scoped brokers → brokers hold a scoped `performance.view`; the money caps
  *    (`performance.financials`, `financials.view`, `commissions.view`) are
  *    superuser-only, and brokers reach Content via blog/guides/listings only.
@@ -50,6 +50,7 @@ export type Capability =
   | 'calendar.use'
   // ── Transactions ──
   | 'transactions.edit'
+  | 'esign.send' // compose + send envelope; brokers (Matt 2026-08-23 bar)
   | 'transactions.signoff' // principal-broker queue; superuser only
   | 'commissions.view'
   | 'financials.view'
@@ -128,6 +129,7 @@ export const CAPABILITY_ROLES: Record<Capability, AdminRoleType[]> = {
   'calendar.use': ['broker'],
   // Transactions
   'transactions.edit': ['broker'],
+  'esign.send': ['broker'],
   'transactions.signoff': [], // superuser only (principal broker, OAR 863-015-0140)
   'commissions.view': [], // superuser only; brokers see own rows via row scope (D4)
   'financials.view': [], // superuser only

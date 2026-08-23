@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
+import { checkAdminAction, getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
 import { getDealContacts } from '@/app/actions/tc-contacts'
@@ -611,8 +611,9 @@ export async function sendEnvelope(
   envelopeId: string,
   opts?: { remindersEnabled?: boolean },
 ): Promise<{ ok: boolean; error?: string }> {
-  const auth = await requireBroker()
-  if ('error' in auth) return { ok: false, error: auth.error }
+  const gate = await checkAdminAction('esign.send')
+  if (!gate.ok) return { ok: false, error: gate.error }
+  const auth = { email: gate.ctx.email }
 
   const supabase = getServiceSupabase()
   const env = await loadDraftEnvelope(supabase, envelopeId)

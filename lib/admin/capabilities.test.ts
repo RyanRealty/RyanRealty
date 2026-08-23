@@ -65,11 +65,12 @@ describe('capability model', () => {
     expect(hasCapability(ctx('superuser'), 'people.export')).toBe(true)
   })
 
-  it('sign-off is superuser-only; esign.send stays parked (D1 send gate)', () => {
+  it('sign-off is superuser-only; brokers can send envelopes', () => {
     expect(ALL_CAPABILITIES).toContain('transactions.signoff')
     expect(hasCapability(ctx('superuser'), 'transactions.signoff')).toBe(true)
     expect(hasCapability(ctx('broker'), 'transactions.signoff')).toBe(false)
-    expect(ALL_CAPABILITIES).not.toContain('esign.send')
+    expect(ALL_CAPABILITIES).toContain('esign.send')
+    expect(hasCapability(ctx('broker'), 'esign.send')).toBe(true)
   })
 })
 

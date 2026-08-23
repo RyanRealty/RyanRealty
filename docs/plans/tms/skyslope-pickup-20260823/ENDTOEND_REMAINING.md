@@ -13,10 +13,9 @@ A broker opens a live deal and the file is usable without retyping mail:
 7. **esign.send** stays parked (D1 lock vs “complete remaining” — send already lives on the composer).
 8. **Tyler Nicoll** stays other-side; we do not invent a personal email.
 
-Shipped 2026-08-23: offer PDF pull, extra dataRefs, Highlight field, richer CDA, Residential — Standard packet seed.
+Shipped 2026-08-23: offer PDF pull, extra dataRefs, Highlight, CDA, Residential packet, esign.send unparked (matches composer Send).
 
 ## Stops (named)
 
-1. **Credential:** Google Admin DWD still `calendar.readonly` — CRM calendar writes; Google Calendar create waits on `https://www.googleapis.com/auth/calendar`.
-2. **Conflicting lock:** D1 `esign.send` stays parked. Composer Send for signature is already live.
-3. **Tyler Nicoll** remains other-side; no personal email in our mailboxes.
+1. **Credential:** Google Admin DWD is `calendar.readonly`. Verified 2026-08-23: `calendar` write returns `unauthorized_client`. CRM calendar still gets listing expiration / acceptance / close. To land events on Google Calendar, add `https://www.googleapis.com/auth/calendar` to the Workspace DWD client for the service account.
+2. **Tyler Nicoll:** other-side buyer (Tiffany Clark). 12 Beaumont/Nicoll bodies scanned — no personal `nicoll@` / `tyler@`. Not a CRM lead.
