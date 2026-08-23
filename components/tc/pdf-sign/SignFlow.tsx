@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PdfPages } from './pdf-pages'
 import { SignaturePad } from './SignaturePad'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,10 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<null | 'completed' | 'partial'>(null)
   const [error, setError] = useState<string | null>(null)
+  const [signedDate, setSignedDate] = useState('')
+  useEffect(() => {
+    setSignedDate(new Date().toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }))
+  }, [])
 
   const requiredIds = useMemo(
     () => payload.fields.filter((f) => f.required && f.type !== 'strike').map((f) => f.id),
@@ -141,7 +145,11 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
                       value={values.get(f.id) ?? null}
                       onSignature={() => setPad(f)}
                       onText={(text) => setValue(f.id, { kind: f.type === 'date_signed' ? 'date_signed' : 'text', text })}
-                      onDate={() => setValue(f.id, { kind: 'date_signed', text: new Date().toLocaleDateString('en-US') })}
+                      onDate={() =>
+                        signedDate
+                          ? setValue(f.id, { kind: 'date_signed', text: signedDate })
+                          : undefined
+                      }
                       onCheckbox={(checked) => setValue(f.id, { kind: 'checkbox', checked })}
                     />
                   ))}
