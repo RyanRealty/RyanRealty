@@ -20,8 +20,8 @@ import {
   createEnvelopeFromDocuments,
   createEnvelopeFromTemplate,
   type EnvelopeSummary,
-  type EnvelopeTemplateOption,
 } from '@/app/actions/tc-envelopes'
+import type { EnvelopeTemplateOption } from '@/lib/data/tc/listEnvelopeTemplates'
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
 
 export type DealEnvelopesCycle = {
