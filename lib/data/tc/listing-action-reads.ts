@@ -88,6 +88,32 @@ export async function listDealPropertyKeys(): Promise<string[]> {
   return (data ?? []).map((r) => String(r.property_key))
 }
 
+export type CdaCycleRow = {
+  id: string
+  deal_id: string
+  sale_price: number | null
+  office_gross: number | null
+  address: string
+}
+
+export async function getCycleForCda(cycleId: string): Promise<CdaCycleRow | null> {
+  const { data } = await client()
+    .from('tc_cycles')
+    .select('id, deal_id, sale_price, office_gross, tc_deals(address)')
+    .eq('id', cycleId)
+    .maybeSingle()
+  if (!data) return null
+  const deal = data.tc_deals as { address?: string } | { address?: string }[] | null
+  const address = Array.isArray(deal) ? deal[0]?.address : deal?.address
+  return {
+    id: String(data.id),
+    deal_id: String(data.deal_id),
+    sale_price: data.sale_price == null ? null : Number(data.sale_price),
+    office_gross: data.office_gross == null ? null : Number(data.office_gross),
+    address: address ? String(address) : 'Deal',
+  }
+}
+
 export async function getLatestListingCycle(dealId: string): Promise<ListingCycleCopy | null> {
   const { data } = await client()
     .from('tc_cycles')

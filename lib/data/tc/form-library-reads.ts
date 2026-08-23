@@ -21,6 +21,17 @@ export async function listFormPackets(): Promise<FormPacket[]> {
   }))
 }
 
+export async function findFormVersionIdByNumber(formNumber: string): Promise<string | null> {
+  const { data } = await createServiceClient()
+    .from('tc_form_versions')
+    .select('id')
+    .eq('form_number', formNumber)
+    .not('blank_pdf_storage_path', 'is', null)
+    .limit(1)
+  const id = data?.[0]?.id
+  return id ? String(id) : null
+}
+
 export async function listClauses(): Promise<ClauseRow[]> {
   const { data } = await createServiceClient()
     .from('tc_clauses')

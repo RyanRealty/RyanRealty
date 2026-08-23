@@ -1,16 +1,15 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createEnvelopeFromTemplate } from '@/app/actions/tc-envelopes'
+import { getCycleDealId } from '@/lib/data/tc/oref-packet-reads'
+import { findFormVersionIdByNumber } from '@/lib/data/tc/form-library-reads'
 
 function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key, { auth: { persistSession: false } })
+  return createServiceClient()
 }
 
 function monthsBetween(a: string, b: string): number {
@@ -44,9 +43,9 @@ export async function saveBuyerAgreementDraft(input: {
   if (monthsBetween(input.termStart, input.termEnd) > 24.05) {
     return { ok: false, error: 'Oregon caps the term at 24 months (OAR 863-015-0133).' }
   }
+  const dealId = await getCycleDealId(input.cycleId)
+  if (!dealId) return { ok: false, error: 'Cycle not found' }
   const sb = getServiceSupabase()
-  const { data: cycle } = await sb.from('tc_cycles').select('id, deal_id').eq('id', input.cycleId).maybeSingle()
-  if (!cycle) return { ok: false, error: 'Cycle not found' }
   const contents = {
     license: input.license.trim(),
     supervisingPb: input.supervisingPb.trim(),
@@ -61,7 +60,7 @@ export async function saveBuyerAgreementDraft(input: {
     rule: 'OAR 863-015-0133',
   }
   await sb.from('tc_events').insert({
-    deal_id: cycle.deal_id,
+    deal_id: dealId,
     cycle_id: input.cycleId,
     actor: email,
     action: 'buyer_agreement_drafted',
@@ -69,15 +68,10 @@ export async function saveBuyerAgreementDraft(input: {
   })
 
   const formNumber = input.exclusive ? '050' : '052'
-  const { data: forms } = await sb
-    .from('tc_form_versions')
-    .select('id, form_number, blank_pdf_storage_path')
-    .eq('form_number', formNumber)
-    .not('blank_pdf_storage_path', 'is', null)
-    .limit(1)
+  const formVersionId = await findFormVersionIdByNumber(formNumber)
   let envelopeId: string | undefined
-  if (forms?.[0]?.id) {
-    const env = await createEnvelopeFromTemplate(input.cycleId, [forms[0].id], `Buyer representation ${formNumber}`)
+  if (formVersionId) {
+    const env = await createEnvelopeFromTemplate(input.cycleId, [formVersionId], `Buyer representation ${formNumber}`)
     if (env.ok) envelopeId = env.envelopeId
   }
   revalidatePath(`/admin/deals/${input.propertyKey}`)

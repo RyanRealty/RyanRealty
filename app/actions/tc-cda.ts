@@ -2,17 +2,15 @@
 
 import { createHash } from 'node:crypto'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
-import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getCommissionsForCycles } from '@/app/actions/tc-commissions'
+import { getCycleForCda } from '@/lib/data/tc/listing-action-reads'
 
 function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key, { auth: { persistSession: false } })
+  return createServiceClient()
 }
 
 function money(n: number | null | undefined): string {
@@ -30,15 +28,11 @@ export async function generateCommissionCda(
   const role = await getAdminRoleForEmail(email)
   if (!email || !role) return { ok: false, error: 'Not authorized' }
 
-  const sb = getServiceSupabase()
-  const { data: cycle } = await sb
-    .from('tc_cycles')
-    .select('id, deal_id, sale_price, office_gross, tc_deals(address)')
-    .eq('id', cycleId)
-    .maybeSingle()
+  const cycle = await getCycleForCda(cycleId)
   if (!cycle) return { ok: false, error: 'Cycle not found' }
   const rows = await getCommissionsForCycles([cycleId])
-  const address = (cycle as { tc_deals?: { address?: string } }).tc_deals?.address ?? 'Deal'
+  const address = cycle.address
+  const sb = getServiceSupabase()
 
   const pdf = await PDFDocument.create()
   const page = pdf.addPage([612, 792])
