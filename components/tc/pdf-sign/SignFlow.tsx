@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PdfPages } from './pdf-pages'
 import { SignaturePad } from './SignaturePad'
 import { Button } from '@/components/ui/button'
@@ -31,16 +31,19 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<null | 'completed' | 'partial'>(null)
   const [error, setError] = useState<string | null>(null)
-  const [signedDate] = useState(() =>
-    new Date().toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }),
-  )
-  const [signedTime] = useState(() =>
-    new Date().toLocaleTimeString('en-US', {
-      timeZone: 'America/Los_Angeles',
-      hour: 'numeric',
-      minute: '2-digit',
-    }),
-  )
+  const [signedDate, setSignedDate] = useState('')
+  const [signedTime, setSignedTime] = useState('')
+  useEffect(() => {
+    const now = new Date()
+    setSignedDate(now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }))
+    setSignedTime(
+      now.toLocaleTimeString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+    )
+  }, [])
 
   const requiredIds = useMemo(
     () => payload.fields.filter((f) => f.required && !isSenderAnnotation(f.type)).map((f) => f.id),
