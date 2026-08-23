@@ -151,6 +151,11 @@
 import type { Metadata } from 'next'
 import { getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
 import {
+  getPublicPlaceSegments,
+  publicSegmentBrowseHref,
+  publicSegmentNoun,
+} from '@/lib/data/market-truth/public-segments'
+import {
   MOS_METHODOLOGY_CLAUSE,
   MOS_THRESHOLD_CLAUSE,
   marketVerdict,
@@ -228,9 +233,10 @@ export default async function MonthsOfSupplyPage() {
   //                   property_type='A'. lib/data/market/getRegionPulse.ts.
   //   citySnapshots - market_pulse_live, geo_type='city', geo_label in MOS_CITY_LABELS,
   //                   property_type='A'. lib/data/market/getMarketPulseSnapshot.ts.
-  const [regionPulse, citySnapshots] = await Promise.all([
+  const [regionPulse, citySnapshots, publicSegments] = await Promise.all([
     getRegionPulse(),
     getMarketPulseCitySnapshots([...MOS_CITY_LABELS]),
+    getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
   ])
 
   // Invariant 2, region. The verdict classifies the STORED value and
@@ -263,11 +269,19 @@ export default async function MonthsOfSupplyPage() {
       href: MOS_REGION_REPORT,
     })
   }
+  for (const row of publicSegments) {
+    if (row.monthsOfSupply == null || row.activeCount == null || row.activeCount <= 0) continue
+    regionFigures.push({
+      value: v3Text(formatMonthsOfSupply(row.monthsOfSupply)),
+      label: v3Text(`${publicSegmentNoun(row.segment, row.activeCount)} · months of supply`),
+      href: publicSegmentBrowseHref(null, row.segment),
+    })
+  }
   const [firstRegionFigure, ...restRegionFigures] = regionFigures
 
   // The region trace: the query, then the two canonical clauses, printed verbatim.
   const regionTrace =
-    'market_pulse_live through Oregon Data Share, active single-family listings across the Central Oregon region. ' +
+    'Detached months of supply is the region HUD overlay. Extra product-type months of supply are Market Truth mt-v1, sample-gated. ' +
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE

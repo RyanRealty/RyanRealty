@@ -136,6 +136,7 @@ describe('getSellBendMarket', () => {
   it('CMA city grain reads the same city detached helper as /sell', () => {
     const cma = readFileSync(resolve('lib/cma/market.ts'), 'utf8')
     expect(cma).toMatch(/getCityDetachedMarket/)
+    expect(cma).toMatch(/getPublicDetachedPace/)
     expect(cma).toMatch(/mt-v1 detached MLS-city/)
   })
 

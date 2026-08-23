@@ -364,6 +364,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23k landed: leftover panel 311 pending, 72 days age, 28 / 2,095 / $760,000 / $399 / 2,956 / 46.6% / 5.9% / 96.9% / 99.1% / 27.6% / 64 / -1.9% / +1.8%. Extra types 66 condos, 78 townhomes, 44 manufactured on land, 21 in parks, 21 2-4 unit, 198 lots, 9 farms, 17 commercial, 3 businesses. `/sell` prints leftover. Neighborhood MOS and county stay unpublished.
 
+### Grind 2026-08-23l — CMA leftover overlay + months-of-supply extra MOS
+
+**Done when:** a city-grain CMA uses leftover MT sale-to-original, YoY median, pending, median close, and ppsf instead of cache/pulse when publishable; `/months-of-supply` prints extra product-type MOS from Market Truth when sample-gated. Neighborhood MOS and county stay unpublished. Workers do not tick this file.
+
+2026-08-23l landed: CMA city grain overlays leftover MT. `/months-of-supply` extra MOS 14.2 condos, 4.8 townhomes, 6.3 manufactured on land, 3.7 in parks, 18.7 lots. Neighborhood MOS and county stay unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

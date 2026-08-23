@@ -20,6 +20,7 @@
 
 import { getCmaMarketPulseRow, getCmaMarketStatsRow, getCmaMarketTrendRows } from '@/lib/data/cma/builderReads'
 import { getCityDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
+import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import { getCmaMarketBoardYear } from '@/lib/cma/market-board-mart'
 import type { CmaMarketContext } from '@/lib/cma/types'
@@ -96,8 +97,10 @@ export async function getCmaMarketContext(
   ])
 
   const sold365 = num(stats.sold_count) ?? 0
-  const cityTruth =
-    geoType === 'city' ? await getCityDetachedMarket(stats.geo_slug) : null
+  const [cityTruth, cityPace] = await Promise.all([
+    geoType === 'city' ? getCityDetachedMarket(stats.geo_slug) : Promise.resolve(null),
+    geoType === 'city' ? getPublicDetachedPace({ geoType: 'city', geoSlug: stats.geo_slug }) : Promise.resolve(null),
+  ])
   // City grain: MT only. Pulse 488 / 3.54 / seller must not fill a miss.
   const active =
     cityTruth?.activeCount ?? (geoType === 'city' ? null : num(pulse?.active_count))
@@ -145,13 +148,14 @@ export async function getCmaMarketContext(
     periodStart: stats.period_start,
     periodEnd: stats.period_end,
     soldCount365: sold365,
-    medianSalePrice: num(stats.median_sale_price),
+    medianSalePrice: cityPace?.medianClose ?? num(stats.median_sale_price),
     medianDom: num(stats.median_dom),
-    medianPpsf: num(stats.median_price_per_sqft_closed) ?? num(stats.median_ppsf),
-    saleToListRatio: num(stats.avg_sale_to_list_ratio),
-    yoyMedianPriceDeltaPct: num(stats.yoy_median_price_delta_pct),
+    medianPpsf: cityPace?.medianPpsf ?? num(stats.median_price_per_sqft_closed) ?? num(stats.median_ppsf),
+    saleToListRatio: cityPace?.saleToOriginal ?? num(stats.avg_sale_to_list_ratio),
+    yoyMedianPriceDeltaPct:
+      cityPace?.yoyMedian != null ? cityPace.yoyMedian * 100 : num(stats.yoy_median_price_delta_pct),
     activeCount: active,
-    pendingCount: num(pulse?.pending_count),
+    pendingCount: cityPace?.pendingCount ?? num(pulse?.pending_count),
     medianListPrice: cityTruth?.medianListPrice ?? num(pulse?.median_list_price),
     monthsOfSupply,
     mosFormula,
