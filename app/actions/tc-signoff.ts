@@ -27,8 +27,12 @@ function getServiceSupabase() {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST rows narrow at mapping sites
 type DbRow = Record<string, any>
 
-export type { SignOffItem, SignOffDeal, SignOffQueue } from '@/lib/data'
-export { getPrincipalSignOffQueue } from '@/lib/data'
+export type { SignOffItem, SignOffDeal, SignOffQueue } from '@/lib/data/tc/getPrincipalSignOffQueue'
+import { getPrincipalSignOffQueue as loadSignOffQueue } from '@/lib/data/tc/getPrincipalSignOffQueue'
+
+export async function getPrincipalSignOffQueue() {
+  return loadSignOffQueue()
+}
 
 // ---------------------------------------------------------------------------
 // The review action — writes the OAR 863-015-0140 named + dated review record.

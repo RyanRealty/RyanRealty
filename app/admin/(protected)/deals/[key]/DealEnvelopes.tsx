@@ -21,8 +21,14 @@ import {
   createEnvelopeFromTemplate,
   type EnvelopeSummary,
 } from '@/app/actions/tc-envelopes'
-import type { EnvelopeTemplateOption } from '@/lib/data/tc/listEnvelopeTemplates'
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
+
+type EnvelopeTemplateOption = {
+  id: string
+  name: string
+  formNumber: string | null
+  libraryCode: string
+}
 
 export type DealEnvelopesCycle = {
   cycleId: string

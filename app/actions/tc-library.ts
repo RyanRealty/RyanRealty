@@ -6,7 +6,6 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 
 export type { FormPacket, ClauseRow } from '@/lib/data/tc/form-library-reads'
-export { listFormPackets, listClauses } from '@/lib/data/tc/form-library-reads'
 
 async function requireEditor() {
   const session = await getSession()
