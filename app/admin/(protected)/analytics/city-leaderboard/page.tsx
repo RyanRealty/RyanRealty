@@ -70,21 +70,25 @@ function emptyCopy(statId: string, label: string) {
   )
 }
 
+type RankRow = LeaderboardRow & { display: string }
+
+function withDisplay(rows: LeaderboardRow[], display: (value: number) => string): RankRow[] {
+  return rows.map((r) => ({ ...r, display: display(r.value) }))
+}
+
 function RankBoard({
   title,
   note,
   label,
   rows,
   valueHeader,
-  formatValue,
   empty,
 }: {
   title: string
   note: string
   label: string
-  rows: LeaderboardRow[]
+  rows: RankRow[]
   valueHeader: string
-  formatValue: (value: number) => string
   empty: ReactNode
 }) {
   return (
@@ -117,7 +121,7 @@ function RankBoard({
             key: 'value',
             header: valueHeader,
             num: true,
-            cell: (r) => formatValue(r.value),
+            cell: (r) => r.display,
           },
           {
             key: 'n',
@@ -180,54 +184,48 @@ async function CityBoards() {
         title="YoY median price — largest gain"
         note="Ranked by year-over-year median close, largest gain first. Value is the ratio (now / year-ago − 1)."
         label="YoY median price largest gain"
-        rows={yoyGain}
+        rows={withDisplay(yoyGain, formatSignedPct)}
         valueHeader="YoY"
-        formatValue={formatSignedPct}
         empty={emptyCopy('yoy_median_price', 'YoY median price (gain)')}
       />
       <RankBoard
         title="YoY median price — largest decline"
         note="Same stat, inverted: biggest drop first. A miss is not 0%."
         label="YoY median price largest decline"
-        rows={yoyDrop}
+        rows={withDisplay(yoyDrop, formatSignedPct)}
         valueHeader="YoY"
-        formatValue={formatSignedPct}
         empty={emptyCopy('yoy_median_price', 'YoY median price (decline)')}
       />
       <RankBoard
         title="Most expensive"
         note="Active detached median list price, highest first."
         label="Most expensive cities by median list"
-        rows={expensive}
+        rows={withDisplay(expensive, formatPriceExact)}
         valueHeader="Median list"
-        formatValue={formatPriceExact}
         empty={emptyCopy('median_list_active', 'median list (active)')}
       />
       <RankBoard
         title="Fastest to contract"
         note="Median days to contract, lowest first. This is days to contract, never days on market."
         label="Fastest to contract"
-        rows={fastest}
+        rows={withDisplay(fastest, formatDays)}
         valueHeader="Days to contract"
-        formatValue={formatDays}
         empty={emptyCopy('median_days_to_contract', 'days to contract')}
       />
       <RankBoard
         title="Most price cuts"
         note="Share of closed sales where original list was above final list, highest first."
         label="Most price cuts"
-        rows={priceCuts}
+        rows={withDisplay(priceCuts, formatSharePct)}
         valueHeader="Price-cut share"
-        formatValue={formatSharePct}
         empty={emptyCopy('pct_with_price_cut', 'price-cut share')}
       />
       <RankBoard
         title="Most new inventory"
         note="New listings in the window, highest first."
         label="Most new inventory"
-        rows={newInventory}
+        rows={withDisplay(newInventory, formatCount)}
         valueHeader="New listings"
-        formatValue={formatCount}
         empty={emptyCopy('new_listings', 'new listings')}
       />
     </>
