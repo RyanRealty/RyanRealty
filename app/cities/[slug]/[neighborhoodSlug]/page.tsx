@@ -68,7 +68,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishSoldCount } from '@/lib/market/publish-months-of-supply'
+import { publishMonthsOfSupply, publishSoldCount } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
@@ -384,9 +384,16 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const monthsOfSupply = pulse?.monthsOfSupply ?? null
+  const hudActive = pulse?.activeCount ?? activeCount ?? null
+  const monthsOfSupply = publishMonthsOfSupply({
+    grain: 'neighborhood',
+    source: 'market-truth',
+    pulseMos: pulse?.monthsOfSupply,
+    pulseActiveCount: pulse?.activeCount,
+    displayedActiveCount: hudActive,
+  })
   const marketData: KbMarketData = {
-    active: pulse?.activeCount ?? activeCount ?? null,
+    active: hudActive,
     closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
     medianList: pulse?.medianListPrice ?? medianListPrice,
@@ -401,8 +408,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   // ── PAGE CONTRACT: AI-citable verified Q&A + structured data ───────────────
   const marketFaqInput: MarketFaqInput = {
-    ...(pulse ?? {}), grain: 'neighborhood', // withholds MoS + sold count (geo-grain-trust.ts)
-    activeCount,
+    ...(pulse ?? {}), grain: 'neighborhood',
+    source: 'market-truth',
+    activeCount: hudActive,
+    pulseActiveCount: pulse?.activeCount,
     medianListPrice: medianListPrice ?? pulse?.medianListPrice ?? null,
     monthsOfSupply,
     soldCount12mo: publishSoldCount({ value: stats?.soldCount, grain: 'neighborhood' }),

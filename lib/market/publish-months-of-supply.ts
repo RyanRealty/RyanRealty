@@ -53,8 +53,13 @@ export function publishMonthsOfSupply(input: {
   pulseActiveCount?: number | null
   displayedActiveCount?: number | null
   soldCount12mo?: number | null
+  /**
+   * Pulse neighborhood MOS is mixed-method (polygon actives, alias closes).
+   * Market Truth MOS uses place_membership is_primary on both sides.
+   */
+  source?: 'pulse' | 'market-truth'
 }): number | null {
-  if (!isSoldAttributionTrusted(input.grain)) return null
+  if (input.source !== 'market-truth' && !isSoldAttributionTrusted(input.grain)) return null
 
   const mos = asFinite(input.pulseMos)
   if (mos == null || mos <= 0) return null

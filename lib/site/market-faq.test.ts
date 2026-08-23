@@ -231,4 +231,18 @@ describe('buildMarketFaq at an untrusted grain', () => {
     expect(faqs.map((f) => f.question).join(' ')).toMatch(/how many homes sold/i)
     expect(datasetVariables.find((v) => v.name === 'Months of Supply')?.value).toBe(48)
   })
+
+  it('publishes Market Truth neighborhood MOS when the source is declared and counts match', () => {
+    const { faqs, datasetVariables } = buildMarketFaq('Sunriver', {
+      grain: 'neighborhood',
+      source: 'market-truth',
+      activeCount: 56,
+      pulseActiveCount: 56,
+      monthsOfSupply: 7.47,
+    })
+    const mos = faqs.find((f) => f.question.includes("buyer's or seller's"))
+    expect(mos?.answer).toContain('7.5 months of supply')
+    expect(mos?.answer).toContain("which is a buyer's market")
+    expect(datasetVariables.find((v) => v.name === 'Months of Supply')?.value).toBe(7.5)
+  })
 })

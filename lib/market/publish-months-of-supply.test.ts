@@ -91,4 +91,29 @@ describe('publishMonthsOfSupply', () => {
       expect(publishMonthsOfSupply({ grain: 'neighborhood', pulseMos: mos })).toBeNull()
     }
   })
+
+  it('publishes a same-source Market Truth neighborhood MOS when the printed count is the numerator', () => {
+    // Sunriver 2026-08-23: 56 actives / 45 closes / 7.47, membership is_primary both sides.
+    expect(
+      publishMonthsOfSupply({
+        grain: 'neighborhood',
+        source: 'market-truth',
+        pulseMos: 7.47,
+        pulseActiveCount: 56,
+        displayedActiveCount: 56,
+      }),
+    ).toBe(7.47)
+  })
+
+  it('still withholds Market Truth neighborhood MOS when the printed count is not the numerator', () => {
+    expect(
+      publishMonthsOfSupply({
+        grain: 'neighborhood',
+        source: 'market-truth',
+        pulseMos: 7.47,
+        pulseActiveCount: 56,
+        displayedActiveCount: 79,
+      }),
+    ).toBeNull()
+  })
 })

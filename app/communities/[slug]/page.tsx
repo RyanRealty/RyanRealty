@@ -79,7 +79,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishSoldCount } from '@/lib/market/publish-months-of-supply'
+import { publishMonthsOfSupply, publishSoldCount } from '@/lib/market/publish-months-of-supply'
 import { formatPlaceHoaAnnual, placeHoaGlanceLabel, publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
@@ -609,10 +609,19 @@ export default async function CommunityDetailPage({ params }: Props) {
   const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : coreChartsRaw
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const monthsOfSupply = pulse?.monthsOfSupply ?? null
+  // Overlay inventory (membership is_primary) is the MOS numerator. FAQ must
+  // print the same count so HUD and structured data cannot disagree (§0).
+  const hudActive = pulse?.activeCount ?? activeCount
+  const monthsOfSupply = publishMonthsOfSupply({
+    grain: 'neighborhood',
+    source: 'market-truth',
+    pulseMos: pulse?.monthsOfSupply,
+    pulseActiveCount: pulse?.activeCount,
+    displayedActiveCount: hudActive,
+  })
   const sellMedian = publishSellMedian({ placeMedian: medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
   const marketData: KbMarketData = {
-    active: pulse?.activeCount ?? activeCount,
+    active: hudActive,
     closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
     medianList: pulse?.medianListPrice ?? medianListPrice,
@@ -646,12 +655,12 @@ export default async function CommunityDetailPage({ params }: Props) {
   // case the schools section + FAQ are silently omitted rather than fabricated.
   const schoolDistrictInfo = getDistrictForCity(cityName)
 
-  const marketFaqInput: MarketFaqInput = { grain: 'neighborhood', // withholds MoS + sold count
-    // Alias-aware active count (the same number the hero shows). (§0 / NWX fix)
-    activeCount,
-    // The SAME figure the hero renders, so the FAQ answer and the market Dataset
-    // cannot disagree with the page they sit on. This ran its own chain ending at
-    // a closed-sale median, so the wrong number reached the structured data too.
+  const marketFaqInput: MarketFaqInput = { grain: 'neighborhood',
+    source: 'market-truth',
+    // Same detached count the HUD prints (Market Truth overlay when present).
+    // Alias-aware tile counts stay on the hero; MOS cannot sit next to them.
+    activeCount: hudActive,
+    pulseActiveCount: pulse?.activeCount,
     medianListPrice,
     monthsOfSupply,
     // Prefer pulse days-to-pending; fall back to stats cache DOM (12-month rolling).

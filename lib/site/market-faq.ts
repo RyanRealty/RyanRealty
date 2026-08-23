@@ -32,6 +32,11 @@ export type MarketFaqInput = {
    * join that found 2 of the 42 closes inside that boundary.
    */
   grain: MarketGrain
+  /**
+   * Pulse neighborhood MOS is mixed-method. Market Truth MOS uses
+   * place_membership is_primary on both sides of the ratio. Default is pulse.
+   */
+  source?: 'pulse' | 'market-truth'
   activeCount?: number | null
   medianListPrice?: number | null
   monthsOfSupply?: number | null
@@ -148,6 +153,7 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
 
   const publishedMos = publishMonthsOfSupply({
     grain: pulse.grain,
+    source: pulse.source,
     pulseMos: pulse.monthsOfSupply,
     pulseActiveCount: pulse.pulseActiveCount ?? pulse.activeCount,
     displayedActiveCount: pulse.activeCount,
