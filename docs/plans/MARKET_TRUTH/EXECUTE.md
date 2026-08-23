@@ -252,12 +252,12 @@ or subdivision price stats. `geo-grain-trust.ts` stays until neighborhood migrat
 
 ### Step 7 — Repairs folded in (not hotfixes, per SPEC D8)
 
-- [ ] Restart boundary assignment (4.3% coverage on Actives since 2026-05-01).
-- [ ] Restart the analytics cube cron (has never run; calendar 2026 has 0 rows).
+- [x] Restart boundary assignment (4.3% coverage on Actives since 2026-05-01).
+- [x] Restart the analytics cube cron (has never run; calendar 2026 has 0 rows).
 - [x] Normalise `buyer_financing` (April-2026 format break, 26 `[object Object]` rows).
 - [x] `close_price_per_sqft = 0` → NULL on 65,577 rows.
 - [x] Quarantine the 883 structurally bare rows and 150 zombie Actives.
-- [ ] Retire the two permanent-zero geographies; unify the slug alphabet.
+- [x] Retire the two permanent-zero geographies; unify the slug alphabet.
 - [x] Correct `lib/property-type.ts`: **E = Farm** (not commercial), **G = commercial Lease**.
 - [x] Instrument listing/place views through `user_events`; drop the empty `listing_views` table.
 
@@ -268,9 +268,22 @@ bare is either found and quarantined or struck from the list (AUDIT: unverified)
 **67,079 → 0** (AUDIT F14 live count; replica-role so the derived-field trigger did not
 re-fire). Zombies already flagged on spans (**149** listings). **883 structurally bare
 struck** (AUDIT: unverified). `listing_views` was **0** rows; dropped; `recordListingView`
-writes `user_events.event_type='listing_view'`. Cube still max year **2025** / 2026 **0**
-rows — cron exists, a successful 2026 run has not landed. Boundary coverage and the two
-permanent-zero geographies remain.
+writes `user_events.event_type='listing_view'`.
+
+2026-08-23 counted:
+- **Boundary assignment:** Actives on/after 2026-05-01 with `boundary_city` **182 / 4333
+  (4.2%) → 4322 / 4333 (99.7%)**. The 11 still-null rows have no coordinates.
+  Of the tagged: **1121** inside a city polygon (smallest valid `ST_Within`), **3201**
+  `Outside Boundaries`. Recency: `refresh_listing_boundary_tags` on the 6-hour
+  sale-pricing-facts cron (last 90 days).
+- **Cube cron:** spawn of `scripts/analytics/*.mjs` never reached the Vercel
+  filesystem (SPEC §1.8). Cron now calls `rebuildAnalyticsMarts` in-process.
+  Calendar 2026 **0 → 63** `analytics_mart_market_annual` cells, **3,466** closed
+  CO rows, `computed_at=2026-08-23`. 2024 parity vs EDA: **0.000%** (5,707 / $3.931B).
+- **Zero geos / slug alphabet:** Tumalo and Crooked River Ranch (0 MLS `City` rows)
+  dropped from the cube closed-city `IN` list. Crooked River (no "Ranch") stays as
+  an analytics city grain (AUDIT F16 / D14). Cube city `geo_slug` stays hyphen
+  (URL alphabet). Cache space form (`la pine`) stays behind `city-cache-slug.ts`.
 
 ### Step 8 — Canon corrections
 
@@ -300,8 +313,9 @@ brokerage rank.
 `getCityLeaderboard({stat})` in `lib/data/market-truth/leaderboards.ts` reads `market_metric`
 with the registry `min_n`. YoY / movers land when those cells exist in the compute pass.
 `getCoOfficeShareMerged` skips the MLS placeholder `"No Office"`. Admin competition desk
-stays behind `/admin`. `office_id` is still unresolved on the mart — not populated this
-pass. Granular public grains wait on Step 5.
+stays behind `/admin`. **2026-08-23:** mart `office_id` **9412 / 12370** populated from
+`analytics_dim_office` (canonical ∪ aliases); **0** `"No Office"` rows remain (50 deleted).
+2026 sides: **318 / 389** resolved. Granular public grains wait on Step 5.
 
 ---
 

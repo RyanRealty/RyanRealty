@@ -500,6 +500,10 @@ describe('design directive contracts', () => {
     expect(weekly).toMatch(/MART_FLOOR_YEAR/)
     expect(weekly).toMatch(/assertMartFloorYear/)
     expect(nightly).toMatch(/assertMartFloorYear/)
+    expect(nightly).toMatch(/rebuildAnalyticsMarts/)
+    expect(weekly).toMatch(/rebuildAnalyticsMarts/)
+    expect(nightly).not.toMatch(/\bspawn\b/)
+    expect(weekly).not.toMatch(/\bspawn\b/)
     expect(vercel).toMatch(/\/api\/cron\/rebuild-analytics-marts-full/)
   })
 

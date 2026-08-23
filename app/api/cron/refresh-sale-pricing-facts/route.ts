@@ -130,6 +130,31 @@ export async function GET(request: Request) {
     spanAfter = marketFactSpan.last_key
     if (span?.done) break
   }
+  const marketFactBound = { upserted: 0, batches: 0, done: false, last_key: '' as string }
+  let boundAfter = ''
+  const boundSince = new Date()
+  boundSince.setUTCDate(boundSince.getUTCDate() - 90)
+  const boundSinceIso = boundSince.toISOString().slice(0, 10)
+  for (let i = 0; i < 3; i++) {
+    const { data: bound, error: boundErr } = await supabase.rpc('refresh_listing_boundary_tags', {
+      p_after: boundAfter,
+      p_limit: 400,
+      p_on_or_after: boundSinceIso,
+    })
+    if (boundErr) {
+      console.error('[refresh-sale-pricing-facts] listing_boundary_tags', boundErr.message)
+      return NextResponse.json(
+        { ok: false, error: boundErr.message, upserted, indexes: idx, marketFactSale: factSale, marketFactSpan },
+        { status: 500 },
+      )
+    }
+    marketFactBound.upserted += Number(bound?.upserted ?? 0)
+    marketFactBound.batches += 1
+    marketFactBound.last_key = String(bound?.last_key ?? '')
+    marketFactBound.done = Boolean(bound?.done)
+    boundAfter = marketFactBound.last_key
+    if (bound?.done) break
+  }
   const { data: shadow, error: shadowErr } = await supabase.rpc('compute_market_metrics_shadow')
   if (shadowErr) {
     console.error('[refresh-sale-pricing-facts] compute_market_metrics_shadow', shadowErr.message)
@@ -141,6 +166,7 @@ export async function GET(request: Request) {
         indexes: idx,
         marketFactSale: factSale,
         marketFactSpan,
+        marketFactBound,
       },
       { status: 500 },
     )
@@ -161,6 +187,7 @@ export async function GET(request: Request) {
     listingReads,
     marketFactSale: factSale,
     marketFactSpan,
+    marketFactBound,
     marketMetricShadow: shadow,
     done,
     indexes: idx,

@@ -262,12 +262,14 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 43.8735,
     lng: -121.4419,
     recurrence: 'Annually, mid-August',
-    nextConfirmedDate: '2026-08-10',
-    endDate: '2026-08-20',
+    // 2026 festival closed Aug 20. Organizer published 2027 dates on
+    // sunrivermusic.org (verified 2026-08-23): August 8–20, 2027, 50th season.
+    nextConfirmedDate: '2027-08-08',
+    endDate: '2027-08-20',
     priceInfo: 'Ticketed',
     organizer: 'Sunriver Music Festival',
     officialUrl: 'https://sunrivermusic.org/',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-08-23',
     blurb:
       'A classical music festival that has run for close to half a century, with orchestral concerts in the Sunriver Resort Great Hall and a closing night at the Tower Theatre in Bend. Guest soloists and a festival orchestra perform across roughly ten days each August.',
   },
@@ -1077,12 +1079,16 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 43.8735,
     lng: -121.4419,
     recurrence: 'Annually, late August',
-    nextConfirmedDate: '2026-08-20',
-    endDate: '2026-08-21',
+    // 2026 outdoor play ended Aug 21. sunriverstars.org next lists The Story
+    // of the Velveteen Rabbit (Nov 5–7, 2026), a different indoor production —
+    // not this summer-play occurrence. Next summer dates are unpublished, so
+    // the date goes null and the page renders the recurrence descriptor.
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Free',
     organizer: 'Sunriver Stars Community Theater',
     officialUrl: 'https://sunriverstars.org/',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-08-23',
     blurb:
       'A free outdoor family play at the Sunriver Nature Center Amphitheater, staged by the Sunriver Stars community theater each summer.',
   },

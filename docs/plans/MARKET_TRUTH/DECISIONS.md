@@ -176,7 +176,11 @@ trailing-365d type-A median $608,000 → $605,680 on six Mitchell sales; detache
 `listings`, 0 facts rows).
 
 `"City" = 'Crooked River'` (2,460 closed ≥$1k, last qualifying A close 2019) is still out of the
-16. That is AUDIT F16 — include-or-document, do not silently drop.
+16. AUDIT F16, documented 2026-08-23: keep it as an **analytics city grain** (it is a real MLS
+City string; the cube `City IN` list includes it). Do not fold it into Crooked River Ranch, do
+not add it to the published 16, do not drop the 2,460 closes from the cube. Tumalo and
+Crooked River Ranch remain named-only in the 16 (0 MLS `City` rows) and are retired from the
+cube closed-city list.
 
 ## D15 — CDOM / first-on-market reset is 60 days · **ADOPTED** (ODS §3-20)
 
