@@ -314,7 +314,7 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.methodology.verdictKind).toBe('unknown')
   })
 
-  it('neighborhood grain keeps pulse MOS — no invented figure, no detached overlay', async () => {
+  it('neighborhood overlays leftover and withholds pulse MOS unless headlines assemble', async () => {
     rowMock.mockResolvedValue({
       ...PULSE_BEND,
       geo_type: 'neighborhood',
@@ -324,22 +324,52 @@ describe('getMarketPulseJsonFeed', () => {
       months_of_supply: 4.6,
       market_health_label: 'Cool',
     })
+    detachedMock.mockResolvedValue(
+      new Map([
+        [
+          'neighborhood:tetherow',
+          {
+            headlines: null,
+            inventory: {
+              activeCount: 19,
+              medianListPrice: 1_895_000,
+              computedAt: '2026-08-23T12:00:00Z',
+            },
+          },
+        ],
+      ]),
+    )
+    paceMock.mockResolvedValue({
+      daysToContract: 44,
+      daysToClose: null,
+      closedCount: 48,
+      newListings: null,
+      priceCutShare: null,
+      medianPriceCut: null,
+      saleToOriginal: null,
+      saleToFinal: null,
+      yoyMedian: null,
+      yoySold: null,
+      cashShare: null,
+      medianClose: null,
+      medianPpsf: null,
+      pendingCount: 7,
+      medianAgeActive: null,
+    })
 
     const result = found(
       await getMarketPulseJsonFeed({ geoType: 'neighborhood', geoSlug: 'tetherow' }),
     )
-    expect(detachedMock).not.toHaveBeenCalled()
-    expect(paceMock).not.toHaveBeenCalled()
-    expect(segmentsMock).not.toHaveBeenCalled()
-    expect(result.leftover).toBeNull()
-    expect(result.extraSegments).toBeNull()
-    expect(result.figures.activeListings).toBe(35)
-    expect(result.figures.monthsOfSupply).toBe(4.6)
-    expect(result.figures.marketHealthLabel).toBe('Cool')
-    expect(result.methodology.verdictKind).toBe('balanced')
+    expect(detachedMock).toHaveBeenCalled()
+    expect(paceMock).toHaveBeenCalled()
+    expect(result.leftover?.pendingCount).toBe(7)
+    expect(result.leftover?.daysToContract).toBe(44)
+    expect(result.figures.activeListings).toBe(19)
+    expect(result.figures.monthsOfSupply).toBeNull()
+    expect(result.methodology.verdictKind).toBe('unknown')
   })
 
-  it('neighborhood with a null pulse MOS keeps that withhold — does not invent MOS', async () => {
+  it('neighborhood with a null pulse MOS does not invent MOS from pulse', async () => {
     rowMock.mockResolvedValue({
       ...PULSE_BEND,
       geo_type: 'neighborhood',
@@ -349,13 +379,13 @@ describe('getMarketPulseJsonFeed', () => {
       months_of_supply: null,
       market_health_label: 'Warm',
     })
+    detachedMock.mockResolvedValue(new Map())
 
     const result = found(
       await getMarketPulseJsonFeed({ geoType: 'neighborhood', geoSlug: 'awbrey-butte' }),
     )
-    expect(detachedMock).not.toHaveBeenCalled()
     expect(result.figures.monthsOfSupply).toBeNull()
-    expect(result.figures.activeListings).toBe(12)
+    expect(result.figures.activeListings).toBeNull()
     expect(result.methodology.verdictKind).toBe('unknown')
   })
 
@@ -384,7 +414,7 @@ describe('getMarketPulseJsonFeed source', () => {
     expect(src).toMatch(/activeListings = null/)
     expect(src).toMatch(/monthsOfSupply = null/)
     expect(src).toMatch(/marketHealthLabel = null/)
-    expect(src).toMatch(/geoType === 'city' \|\| geoType === 'region'/)
+    expect(src).toMatch(/geoType === 'city' \|\| geoType === 'region' \|\| geoType === 'neighborhood'/)
     expect(src).toMatch(/getPublicDetachedPace/)
     expect(src).toMatch(/readJsonFeedLeftover/)
     expect(src).toMatch(/getPublicPlaceSegments/)

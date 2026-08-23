@@ -1,8 +1,8 @@
 -- Market Truth — neighborhood grain shadow compute.
 -- Separate from compute_market_metrics_shadow so a timeout cannot DELETE city/zip cells.
--- MOS / verdict / absorption stay not publishable (REGISTRY §4 remainder; geo-grain-trust).
--- Subdivision prices stay out. County stays out (F18). commercial_lease stays out.
--- Run only after place_membership is rebuilt against the 23u GIS hulls.
+-- Actives and closes both use place_membership is_primary (same source). MOS
+-- inherits registry min_n. Pulse MOS stays untrusted. Subdivision prices stay
+-- out. County stays out (F18). commercial_lease stays out.
 
 CREATE OR REPLACE FUNCTION public.compute_market_metrics_neighborhood_shadow(
   p_period_end date DEFAULT NULL
@@ -842,22 +842,16 @@ BEGIN
     e.excluded_n,
     v_complete,
     CASE
-      WHEN e.stat_id IN (
-        'months_of_supply','months_of_supply_12mo','absorption_rate','market_verdict'
-      )
-      THEN false
-      ELSE e.is_publishable AND (
+      WHEN e.is_publishable AND (
         e.stat_id IN (
           'active_count','pending_count','median_list_active','median_age_active_inventory'
         )
         OR v_end <= v_complete + 2
       )
+      THEN true
+      ELSE false
     END,
     CASE
-      WHEN e.stat_id IN (
-        'months_of_supply','months_of_supply_12mo','absorption_rate','market_verdict'
-      )
-      THEN 'neighborhood_mos_unpublished'
       WHEN e.withheld_reason IS NOT NULL THEN e.withheld_reason
       WHEN e.stat_id NOT IN (
         'active_count','pending_count','median_list_active','median_age_active_inventory'

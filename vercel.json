@@ -194,6 +194,10 @@
       "schedule": "20 */6 * * *"
     },
     {
+      "path": "/api/cron/compute-neighborhood-metrics",
+      "schedule": "40 */6 * * *"
+    },
+    {
       "path": "/api/cron/refresh-similar-listings",
       "schedule": "30 4 * * *"
     },

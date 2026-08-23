@@ -1,7 +1,7 @@
 /**
  * Public place-page extra segments (Step 9). Detached stays the HUD.
  * The mixed all-types bucket is omitted (it double-counts). Lease inventory
- * stays out. Neighborhood MOS is not here. Miss omits the row.
+ * stays out. Neighborhood extra types are inventory; MOS only when publishable. Miss omits the row.
  */
 import { createServiceClient } from '@/lib/data/client'
 import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
@@ -138,7 +138,7 @@ export function publicSegmentItems(
 }
 
 export async function getPublicPlaceSegments(opts: {
-  geoType: 'city' | 'region' | 'zip'
+  geoType: 'city' | 'region' | 'zip' | 'neighborhood'
   geoSlug: string
 }): Promise<PublicSegmentRow[]> {
   const geoSlug = hyphenSlug(opts.geoSlug)

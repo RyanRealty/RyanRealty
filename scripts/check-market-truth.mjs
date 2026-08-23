@@ -195,12 +195,13 @@ function main() {
     'utf8',
   )
   add(
-    'gate 4b: neighborhood compute withholds MOS and does not wipe city cells',
+    'gate 4b: neighborhood compute is a separate job and does not wipe city cells',
     /compute_market_metrics_neighborhood_shadow/.test(nbhCompute) &&
-      /neighborhood_mos_unpublished/.test(nbhCompute) &&
       /AND geo_type = 'neighborhood'/.test(nbhCompute) &&
+      /n_180 >= 30/.test(nbhCompute) &&
       !/FROM public\.market_service_area/.test(nbhCompute) &&
-      !/geo_type = 'subdivision'/.test(nbhCompute),
+      !/geo_type = 'subdivision'/.test(nbhCompute) &&
+      !/neighborhood_mos_unpublished/.test(nbhCompute),
   )
   add(
     'gate 1: place_membership is the geography writer (ST_Within lives there)',

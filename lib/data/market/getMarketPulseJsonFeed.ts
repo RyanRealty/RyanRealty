@@ -19,8 +19,9 @@
  *                 A full inventory miss withholds activeListings rather than pulse.
  *                 City/region leftover pace (12-month + pending/age now) sits
  *                 beside pulse 30-day / days-to-pending. A leftover miss is
- *                 null, never 0. Neighborhood grain keeps the pulse row — no
- *                 invented MOS, no leftover.
+ *                 null, never 0. Neighborhood leftover and extra types overlay
+ *                 the same way. Pulse MOS at neighborhood grain is withheld
+ *                 unless Market Truth headlines assemble.
  *   - NOT_FOUND -> genuine miss (no row for this geo_type/geo_slug). All
  *                 figures null, `note` says so explicitly.
  *   - ERROR    -> getMarketPulseRowForGeo THROWS on a transient DB error
@@ -273,7 +274,7 @@ export async function getMarketPulseJsonFeed(input: {
     note: null,
   }
 
-  if (geoType === 'city' || geoType === 'region') {
+  if (geoType === 'city' || geoType === 'region' || geoType === 'neighborhood') {
     const [layers, leftover, extraSegments] = await Promise.all([
       readDetachedOverlay(geoType, geoSlug),
       readJsonFeedLeftover(geoType, geoSlug),
@@ -298,9 +299,9 @@ type JsonFeedOverlay = {
   inventory: DetachedInventory | null
 }
 
-/** City/region leftover. Throw and miss both omit — never 0. Neighborhood never calls this. */
+/** Leftover. Throw and miss both omit — never 0. */
 async function readJsonFeedLeftover(
-  geoType: 'city' | 'region',
+  geoType: 'city' | 'region' | 'neighborhood',
   geoSlug: string,
 ): Promise<MarketPulseJsonLeftover | null> {
   try {
@@ -311,9 +312,9 @@ async function readJsonFeedLeftover(
   }
 }
 
-/** City/region extra types. Throw and miss both omit — never 0. Neighborhood never calls this. */
+/** Extra types. Throw and miss both omit — never 0. */
 async function readJsonFeedExtraSegments(
-  geoType: 'city' | 'region',
+  geoType: 'city' | 'region' | 'neighborhood',
   geoSlug: string,
 ): Promise<MarketPulseJsonExtraSegment[]> {
   try {
@@ -341,12 +342,12 @@ function jsonExtraSegments(rows: readonly PublicSegmentRow[]): MarketPulseJsonEx
 
 /** City/region overlay. Throw and miss both withhold — never pulse 488. */
 async function readDetachedOverlay(
-  geoType: 'city' | 'region',
+  geoType: 'city' | 'region' | 'neighborhood',
   geoSlug: string,
 ): Promise<JsonFeedOverlay> {
   try {
     const map = await getDetachedOverlays([{ geoType, geoSlug }])
-    const slug = geoType === 'city' ? cityDetachedSlug(geoSlug) : geoSlug.trim().toLowerCase()
+    const slug = geoType === 'region' ? geoSlug.trim().toLowerCase() : cityDetachedSlug(geoSlug)
     return map.get(`${geoType}:${slug}`) ?? { headlines: null, inventory: null }
   } catch {
     return { headlines: null, inventory: null }

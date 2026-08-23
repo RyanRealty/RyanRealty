@@ -44,7 +44,7 @@ describe('getSellBendMarket', () => {
     expect(pulse).toMatch(/overlayDetachedLayers/)
     expect(region).toMatch(/overlayDetachedLayers/)
     expect(snaps).toMatch(/overlayDetachedLayers/)
-    expect(pulse).toMatch(/market-pulse-v8-mt-inventory/)
+    expect(pulse).toMatch(/market-pulse-v9-mt-neighborhood/)
     expect(region).toMatch(/region-pulse-central-oregon-v6-mt-inventory/)
     expect(snaps).toMatch(/market-pulse-city-snapshots-v7-mt-inventory/)
     expect(snaps).toMatch(/market-pulse-all-city-snapshots-v7-mt-inventory/)

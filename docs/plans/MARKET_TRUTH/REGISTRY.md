@@ -218,11 +218,11 @@ union), Widgi Creek **1,276 → 317** (Inn of the 7th Mountain unincorporated co
 Brasada Ranch **16,126 → 888** (Crook County GIS subdivision). Overlap pairs **12 → 4**,
 all nested community-in-district (Awbrey Glen ⊂ Awbrey Butte, Broken Top ⊂ Century West,
 Northwest Crossing ⊂ Summit West, Northwest Crossing ∩ River West sliver).
-`bend-undesignated` still exists. MOS stays unpublished. `place_membership` rebuilt
-2026-08-23 against the new hulls (397 batches, **2,680,623** rows). Nested remainder is
+`bend-undesignated` still exists. `place_membership` rebuilt 2026-08-23 against
+the new hulls (397 batches, **2,680,623** rows). Nested remainder is
 `is_primary` = smallest containing neighborhood — do not ST_Difference a community
-out of a city district. Neighborhood leftover cells exist; MOS/verdict stay
-`is_publishable=false`.
+out of a city district. Neighborhood MOS publishes only when 180-day closes
+clear min_n (same membership as actives). Pulse MOS stays untrusted.
 
 ---
 

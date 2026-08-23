@@ -74,12 +74,12 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
     medianDaysToPending: row.median_days_to_pending as number | null,
     refreshedAt: row.updated_at as IsoTimestamp,
   }
-  if (geoType === 'city' || geoType === 'region') {
+  if (geoType === 'city' || geoType === 'region' || geoType === 'neighborhood') {
     try {
       // Inventory overlays without MOS. Headlines overlay only on full assemble.
       // Throw: withhold active/MOS/verdict/median so pulse 488 is not Market Truth.
       const overlays = await getDetachedOverlays([{ geoType, geoSlug }])
-      const slug = geoType === 'city' ? cityDetachedSlug(geoSlug) : geoSlug.trim().toLowerCase()
+      const slug = geoType === 'region' ? geoSlug.trim().toLowerCase() : cityDetachedSlug(geoSlug)
       const layers = overlays.get(`${geoType}:${slug}`)
       return overlayDetachedLayers(pulse, layers?.headlines ?? null, layers?.inventory ?? null)
     } catch {
@@ -95,7 +95,7 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
 // hit and kept pulse headlines on miss). v4/v5 were poison-null evictions.
 export const getMarketPulse = makeResilientCached(
   fetchMarketPulse,
-  ['market-pulse-v8-mt-inventory'],
+  ['market-pulse-v9-mt-neighborhood'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

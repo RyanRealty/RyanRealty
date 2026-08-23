@@ -31,7 +31,9 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getNeighborhoodBySlug, getCommunitiesInNeighborhood } from '@/app/actions/cities'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
+import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 import {
   getMarketPulse,
   getMarketStats,
@@ -66,7 +68,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishMonthsOfSupply, publishSoldCount } from '@/lib/market/publish-months-of-supply'
+import { publishSoldCount } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
@@ -180,7 +182,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
     peerNeighborhoods,
     inventoryRead,
-    publicPace,
+    publicPace, publicSegments,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     // Hot-path core figures (HUD, about facts, FAQ): a build timeout would
@@ -221,6 +223,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       EMPTY_PUBLIC_PACE,
       3000,
       'nbh:publicPace',
+    ),
+    withTimeoutFallback(
+      getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }),
+      [],
+      3000,
+      'nbh:publicSegments',
     ),
   ])
 
@@ -376,12 +384,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const monthsOfSupply = publishMonthsOfSupply({ grain: 'neighborhood', pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
+  const monthsOfSupply = pulse?.monthsOfSupply ?? null
   const marketData: KbMarketData = {
-    active: activeCount ?? null,
+    active: pulse?.activeCount ?? activeCount ?? null,
     closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
-    medianList: medianListPrice,
+    medianList: pulse?.medianListPrice ?? medianListPrice,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
@@ -517,6 +525,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           eyebrow={`${neighborhood.name} · The market`} geoName={neighborhood.name} asOf={pulse?.refreshedAt ?? null}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         >
+          <PublicProductTypes cityName={neighborhood.name} citySlug={citySlug} rows={publicSegments} />
           <PublicPaceStats cityName={neighborhood.name} row={publicPace} />
           {/* The approved chart-room forms (Unit NEIGHBORHOOD 2026-08-19) —
               same market section, additive under the HUD figures. Closed-side

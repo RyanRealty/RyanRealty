@@ -33,7 +33,7 @@ describe('getPublicPlaceSegments', () => {
     ])
     expect(SRC).not.toMatch(/market_pulse_live/)
     expect(SRC).not.toMatch(/'commercial_lease'/)
-    expect(SRC).not.toMatch(/'neighborhood'/)
+    expect(SRC).toMatch(/'neighborhood'/)
     expect(SRC).not.toMatch(/'all_residential'/)
   })
 
@@ -186,6 +186,15 @@ describe('public place pages', () => {
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
     expect(home).toMatch(/getPublicPlaceSegments/)
     expect(home).toMatch(/PublicProductTypes/)
+    const community = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
+    const neighborhood = readFileSync(
+      resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'),
+      'utf8',
+    )
+    expect(community).toMatch(/getPublicPlaceSegments/)
+    expect(community).toMatch(/PublicProductTypes/)
+    expect(neighborhood).toMatch(/getPublicPlaceSegments/)
+    expect(neighborhood).toMatch(/PublicProductTypes/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
     expect(strip).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })

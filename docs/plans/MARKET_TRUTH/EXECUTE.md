@@ -436,6 +436,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23w landed: `compute_market_metrics_neighborhood_shadow` wrote **11056** neighborhood cells (`period_end=2026-08-23`). MOS **0** publishable (`neighborhood_mos_unpublished`). Bend detached still **774**. Sunriver leftover 56 active / 16 pending / 37 days to contract. Community and neighborhood HUDs print leftover beside pulse DTP. JSON neighborhood leftover stays null.
 
+### Grind 2026-08-23x — neighborhood MOS (sample-gated) + leftover JSON + extra types + cron
+
+**Done when:** neighborhood MOS cells inherit registry min_n from the same `is_primary` membership as actives (proof: Sunriver 56 / 45 / 7.47); `/communities/sunriver` and neighborhood JSON overlay leftover + extra types; pulse MOS is withheld unless headlines assemble; MOS below min_n omits (Tetherow 16 closes); compute runs on a 6-hour cron. County unpublished. Workers do not tick this file.
+
+2026-08-23x landed: neighborhood MOS same-source proof (membership actives = cell MOS). Detached MOS publishable **15** / withheld **13** (`below_min_n`). Sunriver **7.47** (n=45), Three Rivers **11.17** (n=36), Tetherow withheld (n=16). Leftover + extra types on community/neighborhood HUDs and neighborhood JSON. Pulse MOS untrusted. Cron `/api/cron/compute-neighborhood-metrics` at `40 */6`. Bend detached still **774**. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
@@ -449,9 +455,10 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
       Bend detached still **774 / 4.47 / balanced**. Bend condo 66 / 12.8 / buyer.
       Bend townhome 78 / 3.6 / seller. Public extra segments are condo +
       townhome beside the detached HUD. Hero stays detached houses.
-      Neighborhood / community / subdivision grains stay unpublished
-      (REGISTRY §4: hulls repaired 23u; membership rebuild in flight;
-      MOS unpublished until remainder is proven). `commercial_lease` (G) stays out.
+      Neighborhood leftover and extra types overlay sample-gated.
+      Neighborhood MOS publishes only when 180-day closes clear min_n 30
+      (Sunriver 7.47, Three Rivers 11.17). Pulse MOS stays untrusted.
+      County unpublished. `commercial_lease` (G) stays out.
 - [x] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
       fastest to contract, most price cuts, most new inventory.
 - [x] Agent/office share — **internal only** (Matt, 2026-08-22): admin and listing presentations, not

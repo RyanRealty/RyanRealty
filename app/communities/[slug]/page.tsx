@@ -35,7 +35,9 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
+import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 import {
   getMarketPulse,
   getMarketStats,
@@ -77,7 +79,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishMonthsOfSupply, publishSoldCount } from '@/lib/market/publish-months-of-supply'
+import { publishSoldCount } from '@/lib/market/publish-months-of-supply'
 import { formatPlaceHoaAnnual, placeHoaGlanceLabel, publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
@@ -272,7 +274,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     boundaryRead, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
-    publicPace,
+    publicPace, publicSegments,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -332,6 +334,12 @@ export default async function CommunityDetailPage({ params }: Props) {
       EMPTY_PUBLIC_PACE,
       3000,
       'comm:publicPace',
+    ),
+    withTimeoutFallback(
+      getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
+      [],
+      3000,
+      'comm:publicSegments',
     ),
   ])
 
@@ -601,13 +609,13 @@ export default async function CommunityDetailPage({ params }: Props) {
   const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : coreChartsRaw
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const monthsOfSupply = publishMonthsOfSupply({ grain: 'neighborhood', pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
+  const monthsOfSupply = pulse?.monthsOfSupply ?? null
   const sellMedian = publishSellMedian({ placeMedian: medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
   const marketData: KbMarketData = {
-    active: activeCount,
+    active: pulse?.activeCount ?? activeCount,
     closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
-    medianList: medianListPrice,
+    medianList: pulse?.medianListPrice ?? medianListPrice,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
@@ -825,6 +833,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           eyebrow={`${community.name} · The market`} geoName={community.name} asOf={pulse?.refreshedAt ?? null}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         >
+          <PublicProductTypes cityName={community.name} citySlug={citySlug ?? ''} rows={publicSegments} />
           <PublicPaceStats cityName={community.name} row={publicPace} />
           {coreCharts ? (
             <div className="pt-10" aria-label={`${community.name} market trend charts`}>

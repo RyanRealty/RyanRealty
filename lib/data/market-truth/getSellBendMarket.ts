@@ -115,16 +115,18 @@ function assembleInventory(
   }
 }
 
+export type OverlayGeo = 'city' | 'region' | 'neighborhood'
+
 async function loadOverlayRows(
-  keys: ReadonlyArray<{ geoType: 'city' | 'region'; geoSlug: string }>,
+  keys: ReadonlyArray<{ geoType: OverlayGeo; geoSlug: string }>,
 ): Promise<{
-  normalized: Array<{ geoType: 'city' | 'region'; geoSlug: string }>
+  normalized: Array<{ geoType: OverlayGeo; geoSlug: string }>
   latest: Map<string, MetricRow>
 }> {
   const normalized = keys
     .map((k) => ({
       geoType: k.geoType,
-      geoSlug: k.geoType === 'city' ? cityDetachedSlug(k.geoSlug) : k.geoSlug.trim().toLowerCase(),
+      geoSlug: k.geoType === 'region' ? k.geoSlug.trim().toLowerCase() : cityDetachedSlug(k.geoSlug),
     }))
     .filter((k) => k.geoSlug)
   const latest = new Map<string, MetricRow>()
@@ -159,7 +161,7 @@ async function loadOverlayRows(
 }
 
 export async function getDetachedMarkets(
-  keys: ReadonlyArray<{ geoType: 'city' | 'region'; geoSlug: string }>,
+  keys: ReadonlyArray<{ geoType: OverlayGeo; geoSlug: string }>,
 ): Promise<Map<string, SellBendMarket>> {
   const out = new Map<string, SellBendMarket>()
   const { normalized, latest } = await loadOverlayRows(keys)
@@ -171,7 +173,7 @@ export async function getDetachedMarkets(
 }
 
 export async function getDetachedInventories(
-  keys: ReadonlyArray<{ geoType: 'city' | 'region'; geoSlug: string }>,
+  keys: ReadonlyArray<{ geoType: OverlayGeo; geoSlug: string }>,
 ): Promise<Map<string, DetachedInventory>> {
   const out = new Map<string, DetachedInventory>()
   const { normalized, latest } = await loadOverlayRows(keys)
@@ -189,7 +191,7 @@ export type DetachedOverlay = {
 
 /** One loadOverlayRows. Headlines may miss while inventory still publishes. */
 export async function getDetachedOverlays(
-  keys: ReadonlyArray<{ geoType: 'city' | 'region'; geoSlug: string }>,
+  keys: ReadonlyArray<{ geoType: OverlayGeo; geoSlug: string }>,
 ): Promise<Map<string, DetachedOverlay>> {
   const out = new Map<string, DetachedOverlay>()
   const { normalized, latest } = await loadOverlayRows(keys)
@@ -203,11 +205,11 @@ export async function getDetachedOverlays(
 }
 
 export async function getDetachedMarket(
-  geoType: 'city' | 'region',
+  geoType: OverlayGeo,
   geoSlug: string,
 ): Promise<SellBendMarket | null> {
   const map = await getDetachedMarkets([{ geoType, geoSlug }])
-  const slug = geoType === 'city' ? cityDetachedSlug(geoSlug) : geoSlug.trim().toLowerCase()
+  const slug = geoType === 'region' ? geoSlug.trim().toLowerCase() : cityDetachedSlug(geoSlug)
   return map.get(`${geoType}:${slug}`) ?? null
 }
 
