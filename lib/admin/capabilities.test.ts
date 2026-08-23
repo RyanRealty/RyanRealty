@@ -117,11 +117,11 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the nav budget: 37 superuser items, 26 broker items (Signing + Sign-off on Closings)', () => {
+  it('renders the nav budget: 38 superuser items, 27 broker items (Production + Signing + Sign-off on Closings)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(37)
-    expect(count('broker')).toBe(26)
+    expect(count('superuser')).toBe(38)
+    expect(count('broker')).toBe(27)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {

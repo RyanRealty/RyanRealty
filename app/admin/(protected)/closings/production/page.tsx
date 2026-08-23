@@ -20,9 +20,9 @@ export default async function ProductionReportPage() {
       </div>
       <ReportNumbers
         items={brokers.map((b) => ({
+          key: b.broker,
           label: b.broker,
           value: String(b.pending + b.listings),
-          hint: `${b.pending} pending · ${b.listings} listing`,
         }))}
       />
       <ReportGrid
