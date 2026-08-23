@@ -1,8 +1,9 @@
 /**
  * Who must sign a form — known before send, from reading the form.
- * Field map (placed signature/initials tagged to a role) wins. Then the OREF
- * number. Then signer_profile = mutual → Buyer + Seller.
- * Empty means the form is not yet readable; do not invent parties.
+ * Field map (placed signature/initials tagged to a role) wins. Then the
+ * document text / filename / OREF number against the Oregon form library.
+ * Then signer_profile = mutual → Buyer + Seller.
+ * Empty + unidentified means the form is not yet readable; do not invent parties.
  */
 import {
   RECIPIENT_ROLE_LABEL,
@@ -11,21 +12,15 @@ import {
   type RecipientRole,
 } from './signing'
 import type { SignerRole } from './skyslope-field-map'
+import {
+  entriesFromDocumentText,
+  formLibraryEntryByNumber,
+  identifyFormFromName,
+  librarySignersToRoles,
+  type FormLibraryEntry,
+} from './form-identity'
 
 const SIGN_TYPES = new Set(['signature', 'initials'])
-
-/** Mutual vs single-party from the Oregon matrix / form family. Not a guess. */
-const ROLES_BY_FORM_NUMBER: Record<string, RecipientRole[]> = {
-  '001': ['Buyer', 'Seller'],
-  '015': ['Seller'],
-  '020': ['Seller'],
-  '040': ['Seller'],
-  '041': ['Buyer'],
-  '050': ['Buyer'],
-  '052': ['Buyer'],
-  '018': ['Buyer', 'Seller'],
-  '021': ['Buyer', 'Seller'],
-}
 
 export type FormSignerSource = {
   formNumber?: string | null
@@ -35,10 +30,21 @@ export type FormSignerSource = {
     signerRole?: SignerRole | null
     optional?: boolean | null
   }>
+  documentName?: string | null
+  pageText?: string | null
+  cycleKind?: string | null
+}
+
+export type SignerRead = {
+  roles: RecipientRole[]
+  identified: boolean
+  signatureForm: boolean
 }
 
 export function parseFormNumber(raw: string | null | undefined): string | null {
   if (!raw?.trim()) return null
+  const oref = raw.trim().match(/OREF\s*[-]?\s*(\d{3}[A-Z]?)/i)
+  if (oref) return oref[1].toUpperCase().replace(/[A-Z]$/, '')
   const m = raw.trim().match(/\b(\d{3})\b/)
   return m ? m[1] : null
 }
@@ -75,26 +81,64 @@ export function requiredSignerRolesFromFieldMap(
   return uniqueRoles(roles)
 }
 
-export function requiredSignerRolesFromFormNumber(formNumber: string | null | undefined): RecipientRole[] {
-  const n = parseFormNumber(formNumber)
-  if (!n) return []
-  return ROLES_BY_FORM_NUMBER[n] ?? []
+function rolesFromEntries(
+  entries: readonly FormLibraryEntry[],
+  ctx: { cycleKind?: string | null; documentName?: string | null },
+): SignerRead {
+  if (!entries.length) return { roles: [], identified: false, signatureForm: false }
+  const roles: RecipientRole[] = []
+  let signatureForm = false
+  for (const e of entries) {
+    const mapped = librarySignersToRoles(e.signers, ctx)
+    roles.push(...mapped.roles)
+    if (mapped.signatureForm) signatureForm = true
+  }
+  return { roles: uniqueRoles(roles), identified: true, signatureForm }
 }
 
-/** Field map (the document was read) first. Then OREF number. Then mutual profile. */
-export function requiredSignerRolesFromForm(input: FormSignerSource): RecipientRole[] {
+export function requiredSignerRolesFromFormNumber(formNumber: string | null | undefined): RecipientRole[] {
+  const entry = formLibraryEntryByNumber(formNumber) ?? formLibraryEntryByNumber(parseFormNumber(formNumber))
+  if (!entry) return []
+  return librarySignersToRoles(entry.signers, {}).roles
+}
+
+/** Field map (the document was read) first. Then page text. Then filename / OREF number. Then mutual profile. */
+export function readRequiredSigners(input: FormSignerSource): SignerRead {
+  const ctx = { cycleKind: input.cycleKind, documentName: input.documentName }
   const fromMap = requiredSignerRolesFromFieldMap(input.fieldMap)
-  if (fromMap.length) return fromMap
-  const fromNumber = requiredSignerRolesFromFormNumber(input.formNumber)
-  if (fromNumber.length) return fromNumber
-  if (String(input.signerProfile ?? '').toLowerCase() === 'mutual') return ['Buyer', 'Seller']
-  return []
+  if (fromMap.length) return { roles: fromMap, identified: true, signatureForm: true }
+
+  const fromText = rolesFromEntries(entriesFromDocumentText(input.pageText), ctx)
+  if (fromText.identified) return fromText
+
+  const fromName = identifyFormFromName(input.documentName)
+  if (fromName) return rolesFromEntries([fromName], ctx)
+
+  const fromNumber = formLibraryEntryByNumber(input.formNumber) ?? formLibraryEntryByNumber(parseFormNumber(input.formNumber))
+  if (fromNumber) return rolesFromEntries([fromNumber], ctx)
+
+  if (String(input.signerProfile ?? '').toLowerCase() === 'mutual') {
+    return { roles: ['Buyer', 'Seller'], identified: true, signatureForm: true }
+  }
+  return { roles: [], identified: false, signatureForm: false }
+}
+
+export function requiredSignerRolesFromForm(input: FormSignerSource): RecipientRole[] {
+  return readRequiredSigners(input).roles
+}
+
+export function unionRequiredSignerReads(forms: readonly FormSignerSource[]): SignerRead {
+  if (!forms.length) return { roles: [], identified: false, signatureForm: false }
+  const reads = forms.map(readRequiredSigners)
+  return {
+    roles: uniqueRoles(reads.flatMap((r) => r.roles)),
+    identified: reads.every((r) => r.identified),
+    signatureForm: reads.some((r) => r.signatureForm),
+  }
 }
 
 export function unionRequiredSignerRoles(forms: readonly FormSignerSource[]): RecipientRole[] {
-  const roles: RecipientRole[] = []
-  for (const f of forms) roles.push(...requiredSignerRolesFromForm(f))
-  return uniqueRoles(roles)
+  return unionRequiredSignerReads(forms).roles
 }
 
 export function missingRequiredSignerRoles(
@@ -116,6 +160,21 @@ export function requiredSignersLabel(roles: readonly RecipientRole[]): string {
 export function missingRequiredSignersMessage(missing: readonly RecipientRole[]): string | null {
   if (!missing.length) return null
   return `This document needs a ${requiredSignersLabel(missing)} signature. Add them as Needs to sign before sending. One party signing is not fully executed.`
+}
+
+export const UNREAD_FORM_MESSAGE =
+  'Vault has not identified this form yet, so it does not know who must sign. It will not send until the document is read. One party signing is not fully executed.'
+
+export const NOT_SIGNATURE_FORM_MESSAGE =
+  'This document is not a party-signature form. File it on the deal instead of sending for signature.'
+
+export function sendBlockedBySignerKnowledge(
+  read: SignerRead,
+  recipients: ReadonlyArray<{ role: string; actionRequired?: string | null }>,
+): string | null {
+  if (!read.identified) return UNREAD_FORM_MESSAGE
+  if (!read.signatureForm) return NOT_SIGNATURE_FORM_MESSAGE
+  return missingRequiredSignersMessage(missingRequiredSignerRoles(read.roles, recipients))
 }
 
 export function inFlightEnvelopeBlocksCompletion(status: string | null | undefined): boolean {
@@ -158,7 +217,8 @@ export function envelopeCoversChecklistItem(input: {
   const hay = `${input.itemName} ${input.typeName ?? ''}`.toLowerCase()
   for (const n of input.formNumbers) {
     const num = parseFormNumber(n)
-    if (num && (hay.includes(num) || hay.includes(`oref ${num}`))) return true
+    if (num && (hay.includes(num.toLowerCase()) || hay.includes(`oref ${num.toLowerCase()}`))) return true
+    if (n && hay.includes(n.toLowerCase())) return true
   }
   const env = input.envelopeName.toLowerCase()
   const item = input.itemName.toLowerCase()

@@ -393,14 +393,19 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               <p className="text-[11px] text-muted-foreground">
                 {activeRecipientId ? 'Click on the document to drop a field. Drag to move, hover to delete.' : 'Save recipients, then pick who signs to start placing fields.'}
               </p>
-              {detail.requiredSignersLabel ? (
+              {detail.formRead && detail.requiredSignersLabel ? (
                 <p className="text-[11px] text-foreground">
                   This form requires {detail.requiredSignersLabel} to sign
                   {detail.missingSignerRoles.length
                     ? `. Missing ${detail.missingSignerRoles.map((r) => recipientRoleLabel(r)).join(' and ')}. One party signing is not fully executed.`
                     : '. Every required signer must finish before this is complete.'}
                 </p>
-              ) : null}
+              ) : (
+                <p className="text-[11px] text-foreground">
+                  {detail.unreadSignersMessage ??
+                    'Vault has not identified this form yet, so it does not know who must sign. It will not send until the document is read. One party signing is not fully executed.'}
+                </p>
+              )}
             </CardContent>
           </Card>
         ) : null}
@@ -408,6 +413,9 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         <Card>
           <CardContent className="space-y-2 pt-4">
             {status ? <p className="text-xs text-muted-foreground">{status}</p> : null}
+            {detail.unreadSignersMessage ? (
+              <p className="text-xs text-foreground">{detail.unreadSignersMessage}</p>
+            ) : null}
             <label className="flex items-start gap-2 text-xs text-muted-foreground">
               <input
                 type="checkbox"

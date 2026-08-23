@@ -106,6 +106,26 @@ notes:
     filename per v4.
 ```
 
+## OREF 021 — Lead-Based Paint Disclosure Addendum
+
+```yaml
+formId: oref-021-lbp
+name: Lead-Based Paint Disclosure Addendum
+oref: 021
+category: disclosure
+headerRegex: /OREF[-\s]*021|Lead[-\s]*Based\s+Paint/i
+titleRegex: /lead[-\s]*based\s+paint/i
+pages: 2-3
+signers: [buyer, seller, seller_broker, buyer_broker]
+signatureBlocks:
+  - page: last
+    roles: [seller, seller, buyer, buyer, seller_broker, buyer_broker]
+notes:
+  - Federal 42 USC 4852d disclosure. Both sides and both agents sign.
+  - A sellers-only intermediate is not fully executed.
+  - Commonly bundled behind OREF 043 Electronic Funds Advisory.
+```
+
 ## OREF 015 — Listing Agreement (Exclusive Right to Sell)
 
 ```yaml

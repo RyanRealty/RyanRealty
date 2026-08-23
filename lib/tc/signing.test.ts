@@ -169,7 +169,9 @@ describe('action_required (live Forms File Details 2026-08-23)', () => {
       brokerEmail: 'matt@ryan-realty.com',
       cycleKind: 'sale',
     })
-    expect(rows.every((r) => r.action_required === 'NeedsToSign')).toBe(true)
+    expect(rows.find((r) => r.role === 'Buyer')?.action_required).toBe('NeedsToSign')
+    expect(rows.find((r) => r.role === 'Seller')?.action_required).toBe('NeedsToSign')
+    expect(rows.find((r) => r.role === 'BuyerAgent')?.action_required).toBe('ReceivesACopy')
     expect(rows.map((r) => r.role)).not.toContain('cc')
   })
 })
@@ -209,6 +211,28 @@ describe('seedPartyEnvelopeRecipients', () => {
     expect(rows.find((r) => r.role === 'Seller')?.action_required).toBe('NeedsToSign')
     expect(rows.find((r) => r.role === 'Buyer')?.action_required).toBe('ReceivesACopy')
     expect(rows.find((r) => r.role === 'SellerAgent')?.action_required).toBe('ReceivesACopy')
+  })
+
+  it('does not email the listing broker until the form says they sign', () => {
+    const unread = seedPartyEnvelopeRecipients({
+      envelopeId: 'e1',
+      buyers: ['Pat'],
+      sellers: ['Lee'],
+      brokerName: 'Matt Ryan',
+      brokerEmail: 'matt@ryan-realty.com',
+      cycleKind: 'listing',
+    })
+    expect(unread.find((r) => r.role === 'SellerAgent')?.action_required).toBe('ReceivesACopy')
+    const listing = seedPartyEnvelopeRecipients({
+      envelopeId: 'e1',
+      buyers: ['Pat'],
+      sellers: ['Lee'],
+      brokerName: 'Matt Ryan',
+      brokerEmail: 'matt@ryan-realty.com',
+      cycleKind: 'listing',
+      requiredRoles: ['Seller', 'SellerAgent'],
+    })
+    expect(listing.find((r) => r.role === 'SellerAgent')?.action_required).toBe('NeedsToSign')
   })
 })
 

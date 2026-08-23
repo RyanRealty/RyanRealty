@@ -517,6 +517,21 @@ export async function finalizeTcUpload(input: {
   const name = sanitizeUploadName(originalName)
   const now = new Date().toISOString()
 
+  let formNumber: string | null = null
+  let formId: string | null = null
+  if (contentType === 'application/pdf') {
+    try {
+      const { extractPdfPagesText } = await import('@/lib/tc/pdf-page-text')
+      const { entriesFromDocumentText, identifyFormFromName } = await import('@/lib/tc/form-identity')
+      const pageText = await extractPdfPagesText(buf.slice(0))
+      const entry = entriesFromDocumentText(pageText)[0] ?? identifyFormFromName(name)
+      formNumber = entry?.oref ?? null
+      formId = entry?.formId ?? null
+    } catch (err) {
+      console.warn('[tc] upload form identify failed:', err instanceof Error ? err.message : err)
+    }
+  }
+
   const { error: insErr } = await supabase.from('tc_documents').insert({
     id: docId,
     cycle_id: cycleId,
@@ -528,7 +543,12 @@ export async function finalizeTcUpload(input: {
     content_type: contentType,
     page_count: pageCount,
     source_uploaded_at: now,
-    classification: { source: 'native_upload', uploaded_by: auth.email },
+    classification: {
+      source: 'native_upload',
+      uploaded_by: auth.email,
+      ...(formNumber ? { form_number: formNumber } : {}),
+      ...(formId ? { form_id: formId } : {}),
+    },
   })
   if (insErr) {
     await supabase.storage.from('tc-documents').remove([path])

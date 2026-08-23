@@ -74,6 +74,21 @@ export const FORM_LIBRARY = [
     aliases: ['Counter', 'Counter Offer 2', 'Counter Offer No 1'],
   },
   {
+    formId: 'oref-021-lbp',
+    name: 'Lead-Based Paint Disclosure Addendum',
+    oref: '021',
+    category: 'disclosure',
+    headerRegex: /OREF[-\s]*021|Lead[-\s]*Based\s+Paint/i,
+    titleRegex: /lead[-\s]*based\s+paint/i,
+    pages: [2, 3],
+    signers: ['buyer', 'seller', 'seller_broker', 'buyer_broker'],
+    signatureBlocks: [
+      { pages: -1, roles: ['seller', 'seller', 'buyer', 'buyer', 'seller_broker', 'buyer_broker'] },
+    ],
+    aliases: ['LBP', 'Lead Based Paint'],
+    notes: 'Federal 42 USC 4852d. Both sides and both agents. Sellers-only is not fully executed.',
+  },
+  {
     formId: 'oref-015-listing-agreement',
     name: 'Listing Agreement and SA',
     oref: '015',

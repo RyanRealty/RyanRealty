@@ -241,9 +241,10 @@ export async function listInFlightEnvelopes(cycleId: string): Promise<InFlightEn
   const ids = envs.map((e) => String(e.id))
   const { data: docs } = await client()
     .from('tc_envelope_documents')
-    .select('envelope_id, form_version_id')
+    .select('envelope_id, form_version_id, document_id')
     .in('envelope_id', ids)
   const versionIds = [...new Set((docs ?? []).map((d) => d.form_version_id).filter(Boolean).map(String))]
+  const documentIds = [...new Set((docs ?? []).map((d) => d.document_id).filter(Boolean).map(String))]
   const numberByVersion = new Map<string, string>()
   if (versionIds.length) {
     const { data: forms } = await client()
@@ -254,13 +255,31 @@ export async function listInFlightEnvelopes(cycleId: string): Promise<InFlightEn
       if (f.form_number) numberByVersion.set(String(f.id), String(f.form_number))
     }
   }
+  const nameByDoc = new Map<string, string>()
+  if (documentIds.length) {
+    const { data: files } = await client()
+      .from('tc_documents')
+      .select('id, name, classification')
+      .in('id', documentIds)
+    for (const f of files ?? []) {
+      const classNum =
+        f.classification && typeof f.classification === 'object' && !Array.isArray(f.classification)
+          ? (f.classification as { form_number?: unknown }).form_number
+          : null
+      const label =
+        (typeof classNum === 'string' && classNum.trim()) ||
+        (f.name ? String(f.name) : '')
+      if (label) nameByDoc.set(String(f.id), label)
+    }
+  }
   const numsByEnv = new Map<string, string[]>()
   for (const d of docs ?? []) {
     const eid = String(d.envelope_id)
     const n = d.form_version_id ? numberByVersion.get(String(d.form_version_id)) : null
-    if (!n) continue
+    const fromDoc = d.document_id ? nameByDoc.get(String(d.document_id)) : null
     const arr = numsByEnv.get(eid) ?? []
-    arr.push(n)
+    if (n) arr.push(n)
+    else if (fromDoc) arr.push(fromDoc)
     numsByEnv.set(eid, arr)
   }
   return envs.map((e) => ({

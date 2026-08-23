@@ -30,12 +30,16 @@ import { createHash } from 'node:crypto'
 import type { MappedField, SignerRole } from '@/lib/tc/skyslope-field-map'
 import {
   missingRequiredSignerRoles,
-  missingRequiredSignersMessage,
+  readRequiredSigners,
   requiredSignersLabel,
+  sendBlockedBySignerKnowledge,
+  unionRequiredSignerReads,
   unionRequiredSignerRoles,
   type FormSignerSource,
 } from '@/lib/tc/required-signers'
 import { getFormSourcesForEnvelope } from '@/lib/data/tc/envelope-form-sources'
+import { extractPdfPagesText } from '@/lib/tc/pdf-page-text'
+import { entriesFromDocumentText, formNumberFromClassification, identifyFormFromName } from '@/lib/tc/form-identity'
 
 /**
  * TC envelope composer + lifecycle (Phase 2b). Build an envelope from PDF
@@ -123,6 +127,8 @@ export type EnvelopeDetail = EnvelopeSummary & {
   requiredSignerRoles: RecipientRole[]
   requiredSignersLabel: string
   missingSignerRoles: RecipientRole[]
+  formRead: boolean
+  unreadSignersMessage: string | null
 }
 
 function mapRecipient(r: DbRow): EnvelopeRecipient {
@@ -244,9 +250,14 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     signedAt: f.signed_at,
   }))
 
-  const requiredSignerRoles = unionRequiredSignerRoles(await getFormSourcesForEnvelope(envelopeId))
+  const signerRead = unionRequiredSignerReads(await getFormSourcesForEnvelope(envelopeId))
+  const requiredSignerRoles = signerRead.roles
   const missingSignerRoles = missingRequiredSignerRoles(
     requiredSignerRoles,
+    rs.map((r) => ({ role: r.role, actionRequired: r.actionRequired })),
+  )
+  const unreadSignersMessage = sendBlockedBySignerKnowledge(
+    signerRead,
     rs.map((r) => ({ role: r.role, actionRequired: r.actionRequired })),
   )
 
@@ -271,6 +282,8 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     requiredSignerRoles,
     requiredSignersLabel: requiredSignersLabel(requiredSignerRoles),
     missingSignerRoles,
+    formRead: signerRead.identified,
+    unreadSignersMessage,
   }
 }
 
@@ -299,7 +312,7 @@ export async function createEnvelopeFromDocuments(
   // only PDF documents from THIS cycle can be enveloped
   const { data: docs } = await supabase
     .from('tc_documents')
-    .select('id, name, content_type')
+    .select('id, name, content_type, storage_path, classification')
     .eq('cycle_id', cycleId)
     .in('id', documentIds)
   const pdfDocs = ((docs ?? []) as DbRow[]).filter(
@@ -321,6 +334,40 @@ export async function createEnvelopeFromDocuments(
     pdfDocs.map((d, i) => ({ envelope_id: env.id, document_id: d.id, sort_order: i }))
   )
 
+  const cycleKind = (cycle as DbRow).kind as string | null
+  const formSources: FormSignerSource[] = []
+  for (const d of pdfDocs) {
+    const source: FormSignerSource = {
+      formNumber: formNumberFromClassification(d.classification),
+      documentName: d.name ?? null,
+      cycleKind,
+    }
+    if (!readRequiredSigners(source).identified && d.storage_path) {
+      try {
+        const { data: blob } = await supabase.storage.from('tc-documents').download(String(d.storage_path))
+        if (blob) {
+          source.pageText = await extractPdfPagesText(await blob.arrayBuffer())
+          const entry = entriesFromDocumentText(source.pageText)[0] ?? identifyFormFromName(String(d.name ?? ''))
+          if (entry?.oref) {
+            const prior =
+              d.classification && typeof d.classification === 'object' && !Array.isArray(d.classification)
+                ? (d.classification as Record<string, unknown>)
+                : {}
+            await supabase
+              .from('tc_documents')
+              .update({ classification: { ...prior, form_number: entry.oref, form_id: entry.formId } })
+              .eq('id', d.id)
+            source.formNumber = entry.oref
+          }
+        }
+      } catch (err) {
+        console.warn('[tc] envelope doc identify failed:', err instanceof Error ? err.message : err)
+      }
+    }
+    formSources.push(source)
+  }
+  const requiredRoles = unionRequiredSignerRoles(formSources)
+
   // pre-seed recipients from the cycle parties (emails completed in the composer)
   const recipients = seedPartyEnvelopeRecipients({
     envelopeId: env.id,
@@ -328,7 +375,8 @@ export async function createEnvelopeFromDocuments(
     sellers: (cycle.sellers ?? []) as string[],
     brokerName: cycle.broker_name,
     brokerEmail: auth.email,
-    cycleKind: (cycle as DbRow).kind,
+    cycleKind,
+    requiredRoles,
   })
   const withEmail = applyUniquePartyEmails(
     recipients,
@@ -402,6 +450,8 @@ export async function createEnvelopeFromTemplate(
       formNumber: f.form_number ?? null,
       signerProfile: f.signer_profile ?? null,
       fieldMap: (f.field_map ?? []) as FormSignerSource['fieldMap'],
+      cycleKind: (cycle as DbRow).kind as string | null,
+      documentName: (f.name as string | null) ?? null,
     })),
   )
   const recipients = applyUniquePartyEmails(
@@ -703,13 +753,12 @@ export async function sendEnvelope(
   const hasSignature = ((fields ?? []) as DbRow[]).some((f) => f.type === 'signature')
   if (!hasSignature) return { ok: false, error: 'Place at least one signature field' }
 
-  const requiredRoles = unionRequiredSignerRoles(await getFormSourcesForEnvelope(envelopeId))
-  const missingRoles = missingRequiredSignerRoles(
-    requiredRoles,
+  const signerRead = unionRequiredSignerReads(await getFormSourcesForEnvelope(envelopeId))
+  const blocked = sendBlockedBySignerKnowledge(
+    signerRead,
     recipients.map((r) => ({ role: r.role, actionRequired: r.action_required })),
   )
-  const missingMsg = missingRequiredSignersMessage(missingRoles)
-  if (missingMsg) return { ok: false, error: missingMsg }
+  if (blocked) return { ok: false, error: blocked }
 
   const now = new Date().toISOString()
   await supabase

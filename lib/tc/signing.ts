@@ -174,8 +174,12 @@ export function seedPartyEnvelopeRecipients(input: {
   action_required: ActionRequired
 }> {
   const required = input.requiredRoles
-  const mustSign = (role: RecipientRole): ActionRequired =>
-    !required?.length || required.includes(role) ? 'NeedsToSign' : 'ReceivesACopy'
+  const mustSign = (role: RecipientRole): ActionRequired => {
+    if (required?.length) return required.includes(role) ? 'NeedsToSign' : 'ReceivesACopy'
+    // Form not identified yet — do not email the broker until the form says they sign.
+    if (role === 'SellerAgent' || role === 'BuyerAgent' || role === 'Broker') return 'ReceivesACopy'
+    return 'NeedsToSign'
+  }
   const rows: Array<{
     envelope_id: string
     role: string

@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+  NOT_SIGNATURE_FORM_MESSAGE,
+  UNREAD_FORM_MESSAGE,
   envelopeCoversChecklistItem,
   inFlightCompletionBlock,
   inFlightEnvelopeBlocksCompletion,
   missingRequiredSignerRoles,
   missingRequiredSignersMessage,
+  readRequiredSigners,
   requiredSignerRolesFromForm,
+  sendBlockedBySignerKnowledge,
+  unionRequiredSignerReads,
   unionRequiredSignerRoles,
 } from './required-signers'
 
@@ -23,27 +28,75 @@ describe('requiredSignerRolesFromForm', () => {
     ).toEqual(['Buyer', 'Seller'])
   })
 
-  it('sale agreement 001 is Buyer and Seller; listing 015 is Seller only', () => {
+  it('sale agreement 001 is Buyer and Seller; listing 015 is Seller and listing broker', () => {
     expect(requiredSignerRolesFromForm({ formNumber: 'OREF 001' })).toEqual(['Buyer', 'Seller'])
-    expect(requiredSignerRolesFromForm({ formNumber: '015' })).toEqual(['Seller'])
-    expect(requiredSignerRolesFromForm({ formNumber: '050' })).toEqual(['Buyer'])
+    expect(requiredSignerRolesFromForm({ formNumber: '015' })).toEqual(['Seller', 'SellerAgent'])
+    expect(requiredSignerRolesFromForm({ formNumber: '050' })).toEqual(['Buyer', 'BuyerAgent'])
+  })
+
+  it('property disclosure 020 needs seller disclosure and buyer acknowledgment', () => {
+    expect(requiredSignerRolesFromForm({ formNumber: '020' })).toEqual(['Seller', 'Buyer'])
+  })
+
+  it('lead-based paint 021 needs both sides and both agents', () => {
+    expect(requiredSignerRolesFromForm({ formNumber: '021' })).toEqual([
+      'Buyer',
+      'Seller',
+      'SellerAgent',
+      'BuyerAgent',
+    ])
   })
 
   it('mutual profile without a map is both sides; unreadable forms stay empty', () => {
     expect(requiredSignerRolesFromForm({ signerProfile: 'mutual' })).toEqual(['Buyer', 'Seller'])
     expect(requiredSignerRolesFromForm({ formNumber: '999', signerProfile: 'single_party' })).toEqual([])
+    expect(readRequiredSigners({ formNumber: '999' }).identified).toBe(false)
+  })
+
+  it('reads the document name and page text when there is no field map', () => {
+    expect(
+      requiredSignerRolesFromForm({
+        documentName: '20702Beaumont_X_001_Residential Real Estate Sale Agreement.pdf',
+      }),
+    ).toEqual(['Buyer', 'Seller'])
+    expect(
+      requiredSignerRolesFromForm({
+        pageText: 'OREF 015 | Released 01/2026 | Exclusive Right to Sell',
+        cycleKind: 'listing',
+      }),
+    ).toEqual(['Seller', 'SellerAgent'])
   })
 })
 
-describe('missingRequiredSignerRoles', () => {
-  it('treats Receives a copy as not a signer', () => {
+describe('sendBlockedBySignerKnowledge', () => {
+  it('refuses send when the form has not been read', () => {
+    expect(sendBlockedBySignerKnowledge({ roles: [], identified: false, signatureForm: false }, [])).toBe(
+      UNREAD_FORM_MESSAGE,
+    )
+  })
+
+  it('refuses send of a title report that is not a signature form', () => {
+    expect(
+      sendBlockedBySignerKnowledge({ roles: [], identified: true, signatureForm: false }, []),
+    ).toBe(NOT_SIGNATURE_FORM_MESSAGE)
+  })
+
+  it('refuses send when a required role is only Receives a copy', () => {
     const missing = missingRequiredSignerRoles(['Buyer', 'Seller'], [
       { role: 'Buyer', actionRequired: 'NeedsToSign' },
       { role: 'Seller', actionRequired: 'ReceivesACopy' },
     ])
     expect(missing).toEqual(['Seller'])
     expect(missingRequiredSignersMessage(missing)).toMatch(/Seller signature/)
-    expect(missingRequiredSignersMessage(missing)).toMatch(/not fully executed/)
+    expect(
+      sendBlockedBySignerKnowledge(
+        { roles: ['Buyer', 'Seller'], identified: true, signatureForm: true },
+        [
+          { role: 'Buyer', actionRequired: 'NeedsToSign' },
+          { role: 'Seller', actionRequired: 'ReceivesACopy' },
+        ],
+      ),
+    ).toMatch(/not fully executed/)
   })
 })
 
@@ -51,7 +104,16 @@ describe('unionRequiredSignerRoles', () => {
   it('unions a listing form and a sale form', () => {
     expect(
       unionRequiredSignerRoles([{ formNumber: '015' }, { formNumber: '001' }]),
-    ).toEqual(['Seller', 'Buyer'])
+    ).toEqual(['Seller', 'SellerAgent', 'Buyer'])
+  })
+
+  it('marks the envelope unread if any document was not identified', () => {
+    const read = unionRequiredSignerReads([
+      { formNumber: '001' },
+      { documentName: 'scan-of-something.pdf' },
+    ])
+    expect(read.identified).toBe(false)
+    expect(read.roles).toEqual(['Buyer', 'Seller'])
   })
 })
 
