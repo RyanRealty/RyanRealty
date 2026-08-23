@@ -21,9 +21,11 @@ import {
   type ReportGridRow,
 } from '@/components/admin/v2'
 import { getTcFormLibraryBoard, type FormFreshness } from '@/lib/data'
+import { getLiveDealCycles } from '@/lib/data/tc/closings'
 import { formatDateTime } from '@/lib/format/date'
 import { buildFormCatalogCheckScript } from '@/lib/tc/form-catalog-script'
 import { CheckFormCatalog } from './CheckFormCatalog'
+import { UseFormOnDeal } from './UseFormOnDeal'
 
 export const dynamic = 'force-dynamic'
 
@@ -103,7 +105,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
   await requireAdminPage('transactions.edit')
   const { q, lib: expanded, fresh: freshRaw } = await searchParams
   const fresh = parseFresh(freshRaw)
-  const libraries = await getTcFormLibraryBoard(q)
+  const [libraries, liveDeals] = await Promise.all([getTcFormLibraryBoard(q), getLiveDealCycles()])
 
   const populated = libraries.filter((l) => l.forms.length > 0)
   const total = libraries.reduce((s, l) => s + l.forms.length, 0)
@@ -255,21 +257,27 @@ export default async function TcFormsPage({ searchParams }: Props) {
                   Not ingested
                 </StateWord>
               ),
-              f.blankUrl ? (
-                <a
-                  key="b"
-                  href={f.blankUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: 'var(--a-accent)' }}
-                >
-                  Open
-                </a>
-              ) : (
-                <span key="b" style={{ color: 'var(--a-text-2)' }}>
-                  Unavailable
-                </span>
-              ),
+              <span key="b" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                {f.blankUrl ? (
+                  <a
+                    href={f.blankUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--a-accent)' }}
+                  >
+                    Open
+                  </a>
+                ) : (
+                  <span style={{ color: 'var(--a-text-2)' }}>Unavailable</span>
+                )}
+                {f.held && !f.isSample && f.blankUrl ? (
+                  <UseFormOnDeal
+                    formVersionId={f.id}
+                    formLabel={`${library.code} ${f.form_number ?? ''} ${f.name}`.replace(/\s+/g, ' ').trim()}
+                    deals={liveDeals}
+                  />
+                ) : null}
+              </span>,
             ],
           }))
 
@@ -295,7 +303,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
               <ReportGrid
                 label={`${library.code} form versions`}
                 columns={FORM_COLUMNS}
-                template="minmax(72px, 0.5fr) minmax(180px, 2fr) minmax(56px, 0.35fr) minmax(88px, 0.7fr) minmax(76px, 0.55fr) minmax(120px, 0.9fr) minmax(88px, 0.6fr) minmax(72px, 0.45fr)"
+                template="minmax(72px, 0.5fr) minmax(180px, 2fr) minmax(56px, 0.35fr) minmax(88px, 0.7fr) minmax(76px, 0.55fr) minmax(120px, 0.9fr) minmax(88px, 0.6fr) minmax(140px, 0.8fr)"
                 minWidth={860}
                 rows={rows}
                 empty={<>This library holds no form in this filter.</>}

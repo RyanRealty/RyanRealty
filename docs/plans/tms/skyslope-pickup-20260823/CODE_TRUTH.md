@@ -12,7 +12,7 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | `createEnvelopeFromTemplate` | EXISTS (this branch) | Deal New envelope → Form library picks production blanks (OR/OREF/ODS, samples omitted) and calls `createEnvelopeFromTemplate`. |
 | `createDraftEnvelope` | THEATER | Recipients only; no docs/fields. Zero UI callers. |
 | Envelope from uploaded PDFs | EXISTS | Deal envelopes + composer. Field palette includes **Strike** (this branch; live DigiSign). Automatic reminders (Forms checkbox, 48h cron) on this branch. |
-| `/admin/forms` | EXISTS browse / THEATER use-on-deal | Left rail Closings → Forms. No add-to-envelope. |
+| `/admin/forms` | EXISTS browse + use-on-deal **this branch** | Left rail Closings → Forms. Production blanks have **Use on deal** → `createEnvelopeFromTemplate` on an in-flight cycle. |
 | `/admin/sign-off` | EXISTS; on Closings rail **this branch** | Live queue + 7-banking-day clock. Superuser `transactions.signoff`. Production 23 Aug still footer-only until deploy. |
 | `/admin/signing` | EXISTS; on Closings rail **this branch** | Brokers: `transactions.view`. `esign.send` stays parked. Empty on 22 Aug walk. |
 | `/admin/closings` | EXISTS | `tc_deals` board. Active-listing **lens**, not Manage Listings. |
@@ -37,9 +37,9 @@ Nuance: deal log is **not** “only SkySlope import” for native deals. Migrate
 
 Now that the live role list is filed:
 
-Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist, `action_required` column + composer picker, Twilio MMS PDF fetch, 48h envelope reminders, listing expiration on Closings.
+Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist, `action_required` column + composer picker, Twilio MMS PDF fetch, 48h envelope reminders, listing expiration on Closings, Forms Use on deal.
 
 Still missing:
 
 1. Full Manage Listings grid (Accept/Assign/Duplicate/Withdraw/Merge). Closings now shows expiration on the listing lens.
-2. Merge/deploy this branch so production rail, composer, seed, auto-file, action_required, and reminders match.
+2. Merge/deploy this branch so production rail, composer, seed, auto-file, action_required, reminders, and Forms use-on-deal match.

@@ -21,6 +21,7 @@ export interface ClosingDealRow {
   brokerName: string | null
   stage: string
   stageDetail: string | null
+  cycleId: string | null
   cycleKind: string | null
   contractAcceptanceDate: string | null
   escrowClosingDate: string | null
@@ -31,6 +32,28 @@ export interface ClosingDealRow {
   itemsTotal: number
   itemsInReview: number
   partyNames: string[]
+}
+
+export type LiveDealCycle = {
+  cycleId: string
+  propertyKey: string
+  address: string
+  stage: string
+}
+
+const LIVE_STAGES = new Set(['pending', 'pre_contract', 'active_listing'])
+
+/** In-flight deals a broker can compose a library form onto. */
+export function liveDealCyclesFromBoard(deals: readonly ClosingDealRow[]): LiveDealCycle[] {
+  return deals
+    .filter((d) => d.cycleId && LIVE_STAGES.has(d.stage))
+    .map((d) => ({
+      cycleId: d.cycleId as string,
+      propertyKey: d.propertyKey,
+      address: d.address,
+      stage: d.stage,
+    }))
+    .sort((a, b) => a.address.localeCompare(b.address))
 }
 
 export interface ClosingsBoard {
@@ -105,6 +128,7 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
       brokerName: (d.broker_name as string | null) ?? null,
       stage: String(d.stage ?? 'closed'),
       stageDetail: (d.stage_detail as string | null) ?? null,
+      cycleId: cy?.id ? String(cy.id) : null,
       cycleKind: (cy?.kind as string | null) ?? null,
       contractAcceptanceDate: (cy?.contract_acceptance_date as string | null) ?? null,
       escrowClosingDate: (cy?.escrow_closing_date as string | null) ?? null,
@@ -119,4 +143,10 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
   })
 
   return { deals: rows, unreadable: false }
+}
+
+export async function getLiveDealCycles(): Promise<LiveDealCycle[]> {
+  const board = await getClosingsBoard()
+  if (board.unreadable) return []
+  return liveDealCyclesFromBoard(board.deals)
 }

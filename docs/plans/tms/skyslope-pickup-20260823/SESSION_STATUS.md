@@ -46,7 +46,7 @@ Forms map, fill, envelope modal occupants, DigiSign index/history, libraries OR/
 
 See `CODE_TRUTH.md`. Role list is no longer the blocker.
 
-Done on this branch: live Forms recipient roles; `action_required` column; checklist seed; Form-library envelope compose; Signing/Sign-off on Closings rail; auto-file inbound mail/Twilio including MMS PDFs and outbound broker texts; DigiSign Strike on the composer; 48h automatic signing reminders; listing expiration on Closings; deal log labels for mail/text filed.
+Done on this branch: live Forms recipient roles; `action_required` column; checklist seed; Form-library envelope compose; Signing/Sign-off on Closings rail; auto-file inbound mail/Twilio including MMS PDFs and outbound broker texts; DigiSign Strike on the composer; 48h automatic signing reminders; listing expiration on Closings; deal log labels for mail/text filed; Forms **Use on deal**.
 
 1. Full Manage Listings row actions later.
 2. Merge/deploy.
