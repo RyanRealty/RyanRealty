@@ -2,10 +2,9 @@
  * Public detached leftover stats (Step 9). 12-month cells plus point pending
  * and inventory age. Does not replace pulse 30-day / this-week figures.
  * Miss omits the stat. Neighborhood leftover is sample-gated; MOS stays off.
+ * Figures go through getMetrics.
  */
-import { createServiceClient } from '@/lib/data/client'
-import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
-import { staleReason } from '@/lib/data/market-truth/getMetric'
+import { getMetrics, type MetricResult } from '@/lib/data/market-truth/getMetric'
 import { formatPriceExact } from '@/lib/format/money'
 
 export const PUBLIC_PACE_WINDOW_MONTHS = 12
@@ -76,40 +75,14 @@ function hyphenSlug(raw: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-function asNumber(value: unknown): number | null {
-  if (value == null || value === '') return null
-  const n = Number(value)
-  return Number.isFinite(n) ? n : null
-}
-
-type PaceCell = {
-  stat_id: string
-  value: number | string | null
-  period_end: string
-  computed_at: string
-  complete_through: string
-  window_months: number | string
-  is_publishable: boolean
-}
-
-function preferredWindow(statId: string): number {
+function paceWindow(statId: string): number {
   if (statId === 'pending_count' || statId === 'median_age_active_inventory') return 0
   return PUBLIC_PACE_WINDOW_MONTHS
 }
 
-function prefer(next: PaceCell, prev: PaceCell): boolean {
-  const want = preferredWindow(next.stat_id)
-  const wN = Number(next.window_months)
-  const wP = Number(prev.window_months)
-  if (wN !== wP) {
-    if (wN === want) return true
-    if (wP === want) return false
-    return wN < wP
-  }
-  const peN = String(next.period_end)
-  const peP = String(prev.period_end)
-  if (peN !== peP) return peN > peP
-  return String(next.computed_at) > String(prev.computed_at)
+function publishedNumber(cell: MetricResult | null | undefined): number | null {
+  if (!cell?.isPublishable || cell.value == null) return null
+  return cell.value
 }
 
 export function formatPaceShare(share: number): string {
@@ -234,36 +207,21 @@ export async function getPublicDetachedPace(opts: {
   const geoSlug = hyphenSlug(opts.geoSlug)
   if (!geoSlug) return { ...EMPTY_PUBLIC_PACE }
 
-  const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('market_metric')
-    .select('stat_id, value, period_end, computed_at, complete_through, window_months, is_publishable')
-    .eq('definition_id', DEFINITION_ID)
-    .eq('geo_type', opts.geoType)
-    .eq('geo_slug', geoSlug)
-    .eq('segment', 'detached')
-    .in('stat_id', [...PUBLIC_PACE_STATS])
-    .eq('is_publishable', true)
-    .not('value', 'is', null)
+  const inputs = PUBLIC_PACE_STATS.map((stat) => ({
+    stat,
+    geoType: opts.geoType,
+    geoSlug,
+    segment: 'detached',
+    windowMonths: paceWindow(stat),
+  }))
+  const results = await getMetrics(inputs)
+  const byStat = new Map<PublicPaceStat, MetricResult>()
+  PUBLIC_PACE_STATS.forEach((stat, i) => {
+    const result = results[i]
+    if (result) byStat.set(stat, result)
+  })
 
-  if (error) throw new Error(`getPublicDetachedPace: ${error.message}`)
-
-  const best = new Map<string, PaceCell>()
-  for (const raw of (data ?? []) as PaceCell[]) {
-    if (
-      staleReason({
-        completeThrough: String(raw.complete_through ?? ''),
-        periodEnd: String(raw.period_end ?? ''),
-        windowMonths: Number(raw.window_months),
-      })
-    ) {
-      continue
-    }
-    const prev = best.get(raw.stat_id)
-    if (!prev || prefer(raw, prev)) best.set(raw.stat_id, raw)
-  }
-
-  const pick = (id: PublicPaceStat) => asNumber(best.get(id)?.value)
+  const pick = (id: PublicPaceStat) => publishedNumber(byStat.get(id))
   const closedCount = pick('closed_count')
   const newListings = pick('new_listings')
   const pendingCount = pick('pending_count')

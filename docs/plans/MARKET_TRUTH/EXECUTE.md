@@ -472,6 +472,26 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23ac landed: `/communities/sunriver` 31 condos + 5 pending · now · 32 closed · 12 months; 6 townhomes + 1 pending · 2 closed. `/communities/three-rivers` 48 lots + 9 pending · 48 closed; 15 manufactured on land + 4 pending · 26 closed. `/cities/bend/larkspur` 3 condos + 1 pending · 2 closed. Extra MOS still 0. Shared reader also prints leftover bits on city extras (Bend 66 condos + 7 pending · 67 closed). Bend detached still **774**. County unpublished.
 
+### Grind 2026-08-23ad–ag — finish Step 9 grain honesty + getMetric for published MT figures
+
+**Program remainder (locks still hold):** county unpublished; `commercial_lease` out; `all_residential` off public; unadjusted MoM off public; subdivision never a price statistic; office share admin-only; pulse 30-day sold and days-to-pending stay. Neighborhood extra MOS stays omitted while 0 publishable. Workers do not tick this file.
+
+**Done when a real user can:**
+1. Open `/cities/sunriver/sunriver` and see the same extra leftover bits as `/communities/sunriver` (31 condos + 5 pending · 32 closed). Nested city routes resolve the Market Truth neighborhood slug (`sunriver`, not `sunriver-sunriver`). `/cities/bend/larkspur` still hits `bend-larkspur`. Boundary/inventory/map keep the GIS slug. Pulse DTP stays.
+2. Open a plat yearly history and read it as MLS plat-name counts, not recorded-plat membership. Membership 12-month counts stay on the recorded-plat strip. No closed-sale prices.
+3. Extra types and leftover pace assemble through `getMetric` (same publishable/stale rules). Miss omits. 3000ms timeout cannot wipe the strip to empty if cells exist.
+4. The same question asked on `/communities/sunriver` and `/cities/sunriver/sunriver` returns the same extra counts.
+
+Bend detached still 774. County unpublished.
+
+2026-08-23ad landed: `/cities/sunriver/sunriver`, `/cities/bend/northwest-crossing`, and `/cities/la-pine/three-rivers` 308 to `/communities/{slug}` (registry community, not a Bend district). `/cities/bend/larkspur` stays. Nested MT reads use `resolveNeighborhoodMetricSlug` (sunriver not sunriver-sunriver; bend-larkspur stays prefixed).
+
+2026-08-23ae landed: `/subdivisions/kitty-hawk` 52 closings under the MLS plat name, note "MLS plat-name closed counts. Single-family name join." Cache Homes sold omitted. Recorded-plat strip on `/subdivisions/oregon-water-wonderland-unit-2` unchanged (20 / 4 / 24 plus extras). No closed-sale prices.
+
+2026-08-23af landed: `getMetrics` is the batch form of `getMetric`. `getPublicPlaceSegments` and `getPublicDetachedPace` no longer query `market_metric` themselves. `/cities/bend` 66 condos · 12.8 months · 7 pending · 67 closed. `/communities/sunriver` 31 condos · 5 pending · 32 closed.
+
+2026-08-23ag landed: CMA leftover fields omit on miss (no cache/pulse fill). Neighborhood MOS only from Market Truth; Tetherow pulse 4.6 withheld. Comp pool still PropertyType A. Pulse DTP stays off this object.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

@@ -1,22 +1,20 @@
 /**
- * SubdivisionSalesHistory — the sales-history depth section on
- * /subdivisions/[slug] (W2.5): yearly closed-sale aggregates from the 589K-row
- * historical archive, plus the per-subdivision market-stats strip when
- * market_stats_cache carries a geo_type='subdivision' row.
+ * SubdivisionSalesHistory — yearly closed COUNT on /subdivisions/[slug].
  *
- * §0 sources (both are one cached DAL read, query shape documented in the DAL):
- *   - history: getSubdivisionSalesHistory -> get_subdivision_sales_history RPC
- *     (server-side GROUP BY year over closed SFR sales for this plat slug).
- *   - stats: getMarketStats geoType='subdivision' -> market_stats_cache row
- *     (6h freshness; null for most plats until the cache backfill lands).
+ * Two populations live on this route and they are not the same:
+ *   - This table: get_subdivision_sales_history. MLS SubdivisionName slug-join,
+ *     PropertyType A (single-family). Calendar-year closed counts.
+ *   - PublicSubdivisionCounts: recorded-plat membership (place_membership
+ *     is_primary). 12-month closed_count stays on that strip.
  *
- * ODS §5-4 A.4: renders yearly closed COUNT only. REGISTRY §4 withholds a
- * closed-sale median at this grain. Never individual sold addresses or
- * prices — sold listing data is VOW-only. §7-3: the section carries the
- * ODS source line.
+ * market_stats_cache soldCount is the same MLS-name family as this table, YTD,
+ * not membership closed_count. Omit it here so it cannot be read as the
+ * recorded-plat 12-month closed count. Median days on market from that cache
+ * row may still open the band. Closed-sale prices stay behind
+ * publishSubdivisionClosedPrice (REGISTRY §4).
  *
- * Renders null when there is no history AND no stats row (fails soft until the
- * sales-history migration is applied).
+ * ODS §5-4 A.4: counts only, never individual sold addresses or prices.
+ * Renders null when there is no history AND no remaining stats cell.
  */
 
 import type { CSSProperties, ReactNode } from 'react'
@@ -41,6 +39,43 @@ const PERIOD_LABEL: Record<MarketStats['periodType'], string> = {
   ytd: 'Year to date',
 }
 
+/** Public grain line for the yearly table. Not recorded-plat membership. */
+export const SUBDIVISION_YEARLY_HISTORY_NOTE =
+  'MLS plat-name closed counts. Single-family name join. This grain does not publish a median price.'
+
+export type SubdivisionStatCell = { label: string; value: string }
+
+/**
+ * Cache-row cells that may print next to the yearly MLS table.
+ * soldCount stays off: it is MLS-name YTD, not recorded-plat 12-month closed.
+ */
+export function subdivisionCacheStatCells(stats: MarketStats | null): SubdivisionStatCell[] {
+  if (!stats) return []
+  const cells: SubdivisionStatCell[] = []
+  const publishedMedian = publishSubdivisionClosedPrice(stats.medianSalePrice)
+  if (publishedMedian != null) {
+    cells.push({
+      label: 'Closed median',
+      value: `$${Math.round(publishedMedian).toLocaleString('en-US')}`,
+    })
+  }
+  if (stats.medianDaysOnMarket != null) {
+    cells.push({
+      label: 'Median days on market',
+      value: `${Math.round(stats.medianDaysOnMarket)} days`,
+    })
+  }
+  const publishedYoy = publishSubdivisionClosedPrice(stats.yoyChangePct)
+  if (publishedYoy != null) {
+    const arrow = publishedYoy > 0 ? '↑' : publishedYoy < 0 ? '↓' : '→'
+    cells.push({
+      label: 'Closed median YoY',
+      value: `${arrow} ${Math.abs(publishedYoy).toFixed(1)}% YoY`,
+    })
+  }
+  return cells
+}
+
 interface Props {
   displayName: string
   history: SubdivisionSalesYear[]
@@ -56,8 +91,8 @@ interface Props {
 
 export function SubdivisionSalesHistory({ displayName, history, stats, cityName, charts }: Props) {
   const hasHistory = history.length > 0
-  const hasStats = Boolean(stats && (stats.soldCount != null || stats.medianDaysOnMarket != null))
-  if (!hasHistory && !hasStats) return null
+  const statCells = subdivisionCacheStatCells(stats)
+  if (!hasHistory && statCells.length === 0) return null
 
   const { openable, outsideClosed, outsideYears } = splitByExplorerRange(history)
   const totalClosed = history.reduce((sum, r) => sum + r.closedCount, 0)
@@ -66,34 +101,6 @@ export function SubdivisionSalesHistory({ displayName, history, stats, cityName,
   const outsideBit =
     outsideClosed === 1 ? '1 closing' : `${outsideClosed.toLocaleString('en-US')} closings`
   const outsideYearBit = outsideYears === 1 ? 'one year' : `${outsideYears} years`
-
-  const statCells: Array<{ label: string; value: string }> = []
-  if (stats) {
-    const publishedMedian = publishSubdivisionClosedPrice(stats.medianSalePrice)
-    if (publishedMedian != null) {
-      statCells.push({
-        label: 'Closed median',
-        value: `$${Math.round(publishedMedian).toLocaleString('en-US')}`,
-      })
-    }
-    if (stats.medianDaysOnMarket != null) {
-      statCells.push({
-        label: 'Median days on market',
-        value: `${Math.round(stats.medianDaysOnMarket)} days`,
-      })
-    }
-    if (stats.soldCount != null) {
-      statCells.push({ label: 'Homes sold', value: String(stats.soldCount) })
-    }
-    const publishedYoy = publishSubdivisionClosedPrice(stats.yoyChangePct)
-    if (publishedYoy != null) {
-      const arrow = publishedYoy > 0 ? '↑' : publishedYoy < 0 ? '↓' : '→'
-      statCells.push({
-        label: 'Closed median YoY',
-        value: `${arrow} ${Math.abs(publishedYoy).toFixed(1)}% YoY`,
-      })
-    }
-  }
 
   const cellPad = '12px 16px'
   const numCell: CSSProperties = {
@@ -113,12 +120,12 @@ export function SubdivisionSalesHistory({ displayName, history, stats, cityName,
 
         {hasHistory ? (
           <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '42rem', margin: '0 0 1.5rem' }}>
-            {totalClosed.toLocaleString('en-US')} single-family {totalClosed === 1 ? 'home has' : 'homes have'} closed in {displayName}
+            {totalClosed.toLocaleString('en-US')} single-family {totalClosed === 1 ? 'home has' : 'homes have'} closed under the MLS plat name {displayName}
             {firstYear != null ? ` since ${firstYear}` : ''}.
           </p>
         ) : null}
 
-        {hasStats && stats && statCells.length > 0 ? (
+        {stats && statCells.length > 0 ? (
           <div style={{ margin: '0 0 2rem' }}>
             <p className="eyebrow" style={{ margin: '0 0 .75rem' }}>
               {PERIOD_LABEL[stats.periodType]}
@@ -187,7 +194,7 @@ export function SubdivisionSalesHistory({ displayName, history, stats, cityName,
         ) : null}
 
         <p style={{ fontSize: '.8rem', color: 'var(--navy-70)', margin: '1.25rem 0 0', maxWidth: '42rem' }}>
-          Single-family homes. Closed-sale counts only. This grain does not publish a median price.
+          {SUBDIVISION_YEARLY_HISTORY_NOTE}
           {outsideYears > 0
             ? ` ${outsideBit} across ${outsideYearBit} sit outside the closed-sales explorer (from ${HISTORY_MIN_YEAR} to ${HISTORY_MAX_YEAR}) and are counted above, not linked.`
             : ''}{' '}

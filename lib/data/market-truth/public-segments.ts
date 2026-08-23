@@ -2,19 +2,12 @@
  * Public place-page extra segments (Step 9). Detached stays the HUD.
  * The mixed all-types bucket is omitted (it double-counts). Lease inventory
  * stays out. Extra types overlay inventory plus pending/closed counts.
- * MOS only when publishable. Miss omits the row.
+ * MOS only when publishable. Miss omits the row. Figures go through getMetrics.
  */
-import { createServiceClient } from '@/lib/data/client'
-import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
-import { staleReason } from '@/lib/data/market-truth/getMetric'
+import { getMetrics, type MetricResult } from '@/lib/data/market-truth/getMetric'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import {
-  BOARD_STATS,
-  collapseCitySegmentRows,
-  type CitySegmentRow,
-  type RawSegmentCell,
-} from '@/lib/data/market-truth/city-segment-collapse'
+import { BOARD_STATS, type CitySegmentRow } from '@/lib/data/market-truth/city-segment-collapse'
 
 export const PUBLIC_PLACE_SEGMENTS = [
   'condo',
@@ -152,6 +145,28 @@ export function publicSegmentItems(
   return items
 }
 
+function publishedNumber(cell: MetricResult | null | undefined): number | null {
+  if (!cell?.isPublishable || cell.value == null) return null
+  return cell.value
+}
+
+function publishedText(cell: MetricResult | null | undefined): string | null {
+  if (!cell?.isPublishable || cell.valueText == null || cell.valueText.trim() === '') return null
+  return cell.valueText
+}
+
+function pickSampleN(cells: {
+  active?: MetricResult | null
+  median?: MetricResult | null
+  mos?: MetricResult | null
+  verdict?: MetricResult | null
+}): number | null {
+  for (const cell of [cells.mos, cells.active, cells.median, cells.verdict]) {
+    if (cell?.isPublishable && Number.isFinite(cell.provenance.sampleN)) return cell.provenance.sampleN
+  }
+  return null
+}
+
 export async function getPublicPlaceSegments(opts: {
   geoType: 'city' | 'region' | 'zip' | 'neighborhood'
   geoSlug: string
@@ -159,33 +174,43 @@ export async function getPublicPlaceSegments(opts: {
   const geoSlug = hyphenSlug(opts.geoSlug)
   if (!geoSlug) return []
 
-  const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('market_metric')
-    .select(
-      'segment, stat_id, value, value_text, sample_n, window_months, period_end, computed_at, complete_through, is_publishable',
-    )
-    .eq('definition_id', DEFINITION_ID)
-    .eq('geo_type', opts.geoType)
-    .eq('geo_slug', geoSlug)
-    .in('segment', [...PUBLIC_PLACE_SEGMENTS])
-    .in('stat_id', [...PUBLIC_SEGMENT_STATS])
-    .eq('is_publishable', true)
-    .not('value', 'is', null)
-
-  if (error) throw new Error(`getPublicPlaceSegments: ${error.message}`)
-  return collapseCitySegmentRows((data ?? []) as RawSegmentCell[], {
-    segments: PUBLIC_PLACE_SEGMENTS,
-    stale: (row) =>
-      Boolean(
-        staleReason({
-          completeThrough: String(row.complete_through ?? ''),
-          periodEnd: String(row.period_end ?? ''),
-          windowMonths: Number(row.window_months),
-        }),
-      ),
-  }).filter((row): row is PublicSegmentRow => {
-    if (row.activeCount == null || row.activeCount <= 0) return false
-    return (PUBLIC_PLACE_SEGMENTS as readonly string[]).includes(row.segment)
+  const inputs = PUBLIC_PLACE_SEGMENTS.flatMap((segment) =>
+    PUBLIC_SEGMENT_STATS.map((stat) => ({
+      stat,
+      geoType: opts.geoType,
+      geoSlug,
+      segment,
+    })),
+  )
+  const results = await getMetrics(inputs)
+  const byKey = new Map<string, MetricResult>()
+  results.forEach((result, i) => {
+    if (!result) return
+    const input = inputs[i]
+    if (!input) return
+    byKey.set(`${input.segment}:${input.stat}`, result)
   })
+
+  const rows: PublicSegmentRow[] = []
+  for (const segment of PUBLIC_PLACE_SEGMENTS) {
+    const active = byKey.get(`${segment}:active_count`)
+    const activeCount = publishedNumber(active)
+    if (activeCount == null || activeCount <= 0) continue
+    const median = byKey.get(`${segment}:median_list_active`)
+    const mos = byKey.get(`${segment}:months_of_supply`)
+    const verdict = byKey.get(`${segment}:market_verdict`)
+    const pending = publishedNumber(byKey.get(`${segment}:pending_count`))
+    const closed = publishedNumber(byKey.get(`${segment}:closed_count`))
+    rows.push({
+      segment,
+      activeCount: Math.round(activeCount),
+      medianList: publishedNumber(median),
+      monthsOfSupply: publishedNumber(mos),
+      verdict: publishedText(verdict),
+      pendingCount: pending == null || pending < 1 ? null : Math.round(pending),
+      closedCount: closed == null || closed < 1 ? null : Math.round(closed),
+      sampleN: pickSampleN({ active, median, mos, verdict }),
+    })
+  }
+  return rows
 }

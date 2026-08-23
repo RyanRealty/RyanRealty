@@ -170,6 +170,21 @@ export function resolveCanonicalCommunityPath(rawSlug: string): string | null {
 }
 
 /**
+ * Nested `/cities/{city}/{slug}` for a registered community is a hollow
+ * notFound (the neighborhoods table is Bend districts). Send the visitor to
+ * `/communities/{slug}`. Bend district pages (larkspur, awbrey-butte) are
+ * not registry slugs and pass through.
+ */
+export function resolveCityNeighborhoodCommunityPath(pathname: string): string | null {
+  const m = pathname.match(/^\/cities\/([^/]+)\/([^/]+)\/?$/)
+  if (!m) return null
+  const neighborhood = slugifyName(m[2])
+  if (!CANONICAL_SLUGS.has(neighborhood)) return null
+  const dest = `/communities/${neighborhood}`
+  return dest === pathname ? null : dest
+}
+
+/**
  * Every compound slug this resolver redirects, with its destination. Used by the
  * unit test and by the verification probe — never at request time.
  */

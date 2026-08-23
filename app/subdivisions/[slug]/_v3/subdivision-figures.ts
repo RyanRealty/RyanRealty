@@ -40,13 +40,14 @@ import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisio
 import { publishSubdivisionClosedPrice } from '@/lib/market/publish-subdivision-closed-price'
 
 /**
- * The plat's own closed statistics. Closed-sale prices go through
- * publishSubdivisionClosedPrice and stay null (REGISTRY §4). A sold count or
- * days-on-market still opens the band.
+ * The plat's own closed statistics from market_stats_cache (MLS name join).
+ * Closed-sale prices go through publishSubdivisionClosedPrice and stay null
+ * (REGISTRY §4). Cache soldCount stays off this band: it is YTD MLS-name
+ * closings, not recorded-plat 12-month membership closed_count. Days on
+ * market may still open the band.
  */
 export function platStatsFigures(stats: MarketStats | null): V3InstrumentFigure[] {
   if (!stats) return []
-  if (stats.soldCount == null && stats.medianDaysOnMarket == null) return []
   const figures: V3InstrumentFigure[] = []
   const publishedMedian = publishSubdivisionClosedPrice(stats.medianSalePrice)
   if (publishedMedian != null) {
@@ -59,12 +60,6 @@ export function platStatsFigures(stats: MarketStats | null): V3InstrumentFigure[
     figures.push({
       value: v3Text(`${Math.round(stats.medianDaysOnMarket)} days`),
       label: v3Text('median days on market'),
-    })
-  }
-  if (stats.soldCount != null) {
-    figures.push({
-      value: v3Text(stats.soldCount.toLocaleString('en-US')),
-      label: v3Text('homes sold'),
     })
   }
   const publishedYoy = publishSubdivisionClosedPrice(stats.yoyChangePct)
@@ -135,9 +130,8 @@ export function parentPulseFigures(
 }
 
 /**
- * Yearly closed-count series for Instrument.chart (D9). Fewer than two years
- * is not a line. Caption is the trace for this series. The rolling-period
- * figures on the same Instrument keep their own source line.
+ * Yearly closed-count series for Instrument.chart (D9). MLS plat-name join,
+ * not recorded-plat membership. Fewer than two years is not a line.
  */
 export function subdivisionSalesChart(
   displayName: string,
@@ -154,7 +148,7 @@ export function subdivisionSalesChart(
     }))
   if (points.length < 2) return undefined
   return {
-    caption: v3Text(`Closed single-family sales by year, ${displayName}`),
-    series: [{ name: v3Text('Homes sold'), points }],
+    caption: v3Text(`Closed single-family sales by MLS plat name, ${displayName}`),
+    series: [{ name: v3Text('Closed counts'), points }],
   }
 }

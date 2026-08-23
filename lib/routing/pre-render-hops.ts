@@ -25,7 +25,10 @@
  * work only, no DB, no async.
  */
 
-import { resolveCanonicalCommunityPath } from '@/lib/communities/canonical-community-slug'
+import {
+  resolveCanonicalCommunityPath,
+  resolveCityNeighborhoodCommunityPath,
+} from '@/lib/communities/canonical-community-slug'
 import { resolveLegacyReportGeoRedirect } from '@/lib/routing/legacy-report-geo'
 import {
   resolveNeighborhoodAliasRedirect,
@@ -77,6 +80,14 @@ export const PRE_RENDER_HOPS: readonly PreRenderHop[] = [
       if (!m) return null
       return resolveSubdivisionAreaRedirect(decodeSegment(m[1]))
     },
+  },
+  {
+    // /cities/sunriver/sunriver (and /cities/bend/northwest-crossing) are
+    // not neighborhood rows. They 200 a notFound shell. Registry community
+    // slugs hop to /communities/{slug}. Bend districts pass through.
+    id: 'city-neighborhood-community',
+    routes: ['/cities/[slug]/[neighborhoodSlug]'],
+    resolve: resolveCityNeighborhoodCommunityPath,
   },
   {
     // Bend-district alias. Live reports live at /cities/bend/{slug}.

@@ -19,6 +19,7 @@ describe('resolvePreRenderHop', () => {
       expect.arrayContaining([
         '/communities/[slug]',
         '/subdivisions/[slug]',
+        '/cities/[slug]/[neighborhoodSlug]',
         '/neighborhoods/[slug]',
         '/reports/[slug]/[geoName]',
         '/housing-market/reports/[slug]/[geoName]',
@@ -31,6 +32,10 @@ describe('resolvePreRenderHop', () => {
     expect(resolvePreRenderHop('/communities/bend-broken-top')).toBe('/communities/broken-top')
     expect(resolvePreRenderHop('/communities/bend-crosswater')).toBe('/communities/crosswater')
     expect(resolvePreRenderHop('/subdivisions/tetherow')).toBe('/communities/tetherow')
+    expect(resolvePreRenderHop('/cities/sunriver/sunriver')).toBe('/communities/sunriver')
+    expect(resolvePreRenderHop('/cities/bend/northwest-crossing')).toBe(
+      '/communities/northwest-crossing',
+    )
     expect(resolvePreRenderHop('/neighborhoods/awbrey-butte')).toBe('/cities/bend/awbrey-butte')
     expect(resolvePreRenderHop('/reports/city/Bend')).toBe('/housing-market/bend')
     expect(resolvePreRenderHop('/housing-market/reports/city/Bend')).toBe('/housing-market/bend')
@@ -51,6 +56,8 @@ describe('resolvePreRenderHop', () => {
       '/subdivisions/tetherow',
       '/subdivisions/awbrey-butte',
       '/neighborhoods/awbrey-butte',
+      '/cities/sunriver/sunriver',
+      '/cities/bend/northwest-crossing',
       '/reports/city/Bend',
       '/reports/community/Tetherow',
       '/housing-market/reports/city/Redmond',

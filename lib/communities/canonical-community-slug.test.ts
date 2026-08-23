@@ -34,6 +34,7 @@ import {
   enumerateCanonicalCommunityRedirects,
   resolveCanonicalCommunityPath,
   resolveCanonicalCommunitySlug,
+  resolveCityNeighborhoodCommunityPath,
 } from './canonical-community-slug'
 
 type Entry = {
@@ -180,5 +181,19 @@ describe('resolveCanonicalCommunitySlug', () => {
       // The destination is canonical: resolving it again must be a no-op.
       expect(resolveCanonicalCommunitySlug(to)).toBeNull()
     }
+  })
+
+  it('nested city URLs for a registry community hop to /communities/{slug}', () => {
+    expect(resolveCityNeighborhoodCommunityPath('/cities/sunriver/sunriver')).toBe(
+      '/communities/sunriver',
+    )
+    expect(resolveCityNeighborhoodCommunityPath('/cities/bend/northwest-crossing')).toBe(
+      '/communities/northwest-crossing',
+    )
+    expect(resolveCityNeighborhoodCommunityPath('/cities/la-pine/three-rivers')).toBe(
+      '/communities/three-rivers',
+    )
+    expect(resolveCityNeighborhoodCommunityPath('/cities/bend/larkspur')).toBeNull()
+    expect(resolveCityNeighborhoodCommunityPath('/cities/bend/awbrey-butte')).toBeNull()
   })
 })

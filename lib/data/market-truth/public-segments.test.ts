@@ -14,8 +14,10 @@ const SRC = readFileSync(resolve('lib/data/market-truth/public-segments.ts'), 'u
 
 describe('getPublicPlaceSegments', () => {
   it('reads publishable market_metric extra-segment cells', () => {
-    expect(SRC).toMatch(/from\('market_metric'\)/)
-    expect(SRC).toMatch(/is_publishable/)
+    expect(SRC).toMatch(/getMetric/)
+    expect(SRC).toMatch(/getMetrics/)
+    expect(SRC).not.toMatch(/from\('market_metric'\)/)
+    expect(SRC).toMatch(/isPublishable/)
     expect(SRC).toMatch(/'condo'/)
     expect(SRC).toMatch(/'townhome'/)
     expect(SRC).toMatch(/manufactured_land/)

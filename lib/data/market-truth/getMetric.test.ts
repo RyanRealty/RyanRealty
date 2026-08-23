@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   DEFINITION_ID,
   STATS,
@@ -6,7 +6,18 @@ import {
   marketVerdict,
   pickWindow,
 } from '@/lib/data/market-truth/registry'
-import { UnknownStatError, staleReason } from '@/lib/data/market-truth/getMetric'
+
+const { fromImpl } = vi.hoisted(() => ({ fromImpl: vi.fn() }))
+vi.mock('@/lib/data/client', () => ({
+  createServiceClient: () => ({ from: fromImpl }),
+}))
+
+import {
+  UnknownStatError,
+  getMetric,
+  getMetrics,
+  staleReason,
+} from '@/lib/data/market-truth/getMetric'
 
 describe('Market Truth registry', () => {
   it('registers every REGISTRY.md §3 stat_id once', () => {
@@ -36,12 +47,6 @@ describe('Market Truth registry', () => {
     expect(pickWindow(3, 4, 9, 10)).toBeNull()
   })
 
-  it('rejects unknown stat ids before a store read', () => {
-    expect(() => {
-      if (!STAT_BY_ID.get('median_dom')) throw new UnknownStatError('median_dom')
-    }).toThrow(/not in the registry/)
-  })
-
   it('refuses a closed window whose complete_through lags period_end', () => {
     expect(
       staleReason({ completeThrough: '2026-04-30', periodEnd: '2026-08-22', windowMonths: 12 }),
@@ -52,5 +57,113 @@ describe('Market Truth registry', () => {
     expect(
       staleReason({ completeThrough: '2026-04-30', periodEnd: '2026-08-22', windowMonths: 0 }),
     ).toBeNull()
+  })
+})
+
+function metricRow(partial: Record<string, unknown>): Record<string, unknown> {
+  return {
+    geo_type: 'city',
+    geo_slug: 'bend',
+    segment: 'detached',
+    period_end: '2026-08-23',
+    window_months: 0,
+    definition_id: DEFINITION_ID,
+    value_text: null,
+    sample_n: 774,
+    method: 'count',
+    excluded_n: 0,
+    complete_through: '2026-08-22',
+    is_publishable: true,
+    withheld_reason: null,
+    is_floor: false,
+    computed_at: '2026-08-23T01:00:00Z',
+    ...partial,
+  }
+}
+
+function mockMetricRows(rows: Record<string, unknown>[]) {
+  const builder: Record<string, unknown> = {}
+  const self = () => builder
+  builder.select = vi.fn(self)
+  builder.eq = vi.fn(self)
+  builder.in = vi.fn(self)
+  builder.order = vi.fn(self)
+  builder.limit = vi.fn(self)
+  builder.then = (resolve: (v: unknown) => void) => resolve({ data: rows, error: null })
+  fromImpl.mockReturnValue(builder)
+}
+
+describe('getMetric / getMetrics', () => {
+  beforeEach(() => {
+    fromImpl.mockReset()
+  })
+
+  it('rejects unknown stat ids before a store read', async () => {
+    await expect(
+      getMetric({ stat: 'median_dom', geoType: 'city', geoSlug: 'bend', segment: 'detached' }),
+    ).rejects.toThrow(UnknownStatError)
+    await expect(
+      getMetrics([
+        { stat: 'active_count', geoType: 'city', geoSlug: 'bend', segment: 'detached' },
+        { stat: 'median_dom', geoType: 'city', geoSlug: 'bend', segment: 'detached' },
+      ]),
+    ).rejects.toThrow(/not in the registry/)
+    expect(fromImpl).not.toHaveBeenCalled()
+  })
+
+  it('getMetric equals getMetrics for the same Bend detached active_count input', async () => {
+    mockMetricRows([
+      metricRow({
+        stat_id: 'active_count',
+        value: 700,
+        period_end: '2026-08-22',
+        computed_at: '2026-08-22T01:00:00Z',
+      }),
+      metricRow({
+        stat_id: 'active_count',
+        value: 774,
+        period_end: '2026-08-23',
+      }),
+      metricRow({
+        stat_id: 'months_of_supply',
+        value: 99,
+        window_months: 12,
+        sample_n: 40,
+        method: 'derived',
+      }),
+      metricRow({
+        stat_id: 'months_of_supply',
+        value: 12.8,
+        window_months: 6,
+        sample_n: 40,
+        method: 'derived',
+      }),
+    ])
+    const input = {
+      stat: 'active_count',
+      geoType: 'city',
+      geoSlug: 'bend',
+      segment: 'detached',
+    }
+    const single = await getMetric(input)
+    const batched = await getMetrics([input])
+    expect(single).toEqual(batched[0])
+    expect(single?.value).toBe(774)
+    expect(single?.isPublishable).toBe(true)
+    expect(single?.statId).toBe('active_count')
+    expect(fromImpl).toHaveBeenCalledWith('market_metric')
+  })
+
+  it('omits a miss instead of fabricating 0', async () => {
+    mockMetricRows([
+      metricRow({ stat_id: 'active_count', geo_slug: 'bend', value: 774 }),
+    ])
+    const missed = await getMetric({
+      stat: 'active_count',
+      geoType: 'city',
+      geoSlug: 'madras',
+      segment: 'detached',
+    })
+    expect(missed).toBeNull()
   })
 })

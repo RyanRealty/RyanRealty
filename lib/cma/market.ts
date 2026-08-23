@@ -1,31 +1,40 @@
 /**
- * CMA market context — verified conditions for the subject's market, pulled
- * from the cache tables (never aggregated from raw listings; CLAUDE.md
- * database rules). Resort subdivisions read geo_type='neighborhood' first
- * (Caldera Springs, Tetherow, …). City is the fallback. market_stats_cache
- * rolling_365d supplies the closed-sale trend and the YoY rate that drives
- * the per-comp time adjustment; market_pulse_live supplies live inventory
- * AND the canonical months of supply. Calendar-year volume comes from
- * analytics_mart_market_annual via getCmaMarketBoardYear (city grain, else
- * the region row labeled as region). A missing mart row is omitted.
+ * CMA market context — verified conditions for the subject's market.
+ * Resort subdivisions read geo_type='neighborhood' first (Caldera Springs,
+ * Tetherow, …). City is the fallback.
  *
- * City-grain months of supply comes FROM getCityDetachedMarket (getMetric
- * mt-v1), the same path /sell uses, so a Bend CMA cannot say seller while
- * /sell says balanced. Neighborhood grain still uses pulse + geo-grain-trust
- * until Market Truth writes neighborhood cells. The 365-day derivation remains
- * only as a fallback when both are missing, and the citation records which
- * source was used.
- * Verdict thresholds (CLAUDE.md §0): <= 4 seller's, 4-6 balanced, >= 6 buyer's.
+ * Months of supply and live inventory come from getDetachedMarket /
+ * getCityDetachedMarket (getMetric mt-v1), the same path /sell uses. A miss
+ * omits — pulse MOS is never the CMA figure. Leftover 12-month pace
+ * (sale-to-original, YoY, pending, median close, ppsf) comes from
+ * getPublicDetachedPace. A leftover miss omits; cache/pulse do not fill
+ * those fields. Pulse days-to-pending and 30-day sold stay off this object
+ * (do not map them onto 12-month days to contract).
+ *
+ * Cache rolling_365d is optional. Market Truth leftover or inventory is
+ * enough to assemble a context. Verdict thresholds (CLAUDE.md §0): <= 4
+ * seller's, 4-6 balanced, >= 6 buyer's.
  */
 
-import { getCmaMarketPulseRow, getCmaMarketStatsRow, getCmaMarketTrendRows } from '@/lib/data/cma/builderReads'
-import { getCityDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
-import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import {
+  getCmaMarketPulseRow,
+  getCmaMarketStatsRow,
+  getCmaMarketTrendRows,
+  type CmaMarketPulseRow,
+  type CmaMarketStatsRow,
+  type CmaMarketTrendRow,
+} from '@/lib/data/cma/builderReads'
+import { getCityDetachedMarket, getDetachedMarket, type SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
+import {
+  EMPTY_PUBLIC_PACE,
+  getPublicDetachedPace,
+  publicPaceHasRow,
+  type PublicPaceRow,
+} from '@/lib/data/market-truth/public-pace'
 import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import { getCmaMarketBoardYear } from '@/lib/cma/market-board-mart'
 import type { CmaMarketContext } from '@/lib/cma/types'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
-import { isSoldAttributionTrusted } from '@/lib/market/geo-grain-trust'
 
 export { yearMartCite } from '@/lib/cma/market-board-mart'
 
@@ -34,6 +43,22 @@ function slugCandidates(city: string): string[] {
   const hyphen = lower.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
   // The cache historically carries both 'la-pine' and 'la pine' spellings.
   return Array.from(new Set([hyphen, lower]))
+}
+
+function titleCaseSlug(slug: string): string {
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function shiftUtcMonths(iso: string, delta: number): string {
+  const day = iso.slice(0, 10)
+  const d = new Date(`${day}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return day
+  d.setUTCMonth(d.getUTCMonth() + delta)
+  return d.toISOString().slice(0, 10)
 }
 
 export type CmaMarketTarget = {
@@ -69,99 +94,100 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-export async function getCmaMarketContext(
-  cityOrSubject: string | { city: string; subdivision?: string | null },
-): Promise<CmaMarketContext | null> {
-  const city = typeof cityOrSubject === 'string' ? cityOrSubject : cityOrSubject.city
-  const subdivision = typeof cityOrSubject === 'string' ? null : cityOrSubject.subdivision
-  const { targets } = resolveCmaMarketTargets({ city, subdivision })
-  let stats: Awaited<ReturnType<typeof getCmaMarketStatsRow>> = null
-  let pulse: Awaited<ReturnType<typeof getCmaMarketPulseRow>> = null
-  for (const target of targets) {
-    const [nextStats, nextPulse] = await Promise.all([
-      getCmaMarketStatsRow(target.slugs, target.geoType),
-      getCmaMarketPulseRow(target.slugs, target.geoType),
-    ])
-    if (nextStats) {
-      stats = nextStats
-      pulse = nextPulse
-      break
-    }
+async function readCmaDetached(
+  geoType: 'city' | 'neighborhood',
+  geoSlug: string,
+): Promise<SellBendMarket | null> {
+  if (!geoSlug.trim()) return null
+  try {
+    return geoType === 'city'
+      ? await getCityDetachedMarket(geoSlug)
+      : await getDetachedMarket('neighborhood', geoSlug)
+  } catch {
+    return null
   }
-  if (!stats) return null
+}
 
-  const geoType = stats.geo_type === 'neighborhood' ? 'neighborhood' : 'city'
-  const [trendRows, yearMart] = await Promise.all([
-    getCmaMarketTrendRows(stats.geo_slug, geoType),
-    getCmaMarketBoardYear({ city }),
-  ])
+async function readCmaLeftover(
+  geoType: 'city' | 'neighborhood',
+  geoSlug: string,
+): Promise<PublicPaceRow> {
+  try {
+    return await getPublicDetachedPace({ geoType, geoSlug })
+  } catch {
+    return { ...EMPTY_PUBLIC_PACE }
+  }
+}
 
-  const sold365 = num(stats.sold_count) ?? 0
-  const [cityTruth, cityPace] = await Promise.all([
-    geoType === 'city' ? getCityDetachedMarket(stats.geo_slug) : Promise.resolve(null),
-    geoType === 'city' ? getPublicDetachedPace({ geoType: 'city', geoSlug: stats.geo_slug }) : Promise.resolve(null),
-  ])
-  // City grain: MT only. Pulse 488 / 3.54 / seller must not fill a miss.
-  const active =
-    cityTruth?.activeCount ?? (geoType === 'city' ? null : num(pulse?.active_count))
-  let rawMonthsOfSupply =
-    cityTruth?.monthsOfSupply ??
-    (geoType === 'city'
-      ? null
-      : publishMonthsOfSupply({
+export type CmaMarketAssembleInput = {
+  city: string
+  geoType: 'city' | 'neighborhood'
+  geoSlug: string
+  stats: CmaMarketStatsRow | null
+  pulse: CmaMarketPulseRow | null
+  detached: SellBendMarket | null
+  leftover: PublicPaceRow
+  trendRows: CmaMarketTrendRow[]
+  yearMart: CmaMarketContext['yearMart']
+}
+
+/**
+ * Overlay leftover + inventory onto a CMA market board. Leftover fields never
+ * fall back to cache/pulse. MOS never falls back to pulse. Cache rolling_365d
+ * may be missing.
+ */
+export function assembleCmaMarketContext(input: CmaMarketAssembleInput): CmaMarketContext {
+  const { geoType, geoSlug, stats, pulse, detached, leftover, trendRows, yearMart, city } = input
+  const publishedMos =
+    detached != null
+      ? publishMonthsOfSupply({
           grain: geoType,
-          pulseMos: num(pulse?.months_of_supply),
-          pulseActiveCount: active,
-          displayedActiveCount: active,
-          soldCount12mo: sold365,
-        }))
-  let mosFormula = cityTruth
-    ? 'getMetric months_of_supply mt-v1 detached MLS-city (same path as /sell)'
-    : geoType === 'city'
-      ? 'withheld: city detached cell missing (no pulse fallback)'
-      : 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))'
-  // THE 12-MONTH FALLBACK IS THE SAME CLOSED SERIES, so it may only run at a
-  // grain whose closes are attributed the way its actives are. At 'neighborhood'
-  // both sold_count and the pulse MoS come off a subdivision-name text join that
-  // misses most of the boundary's sales, and this fallback would turn a withheld
-  // 48-month figure into a computed 64-month one on a broker-signed valuation.
-  if (rawMonthsOfSupply == null && isSoldAttributionTrusted(geoType) && active != null && sold365 > 0) {
-    rawMonthsOfSupply = active / (sold365 / 12)
-    mosFormula = 'fallback: active_count / (sold_count_365 / 12) — pulse row missing or withheld'
-  }
-  const monthsOfSupply = rawMonthsOfSupply != null ? +rawMonthsOfSupply.toFixed(1) : null
+          source: 'market-truth',
+          pulseMos: detached.monthsOfSupply,
+          pulseActiveCount: detached.activeCount,
+          displayedActiveCount: detached.activeCount,
+        })
+      : null
+  const monthsOfSupply = publishedMos != null ? +publishedMos.toFixed(1) : null
+  const mosFormula =
+    publishedMos != null
+      ? geoType === 'city'
+        ? 'getMetric months_of_supply mt-v1 detached MLS-city (same path as /sell)'
+        : 'getMetric months_of_supply mt-v1 detached (source market-truth)'
+      : 'withheld: detached cell missing (no pulse fallback)'
   let verdict: CmaMarketContext['marketVerdict'] = null
-  if (cityTruth) {
+  if (detached && publishedMos != null) {
     verdict =
-      cityTruth.verdictKind === 'sellers'
+      detached.verdictKind === 'sellers'
         ? 'seller'
-        : cityTruth.verdictKind === 'buyers'
+        : detached.verdictKind === 'buyers'
           ? 'buyer'
           : 'balanced'
-  } else if (rawMonthsOfSupply != null) {
-    verdict = rawMonthsOfSupply <= 4 ? 'seller' : rawMonthsOfSupply >= 6 ? 'buyer' : 'balanced'
   }
 
+  const periodEnd = stats?.period_end ?? detached?.completeThrough ?? pulse?.updated_at?.slice(0, 10) ?? ''
+  const periodStart = stats?.period_start ?? (periodEnd ? shiftUtcMonths(periodEnd, -12) : '')
+  const soldCount365 = leftover.closedCount ?? num(stats?.sold_count) ?? 0
+
   return {
-    geoSlug: stats.geo_slug,
-    geoLabel: stats.geo_label ?? city,
-    periodStart: stats.period_start,
-    periodEnd: stats.period_end,
-    soldCount365: sold365,
-    medianSalePrice: cityPace?.medianClose ?? num(stats.median_sale_price),
-    medianDom: num(stats.median_dom),
-    medianPpsf: cityPace?.medianPpsf ?? num(stats.median_price_per_sqft_closed) ?? num(stats.median_ppsf),
-    saleToListRatio: cityPace?.saleToOriginal ?? num(stats.avg_sale_to_list_ratio),
-    yoyMedianPriceDeltaPct:
-      cityPace?.yoyMedian != null ? cityPace.yoyMedian * 100 : num(stats.yoy_median_price_delta_pct),
-    activeCount: active,
-    pendingCount: cityPace?.pendingCount ?? num(pulse?.pending_count),
-    medianListPrice: cityTruth?.medianListPrice ?? num(pulse?.median_list_price),
+    geoSlug: stats?.geo_slug ?? geoSlug,
+    geoLabel: stats?.geo_label ?? (geoType === 'neighborhood' ? titleCaseSlug(geoSlug) : city),
+    periodStart,
+    periodEnd,
+    soldCount365,
+    medianSalePrice: leftover.medianClose,
+    medianDom: num(stats?.median_dom),
+    medianPpsf: leftover.medianPpsf,
+    saleToListRatio: leftover.saleToOriginal,
+    yoyMedianPriceDeltaPct: leftover.yoyMedian != null ? leftover.yoyMedian * 100 : null,
+    activeCount: detached?.activeCount ?? null,
+    pendingCount: leftover.pendingCount,
+    medianListPrice: detached?.medianListPrice ?? num(pulse?.median_list_price),
     monthsOfSupply,
     mosFormula,
     marketVerdict: verdict,
-    methodologyVersion: stats.methodology_version,
-    computedAt: stats.computed_at,
+    methodologyVersion: stats?.methodology_version ?? null,
+    computedAt: stats?.computed_at ?? detached?.computedAt ?? null,
     pulseUpdatedAt: pulse?.updated_at ?? null,
     yearMart,
     trend: trendRows.map((row) => ({
@@ -171,4 +197,57 @@ export async function getCmaMarketContext(
       endOfPeriodInventory: num(row.end_of_period_inventory),
     })),
   }
+}
+
+export async function getCmaMarketContext(
+  cityOrSubject: string | { city: string; subdivision?: string | null },
+): Promise<CmaMarketContext | null> {
+  const city = typeof cityOrSubject === 'string' ? cityOrSubject : cityOrSubject.city
+  const subdivision = typeof cityOrSubject === 'string' ? null : cityOrSubject.subdivision
+  const { targets } = resolveCmaMarketTargets({ city, subdivision })
+  let stats: CmaMarketStatsRow | null = null
+  let pulse: CmaMarketPulseRow | null = null
+  let detached: SellBendMarket | null = null
+  let leftover: PublicPaceRow = { ...EMPTY_PUBLIC_PACE }
+  let chosen: CmaMarketTarget | null = null
+
+  for (const target of targets) {
+    const slug = target.slugs[0] ?? ''
+    const [nextStats, nextPulse, nextDetached, nextLeftover] = await Promise.all([
+      getCmaMarketStatsRow(target.slugs, target.geoType),
+      getCmaMarketPulseRow(target.slugs, target.geoType),
+      readCmaDetached(target.geoType, slug),
+      readCmaLeftover(target.geoType, slug),
+    ])
+    if (nextStats || nextDetached || publicPaceHasRow(nextLeftover)) {
+      stats = nextStats
+      pulse = nextPulse
+      detached = nextDetached
+      leftover = nextLeftover
+      chosen = target
+      break
+    }
+  }
+
+  if (!chosen) return null
+
+  const geoType =
+    stats?.geo_type === 'neighborhood' || chosen.geoType === 'neighborhood' ? 'neighborhood' : 'city'
+  const geoSlug = stats?.geo_slug ?? chosen.slugs[0] ?? slugCandidates(city)[0] ?? ''
+  const [trendRows, yearMart] = await Promise.all([
+    getCmaMarketTrendRows(geoSlug, geoType),
+    getCmaMarketBoardYear({ city }),
+  ])
+
+  return assembleCmaMarketContext({
+    city,
+    geoType,
+    geoSlug,
+    stats,
+    pulse,
+    detached,
+    leftover,
+    trendRows,
+    yearMart,
+  })
 }

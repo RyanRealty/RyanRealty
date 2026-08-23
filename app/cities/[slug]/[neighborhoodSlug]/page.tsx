@@ -32,6 +32,7 @@ import type { Metadata } from 'next'
 import { getNeighborhoodBySlug, getCommunitiesInNeighborhood } from '@/app/actions/cities'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { resolveNeighborhoodMetricSlug } from '@/lib/data/market-truth/neighborhood-metric-slug'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 import {
@@ -175,6 +176,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   // Boundary polygon slug for neighborhoods: "{citySlug}-{neighborhoodSlug}"
   const boundaryNeighborhoodSlug = `${citySlug}-${neighborhoodSlug}`
+  // GIS / inventory / map stay on the prefixed boundary key. Market Truth
+  // neighborhood geo_slug is often the community slug (sunriver, not
+  // sunriver-sunriver). Identity probe, not a published figure.
+  const metricNeighborhoodSlug = await resolveNeighborhoodMetricSlug({
+    citySlug,
+    neighborhoodSlug,
+  })
 
   const [
     pulse, stats, mktStats, regionPulse, priceHist,
@@ -184,7 +192,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     inventoryRead,
     publicPace, publicSegments,
   ] = await Promise.all([
-    withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
+    withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     // Hot-path core figures (HUD, about facts, FAQ): a build timeout would
     // bake the fallback into the static HTML, so the build leash is 3×.
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug, periodType: 'rolling_365d' }), null, hotRailTimeoutMs(3500), 'nbh:stats'),
@@ -219,13 +227,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     withTimeoutFallback(peerNeighborhoodTowns(citySlug, neighborhoodSlug), [], 3500, 'nbh:peers'),
     getNeighborhoodPublicInventory(boundaryNeighborhoodSlug),
     withTimeoutFallback(
-      getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }),
+      getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }),
       EMPTY_PUBLIC_PACE,
       3000,
       'nbh:publicPace',
     ),
     withTimeoutFallback(
-      getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }),
+      getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }),
       [],
       3000,
       'nbh:publicSegments',

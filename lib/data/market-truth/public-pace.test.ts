@@ -13,15 +13,17 @@ const SRC = readFileSync(resolve('lib/data/market-truth/public-pace.ts'), 'utf8'
 
 describe('getPublicDetachedPace', () => {
   it('reads leftover market_metric cells, never pulse, never MOS', () => {
-    expect(SRC).toMatch(/from\('market_metric'\)/)
-    expect(SRC).toMatch(/is_publishable/)
+    expect(SRC).toMatch(/getMetric/)
+    expect(SRC).toMatch(/getMetrics/)
+    expect(SRC).not.toMatch(/from\('market_metric'\)/)
+    expect(SRC).toMatch(/isPublishable/)
     expect(SRC).toMatch(/median_days_to_contract/)
     expect(SRC).toMatch(/new_listings/)
     expect(SRC).toMatch(/pct_with_price_cut/)
     expect(SRC).toMatch(/yoy_median_price/)
     expect(SRC).toMatch(/median_sale_to_original_list/)
     expect(SRC).toMatch(/pending_count/)
-    expect(SRC).toMatch(/segment', 'detached'/)
+    expect(SRC).toMatch(/segment: 'detached'/)
     expect(SRC).toMatch(/'neighborhood'/)
     expect(SRC).not.toMatch(/market_pulse_live/)
     expect(SRC).not.toMatch(/months_of_supply/)
