@@ -20,7 +20,7 @@ import { todayInboundYesEnabled } from '@/lib/crm/today-inbound-draft'
 import { Button, QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
 import { getClosingsBoard, incompleteInFlight } from '@/lib/data/tc/closings'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
-import { getPrincipalSignOffQueue } from '@/app/actions/tc-signoff'
+import { getPrincipalSignOffQueue } from '@/lib/data'
 import {
   confirmParkedStepToday,
   skipParkedStepToday,

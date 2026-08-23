@@ -834,6 +834,10 @@ export {
   getTcFormLibraryBoard,
   applyFormCatalogSnapshots,
 } from './tc/form-catalog'
+export { listEnvelopeTemplates } from './tc/listEnvelopeTemplates'
+export type { EnvelopeTemplateOption } from './tc/listEnvelopeTemplates'
+export { getPrincipalSignOffQueue } from './tc/getPrincipalSignOffQueue'
+export type { SignOffQueue, SignOffDeal, SignOffItem } from './tc/getPrincipalSignOffQueue'
 export type {
   TcFormLibraryBoard,
   TcFormBoardRow,
