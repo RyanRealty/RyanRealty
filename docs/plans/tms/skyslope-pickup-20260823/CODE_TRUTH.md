@@ -11,12 +11,12 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | New-deal checklist from OR library | EXISTS (this branch) | `createDealWithPeople` seeds `tc_checklist_items` from `seedChecklistItems` (Oregon matrix × deal parties). MLS facts still light conditionals later via anticipated-docs. |
 | `createEnvelopeFromTemplate` | EXISTS (this branch) | Deal New envelope → Form library picks production blanks (OR/OREF/ODS, samples omitted) and calls `createEnvelopeFromTemplate`. |
 | `createDraftEnvelope` | THEATER | Recipients only; no docs/fields. Zero UI callers. |
-| Envelope from uploaded PDFs | EXISTS | Deal envelopes + composer. Field palette includes **Strike** (this branch; live DigiSign). |
+| Envelope from uploaded PDFs | EXISTS | Deal envelopes + composer. Field palette includes **Strike** (this branch; live DigiSign). Automatic reminders (Forms checkbox, 48h cron) on this branch. |
 | `/admin/forms` | EXISTS browse / THEATER use-on-deal | Left rail Closings → Forms. No add-to-envelope. |
 | `/admin/sign-off` | EXISTS; on Closings rail **this branch** | Live queue + 7-banking-day clock. Superuser `transactions.signoff`. Production 23 Aug still footer-only until deploy. |
 | `/admin/signing` | EXISTS; on Closings rail **this branch** | Brokers: `transactions.view`. `esign.send` stays parked. Empty on 22 Aug walk. |
 | `/admin/closings` | EXISTS | `tc_deals` board. Active-listing **lens**, not Manage Listings. |
-| Listing pipeline grid | MISSING | `/admin/listings` = MLS. Spec T3.2 unbuilt. |
+| Listing pipeline grid | PARTIAL (this branch) | `/admin/listings` = MLS. Closings active-listing lens now shows listing expiration (soonest first). Not a 14-col Manage Listings clone. |
 | `tc_events` | EXISTS | Append-only. Writers: native TC, SkySlope migrate, **this branch** Gmail `mail_filed` + Twilio `sms_filed`. |
 | Email → Vault auto-file | EXISTS (this branch) | `lib/tc/file-comms.ts` + `file-comms-write.ts`. Gmail `syncMailboxWindow` after CRM person match. PDFs (cap 3) → `tc-documents` `inbox/` + matching checklist. Fail-open. Address-only fallback needs score ≥ 2 (SkySlope-migrated deals often lack `tc_deal_people`). |
 | Twilio → deal | EXISTS (this branch) | Inbound SMS after `crm_timeline` upsert. Outbound 1:1 and group via `sendGovernedSms` / `sendGovernedGroupMms`. MMS PDFs fetched immediately via `fetchTwilioMedia` (URLs expire). Photos stay on the CRM thread. Sequence-engine drips are not filed. |
@@ -37,9 +37,9 @@ Nuance: deal log is **not** “only SkySlope import” for native deals. Migrate
 
 Now that the live role list is filed:
 
-Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist, `action_required` column + composer picker, Twilio MMS PDF fetch.
+Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist, `action_required` column + composer picker, Twilio MMS PDF fetch, 48h envelope reminders, listing expiration on Closings.
 
 Still missing:
 
-1. Listing pipeline (grid + expiration); Closings already has an active-listing lens.
-2. Merge/deploy this branch so production rail, composer, seed, auto-file, and action_required match.
+1. Full Manage Listings grid (Accept/Assign/Duplicate/Withdraw/Merge). Closings now shows expiration on the listing lens.
+2. Merge/deploy this branch so production rail, composer, seed, auto-file, action_required, and reminders match.

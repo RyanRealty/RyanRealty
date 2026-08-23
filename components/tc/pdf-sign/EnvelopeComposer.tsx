@@ -14,6 +14,7 @@ import {
   saveEnvelopeFields,
   sendEnvelope,
   voidEnvelope,
+  setEnvelopeReminders,
   type EnvelopeDetail,
   type RecipientInput,
   type FieldInput,
@@ -71,6 +72,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   const [activeType, setActiveType] = useState<SignFieldType>('signature')
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [remindersEnabled, setRemindersEnabled] = useState(detail.remindersEnabled !== false)
   const dragRef = useRef<{ localId: string; offsetX: number; offsetY: number } | null>(null)
 
   const colorOf = (recipientId: string | null) => {
@@ -145,6 +147,11 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   }
 
   async function saveDraft(): Promise<boolean> {
+    const opt = await setEnvelopeReminders(detail.id, remindersEnabled)
+    if (!opt.ok) {
+      setStatus(opt.error ?? 'Could not save reminders')
+      return false
+    }
     const rRes = await saveEnvelopeRecipients(detail.id, recipients)
     if (!rRes.ok || !rRes.recipients) {
       setStatus(rRes.error ?? 'Could not save recipients')
@@ -195,7 +202,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       setBusy(false)
       return
     }
-    const res = await sendEnvelope(detail.id)
+    const res = await sendEnvelope(detail.id, { remindersEnabled })
     setBusy(false)
     if (!res.ok) {
       setStatus(res.error ?? 'Could not send')
@@ -362,6 +369,16 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         <Card>
           <CardContent className="space-y-2 pt-4">
             {status ? <p className="text-xs text-muted-foreground">{status}</p> : null}
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={remindersEnabled}
+                disabled={readonly}
+                onChange={(e) => setRemindersEnabled(e.target.checked)}
+              />
+              <span>Enable automatic reminders on this envelope.</span>
+            </label>
             {readonly ? (
               <>
                 <Badge className="bg-primary text-primary-foreground">{detail.status}</Badge>

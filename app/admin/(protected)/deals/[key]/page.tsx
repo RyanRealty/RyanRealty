@@ -62,6 +62,7 @@ import { getEnvelopesForCycle, listEnvelopeTemplates } from '@/app/actions/tc-en
 import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/data'
 import { getDealParties } from '@/lib/data/tc/deal-people'
 import { DealParties } from './DealParties'
+import { tcEventDetailPreview, tcEventLabel } from '@/lib/tc/events'
 import {
   COMMISSION_STATUS,
   DOC_COLUMNS,
@@ -475,7 +476,9 @@ export default async function TcDealPage({ params, searchParams }: Props) {
           <p style={{ ...tiny, margin: 0 }}>No events yet.</p>
         ) : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {deal.events.map((e) => (
+            {deal.events.map((e) => {
+              const preview = tcEventDetailPreview(e.detail)
+              return (
               <li
                 key={e.id}
                 style={{
@@ -490,15 +493,14 @@ export default async function TcDealPage({ params, searchParams }: Props) {
                 <span style={{ fontVariantNumeric: 'tabular-nums' }}>
                   {String(e.created_at).slice(0, 16).replace('T', ' ')}
                 </span>
-                <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>{e.action}</span>
+                <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>{tcEventLabel(e.action)}</span>
                 <span>{e.actor}</span>
-                {e.detail && Object.keys(e.detail).length ? (
-                  <span style={{ overflowWrap: 'anywhere' }}>
-                    {JSON.stringify(e.detail).slice(0, 120)}
-                  </span>
+                {preview ? (
+                  <span style={{ overflowWrap: 'anywhere' }}>{preview}</span>
                 ) : null}
               </li>
-            ))}
+              )
+            })}
           </ul>
         )}
       </section>

@@ -101,6 +101,7 @@ export type EnvelopeSummary = {
 export type EnvelopeDetail = EnvelopeSummary & {
   documents: EnvelopeDocumentRef[]
   fields: EnvelopeField[]
+  remindersEnabled: boolean
 }
 
 function mapRecipient(r: DbRow): EnvelopeRecipient {
@@ -237,6 +238,7 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     executedDocumentId: env.executed_document_id,
     documents,
     fields: mappedFields,
+    remindersEnabled: env.reminders_enabled !== false,
   }
 }
 
@@ -580,8 +582,29 @@ async function loadDraftEnvelope(
 // Send
 // ---------------------------------------------------------------------------
 
+/** Persist the Forms "Enable automatic reminders" checkbox (default on). */
+export async function setEnvelopeReminders(
+  envelopeId: string,
+  enabled: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  const auth = await requireBroker()
+  if ('error' in auth) return { ok: false, error: auth.error }
+  const supabase = getServiceSupabase()
+  const env = await loadDraftEnvelope(supabase, envelopeId)
+  if ('error' in env) return { ok: false, error: env.error }
+  const { error } = await supabase
+    .from('tc_envelopes')
+    .update({ reminders_enabled: enabled })
+    .eq('id', envelopeId)
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
 /** Validate a draft and send it: mint tokens, email the first signing order. */
-export async function sendEnvelope(envelopeId: string): Promise<{ ok: boolean; error?: string }> {
+export async function sendEnvelope(
+  envelopeId: string,
+  opts?: { remindersEnabled?: boolean },
+): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
 
@@ -623,7 +646,14 @@ export async function sendEnvelope(envelopeId: string): Promise<{ ok: boolean; e
   if (!hasSignature) return { ok: false, error: 'Place at least one signature field' }
 
   const now = new Date().toISOString()
-  await supabase.from('tc_envelopes').update({ status: 'sent', sent_at: now }).eq('id', envelopeId)
+  await supabase
+    .from('tc_envelopes')
+    .update({
+      status: 'sent',
+      sent_at: now,
+      ...(typeof opts?.remindersEnabled === 'boolean' ? { reminders_enabled: opts.remindersEnabled } : {}),
+    })
+    .eq('id', envelopeId)
 
   // ordered routing: mint + email ONLY the lowest signing-order group. Later
   // groups get a freshly minted token when their turn comes (advanceOrSeal),
@@ -719,6 +749,11 @@ export async function resendRecipientInvite(recipientId: string): Promise<{ ok: 
     replyTo: auth.email,
     reminder: true,
   })
+
+  await supabase
+    .from('tc_envelope_recipients')
+    .update({ last_reminded_at: new Date().toISOString() })
+    .eq('id', recipientId)
 
   await supabase.from('tc_events').insert({
     cycle_id: env.cycle_id,

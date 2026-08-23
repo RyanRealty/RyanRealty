@@ -13,7 +13,7 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getClosingsBoard, type ClosingDealRow } from '@/lib/data/tc/closings'
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { formatDate } from '@/lib/format/date'
-import { QueueRow, QuietRow, VerdictLine } from '@/components/admin/v2'
+import { QueueRow, VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +43,16 @@ function rowContext(d: ClosingDealRow, nowMs: number): string {
       bits.push(days >= 0 ? `closes ${formatDate(d.escrowClosingDate)} (${days}d)` : `close date ${formatDate(d.escrowClosingDate)} passed`)
     if (d.itemsInReview > 0) bits.push(`${d.itemsInReview} item${d.itemsInReview === 1 ? '' : 's'} in review`)
   } else if (d.stage === 'active_listing') {
-    bits.push('active listing')
+    const days = daysUntil(d.expirationDate, nowMs)
+    if (days != null) {
+      bits.push(
+        days >= 0
+          ? `expires ${formatDate(d.expirationDate)} (${days}d)`
+          : `expired ${formatDate(d.expirationDate)}`,
+      )
+    } else {
+      bits.push('active listing')
+    }
     if (d.itemsInReview > 0) bits.push(`${d.itemsInReview} item${d.itemsInReview === 1 ? '' : 's'} in review`)
   }
   return bits.join(' · ')
@@ -55,7 +64,9 @@ export default async function ClosingsPage() {
   const [board, mirror] = await Promise.all([getClosingsBoard(), getSkySlopeMirrorFreshness()])
 
   const inEscrow = board.deals.filter((d) => d.stage === 'pending')
-  const activeListings = board.deals.filter((d) => d.stage === 'active_listing')
+  const activeListings = board.deals
+    .filter((d) => d.stage === 'active_listing')
+    .sort((a, b) => String(a.expirationDate ?? '9999').localeCompare(String(b.expirationDate ?? '9999')))
   const closed = board.deals
     .filter((d) => d.stage === 'closed')
     .sort((a, b) => String(b.actualClosingDate ?? '').localeCompare(String(a.actualClosingDate ?? '')))

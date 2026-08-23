@@ -27,6 +27,7 @@ export interface ClosingDealRow {
   actualClosingDate: string | null
   salePrice: number | null
   listingPrice: number | null
+  expirationDate: string | null
   itemsTotal: number
   itemsInReview: number
   partyNames: string[]
@@ -55,7 +56,7 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
   const cyclesRes = await sb
     .from('tc_cycles')
     .select(
-      'id, deal_id, kind, contract_acceptance_date, escrow_closing_date, actual_closing_date, sale_price, listing_price, created_at',
+      'id, deal_id, kind, contract_acceptance_date, escrow_closing_date, actual_closing_date, sale_price, listing_price, expiration_date, created_at',
     )
     .in('deal_id', dealIds)
   if (cyclesRes.error) {
@@ -110,6 +111,7 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
       actualClosingDate: (cy?.actual_closing_date as string | null) ?? null,
       salePrice: (cy?.sale_price as number | null) ?? null,
       listingPrice: (cy?.listing_price as number | null) ?? null,
+      expirationDate: (cy?.expiration_date as string | null) ?? null,
       itemsTotal: ct.total,
       itemsInReview: ct.inReview,
       partyNames: namesByDeal.get(id) ?? [],
