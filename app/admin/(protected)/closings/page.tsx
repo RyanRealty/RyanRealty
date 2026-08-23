@@ -19,7 +19,7 @@ import {
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { formatDate } from '@/lib/format/date'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
-import { Button, QueueRow, TextField, VerdictLine } from '@/components/admin/v2'
+import { Button, QueueRow, SectionHead, TextField, VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
@@ -195,7 +195,7 @@ export default async function ClosingsPage({
 
       {incomplete.length > 0 && (
         <section aria-label="Incomplete checklists">
-          <h2 className="av2-lane-head">Incomplete checklists</h2>
+          <SectionHead>Incomplete checklists</SectionHead>
           <ul className="av2-queue">
             {incomplete.map((d) => (
               <QueueRow
@@ -217,7 +217,7 @@ export default async function ClosingsPage({
 
       {inEscrow.length > 0 && (
         <section aria-label="In escrow">
-          <h2 className="av2-lane-head">In escrow</h2>
+          <SectionHead>In escrow</SectionHead>
           <ul className="av2-queue">
             {inEscrow.map((d) => (
               <QueueRow
@@ -239,7 +239,7 @@ export default async function ClosingsPage({
 
       {activeListings.length > 0 && (
         <section aria-label="Active listings">
-          <h2 className="av2-lane-head">Active listings</h2>
+          <SectionHead>Active listings</SectionHead>
           <ul className="av2-queue">
             {activeListings.map((d) => (
               <QueueRow
@@ -261,7 +261,7 @@ export default async function ClosingsPage({
 
       {closed.filter((d) => d.itemsRequired > 0).length > 0 && (
         <section aria-label="Closed with incomplete checklist">
-          <h2 className="av2-lane-head">Closed — incomplete</h2>
+          <SectionHead>Closed — incomplete</SectionHead>
           <ul className="av2-queue">
             {closed
               .filter((d) => d.itemsRequired > 0)
@@ -284,7 +284,7 @@ export default async function ClosingsPage({
       )}
 
       <section aria-label="Closed">
-        <h2 className="av2-lane-head">Closed</h2>
+        <SectionHead>Closed</SectionHead>
         {closed.length === 0 ? (
           <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>None on record.</p>
         ) : (
@@ -307,7 +307,7 @@ export default async function ClosingsPage({
       </section>
 
       <section aria-label="Dead deals">
-        <h2 className="av2-lane-head">Dead deals</h2>
+        <SectionHead>Dead deals</SectionHead>
         {dead.length === 0 ? (
           <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>None on record.</p>
         ) : (
