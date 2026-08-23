@@ -9,7 +9,26 @@ import { createServiceClient } from '@/lib/supabase/service'
 export type FormPacket = { id: string; name: string; formVersionIds: string[] }
 export type ClauseRow = { id: string; scope: string; category: string; title: string; body: string }
 
+async function seedResidentialStandardPacket(): Promise<void> {
+  const sb = createServiceClient()
+  const { count } = await sb.from('tc_form_packets').select('id', { count: 'exact', head: true }).eq('name', 'Residential — Standard')
+  if ((count ?? 0) > 0) return
+  const nums = ['001', '020', '042', '043', '015']
+  const ids: string[] = []
+  for (const n of nums) {
+    const id = await findFormVersionIdByNumber(n)
+    if (id) ids.push(id)
+  }
+  if (!ids.length) return
+  await sb.from('tc_form_packets').insert({
+    name: 'Residential — Standard',
+    form_version_ids: ids,
+    created_by: 'system',
+  })
+}
+
 export async function listFormPackets(): Promise<FormPacket[]> {
+  await seedResidentialStandardPacket()
   const { data } = await createServiceClient()
     .from('tc_form_packets')
     .select('id, name, form_version_ids')

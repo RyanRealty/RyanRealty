@@ -123,6 +123,19 @@ async function drawFieldValue(
 }
 
 /** DigiSign Strike: a line through the placed box. Sender annotation, not a signer value. */
+function drawHighlight(page: PDFPage, field: EnvelopeField): void {
+  const { x, y, w, h } = fieldRectToPdf(field, page.getWidth(), page.getHeight())
+  page.drawRectangle({
+    x,
+    y,
+    width: w,
+    height: Math.max(8, h),
+    color: rgb(1, 0.95, 0.35),
+    opacity: 0.45,
+    borderWidth: 0,
+  })
+}
+
 function drawStrike(page: PDFPage, field: EnvelopeField): void {
   const { x, y, w, h } = fieldRectToPdf(field, page.getWidth(), page.getHeight())
   page.drawLine({
@@ -167,6 +180,10 @@ export async function sealEnvelope(input: SealEnvelopeInput): Promise<SealResult
       const page = out.getPage(pageIdx)
       if (field.type === 'strike') {
         drawStrike(page, field)
+        continue
+      }
+      if (field.type === 'highlight') {
+        drawHighlight(page, field)
         continue
       }
       if (!field.value) continue

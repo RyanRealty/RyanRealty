@@ -221,7 +221,7 @@ export async function submitSigning(
   const valueById = new Map(values.map((v) => [v.fieldId, v.value]))
 
   for (const f of fieldRows) {
-    if (!f.required || f.type === 'strike') continue
+    if (!f.required || f.type === 'strike' || f.type === 'highlight') continue
     const v = valueById.get(f.id)
     if (!v) return { ok: false, error: 'Please complete every required field before finishing.' }
     if ((v.kind === 'signature' || v.kind === 'initials') && !v.png) return { ok: false, error: 'A signature is incomplete.' }

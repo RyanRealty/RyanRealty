@@ -92,22 +92,22 @@ export type OrefFormCandidate = {
 
 /** SkySlope / AcroForm aliases → one deal fact. Normalized before match. */
 export const DEAL_FACT_ALIASES: Record<DealFactKey, readonly string[]> = {
-  address: ['propertyaddress', 'property_address', 'address', 'propertystreetaddress', 'streetaddress', 'property', 'premisesaddress'],
-  city: ['propertycity', 'city'],
-  state: ['propertystate', 'state'],
-  zip: ['propertyzip', 'propertyzipcode', 'zip', 'zipcode', 'postalcode'],
-  buyers: ['buyer1', 'buyer1name', 'buyername', 'buyers', 'buyer'],
+  address: ['propertyaddress', 'property_address', 'address', 'propertystreetaddress', 'streetaddress', 'property', 'premisesaddress', 'propertyaddressline1', 'situsaddress'],
+  city: ['propertycity', 'city', 'premisescity'],
+  state: ['propertystate', 'state', 'premisesstate'],
+  zip: ['propertyzip', 'propertyzipcode', 'zip', 'zipcode', 'postalcode', 'premiseszip'],
+  buyers: ['buyer1', 'buyer1name', 'buyername', 'buyers', 'buyer', 'purchaser', 'purchasername'],
   sellers: ['seller1', 'seller1name', 'sellername', 'sellers', 'seller'],
-  salePrice: ['saleprice', 'purchaseprice', 'price', 'contractprice'],
+  salePrice: ['saleprice', 'purchaseprice', 'price', 'contractprice', 'offeredprice'],
   listingPrice: ['listingprice', 'listprice'],
   mlsNumber: ['mlsnumber', 'mls', 'listnumber'],
-  escrowNumber: ['escrownumber', 'escrowno'],
+  escrowNumber: ['escrownumber', 'escrowno', 'filenumber', 'ordernumber'],
   escrowCompany: ['escrowcompany', 'escrow', 'titlecompany'],
-  contractAcceptanceDate: ['contractacceptancedate', 'acceptancedate', 'accepteddate'],
-  escrowClosingDate: ['escrowclosingdate', 'closingdate', 'closedate'],
-  actualClosingDate: ['actualclosingdate'],
+  contractAcceptanceDate: ['contractacceptancedate', 'acceptancedate', 'accepteddate', 'mutualacceptance'],
+  escrowClosingDate: ['escrowclosingdate', 'closingdate', 'closedate', 'closingon'],
+  actualClosingDate: ['actualclosingdate', 'recordingdate'],
   brokerName: ['listingbroker', 'brokername', 'broker', 'listingagent'],
-  earnestMoneyAmount: ['earnestmoney', 'earnestmoneyamount', 'earnest'],
+  earnestMoneyAmount: ['earnestmoney', 'earnestmoneyamount', 'earnest', 'earnestmoneydeposit', 'emdeposit'],
 }
 
 const FACT_LABEL: Record<DealFactKey, string> = {

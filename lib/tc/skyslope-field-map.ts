@@ -60,6 +60,8 @@ const TYPE_MAP: Record<string, MappedFieldType> = {
   checkboxblock: 'checkbox',
   Strike: 'strike',
   strike: 'strike',
+  Highlight: 'highlight',
+  highlight: 'highlight',
 }
 
 function mapType(t?: string): MappedFieldType {

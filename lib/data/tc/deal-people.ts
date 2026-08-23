@@ -163,7 +163,11 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
     .from('tc_offers')
     .select('id', { count: 'exact', head: true })
     .eq('deal_id', dealId)
-  if (!needsAgent && !needsEscrow && !needsLender && (offerCount ?? 0) > 0) return
+  const cycleId0 = (cycles ?? [])[0]?.id
+  const { count: offerDocs } = cycleId0
+    ? await sb.from('tc_documents').select('id', { count: 'exact', head: true }).eq('cycle_id', cycleId0).ilike('name', '%offer%')
+    : { count: 0 }
+  if (!needsAgent && !needsEscrow && !needsLender && (offerCount ?? 0) > 0 && (offerDocs ?? 0) > 0) return
   try {
     const { harvestDealMailboxFacts } = await import('@/lib/tc/mailbox-harvest-run')
     const facts = await harvestDealMailboxFacts({
@@ -227,6 +231,35 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
           earnest_money: o.earnestMoney,
           status: 'received',
         })
+      }
+    }
+    if (facts.pdfs?.length) {
+      const cycleId = (cycles ?? [])[0]?.id
+      if (cycleId) {
+        const { data: existingDocs } = await sb
+          .from('tc_documents')
+          .select('name')
+          .eq('cycle_id', cycleId)
+        const haveDoc = new Set((existingDocs ?? []).map((d) => String(d.name).toLowerCase()))
+        for (const pdf of facts.pdfs) {
+          const name = pdf.filename || 'Offer.pdf'
+          if (haveDoc.has(name.toLowerCase())) continue
+          const path = `inbox/${cycleId}/offer-${Date.now()}-${name}`.replace(/\s+/g, '_')
+          const up = await sb.storage.from('tc-documents').upload(path, pdf.bytes, {
+            contentType: 'application/pdf',
+            upsert: false,
+          })
+          if (up.error) continue
+          await sb.from('tc_documents').insert({
+            cycle_id: cycleId,
+            name,
+            storage_path: path,
+            bytes: pdf.bytes.byteLength,
+            content_type: 'application/pdf',
+            classification: { source: 'mailbox_offer' },
+          })
+          haveDoc.add(name.toLowerCase())
+        }
       }
     }
   } catch (err) {

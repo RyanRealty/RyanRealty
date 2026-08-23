@@ -17,6 +17,7 @@ const FIELD_PROMPT: Record<SignFieldType, string> = {
   text: 'Type here',
   checkbox: '',
   strike: '',
+  highlight: '',
 }
 
 export function SignFlow({ token, payload }: { token: string; payload: SigningPayload }) {
@@ -33,7 +34,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   }, [])
 
   const requiredIds = useMemo(
-    () => payload.fields.filter((f) => f.required && f.type !== 'strike').map((f) => f.id),
+    () => payload.fields.filter((f) => f.required && f.type !== 'strike' && f.type !== 'highlight').map((f) => f.id),
     [payload.fields],
   )
   const filledCount = requiredIds.filter((id) => values.has(id)).length
@@ -248,6 +249,15 @@ function FieldBox({
       <div style={style} className="pointer-events-none flex items-center">
         <span className="block h-[2px] w-full bg-foreground" />
       </div>
+    )
+  }
+
+  if (field.type === 'highlight') {
+    return (
+      <div
+        style={{ ...style, background: 'rgba(255, 230, 80, 0.45)' }}
+        className="pointer-events-none"
+      />
     )
   }
 

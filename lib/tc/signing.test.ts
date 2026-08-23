@@ -23,6 +23,7 @@ import {
 describe('SIGN_FIELD_TYPES', () => {
   it('includes Strike from the live DigiSign palette', () => {
     expect([...SIGN_FIELD_TYPES]).toContain('strike')
+    expect([...SIGN_FIELD_TYPES]).toContain('highlight')
     expect(SIGN_FIELD_LABEL.strike).toBe('Strike')
   })
 })

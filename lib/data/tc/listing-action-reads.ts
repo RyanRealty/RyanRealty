@@ -93,13 +93,15 @@ export type CdaCycleRow = {
   deal_id: string
   sale_price: number | null
   office_gross: number | null
+  escrow_number: string | null
+  escrow_closing_date: string | null
   address: string
 }
 
 export async function getCycleForCda(cycleId: string): Promise<CdaCycleRow | null> {
   const { data } = await client()
     .from('tc_cycles')
-    .select('id, deal_id, sale_price, office_gross, tc_deals(address)')
+    .select('id, deal_id, sale_price, office_gross, escrow_number, escrow_closing_date, tc_deals(address)')
     .eq('id', cycleId)
     .maybeSingle()
   if (!data) return null
@@ -110,6 +112,8 @@ export async function getCycleForCda(cycleId: string): Promise<CdaCycleRow | nul
     deal_id: String(data.deal_id),
     sale_price: data.sale_price == null ? null : Number(data.sale_price),
     office_gross: data.office_gross == null ? null : Number(data.office_gross),
+    escrow_number: data.escrow_number == null ? null : String(data.escrow_number),
+    escrow_closing_date: data.escrow_closing_date == null ? null : String(data.escrow_closing_date),
     address: address ? String(address) : 'Deal',
   }
 }

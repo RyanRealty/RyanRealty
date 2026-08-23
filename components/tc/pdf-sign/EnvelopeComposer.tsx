@@ -141,7 +141,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         y: Math.max(0, Math.min(1 - size.h, yFrac - size.h / 2)),
         w: size.w,
         h: size.h,
-        required: activeType !== 'strike',
+        required: activeType !== 'strike' && activeType !== 'highlight',
       },
     ])
   }

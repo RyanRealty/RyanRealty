@@ -5,9 +5,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 
-function getServiceSupabase() {
-  return createServiceClient()
-}
+export type { FormPacket, ClauseRow } from '@/lib/data/tc/form-library-reads'
+export { listFormPackets, listClauses } from '@/lib/data/tc/form-library-reads'
 
 async function requireEditor() {
   const session = await getSession()
@@ -19,14 +18,12 @@ async function requireEditor() {
   return { email }
 }
 
-export type { FormPacket, ClauseRow } from '@/lib/data/tc/form-library-reads'
-
 export async function saveFormPacket(name: string, formVersionIds: string[]): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireEditor()
   if ('error' in auth) return { ok: false, error: auth.error }
   const n = name.trim()
   if (!n || !formVersionIds.length) return { ok: false, error: 'Name and at least one form.' }
-  const { error } = await getServiceSupabase().from('tc_form_packets').insert({
+  const { error } = await createServiceClient().from('tc_form_packets').insert({
     name: n,
     form_version_ids: formVersionIds,
     created_by: auth.email,
@@ -45,7 +42,7 @@ export async function saveClause(input: {
   const auth = await requireEditor()
   if ('error' in auth) return { ok: false, error: auth.error }
   if (!input.title.trim() || !input.body.trim()) return { ok: false, error: 'Title and body required.' }
-  const { error } = await getServiceSupabase().from('tc_clauses').insert({
+  const { error } = await createServiceClient().from('tc_clauses').insert({
     scope: input.scope,
     category: input.category.trim() || 'General',
     title: input.title.trim(),

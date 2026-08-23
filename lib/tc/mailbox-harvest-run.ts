@@ -70,6 +70,7 @@ export async function harvestDealMailboxFacts(input: {
   escrowNumber: string | null
   lender: { name: string; email: string } | null
   offers: ReturnType<typeof import('./mailbox-harvest').harvestOffersFromMail>
+  pdfs: Array<{ filename: string; bytes: Buffer }>
 }> {
   const { harvestOtherSideAgent, harvestEscrowNumber, harvestOffersFromMail, harvestLender, gmailQueryForAddress } =
     await import('./mailbox-harvest')
@@ -85,10 +86,56 @@ export async function harvestDealMailboxFacts(input: {
       }
     }
   }
+  const pdfs = await fetchOfferPdfs(mailboxesForDeal(input.brokerName), q)
   return {
     otherAgent: harvestOtherSideAgent(headers),
     escrowNumber: harvestEscrowNumber(headers),
     lender: harvestLender(headers),
     offers: harvestOffersFromMail(headers),
+    pdfs,
   }
+}
+
+async function fetchOfferPdfs(
+  boxes: string[],
+  streetQuery: string,
+): Promise<Array<{ filename: string; bytes: Buffer }>> {
+  if (!streetQuery) return []
+  const out: Array<{ filename: string; bytes: Buffer }> = []
+  const q = `${streetQuery} (offer OR "offer to purchase") has:attachment filename:pdf`
+  for (const box of boxes) {
+    const gmail = getGmailFor(box, ['https://www.googleapis.com/auth/gmail.readonly'])
+    if (!gmail) continue
+    try {
+      const list = await gmail.users.messages.list({ userId: 'me', q, maxResults: 5 })
+      for (const m of list.data.messages ?? []) {
+        const full = await gmail.users.messages.get({ userId: 'me', id: m.id!, format: 'full' })
+        const parts: Array<{ filename: string; attachmentId: string }> = []
+        const walk = (p?: { filename?: string | null; mimeType?: string | null; body?: { attachmentId?: string | null }; parts?: unknown[] }) => {
+          if (!p) return
+          const name = p.filename || ''
+          const mime = (p.mimeType || '').toLowerCase()
+          const id = p.body?.attachmentId
+          if (id && (mime.includes('pdf') || name.toLowerCase().endsWith('.pdf'))) {
+            parts.push({ filename: name || 'offer.pdf', attachmentId: id })
+          }
+          for (const child of (p.parts ?? []) as typeof p[]) walk(child)
+        }
+        walk(full.data.payload)
+        for (const part of parts.slice(0, 2)) {
+          const att = await gmail.users.messages.attachments.get({
+            userId: 'me',
+            messageId: m.id!,
+            id: part.attachmentId,
+          })
+          if (!att.data.data) continue
+          out.push({ filename: part.filename, bytes: Buffer.from(att.data.data, 'base64url') })
+          if (out.length >= 4) return out
+        }
+      }
+    } catch (err) {
+      console.warn('[mailbox-harvest pdf]', box, err)
+    }
+  }
+  return out
 }

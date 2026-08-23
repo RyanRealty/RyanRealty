@@ -45,8 +45,11 @@ export async function generateCommissionCda(
   }
   line('Commission disbursement advice', bold, 16)
   line(address, bold, 12)
-  line(`Sale ${money(cycle.sale_price as number | null)} · Office gross ${money(cycle.office_gross as number | null)}`)
+  if (cycle.escrow_number) line(`Escrow ${cycle.escrow_number}`)
+  if (cycle.escrow_closing_date) line(`Close ${String(cycle.escrow_closing_date).slice(0, 10)}`)
+  line(`Sale ${money(cycle.sale_price)} · Office gross ${money(cycle.office_gross)}`)
   line(`Prepared ${new Date().toISOString().slice(0, 10)} by ${email}`, font, 9)
+  line('Figures trace to settlement records retained per OAR 863-015-0250.', font, 8)
   y -= 8
   if (!rows.length) line('No commission rows on this cycle.')
   for (const r of rows) {
