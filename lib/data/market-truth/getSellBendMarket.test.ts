@@ -4,8 +4,10 @@ import { resolve } from 'node:path'
 import {
   applyDetachedOverlay,
   cityDetachedSlug,
+  overlayDetachedLayers,
   overlayDetachedMarket,
   withholdDetachedHeadlines,
+  type DetachedInventory,
   type SellBendMarket,
 } from '@/lib/data/market-truth/getSellBendMarket'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -35,13 +37,17 @@ describe('getSellBendMarket', () => {
     const pulse = readFileSync(resolve('lib/data/market/getMarketPulse.ts'), 'utf8')
     const region = readFileSync(resolve('lib/data/market/getRegionPulse.ts'), 'utf8')
     const snaps = readFileSync(resolve('lib/data/market/getMarketPulseSnapshot.ts'), 'utf8')
-    expect(pulse).toMatch(/getDetachedMarket\(geoType, geoSlug\)/)
-    expect(region).toMatch(/getDetachedMarket\('region', 'central-oregon'\)/)
-    expect(snaps).toMatch(/getDetachedMarket\('region', regionSlug\)/)
-    expect(snaps).toMatch(/getDetachedMarkets/)
-    expect(pulse).toMatch(/overlayDetachedMarket/)
-    expect(region).toMatch(/overlayDetachedMarket/)
-    expect(snaps).toMatch(/overlayDetachedMarket/)
+    expect(pulse).toMatch(/getDetachedOverlays/)
+    expect(region).toMatch(/getDetachedOverlays/)
+    expect(snaps).toMatch(/getDetachedOverlays/)
+    expect(snaps).not.toMatch(/getDetachedMarkets/)
+    expect(pulse).toMatch(/overlayDetachedLayers/)
+    expect(region).toMatch(/overlayDetachedLayers/)
+    expect(snaps).toMatch(/overlayDetachedLayers/)
+    expect(pulse).toMatch(/market-pulse-v8-mt-inventory/)
+    expect(region).toMatch(/region-pulse-central-oregon-v6-mt-inventory/)
+    expect(snaps).toMatch(/market-pulse-city-snapshots-v7-mt-inventory/)
+    expect(snaps).toMatch(/market-pulse-all-city-snapshots-v7-mt-inventory/)
   })
 
   it('a detached miss withholds pulse 488 / 3.54 / seller instead of publishing it as Market Truth', () => {
@@ -53,6 +59,8 @@ describe('getSellBendMarket', () => {
     expect(helper).toMatch(/function assembleInventory/)
     expect(helper).toMatch(/function withholdDetachedHeadlines/)
     expect(helper).toMatch(/function overlayDetachedMarket/)
+    expect(helper).toMatch(/function overlayDetachedLayers/)
+    expect(helper).toMatch(/function getDetachedOverlays/)
     expect(pulse).toMatch(/withholdDetachedHeadlines/)
     expect(region).toMatch(/withholdDetachedHeadlines/)
     expect(snaps).toMatch(/withholdDetachedHeadlines/)
@@ -95,6 +103,31 @@ describe('getSellBendMarket', () => {
     expect(overlaid.medianDaysToPending).toBe(15)
   })
 
+  it('overlayDetachedLayers publishes inventory when MOS is below min_n', () => {
+    const pulse = {
+      activeCount: 488,
+      monthsOfSupply: 3.54,
+      marketHealthLabel: "seller's market",
+      medianListPrice: 699000,
+      medianDaysToPending: 15,
+      newThisWeek: 12,
+      closedLast30Days: 40,
+    }
+    const inventory: DetachedInventory = {
+      activeCount: 51,
+      medianListPrice: 625000,
+      computedAt: '2026-08-23T00:00:00.000Z',
+    }
+    const layered = overlayDetachedLayers(pulse, null, inventory)
+    expect(layered.activeCount).toBe(51)
+    expect(layered.monthsOfSupply).toBeNull()
+    expect(layered.marketHealthLabel).toBeNull()
+    expect(layered.medianListPrice).toBe(625000)
+    expect(layered.medianDaysToPending).toBe(15)
+    expect(layered.newThisWeek).toBe(12)
+    expect(layered.closedLast30Days).toBe(40)
+  })
+
   it('hyphenates cache city slugs the way market_metric keys them', () => {
     expect(cityDetachedSlug('la pine')).toBe('la-pine')
     expect(cityDetachedSlug('Bend')).toBe('bend')
@@ -118,7 +151,7 @@ describe('getSellBendMarket', () => {
     const feed = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')
     expect(page).toMatch(/getSellBendMarket/)
     expect(page).not.toMatch(/getMarketPulse/)
-    expect(feed).toMatch(/getDetachedMarket/)
+    expect(feed).toMatch(/getDetachedOverlays/)
   })
 
   it('city geo snapshots overlay Market Truth so index/menu cannot print pulse 488', () => {
@@ -126,7 +159,7 @@ describe('getSellBendMarket', () => {
     const browse = readFileSync(resolve('lib/data/market/getMarketStatsCacheRows.ts'), 'utf8')
     expect(snap).toMatch(/overlayCitySnapshotsDetached/)
     expect(snap).toMatch(/getDetachedInventories/)
-    expect(browse).toMatch(/getDetachedMarkets/)
+    expect(browse).toMatch(/getDetachedOverlays/)
     // Miss must not 404 (snapshot object still returned) and must not keep
     // pulse/MV active as published inventory. Inventory overlay does not wait
     // on MOS (Terrebonne 51 active is publishable while MOS is below min_n).
@@ -136,7 +169,7 @@ describe('getSellBendMarket', () => {
     expect(snap).not.toMatch(/withholdDetachedHeadlines/)
     expect(snap).toMatch(/geo-snapshot-v7-mt-inventory/)
     expect(snap).toMatch(/geo-snapshot-all-cities-v7-mt-inventory/)
-    expect(browse).toMatch(/overlayDetachedMarket/)
+    expect(browse).toMatch(/overlayDetachedLayers/)
   })
 
   it('newsletter and CRM city reports read the same detached helper as /sell', () => {
@@ -148,13 +181,13 @@ describe('getSellBendMarket', () => {
     expect(report).not.toMatch(/Pulse overlay is the fallback/)
   })
 
-  it('housing-market city and hub pages read overlaid pulse (getDetachedMarket)', () => {
+  it('housing-market city and hub pages read overlaid pulse (getDetachedOverlays)', () => {
     const geo = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
     const hub = readFileSync(resolve('app/housing-market/page.tsx'), 'utf8')
     const pulse = readFileSync(resolve('lib/data/market/getMarketPulse.ts'), 'utf8')
     expect(geo).toMatch(/getMarketPulse/)
     expect(hub).toMatch(/getMarketPulse/)
-    expect(pulse).toMatch(/getDetachedMarket/)
+    expect(pulse).toMatch(/getDetachedOverlays/)
   })
 
   it('RECON Bend detached 4.454 months is 4.5 display and a balanced verdict', () => {

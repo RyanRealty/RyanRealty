@@ -328,6 +328,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23e landed: city snapshots keep the door on miss (`if (!snapshot) notFound()` still works) and set `activeSfrCount` / median **null** instead of pulse 488. Inventory overlay uses publishable `active_count` even when MOS is below min_n (Terrebonne **51** / $799k with MOS sample 28 withheld). Homepage town rows: Bend 774, La Pine 170, Redmond 274, Sunriver 56, Sisters 110, Terrebonne 51. Neighborhood MOS and county stay unpublished.
 
+### Grind 2026-08-23f — pulse overlay layers + internal segment board
+
+**Done when:** city/region pulse overlay publishes inventory (active + median list) from Market Truth even when MOS is below min_n; MOS/verdict stay null until publishable; homepage/hub remainder omitted-city counts are those MT inventory cells (Terrebonne 51, not pulse 6); Matt can open an admin city-segment board and see condo/townhome/etc cells from `getMetric` (internal only). Neighborhood MOS and county stay unpublished. Public `/cities` stays detached. Workers do not tick this file.
+
+2026-08-23f landed: `getDetachedOverlays` + `overlayDetachedLayers` — inventory and MOS are independent. Pulse/JSON/browse use that. Admin `/admin/analytics/city-segments` reads 11 sale segments from `market_metric` mt-v1. Neighborhood MOS and county stay unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

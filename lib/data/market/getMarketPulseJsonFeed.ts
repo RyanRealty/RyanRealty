@@ -14,9 +14,9 @@
  * §0 degraded-read contract: this module NEVER fabricates a number.
  *   - FOUND    -> every real column, verdict computed once via marketVerdict()
  *                 (lib/market/classify.ts) — never re-derived here.
- *                 City/region headlines overlay getDetachedMarket when present.
- *                 A miss withholds activeListings, monthsOfSupply, and
- *                 marketHealthLabel/verdict rather than pulse (matching /sell).
+ *                 City/region: inventory (active/median) overlays even when
+ *                 MOS is below min_n. MOS/verdict overlay only when publishable.
+ *                 A full inventory miss withholds activeListings rather than pulse.
  *                 Neighborhood grain keeps the pulse row — no invented MOS.
  *   - NOT_FOUND -> genuine miss (no row for this geo_type/geo_slug). All
  *                 figures null, `note` says so explicitly.
@@ -27,7 +27,12 @@
  */
 
 import { getMarketPulseRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
-import { getDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
+import {
+  cityDetachedSlug,
+  getDetachedOverlays,
+  type DetachedInventory,
+  type SellBendMarket,
+} from '@/lib/data/market-truth/getSellBendMarket'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE, type MarketKind } from '@/lib/market/classify'
 
 /** geo_type values market_pulse_live actually carries (verified live 2026-08-03: city, neighborhood, region). */
@@ -227,56 +232,73 @@ export async function getMarketPulseJsonFeed(input: {
   }
 
   if (geoType === 'city' || geoType === 'region') {
-    applyJsonFeedDetachedOrWithhold(found, await readDetachedMarket(geoType, geoSlug))
+    applyJsonFeedDetachedOrWithhold(found, await readDetachedOverlay(geoType, geoSlug))
   }
 
   return found
 }
 
-/** City/region overlay. A miss withholds the three headlines — never pulse. */
-async function readDetachedMarket(
+type JsonFeedOverlay = {
+  headlines: SellBendMarket | null
+  inventory: DetachedInventory | null
+}
+
+/** City/region overlay. Throw and miss both withhold — never pulse 488. */
+async function readDetachedOverlay(
   geoType: 'city' | 'region',
   geoSlug: string,
-): Promise<Awaited<ReturnType<typeof getDetachedMarket>>> {
+): Promise<JsonFeedOverlay> {
   try {
-    return await getDetachedMarket(geoType, geoSlug)
+    const map = await getDetachedOverlays([{ geoType, geoSlug }])
+    const slug = geoType === 'city' ? cityDetachedSlug(geoSlug) : geoSlug.trim().toLowerCase()
+    return map.get(`${geoType}:${slug}`) ?? { headlines: null, inventory: null }
   } catch {
-    // Same as a cell miss: withhold headlines. Do not throw (this feed never
-    // throws) and do not keep pulse 488 / 3.54 / seller as if it were detached.
-    return null
+    return { headlines: null, inventory: null }
   }
 }
 
 /**
- * Overlay Market Truth when the cell is present. On miss, withhold
- * activeListings, monthsOfSupply, and marketHealthLabel/verdict — matching
- * /sell, which prints none of those three rather than pulse.
+ * Inventory (active/median) overlays even when MOS is below min_n.
+ * MOS/verdict overlay only when headlines assemble. Inventory miss nulls
+ * activeListings (unknown is not zero) — never pulse 488.
  */
 function applyJsonFeedDetachedOrWithhold(
   found: Extract<MarketPulseJsonFeedResult, { status: 'found' }>,
-  mt: Awaited<ReturnType<typeof getDetachedMarket>>,
+  layers: JsonFeedOverlay,
 ): void {
+  const inv = layers.inventory
+  const mt = layers.headlines
+  if (inv) {
+    found.figures.activeListings = inv.activeCount
+    if (inv.medianListPrice != null) found.figures.medianListPrice = inv.medianListPrice
+    found.collectedAt = inv.computedAt
+    found.methodology.propertyTypeConvention =
+      "Detached single-family (PropertyType='A' AND property_sub_type='Single Family Residence'). MLS City text, not the city-limits polygon."
+  } else {
+    found.figures.activeListings = null
+    found.figures.medianListPrice = null
+  }
+
   if (mt) {
-    found.figures.activeListings = mt.activeCount
     found.figures.monthsOfSupply = mt.monthsOfSupply
-    found.figures.medianListPrice = mt.medianListPrice
+    if (mt.medianListPrice != null) found.figures.medianListPrice = mt.medianListPrice
     found.figures.marketHealthLabel = mt.verdictLabel
     found.methodology.verdict = mt.verdictLabel
     found.methodology.verdictKind = mt.verdictKind
     found.methodology.propertyTypeConvention =
       "Detached single-family (PropertyType='A' AND property_sub_type='Single Family Residence'). MLS City text, not the city-limits polygon."
+    found.collectedAt = mt.computedAt
     found.note =
       'activeListings, monthsOfSupply, medianListPrice, and verdict are Market Truth mt-v1 detached. Remaining figures are the pulse type-A polygon series until their recon line exists.'
-    found.collectedAt = mt.computedAt
     return
   }
 
-  found.figures.activeListings = null
   found.figures.monthsOfSupply = null
   found.figures.marketHealthLabel = null
   const withheld = marketVerdict(null)
   found.methodology.verdict = withheld.label
   found.methodology.verdictKind = withheld.kind
-  found.note =
-    'activeListings, monthsOfSupply, and verdict withheld: Market Truth detached cell missing. Remaining figures are the pulse type-A polygon series until their recon line exists.'
+  found.note = inv
+    ? 'monthsOfSupply and verdict withheld: MOS below min_n. activeListings is Market Truth mt-v1 detached inventory. Remaining figures are the pulse type-A polygon series until their recon line exists.'
+    : 'activeListings, monthsOfSupply, and verdict withheld: Market Truth detached cell missing. Remaining figures are the pulse type-A polygon series until their recon line exists.'
 }

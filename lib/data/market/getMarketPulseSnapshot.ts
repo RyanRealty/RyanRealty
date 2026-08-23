@@ -11,11 +11,10 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import {
-  overlayDetachedMarket,
+  overlayDetachedLayers,
   withholdDetachedHeadlines,
   cityDetachedSlug,
-  getDetachedMarket,
-  getDetachedMarkets,
+  getDetachedOverlays,
 } from '@/lib/data/market-truth/getSellBendMarket'
 
 export type MarketPulseSnapshot = {
@@ -96,7 +95,9 @@ export async function getMarketPulseRegionSnapshot(
   if (error || !data) return null
   const snap = toSnapshot(data as Record<string, unknown>)
   try {
-    return overlayDetachedMarket(snap, await getDetachedMarket('region', regionSlug))
+    const overlays = await getDetachedOverlays([{ geoType: 'region', geoSlug: regionSlug }])
+    const layers = overlays.get(`region:${regionSlug.trim().toLowerCase()}`)
+    return overlayDetachedLayers(snap, layers?.headlines ?? null, layers?.inventory ?? null)
   } catch {
     return withholdDetachedHeadlines(snap)
   }
@@ -124,12 +125,12 @@ async function fetchMarketPulseCitySnapshots(
 async function overlayCitySnapshots(snaps: MarketPulseSnapshot[]): Promise<MarketPulseSnapshot[]> {
   if (!snaps.length) return snaps
   try {
-    const map = await getDetachedMarkets(
+    const overlays = await getDetachedOverlays(
       snaps.map((s) => ({ geoType: 'city' as const, geoSlug: s.geo_slug || s.geo_label })),
     )
     return snaps.map((s) => {
-      const mt = map.get(`city:${cityDetachedSlug(s.geo_slug || s.geo_label)}`)
-      return overlayDetachedMarket(s, mt)
+      const layers = overlays.get(`city:${cityDetachedSlug(s.geo_slug || s.geo_label)}`)
+      return overlayDetachedLayers(s, layers?.headlines ?? null, layers?.inventory ?? null)
     })
   } catch {
     return snaps.map((s) => withholdDetachedHeadlines(s))
@@ -141,7 +142,7 @@ async function overlayCitySnapshots(snaps: MarketPulseSnapshot[]): Promise<Marke
  * render hit the DB and a blip rendered empty tiles). */
 export const getMarketPulseCitySnapshots = makeResilientCached(
   fetchMarketPulseCitySnapshots,
-  ['market-pulse-city-snapshots-v6-mt-null-withhold'],
+  ['market-pulse-city-snapshots-v7-mt-inventory'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],
@@ -166,7 +167,7 @@ async function fetchAllMarketPulseCitySnapshots(): Promise<MarketPulseSnapshot[]
 
 export const getMarketPulseAllCitySnapshots = makeResilientCached(
   fetchAllMarketPulseCitySnapshots,
-  ['market-pulse-all-city-snapshots-v6-mt-null-withhold'],
+  ['market-pulse-all-city-snapshots-v7-mt-inventory'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

@@ -13,7 +13,13 @@ vi.mock('@/lib/data/market/getMarketStatsCacheRows', () => ({
 }))
 
 vi.mock('@/lib/data/market-truth/getSellBendMarket', () => ({
-  getDetachedMarket: (...args: unknown[]) => detachedMock(...args),
+  getDetachedOverlays: (...args: unknown[]) => detachedMock(...args),
+  cityDetachedSlug: (geoSlug: string) =>
+    geoSlug
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, ''),
 }))
 
 import { getMarketPulseJsonFeed } from './getMarketPulseJsonFeed'
@@ -77,10 +83,24 @@ beforeEach(() => {
 describe('getMarketPulseJsonFeed', () => {
   it('overlays city Market Truth when the detached cell is present', async () => {
     rowMock.mockResolvedValue(PULSE_BEND)
-    detachedMock.mockResolvedValue(MT_BEND)
+    detachedMock.mockResolvedValue(
+      new Map([
+        [
+          'city:bend',
+          {
+            headlines: MT_BEND,
+            inventory: {
+              activeCount: MT_BEND.activeCount,
+              medianListPrice: MT_BEND.medianListPrice,
+              computedAt: MT_BEND.computedAt,
+            },
+          },
+        ],
+      ]),
+    )
 
     const result = found(await getMarketPulseJsonFeed({ geoType: 'city', geoSlug: 'bend' }))
-    expect(detachedMock).toHaveBeenCalledWith('city', 'bend')
+    expect(detachedMock).toHaveBeenCalled()
     expect(result.figures.activeListings).toBe(775)
     expect(result.figures.monthsOfSupply).toBe(4.45)
     expect(result.figures.marketHealthLabel).toBe('balanced market')
@@ -90,9 +110,36 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.collectedAt).toBe(MT_BEND.computedAt)
   })
 
+  it('inventory overlays when MOS is below min_n', async () => {
+    rowMock.mockResolvedValue({ ...PULSE_BEND, geo_slug: 'terrebonne', geo_label: 'Terrebonne' })
+    detachedMock.mockResolvedValue(
+      new Map([
+        [
+          'city:terrebonne',
+          {
+            headlines: null,
+            inventory: {
+              activeCount: 51,
+              medianListPrice: 799_000,
+              computedAt: '2026-08-23T12:00:00Z',
+            },
+          },
+        ],
+      ]),
+    )
+
+    const result = found(await getMarketPulseJsonFeed({ geoType: 'city', geoSlug: 'terrebonne' }))
+    expect(result.figures.activeListings).toBe(51)
+    expect(result.figures.medianListPrice).toBe(799_000)
+    expect(result.figures.monthsOfSupply).toBeNull()
+    expect(result.figures.marketHealthLabel).toBeNull()
+    expect(result.methodology.verdictKind).toBe('unknown')
+    expect(result.figures.pendingListings).toBe(112)
+  })
+
   it('city miss withholds the three headlines rather than pulse 488 / 3.54 / seller', async () => {
     rowMock.mockResolvedValue(PULSE_BEND)
-    detachedMock.mockResolvedValue(null)
+    detachedMock.mockResolvedValue(new Map())
 
     const result = found(await getMarketPulseJsonFeed({ geoType: 'city', geoSlug: 'bend' }))
     expect(result.figures.activeListings).toBeNull()
@@ -104,7 +151,7 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.figures.monthsOfSupply).not.toBe(3.54)
     expect(result.methodology.verdict).not.toMatch(/seller/)
     expect(result.figures.pendingListings).toBe(112)
-    expect(result.figures.medianListPrice).toBe(799_000)
+    expect(result.figures.medianListPrice).toBeNull()
     expect(result.figures.marketHealthScore).toBe(55)
     expect(result.note).toMatch(/withheld/)
   })
@@ -116,12 +163,12 @@ describe('getMarketPulseJsonFeed', () => {
       geo_slug: 'central-oregon',
       geo_label: 'Central Oregon',
     })
-    detachedMock.mockResolvedValue(null)
+    detachedMock.mockResolvedValue(new Map())
 
     const result = found(
       await getMarketPulseJsonFeed({ geoType: 'region', geoSlug: 'central-oregon' }),
     )
-    expect(detachedMock).toHaveBeenCalledWith('region', 'central-oregon')
+    expect(detachedMock).toHaveBeenCalled()
     expect(result.figures.activeListings).toBeNull()
     expect(result.figures.monthsOfSupply).toBeNull()
     expect(result.figures.marketHealthLabel).toBeNull()
@@ -199,7 +246,7 @@ describe('getMarketPulseJsonFeed', () => {
 describe('getMarketPulseJsonFeed source', () => {
   it('city/region miss withholds headlines; neighborhood does not invent MOS', () => {
     const src = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')
-    expect(src).toMatch(/getDetachedMarket/)
+    expect(src).toMatch(/getDetachedOverlays/)
     expect(src).toMatch(/applyJsonFeedDetachedOrWithhold/)
     expect(src).toMatch(/activeListings = null/)
     expect(src).toMatch(/monthsOfSupply = null/)

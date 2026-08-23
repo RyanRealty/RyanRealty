@@ -12,7 +12,7 @@
  * `updatedAt` is exposed so callers can render a freshness pill.
  */
 import { getMarketPulseRowForGeo } from './getMarketStatsCacheRows'
-import { overlayDetachedMarket, withholdDetachedHeadlines, getDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
+import { overlayDetachedLayers, withholdDetachedHeadlines, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type RegionPulse = {
@@ -74,14 +74,16 @@ export const getRegionPulse = makeResilientCached(
       updatedAt: String(row.updated_at ?? ''),
     }
     try {
-      // Hit: overlay detached. Miss/throw: withhold active/MOS/verdict/median.
-      // Days to pending, new 30d, sold 30d stay. Do not crash the homepage.
-      return overlayDetachedMarket(pulse, await getDetachedMarket('region', 'central-oregon'))
+      // Inventory overlays without MOS. Headlines overlay only on full assemble.
+      // Throw: withhold active/MOS/verdict/median. Do not crash the homepage.
+      const overlays = await getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }])
+      const layers = overlays.get('region:central-oregon')
+      return overlayDetachedLayers(pulse, layers?.headlines ?? null, layers?.inventory ?? null)
     } catch {
       return withholdDetachedHeadlines(pulse)
     }
   },
-  ['region-pulse-central-oregon-v5-mt-null-withhold'],
+  ['region-pulse-central-oregon-v6-mt-inventory'],
   { revalidate: 300, tags: ['market-pulse', 'region-pulse'] },
   null,
 )

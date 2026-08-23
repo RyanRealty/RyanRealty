@@ -5,16 +5,23 @@
  * docs/DATABASE_FOR_AI_AGENTS.md). Surfaces "what's happening right now"
  * for the homepage activity feed and LP route badges.
  *
- * City/region: overlay a publishable detached snapshot. A miss or throw
- * withholds active / MOS / verdict / median (not pulse 488 / 3.54 / seller
- * as Market Truth). Days to pending, new this week, sold 30d stay.
+ * City/region: overlay Market Truth inventory (active + median) when
+ * active_count is publishable, even if MOS is below min_n. MOS/verdict
+ * overlay only when the full headline assemble succeeds. Inventory miss
+ * or throw withholds active (not pulse 488). Days to pending, new this
+ * week, sold 30d stay.
  */
 
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached, readOrThrow } from '@/lib/data/cache/resilient'
-import { overlayDetachedMarket, withholdDetachedHeadlines, getDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
+import {
+  overlayDetachedLayers,
+  withholdDetachedHeadlines,
+  getDetachedOverlays,
+  cityDetachedSlug,
+} from '@/lib/data/market-truth/getSellBendMarket'
 import type { GeoType, IsoTimestamp } from '@/lib/data/types/shared'
 import type { MarketPulse } from '@/lib/data/types/market'
 
@@ -69,10 +76,12 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
   }
   if (geoType === 'city' || geoType === 'region') {
     try {
-      // Hit: overlay detached. Miss/throw: withhold active/MOS/verdict/median
-      // so pulse 488 / 3.54 / seller is not published as Market Truth.
-      // Days to pending, new this week, sold 30d stay on this row.
-      return overlayDetachedMarket(pulse, await getDetachedMarket(geoType, geoSlug))
+      // Inventory overlays without MOS. Headlines overlay only on full assemble.
+      // Throw: withhold active/MOS/verdict/median so pulse 488 is not Market Truth.
+      const overlays = await getDetachedOverlays([{ geoType, geoSlug }])
+      const slug = geoType === 'city' ? cityDetachedSlug(geoSlug) : geoSlug.trim().toLowerCase()
+      const layers = overlays.get(`${geoType}:${slug}`)
+      return overlayDetachedLayers(pulse, layers?.headlines ?? null, layers?.inventory ?? null)
     } catch {
       return withholdDetachedHeadlines(pulse)
     }
@@ -80,12 +89,13 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
   return pulse
 }
 
-// v7 2026-08-23 — city/region miss withholds active as null (v6 wrote 0;
+// v8 2026-08-23 — inventory overlays when active_count is publishable even
+// if MOS is below min_n. v7 miss withholds active as null (v6 wrote 0;
 // unknown is not zero). v6 withheld overlay fields (v5 overlaid only on
 // hit and kept pulse headlines on miss). v4/v5 were poison-null evictions.
 export const getMarketPulse = makeResilientCached(
   fetchMarketPulse,
-  ['market-pulse-v7-mt-null-withhold'],
+  ['market-pulse-v8-mt-inventory'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

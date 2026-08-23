@@ -1,10 +1,11 @@
 /**
  * Detached snapshot from Market Truth (D1, MLS City text / region).
  * /sell, CMA city grain, and city/region pulse overlays share this so they
- * cannot disagree. A publishable snapshot overlays as today. A miss or throw
- * withholds active / months of supply / verdict / median — it does not ship
- * pulse 488 / 3.54 / seller as detached. Days to pending, new this week, and
- * sold 30d stay on the pulse series. /sell never falls back.
+ * cannot disagree. Inventory overlays from publishable active_count even when
+ * MOS is below min_n (Terrebonne 51). MOS/verdict overlay only when the full
+ * headline assemble succeeds. A miss of inventory nulls active — unknown is
+ * not zero; it does not ship pulse 488 as detached. Days to pending, new this
+ * week, and sold 30d stay on the pulse series. /sell never falls back.
  */
 import { createServiceClient } from '@/lib/data/client'
 import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
@@ -181,6 +182,26 @@ export async function getDetachedInventories(
   return out
 }
 
+export type DetachedOverlay = {
+  headlines: SellBendMarket | null
+  inventory: DetachedInventory | null
+}
+
+/** One loadOverlayRows. Headlines may miss while inventory still publishes. */
+export async function getDetachedOverlays(
+  keys: ReadonlyArray<{ geoType: 'city' | 'region'; geoSlug: string }>,
+): Promise<Map<string, DetachedOverlay>> {
+  const out = new Map<string, DetachedOverlay>()
+  const { normalized, latest } = await loadOverlayRows(keys)
+  for (const k of normalized) {
+    out.set(`${k.geoType}:${k.geoSlug}`, {
+      headlines: assemble(k.geoType, k.geoSlug, latest),
+      inventory: assembleInventory(k.geoType, k.geoSlug, latest),
+    })
+  }
+  return out
+}
+
 export async function getDetachedMarket(
   geoType: 'city' | 'region',
   geoSlug: string,
@@ -254,9 +275,69 @@ export function withholdDetachedHeadlines<T extends OverlayRow>(row: T): T {
   return next
 }
 
+/**
+ * Inventory and headlines are independent layers. Inventory miss nulls
+ * active/median (unknown is not zero). Headlines miss nulls MOS/verdict
+ * only — it does not wipe a publishable active_count. Days to pending,
+ * new, and sold stay on the pulse row.
+ */
+export function overlayDetachedLayers<T extends OverlayRow>(
+  row: T,
+  headlines: SellBendMarket | null | undefined,
+  inventory: DetachedInventory | null | undefined,
+): T {
+  const next = { ...row }
+  if (inventory) {
+    if ('activeCount' in next) next.activeCount = inventory.activeCount
+    if ('active_count' in next) next.active_count = inventory.activeCount
+    if ('medianListPrice' in next && inventory.medianListPrice != null) {
+      next.medianListPrice = inventory.medianListPrice
+    }
+    if ('median_list_price' in next && inventory.medianListPrice != null) {
+      next.median_list_price = inventory.medianListPrice
+    }
+    if ('refreshedAt' in next) next.refreshedAt = inventory.computedAt as T['refreshedAt']
+    if ('updated_at' in next) next.updated_at = inventory.computedAt
+    if ('updatedAt' in next) next.updatedAt = inventory.computedAt
+  } else {
+    if ('activeCount' in next) next.activeCount = null as T['activeCount']
+    if ('active_count' in next) next.active_count = null as T['active_count']
+    if ('medianListPrice' in next) next.medianListPrice = null as T['medianListPrice']
+    if ('median_list_price' in next) next.median_list_price = null as T['median_list_price']
+  }
+  if (headlines) {
+    if ('monthsOfSupply' in next) next.monthsOfSupply = headlines.monthsOfSupply
+    if ('months_of_supply' in next) next.months_of_supply = headlines.monthsOfSupply
+    if ('marketHealthLabel' in next) next.marketHealthLabel = headlines.verdictLabel
+    if ('market_health_label' in next) next.market_health_label = headlines.verdictLabel
+    if ('medianListPrice' in next && headlines.medianListPrice != null) {
+      next.medianListPrice = headlines.medianListPrice
+    }
+    if ('median_list_price' in next && headlines.medianListPrice != null) {
+      next.median_list_price = headlines.medianListPrice
+    }
+  } else {
+    if ('monthsOfSupply' in next) next.monthsOfSupply = null as T['monthsOfSupply']
+    if ('months_of_supply' in next) next.months_of_supply = null as T['months_of_supply']
+    if ('marketHealthLabel' in next) next.marketHealthLabel = null as T['marketHealthLabel']
+    if ('market_health_label' in next) next.market_health_label = null as T['market_health_label']
+  }
+  return next
+}
+
 export function overlayDetachedMarket<T extends OverlayRow>(
   row: T,
   mt: SellBendMarket | null | undefined,
 ): T {
-  return mt ? applyDetachedOverlay(row, mt) : withholdDetachedHeadlines(row)
+  return overlayDetachedLayers(
+    row,
+    mt,
+    mt
+      ? {
+          activeCount: mt.activeCount,
+          medianListPrice: mt.medianListPrice,
+          computedAt: mt.computedAt,
+        }
+      : null,
+  )
 }

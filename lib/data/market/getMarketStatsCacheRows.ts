@@ -8,10 +8,10 @@
 
 import { supabaseAnon } from '@/lib/data/client'
 import {
-  overlayDetachedMarket,
+  overlayDetachedLayers,
   withholdDetachedHeadlines,
   cityDetachedSlug,
-  getDetachedMarkets,
+  getDetachedOverlays,
 } from '@/lib/data/market-truth/getSellBendMarket'
 
 export type MarketStatsCacheRow = {
@@ -156,19 +156,22 @@ export async function getMarketPulseRowsByGeoType(options: {
   const rows = (data ?? []) as unknown as Array<Record<string, unknown>>
   if (options.geoType !== 'city' && options.geoType !== 'region') return rows
   try {
-    const map = await getDetachedMarkets(
+    const geoType = options.geoType as 'city' | 'region'
+    const overlays = await getDetachedOverlays(
       rows.map((r) => ({
-        geoType: options.geoType as 'city' | 'region',
+        geoType,
         geoSlug: String(r.geo_slug ?? r.geo_label ?? ''),
       })),
     )
     return rows
       .map((r) => {
         const slug = String(r.geo_slug ?? r.geo_label ?? '')
-        const mt = map.get(`${options.geoType}:${cityDetachedSlug(slug)}`)
-        return overlayDetachedMarket(
+        const keySlug = geoType === 'city' ? cityDetachedSlug(slug) : slug.trim().toLowerCase()
+        const layers = overlays.get(`${geoType}:${keySlug}`)
+        return overlayDetachedLayers(
           r as { active_count?: number | null; months_of_supply?: number | null; median_list_price?: number | null },
-          mt,
+          layers?.headlines ?? null,
+          layers?.inventory ?? null,
         ) as Record<string, unknown>
       })
       .sort((a, b) => Number(b.active_count ?? 0) - Number(a.active_count ?? 0))

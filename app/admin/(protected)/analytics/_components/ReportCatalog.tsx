@@ -66,6 +66,12 @@ const REPORT_GROUPS: ReportGroup[] = [
         title: 'City market ranks',
         desc: 'Detached YoY, price, speed, price-cuts, and new inventory by city from Market Truth.',
       },
+      {
+        href: '/admin/analytics/city-segments',
+        icon: '🏘️',
+        title: 'City segment board',
+        desc: 'Detached vs condo vs townhome (and the rest) for one city from Market Truth.',
+      },
     ],
   },
   {
