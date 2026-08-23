@@ -278,6 +278,44 @@ export async function setDealStage(input: {
   return { ok: true }
 }
 
+const ASSIGNABLE_BROKERS = ['Matt Ryan', 'Paul Stevenson', 'Rebecca Peterson'] as const
+
+/** Assign the listing/file to another broker. Superuser only. */
+export async function setDealBroker(input: {
+  propertyKey: string
+  brokerName: string
+}): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSession()
+  const role = await getAdminRoleForEmail(session?.user?.email ?? null)
+  if (role?.role !== 'superuser' || !session?.user?.email) return { ok: false, error: 'Principal broker only' }
+  if (!(ASSIGNABLE_BROKERS as readonly string[]).includes(input.brokerName)) {
+    return { ok: false, error: 'Pick Matt, Paul, or Rebecca.' }
+  }
+  const supabase = getServiceSupabase()
+  const { data: deal } = await supabase
+    .from('tc_deals')
+    .select('id, broker_name')
+    .eq('property_key', input.propertyKey)
+    .maybeSingle()
+  if (!deal) return { ok: false, error: 'Deal not found' }
+  const from = deal.broker_name ?? ''
+  if (from === input.brokerName) return { ok: true }
+  const { error } = await supabase
+    .from('tc_deals')
+    .update({ broker_name: input.brokerName })
+    .eq('id', deal.id)
+  if (error) return { ok: false, error: error.message }
+  await supabase.from('tc_events').insert({
+    deal_id: deal.id,
+    actor: session.user.email,
+    action: 'deal_assigned',
+    detail: { from, to: input.brokerName },
+  })
+  revalidatePath('/admin/closings')
+  revalidatePath(`/admin/deals/${input.propertyKey}`)
+  return { ok: true }
+}
+
 /** Short-lived signed URL for a stored document (5 minutes). */
 export async function getTcDocumentUrl(documentId: string): Promise<{ url: string | null; error?: string }> {
   const supabase = getServiceSupabase()

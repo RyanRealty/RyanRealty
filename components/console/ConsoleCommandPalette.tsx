@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { consoleSearchLeads, type ConsoleLeadHit } from '@/app/actions/console'
+import { consoleSearchDeals, consoleSearchLeads, type ConsoleDealHit, type ConsoleLeadHit } from '@/app/actions/console'
 import type { AdminNavSection } from '@/app/components/admin/admin-nav'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -62,6 +62,7 @@ export default function ConsoleCommandPalette({
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<ConsoleLeadHit[]>([])
+  const [dealHits, setDealHits] = useState<ConsoleDealHit[]>([])
   const [, startTransition] = useTransition()
   const seq = useRef(0)
 
@@ -78,12 +79,15 @@ export default function ConsoleCommandPalette({
 
   useEffect(() => {
     const q = query.trim()
-    if (q.length < 2) { setHits([]); return }
+    if (q.length < 2) return
     const mine = ++seq.current
     const t = setTimeout(() => {
       startTransition(async () => {
-        const r = await consoleSearchLeads(q)
-        if (mine === seq.current) setHits(r)
+        const [r, d] = await Promise.all([consoleSearchLeads(q), consoleSearchDeals(q)])
+        if (mine === seq.current) {
+          setHits(r)
+          setDealHits(d)
+        }
       })
     }, 180)
     return () => clearTimeout(t)
@@ -114,7 +118,7 @@ export default function ConsoleCommandPalette({
       <DialogContent showCloseButton={false} className="top-1/4 translate-y-0 overflow-hidden p-0">
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <Command shouldFilter={false} className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground">
-          <CommandInput placeholder="Search a lead by name, or jump to a page…" value={query} onValueChange={setQuery} />
+          <CommandInput placeholder="Search a lead, a deal, or jump to a page…" value={query} onValueChange={setQuery} />
           <CommandList>
             <CommandEmpty>No matches.</CommandEmpty>
             {navMatches.length > 0 ? (
@@ -124,7 +128,26 @@ export default function ConsoleCommandPalette({
                 ))}
               </CommandGroup>
             ) : null}
-            {hits.length > 0 ? (
+            {query.trim().length >= 2 && dealHits.length > 0 ? (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading="Deals">
+                  {dealHits.map((h) => (
+                    <CommandItem
+                      key={h.propertyKey}
+                      value={`deal-${h.propertyKey}`}
+                      onSelect={() => go(`/admin/deals/${encodeURIComponent(h.propertyKey)}`)}
+                    >
+                      <span className="flex w-full items-center justify-between gap-2">
+                        <span className="truncate">{h.address}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">{h.stage.replace(/_/g, ' ')}</span>
+                      </span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            ) : null}
+            {query.trim().length >= 2 && hits.length > 0 ? (
               <>
                 <CommandSeparator />
                 <CommandGroup heading="Leads">

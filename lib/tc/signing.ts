@@ -196,6 +196,55 @@ export function seedPartyEnvelopeRecipients(input: {
   return rows
 }
 
+const VENDOR_ENVELOPE_ROLE: Record<string, RecipientRole> = {
+  title: 'TitleOfficer',
+  escrow: 'EscrowOfficer',
+  loan_officer: 'LoanOfficer',
+  lender: 'LoanOfficer',
+}
+
+/** Deal-team vendors as copy recipients (Forms File Details → envelope). */
+export function seedVendorEnvelopeRecipients(input: {
+  envelopeId: string
+  contacts: ReadonlyArray<{ role: string; name: string | null; email: string | null }>
+}): Array<{
+  envelope_id: string
+  role: string
+  name: string
+  email: string
+  signing_order: number
+  action_required: ActionRequired
+}> {
+  const seen = new Set<string>()
+  const rows: Array<{
+    envelope_id: string
+    role: string
+    name: string
+    email: string
+    signing_order: number
+    action_required: ActionRequired
+  }> = []
+  for (const c of input.contacts) {
+    const role = VENDOR_ENVELOPE_ROLE[c.role]
+    if (!role) continue
+    const name = (c.name ?? '').trim()
+    const email = (c.email ?? '').trim().toLowerCase()
+    if (!name && !email) continue
+    const key = `${role}|${email || name.toLowerCase()}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    rows.push({
+      envelope_id: input.envelopeId,
+      role,
+      name: name || role,
+      email,
+      signing_order: 4,
+      action_required: 'ReceivesACopy',
+    })
+  }
+  return rows
+}
+
 /** Fill blank recipient emails only when the CRM name is unique. */
 export function applyUniquePartyEmails<T extends { name: string; email: string }>(
   rows: T[],

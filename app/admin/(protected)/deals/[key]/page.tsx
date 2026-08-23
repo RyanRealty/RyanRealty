@@ -220,6 +220,8 @@ function CycleSection({
   const docs = cycle.documents.filter((doc) => (showArchived ? true : !doc.archived))
   const archivedCount = cycle.documents.filter((doc) => doc.archived).length
   const docNameById = new Map(cycle.documents.map((doc) => [doc.id, doc.name]))
+  const assignedIds = new Set(cycle.checklist.flatMap((it) => it.documentIds))
+  const unfiled = docs.filter((doc) => !doc.archived && !assignedIds.has(doc.id))
 
   const docRows: ReportGridRow[] = docs.map((doc) => ({
     key: doc.id,
@@ -352,6 +354,23 @@ function CycleSection({
           </ul>
         )}
       </section>
+
+      {unfiled.length > 0 ? (
+        <section aria-label="Working documents">
+          <SectionHead>Working documents ({unfiled.length})</SectionHead>
+          <p style={{ ...tiny, margin: '0 0 8px' }}>
+            On the cycle, not assigned to a checklist row yet.
+          </p>
+          <ul className="av2-quietlist">
+            {unfiled.map((doc) => (
+              <li key={doc.id} className="av2-quiet">
+                <span className="av2-quiet__name">{doc.name}</span>
+                <span className="av2-quiet__fig">{d10(doc.source_uploaded_at)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </>
   )
 }
@@ -364,15 +383,9 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   // with a role the list bounces, and this one renders commissions, GCI, splits,
   // settlement figures and every transaction document.
   //
-  // This is a capability gap, NOT the broker-scope question. The whole TC family
-  // is deliberately brokerage-wide — no TC reader filters by broker anywhere, and
-  // tc_deals.broker_name is a display string, not an ownership key. Whether TC
-  // SHOULD be broker-scoped is a separate decision for Matt and is filed.
-  //
-  // No live user changes access: 'transactions.view' is ['broker'], superuser
-  // always passes, and admin_roles today holds exactly one superuser and two
-  // brokers. This closes the path before a report_viewer account ever exists.
-  await requireAdminPage('transactions.view')
+  // Brokers are scoped to their files (dealVisibleToBroker in getTcDeal).
+  // Superuser sees all. transactions.view still excludes report_viewer.
+  const ctx = await requireAdminPage('transactions.view')
 
   const { key } = await params
   const { archived } = await searchParams
@@ -435,7 +448,12 @@ export default async function TcDealPage({ params, searchParams }: Props) {
         >
           {showArchived ? 'Hide archived' : 'Show archived'}
         </Link>
-        <DealStageControls propertyKey={deal.property_key} stage={deal.stage} />
+        <DealStageControls
+          propertyKey={deal.property_key}
+          stage={deal.stage}
+          brokerName={deal.broker_name}
+          canAssign={ctx.role === 'superuser'}
+        />
       </div>
       {(() => {
         const datesCycle =

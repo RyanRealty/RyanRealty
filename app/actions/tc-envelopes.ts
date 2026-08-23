@@ -7,6 +7,7 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
+import { getDealContacts } from '@/app/actions/tc-contacts'
 import {
   generateSigningToken,
   isSignableRole,
@@ -15,6 +16,7 @@ import {
   storedRecipientRole,
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
+  seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
   type ActionRequired,
   type EnvelopeField,
@@ -306,7 +308,12 @@ export async function createEnvelopeFromDocuments(
     recipients,
     await peopleEmailsByNames(recipients.map((r) => r.name)),
   )
-  if (withEmail.length) await supabase.from('tc_envelope_recipients').insert(withEmail)
+  const vendors = seedVendorEnvelopeRecipients({
+    envelopeId: env.id,
+    contacts: await getDealContacts(String(cycle.deal_id)),
+  })
+  const allRecipients = [...withEmail, ...vendors]
+  if (allRecipients.length) await supabase.from('tc_envelope_recipients').insert(allRecipients)
 
   await supabase.from('tc_events').insert({
     deal_id: cycle.deal_id,
@@ -380,6 +387,11 @@ export async function createEnvelopeFromTemplate(
     const { data: rs } = await supabase.from('tc_envelope_recipients').insert(recipients).select('id, role')
     savedRecipients = (rs ?? []) as DbRow[]
   }
+  const vendors = seedVendorEnvelopeRecipients({
+    envelopeId: env.id,
+    contacts: await getDealContacts(String(cycle.deal_id)),
+  })
+  if (vendors.length) await supabase.from('tc_envelope_recipients').insert(vendors)
   const recipientByRole = (role: SignerRole): string | null => {
     const match = savedRecipients.find((r) => recipientMatchesSigner(String(r.role), role))
     return match ? (match.id as string) : null

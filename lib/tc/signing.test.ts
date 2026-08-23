@@ -16,6 +16,7 @@ import {
   brokerEnvelopeRole,
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
+  seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
 } from './signing'
 
@@ -151,6 +152,29 @@ describe('seedPartyEnvelopeRecipients', () => {
     })
     expect(rows.map((r) => r.role)).toEqual(['Buyer', 'Buyer', 'Seller', 'SellerAgent'])
     expect(rows.filter((r) => r.role === 'Buyer')).toHaveLength(2)
+  })
+})
+
+describe('seedVendorEnvelopeRecipients', () => {
+  it('maps title and escrow to Forms roles as Receives a copy', () => {
+    const rows = seedVendorEnvelopeRecipients({
+      envelopeId: 'e1',
+      contacts: [
+        { role: 'title', name: 'Yvonne Ward', email: 'yvonne.ward@westerntitle.com' },
+        { role: 'escrow', name: null, email: null },
+        { role: 'transaction_coordinator', name: 'Jeanette Argyle', email: 'a@b.com' },
+      ],
+    })
+    expect(rows).toEqual([
+      {
+        envelope_id: 'e1',
+        role: 'TitleOfficer',
+        name: 'Yvonne Ward',
+        email: 'yvonne.ward@westerntitle.com',
+        signing_order: 4,
+        action_required: 'ReceivesACopy',
+      },
+    ])
   })
 })
 

@@ -2,18 +2,25 @@
 
 import { useTransition } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/admin/v2'
-import { setDealStage } from '@/app/actions/tc'
+import { Button, SelectField } from '@/components/admin/v2'
+import { setDealBroker, setDealStage } from '@/app/actions/tc'
+
+const BROKERS = ['Matt Ryan', 'Paul Stevenson', 'Rebecca Peterson'] as const
 
 export function DealStageControls({
   propertyKey,
   stage,
+  brokerName,
+  canAssign,
 }: {
   propertyKey: string
   stage: string
+  brokerName: string | null
+  canAssign: boolean
 }) {
   const [pending, start] = useTransition()
-  if (stage !== 'active_listing' && stage !== 'dead') return null
+  const showStage = stage === 'active_listing' || stage === 'dead'
+  if (!showStage && !canAssign) return null
 
   function run(next: 'active_listing' | 'dead', detail: string, ok: string) {
     start(async () => {
@@ -24,7 +31,7 @@ export function DealStageControls({
   }
 
   return (
-    <span style={{ display: 'inline-flex', gap: 8 }}>
+    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
       {stage === 'active_listing' ? (
         <Button
           variant="quiet"
@@ -33,7 +40,7 @@ export function DealStageControls({
         >
           Withdraw listing
         </Button>
-      ) : (
+      ) : stage === 'dead' ? (
         <Button
           variant="quiet"
           disabled={pending}
@@ -41,7 +48,30 @@ export function DealStageControls({
         >
           Restore listing
         </Button>
-      )}
+      ) : null}
+      {canAssign ? (
+        <SelectField
+          label="Assign to"
+          value={brokerName && BROKERS.includes(brokerName as (typeof BROKERS)[number]) ? brokerName : ''}
+          disabled={pending}
+          onChange={(e) => {
+            const to = e.target.value
+            if (!to || to === brokerName) return
+            start(async () => {
+              const res = await setDealBroker({ propertyKey, brokerName: to })
+              if (res.error) toast.error(res.error)
+              else toast.success(`Assigned to ${to}.`)
+            })
+          }}
+        >
+          <option value="">Broker…</option>
+          {BROKERS.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+        </SelectField>
+      ) : null}
     </span>
   )
 }

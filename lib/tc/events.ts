@@ -14,6 +14,7 @@ export const TC_EVENT_LABEL: Record<string, string> = {
   oref_filled: 'OREF filled',
   person_added: 'Person added',
   deal_stage_changed: 'Stage changed',
+  deal_assigned: 'Deal assigned',
   contact_added: 'Contact added',
   checklist_status_changed: 'Checklist updated',
   principal_broker_review: 'Principal review',

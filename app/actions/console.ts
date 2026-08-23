@@ -1,7 +1,9 @@
 'use server'
 
 import { listCrmPeople, getCrmAccess } from '@/app/actions/crm'
-import { checkAdminAction } from '@/lib/admin/require-admin'
+import { checkAdminAction, getAdminCapabilityContext } from '@/lib/admin/require-admin'
+import { closingMatchesQuery, getClosingsBoard } from '@/lib/data/tc/closings'
+import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 
 export type ConsoleLeadHit = { id: number; name: string; stage: string; source: string | null }
 
@@ -27,4 +29,28 @@ export async function consoleSearchLeads(q: string): Promise<ConsoleLeadHit[]> {
     stage: p.stage,
     source: p.source,
   }))
+}
+
+export type ConsoleDealHit = { propertyKey: string; address: string; stage: string }
+
+/** Deal search for ⌘K. Same matcher as Closings; scoped to the caller's files. */
+export async function consoleSearchDeals(q: string): Promise<ConsoleDealHit[]> {
+  const query = q.trim()
+  if (query.length < 2) return []
+  const gate = await checkAdminAction('transactions.view')
+  if (!gate.ok) return []
+  const ctx = await getAdminCapabilityContext()
+  if (!ctx) return []
+  const board = await getClosingsBoard()
+  return board.deals
+    .filter((d) =>
+      dealVisibleToBroker({
+        role: ctx.role,
+        brokerSlug: ctx.brokerSlug,
+        dealBrokerName: d.brokerName,
+      }),
+    )
+    .filter((d) => closingMatchesQuery(d, query))
+    .slice(0, 8)
+    .map((d) => ({ propertyKey: d.propertyKey, address: d.address, stage: d.stage }))
 }
