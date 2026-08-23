@@ -412,6 +412,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23s landed: `/cities` region hero leftover Pending · now and Days to contract · 12 months beside months of supply. Featured Bend leftover 311 pending plus 66 condos / 78 townhomes. Pulse active-listing age stays. Neighborhood MOS still unpublished. County unpublished.
 
+### Grind 2026-08-23t — leftover + extra types beside the homepage HUD
+
+**Done when:** `/` KbMarketHud stays detached (pulse 30-day / DTP / overlay MOS) and prints sample-gated extra product types plus labeled leftover pace as HUD children. Neighborhood MOS unpublished. County unpublished. Workers do not tick this file.
+
+2026-08-23t landed: homepage HUD children leftover (region days to contract 32 · 12 months) plus extra types (118 condos · 14.2 months). Detached HUD / pulse 30-day / median to pending stay. Neighborhood MOS still unpublished. County unpublished. Remainder hulls still have no complete plat set (Sunriver 79 plat acres vs 10,113 hull; Brasada / Three Rivers / Widgi 0 plats).
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

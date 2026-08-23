@@ -34,6 +34,10 @@ import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
+import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
 import { formatDate } from '@/lib/format/date'
 import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
@@ -108,7 +112,7 @@ const monthLabel = (iso?: string) =>
   iso ? formatDate(iso, { month: 'short', day: undefined, year: undefined, timeZone: 'UTC' }) : ''
 
 export default async function Home() {
-  const [pulse, cities, communities, tiles, mktStats, priceHist, cityPulse] = await Promise.all([
+  const [pulse, cities, communities, tiles, mktStats, priceHist, cityPulse, publicPace, publicSegments] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
@@ -116,6 +120,8 @@ export default async function Home() {
     getMarketStatsCacheRowForGeo({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getMarketPulseAllCitySnapshots().catch(() => []),
+    getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_PACE),
+    getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
   ])
 
   const sellMedian = publishSellMedian({
@@ -292,7 +298,10 @@ export default async function Home() {
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
-        <KbMarketHud data={marketData} asOf={pulse?.updatedAt ?? null} />
+        <KbMarketHud data={marketData} asOf={pulse?.updatedAt ?? null}>
+          <PublicProductTypes cityName="Central Oregon" citySlug="" rows={publicSegments} />
+          <PublicPaceStats cityName="Central Oregon" row={publicPace} />
+        </KbMarketHud>
         <KbFooter towns={towns} />
       </SmoothScrollProvider>
     </main>
