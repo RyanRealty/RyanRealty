@@ -242,6 +242,10 @@
       "schedule": "0 16 * * *"
     },
     {
+      "path": "/api/cron/tc-deal-calendar",
+      "schedule": "20 16 * * *"
+    },
+    {
       "path": "/api/cron/token-heartbeat",
       "schedule": "0 12 * * *"
     },

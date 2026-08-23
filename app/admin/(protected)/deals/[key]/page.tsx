@@ -56,6 +56,8 @@ import { CommissionEdit } from './CommissionControls'
 import { ChecklistStatusControl } from './ChecklistControls'
 import { DealContacts } from './DealContacts'
 import { DealEnvelopes } from './DealEnvelopes'
+import { DealOffers } from './DealOffers'
+import { listDealOffers } from '@/app/actions/tc-offers'
 import { FillOrefPacket } from './FillOrefPacket'
 import { DocumentName } from './DocumentName'
 import { getEnvelopesForCycle, listEnvelopeTemplates } from '@/app/actions/tc-envelopes'
@@ -396,12 +398,13 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   const deal = await getTcDeal(decodeURIComponent(key))
   if (!deal) notFound()
 
-  const [contacts, commissions, orefFormResult, parties, liveCycles] = await Promise.all([
+  const [contacts, commissions, orefFormResult, parties, liveCycles, offers] = await Promise.all([
     getDealContacts(deal.id),
     getCommissionsForCycles(deal.cycles.map((c) => c.id)),
     getPreferredOrefSaleAgreement(),
     getDealParties(deal.id),
     getLiveDealCycles(),
+    listDealOffers(deal.id),
   ])
   const mergeOthers = liveCycles.filter(
     (d) =>
@@ -518,6 +521,8 @@ export default async function TcDealPage({ params, searchParams }: Props) {
           </div>
         </details>
       ))}
+
+      <DealOffers dealId={deal.id} stage={deal.stage} offers={offers} />
 
       <DealParties dealId={deal.id} propertyKey={deal.property_key} parties={parties} />
 

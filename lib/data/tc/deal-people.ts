@@ -47,6 +47,7 @@ function client() {
 }
 
 export async function getDealParties(dealId: string): Promise<DealParty[]> {
+  await ensureDealPartiesFromFile(dealId)
   const sb = client()
   const { data, error } = await sb
     .from('tc_deal_people')
@@ -68,6 +69,41 @@ export async function getDealParties(dealId: string): Promise<DealParty[]> {
       name,
     }
   })
+}
+
+/** Attach buyers/sellers who have an email or phone on the SkySlope file. Never the deal broker. */
+export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
+  const sb = client()
+  const { data: deal } = await sb.from('tc_deals').select('id, broker_name').eq('id', dealId).maybeSingle()
+  if (!deal) return
+  const broker = (deal.broker_name ?? '').trim().toLowerCase()
+  const { data: cycles } = await sb.from('tc_cycles').select('raw').eq('deal_id', dealId)
+  const { extractPartiesFromCycleRaw } = await import('@/lib/tc/cycle-contacts')
+  const parties = (cycles ?? []).flatMap((c) => extractPartiesFromCycleRaw(c.raw))
+  const seen = new Set<string>()
+  const { data: existing } = await sb.from('tc_deal_people').select('person_id').eq('deal_id', dealId)
+  const have = new Set((existing ?? []).map((r) => Number(r.person_id)))
+  const { ensureNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
+  for (const p of parties) {
+    if (p.name.trim().toLowerCase() === broker) continue
+    if (!p.email && !p.phone) continue
+    const key = p.name.trim().toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    const got = await ensureNativeLead({
+      name: p.name,
+      email: p.email,
+      phone: p.phone,
+      source: 'vault-deal',
+    })
+    if (!got.personId || have.has(got.personId)) continue
+    const { error } = await sb.from('tc_deal_people').insert({
+      deal_id: dealId,
+      person_id: got.personId,
+      role: p.role,
+    })
+    if (!error) have.add(got.personId)
+  }
 }
 
 export async function peopleEmailsByNames(

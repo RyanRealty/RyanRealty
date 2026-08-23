@@ -72,3 +72,36 @@ export function extractContactsFromCycleRaw(raw: unknown): ExtractedDealContact[
   }
   return out
 }
+
+export type ExtractedParty = {
+  name: string
+  role: 'buyer' | 'seller'
+  email: string | null
+  phone: string | null
+}
+
+/** Buyers/sellers from SkySlope raw (email/phone when the file had them). */
+export function extractPartiesFromCycleRaw(raw: unknown): ExtractedParty[] {
+  if (!raw || typeof raw !== 'object') return []
+  const blob = raw as Record<string, unknown>
+  const out: ExtractedParty[] = []
+  const pull = (role: 'buyer' | 'seller', list: unknown) => {
+    if (!Array.isArray(list)) return
+    for (const item of list) {
+      if (!item || typeof item !== 'object') continue
+      const c = item as RawPerson & { phoneNumber?: string | null }
+      const name =
+        str(c.fullName) || [str(c.firstName), str(c.lastName)].filter(Boolean).join(' ') || null
+      if (!name) continue
+      out.push({
+        role,
+        name,
+        email: str(c.email),
+        phone: str(c.phoneNumber) || str(c.alternatePhone),
+      })
+    }
+  }
+  pull('buyer', blob.buyers)
+  pull('seller', blob.sellers)
+  return out
+}

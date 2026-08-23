@@ -70,14 +70,19 @@ function rowContext(d: ClosingDealRow, nowMs: number): string {
 export default async function ClosingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; mine?: string }>
 }) {
   const ctx = await requireAdminPage('transactions.view')
-  const { q } = await searchParams
+  const { q, mine } = await searchParams
   const nowMs = Date.now()
   const [board, mirror] = await Promise.all([getClosingsBoard(), getSkySlopeMirrorFreshness()])
+  const mineOnly = ctx.role === 'superuser' && mine === '1'
   const scoped = board.deals.filter((d) =>
-    dealVisibleToBroker({ role: ctx.role, brokerSlug: ctx.brokerSlug, dealBrokerName: d.brokerName }),
+    dealVisibleToBroker({
+      role: mineOnly ? 'broker' : ctx.role,
+      brokerSlug: ctx.brokerSlug,
+      dealBrokerName: d.brokerName,
+    }),
   )
   const visible = q?.trim() ? scoped.filter((d) => closingMatchesQuery(d, q)) : scoped
 
@@ -144,7 +149,31 @@ export default async function ClosingsPage({
         )}
       </div>
 
+      {ctx.role === 'superuser' ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 14px' }}>
+          {mineOnly ? (
+            <>
+              Showing your files.{' '}
+              <Link href={q?.trim() ? `/admin/closings?q=${encodeURIComponent(q.trim())}` : '/admin/closings'} style={{ color: 'var(--a-accent)' }}>
+                All brokers
+              </Link>
+            </>
+          ) : (
+            <>
+              Showing every file.{' '}
+              <Link
+                href={q?.trim() ? `/admin/closings?mine=1&q=${encodeURIComponent(q.trim())}` : '/admin/closings?mine=1'}
+                style={{ color: 'var(--a-accent)' }}
+              >
+                Mine only
+              </Link>
+            </>
+          )}
+        </p>
+      ) : null}
+
       <form method="GET" className="av2-rfilters" style={{ margin: '0 0 14px' }}>
+        {mineOnly ? <input type="hidden" name="mine" value="1" /> : null}
         <TextField
           label="Search deals"
           name="q"

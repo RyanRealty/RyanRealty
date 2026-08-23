@@ -110,6 +110,8 @@ export async function acceptListingContract(
     detail: { from: 'active_listing', to: 'pending' },
   })
   revalidateDeal(propertyKey)
+  const { syncDealCalendar } = await import('@/lib/tc/deal-calendar')
+  await syncDealCalendar(deal.id)
   return { ok: true }
 }
 
