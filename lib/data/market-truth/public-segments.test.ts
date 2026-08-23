@@ -124,6 +124,8 @@ describe('public place pages', () => {
     expect(hub).toMatch(/getPublicPlaceSegments/)
     expect(hub).toMatch(/publicSegmentDisplayBits/)
     expect(zip).toMatch(/getPublicPlaceSegments/)
+    const annual = readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8')
+    expect(annual).toMatch(/getPublicPlaceSegments/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
     expect(strip).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })

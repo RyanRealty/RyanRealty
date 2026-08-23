@@ -129,6 +129,13 @@ import type { Metadata } from 'next'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { getMarketPulse, getCityMarketDetail, getPriceHistory } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
+import {
+  getPublicPlaceSegments,
+  publicSegmentBrowseHref,
+  publicSegmentNoun,
+} from '@/lib/data/market-truth/public-segments'
+import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { REPORT_CITIES, NON_MLS_CITY_EXEMPTIONS } from '@/lib/data/geo/report-cities'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -194,7 +201,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AnnualReviewPage() {
-  const [regionPulse, regionDetail, citySnapshots, cityDetails, priceHistory] = await Promise.all([
+  const [regionPulse, regionDetail, citySnapshots, cityDetails, priceHistory, publicSegments, publicPace] =
+    await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
     getCityMarketDetail({ geoType: 'region', geoSlug: REGION_GEO_SLUG, periodType: PERIOD_TYPE }),
     getMarketPulseAllCitySnapshots(),
@@ -204,6 +212,8 @@ export default async function AnnualReviewPage() {
       ),
     ),
     getPriceHistory('region', REGION_GEO_SLUG, 'monthly', 60),
+    getPublicPlaceSegments({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
+    getPublicDetachedPace({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
   ])
 
   // Stamps are the REAL refresh timestamps off the rows, never now(). The region
@@ -264,11 +274,23 @@ export default async function AnnualReviewPage() {
 
   // Sections, built from the rows (./_v3/annual-sections.ts). Built BEFORE the
   // Dataset payload because the payload is derived from what actually rendered.
-  const [firstRegionFigure, ...restRegionFigures] = buildRegionFigures(
-    regionPulse,
-    mosRaw,
-    medianListDisplay,
-  )
+  const extraFigures = [
+    ...publicSegments
+      .filter((row) => row.monthsOfSupply != null && row.activeCount != null && row.activeCount > 0)
+      .map((row) => ({
+        value: v3Text(formatMonthsOfSupply(row.monthsOfSupply as number)),
+        label: v3Text(`${publicSegmentNoun(row.segment, row.activeCount)} · months of supply`),
+        href: publicSegmentBrowseHref(null, row.segment),
+      })),
+    ...publicPaceItems(publicPace).map((item) => ({
+      value: v3Text(item.value),
+      label: v3Text(item.label),
+    })),
+  ]
+  const [firstRegionFigure, ...restRegionFigures] = [
+    ...buildRegionFigures(regionPulse, mosRaw, medianListDisplay),
+    ...extraFigures,
+  ]
   const inventory = buildInventoryLedger(GRID_CITIES, citySnapshots, {
     regionActive: regionPulse?.activeCount ?? null,
   })

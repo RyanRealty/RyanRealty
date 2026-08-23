@@ -12,6 +12,7 @@ import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
 import type { MarketPulse, MarketStats } from '@/lib/data/types/market'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 
 /**
  * NeighborhoodMarketContext — THE Zillow beater. KB section style:
@@ -107,6 +108,14 @@ export async function NeighborhoodMarketContext({
         'listing:coreCharts',
       )
     : null
+  const leftover = citySlug
+    ? await withTimeoutFallback(
+        getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug }),
+        EMPTY_PUBLIC_PACE,
+        3000,
+        'listing:pace',
+      )
+    : EMPTY_PUBLIC_PACE
   const cityLabel = citySlug ? cityDisplayName(citySlug) : null
   const chartScopeLabel = cityLabel && cityLabel !== geoName ? `${cityLabel} (city)` : undefined
 
@@ -148,7 +157,7 @@ export async function NeighborhoodMarketContext({
             grid-template-columns would override that and overflow at 375px). */}
         <div
           className="mkt-kpis"
-          style={{ ['--kpi-cols' as string]: [activeCount, medianList, medianDom, mos].filter(v => v != null).length }}
+          style={{ ['--kpi-cols' as string]: [activeCount, medianList, medianDom, mos, leftover.pendingCount, leftover.daysToContract].filter(v => v != null).length }}
         >
           {activeCount != null ? (
             <KpiCell label={`Active in ${geoName}`} value={<TabularNumber value={activeCount} />} />
@@ -161,6 +170,15 @@ export async function NeighborhoodMarketContext({
           ) : null}
           {mos != null ? (
             <KpiCell label="Months of supply" value={<TabularNumber value={mos} fractionDigits={1} />} />
+          ) : null}
+          {leftover.pendingCount != null ? (
+            <KpiCell label="Pending · now" value={<TabularNumber value={leftover.pendingCount} />} />
+          ) : null}
+          {leftover.daysToContract != null ? (
+            <KpiCell
+              label="Days to contract · 12 months"
+              value={<TabularNumber value={leftover.daysToContract} />}
+            />
           ) : null}
         </div>
 

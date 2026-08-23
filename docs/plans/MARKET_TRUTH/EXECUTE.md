@@ -370,6 +370,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23l landed: CMA city grain overlays leftover MT. `/months-of-supply` extra MOS 14.2 condos, 4.8 townhomes, 6.3 manufactured on land, 3.7 in parks, 18.7 lots. Neighborhood MOS and county stay unpublished.
 
+### Grind 2026-08-23m — polygon repair + remaining report/listing leftover
+
+**Done when:** `bend-southeast-bend` is ST_IsValid; `broken-top` neighborhood is the plat union (~491 acres, not 11,495); `/housing-market/annual-review` prints extra MOS + leftover; listing city context prints pending now and 12-month days to contract when publishable. Neighborhood MOS still unpublished (overlaps remain). County unpublished. Workers do not tick this file.
+
+2026-08-23m landed: `bend-southeast-bend` ST_IsValid (1318.1 acres). `broken-top` **11,495.7 → 491.3 acres** (49 plats). Neighborhood overlap pairs **38 → 25**. Annual-review extra MOS 14.2 condos / 4.8 townhomes / 6.3 manufactured on land / 3.7 in parks / 18.7 lots. Listing city context reads leftover. Neighborhood MOS still unpublished. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

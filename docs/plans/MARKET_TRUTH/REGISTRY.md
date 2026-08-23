@@ -207,9 +207,10 @@ Every geography read uses `place_membership` with `is_primary = true`. A sum tha
 `is_primary` fails gate 8 — 19.5% of sales sit inside 2+ subdivision polygons and summing inflates
 totals 1.33× at subdivision grain and 1.50× at neighborhood grain.
 
-**Neighborhood polygons are not publishable until repaired**: 57 overlapping pairs, Broken Top drawn
-at 11,496 acres, `bend-southeast-bend` failing `ST_IsValid`, and one slug literally named
-`bend-undesignated`.
+**Neighborhood polygons are not publishable until repaired.** 2026-08-23m: `bend-southeast-bend`
+is `ST_IsValid`; Broken Top neighborhood is the plat union (**491 acres**, was 11,496). Overlap
+pairs **38 → 25** (10,000 m² intersection floor). `bend-undesignated` still exists. Remainder
+overlaps are why MOS stays unpublished.
 
 ---
 
