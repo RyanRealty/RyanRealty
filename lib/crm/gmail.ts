@@ -111,6 +111,35 @@ function listGmailPdfParts(payload: gmail_v1.Schema$MessagePart | undefined): Ar
   return out.slice(0, 3)
 }
 
+async function fetchGmailPdfAttachments(
+  gmail: gmail_v1.Gmail,
+  messageId: string,
+  messageKey: string,
+  payload: gmail_v1.Schema$MessagePart | undefined,
+): Promise<{
+  filenames: string[]
+  attachments: Array<{ sourceDocId: string; name: string; bytes: Buffer; contentType: string }>
+}> {
+  const refs = listGmailPdfParts(payload)
+  const attachments: Array<{ sourceDocId: string; name: string; bytes: Buffer; contentType: string }> = []
+  for (const ref of refs) {
+    const att = await gmail.users.messages.attachments.get({
+      userId: 'me',
+      messageId,
+      id: ref.attachmentId,
+    })
+    const data = att.data.data
+    if (!data) continue
+    attachments.push({
+      sourceDocId: `gmail:${messageKey}:${ref.attachmentId}`.slice(0, 180),
+      name: ref.filename,
+      bytes: Buffer.from(data, 'base64url'),
+      contentType: 'application/pdf',
+    })
+  }
+  return { filenames: refs.map((r) => r.filename), attachments }
+}
+
 function extractBody(payload: gmail_v1.Schema$MessagePart | undefined): string {
   if (!payload) return ''
   const parts: string[] = []
@@ -291,15 +320,28 @@ export async function syncMailboxWindow(params: {
         for (const a of toCc) { const pid = emailMap.get(a); if (pid && !candidates.has(pid)) candidates.set(pid, 'out') }
         if (!candidates.size) {
           try {
+            const fullMsg = await gmail.users.messages.get({ userId: 'me', id: meta.id!, format: 'full' })
+            const rfcId = headerOf(fullMsg.data, 'Message-ID')
+            const messageKey = rfcId
+              ? `rfc:${createHash('sha1').update(rfcId.trim()).digest('hex').slice(0, 24)}`
+              : fullMsg.data.id
+            const { filenames, attachments } = await fetchGmailPdfAttachments(
+              gmail,
+              fullMsg.data.id!,
+              String(messageKey),
+              fullMsg.data.payload,
+            )
             const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
             await fileCommsToVault({
               personIds: [],
               emails: [...from, ...toCc],
               channel: 'mail',
               actor: `gmail:${brokerSlug}`,
-              title: headerOf(meta, 'Subject'),
-              body: meta.snippet ?? null,
-              dedupeKey: `mail:meta:${meta.id}`,
+              title: headerOf(fullMsg.data, 'Subject') ?? headerOf(meta, 'Subject'),
+              body: extractBody(fullMsg.data.payload) || (fullMsg.data.snippet ?? meta.snippet ?? null),
+              filenames,
+              attachments,
+              dedupeKey: `mail:${messageKey}`,
             })
           } catch (err) {
             console.warn('[gmail-sync] vault auto-file (contact/address) failed', err)
@@ -340,23 +382,12 @@ export async function syncMailboxWindow(params: {
         }
         try {
           const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
-          const refs = listGmailPdfParts(fullMsg.data.payload)
-          const attachments: Array<{ sourceDocId: string; name: string; bytes: Buffer; contentType: string }> = []
-          for (const ref of refs) {
-            const att = await gmail.users.messages.attachments.get({
-              userId: 'me',
-              messageId: fullMsg.data.id!,
-              id: ref.attachmentId,
-            })
-            const data = att.data.data
-            if (!data) continue
-            attachments.push({
-              sourceDocId: `gmail:${String(messageKey)}:${ref.attachmentId}`.slice(0, 180),
-              name: ref.filename,
-              bytes: Buffer.from(data, 'base64url'),
-              contentType: 'application/pdf',
-            })
-          }
+          const { filenames, attachments } = await fetchGmailPdfAttachments(
+            gmail,
+            fullMsg.data.id!,
+            String(messageKey),
+            fullMsg.data.payload,
+          )
           await fileCommsToVault({
             personIds: [...candidates.keys()],
             emails: [...from, ...toCc],
@@ -364,7 +395,7 @@ export async function syncMailboxWindow(params: {
             actor: `gmail:${brokerSlug}`,
             title: subject,
             body,
-            filenames: refs.map((r) => r.filename),
+            filenames,
             attachments,
             dedupeKey: `mail:${messageKey}`,
           })
