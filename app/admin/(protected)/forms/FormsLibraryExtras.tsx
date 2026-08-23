@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { Button, SelectField, TextAreaField, TextField } from '@/components/admin/v2'
+import { Button, SectionHead, SelectField, TextAreaField, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { saveClause, saveFormPacket, type ClauseRow, type FormPacket } from '@/app/actions/tc-library'
 import { createEnvelopeFromTemplate } from '@/app/actions/tc-envelopes'
 import { useRouter } from 'next/navigation'
@@ -30,7 +30,7 @@ export function FormsLibraryExtras({
   return (
     <div className="av2-rcols" style={{ display: 'grid', gap: 24, marginTop: 28 }}>
       <section>
-        <h2 className="av2-lane-head">Packets</h2>
+        <SectionHead>Packets</SectionHead>
         <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           Saved sets of library forms. Instantiate onto an in-flight deal as a draft envelope.
         </p>
@@ -82,19 +82,16 @@ export function FormsLibraryExtras({
               </option>
             ))}
           </SelectField>
-          <label className="av2-field__label">Forms in packet</label>
           <div style={{ maxHeight: 160, overflow: 'auto', display: 'grid', gap: 4 }}>
             {formIds.slice(0, 40).map((f) => (
-              <label key={f.id} style={{ fontSize: 'var(--a-text-sm)' }}>
-                <input
-                  type="checkbox"
-                  checked={picked.includes(f.id)}
-                  onChange={() =>
-                    setPicked((cur) => (cur.includes(f.id) ? cur.filter((x) => x !== f.id) : [...cur, f.id]))
-                  }
-                />{' '}
-                {f.label}
-              </label>
+              <ToolbarCheck
+                key={f.id}
+                label={f.label}
+                checked={picked.includes(f.id)}
+                onChange={() =>
+                  setPicked((cur) => (cur.includes(f.id) ? cur.filter((x) => x !== f.id) : [...cur, f.id]))
+                }
+              />
             ))}
           </div>
           <Button type="submit" disabled={pending || !packetName.trim() || !picked.length}>
@@ -104,7 +101,7 @@ export function FormsLibraryExtras({
       </section>
 
       <section>
-        <h2 className="av2-lane-head">Clauses</h2>
+        <SectionHead>Clauses</SectionHead>
         <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           Reusable text. Copy into a compose text field.
         </p>
@@ -151,7 +148,7 @@ export function FormsLibraryExtras({
         >
           <TextField label="Clause title" value={clauseTitle} onChange={(e) => setClauseTitle(e.target.value)} />
           <TextAreaField label="Body" value={clauseBody} onChange={(e) => setClauseBody(e.target.value)} />
-          <Button type="submit" disabled={pending || !clauseTitle.trim() || !clauseBody.trim()}>
+          <Button type="submit" variant="quiet" disabled={pending || !clauseTitle.trim() || !clauseBody.trim()}>
             Save clause
           </Button>
         </form>
