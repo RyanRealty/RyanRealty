@@ -155,6 +155,7 @@ import {
   publicSegmentBrowseHref,
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
+import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import {
   MOS_METHODOLOGY_CLAUSE,
   MOS_THRESHOLD_CLAUSE,
@@ -233,10 +234,11 @@ export default async function MonthsOfSupplyPage() {
   //                   property_type='A'. lib/data/market/getRegionPulse.ts.
   //   citySnapshots - market_pulse_live, geo_type='city', geo_label in MOS_CITY_LABELS,
   //                   property_type='A'. lib/data/market/getMarketPulseSnapshot.ts.
-  const [regionPulse, citySnapshots, publicSegments] = await Promise.all([
+  const [regionPulse, citySnapshots, publicSegments, publicPace] = await Promise.all([
     getRegionPulse(),
     getMarketPulseCitySnapshots([...MOS_CITY_LABELS]),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
+    getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
   ])
 
   // Invariant 2, region. The verdict classifies the STORED value and
@@ -277,11 +279,17 @@ export default async function MonthsOfSupplyPage() {
       href: publicSegmentBrowseHref(null, row.segment),
     })
   }
+  for (const item of publicPaceItems(publicPace)) {
+    regionFigures.push({
+      value: v3Text(item.value),
+      label: v3Text(item.label),
+    })
+  }
   const [firstRegionFigure, ...restRegionFigures] = regionFigures
 
   // The region trace: the query, then the two canonical clauses, printed verbatim.
   const regionTrace =
-    'Detached months of supply is the region HUD overlay. Extra product-type months of supply are Market Truth mt-v1, sample-gated. ' +
+    'Detached months of supply is the region HUD overlay. Extra product-type months of supply and 12-month pace are Market Truth, sample-gated. ' +
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE

@@ -8,8 +8,8 @@
  * publishes EVERY figure the pulse row carries, so it reads the wide column
  * list through getMarketPulseRowForGeo({ columns }) instead of narrowing.
  *
- * DAL boundary (G1): reads ONLY through getMarketPulseRowForGeo, the existing
- * exported DAL function in getMarketStatsCacheRows.ts. No raw `.from()` here.
+ * DAL boundary (G1): pulse figures through getMarketPulseRowForGeo; leftover
+ * through getPublicDetachedPace. No raw `.from()` here.
  *
  * §0 degraded-read contract: this module NEVER fabricates a number.
  *   - FOUND    -> every real column, verdict computed once via marketVerdict()
@@ -17,7 +17,10 @@
  *                 City/region: inventory (active/median) overlays even when
  *                 MOS is below min_n. MOS/verdict overlay only when publishable.
  *                 A full inventory miss withholds activeListings rather than pulse.
- *                 Neighborhood grain keeps the pulse row — no invented MOS.
+ *                 City/region leftover pace (12-month + pending/age now) sits
+ *                 beside pulse 30-day / days-to-pending. A leftover miss is
+ *                 null, never 0. Neighborhood grain keeps the pulse row — no
+ *                 invented MOS, no leftover.
  *   - NOT_FOUND -> genuine miss (no row for this geo_type/geo_slug). All
  *                 figures null, `note` says so explicitly.
  *   - ERROR    -> getMarketPulseRowForGeo THROWS on a transient DB error
@@ -34,6 +37,11 @@ import {
   type SellBendMarket,
 } from '@/lib/data/market-truth/getSellBendMarket'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE, type MarketKind } from '@/lib/market/classify'
+import {
+  getPublicDetachedPace,
+  publicPaceHasRow,
+  type PublicPaceRow,
+} from '@/lib/data/market-truth/public-pace'
 
 /** geo_type values market_pulse_live actually carries (verified live 2026-08-03: city, neighborhood, region). */
 export type PulseGeoType = 'city' | 'neighborhood' | 'region'
@@ -95,6 +103,12 @@ export type MarketPulseJsonFigures = {
   marketHealthLabel: string | null
 }
 
+/** Detached leftover. 12-month cells plus pending/age now. Miss is null. */
+export type MarketPulseJsonLeftover = PublicPaceRow
+
+const LEFTOVER_NOTE =
+  'Leftover detached pace is Market Truth mt-v1, sample-gated (12-month cells plus pending/age now). Pulse 30-day sold and days-to-pending stay.'
+
 export type MarketPulseJsonMethodology = {
   monthsOfSupplyFormula: string
   monthsOfSupplyThresholds: string
@@ -112,6 +126,7 @@ export type MarketPulseJsonFeedResult =
       geoLabel: string | null
       collectedAt: string | null
       figures: MarketPulseJsonFigures
+      leftover: MarketPulseJsonLeftover | null
       methodology: MarketPulseJsonMethodology
       note: string | null
     }
@@ -122,6 +137,7 @@ export type MarketPulseJsonFeedResult =
       geoLabel: null
       collectedAt: null
       figures: null
+      leftover: null
       methodology: null
       note: string
     }
@@ -132,6 +148,7 @@ export type MarketPulseJsonFeedResult =
       geoLabel: null
       collectedAt: null
       figures: null
+      leftover: null
       methodology: null
       note: string
     }
@@ -159,6 +176,7 @@ export async function getMarketPulseJsonFeed(input: {
       geoLabel: null,
       collectedAt: null,
       figures: null,
+      leftover: null,
       methodology: null,
       note:
         `market_pulse_live read failed for ${geoType}/${geoSlug}: ` +
@@ -174,6 +192,7 @@ export async function getMarketPulseJsonFeed(input: {
       geoLabel: null,
       collectedAt: null,
       figures: null,
+      leftover: null,
       methodology: null,
       note: `No market_pulse_live row for geo_type='${geoType}', geo_slug='${geoSlug}', property_type='A'. This geography is not published.`,
     }
@@ -227,12 +246,21 @@ export async function getMarketPulseJsonFeed(input: {
     geoLabel: toStr(row.geo_label),
     collectedAt: toStr(row.updated_at),
     figures,
+    leftover: null,
     methodology,
     note: null,
   }
 
   if (geoType === 'city' || geoType === 'region') {
-    applyJsonFeedDetachedOrWithhold(found, await readDetachedOverlay(geoType, geoSlug))
+    const [layers, leftover] = await Promise.all([
+      readDetachedOverlay(geoType, geoSlug),
+      readJsonFeedLeftover(geoType, geoSlug),
+    ])
+    applyJsonFeedDetachedOrWithhold(found, layers)
+    found.leftover = leftover
+    if (leftover) {
+      found.note = found.note ? `${found.note} ${LEFTOVER_NOTE}` : LEFTOVER_NOTE
+    }
   }
 
   return found
@@ -241,6 +269,19 @@ export async function getMarketPulseJsonFeed(input: {
 type JsonFeedOverlay = {
   headlines: SellBendMarket | null
   inventory: DetachedInventory | null
+}
+
+/** City/region leftover. Throw and miss both omit — never 0. Neighborhood never calls this. */
+async function readJsonFeedLeftover(
+  geoType: 'city' | 'region',
+  geoSlug: string,
+): Promise<MarketPulseJsonLeftover | null> {
+  try {
+    const row = await getPublicDetachedPace({ geoType, geoSlug })
+    return publicPaceHasRow(row) ? row : null
+  } catch {
+    return null
+  }
 }
 
 /** City/region overlay. Throw and miss both withhold — never pulse 488. */

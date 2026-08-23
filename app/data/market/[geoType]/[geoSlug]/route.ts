@@ -169,6 +169,7 @@ export async function GET(
             : "SFR only (MLS PropertyType = 'A')",
       },
       figures: feed.figures,
+      leftover: feed.leftover,
       methodology: feed.methodology,
       source: SOURCE,
     },

@@ -3,9 +3,10 @@ import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 
-const { rowMock, detachedMock } = vi.hoisted(() => ({
+const { rowMock, detachedMock, paceMock } = vi.hoisted(() => ({
   rowMock: vi.fn(),
   detachedMock: vi.fn(),
+  paceMock: vi.fn(),
 }))
 
 vi.mock('@/lib/data/market/getMarketStatsCacheRows', () => ({
@@ -21,6 +22,16 @@ vi.mock('@/lib/data/market-truth/getSellBendMarket', () => ({
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, ''),
 }))
+
+vi.mock('@/lib/data/market-truth/public-pace', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/data/market-truth/public-pace')>(
+    '@/lib/data/market-truth/public-pace',
+  )
+  return {
+    ...actual,
+    getPublicDetachedPace: (...args: unknown[]) => paceMock(...args),
+  }
+})
 
 import { getMarketPulseJsonFeed } from './getMarketPulseJsonFeed'
 
@@ -78,6 +89,24 @@ function found(result: Awaited<ReturnType<typeof getMarketPulseJsonFeed>>) {
 beforeEach(() => {
   rowMock.mockReset()
   detachedMock.mockReset()
+  paceMock.mockReset()
+  paceMock.mockResolvedValue({
+    daysToContract: null,
+    daysToClose: null,
+    closedCount: null,
+    newListings: null,
+    priceCutShare: null,
+    medianPriceCut: null,
+    saleToOriginal: null,
+    saleToFinal: null,
+    yoyMedian: null,
+    yoySold: null,
+    cashShare: null,
+    medianClose: null,
+    medianPpsf: null,
+    pendingCount: null,
+    medianAgeActive: null,
+  })
 })
 
 describe('getMarketPulseJsonFeed', () => {
@@ -108,6 +137,51 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.methodology.verdictKind).toBe('balanced')
     expect(result.figures.medianListPrice).toBe(825_000)
     expect(result.collectedAt).toBe(MT_BEND.computedAt)
+    expect(result.leftover).toBeNull()
+  })
+
+  it('attaches leftover 12-month pace on city when publishable', async () => {
+    rowMock.mockResolvedValue(PULSE_BEND)
+    detachedMock.mockResolvedValue(
+      new Map([
+        [
+          'city:bend',
+          {
+            headlines: MT_BEND,
+            inventory: {
+              activeCount: MT_BEND.activeCount,
+              medianListPrice: MT_BEND.medianListPrice,
+              computedAt: MT_BEND.computedAt,
+            },
+          },
+        ],
+      ]),
+    )
+    paceMock.mockResolvedValue({
+      daysToContract: 28,
+      daysToClose: null,
+      closedCount: 2095,
+      newListings: null,
+      priceCutShare: null,
+      medianPriceCut: null,
+      saleToOriginal: 0.969,
+      saleToFinal: null,
+      yoyMedian: -0.019,
+      yoySold: null,
+      cashShare: null,
+      medianClose: 760000,
+      medianPpsf: null,
+      pendingCount: 311,
+      medianAgeActive: null,
+    })
+
+    const result = found(await getMarketPulseJsonFeed({ geoType: 'city', geoSlug: 'bend' }))
+    expect(paceMock).toHaveBeenCalledWith({ geoType: 'city', geoSlug: 'bend' })
+    expect(result.leftover?.daysToContract).toBe(28)
+    expect(result.leftover?.pendingCount).toBe(311)
+    expect(result.leftover?.closedCount).toBe(2095)
+    expect(result.note).toMatch(/Leftover detached pace/)
+    expect(result.figures.soldLast30Days).toBe(90)
   })
 
   it('inventory overlays when MOS is below min_n', async () => {
@@ -200,6 +274,8 @@ describe('getMarketPulseJsonFeed', () => {
       await getMarketPulseJsonFeed({ geoType: 'neighborhood', geoSlug: 'tetherow' }),
     )
     expect(detachedMock).not.toHaveBeenCalled()
+    expect(paceMock).not.toHaveBeenCalled()
+    expect(result.leftover).toBeNull()
     expect(result.figures.activeListings).toBe(35)
     expect(result.figures.monthsOfSupply).toBe(4.6)
     expect(result.figures.marketHealthLabel).toBe('Cool')
@@ -252,6 +328,8 @@ describe('getMarketPulseJsonFeed source', () => {
     expect(src).toMatch(/monthsOfSupply = null/)
     expect(src).toMatch(/marketHealthLabel = null/)
     expect(src).toMatch(/geoType === 'city' \|\| geoType === 'region'/)
+    expect(src).toMatch(/getPublicDetachedPace/)
+    expect(src).toMatch(/readJsonFeedLeftover/)
     expect(src).not.toMatch(/monthsOfSupply\(/)
   })
 })
