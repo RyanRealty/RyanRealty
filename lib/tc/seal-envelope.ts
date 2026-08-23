@@ -11,6 +11,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   generateSigningToken,
   isSignableRole,
+  coerceActionRequired,
   recipientRoleLabel,
   type EnvelopeField,
 } from './signing'
@@ -33,7 +34,7 @@ function siteUrl(): string {
  */
 export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<boolean> {
   const { data: recips } = await supabase.from('tc_envelope_recipients').select('*').eq('envelope_id', envelopeId)
-  const signable = ((recips ?? []) as DbRow[]).filter((r) => isSignableRole(r.role))
+  const signable = ((recips ?? []) as DbRow[]).filter((r) => isSignableRole(r.role, r.action_required))
   const allSigned = signable.length > 0 && signable.every((r) => r.completed_at)
 
   if (allSigned) {
@@ -211,6 +212,7 @@ export async function sealAndCompleteEnvelope(supabase: Sb, envelopeId: string):
   const pdfName = `${sealName}.pdf`.replace(/[^\w.\- ]+/g, '')
   const seen = new Set<string>()
   for (const r of (recips ?? []) as DbRow[]) {
+    if (coerceActionRequired(r.action_required, r.role) === 'NoAction') continue
     const email = (r.email ?? '').trim().toLowerCase()
     if (!email || seen.has(email)) continue
     seen.add(email)

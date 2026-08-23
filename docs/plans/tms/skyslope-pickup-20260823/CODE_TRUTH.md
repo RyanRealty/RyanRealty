@@ -22,25 +22,25 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | Twilio → deal | EXISTS (this branch) | Inbound SMS after `crm_timeline` upsert. Same writer. MMS PDF bytes **not** fetched (Twilio media URLs still later). |
 | FUB/CRM → deal log | PARTIAL (this branch) | FUB dead. CRM Gmail person timeline now also files onto the matching Vault deal. |
 | OR / OREF / ODS libraries | EXISTS codes + ingest | OR 1837, ODS 1528, OREF 1340. Blanks via ingest, not bundled PDFs. |
-| `RECIPIENT_ROLES` in `signing.ts` | EXISTS (live Forms enum this branch) | Picker = Buyer / Seller / EscrowOfficer / TitleOfficer / LoanOfficer / BuyerAgent / SellerAgent / Broker / Other. Legacy codes normalize on read/write. `cc` = Receives a copy, not a Forms role. |
+| `RECIPIENT_ROLES` in `signing.ts` | EXISTS (live Forms enum this branch) | Picker = Buyer / Seller / EscrowOfficer / TitleOfficer / LoanOfficer / BuyerAgent / SellerAgent / Broker / Other. Legacy codes normalize on read/write. `cc` is no longer written. |
+| `action_required` on `tc_envelope_recipients` | EXISTS (this branch) | NeedsToSign / ReceivesACopy / NoAction. Composer has a separate Action required picker. Send/seal ignore NoAction; copy-only is not a signer. |
 | `TC_CONTACT_ROLES` in `contact-roles.ts` | DIFFERENT LIST | Deal-side vendors (appraiser, TC, home warranty, attorney) — **not** the Forms file Role dropdown. Do not collapse the two. |
 | SkySlope import → deal log | EXISTS as history | `cycle_imported_from_skyslope`. Native clicks also append. This branch also files Gmail/Twilio. FUB never does. |
 
 ## Handoff claims
 
-Keep: anticipated-docs real. Superseded on this branch: inbound mail auto-file; Twilio auto-file; new-deal checklist seed; `createEnvelopeFromTemplate` UI; sign-off/signing on Closings rail.
+Keep: anticipated-docs real. Superseded on this branch: inbound mail auto-file; Twilio auto-file; new-deal checklist seed; `createEnvelopeFromTemplate` UI; sign-off/signing on Closings rail; `action_required` column.
 
-Nuance: deal log is **not** “only SkySlope import” for native deals. Migrated files still start with the import row. Auto-file of mail/Twilio is live on this branch (fail-open). `action_required` is still stored as `cc`.
+Nuance: deal log is **not** “only SkySlope import” for native deals. Migrated files still start with the import row. Auto-file of mail/Twilio is live on this branch (fail-open). `action_required` is a column; `cc` is only a read of old rows.
 
 ## Vault slices that do not need SkySlope
 
 Now that the live role list is filed:
 
-Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist.
+Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist, `action_required` column + composer picker.
 
 Still missing:
 
-1. `action_required` column (Needs to sign / Receives a copy / No action) instead of storing copy-only as `cc`.
-2. Twilio MMS PDF fetch onto `tc-documents` (media URLs are authenticated/expiring).
-3. Listing pipeline (grid + expiration); Closings already has an active-listing lens.
-4. Merge/deploy this branch so production rail, composer, seed, and auto-file match.
+1. Twilio MMS PDF fetch onto `tc-documents` (media URLs are authenticated/expiring).
+2. Listing pipeline (grid + expiration); Closings already has an active-listing lens.
+3. Merge/deploy this branch so production rail, composer, seed, auto-file, and action_required match.

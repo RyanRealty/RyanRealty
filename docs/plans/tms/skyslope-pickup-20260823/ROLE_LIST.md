@@ -70,7 +70,7 @@ Wire on Forms: `NeedsToSign`. DigiSign hidden value: `Signer`.
 
 ## Vault `lib/tc/signing.ts` (this branch)
 
-Picker stores the live wire values. Legacy `buyer1` / `listing_broker` / `lender` rows still read. `cc` remains the stored stand-in for **Receives a copy** (not a Forms Role) until an `action_required` column exists.
+Picker stores the live wire values. Legacy `buyer1` / `listing_broker` / `lender` rows still read. `action_required` is a real column (`NeedsToSign` / `ReceivesACopy` / `NoAction`). Old `cc` rows read as Receives a copy; new writes never store `cc` as a role.
 
 ## Our Vault `lib/tc/signing.ts` RECIPIENT_ROLES vs live (pre-map)
 

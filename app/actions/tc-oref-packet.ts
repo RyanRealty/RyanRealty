@@ -34,7 +34,6 @@ import { buildFilledOrefPdf } from '@/lib/tc/oref-fill-pdf'
 import { MATT_OWNED_MAILBOX, planOrefMattEmail } from '@/lib/tc/oref-matt-email'
 import { sealEnvelope } from '@/lib/tc/seal-pdf'
 
-type DbRow = Record<string, unknown>
 type Sb = SupabaseClient
 
 function getServiceSupabase(): Sb | null {
@@ -178,6 +177,7 @@ export async function fillOrefSaleAgreementFromDeal(
       await sb.from('tc_envelope_recipients').insert({
         envelope_id: env.id,
         role: 'Broker',
+        action_required: 'NeedsToSign',
         name: 'Matt Ryan',
         email: MATT_OWNED_MAILBOX,
         signing_order: 1,

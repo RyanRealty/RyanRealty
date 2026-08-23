@@ -20,17 +20,18 @@ import {
 } from '@/app/actions/tc-envelopes'
 import {
   RECIPIENT_ROLES,
-  COPY_ONLY_ROLE,
+  ACTION_REQUIRED,
+  ACTION_REQUIRED_LABEL,
   SIGN_FIELD_TYPES,
   SIGN_FIELD_LABEL,
   DEFAULT_FIELD_SIZE,
   isSignableRole,
-  coerceRecipientPickerRole,
+  storedRecipientRole,
+  coerceActionRequired,
   recipientRoleLabel,
+  type ActionRequired,
   type SignFieldType,
 } from '@/lib/tc/signing'
-
-const PICKER_ROLES = [...RECIPIENT_ROLES, COPY_ONLY_ROLE] as const
 
 const RECIPIENT_COLORS = ['#2563eb', '#16a34a', '#db2777', '#9333ea', '#ea580c', '#0891b2', '#ca8a04']
 
@@ -43,7 +44,8 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   const [recipients, setRecipients] = useState<RecipientInput[]>(
     detail.recipients.map((r) => ({
       id: r.id,
-      role: coerceRecipientPickerRole(r.role),
+      role: storedRecipientRole(r.role),
+      actionRequired: r.actionRequired,
       name: r.name,
       email: r.email,
       signingOrder: r.signingOrder,
@@ -64,7 +66,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     }))
   )
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(
-    detail.recipients.find((r) => isSignableRole(r.role))?.id ?? null
+    detail.recipients.find((r) => isSignableRole(r.role, r.actionRequired))?.id ?? null
   )
   const [activeType, setActiveType] = useState<SignFieldType>('signature')
   const [status, setStatus] = useState<string | null>(null)
@@ -76,14 +78,17 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     const idx = recipients.findIndex((r) => r.id === recipientId)
     return RECIPIENT_COLORS[idx % RECIPIENT_COLORS.length]
   }
-  const savedSignable = recipients.filter((r) => r.id && isSignableRole(r.role))
+  const savedSignable = recipients.filter((r) => r.id && isSignableRole(r.role, r.actionRequired))
 
   // --- recipient editing ---
   function updateRecipient(idx: number, patch: Partial<RecipientInput>) {
     setRecipients((rs) => rs.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
   }
   function addRecipient() {
-    setRecipients((rs) => [...rs, { role: 'Buyer', name: '', email: '', signingOrder: 1 }])
+    setRecipients((rs) => [
+      ...rs,
+      { role: 'Buyer', actionRequired: 'NeedsToSign', name: '', email: '', signingOrder: 1 },
+    ])
   }
   function removeRecipient(idx: number) {
     const removed = recipients[idx]
@@ -96,20 +101,23 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     const res = await saveEnvelopeRecipients(detail.id, recipients)
     setBusy(false)
     if (!res.ok || !res.recipients) {
-      setStatus(res.error ?? 'Could not save signers')
+      setStatus(res.error ?? 'Could not save recipients')
       return
     }
     setRecipients(
       res.recipients.map((r) => ({
         id: r.id,
-        role: coerceRecipientPickerRole(r.role),
+        role: storedRecipientRole(r.role),
+        actionRequired: r.actionRequired,
         name: r.name,
         email: r.email,
         signingOrder: r.signingOrder,
       }))
     )
-    if (!activeRecipientId) setActiveRecipientId(res.recipients.find((r) => isSignableRole(r.role))?.id ?? null)
-    setStatus('Signers saved')
+    if (!activeRecipientId) {
+      setActiveRecipientId(res.recipients.find((r) => isSignableRole(r.role, r.actionRequired))?.id ?? null)
+    }
+    setStatus('Recipients saved')
   }
 
   // --- field placement ---
@@ -139,10 +147,19 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   async function saveDraft(): Promise<boolean> {
     const rRes = await saveEnvelopeRecipients(detail.id, recipients)
     if (!rRes.ok || !rRes.recipients) {
-      setStatus(rRes.error ?? 'Could not save signers')
+      setStatus(rRes.error ?? 'Could not save recipients')
       return false
     }
-    setRecipients(rRes.recipients.map((r) => ({ id: r.id, role: r.role, name: r.name, email: r.email, signingOrder: r.signingOrder })))
+    setRecipients(
+      rRes.recipients.map((r) => ({
+        id: r.id,
+        role: storedRecipientRole(r.role),
+        actionRequired: r.actionRequired,
+        name: r.name,
+        email: r.email,
+        signingOrder: r.signingOrder,
+      }))
+    )
     const fieldPayload: FieldInput[] = fields.map((f) => ({
       documentId: f.documentId,
       recipientId: f.recipientId,
@@ -240,7 +257,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between text-sm">
-              Signers
+              Recipients
               <Badge variant="outline">{recipients.length}</Badge>
             </CardTitle>
           </CardHeader>
@@ -249,10 +266,10 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               <div key={r.id ?? `new-${i}`} className="rounded-md border border-border p-2.5">
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: colorOf(r.id ?? null) }} />
-                  <Select value={r.role} onValueChange={(v) => updateRecipient(i, { role: v })} disabled={readonly}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <Select value={storedRecipientRole(r.role)} onValueChange={(v) => updateRecipient(i, { role: v })} disabled={readonly}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Role" /></SelectTrigger>
                     <SelectContent>
-                      {PICKER_ROLES.map((role) => (
+                      {RECIPIENT_ROLES.map((role) => (
                         <SelectItem key={role} value={role} className="text-xs">
                           {recipientRoleLabel(role)}
                         </SelectItem>
@@ -263,21 +280,40 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                     <button onClick={() => removeRecipient(i)} className="text-xs text-muted-foreground hover:text-destructive">✕</button>
                   ) : null}
                 </div>
+                <div className="mt-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Action required</Label>
+                  <Select
+                    value={coerceActionRequired(r.actionRequired, r.role)}
+                    onValueChange={(v) => updateRecipient(i, { actionRequired: v as ActionRequired })}
+                    disabled={readonly}
+                  >
+                    <SelectTrigger className="mt-0.5 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ACTION_REQUIRED.map((action) => (
+                        <SelectItem key={action} value={action} className="text-xs">
+                          {ACTION_REQUIRED_LABEL[action]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Input className="mt-2 h-8 text-xs" placeholder="Full name" value={r.name} disabled={readonly}
                   onChange={(e) => updateRecipient(i, { name: e.target.value })} />
                 <Input className="mt-1.5 h-8 text-xs" placeholder="email@example.com" value={r.email} disabled={readonly}
                   onChange={(e) => updateRecipient(i, { email: e.target.value })} />
-                <div className="mt-1.5 flex items-center gap-2">
-                  <Label className="text-[11px] text-muted-foreground">Signs in order</Label>
-                  <Input type="number" min={1} className="h-7 w-16 text-xs" value={r.signingOrder} disabled={readonly}
-                    onChange={(e) => updateRecipient(i, { signingOrder: parseInt(e.target.value || '1', 10) })} />
-                </div>
+                {isSignableRole(r.role, r.actionRequired) ? (
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Label className="text-[11px] text-muted-foreground">Signs in order</Label>
+                    <Input type="number" min={1} className="h-7 w-16 text-xs" value={r.signingOrder} disabled={readonly}
+                      onChange={(e) => updateRecipient(i, { signingOrder: parseInt(e.target.value || '1', 10) })} />
+                  </div>
+                ) : null}
               </div>
             ))}
             {!readonly ? (
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1" onClick={addRecipient}>Add signer</Button>
-                <Button size="sm" className="flex-1" onClick={saveSigners} disabled={busy}>Save signers</Button>
+                <Button variant="outline" size="sm" className="flex-1" onClick={addRecipient}>Add recipient</Button>
+                <Button size="sm" className="flex-1" onClick={saveSigners} disabled={busy}>Save recipients</Button>
               </div>
             ) : null}
           </CardContent>
@@ -291,7 +327,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                 <Label className="text-[11px] text-muted-foreground">Assign to</Label>
                 <Select value={activeRecipientId ?? ''} onValueChange={setActiveRecipientId}>
                   <SelectTrigger className="mt-1 h-8 text-xs">
-                    <SelectValue placeholder={savedSignable.length ? 'Pick a signer' : 'Save signers first'} />
+                    <SelectValue placeholder={savedSignable.length ? 'Pick a signer' : 'Save recipients first'} />
                   </SelectTrigger>
                   <SelectContent>
                     {savedSignable.map((r) => (
@@ -317,7 +353,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                 </div>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                {activeRecipientId ? 'Click on the document to drop a field. Drag to move, hover to delete.' : 'Save signers, then pick who signs to start placing fields.'}
+                {activeRecipientId ? 'Click on the document to drop a field. Drag to move, hover to delete.' : 'Save recipients, then pick who signs to start placing fields.'}
               </p>
             </CardContent>
           </Card>

@@ -8,9 +8,11 @@ import {
   generateSigningToken,
   isSignableRole,
   isValidEmail,
-  normalizeRecipientRole,
+  coerceActionRequired,
+  storedRecipientRole,
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
+  type ActionRequired,
   type EnvelopeField,
   type EnvelopeStatus,
   type SignFieldType,
@@ -61,6 +63,7 @@ function siteUrl(): string {
 export type EnvelopeRecipient = {
   id: string
   role: string
+  actionRequired: ActionRequired
   name: string
   email: string
   signingOrder: number
@@ -104,6 +107,7 @@ function mapRecipient(r: DbRow): EnvelopeRecipient {
   return {
     id: r.id,
     role: r.role,
+    actionRequired: coerceActionRequired(r.action_required, r.role),
     name: r.name ?? '',
     email: r.email ?? '',
     signingOrder: r.signing_order ?? 1,
@@ -141,7 +145,7 @@ export async function getEnvelopesForCycle(cycleId: string): Promise<EnvelopeSum
 
   return (envs as DbRow[]).map((e) => {
     const rs = (recipsByEnv.get(e.id) ?? []).map(mapRecipient)
-    const signable = rs.filter((r) => isSignableRole(r.role))
+    const signable = rs.filter((r) => isSignableRole(r.role, r.actionRequired))
     return {
       id: e.id,
       cycleId: e.cycle_id,
@@ -189,7 +193,7 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
   }
 
   const rs = ((recips ?? []) as DbRow[]).map(mapRecipient)
-  const signable = rs.filter((r) => isSignableRole(r.role))
+  const signable = rs.filter((r) => isSignableRole(r.role, r.actionRequired))
 
   const documents: EnvelopeDocumentRef[] = ((envDocs ?? []) as DbRow[]).map((d) => {
     const meta = docMeta.get(d.document_id)
@@ -469,6 +473,7 @@ export async function listEnvelopeTemplates(): Promise<EnvelopeTemplateOption[]>
 export type RecipientInput = {
   id?: string
   role: string
+  actionRequired?: ActionRequired
   name: string
   email: string
   signingOrder: number
@@ -495,7 +500,8 @@ export async function saveEnvelopeRecipients(
   const rows = recipients.map((r) => ({
     ...(r.id ? { id: r.id } : {}),
     envelope_id: envelopeId,
-    role: normalizeRecipientRole(r.role),
+    role: storedRecipientRole(r.role),
+    action_required: coerceActionRequired(r.actionRequired, r.role),
     name: r.name?.trim() ?? '',
     email: r.email?.trim().toLowerCase() ?? '',
     signing_order: Math.max(1, Math.round(r.signingOrder || 1)),
@@ -596,10 +602,11 @@ export async function sendEnvelope(envelopeId: string): Promise<{ ok: boolean; e
 
   if (!envDocs?.length) return { ok: false, error: 'No documents on this envelope' }
   const recipients = (recips ?? []) as DbRow[]
-  const signable = recipients.filter((r) => isSignableRole(r.role))
+  const signable = recipients.filter((r) => isSignableRole(r.role, r.action_required))
   if (!signable.length) return { ok: false, error: 'Add at least one signer' }
 
   for (const r of recipients) {
+    if (coerceActionRequired(r.action_required, r.role) === 'NoAction') continue
     if (!isValidEmail(r.email)) return { ok: false, error: `Missing or invalid email for ${r.name || r.role}` }
   }
   const fieldsByRecip = new Map<string, DbRow[]>()
@@ -797,7 +804,7 @@ export async function getEnvelopesOverview(): Promise<EnvelopeOverviewRow[]> {
 
   return (envs as DbRow[]).map((e) => {
     const rs = (recipsByEnv.get(e.id) ?? []).map(mapRecipient)
-    const signable = rs.filter((r) => isSignableRole(r.role))
+    const signable = rs.filter((r) => isSignableRole(r.role, r.actionRequired))
     const deal = e.tc_cycles?.tc_deals
     return {
       id: e.id,

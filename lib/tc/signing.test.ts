@@ -3,8 +3,12 @@ import {
   RECIPIENT_ROLES,
   RECIPIENT_ROLE_LABEL,
   COPY_ONLY_ROLE,
+  ACTION_REQUIRED,
+  ACTION_REQUIRED_LABEL,
   normalizeRecipientRole,
   coerceRecipientPickerRole,
+  coerceActionRequired,
+  storedRecipientRole,
   recipientRoleLabel,
   isSignableRole,
   brokerEnvelopeRole,
@@ -73,6 +77,47 @@ describe('recipientRoleLabel / isSignableRole', () => {
     expect(isSignableRole('buyer1')).toBe(true)
     expect(isSignableRole('cc')).toBe(false)
     expect(isSignableRole('')).toBe(false)
+  })
+})
+
+describe('action_required (live Forms File Details 2026-08-23)', () => {
+  it('is NeedsToSign / ReceivesACopy / NoAction — DigiSign has no No action', () => {
+    expect([...ACTION_REQUIRED]).toEqual(['NeedsToSign', 'ReceivesACopy', 'NoAction'])
+    expect(ACTION_REQUIRED_LABEL.NeedsToSign).toBe('Needs to sign')
+    expect(ACTION_REQUIRED_LABEL.ReceivesACopy).toBe('Receives a copy')
+    expect(ACTION_REQUIRED_LABEL.NoAction).toBe('No action')
+  })
+
+  it('coerces live wire, DigiSign Signer, and the old cc stand-in', () => {
+    expect(coerceActionRequired('NeedsToSign')).toBe('NeedsToSign')
+    expect(coerceActionRequired('ReceivesACopy')).toBe('ReceivesACopy')
+    expect(coerceActionRequired('NoAction')).toBe('NoAction')
+    expect(coerceActionRequired('Signer')).toBe('NeedsToSign')
+    expect(coerceActionRequired(null, 'cc')).toBe('ReceivesACopy')
+    expect(coerceActionRequired(undefined, 'Buyer')).toBe('NeedsToSign')
+    expect(coerceActionRequired('', 'Seller')).toBe('NeedsToSign')
+  })
+
+  it('explicit action wins over a stored cc role', () => {
+    expect(isSignableRole('Buyer', 'ReceivesACopy')).toBe(false)
+    expect(isSignableRole('Buyer', 'NoAction')).toBe(false)
+    expect(isSignableRole('Other', 'NeedsToSign')).toBe(true)
+    expect(isSignableRole('cc', 'NeedsToSign')).toBe(true)
+  })
+
+  it('writes Forms roles, never cc, and defaults parties to NeedsToSign', () => {
+    expect(storedRecipientRole('cc')).toBe('Other')
+    expect(storedRecipientRole('buyer1')).toBe('Buyer')
+    const rows = seedPartyEnvelopeRecipients({
+      envelopeId: 'e1',
+      buyers: ['Pat'],
+      sellers: ['Lee'],
+      brokerName: 'Matt Ryan',
+      brokerEmail: 'matt@ryan-realty.com',
+      cycleKind: 'sale',
+    })
+    expect(rows.every((r) => r.action_required === 'NeedsToSign')).toBe(true)
+    expect(rows.map((r) => r.role)).not.toContain('cc')
   })
 })
 

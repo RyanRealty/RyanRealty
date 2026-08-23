@@ -84,10 +84,13 @@ export async function getSigningSession(token: string): Promise<SigningSessionSt
   // ordered routing gate: every lower signing-order signable recipient must be done
   const { data: allRecips } = await supabase
     .from('tc_envelope_recipients')
-    .select('id, role, signing_order, completed_at')
+    .select('id, role, action_required, signing_order, completed_at')
     .eq('envelope_id', env.id)
   const lowerPending = ((allRecips ?? []) as DbRow[]).filter(
-    (r) => isSignableRole(r.role) && (r.signing_order ?? 1) < (recip.signing_order ?? 1) && !r.completed_at
+    (r) =>
+      isSignableRole(r.role, r.action_required) &&
+      (r.signing_order ?? 1) < (recip.signing_order ?? 1) &&
+      !r.completed_at
   )
   if (lowerPending.length) {
     return { status: 'waiting', envelopeName: env.name, propertyAddress }

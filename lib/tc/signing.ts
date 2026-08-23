@@ -43,11 +43,20 @@ export const RECIPIENT_ROLES = [
 export type RecipientRole = (typeof RECIPIENT_ROLES)[number]
 
 /**
- * Stored stand-in for DigiSign/Forms "Receives a copy" until an
- * action_required column exists. Not a Forms contact Role. Omit from the
- * role picker except to display existing copy-only rows.
+ * Pre-action_required stored stand-in for "Receives a copy". Not a Forms
+ * contact Role. New writes store a real role + action_required = ReceivesACopy.
  */
 export const COPY_ONLY_ROLE = 'cc' as const
+
+/** Live Forms File Details / Create-envelope Action required (ROLE_LIST.md). */
+export const ACTION_REQUIRED = ['NeedsToSign', 'ReceivesACopy', 'NoAction'] as const
+export type ActionRequired = (typeof ACTION_REQUIRED)[number]
+
+export const ACTION_REQUIRED_LABEL: Record<ActionRequired, string> = {
+  NeedsToSign: 'Needs to sign',
+  ReceivesACopy: 'Receives a copy',
+  NoAction: 'No action',
+}
 
 export const RECIPIENT_ROLE_LABEL: Record<RecipientRole, string> = {
   Buyer: 'Buyer',
@@ -96,6 +105,25 @@ export function coerceRecipientPickerRole(
   return 'Other'
 }
 
+/** Forms Role to persist. Never write `cc` — that was the action stand-in. */
+export function storedRecipientRole(role: string | null | undefined): RecipientRole {
+  const n = coerceRecipientPickerRole(role)
+  return n === COPY_ONLY_ROLE ? 'Other' : n
+}
+
+export function coerceActionRequired(
+  action: string | null | undefined,
+  role?: string | null,
+): ActionRequired {
+  const a = (action ?? '').trim()
+  if ((ACTION_REQUIRED as readonly string[]).includes(a)) return a as ActionRequired
+  if (a === 'Signer' || a === 'needs_to_sign') return 'NeedsToSign'
+  if (a === 'cc' || a === 'Receives a copy' || a === 'receives_a_copy') return 'ReceivesACopy'
+  if (a === 'No action' || a === 'no_action') return 'NoAction'
+  if (normalizeRecipientRole(role) === COPY_ONLY_ROLE) return 'ReceivesACopy'
+  return 'NeedsToSign'
+}
+
 export function recipientRoleLabel(role: string | null | undefined): string {
   const n = normalizeRecipientRole(role)
   if (n === COPY_ONLY_ROLE) return 'Receives a copy'
@@ -116,15 +144,43 @@ export function seedPartyEnvelopeRecipients(input: {
   brokerEmail: string
   cycleKind: string | null | undefined
   brokerSigningOrder?: number
-}): Array<{ envelope_id: string; role: string; name: string; email: string; signing_order: number }> {
-  const rows: Array<{ envelope_id: string; role: string; name: string; email: string; signing_order: number }> = []
+}): Array<{
+  envelope_id: string
+  role: string
+  name: string
+  email: string
+  signing_order: number
+  action_required: ActionRequired
+}> {
+  const rows: Array<{
+    envelope_id: string
+    role: string
+    name: string
+    email: string
+    signing_order: number
+    action_required: ActionRequired
+  }> = []
   for (const n of input.buyers) {
     if (!n?.trim()) continue
-    rows.push({ envelope_id: input.envelopeId, role: 'Buyer', name: n.trim(), email: '', signing_order: 1 })
+    rows.push({
+      envelope_id: input.envelopeId,
+      role: 'Buyer',
+      name: n.trim(),
+      email: '',
+      signing_order: 1,
+      action_required: 'NeedsToSign',
+    })
   }
   for (const n of input.sellers) {
     if (!n?.trim()) continue
-    rows.push({ envelope_id: input.envelopeId, role: 'Seller', name: n.trim(), email: '', signing_order: 2 })
+    rows.push({
+      envelope_id: input.envelopeId,
+      role: 'Seller',
+      name: n.trim(),
+      email: '',
+      signing_order: 2,
+      action_required: 'NeedsToSign',
+    })
   }
   if (input.brokerName?.trim()) {
     rows.push({
@@ -133,6 +189,7 @@ export function seedPartyEnvelopeRecipients(input: {
       name: input.brokerName.trim(),
       email: input.brokerEmail,
       signing_order: input.brokerSigningOrder ?? 3,
+      action_required: 'NeedsToSign',
     })
   }
   return rows
@@ -196,7 +253,13 @@ export const DEFAULT_FIELD_SIZE: Record<SignFieldType, { w: number; h: number }>
   checkbox: { w: 0.03, h: 0.022 },
 }
 
-export function isSignableRole(role: string | null | undefined): boolean {
+export function isSignableRole(
+  role: string | null | undefined,
+  actionRequired?: string | null,
+): boolean {
+  if (actionRequired != null && String(actionRequired).trim() !== '') {
+    return coerceActionRequired(actionRequired, role) === 'NeedsToSign'
+  }
   if (role == null || !String(role).trim()) return false
   return normalizeRecipientRole(role) !== COPY_ONLY_ROLE
 }
