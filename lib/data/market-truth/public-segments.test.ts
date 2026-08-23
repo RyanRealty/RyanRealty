@@ -6,6 +6,7 @@ import {
   PUBLIC_PLACE_SEGMENTS,
   publicSegmentBrowseHref,
   publicSegmentDisplayBits,
+  publicSegmentItems,
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
 
@@ -72,6 +73,33 @@ describe('getPublicPlaceSegments', () => {
       monthsOfSupply: null,
       verdict: null,
     })).toEqual([])
+    const items = publicSegmentItems(
+      [
+        {
+          segment: 'condo',
+          activeCount: 66,
+          medianList: 326000,
+          monthsOfSupply: 12.8,
+          verdict: 'buyer',
+          sampleN: 40,
+        },
+        {
+          segment: 'townhome',
+          activeCount: 0,
+          medianList: null,
+          monthsOfSupply: null,
+          verdict: null,
+          sampleN: null,
+        },
+      ],
+      'bend',
+    )
+    expect(items).toHaveLength(1)
+    expect(items[0]?.key).toBe('condo')
+    expect(items[0]?.value).toBe('66')
+    expect(items[0]?.noun).toBe('condos')
+    expect(items[0]?.href).toBe('/homes-for-sale/bend?propertySubTypes=Condominium')
+    expect(items[0]?.label).toContain('condos for sale')
   })
 
   it('collapse with public segments does not emit detached or all_residential', () => {
@@ -135,6 +163,24 @@ describe('public place pages', () => {
     expect(searchLayer).toMatch(/getPublicPlaceSegments/)
     expect(searchLayer).toMatch(/isPlainCityPage/)
     expect(searchTail).toMatch(/publicSegmentBrowseHref/)
+    const jsonFeed = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')
+    const jsonRoute = readFileSync(resolve('app/data/market/[geoType]/[geoSlug]/route.ts'), 'utf8')
+    const sell = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
+    const listing = readFileSync(
+      resolve('components/site/listing-detail/NeighborhoodMarketContext.tsx'),
+      'utf8',
+    )
+    const sellerLp = readFileSync(resolve('app/lp/seller-home-value/page.tsx'), 'utf8')
+    const expired = readFileSync(resolve('app/lp/expired-listing/page.tsx'), 'utf8')
+    const buyer = readFileSync(resolve('app/lp/buyer-listing-alerts/page.tsx'), 'utf8')
+    expect(jsonFeed).toMatch(/getPublicPlaceSegments/)
+    expect(jsonRoute).toMatch(/extraSegments/)
+    expect(sell).toMatch(/getPublicPlaceSegments/)
+    expect(listing).toMatch(/getPublicPlaceSegments/)
+    expect(listing).toMatch(/PublicProductTypes/)
+    expect(sellerLp).toMatch(/getPublicPlaceSegments/)
+    expect(expired).toMatch(/getPublicPlaceSegments/)
+    expect(buyer).toMatch(/getPublicPlaceSegments/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
     expect(strip).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })

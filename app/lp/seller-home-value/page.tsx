@@ -23,6 +23,7 @@ import {
   getTestimonialAggregate,
 } from './data'
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
 
 export const metadata: Metadata = {
   title: 'Get your home’s value in Bend | Ryan Realty',
@@ -105,11 +106,12 @@ export default async function SellerHomeValuePage({
   // the curated real-listings matrix. Each falls back gracefully if Supabase
   // is briefly unreachable. CLAUDE.md §0 Data Accuracy: live values or the
   // em-dash placeholder, never an invented number.
-  const [marketSnapshot, aggregate, allListings, publicPace] = await Promise.all([
+  const [marketSnapshot, aggregate, allListings, publicPace, publicSegments] = await Promise.all([
     getBendMarketSnapshot(),
     getTestimonialAggregate(),
     getOurListings(),
     getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
+    getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
   ])
 
   const snap = marketSnapshot
@@ -126,6 +128,17 @@ export default async function SellerHomeValuePage({
         value: item.value,
         label: label ?? item.label,
         sub: window ?? 'Detached houses',
+      }
+    })
+  const LP_EXTRA = new Set(['condo', 'townhome'])
+  const extraCards = publicSegmentItems(publicSegments, 'bend')
+    .filter((item) => LP_EXTRA.has(item.key))
+    .map((item) => {
+      const bits = item.label.split(' · ').slice(1).join(' · ')
+      return {
+        value: item.value,
+        label: `${item.noun} for sale`,
+        sub: bits || 'Market Truth',
       }
     })
   const statCards: Array<{ value: string; label: string; sub: string }> = [
@@ -153,6 +166,7 @@ export default async function SellerHomeValuePage({
       sub: 'Closed in the last 30 days',
     },
     ...leftoverCards,
+    ...extraCards,
   ]
 
   const updatedLabel = snap?.updatedAt

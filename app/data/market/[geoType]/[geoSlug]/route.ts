@@ -170,6 +170,7 @@ export async function GET(
       },
       figures: feed.figures,
       leftover: feed.leftover,
+      extraSegments: feed.extraSegments,
       methodology: feed.methodology,
       source: SOURCE,
     },

@@ -10,6 +10,7 @@ import { FAQ, PhoneIcon, PlayIcon, ProcessStep } from './BuyerLPBits'
 import { CONTACT } from '@/lib/brand/contact'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
 import { getAllCommunitySnapshots, getGeoSnapshot, getListingTiles } from '@/lib/data'
 import { listingTileHref } from '@/lib/slug'
 import { communityImage } from '@/lib/geo-images'
@@ -57,7 +58,7 @@ export default async function BuyerLPPage() {
   // Per-community active/pending counts from geo_snapshot_mv. Both via existing
   // DAL functions, both graceful-null. CLAUDE.md §0 Data Accuracy: live
   // values or the em-dash placeholder, never an invented number.
-  const [bendPulse, communitySnapshots, sunriverCitySnap, liveBendRaw, publicPace] = await Promise.all([
+  const [bendPulse, communitySnapshots, sunriverCitySnap, liveBendRaw, publicPace, publicSegments] = await Promise.all([
     getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
     getAllCommunitySnapshots().catch(() => []),
     // Sunriver proper is a CITY in geo_snapshot_mv (no community row exists
@@ -67,6 +68,7 @@ export default async function BuyerLPPage() {
     // listing_tile_mv via the DAL — already opt-out / non-IDX filtered (§0 + IDX).
     getListingTiles({ city: 'Bend', status: 'active', sort: 'newest', limit: 18 }).catch(() => []),
     getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
+    getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
   ])
   const activeCount = bendPulse?.activeCount ?? null
 
@@ -163,6 +165,16 @@ export default async function BuyerLPPage() {
       value: item.value,
       label: label ?? item.label,
       sub: window ?? 'Detached houses',
+    })
+  }
+  const LP_EXTRA = new Set(['condo', 'townhome'])
+  for (const item of publicSegmentItems(publicSegments, 'bend')) {
+    if (!LP_EXTRA.has(item.key)) continue
+    const bits = item.label.split(' · ').slice(1).join(' · ')
+    authorityStats.push({
+      value: item.value,
+      label: `${item.noun} for sale`,
+      sub: bits || 'Market Truth',
     })
   }
 

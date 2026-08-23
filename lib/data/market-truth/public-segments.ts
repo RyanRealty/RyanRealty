@@ -106,6 +106,37 @@ export function publicSegmentDisplayBits(row: {
   ].filter((bit): bit is string => Boolean(bit))
 }
 
+export type PublicSegmentItem = {
+  key: PublicPlaceSegment
+  value: string
+  label: string
+  noun: string
+  href: string
+}
+
+/** Miss omitted. Detached is never here. */
+export function publicSegmentItems(
+  rows: readonly PublicSegmentRow[],
+  citySlug: string | null,
+  opts?: { postalCode?: string | null },
+): PublicSegmentItem[] {
+  const items: PublicSegmentItem[] = []
+  for (const row of rows) {
+    if (row.activeCount == null || row.activeCount <= 0) continue
+    if (!(PUBLIC_PLACE_SEGMENTS as readonly string[]).includes(row.segment)) continue
+    const noun = publicSegmentNoun(row.segment, row.activeCount)
+    const bits = publicSegmentDisplayBits(row)
+    items.push({
+      key: row.segment,
+      value: row.activeCount.toLocaleString('en-US'),
+      label: [`${noun} for sale`, ...bits].join(' · '),
+      noun,
+      href: publicSegmentBrowseHref(citySlug, row.segment, opts),
+    })
+  }
+  return items
+}
+
 export async function getPublicPlaceSegments(opts: {
   geoType: 'city' | 'region' | 'zip'
   geoSlug: string

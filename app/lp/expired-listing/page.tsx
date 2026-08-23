@@ -16,6 +16,7 @@ import ExitIntentPrompt from '@/components/landing/ExitIntentPrompt'
 import ScrollReveal from '@/components/landing/ScrollReveal'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
 import LandingPageTracker from '@/components/LandingPageTracker'
 
 /**
@@ -90,14 +91,21 @@ export default async function ExpiredListingPage() {
   // Live Bend detached (MLS City mt-v1 overlay via getMarketPulse) for the
   // re-list market stat strip. Falls back to null gracefully — strip is
   // suppressed when unavailable.
-  const [bendPulse, publicPace] = await Promise.all([
+  const [bendPulse, publicPace, publicSegments] = await Promise.all([
     getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
     getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
+    getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
   ])
   const EXPIRED_LEFTOVER_KEYS = new Set(['pending', 'dtc', 'sto'])
   const leftoverStrip = publicPaceItems(publicPace)
     .filter((item) => EXPIRED_LEFTOVER_KEYS.has(item.key))
     .map((item) => ({ value: item.value, label: item.label }))
+  const LP_EXTRA = new Set(['condo', 'townhome'])
+  leftoverStrip.push(
+    ...publicSegmentItems(publicSegments, 'bend')
+      .filter((item) => LP_EXTRA.has(item.key))
+      .map((item) => ({ value: item.value, label: `${item.noun} for sale` })),
+  )
 
   return (
     <main className="min-h-screen bg-[#faf8f4] text-[#102742]">

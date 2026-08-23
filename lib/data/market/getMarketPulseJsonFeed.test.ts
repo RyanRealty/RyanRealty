@@ -3,10 +3,11 @@ import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 
-const { rowMock, detachedMock, paceMock } = vi.hoisted(() => ({
+const { rowMock, detachedMock, paceMock, segmentsMock } = vi.hoisted(() => ({
   rowMock: vi.fn(),
   detachedMock: vi.fn(),
   paceMock: vi.fn(),
+  segmentsMock: vi.fn(),
 }))
 
 vi.mock('@/lib/data/market/getMarketStatsCacheRows', () => ({
@@ -30,6 +31,16 @@ vi.mock('@/lib/data/market-truth/public-pace', async () => {
   return {
     ...actual,
     getPublicDetachedPace: (...args: unknown[]) => paceMock(...args),
+  }
+})
+
+vi.mock('@/lib/data/market-truth/public-segments', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/data/market-truth/public-segments')>(
+    '@/lib/data/market-truth/public-segments',
+  )
+  return {
+    ...actual,
+    getPublicPlaceSegments: (...args: unknown[]) => segmentsMock(...args),
   }
 })
 
@@ -90,6 +101,8 @@ beforeEach(() => {
   rowMock.mockReset()
   detachedMock.mockReset()
   paceMock.mockReset()
+  segmentsMock.mockReset()
+  segmentsMock.mockResolvedValue([])
   paceMock.mockResolvedValue({
     daysToContract: null,
     daysToClose: null,
@@ -184,6 +197,48 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.figures.soldLast30Days).toBe(90)
   })
 
+  it('attaches extra product types on city when publishable', async () => {
+    rowMock.mockResolvedValue(PULSE_BEND)
+    detachedMock.mockResolvedValue(
+      new Map([
+        [
+          'city:bend',
+          {
+            headlines: MT_BEND,
+            inventory: {
+              activeCount: MT_BEND.activeCount,
+              medianListPrice: MT_BEND.medianListPrice,
+              computedAt: MT_BEND.computedAt,
+            },
+          },
+        ],
+      ]),
+    )
+    segmentsMock.mockResolvedValue([
+      {
+        segment: 'condo',
+        activeCount: 66,
+        medianList: 326000,
+        monthsOfSupply: 12.8,
+        verdict: 'buyer',
+        sampleN: 40,
+      },
+    ])
+
+    const result = found(await getMarketPulseJsonFeed({ geoType: 'city', geoSlug: 'bend' }))
+    expect(segmentsMock).toHaveBeenCalledWith({ geoType: 'city', geoSlug: 'bend' })
+    expect(result.extraSegments).toEqual([
+      {
+        segment: 'condo',
+        activeCount: 66,
+        medianList: 326000,
+        monthsOfSupply: 12.8,
+        verdict: 'buyer',
+      },
+    ])
+    expect(result.note).toMatch(/Extra product types/)
+  })
+
   it('inventory overlays when MOS is below min_n', async () => {
     rowMock.mockResolvedValue({ ...PULSE_BEND, geo_slug: 'terrebonne', geo_label: 'Terrebonne' })
     detachedMock.mockResolvedValue(
@@ -275,7 +330,9 @@ describe('getMarketPulseJsonFeed', () => {
     )
     expect(detachedMock).not.toHaveBeenCalled()
     expect(paceMock).not.toHaveBeenCalled()
+    expect(segmentsMock).not.toHaveBeenCalled()
     expect(result.leftover).toBeNull()
+    expect(result.extraSegments).toBeNull()
     expect(result.figures.activeListings).toBe(35)
     expect(result.figures.monthsOfSupply).toBe(4.6)
     expect(result.figures.marketHealthLabel).toBe('Cool')
@@ -330,6 +387,8 @@ describe('getMarketPulseJsonFeed source', () => {
     expect(src).toMatch(/geoType === 'city' \|\| geoType === 'region'/)
     expect(src).toMatch(/getPublicDetachedPace/)
     expect(src).toMatch(/readJsonFeedLeftover/)
+    expect(src).toMatch(/getPublicPlaceSegments/)
+    expect(src).toMatch(/readJsonFeedExtraSegments/)
     expect(src).not.toMatch(/monthsOfSupply\(/)
   })
 })

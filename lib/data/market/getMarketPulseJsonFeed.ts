@@ -42,6 +42,11 @@ import {
   publicPaceHasRow,
   type PublicPaceRow,
 } from '@/lib/data/market-truth/public-pace'
+import {
+  getPublicPlaceSegments,
+  type PublicPlaceSegment,
+  type PublicSegmentRow,
+} from '@/lib/data/market-truth/public-segments'
 
 /** geo_type values market_pulse_live actually carries (verified live 2026-08-03: city, neighborhood, region). */
 export type PulseGeoType = 'city' | 'neighborhood' | 'region'
@@ -109,6 +114,17 @@ export type MarketPulseJsonLeftover = PublicPaceRow
 const LEFTOVER_NOTE =
   'Leftover detached pace is Market Truth mt-v1, sample-gated (12-month cells plus pending/age now). Pulse 30-day sold and days-to-pending stay.'
 
+const EXTRA_SEGMENTS_NOTE =
+  'Extra product types are Market Truth mt-v1, sample-gated. Detached stays the HUD.'
+
+export type MarketPulseJsonExtraSegment = {
+  segment: PublicPlaceSegment
+  activeCount: number
+  medianList: number | null
+  monthsOfSupply: number | null
+  verdict: string | null
+}
+
 export type MarketPulseJsonMethodology = {
   monthsOfSupplyFormula: string
   monthsOfSupplyThresholds: string
@@ -127,6 +143,7 @@ export type MarketPulseJsonFeedResult =
       collectedAt: string | null
       figures: MarketPulseJsonFigures
       leftover: MarketPulseJsonLeftover | null
+      extraSegments: MarketPulseJsonExtraSegment[] | null
       methodology: MarketPulseJsonMethodology
       note: string | null
     }
@@ -138,6 +155,7 @@ export type MarketPulseJsonFeedResult =
       collectedAt: null
       figures: null
       leftover: null
+      extraSegments: null
       methodology: null
       note: string
     }
@@ -149,6 +167,7 @@ export type MarketPulseJsonFeedResult =
       collectedAt: null
       figures: null
       leftover: null
+      extraSegments: null
       methodology: null
       note: string
     }
@@ -177,6 +196,7 @@ export async function getMarketPulseJsonFeed(input: {
       collectedAt: null,
       figures: null,
       leftover: null,
+      extraSegments: null,
       methodology: null,
       note:
         `market_pulse_live read failed for ${geoType}/${geoSlug}: ` +
@@ -193,6 +213,7 @@ export async function getMarketPulseJsonFeed(input: {
       collectedAt: null,
       figures: null,
       leftover: null,
+      extraSegments: null,
       methodology: null,
       note: `No market_pulse_live row for geo_type='${geoType}', geo_slug='${geoSlug}', property_type='A'. This geography is not published.`,
     }
@@ -247,19 +268,25 @@ export async function getMarketPulseJsonFeed(input: {
     collectedAt: toStr(row.updated_at),
     figures,
     leftover: null,
+    extraSegments: null,
     methodology,
     note: null,
   }
 
   if (geoType === 'city' || geoType === 'region') {
-    const [layers, leftover] = await Promise.all([
+    const [layers, leftover, extraSegments] = await Promise.all([
       readDetachedOverlay(geoType, geoSlug),
       readJsonFeedLeftover(geoType, geoSlug),
+      readJsonFeedExtraSegments(geoType, geoSlug),
     ])
     applyJsonFeedDetachedOrWithhold(found, layers)
     found.leftover = leftover
+    found.extraSegments = extraSegments
     if (leftover) {
       found.note = found.note ? `${found.note} ${LEFTOVER_NOTE}` : LEFTOVER_NOTE
+    }
+    if (extraSegments.length > 0) {
+      found.note = found.note ? `${found.note} ${EXTRA_SEGMENTS_NOTE}` : EXTRA_SEGMENTS_NOTE
     }
   }
 
@@ -282,6 +309,34 @@ async function readJsonFeedLeftover(
   } catch {
     return null
   }
+}
+
+/** City/region extra types. Throw and miss both omit — never 0. Neighborhood never calls this. */
+async function readJsonFeedExtraSegments(
+  geoType: 'city' | 'region',
+  geoSlug: string,
+): Promise<MarketPulseJsonExtraSegment[]> {
+  try {
+    const rows = await getPublicPlaceSegments({ geoType, geoSlug })
+    return jsonExtraSegments(rows)
+  } catch {
+    return []
+  }
+}
+
+function jsonExtraSegments(rows: readonly PublicSegmentRow[]): MarketPulseJsonExtraSegment[] {
+  const out: MarketPulseJsonExtraSegment[] = []
+  for (const row of rows) {
+    if (row.activeCount == null || row.activeCount <= 0) continue
+    out.push({
+      segment: row.segment,
+      activeCount: row.activeCount,
+      medianList: row.medianList,
+      monthsOfSupply: row.monthsOfSupply,
+      verdict: row.verdict,
+    })
+  }
+  return out
 }
 
 /** City/region overlay. Throw and miss both withhold — never pulse 488. */
