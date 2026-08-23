@@ -46,7 +46,7 @@ Forms map, fill, envelope modal occupants, DigiSign index/history, libraries OR/
 
 See `CODE_TRUTH.md`. Role list is no longer the blocker.
 
-Done on this branch: live Forms recipient roles; `action_required` column; checklist seed; Form-library envelope compose; Signing/Sign-off on Closings rail; auto-file inbound mail/Twilio including MMS PDFs.
+Done on this branch: live Forms recipient roles; `action_required` column; checklist seed; Form-library envelope compose; Signing/Sign-off on Closings rail; auto-file inbound mail/Twilio including MMS PDFs and outbound broker texts; DigiSign Strike on the composer.
 
 1. Listing pipeline later; Closings already has an active-listing lens.
 2. Merge/deploy.

@@ -16,6 +16,7 @@ const FIELD_PROMPT: Record<SignFieldType, string> = {
   date_signed: 'Date',
   text: 'Type here',
   checkbox: '',
+  strike: '',
 }
 
 export function SignFlow({ token, payload }: { token: string; payload: SigningPayload }) {
@@ -27,7 +28,10 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   const [done, setDone] = useState<null | 'completed' | 'partial'>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const requiredIds = useMemo(() => payload.fields.filter((f) => f.required).map((f) => f.id), [payload.fields])
+  const requiredIds = useMemo(
+    () => payload.fields.filter((f) => f.required && f.type !== 'strike').map((f) => f.id),
+    [payload.fields],
+  )
   const filledCount = requiredIds.filter((id) => values.has(id)).length
   const allFilled = filledCount === requiredIds.length
 
@@ -228,6 +232,14 @@ function FieldBox({
           {value && value.kind === 'date_signed' ? value.text : 'Date'}
         </span>
       </button>
+    )
+  }
+
+  if (field.type === 'strike') {
+    return (
+      <div style={style} className="pointer-events-none flex items-center">
+        <span className="block h-[2px] w-full bg-foreground" />
+      </div>
     )
   }
 

@@ -58,6 +58,8 @@ const TYPE_MAP: Record<string, MappedFieldType> = {
   TimeSigned: 'date_signed',
   Date: 'date_signed',
   checkboxblock: 'checkbox',
+  Strike: 'strike',
+  strike: 'strike',
 }
 
 function mapType(t?: string): MappedFieldType {
@@ -108,7 +110,15 @@ function clamp01(n: number): number {
 }
 
 /** Counts for the ingest response / smoke-test acceptance. */
-export function summarizeMap(map: MappedField[]): { total: number; signature: number; initials: number; date_signed: number; text: number; checkbox: number } {
+export function summarizeMap(map: MappedField[]): {
+  total: number
+  signature: number
+  initials: number
+  date_signed: number
+  text: number
+  checkbox: number
+  strike: number
+} {
   return {
     total: map.length,
     signature: map.filter((m) => m.type === 'signature').length,
@@ -116,5 +126,6 @@ export function summarizeMap(map: MappedField[]): { total: number; signature: nu
     date_signed: map.filter((m) => m.type === 'date_signed').length,
     text: map.filter((m) => m.type === 'text').length,
     checkbox: map.filter((m) => m.type === 'checkbox').length,
+    strike: map.filter((m) => m.type === 'strike').length,
   }
 }

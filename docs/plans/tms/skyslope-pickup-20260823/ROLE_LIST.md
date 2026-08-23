@@ -56,7 +56,7 @@ Wire on Forms: `NeedsToSign`. DigiSign hidden value: `Signer`.
 ## DigiSign compose (after Forms Next; Send stayed disabled)
 
 - Recipients listed by name/email + color, **no role**.
-- Field palette: Signature · Initials · Full Name · Date · Time · Checkbox · More → **Text Field · Strike**.
+- Field palette: Signature · Initials · Full Name · Date · Time · Checkbox · More → **Text Field · Strike**. Vault composer now includes Strike (sender line, not a signer value).
 - Signer dropdown: people only (Matthew Ryan, Matthew Le Baron).
 - Outgoing email kebab: **Edit Message** (subject “You have documents to sign” / body “Your documents are ready to review and sign.”). Cancelled, not saved.
 - Back → “Are you sure you want to leave? Changes you have entered will not be saved.” Stay / Leave. Left. URL `revertedEnvelopeId=68739053`.

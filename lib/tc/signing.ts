@@ -12,7 +12,7 @@
  */
 import { createHash, randomBytes } from 'node:crypto'
 
-export const SIGN_FIELD_TYPES = ['signature', 'initials', 'date_signed', 'text', 'checkbox'] as const
+export const SIGN_FIELD_TYPES = ['signature', 'initials', 'date_signed', 'text', 'checkbox', 'strike'] as const
 export type SignFieldType = (typeof SIGN_FIELD_TYPES)[number]
 
 export const SIGN_FIELD_LABEL: Record<SignFieldType, string> = {
@@ -21,6 +21,7 @@ export const SIGN_FIELD_LABEL: Record<SignFieldType, string> = {
   date_signed: 'Date signed',
   text: 'Text',
   checkbox: 'Checkbox',
+  strike: 'Strike',
 }
 
 /**
@@ -251,6 +252,7 @@ export const DEFAULT_FIELD_SIZE: Record<SignFieldType, { w: number; h: number }>
   date_signed: { w: 0.14, h: 0.035 },
   text: { w: 0.2, h: 0.035 },
   checkbox: { w: 0.03, h: 0.022 },
+  strike: { w: 0.22, h: 0.018 },
 }
 
 export function isSignableRole(

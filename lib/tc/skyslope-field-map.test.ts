@@ -58,7 +58,15 @@ describe('summarizeMap', () => {
       { type: 'text' },
       { type: 'checkbox' },
     ] as MappedField[]
-    expect(summarizeMap(map)).toEqual({ total: 5, signature: 2, initials: 0, date_signed: 1, text: 1, checkbox: 1 })
+    expect(summarizeMap(map)).toEqual({
+      total: 5,
+      signature: 2,
+      initials: 0,
+      date_signed: 1,
+      text: 1,
+      checkbox: 1,
+      strike: 0,
+    })
   })
 })
 
@@ -67,12 +75,16 @@ describe('summarizeMap', () => {
 // that silently broke envelope creation from any OREF template with a date field.
 describe('field-type canonical parity (C4)', () => {
   it('every mapped type is a canonical SignFieldType', () => {
-    const skyslopeTypes = ['Signature', 'Initials', 'DateSigned', 'TimeSigned', 'Date', 'checkboxblock', 'Unknown']
+    const skyslopeTypes = ['Signature', 'Initials', 'DateSigned', 'TimeSigned', 'Date', 'checkboxblock', 'Strike', 'Unknown']
     const mapped = translateSkyslopeFields(skyslopeTypes.map((t) => ({ type: t })), [])
     for (const m of mapped) expect(SIGN_FIELD_TYPES).toContain(m.type)
   })
   it('SkySlope date variants map to date_signed, never the rejected "date"', () => {
     const mapped = translateSkyslopeFields([{ type: 'DateSigned' }, { type: 'Date' }, { type: 'TimeSigned' }], [])
     expect(mapped.every((m) => m.type === 'date_signed')).toBe(true)
+  })
+  it('DigiSign Strike maps to strike, not text', () => {
+    const mapped = translateSkyslopeFields([{ type: 'Strike' }, { type: 'strike' }], [])
+    expect(mapped.map((m) => m.type)).toEqual(['strike', 'strike'])
   })
 })

@@ -1,7 +1,7 @@
 /**
  * TC envelope sealer — server-only.
  *
- * Flattens completed signature/text/date/checkbox values onto the source
+ * Flattens completed signature/text/date/checkbox values plus Strike lines onto the source
  * PDF(s), merges them into one executed document, and appends a tamper-evident
  * audit-certificate page (ESIGN / Oregon UETA, ORS ch. 84: intent, consent,
  * attribution, integrity, signer copy, retention). Returns the sealed bytes +
@@ -122,6 +122,17 @@ async function drawFieldValue(
   }
 }
 
+/** DigiSign Strike: a line through the placed box. Sender annotation, not a signer value. */
+function drawStrike(page: PDFPage, field: EnvelopeField): void {
+  const { x, y, w, h } = fieldRectToPdf(field, page.getWidth(), page.getHeight())
+  page.drawLine({
+    start: { x, y: y + h / 2 },
+    end: { x: x + w, y: y + h / 2 },
+    thickness: Math.max(1.2, h * 0.35),
+    color: INK,
+  })
+}
+
 function fmt(iso: string | null): string {
   if (!iso) return '—'
   // keep it human + tabular: YYYY-MM-DD HH:MM UTC
@@ -151,10 +162,15 @@ export async function sealEnvelope(input: SealEnvelopeInput): Promise<SealResult
     // overlay this document's fields onto the freshly added pages
     const firstNewPageIndex = out.getPageCount() - pages.length
     for (const field of doc.fields) {
-      if (!field.value) continue
       const pageIdx = firstNewPageIndex + (field.page - 1)
       if (pageIdx < firstNewPageIndex || pageIdx >= out.getPageCount()) continue
-      await drawFieldValue(out, out.getPage(pageIdx), field, field.value, helv)
+      const page = out.getPage(pageIdx)
+      if (field.type === 'strike') {
+        drawStrike(page, field)
+        continue
+      }
+      if (!field.value) continue
+      await drawFieldValue(out, page, field, field.value, helv)
     }
   }
 

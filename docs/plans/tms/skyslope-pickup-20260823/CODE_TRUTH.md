@@ -11,7 +11,7 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | New-deal checklist from OR library | EXISTS (this branch) | `createDealWithPeople` seeds `tc_checklist_items` from `seedChecklistItems` (Oregon matrix × deal parties). MLS facts still light conditionals later via anticipated-docs. |
 | `createEnvelopeFromTemplate` | EXISTS (this branch) | Deal New envelope → Form library picks production blanks (OR/OREF/ODS, samples omitted) and calls `createEnvelopeFromTemplate`. |
 | `createDraftEnvelope` | THEATER | Recipients only; no docs/fields. Zero UI callers. |
-| Envelope from uploaded PDFs | EXISTS | Deal envelopes + composer. |
+| Envelope from uploaded PDFs | EXISTS | Deal envelopes + composer. Field palette includes **Strike** (this branch; live DigiSign). |
 | `/admin/forms` | EXISTS browse / THEATER use-on-deal | Left rail Closings → Forms. No add-to-envelope. |
 | `/admin/sign-off` | EXISTS; on Closings rail **this branch** | Live queue + 7-banking-day clock. Superuser `transactions.signoff`. Production 23 Aug still footer-only until deploy. |
 | `/admin/signing` | EXISTS; on Closings rail **this branch** | Brokers: `transactions.view`. `esign.send` stays parked. Empty on 22 Aug walk. |

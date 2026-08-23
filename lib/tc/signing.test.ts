@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
+  SIGN_FIELD_TYPES,
+  SIGN_FIELD_LABEL,
   RECIPIENT_ROLES,
   RECIPIENT_ROLE_LABEL,
   COPY_ONLY_ROLE,
@@ -15,6 +17,13 @@ import {
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
 } from './signing'
+
+describe('SIGN_FIELD_TYPES', () => {
+  it('includes Strike from the live DigiSign palette', () => {
+    expect([...SIGN_FIELD_TYPES]).toContain('strike')
+    expect(SIGN_FIELD_LABEL.strike).toBe('Strike')
+  })
+})
 
 describe('Forms File Details recipient roles (live 2026-08-23)', () => {
   it('picker is the nine stored SkySlope roles, not invented Buyer2 / listing_broker / lender', () => {
