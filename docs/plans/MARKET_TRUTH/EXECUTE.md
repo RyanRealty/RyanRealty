@@ -223,6 +223,9 @@ registry-declared and land as a follow-on compute. Recon: `RECON.md`. `/sell` re
 - [ ] Then CMA and BPO — the subdivision speed statistic there can never render today
       (`lib/cma/subdivision-story.ts` reads the empty `CumulativeDaysOnMarket`), and the CMA computes
       market-area chapters over the whole A bucket while the cache figures beside them are SFR-only.
+      2026-08-23: city-grain CMA/BPO MoS, active count, verdict, and median list now
+      `getCityDetachedMarket` (same path as `/sell`). Subdivision pace uses
+      `days_to_pending`, not CDOM. Market-area extras still `PropertyType='A'`.
 - [ ] Then place pages, market hub, newsletter, video producers, JSON feeds, admin.
 - [ ] Each surface proves reconciliation before it flips.
 

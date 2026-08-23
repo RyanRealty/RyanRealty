@@ -21,6 +21,7 @@ function sale(over: Partial<CmaSubdivisionHistoryRow>): CmaSubdivisionHistoryRow
     BathroomsTotal: 2,
     year_built: 2020,
     CumulativeDaysOnMarket: 20,
+    days_to_pending: 20,
     lot_size_acres: 0.1,
     public_remarks: null,
     PhotoURL: null,
@@ -63,9 +64,9 @@ describe('computeSubdivisionFacts', () => {
     const recentIso = new Date(now.getTime() - 100 * 24 * 3600e3).toISOString().slice(0, 10)
     const oldIso = '2019-05-01'
     const rows = [
-      sale({ ClosePrice: 590000, ListPrice: 600000, CloseDate: recentIso, CumulativeDaysOnMarket: 10 }),
-      sale({ ClosePrice: 590000, ListPrice: 600000, CloseDate: recentIso, CumulativeDaysOnMarket: 30 }),
-      sale({ ClosePrice: 400000, ListPrice: 800000, CloseDate: oldIso, CumulativeDaysOnMarket: 400 }),
+      sale({ ClosePrice: 590000, ListPrice: 600000, CloseDate: recentIso, days_to_pending: 10 }),
+      sale({ ClosePrice: 590000, ListPrice: 600000, CloseDate: recentIso, days_to_pending: 30 }),
+      sale({ ClosePrice: 400000, ListPrice: 800000, CloseDate: oldIso, days_to_pending: 400 }),
       sale({ ClosePrice: 410000, ListPrice: 820000, CloseDate: oldIso }),
       sale({ ClosePrice: 420000, ListPrice: 840000, CloseDate: oldIso }),
     ]

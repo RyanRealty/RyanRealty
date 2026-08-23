@@ -457,6 +457,7 @@ export type CmaSubdivisionHistoryRow = {
   BathroomsTotal: number | null
   year_built: number | null
   CumulativeDaysOnMarket: number | null
+  days_to_pending: number | null
   lot_size_acres: number | null
   public_remarks: string | null
   PhotoURL: string | null
@@ -481,7 +482,7 @@ export async function getCmaSubdivisionHistory(subdivision: string, sinceIso: st
     const { data, error } = await sb
       .from('listings')
       .select(
-        'ListingKey, ListNumber, StreetNumber, StreetName, ClosePrice, CloseDate, ListPrice, OriginalListPrice, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, year_built, CumulativeDaysOnMarket, lot_size_acres, public_remarks, PhotoURL',
+        'ListingKey, ListNumber, StreetNumber, StreetName, ClosePrice, CloseDate, ListPrice, OriginalListPrice, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, year_built, CumulativeDaysOnMarket, days_to_pending, lot_size_acres, public_remarks, PhotoURL',
       )
       .eq('SubdivisionName', subdivision)
       .eq('PropertyType', 'A')

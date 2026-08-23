@@ -348,7 +348,11 @@ export {
 export type { MarketStatsCacheRow } from '@/lib/data/market/getMarketStatsCacheRows'
 export { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 export { getMetric } from '@/lib/data/market-truth/getMetric'
-export { getSellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
+export {
+  getSellBendMarket,
+  getCityDetachedMarket,
+  cityDetachedSlug,
+} from '@/lib/data/market-truth/getSellBendMarket'
 export type { SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 export { getRegionPulse } from '@/lib/data/market/getRegionPulse'
 export type { RegionPulse } from '@/lib/data/market/getRegionPulse'

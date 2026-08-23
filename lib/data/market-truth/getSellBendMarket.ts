@@ -1,18 +1,19 @@
 /**
- * /sell Bend instrument — the three figures EXECUTE Step 5 migrates.
- *
- * MLS City Bend, detached (D1). Not the city-limits polygon. Never fall
- * back to pulse: a miss withholds rather than reprinting 488 / 3.54.
+ * City detached snapshot from Market Truth (D1, MLS City text).
+ * /sell Bend and CMA city-grain MoS share this so they cannot disagree.
+ * A miss withholds rather than falling back to the pulse polygon series.
  */
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { marketVerdict, type MarketKind } from '@/lib/market/classify'
 import { getMetric } from '@/lib/data/market-truth/getMetric'
 
-const BEND_DETACHED = {
-  geoType: 'city',
-  geoSlug: 'bend',
-  segment: 'detached',
-} as const
+export function cityDetachedSlug(geoSlug: string): string {
+  return geoSlug
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 export type SellBendMarket = {
   activeCount: number
@@ -32,12 +33,15 @@ function storedVerdictKind(valueText: string | null): MarketKind {
   return 'unknown'
 }
 
-export async function getSellBendMarket(): Promise<SellBendMarket | null> {
+export async function getCityDetachedMarket(geoSlug: string): Promise<SellBendMarket | null> {
+  const slug = cityDetachedSlug(geoSlug)
+  if (!slug) return null
+  const geo = { geoType: 'city', geoSlug: slug, segment: 'detached' } as const
   const [active, mos, verdict, medianList] = await Promise.all([
-    getMetric({ stat: 'active_count', ...BEND_DETACHED }),
-    getMetric({ stat: 'months_of_supply', ...BEND_DETACHED }),
-    getMetric({ stat: 'market_verdict', ...BEND_DETACHED }),
-    getMetric({ stat: 'median_list_active', ...BEND_DETACHED }),
+    getMetric({ stat: 'active_count', ...geo }),
+    getMetric({ stat: 'months_of_supply', ...geo }),
+    getMetric({ stat: 'market_verdict', ...geo }),
+    getMetric({ stat: 'median_list_active', ...geo }),
   ])
   if (!active?.isPublishable || active.value == null) return null
   if (!mos?.isPublishable || mos.value == null) return null
@@ -58,4 +62,8 @@ export async function getSellBendMarket(): Promise<SellBendMarket | null> {
     computedAt: mos.provenance.computedAt,
     completeThrough: mos.provenance.completeThrough,
   }
+}
+
+export async function getSellBendMarket(): Promise<SellBendMarket | null> {
+  return getCityDetachedMarket('bend')
 }

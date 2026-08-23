@@ -9,17 +9,17 @@
  * analytics_mart_market_annual via getCmaMarketBoardYear (city grain, else
  * the region row labeled as region). A missing mart row is omitted.
  *
- * Months of supply comes FROM market_pulse_live.months_of_supply — the §0
- * canonical figure (active / (closed_last_6_months / 6)) that every other
- * Ryan Realty surface publishes. A CMA must never tell a client a different
- * MoS/verdict than the website shows for the same city (found live 2026-07-10:
- * a bespoke 365-day-pace derivation said 3.7/seller's while the site said
- * 4.1/balanced). The 365-day derivation remains only as a fallback when the
- * pulse row is missing, and the citation records which source was used.
+ * City-grain months of supply comes FROM getCityDetachedMarket (getMetric
+ * mt-v1), the same path /sell uses, so a Bend CMA cannot say seller while
+ * /sell says balanced. Neighborhood grain still uses pulse + geo-grain-trust
+ * until Market Truth writes neighborhood cells. The 365-day derivation remains
+ * only as a fallback when both are missing, and the citation records which
+ * source was used.
  * Verdict thresholds (CLAUDE.md §0): <= 4 seller's, 4-6 balanced, >= 6 buyer's.
  */
 
 import { getCmaMarketPulseRow, getCmaMarketStatsRow, getCmaMarketTrendRows } from '@/lib/data/cma/builderReads'
+import { getCityDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import { getCmaMarketBoardYear } from '@/lib/cma/market-board-mart'
 import type { CmaMarketContext } from '@/lib/cma/types'
@@ -96,20 +96,26 @@ export async function getCmaMarketContext(
   ])
 
   const sold365 = num(stats.sold_count) ?? 0
-  const active = num(pulse?.active_count)
+  const cityTruth =
+    geoType === 'city' ? await getCityDetachedMarket(stats.geo_slug) : null
+  const active = cityTruth?.activeCount ?? num(pulse?.active_count)
   // Canonical MoS first (the published pulse figure), 365d-pace derivation only
   // when the pulse row is missing it. Keep the RAW (unrounded) value for the
   // verdict classification — rounding before binning flips a true 4.04 into a
   // seller's-market verdict (or 5.96 into a buyer's) that the number itself
   // contradicts. Display the rounded figure; classify off the raw one.
-  let rawMonthsOfSupply = publishMonthsOfSupply({
-    grain: geoType,
-    pulseMos: num(pulse?.months_of_supply),
-    pulseActiveCount: active,
-    displayedActiveCount: active,
-    soldCount12mo: sold365,
-  })
-  let mosFormula = 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))'
+  let rawMonthsOfSupply =
+    cityTruth?.monthsOfSupply ??
+    publishMonthsOfSupply({
+      grain: geoType,
+      pulseMos: num(pulse?.months_of_supply),
+      pulseActiveCount: active,
+      displayedActiveCount: active,
+      soldCount12mo: sold365,
+    })
+  let mosFormula = cityTruth
+    ? 'getMetric months_of_supply mt-v1 detached MLS-city (same path as /sell)'
+    : 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))'
   // THE 12-MONTH FALLBACK IS THE SAME CLOSED SERIES, so it may only run at a
   // grain whose closes are attributed the way its actives are. At 'neighborhood'
   // both sold_count and the pulse MoS come off a subdivision-name text join that
@@ -121,7 +127,14 @@ export async function getCmaMarketContext(
   }
   const monthsOfSupply = rawMonthsOfSupply != null ? +rawMonthsOfSupply.toFixed(1) : null
   let verdict: CmaMarketContext['marketVerdict'] = null
-  if (rawMonthsOfSupply != null) {
+  if (cityTruth) {
+    verdict =
+      cityTruth.verdictKind === 'sellers'
+        ? 'seller'
+        : cityTruth.verdictKind === 'buyers'
+          ? 'buyer'
+          : 'balanced'
+  } else if (rawMonthsOfSupply != null) {
     verdict = rawMonthsOfSupply <= 4 ? 'seller' : rawMonthsOfSupply >= 6 ? 'buyer' : 'balanced'
   }
 
@@ -138,7 +151,7 @@ export async function getCmaMarketContext(
     yoyMedianPriceDeltaPct: num(stats.yoy_median_price_delta_pct),
     activeCount: active,
     pendingCount: num(pulse?.pending_count),
-    medianListPrice: num(pulse?.median_list_price),
+    medianListPrice: cityTruth?.medianListPrice ?? num(pulse?.median_list_price),
     monthsOfSupply,
     mosFormula,
     marketVerdict: verdict,
