@@ -311,11 +311,37 @@ export function brokerRoleFromDealParties(roles: ReadonlyArray<'buyer' | 'seller
   return 'unknown'
 }
 
+export const CHECKLIST_GROUPS = [
+  'Buyer Agreement',
+  'Sales',
+  'Disclosure',
+  'Reports',
+  'Closing',
+  'Listing',
+  'Miscellaneous',
+] as const
+export type ChecklistGroup = (typeof CHECKLIST_GROUPS)[number]
+
+export function checklistGroupForRule(id: string, label = ''): ChecklistGroup {
+  const s = `${id} ${label}`.toLowerCase()
+  if (s.includes('buyer-rep') || s.includes('buyer representation') || s.includes('agency-disclosure') || s.includes('agency disclosure'))
+    return 'Buyer Agreement'
+  if (s.includes('listing')) return 'Listing'
+  if (s.includes('sale-agreement') || s.includes('sale agreement') || s.includes('addend')) return 'Sales'
+  if (s.includes('spds') || s.includes('disclos') || s.includes('lead') || s.includes('smoke') || s.includes('carbon'))
+    return 'Disclosure'
+  if (s.includes('prelim') || s.includes('title') || s.includes('inspect')) return 'Reports'
+  if (s.includes('earnest') || s.includes('closing') || s.includes('efa') || s.includes('wire') || s.includes('hud') || s.includes('alta'))
+    return 'Closing'
+  return 'Miscellaneous'
+}
+
 export type ChecklistSeedRow = {
   name: string
   type_name: string
   status: 'required' | 'optional'
   sort_order: number
+  group: ChecklistGroup
 }
 
 /**
@@ -330,6 +356,7 @@ export function seedChecklistItems(role: BrokerRole, facts: PropertyFacts): Chec
     type_name: r.orefForm ? `OREF ${r.orefForm}` : r.id,
     status: r.severity === 'required' ? 'required' : 'optional',
     sort_order: i,
+    group: checklistGroupForRule(r.id, r.label),
   }))
 }
 

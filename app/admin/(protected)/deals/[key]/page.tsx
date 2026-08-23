@@ -63,9 +63,12 @@ import { getEnvelopesForCycle } from '@/app/actions/tc-envelopes'
 import { listDealOffers, listEnvelopeTemplates } from '@/lib/data'
 import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/data'
 import { getDealParties } from '@/lib/data/tc/deal-people'
+import { CHECKLIST_GROUPS, checklistGroupForRule } from '@/lib/tc/required-documents'
 import { DealParties } from './DealParties'
 import { DealStageControls } from './DealStageControls'
 import { ListingFileActions } from './ListingFileActions'
+import { CdaButton } from './CdaButton'
+import { BuyerAgreementWizard } from './BuyerAgreementWizard'
 import { getLiveDealCycles } from '@/lib/data/tc/closings'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { tcEventDetailPreview, tcEventLabel } from '@/lib/tc/events'
@@ -97,11 +100,22 @@ const tiny = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' } as const
 
 /** Commission block per sale cycle (rung 11). Every figure expression here is
  *  carried from the pre-11D markup character for character. */
-function CommissionSection({ rows }: { rows: TcCommission[] }) {
+function CommissionSection({
+  rows,
+  cycleId,
+  propertyKey,
+}: {
+  rows: TcCommission[]
+  cycleId: string
+  propertyKey: string
+}) {
   if (!rows.length) return null
   return (
     <section aria-label="Commission">
-      <SectionHead>Commission</SectionHead>
+      <SectionHead>
+        Commission{' '}
+        <CdaButton cycleId={cycleId} propertyKey={propertyKey} />
+      </SectionHead>
       {rows.map((r) => {
         const st = COMMISSION_STATUS[r.status] ?? COMMISSION_STATUS.projected
         const fees = r.referral_fee + r.tc_fee + r.other_deductions
@@ -215,12 +229,14 @@ function CycleSection({
   anticipated,
   commissions,
   orefForm,
+  propertyKey,
 }: {
   cycle: TcCycle
   showArchived: boolean
   anticipated: AnticipatedDocsResult | null
   commissions: TcCommission[]
   orefForm: PreferredOrefForm | null
+  propertyKey: string
 }) {
   const docs = cycle.documents.filter((doc) => (showArchived ? true : !doc.archived))
   const archivedCount = cycle.documents.filter((doc) => doc.archived).length
@@ -290,7 +306,10 @@ function CycleSection({
 
       <AnticipatedDocs data={anticipated} />
       <FillOrefPacket cycleId={cycle.id} form={orefForm} />
-      <CommissionSection rows={commissions} />
+      <CommissionSection rows={commissions} cycleId={cycle.id} propertyKey={propertyKey} />
+      {cycle.checklist.some((it) => /buyer representation/i.test(it.name)) ? (
+        <BuyerAgreementWizard cycleId={cycle.id} propertyKey={propertyKey} />
+      ) : null}
 
       <section aria-label="Documents">
         <SectionHead>
@@ -324,39 +343,52 @@ function CycleSection({
         {cycle.checklist.length === 0 ? (
           <p style={{ ...quiet, margin: 0 }}>No checklist item on this cycle.</p>
         ) : (
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {cycle.checklist.map((item) => (
-              <li
-                key={item.id}
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  padding: '8px 2px',
-                  borderBottom: '1px solid var(--a-border)',
-                }}
-              >
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--a-text-sm)' }}>{item.name}</span>
-                  {item.documentIds.length ? (
-                    <span style={{ ...tiny, display: 'block' }}>
-                      {item.documentIds
-                        .map((id) => docNameById.get(id))
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </span>
-                  ) : null}
-                </span>
-                <ChecklistStatusControl
-                  itemId={item.id}
-                  status={item.status}
-                  docCount={item.documentIds.length}
-                />
-              </li>
-            ))}
-          </ul>
+          CHECKLIST_GROUPS.map((g) => {
+            const items = cycle.checklist.filter(
+              (it) => (it.group_name || checklistGroupForRule(it.type_name ?? '', it.name)) === g,
+            )
+            if (!items.length) return null
+            return (
+              <div key={g} style={{ marginTop: 10 }}>
+                <p style={{ ...tiny, fontWeight: 600, margin: '0 0 4px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {g}
+                </p>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {items.map((item) => (
+                    <li
+                      key={item.id}
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        padding: '8px 2px',
+                        borderBottom: '1px solid var(--a-border)',
+                      }}
+                    >
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'block', fontSize: 'var(--a-text-sm)' }}>{item.name}</span>
+                        {item.documentIds.length ? (
+                          <span style={{ ...tiny, display: 'block' }}>
+                            {item.documentIds
+                              .map((id) => docNameById.get(id))
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        ) : null}
+                      </span>
+                      <ChecklistStatusControl
+                        itemId={item.id}
+                        status={item.status}
+                        docCount={item.documentIds.length}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })
         )}
       </section>
 
@@ -517,6 +549,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
               anticipated={anticipatedByCycle.get(cycle.id) ?? null}
               commissions={commissions.filter((r) => r.cycle_id === cycle.id)}
               orefForm={orefForm}
+              propertyKey={deal.property_key}
             />
           </div>
         </details>

@@ -28,6 +28,8 @@ import { formatDateTime } from '@/lib/format/date'
 import { buildFormCatalogCheckScript } from '@/lib/tc/form-catalog-script'
 import { CheckFormCatalog } from './CheckFormCatalog'
 import { UseFormOnDeal } from './UseFormOnDeal'
+import { FormsLibraryExtras } from './FormsLibraryExtras'
+import { listClauses, listFormPackets } from '@/app/actions/tc-library'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,10 +109,12 @@ export default async function TcFormsPage({ searchParams }: Props) {
   await requireAdminPage('transactions.edit')
   const { q, lib: expanded, fresh: freshRaw } = await searchParams
   const fresh = parseFresh(freshRaw)
-  const [libraries, liveDealsAll, ctx] = await Promise.all([
+  const [libraries, liveDealsAll, ctx, packets, clauses] = await Promise.all([
     getTcFormLibraryBoard(q),
     getLiveDealCycles(),
     getAdminCapabilityContext(),
+    listFormPackets(),
+    listClauses(),
   ])
   const liveDeals = liveDealsAll.filter((d) =>
     dealVisibleToBroker({
@@ -339,6 +343,18 @@ export default async function TcFormsPage({ searchParams }: Props) {
           )
         })
       )}
+
+      <FormsLibraryExtras
+        packets={packets}
+        clauses={clauses}
+        deals={liveDeals}
+        formIds={libraries.flatMap((l) =>
+          l.forms
+            .filter((f) => f.held && !f.isSample && f.blankUrl)
+            .slice(0, 30)
+            .map((f) => ({ id: f.id, label: `${l.code} ${f.form_number ?? ''} ${f.name}`.replace(/\s+/g, ' ').trim() })),
+        )}
+      />
 
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
         Field maps get placed once per form version. A newer published version is flagged here

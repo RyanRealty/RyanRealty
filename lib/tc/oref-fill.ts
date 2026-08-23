@@ -92,7 +92,7 @@ export type OrefFormCandidate = {
 
 /** SkySlope / AcroForm aliases → one deal fact. Normalized before match. */
 export const DEAL_FACT_ALIASES: Record<DealFactKey, readonly string[]> = {
-  address: ['propertyaddress', 'property_address', 'address', 'propertystreetaddress', 'streetaddress', 'property'],
+  address: ['propertyaddress', 'property_address', 'address', 'propertystreetaddress', 'streetaddress', 'property', 'premisesaddress'],
   city: ['propertycity', 'city'],
   state: ['propertystate', 'state'],
   zip: ['propertyzip', 'propertyzipcode', 'zip', 'zipcode', 'postalcode'],

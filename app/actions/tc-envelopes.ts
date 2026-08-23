@@ -8,6 +8,7 @@ import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
 import { getDealContacts } from '@/app/actions/tc-contacts'
+import { dealFactsFromRows, mapDealFactsToFillValues, resolveFactKey } from '@/lib/tc/oref-fill'
 import {
   generateSigningToken,
   isSignableRole,
@@ -348,7 +349,9 @@ export async function createEnvelopeFromTemplate(
   const supabase = getServiceSupabase()
   const { data: cycle } = await supabase
     .from('tc_cycles')
-    .select('id, deal_id, kind, sellers, buyers, broker_name, tc_deals(address)')
+    .select(
+      'id, deal_id, kind, sellers, buyers, broker_name, listing_price, sale_price, mls_number, escrow_number, escrow_company, earnest_money, contract_acceptance_date, escrow_closing_date, actual_closing_date, tc_deals(address, city, state, zip, broker_name)',
+    )
     .eq('id', cycleId)
     .maybeSingle()
   if (!cycle) return { ok: false, error: 'Cycle not found' }
@@ -429,21 +432,29 @@ export async function createEnvelopeFromTemplate(
       .from('tc_envelope_documents')
       .insert({ envelope_id: env.id, document_id: doc.id, sort_order: sortOrder++, form_version_id: form.id })
 
+    const dealRow = (cycle as DbRow).tc_deals ?? {}
+    const facts = dealFactsFromRows(dealRow, cycle as DbRow)
+    const { filled } = mapDealFactsToFillValues(facts, (form.field_map ?? []) as MappedField[])
+    const textByFact = new Map(filled.map((v) => [v.factKey, v.value]))
     for (const f of (form.field_map ?? []) as MappedField[]) {
+      const type = (f.type as string) === 'date' ? 'date_signed' : f.type
+      const factKey = resolveFactKey(f.dataRef ?? '')
+      const filledText = factKey ? textByFact.get(factKey) : undefined
       fieldRows.push({
         envelope_id: env.id,
         document_id: doc.id,
         recipient_id: recipientByRole(f.signerRole),
-        // Defensive: any legacy field_map blob ingested before the canonical-type
-        // fix may carry 'date', which the tc_envelope_fields.type CHECK rejects
-        // (it accepts 'date_signed'). Normalize so a stale template can't 23514. (C4)
-        type: (f.type as string) === 'date' ? 'date_signed' : f.type,
+        type,
         page: Math.max(1, Math.round(f.page)),
         x: clamp01(f.x),
         y: clamp01(f.y),
         w: clamp01(f.w),
         h: clamp01(f.h),
         required: !f.optional,
+        value:
+          type === 'text' && filledText
+            ? { kind: 'text', text: filledText }
+            : null,
       })
     }
   }

@@ -25,7 +25,7 @@ import {
  * Pages not in the nav stay reachable where a live surface links them (FAB
  * quick actions, hub catalogs, settings cards) — the D9.2 budget is ≈35
  * superuser items; Closings Signing + Sign-off (2026-08-23) bring the
- * rendered counts to 37 superuser / 26 broker.
+ * rendered counts to 38 superuser / 27 broker.
  */
 
 /** Phone bottom-tab annotation — the D9.4 five carry these. */
@@ -182,6 +182,7 @@ export const DESTINATIONS: NavDestination[] = [
     // remains the existing envelope action gate.
     children: [
       { label: 'Board', href: '/admin/closings', icon: 'handshake', capability: 'transactions.view' },
+      { label: 'Production', href: '/admin/closings/production', icon: 'bar-chart', capability: 'transactions.view' },
       { label: 'Signing', href: '/admin/signing', icon: 'pen-line', capability: 'transactions.view' },
       { label: 'Sign-off', href: '/admin/sign-off', icon: 'clipboard-check', capability: 'transactions.signoff' },
       { label: 'Commissions', href: '/admin/commissions', icon: 'dollar', capability: 'commissions.view' },

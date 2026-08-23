@@ -22,6 +22,7 @@ describe('seedChecklistItems', () => {
     expect(names).toContain('Buyer Representation Agreement')
     expect(names).not.toContain('Exclusive Listing Agreement')
     expect(rows.find((r) => r.type_name === 'OREF 050')?.status).toBe('required')
+    expect(rows.find((r) => r.type_name === 'OREF 050')?.group).toBe('Buyer Agreement')
     expect(rows.every((r, i) => r.sort_order === i)).toBe(true)
   })
 

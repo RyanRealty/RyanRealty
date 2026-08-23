@@ -51,6 +51,7 @@ export type TcChecklistItem = {
   type_name: string | null
   status: 'required' | 'optional' | 'in_review' | 'completed' | 'na'
   sort_order: number | null
+  group_name: string | null
   documentIds: string[]
 }
 
@@ -214,6 +215,7 @@ export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
           type_name: it.type_name,
           status: it.status,
           sort_order: it.sort_order,
+          group_name: (it.group_name as string | null) ?? null,
           documentIds: assignmentsByItem.get(it.id) ?? [],
         })),
     }))

@@ -89,6 +89,7 @@ export async function acceptListingContract(
         type_name: row.type_name,
         status: row.status,
         sort_order: row.sort_order,
+        group_name: row.group,
       })),
     )
   }

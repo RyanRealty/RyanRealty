@@ -22,6 +22,8 @@ export const TC_EVENT_LABEL: Record<string, string> = {
   offer_received: 'Offer received',
   offer_updated: 'Offer updated',
   offer_accepted: 'Offer accepted',
+  cda_generated: 'CDA generated',
+  buyer_agreement_drafted: 'Buyer agreement drafted',
   contact_added: 'Contact added',
   checklist_status_changed: 'Checklist updated',
   principal_broker_review: 'Principal review',
