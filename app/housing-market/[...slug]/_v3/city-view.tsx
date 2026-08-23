@@ -29,9 +29,11 @@ import {
   buildExploreItems,
   buildFaqItems,
   buildLiveFigures,
+  buildPublicPaceFigures,
   buildPublicSegmentFigures,
 } from './geo-figures'
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
+import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 
 type Props = {
   cityName: string
@@ -49,6 +51,7 @@ type Props = {
   chart?: V3ChartProps
   sheet: ReactNode
   publicSegments?: readonly PublicSegmentRow[]
+  publicPace?: PublicPaceRow | null
 }
 
 export function CityMarketView({
@@ -67,10 +70,12 @@ export function CityMarketView({
   chart,
   sheet,
   publicSegments = [],
+  publicPace = null,
 }: Props) {
   const live = buildLiveFigures(pulse, mosText, cityName)
   const segmentFigures = buildPublicSegmentFigures(publicSegments, citySlug)
-  const figures = [...live.figures, ...segmentFigures, ...closedFigures]
+  const paceFigures = buildPublicPaceFigures(publicPace)
+  const figures = [...live.figures, ...segmentFigures, ...paceFigures, ...closedFigures]
   const [firstFigure, ...restFigures] = figures
   const cityLedger = buildCityLedger(snapshots, citySlug)
   const [firstCityRow, ...restCityRows] = cityLedger.rows
@@ -96,6 +101,9 @@ export function CityMarketView({
     live.figures.length > 0 ? live.trace.replace(/\.$/, '') : null,
     segmentFigures.length > 0
       ? 'condo and townhome counts are Market Truth mt-v1, sample-gated, not the detached HUD'
+      : null,
+    paceFigures.length > 0
+      ? 'days to contract, closed sales, new listings, and price-cut share are 12-month Market Truth leftover stats, not the live 30-day pulse'
       : null,
     closedTrace,
   ].filter((part): part is string => Boolean(part))

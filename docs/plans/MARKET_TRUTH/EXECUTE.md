@@ -340,6 +340,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23g landed: `getPublicPlaceSegments` reads publishable mt-v1 condo/townhome cells. `/cities/bend` HUD extra panel 66 condos $326,000 · 12.8 months · buyer's / 78 townhomes $699,000 · 3.6 months · seller's beside detached 774 / 4.5 / balanced. `/housing-market/bend` and the region hub print the same sample-gated figures. Madras omits condos (no 0). Neighborhood MOS and county stay unpublished.
 
+### Grind 2026-08-23h — leftover 12-month pace on public city/region (not pulse overlay)
+
+**Done when:** `/cities/bend` and `/housing-market/bend` show labeled 12-month detached leftover stats from Market Truth (days to contract 28, closed 2095, new listings 2956, price-cut share 46.6%, days to close 64) without replacing pulse 30-day closed or pulse days-to-pending. A miss omits the stat (not 0). Window is named. Neighborhood MOS and county stay unpublished. Workers do not tick this file.
+
+2026-08-23h landed: `getPublicDetachedPace` reads 12-month mt-v1 leftover cells. `/cities/bend` HUD panel 28 / 2,095 / 2,956 / 46.6% / 64. `/housing-market/bend` same figures, labeled 12 months. Pulse 30-day closed and days-to-pending stay. Neighborhood MOS and county stay unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
@@ -351,7 +357,8 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
       Bend detached YoY median **−1.94%**.
       Zip grain membership is GO (PostalCode, not polygons). County is not.
       Bend detached still **774 / 4.47 / balanced**. Bend condo 66 / 12.8 / buyer.
-      Bend townhome 78 / 3.6 / seller. Public readers stay on detached.
+      Bend townhome 78 / 3.6 / seller. Public extra segments are condo +
+      townhome beside the detached HUD. Hero stays detached houses.
       Neighborhood / community / subdivision grains stay unpublished
       (REGISTRY §4 polygons unrepaired). `commercial_lease` (G) stays out.
 - [x] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,

@@ -64,6 +64,11 @@ import {
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
 import {
+  formatPaceShare,
+  getPublicDetachedPace,
+  publicPaceHasRow,
+} from '@/lib/data/market-truth/public-pace'
+import {
   getCoMarketAnnual,
   getCoMarketAnnualSeries,
   MART_FLOOR_YEAR,
@@ -147,6 +152,7 @@ export default async function HousingMarketHubPage() {
     coAnnualSfr,
     concessionQuarters,
     publicSegments,
+    publicPace,
   ] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
     getMarketPulseAllCitySnapshots(),
@@ -158,6 +164,7 @@ export default async function HousingMarketHubPage() {
     getCoMarketAnnualSeries({ fromYear: MART_FLOOR_YEAR, toYear: lastFullYear, typeScope: 'sfr' }),
     getConcessionsQuarterly(),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
+    getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
   ])
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
@@ -229,6 +236,36 @@ export default async function HousingMarketHubPage() {
         [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
       ),
       href: publicSegmentBrowseHref(null, row.segment),
+    })
+  }
+  if (publicPace.daysToContract != null) {
+    sfrFollow.push({
+      value: v3Text(String(publicPace.daysToContract)),
+      label: v3Text('days to contract · 12 months'),
+    })
+  }
+  if (publicPace.closedCount != null) {
+    sfrFollow.push({
+      value: v3Text(publicPace.closedCount.toLocaleString('en-US')),
+      label: v3Text('closed sales · 12 months'),
+    })
+  }
+  if (publicPace.newListings != null) {
+    sfrFollow.push({
+      value: v3Text(publicPace.newListings.toLocaleString('en-US')),
+      label: v3Text('new listings · 12 months'),
+    })
+  }
+  if (publicPace.priceCutShare != null) {
+    sfrFollow.push({
+      value: v3Text(formatPaceShare(publicPace.priceCutShare)),
+      label: v3Text('closed with a price cut · 12 months'),
+    })
+  }
+  if (publicPace.daysToClose != null) {
+    sfrFollow.push({
+      value: v3Text(String(publicPace.daysToClose)),
+      label: v3Text('days to close · 12 months'),
     })
   }
   const [firstSfrFigure, ...restSfrFigures] = sfrFollow
@@ -456,8 +493,8 @@ export default async function HousingMarketHubPage() {
             headline={v3Text('Single-family list inventory')}
             figures={[firstSfrFigure, ...restSfrFigures]}
             source={v3Text(
-              publicSegments.length > 0
-                ? 'live MLS through Oregon Data Share. Single-family figures are the region detached HUD. Condo and townhome counts are Market Truth mt-v1, sample-gated'
+              publicSegments.length > 0 || publicPaceHasRow(publicPace)
+                ? 'live MLS through Oregon Data Share. Single-family figures are the region detached HUD. Condo and townhome counts are Market Truth mt-v1, sample-gated. 12-month pace stats are leftover Market Truth cells, not the live 30-day pulse'
                 : 'live MLS through Oregon Data Share, single-family homes across the Central Oregon region. Not ALL-TYPE closed sales',
             )}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}

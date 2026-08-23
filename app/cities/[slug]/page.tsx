@@ -38,6 +38,7 @@ import {
   getCityDetachedMarket,
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
@@ -85,6 +86,7 @@ import type { SchemaInput } from '@/lib/site/json-ld'
 import { buildCitySchemas } from './city-schemas'
 import { CityMarketCharts } from './_v3/city-market-charts'
 import { PublicProductTypes } from './PublicProductTypes'
+import { PublicPaceStats } from './PublicPaceStats'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -156,7 +158,7 @@ export default async function CityDetailPage({ params }: Props) {
     pulseRead, detached, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
-    publicSegments,
+    publicSegments, publicPace,
   ] = await Promise.all([
     withTimeoutFallbackResult(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
@@ -197,6 +199,7 @@ export default async function CityDetailPage({ params }: Props) {
     // blip → the module renders nothing under the HUD. (§0)
     withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
     withTimeoutFallback(getPublicPlaceSegments({ geoType: 'city', geoSlug: slug }), [], 3000, 'city:publicSegments'),
+    withTimeoutFallback(getPublicDetachedPace({ geoType: 'city', geoSlug: slug }), EMPTY_PUBLIC_PACE, 3000, 'city:publicPace'),
   ])
 
   // Hero — Bend reuses the homepage video; otherwise the VERIFIED cityHero photo
@@ -524,6 +527,7 @@ export default async function CityDetailPage({ params }: Props) {
             stacker (C-17). */}
         <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={pulse?.refreshedAt ?? null} byTownKind="neighborhood">
           <PublicProductTypes cityName={cityName} citySlug={slug} rows={publicSegments} />
+          <PublicPaceStats cityName={cityName} row={publicPace} />
           {coreCharts ? (
             <div className="pt-10" aria-label={`${cityName} market trend charts`}>
               <MarketCoreCharts data={toPublicCoreChartSeries(coreCharts)} heading={`${cityName} market trends`} />
