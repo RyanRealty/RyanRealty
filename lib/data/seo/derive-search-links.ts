@@ -76,7 +76,7 @@ export type GeoCountLite = {
   /** city rows: "la pine" · community rows: "bend:awbrey butte" */
   geoKey: string
   geoLabel: string
-  activeSfrCount: number
+  activeSfrCount: number | null
 }
 
 export type CommunityRef = {
@@ -270,10 +270,8 @@ export function deriveCityLinks(
   }
   const links: CityIndexLink[] = allowedSlugs.map((slug) => {
     const snap = bySlug.get(slug)
-    const count =
-      snap && Number.isFinite(snap.activeSfrCount) && snap.activeSfrCount > 0
-        ? snap.activeSfrCount
-        : 0
+    const n = snap?.activeSfrCount
+    const count = n != null && Number.isFinite(n) && n > 0 ? n : 0
     const name = snap?.geoLabel?.trim()
       ? titleCaseWords(snap.geoLabel)
       : titleCaseWords(slug.replace(/-/g, ' '))
@@ -350,7 +348,7 @@ export function deriveSubdivisionLinks(
     if (!CENTRAL_OREGON_CITY_SLUGS.has(citySlug)) continue
     const subSlug = slugify(subPart)
     if (BANNED_SUB_SLUGS.has(subSlug) || exclude.has(subSlug)) continue
-    const count = Number.isFinite(snap.activeSfrCount) ? snap.activeSfrCount : 0
+    const count = snap.activeSfrCount != null && Number.isFinite(snap.activeSfrCount) ? snap.activeSfrCount : 0
     if (count < minCount) continue
     const href = `/homes-for-sale/${citySlug}/${subSlug}`
     const label = `${titleCaseWords(snap.geoLabel?.trim() ? snap.geoLabel : subPart)} · ${titleCaseWords(cityPart)}`

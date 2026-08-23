@@ -50,6 +50,7 @@ describe('getSellBendMarket', () => {
     const region = readFileSync(resolve('lib/data/market/getRegionPulse.ts'), 'utf8')
     const snaps = readFileSync(resolve('lib/data/market/getMarketPulseSnapshot.ts'), 'utf8')
     const browse = readFileSync(resolve('lib/data/market/getMarketStatsCacheRows.ts'), 'utf8')
+    expect(helper).toMatch(/function assembleInventory/)
     expect(helper).toMatch(/function withholdDetachedHeadlines/)
     expect(helper).toMatch(/function overlayDetachedMarket/)
     expect(pulse).toMatch(/withholdDetachedHeadlines/)
@@ -124,11 +125,17 @@ describe('getSellBendMarket', () => {
     const snap = readFileSync(resolve('lib/data/geo/getGeoSnapshot.ts'), 'utf8')
     const browse = readFileSync(resolve('lib/data/market/getMarketStatsCacheRows.ts'), 'utf8')
     expect(snap).toMatch(/overlayCitySnapshotsDetached/)
-    expect(snap).toMatch(/getDetachedMarkets/)
+    expect(snap).toMatch(/getDetachedInventories/)
     expect(browse).toMatch(/getDetachedMarkets/)
-    // Existence path: a miss must not 404 the city. Do not withhold the count.
-    expect(snap).toMatch(/mt \? withDetachedMarket\(snap, mt\) : snap/)
+    // Miss must not 404 (snapshot object still returned) and must not keep
+    // pulse/MV active as published inventory. Inventory overlay does not wait
+    // on MOS (Terrebonne 51 active is publishable while MOS is below min_n).
+    expect(snap).toMatch(/mt \? withDetachedInventory\(snap, mt\) : withholdCityPublishedInventory\(snap\)/)
+    expect(snap).toMatch(/function withholdCityPublishedInventory/)
+    expect(snap).toMatch(/activeSfrCount: null/)
     expect(snap).not.toMatch(/withholdDetachedHeadlines/)
+    expect(snap).toMatch(/geo-snapshot-v7-mt-inventory/)
+    expect(snap).toMatch(/geo-snapshot-all-cities-v7-mt-inventory/)
     expect(browse).toMatch(/overlayDetachedMarket/)
   })
 

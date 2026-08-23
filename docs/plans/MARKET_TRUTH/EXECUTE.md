@@ -326,15 +326,17 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 **Done when:** a city MT miss cannot print pulse/MV polygon inventory (488) on `/cities`, mega-menu, or homepage town rows as if it were detached; existence still does not 404 the city page. Neighborhood MOS and county stay unpublished.
 
+2026-08-23e landed: city snapshots keep the door on miss (`if (!snapshot) notFound()` still works) and set `activeSfrCount` / median **null** instead of pulse 488. Inventory overlay uses publishable `active_count` even when MOS is below min_n (Terrebonne **51** / $799k with MOS sample 28 withheld). Homepage town rows: Bend 774, La Pine 170, Redmond 274, Sunriver 56, Sisters 110, Terrebonne 51. Neighborhood MOS and county stay unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
       2026-08-23: city + region cells now cover 11 REGISTRY segments
       (detached, condo, townhome, manufactured_land, manufactured_park,
       multifamily_2_4, land, farm, commercial_sale, business, all_residential).
-      Shadow compute wrote **5110** mt-v1 cells (`period_end=2026-08-23`) including
-      YoY, segment_share, bedroom_distribution, cash_share, financing_mix,
-      feature_share (floors). Bend detached YoY median **−1.94%**.
+      Shadow compute wrote **14512** mt-v1 cells (`period_end=2026-08-23`) including
+      YoY, leftover honest stats, zip grain (canonical 10), mix/feature floors.
+      Bend detached YoY median **−1.94%**.
       Zip grain membership is GO (PostalCode, not polygons). County is not.
       Bend detached still **774 / 4.47 / balanced**. Bend condo 66 / 12.8 / buyer.
       Bend townhome 78 / 3.6 / seller. Public readers stay on detached.

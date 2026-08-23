@@ -78,7 +78,7 @@ export default async function BuyerLPPage() {
   for (const s of communitySnapshots) {
     const label = s.geoKey.split(':').slice(1).join(':')
     const cur = countsByLabel.get(label) ?? { active: 0, pending: 0 }
-    cur.active += s.activeSfrCount
+    if (s.activeSfrCount != null) cur.active += s.activeSfrCount
     cur.pending += s.pendingCount
     countsByLabel.set(label, cur)
   }
@@ -92,7 +92,7 @@ export default async function BuyerLPPage() {
     return {
       ...c,
       photoSrc: c.photoOverride ?? communityImage(c.slug),
-      active: counts != null && counts.active > 0 ? counts.active : null,
+      active: counts != null && counts.active != null && counts.active > 0 ? counts.active : null,
       pending: counts != null && counts.pending > 0 ? counts.pending : null,
     }
   })

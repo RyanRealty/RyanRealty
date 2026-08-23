@@ -146,7 +146,7 @@ export default async function CitiesPage() {
   const rawPulseBySlug = new Map(citySnapshots.map((s) => [s.geo_slug.replace(/\s+/g, '-'), s]))
 
   // citySlug -> geo_snapshot_mv fallback (active count + median)
-  const snapshotBySlug = new Map<string, { activeCount: number; medianPrice: number | null }>()
+  const snapshotBySlug = new Map<string, { activeCount: number | null; medianPrice: number | null }>()
   for (const s of allSnapshots) {
     snapshotBySlug.set(s.geoKey.replace(/\s+/g, '-'), {
       activeCount: s.activeSfrCount,
@@ -194,7 +194,12 @@ export default async function CitiesPage() {
   // em-dash placeholder instead.
   const totalActive: number | null =
     regionPulse?.activeCount ??
-    (allSnapshots.length > 0 ? allSnapshots.reduce((sum, s) => sum + s.activeSfrCount, 0) : null)
+    (allSnapshots.length > 0
+      ? allSnapshots.reduce<number | null>((sum, s) => {
+          if (sum == null || s.activeSfrCount == null) return null
+          return sum + s.activeSfrCount
+        }, 0)
+      : null)
   const regionMedian = regionPulse?.medianListPrice ?? null
   const regionVerdict = verdictFromMos(regionPulse?.monthsOfSupply ?? null)
 
@@ -501,8 +506,8 @@ export default async function CitiesPage() {
               <div className="max-w-2xl pt-2" style={{ borderTop: '1px solid var(--navy-12)' }}>
                 {others.map((city) => {
                   const snap = snapshotBySlug.get(city.slug)
-                  const active = snap?.activeCount ?? city.activeCount
-                  const median = snap?.medianPrice ?? city.medianPrice
+                  const active = snap ? snap.activeCount : city.activeCount
+                  const median = snap ? snap.medianPrice : city.medianPrice
 
                   return (
                     <a
@@ -515,7 +520,7 @@ export default async function CitiesPage() {
                         {city.name}
                       </span>
                       <div className="flex items-center gap-4 flex-shrink-0">
-                        {active > 0 ? (
+                        {active != null && active > 0 ? (
                           <span className="text-xs mono-num" style={{ color: 'var(--navy-70)' }}>
                             {active} {active === 1 ? 'home' : 'homes'}
                           </span>

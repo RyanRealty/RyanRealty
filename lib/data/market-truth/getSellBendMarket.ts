@@ -31,6 +31,13 @@ export type SellBendMarket = {
   completeThrough: string
 }
 
+/** Inventory-only snapshot. MOS/verdict may be below min_n; active can still publish. */
+export type DetachedInventory = {
+  activeCount: number
+  medianListPrice: number | null
+  computedAt: string
+}
+
 function storedVerdictKind(valueText: string | null): MarketKind {
   if (valueText === 'seller') return 'sellers'
   if (valueText === 'buyer') return 'buyers'
@@ -92,17 +99,35 @@ function assemble(geoType: string, geoSlug: string, byKey: Map<string, MetricRow
   }
 }
 
-export async function getDetachedMarkets(
+function assembleInventory(
+  geoType: string,
+  geoSlug: string,
+  byKey: Map<string, MetricRow>,
+): DetachedInventory | null {
+  const active = byKey.get(metricKey(geoType, geoSlug, 'active_count'))
+  if (!publishable(active)) return null
+  const medianList = byKey.get(metricKey(geoType, geoSlug, 'median_list_active'))
+  return {
+    activeCount: Math.round(Number(active!.value)),
+    medianListPrice: publishable(medianList) ? Number(medianList!.value) : null,
+    computedAt: active!.computed_at,
+  }
+}
+
+async function loadOverlayRows(
   keys: ReadonlyArray<{ geoType: 'city' | 'region'; geoSlug: string }>,
-): Promise<Map<string, SellBendMarket>> {
-  const out = new Map<string, SellBendMarket>()
+): Promise<{
+  normalized: Array<{ geoType: 'city' | 'region'; geoSlug: string }>
+  latest: Map<string, MetricRow>
+}> {
   const normalized = keys
     .map((k) => ({
       geoType: k.geoType,
       geoSlug: k.geoType === 'city' ? cityDetachedSlug(k.geoSlug) : k.geoSlug.trim().toLowerCase(),
     }))
     .filter((k) => k.geoSlug)
-  if (!normalized.length) return out
+  const latest = new Map<string, MetricRow>()
+  if (!normalized.length) return { normalized, latest }
 
   const sb = createServiceClient()
   const { data, error } = await sb
@@ -123,16 +148,34 @@ export async function getDetachedMarkets(
     .in('stat_id', [...OVERLAY_STATS])
   if (error) throw new Error(`getDetachedMarkets: ${error.message}`)
 
-  const latest = new Map<string, MetricRow>()
   for (const raw of data ?? []) {
     const row = raw as MetricRow
     const key = metricKey(row.geo_type, row.geo_slug, row.stat_id)
     const prev = latest.get(key)
     if (!prev || String(row.computed_at) > String(prev.computed_at)) latest.set(key, row)
   }
+  return { normalized, latest }
+}
 
+export async function getDetachedMarkets(
+  keys: ReadonlyArray<{ geoType: 'city' | 'region'; geoSlug: string }>,
+): Promise<Map<string, SellBendMarket>> {
+  const out = new Map<string, SellBendMarket>()
+  const { normalized, latest } = await loadOverlayRows(keys)
   for (const k of normalized) {
     const assembled = assemble(k.geoType, k.geoSlug, latest)
+    if (assembled) out.set(`${k.geoType}:${k.geoSlug}`, assembled)
+  }
+  return out
+}
+
+export async function getDetachedInventories(
+  keys: ReadonlyArray<{ geoType: 'city' | 'region'; geoSlug: string }>,
+): Promise<Map<string, DetachedInventory>> {
+  const out = new Map<string, DetachedInventory>()
+  const { normalized, latest } = await loadOverlayRows(keys)
+  for (const k of normalized) {
+    const assembled = assembleInventory(k.geoType, k.geoSlug, latest)
     if (assembled) out.set(`${k.geoType}:${k.geoSlug}`, assembled)
   }
   return out
@@ -149,6 +192,11 @@ export async function getDetachedMarket(
 
 export async function getCityDetachedMarket(geoSlug: string): Promise<SellBendMarket | null> {
   return getDetachedMarket('city', geoSlug)
+}
+
+export async function getCityDetachedInventory(geoSlug: string): Promise<DetachedInventory | null> {
+  const map = await getDetachedInventories([{ geoType: 'city', geoSlug }])
+  return map.get(`city:${cityDetachedSlug(geoSlug)}`) ?? null
 }
 
 export async function getSellBendMarket(): Promise<SellBendMarket | null> {

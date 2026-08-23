@@ -98,7 +98,7 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
   ])
 
   // Index snapshots by lower-cased city name for the lookup below.
-  const byCity = new Map<string, { count: number; medianPrice: number | null; communityCount: number }>()
+  const byCity = new Map<string, { count: number | null; medianPrice: number | null; communityCount: number }>()
   for (const snap of snapshots) {
     byCity.set(snap.geoKey, {
       count: snap.activeSfrCount,
@@ -120,7 +120,8 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
   const result: CityForIndex[] = []
   for (const { City: name, count } of browse) {
     const rec = byCity.get(name.toLowerCase())
-    const activeCount = rec?.count ?? count
+    // Snapshot present with null count is unknown, not the browse polygon fallback.
+    const activeCount = rec ? rec.count : count
     const medianPrice = rec?.medianPrice ?? null
     const communityCount = rec?.communityCount ?? 0
     const slug = slugify(name)
@@ -136,15 +137,22 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
       description: db?.description ?? null,
     })
   }
-  result.sort((a, b) => b.activeCount - a.activeCount || a.name.localeCompare(b.name))
+  result.sort((a, b) => {
+    const av = a.activeCount
+    const bv = b.activeCount
+    if (av == null && bv == null) return a.name.localeCompare(b.name)
+    if (av == null) return 1
+    if (bv == null) return -1
+    return bv - av || a.name.localeCompare(b.name)
+  })
   return result
 }
 
-// v4 cache-key bump 2026-08-23 — city snapshots overlay Market Truth detached.
-// v3 (2026-07-08) evicted pre-pulse-override city counts.
+// v6 2026-08-23 — inventory overlay (active_count) even when MOS is below min_n.
+// v5 city MT miss nulls published inventory. v4 overlay on hit.
 export const getCitiesForIndex = unstable_cache(
   _getCitiesForIndexUncached,
-  ['cities-index-v4-mt-detached'],
+  ['cities-index-v6-mt-inventory'],
   { revalidate: 1800, tags: ['cities-index'] }
 )
 
@@ -164,8 +172,7 @@ async function _getCityBySlugUncached(slug: string): Promise<CityDetail | null> 
     getGeoSnapshot({ geoType: 'city', geoKey: cityName.toLowerCase().trim() }),
   ])
   const cityRow = { data: cityMeta }
-  let activeCount = snapshot?.activeSfrCount ?? 0
-  if (activeCount === 0 && stats.count > 0) activeCount = stats.count
+  const activeCount = snapshot?.activeSfrCount ?? null
   const medianFromRows =
     snapshot?.medianListPrice != null ? Math.round(snapshot.medianListPrice) : null
   const communityCount = snapshot?.communityCount ?? 0
@@ -193,7 +200,7 @@ export const getCityBySlug = unstable_cache(
   // the getLiveMarketPulse property_type fix (commit 91b95cf). Old entries
   // had activeCount=0 because the unfiltered .maybeSingle() returned null
   // when market_pulse_live started carrying multiple rows per city.
-  ['city-by-slug-v3-mt-detached'],
+  ['city-by-slug-v4-mt-miss-null'],
   { revalidate: 300, tags: ['city-detail'] }
 )
 
@@ -300,7 +307,7 @@ async function getCommunitiesInCityUncached(cityName: string): Promise<Community
   for (const snap of communitySnapshots) {
     const sub = snap.geoLabel.trim()
     if (!sub) continue
-    countBySubdivision.set(sub, snap.activeSfrCount)
+    if (snap.activeSfrCount != null) countBySubdivision.set(sub, snap.activeSfrCount)
     pendingBySubdivision.set(sub, snap.pendingCount)
     medianBySubdivision.set(sub, snap.medianListPrice != null ? Math.round(snap.medianListPrice) : null)
   }

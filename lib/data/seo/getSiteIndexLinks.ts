@@ -175,7 +175,7 @@ async function buildSiteIndexLinks(): Promise<SiteIndexLinks> {
     .filter((group) => group.links.length > 0)
 
   const countByGeoKey = new Map<string, number>(
-    communityCounts.map((s) => [s.geoKey, s.activeSfrCount]),
+    communityCounts.map((s) => [s.geoKey, s.activeSfrCount ?? 0]),
   )
   const communities = deriveCommunityLinks(
     getAllResortCommunities().map((e) => ({ slug: e.slug, label: e.label, city: e.city })),

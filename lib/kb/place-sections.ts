@@ -135,7 +135,7 @@ type BlogPostRow = {
 type CitySnapshotRow = {
   geoKey: string
   geoLabel: string
-  activeSfrCount: number
+  activeSfrCount: number | null
   medianListPrice: number | null
 }
 
@@ -278,7 +278,7 @@ export function buildOtherCityItems(
       return {
         name: s.geoLabel,
         href: `/cities/${cs}`,
-        activeCount: s.activeSfrCount > 0 ? s.activeSfrCount : 0,
+        activeCount: s.activeSfrCount,
         medianPrice: s.medianListPrice ?? null,
         img: hero.verified ? hero.src : '',
       }

@@ -4,7 +4,8 @@ import { PRIMARY_CITIES } from '@/lib/data/geo/report-cities'
 export type CityForIndex = {
   slug: string
   name: string
-  activeCount: number
+  /** Null when city Market Truth inventory is unknown. 0 is measured empty. */
+  activeCount: number | null
   medianPrice: number | null
   communityCount: number
   heroImageUrl: string | null
@@ -17,7 +18,8 @@ export type CityDetail = {
   name: string
   description: string | null
   heroImageUrl: string | null
-  activeCount: number
+  /** Null when city Market Truth inventory is unknown. 0 is measured empty. */
+  activeCount: number | null
   medianPrice: number | null
   avgDom: number | null
   closedLast12Months: number
@@ -76,7 +78,14 @@ export function sortCitiesWithPrimaryFirst(cities: CityForIndex[]): CityForIndex
     if (c) primary.push(c)
   }
   const others = cities.filter((c) => getPrimaryCityRank(c.name) < 0)
-  others.sort((a, b) => b.activeCount - a.activeCount || a.name.localeCompare(b.name))
+  others.sort((a, b) => {
+    const av = a.activeCount
+    const bv = b.activeCount
+    if (av == null && bv == null) return a.name.localeCompare(b.name)
+    if (av == null) return 1
+    if (bv == null) return -1
+    return bv - av || a.name.localeCompare(b.name)
+  })
   return [...primary, ...others]
 }
 

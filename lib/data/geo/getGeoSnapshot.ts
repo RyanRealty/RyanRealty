@@ -20,9 +20,9 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { pulseOnlyCitySnapshot, type PulseCityRow } from '@/lib/data/geo/pulse-only-city-snapshot'
 import {
   cityDetachedSlug,
-  getCityDetachedMarket,
-  getDetachedMarkets,
-  type SellBendMarket,
+  getCityDetachedInventory,
+  getDetachedInventories,
+  type DetachedInventory,
 } from '@/lib/data/market-truth/getSellBendMarket'
 
 const GeoSnapshotSchema = z.object({
@@ -36,7 +36,8 @@ export type GeoSnapshot = {
   geoType: 'city' | 'community' | 'neighborhood'
   geoKey: string
   geoLabel: string
-  activeSfrCount: number
+  /** City: Market Truth detached when publishable; null on miss (unknown, not zero). Community/neighborhood: MV count. */
+  activeSfrCount: number | null
   activeAllCount: number
   pendingCount: number
   medianListPrice: number | null
@@ -75,11 +76,12 @@ function rowToSnapshot(row: GeoSnapshotMvRow): GeoSnapshot {
 // polygon-clipped mixed type A (Bend 488 / seller). Market Truth is MLS-city
 // detached exact-Active (Bend ~774 / balanced) — the same three figures /sell
 // publishes. City snapshots overlay MT when the detached cell is publishable.
-// A miss or throw does NOT zero activeSfrCount and does NOT return null:
-// city pages 404 on a null snapshot (`if (!snapshot) notFound()`), and
-// generateMetadata uses the same read. MV then pulse stay for existence.
-// Pulse 488 on that miss path is not Market Truth — hole: index/menu can
-// still print polygon inventory when the detached cell is missing.
+// A miss or throw does NOT return null: city pages 404 on a null snapshot
+// (`if (!snapshot) notFound()`), and generateMetadata uses the same read.
+// MV then pulse stay for existence (pendingCount, the door). Published city
+// inventory (activeSfrCount, medianListPrice as a market figure) is MT on
+// hit and null on miss — unknown is not zero; pulse 488 / polygon MV is not
+// printed as detached on /cities, mega-menu, or homepage town rows.
 // Community/neighborhood stay on the MV (REGISTRY §4: polygons unrepaired).
 
 async function fetchPulseCityMap(): Promise<Map<string, PulseCityRow>> {
@@ -106,7 +108,8 @@ function withPulseOverride(snap: GeoSnapshot, pulse: PulseCityRow | undefined): 
   if (!pulse) return snap
   return {
     ...snap,
-    activeSfrCount: pulse.active_count,
+    // Existence / freshness only. Do not copy pulse.active_count — polygon
+    // 488 is not detached. City published inventory is MT or null.
     pendingCount: pulse.pending_count,
     medianListPrice:
       pulse.median_list_price != null ? Math.round(Number(pulse.median_list_price)) : snap.medianListPrice,
@@ -114,7 +117,7 @@ function withPulseOverride(snap: GeoSnapshot, pulse: PulseCityRow | undefined): 
   }
 }
 
-function withDetachedMarket(snap: GeoSnapshot, mt: SellBendMarket): GeoSnapshot {
+function withDetachedInventory(snap: GeoSnapshot, mt: DetachedInventory): GeoSnapshot {
   return {
     ...snap,
     activeSfrCount: mt.activeCount,
@@ -123,30 +126,40 @@ function withDetachedMarket(snap: GeoSnapshot, mt: SellBendMarket): GeoSnapshot 
   }
 }
 
+/** City MT miss/throw: keep the snapshot object (do not 404) and null published inventory. */
+function withholdCityPublishedInventory(snap: GeoSnapshot): GeoSnapshot {
+  if (snap.geoType !== 'city') return snap
+  return {
+    ...snap,
+    activeSfrCount: null,
+    medianListPrice: null,
+  }
+}
+
 async function overlayOneCityDetached(snap: GeoSnapshot): Promise<GeoSnapshot> {
   if (snap.geoType !== 'city') return snap
   try {
-    const mt = await getCityDetachedMarket(snap.geoKey)
-    // Miss: keep MV/pulse counts so the city door still exists. Do not 404.
-    return mt ? withDetachedMarket(snap, mt) : snap
+    const mt = await getCityDetachedInventory(snap.geoKey)
+    // Miss: keep the door. Do not 404. Do not keep pulse/MV as published inventory.
+    // Inventory overlay needs publishable active_count only — MOS may be below min_n.
+    return mt ? withDetachedInventory(snap, mt) : withholdCityPublishedInventory(snap)
   } catch {
-    return snap
+    return withholdCityPublishedInventory(snap)
   }
 }
 
 async function overlayCitySnapshotsDetached(snaps: GeoSnapshot[]): Promise<GeoSnapshot[]> {
   if (!snaps.length) return snaps
   try {
-    const map = await getDetachedMarkets(
+    const map = await getDetachedInventories(
       snaps.map((s) => ({ geoType: 'city' as const, geoSlug: s.geoKey })),
     )
     return snaps.map((s) => {
       const mt = map.get(`city:${cityDetachedSlug(s.geoKey)}`)
-      // Miss: keep MV/pulse counts (existence). Pulse 488 is not Market Truth.
-      return mt ? withDetachedMarket(s, mt) : s
+      return mt ? withDetachedInventory(s, mt) : withholdCityPublishedInventory(s)
     })
   } catch {
-    return snaps
+    return snaps.map(withholdCityPublishedInventory)
   }
 }
 
@@ -218,12 +231,10 @@ const getGeoSnapshotUncoalesced = async (input: GeoSnapshotInput): Promise<GeoSn
   const parsed = GeoSnapshotSchema.parse(input)
   const cached = unstable_cache(
     () => fetchOneOrThrow(parsed),
-    // v5 cache-key bump 2026-08-23 — city snapshots overlay Market Truth
-    // detached when the cell is publishable. Miss keeps MV/pulse counts
-    // (existence; do not 404). Not bumped for withhold: that count path
-    // did not change. v4 pulse-only city doors. v3 pulse override. v2
-    // poison-null eviction.
-    ['geo-snapshot-v5-mt-detached', parsed.geoType, parsed.geoKey],
+    // v7 2026-08-23 — city inventory overlay (active_count) even when MOS
+    // is below min_n. v6 miss nulls published inventory (not pulse 488).
+    // Snapshot object still returned (do not 404). v5 overlay on hit.
+    ['geo-snapshot-v7-mt-inventory', parsed.geoType, parsed.geoKey],
     {
       revalidate:
         parsed.geoType === 'city'
@@ -294,7 +305,14 @@ async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
   const overlaid = await overlayCitySnapshotsDetached(
     rows.map((row) => withPulseOverride(rowToSnapshot(row), pulse.get(row.geo_key.toLowerCase().trim()))),
   )
-  return overlaid.sort((a, b) => b.activeSfrCount - a.activeSfrCount)
+  return overlaid.sort((a, b) => {
+    const av = a.activeSfrCount
+    const bv = b.activeSfrCount
+    if (av == null && bv == null) return 0
+    if (av == null) return 1
+    if (bv == null) return -1
+    return bv - av
+  })
 }
 
 /**
@@ -303,7 +321,7 @@ async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
  */
 export const getAllCitySnapshots = makeResilientCached(
   _fetchAllCitySnapshots,
-  ['geo-snapshot-all-cities-v5-mt-detached'],
+  ['geo-snapshot-all-cities-v7-mt-inventory'],
   { revalidate: CACHE_WINDOWS.geoCity, tags: ['cities-index'] },
   [],
 )

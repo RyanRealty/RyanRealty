@@ -329,7 +329,9 @@ export default async function CityDetailPage({ params }: Props) {
   const communitySfrBySlug = new Map<string, number>()
   for (const s of communitySnapshots) {
     const rawSlug = s.geoKey.includes(':') ? s.geoKey.split(':')[1]! : s.geoKey
-    communitySfrBySlug.set(rawSlug.replace(/\s+/g, '-').toLowerCase(), s.activeSfrCount)
+    if (s.activeSfrCount != null) {
+      communitySfrBySlug.set(rawSlug.replace(/\s+/g, '-').toLowerCase(), s.activeSfrCount)
+    }
   }
   const golfCommunityItems: KbTownItem[] = cityResorts(slug)
     .map((c) => ({
