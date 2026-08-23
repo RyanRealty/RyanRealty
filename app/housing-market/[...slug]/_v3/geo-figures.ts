@@ -24,11 +24,7 @@ import {
   publicSegmentNoun,
   type PublicSegmentRow,
 } from '@/lib/data/market-truth/public-segments'
-import {
-  formatPaceDelta,
-  formatPaceShare,
-  type PublicPaceRow,
-} from '@/lib/data/market-truth/public-pace'
+import { publicPaceItems, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import {
   v3Text,
   type V3ChartPoint,
@@ -136,47 +132,13 @@ export function buildPublicSegmentFigures(
   return figures
 }
 
-/** 12-month leftover pace. Miss omitted. Does not replace live 30-day pulse figures. */
+/** Leftover pace. Miss omitted. Does not replace live 30-day pulse figures. */
 export function buildPublicPaceFigures(row: PublicPaceRow | null | undefined): V3InstrumentFigure[] {
   if (!row) return []
-  const figures: V3InstrumentFigure[] = []
-  if (row.daysToContract != null) {
-    figures.push({
-      value: v3Text(String(row.daysToContract)),
-      label: v3Text('days to contract · 12 months'),
-    })
-  }
-  if (row.closedCount != null) {
-    figures.push({
-      value: v3Text(row.closedCount.toLocaleString('en-US')),
-      label: v3Text('closed sales · 12 months'),
-    })
-  }
-  if (row.newListings != null) {
-    figures.push({
-      value: v3Text(row.newListings.toLocaleString('en-US')),
-      label: v3Text('new listings · 12 months'),
-    })
-  }
-  if (row.priceCutShare != null) {
-    figures.push({
-      value: v3Text(formatPaceShare(row.priceCutShare)),
-      label: v3Text('closed with a price cut · 12 months'),
-    })
-  }
-  if (row.daysToClose != null) {
-    figures.push({
-      value: v3Text(String(row.daysToClose)),
-      label: v3Text('days to close · 12 months'),
-    })
-  }
-  if (row.yoyMedian != null) {
-    figures.push({
-      value: v3Text(formatPaceDelta(row.yoyMedian)),
-      label: v3Text('YoY median close · 12 months'),
-    })
-  }
-  return figures
+  return publicPaceItems(row).map((item) => ({
+    value: v3Text(item.value),
+    label: v3Text(item.label),
+  }))
 }
 
 /**

@@ -35,6 +35,7 @@ import {
   getSellBendMarket,
   getSurfaceImage,
 } from '@/lib/data'
+import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
@@ -92,7 +93,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SellPage() {
-  const [bend, heroSrc, trackRecord] = await Promise.all([
+  const [bend, heroSrc, trackRecord, publicPace] = await Promise.all([
     getSellBendMarket(),
     getSurfaceImage('hero', {
       geoTags: ['central-oregon'],
@@ -100,6 +101,7 @@ export default async function SellPage() {
       fallback: SELL_POSTER,
     }),
     getBrokerageTrackRecord(),
+    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
   ])
 
   const bendFigures: V3InstrumentFigure[] = []
@@ -124,11 +126,21 @@ export default async function SellPage() {
       href: '/months-of-supply',
     })
   }
+  for (const item of publicPaceItems(publicPace)) {
+    bendFigures.push({
+      value: v3Text(item.value),
+      label: v3Text(item.label),
+    })
+  }
   const [firstBendFigure, ...restBendFigures] = bendFigures
 
+  const leftoverTrace =
+    publicPaceItems(publicPace).length > 0
+      ? ' Leftover pace stats are 12-month Market Truth cells except pending and inventory age, which are point-in-time.'
+      : ''
   const bendTrace =
     bend != null
-      ? `${BEND_MARKET_TRACE_SCOPE} ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`
+      ? `${BEND_MARKET_TRACE_SCOPE} ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}${leftoverTrace}`
       : BEND_MARKET_TRACE_SCOPE
 
   const reviews = TESTIMONIALS.filter((t) =>

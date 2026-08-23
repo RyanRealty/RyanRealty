@@ -18,7 +18,7 @@ export function PublicProductTypes({
 }) {
   if (rows.length === 0) return null
   return (
-    <div className="mkt-panel" aria-label={`${cityName} condo and townhome inventory`}>
+    <div className="mkt-panel" aria-label={`${cityName} other product types`}>
       <div className="mkt-phead">
         <span className="mono-lab">▸ Other product types · Market Truth</span>
       </div>

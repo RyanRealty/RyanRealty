@@ -1,6 +1,7 @@
 /**
- * Public place-page extra segments (Step 9 start). Condo and townhome only.
- * Detached stays the HUD. Neighborhood MOS is not here. Miss omits the row.
+ * Public place-page extra segments (Step 9). Detached stays the HUD.
+ * The mixed all-types bucket is omitted (it double-counts). Lease inventory
+ * stays out. Neighborhood MOS is not here. Miss omits the row.
  */
 import { createServiceClient } from '@/lib/data/client'
 import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
@@ -14,20 +15,46 @@ import {
   type RawSegmentCell,
 } from '@/lib/data/market-truth/city-segment-collapse'
 
-export const PUBLIC_PLACE_SEGMENTS = ['condo', 'townhome'] as const
+export const PUBLIC_PLACE_SEGMENTS = [
+  'condo',
+  'townhome',
+  'manufactured_land',
+  'manufactured_park',
+  'multifamily_2_4',
+  'land',
+  'farm',
+  'commercial_sale',
+  'business',
+] as const
 
 export type PublicPlaceSegment = (typeof PUBLIC_PLACE_SEGMENTS)[number]
 
 export type PublicSegmentRow = CitySegmentRow & { segment: PublicPlaceSegment }
 
-const SUBTYPE_QUERY: Record<PublicPlaceSegment, string> = {
-  condo: 'Condominium',
-  townhome: 'Townhouse',
+type BrowseSpec = { propertySubTypes?: string; propertyType?: string }
+
+const BROWSE: Record<PublicPlaceSegment, BrowseSpec> = {
+  condo: { propertySubTypes: 'Condominium' },
+  townhome: { propertySubTypes: 'Townhouse' },
+  manufactured_land: { propertySubTypes: 'Manufactured On Land' },
+  manufactured_park: { propertySubTypes: 'In Park' },
+  multifamily_2_4: { propertyType: 'multi-family' },
+  land: { propertyType: 'Land' },
+  farm: { propertyType: 'farm' },
+  commercial_sale: { propertyType: 'Commercial' },
+  business: { propertyType: 'business' },
 }
 
 const NOUN: Record<PublicPlaceSegment, { one: string; many: string }> = {
   condo: { one: 'condo', many: 'condos' },
   townhome: { one: 'townhome', many: 'townhomes' },
+  manufactured_land: { one: 'manufactured home on land', many: 'manufactured homes on land' },
+  manufactured_park: { one: 'manufactured home in a park', many: 'manufactured homes in parks' },
+  multifamily_2_4: { one: '2-4 unit building', many: '2-4 unit buildings' },
+  land: { one: 'lot', many: 'lots' },
+  farm: { one: 'farm', many: 'farms' },
+  commercial_sale: { one: 'commercial property', many: 'commercial properties' },
+  business: { one: 'business', many: 'businesses' },
 }
 
 function hyphenSlug(raw: string): string {
@@ -49,12 +76,13 @@ export function publicSegmentBrowseHref(
   segment: string,
   opts?: { postalCode?: string | null },
 ): string {
-  const sub = SUBTYPE_QUERY[segment as PublicPlaceSegment]
+  const spec = BROWSE[segment as PublicPlaceSegment]
   const path = citySlug?.trim() ? `/homes-for-sale/${hyphenSlug(citySlug)}` : '/homes-for-sale'
   const params = new URLSearchParams()
   const zip = opts?.postalCode?.replace(/\D/g, '').slice(0, 5)
   if (zip && zip.length === 5) params.set('postalCode', zip)
-  if (sub) params.set('propertySubTypes', sub)
+  if (spec?.propertySubTypes) params.set('propertySubTypes', spec.propertySubTypes)
+  if (spec?.propertyType) params.set('propertyType', spec.propertyType)
   const q = params.toString()
   return q ? `${path}?${q}` : path
 }

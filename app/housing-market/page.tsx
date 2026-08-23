@@ -64,10 +64,9 @@ import {
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
 import {
-  formatPaceDelta,
-  formatPaceShare,
   getPublicDetachedPace,
   publicPaceHasRow,
+  publicPaceItems,
 } from '@/lib/data/market-truth/public-pace'
 import {
   getCoMarketAnnual,
@@ -239,40 +238,10 @@ export default async function HousingMarketHubPage() {
       href: publicSegmentBrowseHref(null, row.segment),
     })
   }
-  if (publicPace.daysToContract != null) {
+  for (const item of publicPaceItems(publicPace)) {
     sfrFollow.push({
-      value: v3Text(String(publicPace.daysToContract)),
-      label: v3Text('days to contract · 12 months'),
-    })
-  }
-  if (publicPace.closedCount != null) {
-    sfrFollow.push({
-      value: v3Text(publicPace.closedCount.toLocaleString('en-US')),
-      label: v3Text('closed sales · 12 months'),
-    })
-  }
-  if (publicPace.newListings != null) {
-    sfrFollow.push({
-      value: v3Text(publicPace.newListings.toLocaleString('en-US')),
-      label: v3Text('new listings · 12 months'),
-    })
-  }
-  if (publicPace.priceCutShare != null) {
-    sfrFollow.push({
-      value: v3Text(formatPaceShare(publicPace.priceCutShare)),
-      label: v3Text('closed with a price cut · 12 months'),
-    })
-  }
-  if (publicPace.daysToClose != null) {
-    sfrFollow.push({
-      value: v3Text(String(publicPace.daysToClose)),
-      label: v3Text('days to close · 12 months'),
-    })
-  }
-  if (publicPace.yoyMedian != null) {
-    sfrFollow.push({
-      value: v3Text(formatPaceDelta(publicPace.yoyMedian)),
-      label: v3Text('YoY median close · 12 months'),
+      value: v3Text(item.value),
+      label: v3Text(item.label),
     })
   }
   const [firstSfrFigure, ...restSfrFigures] = sfrFollow

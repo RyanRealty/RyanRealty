@@ -358,6 +358,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23j landed: leftover pace includes YoY median close. `/cities/bend` prints **-1.9%** YoY median close · 12 months. Unadjusted MoM stays off public. Neighborhood MOS and county stay unpublished.
 
+### Grind 2026-08-23k — remaining leftover stats + remaining public sale segments
+
+**Done when:** `/cities/bend` leftover panel includes pending now, inventory age, sale-to-original, median price cut, cash share, median close, ppsf, YoY sold; extra product types include land / manufactured / farm / commercial / business / 2-4 unit (not all_residential, not commercial_lease); browse hrefs use propertyType or propertySubTypes; `/sell` prints leftover Bend pace; a miss omits the row. Neighborhood MOS and county stay unpublished. Workers do not tick this file.
+
+2026-08-23k landed: leftover panel 311 pending, 72 days age, 28 / 2,095 / $760,000 / $399 / 2,956 / 46.6% / 5.9% / 96.9% / 99.1% / 27.6% / 64 / -1.9% / +1.8%. Extra types 66 condos, 78 townhomes, 44 manufactured on land, 21 in parks, 21 2-4 unit, 198 lots, 9 farms, 17 commercial, 3 businesses. `/sell` prints leftover. Neighborhood MOS and county stay unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

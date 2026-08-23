@@ -12,17 +12,28 @@ import {
 const SRC = readFileSync(resolve('lib/data/market-truth/public-segments.ts'), 'utf8')
 
 describe('getPublicPlaceSegments', () => {
-  it('reads publishable market_metric condo and townhome cells', () => {
+  it('reads publishable market_metric extra-segment cells', () => {
     expect(SRC).toMatch(/from\('market_metric'\)/)
     expect(SRC).toMatch(/is_publishable/)
     expect(SRC).toMatch(/'condo'/)
     expect(SRC).toMatch(/'townhome'/)
-    expect([...PUBLIC_PLACE_SEGMENTS]).toEqual(['condo', 'townhome'])
+    expect(SRC).toMatch(/manufactured_land/)
+    expect(SRC).toMatch(/'land'/)
+    expect([...PUBLIC_PLACE_SEGMENTS]).toEqual([
+      'condo',
+      'townhome',
+      'manufactured_land',
+      'manufactured_park',
+      'multifamily_2_4',
+      'land',
+      'farm',
+      'commercial_sale',
+      'business',
+    ])
     expect(SRC).not.toMatch(/market_pulse_live/)
-    expect(SRC).not.toMatch(/commercial_lease/)
+    expect(SRC).not.toMatch(/'commercial_lease'/)
     expect(SRC).not.toMatch(/'neighborhood'/)
-    expect(SRC).not.toMatch(/'land'/)
-    expect(SRC).not.toMatch(/manufactured/)
+    expect(SRC).not.toMatch(/'all_residential'/)
   })
 
   it('omits a miss instead of printing 0', () => {
@@ -46,6 +57,11 @@ describe('getPublicPlaceSegments', () => {
     expect(publicSegmentNoun('condo', 1)).toBe('condo')
     expect(publicSegmentNoun('condo', 66)).toBe('condos')
     expect(publicSegmentNoun('townhome', 78)).toBe('townhomes')
+    expect(publicSegmentBrowseHref('bend', 'land')).toBe('/homes-for-sale/bend?propertyType=Land')
+    expect(publicSegmentBrowseHref('bend', 'manufactured_land')).toBe(
+      '/homes-for-sale/bend?propertySubTypes=Manufactured+On+Land',
+    )
+    expect(publicSegmentNoun('land', 198)).toBe('lots')
     expect(publicSegmentDisplayBits({
       medianList: 326000,
       monthsOfSupply: 12.8,
@@ -58,7 +74,7 @@ describe('getPublicPlaceSegments', () => {
     })).toEqual([])
   })
 
-  it('collapse with public segments does not emit farm or detached rows', () => {
+  it('collapse with public segments does not emit detached or all_residential', () => {
     const cell = (
       partial: Partial<RawSegmentCell> & Pick<RawSegmentCell, 'segment' | 'stat_id' | 'value'>,
     ): RawSegmentCell => ({
@@ -79,9 +95,11 @@ describe('getPublicPlaceSegments', () => {
       ],
       { segments: PUBLIC_PLACE_SEGMENTS },
     )
-    expect(rows.map((row) => row.segment)).toEqual(['condo', 'townhome'])
+    expect(rows.map((row) => row.segment)).toEqual([...PUBLIC_PLACE_SEGMENTS])
     expect(rows.find((row) => row.segment === 'condo')?.activeCount).toBe(66)
-    expect(rows.find((row) => row.segment === 'townhome')?.activeCount).toBeNull()
+    expect(rows.find((row) => row.segment === 'farm')?.activeCount).toBe(12)
+    expect(rows.find((row) => row.segment === 'detached')).toBeUndefined()
+    expect(rows.find((row) => row.segment === 'all_residential')).toBeUndefined()
   })
 })
 

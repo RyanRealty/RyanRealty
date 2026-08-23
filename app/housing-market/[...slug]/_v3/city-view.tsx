@@ -103,7 +103,7 @@ export function CityMarketView({
       ? 'condo and townhome counts are Market Truth mt-v1, sample-gated, not the detached HUD'
       : null,
     paceFigures.length > 0
-      ? 'days to contract, closed sales, new listings, and price-cut share are 12-month Market Truth leftover stats, not the live 30-day pulse'
+      ? 'leftover pace stats are Market Truth mt-v1, labeled by window, not the live 30-day pulse'
       : null,
     closedTrace,
   ].filter((part): part is string => Boolean(part))
