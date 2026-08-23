@@ -63,6 +63,9 @@ import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/dat
 import { getDealParties } from '@/lib/data/tc/deal-people'
 import { DealParties } from './DealParties'
 import { DealStageControls } from './DealStageControls'
+import { ListingFileActions } from './ListingFileActions'
+import { getLiveDealCycles } from '@/lib/data/tc/closings'
+import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { tcEventDetailPreview, tcEventLabel } from '@/lib/tc/events'
 import {
   COMMISSION_STATUS,
@@ -393,12 +396,23 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   const deal = await getTcDeal(decodeURIComponent(key))
   if (!deal) notFound()
 
-  const [contacts, commissions, orefFormResult, parties] = await Promise.all([
+  const [contacts, commissions, orefFormResult, parties, liveCycles] = await Promise.all([
     getDealContacts(deal.id),
     getCommissionsForCycles(deal.cycles.map((c) => c.id)),
     getPreferredOrefSaleAgreement(),
     getDealParties(deal.id),
+    getLiveDealCycles(),
   ])
+  const mergeOthers = liveCycles.filter(
+    (d) =>
+      d.propertyKey !== deal.property_key &&
+      d.stage === 'active_listing' &&
+      dealVisibleToBroker({
+        role: ctx.role,
+        brokerSlug: ctx.brokerSlug,
+        dealBrokerName: d.brokerName,
+      }),
+  )
   const orefForm = orefFormResult.data
 
   const anticipatedByCycle = new Map<string, AnticipatedDocsResult | null>(
@@ -453,6 +467,11 @@ export default async function TcDealPage({ params, searchParams }: Props) {
           stage={deal.stage}
           brokerName={deal.broker_name}
           canAssign={ctx.role === 'superuser'}
+        />
+        <ListingFileActions
+          propertyKey={deal.property_key}
+          stage={deal.stage}
+          others={mergeOthers}
         />
       </div>
       {(() => {
