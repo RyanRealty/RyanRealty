@@ -1,11 +1,13 @@
 /**
- * City detached snapshot from Market Truth (D1, MLS City text).
- * /sell Bend and CMA city-grain MoS share this so they cannot disagree.
- * A miss withholds rather than falling back to the pulse polygon series.
+ * Detached snapshot from Market Truth (D1, MLS City text / region).
+ * /sell, CMA city grain, and city/region pulse overlays share this so they
+ * cannot disagree. A miss withholds rather than falling back to pulse.
  */
+import { createServiceClient } from '@/lib/data/client'
+import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
+import { staleReason } from '@/lib/data/market-truth/getMetric'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { marketVerdict, type MarketKind } from '@/lib/market/classify'
-import { getMetric } from '@/lib/data/market-truth/getMetric'
 
 export function cityDetachedSlug(geoSlug: string): string {
   return geoSlug
@@ -33,37 +35,147 @@ function storedVerdictKind(valueText: string | null): MarketKind {
   return 'unknown'
 }
 
-export async function getCityDetachedMarket(geoSlug: string): Promise<SellBendMarket | null> {
-  const slug = cityDetachedSlug(geoSlug)
-  if (!slug) return null
-  const geo = { geoType: 'city', geoSlug: slug, segment: 'detached' } as const
-  const [active, mos, verdict, medianList] = await Promise.all([
-    getMetric({ stat: 'active_count', ...geo }),
-    getMetric({ stat: 'months_of_supply', ...geo }),
-    getMetric({ stat: 'market_verdict', ...geo }),
-    getMetric({ stat: 'median_list_active', ...geo }),
-  ])
-  if (!active?.isPublishable || active.value == null) return null
-  if (!mos?.isPublishable || mos.value == null) return null
-  if (!verdict?.isPublishable || verdict.value == null) return null
+const OVERLAY_STATS = [
+  'active_count',
+  'months_of_supply',
+  'market_verdict',
+  'median_list_active',
+] as const
 
-  const classified = marketVerdict(mos.value)
+type MetricRow = {
+  stat_id: string
+  geo_type: string
+  geo_slug: string
+  value: number | null
+  value_text: string | null
+  is_publishable: boolean
+  complete_through: string
+  period_end: string
+  window_months: number
+  computed_at: string
+}
+
+function metricKey(geoType: string, geoSlug: string, statId: string): string {
+  return `${geoType}:${geoSlug}:${statId}`
+}
+
+function publishable(row: MetricRow | undefined): boolean {
+  if (!row?.is_publishable || row.value == null) return false
+  return !staleReason({
+    completeThrough: row.complete_through,
+    periodEnd: row.period_end,
+    windowMonths: Number(row.window_months),
+  })
+}
+
+function assemble(geoType: string, geoSlug: string, byKey: Map<string, MetricRow>): SellBendMarket | null {
+  const active = byKey.get(metricKey(geoType, geoSlug, 'active_count'))
+  const mos = byKey.get(metricKey(geoType, geoSlug, 'months_of_supply'))
+  const verdict = byKey.get(metricKey(geoType, geoSlug, 'market_verdict'))
+  const medianList = byKey.get(metricKey(geoType, geoSlug, 'median_list_active'))
+  if (!publishable(active) || !publishable(mos) || !publishable(verdict)) return null
+  const classified = marketVerdict(Number(mos!.value))
   if (classified.kind === 'unknown') return null
-  if (storedVerdictKind(verdict.valueText) !== classified.kind) return null
-
+  if (storedVerdictKind(verdict!.value_text) !== classified.kind) return null
   return {
-    activeCount: Math.round(active.value),
-    monthsOfSupply: mos.value,
-    mosLabel: formatMonthsOfSupply(mos.value),
+    activeCount: Math.round(Number(active!.value)),
+    monthsOfSupply: Number(mos!.value),
+    mosLabel: formatMonthsOfSupply(Number(mos!.value)),
     verdictKind: classified.kind,
     verdictLabel: classified.label,
-    medianListPrice:
-      medianList?.isPublishable && medianList.value != null ? medianList.value : null,
-    computedAt: mos.provenance.computedAt,
-    completeThrough: mos.provenance.completeThrough,
+    medianListPrice: publishable(medianList) ? Number(medianList!.value) : null,
+    computedAt: mos!.computed_at,
+    completeThrough: mos!.complete_through,
   }
+}
+
+export async function getDetachedMarkets(
+  keys: ReadonlyArray<{ geoType: 'city' | 'region'; geoSlug: string }>,
+): Promise<Map<string, SellBendMarket>> {
+  const out = new Map<string, SellBendMarket>()
+  const normalized = keys
+    .map((k) => ({
+      geoType: k.geoType,
+      geoSlug: k.geoType === 'city' ? cityDetachedSlug(k.geoSlug) : k.geoSlug.trim().toLowerCase(),
+    }))
+    .filter((k) => k.geoSlug)
+  if (!normalized.length) return out
+
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('market_metric')
+    .select(
+      'stat_id, geo_type, geo_slug, value, value_text, is_publishable, complete_through, period_end, window_months, computed_at',
+    )
+    .eq('definition_id', DEFINITION_ID)
+    .eq('segment', 'detached')
+    .in(
+      'geo_type',
+      [...new Set(normalized.map((k) => k.geoType))],
+    )
+    .in(
+      'geo_slug',
+      [...new Set(normalized.map((k) => k.geoSlug))],
+    )
+    .in('stat_id', [...OVERLAY_STATS])
+  if (error) throw new Error(`getDetachedMarkets: ${error.message}`)
+
+  const latest = new Map<string, MetricRow>()
+  for (const raw of data ?? []) {
+    const row = raw as MetricRow
+    const key = metricKey(row.geo_type, row.geo_slug, row.stat_id)
+    const prev = latest.get(key)
+    if (!prev || String(row.computed_at) > String(prev.computed_at)) latest.set(key, row)
+  }
+
+  for (const k of normalized) {
+    const assembled = assemble(k.geoType, k.geoSlug, latest)
+    if (assembled) out.set(`${k.geoType}:${k.geoSlug}`, assembled)
+  }
+  return out
+}
+
+export async function getDetachedMarket(
+  geoType: 'city' | 'region',
+  geoSlug: string,
+): Promise<SellBendMarket | null> {
+  const map = await getDetachedMarkets([{ geoType, geoSlug }])
+  const slug = geoType === 'city' ? cityDetachedSlug(geoSlug) : geoSlug.trim().toLowerCase()
+  return map.get(`${geoType}:${slug}`) ?? null
+}
+
+export async function getCityDetachedMarket(geoSlug: string): Promise<SellBendMarket | null> {
+  return getDetachedMarket('city', geoSlug)
 }
 
 export async function getSellBendMarket(): Promise<SellBendMarket | null> {
   return getCityDetachedMarket('bend')
+}
+
+export function applyDetachedOverlay<T extends {
+  activeCount?: number
+  active_count?: number
+  monthsOfSupply?: number | null
+  months_of_supply?: number | null
+  medianListPrice?: number | null
+  median_list_price?: number | null
+  marketHealthLabel?: string | null
+  market_health_label?: string | null
+  refreshedAt?: string
+  updated_at?: string | null
+  updatedAt?: string
+}>(row: T, mt: SellBendMarket): T {
+  const next = { ...row }
+  if ('activeCount' in next) next.activeCount = mt.activeCount
+  if ('active_count' in next) next.active_count = mt.activeCount
+  if ('monthsOfSupply' in next) next.monthsOfSupply = mt.monthsOfSupply
+  if ('months_of_supply' in next) next.months_of_supply = mt.monthsOfSupply
+  if ('medianListPrice' in next && mt.medianListPrice != null) next.medianListPrice = mt.medianListPrice
+  if ('median_list_price' in next && mt.medianListPrice != null) next.median_list_price = mt.medianListPrice
+  if ('marketHealthLabel' in next) next.marketHealthLabel = mt.verdictLabel
+  if ('market_health_label' in next) next.market_health_label = mt.verdictLabel
+  if ('refreshedAt' in next) next.refreshedAt = mt.computedAt as T['refreshedAt']
+  if ('updated_at' in next) next.updated_at = mt.computedAt
+  if ('updatedAt' in next) next.updatedAt = mt.computedAt
+  return next
 }

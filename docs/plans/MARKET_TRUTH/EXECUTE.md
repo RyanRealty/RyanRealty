@@ -225,8 +225,12 @@ registry-declared and land as a follow-on compute. Recon: `RECON.md`. `/sell` re
       market-area chapters over the whole A bucket while the cache figures beside them are SFR-only.
       2026-08-23: city-grain CMA/BPO MoS, active count, verdict, and median list now
       `getCityDetachedMarket` (same path as `/sell`). Subdivision pace uses
-      `days_to_pending`, not CDOM. Market-area extras still `PropertyType='A'`.
+      `days_to_pending`, not CDOM. Seasonality, financing, and subdivision-pulse
+      extras filter detached (D1), not the mixed A bucket.
 - [ ] Then place pages, market hub, newsletter, video producers, JSON feeds, admin.
+      2026-08-23: city and region `getMarketPulse` / snapshots / JSON feed overlay
+      `getDetachedMarket` so header, hub, homepage, and `/data/market` cannot
+      print pulse 488 next to `/sell` 775. Neighborhood grains stay pulse.
 - [ ] Each surface proves reconciliation before it flips.
 
 **Done when:** `/sell` reads `getMetric` for active count, months of supply, and verdict; the three

@@ -10,6 +10,12 @@
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
+import {
+  applyDetachedOverlay,
+  cityDetachedSlug,
+  getDetachedMarket,
+  getDetachedMarkets,
+} from '@/lib/data/market-truth/getSellBendMarket'
 
 export type MarketPulseSnapshot = {
   geo_slug: string
@@ -86,7 +92,14 @@ export async function getMarketPulseRegionSnapshot(
     .eq('geo_slug', regionSlug)
     .maybeSingle()
   if (error || !data) return null
-  return toSnapshot(data as Record<string, unknown>)
+  const snap = toSnapshot(data as Record<string, unknown>)
+  try {
+    const mt = await getDetachedMarket('region', regionSlug)
+    if (mt) return applyDetachedOverlay(snap, mt)
+  } catch {
+    /* keep pulse */
+  }
+  return snap
 }
 
 /** Inner fetch for city snapshots. THROWS on a query error so the resilient
@@ -105,7 +118,22 @@ async function fetchMarketPulseCitySnapshots(
     .eq('property_type', 'A')
     .in('geo_label', cityLabels)
   if (error) throw new Error(`market_pulse_live city snapshots: ${error.message}`)
-  return ((data ?? []) as Array<Record<string, unknown>>).map(toSnapshot)
+  return overlayCitySnapshots(((data ?? []) as Array<Record<string, unknown>>).map(toSnapshot))
+}
+
+async function overlayCitySnapshots(snaps: MarketPulseSnapshot[]): Promise<MarketPulseSnapshot[]> {
+  if (!snaps.length) return snaps
+  try {
+    const map = await getDetachedMarkets(
+      snaps.map((s) => ({ geoType: 'city' as const, geoSlug: s.geo_slug || s.geo_label })),
+    )
+    return snaps.map((s) => {
+      const mt = map.get(`city:${cityDetachedSlug(s.geo_slug || s.geo_label)}`)
+      return mt ? applyDetachedOverlay(s, mt) : s
+    })
+  } catch {
+    return snaps
+  }
 }
 
 /** City snapshots by geo_label (display name, not slug). Resilient-cached —
@@ -113,7 +141,7 @@ async function fetchMarketPulseCitySnapshots(
  * render hit the DB and a blip rendered empty tiles). */
 export const getMarketPulseCitySnapshots = makeResilientCached(
   fetchMarketPulseCitySnapshots,
-  ['market-pulse-city-snapshots-v3'],
+  ['market-pulse-city-snapshots-v4-mt-detached'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],
@@ -133,12 +161,12 @@ async function fetchAllMarketPulseCitySnapshots(): Promise<MarketPulseSnapshot[]
     .eq('geo_type', 'city')
     .eq('property_type', 'A')
   if (error) throw new Error(`market_pulse_live all city snapshots: ${error.message}`)
-  return ((data ?? []) as Array<Record<string, unknown>>).map(toSnapshot)
+  return overlayCitySnapshots(((data ?? []) as Array<Record<string, unknown>>).map(toSnapshot))
 }
 
 export const getMarketPulseAllCitySnapshots = makeResilientCached(
   fetchAllMarketPulseCitySnapshots,
-  ['market-pulse-all-city-snapshots-v3'],
+  ['market-pulse-all-city-snapshots-v4-mt-detached'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

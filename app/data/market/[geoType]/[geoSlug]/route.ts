@@ -164,7 +164,7 @@ export async function GET(
         collectedAt: feed.collectedAt,
         refreshFrequency: '10-15 minutes',
         propertyType:
-          feed.geoType === 'city' && feed.geoSlug === 'bend'
+          feed.geoType === 'city' || feed.geoType === 'region'
             ? "Detached single-family (PropertyType='A' AND property_sub_type='Single Family Residence')"
             : "SFR only (MLS PropertyType = 'A')",
       },

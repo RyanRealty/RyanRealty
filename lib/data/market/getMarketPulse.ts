@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached, readOrThrow } from '@/lib/data/cache/resilient'
+import { applyDetachedOverlay, getDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import type { GeoType, IsoTimestamp } from '@/lib/data/types/shared'
 import type { MarketPulse } from '@/lib/data/types/market'
 
@@ -50,7 +51,7 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
   if (!data) return null
 
   const row = data as unknown as Record<string, unknown>
-  return {
+  const pulse: MarketPulse = {
     geoType: row.geo_type as GeoType,
     geoSlug: row.geo_slug as string,
     activeCount: (row.active_count as number) ?? 0,
@@ -62,6 +63,15 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
     medianDaysToPending: row.median_days_to_pending as number | null,
     refreshedAt: row.updated_at as IsoTimestamp,
   }
+  if (geoType === 'city' || geoType === 'region') {
+    try {
+      const mt = await getDetachedMarket(geoType, geoSlug)
+      if (mt) return applyDetachedOverlay(pulse, mt)
+    } catch {
+      /* keep pulse rather than fail the page */
+    }
+  }
+  return pulse
 }
 
 // v4 cache-key bump 2026-05-31 — evicts poison-null entries cached before the
@@ -70,7 +80,7 @@ async function fetchMarketPulse(input: GetMarketPulseInput): Promise<MarketPulse
 // retry before falling back to null.
 export const getMarketPulse = makeResilientCached(
   fetchMarketPulse,
-  ['market-pulse-v4'],
+  ['market-pulse-v5-mt-detached'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

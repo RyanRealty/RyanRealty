@@ -79,6 +79,7 @@ export async function getMetric(input: GetMetricInput): Promise<MetricResult | n
     .order('is_publishable', { ascending: false })
     .order('window_months', { ascending: true })
     .order('period_end', { ascending: false })
+    .order('computed_at', { ascending: false })
     .limit(1)
 
   if (input.windowMonths != null) q = q.eq('window_months', input.windowMonths)

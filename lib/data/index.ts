@@ -351,6 +351,8 @@ export { getMetric } from '@/lib/data/market-truth/getMetric'
 export {
   getSellBendMarket,
   getCityDetachedMarket,
+  getDetachedMarket,
+  getDetachedMarkets,
   cityDetachedSlug,
 } from '@/lib/data/market-truth/getSellBendMarket'
 export type { SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'

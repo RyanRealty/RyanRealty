@@ -141,7 +141,7 @@ export function computeSubdivisionFacts(
     saleToListRecentPct: stlMed != null ? Math.round(stlMed * 1000) / 10 : null,
     subjectSqftPercentile: sqftPct,
     vintageSpan: vintages.length >= 5 ? { min: Math.min(...vintages), max: Math.max(...vintages) } : null,
-    source: `Supabase listings, SubdivisionName='${subdivision}', PropertyType='A', Closed, CloseDate ≥ ${sinceIso}: ${sales.length} sales, aggregated by close year`,
+    source: `Supabase listings, SubdivisionName='${subdivision}', detached (PropertyType='A' AND property_sub_type='Single Family Residence'), Closed, CloseDate ≥ ${sinceIso}: ${sales.length} sales, aggregated by close year`,
   }
 }
 

@@ -176,7 +176,7 @@ export function computeSeasonality(rows: CmaClosedSkinnyRow[], city: string, sin
     slowestMonths: ranked.slice(-2).map((m) => m.monthName),
     yearsCovered: years,
     totalClosed: rows.length,
-    source: `Supabase listings, City='${city}', PropertyType='A', Closed, CloseDate ≥ ${sinceIso}: ${rows.length} sales grouped by close month, median days_to_pending per month (months with at least 12 datapoints)`,
+    source: `Supabase listings, City='${city}', detached (PropertyType='A' AND property_sub_type='Single Family Residence'), Closed, CloseDate ≥ ${sinceIso}: ${rows.length} sales grouped by close month, median days_to_pending per month (months with at least 12 datapoints)`,
   }
 }
 
@@ -219,7 +219,7 @@ export function computeFinancing(rows: CmaClosedSkinnyRow[], city: string, since
     conventionalPct: pct(conventional),
     fhaVaPct: pct(fhaVa),
     otherPct: pct(other),
-    source: `Supabase listings, City='${city}', PropertyType='A', Closed, CloseDate ≥ ${sinceIso12}, buyer_financing non-null: ${recent.length} sales`,
+    source: `Supabase listings, City='${city}', detached (PropertyType='A' AND property_sub_type='Single Family Residence'), Closed, CloseDate ≥ ${sinceIso12}, buyer_financing non-null: ${recent.length} sales`,
   }
 }
 
@@ -296,7 +296,7 @@ export function computeSubdivisionPulse(
     low: Math.min(...prices),
     high: Math.max(...prices),
     months,
-    source: `Supabase listings, SubdivisionName='${subdivision}', PropertyType='A', Closed, CloseDate ≥ ${sinceIso}: ${prices.length} sales`,
+    source: `Supabase listings, SubdivisionName='${subdivision}', detached (PropertyType='A' AND property_sub_type='Single Family Residence'), Closed, CloseDate ≥ ${sinceIso}: ${prices.length} sales`,
   }
 }
 

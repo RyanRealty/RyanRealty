@@ -12,6 +12,7 @@
  * `updatedAt` is exposed so callers can render a freshness pill.
  */
 import { getMarketPulseRowForGeo } from './getMarketStatsCacheRows'
+import { applyDetachedOverlay, getDetachedMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 
 export type RegionPulse = {
@@ -58,7 +59,7 @@ export const getRegionPulse = makeResilientCached(
       return Number.isFinite(n) ? n : null
     }
 
-    return {
+    const pulse: RegionPulse = {
       activeCount: toNum(row.active_count) ?? 0,
       pendingCount: toNum(row.pending_count) ?? 0,
       newCount30d: toNum(row.new_count_30d) ?? 0,
@@ -71,10 +72,15 @@ export const getRegionPulse = makeResilientCached(
       soldCount90d: toNum(row.sold_count_90d) ?? 0,
       updatedAt: String(row.updated_at ?? ''),
     }
+    try {
+      const mt = await getDetachedMarket('region', 'central-oregon')
+      if (mt) return applyDetachedOverlay(pulse, mt)
+    } catch {
+      /* keep pulse */
+    }
+    return pulse
   },
-  // v2 — bumped 2026-06-09 with the poison-null fix (was unstable_cache, which
-  // cached null when the source dropped a transient error). v1 may be poisoned.
-  ['region-pulse-central-oregon-v2'],
+  ['region-pulse-central-oregon-v3-mt-detached'],
   { revalidate: 300, tags: ['market-pulse', 'region-pulse'] },
   null,
 )

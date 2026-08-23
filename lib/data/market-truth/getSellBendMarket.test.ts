@@ -6,16 +6,21 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { marketVerdict } from '@/lib/market/classify'
 
 describe('getSellBendMarket', () => {
-  it('reads getMetric for city detached — never pulse', () => {
+  it('assembles detached cells from market_metric, never pulse', () => {
     const src = readFileSync(resolve('lib/data/market-truth/getSellBendMarket.ts'), 'utf8')
-    expect(src).toMatch(/stat: 'active_count'/)
-    expect(src).toMatch(/stat: 'months_of_supply'/)
-    expect(src).toMatch(/stat: 'market_verdict'/)
-    expect(src).toMatch(/segment: 'detached'/)
+    expect(src).toMatch(/segment', 'detached'/)
     expect(src).toMatch(/getCityDetachedMarket\('bend'\)/)
     expect(src).not.toMatch(/getMarketPulse/)
     expect(src).not.toMatch(/market_pulse_live/)
-    expect(src).toMatch(/storedVerdictKind\(verdict\.valueText\) !== classified\.kind/)
+  })
+
+  it('city and region pulse readers overlay Market Truth', () => {
+    const pulse = readFileSync(resolve('lib/data/market/getMarketPulse.ts'), 'utf8')
+    const region = readFileSync(resolve('lib/data/market/getRegionPulse.ts'), 'utf8')
+    const snaps = readFileSync(resolve('lib/data/market/getMarketPulseSnapshot.ts'), 'utf8')
+    expect(pulse).toMatch(/getDetachedMarket/)
+    expect(region).toMatch(/getDetachedMarket/)
+    expect(snaps).toMatch(/getDetachedMarkets/)
   })
 
   it('hyphenates cache city slugs the way market_metric keys them', () => {
@@ -29,12 +34,12 @@ describe('getSellBendMarket', () => {
     expect(cma).toMatch(/mt-v1 detached MLS-city/)
   })
 
-  it('/sell and the Bend JSON feed both go through getSellBendMarket', () => {
+  it('/sell and the JSON feed both read Market Truth detached', () => {
     const page = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
     const feed = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')
     expect(page).toMatch(/getSellBendMarket/)
     expect(page).not.toMatch(/getMarketPulse/)
-    expect(feed).toMatch(/getSellBendMarket/)
+    expect(feed).toMatch(/getDetachedMarket/)
   })
 
   it('RECON Bend detached 4.454 months is 4.5 display and a balanced verdict', () => {
