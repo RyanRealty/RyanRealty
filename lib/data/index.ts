@@ -837,6 +837,8 @@ export {
 export { listEnvelopeTemplates } from './tc/listEnvelopeTemplates'
 export type { EnvelopeTemplateOption } from './tc/listEnvelopeTemplates'
 export { listDealOffers } from './tc/listDealOffers'
+export { listFormPackets, listClauses } from './tc/form-library-reads'
+export type { FormPacket, ClauseRow } from './tc/form-library-reads'
 export { getPrincipalSignOffQueue } from './tc/getPrincipalSignOffQueue'
 export type { SignOffQueue, SignOffDeal, SignOffItem } from './tc/getPrincipalSignOffQueue'
 export type {

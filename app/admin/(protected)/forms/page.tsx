@@ -20,7 +20,7 @@ import {
   type ReportColumn,
   type ReportGridRow,
 } from '@/components/admin/v2'
-import { getTcFormLibraryBoard, type FormFreshness } from '@/lib/data'
+import { getTcFormLibraryBoard, listClauses, listFormPackets, type FormFreshness } from '@/lib/data'
 import { getLiveDealCycles } from '@/lib/data/tc/closings'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
@@ -29,7 +29,6 @@ import { buildFormCatalogCheckScript } from '@/lib/tc/form-catalog-script'
 import { CheckFormCatalog } from './CheckFormCatalog'
 import { UseFormOnDeal } from './UseFormOnDeal'
 import { FormsLibraryExtras } from './FormsLibraryExtras'
-import { listClauses, listFormPackets } from '@/app/actions/tc-library'
 
 export const dynamic = 'force-dynamic'
 

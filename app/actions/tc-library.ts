@@ -22,18 +22,7 @@ async function requireEditor() {
   return { email }
 }
 
-export type FormPacket = { id: string; name: string; formVersionIds: string[] }
-export type ClauseRow = { id: string; scope: string; category: string; title: string; body: string }
-
-export async function listFormPackets(): Promise<FormPacket[]> {
-  const sb = getServiceSupabase()
-  const { data } = await sb.from('tc_form_packets').select('id, name, form_version_ids').order('name')
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    name: r.name,
-    formVersionIds: Array.isArray(r.form_version_ids) ? r.form_version_ids.map(String) : [],
-  }))
-}
+export type { FormPacket, ClauseRow } from '@/lib/data/tc/form-library-reads'
 
 export async function saveFormPacket(name: string, formVersionIds: string[]): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireEditor()
@@ -48,12 +37,6 @@ export async function saveFormPacket(name: string, formVersionIds: string[]): Pr
   if (error) return { ok: false, error: error.message }
   revalidatePath('/admin/forms')
   return { ok: true }
-}
-
-export async function listClauses(): Promise<ClauseRow[]> {
-  const sb = getServiceSupabase()
-  const { data } = await sb.from('tc_clauses').select('id, scope, category, title, body').order('title')
-  return (data ?? []) as ClauseRow[]
 }
 
 export async function saveClause(input: {
