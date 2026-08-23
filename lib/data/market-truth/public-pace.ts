@@ -14,6 +14,7 @@ export const PUBLIC_PACE_STATS = [
   'closed_count',
   'new_listings',
   'pct_with_price_cut',
+  'yoy_median_price',
 ] as const
 
 export type PublicPaceStat = (typeof PUBLIC_PACE_STATS)[number]
@@ -24,6 +25,7 @@ export type PublicPaceRow = {
   closedCount: number | null
   newListings: number | null
   priceCutShare: number | null
+  yoyMedian: number | null
 }
 
 export const EMPTY_PUBLIC_PACE: PublicPaceRow = {
@@ -32,6 +34,7 @@ export const EMPTY_PUBLIC_PACE: PublicPaceRow = {
   closedCount: null,
   newListings: null,
   priceCutShare: null,
+  yoyMedian: null,
 }
 
 function hyphenSlug(raw: string): string {
@@ -70,13 +73,22 @@ export function formatPaceShare(share: number): string {
   return `${pct.toFixed(1)}%`
 }
 
+export function formatPaceDelta(share: number): string {
+  const pct = Math.round(share * 1000) / 10
+  const abs = Math.abs(pct).toFixed(1)
+  if (pct > 0) return `+${abs}%`
+  if (pct < 0) return `-${abs}%`
+  return '0.0%'
+}
+
 export function publicPaceHasRow(row: PublicPaceRow): boolean {
   return (
     row.daysToContract != null ||
     row.daysToClose != null ||
     row.closedCount != null ||
     row.newListings != null ||
-    row.priceCutShare != null
+    row.priceCutShare != null ||
+    row.yoyMedian != null
   )
 }
 
@@ -122,6 +134,7 @@ export async function getPublicDetachedPace(opts: {
   const closedCount = asNumber(best.get('closed_count')?.value)
   const newListings = asNumber(best.get('new_listings')?.value)
   const priceCutShare = asNumber(best.get('pct_with_price_cut')?.value)
+  const yoyMedian = asNumber(best.get('yoy_median_price')?.value)
 
   return {
     daysToContract: daysToContract == null ? null : Math.round(daysToContract),
@@ -129,5 +142,6 @@ export async function getPublicDetachedPace(opts: {
     closedCount: closedCount == null || closedCount <= 0 ? null : Math.round(closedCount),
     newListings: newListings == null || newListings <= 0 ? null : Math.round(newListings),
     priceCutShare: priceCutShare == null || priceCutShare <= 0 ? null : priceCutShare,
+    yoyMedian,
   }
 }

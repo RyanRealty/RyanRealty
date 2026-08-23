@@ -25,6 +25,7 @@ import {
   type PublicSegmentRow,
 } from '@/lib/data/market-truth/public-segments'
 import {
+  formatPaceDelta,
   formatPaceShare,
   type PublicPaceRow,
 } from '@/lib/data/market-truth/public-pace'
@@ -167,6 +168,12 @@ export function buildPublicPaceFigures(row: PublicPaceRow | null | undefined): V
     figures.push({
       value: v3Text(String(row.daysToClose)),
       label: v3Text('days to close · 12 months'),
+    })
+  }
+  if (row.yoyMedian != null) {
+    figures.push({
+      value: v3Text(formatPaceDelta(row.yoyMedian)),
+      label: v3Text('YoY median close · 12 months'),
     })
   }
   return figures

@@ -1,4 +1,5 @@
 import {
+  formatPaceDelta,
   formatPaceShare,
   publicPaceHasRow,
   type PublicPaceRow,
@@ -46,6 +47,13 @@ export function PublicPaceStats({
       key: 'close',
       value: String(row.daysToClose),
       label: 'days to close · 12 months',
+    })
+  }
+  if (row.yoyMedian != null) {
+    items.push({
+      key: 'yoy',
+      value: formatPaceDelta(row.yoyMedian),
+      label: 'YoY median close · 12 months',
     })
   }
   if (items.length === 0) return null

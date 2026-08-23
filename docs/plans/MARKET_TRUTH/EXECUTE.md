@@ -352,6 +352,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23i landed: `/zip/97701` HUD 176 detached / 8 condos / 18 townhomes ($436,998 · 2.1 months · seller's). 12-month pace 27 / 564 / 784 / 46.8% / 65. New · 30 days is 63 (tiles), not 784. Neighborhood MOS and county stay unpublished.
 
+### Grind 2026-08-23j — public 12-month YoY median on leftover pace
+
+**Done when:** city, housing-market, and zip leftover panels print signed 12-month YoY median close from Market Truth (Bend -1.9%) without printing unadjusted MoM. A miss omits the stat. Neighborhood MOS and county stay unpublished. Workers do not tick this file.
+
+2026-08-23j landed: leftover pace includes YoY median close. `/cities/bend` prints **-1.9%** YoY median close · 12 months. Unadjusted MoM stays off public. Neighborhood MOS and county stay unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

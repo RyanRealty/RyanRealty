@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { formatPaceShare, publicPaceHasRow } from '@/lib/data/market-truth/public-pace'
+import { formatPaceDelta, formatPaceShare, publicPaceHasRow } from '@/lib/data/market-truth/public-pace'
 
 const SRC = readFileSync(resolve('lib/data/market-truth/public-pace.ts'), 'utf8')
 
@@ -13,6 +13,7 @@ describe('getPublicDetachedPace', () => {
     expect(SRC).toMatch(/median_days_to_contract/)
     expect(SRC).toMatch(/new_listings/)
     expect(SRC).toMatch(/pct_with_price_cut/)
+    expect(SRC).toMatch(/yoy_median_price/)
     expect(SRC).toMatch(/segment', 'detached'/)
     expect(SRC).not.toMatch(/market_pulse_live/)
     expect(SRC).not.toMatch(/'neighborhood'/)
@@ -28,6 +29,7 @@ describe('getPublicDetachedPace', () => {
       closedCount: null,
       newListings: null,
       priceCutShare: null,
+      yoyMedian: null,
     })).toBe(false)
     expect(publicPaceHasRow({
       daysToContract: 28,
@@ -35,8 +37,11 @@ describe('getPublicDetachedPace', () => {
       closedCount: null,
       newListings: null,
       priceCutShare: null,
+      yoyMedian: null,
     })).toBe(true)
     expect(formatPaceShare(0.465871121718377)).toBe('46.6%')
+    expect(formatPaceDelta(-0.0193548387096775)).toBe('-1.9%')
+    expect(formatPaceDelta(0.0184735051045211)).toBe('+1.8%')
   })
 })
 
@@ -50,6 +55,7 @@ describe('public pace surfaces', () => {
     expect(city).toMatch(/PublicPaceStats/)
     expect(strip).toMatch(/12 months/)
     expect(strip).toMatch(/days to contract/)
+    expect(strip).toMatch(/YoY median close/)
     const zip = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
     expect(market).toMatch(/getPublicDetachedPace/)
     expect(hub).toMatch(/getPublicDetachedPace/)

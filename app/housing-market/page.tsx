@@ -64,6 +64,7 @@ import {
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
 import {
+  formatPaceDelta,
   formatPaceShare,
   getPublicDetachedPace,
   publicPaceHasRow,
@@ -266,6 +267,12 @@ export default async function HousingMarketHubPage() {
     sfrFollow.push({
       value: v3Text(String(publicPace.daysToClose)),
       label: v3Text('days to close · 12 months'),
+    })
+  }
+  if (publicPace.yoyMedian != null) {
+    sfrFollow.push({
+      value: v3Text(formatPaceDelta(publicPace.yoyMedian)),
+      label: v3Text('YoY median close · 12 months'),
     })
   }
   const [firstSfrFigure, ...restSfrFigures] = sfrFollow
