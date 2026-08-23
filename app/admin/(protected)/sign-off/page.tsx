@@ -25,6 +25,7 @@ import {
   VerdictLine,
 } from '@/components/admin/v2'
 import { getPrincipalSignOffQueue, type SignOffDeal } from '@/app/actions/tc-signoff'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import type { ReviewDeadline } from '@/lib/tc/banking-days'
 import { SignOffControls } from './SignOffControls'
 
@@ -89,6 +90,7 @@ const LANE: React.CSSProperties = {
 }
 
 export default async function SignOffPage() {
+  await requireAdminPage('transactions.signoff')
   const queue = await getPrincipalSignOffQueue().catch(() => null)
 
   if (queue === null) {

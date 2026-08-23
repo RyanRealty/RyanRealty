@@ -63,7 +63,17 @@ Page 2 rows (all Closed):
 | 29500 SE Ochoco Way, Prineville | Ryan, Matt | 1 | 10/31/2024 |
 | 15352 Bear St, La Pine | Ryan, Matt | 30 | 10/22/2024 |
 
-Archive icon **not** clicked. Page 3 **not** opened. Shots: `pickup-39-closed-archive-page2.png`, `pickup-40-closed-archive-page2-scrolled.png`.
+Archive icon **not** clicked. Shots: `pickup-39-closed-archive-page2.png`, `pickup-40-closed-archive-page2-scrolled.png`.
+
+### Page 3 of 3 (opened this continuation)
+
+One remaining row:
+
+| Address | Agent | Incomplete | Closing date |
+|---|---|---|---|
+| 712 SW 1st St, Madras, OR 97741 | Ryan, Matt | 20 | 05/09/2024 |
+
+Shot: `suite-leftovers/pickup-50-closed-archive-page3.png`. Closed-to-Archive pager is fully filed (p1 22 Aug, p2–p3 this pickup).
 
 ## Queues
 

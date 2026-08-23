@@ -13,8 +13,8 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | `createDraftEnvelope` | THEATER | Recipients only; no docs/fields. Zero UI callers. |
 | Envelope from uploaded PDFs | EXISTS | Deal envelopes + composer. |
 | `/admin/forms` | EXISTS browse / THEATER use-on-deal | Left rail Closings → Forms. No add-to-envelope. |
-| `/admin/sign-off` | EXISTS, off left rail | Live `in_review` queue + 7-banking-day OAR clock. “17 items” is a live count, not a hardcoded list. |
-| `/admin/signing` | EXISTS, off left rail | Empty on 22 Aug walk. Parked in nav. |
+| `/admin/sign-off` | EXISTS; on Closings rail **this branch** | Live queue + 7-banking-day clock. Superuser `transactions.signoff`. Production 23 Aug still footer-only until deploy. |
+| `/admin/signing` | EXISTS; on Closings rail **this branch** | Brokers: `transactions.view`. `esign.send` stays parked. Empty on 22 Aug walk. |
 | `/admin/closings` | EXISTS | `tc_deals` board. Active-listing **lens**, not Manage Listings. |
 | Listing pipeline grid | MISSING | `/admin/listings` = MLS. Spec T3.2 unbuilt. |
 | `tc_events` | EXISTS | Append-only. Writers: native TC + SkySlope migrate. **Not** mail/Twilio/CRM. |

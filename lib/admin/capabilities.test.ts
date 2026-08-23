@@ -65,8 +65,10 @@ describe('capability model', () => {
     expect(hasCapability(ctx('superuser'), 'people.export')).toBe(true)
   })
 
-  it('parked v1 caps are absent from the enum (e-sign, D1)', () => {
-    expect(ALL_CAPABILITIES).not.toContain('transactions.signoff')
+  it('sign-off is superuser-only; esign.send stays parked (D1 send gate)', () => {
+    expect(ALL_CAPABILITIES).toContain('transactions.signoff')
+    expect(hasCapability(ctx('superuser'), 'transactions.signoff')).toBe(true)
+    expect(hasCapability(ctx('broker'), 'transactions.signoff')).toBe(false)
     expect(ALL_CAPABILITIES).not.toContain('esign.send')
   })
 })
@@ -77,6 +79,8 @@ describe('nav generator projects the capability map', () => {
     expect(nav.map((s) => s.key)).toEqual(DESTINATIONS.map((d) => d.key))
     const closings = nav.find((s) => s.key === 'closings')!
     expect(closings.children.map((c) => c.label)).toContain('Financials')
+    expect(closings.children.map((c) => c.label)).toContain('Sign-off')
+    expect(closings.children.map((c) => c.label)).toContain('Signing')
   })
 
   it('broker gets a subset and NO dead-end children', () => {
@@ -88,7 +92,9 @@ describe('nav generator projects the capability map', () => {
     // Closings shows for a broker but Financials (superuser-only) is filtered out.
     const closings = nav.find((s) => s.key === 'closings')!
     expect(closings.children.map((c) => c.label)).not.toContain('Financials')
+    expect(closings.children.map((c) => c.label)).not.toContain('Sign-off')
     expect(closings.children.map((c) => c.label)).toContain('Board')
+    expect(closings.children.map((c) => c.label)).toContain('Signing')
     // Every rendered child is one the broker actually holds (no dead-ends).
     for (const s of nav) for (const c of s.children) expect(hasCapability(ctx('broker'), c.capability)).toBe(true)
   })
@@ -111,11 +117,11 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the nav budget: 35 superuser items, 25 broker items (G5 unlocked content.marketing)', () => {
+  it('renders the nav budget: 37 superuser items, 26 broker items (Signing + Sign-off on Closings)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(35)
-    expect(count('broker')).toBe(25)
+    expect(count('superuser')).toBe(37)
+    expect(count('broker')).toBe(26)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {

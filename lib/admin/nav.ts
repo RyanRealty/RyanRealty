@@ -24,7 +24,8 @@ import {
  *
  * Pages not in the nav stay reachable where a live surface links them (FAB
  * quick actions, hub catalogs, settings cards) — the D9.2 budget is ≈35
- * superuser items; this table renders 39 superuser / 22 broker (was 56 / 30).
+ * superuser items; Closings Signing + Sign-off (2026-08-23) bring the
+ * rendered counts to 37 superuser / 26 broker.
  */
 
 /** Phone bottom-tab annotation — the D9.4 five carry these. */
@@ -175,11 +176,14 @@ export const DESTINATIONS: NavDestination[] = [
     icon: 'handshake',
     capability: 'transactions.view',
     defaultOpen: true,
-    // e-sign Signing + Sign-off are PARKED for v1 (D1) — pages stay live at
-    // their URLs, deliberately un-navigated (Sign-off is linked from Oversight
-    // and the Closings board).
+    // Signing + Sign-off unparked 2026-08-23 (product bar: brokers prepare +
+    // send; Matt verifies). Pages were already live; they were footer/Oversight
+    // links only. `esign.send` stays parked — compose is visible, live send
+    // remains the existing envelope action gate.
     children: [
       { label: 'Board', href: '/admin/closings', icon: 'handshake', capability: 'transactions.view' },
+      { label: 'Signing', href: '/admin/signing', icon: 'pen-line', capability: 'transactions.view' },
+      { label: 'Sign-off', href: '/admin/sign-off', icon: 'clipboard-check', capability: 'transactions.signoff' },
       { label: 'Commissions', href: '/admin/commissions', icon: 'dollar', capability: 'commissions.view' },
       { label: 'Financials', href: '/admin/financials', icon: 'wallet', capability: 'financials.view' },
       // DSCR moved to Reports (Matt's IA amendment 2026-08-05: a tool, not a deal lane).

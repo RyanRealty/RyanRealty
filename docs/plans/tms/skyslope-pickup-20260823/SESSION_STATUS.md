@@ -23,14 +23,20 @@ Also: Action required (3 values on Forms, 2 on DigiSign), signing groups, DigiSi
 
 See `SUITE_LEFTOVERS.md` and `LISTINGS_MAP.md`. Working Documents already filed 22 Aug. Offers not reopened.
 
-## Not captured / blocked
+## Continuation (same Chrome)
 
-- Vault `/admin/closings` and `/admin/sign-off` in this Chrome: dedicated profile has **no** ryan-realty admin Google session (`pickup-45-vault-admin-login.png`). Optional tab. 22 Aug `VAULT_WALK` + code still stand. Did not ping Matt for a second login.
-- Closed-to-Archive **page 3**.
-- Full DTR 4-page recount and Dead Deals 12+2 identities (confirm-only; not contradicted because not opened).
+- Vault Closings + Sign-off live as Matt. 17 / 14 overdue / 3 deals confirmed. See `VAULT_LIVE_2026-08-23.md`.
+- Breeze look-only. 52 clients; 3480 listing packet OREF SPDS filled + OR LBP canceled. See `BREEZE_WALK.md`. Do not clone Breeze.
+- Closed-to-Archive page 3: 712 SW 1st St Madras only.
+- **Code on this branch:** Closings rail unparks Signing (brokers) and Sign-off (superuser). Production still shows the old four children until this ships.
+
+## Still blocked / not this pass
+
+- Full DTR 4-page recount and Dead Deals 12+2 identities (confirm-only; not opened).
 - DigiSign New Envelope chevron options (would start a new envelope).
 - Role-specific File Details field blocks besides Buyer Agent and Buyer.
 - What Suite receives after a **completed** seal (send forbidden).
+- Production Closings rail still parked until this branch deploys.
 
 ## Repo already had (do not redo)
 
