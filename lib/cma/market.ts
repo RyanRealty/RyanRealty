@@ -34,7 +34,7 @@ import {
 import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import { getCmaMarketBoardYear } from '@/lib/cma/market-board-mart'
 import type { CmaMarketContext } from '@/lib/cma/types'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { isSoldAttributionTrusted, publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 
 export { yearMartCite } from '@/lib/cma/market-board-mart'
 
@@ -167,7 +167,8 @@ export function assembleCmaMarketContext(input: CmaMarketAssembleInput): CmaMark
 
   const periodEnd = stats?.period_end ?? detached?.completeThrough ?? pulse?.updated_at?.slice(0, 10) ?? ''
   const periodStart = stats?.period_start ?? (periodEnd ? shiftUtcMonths(periodEnd, -12) : '')
-  const soldCount365 = leftover.closedCount ?? num(stats?.sold_count) ?? 0
+  const cacheSold = isSoldAttributionTrusted(geoType) ? num(stats?.sold_count) : null
+  const soldCount365 = leftover.closedCount ?? cacheSold ?? 0
 
   return {
     geoSlug: stats?.geo_slug ?? geoSlug,

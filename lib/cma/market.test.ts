@@ -180,6 +180,7 @@ describe('assembleCmaMarketContext neighborhood MOS', () => {
     expect(row.monthsOfSupply).not.toBe(4.6)
     expect(row.pendingCount).toBe(6)
     expect(row.medianDom).toBe(72)
+    expect(row.soldCount365).not.toBe(16)
   })
 
   it('publishes neighborhood MOS only from Market Truth', () => {
