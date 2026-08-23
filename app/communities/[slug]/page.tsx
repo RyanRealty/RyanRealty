@@ -34,6 +34,8 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
 import {
   getMarketPulse,
   getMarketStats,
@@ -270,6 +272,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     boundaryRead, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
+    publicPace,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -323,6 +326,12 @@ export default async function CommunityDetailPage({ params }: Props) {
       null,
       4500,
       'comm:cityCoreCharts',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
+      EMPTY_PUBLIC_PACE,
+      3000,
+      'comm:publicPace',
     ),
   ])
 
@@ -816,6 +825,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           eyebrow={`${community.name} · The market`} geoName={community.name} asOf={pulse?.refreshedAt ?? null}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         >
+          <PublicPaceStats cityName={community.name} row={publicPace} />
           {coreCharts ? (
             <div className="pt-10" aria-label={`${community.name} market trend charts`}>
               <MarketCoreCharts

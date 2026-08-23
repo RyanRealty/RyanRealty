@@ -190,6 +190,18 @@ function main() {
       /pct_with_price_cut/.test(compute) &&
       /mom_median_price/.test(compute),
   )
+  const nbhCompute = readFileSync(
+    'supabase/migrations/20260823250000_compute_market_metrics_neighborhood.sql',
+    'utf8',
+  )
+  add(
+    'gate 4b: neighborhood compute withholds MOS and does not wipe city cells',
+    /compute_market_metrics_neighborhood_shadow/.test(nbhCompute) &&
+      /neighborhood_mos_unpublished/.test(nbhCompute) &&
+      /AND geo_type = 'neighborhood'/.test(nbhCompute) &&
+      !/FROM public\.market_service_area/.test(nbhCompute) &&
+      !/geo_type = 'subdivision'/.test(nbhCompute),
+  )
   add(
     'gate 1: place_membership is the geography writer (ST_Within lives there)',
     (() => {

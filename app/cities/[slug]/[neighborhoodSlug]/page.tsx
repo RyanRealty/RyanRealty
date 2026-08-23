@@ -30,6 +30,8 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getNeighborhoodBySlug, getCommunitiesInNeighborhood } from '@/app/actions/cities'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
 import {
   getMarketPulse,
   getMarketStats,
@@ -178,6 +180,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
     peerNeighborhoods,
     inventoryRead,
+    publicPace,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     // Hot-path core figures (HUD, about facts, FAQ): a build timeout would
@@ -213,6 +216,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     withTimeoutFallback(getAreaGuideVideo(neighborhoodSlug), null, 3000, 'area-guide-video'),
     withTimeoutFallback(peerNeighborhoodTowns(citySlug, neighborhoodSlug), [], 3500, 'nbh:peers'),
     getNeighborhoodPublicInventory(boundaryNeighborhoodSlug),
+    withTimeoutFallback(
+      getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }),
+      EMPTY_PUBLIC_PACE,
+      3000,
+      'nbh:publicPace',
+    ),
   ])
 
   const boundaryMapData = boundaryRead.value
@@ -508,6 +517,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           eyebrow={`${neighborhood.name} · The market`} geoName={neighborhood.name} asOf={pulse?.refreshedAt ?? null}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         >
+          <PublicPaceStats cityName={neighborhood.name} row={publicPace} />
           {/* The approved chart-room forms (Unit NEIGHBORHOOD 2026-08-19) —
               same market section, additive under the HUD figures. Closed-side
               cards read the district polygon assignment; the asking-price card

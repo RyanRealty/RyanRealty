@@ -12,7 +12,7 @@ import {
 const SRC = readFileSync(resolve('lib/data/market-truth/public-pace.ts'), 'utf8')
 
 describe('getPublicDetachedPace', () => {
-  it('reads leftover market_metric cells, never pulse, never neighborhood', () => {
+  it('reads leftover market_metric cells, never pulse, never MOS', () => {
     expect(SRC).toMatch(/from\('market_metric'\)/)
     expect(SRC).toMatch(/is_publishable/)
     expect(SRC).toMatch(/median_days_to_contract/)
@@ -22,8 +22,9 @@ describe('getPublicDetachedPace', () => {
     expect(SRC).toMatch(/median_sale_to_original_list/)
     expect(SRC).toMatch(/pending_count/)
     expect(SRC).toMatch(/segment', 'detached'/)
+    expect(SRC).toMatch(/'neighborhood'/)
     expect(SRC).not.toMatch(/market_pulse_live/)
-    expect(SRC).not.toMatch(/'neighborhood'/)
+    expect(SRC).not.toMatch(/months_of_supply/)
     expect(SRC).not.toMatch(/commercial_lease/)
   })
 
@@ -94,6 +95,15 @@ describe('public pace surfaces', () => {
     expect(home).toMatch(/getPublicDetachedPace/)
     expect(home).toMatch(/PublicPaceStats/)
     expect(searchTail).toMatch(/publicPaceItems/)
+    const community = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
+    const neighborhood = readFileSync(
+      resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'),
+      'utf8',
+    )
+    expect(community).toMatch(/getPublicDetachedPace/)
+    expect(community).toMatch(/PublicPaceStats/)
+    expect(neighborhood).toMatch(/getPublicDetachedPace/)
+    expect(neighborhood).toMatch(/PublicPaceStats/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })
 })

@@ -422,7 +422,19 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 **Done when:** Sunriver, Three Rivers, Widgi Creek, and Brasada Ranch neighborhood polygons are official GIS (not Spark hulls); overlap pairs drop; neighborhood MOS still unpublished; place_membership not rebuilt yet. County unpublished. Workers do not tick this file.
 
-2026-08-23u landed: Sunriver **10,113 → 3,744 acres** (Deschutes Unincorporated Communities SUNRIVER, minus Crosswater plat sliver); Three Rivers **15,703 → 2,520** (Deschutes River Recreation Homesites plat union); Widgi Creek **1,276 → 317** (Inn of the 7th Mountain unincorporated community); Brasada Ranch **16,126 → 888** (Crook County GIS subdivision). Overlap pairs **12 → 4** (nested community-in-district only). Neighborhood MOS still unpublished. County unpublished.
+2026-08-23u landed: Sunriver **10,113 → 3,744 acres** (Deschutes Unincorporated Communities SUNRIVER, minus Crosswater plat sliver); Three Rivers **15,703 → 2,520** (Deschutes River Recreation Homesites plat union); Widgi Creek **1,276 → 317** (Inn of the 7th Mountain unincorporated community); Brasada Ranch **16,126 → 888** (Crook County GIS subdivision). Overlap pairs **12 → 4** (nested community-in-district only). On `origin/main` as `a02c7d98`. Neighborhood MOS still unpublished. County unpublished. `place_membership` rebuild started 2026-08-23 (`--no-truncate` keyset against live hulls).
+
+### Grind 2026-08-23v — rebuild place_membership against GIS hulls
+
+**Done when:** `refresh_place_membership` keyset finishes against the 23u hulls; one-current-primary unique holds; Sunriver / Three Rivers / Widgi Creek / Brasada Ranch have polygon membership; nested remainder is `is_primary` = smallest containing neighborhood (do not ST_Difference community out of a city district). Neighborhood MOS still unpublished. County unpublished. Workers do not tick this file.
+
+2026-08-23v landed: `refresh_place_membership` **397** batches, **2,680,623** rows (was 2,753,274). Duplicate current primaries **0**. Neighborhood polygon rows **200,976 → 124,196** (tighter hulls). Sunriver primary **10,228** / **56** detached active; Three Rivers **9,239** / **67**; Widgi Creek **1,511** / **10**; Brasada Ranch **2,692** / **41**. Nested remainder is `is_primary` = smallest. Neighborhood MOS still unpublished.
+
+### Grind 2026-08-23w — neighborhood leftover compute + community/neighborhood leftover overlay
+
+**Done when:** neighborhood mt-v1 leftover cells exist; MOS/verdict/absorption are not publishable; `/communities/tetherow` and `/cities/bend/{slug}` print labeled leftover when sample-gated; city Bend detached stays 774; neighborhood JSON leftover stays null; extra types stay off this grain. County unpublished. Workers do not tick this file.
+
+2026-08-23w landed: `compute_market_metrics_neighborhood_shadow` wrote **11056** neighborhood cells (`period_end=2026-08-23`). MOS **0** publishable (`neighborhood_mos_unpublished`). Bend detached still **774**. Sunriver leftover 56 active / 16 pending / 37 days to contract. Community and neighborhood HUDs print leftover beside pulse DTP. JSON neighborhood leftover stays null.
 
 ### Step 9 — Then, and only then, the moat
 
@@ -438,7 +450,8 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
       Bend townhome 78 / 3.6 / seller. Public extra segments are condo +
       townhome beside the detached HUD. Hero stays detached houses.
       Neighborhood / community / subdivision grains stay unpublished
-      (REGISTRY §4 polygons unrepaired). `commercial_lease` (G) stays out.
+      (REGISTRY §4: hulls repaired 23u; membership rebuild in flight;
+      MOS unpublished until remainder is proven). `commercial_lease` (G) stays out.
 - [x] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
       fastest to contract, most price cuts, most new inventory.
 - [x] Agent/office share — **internal only** (Matt, 2026-08-22): admin and listing presentations, not

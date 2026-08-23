@@ -1,7 +1,7 @@
 /**
  * Public detached leftover stats (Step 9). 12-month cells plus point pending
  * and inventory age. Does not replace pulse 30-day / this-week figures.
- * Miss omits the stat. Neighborhood is not here.
+ * Miss omits the stat. Neighborhood leftover is sample-gated; MOS stays off.
  */
 import { createServiceClient } from '@/lib/data/client'
 import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
@@ -228,7 +228,7 @@ export function publicPaceItems(row: PublicPaceRow): PublicPaceItem[] {
 }
 
 export async function getPublicDetachedPace(opts: {
-  geoType: 'city' | 'region' | 'zip'
+  geoType: 'city' | 'region' | 'zip' | 'neighborhood'
   geoSlug: string
 }): Promise<PublicPaceRow> {
   const geoSlug = hyphenSlug(opts.geoSlug)
