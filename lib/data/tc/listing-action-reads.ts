@@ -223,3 +223,50 @@ export async function listDealContactKeys(
     email: c.email == null ? null : String(c.email),
   }))
 }
+
+export type InFlightEnvelope = {
+  id: string
+  name: string
+  status: string
+  formNumbers: string[]
+}
+
+export async function listInFlightEnvelopes(cycleId: string): Promise<InFlightEnvelope[]> {
+  const { data: envs } = await client()
+    .from('tc_envelopes')
+    .select('id, name, status')
+    .eq('cycle_id', cycleId)
+    .in('status', ['sent', 'partially_signed'])
+  if (!envs?.length) return []
+  const ids = envs.map((e) => String(e.id))
+  const { data: docs } = await client()
+    .from('tc_envelope_documents')
+    .select('envelope_id, form_version_id')
+    .in('envelope_id', ids)
+  const versionIds = [...new Set((docs ?? []).map((d) => d.form_version_id).filter(Boolean).map(String))]
+  const numberByVersion = new Map<string, string>()
+  if (versionIds.length) {
+    const { data: forms } = await client()
+      .from('tc_form_versions')
+      .select('id, form_number')
+      .in('id', versionIds)
+    for (const f of forms ?? []) {
+      if (f.form_number) numberByVersion.set(String(f.id), String(f.form_number))
+    }
+  }
+  const numsByEnv = new Map<string, string[]>()
+  for (const d of docs ?? []) {
+    const eid = String(d.envelope_id)
+    const n = d.form_version_id ? numberByVersion.get(String(d.form_version_id)) : null
+    if (!n) continue
+    const arr = numsByEnv.get(eid) ?? []
+    arr.push(n)
+    numsByEnv.set(eid, arr)
+  }
+  return envs.map((e) => ({
+    id: String(e.id),
+    name: String(e.name ?? 'Envelope'),
+    status: String(e.status ?? ''),
+    formNumbers: numsByEnv.get(String(e.id)) ?? [],
+  }))
+}

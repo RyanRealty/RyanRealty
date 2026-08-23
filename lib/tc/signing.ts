@@ -163,6 +163,8 @@ export function seedPartyEnvelopeRecipients(input: {
   brokerEmail: string
   cycleKind: string | null | undefined
   brokerSigningOrder?: number
+  /** When the form has been read, only these roles Need to sign. Others receive a copy. */
+  requiredRoles?: readonly RecipientRole[]
 }): Array<{
   envelope_id: string
   role: string
@@ -171,6 +173,9 @@ export function seedPartyEnvelopeRecipients(input: {
   signing_order: number
   action_required: ActionRequired
 }> {
+  const required = input.requiredRoles
+  const mustSign = (role: RecipientRole): ActionRequired =>
+    !required?.length || required.includes(role) ? 'NeedsToSign' : 'ReceivesACopy'
   const rows: Array<{
     envelope_id: string
     role: string
@@ -187,7 +192,7 @@ export function seedPartyEnvelopeRecipients(input: {
       name: n.trim(),
       email: '',
       signing_order: 1,
-      action_required: 'NeedsToSign',
+      action_required: mustSign('Buyer'),
     })
   }
   for (const n of input.sellers) {
@@ -198,17 +203,18 @@ export function seedPartyEnvelopeRecipients(input: {
       name: n.trim(),
       email: '',
       signing_order: 2,
-      action_required: 'NeedsToSign',
+      action_required: mustSign('Seller'),
     })
   }
   if (input.brokerName?.trim()) {
+    const brokerRole = brokerEnvelopeRole(input.cycleKind)
     rows.push({
       envelope_id: input.envelopeId,
-      role: brokerEnvelopeRole(input.cycleKind),
+      role: brokerRole,
       name: input.brokerName.trim(),
       email: input.brokerEmail,
       signing_order: input.brokerSigningOrder ?? 3,
-      action_required: 'NeedsToSign',
+      action_required: mustSign(brokerRole),
     })
   }
   return rows

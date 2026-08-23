@@ -9,6 +9,7 @@ A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 3. **CDA a closer can send** — Generate CDA prints address, MLS, escrow, close, parties, sale/list price, GCI percent, office gross, and the commission split table.
 4. **Calendar after acceptance** — besides expiration / accepted / close, the CRM calendar gets the **7-banking-day principal review** date (OAR 863-015-0140) from contract acceptance. Google write stays fail-open.
 5. **Tyler Nicoll** stays other-side. No invented email.
+6. **Who must sign is known before send** — field map (the form was read), then OREF number, then mutual profile. Send refuses if a required role is only Receives a copy. Checklist / sign-off cannot mark complete while that form’s envelope is still out or only partly signed.
 
 Credential stops:
 

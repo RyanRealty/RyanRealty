@@ -7,7 +7,8 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { notifyDealMailbox } from '@/lib/tc/deal-notify'
-import { getDealByPropertyKey } from '@/lib/data/tc/listing-action-reads'
+import { getDealByPropertyKey, listInFlightEnvelopes } from '@/lib/data/tc/listing-action-reads'
+import { inFlightCompletionBlock, inFlightCompletionMessage } from '@/lib/tc/required-signers'
 
 /**
  * TC system actions — Ryan Realty's own transaction system of record
@@ -591,11 +592,21 @@ export async function setTcChecklistStatus(
   const supabase = getServiceSupabase()
   const { data: item } = await supabase
     .from('tc_checklist_items')
-    .select('id, name, status, cycle_id, tc_cycles(deal_id, tc_deals(address, broker_name, property_key))')
+    .select('id, name, type_name, status, cycle_id, tc_cycles(deal_id, tc_deals(address, broker_name, property_key))')
     .eq('id', itemId)
     .maybeSingle()
   if (!item) return { ok: false, error: 'Checklist item not found' }
   const from = (item as DbRow).status as string
+  if (status === 'completed') {
+    const inflight = await listInFlightEnvelopes(String(item.cycle_id))
+    const block = inFlightCompletionBlock({
+      envelopes: inflight,
+      itemName: String(item.name ?? ''),
+      typeName: item.type_name == null ? null : String(item.type_name),
+    })
+    const msg = inFlightCompletionMessage(block)
+    if (msg) return { ok: false, error: msg }
+  }
 
   const { error: upErr } = await supabase
     .from('tc_checklist_items')

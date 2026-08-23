@@ -1,6 +1,8 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { listInFlightEnvelopes } from '@/lib/data/tc/listing-action-reads'
+import { inFlightCompletionBlock, inFlightCompletionMessage } from '@/lib/tc/required-signers'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -60,11 +62,21 @@ export async function recordPrincipalReview(
   const supabase = getServiceSupabase()
   const { data: item } = await supabase
     .from('tc_checklist_items')
-    .select('id, name, cycle_id, status, tc_cycles(deal_id)')
+    .select('id, name, type_name, cycle_id, status, tc_cycles(deal_id)')
     .eq('id', itemId)
     .maybeSingle()
   if (!item) return { ok: false, error: 'Item not found' }
   if ((item as DbRow).status !== 'in_review') return { ok: false, error: 'Item is not awaiting review' }
+  if (decision === 'approved') {
+    const inflight = await listInFlightEnvelopes(String((item as DbRow).cycle_id))
+    const block = inFlightCompletionBlock({
+      envelopes: inflight,
+      itemName: String((item as DbRow).name ?? ''),
+      typeName: (item as DbRow).type_name == null ? null : String((item as DbRow).type_name),
+    })
+    const msg = inFlightCompletionMessage(block)
+    if (msg) return { ok: false, error: msg }
+  }
 
   const dealId = (item as DbRow).tc_cycles?.deal_id ?? null
   // The documents under this item at review time (the record's subject).

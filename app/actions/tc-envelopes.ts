@@ -22,11 +22,19 @@ import {
   type ActionRequired,
   type EnvelopeField,
   type EnvelopeStatus,
+  type RecipientRole,
   type SignFieldType,
 } from '@/lib/tc/signing'
 import { sendSigningInvite } from '@/lib/tc/signing-emails'
 import { createHash } from 'node:crypto'
 import type { MappedField, SignerRole } from '@/lib/tc/skyslope-field-map'
+import {
+  missingRequiredSignerRoles,
+  missingRequiredSignersMessage,
+  requiredSignersLabel,
+  unionRequiredSignerRoles,
+  type FormSignerSource,
+} from '@/lib/tc/required-signers'
 
 /**
  * TC envelope composer + lifecycle (Phase 2b). Build an envelope from PDF
@@ -111,6 +119,9 @@ export type EnvelopeDetail = EnvelopeSummary & {
   remindersEnabled: boolean
   inviteSubject: string
   inviteBody: string
+  requiredSignerRoles: RecipientRole[]
+  requiredSignersLabel: string
+  missingSignerRoles: RecipientRole[]
 }
 
 function mapRecipient(r: DbRow): EnvelopeRecipient {
@@ -232,6 +243,12 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     signedAt: f.signed_at,
   }))
 
+  const requiredSignerRoles = unionRequiredSignerRoles(await formSourcesForEnvelope(supabase, envelopeId))
+  const missingSignerRoles = missingRequiredSignerRoles(
+    requiredSignerRoles,
+    rs.map((r) => ({ role: r.role, actionRequired: r.actionRequired })),
+  )
+
   return {
     id: env.id,
     cycleId: env.cycle_id,
@@ -250,7 +267,31 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     remindersEnabled: env.reminders_enabled !== false,
     inviteSubject: typeof env.invite_subject === 'string' ? env.invite_subject : '',
     inviteBody: typeof env.invite_body === 'string' ? env.invite_body : '',
+    requiredSignerRoles,
+    requiredSignersLabel: requiredSignersLabel(requiredSignerRoles),
+    missingSignerRoles,
   }
+}
+
+async function formSourcesForEnvelope(
+  supabase: ReturnType<typeof getServiceSupabase>,
+  envelopeId: string,
+): Promise<FormSignerSource[]> {
+  const { data: envDocs } = await supabase
+    .from('tc_envelope_documents')
+    .select('form_version_id')
+    .eq('envelope_id', envelopeId)
+  const ids = ((envDocs ?? []) as DbRow[]).map((d) => d.form_version_id).filter(Boolean) as string[]
+  if (!ids.length) return []
+  const { data: forms } = await supabase
+    .from('tc_form_versions')
+    .select('form_number, signer_profile, field_map')
+    .in('id', ids)
+  return ((forms ?? []) as DbRow[]).map((f) => ({
+    formNumber: f.form_number ?? null,
+    signerProfile: f.signer_profile ?? null,
+    fieldMap: (f.field_map ?? []) as FormSignerSource['fieldMap'],
+  }))
 }
 
 // ---------------------------------------------------------------------------
@@ -362,7 +403,7 @@ export async function createEnvelopeFromTemplate(
 
   const { data: forms } = await supabase
     .from('tc_form_versions')
-    .select('id, name, blank_pdf_storage_path, field_map, page_count')
+    .select('id, name, form_number, signer_profile, blank_pdf_storage_path, field_map, page_count')
     .in('id', formVersionIds)
   if (!forms?.length) return { ok: false, error: 'No forms found' }
 
@@ -376,6 +417,13 @@ export async function createEnvelopeFromTemplate(
     .single()
   if (envErr) return { ok: false, error: envErr.message }
 
+  const requiredRoles = unionRequiredSignerRoles(
+    ((forms ?? []) as DbRow[]).map((f) => ({
+      formNumber: f.form_number ?? null,
+      signerProfile: f.signer_profile ?? null,
+      fieldMap: (f.field_map ?? []) as FormSignerSource['fieldMap'],
+    })),
+  )
   const recipients = applyUniquePartyEmails(
     seedPartyEnvelopeRecipients({
       envelopeId: env.id,
@@ -384,6 +432,7 @@ export async function createEnvelopeFromTemplate(
       brokerName: cycle.broker_name,
       brokerEmail: auth.email,
       cycleKind: (cycle as DbRow).kind,
+      requiredRoles,
     }),
     await peopleEmailsByNames(
       [...((cycle.buyers ?? []) as string[]), ...((cycle.sellers ?? []) as string[])],
@@ -673,6 +722,14 @@ export async function sendEnvelope(
   }
   const hasSignature = ((fields ?? []) as DbRow[]).some((f) => f.type === 'signature')
   if (!hasSignature) return { ok: false, error: 'Place at least one signature field' }
+
+  const requiredRoles = unionRequiredSignerRoles(await formSourcesForEnvelope(supabase, envelopeId))
+  const missingRoles = missingRequiredSignerRoles(
+    requiredRoles,
+    recipients.map((r) => ({ role: r.role, actionRequired: r.action_required })),
+  )
+  const missingMsg = missingRequiredSignersMessage(missingRoles)
+  if (missingMsg) return { ok: false, error: missingMsg }
 
   const now = new Date().toISOString()
   await supabase

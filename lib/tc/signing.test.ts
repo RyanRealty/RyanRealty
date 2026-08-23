@@ -195,6 +195,21 @@ describe('seedPartyEnvelopeRecipients', () => {
     expect(rows.map((r) => r.role)).toEqual(['Buyer', 'Buyer', 'Seller', 'SellerAgent'])
     expect(rows.filter((r) => r.role === 'Buyer')).toHaveLength(2)
   })
+
+  it('listing form that only needs Seller keeps buyers as copy', () => {
+    const rows = seedPartyEnvelopeRecipients({
+      envelopeId: 'e1',
+      buyers: ['Pat'],
+      sellers: ['Lee'],
+      brokerName: 'Matt Ryan',
+      brokerEmail: 'matt@ryan-realty.com',
+      cycleKind: 'listing',
+      requiredRoles: ['Seller'],
+    })
+    expect(rows.find((r) => r.role === 'Seller')?.action_required).toBe('NeedsToSign')
+    expect(rows.find((r) => r.role === 'Buyer')?.action_required).toBe('ReceivesACopy')
+    expect(rows.find((r) => r.role === 'SellerAgent')?.action_required).toBe('ReceivesACopy')
+  })
 })
 
 describe('seedVendorEnvelopeRecipients', () => {

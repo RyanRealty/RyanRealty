@@ -393,6 +393,14 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               <p className="text-[11px] text-muted-foreground">
                 {activeRecipientId ? 'Click on the document to drop a field. Drag to move, hover to delete.' : 'Save recipients, then pick who signs to start placing fields.'}
               </p>
+              {detail.requiredSignersLabel ? (
+                <p className="text-[11px] text-foreground">
+                  This form requires {detail.requiredSignersLabel} to sign
+                  {detail.missingSignerRoles.length
+                    ? `. Missing ${detail.missingSignerRoles.map((r) => recipientRoleLabel(r)).join(' and ')}. One party signing is not fully executed.`
+                    : '. Every required signer must finish before this is complete.'}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         ) : null}
