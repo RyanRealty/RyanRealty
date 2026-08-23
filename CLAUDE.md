@@ -464,11 +464,7 @@ Quoted: `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"L
 `"Longitude"`, `"TotalLivingAreaSqFt"`, `"PhotoURL"`, `"SubdivisionName"`, `"ClosePrice"`,
 `"CloseDate"`, `"BedroomsTotal"`, `"BathroomsTotal"`.
 Bare (lower-case): `year_built`, `pending_timestamp`, `price_per_sqft`.
-
-**`"DaysOnMarket"` is not days-to-contract.** It is list-to-close (escrow included) and
-tracks `"CloseDate" - "OnMarketDate"` minus one day. Never publish it as "days on market".
-The headline speed stat is `days_to_contract` (D2). The MLS cumulative-days field is dead
-(500 non-null of ~595k, all Closed) — do not read it.
+Never publish `"DaysOnMarket"` as DOM (it is list-to-close). Warning: `docs/DATABASE_FOR_AI_AGENTS.md` §4a.
 
 ```sql
 -- correct
@@ -488,10 +484,7 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
 `v4-2026-05-15`. **But no live cache row is stamped v4.** Every row the site serves carries
 `methodology_version = 'v3-2026-05-07'`: `market_pulse_live` 17/17 rows,
 `market_stats_cache` 10,955 rows, plus 70 legacy `v1-pre-fix` and 5 NULL. **State
-`v3-2026-05-07` — that is the stamp on the row — and never claim v4 for a served figure.** The
-v4 definition was registered by migration
-`supabase/migrations/20260515170000_resort_communities_neighborhood_aliases.sql` but the cache
-writer never adopted the string. That gap is a tracked defect, not a doc error.
+`v3-2026-05-07` — that is the stamp on the row — and never claim v4 for a served figure.**
 
 ---
 
