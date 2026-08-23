@@ -45,6 +45,21 @@ export class UnknownStatError extends Error {
   }
 }
 
+/** Gate 7: a closed-window metric whose complete_through lags period_end is stale. */
+export function staleReason(opts: {
+  completeThrough: string
+  periodEnd: string
+  windowMonths: number
+}): string | null {
+  if (opts.windowMonths <= 0) return null
+  const complete = Date.parse(opts.completeThrough.slice(0, 10))
+  const end = Date.parse(opts.periodEnd.slice(0, 10))
+  if (!Number.isFinite(complete) || !Number.isFinite(end)) return 'missing_complete_through'
+  const slackMs = 2 * 86_400_000
+  if (complete + slackMs < end) return 'stale_complete_through'
+  return null
+}
+
 export async function getMetric(input: GetMetricInput): Promise<MetricResult | null> {
   const spec = STAT_BY_ID.get(input.stat)
   if (!spec) throw new UnknownStatError(input.stat)
@@ -73,24 +88,31 @@ export async function getMetric(input: GetMetricInput): Promise<MetricResult | n
   if (!data) return null
 
   const row = data as Record<string, unknown>
+  const windowMonths = Number(row.window_months)
+  const stale = staleReason({
+    completeThrough: String(row.complete_through ?? ''),
+    periodEnd: String(row.period_end ?? ''),
+    windowMonths,
+  })
+  const publishable = Boolean(row.is_publishable) && !stale
   return {
     statId: String(row.stat_id),
     geoType: String(row.geo_type),
     geoSlug: String(row.geo_slug),
     segment: String(row.segment),
-    value: row.value == null ? null : Number(row.value),
-    valueText: row.value_text == null ? null : String(row.value_text),
-    isPublishable: Boolean(row.is_publishable),
+    value: publishable && row.value != null ? Number(row.value) : null,
+    valueText: publishable && row.value_text != null ? String(row.value_text) : null,
+    isPublishable: publishable,
     provenance: {
       sampleN: Number(row.sample_n),
       method: String(row.method),
       excludedN: Number(row.excluded_n ?? 0),
       completeThrough: String(row.complete_through),
-      windowMonths: Number(row.window_months),
+      windowMonths,
       definitionId: String(row.definition_id),
       computedAt: String(row.computed_at),
       isFloor: Boolean(row.is_floor),
-      withheldReason: row.withheld_reason == null ? null : String(row.withheld_reason),
+      withheldReason: stale ?? (row.withheld_reason == null ? null : String(row.withheld_reason)),
     },
   }
 }

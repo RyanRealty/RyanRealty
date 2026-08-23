@@ -252,6 +252,7 @@ function rollupRows(
   for (const row of martRows) {
     const name = String(row.office_name || '').trim()
     if (!name) continue
+    if (/^no office$/i.test(name)) continue
     total++
     const sides = Number(row.sides_count) || 0
     const vol = Number(row.total_volume) || 0

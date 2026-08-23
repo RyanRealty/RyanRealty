@@ -43,6 +43,13 @@ describe('property-type', () => {
       expect(getPropertyTypeLabel('Commercial')).toBe('Commercial')
     })
 
+    it('maps farm (E) and commercial lease (G)', () => {
+      expect(getPropertyTypeLabel('E')).toBe('Farm')
+      expect(getPropertyTypeLabel('Farm')).toBe('Farm')
+      expect(getPropertyTypeLabel('G')).toBe('Commercial lease')
+      expect(getPropertyTypeLabel('Commercial Lease')).toBe('Commercial lease')
+    })
+
     it('maps rental values', () => {
       expect(getPropertyTypeLabel('Rental')).toBe('Rental')
     })
@@ -148,7 +155,10 @@ describe('property-type', () => {
     })
     it('maps Land to D and Commercial to E-H', () => {
       expect(propertyTypeFilterToCodes('Land')).toEqual(['D'])
-      expect(propertyTypeFilterToCodes('Commercial')).toEqual(['E', 'F', 'G', 'H'])
+      expect(propertyTypeFilterToCodes('Commercial')).toEqual(['F'])
+      expect(propertyTypeFilterToCodes('farm')).toEqual(['E'])
+      expect(propertyTypeFilterToCodes('lease')).toEqual(['G'])
+      expect(propertyTypeFilterToCodes('business')).toEqual(['H'])
     })
     it('passes a raw code through unchanged', () => {
       expect(propertyTypeFilterToCodes('A')).toEqual(['A'])

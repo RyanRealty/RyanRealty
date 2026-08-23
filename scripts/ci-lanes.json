@@ -28,6 +28,7 @@
     "ci:listing-key-lookup",
     "ci:maps-safety",
     "ci:market-formula",
+    "ci:market-truth",
     "ci:no-jsdom-serverless",
     "ci:no-report-rpc",
     "ci:no-staging-host",
@@ -774,6 +775,16 @@
       "app/**/page.tsx",
       "design_system/**/parity.json",
       "design_system/**/ui_kits/**"
+    ],
+    "ci:market-truth": [
+      "lib/data/market-truth/**",
+      "lib/data/market/**",
+      "lib/market/**",
+      "app/sell/**",
+      "docs/plans/MARKET_TRUTH/**",
+      "scripts/check-market-truth.mjs",
+      "scripts/market-truth-gate-baseline.json",
+      "supabase/migrations/**market*"
     ],
     "ci:mos-grain-trust": [
       "lib/data/**",

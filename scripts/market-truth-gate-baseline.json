@@ -1,0 +1,42 @@
+{
+  "stores": {
+    "total": 33,
+    "byFile": {
+      "app/api/cron/loop-health-check/route.ts": 1,
+      "app/api/cron/market-history-snapshot/route.ts": 3,
+      "app/api/cron/market-stat-consistency/route.ts": 1,
+      "lib/data/cma/builderReads.ts": 3,
+      "lib/data/geo/getBendNeighborhoodStats.ts": 1,
+      "lib/data/geo/getGeoSnapshot.ts": 1,
+      "lib/data/loop/signals.ts": 1,
+      "lib/data/market/getCityMarketDetail.ts": 2,
+      "lib/data/market/getLiveMortgageRate.ts": 1,
+      "lib/data/market/getMarketHistoryWeekly.ts": 1,
+      "lib/data/market/getMarketPulse.ts": 1,
+      "lib/data/market/getMarketPulseSnapshot.ts": 3,
+      "lib/data/market/getMarketStats.ts": 1,
+      "lib/data/market/getMarketStatsCacheRows.ts": 7,
+      "lib/data/market/getMarketTrend.ts": 1,
+      "lib/data/market/getPriceHistory.ts": 1,
+      "lib/data/market/marketNarrativeWrites.ts": 2,
+      "lib/data/sync/syncWrites.ts": 1,
+      "data/golf/community-kpis.ts": 1
+    }
+  },
+  "cdomConsumer": {
+    "total": 7,
+    "byFile": {
+      "app/actions/listing-detail.ts": 2,
+      "app/lp/tetherow/heath/page.tsx": 2,
+      "data/golf/featured-listings.ts": 3
+    }
+  },
+  "daysOnMarketConsumer": {
+    "total": 0,
+    "byFile": {}
+  },
+  "mlsSourceFilter": {
+    "total": 0,
+    "byFile": {}
+  }
+}

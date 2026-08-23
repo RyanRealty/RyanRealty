@@ -11,9 +11,10 @@ export async function recordListingView(listingKey: string, city: string): Promi
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url?.trim() || !anonKey?.trim() || !listingKey?.trim()) return { error: 'Missing config or listing key' }
   const supabase = createClient(url, anonKey)
-  const { error } = await supabase.from('listing_views').insert({
+  const { error } = await supabase.from('user_events').insert({
+    event_type: 'listing_view',
     listing_key: listingKey.trim(),
-    city: (city ?? '').trim() || 'Bend',
+    payload: { city: (city ?? '').trim() || 'Bend' },
   })
   if (error) return { error: error.message }
   return { error: null }

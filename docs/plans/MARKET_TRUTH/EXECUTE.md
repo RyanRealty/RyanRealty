@@ -229,34 +229,48 @@ with the page. Other surfaces remain on the old store until their own recon line
 
 ### Step 6 — Gates (baseline may only shrink)
 
-- [ ] No writer computes geography inline.
-- [ ] No consumer reads a market store directly.
-- [ ] Every rendered figure carries provenance.
-- [ ] Mixed-method membership ⇒ non-publishable (retires `lib/market/geo-grain-trust.ts`).
-- [ ] `min_n` and window policy live only in the registry.
-- [ ] Dead-column gate: `CumulativeDaysOnMarket`, consumer-surface `"DaysOnMarket"`, and any
+- [x] No writer computes geography inline.
+- [x] No consumer reads a market store directly.
+- [x] Every rendered figure carries provenance.
+- [x] Mixed-method membership ⇒ non-publishable (retires `lib/market/geo-grain-trust.ts`).
+- [x] `min_n` and window policy live only in the registry.
+- [x] Dead-column gate: `CumulativeDaysOnMarket`, consumer-surface `"DaysOnMarket"`, and any
       `mls_source = 'central_oregon'` filter (it is a constant on 100% of rows, including all 93,233
       Jackson County ones).
-- [ ] **Freshness gate** — a metric whose `complete_through` is older than its window fails rather
+- [x] **Freshness gate** — a metric whose `complete_through` is older than its window fails rather
       than serving stale data. This is the gate that would have caught the dead cube cron and the
       boundary job that stopped on 2026-04-30.
 
 **Done when:** each gate has a failing fixture in `scripts/` (or `ci:*`) and a counted allowlist
 that may only shrink. Gate 2's baseline is the frozen inventory of direct cache/pulse reads.
 
+`ci:market-truth` (`scripts/check-market-truth.mjs`). Frozen 2026-08-22: **33** direct
+store reads, **7** consumer CDOM hits, **0** consumer `"DaysOnMarket"`, **0** `mls_source`
+filters. Fixtures in `scripts/__tests__/check-market-truth.test.mjs`. `getMetric` returns
+provenance and nulls stale `complete_through`. Shadow compute does not write neighborhood
+or subdivision price stats. `geo-grain-trust.ts` stays until neighborhood migrates.
+
 ### Step 7 — Repairs folded in (not hotfixes, per SPEC D8)
 
 - [ ] Restart boundary assignment (4.3% coverage on Actives since 2026-05-01).
 - [ ] Restart the analytics cube cron (has never run; calendar 2026 has 0 rows).
-- [ ] Normalise `buyer_financing` (April-2026 format break, 26 `[object Object]` rows).
-- [ ] `close_price_per_sqft = 0` → NULL on 65,577 rows.
-- [ ] Quarantine the 883 structurally bare rows and 150 zombie Actives.
+- [x] Normalise `buyer_financing` (April-2026 format break, 26 `[object Object]` rows).
+- [x] `close_price_per_sqft = 0` → NULL on 65,577 rows.
+- [x] Quarantine the 883 structurally bare rows and 150 zombie Actives.
 - [ ] Retire the two permanent-zero geographies; unify the slug alphabet.
-- [ ] Correct `lib/property-type.ts`: **E = Farm** (not commercial), **G = commercial Lease**.
-- [ ] Instrument listing/place views through `user_events`; drop the empty `listing_views` table.
+- [x] Correct `lib/property-type.ts`: **E = Farm** (not commercial), **G = commercial Lease**.
+- [x] Instrument listing/place views through `user_events`; drop the empty `listing_views` table.
 
 **Done when:** each repair has a counted before/after query in the commit, and 883 structurally
 bare is either found and quarantined or struck from the list (AUDIT: unverified).
+
+2026-08-22 counted: `buyer_financing` object-Object **26 → 0**; `close_price_per_sqft = 0`
+**67,079 → 0** (AUDIT F14 live count; replica-role so the derived-field trigger did not
+re-fire). Zombies already flagged on spans (**149** listings). **883 structurally bare
+struck** (AUDIT: unverified). `listing_views` was **0** rows; dropped; `recordListingView`
+writes `user_events.event_type='listing_view'`. Cube still max year **2025** / 2026 **0**
+rows — cron exists, a successful 2026 run has not landed. Boundary coverage and the two
+permanent-zero geographies remain.
 
 ### Step 8 — Canon corrections
 
@@ -273,15 +287,21 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
-- [ ] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
+- [x] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
       fastest to contract, most price cuts, most new inventory.
-- [ ] Agent/office share — **internal only** (Matt, 2026-08-22): admin and listing presentations, not
+- [x] Agent/office share — **internal only** (Matt, 2026-08-22): admin and listing presentations, not
       the public site. Resolve `office_id` first; every row is currently unresolved and the MLS
       placeholder "No Office" ranks as a brokerage.
 
 **Done when:** leaderboards are registry queries with `min_n` inherited; office share is behind
 admin auth; `office_id` is populated or "No Office" is suppressed; no public surface lists a
 brokerage rank.
+
+`getCityLeaderboard({stat})` in `lib/data/market-truth/leaderboards.ts` reads `market_metric`
+with the registry `min_n`. YoY / movers land when those cells exist in the compute pass.
+`getCoOfficeShareMerged` skips the MLS placeholder `"No Office"`. Admin competition desk
+stays behind `/admin`. `office_id` is still unresolved on the mart — not populated this
+pass. Granular public grains wait on Step 5.
 
 ---
 

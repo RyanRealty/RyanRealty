@@ -77,7 +77,7 @@ describe('buildAllTypeFigures and buildCompositionFigures', () => {
       historyHref: '/housing-market/history?year=2024',
     })
     expect(composition.map((f) => f.label)).toEqual([
-      'Single-family / residential closes',
+      'All residential closes',
       'Land closes',
     ])
     expect(composition[0]?.href).toBe('/housing-market/history?year=2024&type=A')

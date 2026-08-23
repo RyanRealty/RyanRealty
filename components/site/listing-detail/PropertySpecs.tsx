@@ -101,13 +101,13 @@ type Group = {
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
   A: 'Residential',
-  B: 'Condo or townhome',
-  C: 'Manufactured home',
+  B: 'Manufactured in park',
+  C: 'Residential income',
   D: 'Lots and land',
-  E: 'Multi-family',
-  F: 'Farm or ranch',
-  G: 'Commercial',
-  H: 'Other',
+  E: 'Farm',
+  F: 'Commercial sale',
+  G: 'Commercial lease',
+  H: 'Business opportunity',
 }
 
 function propertyTypeLabel(code: string | null | undefined): string | null {

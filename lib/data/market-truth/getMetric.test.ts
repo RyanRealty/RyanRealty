@@ -6,7 +6,7 @@ import {
   marketVerdict,
   pickWindow,
 } from '@/lib/data/market-truth/registry'
-import { UnknownStatError } from '@/lib/data/market-truth/getMetric'
+import { UnknownStatError, staleReason } from '@/lib/data/market-truth/getMetric'
 
 describe('Market Truth registry', () => {
   it('registers every REGISTRY.md §3 stat_id once', () => {
@@ -40,5 +40,17 @@ describe('Market Truth registry', () => {
     expect(() => {
       if (!STAT_BY_ID.get('median_dom')) throw new UnknownStatError('median_dom')
     }).toThrow(/not in the registry/)
+  })
+
+  it('refuses a closed window whose complete_through lags period_end', () => {
+    expect(
+      staleReason({ completeThrough: '2026-04-30', periodEnd: '2026-08-22', windowMonths: 12 }),
+    ).toBe('stale_complete_through')
+    expect(
+      staleReason({ completeThrough: '2026-08-21', periodEnd: '2026-08-22', windowMonths: 12 }),
+    ).toBeNull()
+    expect(
+      staleReason({ completeThrough: '2026-04-30', periodEnd: '2026-08-22', windowMonths: 0 }),
+    ).toBeNull()
   })
 })

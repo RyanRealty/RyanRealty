@@ -43,7 +43,10 @@ export function propertyTypeFilterToCodes(value: string | null | undefined): str
   // Legacy bucket (pre two-layer Home type): dwellings + income + park MH.
   if (v === 'residential') return ['A', 'B', 'C']
   if (v === 'land' || v === 'lots' || v === 'acreage') return ['D']
-  if (v === 'commercial' || v === 'business') return ['E', 'F', 'G', 'H']
+  if (v === 'farm' || v === 'ranch') return ['E']
+  if (v === 'commercial') return ['F']
+  if (v === 'lease' || v === 'commercial lease') return ['G']
+  if (v === 'business') return ['H']
   // Multi-family / income (duplex/tri/quad) — code C. Powers the multi-family
   // search preset (lib/search-presets.ts) and the primary Home-type chip.
   if (v === 'multi-family' || v === 'multifamily' || v === 'multi family' || v === 'income') {
@@ -169,6 +172,8 @@ export function getPropertyTypeLabel(raw: string | null | undefined): string {
   if (lower.includes('manufactured') || lower.includes('mobile')) return 'Manufactured'
   if (lower.includes('acreage') || lower.includes('land') || lower === 'acreage') return 'Acreage / Land'
   if (lower.includes('residential') || lower.includes('single') || lower.includes('family')) return 'Residential'
+  if (lower === 'e' || lower.includes('farm')) return 'Farm'
+  if (lower === 'g' || lower.includes('lease')) return 'Commercial lease'
   if (lower.includes('commercial')) return 'Commercial'
   if (lower.includes('rental')) return 'Rental'
   // Return title-case of first 30 chars for unknown values
