@@ -22,4 +22,6 @@ Credential stops:
 1. Google Workspace DWD must include `https://www.googleapis.com/auth/calendar` for writes.
 2. Tyler’s personal address is not in Matt/Paul/Rebecca mail.
 
+Still specified, not this pass: measured field maps for 015/020/042/043/050 (only 001 overlay is checked in), auto-deadline tasks (EM 3 banking days, etc.), form-version pull when catalog flags an update.
+
 Do not: clone Offers, mutate SkySlope, send a live envelope, create Tyler as a CRM lead, guess inspection/financing windows that are not in the Oregon matrix.

@@ -31,9 +31,16 @@ type EnvelopeTemplateOption = {
   libraryCode: string
 }
 
+type EnvelopePacketOption = {
+  id: string
+  name: string
+  formVersionIds: string[]
+}
+
 export type DealEnvelopesCycle = {
   cycleId: string
   label: string
+  kind?: 'listing' | 'sale'
   documents: { id: string; name: string; executionState?: ExecutionState | null }[]
   envelopes: EnvelopeSummary[]
 }
@@ -52,9 +59,11 @@ const STATUS_STATE: Record<EnvelopeStatus, AdminState> = {
 export function DealEnvelopes({
   cycles,
   templates,
+  packets = [],
 }: {
   cycles: DealEnvelopesCycle[]
   templates: EnvelopeTemplateOption[]
+  packets?: EnvelopePacketOption[]
 }) {
   return (
     <div className="av2-pane">
@@ -62,7 +71,7 @@ export function DealEnvelopes({
         Envelopes &amp; signing
       </p>
       {cycles.map((c) => (
-        <CycleEnvelopes key={c.cycleId} cycle={c} templates={templates} />
+        <CycleEnvelopes key={c.cycleId} cycle={c} templates={templates} packets={packets} />
       ))}
     </div>
   )
@@ -71,9 +80,11 @@ export function DealEnvelopes({
 function CycleEnvelopes({
   cycle,
   templates,
+  packets,
 }: {
   cycle: DealEnvelopesCycle
   templates: EnvelopeTemplateOption[]
+  packets: EnvelopePacketOption[]
 }) {
   return (
     <div
@@ -90,7 +101,10 @@ function CycleEnvelopes({
         >
           {cycle.label}
         </p>
-        <NewEnvelopeDialog cycle={cycle} templates={templates} />
+        <span style={{ display: 'inline-flex', gap: 8 }}>
+          <PacketEnvelopeButton cycle={cycle} packets={packets} />
+          <NewEnvelopeDialog cycle={cycle} templates={templates} packets={packets} />
+        </span>
       </div>
       {cycle.documents.some((d) => d.executionState === 'needs_our_signatures') ? (
         <p style={{ margin: '0 0 8px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text)' }}>
@@ -135,12 +149,44 @@ function CycleEnvelopes({
   )
 }
 
+function PacketEnvelopeButton({
+  cycle,
+  packets,
+}: {
+  cycle: DealEnvelopesCycle
+  packets: EnvelopePacketOption[]
+}) {
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
+  const packet =
+    cycle.kind === 'listing'
+      ? packets.find((p) => p.name === 'Listing — Standard')
+      : packets.find((p) => p.name === 'Residential — Standard')
+  if (!packet?.formVersionIds.length) return null
+  return (
+    <Button
+      variant="quiet"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true)
+        const res = await createEnvelopeFromTemplate(cycle.cycleId, packet.formVersionIds, packet.name)
+        setBusy(false)
+        if (res.ok && res.envelopeId) router.push(`/admin/signing/${res.envelopeId}`)
+      }}
+    >
+      {busy ? 'Creating…' : packet.name}
+    </Button>
+  )
+}
+
 function NewEnvelopeDialog({
   cycle,
   templates,
+  packets,
 }: {
   cycle: DealEnvelopesCycle
   templates: EnvelopeTemplateOption[]
+  packets: EnvelopePacketOption[]
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -164,7 +210,11 @@ function NewEnvelopeDialog({
           id: t.id,
           name: `${t.libraryCode} ${t.formNumber ?? ''} ${t.name}`.replace(/\s+/g, ' ').trim(),
         }))
-  const canOpen = cycle.documents.length > 0 || templates.length > 0
+  const packet =
+    cycle.kind === 'listing'
+      ? packets.find((p) => p.name === 'Listing — Standard')
+      : packets.find((p) => p.name === 'Residential — Standard')
+  const canOpen = cycle.documents.length > 0 || templates.length > 0 || !!packet?.formVersionIds.length
 
   function toggle(id: string) {
     setPicked((s) => {

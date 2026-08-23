@@ -60,7 +60,7 @@ import { DealOffers } from './DealOffers'
 import { FillOrefPacket } from './FillOrefPacket'
 import { DocumentName } from './DocumentName'
 import { getEnvelopesForCycle } from '@/app/actions/tc-envelopes'
-import { listDealOffers, listEnvelopeTemplates } from '@/lib/data'
+import { listDealOffers, listEnvelopeTemplates, listFormPackets } from '@/lib/data'
 import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/data'
 import { getDealParties } from '@/lib/data/tc/deal-people'
 import { CHECKLIST_GROUPS, checklistGroupForRule } from '@/lib/tc/required-documents'
@@ -113,7 +113,17 @@ function CommissionSection({
   cycleId: string
   propertyKey: string
 }) {
-  if (!rows.length) return null
+  if (!rows.length) {
+    return (
+      <section aria-label="Commission">
+        <SectionHead>
+          Commission{' '}
+          <CdaButton cycleId={cycleId} propertyKey={propertyKey} />
+        </SectionHead>
+        <p style={{ ...tiny, margin: 0 }}>No commission rows yet. Generate CDA still prints the file facts.</p>
+      </section>
+    )
+  }
   return (
     <section aria-label="Commission">
       <SectionHead>
@@ -419,7 +429,14 @@ function CycleSection({
             {unfiled.map((doc) => (
               <li key={doc.id} className="av2-quiet">
                 <span className="av2-quiet__name">{doc.name}</span>
-                <span className="av2-quiet__fig">{d10(doc.source_uploaded_at)}</span>
+                <span className="av2-quiet__fig">
+                  {(() => {
+                    const exec = executionStateFromClassification(doc.classification)
+                    return exec && EXECUTION_STATE_LABEL[exec]
+                      ? `${EXECUTION_STATE_LABEL[exec]} · ${d10(doc.source_uploaded_at)}`
+                      : d10(doc.source_uploaded_at)
+                  })()}
+                </span>
               </li>
             ))}
           </ul>
@@ -475,11 +492,12 @@ export default async function TcDealPage({ params, searchParams }: Props) {
     )
   )
 
-  const [envelopeCycles, envelopeTemplates] = await Promise.all([
+  const [envelopeCycles, envelopeTemplates, envelopePackets] = await Promise.all([
     Promise.all(
       deal.cycles.map(async (c) => ({
         cycleId: c.id,
         label: c.kind === 'listing' ? 'Listing folder' : `Sale cycle${c.status ? ` · ${c.status}` : ''}`,
+        kind: c.kind,
         documents: c.documents.filter((doc) => !doc.archived).map((doc) => ({
           id: doc.id,
           name: doc.name,
@@ -489,6 +507,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
       })),
     ),
     listEnvelopeTemplates(),
+    listFormPackets(),
   ])
 
   return (
@@ -584,7 +603,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
       <DealContacts dealId={deal.id} contacts={contacts} />
 
       {/* Envelopes & signing (Phase 2b) */}
-      <DealEnvelopes cycles={envelopeCycles} templates={envelopeTemplates} />
+      <DealEnvelopes cycles={envelopeCycles} templates={envelopeTemplates} packets={envelopePackets} />
 
       <section aria-label="Recent activity">
         <SectionHead>Recent activity</SectionHead>

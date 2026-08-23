@@ -820,16 +820,6 @@ export async function sendEnvelope(
   )
   if (blocked) return { ok: false, error: blocked }
 
-  const now = new Date().toISOString()
-  await supabase
-    .from('tc_envelopes')
-    .update({
-      status: 'sent',
-      sent_at: now,
-      ...(typeof opts?.remindersEnabled === 'boolean' ? { reminders_enabled: opts.remindersEnabled } : {}),
-    })
-    .eq('id', envelopeId)
-
   // ordered routing: mint + email ONLY the lowest signing-order group. Later
   // groups get a freshly minted token when their turn comes (advanceOrSeal),
   // so a live link never exists before it is that signer's turn.
@@ -842,8 +832,9 @@ export async function sendEnvelope(
     tokenByRecip.set(r.id, token)
     await supabase.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', r.id)
   }
+  const failed: string[] = []
   for (const r of toNotify) {
-    await sendSigningInvite({
+    const sent = await sendSigningInvite({
       to: r.email,
       recipientName: r.name || 'there',
       envelopeName: env.name,
@@ -853,7 +844,24 @@ export async function sendEnvelope(
       customSubject: env.invite_subject ?? null,
       customBody: env.invite_body ?? null,
     })
+    if (sent.error) failed.push(r.name || r.email || r.role)
   }
+  if (failed.length) {
+    return {
+      ok: false,
+      error: `Could not email ${failed.join(', ')}. The envelope is still a draft.`,
+    }
+  }
+
+  const now = new Date().toISOString()
+  await supabase
+    .from('tc_envelopes')
+    .update({
+      status: 'sent',
+      sent_at: now,
+      ...(typeof opts?.remindersEnabled === 'boolean' ? { reminders_enabled: opts.remindersEnabled } : {}),
+    })
+    .eq('id', envelopeId)
 
   await supabase.from('tc_events').insert({
     deal_id: (cycle as DbRow)?.deal_id ?? null,
