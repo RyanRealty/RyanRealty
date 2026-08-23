@@ -13,6 +13,7 @@ A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 7. **The form must be completed as required — not every blank.** Requirement comes from that form: field-map `isOptional`, signature lines tagged to a role, and a small known-fact list (001 needs parties/address/price; 015 needs sellers/address/list price). Optional checkboxes and unknown blanks stay empty. The envelope will not seal while a *required* signature field is empty.
 8. **One-sided representation.** We collect our clients' signatures in Vault, email the signed PDF to the other broker, and file the executed copy they send back (mail or SMS). Other-side principals do not get our signing links. Checklist stays open until that return is filed.
 9. **Dual representation.** Both principals sign in Vault. Signing groups match DigiSign: who signs first (buyers together), then who signs second (sellers), then agents if the form requires them. A later group cannot sign until the earlier group is done. The next group is emailed only when it is their turn.
+10. **Inbound PDF execution state.** A mailed PDF is fully executed only when every obligated role on that form has a signature marker. Buyer-only offer on a listing needs our sellers. Seller-only SPD is our-side signed, not complete. Email "signed/executed" is a hint, not proof. SkySlope Envelope completed is that envelope, not both sides of the deal.
 
 Credential stops:
 

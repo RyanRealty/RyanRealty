@@ -113,13 +113,23 @@ describe('looksLikeReturnedSignedPacket', () => {
         haystack: 'Signed SPD.pdf',
         hasPdf: true,
         fromOtherSide: true,
+        executionState: 'fully_executed',
       }),
     ).toBe(true)
+    expect(
+      shouldCompleteFromOtherSideReturn({
+        haystack: 'OFFER attached.pdf',
+        hasPdf: true,
+        fromOtherSide: true,
+        executionState: 'needs_our_signatures',
+      }),
+    ).toBe(false)
     expect(
       shouldCompleteFromOtherSideReturn({
         haystack: 'Signed SPD.pdf',
         hasPdf: true,
         fromOtherSide: false,
+        executionState: 'fully_executed',
       }),
     ).toBe(false)
   })
