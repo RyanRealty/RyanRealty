@@ -41,7 +41,12 @@ import {
 import { getFormSourcesForEnvelope } from '@/lib/data/tc/envelope-form-sources'
 import { extractPdfPagesText } from '@/lib/tc/pdf-page-text'
 import { entriesFromDocumentText, formNumberFromClassification, identifyFormFromName } from '@/lib/tc/form-identity'
-import { incompletePrepareMessage } from '@/lib/tc/required-fields'
+import {
+  incompleteFactsMessage,
+  incompletePrepareMessage,
+  mapFieldIsRequired,
+  missingRequiredFacts,
+} from '@/lib/tc/required-fields'
 
 /**
  * TC envelope composer + lifecycle (Phase 2b). Build an envelope from PDF
@@ -266,7 +271,7 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
   const prepareMessage = incompletePrepareMessage(
     mappedFields.map((f) => ({
       type: f.type,
-      required: f.required,
+      required: f.required === true,
       recipientId: f.recipientId,
       value: f.value,
     })),
@@ -545,7 +550,13 @@ export async function createEnvelopeFromTemplate(
         y: clamp01(f.y),
         w: clamp01(f.w),
         h: clamp01(f.h),
-        required: !f.optional,
+        required: mapFieldIsRequired({
+          type,
+          optional: f.optional,
+          signerRole: f.signerRole,
+          dataRef: f.dataRef,
+          formNumber: form.form_number,
+        }),
         value:
           type === 'text' && filledText
             ? { kind: 'text', text: filledText }
@@ -653,7 +664,7 @@ export async function saveEnvelopeFields(
       y: clamp01(f.y),
       w: clamp01(f.w),
       h: clamp01(f.h),
-      required: f.required ?? true,
+      required: f.required === true,
       value: f.value ?? null,
     }))
     const { error } = await supabase.from('tc_envelope_fields').insert(rows)
@@ -740,7 +751,9 @@ export async function sendEnvelope(
     supabase.from('tc_envelope_documents').select('id').eq('envelope_id', envelopeId),
     supabase
       .from('tc_cycles')
-      .select('deal_id, tc_deals(address)')
+      .select(
+        'deal_id, sellers, buyers, listing_price, sale_price, tc_deals(address, city, state, zip, broker_name)',
+      )
       .eq('id', env.cycle_id)
       .maybeSingle(),
   ])
@@ -770,14 +783,19 @@ export async function sendEnvelope(
   const prepareMsg = incompletePrepareMessage(
     ((fields ?? []) as DbRow[]).map((f) => ({
       type: String(f.type ?? ''),
-      required: f.required !== false,
+      required: f.required === true,
       recipientId: f.recipient_id ?? null,
       value: f.value ?? null,
     })),
   )
   if (prepareMsg) return { ok: false, error: prepareMsg }
 
-  const signerRead = unionRequiredSignerReads(await getFormSourcesForEnvelope(envelopeId))
+  const formSources = await getFormSourcesForEnvelope(envelopeId)
+  const facts = dealFactsFromRows((cycle as DbRow)?.tc_deals ?? {}, (cycle as DbRow) ?? {})
+  const factMsg = incompleteFactsMessage(missingRequiredFacts(formSources.map((s) => s.formNumber), facts))
+  if (factMsg) return { ok: false, error: factMsg }
+
+  const signerRead = unionRequiredSignerReads(formSources)
   const blocked = sendBlockedBySignerKnowledge(
     signerRead,
     recipients.map((r) => ({ role: r.role, actionRequired: r.action_required })),

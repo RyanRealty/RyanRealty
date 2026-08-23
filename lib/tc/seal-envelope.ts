@@ -46,7 +46,7 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
     const incomplete = incompleteFormMessage(
       ((fieldRows ?? []) as DbRow[]).map((f) => ({
         type: String(f.type ?? ''),
-        required: f.required !== false,
+        required: f.required === true,
         recipientId: f.recipient_id ?? null,
         value: f.value ?? null,
       })),

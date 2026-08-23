@@ -29,13 +29,13 @@ import {
   SIGN_FIELD_LABEL,
   DEFAULT_FIELD_SIZE,
   isSignableRole,
-  isSenderAnnotation,
   storedRecipientRole,
   coerceActionRequired,
   recipientRoleLabel,
   type ActionRequired,
   type SignFieldType,
 } from '@/lib/tc/signing'
+import { SIGNER_COMPLETED_TYPES } from '@/lib/tc/required-fields'
 
 const RECIPIENT_COLORS = ['#2563eb', '#16a34a', '#db2777', '#9333ea', '#ea580c', '#0891b2', '#ca8a04']
 
@@ -146,7 +146,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         y: Math.max(0, Math.min(1 - size.h, yFrac - size.h / 2)),
         w: size.w,
         h: size.h,
-        required: !isSenderAnnotation(activeType),
+        required: SIGNER_COMPLETED_TYPES.has(activeType),
         value: null,
       },
     ])

@@ -110,7 +110,7 @@ export const DEAL_FACT_ALIASES: Record<DealFactKey, readonly string[]> = {
   earnestMoneyAmount: ['earnestmoney', 'earnestmoneyamount', 'earnest', 'earnestmoneydeposit', 'emdeposit'],
 }
 
-const FACT_LABEL: Record<DealFactKey, string> = {
+export const FACT_LABEL: Record<DealFactKey, string> = {
   address: 'Property address',
   city: 'City',
   state: 'State',
