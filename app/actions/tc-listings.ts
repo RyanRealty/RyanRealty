@@ -6,7 +6,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
-import { nextDuplicatePropertyKey, todayIsoDate } from '@/lib/tc/listing-actions'
+import { duplicatedDocumentPath, nextDuplicatePropertyKey, todayIsoDate } from '@/lib/tc/listing-actions'
 import { EMPTY_PROPERTY_FACTS, brokerRoleFromDealParties, seedChecklistItems } from '@/lib/tc/required-documents'
 import { getPropertyFactsByMls } from '@/lib/data/listings/getPropertyFactsByMls'
 import { getDealParties } from '@/lib/data/tc/deal-people'
@@ -14,6 +14,7 @@ import {
   getDealByPropertyKey,
   getLatestListingCycle,
   listChecklistItemCopies,
+  listCycleDocumentCopies,
   listDealContactCopies,
   listDealContactKeys,
   listDealPropertyKeys,
@@ -120,7 +121,7 @@ export async function acceptListingContract(
   return { ok: true }
 }
 
-/** Listing kebab Duplicate: new file, listing cycle + people + contacts + checklist. No docs. */
+/** Listing kebab Duplicate: new file, listing cycle + people + contacts + checklist + live docs. */
 export async function duplicateListing(
   propertyKey: string,
 ): Promise<{ ok: boolean; error?: string; propertyKey?: string }> {
@@ -180,6 +181,34 @@ export async function duplicateListing(
           sort_order: it.sort_order,
         })),
       )
+    }
+    const docs = await listCycleDocumentCopies(listing.id)
+    let n = 0
+    for (const d of docs.slice(0, 40)) {
+      if (!d.storage_path) continue
+      n += 1
+      const dest = duplicatedDocumentPath(newCycleId, d.name, n)
+      const down = await supabase.storage.from('tc-documents').download(d.storage_path)
+      if (down.error || !down.data) continue
+      const up = await supabase.storage.from('tc-documents').upload(dest, down.data, {
+        contentType: d.content_type ?? 'application/pdf',
+        upsert: false,
+      })
+      if (up.error) continue
+      const prior =
+        d.classification && typeof d.classification === 'object' && !Array.isArray(d.classification)
+          ? (d.classification as Record<string, unknown>)
+          : {}
+      await supabase.from('tc_documents').insert({
+        cycle_id: newCycleId,
+        name: d.name,
+        storage_path: dest,
+        bytes: d.bytes,
+        content_type: d.content_type,
+        page_count: d.page_count,
+        sha256: d.sha256,
+        classification: { ...prior, source: 'listing_duplicate' },
+      })
     }
   }
 

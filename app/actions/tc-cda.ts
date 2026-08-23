@@ -8,6 +8,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getCommissionsForCycles } from '@/app/actions/tc-commissions'
 import { getCycleForCda } from '@/lib/data/tc/listing-action-reads'
+import { partyNamesFromJson } from '@/lib/tc/listing-actions'
 
 function getServiceSupabase() {
   return createServiceClient()
@@ -45,9 +46,20 @@ export async function generateCommissionCda(
   }
   line('Commission disbursement advice', bold, 16)
   line(address, bold, 12)
+  if (cycle.mls_number) line(`MLS ${cycle.mls_number}`)
   if (cycle.escrow_number) line(`Escrow ${cycle.escrow_number}`)
   if (cycle.escrow_closing_date) line(`Close ${String(cycle.escrow_closing_date).slice(0, 10)}`)
-  line(`Sale ${money(cycle.sale_price)} · Office gross ${money(cycle.office_gross)}`)
+  const sellers = partyNamesFromJson(cycle.sellers)
+  const buyers = partyNamesFromJson(cycle.buyers)
+  if (sellers.length) line(`Sellers ${sellers.join(', ')}`)
+  if (buyers.length) line(`Buyers ${buyers.join(', ')}`)
+  const gciPct =
+    cycle.commission_percent != null && Number.isFinite(cycle.commission_percent)
+      ? `${cycle.commission_percent}%`
+      : '—'
+  line(
+    `Sale ${money(cycle.sale_price)} · List ${money(cycle.listing_price)} · GCI ${gciPct} · Office gross ${money(cycle.office_gross)}`,
+  )
   line(`Prepared ${new Date().toISOString().slice(0, 10)} by ${email}`, font, 9)
   line('Figures trace to settlement records retained per OAR 863-015-0250.', font, 8)
   y -= 8

@@ -92,16 +92,23 @@ export type CdaCycleRow = {
   id: string
   deal_id: string
   sale_price: number | null
+  listing_price: number | null
   office_gross: number | null
+  commission_percent: number | null
+  mls_number: string | null
   escrow_number: string | null
   escrow_closing_date: string | null
   address: string
+  sellers: unknown
+  buyers: unknown
 }
 
 export async function getCycleForCda(cycleId: string): Promise<CdaCycleRow | null> {
   const { data } = await client()
     .from('tc_cycles')
-    .select('id, deal_id, sale_price, office_gross, escrow_number, escrow_closing_date, tc_deals(address)')
+    .select(
+      'id, deal_id, sale_price, listing_price, office_gross, commission_percent, mls_number, escrow_number, escrow_closing_date, sellers, buyers, tc_deals(address)',
+    )
     .eq('id', cycleId)
     .maybeSingle()
   if (!data) return null
@@ -111,10 +118,15 @@ export async function getCycleForCda(cycleId: string): Promise<CdaCycleRow | nul
     id: String(data.id),
     deal_id: String(data.deal_id),
     sale_price: data.sale_price == null ? null : Number(data.sale_price),
+    listing_price: data.listing_price == null ? null : Number(data.listing_price),
     office_gross: data.office_gross == null ? null : Number(data.office_gross),
+    commission_percent: data.commission_percent == null ? null : Number(data.commission_percent),
+    mls_number: data.mls_number == null ? null : String(data.mls_number),
     escrow_number: data.escrow_number == null ? null : String(data.escrow_number),
     escrow_closing_date: data.escrow_closing_date == null ? null : String(data.escrow_closing_date),
     address: address ? String(address) : 'Deal',
+    sellers: data.sellers ?? [],
+    buyers: data.buyers ?? [],
   }
 }
 
@@ -141,6 +153,33 @@ export async function getLatestListingCycle(dealId: string): Promise<ListingCycl
     listing_date: row.listing_date == null ? null : String(row.listing_date),
     expiration_date: row.expiration_date == null ? null : String(row.expiration_date),
   }
+}
+
+export type CycleDocumentCopy = {
+  name: string
+  storage_path: string | null
+  bytes: number | null
+  content_type: string | null
+  page_count: number | null
+  sha256: string | null
+  classification: unknown
+}
+
+export async function listCycleDocumentCopies(cycleId: string): Promise<CycleDocumentCopy[]> {
+  const { data } = await client()
+    .from('tc_documents')
+    .select('name, storage_path, bytes, content_type, page_count, sha256, classification')
+    .eq('cycle_id', cycleId)
+    .eq('archived', false)
+  return (data ?? []).map((d) => ({
+    name: String(d.name ?? 'Document'),
+    storage_path: d.storage_path == null ? null : String(d.storage_path),
+    bytes: d.bytes == null ? null : Number(d.bytes),
+    content_type: d.content_type == null ? null : String(d.content_type),
+    page_count: d.page_count == null ? null : Number(d.page_count),
+    sha256: d.sha256 == null ? null : String(d.sha256),
+    classification: d.classification ?? {},
+  }))
 }
 
 export async function listChecklistItemCopies(cycleId: string): Promise<ChecklistItemCopy[]> {

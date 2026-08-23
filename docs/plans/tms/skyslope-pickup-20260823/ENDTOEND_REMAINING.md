@@ -1,22 +1,18 @@
-# End-to-end remaining Vault items — 2026-08-23 (pass 3)
+# End-to-end remaining Vault items — 2026-08-23 (pass 4)
 
 ## Goal
 
-A broker opens Vault and uses it as the file without SkySlope:
+A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 
-1. **New file from Closings** — Seller opens a listing (Residential — Standard); Buyer opens an accepted-offer sale. Primary client name + email become the CRM party. File owner is the acting broker’s SkySlope-style name (`Matt Ryan`, not slug `matt`).
-2. **DigiSign palette complete** — Signature, Initials, Full Name, Date, Time, Checkbox, Text, Strike, Highlight. Full Name and Time stamp on tap (Pacific).
-3. **Outgoing signing email** — composer Edit message (subject + body) is what the signer receives. Empty fields keep the Ryan Realty default copy.
-4. **Offer PDFs** from Offer threads stay on the cycle. Beaumont already has Nicoll Offer 3 / counters on the file.
-5. **MLS facts seed the checklist** when an MLS number is on the new file or on Accept Contract (well / septic / HOA / LBP).
-6. **Calendar** — CRM calendar already has listing expiration / accepted / close. Google write is attempted; DWD `calendar` scope is the named credential stop if it still fails.
-7. **Tyler Nicoll** stays other-side. We do not invent a personal email.
+1. **Listing packet** — Forms holds **Listing — Standard** (OREF 015 listing agreement, 042 agency pamphlet, 043 electronic-funds advisory, 020 seller disclosure when the library has a blank). Distinct from sale **Residential — Standard** (001 + 020 + 042 + 043 + 015).
+2. **Duplicate listing copies documents** — Duplicate kebab copies live (non-archived) PDFs onto the new file, not only people/checklist.
+3. **CDA a closer can send** — Generate CDA prints address, MLS, escrow, close, parties, sale/list price, GCI percent, office gross, and the commission split table.
+4. **Calendar after acceptance** — besides expiration / accepted / close, the CRM calendar gets the **7-banking-day principal review** date (OAR 863-015-0140) from contract acceptance. Google write stays fail-open.
+5. **Tyler Nicoll** stays other-side. No invented email.
 
-Shipped this pass (on production after Vercel `a95e57f1`): new file, Full Name + Time, Edit message, broker file name, MLS fact seed, live CHECK + invite columns. Verified 2026-08-23: Closings New file (Seller/Buyer, Open file requires email), Beaumont offer PDFs on the file, Tyler Nicoll labeled other-side.
-
-Credential stops (unchanged unless Admin grants them):
+Credential stops:
 
 1. Google Workspace DWD must include `https://www.googleapis.com/auth/calendar` for writes.
 2. Tyler’s personal address is not in Matt/Paul/Rebecca mail.
 
-Do not: clone Offers, mutate SkySlope, send a live envelope, create Tyler as a CRM lead.
+Do not: clone Offers, mutate SkySlope, send a live envelope, create Tyler as a CRM lead, guess inspection/financing windows that are not in the Oregon matrix.

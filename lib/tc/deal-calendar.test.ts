@@ -10,8 +10,15 @@ describe('dealCalendarItems', () => {
         { id: 'S', expiration_date: null, contract_acceptance_date: '2026-08-01', escrow_closing_date: '2026-09-15' },
       ],
     })
-    expect(rows.map((r) => r.kind)).toEqual(['listing_expires', 'contract_accepted', 'escrow_closes'])
+    expect(rows.map((r) => r.kind)).toEqual([
+      'listing_expires',
+      'contract_accepted',
+      'principal_review_due',
+      'escrow_closes',
+    ])
     expect(rows[0].title).toContain('5663 Impala')
+    const review = rows.find((r) => r.kind === 'principal_review_due')
+    expect(review?.date).toBe('2026-08-11')
   })
 })
 

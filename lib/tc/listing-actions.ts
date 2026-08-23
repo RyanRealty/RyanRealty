@@ -21,6 +21,29 @@ export function todayIsoDate(now = new Date()): string {
   return now.toISOString().slice(0, 10)
 }
 
+export function partyNamesFromJson(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const out: string[] = []
+  for (const item of raw) {
+    if (typeof item === 'string' && item.trim()) out.push(item.trim())
+    else if (item && typeof item === 'object') {
+      const n = (item as { name?: unknown }).name
+      if (typeof n === 'string' && n.trim()) out.push(n.trim())
+    }
+  }
+  return out
+}
+
+/** Sale packet: OREF 001 + disclosures. */
+export const SALE_STANDARD_FORM_NUMBERS = ['001', '020', '042', '043', '015'] as const
+/** Listing packet: exclusive listing + agency + EFA + SPDS. Not the sale agreement. */
+export const LISTING_STANDARD_FORM_NUMBERS = ['015', '042', '043', '020'] as const
+
+export function duplicatedDocumentPath(newCycleId: string, filename: string, n: number): string {
+  const safe = (filename.replace(/[^\w.\-]+/g, '_').replace(/^_+|_+$/g, '') || 'document.pdf').slice(0, 80)
+  return `inbox/${newCycleId}/dup-${n}-${safe}`
+}
+
 /** Write A Listing radios we support: Seller = listing file, Buyer = sale file. */
 export type FileRepresentation = 'seller' | 'buyer'
 

@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  LISTING_STANDARD_FORM_NUMBERS,
+  SALE_STANDARD_FORM_NUMBERS,
   duplicatePropertyKey,
+  duplicatedDocumentPath,
   fileShapeForRepresentation,
   nextDuplicatePropertyKey,
+  partyNamesFromJson,
   todayIsoDate,
 } from './listing-actions'
 
@@ -44,5 +48,30 @@ describe('fileShapeForRepresentation', () => {
     expect(fileShapeForRepresentation('buyer').kind).toBe('sale')
     expect(fileShapeForRepresentation('buyer').stage).toBe('pending')
     expect(fileShapeForRepresentation('buyer').partyRole).toBe('buyer')
+  })
+})
+
+describe('listing vs sale packets', () => {
+  it('listing packet is listing agreement + agency + EFA + SPDS, not the sale agreement', () => {
+    expect([...LISTING_STANDARD_FORM_NUMBERS]).toEqual(['015', '042', '043', '020'])
+    expect([...LISTING_STANDARD_FORM_NUMBERS]).not.toContain('001')
+    expect([...SALE_STANDARD_FORM_NUMBERS]).toContain('001')
+  })
+})
+
+describe('partyNamesFromJson', () => {
+  it('reads string names and { name } objects', () => {
+    expect(partyNamesFromJson(['Mary Bowman', { name: 'Tyler Nicoll' }, '', { name: '  ' }])).toEqual([
+      'Mary Bowman',
+      'Tyler Nicoll',
+    ])
+  })
+})
+
+describe('duplicatedDocumentPath', () => {
+  it('keeps the copy on the new cycle inbox path', () => {
+    expect(duplicatedDocumentPath('cyc', 'Beaumont Offer 1.pdf', 2)).toBe(
+      'inbox/cyc/dup-2-Beaumont_Offer_1.pdf',
+    )
   })
 })

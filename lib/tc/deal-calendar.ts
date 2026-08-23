@@ -1,3 +1,4 @@
+import { addBankingDays } from './banking-days'
 import { BROKER_FILE_NAME, brokerEmailFromFileName } from './deal-scope'
 
 export type DealCalendarItem = {
@@ -36,12 +37,23 @@ export function dealCalendarItems(input: {
       })
     }
     if (c.contract_acceptance_date) {
+      const accepted = String(c.contract_acceptance_date).slice(0, 10)
       out.push({
         kind: 'contract_accepted',
-        date: String(c.contract_acceptance_date).slice(0, 10),
+        date: accepted,
         title: `Contract accepted · ${addr}`,
         cycleId: c.id,
       })
+      const start = new Date(`${accepted}T00:00:00Z`)
+      if (!Number.isNaN(start.getTime())) {
+        const due = addBankingDays(start, 7)
+        out.push({
+          kind: 'principal_review_due',
+          date: due.toISOString().slice(0, 10),
+          title: `Principal review due · ${addr}`,
+          cycleId: c.id,
+        })
+      }
     }
     if (c.escrow_closing_date) {
       out.push({

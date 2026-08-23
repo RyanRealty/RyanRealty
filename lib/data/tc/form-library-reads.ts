@@ -5,15 +5,15 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { LISTING_STANDARD_FORM_NUMBERS, SALE_STANDARD_FORM_NUMBERS } from '@/lib/tc/listing-actions'
 
 export type FormPacket = { id: string; name: string; formVersionIds: string[] }
 export type ClauseRow = { id: string; scope: string; category: string; title: string; body: string }
 
-async function seedResidentialStandardPacket(): Promise<void> {
+async function seedNamedPacket(name: string, nums: readonly string[]): Promise<void> {
   const sb = createServiceClient()
-  const { count } = await sb.from('tc_form_packets').select('id', { count: 'exact', head: true }).eq('name', 'Residential — Standard')
+  const { count } = await sb.from('tc_form_packets').select('id', { count: 'exact', head: true }).eq('name', name)
   if ((count ?? 0) > 0) return
-  const nums = ['001', '020', '042', '043', '015']
   const ids: string[] = []
   for (const n of nums) {
     const id = await findFormVersionIdByNumber(n)
@@ -21,14 +21,23 @@ async function seedResidentialStandardPacket(): Promise<void> {
   }
   if (!ids.length) return
   await sb.from('tc_form_packets').insert({
-    name: 'Residential — Standard',
+    name,
     form_version_ids: ids,
     created_by: 'system',
   })
 }
 
+async function seedResidentialStandardPacket(): Promise<void> {
+  await seedNamedPacket('Residential — Standard', SALE_STANDARD_FORM_NUMBERS)
+}
+
+async function seedListingStandardPacket(): Promise<void> {
+  await seedNamedPacket('Listing — Standard', LISTING_STANDARD_FORM_NUMBERS)
+}
+
 export async function listFormPackets(): Promise<FormPacket[]> {
   await seedResidentialStandardPacket()
+  await seedListingStandardPacket()
   const { data } = await createServiceClient()
     .from('tc_form_packets')
     .select('id, name, form_version_ids')
