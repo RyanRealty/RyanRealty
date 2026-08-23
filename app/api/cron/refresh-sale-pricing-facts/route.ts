@@ -108,7 +108,7 @@ export async function GET(request: Request) {
       { status: 500 },
     )
   }
-  let marketFactSpan = { upserted: 0, batches: 0, done: false, last_key: '' as string }
+  const marketFactSpan = { upserted: 0, batches: 0, done: false, last_key: '' as string }
   let spanAfter = ''
   for (let i = 0; i < 8; i++) {
     const { data: span, error: spanErr } = await supabase.rpc('refresh_market_fact_listing_span', {
