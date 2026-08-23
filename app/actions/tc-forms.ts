@@ -4,7 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { seedPartyEnvelopeRecipients } from '@/lib/tc/signing'
+import { applyUniquePartyEmails, seedPartyEnvelopeRecipients } from '@/lib/tc/signing'
+import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
 
 /**
  * TC forms library + envelope scaffolding (Phase 2b — composer/signing).
@@ -142,15 +143,20 @@ export async function createDraftEnvelope(
     .single()
   if (envErr) return { ok: false, error: envErr.message }
 
-  const recipients = seedPartyEnvelopeRecipients({
-    envelopeId: envelope.id,
-    buyers: (cycle.buyers ?? []) as string[],
-    sellers: (cycle.sellers ?? []) as string[],
-    brokerName: cycle.broker_name,
-    brokerEmail: session?.user?.email ?? '',
-    cycleKind: (cycle as { kind?: string }).kind,
-    brokerSigningOrder: 2,
-  })
+  const recipients = applyUniquePartyEmails(
+    seedPartyEnvelopeRecipients({
+      envelopeId: envelope.id,
+      buyers: (cycle.buyers ?? []) as string[],
+      sellers: (cycle.sellers ?? []) as string[],
+      brokerName: cycle.broker_name,
+      brokerEmail: session?.user?.email ?? '',
+      cycleKind: (cycle as { kind?: string }).kind,
+      brokerSigningOrder: 2,
+    }),
+    await peopleEmailsByNames(
+      [...((cycle.buyers ?? []) as string[]), ...((cycle.sellers ?? []) as string[])],
+    ),
+  )
   if (recipients.length) await supabase.from('tc_envelope_recipients').insert(recipients)
 
   await supabase.from('tc_events').insert({

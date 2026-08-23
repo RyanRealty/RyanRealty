@@ -244,5 +244,25 @@ export async function recordPrincipalReview(
 
   revalidatePath('/admin/sign-off')
   revalidatePath('/admin/deals')
+
+  const { data: deal } = dealId
+    ? await supabase.from('tc_deals').select('address, broker_name, property_key').eq('id', dealId).maybeSingle()
+    : { data: null }
+  const { brokerEmailFromFileName } = await import('@/lib/tc/deal-scope')
+  const { notifyDealMailbox } = await import('@/lib/tc/deal-notify')
+  const to = brokerEmailFromFileName((deal as { broker_name?: string | null } | null)?.broker_name)
+  const address = (deal as { address?: string } | null)?.address ?? 'your deal'
+  const key = (deal as { property_key?: string } | null)?.property_key
+  await notifyDealMailbox({
+    to,
+    subject:
+      decision === 'approved'
+        ? `Signed off: ${(item as DbRow).name} on ${address}`
+        : `Sent back: ${(item as DbRow).name} on ${address}`,
+    bodyText:
+      decision === 'approved'
+        ? `Matt signed off on “${(item as DbRow).name}” for ${address}.${key ? `\n\nOpen deal: https://ryan-realty.com/admin/deals/${encodeURIComponent(key)}` : ''}`
+        : `Matt sent “${(item as DbRow).name}” back on ${address}.${note?.trim() ? `\n\nNote: ${note.trim()}` : ''}${key ? `\n\nOpen deal: https://ryan-realty.com/admin/deals/${encodeURIComponent(key)}` : ''}`,
+  })
   return { ok: true }
 }

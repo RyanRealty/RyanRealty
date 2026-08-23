@@ -196,6 +196,25 @@ export function seedPartyEnvelopeRecipients(input: {
   return rows
 }
 
+/** Fill blank recipient emails only when the CRM name is unique. */
+export function applyUniquePartyEmails<T extends { name: string; email: string }>(
+  rows: T[],
+  people: ReadonlyArray<{ name: string | null; email: string | null }>,
+): T[] {
+  return rows.map((r) => {
+    if (r.email?.includes('@')) return r
+    const key = r.name.trim().toLowerCase().replace(/\s+/g, ' ')
+    if (!key) return r
+    const hits = people.filter((p) => {
+      const n = (p.name ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
+      const e = (p.email ?? '').trim()
+      return n === key && e.includes('@')
+    })
+    if (hits.length !== 1) return r
+    return { ...r, email: String(hits[0].email).trim().toLowerCase() }
+  })
+}
+
 export const ENVELOPE_STATUSES = ['draft', 'sent', 'partially_signed', 'completed', 'voided'] as const
 export type EnvelopeStatus = (typeof ENVELOPE_STATUSES)[number]
 

@@ -6,6 +6,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
+import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
 import {
   generateSigningToken,
   isSignableRole,
@@ -14,6 +15,7 @@ import {
   storedRecipientRole,
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
+  applyUniquePartyEmails,
   type ActionRequired,
   type EnvelopeField,
   type EnvelopeStatus,
@@ -300,7 +302,11 @@ export async function createEnvelopeFromDocuments(
     brokerEmail: auth.email,
     cycleKind: (cycle as DbRow).kind,
   })
-  if (recipients.length) await supabase.from('tc_envelope_recipients').insert(recipients)
+  const withEmail = applyUniquePartyEmails(
+    recipients,
+    await peopleEmailsByNames(recipients.map((r) => r.name)),
+  )
+  if (withEmail.length) await supabase.from('tc_envelope_recipients').insert(withEmail)
 
   await supabase.from('tc_events').insert({
     deal_id: cycle.deal_id,
@@ -356,14 +362,19 @@ export async function createEnvelopeFromTemplate(
     .single()
   if (envErr) return { ok: false, error: envErr.message }
 
-  const recipients = seedPartyEnvelopeRecipients({
-    envelopeId: env.id,
-    buyers: (cycle.buyers ?? []) as string[],
-    sellers: (cycle.sellers ?? []) as string[],
-    brokerName: cycle.broker_name,
-    brokerEmail: auth.email,
-    cycleKind: (cycle as DbRow).kind,
-  })
+  const recipients = applyUniquePartyEmails(
+    seedPartyEnvelopeRecipients({
+      envelopeId: env.id,
+      buyers: (cycle.buyers ?? []) as string[],
+      sellers: (cycle.sellers ?? []) as string[],
+      brokerName: cycle.broker_name,
+      brokerEmail: auth.email,
+      cycleKind: (cycle as DbRow).kind,
+    }),
+    await peopleEmailsByNames(
+      [...((cycle.buyers ?? []) as string[]), ...((cycle.sellers ?? []) as string[])],
+    ),
+  )
   let savedRecipients: DbRow[] = []
   if (recipients.length) {
     const { data: rs } = await supabase.from('tc_envelope_recipients').insert(recipients).select('id, role')

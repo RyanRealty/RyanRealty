@@ -15,6 +15,8 @@ export const TC_EVENT_LABEL: Record<string, string> = {
   person_added: 'Person added',
   deal_stage_changed: 'Stage changed',
   contact_added: 'Contact added',
+  checklist_status_changed: 'Checklist updated',
+  principal_broker_review: 'Principal review',
 }
 
 export function tcEventLabel(action: string | null | undefined): string {

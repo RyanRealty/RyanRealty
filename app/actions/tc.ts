@@ -6,6 +6,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
+import { notifyDealMailbox } from '@/lib/tc/deal-notify'
 
 /**
  * TC system actions — Ryan Realty's own transaction system of record
@@ -557,7 +558,7 @@ export async function setTcChecklistStatus(
   const supabase = getServiceSupabase()
   const { data: item } = await supabase
     .from('tc_checklist_items')
-    .select('id, name, status, cycle_id, tc_cycles(deal_id)')
+    .select('id, name, status, cycle_id, tc_cycles(deal_id, tc_deals(address, broker_name, property_key))')
     .eq('id', itemId)
     .maybeSingle()
   if (!item) return { ok: false, error: 'Checklist item not found' }
@@ -578,5 +579,16 @@ export async function setTcChecklistStatus(
   })
 
   revalidatePath('/admin/deals')
+  revalidatePath('/admin/sign-off')
+  if (status === 'in_review') {
+    const deal = (item as DbRow).tc_cycles?.tc_deals
+    const address = deal?.address ?? 'a deal'
+    const key = deal?.property_key ? encodeURIComponent(String(deal.property_key)) : ''
+    await notifyDealMailbox({
+      to: 'matt@ryan-realty.com',
+      subject: `Sign-off: ${item.name} on ${address}`,
+      bodyText: `${session?.user?.email ?? 'A broker'} submitted “${item.name}” for principal review on ${address}.\n\nOpen sign-off: https://ryan-realty.com/admin/sign-off${key ? `\nOpen deal: https://ryan-realty.com/admin/deals/${key}` : ''}`,
+    })
+  }
   return { ok: true }
 }

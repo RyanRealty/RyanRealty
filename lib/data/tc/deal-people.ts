@@ -70,6 +70,24 @@ export async function getDealParties(dealId: string): Promise<DealParty[]> {
   })
 }
 
+export async function peopleEmailsByNames(
+  names: readonly string[],
+): Promise<Array<{ name: string | null; email: string | null }>> {
+  const wanted = [...new Set(names.map((n) => n.trim()).filter(Boolean))]
+  if (!wanted.length) return []
+  const sb = client()
+  const { data, error } = await sb.from('crm_people').select('name, emails').in('name', wanted)
+  if (error) {
+    console.error('[peopleEmailsByNames]', error.message)
+    return []
+  }
+  return (data ?? []).map((row) => {
+    const emails = row.emails as Array<{ value?: string; isPrimary?: number | boolean }> | null
+    const primary = emails?.find((e) => e.isPrimary === 1 || e.isPrimary === true) ?? emails?.[0]
+    return { name: (row.name as string | null) ?? null, email: primary?.value ?? null }
+  })
+}
+
 export async function getDealsForPerson(personId: number): Promise<PersonDealLink[]> {
   const sb = client()
   const { data, error } = await sb

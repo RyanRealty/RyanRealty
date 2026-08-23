@@ -16,6 +16,7 @@ import {
   brokerEnvelopeRole,
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
+  applyUniquePartyEmails,
 } from './signing'
 
 describe('SIGN_FIELD_TYPES', () => {
@@ -150,6 +151,25 @@ describe('seedPartyEnvelopeRecipients', () => {
     })
     expect(rows.map((r) => r.role)).toEqual(['Buyer', 'Buyer', 'Seller', 'SellerAgent'])
     expect(rows.filter((r) => r.role === 'Buyer')).toHaveLength(2)
+  })
+})
+
+describe('applyUniquePartyEmails', () => {
+  it('fills a blank email only when the CRM name is unique', () => {
+    const rows = [
+      { name: 'Mary Bowman', email: '' },
+      { name: 'Paul Stevenson', email: '' },
+      { name: 'Matt Ryan', email: 'matt@ryan-realty.com' },
+    ]
+    const people = [
+      { name: 'Mary Bowman', email: 'mary@example.com' },
+      { name: 'Paul Stevenson', email: 'paul@a.com' },
+      { name: 'Paul Stevenson', email: 'paul@b.com' },
+    ]
+    const out = applyUniquePartyEmails(rows, people)
+    expect(out[0].email).toBe('mary@example.com')
+    expect(out[1].email).toBe('')
+    expect(out[2].email).toBe('matt@ryan-realty.com')
   })
 })
 

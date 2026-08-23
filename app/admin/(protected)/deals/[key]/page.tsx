@@ -437,6 +437,24 @@ export default async function TcDealPage({ params, searchParams }: Props) {
         </Link>
         <DealStageControls propertyKey={deal.property_key} stage={deal.stage} />
       </div>
+      {(() => {
+        const datesCycle =
+          (deal.stage === 'active_listing'
+            ? [...deal.cycles].reverse().find((c) => c.kind === 'listing')
+            : [...deal.cycles].reverse().find((c) => c.kind === 'sale')) ?? deal.cycles[0]
+        if (!datesCycle) return null
+        const bits = [
+          datesCycle.mls_number ? `MLS ${datesCycle.mls_number}` : null,
+          datesCycle.escrow_number ? `Escrow ${datesCycle.escrow_number}` : null,
+          datesCycle.expiration_date ? `Expires ${d10(datesCycle.expiration_date)}` : null,
+          datesCycle.contract_acceptance_date ? `Accepted ${d10(datesCycle.contract_acceptance_date)}` : null,
+          datesCycle.escrow_closing_date ? `Closes ${d10(datesCycle.escrow_closing_date)}` : null,
+        ].filter(Boolean)
+        if (!bits.length) return null
+        return (
+          <p style={{ ...quiet, margin: '8px 0 0' }}>{bits.join(' · ')}</p>
+        )
+      })()}
 
       {deal.cycles.length === 0 ? (
         <p style={{ ...quiet, marginTop: 20 }}>

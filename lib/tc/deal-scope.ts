@@ -9,6 +9,21 @@ export const BROKER_FILE_NAME: Record<string, string> = {
   rebecca: 'Rebecca Peterson',
 }
 
+export const BROKER_FILE_EMAIL: Record<string, string> = {
+  'Matt Ryan': 'matt@ryan-realty.com',
+  'Paul Stevenson': 'paul@ryan-realty.com',
+  'Rebecca Peterson': 'rebeccapeterson@ryan-realty.com',
+}
+
+export function brokerEmailFromFileName(name: string | null | undefined): string | null {
+  const n = (name ?? '').trim().toLowerCase()
+  if (!n) return null
+  for (const [fileName, email] of Object.entries(BROKER_FILE_EMAIL)) {
+    if (fileName.toLowerCase() === n) return email
+  }
+  return null
+}
+
 export function dealVisibleToBroker(input: {
   role: string
   brokerSlug: string | null | undefined
