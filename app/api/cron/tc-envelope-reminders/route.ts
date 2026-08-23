@@ -35,7 +35,7 @@ export async function GET(request: Request) {
   const sb = createServiceClient()
   const { data: envs, error: envErr } = await sb
     .from('tc_envelopes')
-    .select('id, name, status, reminders_enabled, cycle_id, created_by, sent_at, tc_cycles(id, deal_id, tc_deals(address))')
+    .select('id, name, status, reminders_enabled, cycle_id, created_by, sent_at, invite_subject, invite_body, tc_cycles(id, deal_id, tc_deals(address))')
     .in('status', ['sent', 'partially_signed'])
   if (envErr) {
     console.error('[tc-envelope-reminders]', envErr.message)
@@ -87,6 +87,7 @@ export async function GET(request: Request) {
     try {
       const { token, hash } = generateSigningToken()
       await sb.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', c.recipientId)
+      const envRow = envById.get(c.envelopeId)
       const sent = await sendSigningInvite({
         to: c.email,
         recipientName: c.name || 'there',
@@ -95,6 +96,8 @@ export async function GET(request: Request) {
         signUrl: `${siteUrl()}/sign/${token}`,
         replyTo: c.createdBy?.includes('@') ? c.createdBy : undefined,
         reminder: true,
+        customSubject: (envRow?.invite_subject as string | null) ?? null,
+        customBody: (envRow?.invite_body as string | null) ?? null,
       })
       if (sent.error) {
         console.warn('[tc-envelope-reminders] send', sent.error)

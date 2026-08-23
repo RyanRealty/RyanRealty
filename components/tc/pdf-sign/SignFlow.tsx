@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { PdfPages } from './pdf-pages'
 import { SignaturePad } from './SignaturePad'
 import { Button } from '@/components/ui/button'
@@ -9,11 +9,14 @@ import { Card } from '@/components/ui/card'
 import { recordSigningConsent, submitSigning, declineSigning } from '@/app/actions/tc-sign'
 import type { SigningPayload, SubmitFieldValue } from '@/app/actions/tc-sign'
 import type { EnvelopeField, SignFieldType, SignFieldValue } from '@/lib/tc/signing'
+import { isSenderAnnotation } from '@/lib/tc/signing'
 
 const FIELD_PROMPT: Record<SignFieldType, string> = {
   signature: 'Sign',
   initials: 'Initials',
+  full_name: 'Full name',
   date_signed: 'Date',
+  time_signed: 'Time',
   text: 'Type here',
   checkbox: '',
   strike: '',
@@ -28,13 +31,19 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<null | 'completed' | 'partial'>(null)
   const [error, setError] = useState<string | null>(null)
-  const [signedDate, setSignedDate] = useState('')
-  useEffect(() => {
-    setSignedDate(new Date().toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }))
-  }, [])
+  const [signedDate] = useState(() =>
+    new Date().toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }),
+  )
+  const [signedTime] = useState(() =>
+    new Date().toLocaleTimeString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      hour: 'numeric',
+      minute: '2-digit',
+    }),
+  )
 
   const requiredIds = useMemo(
-    () => payload.fields.filter((f) => f.required && f.type !== 'strike' && f.type !== 'highlight').map((f) => f.id),
+    () => payload.fields.filter((f) => f.required && !isSenderAnnotation(f.type)).map((f) => f.id),
     [payload.fields],
   )
   const filledCount = requiredIds.filter((id) => values.has(id)).length
@@ -151,6 +160,14 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
                           ? setValue(f.id, { kind: 'date_signed', text: signedDate })
                           : undefined
                       }
+                      onStamp={(text) => setValue(f.id, { kind: 'text', text })}
+                      stampText={
+                        f.type === 'full_name'
+                          ? payload.recipientName
+                          : f.type === 'time_signed'
+                            ? signedTime
+                            : ''
+                      }
                       onCheckbox={(checked) => setValue(f.id, { kind: 'checkbox', checked })}
                     />
                   ))}
@@ -199,6 +216,8 @@ function FieldBox({
   onSignature,
   onText,
   onDate,
+  onStamp,
+  stampText,
   onCheckbox,
 }: {
   field: EnvelopeField
@@ -207,6 +226,8 @@ function FieldBox({
   onSignature: () => void
   onText: (text: string) => void
   onDate: () => void
+  onStamp: (text: string) => void
+  stampText: string
   onCheckbox: (checked: boolean) => void
 }) {
   const style: React.CSSProperties = {
@@ -239,6 +260,24 @@ function FieldBox({
       <button type="button" style={style} className={`${base} ${ring}`} onClick={onDate}>
         <span className={filled ? 'text-foreground' : 'text-primary'}>
           {value && value.kind === 'date_signed' ? value.text : 'Date'}
+        </span>
+      </button>
+    )
+  }
+
+  if (field.type === 'full_name' || field.type === 'time_signed') {
+    const shown = value && value.kind === 'text' ? value.text : ''
+    return (
+      <button
+        type="button"
+        style={style}
+        className={`${base} ${ring}`}
+        onClick={() => {
+          if (stampText) onStamp(stampText)
+        }}
+      >
+        <span className={filled ? 'text-foreground' : 'text-primary'}>
+          {shown || FIELD_PROMPT[field.type]}
         </span>
       </button>
     )

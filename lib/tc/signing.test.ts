@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   SIGN_FIELD_TYPES,
   SIGN_FIELD_LABEL,
+  isSenderAnnotation,
+  resolveSigningInviteCopy,
   RECIPIENT_ROLES,
   RECIPIENT_ROLE_LABEL,
   COPY_ONLY_ROLE,
@@ -25,6 +29,43 @@ describe('SIGN_FIELD_TYPES', () => {
     expect([...SIGN_FIELD_TYPES]).toContain('strike')
     expect([...SIGN_FIELD_TYPES]).toContain('highlight')
     expect(SIGN_FIELD_LABEL.strike).toBe('Strike')
+  })
+  it('includes Full Name and Time from the live DigiSign palette', () => {
+    expect([...SIGN_FIELD_TYPES]).toContain('full_name')
+    expect([...SIGN_FIELD_TYPES]).toContain('time_signed')
+    expect(SIGN_FIELD_LABEL.full_name).toBe('Full Name')
+    expect(SIGN_FIELD_LABEL.time_signed).toBe('Time')
+    expect(isSenderAnnotation('strike')).toBe(true)
+    expect(isSenderAnnotation('full_name')).toBe(false)
+  })
+  it('CHECK constraint and invite columns match the palette', () => {
+    const sql = readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20260823260000_tc_envelope_fullname_time.sql'),
+      'utf8',
+    )
+    expect(sql).toContain("'full_name'")
+    expect(sql).toContain("'time_signed'")
+    expect(sql).toContain('invite_subject')
+    expect(sql).toContain('invite_body')
+  })
+})
+
+describe('resolveSigningInviteCopy', () => {
+  it('uses brokerage defaults when the broker left Edit message blank', () => {
+    const copy = resolveSigningInviteCopy({ reminder: false, propertyAddress: '1 Beaumont Dr' })
+    expect(copy.subject).toBe('Your signature is requested for 1 Beaumont Dr')
+    expect(copy.body).toContain('1 Beaumont Dr')
+    expect(copy.body).not.toMatch(/—/)
+  })
+  it('uses the broker Edit message when present', () => {
+    const copy = resolveSigningInviteCopy({
+      reminder: true,
+      propertyAddress: '1 Beaumont Dr',
+      customSubject: 'Please sign the listing agreement',
+      customBody: 'Mary, tap to sign when you can.',
+    })
+    expect(copy.subject).toBe('Please sign the listing agreement')
+    expect(copy.body).toBe('Mary, tap to sign when you can.')
   })
 })
 

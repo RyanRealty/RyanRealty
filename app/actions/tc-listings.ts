@@ -8,6 +8,7 @@ import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { nextDuplicatePropertyKey, todayIsoDate } from '@/lib/tc/listing-actions'
 import { EMPTY_PROPERTY_FACTS, brokerRoleFromDealParties, seedChecklistItems } from '@/lib/tc/required-documents'
+import { getPropertyFactsByMls } from '@/lib/data/listings/getPropertyFactsByMls'
 import { getDealParties } from '@/lib/data/tc/deal-people'
 import {
   getDealByPropertyKey,
@@ -80,7 +81,13 @@ export async function acceptListingContract(
 
   const parties = await getDealParties(deal.id)
   const role = brokerRoleFromDealParties(parties.map((p) => p.role))
-  const checklist = seedChecklistItems(role === 'unknown' ? 'listing' : role, EMPTY_PROPERTY_FACTS)
+  let facts = EMPTY_PROPERTY_FACTS
+  const mls = listing?.mls_number
+  if (mls) {
+    const lf = await getPropertyFactsByMls(String(mls)).catch(() => null)
+    if (lf) facts = { ...EMPTY_PROPERTY_FACTS, ...lf }
+  }
+  const checklist = seedChecklistItems(role === 'unknown' ? 'listing' : role, facts)
   if (checklist.length) {
     await supabase.from('tc_checklist_items').insert(
       checklist.map((row) => ({

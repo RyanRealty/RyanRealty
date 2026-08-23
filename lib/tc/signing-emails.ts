@@ -6,6 +6,7 @@
 import { sendEmail } from '@/lib/resend'
 import { EMAIL_FONT_STACK, EMAIL_NAVY, EMAIL_CREAM } from '@/lib/email/brand'
 import { CONTACT } from '@/lib/brand/contact'
+import { resolveSigningInviteCopy } from '@/lib/tc/signing'
 
 const NAVY = EMAIL_NAVY
 const CREAM = EMAIL_CREAM
@@ -42,21 +43,24 @@ export async function sendSigningInvite(params: {
   signUrl: string
   replyTo?: string
   reminder?: boolean
+  customSubject?: string | null
+  customBody?: string | null
 }): Promise<{ id?: string; error?: string }> {
-  const heading = params.reminder
-    ? `A reminder to sign for ${params.propertyAddress}`
-    : `Your signature is requested for ${params.propertyAddress}`
+  const copy = resolveSigningInviteCopy({
+    reminder: !!params.reminder,
+    propertyAddress: params.propertyAddress,
+    customSubject: params.customSubject,
+    customBody: params.customBody,
+  })
   const body = `
     <p style="margin:0 0 12px;">Hi ${escapeHtml(params.recipientName)},</p>
-    <p style="margin:0 0 12px;">${params.reminder ? 'You have documents still waiting for your signature' : 'You have documents ready to sign'} for ${escapeHtml(params.propertyAddress)}.</p>
+    <p style="margin:0 0 12px;">${escapeHtml(copy.body)}</p>
     <p style="margin:0;">Tap the button below to review and sign. You do not need an account or a password. The link is unique to you.</p>
   `
   return sendEmail({
     to: params.to,
-    subject: params.reminder
-      ? `Your signature is still needed for ${params.propertyAddress}`
-      : `Your signature is requested for ${params.propertyAddress}`,
-    html: shell({ heading, bodyHtml: body, cta: { label: 'Review and sign', url: params.signUrl } }),
+    subject: copy.subject,
+    html: shell({ heading: copy.heading, bodyHtml: body, cta: { label: 'Review and sign', url: params.signUrl } }),
     replyTo: params.replyTo,
   })
 }

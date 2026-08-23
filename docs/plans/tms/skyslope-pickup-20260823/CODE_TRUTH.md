@@ -14,8 +14,8 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | Envelope from uploaded PDFs | EXISTS | Deal envelopes + composer. Field palette includes **Strike** (this branch; live DigiSign). Automatic reminders (Forms checkbox, 48h cron) on this branch. |
 | `/admin/forms` | EXISTS browse + use-on-deal **this branch** | Left rail Closings → Forms. Production blanks have **Use on deal** → `createEnvelopeFromTemplate` on an in-flight cycle. |
 | `/admin/sign-off` | EXISTS; on Closings rail **this branch** | Live queue + 7-banking-day clock. Superuser `transactions.signoff`. Production 23 Aug still footer-only until deploy. |
-| `/admin/signing` | EXISTS; on Closings rail **this branch** | Brokers: `transactions.view`. `esign.send` stays parked. Empty on 22 Aug walk. |
-| `/admin/closings` | EXISTS | `tc_deals` board. Active-listing **lens** with MLS + expiration. Search. Incomplete-checklist lane. Parties from cycle names when `tc_deal_people` is empty. Brokers see their files; Matt sees all. Title/escrow/TC backfill from SkySlope `raw` on first deal open. |
+| `/admin/signing` | EXISTS; on Closings rail **this branch** | Brokers: `transactions.view`. `esign.send` unparked 2026-08-23. |
+| `/admin/closings` | EXISTS | `tc_deals` board. **New file** (Seller listing / Buyer sale). Active-listing lens with MLS + expiration. Search. Incomplete-checklist lane. Parties from cycle names when `tc_deal_people` is empty. Brokers see their files; Matt sees all. Title/escrow/TC backfill from SkySlope `raw` on first deal open. |
 | Listing pipeline grid | PARTIAL | `/admin/listings` = MLS. Closings listing lens + deal kebab: Assign, Withdraw, Accept contract (sale cycle on the same file, not Offers), Duplicate, Merge. |
 | `tc_events` | EXISTS | Append-only. Writers: native TC, SkySlope migrate, **this branch** Gmail `mail_filed` + Twilio `sms_filed`. |
 | Email → Vault auto-file | EXISTS (this branch) | `lib/tc/file-comms.ts` + `file-comms-write.ts`. Gmail `syncMailboxWindow` after CRM person match. PDFs (cap 3) → `tc-documents` `inbox/` + matching checklist. Fail-open. Address-only fallback needs score ≥ 2 (SkySlope-migrated deals often lack `tc_deal_people`). |
@@ -37,9 +37,9 @@ Nuance: deal log is **not** “only SkySlope import” for native deals. Migrate
 
 Now that the live role list is filed:
 
-Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist, `action_required` column + composer picker, Twilio MMS PDF fetch, 48h envelope reminders, listing expiration on Closings, Forms Use on deal.
+Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist, `action_required` column + composer picker, Twilio MMS PDF fetch, 48h envelope reminders, listing expiration on Closings, Forms Use on deal, Closings **New file**, DigiSign Full Name + Time, envelope Edit message.
 
-Still missing:
+Still missing (not product clones):
 
-1. 14-column Manage Listings clone (`/admin/listings` stays MLS). Kebab actions live on the deal.
-2. Duplicate/Merge/Accept need a deploy of this follow-up.
+1. 14-column Manage Listings grid (`/admin/listings` stays MLS). Kebab actions live on the deal.
+2. Google Calendar **write** until Workspace DWD includes `calendar` (CRM calendar already has the dates).

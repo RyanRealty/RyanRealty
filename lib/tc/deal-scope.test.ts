@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { brokerEmailFromFileName, dealVisibleToBroker } from './deal-scope'
+import { brokerEmailFromFileName, dealVisibleToBroker, fileNameFromBrokerSlug } from './deal-scope'
 
 describe('dealVisibleToBroker', () => {
   it('lets the principal see every file', () => {
@@ -21,5 +21,10 @@ describe('dealVisibleToBroker', () => {
   it('maps file broker names to mailboxes', () => {
     expect(brokerEmailFromFileName('Paul Stevenson')).toBe('paul@ryan-realty.com')
     expect(brokerEmailFromFileName('nope')).toBeNull()
+  })
+  it('stores the SkySlope-style file name, never the CRM slug', () => {
+    expect(fileNameFromBrokerSlug('paul')).toBe('Paul Stevenson')
+    expect(fileNameFromBrokerSlug('matt')).toBe('Matt Ryan')
+    expect(fileNameFromBrokerSlug('nope')).toBeNull()
   })
 })

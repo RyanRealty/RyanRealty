@@ -107,7 +107,7 @@ async function fetchOfferPdfs(
     const gmail = getGmailFor(box, ['https://www.googleapis.com/auth/gmail.readonly'])
     if (!gmail) continue
     try {
-      const list = await gmail.users.messages.list({ userId: 'me', q, maxResults: 5 })
+      const list = await gmail.users.messages.list({ userId: 'me', q, maxResults: 8 })
       for (const m of list.data.messages ?? []) {
         const full = await gmail.users.messages.get({ userId: 'me', id: m.id!, format: 'full' })
         const parts: Array<{ filename: string; attachmentId: string }> = []
@@ -130,7 +130,7 @@ async function fetchOfferPdfs(
           })
           if (!att.data.data) continue
           out.push({ filename: part.filename, bytes: Buffer.from(att.data.data, 'base64url') })
-          if (out.length >= 4) return out
+          if (out.length >= 6) return out
         }
       }
     } catch (err) {

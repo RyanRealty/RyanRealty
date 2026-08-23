@@ -80,8 +80,12 @@ describe('field-type canonical parity (C4)', () => {
     for (const m of mapped) expect(SIGN_FIELD_TYPES).toContain(m.type)
   })
   it('SkySlope date variants map to date_signed, never the rejected "date"', () => {
-    const mapped = translateSkyslopeFields([{ type: 'DateSigned' }, { type: 'Date' }, { type: 'TimeSigned' }], [])
+    const mapped = translateSkyslopeFields([{ type: 'DateSigned' }, { type: 'Date' }], [])
     expect(mapped.every((m) => m.type === 'date_signed')).toBe(true)
+  })
+  it('SkySlope TimeSigned and FullName keep their own types', () => {
+    const mapped = translateSkyslopeFields([{ type: 'TimeSigned' }, { type: 'FullName' }], [])
+    expect(mapped.map((m) => m.type)).toEqual(['time_signed', 'full_name'])
   })
   it('DigiSign Strike maps to strike, not text', () => {
     const mapped = translateSkyslopeFields([{ type: 'Strike' }, { type: 'strike' }], [])

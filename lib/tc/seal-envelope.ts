@@ -51,7 +51,11 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
     (r) => (r.signing_order ?? 1) === nextOrder && !r.completed_at && !r.auth_token_hash && !r.viewed_at
   )
   if (toNotify.length) {
-    const { data: env } = await supabase.from('tc_envelopes').select('name, cycle_id').eq('id', envelopeId).maybeSingle()
+    const { data: env } = await supabase
+      .from('tc_envelopes')
+      .select('name, cycle_id, invite_subject, invite_body')
+      .eq('id', envelopeId)
+      .maybeSingle()
     const { data: cycle } = await supabase
       .from('tc_cycles')
       .select('broker_name, tc_deals(address)')
@@ -67,6 +71,8 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
         envelopeName: (env as DbRow)?.name ?? 'documents',
         propertyAddress: address,
         signUrl: `${siteUrl()}/sign/${token}`,
+        customSubject: (env as DbRow)?.invite_subject ?? null,
+        customBody: (env as DbRow)?.invite_body ?? null,
       })
     }
   }

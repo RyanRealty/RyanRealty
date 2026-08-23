@@ -15,6 +15,7 @@ import {
   sendEnvelope,
   voidEnvelope,
   setEnvelopeReminders,
+  setEnvelopeInviteMessage,
   resendRecipientInvite,
   type EnvelopeDetail,
   type RecipientInput,
@@ -28,6 +29,7 @@ import {
   SIGN_FIELD_LABEL,
   DEFAULT_FIELD_SIZE,
   isSignableRole,
+  isSenderAnnotation,
   storedRecipientRole,
   coerceActionRequired,
   recipientRoleLabel,
@@ -74,6 +76,8 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [remindersEnabled, setRemindersEnabled] = useState(detail.remindersEnabled !== false)
+  const [inviteSubject, setInviteSubject] = useState(detail.inviteSubject ?? '')
+  const [inviteBody, setInviteBody] = useState(detail.inviteBody ?? '')
   const dragRef = useRef<{ localId: string; offsetX: number; offsetY: number } | null>(null)
 
   const colorOf = (recipientId: string | null) => {
@@ -141,7 +145,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         y: Math.max(0, Math.min(1 - size.h, yFrac - size.h / 2)),
         w: size.w,
         h: size.h,
-        required: activeType !== 'strike' && activeType !== 'highlight',
+        required: !isSenderAnnotation(activeType),
       },
     ])
   }
@@ -153,6 +157,11 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     const opt = await setEnvelopeReminders(detail.id, remindersEnabled)
     if (!opt.ok) {
       setStatus(opt.error ?? 'Could not save reminders')
+      return false
+    }
+    const msg = await setEnvelopeInviteMessage(detail.id, { subject: inviteSubject, body: inviteBody })
+    if (!msg.ok) {
+      setStatus(msg.error ?? 'Could not save the outgoing message')
       return false
     }
     const rRes = await saveEnvelopeRecipients(detail.id, recipients)
@@ -401,6 +410,24 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               />
               <span>Enable automatic reminders on this envelope.</span>
             </label>
+            {!readonly ? (
+              <div className="space-y-2">
+                <Label className="text-[11px] text-muted-foreground">Outgoing email subject</Label>
+                <Input
+                  className="h-8 text-xs"
+                  value={inviteSubject}
+                  placeholder="You have documents to sign"
+                  onChange={(e) => setInviteSubject(e.target.value)}
+                />
+                <Label className="text-[11px] text-muted-foreground">Outgoing email message</Label>
+                <textarea
+                  className="min-h-[72px] w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+                  value={inviteBody}
+                  placeholder="Your documents are ready to review and sign."
+                  onChange={(e) => setInviteBody(e.target.value)}
+                />
+              </div>
+            ) : null}
             {readonly ? (
               <>
                 <Badge className="bg-primary text-primary-foreground">{detail.status}</Badge>

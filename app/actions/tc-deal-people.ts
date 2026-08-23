@@ -5,6 +5,7 @@ import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import {
   addPersonToDeal,
   createDealWithPeople,
@@ -12,6 +13,8 @@ import {
   removePersonFromDeal,
 } from '@/lib/data/tc/deal-people'
 import { isDealPersonRole, type DealPersonRole } from '@/lib/tc/deal-people'
+import { fileNameFromBrokerSlug } from '@/lib/tc/deal-scope'
+import { fileShapeForRepresentation, type FileRepresentation } from '@/lib/tc/listing-actions'
 
 function revalidateDeal(propertyKey: string, personIds: number[]) {
   revalidatePath('/admin/closings')
@@ -50,12 +53,59 @@ export async function createDealFromPersonAction(formData: FormData): Promise<{
 
   const created = await createDealWithPeople({
     address,
-    brokerName: access.brokerSlug,
+    brokerName: fileNameFromBrokerSlug(access.brokerSlug) ?? access.brokerSlug,
     parties,
     actor: auth.ctx.email,
   })
   if (created.error || !created.data) return { error: created.error ?? 'Could not create the deal.' }
   revalidateDeal(created.data.propertyKey, parties.map((p) => p.personId))
+  return { error: null, propertyKey: created.data.propertyKey }
+}
+
+function isFileRepresentation(v: string): v is FileRepresentation {
+  return v === 'seller' || v === 'buyer'
+}
+
+/** Closings Write A Listing / new sale file. Does not write SkySlope. */
+export async function createFileFromClosingsAction(formData: FormData): Promise<{
+  error: string | null
+  propertyKey?: string
+}> {
+  const auth = await checkAdminAction('transactions.edit')
+  if (!auth.ok) return { error: auth.error }
+
+  const address = String(formData.get('address') ?? '').trim()
+  const clientName = String(formData.get('clientName') ?? '').trim()
+  const clientEmail = String(formData.get('clientEmail') ?? '').trim().toLowerCase()
+  const mlsNumber = String(formData.get('mlsNumber') ?? '').trim()
+  const representationRaw = String(formData.get('representation') ?? 'seller')
+  if (!isFileRepresentation(representationRaw)) return { error: 'Pick seller or buyer.' }
+  if (!address) return { error: 'Address is required.' }
+  if (!clientName) return { error: 'Client name is required.' }
+  if (!clientEmail.includes('@')) return { error: 'Client email is required so mail can file onto this file.' }
+
+  const shape = fileShapeForRepresentation(representationRaw)
+  const slug = auth.ctx.brokerSlug
+  const brokerName = fileNameFromBrokerSlug(slug) ?? 'Matt Ryan'
+  const native = await ensureNativeLead({
+    name: clientName,
+    email: clientEmail,
+    source: 'vault-file',
+    assignedBroker: slug ?? 'matt',
+    tags: ['source:vault-file'],
+  })
+  if (!native.personId) return { error: 'Could not create or find that client. Use a unique email.' }
+
+  const created = await createDealWithPeople({
+    address,
+    brokerName,
+    parties: [{ personId: native.personId, role: shape.partyRole }],
+    actor: auth.ctx.email,
+    representation: representationRaw,
+    mlsNumber: mlsNumber || null,
+  })
+  if (created.error || !created.data) return { error: created.error ?? 'Could not create the file.' }
+  revalidateDeal(created.data.propertyKey, [native.personId])
   return { error: null, propertyKey: created.data.propertyKey }
 }
 

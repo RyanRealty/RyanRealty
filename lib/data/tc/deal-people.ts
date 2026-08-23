@@ -17,6 +17,7 @@ import {
   brokerRoleFromDealParties,
   seedChecklistItems,
 } from '@/lib/tc/required-documents'
+import { fileShapeForRepresentation, type FileRepresentation } from '@/lib/tc/listing-actions'
 
 export type DealParty = {
   id: string
@@ -40,6 +41,8 @@ export type CreateDealWithPeopleInput = {
   brokerName: string | null
   parties: ReadonlyArray<{ personId: number; role: DealPersonRole }>
   actor: string
+  representation?: FileRepresentation
+  mlsNumber?: string | null
 }
 
 function client() {
@@ -473,6 +476,8 @@ export async function createDealWithPeople(
   const cycleId = crypto.randomUUID()
   const propertyKey = propertyKeyForInhouseDeal(address, dealId)
   const city = input.city?.trim() || parseCityFromAddress(address)
+  const shape = fileShapeForRepresentation(input.representation ?? 'buyer')
+  const mlsNumber = input.mlsNumber?.trim() || null
 
   const { error: dealErr } = await sb.from('tc_deals').insert({
     id: dealId,
@@ -481,8 +486,8 @@ export async function createDealWithPeople(
     city,
     state: 'OR',
     broker_name: input.brokerName,
-    stage: 'pending',
-    stage_detail: 'Accepted offer',
+    stage: shape.stage,
+    stage_detail: shape.stageDetail,
   })
   if (dealErr) {
     console.error('[createDealWithPeople] deal', dealErr)
@@ -492,11 +497,13 @@ export async function createDealWithPeople(
   const { error: cycleErr } = await sb.from('tc_cycles').insert({
     id: cycleId,
     deal_id: dealId,
-    kind: 'sale',
+    kind: shape.kind,
     source: 'inhouse',
     source_guid: `inhouse:${cycleId}`,
-    status: 'Pending',
+    status: shape.status,
     broker_name: input.brokerName,
+    mls_number: mlsNumber,
+    checklist_type: shape.checklistType,
   })
   if (cycleErr) {
     console.error('[createDealWithPeople] cycle', cycleErr)
@@ -517,8 +524,15 @@ export async function createDealWithPeople(
     return { data: null, error: 'Could not attach people to the deal.' }
   }
 
-  const role = brokerRoleFromDealParties(parties.map((p) => p.role))
-  const checklist = seedChecklistItems(role, EMPTY_PROPERTY_FACTS)
+  const fromParties = brokerRoleFromDealParties(parties.map((p) => p.role))
+  const role = fromParties === 'unknown' ? (shape.partyRole === 'seller' ? 'listing' : 'buyer') : fromParties
+  let facts = EMPTY_PROPERTY_FACTS
+  if (mlsNumber) {
+    const { getPropertyFactsByMls } = await import('@/lib/data/listings/getPropertyFactsByMls')
+    const lf = await getPropertyFactsByMls(mlsNumber).catch(() => null)
+    if (lf) facts = { ...EMPTY_PROPERTY_FACTS, ...lf }
+  }
+  const checklist = seedChecklistItems(role, facts)
   if (checklist.length) {
     const { error: checkErr } = await sb.from('tc_checklist_items').insert(
       checklist.map((row) => ({
@@ -540,7 +554,7 @@ export async function createDealWithPeople(
     cycle_id: cycleId,
     actor: input.actor,
     action: 'deal_created',
-    detail: { propertyKey, parties, role, checklist: checklist.length },
+    detail: { propertyKey, parties, role, checklist: checklist.length, representation: shape.kind, mlsNumber },
   })
 
   return { data: { dealId, propertyKey }, error: null }

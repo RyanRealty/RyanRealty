@@ -109,6 +109,8 @@ export type EnvelopeDetail = EnvelopeSummary & {
   documents: EnvelopeDocumentRef[]
   fields: EnvelopeField[]
   remindersEnabled: boolean
+  inviteSubject: string
+  inviteBody: string
 }
 
 function mapRecipient(r: DbRow): EnvelopeRecipient {
@@ -246,6 +248,8 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     documents,
     fields: mappedFields,
     remindersEnabled: env.reminders_enabled !== false,
+    inviteSubject: typeof env.invite_subject === 'string' ? env.invite_subject : '',
+    inviteBody: typeof env.invite_body === 'string' ? env.invite_body : '',
   }
 }
 
@@ -606,6 +610,27 @@ export async function setEnvelopeReminders(
   return { ok: true }
 }
 
+/** Persist DigiSign Edit Message subject/body. Empty = brokerage default. */
+export async function setEnvelopeInviteMessage(
+  envelopeId: string,
+  input: { subject: string; body: string },
+): Promise<{ ok: boolean; error?: string }> {
+  const auth = await requireBroker()
+  if ('error' in auth) return { ok: false, error: auth.error }
+  const supabase = getServiceSupabase()
+  const env = await loadDraftEnvelope(supabase, envelopeId)
+  if ('error' in env) return { ok: false, error: env.error }
+  const { error } = await supabase
+    .from('tc_envelopes')
+    .update({
+      invite_subject: input.subject.trim() || null,
+      invite_body: input.body.trim() || null,
+    })
+    .eq('id', envelopeId)
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
 /** Validate a draft and send it: mint tokens, email the first signing order. */
 export async function sendEnvelope(
   envelopeId: string,
@@ -682,6 +707,8 @@ export async function sendEnvelope(
       propertyAddress: address,
       signUrl: `${siteUrl()}/sign/${tokenByRecip.get(r.id)}`,
       replyTo: auth.email,
+      customSubject: env.invite_subject ?? null,
+      customBody: env.invite_body ?? null,
     })
   }
 
@@ -755,6 +782,8 @@ export async function resendRecipientInvite(recipientId: string): Promise<{ ok: 
     signUrl: `${siteUrl()}/sign/${token}`,
     replyTo: auth.email,
     reminder: true,
+    customSubject: env.invite_subject ?? null,
+    customBody: env.invite_body ?? null,
   })
 
   await supabase

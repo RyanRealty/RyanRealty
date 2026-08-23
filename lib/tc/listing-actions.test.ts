@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { duplicatePropertyKey, nextDuplicatePropertyKey, todayIsoDate } from './listing-actions'
+import {
+  duplicatePropertyKey,
+  fileShapeForRepresentation,
+  nextDuplicatePropertyKey,
+  todayIsoDate,
+} from './listing-actions'
 
 describe('duplicatePropertyKey', () => {
   it('appends -copy once', () => {
@@ -21,5 +26,23 @@ describe('nextDuplicatePropertyKey', () => {
 describe('todayIsoDate', () => {
   it('is YYYY-MM-DD', () => {
     expect(todayIsoDate(new Date('2026-08-23T18:00:00Z'))).toBe('2026-08-23')
+  })
+})
+
+describe('fileShapeForRepresentation', () => {
+  it('Seller opens a listing file with Residential — Standard', () => {
+    expect(fileShapeForRepresentation('seller')).toEqual({
+      stage: 'active_listing',
+      stageDetail: 'Active listing',
+      kind: 'listing',
+      status: 'Active',
+      checklistType: 'Residential — Standard',
+      partyRole: 'seller',
+    })
+  })
+  it('Buyer opens an accepted-offer sale file', () => {
+    expect(fileShapeForRepresentation('buyer').kind).toBe('sale')
+    expect(fileShapeForRepresentation('buyer').stage).toBe('pending')
+    expect(fileShapeForRepresentation('buyer').partyRole).toBe('buyer')
   })
 })

@@ -15,6 +15,12 @@ export const BROKER_FILE_EMAIL: Record<string, string> = {
   'Rebecca Peterson': 'rebeccapeterson@ryan-realty.com',
 }
 
+export function fileNameFromBrokerSlug(slug: string | null | undefined): string | null {
+  const key = (slug ?? '').trim().toLowerCase()
+  if (!key) return null
+  return BROKER_FILE_NAME[key] ?? null
+}
+
 export function brokerEmailFromFileName(name: string | null | undefined): string | null {
   const n = (name ?? '').trim().toLowerCase()
   if (!n) return null

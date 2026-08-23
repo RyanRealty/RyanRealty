@@ -20,6 +20,7 @@ import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { formatDate } from '@/lib/format/date'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { Button, HiddenField, QueueRow, SectionHead, TextField, VerdictLine } from '@/components/admin/v2'
+import { NewFileForm } from './NewFileForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -192,6 +193,8 @@ export default async function ClosingsPage({
           </Link>
         </p>
       ) : null}
+
+      <NewFileForm />
 
       {incomplete.length > 0 && (
         <section aria-label="Incomplete checklists">

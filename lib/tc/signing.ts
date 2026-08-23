@@ -12,17 +12,34 @@
  */
 import { createHash, randomBytes } from 'node:crypto'
 
-export const SIGN_FIELD_TYPES = ['signature', 'initials', 'date_signed', 'text', 'checkbox', 'strike', 'highlight'] as const
+export const SIGN_FIELD_TYPES = [
+  'signature',
+  'initials',
+  'full_name',
+  'date_signed',
+  'time_signed',
+  'text',
+  'checkbox',
+  'strike',
+  'highlight',
+] as const
 export type SignFieldType = (typeof SIGN_FIELD_TYPES)[number]
 
 export const SIGN_FIELD_LABEL: Record<SignFieldType, string> = {
   signature: 'Signature',
   initials: 'Initials',
+  full_name: 'Full Name',
   date_signed: 'Date signed',
+  time_signed: 'Time',
   text: 'Text',
   checkbox: 'Checkbox',
   strike: 'Strike',
   highlight: 'Highlight',
+}
+
+/** Sender annotations are not signer values. */
+export function isSenderAnnotation(type: string | null | undefined): boolean {
+  return type === 'strike' || type === 'highlight'
 }
 
 /**
@@ -318,11 +335,35 @@ export function hashSigningToken(token: string): string {
 export const DEFAULT_FIELD_SIZE: Record<SignFieldType, { w: number; h: number }> = {
   signature: { w: 0.22, h: 0.05 },
   initials: { w: 0.08, h: 0.045 },
+  full_name: { w: 0.22, h: 0.035 },
   date_signed: { w: 0.14, h: 0.035 },
+  time_signed: { w: 0.12, h: 0.035 },
   text: { w: 0.2, h: 0.035 },
   checkbox: { w: 0.03, h: 0.022 },
   strike: { w: 0.22, h: 0.018 },
   highlight: { w: 0.28, h: 0.028 },
+}
+
+/** DigiSign Edit Message. Empty custom fields keep the brokerage default. */
+export function resolveSigningInviteCopy(input: {
+  reminder: boolean
+  propertyAddress: string
+  customSubject?: string | null
+  customBody?: string | null
+}): { subject: string; heading: string; body: string } {
+  const addr = input.propertyAddress.trim() || 'your transaction'
+  const customSubject = input.customSubject?.trim() ?? ''
+  const customBody = input.customBody?.trim() ?? ''
+  const subject =
+    customSubject ||
+    (input.reminder ? `Your signature is still needed for ${addr}` : `Your signature is requested for ${addr}`)
+  const heading = input.reminder ? `A reminder to sign for ${addr}` : `Your signature is requested for ${addr}`
+  const body =
+    customBody ||
+    (input.reminder
+      ? `You have documents still waiting for your signature for ${addr}.`
+      : `You have documents ready to sign for ${addr}.`)
+  return { subject, heading, body }
 }
 
 export function isSignableRole(
