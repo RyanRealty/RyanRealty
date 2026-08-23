@@ -41,5 +41,5 @@ Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-o
 
 Still missing:
 
-1. Full Manage Listings grid (Accept/Assign/Duplicate/Withdraw/Merge). Closings now shows expiration on the listing lens.
-2. Merge/deploy this branch so production rail, composer, seed, auto-file, action_required, reminders, and Forms use-on-deal match.
+1. Full Manage Listings grid (Accept/Assign/Duplicate/Withdraw/Merge). Closings now shows expiration on the listing lens. Withdraw listing is on the deal.
+2. Merge/deploy this branch so production matches. Schema for action_required + reminders is already on hosted DB.

@@ -20,6 +20,7 @@ import { todayInboundYesEnabled } from '@/lib/crm/today-inbound-draft'
 import { Button, QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
 import { getClosingsBoard, incompleteInFlight } from '@/lib/data/tc/closings'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
+import { getPrincipalSignOffQueue } from '@/app/actions/tc-signoff'
 import {
   confirmParkedStepToday,
   skipParkedStepToday,
@@ -93,7 +94,7 @@ export default async function TodayPage() {
   const brokerScope = scopeBroker(ctx)
   const nowMs = Date.now()
 
-  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne, join, closings] = await Promise.all([
+  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne, join, closings, signOff] = await Promise.all([
     getInboundTriage(brokerScope),
     getLookingAtNow(brokerScope),
     getBrokerActionQueue({ brokerSlug: brokerScope }),
@@ -103,6 +104,7 @@ export default async function TodayPage() {
     getDayOneChecklist(ctx),
     getJoinConversionStats(),
     getClosingsBoard(),
+    getPrincipalSignOffQueue(),
   ])
   const tcIncomplete = incompleteInFlight(
     closings.deals.filter((d) =>
@@ -129,7 +131,8 @@ export default async function TodayPage() {
     cmaDrafts.length +
     approvals.length +
     dueTasks.length +
-    tcIncomplete.length
+    tcIncomplete.length +
+    (signOff.authorized ? signOff.totalItems : 0)
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -160,6 +163,28 @@ export default async function TodayPage() {
             {join.visitsAll} visits all-time. Same figure as the company packet.
           </VerdictLine>
         </div>
+      ) : null}
+
+      {signOff.authorized && signOff.totalItems > 0 ? (
+        <section aria-label="Sign-off">
+          <SectionHead>Sign-off</SectionHead>
+          <ul className="av2-queue">
+            {signOff.deals.slice(0, 6).map((d) => (
+              <QueueRow
+                key={d.propertyKey}
+                kind={signOff.overdueItems > 0 && d.items.some((i) => i.deadline?.overdue) ? 'Overdue' : 'Sign-off'}
+                kindTone={d.items.some((i) => i.deadline?.overdue) ? 'down' : 'slow'}
+                title={d.address}
+                context={`${d.items.length} item${d.items.length === 1 ? '' : 's'} · ${d.broker ?? '—'}`}
+                action={
+                  <Link href="/admin/sign-off" className="av2-btn" style={{ textDecoration: 'none' }}>
+                    Review
+                  </Link>
+                }
+              />
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {tcIncomplete.length > 0 ? (
