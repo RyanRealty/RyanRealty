@@ -5,12 +5,13 @@ import { headers } from 'next/headers'
 import {
   hashSigningToken,
   isSenderAnnotation,
-  isSignableRole,
+  earlierSigningGroupPending,
   type EnvelopeField,
   type SignFieldValue,
 } from '@/lib/tc/signing'
 import { advanceOrSeal } from '@/lib/tc/seal-envelope'
 import { fieldValueIsComplete } from '@/lib/tc/required-fields'
+import { listEnvelopeSigningRoster } from '@/lib/data/tc/envelope-recipient-reads'
 
 /**
  * Public, token-gated signing actions. NO admin auth — the per-recipient token
@@ -84,17 +85,8 @@ export async function getSigningSession(token: string): Promise<SigningSessionSt
   }
 
   // ordered routing gate: every lower signing-order signable recipient must be done
-  const { data: allRecips } = await supabase
-    .from('tc_envelope_recipients')
-    .select('id, role, action_required, signing_order, completed_at')
-    .eq('envelope_id', env.id)
-  const lowerPending = ((allRecips ?? []) as DbRow[]).filter(
-    (r) =>
-      isSignableRole(r.role, r.action_required) &&
-      (r.signing_order ?? 1) < (recip.signing_order ?? 1) &&
-      !r.completed_at
-  )
-  if (lowerPending.length) {
+  const roster = await listEnvelopeSigningRoster(env.id)
+  if (earlierSigningGroupPending(recip.signing_order ?? 1, roster)) {
     return { status: 'waiting', envelopeName: env.name, propertyAddress }
   }
 
@@ -212,6 +204,11 @@ export async function submitSigning(
   if (env.status === 'voided') return { ok: false, error: 'This request was canceled.' }
   if (recip.completed_at) return { ok: false, error: 'You already signed.' }
   if (!recip.consented_at) return { ok: false, error: 'Consent is required before signing.' }
+
+  const roster = await listEnvelopeSigningRoster(env.id)
+  if (earlierSigningGroupPending(recip.signing_order ?? 1, roster)) {
+    return { ok: false, error: 'Earlier signers in this sequence still need to finish.' }
+  }
 
   // load this recipient's required fields to validate completeness
   const { data: fields } = await supabase

@@ -9,7 +9,9 @@ import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
 import { getDealContacts } from '@/app/actions/tc-contacts'
 import { dealFactsFromRows, mapDealFactsToFillValues, resolveFactKey } from '@/lib/tc/oref-fill'
-import { otherSideAgentEnvelopeRole, ourRoleFromCycleKind } from '@/lib/tc/representation'
+import { otherSideAgentEnvelopeRole, ourRoleForEnvelope } from '@/lib/tc/representation'
+import { getDealParties } from '@/lib/data/tc/deal-people'
+import { listEnvelopeSigningRoster } from '@/lib/data/tc/envelope-recipient-reads'
 import {
   generateSigningToken,
   isSignableRole,
@@ -20,6 +22,7 @@ import {
   seedPartyEnvelopeRecipients,
   seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
+  earlierSigningGroupPending,
   type ActionRequired,
   type EnvelopeField,
   type EnvelopeStatus,
@@ -385,6 +388,10 @@ export async function createEnvelopeFromDocuments(
     formSources.push(source)
   }
   const requiredRoles = unionRequiredSignerRoles(formSources)
+  const ourRole = ourRoleForEnvelope({
+    cycleKind,
+    ourPeopleRoles: (await getDealParties(String(cycle.deal_id))).map((p) => p.role),
+  })
 
   // pre-seed recipients from the cycle parties (emails completed in the composer)
   const recipients = seedPartyEnvelopeRecipients({
@@ -395,7 +402,7 @@ export async function createEnvelopeFromDocuments(
     brokerEmail: auth.email,
     cycleKind,
     requiredRoles,
-    ourRole: ourRoleFromCycleKind(cycleKind),
+    ourRole,
   })
   const withEmail = applyUniquePartyEmails(
     recipients,
@@ -404,7 +411,7 @@ export async function createEnvelopeFromDocuments(
   const vendors = seedVendorEnvelopeRecipients({
     envelopeId: env.id,
     contacts: await getDealContacts(String(cycle.deal_id)),
-    otherSideAgentRole: otherSideAgentEnvelopeRole(ourRoleFromCycleKind(cycleKind)),
+    otherSideAgentRole: otherSideAgentEnvelopeRole(ourRole),
   })
   const allRecipients = [...withEmail, ...vendors]
   if (allRecipients.length) await supabase.from('tc_envelope_recipients').insert(allRecipients)
@@ -474,6 +481,10 @@ export async function createEnvelopeFromTemplate(
       documentName: (f.name as string | null) ?? null,
     })),
   )
+  const ourRole = ourRoleForEnvelope({
+    cycleKind: (cycle as DbRow).kind,
+    ourPeopleRoles: (await getDealParties(String(cycle.deal_id))).map((p) => p.role),
+  })
   const recipients = applyUniquePartyEmails(
     seedPartyEnvelopeRecipients({
       envelopeId: env.id,
@@ -483,7 +494,7 @@ export async function createEnvelopeFromTemplate(
       brokerEmail: auth.email,
       cycleKind: (cycle as DbRow).kind,
       requiredRoles,
-      ourRole: ourRoleFromCycleKind((cycle as DbRow).kind),
+      ourRole,
     }),
     await peopleEmailsByNames(
       [...((cycle.buyers ?? []) as string[]), ...((cycle.sellers ?? []) as string[])],
@@ -497,7 +508,7 @@ export async function createEnvelopeFromTemplate(
   const vendors = seedVendorEnvelopeRecipients({
     envelopeId: env.id,
     contacts: await getDealContacts(String(cycle.deal_id)),
-    otherSideAgentRole: otherSideAgentEnvelopeRole(ourRoleFromCycleKind((cycle as DbRow).kind)),
+    otherSideAgentRole: otherSideAgentEnvelopeRole(ourRole),
   })
   if (vendors.length) await supabase.from('tc_envelope_recipients').insert(vendors)
   const recipientByRole = (role: SignerRole): string | null => {
@@ -896,6 +907,11 @@ export async function resendRecipientInvite(recipientId: string): Promise<{ ok: 
   }
   if (r.completed_at) return { ok: false, error: 'This recipient already signed' }
   if (!isValidEmail(r.email)) return { ok: false, error: 'Invalid recipient email' }
+
+  const roster = await listEnvelopeSigningRoster(env.id)
+  if (earlierSigningGroupPending(r.signing_order ?? 1, roster)) {
+    return { ok: false, error: 'It is not this signer\'s turn yet. The earlier group still needs to finish.' }
+  }
 
   const { token, hash } = generateSigningToken()
   await supabase.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', recipientId)

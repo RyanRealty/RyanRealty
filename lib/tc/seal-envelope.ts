@@ -25,6 +25,7 @@ import {
   needsOtherSideReturn,
   otherSideAgentEnvelopeRole,
   ourRoleFromCycleKind,
+  ourRoleFromSignableRoles,
 } from './representation'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,7 +77,10 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
     const { data: cycleRow } = envRow?.cycle_id
       ? await supabase.from('tc_cycles').select('kind').eq('id', envRow.cycle_id).maybeSingle()
       : { data: null }
-    const ourRole = ourRoleFromCycleKind(cycleRow?.kind == null ? null : String(cycleRow.kind))
+    const ourRole = ourRoleFromSignableRoles(
+      cycleRow?.kind == null ? null : String(cycleRow.kind),
+      signable.map((r) => String(r.role ?? '')),
+    )
     let required: string[] = []
     try {
       required = unionRequiredSignerRoles(await getFormSourcesForEnvelope(envelopeId))

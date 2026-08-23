@@ -32,6 +32,7 @@ import {
   storedRecipientRole,
   coerceActionRequired,
   recipientRoleLabel,
+  signingGroupLabel,
   type ActionRequired,
   type SignFieldType,
 } from '@/lib/tc/signing'
@@ -293,6 +294,9 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               Recipients
               <Badge variant="outline">{recipients.length}</Badge>
             </CardTitle>
+            <p className="text-[11px] font-normal text-muted-foreground">
+              Same group signs together. The next group is emailed after this group finishes.
+            </p>
           </CardHeader>
           <CardContent className="space-y-3">
             {recipients.map((r, i) => (
@@ -336,7 +340,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                   onChange={(e) => updateRecipient(i, { email: e.target.value })} />
                 {isSignableRole(r.role, r.actionRequired) ? (
                   <div className="mt-1.5 flex items-center gap-2">
-                    <Label className="text-[11px] text-muted-foreground">Signs in order</Label>
+                    <Label className="text-[11px] text-muted-foreground">{signingGroupLabel(r.signingOrder)}</Label>
                     <Input type="number" min={1} className="h-7 w-16 text-xs" value={r.signingOrder} disabled={readonly}
                       onChange={(e) => updateRecipient(i, { signingOrder: parseInt(e.target.value || '1', 10) })} />
                   </div>

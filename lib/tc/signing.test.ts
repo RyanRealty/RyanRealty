@@ -23,6 +23,9 @@ import {
   seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
   ENVELOPE_STATUSES,
+  signingGroupForRole,
+  signingGroupLabel,
+  earlierSigningGroupPending,
 } from './signing'
 
 describe('SIGN_FIELD_TYPES', () => {
@@ -222,6 +225,23 @@ describe('seedPartyEnvelopeRecipients', () => {
     expect(rows.find((r) => r.role === 'SellerAgent')?.action_required).toBe('ReceivesACopy')
   })
 
+  it('dual sale agreement: buyers sign first as a group, then sellers', () => {
+    const rows = seedPartyEnvelopeRecipients({
+      envelopeId: 'e1',
+      buyers: ['Pat', 'Sam'],
+      sellers: ['Lee'],
+      brokerName: 'Matt Ryan',
+      brokerEmail: 'matt@ryan-realty.com',
+      cycleKind: 'sale',
+      ourRole: 'dual',
+      requiredRoles: ['Buyer', 'Seller'],
+    })
+    expect(rows.filter((r) => r.role === 'Buyer').every((r) => r.action_required === 'NeedsToSign')).toBe(true)
+    expect(rows.find((r) => r.role === 'Seller')?.action_required).toBe('NeedsToSign')
+    expect(rows.filter((r) => r.role === 'Buyer').every((r) => r.signing_order === 1)).toBe(true)
+    expect(rows.find((r) => r.role === 'Seller')?.signing_order).toBe(2)
+  })
+
   it('listing sale agreement never sends a signing link to the buyer', () => {
     const rows = seedPartyEnvelopeRecipients({
       envelopeId: 'e1',
@@ -257,6 +277,31 @@ describe('seedPartyEnvelopeRecipients', () => {
       requiredRoles: ['Seller', 'SellerAgent'],
     })
     expect(listing.find((r) => r.role === 'SellerAgent')?.action_required).toBe('NeedsToSign')
+  })
+})
+
+describe('signing groups', () => {
+  it('labels groups the way DigiSign does and keeps a group parallel', () => {
+    expect(signingGroupLabel(1)).toBe('Who signs first')
+    expect(signingGroupLabel(2)).toBe('Who signs second')
+    expect(signingGroupForRole('Seller', ['Seller', 'SellerAgent'])).toBe(1)
+    expect(signingGroupForRole('SellerAgent', ['Seller', 'SellerAgent'])).toBe(2)
+    expect(signingGroupForRole('Buyer', ['Buyer', 'Seller'])).toBe(1)
+    expect(signingGroupForRole('Seller', ['Buyer', 'Seller'])).toBe(2)
+  })
+
+  it('blocks a later group until every earlier signer is done', () => {
+    const others = [
+      { role: 'Buyer', action_required: 'NeedsToSign', signing_order: 1, completed_at: '2026-08-23' },
+      { role: 'Buyer', action_required: 'NeedsToSign', signing_order: 1, completed_at: null },
+    ]
+    expect(earlierSigningGroupPending(2, others)).toBe(true)
+    expect(earlierSigningGroupPending(1, others)).toBe(false)
+    expect(
+      earlierSigningGroupPending(2, [
+        { role: 'Buyer', action_required: 'NeedsToSign', signing_order: 1, completed_at: '2026-08-23' },
+      ]),
+    ).toBe(false)
   })
 })
 

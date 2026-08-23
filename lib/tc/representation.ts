@@ -39,6 +39,27 @@ export function ourRoleFromCycleKind(kind: string | null | undefined): BrokerRol
   return 'unknown'
 }
 
+/** Dual when our CRM people include a buyer and a seller. Otherwise listing vs buyer from the file kind. */
+export function ourRoleForEnvelope(input: {
+  cycleKind?: string | null
+  ourPeopleRoles?: readonly string[]
+}): BrokerRole {
+  const ours = input.ourPeopleRoles ?? []
+  if (ours.includes('buyer') && ours.includes('seller')) return 'dual'
+  return ourRoleFromCycleKind(input.cycleKind)
+}
+
+/** Both principals NeedsToSign on the envelope means we can run the in-system sequence. */
+export function ourRoleFromSignableRoles(
+  cycleKind: string | null | undefined,
+  signableRoles: readonly string[],
+): BrokerRole {
+  const buyer = signableRoles.includes('Buyer')
+  const seller = signableRoles.includes('Seller')
+  if (buyer && seller) return 'dual'
+  return ourRoleFromCycleKind(cycleKind)
+}
+
 export function isOtherSideRecipientRole(ourRole: BrokerRole, role: string): boolean {
   if (ourRole === 'dual' || ourRole === 'unknown') return false
   if (ourRole === 'listing') return role === 'Buyer' || role === 'BuyerAgent'

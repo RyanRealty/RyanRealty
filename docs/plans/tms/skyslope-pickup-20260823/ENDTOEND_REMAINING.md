@@ -12,6 +12,7 @@ A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 6. **Who must sign is known before send** — Vault reads the document (field map, page-1 OREF stamp / title, filename) against the Oregon form library. It does not ask the broker to name signers. The listing/buyer broker is Needs to sign only when that form requires it. Unreadable forms cannot be sent. Send refuses if a required role is only Receives a copy. Checklist / sign-off cannot mark complete while that form’s envelope is still out or only partly signed.
 7. **The form must be completed as required — not every blank.** Requirement comes from that form: field-map `isOptional`, signature lines tagged to a role, and a small known-fact list (001 needs parties/address/price; 015 needs sellers/address/list price). Optional checkboxes and unknown blanks stay empty. The envelope will not seal while a *required* signature field is empty.
 8. **One-sided representation.** We collect our clients' signatures in Vault, email the signed PDF to the other broker, and file the executed copy they send back (mail or SMS). Other-side principals do not get our signing links. Checklist stays open until that return is filed.
+9. **Dual representation.** Both principals sign in Vault. Signing groups match DigiSign: who signs first (buyers together), then who signs second (sellers), then agents if the form requires them. A later group cannot sign until the earlier group is done. The next group is emailed only when it is their turn.
 
 Credential stops:
 

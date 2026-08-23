@@ -156,6 +156,55 @@ export function brokerEnvelopeRole(cycleKind: string | null | undefined): Recipi
   return cycleKind === 'listing' ? 'SellerAgent' : 'BuyerAgent'
 }
 
+/** SkySlope DigiSign: WHO SIGNS FIRST / SECOND. Same number = parallel. */
+export function signingGroupLabel(order: number): string {
+  const n = Math.max(1, Math.round(order) || 1)
+  if (n === 1) return 'Who signs first'
+  if (n === 2) return 'Who signs second'
+  if (n === 3) return 'Who signs third'
+  return `Who signs in group ${n}`
+}
+
+/**
+ * Compact signer groups from the live SkySlope sequence: buyers, then sellers,
+ * then agents. Roles that are not signing this envelope are dropped so a
+ * listing form starts at group 1, not group 2.
+ */
+export function signingGroupForRole(
+  role: RecipientRole,
+  whoSigns: readonly RecipientRole[],
+): number {
+  const buckets: RecipientRole[][] = [
+    ['Buyer'],
+    ['Seller'],
+    ['BuyerAgent', 'SellerAgent', 'Broker'],
+  ]
+  const live = buckets.map((b) => b.filter((r) => whoSigns.includes(r))).filter((b) => b.length)
+  const i = live.findIndex((b) => b.includes(role))
+  return i >= 0 ? i + 1 : Math.max(1, live.length)
+}
+
+export function earlierSigningGroupPending(
+  recipientOrder: number,
+  others: ReadonlyArray<{
+    role?: string | null
+    actionRequired?: string | null
+    action_required?: string | null
+    signingOrder?: number | null
+    signing_order?: number | null
+    completedAt?: string | null
+    completed_at?: string | null
+  }>,
+): boolean {
+  const order = recipientOrder || 1
+  return others.some((r) => {
+    const action = r.actionRequired ?? r.action_required
+    const theirOrder = r.signingOrder ?? r.signing_order ?? 1
+    const done = r.completedAt ?? r.completed_at
+    return isSignableRole(r.role, action) && theirOrder < order && !done
+  })
+}
+
 /** Pre-seed envelope people from cycle parties using live Forms roles. */
 export function seedPartyEnvelopeRecipients(input: {
   envelopeId: string
@@ -186,6 +235,11 @@ export function seedPartyEnvelopeRecipients(input: {
     if (role === 'SellerAgent' || role === 'BuyerAgent' || role === 'Broker') return 'ReceivesACopy'
     return 'NeedsToSign'
   }
+  const brokerRole = brokerEnvelopeRole(input.cycleKind)
+  const whoSigns: RecipientRole[] = []
+  if (mustSign('Buyer') === 'NeedsToSign') whoSigns.push('Buyer')
+  if (mustSign('Seller') === 'NeedsToSign') whoSigns.push('Seller')
+  if (input.brokerName?.trim() && mustSign(brokerRole) === 'NeedsToSign') whoSigns.push(brokerRole)
   const rows: Array<{
     envelope_id: string
     role: string
@@ -201,7 +255,7 @@ export function seedPartyEnvelopeRecipients(input: {
       role: 'Buyer',
       name: n.trim(),
       email: '',
-      signing_order: 1,
+      signing_order: signingGroupForRole('Buyer', whoSigns),
       action_required: mustSign('Buyer'),
     })
   }
@@ -212,18 +266,17 @@ export function seedPartyEnvelopeRecipients(input: {
       role: 'Seller',
       name: n.trim(),
       email: '',
-      signing_order: 2,
+      signing_order: signingGroupForRole('Seller', whoSigns),
       action_required: mustSign('Seller'),
     })
   }
   if (input.brokerName?.trim()) {
-    const brokerRole = brokerEnvelopeRole(input.cycleKind)
     rows.push({
       envelope_id: input.envelopeId,
       role: brokerRole,
       name: input.brokerName.trim(),
       email: input.brokerEmail,
-      signing_order: input.brokerSigningOrder ?? 3,
+      signing_order: input.brokerSigningOrder ?? signingGroupForRole(brokerRole, whoSigns),
       action_required: mustSign(brokerRole),
     })
   }

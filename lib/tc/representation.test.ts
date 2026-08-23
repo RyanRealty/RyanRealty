@@ -3,8 +3,10 @@ import {
   isOtherSideParty,
   isOtherSideRecipientRole,
   needsOtherSideReturn,
+  ourRoleForEnvelope,
   ourRoleFromCycleKind,
   ourRoleFromCycles,
+  ourRoleFromSignableRoles,
 } from './representation'
 
 describe('isOtherSideParty', () => {
@@ -31,5 +33,14 @@ describe('one-sided envelopes', () => {
     expect(isOtherSideRecipientRole('listing', 'Seller')).toBe(false)
     expect(needsOtherSideReturn('listing', ['Buyer', 'Seller'])).toBe(true)
     expect(needsOtherSideReturn('listing', ['Seller', 'SellerAgent'])).toBe(false)
+  })
+})
+
+describe('dual representation', () => {
+  it('both of our principals sign in Vault; no other-side PDF wait', () => {
+    expect(ourRoleForEnvelope({ cycleKind: 'listing', ourPeopleRoles: ['buyer', 'seller'] })).toBe('dual')
+    expect(isOtherSideRecipientRole('dual', 'Buyer')).toBe(false)
+    expect(needsOtherSideReturn('dual', ['Buyer', 'Seller'])).toBe(false)
+    expect(ourRoleFromSignableRoles('listing', ['Buyer', 'Seller'])).toBe('dual')
   })
 })
