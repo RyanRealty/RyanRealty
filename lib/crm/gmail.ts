@@ -335,6 +335,7 @@ export async function syncMailboxWindow(params: {
             await fileCommsToVault({
               personIds: [],
               emails: [...from, ...toCc],
+              fromEmails: from,
               channel: 'mail',
               actor: `gmail:${brokerSlug}`,
               title: headerOf(fullMsg.data, 'Subject') ?? headerOf(meta, 'Subject'),
@@ -391,6 +392,7 @@ export async function syncMailboxWindow(params: {
           await fileCommsToVault({
             personIds: [...candidates.keys()],
             emails: [...from, ...toCc],
+            fromEmails: from,
             channel: 'mail',
             actor: `gmail:${brokerSlug}`,
             title: subject,

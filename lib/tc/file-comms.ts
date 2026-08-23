@@ -3,6 +3,7 @@
  * Pure. No I/O. Live 2026-08-23: brokers do not log calls or uploads.
  */
 import { DOC_RULES } from './required-documents'
+import { envelopeCoversChecklistItem } from './required-signers'
 
 export const LIVE_DEAL_STAGES = ['pending', 'pre_contract', 'active_listing'] as const
 
@@ -123,6 +124,35 @@ export function shouldCompleteFromOtherSideReturn(input: {
   }
   if (input.executionState === 'fully_executed') return true
   return false
+}
+
+/** Only From (not To/Cc) counts as the other side sending a return. Our outbound to them is not a return. */
+export function fromOtherSideContact(
+  fromAddresses: readonly string[],
+  otherSideEmails: ReadonlySet<string>,
+): boolean {
+  return fromAddresses.some((e) => otherSideEmails.has(e.trim().toLowerCase()))
+}
+
+export function pickWaitingEnvelopesForReturn(
+  waiting: ReadonlyArray<{ id: string; name: string }>,
+  haystack: string,
+): Array<{ id: string; name: string }> {
+  if (!waiting.length) return []
+  if (waiting.length === 1) return [...waiting]
+  const h = haystack.toLowerCase()
+  const hit = waiting.filter((e) => {
+    const n = e.name.toLowerCase()
+    if (/disclosure|\bspd\b/.test(n) && /disclosure|\bspd\b/.test(h)) return true
+    if (/sale agreement|purchase/.test(n) && /sale agreement|offer|\b001\b/.test(h)) return true
+    return envelopeCoversChecklistItem({
+      envelopeName: e.name,
+      formNumbers: [],
+      itemName: haystack,
+      typeName: null,
+    })
+  })
+  return hit
 }
 
 export function pdfMmsParts(media: readonly MmsCommsPart[]): MmsCommsPart[] {

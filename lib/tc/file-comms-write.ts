@@ -13,6 +13,8 @@ import {
   pickDealForComms,
   scoreDealHaystack,
   shouldCompleteFromOtherSideReturn,
+  fromOtherSideContact,
+  pickWaitingEnvelopesForReturn,
 } from '@/lib/tc/file-comms'
 import {
   classifyFromFormAndText,
@@ -35,6 +37,9 @@ export type FileCommsInput = {
   personIds: number[]
   /** From/To/Cc so other-side agents file onto the deal without being our clients. */
   emails?: string[]
+  /** From addresses only. Our outbound To the other agent is not a return. */
+  fromEmails?: string[]
+  fromPhones?: string[]
   channel: 'mail' | 'sms'
   actor: string
   title?: string | null
@@ -219,7 +224,7 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
 
   const { data: otherContacts } = await sb
     .from('tc_deal_contacts')
-    .select('email, role')
+    .select('email, phone, role')
     .eq('deal_id', picked.dealId)
     .in('role', ['other_agent', 'other_party'])
   const otherEmails = new Set(
@@ -227,7 +232,15 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
       .map((c) => String(c.email ?? '').trim().toLowerCase())
       .filter((e) => e.includes('@')),
   )
-  const fromOtherSide = emails.some((e) => otherEmails.has(e))
+  const otherPhones = new Set(
+    (otherContacts ?? [])
+      .map((c) => String(c.phone ?? '').replace(/\D/g, '').slice(-10))
+      .filter((p) => p.length === 10),
+  )
+  const fromEmails = (input.fromEmails ?? []).map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@'))
+  const fromPhones = (input.fromPhones ?? []).map((p) => p.replace(/\D/g, '').slice(-10)).filter((p) => p.length === 10)
+  const fromOtherSide =
+    fromOtherSideContact(fromEmails, otherEmails) || fromPhones.some((p) => otherPhones.has(p))
   const hint = executionHintFromMail(haystack, fromOtherSide)
   const states = Object.values(executionByDoc)
   const anyFullyExecuted = states.some((s) => shouldFileAsFullyExecuted(s))
@@ -255,9 +268,10 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
       .select('id, name')
       .eq('cycle_id', cycleId)
       .eq('status', 'awaiting_other_side')
-    const returnedId = documentIds[0]
+    const returnedId = documentIds.find((id) => shouldFileAsFullyExecuted(executionByDoc[id] ?? 'unknown')) ?? documentIds[0]
     const now = new Date().toISOString()
-    for (const env of waiting ?? []) {
+    const targets = pickWaitingEnvelopesForReturn(waiting ?? [], haystack)
+    for (const env of targets) {
       await sb
         .from('tc_envelopes')
         .update({

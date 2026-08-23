@@ -223,6 +223,7 @@ export async function POST(request: Request) {
       }
       await fileCommsToVault({
         personIds: [match.personId],
+        fromPhones: [from],
         channel: 'sms',
         actor: `twilio:${match.broker ?? 'desk'}`,
         title: null,

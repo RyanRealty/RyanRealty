@@ -8,6 +8,8 @@ import {
   pdfMmsParts,
   looksLikeReturnedSignedPacket,
   shouldCompleteFromOtherSideReturn,
+  fromOtherSideContact,
+  pickWaitingEnvelopesForReturn,
 } from './file-comms'
 
 describe('pickDealForComms', () => {
@@ -132,5 +134,19 @@ describe('looksLikeReturnedSignedPacket', () => {
         executionState: 'fully_executed',
       }),
     ).toBe(false)
+  })
+
+  it('treats From the other agent as a return, not our outbound To them', () => {
+    const other = new Set(['kayla@x.com'])
+    expect(fromOtherSideContact(['kayla@x.com'], other)).toBe(true)
+    expect(fromOtherSideContact(['matt@ryan-realty.com'], other)).toBe(false)
+  })
+
+  it('does not close every waiting envelope from one Signed SPD', () => {
+    const waiting = [
+      { id: 'spd', name: "Seller's Property Disclosure" },
+      { id: 'rsa', name: 'Residential Real Estate Sale Agreement' },
+    ]
+    expect(pickWaitingEnvelopesForReturn(waiting, 'SW 45th - Signed SPD.pdf').map((e) => e.id)).toEqual(['spd'])
   })
 })
