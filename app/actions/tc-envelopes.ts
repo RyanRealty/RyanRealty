@@ -479,9 +479,6 @@ export async function createEnvelopeFromTemplate(
   return { ok: true, envelopeId: env.id }
 }
 
-export type { EnvelopeTemplateOption } from '@/lib/data'
-export { listEnvelopeTemplates } from '@/lib/data'
-
 export type RecipientInput = {
   id?: string
   role: string
