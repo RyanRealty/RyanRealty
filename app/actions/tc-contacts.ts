@@ -1,11 +1,12 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { TC_CONTACT_ROLES, type TcContact } from '@/lib/tc/contact-roles'
 import { extractContactsFromCycleRaw } from '@/lib/tc/cycle-contacts'
+import { createServiceClient } from '@/lib/supabase/service'
+import { countDealContacts, getCycleRawForDeal } from '@/lib/data/tc/deal-contact-reads'
 
 /**
  * Deal team & contacts (tc-builder rung 15). A deal's co-agents + every party
@@ -17,10 +18,7 @@ import { extractContactsFromCycleRaw } from '@/lib/tc/cycle-contacts'
  */
 
 function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key, { auth: { persistSession: false } })
+  return createServiceClient()
 }
 
 async function authorize() {
@@ -34,15 +32,10 @@ async function authorize() {
 
 async function ensureContactsFromCycleRaw(dealId: string): Promise<void> {
   const supabase = getServiceSupabase()
-  const { count } = await supabase
-    .from('tc_deal_contacts')
-    .select('id', { count: 'exact', head: true })
-    .eq('deal_id', dealId)
-  if ((count ?? 0) > 0) return
-  const { data: cycles } = await supabase.from('tc_cycles').select('raw').eq('deal_id', dealId)
+  if ((await countDealContacts(dealId)) > 0) return
   const seen = new Set<string>()
-  const extracted = (cycles ?? [])
-    .flatMap((c) => extractContactsFromCycleRaw(c.raw))
+  const extracted = (await getCycleRawForDeal(dealId))
+    .flatMap((raw) => extractContactsFromCycleRaw(raw))
     .filter((row) => {
       const key = `${row.role}|${(row.email ?? '').toLowerCase()}|${(row.name ?? '').toLowerCase()}`
       if (seen.has(key)) return false

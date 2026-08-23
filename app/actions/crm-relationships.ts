@@ -13,6 +13,7 @@ import {
   validateLink,
 } from '@/lib/crm/relationships'
 import { searchCrmPeople } from '@/lib/data/crm/searchCrmPeople'
+import { getPersonNamesByIds, relationshipLinkExists } from '@/lib/data/crm/findRelationshipLink'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -63,24 +64,11 @@ export async function linkExistingRelationshipAction(
   if (!toScope.ok) return { ok: false, error: 'That person is outside your book' }
 
   const sb = createServiceClient()
-  const { data: existing } = await sb
-    .from('crm_relationships')
-    .select('id,person_id,related_person_id')
-    .or(
-      `and(person_id.eq.${fromPersonId},related_person_id.eq.${toPersonId}),and(person_id.eq.${toPersonId},related_person_id.eq.${fromPersonId})`,
-    )
-    .limit(2)
-  if ((existing ?? []).length > 0) {
+  if (await relationshipLinkExists(fromPersonId, toPersonId)) {
     return { ok: false, error: 'Those two people are already linked' }
   }
 
-  const { data: people } = await sb
-    .from('crm_people')
-    .select('id,name')
-    .in('id', [fromPersonId, toPersonId])
-  const nameById = new Map(
-    (people ?? []).map((p) => [Number(p.id), String(p.name ?? '').trim() || `Person ${p.id}`]),
-  )
+  const nameById = await getPersonNamesByIds([fromPersonId, toPersonId])
   const fromName = nameById.get(fromPersonId) ?? `Person ${fromPersonId}`
   const toName = nameById.get(toPersonId) ?? `Person ${toPersonId}`
   const inverse = reciprocalType(valid.type)

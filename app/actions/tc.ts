@@ -7,6 +7,7 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { notifyDealMailbox } from '@/lib/tc/deal-notify'
+import { getDealByPropertyKey } from '@/lib/data/tc/listing-action-reads'
 
 /**
  * TC system actions — Ryan Realty's own transaction system of record
@@ -243,11 +244,7 @@ export async function setDealStage(input: {
     return { ok: false, error: 'Not authorized' }
   }
   const supabase = getServiceSupabase()
-  const { data: deal } = await supabase
-    .from('tc_deals')
-    .select('id, property_key, stage, broker_name')
-    .eq('property_key', input.propertyKey)
-    .maybeSingle()
+  const deal = await getDealByPropertyKey(input.propertyKey)
   if (!deal) return { ok: false, error: 'Deal not found' }
   const ctx = await getAdminCapabilityContext()
   if (
@@ -292,11 +289,7 @@ export async function setDealBroker(input: {
     return { ok: false, error: 'Pick Matt, Paul, or Rebecca.' }
   }
   const supabase = getServiceSupabase()
-  const { data: deal } = await supabase
-    .from('tc_deals')
-    .select('id, broker_name')
-    .eq('property_key', input.propertyKey)
-    .maybeSingle()
+  const deal = await getDealByPropertyKey(input.propertyKey)
   if (!deal) return { ok: false, error: 'Deal not found' }
   const from = deal.broker_name ?? ''
   if (from === input.brokerName) return { ok: true }

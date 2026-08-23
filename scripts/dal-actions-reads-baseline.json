@@ -1,6 +1,6 @@
 {
   "note": "Raw `.from(table).select` reads in app/actions/** (the DAL-exempt zone). Count may only SHRINK as reads migrate into cached lib/data readers. Regenerate with `node scripts/check-dal-actions-reads.mjs --write-baseline`.",
-  "total": 333,
+  "total": 318,
   "byFile": {
     "app/actions/admin-audit.ts": 1,
     "app/actions/admin-media.ts": 8,
@@ -45,19 +45,17 @@
     "app/actions/crm-tags.ts": 3,
     "app/actions/crm-tasks.ts": 5,
     "app/actions/crm-templates.ts": 2,
-    "app/actions/crm.ts": 40,
+    "app/actions/crm.ts": 38,
     "app/actions/dashboard-history.ts": 2,
     "app/actions/dashboard.ts": 14,
-    "app/actions/expired-outreach.ts": 3,
     "app/actions/export-my-data.ts": 6,
-    "app/actions/fsbo-dashboard.ts": 3,
+    "app/actions/fsbo-dashboard.ts": 1,
     "app/actions/geo-places.ts": 6,
     "app/actions/guides.ts": 4,
     "app/actions/headshot-prompts.ts": 2,
     "app/actions/hidden-listings.ts": 1,
     "app/actions/lead-scoring.ts": 4,
     "app/actions/likes.ts": 2,
-    "app/actions/market-reports.ts": 2,
     "app/actions/partnership-revenue.ts": 3,
     "app/actions/photo-classification.ts": 1,
     "app/actions/profile.ts": 1,
@@ -67,7 +65,6 @@
     "app/actions/saved-listings.ts": 4,
     "app/actions/saved-search-alerts.ts": 2,
     "app/actions/saved-searches.ts": 3,
-    "app/actions/send-doc.ts": 2,
     "app/actions/site-pages.ts": 1,
     "app/actions/subdivision-descriptions.ts": 2,
     "app/actions/sync-full-cron.ts": 3,
@@ -79,7 +76,7 @@
     "app/actions/tc-forms.ts": 4,
     "app/actions/tc-required-docs.ts": 3,
     "app/actions/tc-sign.ts": 10,
-    "app/actions/tc-signoff.ts": 7,
+    "app/actions/tc-signoff.ts": 3,
     "app/actions/tc.ts": 13
   }
 }

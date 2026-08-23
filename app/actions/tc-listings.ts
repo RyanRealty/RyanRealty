@@ -9,6 +9,14 @@ import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { nextDuplicatePropertyKey, todayIsoDate } from '@/lib/tc/listing-actions'
 import { EMPTY_PROPERTY_FACTS, brokerRoleFromDealParties, seedChecklistItems } from '@/lib/tc/required-documents'
 import { getDealParties } from '@/lib/data/tc/deal-people'
+import {
+  getDealByPropertyKey,
+  getLatestListingCycle,
+  listChecklistItemCopies,
+  listDealContactCopies,
+  listDealContactKeys,
+  listDealPropertyKeys,
+} from '@/lib/data/tc/listing-action-reads'
 
 function getServiceSupabase() {
   return createServiceClient()
@@ -21,8 +29,7 @@ async function requireDeal(propertyKey: string) {
   if (!email || !role || (role.role !== 'superuser' && role.role !== 'broker')) {
     return { error: 'Not authorized' as const }
   }
-  const supabase = getServiceSupabase()
-  const { data: deal } = await supabase.from('tc_deals').select('*').eq('property_key', propertyKey).maybeSingle()
+  const deal = await getDealByPropertyKey(propertyKey)
   if (!deal) return { error: 'Deal not found' as const }
   const ctx = await getAdminCapabilityContext()
   if (
@@ -35,7 +42,7 @@ async function requireDeal(propertyKey: string) {
   ) {
     return { error: 'Not authorized' as const }
   }
-  return { supabase, deal, email }
+  return { supabase: getServiceSupabase(), deal, email }
 }
 
 function revalidateDeal(key: string) {
@@ -52,14 +59,7 @@ export async function acceptListingContract(
   const { supabase, deal, email } = auth
   if (deal.stage !== 'active_listing') return { ok: false, error: 'Only an active listing can accept a contract.' }
 
-  const { data: cycles } = await supabase
-    .from('tc_cycles')
-    .select('*')
-    .eq('deal_id', deal.id)
-    .eq('kind', 'listing')
-    .order('created_at', { ascending: false })
-    .limit(1)
-  const listing = cycles?.[0]
+  const listing = await getLatestListingCycle(deal.id)
   const cycleId = crypto.randomUUID()
   const { error: cycleErr } = await supabase.from('tc_cycles').insert({
     id: cycleId,
@@ -123,11 +123,8 @@ export async function duplicateListing(
     return { ok: false, error: 'Duplicate a listing file, not a closing.' }
   }
 
-  const { data: keys } = await supabase.from('tc_deals').select('property_key')
-  const newKey = nextDuplicatePropertyKey(
-    (keys ?? []).map((r) => String(r.property_key)),
-    deal.property_key,
-  )
+  const keys = await listDealPropertyKeys()
+  const newKey = nextDuplicatePropertyKey(keys, deal.property_key)
   const newDealId = crypto.randomUUID()
   const { error: dealErr } = await supabase.from('tc_deals').insert({
     id: newDealId,
@@ -141,14 +138,7 @@ export async function duplicateListing(
   })
   if (dealErr) return { ok: false, error: dealErr.message }
 
-  const { data: listingCycles } = await supabase
-    .from('tc_cycles')
-    .select('*')
-    .eq('deal_id', deal.id)
-    .eq('kind', 'listing')
-    .order('created_at', { ascending: false })
-    .limit(1)
-  const listing = listingCycles?.[0]
+  const listing = await getLatestListingCycle(deal.id)
   const newCycleId = crypto.randomUUID()
   if (listing) {
     const { error: cycleErr } = await supabase.from('tc_cycles').insert({
@@ -171,11 +161,8 @@ export async function duplicateListing(
       await supabase.from('tc_deals').delete().eq('id', newDealId)
       return { ok: false, error: cycleErr.message }
     }
-    const { data: items } = await supabase
-      .from('tc_checklist_items')
-      .select('name, type_name, status, sort_order')
-      .eq('cycle_id', listing.id)
-    if (items?.length) {
+    const items = await listChecklistItemCopies(listing.id)
+    if (items.length) {
       await supabase.from('tc_checklist_items').insert(
         items.map((it) => ({
           cycle_id: newCycleId,
@@ -188,17 +175,14 @@ export async function duplicateListing(
     }
   }
 
-  const { data: people } = await supabase.from('tc_deal_people').select('person_id, role').eq('deal_id', deal.id)
-  if (people?.length) {
+  const people = await getDealParties(deal.id)
+  if (people.length) {
     await supabase.from('tc_deal_people').insert(
-      people.map((p) => ({ deal_id: newDealId, person_id: p.person_id, role: p.role })),
+      people.map((p) => ({ deal_id: newDealId, person_id: p.personId, role: p.role })),
     )
   }
-  const { data: contacts } = await supabase
-    .from('tc_deal_contacts')
-    .select('role, name, company, email, phone, notes')
-    .eq('deal_id', deal.id)
-  if (contacts?.length) {
+  const contacts = await listDealContactCopies(deal.id)
+  if (contacts.length) {
     await supabase.from('tc_deal_contacts').insert(
       contacts.map((c) => ({
         deal_id: newDealId,
@@ -244,28 +228,22 @@ export async function mergeListingInto(
   const { error: moveErr } = await supabase.from('tc_cycles').update({ deal_id: keep.id }).eq('deal_id', other.id)
   if (moveErr) return { ok: false, error: moveErr.message }
 
-  const { data: keepPeople } = await supabase.from('tc_deal_people').select('person_id').eq('deal_id', keep.id)
-  const have = new Set((keepPeople ?? []).map((p) => Number(p.person_id)))
-  const { data: otherPeople } = await supabase.from('tc_deal_people').select('person_id, role').eq('deal_id', other.id)
-  const addPeople = (otherPeople ?? []).filter((p) => !have.has(Number(p.person_id)))
+  const keepPeople = await getDealParties(keep.id)
+  const have = new Set(keepPeople.map((p) => p.personId))
+  const otherPeople = await getDealParties(other.id)
+  const addPeople = otherPeople.filter((p) => !have.has(p.personId))
   if (addPeople.length) {
     await supabase.from('tc_deal_people').insert(
-      addPeople.map((p) => ({ deal_id: keep.id, person_id: p.person_id, role: p.role })),
+      addPeople.map((p) => ({ deal_id: keep.id, person_id: p.personId, role: p.role })),
     )
   }
 
-  const { data: keepContacts } = await supabase
-    .from('tc_deal_contacts')
-    .select('role, name, email')
-    .eq('deal_id', keep.id)
+  const keepContacts = await listDealContactKeys(keep.id)
   const contactHave = new Set(
-    (keepContacts ?? []).map((c) => `${c.role}|${(c.email ?? '').toLowerCase()}|${(c.name ?? '').toLowerCase()}`),
+    keepContacts.map((c) => `${c.role}|${(c.email ?? '').toLowerCase()}|${(c.name ?? '').toLowerCase()}`),
   )
-  const { data: otherContacts } = await supabase
-    .from('tc_deal_contacts')
-    .select('role, name, company, email, phone, notes')
-    .eq('deal_id', other.id)
-  const addContacts = (otherContacts ?? []).filter((c) => {
+  const otherContacts = await listDealContactCopies(other.id)
+  const addContacts = otherContacts.filter((c) => {
     const key = `${c.role}|${(c.email ?? '').toLowerCase()}|${(c.name ?? '').toLowerCase()}`
     return !contactHave.has(key)
   })
