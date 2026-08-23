@@ -73,6 +73,10 @@ import { getLiveDealCycles } from '@/lib/data/tc/closings'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { tcEventDetailPreview, tcEventLabel } from '@/lib/tc/events'
 import {
+  EXECUTION_STATE_LABEL,
+  executionStateFromClassification,
+} from '@/lib/tc/execution-state'
+import {
   COMMISSION_STATUS,
   DOC_COLUMNS,
   DOC_MIN_WIDTH,
@@ -260,6 +264,19 @@ function CycleSection({
       d10(doc.source_uploaded_at),
       <span key="s" style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
         {doc.is_broker_notes ? <StateWord state="accent">Broker notes</StateWord> : null}
+        {(() => {
+          const exec = executionStateFromClassification(doc.classification)
+          if (!exec || !EXECUTION_STATE_LABEL[exec]) return null
+          const state =
+            exec === 'fully_executed'
+              ? 'ok'
+              : exec === 'needs_our_signatures'
+                ? 'slow'
+                : exec === 'our_side_signed'
+                  ? 'accent'
+                  : 'waiting'
+          return <StateWord state={state}>{EXECUTION_STATE_LABEL[exec]}</StateWord>
+        })()}
         {doc.archived ? (
           <StateWord state="waiting">Archived</StateWord>
         ) : (
@@ -463,7 +480,11 @@ export default async function TcDealPage({ params, searchParams }: Props) {
       deal.cycles.map(async (c) => ({
         cycleId: c.id,
         label: c.kind === 'listing' ? 'Listing folder' : `Sale cycle${c.status ? ` · ${c.status}` : ''}`,
-        documents: c.documents.filter((doc) => !doc.archived).map((doc) => ({ id: doc.id, name: doc.name })),
+        documents: c.documents.filter((doc) => !doc.archived).map((doc) => ({
+          id: doc.id,
+          name: doc.name,
+          executionState: executionStateFromClassification(doc.classification),
+        })),
         envelopes: await getEnvelopesForCycle(c.id),
       })),
     ),

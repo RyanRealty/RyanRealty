@@ -152,6 +152,30 @@ export function shouldFileAsFullyExecuted(state: ExecutionState): boolean {
   return state === 'fully_executed'
 }
 
+export const EXECUTION_STATE_LABEL: Record<ExecutionState, string> = {
+  fully_executed: 'Fully executed',
+  needs_our_signatures: 'Needs our signatures',
+  our_side_signed: 'Our side signed',
+  unsigned: 'Unsigned',
+  not_a_signature_form: 'Reference',
+  unknown: '',
+}
+
+export function executionStateFromClassification(raw: unknown): ExecutionState | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const s = (raw as Record<string, unknown>).execution_state
+  if (
+    s === 'fully_executed' ||
+    s === 'needs_our_signatures' ||
+    s === 'our_side_signed' ||
+    s === 'unsigned' ||
+    s === 'not_a_signature_form'
+  ) {
+    return s
+  }
+  return null
+}
+
 export function inboundNeedsOurSignatures(state: ExecutionState, mailHint: 'needs_our_signatures' | null): boolean {
   if (state === 'needs_our_signatures') return true
   if (state === 'fully_executed' || state === 'not_a_signature_form' || state === 'our_side_signed') return false

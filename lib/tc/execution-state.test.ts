@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   classifyExecutionState,
+  EXECUTION_STATE_LABEL,
   executionHintFromMail,
+  executionStateFromClassification,
   inboundNeedsOurSignatures,
   signedRolesFromPdfText,
   shouldFileAsFullyExecuted,
@@ -122,6 +124,14 @@ describe('mail is a hint not proof', () => {
     expect(
       executionHintFromMail('Envelope completed from noreply@skyslope.com', false),
     ).toBeNull()
+  })
+
+  it('reads the stamp a broker will see on the deal', () => {
+    expect(executionStateFromClassification({ execution_state: 'needs_our_signatures' })).toBe(
+      'needs_our_signatures',
+    )
+    expect(EXECUTION_STATE_LABEL.fully_executed).toBe('Fully executed')
+    expect(executionStateFromClassification({ source: 'gmail_auto_file' })).toBeNull()
   })
 
   it('does not award fully executed from the word signed in a subject', () => {

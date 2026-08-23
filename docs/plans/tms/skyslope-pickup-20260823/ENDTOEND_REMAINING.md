@@ -1,6 +1,8 @@
 # End-to-end remaining Vault items — 2026-08-23 (pass 4)
 
-## Goal
+## Goal (e2e)
+
+A broker can walk a live file in Vault without SkySlope: inbound PDFs are classified (needs our signatures vs fully executed), one-sided files collect our signatures then wait for the other broker’s return, dual files run DigiSign groups in Vault, and the deal page shows that state in words.
 
 A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 

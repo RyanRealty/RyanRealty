@@ -22,6 +22,7 @@ import {
   type EnvelopeSummary,
 } from '@/app/actions/tc-envelopes'
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
+import { EXECUTION_STATE_LABEL, type ExecutionState } from '@/lib/tc/execution-state'
 
 type EnvelopeTemplateOption = {
   id: string
@@ -33,7 +34,7 @@ type EnvelopeTemplateOption = {
 export type DealEnvelopesCycle = {
   cycleId: string
   label: string
-  documents: { id: string; name: string }[]
+  documents: { id: string; name: string; executionState?: ExecutionState | null }[]
   envelopes: EnvelopeSummary[]
 }
 
@@ -91,6 +92,13 @@ function CycleEnvelopes({
         </p>
         <NewEnvelopeDialog cycle={cycle} templates={templates} />
       </div>
+      {cycle.documents.some((d) => d.executionState === 'needs_our_signatures') ? (
+        <p style={{ margin: '0 0 8px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text)' }}>
+          {cycle.documents.filter((d) => d.executionState === 'needs_our_signatures').length === 1
+            ? '1 document needs our signatures. Open New envelope — it is pre-selected.'
+            : `${cycle.documents.filter((d) => d.executionState === 'needs_our_signatures').length} documents need our signatures. Open New envelope — they are pre-selected.`}
+        </p>
+      ) : null}
       {cycle.envelopes.length ? (
         <ul className="space-y-1.5" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {cycle.envelopes.map((e) => (
@@ -137,14 +145,25 @@ function NewEnvelopeDialog({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [source, setSource] = useState<'docs' | 'library'>('docs')
-  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [picked, setPicked] = useState<Set<string>>(
+    () => new Set(cycle.documents.filter((d) => d.executionState === 'needs_our_signatures').map((d) => d.id)),
+  )
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const rows = source === 'docs' ? cycle.documents : templates.map((t) => ({
-    id: t.id,
-    name: `${t.libraryCode} ${t.formNumber ?? ''} ${t.name}`.replace(/\s+/g, ' ').trim(),
-  }))
+  const rows =
+    source === 'docs'
+      ? cycle.documents.map((d) => ({
+          id: d.id,
+          name:
+            d.executionState && EXECUTION_STATE_LABEL[d.executionState]
+              ? `${d.name} · ${EXECUTION_STATE_LABEL[d.executionState]}`
+              : d.name,
+        }))
+      : templates.map((t) => ({
+          id: t.id,
+          name: `${t.libraryCode} ${t.formNumber ?? ''} ${t.name}`.replace(/\s+/g, ' ').trim(),
+        }))
   const canOpen = cycle.documents.length > 0 || templates.length > 0
 
   function toggle(id: string) {
@@ -158,7 +177,11 @@ function NewEnvelopeDialog({
 
   function switchSource(next: 'docs' | 'library') {
     setSource(next)
-    setPicked(new Set())
+    setPicked(
+      next === 'docs'
+        ? new Set(cycle.documents.filter((d) => d.executionState === 'needs_our_signatures').map((d) => d.id))
+        : new Set(),
+    )
     setError(null)
   }
 
