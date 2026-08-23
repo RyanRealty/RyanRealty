@@ -9,6 +9,7 @@ import {
   dedupeParties,
   parseCityFromAddress,
   propertyKeyForInhouseDeal,
+  uniquePartyLinks,
   type DealPersonRole,
 } from '@/lib/tc/deal-people'
 import {
@@ -122,6 +123,68 @@ export async function getPartyNamesByDealIds(
     out.set(dealId, list)
   }
   return out
+}
+
+export async function linkUniqueCycleParties(input: {
+  dealId: string
+  actor: string
+}): Promise<{ error: string | null; linked: number; skipped: string[] }> {
+  const sb = client()
+  const { data: cycles } = await sb
+    .from('tc_cycles')
+    .select('buyers, sellers')
+    .eq('deal_id', input.dealId)
+  const wanted: Array<{ name: string; role: DealPersonRole }> = []
+  for (const c of cycles ?? []) {
+    for (const n of Array.isArray(c.sellers) ? c.sellers : []) {
+      if (String(n ?? '').trim()) wanted.push({ name: String(n).trim(), role: 'seller' })
+    }
+    for (const n of Array.isArray(c.buyers) ? c.buyers : []) {
+      if (String(n ?? '').trim()) wanted.push({ name: String(n).trim(), role: 'buyer' })
+    }
+  }
+  const names = [...new Set(wanted.map((w) => w.name))]
+  if (!names.length) return { error: null, linked: 0, skipped: ['No buyer or seller names on the file.'] }
+
+  const { data: people, error: peopleErr } = await sb
+    .from('crm_people')
+    .select('id, name')
+    .in('name', names)
+  if (peopleErr) {
+    console.error('[linkUniqueCycleParties] people', peopleErr.message)
+    return { error: 'Could not search people.', linked: 0, skipped: [] }
+  }
+
+  const matches = uniquePartyLinks(wanted, (people ?? []) as Array<{ id: number; name: string | null }>)
+  const skipped: string[] = []
+  for (const n of names) {
+    if (!matches.some((m) => m.name.trim().toLowerCase() === n.trim().toLowerCase())) {
+      skipped.push(n)
+    }
+  }
+  if (!matches.length) return { error: null, linked: 0, skipped }
+
+  let linked = 0
+  for (const m of matches) {
+    const { error } = await sb.from('tc_deal_people').insert({
+      deal_id: input.dealId,
+      person_id: m.personId,
+      role: m.role,
+    })
+    if (error) {
+      if (error.code === '23505') continue
+      console.error('[linkUniqueCycleParties] insert', error.message)
+      continue
+    }
+    linked++
+    await sb.from('tc_events').insert({
+      deal_id: input.dealId,
+      actor: input.actor,
+      action: 'person_added',
+      detail: { personId: m.personId, role: m.role, source: 'cycle_unique_name' },
+    })
+  }
+  return { error: null, linked, skipped }
 }
 
 export async function addPersonToDeal(input: {

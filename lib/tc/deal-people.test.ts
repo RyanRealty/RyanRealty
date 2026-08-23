@@ -9,6 +9,7 @@ import {
   propertyKeyForInhouseDeal,
   relatedPartiesForStartDeal,
   roleForRelated,
+  uniquePartyLinks,
 } from './deal-people'
 
 describe('deal-people', () => {
@@ -94,6 +95,29 @@ describe('deal-people', () => {
     ).toEqual([
       { personId: 9, name: 'Pat', label: 'Spouse', role: 'seller' },
       { personId: 4, name: 'Ada', label: 'Agent', role: 'other' },
+    ])
+  })
+
+  it('links a cycle party only when the CRM name is unique', () => {
+    const people = [
+      { id: 12967, name: 'Mary Bowman' },
+      { id: 13012, name: 'Paul Stevenson' },
+      { id: 5591, name: 'Paul Stevenson' },
+      { id: 57300, name: 'Tanya Hogan' },
+    ]
+    expect(
+      uniquePartyLinks(
+        [
+          { name: 'Mary Bowman', role: 'seller' },
+          { name: 'Paul Stevenson', role: 'other' },
+          { name: 'Hunter Allen', role: 'seller' },
+          { name: 'tanya  hogan', role: 'seller' },
+        ],
+        people,
+      ),
+    ).toEqual([
+      { personId: 12967, role: 'seller', name: 'Mary Bowman' },
+      { personId: 57300, role: 'seller', name: 'tanya  hogan' },
     ])
   })
 })

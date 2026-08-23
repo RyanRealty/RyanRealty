@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Button, Combobox, SelectField } from '@/components/admin/v2'
 import {
   addPersonToDealAction,
+  linkUniqueCyclePartiesAction,
   removePersonFromDealAction,
   searchPeopleForDealAction,
 } from '@/app/actions/tc-deal-people'
@@ -62,6 +63,18 @@ export function DealParties({
         return
       }
       setHits(res.data)
+    })
+  }
+
+  function linkFromFile() {
+    const fd = new FormData()
+    fd.set('dealId', dealId)
+    fd.set('propertyKey', propertyKey)
+    startTransition(async () => {
+      const res = await linkUniqueCyclePartiesAction(fd)
+      if (res.error) toast.error(res.error)
+      else if (!res.linked) toast.message('No unique CRM match for the names on this file.')
+      else toast.success(`Linked ${res.linked} ${res.linked === 1 ? 'person' : 'people'} from the file.`)
     })
   }
 
@@ -147,6 +160,9 @@ export function DealParties({
         </SelectField>
         <Button disabled={pending || !picked} onClick={add}>
           Add
+        </Button>
+        <Button variant="quiet" disabled={pending} onClick={linkFromFile}>
+          Link names from this file
         </Button>
       </div>
     </section>

@@ -8,6 +8,7 @@ import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import {
   addPersonToDeal,
   createDealWithPeople,
+  linkUniqueCycleParties,
   removePersonFromDeal,
 } from '@/lib/data/tc/deal-people'
 import { isDealPersonRole, type DealPersonRole } from '@/lib/tc/deal-people'
@@ -56,6 +57,22 @@ export async function createDealFromPersonAction(formData: FormData): Promise<{
   if (created.error || !created.data) return { error: created.error ?? 'Could not create the deal.' }
   revalidateDeal(created.data.propertyKey, parties.map((p) => p.personId))
   return { error: null, propertyKey: created.data.propertyKey }
+}
+
+export async function linkUniqueCyclePartiesAction(formData: FormData): Promise<{
+  error: string | null
+  linked?: number
+  skipped?: string[]
+}> {
+  const auth = await checkAdminAction('transactions.edit')
+  if (!auth.ok) return { error: auth.error }
+  const dealId = String(formData.get('dealId') ?? '').trim()
+  const propertyKey = String(formData.get('propertyKey') ?? '').trim()
+  if (!dealId || !propertyKey) return { error: 'Deal is required.' }
+  const result = await linkUniqueCycleParties({ dealId, actor: auth.ctx.email })
+  if (result.error) return { error: result.error }
+  revalidateDeal(propertyKey, [])
+  return { error: null, linked: result.linked, skipped: result.skipped }
 }
 
 export async function addPersonToDealAction(formData: FormData): Promise<{ error: string | null }> {

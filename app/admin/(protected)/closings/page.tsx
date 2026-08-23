@@ -232,7 +232,7 @@ export default async function ClosingsPage({
           <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>None on record.</p>
         ) : (
           <ul className="av2-quietlist">
-            {closed.slice(0, 10).map((d) => (
+            {closed.map((d) => (
               <li key={d.id} className="av2-quiet">
                 <Link href={dealHref(d)} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)' }}>
                   {d.address}
@@ -247,13 +247,29 @@ export default async function ClosingsPage({
             ))}
           </ul>
         )}
-        {closed.length > 10 ? (
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 8 }}>
-            {closed.length - 10} more closed · {dead.length} dead
-          </p>
-        ) : dead.length > 0 ? (
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 8 }}>{dead.length} dead</p>
-        ) : null}
+      </section>
+
+      <section aria-label="Dead deals">
+        <h2 className="av2-lane-head">Dead deals</h2>
+        {dead.length === 0 ? (
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>None on record.</p>
+        ) : (
+          <ul className="av2-quietlist">
+            {dead.map((d) => (
+              <li key={d.id} className="av2-quiet">
+                <Link href={dealHref(d)} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)' }}>
+                  {d.address}
+                </Link>
+                <span className="av2-quiet__ok">dead</span>
+                <span className="av2-quiet__fig">
+                  {[d.partyNames.join(', ') || d.brokerName, d.mlsNumber ? `MLS ${d.mlsNumber}` : null]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 24 }}>

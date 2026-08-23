@@ -110,6 +110,41 @@ export function namesByDealRole(
   return { buyers, sellers }
 }
 
+function normPartyName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+/**
+ * Link cycle buyer/seller names to CRM people only when the name is unique.
+ * Ambiguous or missing names stay unlinked. Brokers are not a deal-people role.
+ */
+export function uniquePartyLinks(
+  wanted: ReadonlyArray<{ name: string; role: DealPersonRole }>,
+  people: ReadonlyArray<{ id: number; name: string | null }>,
+): Array<{ personId: number; role: DealPersonRole; name: string }> {
+  const byName = new Map<string, number[]>()
+  for (const p of people) {
+    const key = p.name ? normPartyName(p.name) : ''
+    if (!key || !Number.isFinite(p.id) || p.id <= 0) continue
+    const ids = byName.get(key) ?? []
+    ids.push(p.id)
+    byName.set(key, ids)
+  }
+  const seen = new Set<number>()
+  const out: Array<{ personId: number; role: DealPersonRole; name: string }> = []
+  for (const w of wanted) {
+    const key = normPartyName(w.name)
+    if (!key) continue
+    const ids = byName.get(key) ?? []
+    if (ids.length !== 1) continue
+    const personId = ids[0]
+    if (seen.has(personId)) continue
+    seen.add(personId)
+    out.push({ personId, role: w.role, name: w.name.trim() })
+  }
+  return out
+}
+
 export function dedupeParties(
   parties: ReadonlyArray<{ personId: number; role: DealPersonRole }>,
 ): Array<{ personId: number; role: DealPersonRole }> {
