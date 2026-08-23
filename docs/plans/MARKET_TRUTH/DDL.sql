@@ -165,6 +165,7 @@ CREATE TABLE IF NOT EXISTS public.market_fact_listing_span (
                     CHECK (span_source IN ('history','listing_row')),
   first_on_market_confidence text NOT NULL
                     CHECK (first_on_market_confidence IN ('recovered','assumed')),
+  flags           text[]     NOT NULL DEFAULT '{}',
   computed_at     timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (listing_key, episode_no),
   CHECK (off_market_date IS NULL OR off_market_date >= on_market_date)

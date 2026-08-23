@@ -142,16 +142,28 @@ publishable rows for per-stat exclusion. 1997–2026 closed rows in the table, q
 
 One row per on-market episode, reconstructed from `listing_history` (3.9M events, 546,300 listings).
 
-- [ ] Emit `span_source` (`history` | `listing_row`) and `first_on_market_confidence`
+- [x] Emit `span_source` (`history` | `listing_row`) and `first_on_market_confidence`
       (`recovered` | `assumed`). **73.0%** of relisted listings carry history predating the current
       `OnMarketDate`, recovering a median **102 days** (SPEC §3.2). `listing_history` covers 99.5%.
-- [ ] Never read `status_change_timestamp` — corrupted by bulk platform-migration stamps.
+- [x] Never read `status_change_timestamp` — corrupted by bulk platform-migration stamps.
       `off_market_date` survived intact.
-- [ ] Flag the 28,169 listings whose `off_market_date` precedes their on-market date, and the 150
+- [x] Flag the 28,169 listings whose `off_market_date` precedes their on-market date, and the 150
       zombie Actives whose own payload says Expired/Cancelled/Pending/Closed.
 
 **Done when:** reconstructing active inventory for 2026-08-10 lands within 1% of the stored snapshot,
 and a per-year table shows what share of spans are `recovered` vs `assumed`.
+
+Loaded 2026-08-22 as `refresh_market_fact_listing_span(p_after, p_limit, p_modified_since)`.
+**652,331** spans / **595,381** listings. Same-day ON/OFF events order by `event_date`, not
+date+uuid (uuid order left Closed listings open). Last episode stays open when
+`StandardStatus` is Active / Active Under Contract even if `listings.off_market_date` is
+stale. Recency lane: same 6-hour cron, last 90 days of `ModificationTimestamp`.
+Flags: `inverted_listing_dates` on **28,169** listings (date-cast, AUDIT F19);
+`zombie_active` on **149** listings / 157 spans (live Active payload-terminal; EXECUTE 150).
+As-of **2026-08-10** 24-city `ILIKE Active%`: snapshot **3,376**, reconstructed **3,352**
+(**0.71%**). Recovered vs assumed by on-market year (1997–2026): recovered 81–92% through
+2019, then 40.6% (2020) → 31.6% (2026) as assumed `listing_row` takes over — the D11
+2021-onward unrecoverable era.
 
 ### Step 3 — `place_membership`
 

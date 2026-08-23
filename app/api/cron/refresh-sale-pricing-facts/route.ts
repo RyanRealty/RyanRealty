@@ -108,6 +108,28 @@ export async function GET(request: Request) {
       { status: 500 },
     )
   }
+  let marketFactSpan = { upserted: 0, batches: 0, done: false, last_key: '' as string }
+  let spanAfter = ''
+  for (let i = 0; i < 8; i++) {
+    const { data: span, error: spanErr } = await supabase.rpc('refresh_market_fact_listing_span', {
+      p_after: spanAfter,
+      p_limit: 2000,
+      p_modified_since: sinceIso,
+    })
+    if (spanErr) {
+      console.error('[refresh-sale-pricing-facts] market_fact_listing_span', spanErr.message)
+      return NextResponse.json(
+        { ok: false, error: spanErr.message, upserted, indexes: idx, marketFactSale: factSale },
+        { status: 500 },
+      )
+    }
+    marketFactSpan.upserted += Number(span?.upserted ?? 0)
+    marketFactSpan.batches += 1
+    marketFactSpan.last_key = String(span?.last_key ?? '')
+    marketFactSpan.done = Boolean(span?.done)
+    spanAfter = marketFactSpan.last_key
+    if (span?.done) break
+  }
   let listingReads = { stamped: 0, skipped: 0, due: 0 }
   try {
     listingReads = await stampListingPricingReadsBatch(done ? 24 : 6)
@@ -123,6 +145,7 @@ export async function GET(request: Request) {
     newConstructionBackfilled,
     listingReads,
     marketFactSale: factSale,
+    marketFactSpan,
     done,
     indexes: idx,
     duration_ms: Date.now() - started,
