@@ -191,6 +191,21 @@ export async function POST(request: Request) {
     // triage queue (Wave 7). Idempotent; never sends a message.
     await markConversationUnreadOnInbound(match.personId)
 
+    try {
+      const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
+      await fileCommsToVault({
+        personIds: [match.personId],
+        channel: 'sms',
+        actor: `twilio:${match.broker ?? 'desk'}`,
+        title: null,
+        body: displayBody,
+        filenames: media.map((m) => m.contentType),
+        dedupeKey: `sms:${sid}`,
+      })
+    } catch (err) {
+      console.warn('[twilio/inbound-sms] vault auto-file failed', err)
+    }
+
     // HELP keyword → carrier-required help reply (does not change subscription).
     if (HELP_WORDS.has(firstToken)) {
       return twiml('Ryan Realty. Reply STOP to opt out. Msg and data rates may apply. For help visit ryan-realty.com/contact.')

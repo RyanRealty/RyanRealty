@@ -95,6 +95,22 @@ function headerOf(msg: gmail_v1.Schema$Message, name: string): string | undefine
   return msg.payload?.headers?.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? undefined
 }
 
+function listGmailPdfParts(payload: gmail_v1.Schema$MessagePart | undefined): Array<{ filename: string; attachmentId: string }> {
+  const out: Array<{ filename: string; attachmentId: string }> = []
+  const walk = (p?: gmail_v1.Schema$MessagePart) => {
+    if (!p) return
+    const name = p.filename || ''
+    const mime = (p.mimeType || '').toLowerCase()
+    const id = p.body?.attachmentId
+    if (id && (mime.includes('pdf') || name.toLowerCase().endsWith('.pdf'))) {
+      out.push({ filename: name || 'attachment.pdf', attachmentId: id })
+    }
+    for (const child of p.parts ?? []) walk(child)
+  }
+  walk(payload)
+  return out.slice(0, 3)
+}
+
 function extractBody(payload: gmail_v1.Schema$MessagePart | undefined): string {
   if (!payload) return ''
   const parts: string[] = []
@@ -305,6 +321,38 @@ export async function syncMailboxWindow(params: {
           if (dir === 'in' && messageKey) {
             inboundForIntent.push({ personId, messageKey, body, subject })
           }
+        }
+        try {
+          const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
+          const refs = listGmailPdfParts(fullMsg.data.payload)
+          const attachments: Array<{ sourceDocId: string; name: string; bytes: Buffer; contentType: string }> = []
+          for (const ref of refs) {
+            const att = await gmail.users.messages.attachments.get({
+              userId: 'me',
+              messageId: fullMsg.data.id!,
+              id: ref.attachmentId,
+            })
+            const data = att.data.data
+            if (!data) continue
+            attachments.push({
+              sourceDocId: `gmail:${String(messageKey)}:${ref.attachmentId}`.slice(0, 180),
+              name: ref.filename,
+              bytes: Buffer.from(data, 'base64url'),
+              contentType: 'application/pdf',
+            })
+          }
+          await fileCommsToVault({
+            personIds: [...candidates.keys()],
+            channel: 'mail',
+            actor: `gmail:${brokerSlug}`,
+            title: subject,
+            body,
+            filenames: refs.map((r) => r.filename),
+            attachments,
+            dedupeKey: `mail:${messageKey}`,
+          })
+        } catch (err) {
+          console.warn('[gmail-sync] vault auto-file failed', err)
         }
       }
       if (rows.length) {

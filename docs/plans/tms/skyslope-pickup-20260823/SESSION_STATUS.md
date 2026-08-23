@@ -28,7 +28,7 @@ See `SUITE_LEFTOVERS.md` and `LISTINGS_MAP.md`. Working Documents already filed 
 - Vault Closings + Sign-off live as Matt. 17 / 14 overdue / 3 deals confirmed. See `VAULT_LIVE_2026-08-23.md`.
 - Breeze look-only. 52 clients; 3480 listing packet OREF SPDS filled + OR LBP canceled. See `BREEZE_WALK.md`. Do not clone Breeze.
 - Closed-to-Archive page 3: 712 SW 1st St Madras only.
-- **Code on this branch:** Closings rail unparks Signing (brokers) and Sign-off (superuser). Envelope picker uses live Forms roles. New in-house deals seed a checklist from the Oregon matrix. Deal New envelope has Form library → `createEnvelopeFromTemplate`. Production still the old surfaces until this ships.
+- **Code on this branch:** Closings rail unparks Signing (brokers) and Sign-off (superuser). Envelope picker uses live Forms roles. New in-house deals seed a checklist from the Oregon matrix. Deal New envelope has Form library → `createEnvelopeFromTemplate`. Gmail sync + Twilio inbound SMS auto-file onto the matching deal (`mail_filed` / `sms_filed`, PDFs onto inbox + checklist). Production still the old surfaces until this ships.
 
 ## Still blocked / not this pass
 
@@ -46,9 +46,9 @@ Forms map, fill, envelope modal occupants, DigiSign index/history, libraries OR/
 
 See `CODE_TRUTH.md`. Role list is no longer the blocker.
 
-1. Map envelope recipients to the live Forms enum (`ROLE_LIST.md`) instead of invented `RECIPIENT_ROLES`.
-2. Library-driven checklist seed on a **new** deal (anticipated-docs is the predictor, not the seed).
-3. `createEnvelopeFromTemplate` UI (backend exists, no caller).
-4. Auto-file inbound mail / Twilio / CRM onto `tc_events` + matching checklist.
-5. Sign-off (and signing) onto the left rail.
-6. Listing pipeline later; Closings already has an active-listing lens.
+Done on this branch: live Forms recipient roles; checklist seed; Form-library envelope compose; Signing/Sign-off on Closings rail; auto-file inbound mail/Twilio.
+
+1. `action_required` as a real column (Needs to sign / Receives a copy / No action) instead of `cc` as a role.
+2. Twilio MMS PDF fetch (optional; media URLs expire and need auth).
+3. Listing pipeline later; Closings already has an active-listing lens.
+4. Merge/deploy.
