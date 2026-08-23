@@ -181,6 +181,8 @@ describe('public place pages', () => {
     expect(sellerLp).toMatch(/getPublicPlaceSegments/)
     expect(expired).toMatch(/getPublicPlaceSegments/)
     expect(buyer).toMatch(/getPublicPlaceSegments/)
+    const citiesIndex = readFileSync(resolve('app/cities/page.tsx'), 'utf8')
+    expect(citiesIndex).toMatch(/getPublicPlaceSegments/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
     expect(strip).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })

@@ -406,6 +406,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23r landed: `/data/market/city/bend` extraSegments condo 66 / 12.8 months and townhome 78 / 3.6 months beside leftover 311 pending. Pulse days-to-pending 18 and sold 30d stay. Tetherow extraSegments null. `/sell`, seller LP, expired LP, and buyer LP print condos/townhomes for sale beside leftover. Neighborhood MOS still unpublished. County unpublished.
 
+### Grind 2026-08-23s — leftover + extra types on /cities featured bands
+
+**Done when:** `/cities` region hero prints leftover pending / days to contract · 12 months beside overlaid inventory and MOS; featured city rows print leftover pending/dtc and sample-gated condo/townhome counts. Pulse active-listing age stays. Neighborhood MOS unpublished. County unpublished. Workers do not tick this file.
+
+2026-08-23s landed: `/cities` region hero leftover Pending · now and Days to contract · 12 months beside months of supply. Featured Bend leftover 311 pending plus 66 condos / 78 townhomes. Pulse active-listing age stays. Neighborhood MOS still unpublished. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

@@ -30,6 +30,8 @@ import Link from 'next/link'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
 import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
 import { getCityContent } from '@/lib/city-content'
 import { cityHero } from '@/lib/geo-images'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -118,11 +120,17 @@ export default async function CitiesPage() {
     'Tumalo', 'Terrebonne', 'Prineville', 'Madras', 'Powell Butte',
     'Crooked River Ranch', 'Culver',
   ]
-  const [allCities, allSnapshots, regionPulse, citySnapshots] = await Promise.all([
+  const [allCities, allSnapshots, regionPulse, citySnapshots, regionPace] = await Promise.all([
     getCitiesForIndex(),
     getAllCitySnapshots(),
     withTimeoutFallback(getRegionPulse(), null, 3500, 'cities:regionPulse'),
     withTimeoutFallback(getMarketPulseCitySnapshots(featuredLabels), [], 3500, 'cities:cityPulse'),
+    withTimeoutFallback(
+      getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
+      EMPTY_PUBLIC_PACE,
+      3000,
+      'cities:regionPace',
+    ),
   ])
 
   const sortedCities = sortCitiesWithPrimaryFirst(allCities)
@@ -161,7 +169,7 @@ export default async function CitiesPage() {
   // Explicitly-tracked-but-zero-inventory communities (Tumalo, Crooked River
   // Ranch) render an honest "0 active" card instead of vanishing from the
   // page — the same honest-zero convention used site-wide (design-audit P2).
-  const featured = FEATURED_CITY_SLUGS.filter(
+  const featuredBase = FEATURED_CITY_SLUGS.filter(
     (slug) => cityNameBySlug.has(slug) || snapshotBySlug.has(slug) || rawPulseBySlug.has(slug),
   ).map((slug) => {
     const name =
@@ -184,6 +192,36 @@ export default async function CitiesPage() {
       verdict: verdictFromMos(pulse?.months_of_supply ?? null),
     }
   })
+
+  const leftoverBySlug = await Promise.all(
+    featuredBase.map(async (city) => {
+      const [pace, segs] = await Promise.all([
+        withTimeoutFallback(
+          getPublicDetachedPace({ geoType: 'city', geoSlug: city.slug }),
+          EMPTY_PUBLIC_PACE,
+          3000,
+          `cities:pace:${city.slug}`,
+        ),
+        withTimeoutFallback(
+          getPublicPlaceSegments({ geoType: 'city', geoSlug: city.slug }),
+          [],
+          3000,
+          `cities:segments:${city.slug}`,
+        ),
+      ])
+      return {
+        pendingCount: pace.pendingCount,
+        daysToContract: pace.daysToContract,
+        extras: publicSegmentItems(segs, city.slug).filter(
+          (item) => item.key === 'condo' || item.key === 'townhome',
+        ),
+      }
+    }),
+  )
+  const featured = featuredBase.map((city, i) => ({
+    ...city,
+    leftover: leftoverBySlug[i] ?? { pendingCount: null, daysToContract: null, extras: [] },
+  }))
 
   const featuredSlugs = new Set(featured.map((f) => f.slug))
   const others = visibleCities.filter((c) => featuredSlugs.has(c.slug) === false)
@@ -337,6 +375,18 @@ export default async function CitiesPage() {
                   <span className="stat-label">Months of supply{regionVerdict ? ` · ${regionVerdict}` : ''}</span>
                 </div>
               ) : null}
+              {regionPace.pendingCount != null ? (
+                <div className="stat-cell">
+                  <span className="stat-num mono-num">{regionPace.pendingCount.toLocaleString()}</span>
+                  <span className="stat-label">Pending · now</span>
+                </div>
+              ) : null}
+              {regionPace.daysToContract != null ? (
+                <div className="stat-cell">
+                  <span className="stat-num mono-num">{regionPace.daysToContract}</span>
+                  <span className="stat-label">Days to contract · 12 months</span>
+                </div>
+              ) : null}
             </div>
             <div className="region-foot">
               <p className="note">
@@ -453,6 +503,37 @@ export default async function CitiesPage() {
                             </p>
                           </div>
                         ) : null}
+                        {city.leftover?.pendingCount != null ? (
+                          <div>
+                            <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
+                              {city.leftover.pendingCount.toLocaleString()}
+                            </p>
+                            <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
+                              Pending now
+                            </p>
+                          </div>
+                        ) : null}
+                        {city.leftover?.daysToContract != null ? (
+                          <div>
+                            <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
+                              {city.leftover.daysToContract}
+                              <span className="font-sans text-xs font-medium" style={{ color: 'var(--navy-70)', marginLeft: '5px' }}>days</span>
+                            </p>
+                            <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
+                              Days to contract · 12 months
+                            </p>
+                          </div>
+                        ) : null}
+                        {(city.leftover?.extras ?? []).map((item) => (
+                          <div key={item.key}>
+                            <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
+                              {item.value}
+                            </p>
+                            <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
+                              {item.noun} for sale
+                            </p>
+                          </div>
+                        ))}
                         {city.verdict ? (
                           <span
                             className="self-center mono-lab"
