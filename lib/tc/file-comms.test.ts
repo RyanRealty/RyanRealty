@@ -5,6 +5,7 @@ import {
   matchChecklistItems,
   commsHaystack,
   scoreDealHaystack,
+  pdfMmsParts,
 } from './file-comms'
 
 describe('pickDealForComms', () => {
@@ -70,5 +71,30 @@ describe('addressTokens / haystack', () => {
   })
   it('joins title body filenames', () => {
     expect(commsHaystack({ title: 'A', body: 'B', filenames: ['c.pdf'] })).toContain('c.pdf')
+  })
+})
+
+describe('pdfMmsParts', () => {
+  const pdf = {
+    mediaSid: 'MEaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    contentType: 'application/pdf',
+    url: 'https://api.twilio.com/2010-04-01/Accounts/ACxx/Messages/MMxx/Media/MEaa',
+  }
+  const jpeg = {
+    mediaSid: 'MEbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    contentType: 'image/jpeg',
+    url: 'https://api.twilio.com/2010-04-01/Accounts/ACxx/Messages/MMxx/Media/MEbb',
+  }
+
+  it('keeps PDFs and drops photos', () => {
+    expect(pdfMmsParts([jpeg, pdf]).map((p) => p.mediaSid)).toEqual([pdf.mediaSid])
+  })
+
+  it('caps at 3', () => {
+    const many = Array.from({ length: 5 }, (_, i) => ({
+      ...pdf,
+      mediaSid: `ME${String(i).padStart(32, '0')}`,
+    }))
+    expect(pdfMmsParts(many)).toHaveLength(3)
   })
 })

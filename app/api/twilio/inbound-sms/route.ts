@@ -37,22 +37,30 @@ const STOP_WORDS = new Set(['stop', 'stopall', 'unsubscribe', 'cancel', 'end', '
 const START_WORDS = new Set(['start', 'unstop', 'yes', 'resubscribe'])
 const HELP_WORDS = new Set(['help', 'info'])
 
-/** Extract Twilio MMS media (mediaSid + contentType) from the webhook params so
- *  client-sent photos/docs are captured, not silently dropped. Capped at 10. */
-function parseMms(params: Record<string, string>): Array<{ mediaSid: string; contentType: string }> {
+/** Extract Twilio MMS media (mediaSid + contentType + url) from the webhook params so
+ *  client-sent photos/docs are captured, not silently dropped. Capped at 10.
+ *  Timeline stores {mediaSid, contentType} only — URLs expire. */
+function parseMms(
+  params: Record<string, string>,
+): Array<{ mediaSid: string; contentType: string; url: string }> {
   const n = Number(params.NumMedia ?? 0)
-  const out: Array<{ mediaSid: string; contentType: string }> = []
+  const out: Array<{ mediaSid: string; contentType: string; url: string }> = []
   for (let i = 0; i < n && i < 10; i++) {
     const url = params[`MediaUrl${i}`] ?? ''
     const m = url.match(/\/Media\/(ME[a-f0-9]{32})/)
-    if (m) out.push({ mediaSid: m[1], contentType: params[`MediaContentType${i}`] ?? 'application/octet-stream' })
+    if (m) {
+      out.push({
+        mediaSid: m[1],
+        contentType: params[`MediaContentType${i}`] ?? 'application/octet-stream',
+        url,
+      })
+    }
   }
   return out
 }
 
-/** Raw Twilio Media URLs (authenticated, expiring — R2.6/R2.8 fetch them
- *  later) for the broker SMS agent branch. Twin of parseMms() above, which
- *  extracts mediaSid/contentType for the lead-flow timeline instead. */
+/** Raw Twilio Media URLs for the broker SMS agent branch. Vault auto-file
+ *  fetches PDFs immediately via fetchTwilioMedia (URLs expire). */
 function rawMediaUrls(params: Record<string, string>): string[] {
   const n = Number(params.NumMedia ?? 0)
   const out: string[] = []
@@ -146,6 +154,7 @@ export async function POST(request: Request) {
 
   const firstToken = body.toLowerCase().split(/\s+/)[0] ?? ''
   const media = parseMms(params)
+  const mediaMeta = media.map(({ mediaSid, contentType }) => ({ mediaSid, contentType }))
   const displayBody = body || (media.length ? `[${media.length} attachment${media.length > 1 ? 's' : ''}]` : '')
   const sb = createServiceClient()
 
@@ -166,7 +175,7 @@ export async function POST(request: Request) {
         person_id: match.personId,
         kind: 'sms_in',
         body: displayBody,
-        payload: { fromNumber: from, toNumber: to, sid, ...(media.length ? { media, messageSid: sid } : {}) },
+        payload: { fromNumber: from, toNumber: to, sid, ...(mediaMeta.length ? { media: mediaMeta, messageSid: sid } : {}) },
         broker: match.broker,
         source: 'twilio',
         dedupe_key: `twilio:${sid}:p${match.personId}`,
@@ -182,7 +191,7 @@ export async function POST(request: Request) {
       await recordConversationMessage({
         sb, direction: 'in', channel: media.length ? 'mms' : 'sms', body: displayBody,
         providerSid: sid, primaryPersonId: match.personId, assignedBroker: match.broker,
-        media: media.length ? media : [],
+        media: mediaMeta.length ? mediaMeta : [],
         participants: [{ personId: match.personId, address: from }],
       })
     } catch (e) { console.warn('[twilio/inbound-sms] conversation shadow-write failed', e) }
@@ -192,14 +201,37 @@ export async function POST(request: Request) {
     await markConversationUnreadOnInbound(match.personId)
 
     try {
+      const { pdfMmsParts } = await import('@/lib/tc/file-comms')
       const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
+      const pdfs = pdfMmsParts(media)
+      const attachments: Array<{ sourceDocId: string; name: string; bytes: Buffer; contentType: string }> = []
+      if (pdfs.length) {
+        const { fetchTwilioMedia } = await import('@/lib/agent/assets')
+        for (const part of pdfs) {
+          try {
+            const got = await fetchTwilioMedia(part.url)
+            attachments.push({
+              sourceDocId: `twilio:${sid}:${part.mediaSid}`.slice(0, 180),
+              name: `${part.mediaSid}.pdf`,
+              bytes: got.buffer,
+              contentType: got.contentType || 'application/pdf',
+            })
+          } catch (fetchErr) {
+            console.warn('[twilio/inbound-sms] MMS PDF fetch failed', fetchErr)
+          }
+        }
+      }
       await fileCommsToVault({
         personIds: [match.personId],
         channel: 'sms',
         actor: `twilio:${match.broker ?? 'desk'}`,
         title: null,
         body: displayBody,
-        filenames: media.map((m) => m.contentType),
+        filenames: [
+          ...media.map((m) => m.contentType),
+          ...attachments.map((a) => a.name),
+        ],
+        attachments,
         dedupeKey: `sms:${sid}`,
       })
     } catch (err) {

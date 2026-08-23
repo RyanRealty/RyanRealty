@@ -19,7 +19,7 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | Listing pipeline grid | MISSING | `/admin/listings` = MLS. Spec T3.2 unbuilt. |
 | `tc_events` | EXISTS | Append-only. Writers: native TC, SkySlope migrate, **this branch** Gmail `mail_filed` + Twilio `sms_filed`. |
 | Email → Vault auto-file | EXISTS (this branch) | `lib/tc/file-comms.ts` + `file-comms-write.ts`. Gmail `syncMailboxWindow` after CRM person match. PDFs (cap 3) → `tc-documents` `inbox/` + matching checklist. Fail-open. Address-only fallback needs score ≥ 2 (SkySlope-migrated deals often lack `tc_deal_people`). |
-| Twilio → deal | EXISTS (this branch) | Inbound SMS after `crm_timeline` upsert. Same writer. MMS PDF bytes **not** fetched (Twilio media URLs still later). |
+| Twilio → deal | EXISTS (this branch) | Inbound SMS after `crm_timeline` upsert. Same writer. MMS PDFs fetched immediately via `fetchTwilioMedia` (URLs expire). Photos stay on the CRM thread. |
 | FUB/CRM → deal log | PARTIAL (this branch) | FUB dead. CRM Gmail person timeline now also files onto the matching Vault deal. |
 | OR / OREF / ODS libraries | EXISTS codes + ingest | OR 1837, ODS 1528, OREF 1340. Blanks via ingest, not bundled PDFs. |
 | `RECIPIENT_ROLES` in `signing.ts` | EXISTS (live Forms enum this branch) | Picker = Buyer / Seller / EscrowOfficer / TitleOfficer / LoanOfficer / BuyerAgent / SellerAgent / Broker / Other. Legacy codes normalize on read/write. `cc` is no longer written. |
@@ -37,10 +37,9 @@ Nuance: deal log is **not** “only SkySlope import” for native deals. Migrate
 
 Now that the live role list is filed:
 
-Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist, `action_required` column + composer picker.
+Shipped on this branch: live Forms recipient roles, Closings rail Signing/Sign-off, new-deal checklist seed, Form-library envelope compose, Gmail/Twilio auto-file onto deal log + matching checklist, `action_required` column + composer picker, Twilio MMS PDF fetch.
 
 Still missing:
 
-1. Twilio MMS PDF fetch onto `tc-documents` (media URLs are authenticated/expiring).
-2. Listing pipeline (grid + expiration); Closings already has an active-listing lens.
-3. Merge/deploy this branch so production rail, composer, seed, auto-file, and action_required match.
+1. Listing pipeline (grid + expiration); Closings already has an active-listing lens.
+2. Merge/deploy this branch so production rail, composer, seed, auto-file, and action_required match.

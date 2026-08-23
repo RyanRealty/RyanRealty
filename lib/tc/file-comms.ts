@@ -100,3 +100,16 @@ export function commsHaystack(input: {
 }): string {
   return [input.title ?? '', input.body ?? '', ...(input.filenames ?? [])].join(' ').slice(0, 12000)
 }
+
+export type MmsCommsPart = { mediaSid: string; contentType: string; url: string }
+
+/** Twilio MMS PDFs to fetch immediately (URLs expire). Cap 3, same as Gmail. */
+export function pdfMmsParts(media: readonly MmsCommsPart[]): MmsCommsPart[] {
+  return media
+    .filter((m) => {
+      const mime = (m.contentType || '').toLowerCase()
+      const url = (m.url || '').toLowerCase()
+      return mime.includes('pdf') || url.includes('.pdf')
+    })
+    .slice(0, 3)
+}
