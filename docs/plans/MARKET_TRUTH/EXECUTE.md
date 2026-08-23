@@ -382,6 +382,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23n landed: NWX **4,857 → 342 acres**; Eagle Crest **6,371 → 1,643**; Caldera Springs **3,942 → 1,019**; Black Butte Ranch **2,659 → 1,185**; Pronghorn **1,583 → 370**; Crosswater **1,012 → 512**; Vandevert Ranch **1,072 → 397**. Overlap pairs **25 → 12**. `/housing-market/central-oregon` extra inventory 118 condos · 14.2 months + leftover (32 days to contract · 12 months). `/housing-market/reports` extra MOS 14.2 condos. Seller LP leftover $760,000 / 96.9% / -1.9%. Remainder hulls: Sunriver, Three Rivers, Brasada, Widgi Creek (no complete plat set). Neighborhood MOS still unpublished. County unpublished.
 
+### Grind 2026-08-23o — leftover on remaining market LPs
+
+**Done when:** `/lp/expired-listing` and `/lp/buyer-listing-alerts` print labeled leftover (pending now, days to contract · 12 months) beside pulse DTP / overlay inventory. Pulse 30-day and days-to-pending stay. Neighborhood MOS still unpublished. County unpublished. Workers do not tick this file.
+
+2026-08-23o landed: expired LP leftover 28 days to contract · 12 months / 96.9% sale to original. Buyer LP leftover days to contract + YoY median -1.9%. Pulse DTP stays. Neighborhood MOS still unpublished. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

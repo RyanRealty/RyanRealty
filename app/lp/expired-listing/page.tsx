@@ -15,6 +15,7 @@ import { ExpiredMarketStatStrip } from '@/components/landing/ExpiredMarketStatSt
 import ExitIntentPrompt from '@/components/landing/ExitIntentPrompt'
 import ScrollReveal from '@/components/landing/ScrollReveal'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import LandingPageTracker from '@/components/LandingPageTracker'
 
 /**
@@ -89,7 +90,14 @@ export default async function ExpiredListingPage() {
   // Live Bend detached (MLS City mt-v1 overlay via getMarketPulse) for the
   // re-list market stat strip. Falls back to null gracefully — strip is
   // suppressed when unavailable.
-  const bendPulse = await getMarketPulse({ geoType: 'city', geoSlug: 'bend' })
+  const [bendPulse, publicPace] = await Promise.all([
+    getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
+    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
+  ])
+  const EXPIRED_LEFTOVER_KEYS = new Set(['pending', 'dtc', 'sto'])
+  const leftoverStrip = publicPaceItems(publicPace)
+    .filter((item) => EXPIRED_LEFTOVER_KEYS.has(item.key))
+    .map((item) => ({ value: item.value, label: item.label }))
 
   return (
     <main className="min-h-screen bg-[#faf8f4] text-[#102742]">
@@ -303,9 +311,9 @@ export default async function ExpiredListingPage() {
       {/* ─── S5 · Re-list proof — live market strip + verified reviews ────── */}
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-14">
-          {bendPulse ? (
+          {bendPulse || leftoverStrip.length > 0 ? (
             <ScrollReveal>
-              <ExpiredMarketStatStrip pulse={bendPulse} />
+              <ExpiredMarketStatStrip pulse={bendPulse} extras={leftoverStrip} />
             </ScrollReveal>
           ) : null}
           {EXPIRED_LP_REVIEWS.length > 0 ? (

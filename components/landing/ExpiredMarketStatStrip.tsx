@@ -18,19 +18,21 @@ import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 
 type Props = {
   pulse: MarketPulse | null
+  extras?: Array<{ value: string; label: string }>
   className?: string
 }
 
-export function ExpiredMarketStatStrip({ pulse, className }: Props) {
-  if (!pulse) return null
+export function ExpiredMarketStatStrip({ pulse, extras, className }: Props) {
+  if (!pulse && (extras == null || extras.length === 0)) return null
 
-  const daysToPending = pulse.medianDaysToPending
-  const activeCount = pulse.activeCount
+  const daysToPending = pulse?.medianDaysToPending ?? null
+  const activeCount = pulse?.activeCount ?? null
 
-  // Render nothing if both core stats are missing.
-  if (daysToPending == null && (!activeCount || activeCount === 0)) return null
+  const extraStats = extras ?? []
+  // Render nothing if core stats and leftover extras are all missing.
+  if (daysToPending == null && (!activeCount || activeCount === 0) && extraStats.length === 0) return null
 
-  const updatedLabel = pulse.refreshedAt
+  const updatedLabel = pulse?.refreshedAt
     ? new Date(pulse.refreshedAt).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
@@ -54,6 +56,10 @@ export function ExpiredMarketStatStrip({ pulse, className }: Props) {
       value: activeCount.toLocaleString('en-US'),
       label: 'Active detached listings in Bend',
     })
+  }
+
+  for (const extra of extraStats) {
+    stats.push(extra)
   }
 
   if (stats.length === 0) return null

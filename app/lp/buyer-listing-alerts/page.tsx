@@ -9,6 +9,7 @@ import { WATCHED_COMMUNITIES } from './watched-communities'
 import { FAQ, PhoneIcon, PlayIcon, ProcessStep } from './BuyerLPBits'
 import { CONTACT } from '@/lib/brand/contact'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { getAllCommunitySnapshots, getGeoSnapshot, getListingTiles } from '@/lib/data'
 import { listingTileHref } from '@/lib/slug'
 import { communityImage } from '@/lib/geo-images'
@@ -56,7 +57,7 @@ export default async function BuyerLPPage() {
   // Per-community active/pending counts from geo_snapshot_mv. Both via existing
   // DAL functions, both graceful-null. CLAUDE.md §0 Data Accuracy: live
   // values or the em-dash placeholder, never an invented number.
-  const [bendPulse, communitySnapshots, sunriverCitySnap, liveBendRaw] = await Promise.all([
+  const [bendPulse, communitySnapshots, sunriverCitySnap, liveBendRaw, publicPace] = await Promise.all([
     getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
     getAllCommunitySnapshots().catch(() => []),
     // Sunriver proper is a CITY in geo_snapshot_mv (no community row exists
@@ -65,6 +66,7 @@ export default async function BuyerLPPage() {
     // Live Bend homes for the "prove the inventory before the ask" rail. Reads
     // listing_tile_mv via the DAL — already opt-out / non-IDX filtered (§0 + IDX).
     getListingTiles({ city: 'Bend', status: 'active', sort: 'newest', limit: 18 }).catch(() => []),
+    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
   ])
   const activeCount = bendPulse?.activeCount ?? null
 
@@ -153,6 +155,16 @@ export default async function BuyerLPPage() {
       sub: 'Median, list to under contract',
     },
   ]
+  const BUYER_LEFTOVER_KEYS = new Set(['pending', 'dtc', 'yoy'])
+  for (const item of publicPaceItems(publicPace)) {
+    if (!BUYER_LEFTOVER_KEYS.has(item.key)) continue
+    const [label, window] = item.label.split(' · ')
+    authorityStats.push({
+      value: item.value,
+      label: label ?? item.label,
+      sub: window ?? 'Detached houses',
+    })
+  }
 
   const refreshedLabel = bendPulse?.refreshedAt
     ? new Date(bendPulse.refreshedAt).toLocaleDateString('en-US', {
@@ -495,7 +507,7 @@ export default async function BuyerLPPage() {
             </p>
           </ScrollReveal>
           {/* Brutalist KPI grid — hard cream hairlines, no rounded cards. */}
-          <div className="mt-10 grid grid-cols-1 gap-px border border-[#faf8f4]/30 bg-[#faf8f4]/30 sm:grid-cols-3">
+          <div className="mt-10 grid grid-cols-1 gap-px border border-[#faf8f4]/30 bg-[#faf8f4]/30 sm:grid-cols-2 lg:grid-cols-3">
             {authorityStats.map((card, i) => (
               <ScrollReveal key={card.label} delayMs={i * 75}>
                 <div className="flex h-full flex-col bg-[#102742] p-5 sm:p-6">
