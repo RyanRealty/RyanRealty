@@ -140,11 +140,11 @@ async function _getCitiesForIndexUncached(): Promise<CityForIndex[]> {
   return result
 }
 
-// v3 cache-key bump 2026-07-08 — evicts entries computed before city counts
-// switched to the canonical market_pulse_live override (design-audit §0).
+// v4 cache-key bump 2026-08-23 — city snapshots overlay Market Truth detached.
+// v3 (2026-07-08) evicted pre-pulse-override city counts.
 export const getCitiesForIndex = unstable_cache(
   _getCitiesForIndexUncached,
-  ['cities-index-v3'],
+  ['cities-index-v4-mt-detached'],
   { revalidate: 1800, tags: ['cities-index'] }
 )
 
@@ -193,7 +193,7 @@ export const getCityBySlug = unstable_cache(
   // the getLiveMarketPulse property_type fix (commit 91b95cf). Old entries
   // had activeCount=0 because the unfiltered .maybeSingle() returned null
   // when market_pulse_live started carrying multiple rows per city.
-  ['city-by-slug-v2'],
+  ['city-by-slug-v3-mt-detached'],
   { revalidate: 300, tags: ['city-detail'] }
 )
 

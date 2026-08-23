@@ -7,6 +7,11 @@
  */
 
 import { supabaseAnon } from '@/lib/data/client'
+import {
+  applyDetachedOverlay,
+  cityDetachedSlug,
+  getDetachedMarkets,
+} from '@/lib/data/market-truth/getSellBendMarket'
 
 export type MarketStatsCacheRow = {
   geo_slug?: string
@@ -136,14 +141,40 @@ export async function getMarketPulseRowsByGeoType(options: {
 }): Promise<Array<Record<string, unknown>>> {
   const sb = supabaseAnon()
   if (!sb) return []
-  const columns = options.columns ?? 'geo_label, active_count'
-  const { data } = await sb
+  const columns = options.columns ?? 'geo_slug, geo_label, active_count'
+  let q = sb
     .from('market_pulse_live')
     .select(columns)
     .eq('geo_type', options.geoType)
     .gt('active_count', options.minActiveCount ?? 0)
     .order('active_count', { ascending: false })
-  return (data ?? []) as unknown as Array<Record<string, unknown>>
+  if (options.geoType === 'city' || options.geoType === 'region') {
+    q = q.eq('property_type', 'A')
+  }
+  const { data } = await q
+  const rows = (data ?? []) as unknown as Array<Record<string, unknown>>
+  if (options.geoType !== 'city' && options.geoType !== 'region') return rows
+  try {
+    const map = await getDetachedMarkets(
+      rows.map((r) => ({
+        geoType: options.geoType as 'city' | 'region',
+        geoSlug: String(r.geo_slug ?? r.geo_label ?? ''),
+      })),
+    )
+    return rows
+      .map((r) => {
+        const slug = String(r.geo_slug ?? r.geo_label ?? '')
+        const mt = map.get(`${options.geoType}:${cityDetachedSlug(slug)}`)
+        if (!mt) return r
+        return applyDetachedOverlay(
+          r as { active_count?: number; months_of_supply?: number | null; median_list_price?: number | null },
+          mt,
+        ) as Record<string, unknown>
+      })
+      .sort((a, b) => Number(b.active_count ?? 0) - Number(a.active_count ?? 0))
+  } catch {
+    return rows
+  }
 }
 
 /** Upsert one market_pulse_live row (admin populate path). */

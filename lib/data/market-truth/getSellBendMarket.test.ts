@@ -49,6 +49,30 @@ describe('getSellBendMarket', () => {
     expect(feed).toMatch(/getDetachedMarket/)
   })
 
+  it('city geo snapshots overlay Market Truth so index/menu cannot print pulse 488', () => {
+    const snap = readFileSync(resolve('lib/data/geo/getGeoSnapshot.ts'), 'utf8')
+    const browse = readFileSync(resolve('lib/data/market/getMarketStatsCacheRows.ts'), 'utf8')
+    expect(snap).toMatch(/overlayCitySnapshotsDetached/)
+    expect(snap).toMatch(/getDetachedMarkets/)
+    expect(browse).toMatch(/getDetachedMarkets/)
+  })
+
+  it('newsletter and CRM city reports read the same detached helper as /sell', () => {
+    const report = readFileSync(resolve('lib/data/crm/getMarketReportData.ts'), 'utf8')
+    const draft = readFileSync(resolve('lib/newsletter/produce-draft.ts'), 'utf8')
+    expect(report).toMatch(/getDetachedMarkets/)
+    expect(draft).toMatch(/getMarketReportData/)
+  })
+
+  it('housing-market city and hub pages read overlaid pulse (getDetachedMarket)', () => {
+    const geo = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
+    const hub = readFileSync(resolve('app/housing-market/page.tsx'), 'utf8')
+    const pulse = readFileSync(resolve('lib/data/market/getMarketPulse.ts'), 'utf8')
+    expect(geo).toMatch(/getMarketPulse/)
+    expect(hub).toMatch(/getMarketPulse/)
+    expect(pulse).toMatch(/getDetachedMarket/)
+  })
+
   it('RECON Bend detached 4.454 months is 4.5 display and a balanced verdict', () => {
     const mos = 4.45402298850575
     expect(formatMonthsOfSupply(mos)).toBe('4.5')

@@ -325,7 +325,7 @@ async function _getBrowseCitiesUncached(): Promise<BrowseCity[]> {
 
 export const getBrowseCities = unstable_cache(
   _getBrowseCitiesUncached,
-  ['browse-cities'],
+  ['browse-cities-v2-mt-detached'],
   { revalidate: 1800, tags: ['browse-cities'] }
 )
 

@@ -13,12 +13,11 @@
  *     read through `getCityMarketDetail` at `period_type='rolling_365d'`. Trailing
  *     12-month window for median price, DOM, YoY, and the email's "homes sold"
  *     line — populated for every subscribable area (cities AND resorts).
- *   - Live inventory + MoS (cities AND resort neighborhoods): `market_pulse_live`
- *     (10-15 min) via `getMarketPulse`. Carries cache-computed `monthsOfSupply`
- *     on the canonical 6-month close base (`active / (closed_6mo / 6)`) plus
- *     current `activeCount`. When present it is the authoritative live MoS and
- *     overrides any historical-derived figure. Neighborhoods are filled by
- *     `refresh_community_market_pulse` (BL-016 / docs/DATABASE_FOR_AI_AGENTS.md §3a).
+ *   - Live inventory + MoS for cities: `getCityDetachedMarket` (Market Truth
+ *     detached, same three figures as `/sell`). Pulse overlay is the fallback
+ *     if a city cell is missing. Resort neighborhoods still read `getMarketPulse`
+ *     (`refresh_community_market_pulse`); MoS at that grain is withheld
+ *     (`geo-grain-trust`).
  *
  * Months of supply (CLAUDE.md §0): MoS = active / (closed_6mo / 6). Thresholds:
  * <= 4 sellers, 4-6 balanced, >= 6 buyers. The returned `marketVerdict` is
@@ -45,12 +44,18 @@
  * for resort communities.
  *
  * DAL boundary (G1): this module reads ONLY through other DAL functions
- * (getCityMarketDetail, getMarketPulse). It contains no raw `.from()`.
+ * (getCityMarketDetail, getCityDetachedMarket, getMarketPulse). It contains
+ * no raw `.from()`.
  */
 
 import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getMarketTrend, type MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
+import {
+  cityDetachedSlug,
+  getDetachedMarkets,
+  type SellBendMarket,
+} from '@/lib/data/market-truth/getSellBendMarket'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { REPORT_CITY_SLUG_SET } from '@/lib/data/geo/report-cities'
@@ -378,9 +383,9 @@ export function buildAreaBlock(args: {
  * Fetch the §0-accurate market blocks for a contact's subscribed areas.
  *
  * For each slug: resolve geo_type, pull the trailing-12-month historical row
- * (getCityMarketDetail at rolling_365d) and the live pulse (getMarketPulse —
- * cities and resort neighborhoods). Areas with no cache data are OMITTED. The
- * result preserves input order, de-duped by slug.
+ * (getCityMarketDetail at rolling_365d) and live inventory (city: Market Truth
+ * detached; resort neighborhood: getMarketPulse). Areas with no cache data
+ * are OMITTED. The result preserves input order, de-duped by slug.
  *
  * The send engine (Phase B) calls this, then renderMarketReportEmail, then the
  * suppression-gated send path.
@@ -401,20 +406,47 @@ export async function getMarketReportData(
   }
   if (slugs.length === 0) return []
 
+  const citySlugs = slugs.filter((s) => resolveAreaGeoType(s) === 'city')
+  let detached = new Map<string, SellBendMarket>()
+  try {
+    if (citySlugs.length) {
+      detached = await getDetachedMarkets(citySlugs.map((s) => ({ geoType: 'city' as const, geoSlug: s })))
+    }
+  } catch {
+    detached = new Map()
+  }
+
   const blocks = await Promise.all(
     slugs.map(async (slug): Promise<MarketReportAreaBlock | null> => {
       const geoType = resolveAreaGeoType(slug)
       const cacheSlug = geoType === 'city' ? canonicalCityCacheSlug(slug) : slug
+      const mt =
+        geoType === 'city'
+          ? detached.get(`city:${cityDetachedSlug(slug)}`) ??
+            detached.get(`city:${cityDetachedSlug(cacheSlug)}`)
+          : undefined
 
       const [detail, pulse, trendPoints] = await Promise.all([
         getCityMarketDetail({ geoType, geoSlug: cacheSlug, periodType: 'rolling_365d' }),
-        // W8.1a: live pulse for cities AND resort neighborhoods (6-month MoS).
-        // Neighborhood rows come from refresh_community_market_pulse (BL-016).
-        getMarketPulse({ geoType, geoSlug: cacheSlug }),
-        // Monthly series for the email charts + month-over-month context.
-        // Resilient-cached with an [] fallback — a miss never blocks the block.
+        mt
+          ? Promise.resolve(null)
+          : getMarketPulse({ geoType, geoSlug: cacheSlug }),
         getMarketTrend(geoType, cacheSlug, 12),
       ])
+
+      const live = mt
+        ? {
+            activeCount: mt.activeCount,
+            monthsOfSupply: mt.monthsOfSupply,
+            refreshedAt: mt.computedAt,
+          }
+        : pulse
+          ? {
+              activeCount: pulse.activeCount,
+              monthsOfSupply: pulse.monthsOfSupply,
+              refreshedAt: pulse.refreshedAt,
+            }
+          : null
 
       const block = buildAreaBlock({
         slug,
@@ -430,13 +462,7 @@ export async function getMarketReportData(
               updatedAt: detail.updatedAt,
             }
           : null,
-        pulse: pulse
-          ? {
-              activeCount: pulse.activeCount,
-              monthsOfSupply: pulse.monthsOfSupply,
-              refreshedAt: pulse.refreshedAt,
-            }
-          : null,
+        pulse: live,
       })
       if (!block) return null
       return { ...block, trend: buildTrendSummary(trendPoints) }

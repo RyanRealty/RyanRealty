@@ -247,7 +247,7 @@ function verdictFromMoS(mos: number | null): MoSVerdict | null {
 
 /**
  * Build one Homes city block. Active count + median come from the geo snapshot
- * MV (one indexed row, well-cached). Popular searches are AUTO-DERIVED from
+ * (Market Truth detached overlay on city rows). Popular searches are AUTO-DERIVED from
  * live inventory (getDerivedPopularSearches, W3.4) — each link is ranked by how
  * many active tiles actually match its preset, so the menu tracks the market
  * instead of the 2026-06-03 hand-curated snapshot. The static registry remains
@@ -280,8 +280,9 @@ async function buildHomes(): Promise<MegaMenuHomes> {
 }
 
 /**
- * Build one Cities card. Stats from the geo snapshot MV; median days-to-pending
- * from market_pulse_live (carries it, the MV does not).
+ * Build one Cities card. Active count + median from the geo snapshot (Market
+ * Truth detached overlay on city rows). Median days-to-pending still from
+ * getMarketPulse (that field is not in the overlay).
  */
 async function buildCity(citySlug: string): Promise<MegaMenuCity> {
   const name = CITY_NAME_BY_SLUG.get(citySlug) ?? citySlug
@@ -434,7 +435,7 @@ async function buildMegaMenuData(): Promise<MegaMenuData> {
  */
 export const getMegaMenuData = unstable_cache(
   buildMegaMenuData,
-  ['mega-menu-data-v1'],
+  ['mega-menu-data-v2-mt-detached'],
   {
     revalidate: CACHE_WINDOWS.marketStats,
     tags: [cacheTag.market, 'cities-index', 'communities-index', cacheTag.blog],

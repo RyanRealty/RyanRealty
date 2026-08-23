@@ -167,7 +167,7 @@ export function buildHubLead(
   if (mosText) {
     figures.push({
       value: v3Text(mosText),
-      label: v3Text('months of supply, SFR pulse'),
+      label: v3Text('months of supply, single-family'),
       href: '/months-of-supply',
     })
   }
@@ -182,7 +182,7 @@ export function buildHubLead(
   else if (closedYear) sourceBits.push(closedMartMissingBody(closedYear.year))
   if (mosText) {
     sourceBits.push(
-      `Months of supply is live MLS, single-family (SFR pulse), Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
+      `Months of supply is live MLS, detached single-family, Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
     )
   }
 
@@ -212,21 +212,21 @@ export function buildSfrFollowFigures(pulse: MarketPulse | null): V3InstrumentFi
   if (pulse?.medianListPrice != null && pulse.medianListPrice > 0) {
     figures.push({
       value: v3Text(formatPriceExact(pulse.medianListPrice)),
-      label: v3Text('median list price, SFR pulse'),
+      label: v3Text('median list price, single-family'),
       href: '/housing-market/central-oregon',
     })
   }
   if (pulse != null && pulse.activeCount > 0) {
     figures.push({
       value: v3Text(pulse.activeCount.toLocaleString('en-US')),
-      label: v3Text('homes for sale, SFR pulse'),
+      label: v3Text('homes for sale, single-family'),
       href: listingsBrowsePath(),
     })
   }
   if (pulse?.medianDaysToPending != null && pulse.medianDaysToPending > 0) {
     figures.push({
       value: v3Text(String(pulse.medianDaysToPending)),
-      label: v3Text('median days to pending, SFR pulse'),
+      label: v3Text('median days to pending, single-family'),
       href: '/housing-market/central-oregon',
     })
   }

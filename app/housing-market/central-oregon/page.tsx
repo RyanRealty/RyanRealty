@@ -455,7 +455,7 @@ export default async function CentralOregonRegionPage() {
             id="sfr-pulse"
             level={2}
             className="hm-tremor"
-            eyebrow={v3Text('SFR pulse')}
+            eyebrow={v3Text('Single-family')}
             headline={v3Text('Single-family list inventory')}
             figures={[firstLiveFigure, ...restLiveFigures]}
             source={v3Text(region.live.trace)}

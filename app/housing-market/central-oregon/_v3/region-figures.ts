@@ -102,21 +102,21 @@ export function buildRegionInstruments(
   if (medianListPrice != null) {
     liveFigures.push({
       value: v3Text(formatPriceExact(medianListPrice)),
-      label: v3Text('median list price, SFR pulse'),
+      label: v3Text('median list price, single-family'),
       href: listingsBrowsePath(),
     })
   }
   if (activeCount != null) {
     liveFigures.push({
       value: v3Text(activeCount.toLocaleString('en-US')),
-      label: v3Text('homes for sale, SFR pulse'),
+      label: v3Text('homes for sale, single-family'),
       href: listingsBrowsePath(),
     })
   }
   if (mosText != null) {
     liveFigures.push({
       value: v3Text(mosText),
-      label: v3Text('months of supply, SFR pulse'),
+      label: v3Text('months of supply, single-family'),
       href: '/months-of-supply',
     })
   }
@@ -209,7 +209,7 @@ export function buildRegionLead(
   if (mosText) {
     figures.push({
       value: v3Text(mosText),
-      label: v3Text('months of supply, SFR pulse'),
+      label: v3Text('months of supply, single-family'),
       href: '/months-of-supply',
     })
   }
@@ -218,7 +218,7 @@ export function buildRegionLead(
   else sourceBits.push(closedMartMissingBody(CLOSED_SALES_TO_YEAR))
   if (mosText) {
     sourceBits.push(
-      `Months of supply is live MLS, single-family (SFR pulse), Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
+      `Months of supply is live MLS, detached single-family, Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
     )
   }
   return {

@@ -14,7 +14,7 @@ Frozen live comparison set for this report: `market_pulse_live` city rows (`prop
 | months of supply | 3.54 | **4.45** | +0.91 | Same clip. The excluded ring runs ~8 months, so dropping it pushes the ratio toward seller. |
 | verdict | seller's | **balanced** | verdict flips | House bins ≤4 seller / 4–6 balanced / ≥6 buyer. |
 
-Flipped 2026-08-23 after Matt's go-ahead. `/sell`, Dataset JSON-LD, and `/data/market/city/bend` all read `getSellBendMarket()` (775 / 4.45 / balanced). Pulse 488 / 3.54 remains on unmigrated surfaces.
+Flipped 2026-08-23 after Matt's go-ahead. `/sell`, Dataset JSON-LD, and `/data/market/city/bend` all read `getSellBendMarket()` (775 / 4.45 / balanced). City/region pulse readers, city geo snapshots, browse counts, newsletter/CRM city blocks, housing-market hub, and GBP drafts overlay the same detached cells so they cannot print pulse 488 next to `/sell`. Neighborhood / community MOS stays withheld. Pulse 488 / 3.54 remains on unmigrated neighborhood writers and skill recipes that still query listings.
 
 ## Pulse city inventory vs shadow detached
 
@@ -48,6 +48,6 @@ Pulse keys cities on `lower("City")` (space form). Shadow keys hyphen slugs. Joi
 
 ## What this report is not
 
-- Every remaining surface. `/sell` now reads getMetric. CMA, place pages, newsletter, video, and the rest stay on pulse until their own recon line.
-- Every one of the ~72 named figures AUDIT F21 counted. Those surfaces stay on the old store until they have a row in a follow-on recon.
+- Every remaining surface. `/sell`, city/region pulse overlays, city geo snapshots, newsletter/CRM city blocks, housing-market hub, and GBP drafts now share the detached cells. Neighborhood/community MOS stays withheld. Skill recipes that still query listings stay unmigrated.
+- Every one of the ~72 named figures AUDIT F21 counted. Closed-sale cache labels (median DOM, sale-to-list mean, eopi) stay on the old store until their own recon line.
 - Neighborhood / subdivision price stats. REGISTRY §4: neighborhood polygons are unverified; subdivision publishes counts and sales, not prices.

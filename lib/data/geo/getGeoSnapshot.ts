@@ -18,6 +18,12 @@ import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { pulseOnlyCitySnapshot, type PulseCityRow } from '@/lib/data/geo/pulse-only-city-snapshot'
+import {
+  cityDetachedSlug,
+  getCityDetachedMarket,
+  getDetachedMarkets,
+  type SellBendMarket,
+} from '@/lib/data/market-truth/getSellBendMarket'
 
 const GeoSnapshotSchema = z.object({
   geoType: z.enum(['city', 'community', 'neighborhood']),
@@ -64,14 +70,12 @@ function rowToSnapshot(row: GeoSnapshotMvRow): GeoSnapshot {
   }
 }
 
-// ── Canonical city override (§0 one-number rule, design-audit P0) ───────────
-// The same "Bend: N active · $X median" ledger rendered 788 from this MV on
-// one page and 500 from market_pulse_live on the next: the MV counts by the
-// MLS City FIELD and includes Active Under Contract, while the pulse is the
-// methodology-versioned canonical (Active+Coming Soon, SFR, city-polygon
-// scoped). City-level snapshots therefore OVERRIDE count/median/pending with
-// the pulse row when one exists; the MV remains the resilient base and the
-// only source for community/neighborhood levels (the pulse has no rows there).
+// ── Canonical city override (§0 one-number rule) ────────────────────────────
+// The MV counts by MLS City and includes Active Under Contract. Pulse is
+// polygon-clipped mixed type A (Bend 488 / seller). Market Truth is MLS-city
+// detached exact-Active (Bend ~774 / balanced) — the same three figures /sell
+// publishes. City snapshots take MT when present, then pulse, then the MV.
+// Community/neighborhood stay on the MV (REGISTRY §4: polygons unrepaired).
 
 async function fetchPulseCityMap(): Promise<Map<string, PulseCityRow>> {
   const map = new Map<string, PulseCityRow>()
@@ -102,6 +106,40 @@ function withPulseOverride(snap: GeoSnapshot, pulse: PulseCityRow | undefined): 
     medianListPrice:
       pulse.median_list_price != null ? Math.round(Number(pulse.median_list_price)) : snap.medianListPrice,
     refreshedAt: pulse.updated_at,
+  }
+}
+
+function withDetachedMarket(snap: GeoSnapshot, mt: SellBendMarket): GeoSnapshot {
+  return {
+    ...snap,
+    activeSfrCount: mt.activeCount,
+    medianListPrice: mt.medianListPrice ?? snap.medianListPrice,
+    refreshedAt: mt.computedAt,
+  }
+}
+
+async function overlayOneCityDetached(snap: GeoSnapshot): Promise<GeoSnapshot> {
+  if (snap.geoType !== 'city') return snap
+  try {
+    const mt = await getCityDetachedMarket(snap.geoKey)
+    return mt ? withDetachedMarket(snap, mt) : snap
+  } catch {
+    return snap
+  }
+}
+
+async function overlayCitySnapshotsDetached(snaps: GeoSnapshot[]): Promise<GeoSnapshot[]> {
+  if (!snaps.length) return snaps
+  try {
+    const map = await getDetachedMarkets(
+      snaps.map((s) => ({ geoType: 'city' as const, geoSlug: s.geoKey })),
+    )
+    return snaps.map((s) => {
+      const mt = map.get(`city:${cityDetachedSlug(s.geoKey)}`)
+      return mt ? withDetachedMarket(s, mt) : s
+    })
+  } catch {
+    return snaps
   }
 }
 
@@ -137,12 +175,13 @@ async function fetchOneOrThrow(input: GeoSnapshotInput): Promise<GeoSnapshot | n
         if (parsed.geoType !== 'city') return null
         const pulse = await fetchPulseCityMap()
         const pulseRow = pulse.get(key)
-        return pulseRow ? pulseOnlyCitySnapshot(key, pulseRow) : null
+        if (!pulseRow) return null
+        return overlayOneCityDetached(pulseOnlyCitySnapshot(key, pulseRow))
       }
       const snap = rowToSnapshot(data as GeoSnapshotMvRow)
       if (parsed.geoType !== 'city') return snap
       const pulse = await fetchPulseCityMap()
-      return withPulseOverride(snap, pulse.get(key))
+      return overlayOneCityDetached(withPulseOverride(snap, pulse.get(key)))
     }
     lastError = error
   }
@@ -172,10 +211,11 @@ const getGeoSnapshotUncoalesced = async (input: GeoSnapshotInput): Promise<GeoSn
   const parsed = GeoSnapshotSchema.parse(input)
   const cached = unstable_cache(
     () => fetchOneOrThrow(parsed),
-    // v4 cache-key bump 2026-08-17 — pulse-only city doors (Tumalo) when the
-    // MV row is absent. v3 (2026-07-08) evicted pre-pulse-override city entries;
-    // v2 (2026-05-31) evicted poison-nulls after the throw-on-error fix.
-    ['geo-snapshot-v4', parsed.geoType, parsed.geoKey],
+    // v5 cache-key bump 2026-08-23 — city snapshots overlay Market Truth
+    // detached so homepage/index/menu cannot print pulse 488 next to /sell.
+    // v4 (2026-08-17) pulse-only city doors (Tumalo). v3 (2026-07-08) pulse
+    // override. v2 (2026-05-31) poison-null eviction.
+    ['geo-snapshot-v5-mt-detached', parsed.geoType, parsed.geoKey],
     {
       revalidate:
         parsed.geoType === 'city'
@@ -243,9 +283,10 @@ async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
   ])
   if (error) throw new Error(`[getAllCitySnapshots] ${error.message ?? JSON.stringify(error)}`)
   if (!rows.length) return []
-  return rows
-    .map((row) => withPulseOverride(rowToSnapshot(row), pulse.get(row.geo_key.toLowerCase().trim())))
-    .sort((a, b) => b.activeSfrCount - a.activeSfrCount)
+  const overlaid = await overlayCitySnapshotsDetached(
+    rows.map((row) => withPulseOverride(rowToSnapshot(row), pulse.get(row.geo_key.toLowerCase().trim()))),
+  )
+  return overlaid.sort((a, b) => b.activeSfrCount - a.activeSfrCount)
 }
 
 /**
@@ -254,7 +295,7 @@ async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
  */
 export const getAllCitySnapshots = makeResilientCached(
   _fetchAllCitySnapshots,
-  ['geo-snapshot-all-cities-v4'],
+  ['geo-snapshot-all-cities-v5-mt-detached'],
   { revalidate: CACHE_WINDOWS.geoCity, tags: ['cities-index'] },
   [],
 )

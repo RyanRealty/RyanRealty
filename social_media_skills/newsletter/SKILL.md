@@ -122,48 +122,13 @@ Before producing any copy:
 - `design_system/ryan-realty/SKILL.md` (brand register: navy `#102742`, cream `#faf8f4`, Geist body, Amboqia display)
 - `marketing_brain_skills/brand-voice/VOICE.md` (full load required for long-form)
 
-**Step 3 - Pull and verify market data from Supabase**
+**Step 3 - Pull and verify market data**
 
-Pull the three headline stats for Bend SFR, current month:
-
-```sql
--- Median close price (current month YTD):
-SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "ClosePrice") AS median_price,
-       COUNT(*) AS closed_count
-FROM listings
-WHERE "PropertyType" = 'A'
-  AND "City" = 'Bend'
-  AND "StandardStatus" = 'Closed'
-  AND "CloseDate" >= date_trunc('year', now())
-  AND "CloseDate" < now();
-
--- Active inventory count:
-SELECT COUNT(*) AS active_count
-FROM listings
-WHERE "PropertyType" = 'A'
-  AND "City" = 'Bend'
-  AND "StandardStatus" = 'Active';
-
--- Months of supply (active / avg monthly closes over last 6 months):
-SELECT COUNT(*) AS closed_last_6
-FROM listings
-WHERE "PropertyType" = 'A'
-  AND "City" = 'Bend'
-  AND "StandardStatus" = 'Closed'
-  AND "CloseDate" >= now() - interval '6 months';
--- MoS = active_count / (closed_last_6 / 6)
--- Thresholds: <=4 seller, 4-6 balanced, >=6 buyer
-
--- Median days on market:
-SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "CumulativeDaysOnMarket") AS median_dom
-FROM listings
-WHERE "PropertyType" = 'A'
-  AND "City" = 'Bend'
-  AND "StandardStatus" = 'Closed'
-  AND "CloseDate" >= now() - interval '90 days';
-```
-
-Cross-check against `market_stats_cache` for reconciliation. If delta exceeds 1%, surface to Matt before proceeding (per CLAUDE.md §0 Spark x Supabase reconciliation gate).
+This producer is unused. The live path is `lib/newsletter/produce-draft.ts` via
+`getMarketReportData` → `getCityDetachedMarket` (D1 detached, MLS City, exact
+Active). Do not query `listings` for city MOS. Do not read
+`CumulativeDaysOnMarket` or `"DaysOnMarket"` (D2 is `days_to_contract`).
+A miss withholds. Never fall back to pulse 488 / 3.54.
 
 **Step 4 - Pull featured listing data**
 

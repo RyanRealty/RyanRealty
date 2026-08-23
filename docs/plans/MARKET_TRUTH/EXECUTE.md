@@ -228,7 +228,13 @@ registry-declared and land as a follow-on compute. Recon: `RECON.md`. `/sell` re
       `getDetachedMarket` so header, hub, homepage, and `/data/market` cannot
       print pulse 488 next to `/sell`. City HUD / FAQ / Dataset use
       `getCityDetachedMarket` for active, MoS, and median; the map grid stays
-      the address-set doors, now detached. Neighborhood grains stay pulse.
+      the address-set doors, now detached.
+      Same day: `getGeoSnapshot` city rows, browse-city counts, mega menu, and
+      the cities index overlay the same detached cells. Newsletter / CRM emails
+      (`getMarketReportData`) read `getDetachedMarkets` for city grain. GBP
+      drafts already ride `getRegionPulse` overlay. Neighborhood / community
+      MOS stays withheld (`geo-grain-trust` / REGISTRY §4). Neighborhood
+      inventory stays the address-set, not pulse.
 - [ ] Each surface proves reconciliation before it flips.
 
 **Done when:** `/sell` reads `getMetric` for active count, months of supply, and verdict; the three
