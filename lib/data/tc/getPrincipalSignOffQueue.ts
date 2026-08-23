@@ -83,15 +83,17 @@ export async function getPrincipalSignOffQueue(): Promise<SignOffQueue> {
 
   const docsByItem = new Map<string, Array<{ id: string; name: string; thumbUrl: string | null }>>()
   for (const a of (assignments ?? []) as DbRow[]) {
-    const d = docById.get(a.document_id)
-    if (!d) continue
-    const arr = docsByItem.get(a.item_id) ?? []
+    const docId = String(a.document_id ?? '')
+    const itemId = String(a.item_id ?? '')
+    const d = docById.get(docId)
+    if (!d || !itemId) continue
+    const arr = docsByItem.get(itemId) ?? []
     arr.push({
-      id: d.id as string,
-      name: d.name as string,
+      id: String(d.id),
+      name: String(d.name),
       thumbUrl: thumbByPath.get(`tc-thumbs/${d.id}__plast.jpg`) ?? null,
     })
-    docsByItem.set(a.item_id as string, arr)
+    docsByItem.set(itemId, arr)
   }
 
   const byDeal = new Map<string, SignOffDeal>()
