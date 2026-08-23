@@ -207,10 +207,14 @@ Every geography read uses `place_membership` with `is_primary = true`. A sum tha
 `is_primary` fails gate 8 — 19.5% of sales sit inside 2+ subdivision polygons and summing inflates
 totals 1.33× at subdivision grain and 1.50× at neighborhood grain.
 
-**Neighborhood polygons are not publishable until repaired.** 2026-08-23m: `bend-southeast-bend`
-is `ST_IsValid`; Broken Top neighborhood is the plat union (**491 acres**, was 11,496). Overlap
-pairs **38 → 25** (10,000 m² intersection floor). `bend-undesignated` still exists. Remainder
-overlaps are why MOS stays unpublished.
+**Neighborhood polygons are not publishable until repaired.** 2026-08-23n: seven Spark hulls
+replaced with Deschutes County GIS plat unions — Northwest Crossing **4,857 → 342 acres**,
+Eagle Crest **6,371 → 1,643**, Caldera Springs **3,942 → 1,019**, Black Butte Ranch
+**2,659 → 1,185**, Pronghorn **1,583 → 370**, Crosswater **1,012 → 512**, Vandevert Ranch
+**1,072 → 397**. Overlap pairs **25 → 12** (10,000 m² floor). Remainder: Sunriver / Three
+Rivers / Brasada / Widgi Creek hulls (no complete plat set) plus nested community-in-district
+pairs (Awbrey Glen ⊂ Awbrey Butte, Broken Top ⊂ Century West). `bend-undesignated` still
+exists. MOS stays unpublished.
 
 ---
 

@@ -22,6 +22,7 @@ import {
   getOurListings,
   getTestimonialAggregate,
 } from './data'
+import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 
 export const metadata: Metadata = {
   title: 'Get your home’s value in Bend | Ryan Realty',
@@ -104,15 +105,29 @@ export default async function SellerHomeValuePage({
   // the curated real-listings matrix. Each falls back gracefully if Supabase
   // is briefly unreachable. CLAUDE.md §0 Data Accuracy: live values or the
   // em-dash placeholder, never an invented number.
-  const [marketSnapshot, aggregate, allListings] = await Promise.all([
+  const [marketSnapshot, aggregate, allListings, publicPace] = await Promise.all([
     getBendMarketSnapshot(),
     getTestimonialAggregate(),
     getOurListings(),
+    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
   ])
 
   const snap = marketSnapshot
 
   // Stat band values — formatted live, em-dash placeholder when unavailable.
+  // Pulse keeps 90-day median, days-to-pending, sale-to-list, and 30-day sold.
+  // Leftover 12-month / pending-now cells sit beside them, labeled by window.
+  const LP_LEFTOVER_KEYS = new Set(['pending', 'dtc', 'medClose', 'sto', 'yoy'])
+  const leftoverCards = publicPaceItems(publicPace)
+    .filter((item) => LP_LEFTOVER_KEYS.has(item.key))
+    .map((item) => {
+      const [label, window] = item.label.split(' · ')
+      return {
+        value: item.value,
+        label: label ?? item.label,
+        sub: window ?? 'Detached houses',
+      }
+    })
   const statCards: Array<{ value: string; label: string; sub: string }> = [
     {
       value:
@@ -137,6 +152,7 @@ export default async function SellerHomeValuePage({
       label: 'Homes sold',
       sub: 'Closed in the last 30 days',
     },
+    ...leftoverCards,
   ]
 
   const updatedLabel = snap?.updatedAt
@@ -334,7 +350,8 @@ export default async function SellerHomeValuePage({
               What Bend homes are doing right now
             </h2>
             <p className="mt-4 max-w-2xl text-base text-[#faf8f4]/80">
-              Live single-family figures for Bend. The same data your report is built from.
+              Live single-family figures for Bend. 90-day and 30-day pulse stay. Trailing
+              12-month figures are labeled.
             </p>
           </ScrollReveal>
           {/* Brutalist KPI grid — hard cream hairlines, no rounded cards. */}
@@ -356,6 +373,7 @@ export default async function SellerHomeValuePage({
           <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#faf8f4]/55">
             {updatedLabel ? `Live data · updated ${updatedLabel} · ` : 'Live data · '}
             Bend single-family · MLS via Ryan Realty
+            {leftoverCards.length > 0 ? ' · trailing 12-month figures labeled' : ''}
           </p>
         </div>
       </section>

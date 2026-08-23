@@ -274,19 +274,21 @@ export default async function AnnualReviewPage() {
 
   // Sections, built from the rows (./_v3/annual-sections.ts). Built BEFORE the
   // Dataset payload because the payload is derived from what actually rendered.
-  const extraFigures = [
-    ...publicSegments
-      .filter((row) => row.monthsOfSupply != null && row.activeCount != null && row.activeCount > 0)
-      .map((row) => ({
-        value: v3Text(formatMonthsOfSupply(row.monthsOfSupply as number)),
-        label: v3Text(`${publicSegmentNoun(row.segment, row.activeCount)} · months of supply`),
-        href: publicSegmentBrowseHref(null, row.segment),
-      })),
-    ...publicPaceItems(publicPace).map((item) => ({
+  const extraFigures: Array<{ value: ReturnType<typeof v3Text>; label: ReturnType<typeof v3Text>; href?: string }> = []
+  for (const row of publicSegments) {
+    if (row.monthsOfSupply == null || row.activeCount == null || row.activeCount <= 0) continue
+    extraFigures.push({
+      value: v3Text(formatMonthsOfSupply(row.monthsOfSupply)),
+      label: v3Text(`${publicSegmentNoun(row.segment, row.activeCount)} · months of supply`),
+      href: publicSegmentBrowseHref(null, row.segment),
+    })
+  }
+  for (const item of publicPaceItems(publicPace)) {
+    extraFigures.push({
       value: v3Text(item.value),
       label: v3Text(item.label),
-    })),
-  ]
+    })
+  }
   const [firstRegionFigure, ...restRegionFigures] = [
     ...buildRegionFigures(regionPulse, mosRaw, medianListDisplay),
     ...extraFigures,

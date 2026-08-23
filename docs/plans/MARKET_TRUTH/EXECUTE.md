@@ -376,6 +376,12 @@ restatement in CLAUDE.md §0 is already on `origin/main` as of `526dac93`.)
 
 2026-08-23m landed: `bend-southeast-bend` ST_IsValid (1318.1 acres). `broken-top` **11,495.7 → 491.3 acres** (49 plats). Neighborhood overlap pairs **38 → 25**. Annual-review extra MOS 14.2 condos / 4.8 townhomes / 6.3 manufactured on land / 3.7 in parks / 18.7 lots. Listing city context reads leftover. Neighborhood MOS still unpublished. County unpublished.
 
+### Grind 2026-08-23n — spatial-discovery hulls + remaining region leftover
+
+**Done when:** Northwest Crossing, Eagle Crest, Caldera Springs, Black Butte Ranch, Pronghorn, Crosswater, and Vandevert Ranch neighborhood polygons are Deschutes County GIS plat unions (not Spark hulls); `/housing-market/central-oregon` and `/housing-market/reports` print extra product-type MOS/inventory + leftover; seller LP prints labeled leftover beside pulse 90d/30d/DTP. Neighborhood MOS still unpublished. County unpublished. Workers do not tick this file.
+
+2026-08-23n landed: NWX **4,857 → 342 acres**; Eagle Crest **6,371 → 1,643**; Caldera Springs **3,942 → 1,019**; Black Butte Ranch **2,659 → 1,185**; Pronghorn **1,583 → 370**; Crosswater **1,012 → 512**; Vandevert Ranch **1,072 → 397**. Overlap pairs **25 → 12**. `/housing-market/central-oregon` extra inventory 118 condos · 14.2 months + leftover (32 days to contract · 12 months). `/housing-market/reports` extra MOS 14.2 condos. Seller LP leftover $760,000 / 96.9% / -1.9%. Remainder hulls: Sunriver, Three Rivers, Brasada, Widgi Creek (no complete plat set). Neighborhood MOS still unpublished. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

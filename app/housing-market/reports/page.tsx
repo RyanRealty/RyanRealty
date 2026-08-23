@@ -25,6 +25,12 @@ import { getMarketPulse } from '@/lib/data'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import {
+  getPublicPlaceSegments,
+  publicSegmentBrowseHref,
+  publicSegmentNoun,
+} from '@/lib/data/market-truth/public-segments'
+import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
   V3_ROOT_CLASS,
@@ -71,7 +77,11 @@ type PageProps = { searchParams: Promise<{ [key: string]: string | string[] | un
 export default async function ReportsIndexPage({ searchParams }: PageProps) {
   const params = await searchParams
   const { cities: selectedCities, period } = parseReportsParams(params ?? null)
-  const regionPulse = await getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' })
+  const [regionPulse, publicSegments, publicPace] = await Promise.all([
+    getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
+    getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
+    getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
+  ])
 
   const mosRaw =
     regionPulse?.monthsOfSupply != null && regionPulse.monthsOfSupply > 0
@@ -79,6 +89,24 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
       : null
   const verdict = marketVerdict(mosRaw)
   const regionFigures = buildRegionFigures(regionPulse)
+  for (const row of publicSegments) {
+    if (row.monthsOfSupply == null || row.activeCount == null || row.activeCount <= 0) continue
+    regionFigures.push({
+      value: v3Text(formatMonthsOfSupply(row.monthsOfSupply)),
+      label: v3Text(`${publicSegmentNoun(row.segment, row.activeCount)} · months of supply`),
+      href: publicSegmentBrowseHref(null, row.segment),
+    })
+  }
+  for (const item of publicPaceItems(publicPace)) {
+    regionFigures.push({
+      value: v3Text(item.value),
+      label: v3Text(item.label),
+    })
+  }
+  const extraTrace =
+    publicSegments.length > 0 || publicPaceItems(publicPace).length > 0
+      ? ' Extra product-type months of supply and 12-month pace are Market Truth, sample-gated.'
+      : ''
   const [firstFigure, ...restFigures] = regionFigures
   const refreshedAt = regionPulse?.refreshedAt ?? null
   const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
@@ -121,7 +149,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
             source={v3Text(
               `live MLS through Oregon Data Share, market_pulse_live, geo_type=region, geo_slug=central-oregon, property_type=A. ${MOS_METHODOLOGY_CLAUSE}${
                 mosText ? ` This refresh: ${mosText} months of supply.` : ''
-              }`,
+              }${extraTrace}`,
             )}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             action={{

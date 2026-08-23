@@ -104,6 +104,13 @@ import {
 } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
+import {
+  getPublicPlaceSegments,
+  publicSegmentBrowseHref,
+  publicSegmentDisplayBits,
+  publicSegmentNoun,
+} from '@/lib/data/market-truth/public-segments'
+import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { PUBLIC_CLOSED_SALES_METHODOLOGY } from '@/lib/market/publish-public-methodology'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -124,6 +131,7 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
+  type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -187,17 +195,20 @@ export default async function CentralOregonRegionPage() {
   //
   // getRecentBlogPosts keeps offset 3 so this page's guide rail does not repeat the
   // /housing-market hub's three posts.
-  const [regionPulse, citySnapshots, blogPosts, closedSeries, priceHistory] = await Promise.all([
-    getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
-    getMarketPulseAllCitySnapshots(),
-    getRecentBlogPosts({ limit: 3, offset: 3 }),
-    getCoMarketAnnualSeries({
-      fromYear: CLOSED_SALES_FROM_YEAR,
-      toYear: CLOSED_SALES_TO_YEAR,
-      typeScope: 'all',
-    }),
-    getPriceHistory('region', 'central-oregon', 'monthly', 60),
-  ])
+  const [regionPulse, citySnapshots, blogPosts, closedSeries, priceHistory, publicSegments, publicPace] =
+    await Promise.all([
+      getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
+      getMarketPulseAllCitySnapshots(),
+      getRecentBlogPosts({ limit: 3, offset: 3 }),
+      getCoMarketAnnualSeries({
+        fromYear: CLOSED_SALES_FROM_YEAR,
+        toYear: CLOSED_SALES_TO_YEAR,
+        typeScope: 'all',
+      }),
+      getPriceHistory('region', 'central-oregon', 'monthly', 60),
+      getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
+      getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
+    ])
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
   // display it, and hand the RAW value to buildMarketFaq so the shared builder
@@ -247,7 +258,33 @@ export default async function CentralOregonRegionPage() {
   const region = buildRegionInstruments(regionPulse, mosText)
   const lead = buildRegionLead(closedSeries, mosText)
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
-  const [firstLiveFigure, ...restLiveFigures] = withoutMosFigures(region.live.figures)
+  const extraLive: V3InstrumentFigure[] = []
+  for (const row of publicSegments) {
+    if (row.activeCount == null || row.activeCount <= 0) continue
+    const bits = publicSegmentDisplayBits(row)
+    extraLive.push({
+      value: v3Text(row.activeCount.toLocaleString('en-US')),
+      label: v3Text(
+        [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
+      ),
+      href: publicSegmentBrowseHref(null, row.segment),
+    })
+  }
+  for (const item of publicPaceItems(publicPace)) {
+    extraLive.push({
+      value: v3Text(item.value),
+      label: v3Text(item.label),
+    })
+  }
+  const [firstLiveFigure, ...restLiveFigures] = [
+    ...withoutMosFigures(region.live.figures),
+    ...extraLive,
+  ]
+  const liveTrace =
+    region.live.trace +
+    (extraLive.length > 0
+      ? ' Extra product-type inventory and 12-month pace are Market Truth, sample-gated.'
+      : '')
   const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
   const cityLedger = buildCityLedger(citySnapshots, {
     regionActive: regionPulse?.activeCount ?? null,
@@ -458,7 +495,7 @@ export default async function CentralOregonRegionPage() {
             eyebrow={v3Text('Single-family')}
             headline={v3Text('Single-family list inventory')}
             figures={[firstLiveFigure, ...restLiveFigures]}
-            source={v3Text(region.live.trace)}
+            source={v3Text(liveTrace)}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             chart={regionChart}
           />
