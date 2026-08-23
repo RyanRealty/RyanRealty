@@ -68,7 +68,11 @@ Wire on Forms: `NeedsToSign`. DigiSign hidden value: `Signer`.
 - Role column is **not** a dropdown here.
 - Next opens DigiSign compose (draft). Leave discarded compose changes.
 
-## Our Vault `lib/tc/signing.ts` RECIPIENT_ROLES vs live
+## Vault `lib/tc/signing.ts` (this branch)
+
+Picker stores the live wire values. Legacy `buyer1` / `listing_broker` / `lender` rows still read. `cc` remains the stored stand-in for **Receives a copy** (not a Forms Role) until an `action_required` column exists.
+
+## Our Vault `lib/tc/signing.ts` RECIPIENT_ROLES vs live (pre-map)
 
 | Our enum | Live SkySlope |
 |---|---|

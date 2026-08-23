@@ -23,34 +23,119 @@ export const SIGN_FIELD_LABEL: Record<SignFieldType, string> = {
   checkbox: 'Checkbox',
 }
 
-/** Recipient roles. CC recipients receive the completed copy but never sign. */
+/**
+ * Envelope contact roles — live SkySlope Forms File Details listbox
+ * (docs/plans/tms/skyslope-pickup-20260823/ROLE_LIST.md, 2026-08-23).
+ * Multiples of a role are extra recipient rows, not Buyer2/Seller2 codes.
+ * Empty "None" is a Forms add-contact default, not a stored envelope role.
+ */
 export const RECIPIENT_ROLES = [
-  'buyer1',
-  'buyer2',
-  'seller1',
-  'seller2',
-  'listing_broker',
-  'buyer_broker',
-  'escrow',
-  'title',
-  'lender',
-  'other',
-  'cc',
+  'Buyer',
+  'Seller',
+  'EscrowOfficer',
+  'TitleOfficer',
+  'LoanOfficer',
+  'BuyerAgent',
+  'SellerAgent',
+  'Broker',
+  'Other',
 ] as const
 export type RecipientRole = (typeof RECIPIENT_ROLES)[number]
 
+/**
+ * Stored stand-in for DigiSign/Forms "Receives a copy" until an
+ * action_required column exists. Not a Forms contact Role. Omit from the
+ * role picker except to display existing copy-only rows.
+ */
+export const COPY_ONLY_ROLE = 'cc' as const
+
 export const RECIPIENT_ROLE_LABEL: Record<RecipientRole, string> = {
+  Buyer: 'Buyer',
+  Seller: 'Seller',
+  EscrowOfficer: 'Escrow Officer',
+  TitleOfficer: 'Title Officer',
+  LoanOfficer: 'Loan Officer',
+  BuyerAgent: 'Buyer Agent',
+  SellerAgent: 'Seller Agent',
+  Broker: 'Broker',
+  Other: 'Other',
+}
+
+/** Pre-2026-08-23 stored codes → live Forms wire values. */
+export const LEGACY_RECIPIENT_ROLE: Record<string, RecipientRole | typeof COPY_ONLY_ROLE> = {
+  buyer: 'Buyer',
   buyer1: 'Buyer',
-  buyer2: 'Buyer (2nd)',
+  buyer2: 'Buyer',
+  seller: 'Seller',
   seller1: 'Seller',
-  seller2: 'Seller (2nd)',
-  listing_broker: 'Listing broker',
-  buyer_broker: "Buyer's broker",
-  escrow: 'Escrow officer',
-  title: 'Title',
-  lender: 'Lender',
-  other: 'Other party',
-  cc: 'CC (copy only)',
+  seller2: 'Seller',
+  listing_broker: 'SellerAgent',
+  listing_agent: 'SellerAgent',
+  selling_broker: 'BuyerAgent',
+  buyer_broker: 'BuyerAgent',
+  escrow: 'EscrowOfficer',
+  title: 'TitleOfficer',
+  lender: 'LoanOfficer',
+  other: 'Other',
+  cc: COPY_ONLY_ROLE,
+}
+
+export function normalizeRecipientRole(role: string | null | undefined): string {
+  const raw = (role ?? '').trim()
+  if (!raw) return 'Other'
+  if ((RECIPIENT_ROLES as readonly string[]).includes(raw) || raw === COPY_ONLY_ROLE) return raw
+  return LEGACY_RECIPIENT_ROLE[raw] ?? raw
+}
+
+export function coerceRecipientPickerRole(
+  role: string | null | undefined,
+): RecipientRole | typeof COPY_ONLY_ROLE {
+  const n = normalizeRecipientRole(role)
+  if ((RECIPIENT_ROLES as readonly string[]).includes(n)) return n as RecipientRole
+  if (n === COPY_ONLY_ROLE) return COPY_ONLY_ROLE
+  return 'Other'
+}
+
+export function recipientRoleLabel(role: string | null | undefined): string {
+  const n = normalizeRecipientRole(role)
+  if (n === COPY_ONLY_ROLE) return 'Receives a copy'
+  return RECIPIENT_ROLE_LABEL[n as RecipientRole] ?? n
+}
+
+/** Matt (or the deal broker) on a listing file is Seller Agent; on a sale/buyer file, Buyer Agent. */
+export function brokerEnvelopeRole(cycleKind: string | null | undefined): RecipientRole {
+  return cycleKind === 'listing' ? 'SellerAgent' : 'BuyerAgent'
+}
+
+/** Pre-seed envelope people from cycle parties using live Forms roles. */
+export function seedPartyEnvelopeRecipients(input: {
+  envelopeId: string
+  buyers: string[]
+  sellers: string[]
+  brokerName: string | null | undefined
+  brokerEmail: string
+  cycleKind: string | null | undefined
+  brokerSigningOrder?: number
+}): Array<{ envelope_id: string; role: string; name: string; email: string; signing_order: number }> {
+  const rows: Array<{ envelope_id: string; role: string; name: string; email: string; signing_order: number }> = []
+  for (const n of input.buyers) {
+    if (!n?.trim()) continue
+    rows.push({ envelope_id: input.envelopeId, role: 'Buyer', name: n.trim(), email: '', signing_order: 1 })
+  }
+  for (const n of input.sellers) {
+    if (!n?.trim()) continue
+    rows.push({ envelope_id: input.envelopeId, role: 'Seller', name: n.trim(), email: '', signing_order: 2 })
+  }
+  if (input.brokerName?.trim()) {
+    rows.push({
+      envelope_id: input.envelopeId,
+      role: brokerEnvelopeRole(input.cycleKind),
+      name: input.brokerName.trim(),
+      email: input.brokerEmail,
+      signing_order: input.brokerSigningOrder ?? 3,
+    })
+  }
+  return rows
 }
 
 export const ENVELOPE_STATUSES = ['draft', 'sent', 'partially_signed', 'completed', 'voided'] as const
@@ -112,7 +197,22 @@ export const DEFAULT_FIELD_SIZE: Record<SignFieldType, { w: number; h: number }>
 }
 
 export function isSignableRole(role: string | null | undefined): boolean {
-  return !!role && role !== 'cc'
+  if (role == null || !String(role).trim()) return false
+  return normalizeRecipientRole(role) !== COPY_ONLY_ROLE
+}
+
+/** Bind a form-field signer (dataRef/group) to a stored envelope recipient. */
+export function recipientMatchesSigner(
+  storedRole: string | null | undefined,
+  signer: 'buyer' | 'seller' | 'listing_agent' | 'buyer_agent' | null,
+): boolean {
+  if (!signer) return false
+  const n = normalizeRecipientRole(storedRole)
+  if (signer === 'buyer') return n === 'Buyer'
+  if (signer === 'seller') return n === 'Seller'
+  if (signer === 'listing_agent') return n === 'SellerAgent'
+  if (signer === 'buyer_agent') return n === 'BuyerAgent'
+  return false
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

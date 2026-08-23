@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { seedPartyEnvelopeRecipients } from '@/lib/tc/signing'
 
 /**
  * TC forms library + envelope scaffolding (Phase 2b — composer/signing).
@@ -119,7 +120,7 @@ export async function createDraftEnvelope(
   const supabase = getServiceSupabase()
   const { data: cycle } = await supabase
     .from('tc_cycles')
-    .select('id, deal_id, sellers, buyers, broker_name, tc_deals(address)')
+    .select('id, deal_id, kind, sellers, buyers, broker_name, tc_deals(address)')
     .eq('id', cycleId)
     .maybeSingle()
   if (!cycle) return { ok: false, error: 'Cycle not found' }
@@ -141,22 +142,15 @@ export async function createDraftEnvelope(
     .single()
   if (envErr) return { ok: false, error: envErr.message }
 
-  // recipients from parties (emails completed in review UI)
-  const recipients: DbRow[] = []
-  ;((cycle.sellers ?? []) as string[]).forEach((n, i) =>
-    recipients.push({ envelope_id: envelope.id, role: `seller${i + 1}`, name: n, email: '', signing_order: 1 })
-  )
-  ;((cycle.buyers ?? []) as string[]).forEach((n, i) =>
-    recipients.push({ envelope_id: envelope.id, role: `buyer${i + 1}`, name: n, email: '', signing_order: 1 })
-  )
-  if (cycle.broker_name)
-    recipients.push({
-      envelope_id: envelope.id,
-      role: 'listing_broker',
-      name: cycle.broker_name,
-      email: session?.user?.email ?? '',
-      signing_order: 2,
-    })
+  const recipients = seedPartyEnvelopeRecipients({
+    envelopeId: envelope.id,
+    buyers: (cycle.buyers ?? []) as string[],
+    sellers: (cycle.sellers ?? []) as string[],
+    brokerName: cycle.broker_name,
+    brokerEmail: session?.user?.email ?? '',
+    cycleKind: (cycle as { kind?: string }).kind,
+    brokerSigningOrder: 2,
+  })
   if (recipients.length) await supabase.from('tc_envelope_recipients').insert(recipients)
 
   await supabase.from('tc_events').insert({

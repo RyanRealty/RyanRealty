@@ -177,7 +177,7 @@ export async function fillOrefSaleAgreementFromDeal(
       })
       await sb.from('tc_envelope_recipients').insert({
         envelope_id: env.id,
-        role: 'listing_broker',
+        role: 'Broker',
         name: 'Matt Ryan',
         email: MATT_OWNED_MAILBOX,
         signing_order: 1,

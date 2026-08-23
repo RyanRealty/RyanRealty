@@ -8,6 +8,9 @@ import {
   generateSigningToken,
   isSignableRole,
   isValidEmail,
+  normalizeRecipientRole,
+  recipientMatchesSigner,
+  seedPartyEnvelopeRecipients,
   type EnvelopeField,
   type EnvelopeStatus,
   type SignFieldType,
@@ -250,7 +253,7 @@ export async function createEnvelopeFromDocuments(
   const supabase = getServiceSupabase()
   const { data: cycle } = await supabase
     .from('tc_cycles')
-    .select('id, deal_id, sellers, buyers, broker_name, tc_deals(address, property_key)')
+    .select('id, deal_id, kind, sellers, buyers, broker_name, tc_deals(address, property_key)')
     .eq('id', cycleId)
     .maybeSingle()
   if (!cycle) return { ok: false, error: 'Cycle not found' }
@@ -281,21 +284,14 @@ export async function createEnvelopeFromDocuments(
   )
 
   // pre-seed recipients from the cycle parties (emails completed in the composer)
-  const recipients: DbRow[] = []
-  ;((cycle.buyers ?? []) as string[]).forEach((n, i) =>
-    recipients.push({ envelope_id: env.id, role: `buyer${i + 1}`, name: n, email: '', signing_order: 1 })
-  )
-  ;((cycle.sellers ?? []) as string[]).forEach((n, i) =>
-    recipients.push({ envelope_id: env.id, role: `seller${i + 1}`, name: n, email: '', signing_order: 2 })
-  )
-  if (cycle.broker_name)
-    recipients.push({
-      envelope_id: env.id,
-      role: 'listing_broker',
-      name: cycle.broker_name,
-      email: auth.email,
-      signing_order: 3,
-    })
+  const recipients = seedPartyEnvelopeRecipients({
+    envelopeId: env.id,
+    buyers: (cycle.buyers ?? []) as string[],
+    sellers: (cycle.sellers ?? []) as string[],
+    brokerName: cycle.broker_name,
+    brokerEmail: auth.email,
+    cycleKind: (cycle as DbRow).kind,
+  })
   if (recipients.length) await supabase.from('tc_envelope_recipients').insert(recipients)
 
   await supabase.from('tc_events').insert({
@@ -331,7 +327,7 @@ export async function createEnvelopeFromTemplate(
   const supabase = getServiceSupabase()
   const { data: cycle } = await supabase
     .from('tc_cycles')
-    .select('id, deal_id, sellers, buyers, broker_name, tc_deals(address)')
+    .select('id, deal_id, kind, sellers, buyers, broker_name, tc_deals(address)')
     .eq('id', cycleId)
     .maybeSingle()
   if (!cycle) return { ok: false, error: 'Cycle not found' }
@@ -352,23 +348,21 @@ export async function createEnvelopeFromTemplate(
     .single()
   if (envErr) return { ok: false, error: envErr.message }
 
-  // recipients from the cycle parties (emails completed in the composer)
-  const recipients: DbRow[] = []
-  ;((cycle.buyers ?? []) as string[]).forEach((n, i) =>
-    recipients.push({ envelope_id: env.id, role: `buyer${i + 1}`, name: n, email: '', signing_order: 1 }))
-  ;((cycle.sellers ?? []) as string[]).forEach((n, i) =>
-    recipients.push({ envelope_id: env.id, role: `seller${i + 1}`, name: n, email: '', signing_order: 2 }))
-  if (cycle.broker_name)
-    recipients.push({ envelope_id: env.id, role: 'listing_broker', name: cycle.broker_name, email: auth.email, signing_order: 3 })
+  const recipients = seedPartyEnvelopeRecipients({
+    envelopeId: env.id,
+    buyers: (cycle.buyers ?? []) as string[],
+    sellers: (cycle.sellers ?? []) as string[],
+    brokerName: cycle.broker_name,
+    brokerEmail: auth.email,
+    cycleKind: (cycle as DbRow).kind,
+  })
   let savedRecipients: DbRow[] = []
   if (recipients.length) {
     const { data: rs } = await supabase.from('tc_envelope_recipients').insert(recipients).select('id, role')
     savedRecipients = (rs ?? []) as DbRow[]
   }
   const recipientByRole = (role: SignerRole): string | null => {
-    if (!role) return null
-    const want = role === 'seller' ? 'seller' : role === 'listing_agent' ? 'listing_broker' : 'buyer'
-    const match = savedRecipients.find((r) => String(r.role).startsWith(want))
+    const match = savedRecipients.find((r) => recipientMatchesSigner(String(r.role), role))
     return match ? (match.id as string) : null
   }
 
@@ -468,7 +462,7 @@ export async function saveEnvelopeRecipients(
   const rows = recipients.map((r) => ({
     ...(r.id ? { id: r.id } : {}),
     envelope_id: envelopeId,
-    role: r.role,
+    role: normalizeRecipientRole(r.role),
     name: r.name?.trim() ?? '',
     email: r.email?.trim().toLowerCase() ?? '',
     signing_order: Math.max(1, Math.round(r.signingOrder || 1)),

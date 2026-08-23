@@ -11,9 +11,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   generateSigningToken,
   isSignableRole,
-  RECIPIENT_ROLE_LABEL,
+  recipientRoleLabel,
   type EnvelopeField,
-  type RecipientRole,
 } from './signing'
 import { sealEnvelope, type SealDocumentInput, type SealRecipientSummary } from './seal-pdf'
 import { sendSigningInvite, sendCompletionCopy, sendBrokerSignedNotice } from './signing-emails'
@@ -141,7 +140,7 @@ export async function sealAndCompleteEnvelope(supabase: Sb, envelopeId: string):
   const recipSummaries: SealRecipientSummary[] = ((recips ?? []) as DbRow[]).map((r) => ({
     name: r.name ?? '',
     email: r.email ?? '',
-    roleLabel: RECIPIENT_ROLE_LABEL[r.role as RecipientRole] ?? r.role,
+    roleLabel: recipientRoleLabel(r.role),
     signingOrder: r.signing_order ?? 1,
     consentedAt: r.consented_at,
     viewedAt: r.viewed_at,

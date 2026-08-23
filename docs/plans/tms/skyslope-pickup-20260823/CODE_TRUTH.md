@@ -22,7 +22,7 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | Twilio → deal | MISSING | `crm_timeline` only. |
 | FUB/CRM → deal log | MISSING | FUB dead. Person timeline ≠ deal log. |
 | OR / OREF / ODS libraries | EXISTS codes + ingest | OR 1837, ODS 1528, OREF 1340. Blanks via ingest, not bundled PDFs. |
-| `RECIPIENT_ROLES` in `signing.ts` | INVENTED vs live | Replace from `ROLE_LIST.md`. |
+| `RECIPIENT_ROLES` in `signing.ts` | EXISTS (live Forms enum this branch) | Picker = Buyer / Seller / EscrowOfficer / TitleOfficer / LoanOfficer / BuyerAgent / SellerAgent / Broker / Other. Legacy codes normalize on read/write. `cc` = Receives a copy, not a Forms role. |
 | `TC_CONTACT_ROLES` in `contact-roles.ts` | DIFFERENT LIST | Deal-side vendors (appraiser, TC, home warranty, attorney) — **not** the Forms file Role dropdown. Do not collapse the two. |
 | SkySlope import → deal log | EXISTS as history | `cycle_imported_from_skyslope`. Native clicks also append. Mail/Twilio/FUB never do. |
 

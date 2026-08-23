@@ -20,13 +20,17 @@ import {
 } from '@/app/actions/tc-envelopes'
 import {
   RECIPIENT_ROLES,
-  RECIPIENT_ROLE_LABEL,
+  COPY_ONLY_ROLE,
   SIGN_FIELD_TYPES,
   SIGN_FIELD_LABEL,
   DEFAULT_FIELD_SIZE,
   isSignableRole,
+  coerceRecipientPickerRole,
+  recipientRoleLabel,
   type SignFieldType,
 } from '@/lib/tc/signing'
+
+const PICKER_ROLES = [...RECIPIENT_ROLES, COPY_ONLY_ROLE] as const
 
 const RECIPIENT_COLORS = ['#2563eb', '#16a34a', '#db2777', '#9333ea', '#ea580c', '#0891b2', '#ca8a04']
 
@@ -37,7 +41,13 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   const readonly = detail.status !== 'draft'
 
   const [recipients, setRecipients] = useState<RecipientInput[]>(
-    detail.recipients.map((r) => ({ id: r.id, role: r.role, name: r.name, email: r.email, signingOrder: r.signingOrder }))
+    detail.recipients.map((r) => ({
+      id: r.id,
+      role: coerceRecipientPickerRole(r.role),
+      name: r.name,
+      email: r.email,
+      signingOrder: r.signingOrder,
+    }))
   )
   const [fields, setFields] = useState<LocalField[]>(
     detail.fields.map((f, i) => ({
@@ -73,7 +83,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     setRecipients((rs) => rs.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
   }
   function addRecipient() {
-    setRecipients((rs) => [...rs, { role: 'buyer1', name: '', email: '', signingOrder: 1 }])
+    setRecipients((rs) => [...rs, { role: 'Buyer', name: '', email: '', signingOrder: 1 }])
   }
   function removeRecipient(idx: number) {
     const removed = recipients[idx]
@@ -90,7 +100,13 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       return
     }
     setRecipients(
-      res.recipients.map((r) => ({ id: r.id, role: r.role, name: r.name, email: r.email, signingOrder: r.signingOrder }))
+      res.recipients.map((r) => ({
+        id: r.id,
+        role: coerceRecipientPickerRole(r.role),
+        name: r.name,
+        email: r.email,
+        signingOrder: r.signingOrder,
+      }))
     )
     if (!activeRecipientId) setActiveRecipientId(res.recipients.find((r) => isSignableRole(r.role))?.id ?? null)
     setStatus('Signers saved')
@@ -236,8 +252,10 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                   <Select value={r.role} onValueChange={(v) => updateRecipient(i, { role: v })} disabled={readonly}>
                     <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {RECIPIENT_ROLES.map((role) => (
-                        <SelectItem key={role} value={role} className="text-xs">{RECIPIENT_ROLE_LABEL[role]}</SelectItem>
+                      {PICKER_ROLES.map((role) => (
+                        <SelectItem key={role} value={role} className="text-xs">
+                          {recipientRoleLabel(role)}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -278,7 +296,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                   <SelectContent>
                     {savedSignable.map((r) => (
                       <SelectItem key={r.id} value={r.id!} className="text-xs">
-                        {r.name || RECIPIENT_ROLE_LABEL[r.role as keyof typeof RECIPIENT_ROLE_LABEL] || r.role}
+                        {r.name || recipientRoleLabel(r.role)}
                       </SelectItem>
                     ))}
                   </SelectContent>
