@@ -12,6 +12,9 @@ export const TC_EVENT_LABEL: Record<string, string> = {
   envelope_voided: 'Envelope voided',
   cycle_imported_from_skyslope: 'Imported from SkySlope',
   oref_filled: 'OREF filled',
+  person_added: 'Person added',
+  deal_stage_changed: 'Stage changed',
+  contact_added: 'Contact added',
 }
 
 export function tcEventLabel(action: string | null | undefined): string {

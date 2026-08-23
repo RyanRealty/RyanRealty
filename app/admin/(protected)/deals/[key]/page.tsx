@@ -411,8 +411,8 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   return (
     <div className="av2-scope" style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
       <nav aria-label="Breadcrumb" style={{ ...tiny, margin: '0 0 8px' }}>
-        <Link href="/admin/deals" style={{ color: 'var(--a-accent)' }}>
-          Deals
+        <Link href="/admin/closings" style={{ color: 'var(--a-accent)' }}>
+          Closings
         </Link>
       </nav>
 
