@@ -68,6 +68,7 @@ export function DealOffers({
             template={`minmax(120px, 0.8fr) ${offers.map(() => 'minmax(140px, 1fr)').join(' ')}`}
             minWidth={220 + offers.length * 160}
             rows={rows}
+            empty="No offers on this file yet."
           />
           {stage === 'active_listing' || stage === 'pending' ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>

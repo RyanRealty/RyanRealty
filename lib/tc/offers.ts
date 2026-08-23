@@ -1,3 +1,5 @@
+import { formatPriceExact } from '@/lib/format/money'
+
 export const OFFER_STATUSES = ['received', 'countered', 'accepted', 'rejected', 'expired'] as const
 export type OfferStatus = (typeof OFFER_STATUSES)[number]
 
@@ -46,12 +48,7 @@ export const OFFER_COMPARE_ROWS = [
 ] as const
 
 export function formatOfferMoney(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(Number(n))) return '—'
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(Number(n))
+  return formatPriceExact(n == null ? n : Number(n))
 }
 
 export function offerCompareValue(offer: DealOffer, key: (typeof OFFER_COMPARE_ROWS)[number]['key']): string {
