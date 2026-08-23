@@ -5,6 +5,7 @@ import {
   EMPTY_SUBDIVISION_COUNTS,
   subdivisionCountItems,
   subdivisionCountsHasRow,
+  subdivisionExtraItems,
 } from '@/lib/data/market-truth/subdivision-counts'
 
 vi.mock('@/lib/data/market-truth/getMetric', () => ({
@@ -18,10 +19,13 @@ describe('subdivision counts-only grain', () => {
         activeCount: 4,
         pendingCount: 1,
         closedCount: 9,
+        extras: [],
       }).map((i) => i.key),
     ).toEqual(['active', 'pending', 'closed'])
     expect(subdivisionCountsHasRow(EMPTY_SUBDIVISION_COUNTS)).toBe(false)
-    expect(subdivisionCountItems({ activeCount: 0, pendingCount: null, closedCount: null })).toEqual([])
+    expect(
+      subdivisionCountItems({ activeCount: 0, pendingCount: null, closedCount: null, extras: [] }),
+    ).toEqual([])
   })
 
   it('compute writes counts only — no price, MOS, or verdict cells', () => {
@@ -58,5 +62,24 @@ describe('subdivision counts-only grain', () => {
     expect(page).toMatch(/getSubdivisionCounts/)
     expect(page).toMatch(/PublicSubdivisionCounts/)
     expect(page).not.toMatch(/getDetachedMarket/)
+  })
+
+  it('extra types print active counts only — no MOS, median, or verdict', () => {
+    const items = subdivisionExtraItems([
+      { segment: 'land', activeCount: 3 },
+      { segment: 'condo', activeCount: 0 },
+      { segment: 'manufactured_land', activeCount: 2 },
+    ])
+    expect(items.map((i) => i.key)).toEqual(['land', 'manufactured_land'])
+    expect(items[0]?.label).toContain('lots')
+    expect(items.map((i) => i.label).join(' ')).not.toMatch(/month/i)
+    expect(items.map((i) => i.label).join(' ')).not.toMatch(/\$/)
+    const src = readFileSync(resolve('lib/data/market-truth/subdivision-counts.ts'), 'utf8')
+    expect(src).toMatch(/PUBLIC_PLACE_SEGMENTS/)
+    expect(src).not.toMatch(/months_of_supply/)
+    expect(src).not.toMatch(/median_list/)
+    const ui = readFileSync(resolve('app/subdivisions/[slug]/PublicSubdivisionCounts.tsx'), 'utf8')
+    expect(ui).toMatch(/Other product types/)
+    expect(ui).not.toMatch(/publicSegmentDisplayBits/)
   })
 })
