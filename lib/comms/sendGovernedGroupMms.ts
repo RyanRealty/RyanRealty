@@ -114,6 +114,23 @@ export async function sendGovernedGroupMms(
   } catch (e) {
     console.warn('[comms] conversation shadow-write (group) failed', e)
   }
+  try {
+    const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
+    const personIds = req.members
+      .map((m) => m.personId)
+      .filter((id): id is number => typeof id === 'number' && id > 0)
+    await fileCommsToVault({
+      personIds,
+      channel: 'sms',
+      actor: `crm:${slug}`,
+      title: 'Group text sent',
+      body: req.mergedBody,
+      filenames: group.media.map((m) => m.contentType),
+      dedupeKey: `sms-out:${group.messageSid}`,
+    })
+  } catch (e) {
+    console.warn('[comms] vault auto-file (group) failed', e)
+  }
   return {
     ok: true,
     conversationSid: group.conversationSid,

@@ -91,6 +91,20 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
         participants: [{ personId: req.personId, address: to, displayName: person.name ?? null }],
       })
     } catch (e) { console.warn('[comms] conversation shadow-write (sms 1:1) failed', e) }
+    try {
+      const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')
+      await fileCommsToVault({
+        personIds: [req.personId],
+        channel: 'sms',
+        actor: `crm:${slug}`,
+        title: 'Text sent',
+        body: mergedBody,
+        filenames: storedMedia.map((m) => m.name),
+        dedupeKey: `sms-out:${sent.sid}`,
+      })
+    } catch (e) {
+      console.warn('[comms] vault auto-file (sms 1:1) failed', e)
+    }
     return { ok: true, sid: sent.sid, to }
   }
 

@@ -29,6 +29,7 @@ const h = vi.hoisted(() => ({
   prepareDeliverableEmail: vi.fn(),
   resendSendEmail: vi.fn(),
   inserts: [] as Array<{ table: string; rows: unknown }>,
+  fileCommsToVault: vi.fn(),
 }))
 
 vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: h.isSuppressed }))
@@ -48,6 +49,7 @@ vi.mock('@/lib/crm/twilio', () => ({
 vi.mock('@/lib/crm/twilio-conversations', () => ({ sendGroupMms: h.sendGroupMms }))
 vi.mock('@/lib/data/crm/shortLinks', () => ({ instrumentSmsLinks: h.instrumentSmsLinks }))
 vi.mock('@/lib/crm/record-message', () => ({ recordConversationMessage: h.recordConversationMessage }))
+vi.mock('@/lib/tc/file-comms-write', () => ({ fileCommsToVault: h.fileCommsToVault }))
 vi.mock('@/lib/crm/gmail', () => ({
   CRM_MAILBOXES: [
     { email: 'matt@ryan-realty.com', slug: 'matt' },
@@ -109,6 +111,7 @@ function wireHappySmsPath() {
 beforeEach(() => {
   vi.clearAllMocks()
   h.inserts.length = 0
+  h.fileCommsToVault.mockResolvedValue({ filed: false, documentIds: [], checklistItemIds: [], skipped: 'no-deal' })
   // Idempotency default: transparent pass-through (the ledger is exercised by
   // its own unit tests in lib/crm) — these tests assert WHEN it is consulted.
   h.withSendIdempotency.mockImplementation(async (_args: unknown, run: () => Promise<unknown>) => run())
@@ -136,6 +139,7 @@ describe('sendGovernedSms — guard order', () => {
     expect(h.sendSms).not.toHaveBeenCalled()
     expect(h.sendSmsViaMessagingService).not.toHaveBeenCalled()
     expect(h.inserts.filter((i) => i.table !== 'admin_actions')).toHaveLength(0)
+    expect(h.fileCommsToVault).not.toHaveBeenCalled()
   })
 
   it('a suppressed person NEVER reaches quiet hours, idempotency, the provider, or the timeline', async () => {
@@ -206,6 +210,14 @@ describe('sendGovernedSms — guard order', () => {
       dedupe_key: 'twilio:SM123:p42',
     })
     expect(h.recordConversationMessage).toHaveBeenCalledTimes(1)
+    expect(h.fileCommsToVault).toHaveBeenCalledWith(
+      expect.objectContaining({
+        personIds: [42],
+        channel: 'sms',
+        title: 'Text sent',
+        dedupeKey: 'sms-out:SM123',
+      }),
+    )
   })
 
   it('no phone on file refuses at the recipient stage without touching the provider', async () => {
@@ -387,6 +399,7 @@ describe('sendGovernedGroupMms — one thread, same guards', () => {
     if (res.ok === false) expect(res.stage).toBe('suppression')
     expect(h.sendGroupMms).not.toHaveBeenCalled()
     expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
+    expect(h.fileCommsToVault).not.toHaveBeenCalled()
   })
 
   it('sends one group thread after every member clears guards', async () => {
@@ -410,5 +423,13 @@ describe('sendGovernedGroupMms — one thread, same guards', () => {
     expect(h.sendGroupMms).toHaveBeenCalledTimes(1)
     expect(h.sendGroupMms.mock.calls[0][0].participants).toEqual(['+15415551111', '+15415552222'])
     expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(2)
+    expect(h.fileCommsToVault).toHaveBeenCalledWith(
+      expect.objectContaining({
+        personIds: [42, 43],
+        channel: 'sms',
+        title: 'Group text sent',
+        dedupeKey: 'sms-out:IM1',
+      }),
+    )
   })
 })

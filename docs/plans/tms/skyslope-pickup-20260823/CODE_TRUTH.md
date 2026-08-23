@@ -19,7 +19,7 @@ Read from pickup worktree (contains `e24c3f0e4`) and the code-truth specialist. 
 | Listing pipeline grid | MISSING | `/admin/listings` = MLS. Spec T3.2 unbuilt. |
 | `tc_events` | EXISTS | Append-only. Writers: native TC, SkySlope migrate, **this branch** Gmail `mail_filed` + Twilio `sms_filed`. |
 | Email → Vault auto-file | EXISTS (this branch) | `lib/tc/file-comms.ts` + `file-comms-write.ts`. Gmail `syncMailboxWindow` after CRM person match. PDFs (cap 3) → `tc-documents` `inbox/` + matching checklist. Fail-open. Address-only fallback needs score ≥ 2 (SkySlope-migrated deals often lack `tc_deal_people`). |
-| Twilio → deal | EXISTS (this branch) | Inbound SMS after `crm_timeline` upsert. Same writer. MMS PDFs fetched immediately via `fetchTwilioMedia` (URLs expire). Photos stay on the CRM thread. |
+| Twilio → deal | EXISTS (this branch) | Inbound SMS after `crm_timeline` upsert. Outbound 1:1 and group via `sendGovernedSms` / `sendGovernedGroupMms`. MMS PDFs fetched immediately via `fetchTwilioMedia` (URLs expire). Photos stay on the CRM thread. Sequence-engine drips are not filed. |
 | FUB/CRM → deal log | PARTIAL (this branch) | FUB dead. CRM Gmail person timeline now also files onto the matching Vault deal. |
 | OR / OREF / ODS libraries | EXISTS codes + ingest | OR 1837, ODS 1528, OREF 1340. Blanks via ingest, not bundled PDFs. |
 | `RECIPIENT_ROLES` in `signing.ts` | EXISTS (live Forms enum this branch) | Picker = Buyer / Seller / EscrowOfficer / TitleOfficer / LoanOfficer / BuyerAgent / SellerAgent / Broker / Other. Legacy codes normalize on read/write. `cc` is no longer written. |
