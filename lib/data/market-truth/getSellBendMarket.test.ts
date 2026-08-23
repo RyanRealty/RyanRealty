@@ -34,6 +34,13 @@ describe('getSellBendMarket', () => {
     expect(cma).toMatch(/mt-v1 detached MLS-city/)
   })
 
+  it('city page HUD reads getCityDetachedMarket and map tiles are detached', () => {
+    const page = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+    expect(page).toMatch(/getCityDetachedMarket/)
+    expect(page).toMatch(/propertySubType: 'Single Family Residence'/)
+    expect(page).toMatch(/displayedActiveCount=\{marketActive\}/)
+  })
+
   it('/sell and the JSON feed both read Market Truth detached', () => {
     const page = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
     const feed = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')

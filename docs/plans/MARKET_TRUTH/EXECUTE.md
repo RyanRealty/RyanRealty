@@ -220,17 +220,15 @@ registry-declared and land as a follow-on compute. Recon: `RECON.md`. `/sell` re
       Flipped 2026-08-23: `/sell` reads `getSellBendMarket()` → `getMetric` (detached, MLS City
       Bend). Live cells: **775 / 4.45 / balanced**. Dataset JSON-LD and `/data/market/city/bend`
       overlay the same three. Never falls back to pulse.
-- [ ] Then CMA and BPO — the subdivision speed statistic there can never render today
-      (`lib/cma/subdivision-story.ts` reads the empty `CumulativeDaysOnMarket`), and the CMA computes
-      market-area chapters over the whole A bucket while the cache figures beside them are SFR-only.
-      2026-08-23: city-grain CMA/BPO MoS, active count, verdict, and median list now
-      `getCityDetachedMarket` (same path as `/sell`). Subdivision pace uses
-      `days_to_pending`, not CDOM. Seasonality, financing, and subdivision-pulse
-      extras filter detached (D1), not the mixed A bucket.
+- [x] Then CMA and BPO — city-grain live stats match `/sell` (`getCityDetachedMarket`).
+      Subdivision pace uses `days_to_pending`. Extras filter detached (D1). Comps still
+      fetch PropertyType A then `keepSameProductType` in memory.
 - [ ] Then place pages, market hub, newsletter, video producers, JSON feeds, admin.
       2026-08-23: city and region `getMarketPulse` / snapshots / JSON feed overlay
       `getDetachedMarket` so header, hub, homepage, and `/data/market` cannot
-      print pulse 488 next to `/sell` 775. Neighborhood grains stay pulse.
+      print pulse 488 next to `/sell`. City HUD / FAQ / Dataset use
+      `getCityDetachedMarket` for active, MoS, and median; the map grid stays
+      the address-set doors, now detached. Neighborhood grains stay pulse.
 - [ ] Each surface proves reconciliation before it flips.
 
 **Done when:** `/sell` reads `getMetric` for active count, months of supply, and verdict; the three

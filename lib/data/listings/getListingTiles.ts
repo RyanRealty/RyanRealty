@@ -115,6 +115,8 @@ const FilterSchema = z.object({
    * listings table is 'A' so most LP routes get SFR + multi-family.
    */
   propertyType: z.string().min(1).max(4).optional(),
+  /** MLS property_sub_type, e.g. 'Single Family Residence' (D1 detached). */
+  propertySubType: z.string().min(1).max(80).optional(),
   /**
    * Geographic scope guard (audit P0-3 2026-06-10). The MLS feed is statewide,
    * so an unscoped pull surfaces Grants Pass / Ashland / Klamath Falls homes
@@ -358,6 +360,7 @@ function applyTileFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>):
   // constraining, else the filter silently matches nothing. [[ryanrealty-amenities-column-empty]]
   const ptCodes = propertyTypeFilterToCodes(parsed.propertyType)
   if (ptCodes && ptCodes.length > 0) query = query.in('property_type', ptCodes)
+  if (parsed.propertySubType) query = query.eq('property_sub_type', parsed.propertySubType)
   if (parsed.listingKeys && parsed.listingKeys.length > 0) {
     query = query.in('listing_key', parsed.listingKeys)
   }

@@ -35,6 +35,7 @@ import {
   getAllCitySnapshots,
   getRecentBlogPosts,
   getAreaGuideVideo,
+  getCityDetachedMarket,
 } from '@/lib/data'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
@@ -150,11 +151,12 @@ export default async function CityDetailPage({ params }: Props) {
   const geoSlug = canonicalCityCacheSlug(slug)
 
   const [
-    pulseRead, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
+    pulseRead, detached, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
   ] = await Promise.all([
     withTimeoutFallbackResult(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
+    withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
     withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'city', geoSlug }), null, 3000, 'city:mktStats'),
     withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
@@ -176,11 +178,11 @@ export default async function CityDetailPage({ params }: Props) {
     // market_pulse_live's SFR activeCount. All-types tiles here made the badge read
     // 1,000 against a hero of 491 on /cities/bend. The 1500 cap also stops binding
     // once the pull is SFR-only.
-    withTimeoutFallbackResult(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: CITY_TILE_FETCH_LIMIT }), [], 4500, 'city:mapTiles'),
+    withTimeoutFallbackResult(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', propertySubType: 'Single Family Residence', limit: CITY_TILE_FETCH_LIMIT }), [], 4500, 'city:mapTiles'),
     // Wide SFR pool for curateFeaturedTiles below — the old price-desc top-14
     // pull had ONLY luxury outliers in it, so curation ran but had nothing
     // mid-market to pick from (design-audit P2).
-    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: 300 }), [], 4500, 'city:featured'),
+    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', propertySubType: 'Single Family Residence', limit: 300 }), [], 4500, 'city:featured'),
     // Uncapped active SFR tiles for the city — the source for alias-aware resort
     // counts. mapTiles is capped at 1500 + all-types, which UNDERcounts resorts
     // (Widgi 28 vs true 48). This SFR-only, high-limit pull is exact. (§0)
@@ -393,12 +395,19 @@ export default async function CityDetailPage({ params }: Props) {
 
   // Market HUD.
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const monthsOfSupply = publishMonthsOfSupply({ grain: 'city', pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount })
+  const marketActive = detached?.activeCount ?? pulse?.activeCount ?? null
+  const monthsOfSupply = publishMonthsOfSupply({
+    grain: 'city',
+    pulseMos: detached?.monthsOfSupply ?? pulse?.monthsOfSupply,
+    pulseActiveCount: marketActive,
+    displayedActiveCount: marketActive,
+  })
+  const marketMedian = detached?.medianListPrice ?? publishedMedian
   const marketData: KbMarketData = {
-    active: activeCount,
+    active: marketActive,
     closed30: pulse?.closedLast30Days ?? null,
     new30: null,
-    medianList: publishedMedian,
+    medianList: marketMedian,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
@@ -415,8 +424,9 @@ export default async function CityDetailPage({ params }: Props) {
   // awaited above and never null. Every figure stays verified (§0).
   const marketFaqInput: MarketFaqInput = {
     ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }),
-    activeCount: activeCount ?? snapshot.activeSfrCount, pulseActiveCount: pulse?.activeCount ?? null,
-    medianListPrice: publishedMedian ?? snapshot.medianListPrice,
+    activeCount: marketActive ?? snapshot.activeSfrCount,
+    pulseActiveCount: marketActive,
+    medianListPrice: marketMedian ?? snapshot.medianListPrice,
     grain: 'city',
     monthsOfSupply,
   }
@@ -521,7 +531,7 @@ export default async function CityDetailPage({ params }: Props) {
             cityName={cityName}
             publishedMos={monthsOfSupply}
             publishedDtp={pulse?.medianDaysToPending ?? null}
-            displayedActiveCount={activeCount}
+            displayedActiveCount={marketActive}
           />
         </KbMarketHud>
         <KbExploreTowns
