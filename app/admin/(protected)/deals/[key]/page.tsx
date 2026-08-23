@@ -62,6 +62,7 @@ import { getEnvelopesForCycle, listEnvelopeTemplates } from '@/app/actions/tc-en
 import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/data'
 import { getDealParties } from '@/lib/data/tc/deal-people'
 import { DealParties } from './DealParties'
+import { DealStageControls } from './DealStageControls'
 import { tcEventDetailPreview, tcEventLabel } from '@/lib/tc/events'
 import {
   COMMISSION_STATUS,
@@ -434,6 +435,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
         >
           {showArchived ? 'Hide archived' : 'Show archived'}
         </Link>
+        <DealStageControls propertyKey={deal.property_key} stage={deal.stage} />
       </div>
 
       {deal.cycles.length === 0 ? (

@@ -18,6 +18,8 @@ import { dayOneComplete, dayOneRemaining } from '@/lib/crm/day-one'
 import { createServiceClient } from '@/lib/supabase/service'
 import { todayInboundYesEnabled } from '@/lib/crm/today-inbound-draft'
 import { Button, QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
+import { getClosingsBoard, incompleteInFlight } from '@/lib/data/tc/closings'
+import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import {
   confirmParkedStepToday,
   skipParkedStepToday,
@@ -91,7 +93,7 @@ export default async function TodayPage() {
   const brokerScope = scopeBroker(ctx)
   const nowMs = Date.now()
 
-  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne, join] = await Promise.all([
+  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne, join, closings] = await Promise.all([
     getInboundTriage(brokerScope),
     getLookingAtNow(brokerScope),
     getBrokerActionQueue({ brokerSlug: brokerScope }),
@@ -100,7 +102,13 @@ export default async function TodayPage() {
     readyApprovals(),
     getDayOneChecklist(ctx),
     getJoinConversionStats(),
+    getClosingsBoard(),
   ])
+  const tcIncomplete = incompleteInFlight(
+    closings.deals.filter((d) =>
+      dealVisibleToBroker({ role: ctx.role, brokerSlug: ctx.brokerSlug, dealBrokerName: d.brokerName }),
+    ),
+  ).slice(0, 8)
 
   type CmaRow = {
     slug: string
@@ -115,7 +123,13 @@ export default async function TodayPage() {
   )
   const dueTasks = tasks.rows.slice(0, 8)
   const total =
-    lookingAt.length + triage.length + parked.length + cmaDrafts.length + approvals.length + dueTasks.length
+    lookingAt.length +
+    triage.length +
+    parked.length +
+    cmaDrafts.length +
+    approvals.length +
+    dueTasks.length +
+    tcIncomplete.length
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -146,6 +160,32 @@ export default async function TodayPage() {
             {join.visitsAll} visits all-time. Same figure as the company packet.
           </VerdictLine>
         </div>
+      ) : null}
+
+      {tcIncomplete.length > 0 ? (
+        <section aria-label="Incomplete checklists">
+          <SectionHead>Incomplete checklists</SectionHead>
+          <ul className="av2-queue">
+            {tcIncomplete.map((d) => (
+              <QueueRow
+                key={d.id}
+                kind="Incomplete"
+                kindTone="slow"
+                title={d.address}
+                context={`${d.itemsRequired} required · ${d.brokerName ?? '—'}`}
+                action={
+                  <Link
+                    href={`/admin/deals/${encodeURIComponent(d.propertyKey)}`}
+                    className="av2-btn"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    Open deal
+                  </Link>
+                }
+              />
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {dayOne.applies && !dayOneComplete(dayOne.items) ? (

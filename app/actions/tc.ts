@@ -230,6 +230,53 @@ export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
   }
 }
 
+/** Listing withdraw / restore. Not a SkySlope kebab clone — one stage flip + audit row. */
+export async function setDealStage(input: {
+  propertyKey: string
+  stage: 'active_listing' | 'dead'
+  detail: string
+}): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSession()
+  const role = await getAdminRoleForEmail(session?.user?.email ?? null)
+  if (!role || (role.role !== 'superuser' && role.role !== 'broker')) {
+    return { ok: false, error: 'Not authorized' }
+  }
+  const supabase = getServiceSupabase()
+  const { data: deal } = await supabase
+    .from('tc_deals')
+    .select('id, property_key, stage, broker_name')
+    .eq('property_key', input.propertyKey)
+    .maybeSingle()
+  if (!deal) return { ok: false, error: 'Deal not found' }
+  const ctx = await getAdminCapabilityContext()
+  if (
+    !ctx ||
+    !dealVisibleToBroker({
+      role: ctx.role,
+      brokerSlug: ctx.brokerSlug,
+      dealBrokerName: deal.broker_name,
+    })
+  ) {
+    return { ok: false, error: 'Not authorized' }
+  }
+  const from = String(deal.stage)
+  if (from === input.stage) return { ok: true }
+  const { error } = await supabase
+    .from('tc_deals')
+    .update({ stage: input.stage, stage_detail: input.detail })
+    .eq('id', deal.id)
+  if (error) return { ok: false, error: error.message }
+  await supabase.from('tc_events').insert({
+    deal_id: deal.id,
+    actor: session?.user?.email ?? 'admin',
+    action: 'deal_stage_changed',
+    detail: { from, to: input.stage, detail: input.detail },
+  })
+  revalidatePath('/admin/closings')
+  revalidatePath(`/admin/deals/${input.propertyKey}`)
+  return { ok: true }
+}
+
 /** Short-lived signed URL for a stored document (5 minutes). */
 export async function getTcDocumentUrl(documentId: string): Promise<{ url: string | null; error?: string }> {
   const supabase = getServiceSupabase()

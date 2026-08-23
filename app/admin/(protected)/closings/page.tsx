@@ -230,6 +230,30 @@ export default async function ClosingsPage({
         </section>
       )}
 
+      {closed.filter((d) => d.itemsRequired > 0).length > 0 && (
+        <section aria-label="Closed with incomplete checklist">
+          <h2 className="av2-lane-head">Closed — incomplete</h2>
+          <ul className="av2-queue">
+            {closed
+              .filter((d) => d.itemsRequired > 0)
+              .map((d) => (
+                <QueueRow
+                  key={`inc-closed-${d.id}`}
+                  kind="Archive"
+                  kindTone="slow"
+                  title={d.address}
+                  context={rowContext(d, nowMs)}
+                  action={
+                    <Link href={dealHref(d)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                      Open deal
+                    </Link>
+                  }
+                />
+              ))}
+          </ul>
+        </section>
+      )}
+
       <section aria-label="Closed">
         <h2 className="av2-lane-head">Closed</h2>
         {closed.length === 0 ? (
