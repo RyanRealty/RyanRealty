@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   computeMonthsOfSupply,
@@ -8,6 +10,7 @@ import {
   monthLabel,
 } from './getMarketReportData'
 import type { MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
+import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 
 describe('buildTrendSummary', () => {
   const pt = (
@@ -256,5 +259,83 @@ describe('buildAreaBlock', () => {
     // Thresholds are the canonical classifier's responsibility (lib/market/classify.ts);
     // we only verify the block's verdict equals classifyMarketVerdict(block.monthsOfSupply).
     expect(block!.marketVerdict).toBe(classifyMarketVerdict(block!.monthsOfSupply))
+  })
+
+  const leftover = {
+    medianClose: 760_000,
+    closedCount: 2095,
+    yoyMedian: -0.0194,
+  }
+  const livePulse = { activeCount: 480, monthsOfSupply: 3.5, refreshedAt: '2026-06-25T12:00:00Z' }
+
+  it('leftover median/sold/YoY replace cache trailing 12-month close figures', () => {
+    const block = buildAreaBlock({
+      slug: 'bend',
+      geoType: 'city',
+      detail: FULL_DETAIL,
+      pulse: livePulse,
+      leftover,
+    })
+    expect(block).not.toBeNull()
+    expect(block!.medianPrice).toBe(760_000)
+    expect(block!.soldLast12mo).toBe(2095)
+    expect(block!.yoyPct).toBeCloseTo(-1.94)
+    expect(block!.medianPrice).not.toBe(FULL_DETAIL.medianSalePrice)
+    expect(block!.soldLast12mo).not.toBe(FULL_DETAIL.soldCount)
+    expect(block!.yoyPct).not.toBe(FULL_DETAIL.yoyMedianPriceDeltaPct)
+  })
+
+  it('leftover miss omits median/sold/YoY even when cache had values', () => {
+    const block = buildAreaBlock({
+      slug: 'bend',
+      geoType: 'city',
+      detail: FULL_DETAIL,
+      pulse: livePulse,
+      leftover: EMPTY_PUBLIC_PACE,
+    })
+    expect(block).not.toBeNull()
+    expect(block!.medianPrice).toBeNull()
+    expect(block!.soldLast12mo).toBeNull()
+    expect(block!.soldLast12mo).not.toBe(0)
+    expect(block!.yoyPct).toBeNull()
+    expect(block!.medianPrice).not.toBe(FULL_DETAIL.medianSalePrice)
+    expect(block!.soldLast12mo).not.toBe(FULL_DETAIL.soldCount)
+  })
+
+  it('does not map leftover days-to-contract onto DOM — medianDom stays cache', () => {
+    const block = buildAreaBlock({
+      slug: 'bend',
+      geoType: 'city',
+      detail: FULL_DETAIL,
+      pulse: livePulse,
+      leftover,
+    })
+    expect(block).not.toBeNull()
+    expect(block!.domMedian).toBe(FULL_DETAIL.medianDom)
+    expect(block!.domMedian).not.toBe(28)
+  })
+
+  it('keeps pulse live inventory and MOS when leftover overlays 12-month close', () => {
+    const block = buildAreaBlock({
+      slug: 'bend',
+      geoType: 'city',
+      detail: FULL_DETAIL,
+      pulse: livePulse,
+      leftover,
+    })
+    expect(block).not.toBeNull()
+    expect(block!.activeListings).toBe(480)
+    expect(block!.activeListings).not.toBe(FULL_DETAIL.endOfPeriodInventory)
+    expect(block!.monthsOfSupply).toBe(3.5)
+    expect(block!.source).toBe('market_pulse_live')
+  })
+})
+
+describe('getMarketReportData leftover fetch path', () => {
+  it('reads leftover 12-month close through getPublicDetachedPace', () => {
+    const src = readFileSync(resolve('lib/data/crm/getMarketReportData.ts'), 'utf8')
+    expect(src).toMatch(/getPublicDetachedPace/)
+    expect(src).toMatch(/readAreaLeftover\(geoType, slug\)/)
+    expect(src).toMatch(/leftover,/)
   })
 })

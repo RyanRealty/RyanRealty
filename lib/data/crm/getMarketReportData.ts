@@ -9,16 +9,18 @@
  * email is a compliance failure (CLAUDE.md §0).
  *
  * Source of every block:
- *   - Period-anchored historical analytics: `market_stats_cache` (6h freshness)
- *     read through `getCityMarketDetail` at `period_type='rolling_365d'`. Trailing
- *     12-month window for median price, DOM, YoY, and the email's "homes sold"
- *     line — populated for every subscribable area (cities AND resorts).
+ *   - Trailing 12-month median / sold / YoY: leftover Market Truth cells via
+ *     `getPublicDetachedPace` (`medianClose`, `closedCount`, `yoyMedian`).
+ *     Miss omits those fields — never cache fill. `medianDom` stays
+ *     `market_stats_cache` rolling_365d; leftover days-to-contract is not DOM.
+ *   - Cache `getCityMarketDetail(rolling_365d)` still supplies DOM, health
+ *     label, historical inventory, and the existence row the block needs.
  *   - Live inventory + MoS for cities: `getDetachedMarkets` (Market Truth
  *     detached, same three figures as `/sell`). A city miss does not fall
  *     back to pulse 488 / 3.54 / seller — live headlines stay empty and the
  *     block uses rolling_365d inventory/MOS. Resort neighborhoods still read
  *     `getMarketPulse` (`refresh_community_market_pulse`); MoS at that grain
- *     is withheld (`geo-grain-trust`).
+ *     is withheld (`geo-grain-trust`). Do not invent MOS from leftover sold.
  *
  * Months of supply (CLAUDE.md §0): MoS = active / (closed_6mo / 6). Thresholds:
  * <= 4 sellers, 4-6 balanced, >= 6 buyers. The returned `marketVerdict` is
@@ -27,15 +29,16 @@
  *
  * W8.1a (Matt 2026-07-27: "switch resorts to 6mo"): cities and resorts both
  * prefer live pulse MoS (6-month base) when the row exists. `soldLast12mo`
- * remains the trailing-12-month close count for the email volume line, so
- * `monthsOfSupply` need not equal `activeListings / (soldLast12mo / 12)` —
- * same city pattern, now applied to resorts. Pulse MOS still withholds when
- * the implied six-month closes cannot sit inside the printed 12-month sold
- * count, or when the live numerator is not the count on the block
- * (`publishMonthsOfSupply`). When pulse MoS is null or withheld (sparse
- * slow-turnover geos, or impossible arithmetic), fall back to computing MoS
- * from the rolling_365d sold count via `rawMonthsOfSupply` so the email still
- * has a real figure rather than a blank.
+ * is leftover 12-month closed count when publishable, so `monthsOfSupply`
+ * need not equal `activeListings / (soldLast12mo / 12)`. Pulse MOS still
+ * withholds when the implied six-month closes cannot sit inside the printed
+ * 12-month sold count, or when the live numerator is not the count on the
+ * block (`publishMonthsOfSupply`). Neighborhood MOS stays unpublished unless
+ * that helper's source is market-truth — do not invent MOS from leftover
+ * sold. When pulse MoS is null or withheld (sparse slow-turnover geos, or
+ * impossible arithmetic), city grain may fall back to `rawMonthsOfSupply`
+ * on the cache rolling_365d sold count so leftover closed is not a MOS
+ * formula.
  *
  * Slug resolution: the subscribable areas (lib/data/crm/getContactReportSubscriptions
  * buildMarketReportAreas) are the 7 Central Oregon cities + the 14 resort
@@ -45,8 +48,8 @@
  * for resort communities.
  *
  * DAL boundary (G1): this module reads ONLY through other DAL functions
- * (getCityMarketDetail, getDetachedMarkets, getMarketPulse). It contains
- * no raw `.from()`.
+ * (getCityMarketDetail, getDetachedMarkets, getMarketPulse,
+ * getPublicDetachedPace). It contains no raw `.from()`.
  */
 
 import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
@@ -57,6 +60,11 @@ import {
   getDetachedMarkets,
   type SellBendMarket,
 } from '@/lib/data/market-truth/getSellBendMarket'
+import {
+  EMPTY_PUBLIC_PACE,
+  getPublicDetachedPace,
+  type PublicPaceRow,
+} from '@/lib/data/market-truth/public-pace'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { REPORT_CITY_SLUG_SET } from '@/lib/data/geo/report-cities'
@@ -275,14 +283,37 @@ function toNum(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+async function readAreaLeftover(
+  geoType: 'city' | 'neighborhood',
+  geoSlug: string,
+): Promise<PublicPaceRow> {
+  try {
+    return await getPublicDetachedPace({ geoType, geoSlug })
+  } catch {
+    return { ...EMPTY_PUBLIC_PACE }
+  }
+}
+
+/** Leftover YoY is a fraction; the email field is percent. Miss omits. */
+function leftoverYoyPct(yoyMedian: number | null | undefined): number | null {
+  const n = toNum(yoyMedian)
+  return n == null ? null : n * 100
+}
+
 /**
- * Build one area's block from the historical cache row (+ optional live pulse).
- * Pure given the already-fetched rows — exported so the merge logic (which live
- * source wins, when an area is unavailable) is unit-tested without the DB.
+ * Build one area's block from the historical cache row (+ optional live pulse
+ * and leftover 12-month pace). Pure given the already-fetched rows — exported
+ * so the merge logic (which live source wins, leftover overlay, when an area
+ * is unavailable) is unit-tested without the DB.
  *
  * Returns null when the area has NO usable cache data (no median price AND no
  * active inventory AND no close count) — the caller omits it. We never emit a
  * block whose figures are all null/fabricated.
+ *
+ * When `leftover` is passed (including an empty/miss row), median / sold / YoY
+ * overlay leftover and miss nulls those fields — never cache fill. Omit
+ * `leftover` to keep cache figures (unit tests of pulse/MOS merge).
+ * `medianDom` always stays cache.
  */
 export function buildAreaBlock(args: {
   slug: string
@@ -303,14 +334,18 @@ export function buildAreaBlock(args: {
     monthsOfSupply: number | null
     refreshedAt: string | null
   } | null
+  /** From getPublicDetachedPace. Passed on the fetch path; miss omits 12-month close figures. */
+  leftover?: Pick<PublicPaceRow, 'medianClose' | 'closedCount' | 'yoyMedian'> | null
 }): MarketReportAreaBlock | null {
-  const { slug, geoType, detail, pulse } = args
+  const { slug, geoType, detail, pulse, leftover } = args
   if (!detail) return null
 
-  const medianPrice = toNum(detail.medianSalePrice)
-  const soldLast12mo = toNum(detail.soldCount)
+  const overlay = leftover !== undefined
+  const cacheSold = toNum(detail.soldCount)
+  const medianPrice = overlay ? toNum(leftover?.medianClose) : toNum(detail.medianSalePrice)
+  const soldLast12mo = overlay ? toNum(leftover?.closedCount) : cacheSold
   const domMedian = toNum(detail.medianDom)
-  const yoyPct = toNum(detail.yoyMedianPriceDeltaPct)
+  const yoyPct = overlay ? leftoverYoyPct(leftover?.yoyMedian) : toNum(detail.yoyMedianPriceDeltaPct)
   const historicalActive = toNum(detail.endOfPeriodInventory)
 
   // Live pulse wins for active inventory + MoS when present (10-15 min vs 6h).
@@ -344,15 +379,16 @@ export function buildAreaBlock(args: {
     displayedActiveCount: activeListings,
     soldCount12mo: soldLast12mo,
   })
-  // The trailing-12 absorption fallback reads the same closed series the pulse
-  // figure was built from, so an untrusted grain cannot reach it either — a
-  // resort-community report would otherwise mail a computed figure in place of
-  // the withheld one, off a sold count that finds a fraction of the sales.
+  // The trailing-12 absorption fallback reads cache sold, not leftover
+  // closedCount — leftover is not a MOS formula. An untrusted grain cannot
+  // reach it either: a resort-community report would otherwise mail a computed
+  // figure in place of the withheld one, off a sold count that finds a
+  // fraction of the sales.
   const rawMos =
     liveMos != null
       ? liveMos
       : isSoldAttributionTrusted(geoType)
-        ? rawMonthsOfSupply(activeListings, soldLast12mo)
+        ? rawMonthsOfSupply(activeListings, cacheSold)
         : null
   // Keep two-decimal precision so the display can stay consistent with the
   // raw-derived verdict at the 4.0 / 6.0 boundaries (formatMonths shows the
@@ -384,8 +420,9 @@ export function buildAreaBlock(args: {
  * Fetch the §0-accurate market blocks for a contact's subscribed areas.
  *
  * For each slug: resolve geo_type, pull the trailing-12-month historical row
- * (getCityMarketDetail at rolling_365d) and live inventory (city: Market Truth
- * detached only — no pulse headline fallback; resort neighborhood: getMarketPulse).
+ * (getCityMarketDetail at rolling_365d), leftover 12-month pace
+ * (getPublicDetachedPace), and live inventory (city: Market Truth detached
+ * only — no pulse headline fallback; resort neighborhood: getMarketPulse).
  * Areas with no cache data are OMITTED. The result preserves input order, de-duped by slug.
  *
  * The send engine (Phase B) calls this, then renderMarketReportEmail, then the
@@ -427,12 +464,13 @@ export async function getMarketReportData(
             detached.get(`city:${cityDetachedSlug(cacheSlug)}`)
           : undefined
 
-      const [detail, pulse, trendPoints] = await Promise.all([
+      const [detail, pulse, trendPoints, leftover] = await Promise.all([
         getCityMarketDetail({ geoType, geoSlug: cacheSlug, periodType: 'rolling_365d' }),
         geoType === 'neighborhood'
           ? getMarketPulse({ geoType, geoSlug: cacheSlug })
           : Promise.resolve(null),
         getMarketTrend(geoType, cacheSlug, 12),
+        readAreaLeftover(geoType, slug),
       ])
 
       const live = mt
@@ -464,6 +502,7 @@ export async function getMarketReportData(
             }
           : null,
         pulse: live,
+        leftover,
       })
       if (!block) return null
       return { ...block, trend: buildTrendSummary(trendPoints) }

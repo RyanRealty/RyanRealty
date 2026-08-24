@@ -25,16 +25,18 @@
  *   Median price    -> market_stats_cache.median_sale_price for 30d / 90d / ytd;
  *                      leftover.medianClose when the chosen period is rolling_365d
  *   Median DOM      -> market_stats_cache.median_dom                     (chosen period)
- *   $/sq ft         -> market_stats_cache.median_price_per_sqft_closed   (chosen period)
+ *   $/sq ft         -> market_stats_cache.median_price_per_sqft_closed for 30d / 90d / ytd;
+ *                      leftover.medianPpsf when the chosen period is rolling_365d
  *   Active listings -> market_pulse_live.active_count                    (live, no period)
  *   Sales (12 mo)   -> leftover.closedCount (Market Truth 12-month). Miss omits;
  *                      never cache rolling_365d. Default range is 30 days — leftover
  *                      does not map onto that Sold column.
  *   Months of supply-> market_pulse_live.months_of_supply                (canonical /6)
  *
- * Leftover days-to-contract is not DOM. Leftover ppsf is not the cache $/sq ft
- * column. Those stay cache. UNKNOWN IS NOT ZERO: a leftover miss nulls the
- * 12-month count (and rolling_365d Sold/Median) rather than printing cache.
+ * Leftover days-to-contract is not DOM — Median DOM stays cache on every period.
+ * On rolling_365d, leftover.medianPpsf overlays the $/sq ft column; 30d / 90d /
+ * ytd keep cache ppsf. UNKNOWN IS NOT ZERO: a leftover miss nulls the 12-month
+ * count (and rolling_365d Sold/Median/$/sq ft) rather than printing cache.
  *
  * The median is CLOSE-based and gated at n>=3: a period with fewer than three
  * closings stores NULL rather than a "median" from one sale.
@@ -114,21 +116,24 @@ async function readCityLeftover(cityLabel: string): Promise<PublicPaceRow> {
 
 /**
  * Overlay leftover 12-month close onto Sales (12 mo). When the selected period
- * is rolling_365d, Sold and Median are that same window — overlay those too.
- * rolling_30d / 90d / ytd Sold and Median stay cache. Miss omits, never cache.
+ * is rolling_365d, Sold, Median, and $/sq ft are that same window — overlay
+ * those too. rolling_30d / 90d / ytd Sold, Median, and $/sq ft stay cache.
+ * Median DOM stays cache. Miss omits, never cache.
  */
 export function overlayRangeLeftover(
   row: CityRangeRow,
-  leftover: Pick<PublicPaceRow, 'closedCount' | 'medianClose'> | null,
+  leftover: Pick<PublicPaceRow, 'closedCount' | 'medianClose' | 'medianPpsf'> | null,
   period: RangePeriod,
 ): CityRangeRow {
   const closed = leftover?.closedCount ?? null
   const medianClose = leftover?.medianClose ?? null
+  const medianPpsf = leftover?.medianPpsf ?? null
   return {
     ...row,
     sales12mo: closed,
     soldCount: period === 'rolling_365d' ? closed : row.soldCount,
     medianSalePrice: period === 'rolling_365d' ? medianClose : row.medianSalePrice,
+    medianPricePerSqft: period === 'rolling_365d' ? medianPpsf : row.medianPricePerSqft,
   }
 }
 

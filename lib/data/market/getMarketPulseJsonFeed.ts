@@ -19,9 +19,11 @@
  *                 A full inventory miss withholds activeListings rather than pulse.
  *                 City/region leftover pace (12-month + pending/age now) sits
  *                 beside pulse 30-day / days-to-pending. A leftover miss is
- *                 null, never 0. Neighborhood leftover and extra types overlay
- *                 the same way. Pulse MOS at neighborhood grain is withheld
- *                 unless Market Truth headlines assemble.
+ *                 null, never 0. figures.medianSaleToListRatio is leftover
+ *                 saleToOriginal (12-month), never pulse median_sale_to_list.
+ *                 Neighborhood leftover and extra types overlay the same way.
+ *                 Pulse MOS at neighborhood grain is withheld unless Market
+ *                 Truth headlines assemble.
  *   - NOT_FOUND -> genuine miss (no row for this geo_type/geo_slug). All
  *                 figures null, `note` says so explicitly.
  *   - ERROR    -> getMarketPulseRowForGeo THROWS on a transient DB error
@@ -113,7 +115,7 @@ export type MarketPulseJsonFigures = {
 export type MarketPulseJsonLeftover = PublicPaceRow
 
 const LEFTOVER_NOTE =
-  'Leftover detached pace is Market Truth mt-v1, sample-gated (12-month cells plus pending/age now). Pulse 30-day sold and days-to-pending stay.'
+  'Leftover detached pace is Market Truth mt-v1, sample-gated (12-month cells plus pending/age now). figures.medianSaleToListRatio is leftover saleToOriginal (12-month), not pulse median_sale_to_list. Pulse 30-day sold and days-to-pending stay.'
 
 const EXTRA_SEGMENTS_NOTE =
   'Extra product types are Market Truth mt-v1, sample-gated. Detached stays the HUD.'
@@ -284,6 +286,7 @@ export async function getMarketPulseJsonFeed(input: {
     ])
     applyJsonFeedDetachedOrWithhold(found, layers)
     found.leftover = leftover
+    found.figures.medianSaleToListRatio = leftover?.saleToOriginal ?? null
     found.extraSegments = extraSegments
     if (leftover) {
       found.note = found.note ? `${found.note} ${LEFTOVER_NOTE}` : LEFTOVER_NOTE

@@ -74,10 +74,11 @@ function rangeRow(overrides: Partial<CityRangeRow> = {}): CityRangeRow {
 }
 
 describe('getCityRangeReport leftover source', () => {
-  it('reads leftover closedCount/medianClose for the 12-month column, not cache rolling_365d sold', () => {
+  it('reads leftover closedCount/medianClose/medianPpsf for the 12-month column, not cache rolling_365d sold', () => {
     expect(SRC).toMatch(/getPublicDetachedPace/)
     expect(SRC).toMatch(/leftover\.closedCount/)
     expect(SRC).toMatch(/leftover\.medianClose/)
+    expect(SRC).toMatch(/leftover\.medianPpsf/)
     expect(SRC).toMatch(/overlayRangeLeftover/)
     expect(SRC).not.toMatch(/daysToContract/)
   })
@@ -93,6 +94,13 @@ describe('overlayRangeLeftover', () => {
     expect(out.medianPricePerSqft).toBe(385)
   })
 
+  it('keeps rolling_30d $/sq ft on cache even when leftover medianPpsf is present', () => {
+    const out = overlayRangeLeftover(rangeRow({ medianPricePerSqft: 385 }), LEFTOVER, 'rolling_30d')
+    expect(out.medianPricePerSqft).toBe(385)
+    expect(out.medianPricePerSqft).not.toBe(400)
+    expect(out.medianDom).toBe(33)
+  })
+
   it('overlays leftover closedCount and medianClose onto rolling_365d Sold/Median and Sales (12 mo)', () => {
     const out = overlayRangeLeftover(
       rangeRow({
@@ -100,6 +108,7 @@ describe('overlayRangeLeftover', () => {
         medianSalePrice: 719_000,
         sales12mo: 1641,
         medianDom: 25,
+        medianPricePerSqft: 385,
       }),
       LEFTOVER,
       'rolling_365d',
@@ -108,24 +117,38 @@ describe('overlayRangeLeftover', () => {
     expect(out.medianSalePrice).toBe(760_000)
     expect(out.sales12mo).toBe(2095)
     expect(out.medianDom).toBe(25)
+    expect(out.medianPricePerSqft).toBe(400)
   })
 
-  it('keeps rolling_90d and ytd Sold/Median on cache', () => {
+  it('overlays leftover medianPpsf onto rolling_365d $/sq ft, replacing cache', () => {
+    const out = overlayRangeLeftover(
+      rangeRow({ medianPricePerSqft: 385, medianDom: 25 }),
+      LEFTOVER,
+      'rolling_365d',
+    )
+    expect(out.medianPricePerSqft).toBe(400)
+    expect(out.medianPricePerSqft).not.toBe(385)
+    expect(out.medianDom).toBe(25)
+  })
+
+  it('keeps rolling_90d and ytd Sold/Median/$/sq ft on cache', () => {
     const ninety = overlayRangeLeftover(
-      rangeRow({ soldCount: 400, medianSalePrice: 725_000 }),
+      rangeRow({ soldCount: 400, medianSalePrice: 725_000, medianPricePerSqft: 385 }),
       LEFTOVER,
       'rolling_90d',
     )
     expect(ninety.soldCount).toBe(400)
     expect(ninety.medianSalePrice).toBe(725_000)
+    expect(ninety.medianPricePerSqft).toBe(385)
     expect(ninety.sales12mo).toBe(2095)
     const ytd = overlayRangeLeftover(
-      rangeRow({ soldCount: 1007, medianSalePrice: 725_000 }),
+      rangeRow({ soldCount: 1007, medianSalePrice: 725_000, medianPricePerSqft: 385 }),
       LEFTOVER,
       'ytd',
     )
     expect(ytd.soldCount).toBe(1007)
     expect(ytd.medianSalePrice).toBe(725_000)
+    expect(ytd.medianPricePerSqft).toBe(385)
     expect(ytd.sales12mo).toBe(2095)
   })
 
@@ -134,6 +157,7 @@ describe('overlayRangeLeftover', () => {
     expect(thirty.sales12mo).toBeNull()
     expect(thirty.soldCount).toBe(137)
     expect(thirty.medianSalePrice).toBe(730_000)
+    expect(thirty.medianPricePerSqft).toBe(385)
     const year = overlayRangeLeftover(
       rangeRow({ soldCount: 1641, medianSalePrice: 719_000, sales12mo: 1641 }),
       EMPTY_PUBLIC_PACE,
@@ -143,6 +167,17 @@ describe('overlayRangeLeftover', () => {
     expect(year.soldCount).toBeNull()
     expect(year.medianSalePrice).toBeNull()
     expect(year.soldCount).not.toBe(0)
+  })
+
+  it('omits rolling_365d $/sq ft on leftover ppsf miss even when cache had a value', () => {
+    const year = overlayRangeLeftover(
+      rangeRow({ medianPricePerSqft: 385, medianDom: 25 }),
+      EMPTY_PUBLIC_PACE,
+      'rolling_365d',
+    )
+    expect(year.medianPricePerSqft).toBeNull()
+    expect(year.medianPricePerSqft).not.toBe(385)
+    expect(year.medianDom).toBe(25)
   })
 })
 
@@ -165,21 +200,31 @@ describe('getCityRangeRow leftover overlay', () => {
     expect(row!.medianDom).toBe(33)
   })
 
-  it('rolling_365d overlays leftover onto Sold, Median, and Sales (12 mo)', async () => {
+  it('rolling_365d overlays leftover onto Sold, Median, Sales (12 mo), and $/sq ft', async () => {
     detailMock.mockResolvedValue(CACHE_365)
     const row = await getCityRangeRow('Bend', 'rolling_365d')
     expect(row!.soldCount).toBe(2095)
     expect(row!.medianSalePrice).toBe(760_000)
     expect(row!.sales12mo).toBe(2095)
     expect(row!.medianDom).toBe(25)
+    expect(row!.medianPricePerSqft).toBe(400)
     expect(row!.soldCount).not.toBe(1641)
     expect(row!.medianSalePrice).not.toBe(719_000)
+    expect(row!.medianPricePerSqft).not.toBe(385)
   })
 
-  it('does not map leftover days-to-contract or ppsf onto DOM / $/sq ft', async () => {
+  it('does not map leftover days-to-contract onto DOM; 30-day $/sq ft stays cache', async () => {
     detailMock.mockResolvedValue(CACHE_30D)
     const row = await getCityRangeRow('Bend', 'rolling_30d')
     expect(row!.medianDom).toBe(33)
     expect(row!.medianPricePerSqft).toBe(385)
+  })
+
+  it('rolling_365d leftover ppsf miss nulls $/sq ft even when cache had 385', async () => {
+    leftoverMock.mockResolvedValue({ ...EMPTY_PUBLIC_PACE })
+    detailMock.mockResolvedValue(CACHE_365)
+    const row = await getCityRangeRow('Bend', 'rolling_365d')
+    expect(row!.medianPricePerSqft).toBeNull()
+    expect(row!.medianDom).toBe(25)
   })
 })

@@ -193,8 +193,38 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.leftover?.daysToContract).toBe(28)
     expect(result.leftover?.pendingCount).toBe(311)
     expect(result.leftover?.closedCount).toBe(2095)
+    expect(result.leftover?.saleToOriginal).toBe(0.969)
+    expect(result.figures.medianSaleToListRatio).toBe(0.969)
     expect(result.note).toMatch(/Leftover detached pace/)
+    expect(result.note).toMatch(/saleToOriginal/)
     expect(result.figures.soldLast30Days).toBe(90)
+    expect(result.figures.medianDaysToPending).toBe(18)
+  })
+
+  it('leftover miss nulls figures.medianSaleToListRatio even when pulse median_sale_to_list is 0.99', async () => {
+    rowMock.mockResolvedValue(PULSE_BEND)
+    detachedMock.mockResolvedValue(
+      new Map([
+        [
+          'city:bend',
+          {
+            headlines: MT_BEND,
+            inventory: {
+              activeCount: MT_BEND.activeCount,
+              medianListPrice: MT_BEND.medianListPrice,
+              computedAt: MT_BEND.computedAt,
+            },
+          },
+        ],
+      ]),
+    )
+
+    const result = found(await getMarketPulseJsonFeed({ geoType: 'city', geoSlug: 'bend' }))
+    expect(result.leftover).toBeNull()
+    expect(result.figures.medianSaleToListRatio).toBeNull()
+    expect(result.figures.medianSaleToListRatio).not.toBe(0.99)
+    expect(result.figures.soldLast30Days).toBe(90)
+    expect(result.figures.medianDaysToPending).toBe(18)
   })
 
   it('attaches extra product types on city when publishable', async () => {
@@ -368,9 +398,13 @@ describe('getMarketPulseJsonFeed', () => {
     expect(paceMock).toHaveBeenCalled()
     expect(result.leftover?.pendingCount).toBe(7)
     expect(result.leftover?.daysToContract).toBe(44)
+    expect(result.leftover?.saleToOriginal).toBeNull()
+    expect(result.figures.medianSaleToListRatio).toBeNull()
     expect(result.figures.activeListings).toBe(19)
     expect(result.figures.monthsOfSupply).toBeNull()
     expect(result.methodology.verdictKind).toBe('unknown')
+    expect(result.figures.soldLast30Days).toBe(90)
+    expect(result.figures.medianDaysToPending).toBe(18)
   })
 
   it('neighborhood with a null pulse MOS does not invent MOS from pulse', async () => {
@@ -423,6 +457,7 @@ describe('getMarketPulseJsonFeed source', () => {
     expect(src).toMatch(/readJsonFeedLeftover/)
     expect(src).toMatch(/getPublicPlaceSegments/)
     expect(src).toMatch(/readJsonFeedExtraSegments/)
+    expect(src).toMatch(/medianSaleToListRatio = leftover\?\.saleToOriginal \?\? null/)
     expect(src).not.toMatch(/monthsOfSupply\(/)
   })
 })

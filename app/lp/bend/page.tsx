@@ -10,8 +10,9 @@
  * Tone: Buffett voice. Inventory + market facts first. Map + listings +
  *       neighborhoods carry the page. No tourism brochure register.
  *
- * 12-month sold / median close / sale-to-list overlay leftover
- * (getPublicDetachedPace). Miss omits. Pulse DTP is not median DOM.
+ * 12-month sold / median close / sale-to-list / ppsf overlay leftover
+ * (getPublicDetachedPace) for Bend and peer cities. Miss omits.
+ * Pulse DTP is not median DOM.
  */
 import 'server-only'
 import { promises as fs } from 'node:fs'
@@ -64,15 +65,16 @@ type Kpis = {
   methodology_version: string | null
 }
 
-/** 12-month sold / median close / SLT from leftover. Miss is null, never 0. */
+/** 12-month sold / median close / SLT / ppsf from leftover. Miss is null, never 0. */
 function leftoverSoldMedianSlt(leftover: PublicPaceRow): Pick<
   Kpis,
-  'sold_count' | 'median_sale_price' | 'avg_sale_to_list_ratio'
+  'sold_count' | 'median_sale_price' | 'avg_sale_to_list_ratio' | 'median_ppsf'
 > {
   return {
     sold_count: leftover.closedCount,
     median_sale_price: leftover.medianClose,
     avg_sale_to_list_ratio: leftover.saleToOriginal,
+    median_ppsf: leftover.medianPpsf,
   }
 }
 
@@ -105,7 +107,8 @@ async function loadBendKpis(): Promise<Kpis | null> {
     !cache &&
     overlay.sold_count == null &&
     overlay.median_sale_price == null &&
-    overlay.avg_sale_to_list_ratio == null
+    overlay.avg_sale_to_list_ratio == null &&
+    overlay.median_ppsf == null
   ) {
     return null
   }
@@ -114,7 +117,7 @@ async function loadBendKpis(): Promise<Kpis | null> {
     median_sale_price: overlay.median_sale_price,
     median_dom: cache?.median_dom ?? null,
     avg_sale_to_list_ratio: overlay.avg_sale_to_list_ratio,
-    median_ppsf: cache?.median_ppsf ?? null,
+    median_ppsf: overlay.median_ppsf,
     end_of_period_inventory: cache?.end_of_period_inventory ?? null,
     computed_at: cache?.computed_at ?? null,
     methodology_version: cache?.methodology_version ?? null,
@@ -287,25 +290,52 @@ type PeerKpiRow = {
   median_ppsf: number | null
 }
 
+const PEER_CITY_SLUGS = ['bend', 'redmond', 'sisters', 'la-pine', 'terrebonne'] as const
+
+/** Cache is labels + median DOM only. Closed sold/median/SLT/ppsf overlay leftover. */
 async function loadPeerCities(): Promise<PeerKpiRow[]> {
   void createServiceClient
   const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
-  const data = await getMarketStatsCacheRowsForGeos({
-    geoType: 'city',
-    geoSlugs: ['bend', 'redmond', 'sisters', 'la-pine', 'terrebonne'],
-    periodType: 'rolling_365d',
-    columns:
-      'geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf',
-    orderBy: { column: 'median_sale_price', ascending: false },
-  })
+  const [data, leftoverPairs] = await Promise.all([
+    getMarketStatsCacheRowsForGeos({
+      geoType: 'city',
+      geoSlugs: [...PEER_CITY_SLUGS],
+      periodType: 'rolling_365d',
+      columns: 'geo_slug, geo_label, median_dom',
+    }),
+    Promise.all(
+      PEER_CITY_SLUGS.map(async (geoSlug) => {
+        const leftover = await readLeftoverPace('city', geoSlug)
+        return [geoSlug, leftover] as const
+      }),
+    ),
+  ])
 
-  const seen = new Set<string>()
-  const out: PeerKpiRow[] = []
-  for (const r of (data ?? []) as PeerKpiRow[]) {
-    if (seen.has(r.geo_slug)) continue
-    seen.add(r.geo_slug)
-    out.push(r)
+  const cacheByGeo = new Map<string, { geo_label: string | null; median_dom: number | null }>()
+  for (const r of (data ?? []) as Array<{
+    geo_slug: string
+    geo_label: string | null
+    median_dom: number | null
+  }>) {
+    if (!cacheByGeo.has(r.geo_slug)) cacheByGeo.set(r.geo_slug, r)
   }
+  const leftoverByGeo = new Map<string, PublicPaceRow>(leftoverPairs)
+
+  const out: PeerKpiRow[] = []
+  for (const geoSlug of PEER_CITY_SLUGS) {
+    const cache = cacheByGeo.get(geoSlug)
+    const overlay = leftoverSoldMedianSlt(leftoverByGeo.get(geoSlug) ?? EMPTY_PUBLIC_PACE)
+    out.push({
+      geo_slug: geoSlug,
+      geo_label: cache?.geo_label ?? null,
+      sold_count: overlay.sold_count,
+      median_sale_price: overlay.median_sale_price,
+      median_dom: cache?.median_dom ?? null,
+      avg_sale_to_list_ratio: overlay.avg_sale_to_list_ratio,
+      median_ppsf: overlay.median_ppsf,
+    })
+  }
+  out.sort((a, b) => (b.median_sale_price ?? -1) - (a.median_sale_price ?? -1))
   return out
 }
 
@@ -339,24 +369,13 @@ function fmtDate(s: string | null | undefined): string {
 }
 
 export default async function BendCityPage() {
-  const [kpis, communities, peersRaw, listings, polygons] = await Promise.all([
+  const [kpis, communities, peers, listings, polygons] = await Promise.all([
     loadBendKpis(),
     loadBendCommunitiesIndex(),
     loadPeerCities(),
     loadActiveListings(),
     loadCommunityPolygons(),
   ])
-  // Bend peer-table sold/median/SLT are the leftover overlay, not cache.
-  const peers = peersRaw.map((p) =>
-    p.geo_slug === 'bend'
-      ? {
-          ...p,
-          sold_count: kpis?.sold_count ?? null,
-          median_sale_price: kpis?.median_sale_price ?? null,
-          avg_sale_to_list_ratio: kpis?.avg_sale_to_list_ratio ?? null,
-        }
-      : p,
-  )
 
   return (
     <main className="bend-lp">
@@ -1010,8 +1029,9 @@ export default async function BendCityPage() {
         <div className="bend-shell">
           <div className="bend-eyebrow">Sources</div>
           <p className="methodology" style={{ maxWidth: 880 }}>
-            12-month sold, median close, and sale-to-list from Market Truth leftover
-            (detached, city Bend). Miss omits. Other KPI cells from Oregon RMLS via{' '}
+            12-month sold, median close, sale-to-list, and median $/sqft from Market Truth leftover
+            (detached, city grain) for Bend and peer cities. Miss omits. Median DOM from cache.
+            Other KPI cells from Oregon RMLS via{' '}
             <code>market_stats_cache</code>, <code>geo_slug=&apos;bend&apos;</code>, rolling
             365-day window. Methodology {kpis?.methodology_version ?? 'v3-2026-05-07'}, computed{' '}
             {fmtDate(kpis?.computed_at)}. Active listing inventory pulled live from the{' '}
@@ -1036,7 +1056,7 @@ export default async function BendCityPage() {
           }),
         }}
       />
-      {/* Dataset — leftover 12-month sold/median/SLT; remaining cells from cache.
+      {/* Dataset — leftover 12-month sold/median/SLT/ppsf; remaining cells from cache.
           Only include a metric when its value is non-null (CLAUDE.md data-accuracy). */}
       {kpis && (
         <script
@@ -1047,7 +1067,7 @@ export default async function BendCityPage() {
               '@type': 'Dataset',
               name: 'Bend, Oregon single-family residential market statistics (rolling 12 months)',
               description:
-                'Market statistics for Bend, Oregon detached houses. 12-month closed count, median close, and sale-to-list from Market Truth leftover; remaining cells from Oregon RMLS cache.',
+                'Market statistics for Bend, Oregon detached houses. 12-month closed count, median close, sale-to-list, and median price per sq ft from Market Truth leftover; remaining cells from Oregon RMLS cache.',
               url: `${siteUrl}/lp/bend/`,
               creator: { '@type': 'RealEstateAgent', name: 'Ryan Realty', url: siteUrl },
               ...(kpis.computed_at ? { dateModified: kpis.computed_at } : {}),

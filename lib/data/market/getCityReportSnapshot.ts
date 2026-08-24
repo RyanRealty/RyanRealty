@@ -14,11 +14,11 @@
  *     the exact DAL call app/cities/[slug]/page.tsx makes for its market HUD
  *     (activeCount, medianListPrice, monthsOfSupply, closedLast30Days,
  *     medianDaysToPending).
- *   - Trailing-12-month figures: leftover.medianClose / leftover.closedCount
- *     overlay `market_stats_cache` rolling_365d sold/median on the hub snapshots
- *     (`getCityReportSnapshots`). Miss omits those two fields — never cache.
- *     medianDom and YoY stay cache. `getCityReportSnapshot` (singular) stays
- *     cache-only so the market-stat-consistency cron still compares cache to RPC.
+ *   - Trailing-12-month figures: leftover.medianClose / leftover.closedCount /
+ *     leftover.yoyMedian overlay `market_stats_cache` rolling_365d sold/median/YoY
+ *     on `getCityReportSnapshot` (singular) and `getCityReportSnapshots`. Miss
+ *     omits those three fields — never cache. medianDom stays cache (leftover
+ *     days-to-contract is not DOM). Pulse live fields stay pulse.
  *
  * The two groups are kept SEPARATE on the returned shape (live vs trailing12mo)
  * so a renderer cannot mix windows on one unlabeled surface — each group carries
@@ -152,18 +152,28 @@ async function readCityLeftover(cityLabel: string): Promise<PublicPaceRow> {
 }
 
 /**
- * Overlay leftover 12-month close onto trailing sold/median. Miss omits those
- * two cache fields. medianDom stays cache — leftover days-to-contract is not DOM.
- * Live pulse is untouched. Singular getCityReportSnapshot does not call this.
+ * Overlay leftover 12-month close onto trailing sold/median/YoY. Miss omits
+ * those three cache fields. leftover.yoyMedian is a share (e.g. -0.019 → -1.9).
+ * medianDom stays cache — leftover days-to-contract is not DOM. Live pulse is
+ * untouched. Singular getCityReportSnapshot and the batch path both call this.
  */
 export function overlayCityReportLeftover(
   snapshot: CityReportSnapshot | null,
-  leftover: Pick<PublicPaceRow, 'medianClose' | 'closedCount'> | null,
+  leftover: Pick<PublicPaceRow, 'medianClose' | 'closedCount' | 'yoyMedian'> | null,
 ): CityReportSnapshot | null {
   if (!snapshot) return null
   const medianSalePrice = leftover?.medianClose ?? null
   const soldCount = leftover?.closedCount ?? null
-  if (!snapshot.trailing12mo && medianSalePrice == null && soldCount == null) return snapshot
+  const yoyMedianPriceDeltaPct =
+    leftover?.yoyMedian != null ? leftover.yoyMedian * 100 : null
+  if (
+    !snapshot.trailing12mo &&
+    medianSalePrice == null &&
+    soldCount == null &&
+    yoyMedianPriceDeltaPct == null
+  ) {
+    return snapshot
+  }
   const trailing = snapshot.trailing12mo
   return {
     ...snapshot,
@@ -171,7 +181,7 @@ export function overlayCityReportLeftover(
       medianSalePrice,
       soldCount,
       medianDom: trailing?.medianDom ?? null,
-      yoyMedianPriceDeltaPct: trailing?.yoyMedianPriceDeltaPct ?? null,
+      yoyMedianPriceDeltaPct,
       periodStart: trailing?.periodStart ?? null,
       periodEnd: trailing?.periodEnd ?? null,
       updatedAt: trailing?.updatedAt ?? null,
@@ -200,16 +210,22 @@ export function hasReportSignal(s: CityReportSnapshot): boolean {
  * One city's snapshot. Resolves the cache slug by candidates (space-separated
  * first). Underlying reads are already resiliently cached (getMarketPulse
  * 10-15 min, getCityMarketDetail 6h) — no extra cache layer here.
+ * Leftover overlays 12-month close/sold/YoY so this path cannot print cache
+ * rolling_365d. Pulse live fields stay pulse.
  */
 export async function getCityReportSnapshot(cityLabel: string): Promise<CityReportSnapshot | null> {
   const candidates = citySlugCandidates(cityLabel)
+  const leftoverP = readCityLeftover(cityLabel)
   for (const geoSlug of candidates) {
     const [pulse, detail] = await Promise.all([
       getMarketPulse({ geoType: 'city', geoSlug }),
       getCityMarketDetail({ geoType: 'city', geoSlug, periodType: 'rolling_365d' }),
     ])
     if (pulse || detail) {
-      return buildCityReportSnapshot({ cityLabel, geoSlug, pulse, detail })
+      return overlayCityReportLeftover(
+        buildCityReportSnapshot({ cityLabel, geoSlug, pulse, detail }),
+        await leftoverP,
+      )
     }
   }
   return null
@@ -230,14 +246,6 @@ export async function getCityReportSnapshots(cityLabels: string[]): Promise<City
     labels.push(label)
   }
   if (labels.length === 0) return []
-  const results = await Promise.all(
-    labels.map(async (label) => {
-      const [snapshot, leftover] = await Promise.all([
-        getCityReportSnapshot(label),
-        readCityLeftover(label),
-      ])
-      return overlayCityReportLeftover(snapshot, leftover)
-    }),
-  )
+  const results = await Promise.all(labels.map((label) => getCityReportSnapshot(label)))
   return results.filter((s): s is CityReportSnapshot => s !== null)
 }

@@ -278,8 +278,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 3500, 'comm:pulse'),
-    // Neighborhood cache still supplies 12-month sold count / DOM fallbacks.
-    // Closed median and sale-to-list come from leftover membership, not this row.
+    // Neighborhood cache still supplies 12-month DOM fallbacks.
+    // Closed median, sale-to-list, and 12-month sold come from leftover
+    // membership, not this row. Miss omits — never cache soldCount.
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: neighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'comm:stats'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'comm:regionPulse'),
     withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
@@ -636,9 +637,10 @@ export default async function CommunityDetailPage({ params }: Props) {
     saleToList: leftoverSaleToList,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
-    // 12-month rolling fallbacks (market_stats_cache) for neighborhood scope,
-    // where pulse 30-day fields are null. Honest 12-month HUD labels only. (§0)
-    sold12mo: publishSoldCount({ value: stats?.soldCount, grain: 'neighborhood' }),
+    // 12-month sold is leftover membership (closedCount). Miss omits — never
+    // cache soldCount. medianDom12mo stays cache DOM; leftover daysToContract
+    // is not DOM.
+    sold12mo: publicPace.closedCount ?? null,
     medianDom12mo: stats?.medianDaysOnMarket ?? null,
     trend: buildMonthlyTrend(chartPriceHist),
     byTown: [],
@@ -675,8 +677,8 @@ export default async function CommunityDetailPage({ params }: Props) {
     medianDaysToPending: pulse?.medianDaysToPending ?? null,
     medianDaysOnMarket: stats?.medianDaysOnMarket ?? null,
     refreshedAt: pulse?.refreshedAt ?? snapshot?.refreshedAt ?? null,
-    // Extended fields — community-specific grounded questions.
-    soldCount12mo: publishSoldCount({ value: stats?.soldCount, grain: 'neighborhood' }),
+    // Extended fields — leftover 12-month closed count. Miss omits.
+    soldCount12mo: publicPace.closedCount ?? null,
     subdivisionAliases: registryEntry?.subdivision_aliases?.length
       ? registryEntry.subdivision_aliases
       : null,

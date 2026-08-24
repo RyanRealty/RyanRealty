@@ -1,12 +1,40 @@
-import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
+
+const { detailMock, leftoverMock, pulseMock } = vi.hoisted(() => ({
+  detailMock: vi.fn(),
+  leftoverMock: vi.fn(),
+  pulseMock: vi.fn(),
+}))
+
+vi.mock('@/lib/data/market/getCityMarketDetail', () => ({
+  getCityMarketDetail: (args: unknown) => detailMock(args),
+}))
+vi.mock('@/lib/data/market/getMarketPulse', () => ({
+  getMarketPulse: (args: unknown) => pulseMock(args),
+}))
+vi.mock('@/lib/data/market-truth/public-pace', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/data/market-truth/public-pace')>(
+    '@/lib/data/market-truth/public-pace',
+  )
+  return {
+    ...actual,
+    getPublicDetachedPace: (...args: unknown[]) => leftoverMock(...args),
+  }
+})
+
 import {
   buildCityReportSnapshot,
   citySlugCandidates,
   cityUrlSlug,
+  getCityReportSnapshot,
   hasReportSignal,
   overlayCityReportLeftover,
 } from './getCityReportSnapshot'
+
+const SRC = readFileSync(resolve('lib/data/market/getCityReportSnapshot.ts'), 'utf8')
 
 const pulse = {
   activeCount: 500,
@@ -148,6 +176,7 @@ describe('overlayCityReportLeftover', () => {
     ...EMPTY_PUBLIC_PACE,
     medianClose: 760_000,
     closedCount: 2095,
+    yoyMedian: -0.019,
     daysToContract: 28,
   }
 
@@ -159,20 +188,31 @@ describe('overlayCityReportLeftover', () => {
     expect(snap!.trailing12mo!.medianSalePrice).toBe(760_000)
     expect(snap!.trailing12mo!.soldCount).toBe(2095)
     expect(snap!.trailing12mo!.medianDom).toBe(41)
-    expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).toBe(2.1)
     expect(snap!.live!.closedLast30Days).toBe(92)
     expect(snap!.trailing12mo!.medianSalePrice).not.toBe(780_000)
     expect(snap!.trailing12mo!.soldCount).not.toBe(1_240)
   })
 
-  it('omits cache trailing sold/median on leftover miss — unknown is not zero', () => {
+  it('overlays leftover yoyMedian share as yoyMedianPriceDeltaPct percent', () => {
+    const snap = overlayCityReportLeftover(
+      buildCityReportSnapshot({ cityLabel: 'Bend', geoSlug: 'bend', pulse, detail }),
+      leftover,
+    )
+    expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).toBeCloseTo(-1.9, 5)
+    expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).not.toBe(2.1)
+  })
+
+  it('omits cache trailing sold/median/yoy on leftover miss — unknown is not zero', () => {
     const snap = overlayCityReportLeftover(
       buildCityReportSnapshot({ cityLabel: 'Bend', geoSlug: 'bend', pulse, detail }),
       EMPTY_PUBLIC_PACE,
     )
     expect(snap!.trailing12mo!.medianSalePrice).toBeNull()
     expect(snap!.trailing12mo!.soldCount).toBeNull()
+    expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).toBeNull()
     expect(snap!.trailing12mo!.soldCount).not.toBe(0)
+    expect(snap!.trailing12mo!.medianSalePrice).not.toBe(780_000)
+    expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).not.toBe(2.1)
     expect(snap!.trailing12mo!.medianDom).toBe(41)
     expect(snap!.live!.activeCount).toBe(500)
   })
@@ -184,6 +224,58 @@ describe('overlayCityReportLeftover', () => {
     )
     expect(snap!.trailing12mo!.medianDom).toBe(41)
     expect(snap!.trailing12mo!.medianDom).not.toBe(28)
+  })
+})
+
+describe('getCityReportSnapshot leftover overlay', () => {
+  const leftover = {
+    ...EMPTY_PUBLIC_PACE,
+    medianClose: 760_000,
+    closedCount: 2095,
+    yoyMedian: -0.019,
+    daysToContract: 28,
+  }
+
+  beforeEach(() => {
+    pulseMock.mockReset()
+    detailMock.mockReset()
+    leftoverMock.mockReset()
+    pulseMock.mockResolvedValue(pulse)
+    detailMock.mockResolvedValue(detail)
+    leftoverMock.mockResolvedValue(leftover)
+  })
+
+  it('singular path source-contracts leftover overlay so cache 12-month close cannot print', () => {
+    const start = SRC.indexOf('export async function getCityReportSnapshot(')
+    const end = SRC.indexOf('export async function getCityReportSnapshots(')
+    const singular = SRC.slice(start, end)
+    expect(singular).toMatch(/overlayCityReportLeftover\(/)
+    expect(singular).toMatch(/readCityLeftover/)
+  })
+
+  it('singular getCityReportSnapshot overlays leftover 12-month close and YoY', async () => {
+    const snap = await getCityReportSnapshot('Bend')
+    expect(leftoverMock).toHaveBeenCalled()
+    expect(snap!.trailing12mo!.medianSalePrice).toBe(760_000)
+    expect(snap!.trailing12mo!.soldCount).toBe(2095)
+    expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).toBeCloseTo(-1.9, 5)
+    expect(snap!.trailing12mo!.medianDom).toBe(41)
+    expect(snap!.live!.closedLast30Days).toBe(92)
+    expect(snap!.live!.activeCount).toBe(500)
+    expect(snap!.live!.medianDaysToPending).toBe(38)
+    expect(snap!.trailing12mo!.medianSalePrice).not.toBe(780_000)
+    expect(snap!.trailing12mo!.soldCount).not.toBe(1_240)
+    expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).not.toBe(2.1)
+  })
+
+  it('singular leftover miss nulls trailing median/sold/yoy and keeps pulse plus cache medianDom', async () => {
+    leftoverMock.mockResolvedValue(EMPTY_PUBLIC_PACE)
+    const snap = await getCityReportSnapshot('Bend')
+    expect(snap!.trailing12mo!.medianSalePrice).toBeNull()
+    expect(snap!.trailing12mo!.soldCount).toBeNull()
+    expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).toBeNull()
+    expect(snap!.trailing12mo!.medianDom).toBe(41)
+    expect(snap!.live!.closedLast30Days).toBe(92)
   })
 })
 
