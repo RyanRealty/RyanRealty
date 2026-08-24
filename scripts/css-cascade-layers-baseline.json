@@ -1,13 +1,6 @@
 {
   "$comment": "Ratchet baseline for check-css-cascade-layers.mjs. Each entry is an un-layered bare-element link/button color rule (file:line selector). May only SHRINK: move the rule into @layer base (so Tailwind utilities keep winning) and remove its entry.",
   "offenders": [
-    "components/admin/help/help-driver.css:32 .driver-popover-navigation-btns button",
-    "components/site/kb/kb.css:732 .kb-root .mkt-toggle button",
-    "components/site/kb/kb.css:754 .kb-root .foot-contact a, .kb-root .foot-contact span",
-    "components/site/kb/kb.css:756 .kb-root .foot-social a",
-    "components/site/kb/kb.css:758 .kb-root .foot-col a",
-    "components/site/kb/kb.css:759 .kb-root .foot-col a:hover, .kb-root .foot-contact a:hover, .kb-root .foot-socia",
-    "components/site/kb/kb.css:787 .kb-root .proof-team-head a",
-    "components/site/kb/kb.css:788 .kb-root .proof-team-head a:hover"
+    "components/admin/help/help-driver.css:32 .driver-popover-navigation-btns button"
   ]
 }

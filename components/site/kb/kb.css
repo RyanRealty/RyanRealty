@@ -716,7 +716,9 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-how{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;margin:-12px -10px -12px -6px;color:inherit;text-decoration:none;}
 .kb-root .mkt-how-mark{display:inline-flex;align-items:center;justify-content:center;width:1.15em;height:1.15em;border:1px solid currentColor;border-radius:50%;font-size:.85em;font-weight:700;letter-spacing:0;text-transform:none;line-height:1;}
 .kb-root .mkt-how:focus-visible{outline:2px solid var(--cream);outline-offset:2px;}
+@layer base {
 .kb-root .mkt-fine a{color:var(--cream);text-underline-offset:3px;}
+}
 
 /* Verdict stamp + median headline — flex-wrap, same reasoning as .mkt-kpis
    above: either card can be conditionally absent (no median list price, no
@@ -805,7 +807,9 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-anno b{color:var(--cream);font-variant-numeric:tabular-nums;font-weight:600;}
 .kb-root .mkt-avglbl{position:absolute;right:0;font-size:.6rem;letter-spacing:.06em;color:var(--cream-muted);transform:translateY(-50%);background:var(--navy);padding:0 6px;pointer-events:none;}
 .kb-root .mkt-toggle{display:inline-flex;border:1px solid var(--cream-12);border-radius:4px;overflow:hidden;}
+@layer base {
 .kb-root .mkt-toggle button{font-family:inherit;font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cream-muted);background:none;border:0;padding:8px 13px;cursor:pointer;transition:background .2s ease,color .2s ease;min-height:34px;}
+}
 .kb-root .mkt-toggle button.on{background:var(--cream);color:var(--navy);}
 .kb-root .mkt-county{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--cream-40);pointer-events:none;}
 .kb-root .mkt-county span{position:absolute;top:-7px;left:6px;font-size:.58rem;letter-spacing:.05em;color:var(--cream-muted);white-space:nowrap;}
@@ -829,12 +833,20 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .foot-brand .logo-img{height:58px;margin-bottom:16px;}
 .kb-root .foot-brand p{max-width:32ch;font-size:.9rem;line-height:1.5;color:rgba(250,248,244,.7);}
 .kb-root .foot-contact{display:flex;flex-direction:column;gap:5px;margin:18px 0;}
+@layer base {
 .kb-root .foot-contact a, .kb-root .foot-contact span{color:var(--cream);font-size:.96rem;text-decoration:none;}
+}
 .kb-root .foot-social{display:flex;gap:16px;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;}
+@layer base {
 .kb-root .foot-social a{color:rgba(250,248,244,.7);text-decoration:none;}
+}
 .kb-root .foot-col h3{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(250,248,244,.5);margin-bottom:14px;}
+@layer base {
 .kb-root .foot-col a{display:block;margin:9px 0;font-size:.92rem;color:rgba(250,248,244,.78);text-decoration:none;}
+}
+@layer base {
 .kb-root .foot-col a:hover, .kb-root .foot-contact a:hover, .kb-root .foot-social a:hover{color:var(--cream);}
+}
 .kb-root .foot-bottom{padding:26px 0 0;display:flex;flex-direction:column;gap:10px;}
 .kb-root .foot-bottom p{font-size:.72rem;color:rgba(250,248,244,.5);line-height:1.5;max-width:90ch;}
 .kb-root .foot-legal{display:flex;flex-wrap:wrap;gap:4px 16px;}
@@ -862,8 +874,12 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .proof-team{margin:clamp(4px,1vw,12px) 0 clamp(42px,6vw,64px);}
 .kb-root .proof-team-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:26px;padding-bottom:16px;border-bottom:1px solid var(--cream-12);}
 .kb-root .proof-team-head .eyebrow{color:var(--cream-muted);}
+@layer base {
 .kb-root .proof-team-head a{font-size:.82rem;color:var(--cream-70);transition:color .2s ease;white-space:nowrap;}
+}
+@layer base {
 .kb-root .proof-team-head a:hover{color:var(--cream);}
+}
 .kb-root .team-row{display:grid;grid-template-columns:1fr;gap:22px;}
 @media(min-width:680px){.kb-root .team-row{grid-template-columns:repeat(3,1fr);}}
 .kb-root .team-member{display:flex;align-items:center;gap:18px;}
