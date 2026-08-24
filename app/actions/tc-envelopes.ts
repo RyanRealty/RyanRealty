@@ -33,6 +33,9 @@ import {
 import { sendSigningInvite } from '@/lib/tc/signing-emails'
 import { createHash } from 'node:crypto'
 import type { MappedField, SignerRole } from '@/lib/tc/skyslope-field-map'
+import { fieldMapFromAcroFormPdf } from '@/lib/tc/acroform-field-map'
+import { fallbackSigningStack } from '@/lib/tc/fallback-signing-stack'
+import { isOref001OverlayApplicable, oref001OverlayFieldMap } from '@/lib/tc/oref-001-field-map'
 import {
   missingRequiredSignerRoles,
   readRequiredSigners,
@@ -550,9 +553,51 @@ export async function createEnvelopeFromTemplate(
 
     const dealRow = (cycle as DbRow).tc_deals ?? {}
     const facts = dealFactsFromRows(dealRow, cycle as DbRow)
-    const { filled } = mapDealFactsToFillValues(facts, (form.field_map ?? []) as MappedField[])
+    let map = Array.isArray(form.field_map) ? ([...form.field_map] as MappedField[]) : []
+    if (!map.length) {
+      try {
+        map = await fieldMapFromAcroFormPdf(new Uint8Array(bytes))
+        if (map.length) {
+          await supabase
+            .from('tc_form_versions')
+            .update({ field_map: map, field_map_source: 'acroform' })
+            .eq('id', form.id)
+        }
+      } catch (err) {
+        console.warn('[tc] acroform field map', err instanceof Error ? err.message : err)
+      }
+    }
+    if (!map.length && isOref001OverlayApplicable(form.form_number, form.page_count)) {
+      map = [
+        ...oref001OverlayFieldMap().map((f) => ({
+          type: 'text' as const,
+          page: f.page,
+          x: f.x,
+          y: f.y,
+          w: f.w,
+          h: f.h,
+          dataRef: f.dataRef ?? f.binding,
+          signerRole: null,
+          optional: false,
+          label: f.label ?? null,
+        })),
+        ...fallbackSigningStack({
+          pageCount: Number(form.page_count) || 15,
+          formNumber: '001',
+          signerProfile: form.signer_profile,
+        }),
+      ]
+    }
+    if (!map.length) {
+      map = fallbackSigningStack({
+        pageCount: Number(form.page_count) || 1,
+        formNumber: form.form_number,
+        signerProfile: form.signer_profile,
+      })
+    }
+    const { filled } = mapDealFactsToFillValues(facts, map)
     const textByFact = new Map(filled.map((v) => [v.factKey, v.value]))
-    for (const f of (form.field_map ?? []) as MappedField[]) {
+    for (const f of map) {
       const type = (f.type as string) === 'date' ? 'date_signed' : f.type
       const factKey = resolveFactKey(f.dataRef ?? '')
       const filledText = factKey ? textByFact.get(factKey) : undefined

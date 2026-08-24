@@ -71,6 +71,7 @@ import { CdaButton } from './CdaButton'
 import { BuyerAgreementWizard } from './BuyerAgreementWizard'
 import { getLiveDealCycles } from '@/lib/data/tc/closings'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
+import { dealCalendarItems } from '@/lib/tc/deal-calendar'
 import { tcEventDetailPreview, tcEventLabel } from '@/lib/tc/events'
 import {
   EXECUTION_STATE_LABEL,
@@ -244,6 +245,7 @@ function CycleSection({
   commissions,
   orefForm,
   propertyKey,
+  address,
 }: {
   cycle: TcCycle
   showArchived: boolean
@@ -251,6 +253,7 @@ function CycleSection({
   commissions: TcCommission[]
   orefForm: PreferredOrefForm | null
   propertyKey: string
+  address: string
 }) {
   const docs = cycle.documents.filter((doc) => (showArchived ? true : !doc.archived))
   const archivedCount = cycle.documents.filter((doc) => doc.archived).length
@@ -331,6 +334,34 @@ function CycleSection({
         </p>
       ) : null}
 
+      {(() => {
+        const dates = dealCalendarItems({
+          address,
+          cycles: [
+            {
+              id: cycle.id,
+              expiration_date: cycle.expiration_date,
+              contract_acceptance_date: cycle.contract_acceptance_date,
+              escrow_closing_date: cycle.escrow_closing_date,
+              hasWell: cycle.checklist.some((it) => /\bwell\b/i.test(`${it.name} ${it.type_name ?? ''}`)),
+            },
+          ],
+        }).filter((d) => d.kind !== 'contract_accepted')
+        if (!dates.length) return null
+        return (
+          <section aria-label="File deadlines">
+            <SectionHead>File deadlines</SectionHead>
+            <ul className="av2-quietlist">
+              {dates.map((d) => (
+                <li key={`${d.kind}:${d.date}`} className="av2-quiet">
+                  <span className="av2-quiet__name">{d.title.replace(/\s·\s$/, '') || d.kind}</span>
+                  <span className="av2-quiet__fig">{d.date}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      })()}
       <AnticipatedDocs data={anticipated} />
       <FillOrefPacket cycleId={cycle.id} form={orefForm} />
       <CommissionSection rows={commissions} cycleId={cycle.id} propertyKey={propertyKey} />
@@ -590,6 +621,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
               commissions={commissions.filter((r) => r.cycle_id === cycle.id)}
               orefForm={orefForm}
               propertyKey={deal.property_key}
+              address={deal.address}
             />
           </div>
         </details>

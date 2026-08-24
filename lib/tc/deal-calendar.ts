@@ -16,6 +16,19 @@ export function slugFromBrokerName(name: string | null | undefined): string | nu
   return null
 }
 
+function addCalendarDays(iso: string, n: number): string | null {
+  const d = new Date(`${iso}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return null
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+function bankingDue(iso: string, n: number): string | null {
+  const start = new Date(`${iso}T00:00:00Z`)
+  if (Number.isNaN(start.getTime())) return null
+  return addBankingDays(start, n).toISOString().slice(0, 10)
+}
+
 export function dealCalendarItems(input: {
   address: string
   cycles: ReadonlyArray<{
@@ -23,6 +36,7 @@ export function dealCalendarItems(input: {
     expiration_date?: string | null
     contract_acceptance_date?: string | null
     escrow_closing_date?: string | null
+    hasWell?: boolean
   }>
 }): DealCalendarItem[] {
   const addr = input.address.trim() || 'Deal'
@@ -44,15 +58,52 @@ export function dealCalendarItems(input: {
         title: `Contract accepted · ${addr}`,
         cycleId: c.id,
       })
-      const start = new Date(`${accepted}T00:00:00Z`)
-      if (!Number.isNaN(start.getTime())) {
-        const due = addBankingDays(start, 7)
+      const em = bankingDue(accepted, 3)
+      if (em) {
+        out.push({
+          kind: 'earnest_money_due',
+          date: em,
+          title: `Earnest money deposit due · ${addr}`,
+          cycleId: c.id,
+        })
+      }
+      const copies = addCalendarDays(accepted, 3)
+      if (copies) {
+        out.push({
+          kind: 'executed_copies_due',
+          date: copies,
+          title: `Executed copies due · ${addr}`,
+          cycleId: c.id,
+        })
+      }
+      const spds = bankingDue(accepted, 5)
+      if (spds) {
+        out.push({
+          kind: 'spds_revocation_ends',
+          date: spds,
+          title: `SPDS revocation window ends · ${addr}`,
+          cycleId: c.id,
+        })
+      }
+      const review = bankingDue(accepted, 7)
+      if (review) {
         out.push({
           kind: 'principal_review_due',
-          date: due.toISOString().slice(0, 10),
+          date: review,
           title: `Principal review due · ${addr}`,
           cycleId: c.id,
         })
+      }
+      if (c.hasWell) {
+        const well = addCalendarDays(accepted, 90)
+        if (well) {
+          out.push({
+            kind: 'well_contingency',
+            date: well,
+            title: `Well contingency (90 days) · ${addr}`,
+            cycleId: c.id,
+          })
+        }
       }
     }
     if (c.escrow_closing_date) {
@@ -98,7 +149,22 @@ export async function syncDealCalendar(dealId: string): Promise<{ synced: number
     .from('tc_cycles')
     .select('id, expiration_date, contract_acceptance_date, escrow_closing_date')
     .eq('deal_id', dealId)
-  const items = dealCalendarItems({ address: String(deal.address ?? ''), cycles: cycles ?? [] })
+  const cycleIds = (cycles ?? []).map((c) => String(c.id))
+  const wellIds = new Set<string>()
+  if (cycleIds.length) {
+    const { data: wellItems } = await sb
+      .from('tc_checklist_items')
+      .select('cycle_id, name, type_name')
+      .in('cycle_id', cycleIds)
+    for (const it of wellItems ?? []) {
+      const blob = `${it.name ?? ''} ${it.type_name ?? ''}`.toLowerCase()
+      if (/\bwell\b/.test(blob)) wellIds.add(String(it.cycle_id))
+    }
+  }
+  const items = dealCalendarItems({
+    address: String(deal.address ?? ''),
+    cycles: (cycles ?? []).map((c) => ({ ...c, hasWell: wellIds.has(String(c.id)) })),
+  })
   const dealSlug = slugFromBrokerName(deal.broker_name)
   const slugs = [...new Set([dealSlug, 'matt'].filter(Boolean))] as string[]
   const typeId = await appointmentTypeId(sb)
