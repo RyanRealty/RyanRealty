@@ -56,7 +56,7 @@ describe('leftover monthly chart overlay', () => {
     expect(hub).toMatch(/getPublicDetachedMonthly/)
     expect(region).toMatch(/getPublicDetachedMonthly/)
     const sql = readFileSync(
-      resolve('supabase/migrations/20260824120000_compute_market_metrics_monthly.sql'),
+      resolve('scripts/sql/compute_market_metrics_monthly_shadow.sql'),
       'utf8',
     )
     expect(sql).toMatch(/window_months = 1/)
@@ -70,7 +70,12 @@ describe('leftover monthly chart overlay', () => {
   })
 
   it('does not fill a leftover monthly miss from cache', () => {
-    const leftover = [1, 2, 3, 4, 5, 7].map((month) => ({
+    const leftover: Array<{
+      periodStart: string
+      periodEnd: string
+      medianClose: number | null
+      closedCount: number | null
+    }> = [1, 2, 3, 4, 5, 7].map((month) => ({
       periodStart: `2026-${String(month).padStart(2, '0')}-01`,
       periodEnd: `2026-${String(month).padStart(2, '0')}-28`,
       medianClose: 750000,

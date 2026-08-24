@@ -567,7 +567,7 @@ Bend detached still 774. County unpublished.
 
 Bend detached still 774. County unpublished. Pulse DTP / 30-day stay.
 
-2026-08-23ao landed: city/region year-overlay charts prefer leftover monthly `median_close` (window_months = 1, min_n 10) when at least six months publish. A leftover miss does not fill that month from cache. Cache series remains until monthly compute writes cells (`compute_market_metrics_monthly_shadow`). Caption names leftover when leftover plots. Unadjusted MoM stays off public. Pulse DTP / 30-day stay.
+2026-08-23ao landed: city/region year-overlay charts prefer leftover monthly `median_close` (window_months = 1, min_n 10) when at least six months publish. A leftover miss does not fill that month from cache. Cache series remains until `compute_market_metrics_monthly_shadow` is applied on hosted Supabase (`scripts/sql/compute_market_metrics_monthly_shadow.sql`; cron already calls it). Caption names leftover when leftover plots. Unadjusted MoM stays off public. Pulse DTP / 30-day stay. Origin `tc_tasks` is not in the prod schema snapshot, so this function is not a supabase/migrations CREATE TABLE until that drift is cleared.
 
 ### Step 9 — Then, and only then, the moat
 
