@@ -100,8 +100,14 @@ function matchesInput(row: Record<string, unknown>, input: GetMetricInput): bool
   return true
 }
 
+function hasPublishedPayload(row: Record<string, unknown>): boolean {
+  if (row.value != null && Number.isFinite(Number(row.value))) return true
+  const text = row.value_text == null ? '' : String(row.value_text).trim()
+  return text !== '' && text !== 'null' && text !== '{}'
+}
+
 function isFreshPublishable(row: Record<string, unknown>): boolean {
-  if (!row.is_publishable || row.value == null) return false
+  if (!row.is_publishable || !hasPublishedPayload(row)) return false
   return !staleReason({
     completeThrough: String(row.complete_through ?? ''),
     periodEnd: String(row.period_end ?? ''),

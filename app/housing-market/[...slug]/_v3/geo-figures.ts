@@ -25,6 +25,7 @@ import {
   type PublicSegmentRow,
 } from '@/lib/data/market-truth/public-segments'
 import { publicPaceItems, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
+import { publicMixItems, type PublicMixRow } from '@/lib/data/market-truth/public-mix'
 import {
   v3Text,
   type V3ChartPoint,
@@ -151,6 +152,15 @@ export function buildPublicPaceFigures(row: PublicPaceRow | null | undefined): V
       value: v3Text(item.value),
       label: v3Text(item.label),
     }))
+}
+
+/** Detached mix and D12 feature floors. Miss omitted. */
+export function buildPublicMixFigures(row: PublicMixRow | null | undefined): V3InstrumentFigure[] {
+  if (!row) return []
+  return publicMixItems(row).map((item) => ({
+    value: v3Text(item.value),
+    label: v3Text(item.label),
+  }))
 }
 
 /**

@@ -50,6 +50,11 @@ import {
   type PublicPlaceSegment,
   type PublicSegmentRow,
 } from '@/lib/data/market-truth/public-segments'
+import {
+  getPublicDetachedMix,
+  publicMixHasRow,
+  type PublicMixRow,
+} from '@/lib/data/market-truth/public-mix'
 
 /** geo_type values market_pulse_live actually carries (verified live 2026-08-03: city, neighborhood, region). */
 export type PulseGeoType = 'city' | 'neighborhood' | 'region'
@@ -120,6 +125,9 @@ const LEFTOVER_NOTE =
 const EXTRA_SEGMENTS_NOTE =
   'Extra product types are Market Truth mt-v1, sample-gated. Detached stays the HUD. Leftover pace (days to contract, sale to original, YoY, price-cut share) is 12-month, not pulse days-to-pending.'
 
+const MIX_NOTE =
+  'Detached mix and feature floors are Market Truth mt-v1, 12-month. Feature flags other than garage are D12 floors labeled at least.'
+
 export type MarketPulseJsonExtraSegment = {
   segment: PublicPlaceSegment
   activeCount: number
@@ -153,6 +161,7 @@ export type MarketPulseJsonFeedResult =
       figures: MarketPulseJsonFigures
       leftover: MarketPulseJsonLeftover | null
       extraSegments: MarketPulseJsonExtraSegment[] | null
+      mix: PublicMixRow | null
       methodology: MarketPulseJsonMethodology
       note: string | null
     }
@@ -165,6 +174,7 @@ export type MarketPulseJsonFeedResult =
       figures: null
       leftover: null
       extraSegments: null
+      mix: null
       methodology: null
       note: string
     }
@@ -177,6 +187,7 @@ export type MarketPulseJsonFeedResult =
       figures: null
       leftover: null
       extraSegments: null
+      mix: null
       methodology: null
       note: string
     }
@@ -206,6 +217,7 @@ export async function getMarketPulseJsonFeed(input: {
       figures: null,
       leftover: null,
       extraSegments: null,
+      mix: null,
       methodology: null,
       note:
         `market_pulse_live read failed for ${geoType}/${geoSlug}: ` +
@@ -223,6 +235,7 @@ export async function getMarketPulseJsonFeed(input: {
       figures: null,
       leftover: null,
       extraSegments: null,
+      mix: null,
       methodology: null,
       note: `No market_pulse_live row for geo_type='${geoType}', geo_slug='${geoSlug}', property_type='A'. This geography is not published.`,
     }
@@ -278,25 +291,31 @@ export async function getMarketPulseJsonFeed(input: {
     figures,
     leftover: null,
     extraSegments: null,
+    mix: null,
     methodology,
     note: null,
   }
 
   if (geoType === 'city' || geoType === 'region' || geoType === 'neighborhood') {
-    const [layers, leftover, extraSegments] = await Promise.all([
+    const [layers, leftover, extraSegments, mix] = await Promise.all([
       readDetachedOverlay(geoType, geoSlug),
       readJsonFeedLeftover(geoType, geoSlug),
       readJsonFeedExtraSegments(geoType, geoSlug),
+      readJsonFeedMix(geoType, geoSlug),
     ])
     applyJsonFeedDetachedOrWithhold(found, layers)
     found.leftover = leftover
     found.figures.medianSaleToListRatio = leftover?.saleToOriginal ?? null
     found.extraSegments = extraSegments
+    found.mix = mix
     if (leftover) {
       found.note = found.note ? `${found.note} ${LEFTOVER_NOTE}` : LEFTOVER_NOTE
     }
     if (extraSegments.length > 0) {
       found.note = found.note ? `${found.note} ${EXTRA_SEGMENTS_NOTE}` : EXTRA_SEGMENTS_NOTE
+    }
+    if (mix) {
+      found.note = found.note ? `${found.note} ${MIX_NOTE}` : MIX_NOTE
     }
   }
 
@@ -316,6 +335,19 @@ async function readJsonFeedLeftover(
   try {
     const row = await getPublicDetachedPace({ geoType, geoSlug })
     return publicPaceHasRow(row) ? row : null
+  } catch {
+    return null
+  }
+}
+
+/** Detached mix/feature floors. Throw and miss omit. */
+async function readJsonFeedMix(
+  geoType: 'city' | 'region' | 'neighborhood',
+  geoSlug: string,
+): Promise<PublicMixRow | null> {
+  try {
+    const row = await getPublicDetachedMix({ geoType, geoSlug })
+    return publicMixHasRow(row) ? row : null
   } catch {
     return null
   }

@@ -171,6 +171,7 @@ export async function GET(
       figures: feed.figures,
       leftover: feed.leftover,
       extraSegments: feed.extraSegments,
+      mix: feed.mix,
       methodology: feed.methodology,
       source: SOURCE,
     },

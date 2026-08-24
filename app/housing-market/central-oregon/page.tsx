@@ -111,6 +111,7 @@ import {
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMix, publicMixItems } from '@/lib/data/market-truth/public-mix'
 import { PUBLIC_CLOSED_SALES_METHODOLOGY } from '@/lib/market/publish-public-methodology'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -195,7 +196,7 @@ export default async function CentralOregonRegionPage() {
   //
   // getRecentBlogPosts keeps offset 3 so this page's guide rail does not repeat the
   // /housing-market hub's three posts.
-  const [regionPulse, citySnapshots, blogPosts, closedSeries, priceHistory, publicSegments, publicPace] =
+  const [regionPulse, citySnapshots, blogPosts, closedSeries, priceHistory, publicSegments, publicPace, publicMix] =
     await Promise.all([
       getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
       getMarketPulseAllCitySnapshots(),
@@ -208,6 +209,7 @@ export default async function CentralOregonRegionPage() {
       getPriceHistory('region', 'central-oregon', 'monthly', 60),
       getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
       getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
+      getPublicDetachedMix({ geoType: 'region', geoSlug: 'central-oregon' }),
     ])
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
@@ -271,6 +273,12 @@ export default async function CentralOregonRegionPage() {
     })
   }
   for (const item of publicPaceItems(publicPace)) {
+    extraLive.push({
+      value: v3Text(item.value),
+      label: v3Text(item.label),
+    })
+  }
+  for (const item of publicMixItems(publicMix)) {
     extraLive.push({
       value: v3Text(item.value),
       label: v3Text(item.label),

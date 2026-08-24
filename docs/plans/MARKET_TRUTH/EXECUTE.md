@@ -541,6 +541,21 @@ Bend detached still 774. County unpublished.
 
 2026-08-23am landed (live webpack 3010): `/housing-market/bend` extra types leftover pace — condos **66** / **49 days to contract** / **93.0%** sale to original / **−10.6%** YoY / **49.3%** price cuts; townhomes **79** / **45** days to contract / **96.8%** / **−33.4%** / **50.7%**. `/data/market/city/bend` extraSegments carries those four leftover fields; farm leftover miss omits. Pulse DTP **18** / sold 30d **137** stay. Neighborhood extra MOS still omitted. County unpublished.
 
+### Grind 2026-08-23an — mix and feature floors on public city/region
+
+**Locks still hold:** county unpublished; pulse 30-day sold and DTP stay; extra MOS at neighborhood omitted; unadjusted MoM off public; `commercial_lease` out; `all_residential` off public; subdivision never a price. Feature prevalence is a D12 floor labeled **at least**, except `garage_yn` which is a true share (D16). Workers do not tick this file.
+
+**Done when a real user can:**
+1. Open `/housing-market/bend` and see detached 12-month **feature floors** (fireplace, pool, waterfront, etc. as "at least X%") and **garage as a true share**, plus financing mix / bedroom mix when `getMetric` publishes. Miss omits. Never print a 0% floor as a figure.
+2. Open `/housing-market` and `/housing-market/central-oregon` and see the same mix/feature leftover for the region when publishable.
+3. Open `/data/market/city/bend` and see a `mix` object with those fields; miss is null. Pulse DTP / 30-day stay.
+
+`getMetric` must return a publishable mix cell whose payload is `value_text` (financing_mix / bedroom_distribution have null `value`).
+
+Bend detached still 774. County unpublished.
+
+2026-08-23an landed (live webpack 3010): `/housing-market/bend` detached mix/feature leftover — garage **96.1%** (true share), **at least 85.8%** fireplace, **at least 85.4%** cooling, **at least 51.4%** HOA, conventional **63.5%** / cash **27.6%**, 3-bed **56.3%**. `/data/market/city/bend` `mix` matches. Pulse DTP **18** / sold 30d **137** stay. 0% floors omitted. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

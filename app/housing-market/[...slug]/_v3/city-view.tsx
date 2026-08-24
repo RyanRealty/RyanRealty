@@ -29,11 +29,13 @@ import {
   buildExploreItems,
   buildFaqItems,
   buildLiveFigures,
+  buildPublicMixFigures,
   buildPublicPaceFigures,
   buildPublicSegmentFigures,
 } from './geo-figures'
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
+import type { PublicMixRow } from '@/lib/data/market-truth/public-mix'
 
 type Props = {
   cityName: string
@@ -52,6 +54,7 @@ type Props = {
   sheet: ReactNode
   publicSegments?: readonly PublicSegmentRow[]
   publicPace?: PublicPaceRow | null
+  publicMix?: PublicMixRow | null
 }
 
 export function CityMarketView({
@@ -71,11 +74,13 @@ export function CityMarketView({
   sheet,
   publicSegments = [],
   publicPace = null,
+  publicMix = null,
 }: Props) {
   const live = buildLiveFigures(pulse, mosText, cityName)
   const segmentFigures = buildPublicSegmentFigures(publicSegments, citySlug)
   const paceFigures = buildPublicPaceFigures(publicPace)
-  const figures = [...live.figures, ...segmentFigures, ...paceFigures, ...closedFigures]
+  const mixFigures = buildPublicMixFigures(publicMix)
+  const figures = [...live.figures, ...segmentFigures, ...paceFigures, ...mixFigures, ...closedFigures]
   const [firstFigure, ...restFigures] = figures
   const cityLedger = buildCityLedger(snapshots, citySlug)
   const [firstCityRow, ...restCityRows] = cityLedger.rows
@@ -104,6 +109,9 @@ export function CityMarketView({
       : null,
     paceFigures.length > 0
       ? 'leftover pace stats are Market Truth mt-v1, labeled by window, not the live 30-day pulse'
+      : null,
+    mixFigures.length > 0
+      ? 'feature shares other than garage are Market Truth floors labeled at least'
       : null,
     closedTrace,
   ].filter((part): part is string => Boolean(part))

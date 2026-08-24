@@ -68,6 +68,7 @@ import {
   publicPaceHasRow,
   publicPaceItems,
 } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMix, publicMixHasRow, publicMixItems } from '@/lib/data/market-truth/public-mix'
 import {
   getCoMarketAnnual,
   getCoMarketAnnualSeries,
@@ -153,6 +154,7 @@ export default async function HousingMarketHubPage() {
     concessionQuarters,
     publicSegments,
     publicPace,
+    publicMix,
   ] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
     getMarketPulseAllCitySnapshots(),
@@ -165,6 +167,7 @@ export default async function HousingMarketHubPage() {
     getConcessionsQuarterly(),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
+    getPublicDetachedMix({ geoType: 'region', geoSlug: 'central-oregon' }),
   ])
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
@@ -239,6 +242,12 @@ export default async function HousingMarketHubPage() {
     })
   }
   for (const item of publicPaceItems(publicPace)) {
+    sfrFollow.push({
+      value: v3Text(item.value),
+      label: v3Text(item.label),
+    })
+  }
+  for (const item of publicMixItems(publicMix)) {
     sfrFollow.push({
       value: v3Text(item.value),
       label: v3Text(item.label),
@@ -469,7 +478,7 @@ export default async function HousingMarketHubPage() {
             headline={v3Text('Single-family list inventory')}
             figures={[firstSfrFigure, ...restSfrFigures]}
             source={v3Text(
-              publicSegments.length > 0 || publicPaceHasRow(publicPace)
+              publicSegments.length > 0 || publicPaceHasRow(publicPace) || publicMixHasRow(publicMix)
                 ? 'live MLS through Oregon Data Share. Single-family figures are the region detached HUD. Condo and townhome counts are Market Truth mt-v1, sample-gated. 12-month pace stats are leftover Market Truth cells, not the live 30-day pulse'
                 : 'live MLS through Oregon Data Share, single-family homes across the Central Oregon region. Not ALL-TYPE closed sales',
             )}

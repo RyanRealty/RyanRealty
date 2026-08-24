@@ -3,11 +3,12 @@ import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 
-const { rowMock, detachedMock, paceMock, segmentsMock } = vi.hoisted(() => ({
+const { rowMock, detachedMock, paceMock, segmentsMock, mixMock } = vi.hoisted(() => ({
   rowMock: vi.fn(),
   detachedMock: vi.fn(),
   paceMock: vi.fn(),
   segmentsMock: vi.fn(),
+  mixMock: vi.fn(),
 }))
 
 vi.mock('@/lib/data/market/getMarketStatsCacheRows', () => ({
@@ -41,6 +42,16 @@ vi.mock('@/lib/data/market-truth/public-segments', async () => {
   return {
     ...actual,
     getPublicPlaceSegments: (...args: unknown[]) => segmentsMock(...args),
+  }
+})
+
+vi.mock('@/lib/data/market-truth/public-mix', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/data/market-truth/public-mix')>(
+    '@/lib/data/market-truth/public-mix',
+  )
+  return {
+    ...actual,
+    getPublicDetachedMix: (...args: unknown[]) => mixMock(...args),
   }
 })
 
@@ -103,6 +114,8 @@ beforeEach(() => {
   paceMock.mockReset()
   segmentsMock.mockReset()
   segmentsMock.mockResolvedValue([])
+  mixMock.mockReset()
+  mixMock.mockResolvedValue({ financing: [], features: [], bedrooms: [] })
   paceMock.mockResolvedValue({
     daysToContract: null,
     daysToClose: null,
@@ -279,6 +292,21 @@ describe('getMarketPulseJsonFeed', () => {
       },
     ])
     expect(result.note).toMatch(/Extra product types/)
+  })
+
+  it('attaches detached mix and D12 feature floors when publishable', async () => {
+    rowMock.mockResolvedValue(PULSE_BEND)
+    detachedMock.mockResolvedValue(new Map())
+    mixMock.mockResolvedValue({
+      features: [{ key: 'fireplace_yn', share: 0.41, floor: true }],
+      financing: [{ key: 'conventional', share: 0.61, floor: false }],
+      bedrooms: [{ key: '3', share: 0.47, floor: false }],
+    })
+    const result = found(await getMarketPulseJsonFeed({ geoType: 'city', geoSlug: 'bend' }))
+    expect(mixMock).toHaveBeenCalledWith({ geoType: 'city', geoSlug: 'bend' })
+    expect(result.mix?.features[0]?.floor).toBe(true)
+    expect(result.mix?.financing[0]?.key).toBe('conventional')
+    expect(result.note).toMatch(/at least/)
   })
 
   it('inventory overlays when MOS is below min_n', async () => {

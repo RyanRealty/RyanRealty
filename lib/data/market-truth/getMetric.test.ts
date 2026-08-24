@@ -166,4 +166,27 @@ describe('getMetric / getMetrics', () => {
     })
     expect(missed).toBeNull()
   })
+
+  it('returns a mix cell whose payload is value_text with a null value', async () => {
+    mockMetricRows([
+      metricRow({
+        stat_id: 'financing_mix',
+        value: null,
+        value_text: '{"conventional":0.61,"cash":0.22}',
+        window_months: 12,
+        sample_n: 1800,
+        method: 'multi_label_share_of_known_financing',
+      }),
+    ])
+    const row = await getMetric({
+      stat: 'financing_mix',
+      geoType: 'city',
+      geoSlug: 'bend',
+      segment: 'detached',
+      windowMonths: 12,
+    })
+    expect(row?.isPublishable).toBe(true)
+    expect(row?.value).toBeNull()
+    expect(row?.valueText).toContain('conventional')
+  })
 })

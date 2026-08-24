@@ -48,6 +48,7 @@ import {
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'
@@ -124,7 +125,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   // fallback, so a `.catch(() => null)` here would only hide a real outage
   // behind a confident empty page.
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [pulse, priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace] =
+  const [pulse, priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix] =
     await Promise.all([
     getMarketPulse({ geoType, geoSlug }),
     getPriceHistory(geoType, geoSlug, 'monthly', priceHistoryLimit),
@@ -138,6 +139,9 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     isCity
       ? getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug })
       : Promise.resolve(EMPTY_PUBLIC_PACE),
+    isCity
+      ? getPublicDetachedMix({ geoType: 'city', geoSlug: citySlug })
+      : Promise.resolve(EMPTY_PUBLIC_MIX),
   ])
   const detailYtd = timeframes?.ytd ?? null
   const detail = timeframes?.monthly ?? null
@@ -269,6 +273,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             sheet={sheet}
             publicSegments={publicSegments}
             publicPace={publicPace}
+            publicMix={publicMix}
           />
         ) : (
           <CommunityMarketView
