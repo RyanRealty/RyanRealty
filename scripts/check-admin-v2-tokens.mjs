@@ -628,6 +628,8 @@ const SCAN_DIRS = [
   'app/admin/(protected)/deals/[key]/DealParties.tsx',
   'app/admin/(protected)/deals/[key]/DealEnvelopes.tsx',
   'app/admin/(protected)/deals/[key]/DealTasks.tsx',
+  'app/admin/(protected)/deals/[key]/AddMissingChecklist.tsx',
+  'app/admin/(protected)/deals/[key]/DealPropertyFacts.tsx',
   'app/admin/(protected)/deals/[key]/DealContingencyDays.tsx',
   'app/admin/(protected)/deals/[key]/DocumentName.tsx',
   'app/admin/(protected)/deals/[key]/DocumentRowActions.tsx',
