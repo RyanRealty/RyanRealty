@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@supabase/supabase-js'
-import { getListingTiles } from '@/lib/data'
+import { getListingTiles } from '@/lib/data/listings/getListingTiles'
 import { publishMoneyText, publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -11,8 +11,9 @@ function getSupabase() {
   return createClient(url, anonKey)
 }
 
-// Edge required for ImageResponse latency; disables static generation for this route.
-export const runtime = 'edge'
+// Node: importing getListingTiles through the DAL barrel pulled node:crypto
+// (ingest-licensed-blank / signing) into Edge and Vercel rejected middleware.
+export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
