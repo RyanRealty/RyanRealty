@@ -148,6 +148,14 @@ export async function getSigningSession(token: string): Promise<SigningSessionSt
         .filter((f) => {
           const type = String(f.type ?? '')
           if (f.recipient_id === recip.id && signerOwnsMappedField(type)) return true
+          if (
+            f.recipient_id &&
+            f.recipient_id !== recip.id &&
+            signerOwnsMappedField(type) &&
+            f.value
+          ) {
+            return true
+          }
           const text = f.value && typeof f.value === 'object' && 'text' in f.value ? String((f.value as { text?: string }).text ?? '') : ''
           return type === 'text' && !!text.trim()
         })

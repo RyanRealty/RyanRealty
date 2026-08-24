@@ -27,6 +27,7 @@ import {
   ACTION_REQUIRED_LABEL,
   SIGN_FIELD_TYPES,
   SIGN_FIELD_LABEL,
+  signerBlockColor,
   DEFAULT_FIELD_SIZE,
   isSignableRole,
   storedRecipientRole,
@@ -37,8 +38,6 @@ import {
   type SignFieldType,
 } from '@/lib/tc/signing'
 import { SIGNER_COMPLETED_TYPES } from '@/lib/tc/required-fields'
-
-const RECIPIENT_COLORS = ['#2563eb', '#16a34a', '#db2777', '#9333ea', '#ea580c', '#0891b2', '#ca8a04']
 
 type LocalField = FieldInput & { localId: string }
 
@@ -85,7 +84,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   const colorOf = (recipientId: string | null) => {
     if (!recipientId) return '#64748b'
     const idx = recipients.findIndex((r) => r.id === recipientId)
-    return RECIPIENT_COLORS[idx % RECIPIENT_COLORS.length]
+    return signerBlockColor(idx)
   }
   const savedSignable = recipients.filter((r) => r.id && isSignableRole(r.role, r.actionRequired))
   const completedIds = new Set(detail.recipients.filter((r) => r.completedAt).map((r) => r.id))

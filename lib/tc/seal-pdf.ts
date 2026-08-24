@@ -102,7 +102,7 @@ async function drawFieldValue(
       const scale = Math.min(fw / img.width, fh / img.height)
       const dw = img.width * scale
       const dh = img.height * scale
-      page.drawImage(img, { x: fx + (fw - dw) / 2, y: fy + (fh - dh) / 2, width: dw, height: dh })
+      page.drawImage(img, { x: fx + 1, y: fy + (fh - dh) / 2, width: dw, height: dh })
     } catch {
       /* skip unembeddable image */
     }

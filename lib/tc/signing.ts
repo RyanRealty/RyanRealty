@@ -28,6 +28,14 @@ export const SIGN_FIELD_TYPES = [
 ] as const
 export type SignFieldType = (typeof SIGN_FIELD_TYPES)[number]
 
+/** One color per signer so buyer vs seller blocks are obvious on the form. */
+export const SIGNER_BLOCK_COLORS = ['#2563eb', '#16a34a', '#db2777', '#9333ea', '#ea580c', '#0891b2', '#ca8a04'] as const
+
+export function signerBlockColor(index: number): string {
+  const i = Number.isFinite(index) ? Math.abs(Math.trunc(index)) : 0
+  return SIGNER_BLOCK_COLORS[i % SIGNER_BLOCK_COLORS.length]
+}
+
 export const SIGN_FIELD_LABEL: Record<SignFieldType, string> = {
   signature: 'Signature',
   initials: 'Initials',

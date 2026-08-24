@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   demoteImplausibleSignatureFields,
   fillStackedUnderlineRun,
+  promoteInitialsBoxes,
   promoteLinedFormFields,
   stackedUnderlineRuns,
   wrapTextToWidth,
@@ -110,6 +111,19 @@ describe('stacked underlines', () => {
     expect(filled.every((r) => r.text.length <= 72)).toBe(true)
     expect(filled.map((r) => r.field.y)).toEqual(run.map((f) => f.y))
     expect(stackedUnderlineRuns(run)).toHaveLength(1)
+  })
+})
+
+describe('promoteInitialsBoxes', () => {
+  it('puts 060 buyer initials on the left cluster and seller on the right', () => {
+    const xs = [0.124, 0.193, 0.262, 0.331, 0.668, 0.737, 0.806, 0.875]
+    const map = xs.map((x, i) => field({ label: `i${i}`, x, y: 0.897, w: 0.051, h: 0.016 }))
+    const out = promoteInitialsBoxes(map)
+    expect(out.filter((f) => f.signerRole === 'buyer' && f.type === 'initials')).toHaveLength(4)
+    expect(out.filter((f) => f.signerRole === 'seller' && f.type === 'initials')).toHaveLength(4)
+    expect(out.find((f) => f.x === 0.124)).toMatchObject({ type: 'initials', signerRole: 'buyer', optional: false })
+    expect(out.find((f) => f.x === 0.193)).toMatchObject({ optional: true })
+    expect(out.find((f) => f.x === 0.668)).toMatchObject({ type: 'initials', signerRole: 'seller', optional: false })
   })
 })
 

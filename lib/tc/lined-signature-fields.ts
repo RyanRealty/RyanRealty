@@ -135,6 +135,44 @@ export function promoteLinedFormFields(map: readonly MappedField[]): MappedField
   return out
 }
 
+function isInitialsBox(f: MappedField): boolean {
+  if (f.type !== 'text' && f.type !== 'initials') return false
+  return f.w >= 0.03 && f.w <= 0.08 && f.h >= 0.012 && f.h <= 0.022
+}
+
+/**
+ * Footer initial rows (OREF 060): a line of small boxes, buyers on the left,
+ * sellers on the right. First box per side is required; extras stay optional.
+ */
+export function promoteInitialsBoxes(map: readonly MappedField[]): MappedField[] {
+  const out = map.map((f) => ({ ...f }))
+  const boxes = out
+    .map((f, i) => ({ f, i }))
+    .filter(({ f }) => isInitialsBox(f))
+  const groups = new Map<string, { f: MappedField; i: number }[]>()
+  for (const b of boxes) {
+    const key = `${b.f.page}:${Math.round(b.f.y * 200)}`
+    const arr = groups.get(key) ?? []
+    arr.push(b)
+    groups.set(key, arr)
+  }
+  for (const group of groups.values()) {
+    if (group.length < 4) continue
+    group.sort((a, b) => a.f.x - b.f.x)
+    const mid = (group[0]!.f.x + group[group.length - 1]!.f.x) / 2
+    const left = group.filter((g) => g.f.x < mid)
+    const right = group.filter((g) => g.f.x >= mid)
+    const assign = (cluster: { f: MappedField; i: number }[], role: SignerRole) => {
+      cluster.forEach((g, idx) => {
+        out[g.i] = { ...g.f, type: 'initials', signerRole: role, optional: idx > 0 }
+      })
+    }
+    assign(left, 'buyer')
+    assign(right, 'seller')
+  }
+  return out
+}
+
 /** Consecutive printed underlines (059 document list, 060 other-language). */
 export function stackedUnderlineRuns(map: readonly MappedField[]): MappedField[][] {
   const candidates = map

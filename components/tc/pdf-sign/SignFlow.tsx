@@ -3,14 +3,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PdfPages } from './pdf-pages'
 import { SignaturePad, scriptTextToPng } from './SignaturePad'
-import { fieldNeedsAdoptedMark, initialsFromFullName, nextRequiredFieldId } from '@/lib/tc/adopt-signature'
+import {
+  fieldNeedsAdoptedMark,
+  initialsFromFullName,
+  nextRequiredFieldId,
+  stampPreparedSignerFields,
+} from '@/lib/tc/adopt-signature'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card } from '@/components/ui/card'
 import { recordSigningConsent, submitSigning, declineSigning } from '@/app/actions/tc-sign'
 import type { SigningPayload, SubmitFieldValue } from '@/app/actions/tc-sign'
 import type { EnvelopeField, SignFieldType, SignFieldValue } from '@/lib/tc/signing'
-import { isSenderAnnotation } from '@/lib/tc/signing'
+import { signerBlockColor } from '@/lib/tc/signing'
 
 const FIELD_PROMPT: Record<SignFieldType, string> = {
   signature: 'Sign',
@@ -27,7 +32,13 @@ const FIELD_PROMPT: Record<SignFieldType, string> = {
 export function SignFlow({ token, payload }: { token: string; payload: SigningPayload }) {
   const [consented, setConsented] = useState(payload.consented)
   const [agree, setAgree] = useState(false)
-  const [values, setValues] = useState<Map<string, SignFieldValue>>(new Map())
+  const [values, setValues] = useState<Map<string, SignFieldValue>>(() => {
+    const m = new Map<string, SignFieldValue>()
+    for (const f of payload.fields) {
+      if (f.value) m.set(f.id, f.value)
+    }
+    return m
+  })
   const [pad, setPad] = useState<EnvelopeField | null>(null)
   const [adopted, setAdopted] = useState<{ signaturePng: string; initialsPng: string } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -46,21 +57,56 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
       }),
     )
   }, [])
+  useEffect(() => {
+    if (!adopted || !signedDate) return
+    setValues((m) => {
+      const next = new Map(m)
+      applyPreparedStamps(next)
+      return next
+    })
+  }, [adopted, signedDate, signedTime])
 
   const requiredIds = useMemo(
-    () => payload.fields.filter((f) => f.required && !isSenderAnnotation(f.type)).map((f) => f.id),
-    [payload.fields],
+    () =>
+      payload.fields
+        .filter(
+          (f) =>
+            f.required &&
+            fieldNeedsAdoptedMark(f.type) &&
+            (!f.recipientId || f.recipientId === payload.recipientId),
+        )
+        .map((f) => f.id),
+    [payload.fields, payload.recipientId],
   )
   const filledCount = requiredIds.filter((id) => values.has(id)).length
   const allFilled = filledCount === requiredIds.length
-  const needsAdopt = payload.fields.some((f) => fieldNeedsAdoptedMark(f.type))
+  const needsAdopt = payload.fields.some(
+    (f) => fieldNeedsAdoptedMark(f.type) && (!f.recipientId || f.recipientId === payload.recipientId),
+  )
+  const colorByRecipient = useMemo(() => {
+    const ids = [...new Set(payload.fields.map((f) => f.recipientId).filter(Boolean))] as string[]
+    const m = new Map<string, string>()
+    ids.forEach((id, i) => m.set(id, signerBlockColor(i)))
+    return m
+  }, [payload.fields])
+
+  function applyPreparedStamps(into: Map<string, SignFieldValue>) {
+    for (const s of stampPreparedSignerFields(payload.fields, {
+      recipientId: payload.recipientId,
+      name: payload.recipientName,
+      date: signedDate,
+      time: signedTime,
+    })) {
+      if (!into.has(s.fieldId)) into.set(s.fieldId, s.value)
+    }
+  }
 
   const setValue = (fieldId: string, v: SignFieldValue) =>
     setValues((m) => {
       const next = new Map(m)
       next.set(fieldId, v)
       const nid = nextRequiredFieldId(
-        payload.fields,
+        payload.fields.filter((f) => fieldNeedsAdoptedMark(f.type)),
         new Set(next.keys()),
       )
       if (nid) {
@@ -72,6 +118,11 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   function adoptPng(png: string) {
     const initials = scriptTextToPng(initialsFromFullName(payload.recipientName)) ?? png
     setAdopted({ signaturePng: png, initialsPng: initials })
+    setValues((m) => {
+      const next = new Map(m)
+      applyPreparedStamps(next)
+      return next
+    })
   }
 
   function applyMark(field: EnvelopeField) {
@@ -98,7 +149,9 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
       return
     }
     setBusy(true)
-    const payloadValues: SubmitFieldValue[] = [...values.entries()].map(([fieldId, value]) => ({ fieldId, value }))
+    const submitted = new Map(values)
+    applyPreparedStamps(submitted)
+    const payloadValues: SubmitFieldValue[] = [...submitted.entries()].map(([fieldId, value]) => ({ fieldId, value }))
     const res = await submitSigning(token, payloadValues)
     setBusy(false)
     if (!res.ok) {
@@ -207,22 +260,11 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
                       key={f.id}
                       field={f}
                       size={size}
+                      color={colorByRecipient.get(f.recipientId ?? '') ?? '#2563eb'}
+                      ownerId={payload.recipientId}
                       value={values.get(f.id) ?? f.value ?? null}
                       onSignature={() => applyMark(f)}
                       onText={(text) => setValue(f.id, { kind: f.type === 'date_signed' ? 'date_signed' : 'text', text })}
-                      onDate={() =>
-                        signedDate
-                          ? setValue(f.id, { kind: 'date_signed', text: signedDate })
-                          : undefined
-                      }
-                      onStamp={(text) => setValue(f.id, { kind: 'text', text })}
-                      stampText={
-                        f.type === 'full_name'
-                          ? payload.recipientName
-                          : f.type === 'time_signed'
-                            ? signedTime
-                            : ''
-                      }
                       onCheckbox={(checked) => setValue(f.id, { kind: 'checkbox', checked })}
                     />
                   ))}
@@ -271,22 +313,20 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
 function FieldBox({
   field,
   size,
+  color,
+  ownerId,
   value,
   onSignature,
   onText,
-  onDate,
-  onStamp,
-  stampText,
   onCheckbox,
 }: {
   field: EnvelopeField
   size: { w: number; h: number }
+  color: string
+  ownerId: string
   value: SignFieldValue | null
   onSignature: () => void
   onText: (text: string) => void
-  onDate: () => void
-  onStamp: (text: string) => void
-  stampText: string
   onCheckbox: (checked: boolean) => void
 }) {
   const style: React.CSSProperties = {
@@ -297,55 +337,50 @@ function FieldBox({
     height: field.h * size.h,
   }
   const filled = value != null
+  const others = !!(field.recipientId && field.recipientId !== ownerId)
   const base =
-    'flex items-center justify-center overflow-hidden rounded-sm text-[11px] font-medium ring-1 transition-colors'
-  const ring = filled ? 'ring-success/60 bg-success/5' : 'ring-primary/70 bg-primary/10 hover:bg-primary/20 cursor-pointer'
+    'flex items-center overflow-hidden rounded-sm text-[11px] font-medium ring-1 transition-colors'
+  const ring = filled ? 'ring-success/60 bg-success/5' : 'hover:bg-black/5 cursor-pointer'
 
   if (field.type === 'signature' || field.type === 'initials') {
+    if (others) {
+      return (
+        <div style={style} className={`${base} justify-start bg-transparent ring-0`}>
+          {value && (value.kind === 'signature' || value.kind === 'initials') ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value.png} alt="" className="max-h-full max-w-full object-contain object-left" />
+          ) : null}
+        </div>
+      )
+    }
     return (
       <button
         type="button"
         id={`sign-field-${field.id}`}
-        style={style}
-        className={`${base} ${ring}`}
+        style={{ ...style, color, boxShadow: `inset 0 0 0 1.5px ${color}` }}
+        className={`${base} justify-start bg-white/40 px-0.5 ${ring}`}
         onClick={onSignature}
       >
         {value && (value.kind === 'signature' || value.kind === 'initials') ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={value.png} alt="signature" className="max-h-full max-w-full object-contain" />
+          <img src={value.png} alt="signature" className="max-h-full max-w-full object-contain object-left" />
         ) : (
-          <span className="text-primary">{FIELD_PROMPT[field.type]}</span>
+          <span className="pl-1">{FIELD_PROMPT[field.type]}</span>
         )}
       </button>
     )
   }
 
-  if (field.type === 'date_signed') {
+  if (field.type === 'date_signed' || field.type === 'full_name' || field.type === 'time_signed') {
+    const shown =
+      value && (value.kind === 'date_signed' || value.kind === 'text') ? value.text : ''
     return (
-      <button type="button" id={`sign-field-${field.id}`} style={style} className={`${base} ${ring}`} onClick={onDate}>
-        <span className={filled ? 'text-foreground' : 'text-primary'}>
-          {value && value.kind === 'date_signed' ? value.text : 'Date'}
-        </span>
-      </button>
-    )
-  }
-
-  if (field.type === 'full_name' || field.type === 'time_signed') {
-    const shown = value && value.kind === 'text' ? value.text : ''
-    return (
-      <button
-        type="button"
-        id={`sign-field-${field.id}`}
+      <div
         style={style}
-        className={`${base} ${ring}`}
-        onClick={() => {
-          if (stampText) onStamp(stampText)
-        }}
+        className="pointer-events-none flex items-center overflow-hidden px-1 text-[11px] leading-none text-foreground"
       >
-        <span className={filled ? 'text-foreground' : 'text-primary'}>
-          {shown || FIELD_PROMPT[field.type]}
-        </span>
-      </button>
+        {shown}
+      </div>
     )
   }
 

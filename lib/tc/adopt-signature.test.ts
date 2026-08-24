@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { fieldNeedsAdoptedMark, initialsFromFullName, nextRequiredFieldId } from './adopt-signature'
+import {
+  fieldNeedsAdoptedMark,
+  initialsFromFullName,
+  nextRequiredFieldId,
+  stampPreparedSignerFields,
+} from './adopt-signature'
 
 describe('initialsFromFullName', () => {
   it('takes first and last letters of a legal name', () => {
@@ -21,6 +26,24 @@ describe('nextRequiredFieldId', () => {
     expect(nextRequiredFieldId(fields, new Set(['s1']))).toBe('s2')
     expect(nextRequiredFieldId(fields, new Set(['s1', 's2']))).toBe('d1')
     expect(nextRequiredFieldId(fields, new Set(['s1', 's2', 'd1']))).toBeNull()
+  })
+})
+
+describe('stampPreparedSignerFields', () => {
+  it('fills name and date for this signer so they only tap Sign and Initials', () => {
+    const stamped = stampPreparedSignerFields(
+      [
+        { id: 'n1', type: 'full_name', recipientId: 'buyer' },
+        { id: 'd1', type: 'date_signed', recipientId: 'buyer' },
+        { id: 's1', type: 'signature', recipientId: 'buyer' },
+        { id: 'n2', type: 'full_name', recipientId: 'seller' },
+      ],
+      { recipientId: 'buyer', name: 'Vault Test Buyer', date: '8/24/2026', time: '8:15 AM' },
+    )
+    expect(stamped).toEqual([
+      { fieldId: 'n1', value: { kind: 'text', text: 'Vault Test Buyer' } },
+      { fieldId: 'd1', value: { kind: 'date_signed', text: '8/24/2026' } },
+    ])
   })
 })
 
