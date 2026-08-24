@@ -8,6 +8,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getCommissionsForCycles, updateTcCommission } from '@/app/actions/tc-commissions'
 import { getCycleForCda } from '@/lib/data/tc/listing-action-reads'
+import { getTcChecklistItemNames } from '@/lib/data/tc/getTcAnticipatedReads'
 import { inboundReferralFeePctForDeal } from '@/lib/data/tc/deal-people'
 import { partyNamesFromJson } from '@/lib/tc/listing-actions'
 import { prefillReferralFee } from '@/lib/tc/property-facts'
@@ -103,8 +104,8 @@ export async function generateCommissionCda(
   })
   if (docErr) return { ok: false, error: docErr.message }
   const referralTotal = rows.reduce((sum, r) => sum + Number(r.referral_fee ?? 0), 0)
-  const { data: existingItems } = await sb.from('tc_checklist_items').select('name').eq('cycle_id', cycleId)
-  const w9 = missingReferralW9((existingItems ?? []).map((i: { name?: string }) => String(i.name ?? '')), referralTotal)
+  const existingNames = await getTcChecklistItemNames(cycleId)
+  const w9 = missingReferralW9(existingNames, referralTotal)
   if (w9.length) {
     await sb.from('tc_checklist_items').insert(
       w9.map((row, i) => ({
@@ -112,7 +113,7 @@ export async function generateCommissionCda(
         name: row.name,
         type_name: row.type_name,
         status: row.status,
-        sort_order: (existingItems ?? []).length + i,
+        sort_order: existingNames.length + i,
         group_name: row.group,
       })),
     )

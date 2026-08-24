@@ -15,6 +15,7 @@ import {
 } from '@/lib/tc/required-documents'
 import { getPropertyFactsByMls } from '@/lib/data/listings/getPropertyFactsByMls'
 import { getTcCycleRawById } from '@/lib/data/tc/getTcCycleRawById'
+import { getTcCycleReferralFeeTotal, getTcDealContactRoles } from '@/lib/data/tc/getTcAnticipatedReads'
 import { overlayPropertyFacts, parseSavedPropertyFacts } from '@/lib/tc/property-facts'
 
 /**
@@ -114,11 +115,8 @@ export async function getAnticipatedDocuments(cycleId: string): Promise<Anticipa
   const savedFacts = parseSavedPropertyFacts((cycle.raw as Raw)?.propertyFacts)
   facts = overlayPropertyFacts(facts, savedFacts)
   if (savedFacts?.hasTeam === undefined && cycle.deal_id) {
-    const { data: contactRows } = await supabase
-      .from('tc_deal_contacts')
-      .select('role')
-      .eq('deal_id', cycle.deal_id)
-    if ((contactRows ?? []).some((r: { role?: string }) => r.role === 'co_agent')) {
+    const roles = await getTcDealContactRoles(String(cycle.deal_id))
+    if (roles.some((role) => role === 'co_agent')) {
       facts = overlayPropertyFacts(facts, { hasTeam: true })
     }
   }
@@ -144,14 +142,7 @@ export async function addMissingAnticipatedChecklist(
   const preview = await getAnticipatedDocuments(cycleId)
   if (!preview) return { ok: false, error: 'Cycle not found' }
   const supabase = getServiceSupabase()
-  const { data: commissionRows } = await supabase
-    .from('tc_commissions')
-    .select('referral_fee')
-    .eq('cycle_id', cycleId)
-  const referralFee = (commissionRows ?? []).reduce(
-    (sum: number, r: { referral_fee?: number }) => sum + Number(r.referral_fee ?? 0),
-    0,
-  )
+  const referralFee = await getTcCycleReferralFeeTotal(cycleId)
   const missing = [
     ...missingChecklistSeeds(preview.role, preview.facts, preview.presentNames),
     ...missingReferralW9(preview.presentNames, referralFee),

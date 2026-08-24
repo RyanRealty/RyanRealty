@@ -20,9 +20,9 @@ export function BuyerAgreementWizard({
   const [pending, start] = useTransition()
   const broker =
     /paul/i.test(brokerName ?? '') ? BROKERS.paul : /rebecca/i.test(brokerName ?? '') ? BROKERS.rebecca : BROKERS.matt
-  const [license, setLicense] = useState(broker.license)
+  const [license, setLicense] = useState<string>(broker.license)
   const [pb, setPb] = useState(
-    `${BROKERS.matt.name} · ${BROKERS.matt.phone} · ${BROKERS.matt.email} · license ${BROKERS.matt.license}`,
+    `${broker.name} · ${broker.phone} · ${broker.email} · license ${broker.license}`,
   )
   const [termStart, setTermStart] = useState('')
   const [termEnd, setTermEnd] = useState('')
@@ -31,7 +31,7 @@ export function BuyerAgreementWizard({
   const [priceRange, setPriceRange] = useState('')
   const [compensation, setCompensation] = useState('Seller-paid cooperative compensation as offered; buyer not obligated to pay brokerage compensation unless agreed in writing.')
   const [termination, setTermination] = useState('Either party may terminate in writing as provided in the agreement.')
-  const [exclusive, setExclusive] = useState('exclusive')
+  const [exclusive, setExclusive] = useState<string>('exclusive')
 
   if (!open) {
     return (
