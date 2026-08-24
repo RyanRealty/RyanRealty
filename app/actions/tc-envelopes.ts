@@ -585,6 +585,7 @@ export async function createEnvelopeFromTemplate(
           pageCount: Number(form.page_count) || 15,
           formNumber: '001',
           signerProfile: form.signer_profile,
+          documentName: form.name,
         }),
       ]
     }
@@ -593,6 +594,7 @@ export async function createEnvelopeFromTemplate(
         pageCount: Number(form.page_count) || 1,
         formNumber: form.form_number,
         signerProfile: form.signer_profile,
+        documentName: form.name,
       })
     }
     const { filled } = mapDealFactsToFillValues(facts, map)
