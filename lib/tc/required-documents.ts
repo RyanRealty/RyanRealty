@@ -24,6 +24,7 @@ export type PropertyFacts = {
   isTenantOccupied: boolean | null
   isShortSale: boolean | null
   isSellerCarried: boolean | null
+  hasTeam: boolean | null
   financing: 'va' | 'fha' | 'conventional' | 'cash' | null
 }
 
@@ -146,6 +147,16 @@ export const DOC_RULES: DocRule[] = [
     citation: 'ORS 696.815/696.820 disclosed limited agency',
     matchAny: ['disclosed limited agency', 'limited agency', '040', '041'],
     applies: (role) => role === 'dual',
+  },
+  {
+    id: 'team-disclosure',
+    label: 'Real estate team disclosure at first contact',
+    orefForm: null,
+    severity: 'required',
+    citation:
+      'OAR 863-015-0143 (HB 3137, effective 2026-01-01): a licensed real estate team must disclose the team at first contact. Encoded 2026-08-24 from docs/TC_BUILD_SPEC.md; confirm against the live OAR text if a team advertising question comes up.',
+    matchAny: ['team disclosure', '0143'],
+    applies: (_role, f) => T(f.hasTeam),
   },
   {
     id: 'compensation',
@@ -298,6 +309,7 @@ export const EMPTY_PROPERTY_FACTS: PropertyFacts = {
   isTenantOccupied: null,
   isShortSale: null,
   isSellerCarried: null,
+  hasTeam: null,
   financing: null,
 }
 
@@ -374,6 +386,23 @@ export function missingChecklistSeeds(
   return seedChecklistItems(role, facts).filter((row) => missing.has(row.name))
 }
 
+export function referralW9ChecklistRow(): ChecklistSeedRow {
+  return {
+    name: 'Referral payee W-9',
+    type_name: 'w9',
+    status: 'required',
+    sort_order: 80,
+    group: 'Closing',
+  }
+}
+
+export function missingReferralW9(presentNames: readonly string[], referralFee: number): ChecklistSeedRow[] {
+  if (!(referralFee > 0)) return []
+  const hay = presentNames.map((n) => n.toLowerCase())
+  if (hay.some((h) => h.includes('w-9') || h.includes('w9') || h.includes('referral payee'))) return []
+  return [referralW9ChecklistRow()]
+}
+
 export function unknownFacts(facts: PropertyFacts): string[] {
   const labels: Record<keyof PropertyFacts, string> = {
     yearBuilt: 'Year built (lead-based paint)',
@@ -387,6 +416,7 @@ export function unknownFacts(facts: PropertyFacts): string[] {
     isTenantOccupied: 'Tenant-occupied?',
     isShortSale: 'Short sale?',
     isSellerCarried: 'Seller-carried financing?',
+    hasTeam: 'Licensed team (2+ agents)?',
     financing: 'Financing type (VA/FHA)',
   }
   return (Object.keys(labels) as (keyof PropertyFacts)[])

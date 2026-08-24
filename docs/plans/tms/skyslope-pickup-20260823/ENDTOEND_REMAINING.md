@@ -18,7 +18,7 @@ A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 
 ## Remaining (this grind)
 
-Unblocked: catalog apply pulls new/revised licensed PDFs. A deal can confirm property facts (well, septic, HOA, financing, year built) and add the matching Oregon checklist rows. Generate CDA prefills inbound referral % of GCI when the client was referred in, and notes the W-9. Library filter + Open blanks stay on `/admin/forms`.
+Unblocked: catalog apply pulls new/revised licensed PDFs. A deal can confirm property facts and add matching Oregon checklist rows. Buyer/dual files get the OAR 863-015-0133 wizard with Matt's license filled. A co-agent on the file flags team disclosure (OAR 863-015-0143). CDA prefills inbound referral % of GCI and adds a W-9 checklist row when a referral fee exists.
 
 Blocked on Matt: send a live envelope. Blocked on mail DNS: per-deal inbound address. Blocked on a new license: any library outside OREF / OR / ODS.
 

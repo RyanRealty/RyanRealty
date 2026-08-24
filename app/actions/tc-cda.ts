@@ -11,6 +11,7 @@ import { getCycleForCda } from '@/lib/data/tc/listing-action-reads'
 import { inboundReferralFeePctForDeal } from '@/lib/data/tc/deal-people'
 import { partyNamesFromJson } from '@/lib/tc/listing-actions'
 import { prefillReferralFee } from '@/lib/tc/property-facts'
+import { missingReferralW9 } from '@/lib/tc/required-documents'
 
 function getServiceSupabase() {
   return createServiceClient()
@@ -101,12 +102,27 @@ export async function generateCommissionCda(
     classification: { source: 'cda' },
   })
   if (docErr) return { ok: false, error: docErr.message }
+  const referralTotal = rows.reduce((sum, r) => sum + Number(r.referral_fee ?? 0), 0)
+  const { data: existingItems } = await sb.from('tc_checklist_items').select('name').eq('cycle_id', cycleId)
+  const w9 = missingReferralW9((existingItems ?? []).map((i: { name?: string }) => String(i.name ?? '')), referralTotal)
+  if (w9.length) {
+    await sb.from('tc_checklist_items').insert(
+      w9.map((row, i) => ({
+        cycle_id: cycleId,
+        name: row.name,
+        type_name: row.type_name,
+        status: row.status,
+        sort_order: (existingItems ?? []).length + i,
+        group_name: row.group,
+      })),
+    )
+  }
   await sb.from('tc_events').insert({
     deal_id: cycle.deal_id,
     cycle_id: cycleId,
     actor: email,
     action: 'cda_generated',
-    detail: { payees: rows.length },
+    detail: { payees: rows.length, w9: w9.length },
   })
   revalidatePath(`/admin/deals/${propertyKey}`)
   return { ok: true }

@@ -7,6 +7,7 @@ import {
   EMPTY_PROPERTY_FACTS,
   anticipateDocuments,
   missingChecklistSeeds,
+  missingReferralW9,
   unknownFacts,
   type AnticipatedDoc,
   type BrokerRole,
@@ -60,6 +61,7 @@ function factsFromRaw(raw: Raw, mlsYearBuilt: number | null): PropertyFacts {
     isTenantOccupied: null,
     isShortSale: null,
     isSellerCarried: null,
+    hasTeam: null,
     financing: null,
   }
 }
@@ -108,7 +110,17 @@ export async function getAnticipatedDocuments(cycleId: string): Promise<Anticipa
       facts = overlayPropertyFacts(facts, fromMls)
     }
   }
-  facts = overlayPropertyFacts(facts, parseSavedPropertyFacts((cycle.raw as Raw)?.propertyFacts))
+  const savedFacts = parseSavedPropertyFacts((cycle.raw as Raw)?.propertyFacts)
+  facts = overlayPropertyFacts(facts, savedFacts)
+  if (savedFacts?.hasTeam === undefined && cycle.deal_id) {
+    const { data: contactRows } = await supabase
+      .from('tc_deal_contacts')
+      .select('role')
+      .eq('deal_id', cycle.deal_id)
+    if ((contactRows ?? []).some((r: { role?: string }) => r.role === 'co_agent')) {
+      facts = overlayPropertyFacts(facts, { hasTeam: true })
+    }
+  }
   const documents = anticipateDocuments(role, facts, presentNames)
 
   return {
@@ -130,9 +142,20 @@ export async function addMissingAnticipatedChecklist(
   if (!gate.ok) return { ok: false, error: gate.error }
   const preview = await getAnticipatedDocuments(cycleId)
   if (!preview) return { ok: false, error: 'Cycle not found' }
-  const missing = missingChecklistSeeds(preview.role, preview.facts, preview.presentNames)
-  if (!missing.length) return { ok: true, added: 0 }
   const supabase = getServiceSupabase()
+  const { data: commissionRows } = await supabase
+    .from('tc_commissions')
+    .select('referral_fee')
+    .eq('cycle_id', cycleId)
+  const referralFee = (commissionRows ?? []).reduce(
+    (sum: number, r: { referral_fee?: number }) => sum + Number(r.referral_fee ?? 0),
+    0,
+  )
+  const missing = [
+    ...missingChecklistSeeds(preview.role, preview.facts, preview.presentNames),
+    ...missingReferralW9(preview.presentNames, referralFee),
+  ]
+  if (!missing.length) return { ok: true, added: 0 }
   const start = preview.presentNames.length
   const { error } = await supabase.from('tc_checklist_items').insert(
     missing.map((row, i) => ({

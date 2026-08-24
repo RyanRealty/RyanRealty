@@ -5,6 +5,7 @@ import {
   seedChecklistItems,
   anticipateDocuments,
   missingChecklistSeeds,
+  missingReferralW9,
 } from './required-documents'
 
 describe('brokerRoleFromDealParties', () => {
@@ -54,5 +55,18 @@ describe('seedChecklistItems', () => {
     const missing = missingChecklistSeeds('buyer', withWell, already)
     expect(missing.some((r) => /well/i.test(r.name))).toBe(true)
     expect(missingChecklistSeeds('buyer', withWell, [...already, ...missing.map((r) => r.name)])).toEqual([])
+  })
+
+  it('requires team disclosure only when the file is a licensed team', () => {
+    const solo = seedChecklistItems('listing', EMPTY_PROPERTY_FACTS).map((r) => r.name)
+    expect(solo.some((n) => /team disclosure/i.test(n))).toBe(false)
+    const team = seedChecklistItems('listing', { ...EMPTY_PROPERTY_FACTS, hasTeam: true }).map((r) => r.name)
+    expect(team.some((n) => /team disclosure/i.test(n))).toBe(true)
+  })
+
+  it('adds a W-9 row when a referral fee exists and skips it if already named', () => {
+    expect(missingReferralW9([], 2500).map((r) => r.name)).toEqual(['Referral payee W-9'])
+    expect(missingReferralW9(['Referral payee W-9'], 2500)).toEqual([])
+    expect(missingReferralW9([], 0)).toEqual([])
   })
 })

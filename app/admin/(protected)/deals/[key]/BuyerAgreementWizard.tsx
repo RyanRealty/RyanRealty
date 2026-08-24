@@ -4,13 +4,16 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button, SelectField, TextAreaField, TextField } from '@/components/admin/v2'
 import { saveBuyerAgreementDraft } from '@/app/actions/tc-buyer-agreement'
+import { BROKERS } from '@/lib/brand/contact'
 
 /** OAR 863-015-0133 eight required contents. */
 export function BuyerAgreementWizard({ cycleId, propertyKey }: { cycleId: string; propertyKey: string }) {
   const [open, setOpen] = useState(false)
   const [pending, start] = useTransition()
-  const [license, setLicense] = useState('')
-  const [pb, setPb] = useState('Matthew Ryan · 541-728-2280 · matt@ryan-realty.com')
+  const [license, setLicense] = useState(BROKERS.matt.license)
+  const [pb, setPb] = useState(
+    `${BROKERS.matt.name} · ${BROKERS.matt.phone} · ${BROKERS.matt.email} · license ${BROKERS.matt.license}`,
+  )
   const [termStart, setTermStart] = useState('')
   const [termEnd, setTermEnd] = useState('')
   const [duties, setDuties] = useState('Represent the buyer in locating and negotiating a 1–4 unit residential purchase in Central Oregon.')

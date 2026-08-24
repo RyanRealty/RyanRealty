@@ -32,6 +32,7 @@ export function parseSavedPropertyFacts(raw: unknown): Partial<PropertyFacts> | 
     'isTenantOccupied',
     'isShortSale',
     'isSellerCarried',
+    'hasTeam',
   ]
   for (const key of boolKeys) {
     if (o[key] === true || o[key] === false) out[key] = o[key]

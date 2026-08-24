@@ -386,7 +386,9 @@ function CycleSection({
       <AnticipatedDocs data={anticipated} cycleId={cycle.id} />
       <FillOrefPacket cycleId={cycle.id} form={orefForm} />
       <CommissionSection rows={commissions} cycleId={cycle.id} propertyKey={propertyKey} />
-      {cycle.checklist.some((it) => /buyer representation/i.test(it.name)) ? (
+      {anticipated?.role === 'buyer' ||
+      anticipated?.role === 'dual' ||
+      cycle.checklist.some((it) => /buyer representation/i.test(it.name)) ? (
         <BuyerAgreementWizard cycleId={cycle.id} propertyKey={propertyKey} />
       ) : null}
 

@@ -18,6 +18,7 @@ const BOOLS: Array<{ key: keyof PropertyFacts; label: string }> = [
   { key: 'isTenantOccupied', label: 'Tenant occupied' },
   { key: 'isShortSale', label: 'Short sale' },
   { key: 'isSellerCarried', label: 'Seller-carried' },
+  { key: 'hasTeam', label: 'Licensed team' },
 ]
 
 function boolValue(v: boolean | null | undefined): string {
