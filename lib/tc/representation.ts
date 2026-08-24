@@ -67,11 +67,48 @@ export function isOtherSideRecipientRole(ourRole: BrokerRole, role: string): boo
   return false
 }
 
+function partyNamesPresent(raw: unknown): boolean {
+  if (!Array.isArray(raw) || raw.length === 0) return false
+  return raw.some((item) => {
+    if (typeof item === 'string') return item.trim().length > 0
+    if (item && typeof item === 'object') {
+      const o = item as { name?: unknown; full_name?: unknown }
+      return String(o.name ?? o.full_name ?? '').trim().length > 0
+    }
+    return false
+  })
+}
+
+/** True when the other principal (or their broker) is actually on this file. */
+export function otherPrincipalOnFile(input: {
+  ourRole: BrokerRole
+  peopleRoles?: readonly string[]
+  cycleBuyers?: unknown
+  cycleSellers?: unknown
+  envelopeRoles?: readonly string[]
+}): boolean {
+  const people = input.peopleRoles ?? []
+  const env = input.envelopeRoles ?? []
+  if (input.ourRole === 'listing') {
+    if (people.includes('buyer')) return true
+    if (partyNamesPresent(input.cycleBuyers)) return true
+    return env.some((r) => r === 'Buyer' || r === 'BuyerAgent')
+  }
+  if (input.ourRole === 'buyer') {
+    if (people.includes('seller')) return true
+    if (partyNamesPresent(input.cycleSellers)) return true
+    return env.some((r) => r === 'Seller' || r === 'SellerAgent')
+  }
+  return false
+}
+
 export function needsOtherSideReturn(
   ourRole: BrokerRole,
   requiredRoles: readonly string[],
+  opts?: { otherPrincipalOnFile?: boolean },
 ): boolean {
   if (ourRole === 'dual' || ourRole === 'unknown') return false
+  if (opts?.otherPrincipalOnFile === false) return false
   return requiredRoles.some((r) => isOtherSideRecipientRole(ourRole, r))
 }
 

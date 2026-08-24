@@ -13,6 +13,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import type { BrokerRole } from './required-documents'
 import { isOtherSideRecipientRole } from './representation'
+import { deriveSignerRole } from './skyslope-field-map'
 
 export const SIGN_FIELD_TYPES = [
   'signature',
@@ -517,6 +518,8 @@ export function nearestMappedSignerRole(
     y?: number
     type?: string | null
     signerRole?: string | null
+    dataRef?: string | null
+    label?: string | null
   }>,
 ): 'buyer' | 'seller' | 'listing_agent' | 'buyer_agent' | null {
   const fieldType = field.type === 'date_signed' ? 'date' : field.type
@@ -529,7 +532,9 @@ export function nearestMappedSignerRole(
     const dy = (m.y ?? 0) - field.y
     const dist = Math.hypot(dx, dy)
     if (dist > MAP_FIELD_EPS) continue
-    if (!best || dist < best.dist) best = { dist, signerRole: m.signerRole ?? null }
+    const signerRole =
+      m.signerRole ?? deriveSignerRole(m.dataRef ?? undefined, m.label ?? undefined)
+    if (!best || dist < best.dist) best = { dist, signerRole: signerRole ?? null }
   }
   const role = best?.signerRole
   if (role === 'buyer' || role === 'seller' || role === 'listing_agent' || role === 'buyer_agent') {
@@ -546,6 +551,8 @@ export function recipientIdForMappedField(
     y?: number
     type?: string | null
     signerRole?: string | null
+    dataRef?: string | null
+    label?: string | null
   }>,
   recipients: ReadonlyArray<{ id: string; role: string }>,
 ): string | null {

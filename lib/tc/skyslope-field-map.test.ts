@@ -27,6 +27,10 @@ describe('deriveSignerRole', () => {
     expect(deriveSignerRole('', '')).toBeNull()
     expect(deriveSignerRole()).toBeNull()
   })
+  it('reads originalName when dataRef is generic', () => {
+    expect(deriveSignerRole('sig1', 'Seller Signature')).toBe('seller')
+    expect(deriveSignerRole('', 'Listing Agent')).toBe('listing_agent')
+  })
 })
 
 describe('translateSkyslopeFields', () => {

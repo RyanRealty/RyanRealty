@@ -230,6 +230,17 @@ export function dealFactsFromRows(
   }
 }
 
+/** Broker-typed money on the deal page. Blank clears; junk is rejected. */
+export function parsePositiveMoney(
+  raw: string,
+): { ok: true; value: number | null } | { ok: false } {
+  const t = raw.trim()
+  if (!t) return { ok: true, value: null }
+  const n = Number(t.replace(/[$,\s]/g, ''))
+  if (!Number.isFinite(n) || n <= 0) return { ok: false }
+  return { ok: true, value: n }
+}
+
 /** MLS list price fills listingPrice only when the cycle has not stored one. */
 export function overlayListingPrice(
   facts: DealFacts,

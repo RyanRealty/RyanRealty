@@ -40,7 +40,7 @@ import {
 } from '@/lib/tc/signing'
 import { sendSigningInvite } from '@/lib/tc/signing-emails'
 import { createHash } from 'node:crypto'
-import type { MappedField, SignerRole } from '@/lib/tc/skyslope-field-map'
+import { deriveSignerRole, type MappedField, type SignerRole } from '@/lib/tc/skyslope-field-map'
 import { fieldMapFromAcroFormPdf } from '@/lib/tc/acroform-field-map'
 import { fallbackSigningStack } from '@/lib/tc/fallback-signing-stack'
 import { isOref001OverlayApplicable, oref001OverlayFieldMap } from '@/lib/tc/oref-001-field-map'
@@ -643,7 +643,9 @@ export async function createEnvelopeFromTemplate(
       fieldRows.push({
         envelope_id: env.id,
         document_id: doc.id,
-        recipient_id: recipientByRole(f.signerRole),
+        recipient_id: recipientByRole(
+          f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined),
+        ),
         type,
         page: Math.max(1, Math.round(f.page)),
         x: clamp01(f.x),

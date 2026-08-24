@@ -101,7 +101,10 @@ export function translateSkyslopeFields(
       w: clamp01((f.width ?? 0) / W),
       h: clamp01((f.height ?? 0) / H),
       dataRef: f.dataRef ? `${f.dataRef}${f.format ?? ''}` : null,
-      signerRole: deriveSignerRole(f.dataRef, f.group),
+      signerRole: deriveSignerRole(
+        [f.dataRef, f.originalName, f.domainName].filter(Boolean).join(' '),
+        f.group,
+      ),
       optional: !!f.isOptional,
       label: f.originalName ?? f.domainName ?? null,
     }

@@ -399,4 +399,27 @@ describe('recipientIdForMappedField', () => {
       ),
     ).toBe('agent')
   })
+
+  it('assigns from the map label when signerRole was stored null', () => {
+    expect(
+      recipientIdForMappedField(
+        { recipientId: null, page: 6, x: 0.2, y: 0.8, type: 'signature' },
+        [
+          {
+            type: 'signature',
+            page: 6,
+            x: 0.2,
+            y: 0.8,
+            signerRole: null,
+            dataRef: 'sig1',
+            label: 'Seller Signature',
+          },
+        ],
+        [
+          { id: 'agent', role: 'SellerAgent' },
+          { id: 'seller', role: 'Seller' },
+        ],
+      ),
+    ).toBe('seller')
+  })
 })

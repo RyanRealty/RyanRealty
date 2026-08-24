@@ -3,6 +3,7 @@ import {
   isOtherSideParty,
   isOtherSideRecipientRole,
   needsOtherSideReturn,
+  otherPrincipalOnFile,
   ourRoleForEnvelope,
   ourRoleFromCycleKind,
   ourRoleFromCycles,
@@ -33,6 +34,35 @@ describe('one-sided envelopes', () => {
     expect(isOtherSideRecipientRole('listing', 'Seller')).toBe(false)
     expect(needsOtherSideReturn('listing', ['Buyer', 'Seller'])).toBe(true)
     expect(needsOtherSideReturn('listing', ['Seller', 'SellerAgent'])).toBe(false)
+  })
+
+  it('listing packet with 020 completes when no buyer is on the file', () => {
+    expect(
+      otherPrincipalOnFile({
+        ourRole: 'listing',
+        peopleRoles: ['seller'],
+        cycleBuyers: [],
+        envelopeRoles: ['Seller', 'SellerAgent'],
+      }),
+    ).toBe(false)
+    expect(
+      needsOtherSideReturn('listing', ['Buyer', 'Seller', 'SellerAgent'], {
+        otherPrincipalOnFile: false,
+      }),
+    ).toBe(false)
+  })
+
+  it('sale on a listing waits when a buyer is on the file', () => {
+    expect(
+      otherPrincipalOnFile({
+        ourRole: 'listing',
+        peopleRoles: ['seller', 'buyer'],
+        envelopeRoles: ['Seller', 'SellerAgent'],
+      }),
+    ).toBe(true)
+    expect(
+      needsOtherSideReturn('listing', ['Buyer', 'Seller'], { otherPrincipalOnFile: true }),
+    ).toBe(true)
   })
 })
 

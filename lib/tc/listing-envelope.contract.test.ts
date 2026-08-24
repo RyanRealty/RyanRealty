@@ -11,6 +11,7 @@ describe('listing envelope walk wiring', () => {
     expect(src).toMatch(/mergePartyNamesIntoFacts/)
     expect(src).toMatch(/overlayListingPrice/)
     expect(src).toMatch(/assignUnassignedFieldsFromMaps/)
+    expect(src).toMatch(/deriveSignerRole/)
     expect(src).toMatch(/getEnvelopeCycleKindAndDeal/)
     expect(src).toMatch(/getListPriceByMlsNumber/)
   })
@@ -19,5 +20,17 @@ describe('listing envelope walk wiring', () => {
     const src = readFileSync(join(process.cwd(), 'app/actions/tc-required-docs.ts'), 'utf8')
     expect(src).toMatch(/presentNamesForAnticipate/)
     expect(src).toMatch(/checklistNames/)
+  })
+
+  it('seals a listing packet when the other principal is not on the file', () => {
+    const src = readFileSync(join(process.cwd(), 'lib/tc/seal-envelope.ts'), 'utf8')
+    expect(src).toMatch(/otherPrincipalOnFile/)
+    expect(src).toMatch(/deal_id, buyers, sellers/)
+  })
+
+  it('lets the broker edit list price on the deal', () => {
+    const src = readFileSync(join(process.cwd(), 'app/admin/(protected)/deals/[key]/page.tsx'), 'utf8')
+    expect(src).toMatch(/DealPrices/)
+    expect(src).toMatch(/listing_price/)
   })
 })

@@ -5,6 +5,7 @@ import {
   mapDealFactsToFillValues,
   mergePartyNamesIntoFacts,
   overlayListingPrice,
+  parsePositiveMoney,
   parseEarnestMoneyAmount,
   pickPreferredOrefForm,
   presentFactValues,
@@ -100,6 +101,15 @@ describe('overlayListingPrice', () => {
     expect(overlayListingPrice(FULL, 599000).listingPrice).toBe(FULL.listingPrice)
     expect(overlayListingPrice({ ...FULL, listingPrice: null }, 599000).listingPrice).toBe(599000)
     expect(overlayListingPrice({ ...FULL, listingPrice: null }, 0).listingPrice).toBeNull()
+  })
+})
+
+describe('parsePositiveMoney', () => {
+  it('reads dollars, treats blank as empty, and rejects junk', () => {
+    expect(parsePositiveMoney('$649,900')).toEqual({ ok: true, value: 649900 })
+    expect(parsePositiveMoney('  ')).toEqual({ ok: true, value: null })
+    expect(parsePositiveMoney('n/a')).toEqual({ ok: false })
+    expect(parsePositiveMoney('0')).toEqual({ ok: false })
   })
 })
 

@@ -67,6 +67,7 @@ import { CHECKLIST_GROUPS, checklistGroupForRule } from '@/lib/tc/required-docum
 import { DealParties } from './DealParties'
 import { DealTasks } from './DealTasks'
 import { DealContingencyDays } from './DealContingencyDays'
+import { DealPrices } from './DealPrices'
 import { AddMissingChecklist } from './AddMissingChecklist'
 import { DealPropertyFacts } from './DealPropertyFacts'
 import { listDealTasks } from '@/lib/data/tc/task-reads'
@@ -332,6 +333,7 @@ function CycleSection({
           fontVariantNumeric: 'tabular-nums',
         }}
       >
+        {cycle.listing_price ? <span>list {money(cycle.listing_price)}</span> : null}
         {cycle.sale_price ? <span>{money(cycle.sale_price)}</span> : null}
         {cycle.office_gross ? <span style={quiet}>gross {money(cycle.office_gross)}</span> : null}
         {cycle.escrow_number ? <span style={quiet}>escrow {cycle.escrow_number}</span> : null}
@@ -381,6 +383,12 @@ function CycleSection({
           </section>
         )
       })()}
+      <DealPrices
+        cycleId={cycle.id}
+        propertyKey={propertyKey}
+        listingPrice={cycle.listing_price}
+        salePrice={cycle.sale_price}
+      />
       <DealContingencyDays
         cycleId={cycle.id}
         dealId={dealId}

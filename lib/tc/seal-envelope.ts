@@ -23,6 +23,7 @@ import { getFormSourcesForEnvelope } from '@/lib/data/tc/envelope-form-sources'
 import { unionRequiredSignerRoles } from './required-signers'
 import {
   needsOtherSideReturn,
+  otherPrincipalOnFile,
   otherSideAgentEnvelopeRole,
   ourRoleFromCycleKind,
   ourRoleFromSignableRoles,
@@ -75,7 +76,11 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
       .eq('id', envelopeId)
       .maybeSingle()
     const { data: cycleRow } = envRow?.cycle_id
-      ? await supabase.from('tc_cycles').select('kind').eq('id', envRow.cycle_id).maybeSingle()
+      ? await supabase
+          .from('tc_cycles')
+          .select('kind, deal_id, buyers, sellers')
+          .eq('id', envRow.cycle_id)
+          .maybeSingle()
       : { data: null }
     const ourRole = ourRoleFromSignableRoles(
       cycleRow?.kind == null ? null : String(cycleRow.kind),
@@ -87,7 +92,20 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
     } catch (err) {
       console.warn('[tc] other-side requirement read failed:', err instanceof Error ? err.message : err)
     }
-    if (needsOtherSideReturn(ourRole, required)) {
+    const dealId = cycleRow?.deal_id == null ? null : String(cycleRow.deal_id)
+    const { data: people } = dealId
+      ? await supabase.from('tc_deal_people').select('role').eq('deal_id', dealId)
+      : { data: [] }
+    const waitForOtherSide = needsOtherSideReturn(ourRole, required, {
+      otherPrincipalOnFile: otherPrincipalOnFile({
+        ourRole,
+        peopleRoles: ((people ?? []) as DbRow[]).map((p) => String(p.role ?? '')),
+        cycleBuyers: cycleRow?.buyers,
+        cycleSellers: cycleRow?.sellers,
+        envelopeRoles: ((recips ?? []) as DbRow[]).map((r) => String(r.role ?? '')),
+      }),
+    })
+    if (waitForOtherSide) {
       await sealAndCompleteEnvelope(supabase, envelopeId, { awaitOtherSide: true })
       return false
     }
