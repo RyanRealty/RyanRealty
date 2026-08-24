@@ -2,7 +2,9 @@
  * Public place-page extra segments (Step 9). Detached stays the HUD.
  * The mixed all-types bucket is omitted (it double-counts). Lease inventory
  * stays out. Extra types overlay inventory plus pending/closed counts.
- * MOS only when publishable. Miss omits the row. Figures go through getMetrics.
+ * MOS only when publishable and > 0 (0.0 months is not a figure).
+ * Neighborhood extra MOS/verdict stay omitted; counts still overlay.
+ * Miss omits the row. Figures go through getMetrics.
  */
 import { getMetrics, type MetricResult } from '@/lib/data/market-truth/getMetric'
 import { formatPriceExact } from '@/lib/format/money'
@@ -103,7 +105,9 @@ export function publicSegmentDisplayBits(row: {
 }): string[] {
   return [
     row.medianList != null ? formatPriceExact(row.medianList) : null,
-    row.monthsOfSupply != null ? `${formatMonthsOfSupply(row.monthsOfSupply)} months` : null,
+    row.monthsOfSupply != null && row.monthsOfSupply > 0
+      ? `${formatMonthsOfSupply(row.monthsOfSupply)} months`
+      : null,
     publicSegmentVerdictLabel(row.verdict),
     row.pendingCount != null && row.pendingCount >= 1
       ? `${row.pendingCount.toLocaleString('en-US')} pending · now`
@@ -146,7 +150,7 @@ export function publicSegmentItems(
 }
 
 function publishedNumber(cell: MetricResult | null | undefined): number | null {
-  if (!cell?.isPublishable || cell.value == null) return null
+  if (!cell?.isPublishable || cell.value == null || cell.value <= 0) return null
   return cell.value
 }
 
@@ -191,6 +195,8 @@ export async function getPublicPlaceSegments(opts: {
     byKey.set(`${input.segment}:${input.stat}`, result)
   })
 
+  const withholdExtraMos = opts.geoType === 'neighborhood'
+
   const rows: PublicSegmentRow[] = []
   for (const segment of PUBLIC_PLACE_SEGMENTS) {
     const active = byKey.get(`${segment}:active_count`)
@@ -205,8 +211,8 @@ export async function getPublicPlaceSegments(opts: {
       segment,
       activeCount: Math.round(activeCount),
       medianList: publishedNumber(median),
-      monthsOfSupply: publishedNumber(mos),
-      verdict: publishedText(verdict),
+      monthsOfSupply: withholdExtraMos ? null : publishedNumber(mos),
+      verdict: withholdExtraMos ? null : publishedText(verdict),
       pendingCount: pending == null || pending < 1 ? null : Math.round(pending),
       closedCount: closed == null || closed < 1 ? null : Math.round(closed),
       sampleN: pickSampleN({ active, median, mos, verdict }),

@@ -1,16 +1,78 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { collapseCitySegmentRows, type RawSegmentCell } from '@/lib/data/market-truth/city-segment-collapse'
+import type { GetMetricInput, MetricResult } from '@/lib/data/market-truth/getMetric'
 import {
   PUBLIC_PLACE_SEGMENTS,
+  getPublicPlaceSegments,
   publicSegmentBrowseHref,
   publicSegmentDisplayBits,
   publicSegmentItems,
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
 
+const { getMetricsMock } = vi.hoisted(() => ({ getMetricsMock: vi.fn() }))
+vi.mock('@/lib/data/market-truth/getMetric', () => ({
+  getMetrics: (...args: unknown[]) => getMetricsMock(...args),
+}))
+
 const SRC = readFileSync(resolve('lib/data/market-truth/public-segments.ts'), 'utf8')
+
+function metric(
+  partial: Partial<MetricResult> & Pick<MetricResult, 'statId' | 'segment'>,
+): MetricResult {
+  return {
+    geoType: 'city',
+    geoSlug: 'bend',
+    value: null,
+    valueText: null,
+    isPublishable: true,
+    provenance: {
+      sampleN: 40,
+      method: 'count',
+      excludedN: 0,
+      completeThrough: '2026-08-22',
+      windowMonths: 6,
+      definitionId: 'mt-v1',
+      computedAt: '2026-08-23T01:00:00Z',
+      isFloor: false,
+      withheldReason: null,
+    },
+    ...partial,
+  }
+}
+
+function bendCondoCells(opts?: { mos?: number; verdict?: string }): Record<string, MetricResult> {
+  const mos = opts?.mos ?? 12.8
+  return {
+    'condo:active_count': metric({ statId: 'active_count', segment: 'condo', value: 66 }),
+    'condo:median_list_active': metric({
+      statId: 'median_list_active',
+      segment: 'condo',
+      value: 326000,
+    }),
+    'condo:months_of_supply': metric({
+      statId: 'months_of_supply',
+      segment: 'condo',
+      value: mos,
+    }),
+    'condo:market_verdict': metric({
+      statId: 'market_verdict',
+      segment: 'condo',
+      value: mos,
+      valueText: opts?.verdict ?? 'buyer',
+    }),
+    'condo:pending_count': metric({ statId: 'pending_count', segment: 'condo', value: 7 }),
+    'condo:closed_count': metric({ statId: 'closed_count', segment: 'condo', value: 67 }),
+  }
+}
+
+function mockCells(map: Record<string, MetricResult>) {
+  getMetricsMock.mockImplementation(async (inputs: GetMetricInput[]) =>
+    inputs.map((input) => map[`${input.segment}:${input.stat}`] ?? null),
+  )
+}
 
 describe('getPublicPlaceSegments', () => {
   it('reads publishable market_metric extra-segment cells', () => {
@@ -36,6 +98,7 @@ describe('getPublicPlaceSegments', () => {
     expect(SRC).not.toMatch(/market_pulse_live/)
     expect(SRC).not.toMatch(/'commercial_lease'/)
     expect(SRC).toMatch(/'neighborhood'/)
+    expect(SRC).toMatch(/geoType === 'neighborhood'/)
     expect(SRC).not.toMatch(/'all_residential'/)
     expect(SRC).toMatch(/pending_count/)
     expect(SRC).toMatch(/closed_count/)
@@ -44,6 +107,7 @@ describe('getPublicPlaceSegments', () => {
 
   it('omits a miss instead of printing 0', () => {
     expect(SRC).toMatch(/activeCount == null \|\| row.activeCount <= 0/)
+    expect(SRC).toMatch(/cell\.value <= 0/)
     expect(SRC).toMatch(/propertySubTypes/)
   })
 
@@ -87,6 +151,16 @@ describe('getPublicPlaceSegments', () => {
       monthsOfSupply: null,
       verdict: null,
     })).toEqual([])
+    expect(publicSegmentDisplayBits({
+      medianList: 326000,
+      monthsOfSupply: 0,
+      verdict: null,
+    })).toEqual(['$326,000'])
+    expect(publicSegmentDisplayBits({
+      medianList: 326000,
+      monthsOfSupply: 0.0,
+      verdict: 'buyer',
+    })).toEqual(['$326,000', "buyer's"])
     const items = publicSegmentItems(
       [
         {
@@ -146,6 +220,49 @@ describe('getPublicPlaceSegments', () => {
     expect(rows.find((row) => row.segment === 'farm')?.activeCount).toBe(12)
     expect(rows.find((row) => row.segment === 'detached')).toBeUndefined()
     expect(rows.find((row) => row.segment === 'all_residential')).toBeUndefined()
+  })
+
+  describe('extra MOS grain lock', () => {
+    beforeEach(() => {
+      getMetricsMock.mockReset()
+      getMetricsMock.mockResolvedValue([])
+    })
+
+    it('withholds neighborhood extra MOS and verdict even when getMetrics returns a MOS cell', async () => {
+      mockCells(bendCondoCells())
+      const rows = await getPublicPlaceSegments({
+        geoType: 'neighborhood',
+        geoSlug: 'tetherow',
+      })
+      expect(rows).toHaveLength(1)
+      expect(rows[0]?.segment).toBe('condo')
+      expect(rows[0]?.activeCount).toBe(66)
+      expect(rows[0]?.pendingCount).toBe(7)
+      expect(rows[0]?.closedCount).toBe(67)
+      expect(rows[0]?.medianList).toBe(326000)
+      expect(rows[0]?.monthsOfSupply).toBeNull()
+      expect(rows[0]?.verdict).toBeNull()
+    })
+
+    it('publishes city extra MOS when sample-gated', async () => {
+      mockCells(bendCondoCells())
+      const rows = await getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' })
+      expect(rows).toHaveLength(1)
+      expect(rows[0]?.segment).toBe('condo')
+      expect(rows[0]?.activeCount).toBe(66)
+      expect(rows[0]?.monthsOfSupply).toBeCloseTo(12.8)
+      expect(rows[0]?.verdict).toBe('buyer')
+      expect(rows[0]?.pendingCount).toBe(7)
+      expect(rows[0]?.closedCount).toBe(67)
+    })
+
+    it('omits MOS of 0, unknown is not zero', async () => {
+      mockCells(bendCondoCells({ mos: 0, verdict: 'seller' }))
+      const rows = await getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' })
+      expect(rows).toHaveLength(1)
+      expect(rows[0]?.activeCount).toBe(66)
+      expect(rows[0]?.monthsOfSupply).toBeNull()
+    })
   })
 })
 
