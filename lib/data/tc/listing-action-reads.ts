@@ -130,6 +130,11 @@ export async function getCycleForCda(cycleId: string): Promise<CdaCycleRow | nul
   }
 }
 
+export async function listCycleIdsForDeal(dealId: string): Promise<string[]> {
+  const { data } = await client().from('tc_cycles').select('id').eq('deal_id', dealId)
+  return (data ?? []).map((r) => String(r.id))
+}
+
 export async function getLatestListingCycle(dealId: string): Promise<ListingCycleCopy | null> {
   const { data } = await client()
     .from('tc_cycles')

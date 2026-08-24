@@ -7,7 +7,7 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { notifyDealMailbox } from '@/lib/tc/deal-notify'
-import { getDealByPropertyKey, listInFlightEnvelopes } from '@/lib/data/tc/listing-action-reads'
+import { getDealByPropertyKey, listCycleIdsForDeal, listInFlightEnvelopes } from '@/lib/data/tc/listing-action-reads'
 import { inFlightCompletionBlock, inFlightCompletionMessage } from '@/lib/tc/required-signers'
 
 /**
@@ -270,9 +270,9 @@ export async function setDealStage(input: {
     return { ok: false, error: 'Only a pending sale can close.' }
   }
   if (input.stage === 'closed') {
-    const { data: cycles } = await supabase.from('tc_cycles').select('id').eq('deal_id', deal.id)
-    for (const c of cycles ?? []) {
-      const inflight = await listInFlightEnvelopes(String(c.id))
+    const cycleIds = await listCycleIdsForDeal(deal.id)
+    for (const cycleId of cycleIds) {
+      const inflight = await listInFlightEnvelopes(cycleId)
       if (inflight.length) {
         return { ok: false, error: 'Finish or void envelopes still out for signature before closing.' }
       }
