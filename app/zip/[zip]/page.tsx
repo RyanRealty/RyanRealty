@@ -361,7 +361,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // closed30/saleToList stay null. Do not invent daysToPending from active DOM.
   const marketData: KbMarketData = {
     active: activeCount,
-    closed30: null,
+    closed30: publicPace.closedCount30d ?? null,
     new30: tileNew30,
     medianList: publishedMedianList,
     saleToList: null,
@@ -372,7 +372,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     // leave the active set, so active DOM is systematically larger. Keep
     // daysToPending null unless a publishable median_days_to_contract cell exists
     // (HUD labels that field "pending" — do not overlay speed under the wrong name).
-    daysToPending: null,
+    daysToPending: publicPace.daysToPending90d ?? null,
     medianDomActive: medianDom,
     monthsSupply: publishedMos,
     trend: chartMonths.months

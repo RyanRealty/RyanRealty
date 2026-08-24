@@ -23,6 +23,8 @@ describe('getPublicDetachedPace', () => {
     expect(SRC).toMatch(/yoy_median_price/)
     expect(SRC).toMatch(/median_sale_to_original_list/)
     expect(SRC).toMatch(/pending_count/)
+    expect(SRC).toMatch(/closed_count_30d/)
+    expect(SRC).toMatch(/median_days_to_contract_90d/)
     expect(SRC).toMatch(/segment: 'detached'/)
     expect(SRC).toMatch(/'neighborhood'/)
     expect(SRC).not.toMatch(/market_pulse_live/)

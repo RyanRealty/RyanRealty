@@ -17,11 +17,12 @@ describe('homepage HUD leftover sale-to-list', () => {
     expect(SRC).not.toMatch(/getMarketStatsCacheRowForGeo/)
   })
 
-  it('keeps pulse 30-day sold and days-to-pending', () => {
-    expect(SRC).toMatch(/closed30:\s*pulse\?\.soldCount30d\s*\?\?\s*null/)
-    expect(SRC).toMatch(/daysToPending:\s*pulse\?\.medianDaysToPending\s*\?\?\s*null/)
-    expect(SRC).not.toMatch(/closed30:\s*publicPace/)
-    expect(SRC).not.toMatch(/daysToPending:\s*publicPace/)
-    expect(SRC).not.toMatch(/daysToPending:[\s\S]{0,80}daysToContract/)
+  it('overlays leftover 30-day closed and 90-day days-to-contract, pulse fills on miss', () => {
+    expect(SRC).toMatch(/closed30:\s*publicPace\.closedCount30d\s*\?\?\s*pulse\?\.soldCount30d\s*\?\?\s*null/)
+    expect(SRC).toMatch(
+      /daysToPending:\s*publicPace\.daysToPending90d\s*\?\?\s*pulse\?\.medianDaysToPending\s*\?\?\s*null/,
+    )
+    expect(SRC).not.toMatch(/closed30:\s*publicPace\.closedCount\s*\?\?/)
+    expect(SRC).not.toMatch(/daysToPending:\s*publicPace\.daysToContract/)
   })
 })

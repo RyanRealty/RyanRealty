@@ -39,6 +39,8 @@ export const STATS: readonly StatSpec[] = [
   { statId: 'new_listings', minN: 5, earliestYear: 1997, population: 'active', windowPolicy: 'ladder', excludeReasons: [] },
   { statId: 'pending_count', minN: 1, earliestYear: 1997, population: 'pending', windowPolicy: 'point', excludeReasons: [] },
   { statId: 'closed_count', minN: 1, earliestYear: 1997, population: 'closed', windowPolicy: 'ladder', excludeReasons: [] },
+  { statId: 'closed_count_30d', minN: 1, earliestYear: 1997, population: 'closed', windowPolicy: 'point', excludeReasons: [] },
+  { statId: 'median_days_to_contract_90d', minN: 10, earliestYear: 2006, population: 'closed', windowPolicy: 'point', excludeReasons: ['retroactive_entry'] },
   { statId: 'months_of_supply', minN: 30, earliestYear: 1997, population: 'derived', windowPolicy: 'fixed6', excludeReasons: [] },
   { statId: 'months_of_supply_12mo', minN: 30, earliestYear: 1997, population: 'derived', windowPolicy: 'fixed12', excludeReasons: [] },
   { statId: 'absorption_rate', minN: 30, earliestYear: 1997, population: 'derived', windowPolicy: 'fixed6', excludeReasons: [] },

@@ -182,6 +182,13 @@ export async function GET(request: Request) {
         monthlyZip.error.message,
       )
     }
+    const hudWindows = await supabase.rpc('compute_market_metrics_hud_windows_shadow')
+    if (hudWindows.error) {
+      console.error(
+        '[refresh-sale-pricing-facts] compute_market_metrics_hud_windows_shadow',
+        hudWindows.error.message,
+      )
+    }
   }
   if (shadowErr) {
     console.error('[refresh-sale-pricing-facts] compute_market_metrics_shadow', shadowErr.message)

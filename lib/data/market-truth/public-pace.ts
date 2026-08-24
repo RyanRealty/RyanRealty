@@ -1,6 +1,7 @@
 /**
  * Public detached leftover stats (Step 9). 12-month cells plus point pending
- * and inventory age. Does not replace pulse 30-day / this-week figures.
+ * and inventory age, plus HUD 30-day closed count and 90-day days-to-contract
+ * (list-to-pending). Does not map 12-month days-to-contract onto DTP.
  * Miss omits the stat. Neighborhood leftover is sample-gated; MOS stays off.
  * Figures go through getMetrics.
  */
@@ -25,6 +26,8 @@ export const PUBLIC_PACE_STATS = [
   'median_ppsf',
   'pending_count',
   'median_age_active_inventory',
+  'closed_count_30d',
+  'median_days_to_contract_90d',
 ] as const
 
 export type PublicPaceStat = (typeof PUBLIC_PACE_STATS)[number]
@@ -45,6 +48,8 @@ export type PublicPaceRow = {
   medianPpsf: number | null
   pendingCount: number | null
   medianAgeActive: number | null
+  closedCount30d: number | null
+  daysToPending90d: number | null
 }
 
 export const EMPTY_PUBLIC_PACE: PublicPaceRow = {
@@ -63,6 +68,8 @@ export const EMPTY_PUBLIC_PACE: PublicPaceRow = {
   medianPpsf: null,
   pendingCount: null,
   medianAgeActive: null,
+  closedCount30d: null,
+  daysToPending90d: null,
 }
 
 export type PublicPaceItem = { key: string; value: string; label: string }
@@ -76,7 +83,14 @@ function hyphenSlug(raw: string): string {
 }
 
 function paceWindow(statId: string): number {
-  if (statId === 'pending_count' || statId === 'median_age_active_inventory') return 0
+  if (
+    statId === 'pending_count' ||
+    statId === 'median_age_active_inventory' ||
+    statId === 'closed_count_30d' ||
+    statId === 'median_days_to_contract_90d'
+  ) {
+    return 0
+  }
   return PUBLIC_PACE_WINDOW_MONTHS
 }
 
@@ -225,6 +239,8 @@ export async function getPublicDetachedPace(opts: {
   const closedCount = pick('closed_count')
   const newListings = pick('new_listings')
   const pendingCount = pick('pending_count')
+  const closedCount30d = pick('closed_count_30d')
+  const daysToPending90d = pick('median_days_to_contract_90d')
   const priceCutShare = pick('pct_with_price_cut')
   const medianPriceCut = pick('median_price_cut_pct')
   const saleToOriginal = pick('median_sale_to_original_list')
@@ -252,5 +268,7 @@ export async function getPublicDetachedPace(opts: {
     medianPpsf: medianPpsf == null || medianPpsf <= 0 ? null : medianPpsf,
     pendingCount: pendingCount == null || pendingCount <= 0 ? null : Math.round(pendingCount),
     medianAgeActive: medianAgeActive == null ? null : Math.round(medianAgeActive),
+    closedCount30d: closedCount30d == null || closedCount30d <= 0 ? null : Math.round(closedCount30d),
+    daysToPending90d: daysToPending90d == null ? null : Math.round(daysToPending90d),
   }
 }

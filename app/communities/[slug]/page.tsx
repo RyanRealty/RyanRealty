@@ -674,11 +674,11 @@ export default async function CommunityDetailPage({ params }: Props) {
   const sellMedian = publishSellMedian({ placeMedian: medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
   const marketData: KbMarketData = {
     active: hudActive,
-    closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
+    closed30: publicPace.closedCount30d ?? publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
     medianList: pulse?.medianListPrice ?? medianListPrice,
     saleToList: leftoverSaleToList,
-    daysToPending: pulse?.medianDaysToPending ?? null,
+    daysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
     // 12-month sold is leftover membership (closedCount). Miss omits — never
     // cache soldCount. medianDom12mo stays cache DOM; leftover daysToContract

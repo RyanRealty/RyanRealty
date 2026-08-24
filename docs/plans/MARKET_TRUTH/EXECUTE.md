@@ -646,6 +646,19 @@ stays behind `/admin`. **2026-08-23:** mart `office_id` **9412 / 12370** populat
 `analytics_dim_office` (canonical ∪ aliases); **0** `"No Office"` rows remain (50 deleted).
 2026 sides: **318 / 389** resolved. Granular public grains landed 2026-08-24 (23ar).
 
+### Grind 2026-08-24as — leftover HUD 30-day sold + 90-day days to contract
+
+**Locks still hold:** county unpublished; do **not** map leftover 12-month `days_to_contract` onto days-to-pending; unadjusted MoM off public; extra MOS at neighborhood omitted while 0; subdivision never a price; `commercial_lease` out; `all_residential` off public; YTD / this-month cache windows stay cache. Pulse 30-day sold and DTP **stay on the HUD** as those labels/windows. Leftover membership at those same windows (30-day closed count, 90-day days-to-contract = list-to-pending, D2) overlays when publishable; pulse fills only on leftover miss so the tiles stay. Workers do not tick this file.
+
+**Done when a real user can:**
+1. Open `/` and `/cities/bend` HUD **Closed · 30 days** from leftover `closed_count_30d` (membership, complete_through trailing 30 days) when publishable. Pulse 30-day fills only on leftover miss. Not leftover 12-month closed count.
+2. Open the same HUDs and see **Median to pending** from leftover `median_days_to_contract_90d` (90-day list-to-pending, min_n 10) when publishable. Pulse DTP fills only on leftover miss. Leftover 12-month days-to-contract stays in the leftover pace strip, never on this tile.
+3. Origin `tc_tasks` is in the prod schema snapshot (or applied then snapshot-refreshed) so `ci:migration-drift` no longer blocks new CREATE TABLE migrations.
+
+Bend detached still 774. County unpublished.
+
+2026-08-24as landed (live webpack 3010): leftover HUD windows on hosted DB — Bend `closed_count_30d` **203** (n=203), `median_days_to_contract_90d` **19** (n=618); region **354** / **25**. `/cities/bend` Closed · 30 days **203**; leftover 12-month days-to-contract stays in the pace strip. Pulse 30-day fills only on leftover miss. `docs/DATABASE_SCHEMA_SNAPSHOT.md` now includes `tc_tasks`. Monthly leftover Bend July **$795,000** intact. County unpublished.
+
 ---
 
 ## 5. Definition of done for the whole program

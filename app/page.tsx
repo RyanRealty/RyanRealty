@@ -217,11 +217,11 @@ export default async function Home() {
   const sltRaw = publicPace.saleToOriginal ?? null
   const marketData: KbMarketData = {
     active: pulse?.activeCount ?? null,
-    closed30: pulse?.soldCount30d ?? null,
+    closed30: publicPace.closedCount30d ?? pulse?.soldCount30d ?? null,
     new30: pulse?.newCount30d ?? null,
     medianList: pulse?.medianListPrice ?? null,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
-    daysToPending: pulse?.medianDaysToPending ?? null,
+    daysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
     monthsSupply: publishMonthsOfSupply({
       // getRegionPulse — the central-oregon row, written by refresh_market_pulse.
       grain: 'region',
@@ -251,7 +251,7 @@ export default async function Home() {
           data={{
             activeCount: pulse?.activeCount ?? null,
             medianListPrice: pulse?.medianListPrice ?? null,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+            medianDaysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
           }}
           eyebrow="Central Oregon Real Estate"
           titleTop="Central Oregon"
@@ -305,7 +305,7 @@ export default async function Home() {
           data={{
             medianListPrice: sellMedian?.value ?? null,
             medianCaption: sellMedian?.caption ?? null,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+            medianDaysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
             soldCount30d: pulse?.soldCount30d ?? null,
           }}
         />

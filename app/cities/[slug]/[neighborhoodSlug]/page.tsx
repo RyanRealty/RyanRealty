@@ -452,11 +452,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   })
   const marketData: KbMarketData = {
     active: hudActive,
-    closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
+    closed30: publicPace.closedCount30d ?? publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
     medianList: pulse?.medianListPrice ?? medianListPrice,
     saleToList: leftoverSaleToList,
-    daysToPending: pulse?.medianDaysToPending ?? null,
+    daysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
     trend: buildMonthlyTrend(chartPriceHist),
     byTown: [],

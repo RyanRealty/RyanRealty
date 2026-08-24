@@ -264,7 +264,7 @@ export default async function CityDetailPage({ params }: Props) {
         medianPrice: publishedMedian ?? snapshot.medianListPrice,
         communityCount: communitySnapshots.length,
       }).slice(0, 2)
-  const daysFact = publishDaysLabel(pulse?.medianDaysToPending)
+  const daysFact = publishDaysLabel(publicPace.daysToPending90d ?? pulse?.medianDaysToPending)
   const aboutFacts: { label: string; value: string }[] = [
     ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
     ...(publishedMedian ? [{ label: 'Median list', value: kbMoneyFull(publishedMedian) ?? '—' }] : []),
@@ -438,11 +438,11 @@ export default async function CityDetailPage({ params }: Props) {
   const marketMedian = detached?.medianListPrice ?? publishedMedian
   const marketData: KbMarketData = {
     active: marketActive,
-    closed30: pulse?.closedLast30Days ?? null,
+    closed30: publicPace.closedCount30d ?? pulse?.closedLast30Days ?? null,
     new30: null,
     medianList: marketMedian,
     saleToList: leftoverSaleToList,
-    daysToPending: pulse?.medianDaysToPending ?? null,
+    daysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
     trend: buildMonthlyTrend(chartMonths.months),
     byTown: bendNeighborhoodItems.filter((n) => n.medianPrice != null).map((n) => ({ name: n.name, median: n.medianPrice as number })),
@@ -494,7 +494,7 @@ export default async function CityDetailPage({ params }: Props) {
           data={{
             activeCount,
             medianListPrice: publishedMedian,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+            medianDaysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
           }}
           eyebrow={`${cityName} · Oregon`}
           titleTop={cityName}
@@ -564,7 +564,7 @@ export default async function CityDetailPage({ params }: Props) {
             geoSlug={geoSlug}
             cityName={cityName}
             publishedMos={monthsOfSupply}
-            publishedDtp={pulse?.medianDaysToPending ?? null}
+            publishedDtp={publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null}
             displayedActiveCount={marketActive}
           />
         </KbMarketHud>
@@ -601,7 +601,7 @@ export default async function CityDetailPage({ params }: Props) {
           data={{
             medianListPrice: sellMedian?.value ?? null,
             medianCaption: sellMedian?.caption ?? null,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+            medianDaysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
             soldCount30d: pulse?.closedLast30Days ?? null,
           }}
           eyebrow={`Sell in ${cityName}`}

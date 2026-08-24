@@ -139,6 +139,7 @@ Every entry: `stat_id` · formula · population · `min_n` · grains · earliest
 | stat_id | formula | min_n | earliest | notes |
 |---|---|---|---|---|
 | `median_days_to_contract` | `percentile_cont(0.5) WITHIN GROUP (ORDER BY (contract_date - on_market_date))` where `>= 0` | 10 | **2006** | **The headline speed stat (D2).** `purchase_contract_date` copies CloseDate before 2003 and carries negative escrow 2003–05. Excludes retroactive entries. |
+| `median_days_to_contract_90d` | Same formula, trailing **90 days** of complete closes | 10 | **2006** | HUD "days to pending" window. Not the 12-month leftover DTC cell. |
 | `median_days_to_close` | `percentile_cont(0.5)` over `close_date - on_market_date` | 10 | 1997 | Labelled **"days to close"**, never "days on market". |
 | `median_age_active_inventory` | `percentile_cont(0.5)` over `current_date - on_market_date`, population `active` | 10 | now | Unsold inventory age. A different quantity from both rows above. |
 
@@ -166,6 +167,7 @@ mean of 6,927%.
 | `new_listings` | `count(*)` of episodes starting in window, **excluding relists within 90 days** | 5 | 1997 | 90 days is a **new-listing de-dupe**, not the DOM/CDOM reset. CDOM / first-on-market reset is **60 days off-market** (Oregon Data Share §3-20). Publish raw and de-duplicated during migration. |
 | `pending_count` | `count(*)` where status Pending or Active Under Contract | 1 | now | Never inside `active_count`. |
 | `closed_count` | `count(*)`, population `closed` | 1 | 1997 | |
+| `closed_count_30d` | `count(*)` trailing **30 days** of complete closes | 1 | 1997 | HUD "Closed · 30 days". Not leftover 12-month `closed_count`. |
 | `months_of_supply` | `active_count / (closed_count_180d / 6.0)` | 30 | now | House convention. **Must print its window and the threshold sentence.** The 6-month denominator swings 1.32× by window end-month from seasonality alone — enough to cross 4.0 and 6.0. |
 | `months_of_supply_12mo` | `active_count / (closed_count_365d / 12.0)` | 30 | now | Stored alongside; the NAR-shaped variant. Diverges up to 2.31 months in thin geographies. |
 | `absorption_rate` | `closed_count_180d / 6.0 / active_count` | 30 | now | |
