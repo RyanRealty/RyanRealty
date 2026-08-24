@@ -271,3 +271,13 @@ Closed · 30 days, Median to pending, Active homes, or Months of supply there.
 
 New · 30 days stays omitted on the JSON HUD until leftover has a true 30-day
 new-listings cell. CRM / blog / report export stay pulse-gated.
+
+## D23 — leftover FAQ DTP and seller LP HUD · **DECIDED** (Matt, 2026-08-24)
+
+Same one-pile rule on leftover-eligible FAQ and seller LP HUD-family figures.
+City, neighborhood, community, and housing-market FAQ Median to pending is
+leftover 90-day list-to-pending. Pulse DTP and cache days-on-market do not
+fill. `/lp/seller-home-value` HUD-family tiles are leftover membership.
+Leftover has no 90-day median close; that tile is omitted rather than filled
+from pulse or leftover 12-month median close. New · 30 days omitted.
+County unpublished. CRM / blog / report export stay pulse-gated.

@@ -452,11 +452,14 @@ export default async function CityDetailPage({ params }: Props) {
   // awaited above and never null. Every figure stays verified (§0).
   const marketFaqInput: MarketFaqInput = {
     ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }),
-    activeCount: marketActive ?? snapshot.activeSfrCount,
-    pulseActiveCount: marketActive,
-    medianListPrice: marketMedian ?? snapshot.medianListPrice,
     grain: 'city',
+    source: 'market-truth',
+    activeCount: marketActive,
+    pulseActiveCount: marketActive,
+    medianListPrice: marketMedian,
     monthsOfSupply,
+    medianDaysToPending: hud.daysToPending,
+    soldCount12mo: hud.sold12mo,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, marketFaqInput)
   const hasMap = mapFeatures.length > 0

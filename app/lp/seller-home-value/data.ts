@@ -5,48 +5,37 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getMarketPulseRowForGeo } from '@/lib/data'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import {
   EMPTY_PUBLIC_PACE,
   getPublicDetachedPace,
 } from '@/lib/data/market-truth/public-pace'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { marketVerdict } from '@/lib/market/classify'
 import { TESTIMONIALS, type Testimonial } from '@/lib/testimonials'
 
 export type BendMarketSnapshot = {
-  /** Median active list price (SFR). */
+  /** Median leftover active list price. */
   medianListPrice: number | null
-  /** Median closed sale price over the trailing 90 days (SFR) — the honest
-   *  "what homes actually sell for" anchor. */
-  medianSold90d: number | null
-  /** Median days from list to under-contract (list-to-pending). Pulse. */
+  /** Leftover has no 90-day median close. Always omitted. */
+  medianSold90d: null
+  /** Leftover 90-day list-to-pending. Miss omits. */
   medianDaysToPending: number | null
   /** Leftover 12-month sale-to-original as a percent (0.969 → 96.9). Miss omits. */
   saleToListPct: number | null
-  /** Closed sales in the trailing 30 days (SFR). */
+  /** Leftover Closed · 30 days. Miss omits. */
   soldCount30d: number | null
-  /** Months of supply: active / (sold-per-month). */
+  /** Leftover months of supply. Miss omits. */
   monthsOfSupply: number | null
   activeCount: number | null
-  newCount30d: number | null
+  /** Omitted until leftover has a true 30-day new-listings cell. */
+  newCount30d: null
   marketHealthLabel: string | null
-  /** ISO timestamp the pulse row was last refreshed. */
+  /** Leftover computed stamp. */
   updatedAt: string | null
 }
 
-/** Coerce a Supabase numeric-as-string (or number) to a finite number or null. */
-function num(v: unknown): number | null {
-  if (v == null) return null
-  const n = typeof v === 'number' ? v : Number(v)
-  return Number.isFinite(n) ? n : null
-}
 
-/** Leftover sale-to-original as a percent. Fraction (< 2) times 100. Miss omits. */
-function leftoverSaleToListPct(saleToOriginal: number | null): number | null {
-  if (saleToOriginal == null || !Number.isFinite(saleToOriginal) || saleToOriginal <= 0) {
-    return null
-  }
-  return saleToOriginal < 2 ? saleToOriginal * 100 : saleToOriginal
-}
 
 /** A single Ryan Realty listing card for the LP social-proof grid. */
 export type OurListing = {
@@ -393,39 +382,38 @@ export async function getOurListings(): Promise<OurListing[]> {
 }
 
 /**
- * Live Bend market snapshot (city-level residential).
- * Pulse: 90-day close, days-to-pending, 30-day sold/new. Sale-to-list is leftover
- * Bend saleToOriginal when publishable; miss omits. Do not map leftover
- * days-to-contract onto DTP or leftover 12-month median onto the 90-day close.
+ * Live Bend leftover HUD (D23). Miss omits. Pulse and cache do not fill.
+ * Leftover has no 90-day median close and no 30-day new listings.
  */
 export async function getBendMarketSnapshot(): Promise<BendMarketSnapshot | null> {
   try {
-    const leftoverTask = getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }).catch(
-      (e) => {
+    const [overlays, leftover] = await Promise.all([
+      getDetachedOverlays([{ geoType: 'city', geoSlug: 'bend' }]),
+      getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }).catch((e) => {
         console.warn('[seller-lp/data] leftover pace miss:', e)
         return { ...EMPTY_PUBLIC_PACE }
-      },
-    )
-    // Wider SFR pulse projection (default DAL columns omit DTP / sold-90d).
-    const row = await getMarketPulseRowForGeo({
-      geoType: 'city',
-      geoSlug: 'bend',
-      columns:
-        'median_list_price, median_close_price_90d, median_days_to_pending, sold_count_30d, months_of_supply, active_count, new_count_30d, market_health_label, updated_at',
+      }),
+    ])
+    const layers = overlays.get('city:bend')
+    const hud = leftoverHudKpis({
+      grain: 'city',
+      headlines: layers?.headlines ?? null,
+      inventory: layers?.inventory ?? null,
+      pace: leftover,
     })
-    if (!row) return null
-    const leftover = await leftoverTask
+    const verdict = hud.monthsSupply != null ? marketVerdict(hud.monthsSupply) : null
     return {
-      medianListPrice: num(row['median_list_price']),
-      medianSold90d: num(row['median_close_price_90d']),
-      medianDaysToPending: num(row['median_days_to_pending']),
-      saleToListPct: leftoverSaleToListPct(leftover.saleToOriginal),
-      soldCount30d: num(row['sold_count_30d']),
-      monthsOfSupply: num(row['months_of_supply']),
-      activeCount: num(row['active_count']),
-      newCount30d: num(row['new_count_30d']),
-      marketHealthLabel: (row['market_health_label'] as string | null) ?? null,
-      updatedAt: (row['updated_at'] as string | null) ?? null,
+      medianListPrice: hud.medianList,
+      medianSold90d: null,
+      medianDaysToPending: hud.daysToPending,
+      saleToListPct: hud.saleToList,
+      soldCount30d: hud.closed30,
+      monthsOfSupply: hud.monthsSupply,
+      activeCount: hud.active,
+      newCount30d: null,
+      marketHealthLabel:
+        verdict && verdict.kind !== 'unknown' ? verdict.label : null,
+      updatedAt: layers?.headlines?.computedAt ?? layers?.inventory?.computedAt ?? null,
     }
   } catch (e) {
     console.warn('[seller-lp/data] getBendMarketSnapshot failed:', e)

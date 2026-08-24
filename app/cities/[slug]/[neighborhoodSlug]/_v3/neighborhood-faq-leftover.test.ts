@@ -12,4 +12,10 @@ describe('nested neighborhood FAQ leftover sold count', () => {
     expect(faqBlock).not.toMatch(/stats\?\.soldCount/)
     expect(faqBlock).not.toMatch(/soldCount12mo:\s*publishSoldCount\(\{\s*value:\s*stats\?\.soldCount/)
   })
+
+  it('FAQ Median to pending is leftover HUD, not pulse or cache DOM', () => {
+    expect(faqBlock).toMatch(/medianDaysToPending:\s*hud\.daysToPending/)
+    expect(faqBlock).not.toMatch(/pulse\?\.medianDaysToPending/)
+    expect(faqBlock).not.toMatch(/stats\?\.medianDaysOnMarket/)
+  })
 })

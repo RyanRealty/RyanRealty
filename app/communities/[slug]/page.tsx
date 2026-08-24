@@ -383,6 +383,13 @@ export default async function CommunityDetailPage({ params }: Props) {
       'comm:detachedOverlay',
     ),
   ])
+  const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
+  const hud = leftoverHudKpis({
+    grain: 'neighborhood',
+    headlines: commMt?.headlines ?? null,
+    inventory: commMt?.inventory ?? null,
+    pace: publicPace,
+  })
 
   // Amenity → blog-post link cards (topic-cluster SEO): resolve the published posts
   // for any amenity carrying a blog_slug, so those amenity cards render with a hero
@@ -493,9 +500,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       : activeSet.tiles
       ? medianListPriceOfTiles(activeSet.tiles)
       : activeSet.median
-  // Days: pulse (days-to-pending) for resorts with a pulse row; market_stats_cache
-  // (days-on-market) for communities where pulse has no row.
-  const medianDays = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
+  const medianDays = hud.daysToPending
 
   // ── HERO ──────────────────────────────────────────────────────────────────
   // Verified community photo: curated communityImage(slug) first (the resort
@@ -538,7 +543,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const aboutFacts: { label: string; value: string }[] = [
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(medianListPrice != null ? [{ label: 'Median list', value: kbMoneyFull(medianListPrice) ?? '—' }] : []),
-    ...(daysFact ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: daysFact }] : []),
+    ...(daysFact ? [{ label: 'Median to pending', value: daysFact }] : []),
     ...(leftoverMedianSold ? [{ label: 'Median sold, 12 months', value: leftoverMedianSold }] : []),
     ...(publishedHoa ? [{ label: placeHoaGlanceLabel(publishedHoa.kind), value: formatPlaceHoaAnnual(publishedHoa.annual) }] : []),
     { label: 'City', value: cityName },
@@ -661,13 +666,6 @@ export default async function CommunityDetailPage({ params }: Props) {
   const coreChartsRaw = chartIsCityLevel ? cityCoreCharts : commCoreCharts
   const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : coreChartsRaw
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
-  const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
-  const hud = leftoverHudKpis({
-    grain: 'neighborhood',
-    headlines: commMt?.headlines ?? null,
-    inventory: commMt?.inventory ?? null,
-    pace: publicPace,
-  })
   const hudActive = hud.active
   const monthsOfSupply = hud.monthsSupply
   const sellMedian = publishSellMedian({ placeMedian: hud.medianList ?? medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
@@ -706,15 +704,13 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const marketFaqInput: MarketFaqInput = { grain: 'neighborhood',
     source: 'market-truth',
-    // Same detached count the HUD prints (Market Truth overlay when present).
-    // Alias-aware tile counts stay on the hero; MOS cannot sit next to them.
+    // Same leftover HUD the page prints. Miss omits. Pulse DTP and cache DOM do not fill.
     activeCount: hudActive,
-    pulseActiveCount: pulse?.activeCount,
-    medianListPrice,
+    pulseActiveCount: hudActive,
+    medianListPrice: hud.medianList,
     monthsOfSupply,
-    // Prefer pulse days-to-pending; fall back to stats cache DOM (12-month rolling).
-    medianDaysToPending: pulse?.medianDaysToPending ?? null,
-    medianDaysOnMarket: stats?.medianDaysOnMarket ?? null,
+    medianDaysToPending: hud.daysToPending,
+    medianDaysOnMarket: null,
     refreshedAt: pulse?.refreshedAt ?? snapshot?.refreshedAt ?? null,
     // Extended fields — leftover 12-month closed count. Miss omits.
     soldCount12mo: publicPace.closedCount ?? null,
@@ -817,7 +813,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           data={{
             activeCount,
             medianListPrice,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+            medianDaysToPending: hud.daysToPending,
           }}
           eyebrow={communityLabel}
           titleTop={community.name}

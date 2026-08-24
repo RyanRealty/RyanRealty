@@ -282,6 +282,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       'nbh:detachedOverlay',
     ),
   ])
+  const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
+  const hud = leftoverHudKpis({
+    grain: 'neighborhood',
+    headlines: nbhMt?.headlines ?? null,
+    inventory: nbhMt?.inventory ?? null,
+    pace: publicPace,
+  })
 
   const boundaryMapData = boundaryRead.value
   const inventory = inventoryRead
@@ -316,7 +323,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     grain: 'neighborhood',
     placeName: neighborhood.name,
   })
-  const medianDays = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
+  const medianDays = hud.daysToPending
   const nbhCentroid = mapCentroid(listingTiles)
   const nbhLifestyle = lifestyleNearLatLng(nbhCentroid?.lat, nbhCentroid?.lng)
 
@@ -353,9 +360,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     // Omitted, never "0", when the count is unknown (§0).
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(medianListPrice != null ? [{ label: 'Median list', value: formatPriceExact(medianListPrice) }] : []),
-    ...(daysFact
-      ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: daysFact }]
-      : []),
+    ...(daysFact ? [{ label: 'Median to pending', value: daysFact }] : []),
     ...(leftoverMedianClose ? [{ label: 'Median close, 12 months', value: leftoverMedianClose }] : []),
     { label: 'City', value: cityName },
   ]
@@ -445,13 +450,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const chartIsCityLevel = chartMonths.cityFallback
   const chartPriceHist = chartMonths.months
 
-  const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
-  const hud = leftoverHudKpis({
-    grain: 'neighborhood',
-    headlines: nbhMt?.headlines ?? null,
-    inventory: nbhMt?.inventory ?? null,
-    pace: publicPace,
-  })
   const monthsOfSupply = hud.monthsSupply
   const marketData: KbMarketData = {
     active: hud.active,
@@ -477,6 +475,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     pulseActiveCount: hud.active,
     medianListPrice: hud.medianList,
     monthsOfSupply,
+    medianDaysToPending: hud.daysToPending,
     soldCount12mo: publicPace.closedCount ?? null,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
@@ -526,7 +525,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           data={{
             activeCount,
             medianListPrice,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+            medianDaysToPending: hud.daysToPending,
           }}
           eyebrow={neighborhoodLabel}
           titleTop={neighborhood.name}

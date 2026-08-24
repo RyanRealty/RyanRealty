@@ -196,6 +196,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       activeCount: hud.active,
       pulseActiveCount: hud.active,
       medianListPrice: hud.medianList,
+      medianDaysToPending: hud.daysToPending,
     },
   )
 

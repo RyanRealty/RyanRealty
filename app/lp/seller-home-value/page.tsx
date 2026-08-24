@@ -102,10 +102,7 @@ export default async function SellerHomeValuePage({
   const cookiePersonId = await getPersonIdFromCookie()
   const knownVisitor = cookiePersonId != null && cookiePersonId > 0
 
-  // Live local data — Bend market snapshot (market_pulse_live via the DAL) +
-  // the curated real-listings matrix. Each falls back gracefully if Supabase
-  // is briefly unreachable. CLAUDE.md §0 Data Accuracy: live values or the
-  // em-dash placeholder, never an invented number.
+  // Leftover Bend HUD + curated listings. Miss omits. Never invent a number.
   const [marketSnapshot, aggregate, allListings, publicPace, publicSegments] = await Promise.all([
     getBendMarketSnapshot(),
     getTestimonialAggregate(),
@@ -116,10 +113,7 @@ export default async function SellerHomeValuePage({
 
   const snap = marketSnapshot
 
-  // Stat band values — formatted live, em-dash placeholder when unavailable.
-  // Pulse keeps 90-day median, days-to-pending, and 30-day sold.
-  // Sale-to-list is leftover saleToOriginal via getBendMarketSnapshot (omit on miss).
-  // Other leftover 12-month / pending-now cells sit beside them, labeled by window.
+  // Leftover HUD-family tiles. Miss omits. No 90-day leftover median close.
   const LP_LEFTOVER_KEYS = new Set(['pending', 'dtc', 'medClose', 'yoy'])
   const leftoverCards = publicPaceItems(publicPace)
     .filter((item) => LP_LEFTOVER_KEYS.has(item.key))
@@ -143,29 +137,33 @@ export default async function SellerHomeValuePage({
       }
     })
   const statCards: Array<{ value: string; label: string; sub: string }> = [
-    {
-      value:
-        snap?.medianSold90d != null
-          ? `$${(Math.round(snap.medianSold90d / 1000) * 1000).toLocaleString('en-US')}`
-          : MDASH,
-      label: 'Median sale price',
-      sub: 'Closed in the last 90 days',
-    },
-    {
-      value: publishDaysLabel(snap?.medianDaysToPending) ?? MDASH,
-      label: 'Time to pending',
-      sub: 'Median, list to under contract',
-    },
-    {
-      value: snap?.saleToListPct != null ? `${snap.saleToListPct.toFixed(1)}%` : MDASH,
-      label: 'Sale to list',
-      sub: 'Median close vs original list, 12 months',
-    },
-    {
-      value: snap?.soldCount30d != null ? snap.soldCount30d.toLocaleString('en-US') : MDASH,
-      label: 'Homes sold',
-      sub: 'Closed in the last 30 days',
-    },
+    ...(snap?.medianDaysToPending != null
+      ? [
+          {
+            value: publishDaysLabel(snap.medianDaysToPending) ?? MDASH,
+            label: 'Time to pending',
+            sub: 'Median, list to under contract, last 90 days',
+          },
+        ]
+      : []),
+    ...(snap?.saleToListPct != null
+      ? [
+          {
+            value: `${snap.saleToListPct.toFixed(1)}%`,
+            label: 'Sale to list',
+            sub: 'Median close vs original list, 12 months',
+          },
+        ]
+      : []),
+    ...(snap?.soldCount30d != null
+      ? [
+          {
+            value: snap.soldCount30d.toLocaleString('en-US'),
+            label: 'Homes sold',
+            sub: 'Closed in the last 30 days',
+          },
+        ]
+      : []),
     ...leftoverCards,
     ...extraCards,
   ]

@@ -107,6 +107,10 @@ const leftoverHudSurfaces = [
     path: 'app/housing-market/og/[...slug]/route.tsx',
     label: 'housing-market OG gates MOS through leftoverHudKpis',
   },
+  {
+    path: 'app/lp/seller-home-value/data.ts',
+    label: 'seller LP snapshot gates MOS through leftoverHudKpis',
+  },
 ]
 
 const surfaces = [

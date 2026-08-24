@@ -722,6 +722,16 @@ Same one-pile rule on remaining leftover-eligible public visitor figures.
 
 CRM / blog / report export stay pulse-gated. County unpublished. New · 30 days omitted.
 
+### D23 leftover FAQ DTP and seller LP HUD
+
+Same one-pile rule on leftover-eligible FAQ and seller LP HUD-family figures.
+
+**Done when a real user can:**
+1. Open `/cities/bend`, a neighborhood, a community, or a housing-market geo FAQ and see leftover 90-day Median to pending when leftover can publish it. Pulse DTP and cache days-on-market do not fill. A leftover miss omits.
+2. Open `/lp/seller-home-value` and see leftover Closed · 30 days, leftover 90-day time to pending, leftover sale to list. Pulse does not fill. The 90-day median sale tile is omitted until leftover has that cell. New · 30 days omitted.
+
+CRM / blog / report export stay pulse-gated. County unpublished.
+
 ---
 
 ## 5. Definition of done for the whole program
