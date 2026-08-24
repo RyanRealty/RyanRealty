@@ -1,6 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { Ratelimit } from '@upstash/ratelimit'
-import { Redis } from '@upstash/redis'
 import legacyRedirects from '@/data/legacy-redirects.json'
 import { resolvePreRenderHop } from '@/lib/routing/pre-render-hops'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
@@ -43,18 +41,12 @@ import resortCommunitiesRegistry from '@/data/resort-communities.json'
  * roughly doubles command spend for a dashboard nobody reads.
  */
 
-// Build limiters at module scope (Edge runtime caches across invocations)
-function buildLimiter(prefix: string, tokens: number, window: string): Ratelimit | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN
-  if (!url?.trim() || !token?.trim()) return null
-  return new Ratelimit({
-    redis: new Redis({ url, token }),
-    limiter: Ratelimit.slidingWindow(tokens, window as Parameters<typeof Ratelimit.slidingWindow>[1]),
-    prefix: `rl:mw:${prefix}`,
-    analytics: false,
-  })
-}
+// Edge middleware cannot import @upstash/ratelimit — Vercel rejects the bundle
+// when that package pulls node:crypto (`The Edge Function "middleware" is
+// referencing unsupported modules: node:crypto`). In-memory windows stay on
+// the isolate. Strict/auth used to use Upstash for cross-instance accuracy;
+// a local window is still stricter than the fail-open path a broken deploy
+// leaves us with.
 
 /**
  * In-memory fixed-window limiter for the high-volume tiers. Per-isolate, so a
@@ -90,8 +82,8 @@ class MemoryWindowLimiter {
   }
 }
 
-const strict = buildLimiter('strict', 10, '60 s')
-const auth = buildLimiter('auth', 5, '60 s')
+const strict = new MemoryWindowLimiter(10, 60_000)
+const auth = new MemoryWindowLimiter(5, 60_000)
 const admin = new MemoryWindowLimiter(300, 60_000)
 const general = new MemoryWindowLimiter(60, 60_000)
 
@@ -104,7 +96,7 @@ function getIp(request: NextRequest): string {
   )
 }
 
-function pickLimiter(pathname: string): Ratelimit | MemoryWindowLimiter | null {
+function pickLimiter(pathname: string): MemoryWindowLimiter | null {
   if (pathname.startsWith('/api/ai/')) return strict
   if (pathname.startsWith('/api/pdf/')) return strict
   if (pathname.startsWith('/api/cma/')) return strict
@@ -540,11 +532,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const limiter = pickLimiter(pathname)
   if (limiter) {
     const ip = getIp(request)
-    // Fail OPEN: if the limiter backend (Upstash) is down or over its monthly
-    // request quota, limiter.limit() throws. A rate limiter must never take the
-    // API offline — when its backend errors, allow the request through rather
-    // than 500-ing every /api/* call. (Quota/outage is surfaced via logs.)
-    // The in-memory tiers are synchronous and never throw; await handles both.
+    // Fail OPEN if a limiter throws. In-memory windows are synchronous.
     let limited: MemLimitResult | null = null
     try {
       limited = await limiter.limit(ip)
