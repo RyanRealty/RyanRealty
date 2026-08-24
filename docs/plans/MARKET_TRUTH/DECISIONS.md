@@ -194,3 +194,22 @@ No RESO/NAR number exists. House analog: OMB Statistical Policy Directive No. 2 
 70%. Below that, positives publish only as a D12 floor ("at least") or not at all. Of the 16 YN
 fields, only `garage_yn` (72.9% coverage) clears 70%. D13 (never publish a negative from NULL)
 stands and is not sufficient by itself.
+
+## D17 — leftover HUD 30-day sold, then stop · **DECIDED** (Matt, 2026-08-24)
+
+Public **Closed · 30 days** is leftover membership `closed_count_30d` when publishable. Pulse
+fills that tile only on leftover miss. Do not put leftover 12-month `closed_count` on this tile.
+Bend leftover **203** vs pulse **137** is accepted: different population (detached membership vs
+the old snapshot), not a leftover bug.
+
+Public **Median to pending** is leftover `median_days_to_contract_90d` (90-day list-to-pending)
+when publishable. Pulse fills only on leftover miss. Leftover 12-month days-to-contract stays in
+the leftover pace strip, never on this tile.
+
+**Stop leftover expansion there.** YTD, this-month, New · 30 days, and core-chart inventory /
+days on market / months of supply / weekly price-cuts stay pulse or cache. County unpublished.
+Neighborhood extra MOS omitted while 0 publishable. Subdivision never a price.
+
+Program §5 "getMetric is the only way any surface obtains a market figure" is **not** a grind
+target for those remaining tiles. Dual-run on the leftover-miss fill and the locked cache/pulse
+windows is the product.

@@ -659,11 +659,15 @@ Bend detached still 774. County unpublished.
 
 2026-08-24as landed (live webpack 3010): leftover HUD windows on hosted DB — Bend `closed_count_30d` **203** (n=203), `median_days_to_contract_90d` **19** (n=618); region **354** / **25**. `/cities/bend` Closed · 30 days **203**; leftover 12-month days-to-contract stays in the pace strip. Pulse 30-day fills only on leftover miss. `docs/DATABASE_SCHEMA_SNAPSHOT.md` now includes `tc_tasks`. Monthly leftover Bend July **$795,000** intact. County unpublished.
 
+**Matt 2026-08-24 (D17):** keep leftover 203 with pulse fill on miss; stop leftover expansion (YTD / this-month / New · 30 days / core-chart inventory-DOM-MOS stay pulse or cache). Do not grind remaining tiles onto leftover unless Matt lifts D17.
+
 ---
 
 ## 5. Definition of done for the whole program
 
 - One read path. `getMetric()` is the only way any surface obtains a market figure.
+  **D17 remainder:** YTD / this-month / New · 30 days / core-chart inventory-DOM-MOS / weekly
+  price-cuts stay pulse or cache; HUD 30-day sold and DTP prefer leftover and pulse-fill on miss.
 - Every published figure traces to rows, method and window.
 - The same question asked twice, anywhere in the estate, returns the same number.
 - A new metric is a registry entry, and it is correct on arrival because it inherits membership,
