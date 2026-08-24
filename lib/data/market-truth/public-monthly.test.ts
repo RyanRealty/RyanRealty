@@ -5,6 +5,7 @@ import type { GetMetricInput, MetricResult } from '@/lib/data/market-truth/getMe
 import {
   completeMonthKeys,
   leftoverOrCacheMonthly,
+  leftoverNeighborhoodOrCityMonthly,
   dropCurrentMonth,
   getPublicDetachedMonthly,
 } from '@/lib/data/market-truth/public-monthly'
@@ -68,8 +69,10 @@ describe('leftover monthly chart overlay', () => {
     expect(annual).toMatch(/getPublicDetachedMonthly/)
     expect(comm).toMatch(/getPublicDetachedMonthly/)
     expect(nbh).toMatch(/getPublicDetachedMonthly/)
-    expect(comm).toMatch(/chartIsCityLevel \? leftoverMonthly : \[\]/)
-    expect(nbh).toMatch(/chartIsCityLevel \? leftoverMonthly : \[\]/)
+    expect(comm).toMatch(/leftoverNeighborhoodOrCityMonthly/)
+    expect(nbh).toMatch(/leftoverNeighborhoodOrCityMonthly/)
+    expect(comm).toMatch(/geoType: 'neighborhood'/)
+    expect(nbh).toMatch(/geoType: 'neighborhood'/)
     expect(zip).toMatch(/getPublicDetachedMonthly\(\{\s*geoType: 'city'/)
     const sql = readFileSync(
       resolve('scripts/sql/compute_market_metrics_monthly_shadow.sql'),
@@ -79,6 +82,16 @@ describe('leftover monthly chart overlay', () => {
     expect(sql).toMatch(/median_close/)
     expect(sql).not.toMatch(/mom_median_price/)
     expect(sql).toMatch(/segment = 'detached'/)
+    const nbhSql = readFileSync(
+      resolve('scripts/sql/compute_market_metrics_monthly_neighborhood_shadow.sql'),
+      'utf8',
+    )
+    expect(nbhSql).toMatch(/geo_type = 'neighborhood'/)
+    expect(nbhSql).toMatch(/window_months = 1/)
+    expect(nbhSql).not.toMatch(/mom_median_price/)
+    expect(nbhSql).not.toMatch(/geo_type IN \('city', 'region'\)/)
+    const cron = readFileSync(resolve('app/api/cron/refresh-sale-pricing-facts/route.ts'), 'utf8')
+    expect(cron).toMatch(/compute_market_metrics_monthly_neighborhood_shadow/)
   })
 
   it('drops the in-progress month and lists complete months oldest first', () => {
@@ -146,5 +159,68 @@ describe('leftover monthly chart overlay', () => {
     )
     expect(picked.leftoverUsed).toBe(false)
     expect(picked.months[0]?.medianSalePrice).toBe(740000)
+  })
+
+  it('prefers leftover neighborhood monthly over leftover city', () => {
+    const leftoverNeighborhood = [1, 2, 3, 4, 5, 6].map((month) => ({
+      periodStart: `2026-0${month}-01`,
+      periodEnd: `2026-0${month}-28`,
+      medianClose: 880000,
+      closedCount: 12,
+    }))
+    const leftoverCity = leftoverNeighborhood.map((row) => ({ ...row, medianClose: 759450 }))
+    const picked = leftoverNeighborhoodOrCityMonthly({
+      leftoverNeighborhood,
+      leftoverCity,
+      neighborhoodCache: [{ periodStart: '2026-06-01', medianSalePrice: 1 }],
+      cityCache: [{ periodStart: '2026-06-01', medianSalePrice: 759450 }],
+      currentMonthKey: '2026-08',
+      neighborhoodCacheSparse: true,
+    })
+    expect(picked.leftoverUsed).toBe(true)
+    expect(picked.cityFallback).toBe(false)
+    expect(picked.months[0]?.medianSalePrice).toBe(880000)
+  })
+
+  it('does not fill a neighborhood leftover miss from leftover city when local cache is dense', () => {
+    const picked = leftoverNeighborhoodOrCityMonthly({
+      leftoverNeighborhood: [],
+      leftoverCity: [1, 2, 3, 4, 5, 6].map((month) => ({
+        periodStart: `2026-0${month}-01`,
+        periodEnd: `2026-0${month}-28`,
+        medianClose: 759450,
+        closedCount: 80,
+      })),
+      neighborhoodCache: [1, 2, 3, 4, 5, 6, 7, 8].map((month) => ({
+        periodStart: `2025-${String(month).padStart(2, '0')}-01`,
+        medianSalePrice: 500000 + month,
+      })),
+      cityCache: [{ periodStart: '2026-06-01', medianSalePrice: 759450 }],
+      currentMonthKey: '2026-08',
+      neighborhoodCacheSparse: false,
+    })
+    expect(picked.leftoverUsed).toBe(false)
+    expect(picked.cityFallback).toBe(false)
+    expect(picked.months[0]?.medianSalePrice).toBe(500001)
+  })
+
+  it('uses leftover city monthly only when neighborhood leftover cannot plot and cache is sparse', () => {
+    const leftoverCity = [1, 2, 3, 4, 5, 6].map((month) => ({
+      periodStart: `2026-0${month}-01`,
+      periodEnd: `2026-0${month}-28`,
+      medianClose: 759450,
+      closedCount: 80,
+    }))
+    const picked = leftoverNeighborhoodOrCityMonthly({
+      leftoverNeighborhood: [],
+      leftoverCity,
+      neighborhoodCache: [{ periodStart: '2026-07-01', medianSalePrice: 400000 }],
+      cityCache: [{ periodStart: '2026-07-01', medianSalePrice: 1641 }],
+      currentMonthKey: '2026-08',
+      neighborhoodCacheSparse: true,
+    })
+    expect(picked.leftoverUsed).toBe(true)
+    expect(picked.cityFallback).toBe(true)
+    expect(picked.months[0]?.medianSalePrice).toBe(759450)
   })
 })

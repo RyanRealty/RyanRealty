@@ -96,8 +96,49 @@ export function leftoverOrCacheMonthly<T extends { periodStart: string; medianSa
   }
 }
 
+/**
+ * Neighborhood/community HUD grain: leftover neighborhood monthly when it can
+ * plot; else this place's cache when dense; else leftover city monthly (labeled
+ * city by the caller). Never fills a neighborhood leftover miss from leftover
+ * city without cityFallback.
+ */
+export function leftoverNeighborhoodOrCityMonthly<
+  T extends { periodStart: string; medianSalePrice: number | null },
+>(opts: {
+  leftoverNeighborhood: readonly PublicMonthlyPoint[]
+  leftoverCity: readonly PublicMonthlyPoint[]
+  neighborhoodCache: readonly T[]
+  cityCache: readonly T[]
+  currentMonthKey: string
+  neighborhoodCacheSparse: boolean
+  minMonths?: number
+}): {
+  months: Array<{ periodStart: string; medianSalePrice: number | null; soldCount: number | null }>
+  leftoverUsed: boolean
+  cityFallback: boolean
+} {
+  const minMonths = opts.minMonths ?? 6
+  const place = leftoverOrCacheMonthly(
+    opts.leftoverNeighborhood,
+    dropCurrentMonth(opts.neighborhoodCache, opts.currentMonthKey),
+    minMonths,
+  )
+  if (place.leftoverUsed) {
+    return { ...place, cityFallback: false }
+  }
+  if (!opts.neighborhoodCacheSparse) {
+    return { ...place, cityFallback: false }
+  }
+  const city = leftoverOrCacheMonthly(
+    opts.leftoverCity,
+    dropCurrentMonth(opts.cityCache, opts.currentMonthKey),
+    minMonths,
+  )
+  return { ...city, cityFallback: true }
+}
+
 export async function getPublicDetachedMonthly(opts: {
-  geoType: 'city' | 'region'
+  geoType: 'city' | 'region' | 'neighborhood'
   geoSlug: string
   currentMonthKey: string
 }): Promise<PublicMonthlyPoint[]> {

@@ -9,6 +9,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
   assembleCoreChartSeries,
+  overlayLeftoverCoreCloseSeries,
   describeSpan,
   monthsOfSupplySeries,
   trendField,
@@ -145,6 +146,39 @@ describe('assembleCoreChartSeries', () => {
     expect(metrics).not.toContain('monthsOfSupply')
     expect(metrics).toContain('medianClosePrice')
     expect(metrics).toContain('closedVolume')
+  })
+})
+
+describe('overlayLeftoverCoreCloseSeries', () => {
+  const leftover = [1, 2, 3, 4, 5, 6, 7].map((month) => ({
+    periodStart: `2026-0${month}-01`,
+    periodEnd: `2026-0${month}-28`,
+    medianClose: 700000 + month,
+    closedCount: 10 + month,
+  }))
+
+  it('overlays leftover median and closed count and leaves DOM/MOS on cache', () => {
+    const assembled = assembleCoreChartSeries('city', 'bend', months(30), [])
+    const out = overlayLeftoverCoreCloseSeries(assembled, leftover)
+    const median = out.series.find((s) => s.metric === 'medianClosePrice')
+    const closed = out.series.find((s) => s.metric === 'closedVolume')
+    const dom = out.series.find((s) => s.metric === 'medianDom')
+    const mos = out.series.find((s) => s.metric === 'monthsOfSupply')
+    expect(median?.leftover).toBe(true)
+    expect(median?.points[0]?.value).toBe(700001)
+    expect(closed?.leftover).toBe(true)
+    expect(closed?.points[0]?.value).toBe(11)
+    expect(dom?.leftover).toBeUndefined()
+    expect(mos?.leftover).toBeUndefined()
+    expect(mos?.source).toContain('end_of_period_inventory / (trailing 6-month sold_count / 6)')
+  })
+
+  it('does not mix leftover into cache when leftover cannot plot', () => {
+    const assembled = assembleCoreChartSeries('city', 'bend', months(30), [])
+    const cacheMedian = assembled.series.find((s) => s.metric === 'medianClosePrice')?.points[0]?.value
+    const out = overlayLeftoverCoreCloseSeries(assembled, leftover.slice(0, 2))
+    expect(out.series.find((s) => s.metric === 'medianClosePrice')?.leftover).toBeUndefined()
+    expect(out.series.find((s) => s.metric === 'medianClosePrice')?.points[0]?.value).toBe(cacheMedian)
   })
 })
 

@@ -27,7 +27,12 @@ import { z } from 'zod'
 import { getMarketTrend, type MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
 import { getMarketHistoryWeekly, type MarketHistoryWeeklyPoint } from '@/lib/data/market/getMarketHistoryWeekly'
 import type { GeoType } from '@/lib/data/types/shared'
-import { formatDate } from '@/lib/format/date'
+import { formatDate, zonedDateKey } from '@/lib/format/date'
+import {
+  leftoverMonthlyToCacheShape,
+  getPublicDetachedMonthly,
+  type PublicMonthlyPoint,
+} from '@/lib/data/market-truth/public-monthly'
 
 // 24-month display window; +6 leading months so the first plotted
 // months-of-supply point still has a full trailing 6-month closed window.
@@ -62,6 +67,8 @@ export type CoreChartSeriesEntry = {
   source: string
   /** Human-readable span, e.g. "Aug 2024 to Jul 2026 (24 months)". */
   period: string
+  /** True when medianClosePrice / closedVolume came from leftover monthly cells. */
+  leftover?: boolean
 }
 
 export type CoreChartSeries = {
@@ -207,6 +214,66 @@ export function assembleCoreChartSeries(
   }
 }
 
+const CORE_METRIC_ORDER: CoreChartMetric[] = [
+  'medianClosePrice',
+  'activeInventory',
+  'medianDom',
+  'monthsOfSupply',
+  'priceCutShare',
+  'closedVolume',
+]
+
+/**
+ * Overlay leftover monthly median_close / closed_count onto those two tabs.
+ * Inventory, DOM, MOS, and weekly price-cuts stay on cache/weekly. A leftover
+ * miss does not fill those two tabs from cache mixed into leftover points.
+ */
+export function overlayLeftoverCoreCloseSeries(
+  assembled: CoreChartSeries,
+  leftover: readonly PublicMonthlyPoint[],
+  minMonths = 6,
+): CoreChartSeries {
+  const leftoverMonths = leftoverMonthlyToCacheShape(leftover)
+  if (leftoverMonths.length < minMonths) return assembled
+
+  const medianPts: CoreChartPoint[] = leftoverMonths
+    .slice(-WINDOW_MONTHS)
+    .map((row) => ({ periodStart: row.periodStart, value: row.medianSalePrice as number }))
+  const closedPts: CoreChartPoint[] = leftover
+    .filter((row) => row.closedCount != null && row.closedCount > 0)
+    .slice(-WINDOW_MONTHS)
+    .map((row) => ({ periodStart: row.periodStart, value: row.closedCount as number }))
+
+  const leftoverTrace = `Market Truth leftover mt-v1 window_months=1 · geo_type='${assembled.geoType}' geo_slug='${assembled.geoSlug}'`
+  const byMetric = new Map(assembled.series.map((s) => [s.metric, s]))
+  if (medianPts.length >= 2) {
+    byMetric.set('medianClosePrice', {
+      metric: 'medianClosePrice',
+      granularity: 'monthly',
+      points: medianPts,
+      source: `${leftoverTrace} · median_close`,
+      period: describeSpan(medianPts, 'monthly'),
+      leftover: true,
+    })
+  }
+  if (closedPts.length >= 2) {
+    byMetric.set('closedVolume', {
+      metric: 'closedVolume',
+      granularity: 'monthly',
+      points: closedPts,
+      source: `${leftoverTrace} · closed_count`,
+      period: describeSpan(closedPts, 'monthly'),
+      leftover: true,
+    })
+  }
+  return {
+    ...assembled,
+    series: CORE_METRIC_ORDER.map((metric) => byMetric.get(metric)).filter(
+      (s): s is CoreChartSeriesEntry => s != null,
+    ),
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public fetcher
 // ---------------------------------------------------------------------------
@@ -222,8 +289,11 @@ export async function getCoreChartSeries(input: {
   geoSlug: string
 }): Promise<CoreChartSeries> {
   const { geoType, geoSlug } = InputSchema.parse(input)
+  const leftoverGeo =
+    geoType === 'city' || geoType === 'region' || geoType === 'neighborhood' ? geoType : null
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
 
-  const [trend, weekly] = await Promise.all([
+  const [trend, weekly, leftover] = await Promise.all([
     // 24-month window + 6 leading months so month 1 of the window still gets a
     // complete trailing-6 months-of-supply computation.
     getMarketTrend(geoType, geoSlug, WINDOW_MONTHS + MOS_TRAILING_MONTHS).catch(
@@ -237,7 +307,17 @@ export async function getCoreChartSeries(input: {
       metrics: ['price_reduction_share'],
       weeks: 104,
     }).catch(() => [] as MarketHistoryWeeklyPoint[]),
+    leftoverGeo
+      ? getPublicDetachedMonthly({
+          geoType: leftoverGeo,
+          geoSlug,
+          currentMonthKey,
+        }).catch(() => [] as PublicMonthlyPoint[])
+      : Promise.resolve([] as PublicMonthlyPoint[]),
   ])
 
-  return assembleCoreChartSeries(geoType, geoSlug, trend, weekly)
+  return overlayLeftoverCoreCloseSeries(
+    assembleCoreChartSeries(geoType, geoSlug, trend, weekly),
+    leftover,
+  )
 }

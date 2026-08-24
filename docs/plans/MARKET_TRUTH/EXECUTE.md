@@ -583,6 +583,19 @@ Bend detached still 774. County unpublished. Pulse DTP / 30-day stay.
 
 2026-08-23ap landed (live webpack 3010): hosted `compute_market_metrics_monthly_shadow(36)` upserted **910** window=1 leftover cells. Bend July 2026 leftover median close **$795,000** (n=219, publishable); region **$696,700** (n=403). Homepage and `/cities/bend` HUD caption **Median close · leftover**; pulse Closed · 30 days / Median to pending stay. `/housing-market/bend` and `/housing-market` leftover year-overlay caption. `/housing-market/annual-review` leftover overlay + leftover trailing-12 caption. `/zip/97701` leftover **city** monthly (labeled city). `/communities/sunriver` and `/cities/bend/larkspur` leftover city monthly only on the city-fallback chart, labeled Bend (city). Unadjusted MoM off. County unpublished.
 
+### Grind 2026-08-23aq — leftover neighborhood monthly + core-chart close overlay
+
+**Locks still hold:** county unpublished; pulse 30-day sold and DTP stay; unadjusted MoM off public; extra MOS at neighborhood omitted; subdivision never a price; `commercial_lease` out; `all_residential` off public. Neighborhood leftover monthly is sample-gated (median min_n 10). A leftover neighborhood miss does not fill from leftover city without the city label. Core-chart inventory / DOM / MOS / weekly price-cuts stay cache/weekly — leftover days-to-contract is not DOM; leftover closed count is not mixed into MOS. Workers do not tick this file.
+
+**Done when a real user can:**
+1. Open `/cities/bend` tabbed core charts and see **Median price** and **Closed sales** from leftover monthly `median_close` / `closed_count` (window_months = 1) when leftover can plot (≥6 publishable months). Source names leftover. Inventory / days on market / months of supply / price cuts stay cache or weekly.
+2. Open `/communities/sunriver` (and a nested neighborhood that resolves to a Market Truth neighborhood slug) and see leftover **neighborhood** monthly on the HUD when ≥6 leftover months publish. If leftover neighborhood cannot plot and the local cache is sparse, leftover **city** monthly remains, still labeled as the parent city.
+3. Hosted `compute_market_metrics_monthly_neighborhood_shadow` writes neighborhood window=1 detached cells without deleting city/region monthly leftover.
+
+Bend detached still 774. County unpublished. Pulse DTP / 30-day stay.
+
+2026-08-23aq landed (live webpack 3010): hosted `compute_market_metrics_monthly_neighborhood_shadow(36)` upserted **1678** neighborhood window=1 cells without deleting city leftover (Bend July still **$795,000**, n=219). Sunriver July leftover median close **$890,000** (n=12). **11** neighborhood slugs have ≥6 publishable leftover months. `/cities/bend` core-chart source **Market Truth leftover, Bend city, monthly median close** / **monthly closed sales**; inventory/DOM/MOS/price-cuts stay cache or weekly; pulse Closed · 30 days / Median to pending stay. `/communities/sunriver` HUD **Median close · leftover** at neighborhood grain (no Bend (city) label) and leftover Sunriver core-chart source. `/cities/bend/larkspur` leftover neighborhood monthly (no city fallback label). Pulse DTP stays. Unadjusted MoM off. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

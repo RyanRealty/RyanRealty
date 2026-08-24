@@ -36,8 +36,15 @@ export function publishPublicChartSource(input: {
   geoType: string
   geoSlug: string
   metric?: CoreChartMetric
+  leftover?: boolean
 }): string {
   const place = publicChartPlaceLabel(input.geoType, input.geoSlug)
+  if (input.leftover && input.metric === 'closedVolume') {
+    return `Market Truth leftover, ${place}, monthly closed sales`
+  }
+  if (input.leftover) {
+    return `Market Truth leftover, ${place}, monthly median close`
+  }
   if (input.metric === 'priceCutShare') {
     return `Oregon Data Share, ${place}, weekly price-cut share`
   }
@@ -52,10 +59,12 @@ export function toPublicCoreChartSeries(series: CoreChartSeries): CoreChartSerie
     ...series,
     series: series.series.map((entry) => ({
       ...entry,
+      leftover: entry.leftover,
       source: publishPublicChartSource({
         geoType: series.geoType,
         geoSlug: series.geoSlug,
         metric: entry.metric,
+        leftover: entry.leftover,
       }),
     })),
   }

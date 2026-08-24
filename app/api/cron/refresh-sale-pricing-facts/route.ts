@@ -164,6 +164,15 @@ export async function GET(request: Request) {
     } else {
       monthlyShadow = monthly.data
     }
+    const monthlyNbh = await supabase.rpc('compute_market_metrics_monthly_neighborhood_shadow', {
+      p_months: 36,
+    })
+    if (monthlyNbh.error) {
+      console.error(
+        '[refresh-sale-pricing-facts] compute_market_metrics_monthly_neighborhood_shadow',
+        monthlyNbh.error.message,
+      )
+    }
   }
   if (shadowErr) {
     console.error('[refresh-sale-pricing-facts] compute_market_metrics_shadow', shadowErr.message)
