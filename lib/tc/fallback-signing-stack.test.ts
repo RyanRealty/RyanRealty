@@ -20,6 +20,43 @@ describe('fallbackSigningStack', () => {
 })
 
 describe('withFallbackSignatures', () => {
+  it('uses the printed Buyer/Seller lines instead of dumping a second stack', () => {
+    const map = withFallbackSignatures(
+      [
+        {
+          type: 'text',
+          page: 15,
+          x: 0.126,
+          y: 0.309,
+          w: 0.509,
+          h: 0.022,
+          dataRef: 'Buyer_4',
+          signerRole: null,
+          optional: false,
+          label: 'Buyer_4',
+        },
+        {
+          type: 'text',
+          page: 15,
+          x: 0.126,
+          y: 0.737,
+          w: 0.509,
+          h: 0.022,
+          dataRef: 'Seller_5',
+          signerRole: null,
+          optional: false,
+          label: 'Seller_5',
+        },
+      ],
+      { pageCount: 15, formNumber: '001' },
+    )
+    const buyer = map.find((f) => f.label === 'Buyer_4')
+    const seller = map.find((f) => f.label === 'Seller_5')
+    expect(buyer).toMatchObject({ type: 'signature', y: 0.309, w: 0.509 })
+    expect(seller).toMatchObject({ type: 'signature', y: 0.737, w: 0.509 })
+    expect(map.filter((f) => f.type === 'signature' && f.label === 'Buyer signature')).toHaveLength(0)
+  })
+
   it('appends last-page signatures when the AcroForm map is only text widgets', () => {
     const map = withFallbackSignatures(
       [
@@ -29,7 +66,7 @@ describe('withFallbackSignatures', () => {
           x: 0.1,
           y: 0.2,
           w: 0.4,
-          h: 0.02,
+          h: 0.016,
           dataRef: 'Buyer1Name',
           signerRole: 'buyer',
           optional: false,
@@ -41,6 +78,56 @@ describe('withFallbackSignatures', () => {
     expect(map.some((f) => f.type === 'text' && f.dataRef === 'Buyer1Name')).toBe(true)
     expect(map.some((f) => f.type === 'signature' && f.signerRole === 'buyer')).toBe(true)
     expect(map.some((f) => f.type === 'signature' && f.signerRole === 'seller')).toBe(true)
+  })
+
+  it('keeps 059 signatures on the printed Delivering/Receiving lines', () => {
+    const map = withFallbackSignatures(
+      [
+        {
+          type: 'text',
+          page: 1,
+          x: 0.184,
+          y: 0.537,
+          w: 0.451,
+          h: 0.022,
+          dataRef: 'Delivering Party',
+          signerRole: null,
+          optional: false,
+          label: 'Delivering Party',
+        },
+        {
+          type: 'text',
+          page: 1,
+          x: 0.183,
+          y: 0.708,
+          w: 0.451,
+          h: 0.022,
+          dataRef: 'Receiving Party',
+          signerRole: null,
+          optional: false,
+          label: 'Receiving Party',
+        },
+        {
+          type: 'signature',
+          page: 1,
+          x: 0.865,
+          y: 0.463,
+          w: 0.073,
+          h: 0.016,
+          dataRef:
+            'DELIVERY AND RECEIPT By signing below the delivering Party represents that the abovelisted items are being delivered',
+          signerRole: null,
+          optional: false,
+          label: 'DELIVERY AND RECEIPT By signing below the delivering Party represents that the abovelisted items are being delivered',
+        },
+      ],
+      { pageCount: 1, formNumber: '059', documentName: 'Delivery Addendum 1 - 059 OREF' },
+    )
+    const dumped = map.filter((f) => f.type === 'signature' && f.y >= 0.77)
+    expect(dumped).toHaveLength(0)
+    expect(map.find((f) => f.label === 'Delivering Party')).toMatchObject({ type: 'signature', y: 0.537 })
+    expect(map.find((f) => f.label === 'Receiving Party')).toMatchObject({ type: 'signature', y: 0.708 })
+    expect(map.find((f) => f.x === 0.865)?.type).toBe('text')
   })
 
   it('does not duplicate a role that already has a signature box', () => {

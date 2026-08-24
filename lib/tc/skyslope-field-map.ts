@@ -77,8 +77,12 @@ export function mappedFieldTypeFromName(
   current: MappedFieldType = 'text',
 ): MappedFieldType {
   if (current !== 'text') return current
-  const s = `${dataRef ?? ''} ${label ?? ''}`.toLowerCase()
-  if (!s.trim()) return current
+  const joined = `${dataRef ?? ''} ${label ?? ''}`.trim()
+  if (!joined) return current
+  // Legal paragraphs ("By signing below the delivering Party…") are not widgets.
+  if (joined.length > 60) return current
+  const s = joined.toLowerCase()
+  if (/\bsigning\b/.test(s) && !/\bsignature\b/.test(s)) return current
   if (/initial/.test(s)) return 'initials'
   if (/date\s*signed|datesigned|date_signed/.test(s)) return 'date_signed'
   if (/time\s*signed|timesigned|time_signed/.test(s)) return 'time_signed'
@@ -95,6 +99,8 @@ export function deriveSignerRole(dataRef?: string, group?: string): SignerRole {
   const s = `${dataRef ?? ''} ${group ?? ''}`.toLowerCase()
   if (/buyer'?s?[\s_-]*agent|buyersagent|selling[\s_-]*agent/.test(s)) return 'buyer_agent'
   if (/listing[\s_-]*agent|seller'?s?[\s_-]*agent|sellersagent/.test(s)) return 'listing_agent'
+  if (/receiv/.test(s)) return 'buyer'
+  if (/deliver/.test(s)) return 'seller'
   if (/buyer/.test(s)) return 'buyer'
   if (/seller/.test(s)) return 'seller'
   return null

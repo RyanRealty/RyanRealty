@@ -650,8 +650,8 @@ export async function createEnvelopeFromTemplate(
     const { filled } = mapDealFactsToFillValues(facts, map)
     const textByFact = new Map(filled.map((v) => [v.factKey, v.value]))
     for (const f of map) {
-      const raw = (f.type as string) === 'date' ? 'date_signed' : f.type
-      const type = mappedFieldTypeFromName(f.dataRef, f.label, raw as MappedFieldType)
+      const raw = ((f.type as string) === 'date' ? 'date_signed' : f.type) as MappedFieldType
+      const type = mappedFieldTypeFromName(f.dataRef, f.label, raw)
       const factKey = resolveFactKey(f.dataRef ?? '')
       const filledText = factKey ? textByFact.get(factKey) : undefined
       fieldRows.push({

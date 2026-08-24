@@ -125,7 +125,6 @@ export async function getSigningSession(token: string): Promise<SigningSessionSt
     .from('tc_envelope_fields')
     .select('*')
     .eq('envelope_id', env.id)
-    .eq('recipient_id', recip.id)
 
   return {
     status: 'ready',
@@ -146,7 +145,12 @@ export async function getSigningSession(token: string): Promise<SigningSessionSt
         }
       }),
       fields: ((fields ?? []) as DbRow[])
-        .filter((f) => signerOwnsMappedField(String(f.type ?? '')))
+        .filter((f) => {
+          const type = String(f.type ?? '')
+          if (f.recipient_id === recip.id && signerOwnsMappedField(type)) return true
+          const text = f.value && typeof f.value === 'object' && 'text' in f.value ? String((f.value as { text?: string }).text ?? '') : ''
+          return type === 'text' && !!text.trim()
+        })
         .map((f) => ({
         id: f.id,
         documentId: f.document_id,

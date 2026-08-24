@@ -18,6 +18,8 @@ Fixes from that walk (this commit): last-page signatures when the AcroForm has n
 
 Next on Apollo: 022A, 022B, 059, 060, Close file. Then file 2.
 
+2026-08-24 layout: 022A `b4281d7d` and 022B `b66124c5` completed. 059 Delivery Addendum `172429d1` completed 2/2. Signature overlays sit on the printed Delivering/Receiving lines; long document language wraps across stacked underlines 8–11. Last-page dump removed. Next: 060 then Close file.
+
 ---
 
 # End-to-end remaining Vault items — 2026-08-23 (pass 4)

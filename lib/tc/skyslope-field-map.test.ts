@@ -23,6 +23,10 @@ describe('deriveSignerRole', () => {
     expect(deriveSignerRole('Buyer1')).toBe('buyer')
     expect(deriveSignerRole('Seller2')).toBe('seller')
   })
+  it('reads delivering / receiving lines on OREF 059', () => {
+    expect(deriveSignerRole('Delivering Party')).toBe('seller')
+    expect(deriveSignerRole('Receiving Party_2')).toBe('buyer')
+  })
   it('reads dataRef AND group, and returns null for neither', () => {
     expect(deriveSignerRole(undefined, 'BuyerGroup')).toBe('buyer')
     expect(deriveSignerRole('', '')).toBeNull()
@@ -41,6 +45,15 @@ describe('mappedFieldTypeFromName', () => {
     expect(mappedFieldTypeFromName('ListingAgentInitials', null, 'text')).toBe('initials')
     expect(mappedFieldTypeFromName('Buyer1Name', null, 'text')).toBe('text')
     expect(mappedFieldTypeFromName('Assignment', null, 'text')).toBe('text')
+  })
+  it('does not turn “By signing below” legal language into a signature box', () => {
+    expect(
+      mappedFieldTypeFromName(
+        'DELIVERY AND RECEIPT By signing below the delivering Party represents that the abovelisted items are being delivered',
+        null,
+        'text',
+      ),
+    ).toBe('text')
   })
 })
 

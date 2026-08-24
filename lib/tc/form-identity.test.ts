@@ -48,6 +48,21 @@ describe('identifyFormFromName', () => {
   })
 })
 
+describe('licensed 059 / 060', () => {
+  it('treats Delivery Addendum 059 as buyer + seller, not buyer-only', () => {
+    const entry = formLibraryEntryByNumber('059')
+    expect(entry?.name).toBe('Delivery Addendum')
+    expect(entry?.signers).toEqual(['buyer', 'seller'])
+    expect(identifyFormFromName('Delivery Addendum 1 - 059 OREF')?.signers).toEqual(['buyer', 'seller'])
+  })
+  it('treats Contingency Removal Addendum 060 as buyer + seller', () => {
+    const entry = formLibraryEntryByNumber('060')
+    expect(entry?.name).toBe('Contingency Removal Addendum')
+    expect(entry?.signers).toEqual(['buyer', 'seller'])
+    expect(identifyFormFromName('Contingency Removal Addendum 1 - 060 OREF')?.signers).toEqual(['buyer', 'seller'])
+  })
+})
+
 describe('librarySignersToRoles', () => {
   it('maps 042 acknowledger from the file kind, not from who happened to sign', () => {
     expect(

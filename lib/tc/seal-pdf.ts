@@ -13,6 +13,7 @@
 import { createHash } from 'node:crypto'
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import type { EnvelopeField, SignFieldValue } from './signing'
+import { wrapTextToWidth } from './lined-signature-fields'
 
 export type SealRecipientSummary = {
   name: string
@@ -111,8 +112,20 @@ async function drawFieldValue(
   if (value.kind === 'date_signed' || value.kind === 'text') {
     const text = value.text ?? ''
     if (!text) return
-    const size = Math.max(7, Math.min(12, fh * 0.7))
-    page.drawText(text, { x: fx + 2, y: fy + (fh - size) / 2 + 1, size, font, color: INK })
+    const size = Math.max(7, Math.min(11, fh * 0.72))
+    const maxWidth = Math.max(8, fw - 4)
+    const lines = wrapTextToWidth(text, maxWidth, (s) => font.widthOfTextAtSize(s, size))
+    const lineH = size + 1.2
+    const maxLines = Math.max(1, Math.floor((fh - 1) / lineH))
+    const shown = lines.slice(0, maxLines)
+    // Top-align in the box so a wrapped paragraph sits on the printed lines.
+    let ty = fy + fh - size - 1
+    if (shown.length === 1) ty = fy + (fh - size) / 2 + 1
+    for (const line of shown) {
+      page.drawText(line, { x: fx + 2, y: ty, size, font, color: INK, maxWidth })
+      ty -= lineH
+      if (ty < fy - 1) break
+    }
     return
   }
 

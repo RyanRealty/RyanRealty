@@ -4,6 +4,7 @@
  * this is a measured overlay of every blank on the form.
  */
 import { deriveSignerRole, mappedFieldTypeFromName, type MappedField, type SignerRole } from './skyslope-field-map'
+import { demoteImplausibleSignatureFields, promoteLinedFormFields } from './lined-signature-fields'
 import { readRequiredSigners } from './required-signers'
 import type { RecipientRole } from './signing'
 
@@ -77,13 +78,16 @@ export function withFallbackSignatures(
     documentName?: string | null
   },
 ): MappedField[] {
-  const typed = map.map((f) => ({
-    ...f,
-    type: mappedFieldTypeFromName(f.dataRef, f.label, f.type),
-  }))
-  const have = new Set(typed.filter((f) => f.type === 'signature').map((f) => f.signerRole))
+  const typed = demoteImplausibleSignatureFields(
+    map.map((f) => ({
+      ...f,
+      type: mappedFieldTypeFromName(f.dataRef, f.label, f.type),
+    })),
+  )
+  const promoted = promoteLinedFormFields(typed)
+  const have = new Set(promoted.filter((f) => f.type === 'signature').map((f) => f.signerRole))
   const extra = fallbackSigningStack(input).filter((f) => !have.has(f.signerRole))
-  return extra.length ? [...typed, ...extra] : typed
+  return extra.length ? [...promoted, ...extra] : promoted
 }
 
 export { deriveSignerRole }

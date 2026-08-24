@@ -559,12 +559,24 @@ function FieldChip({
     borderColor: color,
     color,
     pointerEvents: clickThrough ? 'none' : undefined,
+    overflow: 'hidden',
+    boxSizing: 'border-box',
   }
+  const shownText =
+    field.value && 'text' in field.value && field.value.text ? field.value.text : ''
+  const emptyText = field.type === 'text' && !shownText
+  const tall = field.h > 0.03
   return (
     <div
       data-field-chip
       style={style}
-      className="group flex items-center justify-center rounded-sm border-2 bg-white/70 text-[10px] font-semibold"
+      className={`group flex rounded-sm border-2 text-[10px] font-semibold ${
+        emptyText
+          ? 'items-center border-dashed bg-white/15'
+          : tall
+            ? 'items-start bg-white/70'
+            : 'items-center justify-center bg-white/70'
+      }`}
       onPointerDown={(e) => {
         if (readonly) return
         e.stopPropagation()
@@ -590,10 +602,10 @@ function FieldChip({
         window.addEventListener('pointerup', onUp)
       }}
     >
-      <span className="pointer-events-none truncate px-0.5">
-        {field.value && 'text' in field.value && field.value.text
-          ? field.value.text
-          : SIGN_FIELD_LABEL[field.type]}
+      <span
+        className={`pointer-events-none px-0.5 ${tall ? 'whitespace-pre-wrap break-words' : 'truncate whitespace-nowrap'}`}
+      >
+        {emptyText ? '' : shownText || SIGN_FIELD_LABEL[field.type]}
       </span>
       {!readonly ? (
         <button

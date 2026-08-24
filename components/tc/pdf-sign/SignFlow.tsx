@@ -207,7 +207,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
                       key={f.id}
                       field={f}
                       size={size}
-                      value={values.get(f.id) ?? null}
+                      value={values.get(f.id) ?? f.value ?? null}
                       onSignature={() => applyMark(f)}
                       onText={(text) => setValue(f.id, { kind: f.type === 'date_signed' ? 'date_signed' : 'text', text })}
                       onDate={() =>
@@ -380,12 +380,42 @@ function FieldBox({
     )
   }
 
-  // text
+  const typed = value?.kind === 'text' ? value.text : ''
+  const tall = field.h > 0.03
+  const boxStyle: React.CSSProperties = {
+    ...style,
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+    fontSize: Math.max(9, Math.min(12, field.h * size.h * 0.7)),
+    lineHeight: 1.2,
+    resize: 'none',
+  }
+  if (!field.recipientId) {
+    return (
+      <div
+        style={boxStyle}
+        className={`pointer-events-none px-1 text-foreground ${tall ? 'whitespace-pre-wrap break-words' : 'truncate whitespace-nowrap'}`}
+      >
+        {typed}
+      </div>
+    )
+  }
+  if (tall) {
+    return (
+      <textarea
+        style={boxStyle}
+        className="rounded-sm bg-primary/10 px-1 text-foreground ring-1 ring-primary/70 outline-none focus:bg-white"
+        defaultValue={typed}
+        placeholder={FIELD_PROMPT.text}
+        onChange={(e) => onText(e.target.value)}
+      />
+    )
+  }
   return (
     <input
-      style={style}
-      className="rounded-sm bg-primary/10 px-1 text-[12px] text-foreground ring-1 ring-primary/70 outline-none focus:bg-white"
-      defaultValue={value?.kind === 'text' ? value.text : ''}
+      style={boxStyle}
+      className="rounded-sm bg-primary/10 px-1 text-foreground ring-1 ring-primary/70 outline-none focus:bg-white"
+      defaultValue={typed}
       placeholder={FIELD_PROMPT.text}
       onChange={(e) => onText(e.target.value)}
     />
