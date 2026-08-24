@@ -35,10 +35,11 @@ import {
 import { getMetric } from '@/lib/data/market-truth/getMetric'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { formatDate } from '@/lib/format/date'
+import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { homesForSalePath } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishPlaceHeroCta } from '@/lib/search/publish-place-browse-href'
@@ -190,6 +191,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     )
 
   // Surface-tagged hero photo seeded by ZIP for per-page variety. (§D86)
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [
     zipHeroRaw,
     tilesRead,
@@ -200,6 +202,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     mtVerdictCell,
     publicSegments,
     publicPace,
+    leftoverMonthly,
   ] = await Promise.all([
     withTimeoutFallback(
       getSurfaceImage('hero', {
@@ -232,7 +235,17 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     zipMt('market_verdict'),
     withTimeoutFallback(getPublicPlaceSegments({ geoType: 'zip', geoSlug: zip }), [], 3000, 'zip:publicSegments'),
     withTimeoutFallback(getPublicDetachedPace({ geoType: 'zip', geoSlug: zip }), EMPTY_PUBLIC_PACE, 3000, 'zip:publicPace'),
+    withTimeoutFallback(
+      getPublicDetachedMonthly({ geoType: 'city', geoSlug: citySlug, currentMonthKey }),
+      [],
+      4500,
+      'zip:leftoverMonthly',
+    ),
   ])
+  const chartMonths = leftoverOrCacheMonthly(
+    leftoverMonthly,
+    dropCurrentMonth(cityPriceHist, currentMonthKey),
+  )
 
   // ── LIVE STATS — tiles for map/featured; HUD overlays Market Truth on HIT ─
   // §0 UNKNOWN IS NOT ZERO: the tile `[]` fallback is indistinguishable from a
@@ -342,13 +355,14 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     daysToPending: null,
     medianDomActive: medianDom,
     monthsSupply: publishedMos,
-    trend: cityPriceHist
+    trend: chartMonths.months
       .slice(-13)
       .filter((p) => p.medianSalePrice != null)
       .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
     byTown: [],
     countyMedian: null,
-    yearSeries: buildYearSeries(cityPriceHist, 5),
+    yearSeries: buildYearSeries(chartMonths.months, 5),
+    chartLeftover: chartMonths.leftoverUsed,
   }
 
   // ── SUBDIVISION EXPLORER ─────────────────────────────────────────────────

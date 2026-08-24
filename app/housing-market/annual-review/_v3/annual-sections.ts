@@ -468,14 +468,17 @@ export function buildYearLedger(
 export function buildAnnualCharts(
   monthly: readonly MedianMonth[],
   currentMonthKey: string,
+  leftoverUsed = false,
 ): { region: V3ChartProps | undefined; trailing: V3ChartProps | undefined } {
   const complete = dropInProgressMonth(monthly, currentMonthKey)
   return {
-    region: withChartId(buildRegionMedianChart(complete), 'region-median'),
+    region: withChartId(buildRegionMedianChart(complete, leftoverUsed), 'region-median'),
     trailing: withChartId(
       buildMonthlyMedianChart(
         lastCompleteMonths(complete, 12),
-        'Median sale price, last 12 completed months',
+        leftoverUsed
+          ? 'Median close, Market Truth leftover, last 12 completed months'
+          : 'Median sale price, last 12 completed months',
       ),
       'trailing-median',
     ),

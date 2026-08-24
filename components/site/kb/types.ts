@@ -130,6 +130,8 @@ export interface KbMarketData {
   /** Up to 5 calendar years of monthly medians for the year-over-year overlay
    *  chart (each year a colored line on a shared Jan-Dec axis). Oldest first. */
   yearSeries?: { year: number; points: { m: number; value: number }[] }[]
+  /** True when yearSeries/trend are leftover monthly median_close (window=1). */
+  chartLeftover?: boolean
 }
 
 /**

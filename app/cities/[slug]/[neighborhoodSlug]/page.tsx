@@ -31,6 +31,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getNeighborhoodBySlug, getCommunitiesInNeighborhood } from '@/app/actions/cities'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
+import { zonedDateKey } from '@/lib/format/date'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { resolveNeighborhoodMetricSlug } from '@/lib/data/market-truth/neighborhood-metric-slug'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
@@ -183,13 +185,14 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     neighborhoodSlug,
   })
 
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [
     pulse, stats, regionPulse, priceHist,
     boundaryRead, allCitySnapshots, blogPosts, openHouses, activity,
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
     peerNeighborhoods,
     inventoryRead,
-    publicPace, publicSegments,
+    publicPace, publicSegments, leftoverMonthly,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     // Hot-path core figures (HUD, about facts, FAQ): a build timeout would
@@ -237,6 +240,16 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       [],
       3000,
       'nbh:publicSegments',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedMonthly({
+        geoType: 'city',
+        geoSlug: citySlug,
+        currentMonthKey,
+      }),
+      [],
+      4500,
+      'nbh:leftoverMonthly',
     ),
   ])
 
@@ -397,7 +410,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   // City-fallback for a too-sparse neighborhood series — see the header block.
   // chartScopeLabel keeps the city figure from reading as this one's (§0).
   const chartIsCityLevel = isTrendSeriesTooSparse(priceHist)
-  const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
+  const cacheForChart = chartIsCityLevel ? cityPriceHist : priceHist
+  const chartMonths = leftoverOrCacheMonthly(
+    chartIsCityLevel ? leftoverMonthly : [],
+    dropCurrentMonth(cacheForChart, currentMonthKey),
+  )
+  const chartPriceHist = chartMonths.months
 
   const hudActive = pulse?.activeCount ?? activeCount ?? null
   const monthsOfSupply = publishMonthsOfSupply({
@@ -419,6 +437,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     byTown: [],
     countyMedian: regionPulse?.medianListPrice ?? null,
     yearSeries: buildYearSeries(chartPriceHist, 5),
+    chartLeftover: chartMonths.leftoverUsed,
   }
 
   // ── PAGE CONTRACT: AI-citable verified Q&A + structured data ───────────────

@@ -68,6 +68,15 @@ export function leftoverMonthlyToCacheShape(rows: readonly PublicMonthlyPoint[])
     }))
 }
 
+/** Drop the Pacific in-progress month so a partial month cannot draw as a dip. */
+export function dropCurrentMonth<T extends { periodStart: string }>(
+  rows: readonly T[],
+  currentMonthKey: string,
+): T[] {
+  if (!currentMonthKey) return [...rows]
+  return rows.filter((row) => row.periodStart.slice(0, 7) !== currentMonthKey)
+}
+
 export function leftoverOrCacheMonthly<T extends { periodStart: string; medianSalePrice: number | null }>(
   leftover: readonly PublicMonthlyPoint[],
   cache: readonly T[],

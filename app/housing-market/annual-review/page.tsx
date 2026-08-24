@@ -135,6 +135,7 @@ import {
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { REPORT_CITIES, NON_MLS_CITY_EXEMPTIONS } from '@/lib/data/geo/report-cities'
 import { buildMarketFaq } from '@/lib/site/market-faq'
@@ -202,7 +203,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AnnualReviewPage() {
-  const [regionPulse, regionDetail, citySnapshots, cityDetailRows, priceHistory, publicSegments, publicPace, cityPaces] =
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
+  const [regionPulse, regionDetail, citySnapshots, cityDetailRows, priceHistory, publicSegments, publicPace, cityPaces, leftoverMonthly] =
     await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
     getCityMarketDetail({ geoType: 'region', geoSlug: REGION_GEO_SLUG, periodType: PERIOD_TYPE }),
@@ -216,7 +218,16 @@ export default async function AnnualReviewPage() {
     getPublicPlaceSegments({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
     getPublicDetachedPace({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
     Promise.all(GRID_CITIES.map((c) => getPublicDetachedPace({ geoType: 'city', geoSlug: c.slug }))),
+    getPublicDetachedMonthly({
+      geoType: 'region',
+      geoSlug: REGION_GEO_SLUG,
+      currentMonthKey,
+    }),
   ])
+  const chartMonths = leftoverOrCacheMonthly(
+    leftoverMonthly,
+    dropCurrentMonth(priceHistory, currentMonthKey),
+  )
   const cityDetails = cityDetailRows.map((detail, i) =>
     overlayYearDetailWithLeftover(detail, cityPaces[i], GRID_CITIES[i]),
   )
@@ -323,7 +334,7 @@ export default async function AnnualReviewPage() {
   const [firstClosedFigure, ...restClosedFigures] = closed.figures
   const year = buildYearLedger(GRID_CITIES, cityDetails)
   const [firstYearRow, ...restYearRows] = year.rows
-  const annualCharts = buildAnnualCharts(priceHistory, zonedDateKey(new Date()).slice(0, 7))
+  const annualCharts = buildAnnualCharts(chartMonths.months, currentMonthKey, chartMonths.leftoverUsed)
 
   // Dataset variableMeasured — region core stats (from buildMarketFaq, so the FAQ
   // and the Dataset never disagree) plus one YoY price-change variable per report

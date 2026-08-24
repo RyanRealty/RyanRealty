@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { MarketDetail } from '@/lib/data'
 import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
-import { buildYearLedger, overlayYearDetailWithLeftover } from './annual-sections'
+import { buildAnnualCharts, buildYearLedger, overlayYearDetailWithLeftover } from './annual-sections'
 
 const BEND = { slug: 'bend', label: 'Bend' } as const
 
@@ -44,6 +44,29 @@ function leftover(overrides: Partial<PublicPaceRow> = {}): PublicPaceRow {
     ...overrides,
   }
 }
+
+describe('buildAnnualCharts leftover overlay', () => {
+  const months = [
+    { periodStart: '2024-01-01', medianSalePrice: 450000, soldCount: 20 },
+    { periodStart: '2024-06-01', medianSalePrice: 460000, soldCount: 22 },
+    { periodStart: '2025-01-01', medianSalePrice: 500000, soldCount: 18 },
+    { periodStart: '2025-06-01', medianSalePrice: 510000, soldCount: 19 },
+    { periodStart: '2026-01-01', medianSalePrice: 520000, soldCount: 17 },
+    { periodStart: '2026-06-01', medianSalePrice: 530000, soldCount: 16 },
+  ]
+
+  it('names leftover membership when leftover plots', () => {
+    const charts = buildAnnualCharts(months, '2026-08', true)
+    expect(charts.region?.caption).toBe('Median close by month, Market Truth leftover, recent years')
+    expect(charts.trailing?.caption).toBe('Median close, Market Truth leftover, last 12 completed months')
+  })
+
+  it('keeps the cache caption when leftover cannot plot', () => {
+    const charts = buildAnnualCharts(months, '2026-08', false)
+    expect(charts.region?.caption).toBe('Median sale price by month, recent years')
+    expect(charts.trailing?.caption).toBe('Median sale price, last 12 completed months')
+  })
+})
 
 describe('overlayYearDetailWithLeftover', () => {
   it('replaces cache median, sold count, and YoY with leftover close figures', () => {

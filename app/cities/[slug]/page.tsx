@@ -39,6 +39,8 @@ import {
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
+import { zonedDateKey } from '@/lib/format/date'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
@@ -152,12 +154,13 @@ export default async function CityDetailPage({ params }: Props) {
   // ("la pine", "powell butte") — normalize for those reads, or multi-word cities
   // come back stat-dead. Keep the hyphenated `slug` for URLs / cityHero / config.
   const geoSlug = canonicalCityCacheSlug(slug)
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
 
   const [
     pulseRead, detached, regionPulse, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
-    publicSegments, publicPace,
+    publicSegments, publicPace, leftoverMonthly,
   ] = await Promise.all([
     withTimeoutFallbackResult(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
@@ -198,7 +201,14 @@ export default async function CityDetailPage({ params }: Props) {
     withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
     withTimeoutFallback(getPublicPlaceSegments({ geoType: 'city', geoSlug: slug }), [], 3000, 'city:publicSegments'),
     withTimeoutFallback(getPublicDetachedPace({ geoType: 'city', geoSlug: slug }), EMPTY_PUBLIC_PACE, 3000, 'city:publicPace'),
+    withTimeoutFallback(
+      getPublicDetachedMonthly({ geoType: 'city', geoSlug: slug, currentMonthKey }),
+      [],
+      4500,
+      'city:leftoverMonthly',
+    ),
   ])
+  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
 
   // Hero — Bend reuses the homepage video; otherwise the VERIFIED cityHero photo
   // (a city without one renders the LABELED regional fallback, never a wrong-city
@@ -426,10 +436,11 @@ export default async function CityDetailPage({ params }: Props) {
     saleToList: leftoverSaleToList,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
-    trend: buildMonthlyTrend(priceHist),
+    trend: buildMonthlyTrend(chartMonths.months),
     byTown: bendNeighborhoodItems.filter((n) => n.medianPrice != null).map((n) => ({ name: n.name, median: n.medianPrice as number })),
     countyMedian: regionPulse?.medianListPrice ?? null,
-    yearSeries: buildYearSeries(priceHist, 5),
+    yearSeries: buildYearSeries(chartMonths.months, 5),
+    chartLeftover: chartMonths.leftoverUsed,
   }
 
   // AI-citability: verified market Q&A + structured data. The PAGE CONTRACT

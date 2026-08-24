@@ -5,6 +5,7 @@ import type { GetMetricInput, MetricResult } from '@/lib/data/market-truth/getMe
 import {
   completeMonthKeys,
   leftoverOrCacheMonthly,
+  dropCurrentMonth,
   getPublicDetachedMonthly,
 } from '@/lib/data/market-truth/public-monthly'
 
@@ -52,9 +53,24 @@ describe('leftover monthly chart overlay', () => {
     const city = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
     const hub = readFileSync(resolve('app/housing-market/page.tsx'), 'utf8')
     const region = readFileSync(resolve('app/housing-market/central-oregon/page.tsx'), 'utf8')
+    const home = readFileSync(resolve('app/page.tsx'), 'utf8')
+    const cities = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+    const zip = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
+    const annual = readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8')
+    const comm = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
+    const nbh = readFileSync(resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'), 'utf8')
     expect(city).toMatch(/getPublicDetachedMonthly/)
     expect(hub).toMatch(/getPublicDetachedMonthly/)
     expect(region).toMatch(/getPublicDetachedMonthly/)
+    expect(home).toMatch(/getPublicDetachedMonthly/)
+    expect(cities).toMatch(/getPublicDetachedMonthly/)
+    expect(zip).toMatch(/getPublicDetachedMonthly/)
+    expect(annual).toMatch(/getPublicDetachedMonthly/)
+    expect(comm).toMatch(/getPublicDetachedMonthly/)
+    expect(nbh).toMatch(/getPublicDetachedMonthly/)
+    expect(comm).toMatch(/chartIsCityLevel \? leftoverMonthly : \[\]/)
+    expect(nbh).toMatch(/chartIsCityLevel \? leftoverMonthly : \[\]/)
+    expect(zip).toMatch(/getPublicDetachedMonthly\(\{\s*geoType: 'city'/)
     const sql = readFileSync(
       resolve('scripts/sql/compute_market_metrics_monthly_shadow.sql'),
       'utf8',
@@ -67,6 +83,15 @@ describe('leftover monthly chart overlay', () => {
 
   it('drops the in-progress month and lists complete months oldest first', () => {
     expect(completeMonthKeys('2026-08', 3)).toEqual(['2026-05', '2026-06', '2026-07'])
+    expect(
+      dropCurrentMonth(
+        [
+          { periodStart: '2026-07-01', medianSalePrice: 1 },
+          { periodStart: '2026-08-01', medianSalePrice: 2 },
+        ],
+        '2026-08',
+      ).map((row) => row.periodStart),
+    ).toEqual(['2026-07-01'])
   })
 
   it('does not fill a leftover monthly miss from cache', () => {

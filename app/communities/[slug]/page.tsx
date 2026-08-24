@@ -35,6 +35,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
+import { zonedDateKey } from '@/lib/format/date'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
@@ -268,12 +270,13 @@ export default async function CommunityDetailPage({ params }: Props) {
   // bare community slug.
   const neighborhoodSlug = slug
 
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [
     snapshot, pulse, stats, regionPulse, priceHist,
     boundaryRead, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
-    publicPace, publicSegments,
+    publicPace, publicSegments, leftoverMonthly,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -338,6 +341,16 @@ export default async function CommunityDetailPage({ params }: Props) {
       [],
       3000,
       'comm:publicSegments',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedMonthly({
+        geoType: 'city',
+        geoSlug: citySlug,
+        currentMonthKey,
+      }),
+      [],
+      4500,
+      'comm:leftoverMonthly',
     ),
   ])
 
@@ -601,7 +614,12 @@ export default async function CommunityDetailPage({ params }: Props) {
   // years), fall back to the parent CITY's trend — relabeled as city-level so no city
   // figure is ever passed off as the community's. (§0)
   const chartIsCityLevel = isTrendSeriesTooSparse(priceHist)
-  const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
+  const cacheForChart = chartIsCityLevel ? cityPriceHist : priceHist
+  const chartMonths = leftoverOrCacheMonthly(
+    chartIsCityLevel ? leftoverMonthly : [],
+    dropCurrentMonth(cacheForChart, currentMonthKey),
+  )
+  const chartPriceHist = chartMonths.months
 
   // Core-chart module scope mirrors the SAME sparse-community decision: the
   // community's own series when dense enough, else the parent city's — always
@@ -646,6 +664,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     byTown: [],
     countyMedian: regionPulse?.medianListPrice ?? null,
     yearSeries: buildYearSeries(chartPriceHist, 5),
+    chartLeftover: chartMonths.leftoverUsed,
   }
 
   // ── PAGE CONTRACT: AI-citable verified Q&A + structured data ───────────────

@@ -569,6 +569,20 @@ Bend detached still 774. County unpublished. Pulse DTP / 30-day stay.
 
 2026-08-23ao landed: city/region year-overlay charts prefer leftover monthly `median_close` (window_months = 1, min_n 10) when at least six months publish. A leftover miss does not fill that month from cache. Cache series remains until `compute_market_metrics_monthly_shadow` is applied on hosted Supabase (`scripts/sql/compute_market_metrics_monthly_shadow.sql`; cron already calls it). Caption names leftover when leftover plots. Unadjusted MoM stays off public. Pulse DTP / 30-day stay. Origin `tc_tasks` is not in the prod schema snapshot, so this function is not a supabase/migrations CREATE TABLE until that drift is cleared.
 
+### Grind 2026-08-23ap — leftover monthly HUD + annual-review charts
+
+**Locks still hold:** county unpublished; pulse 30-day sold and DTP stay; unadjusted MoM stays off public; extra MOS at neighborhood omitted; subdivision never a price; `commercial_lease` out; `all_residential` off public. Neighborhood leftover monthly cells are not invented — community/neighborhood HUDs overlay leftover only when they already fall back to the parent city series. The in-progress month stays dropped. Workers do not tick this file.
+
+**Done when a real user can:**
+1. Open `/` and `/cities/bend` year-overlay HUD and see leftover monthly **median close** (`window_months = 1`) when at least six months publish. A leftover miss does not fill that month from cache. Cache series remains (labeled as cache) until leftover can plot.
+2. Open `/housing-market/annual-review` region overlay + trailing-12 chart and see the same leftover overlay, leftover caption when leftover plots.
+3. Open `/zip/97701` and a sparse community/neighborhood HUD (city-fallback chart) and see leftover **city** monthly, still labeled as the parent city — never as a ZIP/neighborhood leftover monthly series.
+4. Apply `compute_market_metrics_monthly_shadow` on hosted Supabase so leftover months exist; charts stay on cache caption until those cells publish.
+
+Bend detached still 774. County unpublished. Pulse DTP / 30-day stay.
+
+2026-08-23ap landed (live webpack 3010): hosted `compute_market_metrics_monthly_shadow(36)` upserted **910** window=1 leftover cells. Bend July 2026 leftover median close **$795,000** (n=219, publishable); region **$696,700** (n=403). Homepage and `/cities/bend` HUD caption **Median close · leftover**; pulse Closed · 30 days / Median to pending stay. `/housing-market/bend` and `/housing-market` leftover year-overlay caption. `/housing-market/annual-review` leftover overlay + leftover trailing-12 caption. `/zip/97701` leftover **city** monthly (labeled city). `/communities/sunriver` and `/cities/bend/larkspur` leftover city monthly only on the city-fallback chart, labeled Bend (city). Unadjusted MoM off. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

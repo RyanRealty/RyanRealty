@@ -35,9 +35,10 @@ import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
-import { formatDate } from '@/lib/format/date'
+import { formatDate, zonedDateKey } from '@/lib/format/date'
 import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { TESTIMONIALS } from '@/lib/testimonials'
@@ -111,7 +112,8 @@ const monthLabel = (iso?: string) =>
   iso ? formatDate(iso, { month: 'short', day: undefined, year: undefined, timeZone: 'UTC' }) : ''
 
 export default async function Home() {
-  const [pulse, cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments] = await Promise.all([
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
+  const [pulse, cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments, leftoverMonthly] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
@@ -120,7 +122,13 @@ export default async function Home() {
     getMarketPulseAllCitySnapshots().catch(() => []),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_PACE),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
+    getPublicDetachedMonthly({
+      geoType: 'region',
+      geoSlug: 'central-oregon',
+      currentMonthKey,
+    }).catch(() => []),
   ])
+  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
 
   const sellMedian = publishSellMedian({
     placeMedian: pulse?.medianListPrice ?? null,
@@ -218,7 +226,7 @@ export default async function Home() {
       pulseActiveCount: pulse?.activeCount,
       displayedActiveCount: pulse?.activeCount,
     }),
-    trend: priceHist
+    trend: chartMonths.months
       .slice(-13)
       .filter((p) => p.medianSalePrice != null)
       .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
@@ -226,7 +234,8 @@ export default async function Home() {
       .filter((t) => t.medianPrice != null)
       .map((t) => ({ name: t.name, median: t.medianPrice as number })),
     countyMedian: pulse?.medianListPrice ?? null,
-    yearSeries: buildYearSeries(priceHist, 5),
+    yearSeries: buildYearSeries(chartMonths.months, 5),
+    chartLeftover: chartMonths.leftoverUsed,
   }
 
   return (

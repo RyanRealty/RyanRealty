@@ -233,7 +233,7 @@ export function KbMarketHud({
                   (years = the chart's yearSeries, the % = a separate ~12-month
                   trend series). Spelled out in plain terms + what it's versus. */}
               <span className="mono-lab">
-                ▸ Median sale · single-family{chartScopeLabel ? ` · ${chartScopeLabel}` : ''} ·{' '}
+                ▸ {data.chartLeftover ? 'Median close · leftover' : 'Median sale'} · single-family{chartScopeLabel ? ` · ${chartScopeLabel}` : ''} ·{' '}
                 {years.length >= 2 ? `${years.length} years shown` : 'monthly'}
                 {yoy
                   ? `  ${yoy.pct >= 0 ? '↑' : '↓'} ${Math.abs(yoy.pct).toFixed(1)}% vs. ${
@@ -256,7 +256,7 @@ export function KbMarketHud({
             ) : null}
             <KbMarketChart
               years={years}
-              ariaLabel={`Median sale price by year${chartScopeLabel ? `, ${chartScopeLabel}` : data.byTown.length ? ', this area' : ', Central Oregon'}`}
+              ariaLabel={`${data.chartLeftover ? 'Median close by year, Market Truth leftover' : 'Median sale price by year'}${chartScopeLabel ? `, ${chartScopeLabel}` : data.byTown.length ? ', this area' : ', Central Oregon'}`}
               height={320}
             />
           </div>
