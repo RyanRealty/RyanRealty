@@ -526,14 +526,11 @@ export async function createDealWithPeople(
   let listingPrice: number | null = null
   if (mlsNumber) {
     const { data: listing } = await sb
-      .from('listings')
-      .select('ListPrice, list_price')
-      .eq('ListNumber', mlsNumber)
+      .from('listing_tile_mv')
+      .select('list_price')
+      .eq('list_number', mlsNumber)
       .maybeSingle()
-    const n = Number(
-      (listing as { ListPrice?: number | null; list_price?: number | null } | null)?.ListPrice ??
-        (listing as { list_price?: number | null } | null)?.list_price,
-    )
+    const n = Number((listing as { list_price?: number | null } | null)?.list_price)
     if (Number.isFinite(n) && n > 0) listingPrice = n
   }
 
