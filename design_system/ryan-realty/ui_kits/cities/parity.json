@@ -1,8 +1,8 @@
 {
   "route": "app/cities/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
-  "competitiveTarget": "Beat portal city-directory pages with a live regional pulse and a ledger of Central Oregon cities, not a link farm.",
-  "note": "PUBLIC_UI.md §3 city grain (2026-08-14). First screen is doors to cities: name, median, months of supply, count. Not a city essay, not a number hero, not a house-stamp dump. Section order: Breadcrumb, Ledger (cities), Instrument (region pulse below the fold), Sheet (SFR alerts), Quiet (edges), Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company).",
+  "competitiveTarget": "Beat portal city-directory pages with leftover regional inventory and a ledger of Central Oregon cities, not a link farm.",
+  "note": "PUBLIC_UI.md §3 city grain (2026-08-14). First screen is doors to cities: name, median, months of supply, count. Not a city essay, not a number hero, not a house-stamp dump. Section order: Breadcrumb, Ledger (cities), Instrument (leftover region figures below the fold), Sheet (SFR alerts), Quiet (edges), Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company).",
   "requiredComponents": [
     {
       "name": "KbSectionTracker",
@@ -30,13 +30,13 @@
       "blocking": true
     },
     {
-      "name": "getRegionPulse",
-      "section": "Instrument \u2014 live region stats (active count, median list, months of supply).",
+      "name": "leftoverHudKpis",
+      "section": "Instrument \u2014 leftover region stats (active count, median list, months of supply). Miss omits.",
       "blocking": true
     },
     {
-      "name": "getMarketPulseCitySnapshots",
-      "section": "Ledger \u2014 live per-city active count and median.",
+      "name": "getDetachedOverlays",
+      "section": "Ledger \u2014 leftover per-city active count and median. Miss omits.",
       "blocking": true
     },
     {
