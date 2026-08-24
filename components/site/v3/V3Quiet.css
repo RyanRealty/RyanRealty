@@ -54,6 +54,11 @@
   border-top: 1px solid var(--v3-edge);
 }
 
+/* Hash landings from a `?` on another page. Sticky chrome sits above the row. */
+.v3.v3-quiet .v3-quiet__item[id] {
+  scroll-margin-top: calc(var(--v3-space-3xl) + var(--v3-tap));
+}
+
 .v3-quiet__item:last-child {
   border-bottom: 1px solid var(--v3-edge);
 }

@@ -4,6 +4,8 @@ import {
   publicSegmentNoun,
   type PublicSegmentRow,
 } from '@/lib/data/market-truth/public-segments'
+import { MetricHowLink } from '@/components/site/kb/MetricHowLink.client'
+import { PANEL_HOW } from '@/lib/market/how-we-get-our-numbers'
 
 export function PublicProductTypes({
   cityName,
@@ -20,7 +22,10 @@ export function PublicProductTypes({
   return (
     <div className="mkt-panel" aria-label={`${cityName} other product types`}>
       <div className="mkt-phead">
-        <span className="mono-lab">▸ Other product types · Market Truth</span>
+        <span className="mono-lab">
+          ▸ Other product types · Market Truth
+          <MetricHowLink anchor={PANEL_HOW.products} label="Other product types" />
+        </span>
       </div>
       <ul className="mkt-bars" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {rows.map((row) => {

@@ -213,3 +213,14 @@ Neighborhood extra MOS omitted while 0 publishable. Subdivision never a price.
 Program §5 "getMetric is the only way any surface obtains a market figure" is **not** a grind
 target for those remaining tiles. Dual-run on the leftover-miss fill and the locked cache/pulse
 windows is the product.
+
+## D18 — How we get our numbers · **DECIDED** (Matt, 2026-08-24)
+
+Leftover detached membership is the documented public definition of the pile. A dedicated
+**How we get our numbers** page (`/how-we-get-our-numbers`) spells out each public label, the
+houses counted, the window on the label, and when a live MLS snapshot fills a miss. A `?` next
+to a public figure jumps to that term. The dictionary is not duplicated on every market page.
+
+Do not expand leftover onto D17-locked tiles. Do not invent live figures on the dictionary page.
+MOS formula and thresholds stay imported from `lib/market/classify.ts`. Visitor copy names no
+table or SQL.

@@ -69,6 +69,8 @@ export type V3QuietLink = {
   label: string
   /** Where the edge goes. Internal path or absolute URL. */
   href: string
+  /** Optional hash target when a door itself is a landing. */
+  id?: string
 }
 
 /**
@@ -86,6 +88,11 @@ export type V3QuietProse = {
   term?: string
   /** The answer, definition, or passage. One string is one paragraph. */
   body: string | readonly string[]
+  /**
+   * Hash target for in-page jumps (a dictionary term a `?` on another page
+   * lands on). Optional. The id is on the row, not derived from `term`.
+   */
+  id?: string
 }
 
 export type V3QuietItem = V3QuietLink | V3QuietProse
@@ -151,8 +158,8 @@ function paragraphs(body: V3QuietProse['body']): string[] {
 }
 
 type RenderableItem =
-  | { kind: 'link'; label: string; href: string }
-  | { kind: 'prose'; term: string | undefined; body: string[] }
+  | { kind: 'link'; label: string; href: string; id?: string }
+  | { kind: 'prose'; term: string | undefined; body: string[]; id?: string }
 
 /**
  * Drops what cannot be rendered honestly: a link with no label would ship an
@@ -173,14 +180,14 @@ function toRenderable(items: readonly V3QuietItem[]): RenderableItem[] {
     if (item.kind === 'prose') {
       const body = paragraphs(item.body)
       if (body.length === 0) continue
-      out.push({ kind: 'prose', term: text(item.term), body })
+      out.push({ kind: 'prose', term: text(item.term), body, id: text(item.id) })
       continue
     }
 
     const label = text(item.label)
     const href = text(item.href)
     if (!label || !href) continue
-    out.push({ kind: 'link', label, href })
+    out.push({ kind: 'link', label, href, id: text(item.id) })
   }
 
   return out
@@ -264,7 +271,8 @@ export function V3Quiet({
           {rendered.map((item, index) =>
             item.kind === 'link' ? (
               <li
-                key={`link-${index}`}
+                key={item.id ?? `link-${index}`}
+                id={item.id}
                 className="v3-quiet__item v3-quiet__item--link"
               >
                 <Link href={item.href} className="v3-quiet__link">
@@ -276,7 +284,8 @@ export function V3Quiet({
               </li>
             ) : (
               <li
-                key={`prose-${index}`}
+                key={item.id ?? `prose-${index}`}
+                id={item.id}
                 className="v3-quiet__item v3-quiet__item--prose"
               >
                 {item.term ? (

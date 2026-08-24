@@ -7,15 +7,26 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbMarketData } from './types'
 import { KbMarketChart } from './KbMarketChart.client'
+import { MetricHowLink } from './MetricHowLink.client'
 import { valuationPath } from '@/lib/slug'
 import { monthsOfSupplyVerdict as verdictOf, formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
+import {
+  HOW_WE_GET_OUR_NUMBERS_PATH,
+  HUD_KPI_HOW,
+  PANEL_HOW,
+  type HudKpiLabel,
+} from '@/lib/market/how-we-get-our-numbers'
 
 function Kpi({ val, lbl }: { val: string | null; lbl: string }) {
+  const anchor = HUD_KPI_HOW[lbl as HudKpiLabel]
   return (
     <div className="mkt-kpi">
       <span className="mkt-kpi-val">{val ?? '—'}</span>
-      <span className="mkt-kpi-lbl">{lbl}</span>
+      <span className="mkt-kpi-lbl">
+        <span>{lbl}</span>
+        {anchor ? <MetricHowLink anchor={anchor} label={lbl} /> : null}
+      </span>
     </div>
   )
 }
@@ -208,7 +219,10 @@ export function KbMarketHud({
             <div className="mkt-headline">
               <span className="mkt-headline-val">{kbMoneyFull(data.medianList)}</span>
               <span className="mkt-headline-meta">
-                <span className="mkt-headline-lbl">Median list price</span>
+                <span className="mkt-headline-lbl">
+                Median list price
+                <MetricHowLink anchor={PANEL_HOW.medianList} label="Median list price" />
+              </span>
                 {/* The list-price headline carries NO delta: the only trend we hold
                     is median-CLOSE, shown (with its change) on the chart below, so a
                     sale-derived % must not sit on a list-price number. (§0) */}
@@ -240,6 +254,7 @@ export function KbMarketHud({
                       yoy.months >= 11 ? '1 year ago' : `${yoy.months} month${yoy.months === 1 ? '' : 's'} ago`
                     }`
                   : ''}
+                <MetricHowLink anchor={PANEL_HOW.chart} label="Median close chart" />
               </span>
               {kbMoneyFull(lastMedian) ? <span className="mkt-phead-now mono-num">{kbMoneyFull(lastMedian)}</span> : null}
             </div>
@@ -314,12 +329,8 @@ export function KbMarketHud({
           says nothing when there is no number.
         */}
         <p className="mkt-fine">
-          Live single-family figures from the regional MLS.
-          {data.monthsSupply != null
-            ? ' Months of supply is active inventory divided by the homes closed in the last 6 months, then divided by 6. Four months or less is a seller’s market, four to six is balanced, six or more is a buyer’s market.'
-            : ''}
-          {data.saleToList != null ? ' Sale to list compares the final sale price to the asking price.' : ''}
-          {publishDaysLabel(data.daysToPending) ? ' Median to pending is days from listing to an accepted offer.' : ''}
+          Live single-family figures from the regional MLS.{' '}
+          <Link href={HOW_WE_GET_OUR_NUMBERS_PATH}>How we get our numbers</Link>
         </p>
         {children}
       </div>

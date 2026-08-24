@@ -92,6 +92,7 @@ export const MOS_RELATED_LINKS: ReadonlyArray<{ label: string; href: string }> =
   { label: 'Central Oregon market report', href: MOS_REGION_REPORT },
   { label: 'Bend market report', href: MOS_CITY_REPORT.Bend },
   { label: 'All cities and towns', href: '/housing-market' },
+  { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
 ]
 
 export const MOS_METADATA_DESCRIPTION =

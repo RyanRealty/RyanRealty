@@ -661,6 +661,23 @@ Bend detached still 774. County unpublished.
 
 **Matt 2026-08-24 (D17):** keep leftover 203 with pulse fill on miss; stop leftover expansion (YTD / this-month / New · 30 days / core-chart inventory-DOM-MOS stay pulse or cache). Do not grind remaining tiles onto leftover unless Matt lifts D17.
 
+### How we get our numbers (Matt 2026-08-24, D18)
+
+Dedicated public dictionary. Metrics keep their current labels. A `?` next to a figure jumps to
+`/how-we-get-our-numbers#…`. Not duplicated on every market page.
+
+**Done when a real user can:**
+1. Open `/how-we-get-our-numbers` and read what each public HUD label, leftover strip, mix,
+   extra product type, leftover chart, and still-snapshot tile actually counts.
+2. Tap `?` next to a HUD figure (and leftover / mix / extra-type headers) and land on that term.
+3. The page names leftover detached membership without leaking table or SQL names. MOS formula
+   and thresholds are imported, never retyped. No live figures are invented on this page.
+
+2026-08-24 landed (live webpack 3010): `/how-we-get-our-numbers` is the public dictionary.
+HUD KPI `?` (Active homes, Closed · 30 days, Median to pending, Months of supply, Sale to list,
+median list, leftover chart) and leftover / mix / extra-type headers jump to the matching term.
+Bend Closed · 30 days still leftover **203**. Hash landings scroll to the term. D17 tiles unchanged.
+
 ---
 
 ## 5. Definition of done for the whole program

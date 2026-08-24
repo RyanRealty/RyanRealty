@@ -57,6 +57,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     expect(hrefs).toContain('/tools/mortgage-calculator')
     expect(hrefs).toContain('/tools/rental-property-calculator')
     expect(hrefs).toContain('/months-of-supply')
+    expect(hrefs).toContain('/how-we-get-our-numbers')
   })
 
   it('Menu+ mirrors intent groups; About includes Join', () => {

@@ -12,6 +12,8 @@ describe('pageTypeFromPath', () => {
     expect(pageTypeFromPath('/search/bend')).toBe('search')
     expect(pageTypeFromPath('/lp/seller-home-value')).toBe('sell')
     expect(pageTypeFromPath('/housing-market/bend')).toBe('market')
+    expect(pageTypeFromPath('/how-we-get-our-numbers')).toBe('market')
+    expect(pageTypeFromPath('/months-of-supply')).toBe('market')
     expect(pageTypeFromPath('/contact')).toBe('contact')
     expect(pageTypeFromPath('/central-oregon/trails')).toBe('guides')
     expect(pageTypeFromPath('/luxury-homes-bend')).toBe('search')

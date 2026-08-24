@@ -712,7 +712,11 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-kpis{display:flex;flex-wrap:wrap;gap:1px;border:1px solid rgba(250,248,244,.22);margin:30px 0 26px;}
 .kb-root .mkt-kpi{background:var(--navy);padding:20px 18px;display:flex;flex-direction:column;gap:7px;flex:1 1 150px;}
 .kb-root .mkt-kpi-val{font-family:var(--font-amboqia-safe),serif;font-weight:400;font-size:clamp(1.7rem,4.4vw,2.3rem);line-height:.92;color:var(--cream);font-variant-numeric:tabular-nums;}
-.kb-root .mkt-kpi-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-70);}
+.kb-root .mkt-kpi-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-70);display:flex;align-items:center;gap:2px;}
+.kb-root .mkt-how{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;margin:-12px -10px -12px -6px;color:inherit;text-decoration:none;}
+.kb-root .mkt-how-mark{display:inline-flex;align-items:center;justify-content:center;width:1.15em;height:1.15em;border:1px solid currentColor;border-radius:50%;font-size:.85em;font-weight:700;letter-spacing:0;text-transform:none;line-height:1;}
+.kb-root .mkt-how:focus-visible{outline:2px solid var(--cream);outline-offset:2px;}
+.kb-root .mkt-fine a{color:var(--cream);text-underline-offset:3px;}
 
 /* Verdict stamp + median headline — flex-wrap, same reasoning as .mkt-kpis
    above: either card can be conditionally absent (no median list price, no
@@ -727,7 +731,7 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-headline{background:var(--navy);padding:24px 24px;display:flex;flex-direction:column;gap:10px;justify-content:center;flex:1 1 300px;}
 .kb-root .mkt-headline-val{font-family:var(--font-amboqia-safe),serif;font-weight:400;font-size:clamp(2.4rem,8vw,3.8rem);line-height:.86;color:var(--cream);font-variant-numeric:tabular-nums;}
 .kb-root .mkt-headline-meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-.kb-root .mkt-headline-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-70);}
+.kb-root .mkt-headline-lbl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-70);display:inline-flex;align-items:center;}
 .kb-root .mkt-headline-delta{font-size:.72rem;font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums;padding:4px 10px;border:1px solid var(--cream-12);border-radius:3px;}
 .kb-root .mkt-headline-delta.up{color:#7fe3b0;border-color:rgba(127,227,176,.35);}
 .kb-root .mkt-headline-delta.down{color:#f0a6a0;border-color:rgba(240,166,160,.35);}

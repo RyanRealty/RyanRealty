@@ -68,6 +68,7 @@ export const PUBLIC_PAGE_SEGMENTS = [
   'feed',
   'forgot-password',
   'homes-for-sale',
+  'how-we-get-our-numbers',
   'housing-market',
   'join',
   'listing',
@@ -192,7 +193,12 @@ export function pageTypeFromPath(pathname: string): PageType {
   if (p.startsWith('/communities') || p.startsWith('/builders')) return 'community'
   if (p.startsWith('/subdivisions')) return 'subdivision'
   if (p.startsWith('/zip/')) return 'zip'
-  if (p.startsWith('/housing-market') || p.startsWith('/reports') || p.startsWith('/months-of-supply')) {
+  if (
+    p.startsWith('/housing-market') ||
+    p.startsWith('/reports') ||
+    p.startsWith('/months-of-supply') ||
+    p.startsWith('/how-we-get-our-numbers')
+  ) {
     return 'market'
   }
   if (

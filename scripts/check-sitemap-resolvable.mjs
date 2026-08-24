@@ -92,7 +92,7 @@ const FAMILIES = [
   { id: 'tools', roots: ['tools'], resolvers: ['app/tools/mortgage-calculator/page.tsx', 'app/tools/rental-property-calculator/page.tsx', 'app/tools/appreciation/page.tsx'] },
   // Static single-page families (each is a bare /segment -> app/segment/page.tsx).
   // /feed 301s to /videos?view=feed and is noindex — do not emit it.
-  { id: 'static-singles', roots: ['about', 'contact', 'our-homes', 'videos', 'faq', 'reviews', 'join', 'refer-a-client', 'privacy', 'terms', 'accessibility', 'fair-housing', 'dmca', 'activity', 'newsletter'], resolvers: ['app/about/page.tsx', 'app/contact/page.tsx', 'app/our-homes/page.tsx', 'app/videos/page.tsx', 'app/faq/page.tsx', 'app/reviews/page.tsx', 'app/join/page.tsx', 'app/refer-a-client/page.tsx', 'app/privacy/page.tsx', 'app/terms/page.tsx', 'app/accessibility/page.tsx', 'app/fair-housing/page.tsx', 'app/dmca/page.tsx', 'app/activity/page.tsx', 'app/newsletter/page.tsx'] },
+  { id: 'static-singles', roots: ['about', 'contact', 'our-homes', 'videos', 'faq', 'reviews', 'join', 'refer-a-client', 'privacy', 'terms', 'accessibility', 'fair-housing', 'dmca', 'activity', 'newsletter', 'months-of-supply', 'how-we-get-our-numbers'], resolvers: ['app/about/page.tsx', 'app/contact/page.tsx', 'app/our-homes/page.tsx', 'app/videos/page.tsx', 'app/faq/page.tsx', 'app/reviews/page.tsx', 'app/join/page.tsx', 'app/refer-a-client/page.tsx', 'app/privacy/page.tsx', 'app/terms/page.tsx', 'app/accessibility/page.tsx', 'app/fair-housing/page.tsx', 'app/dmca/page.tsx', 'app/activity/page.tsx', 'app/newsletter/page.tsx', 'app/months-of-supply/page.tsx', 'app/how-we-get-our-numbers/page.tsx'] },
 ]
 
 const problems = []
