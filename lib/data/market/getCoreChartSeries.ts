@@ -224,9 +224,11 @@ const CORE_METRIC_ORDER: CoreChartMetric[] = [
 ]
 
 /**
- * Overlay leftover monthly median_close / closed_count onto those two tabs.
- * Inventory, DOM, MOS, and weekly price-cuts stay on cache/weekly. A leftover
- * miss does not fill those two tabs from cache mixed into leftover points.
+ * HUD chart series from leftover membership only (D20). Median close and
+ * closed count when leftover can plot. Inventory, DOM, MOS, and weekly
+ * price-cuts are omitted: leftover has no honest monthly series for those
+ * labels, and cache tabs next to leftover HUD KPIs mix piles.
+ * A leftover miss omits the module rather than filling from cache.
  */
 export function overlayLeftoverCoreCloseSeries(
   assembled: CoreChartSeries,
@@ -234,7 +236,9 @@ export function overlayLeftoverCoreCloseSeries(
   minMonths = 6,
 ): CoreChartSeries {
   const leftoverMonths = leftoverMonthlyToCacheShape(leftover)
-  if (leftoverMonths.length < minMonths) return assembled
+  if (leftoverMonths.length < minMonths) {
+    return { ...assembled, series: [] }
+  }
 
   const medianPts: CoreChartPoint[] = leftoverMonths
     .slice(-WINDOW_MONTHS)
@@ -245,9 +249,9 @@ export function overlayLeftoverCoreCloseSeries(
     .map((row) => ({ periodStart: row.periodStart, value: row.closedCount as number }))
 
   const leftoverTrace = `Market Truth leftover mt-v1 window_months=1 · geo_type='${assembled.geoType}' geo_slug='${assembled.geoSlug}'`
-  const byMetric = new Map(assembled.series.map((s) => [s.metric, s]))
+  const series: CoreChartSeriesEntry[] = []
   if (medianPts.length >= 2) {
-    byMetric.set('medianClosePrice', {
+    series.push({
       metric: 'medianClosePrice',
       granularity: 'monthly',
       points: medianPts,
@@ -257,7 +261,7 @@ export function overlayLeftoverCoreCloseSeries(
     })
   }
   if (closedPts.length >= 2) {
-    byMetric.set('closedVolume', {
+    series.push({
       metric: 'closedVolume',
       granularity: 'monthly',
       points: closedPts,
@@ -266,12 +270,7 @@ export function overlayLeftoverCoreCloseSeries(
       leftover: true,
     })
   }
-  return {
-    ...assembled,
-    series: CORE_METRIC_ORDER.map((metric) => byMetric.get(metric)).filter(
-      (s): s is CoreChartSeriesEntry => s != null,
-    ),
-  }
+  return { ...assembled, series }
 }
 
 // ---------------------------------------------------------------------------

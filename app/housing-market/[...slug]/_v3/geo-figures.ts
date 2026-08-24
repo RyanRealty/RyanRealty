@@ -386,8 +386,8 @@ function priceFigure(
 }
 
 /**
- * YTD / this month or last complete month from market_stats_cache, plus leftover
- * 12-month close / count / YoY. Miss omits the 12-month cache rolling row.
+ * Leftover 12-month close / count / YoY only (D20). Cache YTD and this-month
+ * sit on a different pile from leftover HUD membership, so they are omitted.
  * Do not print unadjusted MoM. Do not print marketHealthLabel.
  */
 export function buildCityPeriodFigures(args: {
@@ -399,24 +399,6 @@ export function buildCityPeriodFigures(args: {
   currentMonthKey: string
 }): { figures: V3InstrumentFigure[]; trace: string | null } {
   const figures: V3InstrumentFigure[] = []
-  const ytdPrice = priceFigure(args.ytd?.medianSalePrice, 'YTD median sale', HISTORY_PATH)
-  if (ytdPrice) figures.push(ytdPrice)
-  if (args.ytd?.soldCount != null && args.ytd.soldCount > 0) {
-    figures.push({
-      value: v3Text(args.ytd.soldCount.toLocaleString('en-US')),
-      label: v3Text('YTD homes sold'),
-      href: HISTORY_PATH,
-    })
-  }
-  const publishedMonth = publishCompleteMonthMedian({
-    monthly: args.monthly,
-    lastComplete: args.lastComplete,
-    currentMonthKey: args.currentMonthKey,
-  })
-  const monthPrice = publishedMonth
-    ? priceFigure(publishedMonth.value, publishedMonth.label)
-    : null
-  if (monthPrice) figures.push(monthPrice)
   const leftoverPeriod = leftoverPeriodItems(args.leftover)
   for (const item of leftoverPeriod) {
     figures.push({
@@ -425,24 +407,10 @@ export function buildCityPeriodFigures(args: {
     })
   }
   if (figures.length === 0) return { figures, trace: null }
-  const monthClause =
-    publishedMonth?.grain === 'complete'
-      ? publishedMonth.label.replace(/ median sale$/, '')
-      : publishedMonth
-        ? 'the current month'
-        : null
-  const cacheBits = ['year-to-date', monthClause].filter(Boolean)
-  const parts: string[] = []
-  if (cacheBits.length > 0) {
-    parts.push(`Closed-sale figures are ${cacheBits.join(', ')} from market_stats_cache`)
+  return {
+    figures,
+    trace: '12-month leftover figures are Market Truth, labeled by window',
   }
-  if (leftoverPeriod.length > 0) {
-    parts.push(
-      '12-month leftover figures are Market Truth mt-v1, labeled by window, not the cache rolling row',
-    )
-  }
-  parts.push('They are a different population from the live list-price figures')
-  return { figures, trace: parts.join('. ') }
 }
 
 /**

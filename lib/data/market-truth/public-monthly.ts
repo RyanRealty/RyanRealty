@@ -86,14 +86,7 @@ export function leftoverOrCacheMonthly<T extends { periodStart: string; medianSa
   if (leftoverMonths.length >= minMonths) {
     return { months: leftoverMonths, leftoverUsed: true }
   }
-  return {
-    months: cache.map((row) => ({
-      periodStart: row.periodStart,
-      medianSalePrice: row.medianSalePrice,
-      soldCount: 'soldCount' in row ? (row as { soldCount?: number | null }).soldCount ?? null : null,
-    })),
-    leftoverUsed: false,
-  }
+  return { months: [], leftoverUsed: false }
 }
 
 /**
@@ -126,15 +119,15 @@ export function leftoverNeighborhoodOrCityMonthly<
   if (place.leftoverUsed) {
     return { ...place, cityFallback: false }
   }
-  if (!opts.neighborhoodCacheSparse) {
-    return { ...place, cityFallback: false }
-  }
   const city = leftoverOrCacheMonthly(
     opts.leftoverCity,
     dropCurrentMonth(opts.cityCache, opts.currentMonthKey),
     minMonths,
   )
-  return { ...city, cityFallback: true }
+  if (city.leftoverUsed) {
+    return { ...city, cityFallback: true }
+  }
+  return { months: [], leftoverUsed: false, cityFallback: false }
 }
 
 export async function getPublicDetachedMonthly(opts: {

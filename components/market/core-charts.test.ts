@@ -157,28 +157,23 @@ describe('overlayLeftoverCoreCloseSeries', () => {
     closedCount: 10 + month,
   }))
 
-  it('overlays leftover median and closed count and leaves DOM/MOS on cache', () => {
+  it('keeps only leftover median and closed count, and omits cache DOM/MOS/inventory/cuts', () => {
     const assembled = assembleCoreChartSeries('city', 'bend', months(30), [])
     const out = overlayLeftoverCoreCloseSeries(assembled, leftover)
+    const metrics = out.series.map((s) => s.metric).sort()
+    expect(metrics).toEqual(['closedVolume', 'medianClosePrice'])
     const median = out.series.find((s) => s.metric === 'medianClosePrice')
     const closed = out.series.find((s) => s.metric === 'closedVolume')
-    const dom = out.series.find((s) => s.metric === 'medianDom')
-    const mos = out.series.find((s) => s.metric === 'monthsOfSupply')
     expect(median?.leftover).toBe(true)
     expect(median?.points[0]?.value).toBe(700001)
     expect(closed?.leftover).toBe(true)
     expect(closed?.points[0]?.value).toBe(11)
-    expect(dom?.leftover).toBeUndefined()
-    expect(mos?.leftover).toBeUndefined()
-    expect(mos?.source).toContain('end_of_period_inventory / (trailing 6-month sold_count / 6)')
   })
 
-  it('does not mix leftover into cache when leftover cannot plot', () => {
+  it('omits the module when leftover cannot plot, rather than mixing cache tabs', () => {
     const assembled = assembleCoreChartSeries('city', 'bend', months(30), [])
-    const cacheMedian = assembled.series.find((s) => s.metric === 'medianClosePrice')?.points[0]?.value
     const out = overlayLeftoverCoreCloseSeries(assembled, leftover.slice(0, 2))
-    expect(out.series.find((s) => s.metric === 'medianClosePrice')?.leftover).toBeUndefined()
-    expect(out.series.find((s) => s.metric === 'medianClosePrice')?.points[0]?.value).toBe(cacheMedian)
+    expect(out.series).toEqual([])
   })
 })
 

@@ -106,7 +106,8 @@ describe('buildCityPeriodFigures — leftover 12-month overlay', () => {
     expect(values).not.toContain('$719,000')
     expect(values).not.toContain('1,640')
     expect(values).not.toContain('-2.1%')
-    expect(trace).toMatch(/Market Truth mt-v1/)
+    expect(trace).toMatch(/Market Truth/)
+    expect(trace).not.toMatch(/mt-v1/)
     expect(trace).not.toMatch(/the last 12 months from market_stats_cache/)
   })
 
@@ -127,10 +128,10 @@ describe('buildCityPeriodFigures — leftover 12-month overlay', () => {
     expect(values).not.toContain('$719,000')
     expect(values).not.toContain('1,640')
     expect(values).not.toContain('0')
-    expect(trace).not.toMatch(/the last 12 months/)
+    expect(trace).toBeNull()
   })
 
-  it('keeps YTD and this-month cache figures, and does not print unadjusted MoM', () => {
+  it('omits YTD and this-month cache figures, and does not print unadjusted MoM', () => {
     const { figures } = buildCityPeriodFigures({
       ytd,
       monthly,
@@ -138,10 +139,10 @@ describe('buildCityPeriodFigures — leftover 12-month overlay', () => {
       leftover: leftover(),
       currentMonthKey: CURRENT_MONTH_KEY,
     })
-    const byLabel = Object.fromEntries(figures.map((f) => [String(f.label), String(f.value)]))
-    expect(byLabel['YTD median sale']).toBe('$725,000')
-    expect(byLabel['YTD homes sold']).toBe('1,007')
-    expect(byLabel['this month median sale']).toBe('$725,000')
+    const labels = figures.map((f) => String(f.label))
+    expect(labels).not.toContain('YTD median sale')
+    expect(labels).not.toContain('YTD homes sold')
+    expect(labels).not.toContain('this month median sale')
     expect(figures.some((f) => /MoM|month over month/i.test(String(f.label)))).toBe(false)
     expect(figures.some((f) => String(f.label) === 'median sale price')).toBe(false)
   })

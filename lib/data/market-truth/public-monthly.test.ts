@@ -160,14 +160,14 @@ describe('leftover monthly chart overlay', () => {
     expect(leftover.find((row) => row.periodStart.startsWith('2026-06'))?.medianClose).toBeNull()
   })
 
-  it('falls back to cache when leftover cannot plot', () => {
+  it('omits the series when leftover cannot plot, rather than mixing cache', () => {
     const picked = leftoverOrCacheMonthly(
       [{ periodStart: '2026-07-01', periodEnd: '2026-07-31', medianClose: 750000, closedCount: 80 }],
       [{ periodStart: '2026-07-01', medianSalePrice: 740000, soldCount: 70 }],
       6,
     )
     expect(picked.leftoverUsed).toBe(false)
-    expect(picked.months[0]?.medianSalePrice).toBe(740000)
+    expect(picked.months).toEqual([])
   })
 
   it('prefers leftover neighborhood monthly over leftover city', () => {
@@ -191,7 +191,7 @@ describe('leftover monthly chart overlay', () => {
     expect(picked.months[0]?.medianSalePrice).toBe(880000)
   })
 
-  it('does not fill a neighborhood leftover miss from leftover city when local cache is dense', () => {
+  it('uses leftover city when neighborhood leftover cannot plot, rather than dense cache', () => {
     const picked = leftoverNeighborhoodOrCityMonthly({
       leftoverNeighborhood: [],
       leftoverCity: [1, 2, 3, 4, 5, 6].map((month) => ({
@@ -208,9 +208,9 @@ describe('leftover monthly chart overlay', () => {
       currentMonthKey: '2026-08',
       neighborhoodCacheSparse: false,
     })
-    expect(picked.leftoverUsed).toBe(false)
-    expect(picked.cityFallback).toBe(false)
-    expect(picked.months[0]?.medianSalePrice).toBe(500001)
+    expect(picked.leftoverUsed).toBe(true)
+    expect(picked.cityFallback).toBe(true)
+    expect(picked.months[0]?.medianSalePrice).toBe(759450)
   })
 
   it('uses leftover city monthly only when neighborhood leftover cannot plot and cache is sparse', () => {

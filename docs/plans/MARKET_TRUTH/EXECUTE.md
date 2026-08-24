@@ -693,6 +693,10 @@ D17 remainder (YTD / this-month / core-chart inventory-DOM-MOS / weekly price-cu
 
 2026-08-24 landed (live webpack 3010): homepage HUD leftover **1,820** / Closed · 30 days **354** / **25 days** / **5.7 mo**. `/cities/bend` leftover **771** / **203** / **19 days** / **4.5 mo**. New · 30 days omitted. Dictionary updated. Pulse no longer fills the HUD KPI row.
 
+### D20 leftover HUD charts + housing-market instrument
+
+Core-chart tabs inside leftover HUD: leftover monthly median and closed count only. Cache inventory / DOM / MOS / weekly cuts omitted. Cache YTD / this-month omitted from housing-market instrument. Housing-market live inventory / MOS / median list leftover.
+
 ---
 
 ## 5. Definition of done for the whole program

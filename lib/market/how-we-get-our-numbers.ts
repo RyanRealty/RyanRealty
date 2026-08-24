@@ -130,7 +130,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
       'Months of supply is how many months it would take to sell every house currently for sale at the pace houses have actually been closing.',
       MOS_METHODOLOGY_CLAUSE,
       MOS_THRESHOLD_CLAUSE,
-      'On the HUD this uses leftover membership, and only when the inventory count next to it is the same leftover population. If leftover months of supply cannot publish, the tile is omitted. We do not fill it from the live MLS snapshot. Neighborhood months of supply is withheld when leftover cannot publish it. Core-chart months of supply still uses the older monthly figures. The dedicated definition lives on the Months of supply page.',
+      'On the HUD this uses leftover membership, and only when the inventory count next to it is the same leftover population. If leftover months of supply cannot publish, the tile is omitted. We do not fill it from the live MLS snapshot. Neighborhood months of supply is withheld when leftover cannot publish it. Core-chart months of supply tabs are omitted so they cannot mix older monthly figures into the leftover HUD. The dedicated definition lives on the Months of supply page.',
     ],
   },
   {
@@ -174,35 +174,35 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'ytd',
     term: 'YTD',
     body: [
-      'Year-to-date median sale and homes sold from the older monthly figures, not leftover membership.',
+      'YTD is not on the leftover HUD or the leftover housing-market instrument. Those surfaces use leftover membership only. Older year-to-date cache figures are omitted there so they cannot be read as the same pile.',
     ],
   },
   {
     id: 'this-month',
     term: 'This month',
     body: [
-      'The current calendar month, or the last complete month, from the older monthly figures.',
+      'This-month cache figures are not on the leftover HUD or housing-market instrument. Calendar-month leftover median close, when we plot it, is leftover membership, labeled as a completed month.',
     ],
   },
   {
     id: 'weekly-price-cuts',
     term: 'Weekly price cuts',
     body: [
-      'Share of actives with a price cut in the recent weekly window, from the older weekly figures. Not leftover membership.',
+      'Weekly price-cut charts are omitted from the leftover HUD. Leftover has a 12-month closed-with-a-price-cut share in the leftover strip, not a weekly active share.',
     ],
   },
   {
     id: 'days-on-market',
     term: 'Days on market',
     body: [
-      'Core-chart days on market still uses the older monthly figures. Do not read it as leftover days to contract.',
+      'Days-on-market core-chart tabs are omitted from the leftover HUD. Median to pending on that HUD is leftover 90-day list-to-pending. Do not read a cache days-on-market series as leftover days to contract.',
     ],
   },
   {
     id: 'fill-on-miss',
     term: 'When a number is missing',
     body: [
-      'On the HUD KPI row, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures.',
+      'On the HUD KPI row and leftover HUD charts, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures.',
       'We do not invent a zero, and we do not put a longer window under a shorter label.',
     ],
   },
@@ -227,7 +227,7 @@ export const HOW_NUMBER_FAQS: readonly HowNumberFaq[] = [
   {
     question: 'When do you print a live MLS snapshot instead?',
     answer:
-      'The HUD KPI row does not. A missing leftover cell is omitted. YTD, this month, core-chart days on market, months of supply charts, and weekly price cuts still use the older monthly figures or the live snapshot, on those labeled surfaces.',
+      'The leftover HUD does not. A missing leftover cell is omitted. We do not print older YTD, this-month, inventory, days-on-market, months-of-supply, or weekly price-cut series on that leftover HUD.',
   },
 ]
 

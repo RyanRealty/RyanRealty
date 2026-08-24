@@ -20,7 +20,8 @@ describe('listing and overlay MOS cannot print pulse 48', () => {
   })
 
   it('housing-market neighborhood MOS is source market-truth after overlay', () => {
-    expect(HOUSING).toMatch(/source: geoType === 'neighborhood' \? 'market-truth'/)
+    expect(HOUSING).toMatch(/leftoverHudKpis/)
+    expect(HOUSING).toMatch(/source: 'market-truth'/)
   })
 
   it('agent MOS is gated and subdivision/zip cannot print pulse MOS', () => {

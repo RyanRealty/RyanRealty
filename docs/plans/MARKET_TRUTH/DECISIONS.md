@@ -235,5 +235,13 @@ Miss omits. Pulse and cache do not fill those tiles.
 **New · 30 days** is omitted until leftover has a true 30-day new-listings cell. Do not print
 12-month leftover `new_listings` under that label.
 
-D17 still holds for YTD, this-month, core-chart inventory / days on market / months of supply
-/ weekly price-cuts. County unpublished. Subdivision never a price. Unadjusted MoM off public.
+## D20 — leftover HUD charts and housing-market instrument · **DECIDED** (Matt, 2026-08-24)
+
+Same one-pile rule as D19, applied to the rest of the leftover HUD story. Core-chart tabs
+inside the HUD are leftover monthly median close and leftover closed count only. Cache
+inventory / DOM / MOS / weekly price-cut tabs are omitted. Cache YTD and this-month figures
+are omitted from the housing-market instrument. Housing-market live inventory / MOS / median
+list are leftover membership.
+
+County unpublished. Subdivision never a price. Unadjusted MoM off public. New · 30 days still
+omitted until leftover has a 30-day new-listings cell.

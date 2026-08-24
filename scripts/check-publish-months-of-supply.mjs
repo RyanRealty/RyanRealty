@@ -55,13 +55,13 @@ const leftoverHudSurfaces = [
     path: 'app/page.tsx',
     label: 'homepage HUD gates MOS through leftoverHudKpis',
   },
+  {
+    path: 'app/housing-market/[...slug]/page.tsx',
+    label: 'housing-market geo gates MOS through leftoverHudKpis',
+  },
 ]
 
 const surfaces = [
-  {
-    path: 'app/housing-market/[...slug]/page.tsx',
-    label: 'housing-market geo gates MOS through publishMonthsOfSupply',
-  },
   {
     path: 'lib/site/market-faq.ts',
     label: 'buildMarketFaq refuses an impossible MOS + sold year',
