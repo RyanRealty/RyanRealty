@@ -75,6 +75,7 @@ const KIND_LABELS: Array<{ kind: CalEventKind; label: string }> = [
   { kind: 'appointment', label: 'Appointments' },
   { kind: 'task', label: 'Tasks' },
   { kind: 'closing', label: 'Deal closings' },
+  { kind: 'file', label: 'File deadlines' },
 ]
 
 const HAIRLINE = '1px solid var(--a-border)'
@@ -192,6 +193,8 @@ export default function CalendarView({
       router.push(e.personId ? `/admin/people/${e.personId}` : '/admin/crm/tasks?view=overdue')
     } else if (e.kind === 'closing') {
       router.push(`/admin/crm/deals?deal=${e.id.replace('deal:', '')}`)
+    } else if (e.kind === 'file' && e.propertyKey) {
+      router.push(`/admin/deals/${encodeURIComponent(e.propertyKey)}`)
     }
   }
 

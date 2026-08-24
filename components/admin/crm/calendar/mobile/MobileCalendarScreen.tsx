@@ -282,7 +282,9 @@ export default function MobileCalendarScreen({
                           ? () => openEditAppt(e.apptId as number)
                           : e.kind === 'closing'
                             ? () => router.push('/admin/crm/deals')
-                            : undefined
+                            : e.kind === 'file' && e.propertyKey
+                              ? () => router.push(`/admin/deals/${encodeURIComponent(e.propertyKey as string)}`)
+                              : undefined
                       }
                     />
                   ),

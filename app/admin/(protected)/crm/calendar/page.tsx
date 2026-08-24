@@ -75,6 +75,7 @@ import {
   getPersonNamesByIds,
   type AppointmentRow,
 } from '@/lib/data/crm/getAppointments'
+import { listFileDeadlineTasks } from '@/lib/data/tc/task-reads'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import {
   isDateKey,
@@ -144,9 +145,10 @@ async function loadEvents(brokerScope: string | null, from: string, to: string):
   events: CalEvent[]
   appointments: AppointmentRow[]
 }> {
-  const [appointments, extras] = await Promise.all([
+  const [appointments, extras, fileDeadlines] = await Promise.all([
     getAppointments({ brokerScope, from, to }),
     getCalendarExtras({ brokerScope, from, to }),
+    listFileDeadlineTasks({ from, to, brokerScope }),
   ])
 
   const events: CalEvent[] = appointments.flatMap(apptEvents)
@@ -171,6 +173,24 @@ async function loadEvents(brokerScope: string | null, from: string, to: string):
       broker: t.assignedBroker,
       apptId: null,
       taskType: t.type,
+    })
+  }
+
+  for (const f of fileDeadlines) {
+    events.push({
+      id: `file:${f.id}`,
+      kind: 'file',
+      title: f.title,
+      dateKey: f.dueDate,
+      startMin: -1,
+      endMin: -1,
+      allDay: true,
+      timeLabel: '',
+      personId: null,
+      personName: null,
+      broker: f.brokerSlug,
+      apptId: null,
+      propertyKey: f.propertyKey,
     })
   }
 

@@ -257,6 +257,7 @@ function CycleSection({
   propertyKey,
   address,
   dealId,
+  dealBrokerName,
 }: {
   cycle: TcCycle
   showArchived: boolean
@@ -266,6 +267,7 @@ function CycleSection({
   propertyKey: string
   address: string
   dealId: string
+  dealBrokerName?: string | null
 }) {
   const docs = cycle.documents.filter((doc) => (showArchived ? true : !doc.archived))
   const archivedCount = cycle.documents.filter((doc) => doc.archived).length
@@ -389,7 +391,11 @@ function CycleSection({
       {anticipated?.role === 'buyer' ||
       anticipated?.role === 'dual' ||
       cycle.checklist.some((it) => /buyer representation/i.test(it.name)) ? (
-        <BuyerAgreementWizard cycleId={cycle.id} propertyKey={propertyKey} />
+        <BuyerAgreementWizard
+          cycleId={cycle.id}
+          propertyKey={propertyKey}
+          brokerName={cycle.broker_name ?? dealBrokerName}
+        />
       ) : null}
 
       <section aria-label="Documents">
@@ -647,6 +653,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
               propertyKey={deal.property_key}
               address={deal.address}
               dealId={deal.id}
+              dealBrokerName={deal.broker_name}
             />
           </div>
         </details>

@@ -7,10 +7,20 @@ import { saveBuyerAgreementDraft } from '@/app/actions/tc-buyer-agreement'
 import { BROKERS } from '@/lib/brand/contact'
 
 /** OAR 863-015-0133 eight required contents. */
-export function BuyerAgreementWizard({ cycleId, propertyKey }: { cycleId: string; propertyKey: string }) {
+export function BuyerAgreementWizard({
+  cycleId,
+  propertyKey,
+  brokerName,
+}: {
+  cycleId: string
+  propertyKey: string
+  brokerName?: string | null
+}) {
   const [open, setOpen] = useState(false)
   const [pending, start] = useTransition()
-  const [license, setLicense] = useState(BROKERS.matt.license)
+  const broker =
+    /paul/i.test(brokerName ?? '') ? BROKERS.paul : /rebecca/i.test(brokerName ?? '') ? BROKERS.rebecca : BROKERS.matt
+  const [license, setLicense] = useState(broker.license)
   const [pb, setPb] = useState(
     `${BROKERS.matt.name} · ${BROKERS.matt.phone} · ${BROKERS.matt.email} · license ${BROKERS.matt.license}`,
   )

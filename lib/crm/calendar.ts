@@ -132,7 +132,7 @@ export function wallMinutes(iso: string): number {
 
 // ── The unified calendar event ────────────────────────────────────────────────
 
-export type CalEventKind = 'appointment' | 'task' | 'closing'
+export type CalEventKind = 'appointment' | 'task' | 'closing' | 'file'
 
 export type CalEvent = {
   /** 'appt:12' | 'task:437' | 'deal:5' */
@@ -153,6 +153,8 @@ export type CalEvent = {
   apptId: number | null
   /** crm_tasks.type when kind === 'task' (the §29 A.6 mobile icon map). */
   taskType?: string | null
+  /** Vault deal key when kind === 'file'. */
+  propertyKey?: string | null
 }
 
 /** Group events by dateKey, all-day first, then by start time. */

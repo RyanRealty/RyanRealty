@@ -1,6 +1,8 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { fileDeadlineMatchesScope } from '@/lib/tc/deal-scope'
+import { slugFromBrokerName } from '@/lib/tc/deal-calendar'
 
 export type TcTaskRow = {
   id: string
@@ -42,4 +44,60 @@ export async function listDealTasks(dealId: string): Promise<TcTaskRow[]> {
     source: r.source === 'auto_deadline' ? 'auto_deadline' : 'manual',
     completed_at: r.completed_at == null ? null : String(r.completed_at),
   }))
+}
+
+export type FileDeadlineRow = {
+  id: string
+  title: string
+  dueDate: string
+  brokerSlug: string | null
+  propertyKey: string | null
+}
+
+/** Open Vault file clocks in a date window, scoped like Closings. */
+export async function listFileDeadlineTasks(input: {
+  from: string
+  to: string
+  brokerScope: string | null
+}): Promise<FileDeadlineRow[]> {
+  const { data, error } = await createServiceClient()
+    .from('tc_tasks')
+    .select('id, title, due_date, assignee_email, status, tc_deals(broker_name, property_key)')
+    .eq('status', 'open')
+    .gte('due_date', input.from)
+    .lte('due_date', input.to)
+    .order('due_date', { ascending: true })
+    .limit(500)
+  if (error) {
+    console.error('[listFileDeadlineTasks]', error.message)
+    return []
+  }
+  const out: FileDeadlineRow[] = []
+  for (const r of data ?? []) {
+    const deal = r.tc_deals as
+      | { broker_name?: string | null; property_key?: string | null }
+      | { broker_name?: string | null; property_key?: string | null }[]
+      | null
+    const row = Array.isArray(deal) ? deal[0] : deal
+    const brokerName = row?.broker_name ?? null
+    if (
+      !fileDeadlineMatchesScope({
+        dealBrokerName: brokerName,
+        assigneeEmail: r.assignee_email == null ? null : String(r.assignee_email),
+        brokerScope: input.brokerScope,
+      })
+    ) {
+      continue
+    }
+    const due = r.due_date == null ? '' : String(r.due_date).slice(0, 10)
+    if (!due) continue
+    out.push({
+      id: String(r.id),
+      title: String(r.title ?? 'File deadline'),
+      dueDate: due,
+      brokerSlug: slugFromBrokerName(brokerName),
+      propertyKey: row?.property_key ? String(row.property_key) : null,
+    })
+  }
+  return out
 }

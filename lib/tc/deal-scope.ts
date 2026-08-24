@@ -30,6 +30,21 @@ export function brokerEmailFromFileName(name: string | null | undefined): string
   return null
 }
 
+export function fileDeadlineMatchesScope(input: {
+  dealBrokerName: string | null | undefined
+  assigneeEmail: string | null | undefined
+  brokerScope: string | null | undefined
+}): boolean {
+  if (!input.brokerScope) return true
+  const wantName = BROKER_FILE_NAME[input.brokerScope.trim().toLowerCase()]
+  if (wantName && (input.dealBrokerName ?? '').trim().toLowerCase() === wantName.toLowerCase()) return true
+  if (wantName) {
+    const wantEmail = BROKER_FILE_EMAIL[wantName]
+    if (wantEmail && (input.assigneeEmail ?? '').trim().toLowerCase() === wantEmail.toLowerCase()) return true
+  }
+  return false
+}
+
 export function dealVisibleToBroker(input: {
   role: string
   brokerSlug: string | null | undefined

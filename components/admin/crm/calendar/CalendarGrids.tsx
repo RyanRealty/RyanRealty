@@ -34,12 +34,14 @@ const BLOCK_STYLE: Record<CalEvent['kind'], CSSProperties> = {
   appointment: { background: 'var(--a-accent)', color: 'var(--a-btn-fg)' },
   task: { background: 'var(--a-warn)', color: 'var(--a-btn-fg)' },
   closing: { background: 'var(--a-ok)', color: 'var(--a-btn-fg)' },
+  file: { background: 'var(--a-text)', color: 'var(--a-bg)' },
 }
 
 const DOT_STYLE: Record<CalEvent['kind'], CSSProperties> = {
   appointment: { background: 'var(--a-accent)' },
   task: { background: 'var(--a-warn)' },
   closing: { background: 'var(--a-ok)' },
+  file: { background: 'var(--a-text)' },
 }
 
 const HAIRLINE = '1px solid var(--a-border)'

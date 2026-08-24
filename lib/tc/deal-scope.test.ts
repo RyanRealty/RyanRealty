@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { brokerEmailFromFileName, dealVisibleToBroker, fileNameFromBrokerSlug } from './deal-scope'
+import {
+  brokerEmailFromFileName,
+  dealVisibleToBroker,
+  fileDeadlineMatchesScope,
+  fileNameFromBrokerSlug,
+} from './deal-scope'
 
 describe('dealVisibleToBroker', () => {
   it('lets the principal see every file', () => {
@@ -26,5 +31,33 @@ describe('dealVisibleToBroker', () => {
     expect(fileNameFromBrokerSlug('paul')).toBe('Paul Stevenson')
     expect(fileNameFromBrokerSlug('matt')).toBe('Matt Ryan')
     expect(fileNameFromBrokerSlug('nope')).toBeNull()
+  })
+})
+
+describe('fileDeadlineMatchesScope', () => {
+  it('shows every file clock when the principal has no agent filter', () => {
+    expect(
+      fileDeadlineMatchesScope({
+        dealBrokerName: 'Paul Stevenson',
+        assigneeEmail: 'paul@ryan-realty.com',
+        brokerScope: null,
+      }),
+    ).toBe(true)
+  })
+  it('keeps Paul on Paul files and off Matt files', () => {
+    expect(
+      fileDeadlineMatchesScope({
+        dealBrokerName: 'Paul Stevenson',
+        assigneeEmail: null,
+        brokerScope: 'paul',
+      }),
+    ).toBe(true)
+    expect(
+      fileDeadlineMatchesScope({
+        dealBrokerName: 'Matt Ryan',
+        assigneeEmail: 'matt@ryan-realty.com',
+        brokerScope: 'paul',
+      }),
+    ).toBe(false)
   })
 })
