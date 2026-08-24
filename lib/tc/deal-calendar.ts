@@ -165,6 +165,35 @@ export async function syncDealCalendar(dealId: string): Promise<{ synced: number
     address: String(deal.address ?? ''),
     cycles: (cycles ?? []).map((c) => ({ ...c, hasWell: wellIds.has(String(c.id)) })),
   })
+  const { autoDeadlineTasksFromCalendar } = await import('@/lib/tc/auto-deadline-tasks')
+  const brokerEmail = brokerEmailFromFileName(deal.broker_name as string) ?? null
+  for (const t of autoDeadlineTasksFromCalendar(items)) {
+    if (!t.cycleId) continue
+    const { data: existing } = await sb
+      .from('tc_tasks')
+      .select('id, status')
+      .eq('cycle_id', t.cycleId)
+      .eq('kind', t.kind)
+      .eq('source', 'auto_deadline')
+      .maybeSingle()
+    if (existing?.id) {
+      if (existing.status === 'open') {
+        await sb.from('tc_tasks').update({ title: t.title, due_date: t.due_date }).eq('id', existing.id)
+      }
+    } else {
+      await sb.from('tc_tasks').insert({
+        deal_id: dealId,
+        cycle_id: t.cycleId,
+        kind: t.kind,
+        title: t.title,
+        due_date: t.due_date,
+        source: 'auto_deadline',
+        status: 'open',
+        assignee_email: brokerEmail,
+        created_by: 'system',
+      })
+    }
+  }
   const dealSlug = slugFromBrokerName(deal.broker_name)
   const slugs = [...new Set([dealSlug, 'matt'].filter(Boolean))] as string[]
   const typeId = await appointmentTypeId(sb)

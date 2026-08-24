@@ -65,6 +65,8 @@ import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/dat
 import { getDealParties } from '@/lib/data/tc/deal-people'
 import { CHECKLIST_GROUPS, checklistGroupForRule } from '@/lib/tc/required-documents'
 import { DealParties } from './DealParties'
+import { DealTasks } from './DealTasks'
+import { listDealTasks } from '@/lib/data/tc/task-reads'
 import { DealStageControls } from './DealStageControls'
 import { ListingFileActions } from './ListingFileActions'
 import { CdaButton } from './CdaButton'
@@ -495,13 +497,14 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   const deal = await getTcDeal(decodeURIComponent(key))
   if (!deal) notFound()
 
-  const [contacts, commissions, orefFormResult, parties, liveCycles, offers] = await Promise.all([
+  const [contacts, commissions, orefFormResult, parties, liveCycles, offers, fileTasks] = await Promise.all([
     getDealContacts(deal.id),
     getCommissionsForCycles(deal.cycles.map((c) => c.id)),
     getPreferredOrefSaleAgreement(),
     getDealParties(deal.id),
     getLiveDealCycles(),
     listDealOffers(deal.id),
+    listDealTasks(deal.id),
   ])
   const mergeOthers = liveCycles.filter(
     (d) =>
@@ -626,6 +629,8 @@ export default async function TcDealPage({ params, searchParams }: Props) {
           </div>
         </details>
       ))}
+
+      <DealTasks tasks={fileTasks} propertyKey={deal.property_key} />
 
       <DealOffers dealId={deal.id} stage={deal.stage} offers={offers} />
 
