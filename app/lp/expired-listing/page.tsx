@@ -14,7 +14,8 @@ import { ReviewStrip } from '@/components/landing/ReviewCard'
 import { ExpiredMarketStatStrip } from '@/components/landing/ExpiredMarketStatStrip'
 import ExitIntentPrompt from '@/components/landing/ExitIntentPrompt'
 import ScrollReveal from '@/components/landing/ScrollReveal'
-import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
 import LandingPageTracker from '@/components/LandingPageTracker'
@@ -88,14 +89,19 @@ const AUDIT_COVERAGE = [
 ]
 
 export default async function ExpiredListingPage() {
-  // Live Bend detached (MLS City mt-v1 overlay via getMarketPulse) for the
-  // re-list market stat strip. Falls back to null gracefully — strip is
-  // suppressed when unavailable.
-  const [bendPulse, publicPace, publicSegments] = await Promise.all([
-    getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
+  // Leftover Bend membership for the re-list market stat strip. Miss omits.
+  const [overlays, publicPace, publicSegments] = await Promise.all([
+    getDetachedOverlays([{ geoType: 'city', geoSlug: 'bend' }]),
     getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
     getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
   ])
+  const bendMt = overlays.get('city:bend')
+  const hud = leftoverHudKpis({
+    grain: 'city',
+    headlines: bendMt?.headlines ?? null,
+    inventory: bendMt?.inventory ?? null,
+    pace: publicPace,
+  })
   const EXPIRED_LEFTOVER_KEYS = new Set(['pending', 'dtc', 'sto'])
   const leftoverStrip = publicPaceItems(publicPace)
     .filter((item) => EXPIRED_LEFTOVER_KEYS.has(item.key))
@@ -319,9 +325,14 @@ export default async function ExpiredListingPage() {
       {/* ─── S5 · Re-list proof — live market strip + verified reviews ────── */}
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-14">
-          {bendPulse || leftoverStrip.length > 0 ? (
+          {hud.active != null || hud.daysToPending != null || leftoverStrip.length > 0 ? (
             <ScrollReveal>
-              <ExpiredMarketStatStrip pulse={bendPulse} extras={leftoverStrip} />
+              <ExpiredMarketStatStrip
+                active={hud.active}
+                daysToPending={hud.daysToPending}
+                updatedAt={bendMt?.headlines?.computedAt ?? bendMt?.inventory?.computedAt ?? null}
+                extras={leftoverStrip}
+              />
             </ScrollReveal>
           ) : null}
           {EXPIRED_LP_REVIEWS.length > 0 ? (

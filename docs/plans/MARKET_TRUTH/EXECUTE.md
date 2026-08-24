@@ -706,6 +706,10 @@ Core-chart tabs inside leftover HUD: leftover monthly median and closed count on
 
 CRM / blog / report export stay pulse-gated. New · 30 days still omitted. County unpublished.
 
+### D21 follow-on leftover LPs
+
+`/lp/expired-listing` and `/lp/buyer-listing-alerts` print leftover Bend HUD figures (active, leftover 90-day median to pending, leftover median list). Miss omits. Pulse does not fill.
+
 ---
 
 ## 5. Definition of done for the whole program

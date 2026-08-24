@@ -8,7 +8,8 @@ import { SiteCaptureAlignment } from './SiteCaptureAlignment'
 import { WATCHED_COMMUNITIES } from './watched-communities'
 import { FAQ, PhoneIcon, PlayIcon, ProcessStep } from './BuyerLPBits'
 import { CONTACT } from '@/lib/brand/contact'
-import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
 import { getAllCommunitySnapshots, getGeoSnapshot, getListingTiles } from '@/lib/data'
@@ -53,13 +54,10 @@ const BUYER_LP_REVIEWS = TESTIMONIALS.filter((t) =>
 )
 
 export default async function BuyerLPPage() {
-  // Live data — Bend city active/median list are market_metric mt-v1 detached
-  // via getMarketPulse overlay; days to pending stays market_pulse_live.
-  // Per-community active/pending counts from geo_snapshot_mv. Both via existing
-  // DAL functions, both graceful-null. CLAUDE.md §0 Data Accuracy: live
-  // values or the em-dash placeholder, never an invented number.
-  const [bendPulse, communitySnapshots, sunriverCitySnap, liveBendRaw, publicPace, publicSegments] = await Promise.all([
-    getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
+  // Leftover Bend membership for the authority band. Miss omits. Community
+  // tiles stay geo snapshots. CLAUDE.md §0: never invent a number.
+  const [overlays, communitySnapshots, sunriverCitySnap, liveBendRaw, publicPace, publicSegments] = await Promise.all([
+    getDetachedOverlays([{ geoType: 'city', geoSlug: 'bend' }]),
     getAllCommunitySnapshots().catch(() => []),
     // Sunriver proper is a CITY in geo_snapshot_mv (no community row exists
     // for it) — pull its city snapshot for the Sunriver tile counts.
@@ -70,7 +68,14 @@ export default async function BuyerLPPage() {
     getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
     getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
   ])
-  const activeCount = bendPulse?.activeCount ?? null
+  const bendMt = overlays.get('city:bend')
+  const hud = leftoverHudKpis({
+    grain: 'city',
+    headlines: bendMt?.headlines ?? null,
+    inventory: bendMt?.inventory ?? null,
+    pace: publicPace,
+  })
+  const activeCount = hud.active
 
   // geo_snapshot_mv community keys are "city:subdivision" where the city half
   // follows the raw MLS City value, which is inconsistent for the Sunriver-area
@@ -135,28 +140,29 @@ export default async function BuyerLPPage() {
       }
     })
 
-  // Market authority band — 3 live stat cards. Bend city active and median
-  // list are mt-v1 detached via overlay; time to pending is still pulse.
-  const authorityStats: Array<{ value: string; label: string; sub: string }> = [
-    {
-      value: activeCount != null && activeCount > 0 ? activeCount.toLocaleString('en-US') : MDASH,
+  const authorityStats: Array<{ value: string; label: string; sub: string }> = []
+  if (activeCount != null && activeCount > 0) {
+    authorityStats.push({
+      value: activeCount.toLocaleString('en-US'),
       label: 'Active listings',
-      sub: 'Bend single-family, right now',
-    },
-    {
-      value:
-        bendPulse?.medianListPrice != null
-          ? `$${(Math.round(bendPulse.medianListPrice / 1000) * 1000).toLocaleString('en-US')}`
-          : MDASH,
+      sub: 'Leftover Bend houses, right now',
+    })
+  }
+  if (hud.medianList != null && hud.medianList > 0) {
+    authorityStats.push({
+      value: `$${Math.round(hud.medianList).toLocaleString('en-US')}`,
       label: 'Median list price',
-      sub: 'Bend single-family',
-    },
-    {
-      value: publishDaysLabel(bendPulse?.medianDaysToPending) ?? MDASH,
+      sub: 'Leftover Bend houses',
+    })
+  }
+  const pendingLabel = publishDaysLabel(hud.daysToPending)
+  if (pendingLabel) {
+    authorityStats.push({
+      value: pendingLabel,
       label: 'Time to pending',
-      sub: 'Median, list to under contract',
-    },
-  ]
+      sub: 'Leftover 90-day list to under contract',
+    })
+  }
   const BUYER_LEFTOVER_KEYS = new Set(['pending', 'dtc', 'yoy'])
   for (const item of publicPaceItems(publicPace)) {
     if (!BUYER_LEFTOVER_KEYS.has(item.key)) continue
@@ -178,8 +184,9 @@ export default async function BuyerLPPage() {
     })
   }
 
-  const refreshedLabel = bendPulse?.refreshedAt
-    ? new Date(bendPulse.refreshedAt).toLocaleDateString('en-US', {
+  const leftoverStamp = bendMt?.headlines?.computedAt ?? bendMt?.inventory?.computedAt ?? null
+  const refreshedLabel = leftoverStamp
+    ? new Date(leftoverStamp).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric',

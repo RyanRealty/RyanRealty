@@ -87,6 +87,14 @@ const leftoverHudSurfaces = [
     path: 'app/housing-market/reports/page.tsx',
     label: 'housing-market reports hub gates MOS through leftoverHudKpis',
   },
+  {
+    path: 'app/lp/expired-listing/page.tsx',
+    label: 'expired LP gates MOS through leftoverHudKpis',
+  },
+  {
+    path: 'app/lp/buyer-listing-alerts/page.tsx',
+    label: 'buyer LP gates MOS through leftoverHudKpis',
+  },
 ]
 
 const surfaces = [

@@ -1,39 +1,37 @@
 /**
- * ExpiredMarketStatStrip — compact live market stat row for the expired LP.
+ * ExpiredMarketStatStrip — compact leftover market stat row for the expired LP.
  *
- * Framed as "What the market looks like for your re-list". Bend city active
- * count is market_metric mt-v1 detached (MLS City) via getMarketPulse overlay.
- * Median days to pending stays the pulse series. Data-accuracy compliant:
- *   - Only renders when values are non-null.
- *   - Tabular numerals.
- *   - Shows "updated" label with ISO date of the last refresh.
- *   - Falls back to null render when the DAL returns nothing.
+ * Framed as "What the market looks like for your re-list". Bend figures are
+ * leftover membership. Miss omits. Pulse does not fill.
  *
  * Server component — no interactivity.
  */
 
-import type { MarketPulse } from '@/lib/data/types/market'
 import { cn } from '@/lib/utils'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 
 type Props = {
-  pulse: MarketPulse | null
+  active: number | null
+  daysToPending: number | null
+  updatedAt: string | null
   extras?: Array<{ value: string; label: string }>
   className?: string
 }
 
-export function ExpiredMarketStatStrip({ pulse, extras, className }: Props) {
-  if (!pulse && (extras == null || extras.length === 0)) return null
-
-  const daysToPending = pulse?.medianDaysToPending ?? null
-  const activeCount = pulse?.activeCount ?? null
-
+export function ExpiredMarketStatStrip({
+  active,
+  daysToPending,
+  updatedAt,
+  extras,
+  className,
+}: Props) {
   const extraStats = extras ?? []
-  // Render nothing if core stats and leftover extras are all missing.
-  if (daysToPending == null && (!activeCount || activeCount === 0) && extraStats.length === 0) return null
+  if (daysToPending == null && (active == null || active === 0) && extraStats.length === 0) {
+    return null
+  }
 
-  const updatedLabel = pulse?.refreshedAt
-    ? new Date(pulse.refreshedAt).toLocaleDateString('en-US', {
+  const updatedLabel = updatedAt
+    ? new Date(updatedAt).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric',
@@ -47,14 +45,14 @@ export function ExpiredMarketStatStrip({ pulse, extras, className }: Props) {
   if (pendingLabel) {
     stats.push({
       value: pendingLabel,
-      label: 'Median days to pending',
+      label: 'Median to pending · 90 days',
     })
   }
 
-  if (activeCount != null && activeCount > 0) {
+  if (active != null && active > 0) {
     stats.push({
-      value: activeCount.toLocaleString('en-US'),
-      label: 'Active detached listings in Bend',
+      value: active.toLocaleString('en-US'),
+      label: 'Active leftover houses in Bend',
     })
   }
 
@@ -87,7 +85,7 @@ export function ExpiredMarketStatStrip({ pulse, extras, className }: Props) {
       </div>
       {updatedLabel ? (
         <p className="mt-3 text-xs text-muted-foreground/70">
-          Updated {updatedLabel} · Bend detached · MLS City
+          Updated {updatedLabel} · leftover membership
         </p>
       ) : null}
     </aside>
