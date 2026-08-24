@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * Region SFR pulse vs city-table remainder lock.
+ * Leftover region inventory vs city-table remainder lock.
  *
- * A page that prints a region inventory total next to a city inventory table
- * must name omitted pulse cities and the TIGER/MLS remainder. Founding case:
- * /housing-market printed 1,841 next to seven city rows summing to 1,026
- * (fleet 5439b87e, 2026-08-16).
+ * A page that prints a leftover region inventory total next to a city
+ * inventory table must name omitted leftover cities and the leftover
+ * remainder. Founding case: /housing-market printed 1,841 next to seven
+ * city rows summing to 1,026 (fleet 5439b87e, 2026-08-16). D21: the pile
+ * is leftover membership, miss omits.
  *
  *   node scripts/check-pulse-city-remainder.mjs
  */
@@ -19,34 +20,34 @@ function src(path) {
 
 const helper = src('lib/market/pulse-city-remainder.ts')
 checks.push({
-  label: 'namePulseCityRemainder exists and names omitted cities plus remainder',
+  label: 'namePulseCityRemainder exists and names omitted leftover cities plus remainder',
   ok:
     /export function namePulseCityRemainder/.test(helper) &&
-    /omitted pulse cities/i.test(helper) &&
-    helper.includes('incorporated-place boundary') &&
-    helper.includes('Also in the region pulse and not in the table'),
+    /omitted leftover cities/i.test(helper) &&
+    helper.includes('mapped city') &&
+    helper.includes('Also in the leftover regional count and not in the table'),
 })
 
 const surfaces = [
   {
     path: 'app/page.tsx',
-    label: 'homepage fetches all city pulse rows and passes regionActive',
-    regionActive: /regionActive:\s*pulse\?\.activeCount/,
+    label: 'homepage fetches leftover city rows and passes leftover regionActive',
+    regionActive: /regionActive:\s*hud\.active/,
   },
   {
     path: 'app/housing-market/page.tsx',
-    label: 'housing-market hub fetches all city pulse rows and passes regionActive',
-    regionActive: /regionActive:\s*regionPulse\?\.activeCount/,
+    label: 'housing-market hub fetches leftover city rows and passes leftover regionActive',
+    regionActive: /regionActive:\s*hud\.active/,
   },
   {
     path: 'app/housing-market/central-oregon/page.tsx',
-    label: 'central-oregon report fetches all city pulse rows and passes regionActive',
-    regionActive: /regionActive:\s*regionPulse\?\.activeCount/,
+    label: 'central-oregon report fetches leftover city rows and passes leftover regionActive',
+    regionActive: /regionActive:\s*hud\.active/,
   },
   {
     path: 'app/housing-market/annual-review/page.tsx',
-    label: 'annual-review fetches all city pulse rows and passes regionActive',
-    regionActive: /regionActive:\s*regionPulse\?\.activeCount/,
+    label: 'annual-review fetches leftover city rows and passes leftover regionActive',
+    regionActive: /regionActive:\s*hud\.active/,
   },
 ]
 

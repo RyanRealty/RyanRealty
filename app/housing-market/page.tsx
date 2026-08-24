@@ -52,7 +52,6 @@
 
 import type { Metadata } from 'next'
 import {
-  getMarketPulse,
   getRecentBlogPosts,
   getPriceHistory,
 } from '@/lib/data'
@@ -70,6 +69,8 @@ import {
 } from '@/lib/data/market-truth/public-pace'
 import { getPublicDetachedMix, publicMixHasRow, publicMixItems } from '@/lib/data/market-truth/public-mix'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import {
   getCoMarketAnnual,
   getCoMarketAnnualSeries,
@@ -144,7 +145,6 @@ export default async function HousingMarketHubPage() {
   const todayKey = zonedDateKey(new Date())
   const lastFullYear = Number(todayKey.slice(0, 4)) - 1
   const [
-    regionPulse,
     citySnapshots,
     blogPosts,
     closedYear,
@@ -157,8 +157,8 @@ export default async function HousingMarketHubPage() {
     publicPace,
     publicMix,
     leftoverMonthly,
+    regionOverlays,
   ] = await Promise.all([
-    getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
     getMarketPulseAllCitySnapshots(),
     getRecentBlogPosts({ limit: 3 }),
     getCoMarketAnnual({ year: CLOSED_SALES_YEAR, typeScope: 'all' }),
@@ -175,15 +175,20 @@ export default async function HousingMarketHubPage() {
       geoSlug: 'central-oregon',
       currentMonthKey: todayKey.slice(0, 7),
     }),
+    getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]),
   ])
+  const regionMt = regionOverlays.get('region:central-oregon')
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: regionMt?.headlines ?? null,
+    inventory: regionMt?.inventory ?? null,
+    pace: publicPace,
+  })
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
   // display it, and hand the RAW value to buildMarketFaq so the shared builder
   // repeats the same two steps in the same order.
-  const mosRaw =
-    regionPulse?.monthsOfSupply != null && regionPulse.monthsOfSupply > 0
-      ? regionPulse.monthsOfSupply
-      : null
+  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
   const verdict = marketVerdict(mosRaw)
   const chartMonths = leftoverOrCacheMonthly(
@@ -212,24 +217,24 @@ export default async function HousingMarketHubPage() {
   // the page contract requires (G52): the structured data survives a slow or missing
   // region row instead of vanishing. A null field produces no question and no
   // variable, never a fabricated one.
-  const pulse: MarketFaqInput | null = regionPulse
-    ? {
-        grain: 'region',
-        activeCount: regionPulse.activeCount,
-        medianListPrice: regionPulse.medianListPrice,
-        // The RAW figure. The builder rounds it for its sentence exactly as this
-        // page rounds it for the H1, so both read one number and one verdict.
-        monthsOfSupply: mosRaw,
-        medianDaysToPending: regionPulse.medianDaysToPending,
-        refreshedAt: regionPulse.refreshedAt,
-      }
-    : null
+  const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
+  const pulse: MarketFaqInput | null = {
+    grain: 'region',
+    source: 'market-truth',
+    activeCount: hud.active,
+    medianListPrice: hud.medianList,
+    monthsOfSupply: mosRaw,
+    medianDaysToPending: hud.daysToPending,
+    soldCount12mo: publicPace.closedCount ?? null,
+    pulseActiveCount: hud.active,
+    refreshedAt: leftoverStamp,
+  }
   const marketFaq = buildMarketFaq(
     'Central Oregon',
     pulse ?? { grain: 'region', activeCount: null, medianListPrice: null, refreshedAt: null },
   )
   const { datasetVariables, asOfIso, asOfLabel } = marketFaq
-  const refreshedAt = regionPulse?.refreshedAt ?? null
+  const refreshedAt = leftoverStamp
 
   // ALL-TYPE closed year from the mart, plus the SFR pulse MoS figure so the
   // verdict and the number stay on the same first screen. source === 'missing'
@@ -238,7 +243,7 @@ export default async function HousingMarketHubPage() {
   const closed = lead.closed
   const historyPath = lead.historyPath
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
-  const sfrFollow = buildSfrFollowFigures(regionPulse)
+  const sfrFollow = buildSfrFollowFigures(hud)
   for (const row of publicSegments) {
     if (row.activeCount == null || row.activeCount <= 0) continue
     const bits = publicSegmentDisplayBits(row)
@@ -284,7 +289,7 @@ export default async function HousingMarketHubPage() {
   // City rows. D9 leftover lives on the builder: each city is a door, and a
   // line through cities invents a sequence V3Chart is not for.
   const cityLedger = buildCityLedger(citySnapshots, {
-    regionActive: regionPulse?.activeCount ?? null,
+    regionActive: hud.active,
   })
   const [firstCityRow, ...restCityRows] = cityLedger.rows
   const cityFootnotes = cityLedger.footnotes
@@ -320,7 +325,7 @@ export default async function HousingMarketHubPage() {
   const faqEdges: V3QuietItem[] = [
     { label: 'Central Oregon region report', href: '/housing-market/central-oregon' },
   ]
-  if (regionPulse != null) {
+  if (hud.active != null) {
     faqEdges.push({ label: 'Browse homes for sale', href: listingsBrowsePath() })
   }
   if (mosText != null) {
@@ -461,7 +466,7 @@ export default async function HousingMarketHubPage() {
             heading={v3Text('Market by city')}
             rows={[firstCityRow, ...restCityRows]}
             source={v3Text(
-              'live MLS through Oregon Data Share, active single-family listings, one row per city',
+              'leftover membership, active single-family houses, one row per city',
             )}
             updated={cityRefreshedAt ? v3Text(formatDate(cityRefreshedAt)) : undefined}
             action={{ label: v3Text('All Central Oregon cities'), href: '/cities' }}
@@ -488,8 +493,8 @@ export default async function HousingMarketHubPage() {
             figures={[firstSfrFigure, ...restSfrFigures]}
             source={v3Text(
               publicSegments.length > 0 || publicPaceHasRow(publicPace) || publicMixHasRow(publicMix)
-                ? 'live MLS through Oregon Data Share. Single-family figures are the region detached HUD. Condo and townhome counts are Market Truth mt-v1, sample-gated. 12-month pace stats are leftover Market Truth cells, not the live 30-day pulse'
-                : 'live MLS through Oregon Data Share, single-family homes across the Central Oregon region. Not ALL-TYPE closed sales',
+                ? 'Leftover membership. Single-family figures, extra product types, and 12-month pace are the leftover pile. A miss omits. Not ALL-TYPE closed sales'
+                : 'Leftover membership, single-family houses across the Central Oregon region. Not ALL-TYPE closed sales',
             )}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             action={{

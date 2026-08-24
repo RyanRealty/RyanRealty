@@ -21,7 +21,8 @@
  */
 
 import type { Metadata } from 'next'
-import { getMarketPulse } from '@/lib/data'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -77,18 +78,22 @@ type PageProps = { searchParams: Promise<{ [key: string]: string | string[] | un
 export default async function ReportsIndexPage({ searchParams }: PageProps) {
   const params = await searchParams
   const { cities: selectedCities, period } = parseReportsParams(params ?? null)
-  const [regionPulse, publicSegments, publicPace] = await Promise.all([
-    getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
+  const [regionOverlays, publicSegments, publicPace] = await Promise.all([
+    getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
   ])
+  const regionMt = regionOverlays.get('region:central-oregon')
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: regionMt?.headlines ?? null,
+    inventory: regionMt?.inventory ?? null,
+    pace: publicPace,
+  })
 
-  const mosRaw =
-    regionPulse?.monthsOfSupply != null && regionPulse.monthsOfSupply > 0
-      ? regionPulse.monthsOfSupply
-      : null
+  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const verdict = marketVerdict(mosRaw)
-  const regionFigures = buildRegionFigures(regionPulse)
+  const regionFigures = buildRegionFigures(hud)
   for (const row of publicSegments) {
     if (row.monthsOfSupply == null || row.activeCount == null || row.activeCount <= 0) continue
     regionFigures.push({
@@ -105,10 +110,11 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
   }
   const extraTrace =
     publicSegments.length > 0 || publicPaceItems(publicPace).length > 0
-      ? ' Extra product-type months of supply and 12-month pace are Market Truth, sample-gated.'
+      ? ' Extra product-type months of supply and 12-month pace are leftover membership, sample-gated.'
       : ''
   const [firstFigure, ...restFigures] = regionFigures
-  const refreshedAt = regionPulse?.refreshedAt ?? null
+  const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
+  const refreshedAt = leftoverStamp
   const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
 
   return (
@@ -147,7 +153,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
             )}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(
-              `live MLS through Oregon Data Share, market_pulse_live, geo_type=region, geo_slug=central-oregon, property_type=A. ${MOS_METHODOLOGY_CLAUSE}${
+              `Leftover membership, Central Oregon single-family houses. A miss omits. ${MOS_METHODOLOGY_CLAUSE}${
                 mosText ? ` This refresh: ${mosText} months of supply.` : ''
               }${extraTrace}`,
             )}

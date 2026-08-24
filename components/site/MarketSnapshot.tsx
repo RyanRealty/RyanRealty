@@ -1,7 +1,7 @@
-import { getRegionPulse } from '@/lib/data/market/getRegionPulse'
-import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import {
   Body,
   Container,
@@ -120,54 +120,28 @@ type Props = {
 export default async function MarketSnapshot({
   citySlug,
   cityName,
-  publishedActiveCount,
-  publishedMedianListPrice,
 }: Props = {}) {
-  // City-scoped path — getMarketPulse reads market_pulse_live for the city row.
-  // Region path — getRegionPulse reads the pre-aggregated central-oregon row.
-  let activeCount: number | null = null
-  let medianListPrice: number | null = null
-  let medianDaysToPending: number | null = null
-  let monthsOfSupply: number | null = null
-  let closedLast30Days: number | null = null
-  let updatedAt = ''
-
-  if (citySlug) {
-    const pulse = await getMarketPulse({
-      geoType: 'city',
-      geoSlug: canonicalCityCacheSlug(citySlug),
-    })
-    if (pulse) {
-      activeCount = publishedActiveCount ?? pulse.activeCount
-      medianListPrice = publishedMedianListPrice ?? pulse.medianListPrice
-      medianDaysToPending = pulse.medianDaysToPending
-      monthsOfSupply = publishMonthsOfSupply({
-        grain: 'city',
-        pulseMos: pulse.monthsOfSupply,
-        pulseActiveCount: pulse.activeCount,
-        displayedActiveCount: activeCount,
-      })
-      closedLast30Days = pulse.closedLast30Days
-      updatedAt = pulse.refreshedAt
-    }
-  } else {
-    const regionPulse = await getRegionPulse()
-    if (regionPulse) {
-      activeCount = regionPulse.activeCount
-      medianListPrice = regionPulse.medianListPrice
-      medianDaysToPending = regionPulse.medianDaysToPending
-      // Through the same publisher as the city branch, so one figure under one
-      // label has one gate rather than two code paths that can drift.
-      monthsOfSupply = publishMonthsOfSupply({
-        grain: 'region',
-        pulseMos: regionPulse.monthsOfSupply,
-        pulseActiveCount: regionPulse.activeCount,
-        displayedActiveCount: activeCount,
-      })
-      closedLast30Days = regionPulse.soldCount30d
-      updatedAt = regionPulse.updatedAt
-    }
-  }
+  const grain = citySlug ? ('city' as const) : ('region' as const)
+  const geoSlug = citySlug ? canonicalCityCacheSlug(citySlug) : 'central-oregon'
+  const [overlays, pace] = await Promise.all([
+    getDetachedOverlays([{ geoType: grain, geoSlug }]),
+    getPublicDetachedPace({ geoType: grain, geoSlug }),
+  ])
+  const overlayKey =
+    grain === 'region' ? `region:${geoSlug.trim().toLowerCase()}` : `city:${cityDetachedSlug(geoSlug)}`
+  const layers = overlays.get(overlayKey)
+  const hud = leftoverHudKpis({
+    grain,
+    headlines: layers?.headlines ?? null,
+    inventory: layers?.inventory ?? null,
+    pace: pace ?? EMPTY_PUBLIC_PACE,
+  })
+  const activeCount = hud.active
+  const medianListPrice = hud.medianList
+  const medianDaysToPending = hud.daysToPending
+  const monthsOfSupply = hud.monthsSupply
+  const closedLast30Days = hud.closed30
+  const updatedAt = layers?.headlines?.computedAt ?? layers?.inventory?.computedAt ?? ''
 
   const verdict = marketVerdict(monthsOfSupply)
   const geoLabel = cityName ?? 'Central Oregon'
@@ -178,10 +152,10 @@ export default async function MarketSnapshot({
       <Container>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
           <Stack gap="tight">
-            <Eyebrow>Live from the MLS</Eyebrow>
+            <Eyebrow>Leftover membership</Eyebrow>
             <H2>{geoLabel} housing market</H2>
             <Body size="small" tone="muted">
-              Refreshed every 15 minutes from Oregon Data Share. Single-family homes only.
+              Single-family leftover houses. A miss omits. Not the live MLS snapshot.
               {updatedAt ? ` Updated ${fmtFreshness(updatedAt)}.` : ''}
             </Body>
           </Stack>

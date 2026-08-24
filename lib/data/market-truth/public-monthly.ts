@@ -2,7 +2,7 @@
  * Public detached calendar-month leftover (Step 9 chart overlay).
  * window_months = 1 median_close / closed_count through getMetrics.
  * Miss omits that month. Does not print MoM rates. In-progress month is dropped
- * by the caller. Cache remains the fallback when leftover cannot plot.
+ * by the caller. If leftover cannot plot, the series is empty. Cache does not fill.
  */
 import { getMetrics, type MetricResult } from '@/lib/data/market-truth/getMetric'
 

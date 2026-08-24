@@ -22,6 +22,7 @@
 import type { BlogPostCard, MarketPulseSnapshot } from '@/lib/data'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { formatPriceExact } from '@/lib/format/money'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
@@ -79,8 +80,8 @@ export function buildCityLedger(
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
       detail:
-        snapshot.median_days_to_pending != null
-          ? v3Text(`${snapshot.median_days_to_pending} days to pending`)
+        snapshot.months_of_supply != null
+          ? v3Text(`${formatMonthsOfSupply(snapshot.months_of_supply)} months of supply`)
           : undefined,
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
@@ -124,7 +125,7 @@ export function buildCityLedger(
       fact: `${city.label} has ${city.active.toLocaleString('en-US')} active single-family listings not in the table above`,
     })
   }
-  for (const fact of remainder.facts.filter((line) => !line.startsWith('Also in the region pulse'))) {
+  for (const fact of remainder.facts.filter((line) => !line.startsWith('Also in the leftover regional count'))) {
     footnotes.push({ label: 'Outside city rows', fact })
   }
 

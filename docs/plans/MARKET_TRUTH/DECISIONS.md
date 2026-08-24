@@ -245,3 +245,19 @@ list are leftover membership.
 
 County unpublished. Subdivision never a price. Unadjusted MoM off public. New · 30 days still
 omitted until leftover has a 30-day new-listings cell.
+
+## D21 — leftover MOS destinations and leftover remainder · **DECIDED** (Matt, 2026-08-24)
+
+Same one-pile rule as D19/D20, applied to remaining public visitor MOS and inventory
+tables that sat next to leftover HUD. `/months-of-supply`, `/housing-market`,
+`/housing-market/central-oregon`, `/housing-market/annual-review`, `/housing-market/reports`,
+`/cities`, and search MarketSnapshot print leftover MOS / leftover inventory /
+leftover 90-day median to pending / leftover Closed · 30 days. Miss omits. Pulse
+does not fill.
+
+Region vs city remainder is leftover membership: omitted leftover cities are named,
+and leftover region minus leftover city rows is leftover remainder, not a
+city-limits pin gap.
+
+CRM reports, blog MOS rewriter, and report export stay pulse-gated through
+`publishMonthsOfSupply`. They are not leftover HUD visitor destinations.

@@ -1,14 +1,11 @@
 /**
- * When a page prints a region SFR pulse total and a city inventory table,
- * the table must describe the same inventory or name what it omitted.
+ * When a page prints a leftover region inventory total and a city inventory
+ * table, the table must describe the same leftover pile or name what it omitted.
  *
  * Fleet finding 5439b87e (2026-08-16): /housing-market printed 1,841 homes
- * for sale (region pulse) next to seven city rows that summed to 1,026.
- * The footnote only said Tumalo had no active SFR. Omitted pulse cities
- * (Madras, Powell Butte, Black Butte Ranch, Culver, Metolius, Camp Sherman)
- * were unnamed. A further remainder is the methodology gap: region counts
- * by MLS city (`is_central_oregon_city`), city rows clip to the TIGER
- * incorporated-place polygon when one exists.
+ * for sale next to seven city rows that summed to 1,026. D21: both totals
+ * are leftover membership. Omitted leftover cities are named. Remainder is
+ * leftover region minus leftover city rows, not a city-limits pin gap.
  *
  * reachability: homepage town doors, housing-market hub, central-oregon
  * region report, annual review
@@ -62,7 +59,7 @@ export function namePulseCityRemainder(input: {
   const facts: string[] = []
   if (omitted.length > 0) {
     facts.push(
-      `Also in the region pulse and not in the table: ${omitted
+      `Also in the leftover regional count and not in the table: ${omitted
         .map((city) => `${city.label} ${formatCount(city.active)}`)
         .join(', ')}`,
     )
@@ -72,16 +69,14 @@ export function namePulseCityRemainder(input: {
   const remainder =
     region != null && region > 0 && input.allCities.length > 0 ? region - allCitySum : null
   if (remainder != null && remainder > 0) {
-    facts.push(`${formatCount(remainder)} more in the region pulse sit outside a city-boundary row`)
-    facts.push(
-      'Region counts by MLS city. City rows use the incorporated-place boundary when one exists',
-    )
+    facts.push(`${formatCount(remainder)} more leftover houses sit outside these town rows`)
+    facts.push('Each house is counted once in its mapped city, not by city-limits pin')
   }
 
   return { omitted, displayedSum, allCitySum, remainder, facts }
 }
 
-/** Visitor-facing remainder lines for a town/city door list next to a region pulse. */
+/** Visitor-facing remainder lines for a town/city door list next to leftover region inventory. */
 export function formatPulseCityRemainderPublic(named: PulseCityRemainder): string[] {
   const lines: string[] = []
   if (named.omitted.length > 0) {
@@ -93,7 +88,7 @@ export function formatPulseCityRemainderPublic(named: PulseCityRemainder): strin
   }
   if (named.remainder != null && named.remainder > 0) {
     lines.push(
-      `${formatCount(named.remainder)} more homes sit outside these town rows. Region counts by MLS city. Town rows use the city boundary when one exists.`,
+      `${formatCount(named.remainder)} more leftover houses sit outside these town rows. Each house is counted once in its mapped city.`,
     )
   }
   return lines

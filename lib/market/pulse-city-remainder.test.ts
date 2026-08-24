@@ -35,7 +35,7 @@ const CITIES = [
 ]
 
 describe('namePulseCityRemainder', () => {
-  it('names omitted pulse cities with inventory and the TIGER remainder', () => {
+  it('names omitted leftover cities with inventory and the leftover remainder', () => {
     const named = namePulseCityRemainder({
       regionActive: 1840,
       displayedLabels: HUB,
@@ -55,8 +55,9 @@ describe('namePulseCityRemainder', () => {
     expect(named.facts[0]).toContain('Madras 50')
     expect(named.facts[0]).toContain('Powell Butte 63')
     expect(named.facts[0]).not.toMatch(/Tumalo/)
-    expect(named.facts.join(' ')).toContain('649 more')
-    expect(named.facts.join(' ')).toContain('incorporated-place boundary')
+    expect(named.facts.join(' ')).toContain('649 more leftover houses')
+    expect(named.facts.join(' ')).toContain('mapped city')
+    expect(named.facts.join(' ')).not.toMatch(/incorporated-place|region pulse/i)
   })
 
   it('does not invent a remainder when city rows did not return', () => {
@@ -78,7 +79,7 @@ describe('namePulseCityRemainder', () => {
     })
     expect(named.remainder).toBeNull()
     expect(named.omitted).toHaveLength(6)
-    expect(named.facts.join(' ')).not.toMatch(/more in the region pulse/)
+    expect(named.facts.join(' ')).not.toMatch(/more leftover houses/)
   })
 
   it('is quiet when the table already covers every city with inventory', () => {
@@ -94,7 +95,7 @@ describe('namePulseCityRemainder', () => {
 })
 
 describe('formatPulseCityRemainderPublic', () => {
-  it('names omitted cities with an active unit and the TIGER remainder', () => {
+  it('names omitted cities with an active unit and the leftover remainder', () => {
     const named = namePulseCityRemainder({
       regionActive: 1840,
       displayedLabels: HUB,
@@ -105,8 +106,9 @@ describe('formatPulseCityRemainderPublic', () => {
     expect(lines[0]).toContain('Madras 50 active')
     expect(lines[0]).toContain('Powell Butte 63 active')
     expect(lines[0]).not.toMatch(/Tumalo/)
-    expect(lines.join(' ')).toContain('649 more homes')
-    expect(lines.join(' ')).toContain('city boundary')
+    expect(lines.join(' ')).toContain('649 more leftover houses')
+    expect(lines.join(' ')).toContain('mapped city')
+    expect(lines.join(' ')).not.toMatch(/city boundary|MLS city/)
   })
 
   it('is quiet when the doors already cover every city with inventory', () => {

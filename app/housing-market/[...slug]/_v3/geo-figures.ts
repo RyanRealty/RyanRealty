@@ -17,6 +17,7 @@ import type { BlogPostCard, MarketDetail, MarketPulse, MarketPulseSnapshot } fro
 import type { KbYearSeries } from '@/lib/kb/year-series'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice, formatPriceCompact, formatPriceExact } from '@/lib/format/money'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
   publicSegmentBrowseHref,
@@ -256,8 +257,8 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[], currentCitySlu
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
       detail:
-        snapshot.median_days_to_pending != null
-          ? v3Text(`${snapshot.median_days_to_pending} days to pending`)
+        snapshot.months_of_supply != null
+          ? v3Text(`${formatMonthsOfSupply(snapshot.months_of_supply)} months of supply`)
           : undefined,
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,

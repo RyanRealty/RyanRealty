@@ -73,7 +73,7 @@ async function CityHeadlineLedger({ selectedCities }: { selectedCities: string[]
       heading={v3Text('Live figures by city')}
       rows={[first, ...rest]}
       source={v3Text(
-        'live MLS through Oregon Data Share, active single-family listings, market_pulse_live plus market_stats_cache rolling_365d',
+        'Leftover membership, active single-family houses, one leftover count per city. A miss omits.',
       )}
       updated={stamp ? v3Text(formatDate(stamp)) : undefined}
       action={{ label: v3Text('All Central Oregon cities'), href: '/cities' }}

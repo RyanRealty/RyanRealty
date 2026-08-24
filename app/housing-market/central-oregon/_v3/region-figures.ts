@@ -37,8 +37,8 @@
  * trace clause read, a clause can never outlive its figure.
  */
 
-import type { MarketPulse } from '@/lib/data'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
+import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -76,24 +76,20 @@ export type RegionInstruments = {
 }
 
 /**
- * @param pulse the market_pulse_live region row, or null when it did not return.
+ * @param hud leftover HUD KPIs for the region. Miss omits.
  * @param mosText months of supply already formatted by the page through
  *   formatMonthsOfSupply, or null. Passed in rather than derived here: the page owns
  *   the single derivation that classifies the RAW value and formats only to display it.
  */
 export function buildRegionInstruments(
-  pulse: MarketPulse | null,
+  hud: LeftoverHudKpis,
   mosText: string | null,
 ): RegionInstruments {
-  const medianListPrice =
-    pulse?.medianListPrice != null && pulse.medianListPrice > 0 ? pulse.medianListPrice : null
-  const activeCount = pulse != null && pulse.activeCount != null && pulse.activeCount > 0 ? pulse.activeCount : null
+  const medianListPrice = hud.medianList != null && hud.medianList > 0 ? hud.medianList : null
+  const activeCount = hud.active != null && hud.active > 0 ? hud.active : null
   const daysToPending =
-    pulse?.medianDaysToPending != null && pulse.medianDaysToPending > 0
-      ? pulse.medianDaysToPending
-      : null
-  const closedLast30Days =
-    pulse != null && pulse.closedLast30Days > 0 ? pulse.closedLast30Days : null
+    hud.daysToPending != null && hud.daysToPending > 0 ? hud.daysToPending : null
+  const closedLast30Days = hud.closed30 != null && hud.closed30 > 0 ? hud.closed30 : null
 
   // ── Live inventory ────────────────────────────────────────────────────────────
   // Every figure is a door where a node behind it shows that figure's window.
@@ -122,7 +118,7 @@ export function buildRegionInstruments(
   }
 
   const liveClauses = [
-    'live MLS through Oregon Data Share, active single-family listings across the Central Oregon region',
+    'leftover membership, active single-family houses across the Central Oregon region',
   ]
   // The two canonical clauses append whole, never edited, and only when the figure they
   // govern is on the screen. lib/market/classify.ts owns that wording and
@@ -141,7 +137,7 @@ export function buildRegionInstruments(
   if (daysToPending != null) {
     paceFigures.push({
       value: v3Text(String(daysToPending)),
-      label: v3Text('median days to pending'),
+      label: v3Text('median to pending · 90 days'),
     })
   }
   if (closedLast30Days != null) {
@@ -152,11 +148,11 @@ export function buildRegionInstruments(
   }
 
   const paceClauses = [
-    'live MLS through Oregon Data Share, closed single-family sales across the Central Oregon region',
+    'leftover membership, closed single-family houses across the Central Oregon region',
   ]
   if (daysToPending != null) {
     paceClauses.push(
-      'Days to pending is the median list-to-pending time of homes that closed in the last 90 days',
+      'Median to pending is leftover 90-day list-to-pending',
     )
   }
   if (closedLast30Days != null) {
@@ -218,7 +214,7 @@ export function buildRegionLead(
   else sourceBits.push(closedMartMissingBody(CLOSED_SALES_TO_YEAR))
   if (mosText) {
     sourceBits.push(
-      `Months of supply is live MLS, detached single-family, Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
+      `Months of supply is leftover membership, detached single-family, Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
     )
   }
   return {

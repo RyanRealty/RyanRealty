@@ -59,6 +59,34 @@ const leftoverHudSurfaces = [
     path: 'app/housing-market/[...slug]/page.tsx',
     label: 'housing-market geo gates MOS through leftoverHudKpis',
   },
+  {
+    path: 'app/housing-market/page.tsx',
+    label: 'housing-market hub gates MOS through leftoverHudKpis',
+  },
+  {
+    path: 'app/housing-market/central-oregon/page.tsx',
+    label: 'central-oregon report gates MOS through leftoverHudKpis',
+  },
+  {
+    path: 'app/housing-market/annual-review/page.tsx',
+    label: 'annual-review gates MOS through leftoverHudKpis',
+  },
+  {
+    path: 'app/months-of-supply/page.tsx',
+    label: 'months-of-supply page gates MOS through leftoverHudKpis',
+  },
+  {
+    path: 'app/cities/page.tsx',
+    label: 'cities index gates MOS through leftoverHudKpis',
+  },
+  {
+    path: 'components/site/MarketSnapshot.tsx',
+    label: 'MarketSnapshot gates MOS through leftoverHudKpis',
+  },
+  {
+    path: 'app/housing-market/reports/page.tsx',
+    label: 'housing-market reports hub gates MOS through leftoverHudKpis',
+  },
 ]
 
 const surfaces = [

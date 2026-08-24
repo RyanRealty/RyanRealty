@@ -16,8 +16,8 @@ import { formatPrice, formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import { marketVerdict } from '@/lib/market/classify'
-import type { MarketPulse } from '@/lib/data/types/market'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { v3Text, type V3InstrumentFigure, type V3LedgerFigureRow } from '@/components/site/v3'
 import { CANONICAL_PATH, siteUrl } from './hub-constants'
 
@@ -34,26 +34,25 @@ export function parseReportsParams(params: { [key: string]: string | string[] | 
 }
 
 export function buildRegionFigures(
-  pulse: MarketPulse | null,
+  hud: LeftoverHudKpis | null,
 ): V3InstrumentFigure[] {
-  if (!pulse) return []
+  if (!hud) return []
   const figures: V3InstrumentFigure[] = []
-  if (pulse.medianListPrice != null && pulse.medianListPrice > 0) {
+  if (hud.medianList != null && hud.medianList > 0) {
     figures.push({
-      value: v3Text(formatPriceExact(pulse.medianListPrice)),
+      value: v3Text(formatPriceExact(hud.medianList)),
       label: v3Text('median list price'),
       href: '/housing-market',
     })
   }
-  if (pulse.activeCount != null && pulse.activeCount > 0) {
+  if (hud.active != null && hud.active > 0) {
     figures.push({
-      value: v3Text(pulse.activeCount.toLocaleString('en-US')),
+      value: v3Text(hud.active.toLocaleString('en-US')),
       label: v3Text('homes for sale'),
       href: '/homes-for-sale?view=list',
     })
   }
-  const mosRaw =
-    pulse.monthsOfSupply != null && pulse.monthsOfSupply > 0 ? pulse.monthsOfSupply : null
+  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   if (mosRaw != null) {
     const verdict = marketVerdict(mosRaw)
     figures.push({
@@ -64,11 +63,11 @@ export function buildRegionFigures(
       href: '/months-of-supply',
     })
   }
-  const daysToPending = publishDaysFigure(pulse.medianDaysToPending)
+  const daysToPending = publishDaysFigure(hud.daysToPending)
   if (daysToPending) {
     figures.push({
       value: v3Text(daysToPending),
-      label: v3Text('median days to pending'),
+      label: v3Text('median to pending · 90 days'),
       href: '/housing-market',
     })
   }

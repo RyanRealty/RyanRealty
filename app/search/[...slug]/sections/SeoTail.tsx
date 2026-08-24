@@ -165,7 +165,7 @@ export function SearchSeoTail({
               headline={v3Text(`${city} leftover and other types`)}
               figures={[firstLeftover, ...restLeftover]}
               source={v3Text(
-                'Extra product-type inventory and 12-month leftover pace are Market Truth, sample-gated. Pulse 30-day sold and typical days to pending stay in the live MLS band above.',
+                'Extra product-type inventory and 12-month leftover pace are leftover membership, sample-gated. The band above is the same leftover pile. A miss omits.',
               )}
               action={{
                 label: v3Text(`Open ${city} market report`),

@@ -44,6 +44,7 @@ export const PANEL_HOW = {
   products: 'other-product-types',
   chart: 'leftover-chart',
   medianList: 'median-list',
+  remainder: 'town-remainder',
 } as const
 
 export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
@@ -130,7 +131,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
       'Months of supply is how many months it would take to sell every house currently for sale at the pace houses have actually been closing.',
       MOS_METHODOLOGY_CLAUSE,
       MOS_THRESHOLD_CLAUSE,
-      'On the HUD this uses leftover membership, and only when the inventory count next to it is the same leftover population. If leftover months of supply cannot publish, the tile is omitted. We do not fill it from the live MLS snapshot. Neighborhood months of supply is withheld when leftover cannot publish it. Core-chart months of supply tabs are omitted so they cannot mix older monthly figures into the leftover HUD. The dedicated definition lives on the Months of supply page.',
+      'On the HUD this uses leftover membership, and only when the inventory count next to it is the same leftover population. If leftover months of supply cannot publish, the tile is omitted. We do not fill it from the live MLS snapshot. Neighborhood months of supply is withheld when leftover cannot publish it. Core-chart months of supply tabs are omitted so they cannot mix older monthly figures into the leftover HUD. The dedicated Months of supply page, the housing-market hub, the region report, the annual review, and the cities index use the same leftover pile.',
     ],
   },
   {
@@ -160,7 +161,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'leftover-chart',
     term: 'Median close chart',
     body: [
-      'Monthly median close for leftover houses, calendar months. We plot a leftover series when at least six months publish. Otherwise the older monthly figures remain.',
+      'Monthly median close for leftover houses, calendar months. We plot a leftover series when at least six months publish. If leftover cannot plot, the chart is omitted. We do not fill it from the older monthly figures.',
     ],
   },
   {
@@ -199,10 +200,18 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     ],
   },
   {
+    id: 'town-remainder',
+    term: 'Town remainder',
+    body: [
+      'When a leftover region count sits next to a town table, omitted leftover towns are named, and any leftover houses outside those town rows are named as leftover remainder.',
+      'That remainder is leftover membership, not a city-limits pin count. If leftover cannot publish the region count or the city rows, those figures are omitted.',
+    ],
+  },
+  {
     id: 'fill-on-miss',
     term: 'When a number is missing',
     body: [
-      'On the HUD KPI row and leftover HUD charts, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures.',
+      'On the leftover HUD, leftover MOS destinations, leftover remainder, and leftover HUD charts, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures.',
       'We do not invent a zero, and we do not put a longer window under a shorter label.',
     ],
   },
@@ -227,7 +236,7 @@ export const HOW_NUMBER_FAQS: readonly HowNumberFaq[] = [
   {
     question: 'When do you print a live MLS snapshot instead?',
     answer:
-      'The leftover HUD does not. A missing leftover cell is omitted. We do not print older YTD, this-month, inventory, days-on-market, months-of-supply, or weekly price-cut series on that leftover HUD.',
+      'The leftover HUD, leftover MOS destinations, leftover remainder, and leftover HUD charts do not. A missing leftover cell is omitted. We do not print older YTD, this-month, inventory, days-on-market, months-of-supply, or weekly price-cut series on those leftover surfaces.',
   },
 ]
 

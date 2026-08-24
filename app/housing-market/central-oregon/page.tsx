@@ -98,7 +98,6 @@
 
 import type { Metadata } from 'next'
 import {
-  getMarketPulse,
   getRecentBlogPosts,
   getPriceHistory,
 } from '@/lib/data'
@@ -113,6 +112,8 @@ import {
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { getPublicDetachedMix, publicMixItems } from '@/lib/data/market-truth/public-mix'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { PUBLIC_CLOSED_SALES_METHODOLOGY } from '@/lib/market/publish-public-methodology'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -198,9 +199,8 @@ export default async function CentralOregonRegionPage() {
   // getRecentBlogPosts keeps offset 3 so this page's guide rail does not repeat the
   // /housing-market hub's three posts.
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [regionPulse, citySnapshots, blogPosts, closedSeries, priceHistory, publicSegments, publicPace, publicMix, leftoverMonthly] =
+  const [citySnapshots, blogPosts, closedSeries, priceHistory, publicSegments, publicPace, publicMix, leftoverMonthly, regionOverlays] =
     await Promise.all([
-      getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
       getMarketPulseAllCitySnapshots(),
       getRecentBlogPosts({ limit: 3, offset: 3 }),
       getCoMarketAnnualSeries({
@@ -217,7 +217,15 @@ export default async function CentralOregonRegionPage() {
         geoSlug: 'central-oregon',
         currentMonthKey,
       }),
+      getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]),
     ])
+  const regionMt = regionOverlays.get('region:central-oregon')
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: regionMt?.headlines ?? null,
+    inventory: regionMt?.inventory ?? null,
+    pace: publicPace,
+  })
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
   // display it, and hand the RAW value to buildMarketFaq so the shared builder
@@ -227,10 +235,7 @@ export default async function CentralOregonRegionPage() {
   // "balanced market" headline and above a threshold sentence that calls 4.0 or less a
   // seller's market. lib/format/months-of-supply.ts exists for exactly that boundary
   // and the KB market HUD printed the figure through it in both places it showed it.
-  const mosRaw =
-    regionPulse?.monthsOfSupply != null && regionPulse.monthsOfSupply > 0
-      ? regionPulse.monthsOfSupply
-      : null
+  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
   const verdict = marketVerdict(mosRaw)
   const chartMonths = leftoverOrCacheMonthly(
@@ -238,27 +243,29 @@ export default async function CentralOregonRegionPage() {
     dropInProgressMonth(priceHistory, currentMonthKey),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
+  const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
   // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
   // the page contract requires (G52): the structured data survives a slow or missing
-  // region row instead of vanishing. A null field produces no question and no
+  // leftover row instead of vanishing. A null field produces no question and no
   // variable, never a fabricated one.
-  const pulse: MarketFaqInput | null = regionPulse
-    ? {
-        grain: 'region',
-        activeCount: regionPulse.activeCount,
-        medianListPrice: regionPulse.medianListPrice,
-        monthsOfSupply: mosRaw,
-        medianDaysToPending: regionPulse.medianDaysToPending,
-        refreshedAt: regionPulse.refreshedAt,
-      }
-    : null
+  const pulse: MarketFaqInput | null = {
+    grain: 'region',
+    source: 'market-truth',
+    activeCount: hud.active,
+    medianListPrice: hud.medianList,
+    monthsOfSupply: mosRaw,
+    medianDaysToPending: hud.daysToPending,
+    soldCount12mo: publicPace.closedCount ?? null,
+    pulseActiveCount: hud.active,
+    refreshedAt: leftoverStamp,
+  }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     'Central Oregon',
     pulse ?? { grain: 'region', activeCount: null, medianListPrice: null, refreshedAt: null },
   )
-  const refreshedAt = regionPulse?.refreshedAt ?? null
+  const refreshedAt = leftoverStamp
 
   // The region row's TWO Instruments, built in ./_v3/region-figures.ts. Every figure is
   // a door where a node behind it shows that figure's window (PUBLIC-PRODUCT-OS calls
@@ -266,7 +273,7 @@ export default async function CentralOregonRegionPage() {
   // buildMarketFaq applies to the same figure (invariant 2), and each section's trace is
   // assembled from the figures that section actually rendered (invariant 3). Split out
   // under ci:file-size-budget's own instruction, alongside the Ledger builders.
-  const region = buildRegionInstruments(regionPulse, mosText)
+  const region = buildRegionInstruments(hud, mosText)
   const lead = buildRegionLead(closedSeries, mosText)
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
   const extraLive: V3InstrumentFigure[] = []
@@ -300,11 +307,11 @@ export default async function CentralOregonRegionPage() {
   const liveTrace =
     region.live.trace +
     (extraLive.length > 0
-      ? ' Extra product-type inventory and 12-month pace are Market Truth, sample-gated.'
+      ? ' Extra product-type inventory and 12-month pace are leftover membership, sample-gated.'
       : '')
   const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
   const cityLedger = buildCityLedger(citySnapshots, {
-    regionActive: regionPulse?.activeCount ?? null,
+    regionActive: hud.active,
   })
   const [firstCityRow, ...restCityRows] = cityLedger.rows
   const closedLedger = buildClosedLedger(closedSeries)
@@ -487,7 +494,7 @@ export default async function CentralOregonRegionPage() {
             // this Ledger replaces printed only the count and the median, so the
             // inherited source line was never written to cover a pace figure.
             source={v3Text(
-              'live MLS through Oregon Data Share, one row per city. The count and the median list price are active single-family listings. Days to pending is the median list-to-pending time of single-family homes that closed in the last 90 days',
+              'leftover membership, one row per city. The count and the median list price are leftover active houses. Months of supply is leftover membership',
             )}
             updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}

@@ -149,13 +149,14 @@
  */
 
 import type { Metadata } from 'next'
-import { getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import {
   getPublicPlaceSegments,
   publicSegmentBrowseHref,
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
-import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import {
   MOS_METHODOLOGY_CLAUSE,
   MOS_THRESHOLD_CLAUSE,
@@ -230,22 +231,37 @@ function refreshStamp(iso: string | null | undefined): string | undefined {
 
 export default async function MonthsOfSupplyPage() {
   // Data, all through the DAL (G8). Nothing is fetched that this page does not render.
-  //   regionPulse   - market_pulse_live, geo_type='region', geo_slug='central-oregon',
-  //                   property_type='A'. lib/data/market/getRegionPulse.ts.
-  //   citySnapshots - market_pulse_live, geo_type='city', geo_label in MOS_CITY_LABELS,
-  //                   property_type='A'. lib/data/market/getMarketPulseSnapshot.ts.
-  const [regionPulse, citySnapshots, publicSegments, publicPace] = await Promise.all([
-    getRegionPulse(),
-    getMarketPulseCitySnapshots([...MOS_CITY_LABELS]),
+  // Leftover membership for the region HUD and Bend city row. Extra types and
+  // 12-month pace are leftover. Miss omits.
+  const [overlays, publicSegments, publicPace, bendPace] = await Promise.all([
+    getDetachedOverlays([
+      { geoType: 'region', geoSlug: 'central-oregon' },
+      { geoType: 'city', geoSlug: 'bend' },
+    ]),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
+    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
   ])
+  const regionMt = overlays.get('region:central-oregon')
+  const bendMt = overlays.get('city:bend')
+  const regionHud = leftoverHudKpis({
+    grain: 'region',
+    headlines: regionMt?.headlines ?? null,
+    inventory: regionMt?.inventory ?? null,
+    pace: publicPace,
+  })
+  const bendHud = leftoverHudKpis({
+    grain: 'city',
+    headlines: bendMt?.headlines ?? null,
+    inventory: bendMt?.inventory ?? null,
+    pace: bendPace ?? EMPTY_PUBLIC_PACE,
+  })
 
   // Invariant 2, region. The verdict classifies the STORED value and
   // formatMonthsOfSupply rounds only to display it.
-  const regionMos = regionPulse?.monthsOfSupply ?? null
+  const regionMos = regionHud.monthsSupply
   const regionVerdict = marketVerdict(regionMos)
-  const regionStamp = refreshStamp(regionPulse?.updatedAt)
+  const regionStamp = refreshStamp(regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt)
 
   // Every region figure is a door into the region report, which is the page that
   // publishes the row these three numbers come from.
@@ -257,9 +273,9 @@ export default async function MonthsOfSupplyPage() {
       href: MOS_REGION_REPORT,
     })
   }
-  if (regionPulse != null && regionPulse.activeCount != null && regionPulse.activeCount > 0) {
+  if (regionHud.active != null && regionHud.active > 0) {
     regionFigures.push({
-      value: v3Text(regionPulse.activeCount.toLocaleString('en-US')),
+      value: v3Text(regionHud.active.toLocaleString('en-US')),
       label: v3Text('active single-family listings'),
       href: MOS_REGION_REPORT,
     })
@@ -289,7 +305,7 @@ export default async function MonthsOfSupplyPage() {
 
   // The region trace: the query, then the two canonical clauses, printed verbatim.
   const regionTrace =
-    'Detached months of supply is the region HUD overlay. Extra product-type months of supply and 12-month pace are Market Truth, sample-gated. ' +
+    'Months of supply is leftover membership, the same pile as the leftover HUD. Extra product-type months of supply and 12-month pace are leftover, sample-gated. A miss omits. ' +
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE
@@ -298,41 +314,38 @@ export default async function MonthsOfSupplyPage() {
   // already on screen. An exact identity of those numbers, not a second source. It
   // needs a months of supply above zero, because inverting a zero divides by it.
   const worked =
-    regionPulse &&
-    regionPulse.activeCount != null &&
-    regionPulse.activeCount > 0 &&
+    regionHud.active != null &&
+    regionHud.active > 0 &&
     regionMos != null &&
     regionMos > 0
       ? {
-          active: regionPulse.activeCount,
+          active: regionHud.active,
           mos: regionMos,
-          avgMonthlyClosings: Math.round((regionPulse.activeCount / regionMos) * 10) / 10,
-          impliedSixMonthTotal: Math.round((regionPulse.activeCount / regionMos) * 6),
+          avgMonthlyClosings: Math.round((regionHud.active / regionMos) * 10) / 10,
+          impliedSixMonthTotal: Math.round((regionHud.active / regionMos) * 6),
         }
       : null
 
   // City rows. A city earns a row when the live query returned one AND that row
   // carries a months of supply, because the Ledger's value column is a figure and a
   // figure this page cannot source is a figure it does not print. Invariant 4.
-  const snapshotByLabel = new Map(citySnapshots.map((s) => [s.geo_label, s]))
   const cityRows: V3LedgerFigureRow[] = []
   const rowed = new Set<string>()
   for (const label of MOS_CITY_LABELS) {
-    const snapshot = snapshotByLabel.get(label)
-    if (!snapshot || snapshot.months_of_supply == null) continue
-    const verdict = marketVerdict(snapshot.months_of_supply)
+    if (label !== 'Bend' || bendHud.monthsSupply == null) continue
+    const verdict = marketVerdict(bendHud.monthsSupply)
     rowed.add(label)
     cityRows.push({
       href: MOS_CITY_REPORT[label],
       when: v3Text(
-        snapshot.active_count != null
-          ? `${snapshot.active_count.toLocaleString('en-US')} for sale`
+        bendHud.active != null
+          ? `${bendHud.active.toLocaleString('en-US')} for sale`
           : 'active count unpublished',
       ),
       what: v3Text(label),
       detail:
         verdict.kind === 'unknown' ? undefined : v3Text(capitalize(verdict.label)),
-      value: v3Text(formatMonthsOfSupply(snapshot.months_of_supply)),
+      value: v3Text(formatMonthsOfSupply(bendHud.monthsSupply)),
       id: label.toLowerCase(),
     })
   }
@@ -354,10 +367,9 @@ export default async function MonthsOfSupplyPage() {
   // exactly this reason ("A zero-row query is a fact worth printing").
   const cityFootnotes = MOS_CITY_LABELS.filter((label) => !rowed.has(label)).map(
     (label) => {
-      const snapshot = snapshotByLabel.get(label)
-      if (!snapshot) return `${label} returned no market row in the latest sync`
-      if (snapshot.active_count == null) return `${label} has no published active single-family count`
-      return `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published months of supply`
+      if (label !== 'Bend') return `${label} returned no leftover market row`
+      if (bendHud.active == null) return `${label} has no published leftover active count`
+      return `${label} shows ${bendHud.active.toLocaleString('en-US')} leftover active with no published months of supply`
     },
   )
   const cityFootnoteSentence =
@@ -366,12 +378,7 @@ export default async function MonthsOfSupplyPage() {
   // The city Ledger's own stamp, from the city rows themselves. The region row
   // refreshes on its own schedule, so borrowing its timestamp would date one query's
   // figures with another query's clock. Invariant 3.
-  const cityRefreshedAt = citySnapshots
-    .map((s) => s.updated_at)
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .sort()
-    .at(-1)
-  const cityStamp = refreshStamp(cityRefreshedAt)
+  const cityStamp = refreshStamp(bendMt?.headlines?.computedAt ?? bendMt?.inventory?.computedAt)
 
   // The city trace, one per query (invariant 3), covering every column the section
   // publishes rather than only the population the filter named. `when` prints an
@@ -380,7 +387,7 @@ export default async function MonthsOfSupplyPage() {
   // listings - so the same two imported clauses the region trace carries are appended
   // here. Same string in both branches, because it is the same query either way.
   const cityTrace =
-    'market_pulse_live through Oregon Data Share, active single-family listings, one row per city. ' +
+    'Leftover membership, active single-family houses, one leftover count per city. A miss omits. ' +
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE
@@ -444,7 +451,7 @@ export default async function MonthsOfSupplyPage() {
       headline: 'Months of supply, defined',
       description: definitionText,
       url: '/months-of-supply',
-      dateModified: regionPulse?.updatedAt || undefined,
+      dateModified: regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? undefined,
     },
     { type: 'faqPage', items: faqs },
   ]

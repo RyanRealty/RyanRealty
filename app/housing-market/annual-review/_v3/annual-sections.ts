@@ -34,7 +34,7 @@
  *     figures on a citable page.
  */
 
-import type { MarketDetail, MarketPulse, MarketPulseSnapshot } from '@/lib/data'
+import type { MarketDetail, MarketPulseSnapshot } from '@/lib/data'
 import type { ReportCity } from '@/lib/data/geo/report-cities'
 import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import { marketVerdict } from '@/lib/market/classify'
@@ -90,7 +90,7 @@ export type CityLedger = {
  * second thousand-round of an already-shared figure.
  */
 export function buildRegionFigures(
-  pulse: MarketPulse | null,
+  hud: { active: number | null; daysToPending: number | null } | null,
   mosRaw: number | null,
   medianListDisplay: number | null,
 ): V3InstrumentFigure[] {
@@ -102,9 +102,9 @@ export function buildRegionFigures(
       href: '/months-of-supply',
     })
   }
-  if (pulse != null && pulse.activeCount != null && pulse.activeCount > 0) {
+  if (hud != null && hud.active != null && hud.active > 0) {
     figures.push({
-      value: v3Text(pulse.activeCount.toLocaleString('en-US')),
+      value: v3Text(hud.active.toLocaleString('en-US')),
       label: v3Text('active single-family listings'),
       href: listingsBrowsePath(),
     })
@@ -116,10 +116,10 @@ export function buildRegionFigures(
       href: REGION_REPORT_PATH,
     })
   }
-  if (pulse?.medianDaysToPending != null && pulse.medianDaysToPending > 0) {
+  if (hud?.daysToPending != null && hud.daysToPending > 0) {
     figures.push({
-      value: v3Text(String(pulse.medianDaysToPending)),
-      label: v3Text('median days to pending'),
+      value: v3Text(String(hud.daysToPending)),
+      label: v3Text('median to pending · 90 days'),
       href: REGION_REPORT_PATH,
     })
   }
@@ -205,7 +205,7 @@ export function buildInventoryLedger(
       fact: `${city.label} has ${city.active.toLocaleString('en-US')} active single-family listings not in the table above`,
     })
   }
-  for (const fact of remainder.facts.filter((line) => !line.startsWith('Also in the region pulse'))) {
+  for (const fact of remainder.facts.filter((line) => !line.startsWith('Also in the leftover regional count'))) {
     missing.push({ label: 'Outside city rows', slug: '', fact })
   }
 

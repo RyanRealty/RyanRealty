@@ -17,6 +17,10 @@ describe('homepage HUD leftover sale-to-list', () => {
     expect(SRC).not.toMatch(/getMarketStatsCacheRowForGeo/)
   })
 
+  it('remainder uses leftover HUD region count', () => {
+    expect(SRC).toMatch(/regionActive:\s*hud\.active/)
+  })
+
   it('HUD KPI row is leftover only: miss omits, pulse does not fill', () => {
     expect(SRC).toMatch(/closed30:\s*hud\.closed30/)
     expect(SRC).toMatch(/daysToPending:\s*hud\.daysToPending/)

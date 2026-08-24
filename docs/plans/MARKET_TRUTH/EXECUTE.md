@@ -697,6 +697,15 @@ D17 remainder (YTD / this-month / core-chart inventory-DOM-MOS / weekly price-cu
 
 Core-chart tabs inside leftover HUD: leftover monthly median and closed count only. Cache inventory / DOM / MOS / weekly cuts omitted. Cache YTD / this-month omitted from housing-market instrument. Housing-market live inventory / MOS / median list leftover.
 
+### D21 leftover MOS destinations + leftover remainder
+
+**Done when a real user can:**
+1. Open `/months-of-supply` and see leftover region MOS / leftover inventory, and leftover Bend MOS. A leftover miss omits. Pulse does not fill.
+2. Open `/`, `/housing-market`, `/housing-market/central-oregon`, and `/housing-market/annual-review` and see leftover remainder naming omitted leftover towns, not a city-limits pin remainder.
+3. Open `/cities`, `/housing-market/reports`, and search city SEO and see leftover MOS / leftover inventory / leftover 90-day median to pending. Pulse DOM is omitted.
+
+CRM / blog / report export stay pulse-gated. New · 30 days still omitted. County unpublished.
+
 ---
 
 ## 5. Definition of done for the whole program

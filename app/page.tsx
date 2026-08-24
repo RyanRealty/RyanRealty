@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { getRegionPulse, getListingTiles, getDetachedOverlays } from '@/lib/data'
+import { getListingTiles, getDetachedOverlays } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
@@ -50,7 +50,7 @@ import '@/components/site/kb/kb.css'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 // D11 seo-shell lock: this exact town list stays in source. The live hero
-// count is the regional pulse, so the hero lead names that grain instead.
+// count is leftover region inventory, so the hero lead names that grain.
 const D11_HOMEPAGE_LEAD =
   'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
 
@@ -115,8 +115,7 @@ const monthLabel = (iso?: string) =>
 
 export default async function Home() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [pulse, cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments, leftoverMonthly, publicMix, regionOverlays] = await Promise.all([
-    getRegionPulse().catch(() => null),
+  const [cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments, leftoverMonthly, publicMix, regionOverlays] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
@@ -134,9 +133,15 @@ export default async function Home() {
   ])
   const regionMt = regionOverlays.get('region:central-oregon')
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: regionMt?.headlines ?? null,
+    inventory: regionMt?.inventory ?? null,
+    pace: publicPace,
+  })
 
   const sellMedian = publishSellMedian({
-    placeMedian: pulse?.medianListPrice ?? null,
+    placeMedian: hud.medianList,
     grain: 'region',
     placeName: 'Central Oregon',
   })
@@ -149,7 +154,7 @@ export default async function Home() {
   }).filter((t): t is KbTownItem => t !== null)
   const townRemainder = formatPulseCityRemainderPublic(
     namePulseCityRemainder({
-      regionActive: pulse?.activeCount,
+      regionActive: hud.active,
       displayedLabels: towns.map((t) => t.name),
       allCities: cityPulse.map((row) => ({
         label: row.geo_label,
@@ -213,12 +218,6 @@ export default async function Home() {
   // picks survive the resolver's video-first ordering.
   const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featured, 9)
 
-  const hud = leftoverHudKpis({
-    grain: 'region',
-    headlines: regionMt?.headlines ?? null,
-    inventory: regionMt?.inventory ?? null,
-    pace: publicPace,
-  })
   const marketData: KbMarketData = {
     active: hud.active,
     closed30: hud.closed30,
@@ -235,7 +234,7 @@ export default async function Home() {
     byTown: towns
       .filter((t) => t.medianPrice != null)
       .map((t) => ({ name: t.name, median: t.medianPrice as number })),
-    countyMedian: pulse?.medianListPrice ?? null,
+    countyMedian: hud.medianList,
     yearSeries: buildYearSeries(chartMonths.months, 5),
     chartLeftover: chartMonths.leftoverUsed,
   }
@@ -292,7 +291,7 @@ export default async function Home() {
             Valley with zero pins (design-audit). */}
         <KbListingMap
           geojson={mapGeo}
-          totalActive={pulse?.activeCount ?? mapFeatures.length}
+          totalActive={hud.active ?? mapFeatures.length}
           fitToFeatures
           browseHref={publishRegionalSearchHref()}
         />
@@ -310,7 +309,7 @@ export default async function Home() {
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
-        <KbMarketHud data={marketData} asOf={regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? pulse?.updatedAt ?? null}>
+        <KbMarketHud data={marketData} asOf={regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null}>
           <PublicProductTypes cityName="Central Oregon" citySlug="" rows={publicSegments} />
           <PublicPaceStats cityName="Central Oregon" row={publicPace} />
           <PublicMixStats cityName="Central Oregon" row={publicMix} />

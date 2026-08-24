@@ -12,9 +12,10 @@
  * this Ledger stays type.
  */
 
-import type { MarketPulse, MarketPulseSnapshot } from '@/lib/data'
+import type { MarketPulseSnapshot } from '@/lib/data'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { formatPriceExact } from '@/lib/format/money'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import {
@@ -71,8 +72,8 @@ export function buildCityLedger(
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
       detail:
-        snapshot.median_days_to_pending != null
-          ? v3Text(`${snapshot.median_days_to_pending} days to pending`)
+        snapshot.months_of_supply != null
+          ? v3Text(`${formatMonthsOfSupply(snapshot.months_of_supply)} months of supply`)
           : undefined,
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
@@ -116,7 +117,7 @@ export function buildCityLedger(
       fact: `${city.label} has ${city.active.toLocaleString('en-US')} active single-family listings not in the table above`,
     })
   }
-  for (const fact of remainder.facts.filter((line) => !line.startsWith('Also in the region pulse'))) {
+  for (const fact of remainder.facts.filter((line) => !line.startsWith('Also in the leftover regional count'))) {
     footnotes.push({ label: 'Outside city rows', fact })
   }
 
@@ -143,7 +144,7 @@ export type HubLead = {
 
 /**
  * First-screen KPIs: ALL-TYPE volume, ALL-TYPE closes, composition, and the
- * SFR pulse months-of-supply figure so the verdict stays next to its number.
+ * leftover SFR months-of-supply figure so the verdict stays next to its number.
  */
 export function buildHubLead(
   closedYear: CoMarketAnnualRow | null | undefined,
@@ -185,7 +186,7 @@ export function buildHubLead(
   else if (closedYear) sourceBits.push(closedMartMissingBody(closedYear.year))
   if (mosText) {
     sourceBits.push(
-      `Months of supply is live MLS, detached single-family, Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
+      `Months of supply is leftover membership, detached single-family, Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
     )
   }
 
@@ -209,27 +210,31 @@ export function buildHubLead(
   }
 }
 
-/** SFR pulse leftovers after the first screen already printed months of supply. */
-export function buildSfrFollowFigures(pulse: MarketPulse | null): V3InstrumentFigure[] {
+/** Leftover SFR follow figures after the first screen already printed months of supply. */
+export function buildSfrFollowFigures(hud: {
+  medianList: number | null
+  active: number | null
+  daysToPending: number | null
+} | null): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
-  if (pulse?.medianListPrice != null && pulse.medianListPrice > 0) {
+  if (hud?.medianList != null && hud.medianList > 0) {
     figures.push({
-      value: v3Text(formatPriceExact(pulse.medianListPrice)),
+      value: v3Text(formatPriceExact(hud.medianList)),
       label: v3Text('median list price, single-family'),
       href: '/housing-market/central-oregon',
     })
   }
-  if (pulse != null && pulse.activeCount != null && pulse.activeCount > 0) {
+  if (hud != null && hud.active != null && hud.active > 0) {
     figures.push({
-      value: v3Text(pulse.activeCount.toLocaleString('en-US')),
+      value: v3Text(hud.active.toLocaleString('en-US')),
       label: v3Text('homes for sale, single-family'),
       href: listingsBrowsePath(),
     })
   }
-  if (pulse?.medianDaysToPending != null && pulse.medianDaysToPending > 0) {
+  if (hud?.daysToPending != null && hud.daysToPending > 0) {
     figures.push({
-      value: v3Text(String(pulse.medianDaysToPending)),
-      label: v3Text('median days to pending, single-family'),
+      value: v3Text(String(hud.daysToPending)),
+      label: v3Text('median to pending · 90 days, single-family'),
       href: '/housing-market/central-oregon',
     })
   }

@@ -127,7 +127,7 @@
 
 import type { Metadata } from 'next'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { getMarketPulse, getCityMarketDetail, getPriceHistory } from '@/lib/data'
+import { getCityMarketDetail, getPriceHistory } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import {
   getPublicPlaceSegments,
@@ -136,6 +136,8 @@ import {
 } from '@/lib/data/market-truth/public-segments'
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { REPORT_CITIES, NON_MLS_CITY_EXEMPTIONS } from '@/lib/data/geo/report-cities'
 import { buildMarketFaq } from '@/lib/site/market-faq'
@@ -204,9 +206,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AnnualReviewPage() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [regionPulse, regionDetail, citySnapshots, cityDetailRows, priceHistory, publicSegments, publicPace, cityPaces, leftoverMonthly] =
+  const [regionDetail, citySnapshots, cityDetailRows, priceHistory, publicSegments, publicPace, cityPaces, leftoverMonthly, regionOverlays] =
     await Promise.all([
-    getMarketPulse({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
     getCityMarketDetail({ geoType: 'region', geoSlug: REGION_GEO_SLUG, periodType: PERIOD_TYPE }),
     getMarketPulseAllCitySnapshots(),
     Promise.all(
@@ -223,7 +224,15 @@ export default async function AnnualReviewPage() {
       geoSlug: REGION_GEO_SLUG,
       currentMonthKey,
     }),
+    getDetachedOverlays([{ geoType: 'region', geoSlug: REGION_GEO_SLUG }]),
   ])
+  const regionMt = regionOverlays.get(`region:${REGION_GEO_SLUG}`)
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: regionMt?.headlines ?? null,
+    inventory: regionMt?.inventory ?? null,
+    pace: publicPace,
+  })
   const chartMonths = leftoverOrCacheMonthly(
     leftoverMonthly,
     dropCurrentMonth(priceHistory, currentMonthKey),
@@ -235,7 +244,8 @@ export default async function AnnualReviewPage() {
   // Stamps are the REAL refresh timestamps off the rows, never now(). The region
   // pulse row stamps the live-inventory tier and the region detail row stamps the
   // closed-sales tier; each city Ledger computes its own stamp from its own rows.
-  const inventoryAsOf = regionPulse?.refreshedAt ?? null
+  const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
+  const inventoryAsOf = leftoverStamp
   const salesAsOf = regionDetail?.updatedAt ?? null
   const periodStart = regionDetail?.periodStart ?? null
   const periodEnd = regionDetail?.periodEnd ?? null
@@ -243,10 +253,7 @@ export default async function AnnualReviewPage() {
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, round only to
   // display it, and hand the RAW value to buildMarketFaq so the shared builder
   // repeats the same two steps in the same order.
-  const mosRaw =
-    regionPulse?.monthsOfSupply != null && regionPulse.monthsOfSupply > 0
-      ? regionPulse.monthsOfSupply
-      : null
+  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const verdict = marketVerdict(mosRaw)
 
   // THE OTHER DERIVATION (invariant 6). formatPrice rounds a list price to the
@@ -258,8 +265,8 @@ export default async function AnnualReviewPage() {
   // would round to 0, and a zero under a live-MLS source line is the synthesized
   // figure invariant 3 refuses, so it publishes no figure instead.
   const medianListDisplay =
-    regionPulse?.medianListPrice != null && regionPulse.medianListPrice > 0
-      ? Math.round(regionPulse.medianListPrice / 1000) * 1000 || null
+    hud.medianList != null && hud.medianList > 0
+      ? Math.round(hud.medianList / 1000) * 1000 || null
       : null
 
   // buildMarketFaq — the single source for the visible FAQ, the FAQPage JSON-LD,
@@ -272,19 +279,22 @@ export default async function AnnualReviewPage() {
   // and app/housing-market/[...slug]/page.tsx carry. The regionDetail-sourced fields
   // below are passed either way, so a slow or missing market_pulse_live row costs the
   // page its pulse questions, not its whole structured-data block.
-  const pulse = regionPulse
-  const pulseFields = pulse ?? {
-    activeCount: null,
-    medianDaysToPending: null,
+  const pulse = {
+    grain: 'region' as const,
+    source: 'market-truth' as const,
+    activeCount: hud.active,
+    medianDaysToPending: hud.daysToPending,
+    pulseActiveCount: hud.active,
   }
   const { faqs, datasetVariables: regionFaqVariables, asOfIso } = buildMarketFaq(REGION_LABEL, {
     grain: 'region',
-    activeCount: pulseFields.activeCount,
+    source: 'market-truth',
+    activeCount: pulse.activeCount,
     medianListPrice: medianListDisplay,
     monthsOfSupply: mosRaw,
-    medianDaysToPending: pulseFields.medianDaysToPending,
+    medianDaysToPending: pulse.medianDaysToPending,
+    pulseActiveCount: pulse.pulseActiveCount,
     refreshedAt: inventoryAsOf,
-    medianDaysOnMarket: regionDetail?.medianDom ?? null,
     soldCount12mo: publicPace.closedCount ?? null,
   })
 
@@ -308,11 +318,11 @@ export default async function AnnualReviewPage() {
     })
   }
   const [firstRegionFigure, ...restRegionFigures] = [
-    ...buildRegionFigures(regionPulse, mosRaw, medianListDisplay),
+    ...buildRegionFigures(hud, mosRaw, medianListDisplay),
     ...extraFigures,
   ]
   const inventory = buildInventoryLedger(GRID_CITIES, citySnapshots, {
-    regionActive: regionPulse?.activeCount ?? null,
+    regionActive: hud.active,
   })
   const [firstInventoryRow, ...restInventoryRows] = inventory.rows
   const closed = buildClosedInstrument(
@@ -453,7 +463,7 @@ export default async function AnnualReviewPage() {
   if (mosRaw != null) {
     edges.push({ label: 'Months of supply, defined', href: '/months-of-supply' })
   }
-  if (regionPulse != null && regionPulse.activeCount != null && regionPulse.activeCount > 0) {
+  if (hud.active != null && hud.active > 0) {
     edges.push({ label: 'Browse homes for sale', href: listingsBrowsePath() })
   }
   // The two seller doors, the only surviving descendants of the KB page's KbSell

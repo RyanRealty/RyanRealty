@@ -83,7 +83,7 @@ export const MOS_FAQ_REST: readonly MosFaq[] = [
   {
     question: 'Where does the number on this page come from?',
     answer:
-      'The live figures above are pulled directly from Ryan Realty’s Central Oregon MLS data feed (Oregon Data Share) at render time, refreshed every 10 to 15 minutes. Nothing on this page is estimated or held over from an earlier report.',
+      'The figures above are leftover membership of single-family houses, the same pile as the leftover HUD. If leftover cannot publish a figure, this page omits it. We do not fill it from the live MLS snapshot.',
   },
 ]
 

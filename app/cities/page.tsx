@@ -29,7 +29,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
-import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
+import { getAllCitySnapshots } from '@/lib/data'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
 import { getCityContent } from '@/lib/city-content'
@@ -112,19 +114,18 @@ function verdictFromMos(mos: number | null): string | null {
 }
 
 export default async function CitiesPage() {
-  // market_pulse_live filters by geo_label (display name) — include known
-  // aliases (Lapine/La Pine, Sun River/Sunriver); rows are re-keyed by
-  // geo_slug below so the alias spelling never leaks into the UI.
-  const featuredLabels = [
-    'Bend', 'Redmond', 'Sisters', 'Sunriver', 'Sun River', 'La Pine', 'Lapine',
-    'Tumalo', 'Terrebonne', 'Prineville', 'Madras', 'Powell Butte',
-    'Crooked River Ranch', 'Culver',
-  ]
-  const [allCities, allSnapshots, regionPulse, citySnapshots, regionPace] = await Promise.all([
+  const [allCities, allSnapshots, overlays, regionPace] = await Promise.all([
     getCitiesForIndex(),
     getAllCitySnapshots(),
-    withTimeoutFallback(getRegionPulse(), null, 3500, 'cities:regionPulse'),
-    withTimeoutFallback(getMarketPulseCitySnapshots(featuredLabels), [], 3500, 'cities:cityPulse'),
+    withTimeoutFallback(
+      getDetachedOverlays([
+        { geoType: 'region', geoSlug: 'central-oregon' },
+        ...FEATURED_CITY_SLUGS.map((slug) => ({ geoType: 'city' as const, geoSlug: slug })),
+      ]),
+      new Map(),
+      3500,
+      'cities:leftoverOverlays',
+    ),
     withTimeoutFallback(
       getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
       EMPTY_PUBLIC_PACE,
@@ -132,28 +133,17 @@ export default async function CitiesPage() {
       'cities:regionPace',
     ),
   ])
+  const regionMt = overlays.get('region:central-oregon')
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: regionMt?.headlines ?? null,
+    inventory: regionMt?.inventory ?? null,
+    pace: regionPace,
+  })
 
   const sortedCities = sortCitiesWithPrimaryFirst(allCities)
   const visibleCities = sortedCities.slice(0, 60)
 
-  // citySlug -> live pulse snapshot (market_pulse_live, 10–15 min freshness).
-  // geo_slug in market_pulse_live uses spaces ('la pine') — normalize to
-  // hyphens. A pulse row with zero actives and no median is treated as
-  // absent so the geo_snapshot_mv fallback can answer honestly.
-  const pulseBySlug = new Map(
-    citySnapshots
-      .filter((s) => (s.active_count != null && s.active_count > 0) || s.median_list_price != null)
-      .map((s) => [s.geo_slug.replace(/\s+/g, '-'), s]),
-  )
-  // Unfiltered pulse, keyed the same way — Tumalo and Crooked River Ranch are
-  // unincorporated communities the refresh job explicitly tracks but that
-  // currently have zero live SFR inventory, so they never clear the >0 filter
-  // above AND have no geo_snapshot_mv row either (not a real MLS City value) —
-  // both vanished from the page entirely instead of rendering an honest "0
-  // active" card, same class of bug fixed elsewhere in this remediation (§0).
-  const rawPulseBySlug = new Map(citySnapshots.map((s) => [s.geo_slug.replace(/\s+/g, '-'), s]))
-
-  // citySlug -> geo_snapshot_mv fallback (active count + median)
   const snapshotBySlug = new Map<string, { activeCount: number | null; medianPrice: number | null }>()
   for (const s of allSnapshots) {
     snapshotBySlug.set(s.geoKey.replace(/\s+/g, '-'), {
@@ -164,19 +154,16 @@ export default async function CitiesPage() {
 
   const cityNameBySlug = new Map(visibleCities.map((c) => [c.slug, c.name]))
 
-  // Featured editorial rows — a slug qualifies if the city index, the
-  // geo_snapshot_mv fallback, OR the raw (unfiltered) pulse knows about it.
-  // Explicitly-tracked-but-zero-inventory communities (Tumalo, Crooked River
-  // Ranch) render an honest "0 active" card instead of vanishing from the
-  // page — the same honest-zero convention used site-wide (design-audit P2).
   const featuredBase = FEATURED_CITY_SLUGS.filter(
-    (slug) => cityNameBySlug.has(slug) || snapshotBySlug.has(slug) || rawPulseBySlug.has(slug),
+    (slug) => cityNameBySlug.has(slug) || snapshotBySlug.has(slug) || overlays.has(`city:${slug}`),
   ).map((slug) => {
     const name =
       cityNameBySlug.get(slug) ??
       slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-    const pulse = pulseBySlug.get(slug) ?? rawPulseBySlug.get(slug) ?? null
-    const snap = snapshotBySlug.get(slug) ?? null
+    const layers = overlays.get(`city:${slug}`)
+    const leftoverActive = layers?.headlines?.activeCount ?? layers?.inventory?.activeCount ?? null
+    const leftoverMedian = layers?.headlines?.medianListPrice ?? layers?.inventory?.medianListPrice ?? null
+    const leftoverMos = layers?.headlines?.monthsOfSupply ?? null
     const content = getCityContent(name)
     const sentence = content?.description
       ? firstSentence(content.description)
@@ -186,10 +173,10 @@ export default async function CitiesPage() {
       name,
       hero: cityHero(slug),
       sentence,
-      activeCount: pulse?.active_count ?? snap?.activeCount ?? null,
-      medianListPrice: pulse?.median_list_price ?? snap?.medianPrice ?? null,
-      medianDom: pulse?.median_active_dom ?? null,
-      verdict: verdictFromMos(pulse?.months_of_supply ?? null),
+      activeCount: leftoverActive,
+      medianListPrice: leftoverMedian,
+      medianDom: null as number | null,
+      verdict: verdictFromMos(leftoverMos),
     }
   })
 
@@ -226,39 +213,22 @@ export default async function CitiesPage() {
   const featuredSlugs = new Set(featured.map((f) => f.slug))
   const others = visibleCities.filter((c) => featuredSlugs.has(c.slug) === false)
 
-  // Region totals — live pulse first, mv fallback. §0 UNKNOWN IS NOT ZERO: both
-  // sources are guarded reads, and `[].reduce(…, 0)` turns a doubly-degraded
-  // render into a published "0". null = unknown, and the tile renders an
-  // em-dash placeholder instead.
-  const totalActive: number | null =
-    regionPulse?.activeCount ??
-    (allSnapshots.length > 0
-      ? allSnapshots.reduce<number | null>((sum, s) => {
-          if (sum == null || s.activeSfrCount == null) return null
-          return sum + s.activeSfrCount
-        }, 0)
-      : null)
-  const regionMedian = regionPulse?.medianListPrice ?? null
-  const regionVerdict = verdictFromMos(regionPulse?.monthsOfSupply ?? null)
+  const totalActive: number | null = hud.active
+  const regionMedian = hud.medianList
+  const regionVerdict = verdictFromMos(hud.monthsSupply)
 
-  // Dataset JSON-LD from the SAME region pulse the hero tiles render, so
-  // structured data cannot diverge from what a visitor sees. `pulse ?? snapshot`
-  // (G52): getRegionPulse is a guarded 3.5s read, and passing null on a slow row
-  // would delete the Dataset block rather than degrade it. §0 governs what the
-  // fallback may carry: only activeCount, because summing per-city actives is a
-  // real region total (totalActive above), while a region median is NOT the
-  // median of city medians and months of supply is not summable. Both omitted
-  // rather than approximated.
-  const pulse: MarketFaqInput | null = regionPulse
-    ? {
-        grain: 'region',
-        activeCount: regionPulse.activeCount,
-        medianListPrice: regionPulse.medianListPrice,
-        monthsOfSupply: regionPulse.monthsOfSupply,
-        medianDaysToPending: regionPulse.medianDaysToPending,
-        refreshedAt: regionPulse.updatedAt,
-      }
-    : null
+  const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
+  const pulse: MarketFaqInput | null = {
+    grain: 'region',
+    source: 'market-truth',
+    activeCount: hud.active,
+    medianListPrice: hud.medianList,
+    monthsOfSupply: hud.monthsSupply,
+    medianDaysToPending: hud.daysToPending,
+    soldCount12mo: regionPace.closedCount ?? null,
+    pulseActiveCount: hud.active,
+    refreshedAt: leftoverStamp,
+  }
   const latestSnapshotAt = allSnapshots.reduce<string | null>(
     (latest, s) => (latest == null || s.refreshedAt > latest ? s.refreshedAt : latest),
     null,
@@ -367,10 +337,10 @@ export default async function CitiesPage() {
               {/* The stat is the number; the verdict is a sub-line under it (was
                   the verdict alone under "MONTHS OF SUPPLY" — a word where a
                   number was promised, design-audit P2). */}
-              {regionPulse?.monthsOfSupply != null ? (
+              {hud.monthsSupply != null ? (
                 <div className="stat-cell">
                   <span className="stat-num mono-num">
-                    {formatMonthsOfSupply(regionPulse.monthsOfSupply)} mo
+                    {formatMonthsOfSupply(hud.monthsSupply)} mo
                   </span>
                   <span className="stat-label">Months of supply{regionVerdict ? ` · ${regionVerdict}` : ''}</span>
                 </div>
