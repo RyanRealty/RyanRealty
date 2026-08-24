@@ -61,7 +61,11 @@ function TaskRow({ task, propertyKey }: { task: TcTaskRow; propertyKey: string }
           <Button
             variant="quiet"
             disabled={pending}
-            onClick={() => start(() => setTcTaskStatus(task.id, 'done', propertyKey))}
+            onClick={() => {
+              start(() => {
+                void setTcTaskStatus(task.id, 'done', propertyKey)
+              })
+            }}
           >
             Mark done
           </Button>
@@ -69,7 +73,11 @@ function TaskRow({ task, propertyKey }: { task: TcTaskRow; propertyKey: string }
           <Button
             variant="quiet"
             disabled={pending}
-            onClick={() => start(() => setTcTaskStatus(task.id, 'open', propertyKey))}
+            onClick={() => {
+              start(() => {
+                void setTcTaskStatus(task.id, 'open', propertyKey)
+              })
+            }}
           >
             Reopen
           </Button>

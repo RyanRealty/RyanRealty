@@ -571,12 +571,12 @@ export async function createEnvelopeFromTemplate(
       map = [
         ...oref001OverlayFieldMap().map((f) => ({
           type: 'text' as const,
-          page: f.page,
-          x: f.x,
-          y: f.y,
-          w: f.w,
-          h: f.h,
-          dataRef: f.dataRef ?? f.binding,
+          page: f.page ?? 1,
+          x: f.x ?? 0,
+          y: f.y ?? 0,
+          w: f.w ?? 0,
+          h: f.h ?? 0,
+          dataRef: f.dataRef ?? f.binding ?? null,
           signerRole: null,
           optional: false,
           label: f.label ?? null,
