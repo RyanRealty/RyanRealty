@@ -48,7 +48,7 @@ export type MarketFaqInput = {
    *  when medianDaysToPending is null (community has no pulse row). If both are present,
    *  only medianDaysToPending is used so we don't show two nearly-identical questions. */
   medianDaysOnMarket?: number | null
-  /** Homes sold in the last 12 months (market_stats_cache soldCount). */
+  /** Homes sold in the last 12 months. Leftover closed_count when source is market-truth. */
   soldCount12mo?: number | null
   /** The alias subdivision names that make up this community (registry).
    *  Emits a "what areas/subdivisions" question when there are 2+ aliases. */
@@ -149,7 +149,11 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     datasetVariables.push({ name: 'Active Listings', value: sfrPublished.value })
   }
 
-  const publishedSold12mo = publishSoldCount({ value: pulse.soldCount12mo, grain: pulse.grain })
+  const publishedSold12mo = publishSoldCount({
+    value: pulse.soldCount12mo,
+    grain: pulse.grain,
+    source: pulse.source,
+  })
 
   const publishedMos = publishMonthsOfSupply({
     grain: pulse.grain,
@@ -211,11 +215,9 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
 
   // ── Extended community-specific questions (§0: only when data exists) ───────
 
-  // Homes sold in the past 12 months — market_stats_cache soldCount, and only
-  // at a grain that attributes closes the way it attributes actives. The
-  // neighborhood rows count a close only when its "SubdivisionName" string
-  // matches a registered alias, which found 3 of bend-century-west's 72 sales
-  // for the year. publishSoldCount is what withholds it (geo-grain-trust.ts).
+  // Homes sold in the past 12 months. Cache/pulse neighborhood sold is
+  // withheld (alias join). Leftover closed_count publishes when source is
+  // market-truth (place_membership is_primary).
   if (publishedSold12mo != null && publishedSold12mo > 0) {
     faqs.push({
       question: `How many homes sold in ${geoName} in the last year?`,

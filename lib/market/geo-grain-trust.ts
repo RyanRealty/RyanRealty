@@ -97,8 +97,14 @@ export function isSoldAttributionTrusted(grain: MarketGrain | null | undefined):
 export function publishSoldCount(input: {
   value: number | null | undefined
   grain: MarketGrain
+  /**
+   * Pulse/cache neighborhood sold counts are mixed-method (alias join).
+   * Market Truth leftover closed_count uses place_membership is_primary
+   * on the same population as actives.
+   */
+  source?: 'pulse' | 'market-truth'
 }): number | null {
-  if (!isSoldAttributionTrusted(input.grain)) return null
+  if (input.source !== 'market-truth' && !isSoldAttributionTrusted(input.grain)) return null
   const { value } = input
   if (value == null || !Number.isFinite(value) || value < 0) return null
   return value

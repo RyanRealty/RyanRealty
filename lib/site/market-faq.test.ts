@@ -212,6 +212,17 @@ describe('buildMarketFaq at an untrusted grain', () => {
     expect(datasetVariables.find((v) => v.name === 'Homes Sold (12 months)')).toBeUndefined()
   })
 
+  it('publishes leftover 12-month sold at neighborhood when source is market-truth', () => {
+    const { faqs, datasetVariables } = buildMarketFaq('Sunriver', {
+      grain: 'neighborhood',
+      source: 'market-truth',
+      soldCount12mo: 117,
+      activeCount: 56,
+    })
+    expect(faqs.map((f) => f.question).join(' ')).toMatch(/how many homes sold/i)
+    expect(datasetVariables.find((v) => v.name === 'Homes Sold (12 months)')?.value).toBe(117)
+  })
+
   it('still answers the figures that do not depend on closed-sale attribution', () => {
     const { faqs, datasetVariables } = buildMarketFaq('Century West', {
       grain: 'neighborhood',

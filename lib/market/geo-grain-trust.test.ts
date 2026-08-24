@@ -53,4 +53,8 @@ describe('publishSoldCount', () => {
   it('publishes a real zero at a trusted grain rather than treating it as missing', () => {
     expect(publishSoldCount({ value: 0, grain: 'city' })).toBe(0)
   })
+
+  it('publishes neighborhood leftover closed_count when source is market-truth', () => {
+    expect(publishSoldCount({ value: 21, grain: 'neighborhood', source: 'market-truth' })).toBe(21)
+  })
 })
