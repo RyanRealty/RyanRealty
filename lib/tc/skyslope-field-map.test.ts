@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   deriveSignerRole,
+  mappedFieldTypeFromName,
   translateSkyslopeFields,
   summarizeMap,
   type MappedField,
@@ -30,6 +31,16 @@ describe('deriveSignerRole', () => {
   it('reads originalName when dataRef is generic', () => {
     expect(deriveSignerRole('sig1', 'Seller Signature')).toBe('seller')
     expect(deriveSignerRole('', 'Listing Agent')).toBe('listing_agent')
+  })
+})
+
+describe('mappedFieldTypeFromName', () => {
+  it('turns an AcroForm text widget named as a signature into a signature field', () => {
+    expect(mappedFieldTypeFromName('BuyerSignature', null, 'text')).toBe('signature')
+    expect(mappedFieldTypeFromName('Seller_Sign', 'Seller Sign', 'text')).toBe('signature')
+    expect(mappedFieldTypeFromName('ListingAgentInitials', null, 'text')).toBe('initials')
+    expect(mappedFieldTypeFromName('Buyer1Name', null, 'text')).toBe('text')
+    expect(mappedFieldTypeFromName('Assignment', null, 'text')).toBe('text')
   })
 })
 

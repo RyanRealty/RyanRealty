@@ -16,6 +16,18 @@ describe('fieldMapFromAcroFormPdf', () => {
     expect(map[0].dataRef).toBe('Buyer1Name')
     expect(map[0].signerRole).toBe('buyer')
     expect(map[0].page).toBe(1)
+    expect(map[0].type).toBe('text')
+  })
+
+  it('reads a text widget named BuyerSignature as a signature field', async () => {
+    const pdf = await PDFDocument.create()
+    const page = pdf.addPage([612, 792])
+    const form = pdf.getForm()
+    const tf = form.createTextField('BuyerSignature')
+    tf.addToPage(page, { x: 80, y: 80, width: 180, height: 36 })
+    const map = await fieldMapFromAcroFormPdf(await pdf.save())
+    expect(map[0]?.type).toBe('signature')
+    expect(map[0]?.signerRole).toBe('buyer')
   })
 
   it('returns empty for a blank page with no widgets', async () => {

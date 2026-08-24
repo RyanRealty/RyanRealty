@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { PdfPages } from './pdf-pages'
-import { SignaturePad } from './SignaturePad'
+import { SignaturePad, scriptTextToPng } from './SignaturePad'
+import { fieldNeedsAdoptedMark, initialsFromFullName, nextRequiredFieldId } from '@/lib/tc/adopt-signature'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card } from '@/components/ui/card'
@@ -28,6 +29,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   const [agree, setAgree] = useState(false)
   const [values, setValues] = useState<Map<string, SignFieldValue>>(new Map())
   const [pad, setPad] = useState<EnvelopeField | null>(null)
+  const [adopted, setAdopted] = useState<{ signaturePng: string; initialsPng: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<null | 'completed' | 'partial'>(null)
   const [error, setError] = useState<string | null>(null)
@@ -51,13 +53,35 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
   )
   const filledCount = requiredIds.filter((id) => values.has(id)).length
   const allFilled = filledCount === requiredIds.length
+  const needsAdopt = payload.fields.some((f) => fieldNeedsAdoptedMark(f.type))
 
   const setValue = (fieldId: string, v: SignFieldValue) =>
     setValues((m) => {
       const next = new Map(m)
       next.set(fieldId, v)
+      const nid = nextRequiredFieldId(
+        payload.fields,
+        new Set(next.keys()),
+      )
+      if (nid) {
+        requestAnimationFrame(() => document.getElementById(`sign-field-${nid}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+      }
       return next
     })
+
+  function adoptPng(png: string) {
+    const initials = scriptTextToPng(initialsFromFullName(payload.recipientName)) ?? png
+    setAdopted({ signaturePng: png, initialsPng: initials })
+  }
+
+  function applyMark(field: EnvelopeField) {
+    if (!adopted) {
+      setPad(field)
+      return
+    }
+    if (field.type === 'initials') setValue(field.id, { kind: 'initials', png: adopted.initialsPng })
+    else setValue(field.id, { kind: 'signature', png: adopted.signaturePng })
+  }
 
   async function consent() {
     setBusy(true)
@@ -134,11 +158,39 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
     )
   }
 
+  if (needsAdopt && !adopted) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16">
+        <h1 className="font-display text-2xl font-bold text-foreground">Adopt your signature</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Draw it, type it, or upload a picture. Then tap each Sign box on the documents. Nothing to install.
+        </p>
+        <SignaturePad
+          open
+          onOpenChange={() => undefined}
+          title="Adopt your signature"
+          defaultName={payload.recipientName}
+          confirmLabel="Adopt and start signing"
+          onComplete={adoptPng}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-3 pb-32 pt-6">
       <div className="mb-4">
         <h1 className="font-display text-xl font-bold text-foreground">{payload.propertyAddress}</h1>
         <p className="text-sm text-muted-foreground">{payload.envelopeName}</p>
+        {adopted ? (
+          <button
+            type="button"
+            className="mt-1 text-xs text-muted-foreground underline underline-offset-2"
+            onClick={() => setAdopted(null)}
+          >
+            Change signature
+          </button>
+        ) : null}
       </div>
 
       {payload.documents.map((doc) => (
@@ -156,7 +208,7 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
                       field={f}
                       size={size}
                       value={values.get(f.id) ?? null}
-                      onSignature={() => setPad(f)}
+                      onSignature={() => applyMark(f)}
                       onText={(text) => setValue(f.id, { kind: f.type === 'date_signed' ? 'date_signed' : 'text', text })}
                       onDate={() =>
                         signedDate
@@ -201,10 +253,14 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
       <SignaturePad
         open={!!pad}
         onOpenChange={(v) => !v && setPad(null)}
-        title={pad?.type === 'initials' ? 'Add your initials' : 'Add your signature'}
+        title={pad?.type === 'initials' ? 'Add your initials' : 'Adopt your signature'}
         defaultName={payload.recipientName}
+        confirmLabel="Adopt"
         onComplete={(png) => {
-          if (pad) setValue(pad.id, { kind: pad.type === 'initials' ? 'initials' : 'signature', png })
+          const initials = scriptTextToPng(initialsFromFullName(payload.recipientName)) ?? png
+          setAdopted({ signaturePng: png, initialsPng: initials })
+          if (pad?.type === 'initials') setValue(pad.id, { kind: 'initials', png: initials })
+          else if (pad?.type === 'signature') setValue(pad.id, { kind: 'signature', png })
           setPad(null)
         }}
       />
@@ -247,7 +303,13 @@ function FieldBox({
 
   if (field.type === 'signature' || field.type === 'initials') {
     return (
-      <button type="button" style={style} className={`${base} ${ring}`} onClick={onSignature}>
+      <button
+        type="button"
+        id={`sign-field-${field.id}`}
+        style={style}
+        className={`${base} ${ring}`}
+        onClick={onSignature}
+      >
         {value && (value.kind === 'signature' || value.kind === 'initials') ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={value.png} alt="signature" className="max-h-full max-w-full object-contain" />
@@ -260,7 +322,7 @@ function FieldBox({
 
   if (field.type === 'date_signed') {
     return (
-      <button type="button" style={style} className={`${base} ${ring}`} onClick={onDate}>
+      <button type="button" id={`sign-field-${field.id}`} style={style} className={`${base} ${ring}`} onClick={onDate}>
         <span className={filled ? 'text-foreground' : 'text-primary'}>
           {value && value.kind === 'date_signed' ? value.text : 'Date'}
         </span>
@@ -273,6 +335,7 @@ function FieldBox({
     return (
       <button
         type="button"
+        id={`sign-field-${field.id}`}
         style={style}
         className={`${base} ${ring}`}
         onClick={() => {

@@ -67,7 +67,7 @@ describe('SIGN_FIELD_TYPES', () => {
 describe('resolveSigningInviteCopy', () => {
   it('uses brokerage defaults when the broker left Edit message blank', () => {
     const copy = resolveSigningInviteCopy({ reminder: false, propertyAddress: '1 Beaumont Dr' })
-    expect(copy.subject).toBe('Your signature is requested for 1 Beaumont Dr')
+    expect(copy.subject).toBe('You have documents to sign for 1 Beaumont Dr')
     expect(copy.body).toContain('1 Beaumont Dr')
     expect(copy.body).not.toMatch(/—/)
   })
@@ -230,6 +230,24 @@ describe('seedPartyEnvelopeRecipients', () => {
     expect(rows.find((r) => r.role === 'Seller')?.action_required).toBe('NeedsToSign')
     expect(rows.find((r) => r.role === 'Buyer')?.action_required).toBe('ReceivesACopy')
     expect(rows.find((r) => r.role === 'SellerAgent')?.action_required).toBe('ReceivesACopy')
+  })
+
+  it('dual sale agreement seeds both agent lines for the same broker', () => {
+    const rows = seedPartyEnvelopeRecipients({
+      envelopeId: 'e1',
+      buyers: ['Vault Test Buyer'],
+      sellers: ['Marketing Test Lead'],
+      brokerName: 'Matt Ryan',
+      brokerEmail: 'matt@ryan-realty.com',
+      cycleKind: 'sale',
+      ourRole: 'dual',
+      requiredRoles: ['Buyer', 'Seller', 'SellerAgent', 'BuyerAgent'],
+    })
+    const agents = rows.filter((r) => r.role === 'SellerAgent' || r.role === 'BuyerAgent')
+    expect(agents).toHaveLength(2)
+    expect(agents.every((r) => r.action_required === 'NeedsToSign')).toBe(true)
+    expect(agents.every((r) => r.email === 'matt@ryan-realty.com')).toBe(true)
+    expect(new Set(agents.map((r) => r.role))).toEqual(new Set(['SellerAgent', 'BuyerAgent']))
   })
 
   it('dual sale agreement: buyers sign first as a group, then sellers', () => {

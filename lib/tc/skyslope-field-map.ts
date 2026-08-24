@@ -70,6 +70,26 @@ function mapType(t?: string): MappedFieldType {
   return (t ? TYPE_MAP[t] : undefined) ?? 'text'
 }
 
+/** AcroForm widgets are often Text even when the name is BuyerSignature. */
+export function mappedFieldTypeFromName(
+  dataRef?: string | null,
+  label?: string | null,
+  current: MappedFieldType = 'text',
+): MappedFieldType {
+  if (current !== 'text') return current
+  const s = `${dataRef ?? ''} ${label ?? ''}`.toLowerCase()
+  if (!s.trim()) return current
+  if (/initial/.test(s)) return 'initials'
+  if (/date\s*signed|datesigned|date_signed/.test(s)) return 'date_signed'
+  if (/time\s*signed|timesigned|time_signed/.test(s)) return 'time_signed'
+  if (/full\s*name|fullname/.test(s)) return 'full_name'
+  if (/\bsignature\b|signatur|_sig(?:nature)?\b/.test(s)) return 'signature'
+  if (/(?:^|[^a-z])sign(?:ature)?(?:[^a-z]|$)/.test(s) && !/assign|design|signal|significant/.test(s)) {
+    return 'signature'
+  }
+  return current
+}
+
 /** Derive which recipient signs a signature/initials field from its dataRef/group. */
 export function deriveSignerRole(dataRef?: string, group?: string): SignerRole {
   const s = `${dataRef ?? ''} ${group ?? ''}`.toLowerCase()
@@ -92,7 +112,11 @@ export function translateSkyslopeFields(
     const pg = safePages[f.pageNumber ?? 0] ?? safePages[0] ?? DEFAULT_PAGE
     const W = pg.width || DEFAULT_PAGE.width
     const H = pg.height || DEFAULT_PAGE.height
-    const type = mapType(f.type ?? f.originalType)
+    const type = mappedFieldTypeFromName(
+      f.dataRef,
+      f.originalName ?? f.domainName,
+      mapType(f.type ?? f.originalType),
+    )
     return {
       type,
       page: (f.pageNumber ?? 0) + 1,

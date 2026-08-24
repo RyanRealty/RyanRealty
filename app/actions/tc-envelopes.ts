@@ -40,7 +40,13 @@ import {
 } from '@/lib/tc/signing'
 import { sendSigningInvite } from '@/lib/tc/signing-emails'
 import { createHash } from 'node:crypto'
-import { deriveSignerRole, type MappedField, type SignerRole } from '@/lib/tc/skyslope-field-map'
+import {
+  deriveSignerRole,
+  mappedFieldTypeFromName,
+  type MappedField,
+  type MappedFieldType,
+  type SignerRole,
+} from '@/lib/tc/skyslope-field-map'
 import { fieldMapFromAcroFormPdf } from '@/lib/tc/acroform-field-map'
 import { fallbackSigningStack } from '@/lib/tc/fallback-signing-stack'
 import { isOref001OverlayApplicable, oref001OverlayFieldMap } from '@/lib/tc/oref-001-field-map'
@@ -637,7 +643,8 @@ export async function createEnvelopeFromTemplate(
     const { filled } = mapDealFactsToFillValues(facts, map)
     const textByFact = new Map(filled.map((v) => [v.factKey, v.value]))
     for (const f of map) {
-      const type = (f.type as string) === 'date' ? 'date_signed' : f.type
+      const raw = (f.type as string) === 'date' ? 'date_signed' : f.type
+      const type = mappedFieldTypeFromName(f.dataRef, f.label, raw as MappedFieldType)
       const factKey = resolveFactKey(f.dataRef ?? '')
       const filledText = factKey ? textByFact.get(factKey) : undefined
       fieldRows.push({

@@ -5,26 +5,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ADOPT_METHOD_LABEL, type AdoptMethod } from '@/lib/tc/adopt-signature'
 
 /**
- * Signature / initials capture. Draw with a finger or mouse, or type a name
- * rendered in a script-style face. Returns a transparent PNG data URL.
+ * Adopt a signature: draw, type, or upload a picture. Returns a transparent PNG.
+ * No app. Same three choices as live DigiSign.
  */
 export function SignaturePad({
   open,
   onOpenChange,
   title,
   defaultName,
+  confirmLabel = 'Adopt',
   onComplete,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   title: string
   defaultName?: string
+  confirmLabel?: string
   onComplete: (png: string) => void
 }) {
-  const [tab, setTab] = useState<'draw' | 'type'>('draw')
+  const [tab, setTab] = useState<AdoptMethod>('type')
   const [typed, setTyped] = useState(defaultName ?? '')
+  const [uploadPng, setUploadPng] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawingRef = useRef(false)
   const dirtyRef = useRef(false)
@@ -32,8 +37,9 @@ export function SignaturePad({
   useEffect(() => {
     if (open) {
       setTyped(defaultName ?? '')
+      setUploadPng(null)
+      setUploadError(null)
       dirtyRef.current = false
-      // clear after the dialog paints
       requestAnimationFrame(() => clearCanvas())
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,25 +84,17 @@ export function SignaturePad({
     drawingRef.current = false
   }
 
-  const typedToPng = (): string | null => {
-    const name = typed.trim()
-    if (!name) return null
-    const c = document.createElement('canvas')
-    c.width = 600
-    c.height = 160
-    const ctx = c.getContext('2d')!
-    ctx.fillStyle = '#102742'
-    ctx.font = 'italic 64px "Brush Script MT","Snell Roundhand",cursive'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(name, 16, 88)
-    return c.toDataURL('image/png')
-  }
-
   const finish = () => {
     if (tab === 'type') {
-      const png = typedToPng()
+      const png = scriptTextToPng(typed.trim())
       if (!png) return
       onComplete(png)
+      onOpenChange(false)
+      return
+    }
+    if (tab === 'upload') {
+      if (!uploadPng) return
+      onComplete(uploadPng)
       onOpenChange(false)
       return
     }
@@ -106,17 +104,52 @@ export function SignaturePad({
     onOpenChange(false)
   }
 
+  function onUpload(file: File | undefined) {
+    setUploadError(null)
+    setUploadPng(null)
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Pick a photo or a scan of your signature.')
+      return
+    }
+    const img = new Image()
+    img.onload = () => {
+      const c = document.createElement('canvas')
+      c.width = 600
+      c.height = 160
+      const ctx = c.getContext('2d')
+      if (!ctx) return
+      const scale = Math.min(c.width / img.width, c.height / img.height)
+      const w = img.width * scale
+      const h = img.height * scale
+      ctx.drawImage(img, (c.width - w) / 2, (c.height - h) / 2, w, h)
+      setUploadPng(c.toDataURL('image/png'))
+      URL.revokeObjectURL(img.src)
+    }
+    img.onerror = () => setUploadError('That picture could not be read. Try another.')
+    img.src = URL.createObjectURL(file)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <Tabs value={tab} onValueChange={(v) => setTab(v as 'draw' | 'type')}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="draw">Draw</TabsTrigger>
-            <TabsTrigger value="type">Type</TabsTrigger>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as AdoptMethod)}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="type">{ADOPT_METHOD_LABEL.type}</TabsTrigger>
+            <TabsTrigger value="draw">{ADOPT_METHOD_LABEL.draw}</TabsTrigger>
+            <TabsTrigger value="upload">{ADOPT_METHOD_LABEL.upload}</TabsTrigger>
           </TabsList>
+          <TabsContent value="type" className="mt-3">
+            <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Type your full name" autoFocus />
+            <div className="mt-3 flex h-[120px] items-center justify-center rounded-md border border-border bg-white">
+              <span style={{ fontFamily: '"Brush Script MT","Snell Roundhand",cursive', fontStyle: 'italic', fontSize: 44, color: '#102742' }}>
+                {typed || 'Your name'}
+              </span>
+            </div>
+          </TabsContent>
           <TabsContent value="draw" className="mt-3">
             <div className="rounded-md border border-border bg-white">
               <canvas
@@ -135,22 +168,48 @@ export function SignaturePad({
               Clear
             </button>
           </TabsContent>
-          <TabsContent value="type" className="mt-3">
-            <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Type your full name" autoFocus />
-            <div className="mt-3 flex h-[120px] items-center justify-center rounded-md border border-border bg-white">
-              <span style={{ fontFamily: '"Brush Script MT","Snell Roundhand",cursive', fontStyle: 'italic', fontSize: 44, color: '#102742' }}>
-                {typed || 'Your name'}
-              </span>
-            </div>
+          <TabsContent value="upload" className="mt-3">
+            <label className="block text-sm text-muted-foreground">
+              A photo or scan of your signature. Nothing is installed on your phone.
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="mt-2 block w-full text-sm"
+                onChange={(e) => onUpload(e.target.files?.[0])}
+              />
+            </label>
+            {uploadPng ? (
+              <div className="mt-3 flex h-[120px] items-center justify-center rounded-md border border-border bg-white">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={uploadPng} alt="Uploaded signature preview" className="max-h-[110px] max-w-full object-contain" />
+              </div>
+            ) : null}
+            {uploadError ? <p className="mt-2 text-sm text-destructive">{uploadError}</p> : null}
           </TabsContent>
         </Tabs>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={finish}>Apply</Button>
+          <Button onClick={finish}>{confirmLabel}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
+}
+
+export function scriptTextToPng(text: string): string | null {
+  const name = text.trim()
+  if (!name || typeof document === 'undefined') return null
+  const c = document.createElement('canvas')
+  c.width = 600
+  c.height = 160
+  const ctx = c.getContext('2d')
+  if (!ctx) return null
+  ctx.fillStyle = '#102742'
+  ctx.font = 'italic 64px "Brush Script MT","Snell Roundhand",cursive'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(name, 16, 88)
+  return c.toDataURL('image/png')
 }

@@ -242,10 +242,16 @@ export function seedPartyEnvelopeRecipients(input: {
     return 'NeedsToSign'
   }
   const brokerRole = brokerEnvelopeRole(input.cycleKind, ourRole)
+  const agentRoles: RecipientRole[] =
+    ourRole === 'dual' ? ['SellerAgent', 'BuyerAgent'] : [brokerRole]
   const whoSigns: RecipientRole[] = []
   if (mustSign('Buyer') === 'NeedsToSign') whoSigns.push('Buyer')
   if (mustSign('Seller') === 'NeedsToSign') whoSigns.push('Seller')
-  if (input.brokerName?.trim() && mustSign(brokerRole) === 'NeedsToSign') whoSigns.push(brokerRole)
+  for (const role of agentRoles) {
+    if (input.brokerName?.trim() && mustSign(role) === 'NeedsToSign' && !whoSigns.includes(role)) {
+      whoSigns.push(role)
+    }
+  }
   const rows: Array<{
     envelope_id: string
     role: string
@@ -277,14 +283,19 @@ export function seedPartyEnvelopeRecipients(input: {
     })
   }
   if (input.brokerName?.trim()) {
-    rows.push({
-      envelope_id: input.envelopeId,
-      role: brokerRole,
-      name: input.brokerName.trim(),
-      email: input.brokerEmail,
-      signing_order: input.brokerSigningOrder ?? signingGroupForRole(brokerRole, whoSigns),
-      action_required: mustSign(brokerRole),
-    })
+    const seen = new Set<RecipientRole>()
+    for (const role of agentRoles) {
+      if (seen.has(role)) continue
+      seen.add(role)
+      rows.push({
+        envelope_id: input.envelopeId,
+        role,
+        name: input.brokerName.trim(),
+        email: input.brokerEmail,
+        signing_order: input.brokerSigningOrder ?? signingGroupForRole(role, whoSigns),
+        action_required: mustSign(role),
+      })
+    }
   }
   return rows
 }
@@ -444,8 +455,8 @@ export function resolveSigningInviteCopy(input: {
   const customBody = input.customBody?.trim() ?? ''
   const subject =
     customSubject ||
-    (input.reminder ? `Your signature is still needed for ${addr}` : `Your signature is requested for ${addr}`)
-  const heading = input.reminder ? `A reminder to sign for ${addr}` : `Your signature is requested for ${addr}`
+    (input.reminder ? `Your signature is still needed for ${addr}` : `You have documents to sign for ${addr}`)
+  const heading = input.reminder ? `A reminder to sign for ${addr}` : `You have documents to sign for ${addr}`
   const body =
     customBody ||
     (input.reminder

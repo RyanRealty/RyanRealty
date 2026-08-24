@@ -286,6 +286,11 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                         size={size}
                         color={colorOf(f.recipientId)}
                         readonly={readonly}
+                        clickThrough={
+                          (activeType === 'signature' || activeType === 'initials') &&
+                          f.type !== 'signature' &&
+                          f.type !== 'initials'
+                        }
                         onDelete={() => deleteField(f.localId)}
                         onMove={(xf, yf) =>
                           setFields((fs) => fs.map((x) => (x.localId === f.localId ? { ...x, x: xf, y: yf } : x)))
@@ -531,6 +536,7 @@ function FieldChip({
   size,
   color,
   readonly,
+  clickThrough = false,
   onDelete,
   onMove,
   dragRef,
@@ -539,6 +545,7 @@ function FieldChip({
   size: { w: number; h: number }
   color: string
   readonly: boolean
+  clickThrough?: boolean
   onDelete: () => void
   onMove: (xFrac: number, yFrac: number) => void
   dragRef: React.RefObject<{ localId: string; offsetX: number; offsetY: number } | null>
@@ -551,6 +558,7 @@ function FieldChip({
     height: field.h * size.h,
     borderColor: color,
     color,
+    pointerEvents: clickThrough ? 'none' : undefined,
   }
   return (
     <div

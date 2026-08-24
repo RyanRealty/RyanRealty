@@ -3,7 +3,7 @@
  * Flattened sample blanks return []. Do not invent boxes.
  */
 import { PDFCheckBox, PDFDocument, PDFSignature, PDFTextField } from 'pdf-lib'
-import { deriveSignerRole, type MappedField } from './skyslope-field-map'
+import { deriveSignerRole, mappedFieldTypeFromName, type MappedField } from './skyslope-field-map'
 
 function clamp01(n: number): number {
   if (!Number.isFinite(n)) return 0
@@ -20,7 +20,7 @@ export async function fieldMapFromAcroFormPdf(bytes: Uint8Array): Promise<Mapped
     let type: MappedField['type'] = 'text'
     if (field instanceof PDFCheckBox) type = 'checkbox'
     else if (field instanceof PDFSignature) type = 'signature'
-    else if (field instanceof PDFTextField) type = 'text'
+    else if (field instanceof PDFTextField) type = mappedFieldTypeFromName(name, name, 'text')
     const widgets = field.acroField.getWidgets()
     for (const w of widgets) {
       const rect = w.getRectangle()

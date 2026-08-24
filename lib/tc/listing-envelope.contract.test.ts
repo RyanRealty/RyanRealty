@@ -12,6 +12,7 @@ describe('listing envelope walk wiring', () => {
     expect(src).toMatch(/overlayListingPrice/)
     expect(src).toMatch(/assignUnassignedFieldsFromMaps/)
     expect(src).toMatch(/deriveSignerRole/)
+    expect(src).toMatch(/mappedFieldTypeFromName/)
     expect(src).toMatch(/getEnvelopeCycleKindAndDeal/)
     expect(src).toMatch(/getListPriceByMlsNumber/)
   })
