@@ -19,6 +19,7 @@ describe('parseFormNumber', () => {
     expect(parseFormNumber('Residential Real Estate Sale Agreement - 001 OREF')).toBe('001')
     expect(parseFormNumber('Things to Know Before Signing - 000A OREF')).toBe('000A')
     expect(parseFormNumber('Addendum to Sale Agreement 2 page - 002A OREF')).toBe('002A')
+    expect(parseFormNumber('Buyers Repair Addendum - 022A (1) OREF')).toBe('022A')
   })
   it('reads Oregon Realtors dotted numbers', () => {
     expect(parseFormNumber('1.1 Oregon Residential Real Estate Purchase And Sale Agreement - OR')).toBe(

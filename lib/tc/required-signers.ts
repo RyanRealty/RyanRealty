@@ -23,7 +23,7 @@ import { signersFromHeldForm } from './library-signers-from-name'
 import { isOtherSideRecipientRole } from './representation'
 import type { BrokerRole } from './required-documents'
 
-const SIGN_TYPES = new Set(['signature', 'initials'])
+const SIGN_TYPES = new Set(['signature'])
 
 export type FormSignerSource = {
   formNumber?: string | null
@@ -47,9 +47,9 @@ export type SignerRead = {
 export function parseFormNumber(raw: string | null | undefined): string | null {
   if (!raw?.trim()) return null
   const oref = raw.trim().match(/OREF\s*[-]?\s*(\d{3}[A-Z]?)/i)
-  if (oref) return oref[1].toUpperCase().replace(/[A-Z]$/, '')
-  const m = raw.trim().match(/\b(\d{3})\b/)
-  return m ? m[1] : null
+  if (oref) return oref[1].toUpperCase()
+  const m = raw.trim().match(/\b(\d{3}[A-Z]?)\b/i)
+  return m ? m[1].toUpperCase() : null
 }
 
 export function recipientRoleFromFieldSigner(signer: SignerRole | null | undefined): RecipientRole | null {

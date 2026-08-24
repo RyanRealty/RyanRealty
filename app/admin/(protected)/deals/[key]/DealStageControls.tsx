@@ -19,10 +19,10 @@ export function DealStageControls({
   canAssign: boolean
 }) {
   const [pending, start] = useTransition()
-  const showStage = stage === 'active_listing' || stage === 'dead'
+  const showStage = stage === 'active_listing' || stage === 'dead' || stage === 'pending'
   if (!showStage && !canAssign) return null
 
-  function run(next: 'active_listing' | 'dead', detail: string, ok: string) {
+  function run(next: 'active_listing' | 'dead' | 'closed', detail: string, ok: string) {
     start(async () => {
       const res = await setDealStage({ propertyKey, stage: next, detail })
       if (res.error) toast.error(res.error)
@@ -47,6 +47,17 @@ export function DealStageControls({
           onClick={() => run('active_listing', 'Listing restored', 'Listing restored.')}
         >
           Restore listing
+        </Button>
+      ) : stage === 'pending' ? (
+        <Button
+          variant="quiet"
+          disabled={pending}
+          onClick={() => {
+            if (!window.confirm('Close this file? Title documents are not required to mark it closed.')) return
+            run('closed', 'Closed', 'File closed.')
+          }}
+        >
+          Close file
         </Button>
       ) : null}
       {canAssign ? (

@@ -3,7 +3,7 @@
  * and no AcroForm widgets. Broker can drag in the composer. Do not pretend
  * this is a measured overlay of every blank on the form.
  */
-import { deriveSignerRole, type MappedField, type SignerRole } from './skyslope-field-map'
+import { deriveSignerRole, mappedFieldTypeFromName, type MappedField, type SignerRole } from './skyslope-field-map'
 import { readRequiredSigners } from './required-signers'
 import type { RecipientRole } from './signing'
 
@@ -60,6 +60,30 @@ export function fallbackSigningStack(input: {
       },
     ]
   })
+}
+
+/**
+ * Licensed OREF blanks often have hundreds of AcroForm text widgets and no
+ * PDFSignature widgets. Name-mapping catches BuyerSignature; 001 does not
+ * name those lines. Append the last-page stack for any required role that
+ * still has no signature box.
+ */
+export function withFallbackSignatures(
+  map: readonly MappedField[],
+  input: {
+    pageCount: number
+    formNumber?: string | null
+    signerProfile?: string | null
+    documentName?: string | null
+  },
+): MappedField[] {
+  const typed = map.map((f) => ({
+    ...f,
+    type: mappedFieldTypeFromName(f.dataRef, f.label, f.type),
+  }))
+  const have = new Set(typed.filter((f) => f.type === 'signature').map((f) => f.signerRole))
+  const extra = fallbackSigningStack(input).filter((f) => !have.has(f.signerRole))
+  return extra.length ? [...typed, ...extra] : typed
 }
 
 export { deriveSignerRole }

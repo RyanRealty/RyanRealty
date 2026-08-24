@@ -222,6 +222,7 @@ export async function submitSigning(
   const valueById = new Map(values.map((v) => [v.fieldId, v.value]))
 
   for (const f of fieldRows) {
+    if (!signerOwnsMappedField(String(f.type ?? ''))) continue
     if (!f.required || isSenderAnnotation(f.type)) continue
     const v = valueById.get(f.id)
     if (!fieldValueIsComplete(String(f.type ?? ''), v ?? null)) {

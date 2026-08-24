@@ -34,7 +34,7 @@ export const FORM_LIBRARY: readonly FormLibraryEntry[] = [
     oref: '001',
     headerRegex: /OREF[-\s]*001|Residential\s+Real\s+Estate\s+Sale\s+Agreement/i,
     titleRegex: /residential\s+real\s+estate\s+sale\s+agreement/i,
-    signers: ['buyer', 'seller'],
+    signers: ['buyer', 'seller', 'seller_broker', 'buyer_broker'],
   },
   {
     formId: 'oref-002-addendum',

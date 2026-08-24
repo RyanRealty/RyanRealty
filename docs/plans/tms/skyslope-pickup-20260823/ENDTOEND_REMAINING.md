@@ -10,6 +10,14 @@ On each file: listing packet (already done on Apollo) → sale agreement sent an
 
 Done means the second file repeats the first without a new send/sign/assign bug.
 
+## File 1 (Apollo) — 2026-08-24
+
+Listing packet completed. Sale agreement `bde354f4` sent from email and completed: buyer `admin@`, seller `marketing@`, Matt both agent lines. Adopt Type, then Sign. Inspection ends 2026-09-08; financing 2026-10-06.
+
+Fixes from that walk (this commit): last-page signatures when the AcroForm has no Sign widgets; 001 includes both licensees; sale packet is 001 only (the 6-form packet timed out at 1,104 fields); email Finish no longer demands hidden text blanks; 022A form number from `022A (1) OREF`; Close file on a pending sale.
+
+Next on Apollo: 022A, 022B, 059, 060, Close file. Then file 2.
+
 ---
 
 # End-to-end remaining Vault items — 2026-08-23 (pass 4)

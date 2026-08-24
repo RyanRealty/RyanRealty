@@ -239,10 +239,10 @@ export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
   }
 }
 
-/** Listing withdraw / restore. Not a SkySlope kebab clone — one stage flip + audit row. */
+/** Listing withdraw / restore, or close a pending sale. Not a SkySlope kebab clone. */
 export async function setDealStage(input: {
   propertyKey: string
-  stage: 'active_listing' | 'dead'
+  stage: 'active_listing' | 'dead' | 'closed'
   detail: string
 }): Promise<{ ok: boolean; error?: string }> {
   const session = await getSession()
@@ -266,11 +266,32 @@ export async function setDealStage(input: {
   }
   const from = String(deal.stage)
   if (from === input.stage) return { ok: true }
+  if (input.stage === 'closed' && from !== 'pending') {
+    return { ok: false, error: 'Only a pending sale can close.' }
+  }
+  if (input.stage === 'closed') {
+    const { data: cycles } = await supabase.from('tc_cycles').select('id').eq('deal_id', deal.id)
+    for (const c of cycles ?? []) {
+      const inflight = await listInFlightEnvelopes(String(c.id))
+      if (inflight.length) {
+        return { ok: false, error: 'Finish or void envelopes still out for signature before closing.' }
+      }
+    }
+  }
   const { error } = await supabase
     .from('tc_deals')
     .update({ stage: input.stage, stage_detail: input.detail })
     .eq('id', deal.id)
   if (error) return { ok: false, error: error.message }
+  if (input.stage === 'closed') {
+    const today = new Date().toISOString().slice(0, 10)
+    await supabase
+      .from('tc_cycles')
+      .update({ actual_closing_date: today, status: 'Closed' })
+      .eq('deal_id', deal.id)
+      .eq('kind', 'sale')
+      .is('actual_closing_date', null)
+  }
   await supabase.from('tc_events').insert({
     deal_id: deal.id,
     actor: session?.user?.email ?? 'admin',

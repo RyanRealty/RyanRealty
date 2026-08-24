@@ -57,7 +57,7 @@ export function parseFormNumber(name: string): string | null {
   const text = name.trim()
   const orefPrefix = text.match(/\bOREF[- ](\d{3}[A-Z]?)\b/i)
   if (orefPrefix) return orefPrefix[1].toUpperCase()
-  const orefSuffix = text.match(/\b(\d{3}[A-Z]?)\s*[-–]?\s*OREF\b/i)
+  const orefSuffix = text.match(/\b(\d{3}[A-Z]?)\s*(?:\(\d+\)\s*)?[-–]?\s*OREF\b/i)
   if (orefSuffix) return orefSuffix[1].toUpperCase()
   const orNum = text.match(/^(\d{1,2}\.\d+[A-Z]?)\b/i)
   if (orNum) return orNum[1].toUpperCase()

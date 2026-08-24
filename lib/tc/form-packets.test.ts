@@ -17,6 +17,10 @@ describe('FORM_PACKET_SEEDS', () => {
     const listing = FORM_PACKET_SEEDS.find((s) => s.name === 'Listing — Standard')
     expect(listing?.formNumbers).not.toContain('001')
     expect(listing?.nameIncludes?.some((n) => /Seller/i.test(n))).toBe(true)
+    const sale = FORM_PACKET_SEEDS.find((s) => s.name === 'Residential — Standard')
+    expect(sale?.formNumbers).toEqual(['001'])
+    expect(sale?.formNumbers).not.toContain('015')
+    expect(sale?.formNumbers).not.toContain('020')
   })
 })
 

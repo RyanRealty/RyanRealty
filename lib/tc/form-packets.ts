@@ -11,11 +11,8 @@ export type FormPacketSeed = {
 export const FORM_PACKET_SEEDS: readonly FormPacketSeed[] = [
   {
     name: 'Residential — Standard',
-    formNumbers: ['001', '020', '042', '015'],
-    nameIncludes: [
-      'Advisory Regarding Electronic Funds - Buyer',
-      'Advisory Regarding Electronic Funds - Seller',
-    ],
+    formNumbers: ['001'],
+    nameIncludes: ['Advisory Regarding Electronic Funds - Buyer'],
   },
   {
     name: 'Listing — Standard',

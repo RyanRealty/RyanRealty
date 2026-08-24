@@ -44,10 +44,25 @@ describe('requiredSignerRolesFromForm', () => {
     ).toEqual(['Buyer', 'BuyerAgent'])
   })
 
-  it('sale agreement 001 is Buyer and Seller; listing 015 is Seller and listing broker', () => {
-    expect(requiredSignerRolesFromForm({ formNumber: 'OREF 001' })).toEqual(['Buyer', 'Seller'])
+  it('sale agreement 001 is both principals and both licensees; listing 015 is Seller and listing broker', () => {
+    expect(requiredSignerRolesFromForm({ formNumber: 'OREF 001' })).toEqual([
+      'Buyer',
+      'Seller',
+      'SellerAgent',
+      'BuyerAgent',
+    ])
     expect(requiredSignerRolesFromForm({ formNumber: '015' })).toEqual(['Seller', 'SellerAgent'])
     expect(requiredSignerRolesFromForm({ formNumber: '050' })).toEqual(['Buyer', 'BuyerAgent'])
+  })
+
+  it('keeps 022A distinct from 022 and does not let initials hide 001 licensee lines', () => {
+    expect(requiredSignerRolesFromForm({ formNumber: '022A' })).toEqual(['Buyer', 'Seller'])
+    expect(
+      requiredSignerRolesFromForm({
+        formNumber: '001',
+        fieldMap: [{ type: 'initials', signerRole: 'buyer', optional: false }],
+      }),
+    ).toEqual(['Buyer', 'Seller', 'SellerAgent', 'BuyerAgent'])
   })
 
   it('property disclosure 020 needs seller disclosure and buyer acknowledgment', () => {
@@ -74,7 +89,7 @@ describe('requiredSignerRolesFromForm', () => {
       requiredSignerRolesFromForm({
         documentName: '20702Beaumont_X_001_Residential Real Estate Sale Agreement.pdf',
       }),
-    ).toEqual(['Buyer', 'Seller'])
+    ).toEqual(['Buyer', 'Seller', 'SellerAgent', 'BuyerAgent'])
     expect(
       requiredSignerRolesFromForm({
         pageText: 'OREF 015 | Released 01/2026 | Exclusive Right to Sell',
@@ -155,7 +170,7 @@ describe('unionRequiredSignerRoles', () => {
   it('unions a listing form and a sale form', () => {
     expect(
       unionRequiredSignerRoles([{ formNumber: '015' }, { formNumber: '001' }]),
-    ).toEqual(['Seller', 'SellerAgent', 'Buyer'])
+    ).toEqual(['Seller', 'SellerAgent', 'Buyer', 'BuyerAgent'])
   })
 
   it('marks the envelope unread if any document was not identified', () => {
@@ -164,7 +179,7 @@ describe('unionRequiredSignerRoles', () => {
       { documentName: 'scan-of-something.pdf' },
     ])
     expect(read.identified).toBe(false)
-    expect(read.roles).toEqual(['Buyer', 'Seller'])
+    expect(read.roles).toEqual(['Buyer', 'Seller', 'SellerAgent', 'BuyerAgent'])
   })
 })
 

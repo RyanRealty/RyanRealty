@@ -12,7 +12,7 @@ describe('identifyFormFromText', () => {
   it('reads the OREF stamp on page 1, not a guess after someone signs', () => {
     const page1 = 'OREF 001 | Released 01/2026 | Page 1 of 15\nResidential Real Estate Sale Agreement'
     expect(identifyFormFromText(page1)?.oref).toBe('001')
-    expect(identifyFormFromText(page1)?.signers).toEqual(['buyer', 'seller'])
+    expect(identifyFormFromText(page1)?.signers).toEqual(['buyer', 'seller', 'seller_broker', 'buyer_broker'])
   })
 
   it('reads listing 015 as seller + listing broker, not buyer', () => {
@@ -66,7 +66,7 @@ describe('librarySignersToRoles', () => {
 
   it('marks a title report as identified and not a signature form', () => {
     const entry = formLibraryEntryByNumber('001')
-    expect(entry?.signers).toEqual(['buyer', 'seller'])
+    expect(entry?.signers).toEqual(['buyer', 'seller', 'seller_broker', 'buyer_broker'])
     expect(librarySignersToRoles(['not_applicable'], {}).signatureForm).toBe(false)
   })
 })

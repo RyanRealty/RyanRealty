@@ -48,7 +48,7 @@ import {
   type SignerRole,
 } from '@/lib/tc/skyslope-field-map'
 import { fieldMapFromAcroFormPdf } from '@/lib/tc/acroform-field-map'
-import { fallbackSigningStack } from '@/lib/tc/fallback-signing-stack'
+import { fallbackSigningStack, withFallbackSignatures } from '@/lib/tc/fallback-signing-stack'
 import { isOref001OverlayApplicable, oref001OverlayFieldMap } from '@/lib/tc/oref-001-field-map'
 import {
   missingRequiredSignerRoles,
@@ -641,6 +641,12 @@ export async function createEnvelopeFromTemplate(
         documentName: form.name,
       })
     }
+    map = withFallbackSignatures(map, {
+      pageCount: Number(form.page_count) || 1,
+      formNumber: form.form_number,
+      signerProfile: form.signer_profile,
+      documentName: form.name,
+    })
     const { filled } = mapDealFactsToFillValues(facts, map)
     const textByFact = new Map(filled.map((v) => [v.factKey, v.value]))
     for (const f of map) {
