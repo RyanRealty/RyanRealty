@@ -98,6 +98,7 @@ export function buildMonthlyMedianChart(
 export function buildYearOverlayChart(
   years: readonly KbYearSeries[],
   monthly: readonly MedianMonth[],
+  leftoverUsed = false,
 ): V3ChartProps | undefined {
   const overlay: V3ChartSeries[] = []
   for (const year of years.slice(-3)) {
@@ -113,11 +114,18 @@ export function buildYearOverlayChart(
   }
   if (overlay.length > 0) {
     return {
-      caption: v3Text('Median sale price by month, recent years'),
+      caption: v3Text(
+        leftoverUsed
+          ? 'Median close by month, Market Truth leftover, recent years'
+          : 'Median sale price by month, recent years',
+      ),
       series: overlay,
     }
   }
-  return buildMonthlyMedianChart(monthly, 'Median sale price, completed months')
+  return buildMonthlyMedianChart(
+    monthly,
+    leftoverUsed ? 'Median close, Market Truth leftover, completed months' : 'Median sale price, completed months',
+  )
 }
 
 /**
@@ -125,8 +133,11 @@ export function buildYearOverlayChart(
  * mounts. Completes the year-series grouping here so the page does not import
  * lib/kb at the route.
  */
-export function buildRegionMedianChart(monthly: readonly MedianMonth[]): V3ChartProps | undefined {
-  return buildYearOverlayChart(buildYearSeries([...monthly], 5), monthly)
+export function buildRegionMedianChart(
+  monthly: readonly MedianMonth[],
+  leftoverUsed = false,
+): V3ChartProps | undefined {
+  return buildYearOverlayChart(buildYearSeries([...monthly], 5), monthly, leftoverUsed)
 }
 
 /** Last n completed months, oldest first. The trailing-12-month instrument uses 12. */

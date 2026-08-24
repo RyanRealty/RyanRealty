@@ -69,6 +69,7 @@ import {
   publicPaceItems,
 } from '@/lib/data/market-truth/public-pace'
 import { getPublicDetachedMix, publicMixHasRow, publicMixItems } from '@/lib/data/market-truth/public-mix'
+import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
 import {
   getCoMarketAnnual,
   getCoMarketAnnualSeries,
@@ -155,6 +156,7 @@ export default async function HousingMarketHubPage() {
     publicSegments,
     publicPace,
     publicMix,
+    leftoverMonthly,
   ] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
     getMarketPulseAllCitySnapshots(),
@@ -168,6 +170,11 @@ export default async function HousingMarketHubPage() {
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
     getPublicDetachedMix({ geoType: 'region', geoSlug: 'central-oregon' }),
+    getPublicDetachedMonthly({
+      geoType: 'region',
+      geoSlug: 'central-oregon',
+      currentMonthKey: todayKey.slice(0, 7),
+    }),
   ])
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
@@ -179,9 +186,11 @@ export default async function HousingMarketHubPage() {
       : null
   const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
   const verdict = marketVerdict(mosRaw)
-  const regionChart = buildRegionMedianChart(
+  const chartMonths = leftoverOrCacheMonthly(
+    leftoverMonthly,
     dropInProgressMonth(priceHistory, todayKey.slice(0, 7)),
   )
+  const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
 
   // The long view: the approved chart-room forms wired live. A fourth
   // population set (national FRED series, the mart's SFR cube, the seller-net

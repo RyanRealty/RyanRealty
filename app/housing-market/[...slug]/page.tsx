@@ -49,6 +49,7 @@ import {
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
+import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'
@@ -125,7 +126,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   // fallback, so a `.catch(() => null)` here would only hide a real outage
   // behind a confident empty page.
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [pulse, priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix] =
+  const [pulse, priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix, leftoverMonthly] =
     await Promise.all([
     getMarketPulse({ geoType, geoSlug }),
     getPriceHistory(geoType, geoSlug, 'monthly', priceHistoryLimit),
@@ -142,6 +143,9 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     isCity
       ? getPublicDetachedMix({ geoType: 'city', geoSlug: citySlug })
       : Promise.resolve(EMPTY_PUBLIC_MIX),
+    isCity
+      ? getPublicDetachedMonthly({ geoType: 'city', geoSlug: citySlug, currentMonthKey })
+      : Promise.resolve([]),
   ])
   const detailYtd = timeframes?.ytd ?? null
   const detail = timeframes?.monthly ?? null
@@ -153,6 +157,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   if (!pulse && priceHistory.length === 0) notFound()
 
   const completePriceMonths = priceHistory.filter((p) => p.periodStart.slice(0, 7) !== currentMonthKey)
+  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, completePriceMonths)
 
   const mosRaw = publishMonthsOfSupply({
     grain: geoType,
@@ -222,8 +227,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     schemas.push({ type: 'faqPage', items: faqs })
   }
 
-  const yearSeries = buildYearSeries(completePriceMonths, 5)
-  const cityChart = buildCityMedianChart(yearSeries, completePriceMonths)
+  const yearSeries = buildYearSeries(chartMonths.months, 5)
+  const cityChart = buildCityMedianChart(yearSeries, chartMonths.months, chartMonths.leftoverUsed)
   const communityChart =
     completePriceMonths.length >= 6
       ? buildMonthlyMedianChart(completePriceMonths, `${geoName} median sale price, completed months`)

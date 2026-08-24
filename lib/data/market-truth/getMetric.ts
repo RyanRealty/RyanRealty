@@ -96,7 +96,9 @@ function matchesInput(row: Record<string, unknown>, input: GetMetricInput): bool
   if (String(row.segment) !== input.segment) return false
   if (String(row.definition_id) !== (input.definitionId ?? DEFINITION_ID)) return false
   if (input.windowMonths != null && Number(row.window_months) !== input.windowMonths) return false
-  if (input.periodEnd && String(row.period_end) !== input.periodEnd) return false
+  if (input.periodEnd && String(row.period_end).slice(0, 10) !== String(input.periodEnd).slice(0, 10)) {
+    return false
+  }
   return true
 }
 

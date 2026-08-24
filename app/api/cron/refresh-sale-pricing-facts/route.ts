@@ -156,6 +156,15 @@ export async function GET(request: Request) {
     if (bound?.done) break
   }
   const { data: shadow, error: shadowErr } = await supabase.rpc('compute_market_metrics_shadow')
+  let monthlyShadow: unknown = null
+  if (!shadowErr) {
+    const monthly = await supabase.rpc('compute_market_metrics_monthly_shadow', { p_months: 36 })
+    if (monthly.error) {
+      console.error('[refresh-sale-pricing-facts] compute_market_metrics_monthly_shadow', monthly.error.message)
+    } else {
+      monthlyShadow = monthly.data
+    }
+  }
   if (shadowErr) {
     console.error('[refresh-sale-pricing-facts] compute_market_metrics_shadow', shadowErr.message)
     return NextResponse.json(
@@ -189,6 +198,7 @@ export async function GET(request: Request) {
     marketFactSpan,
     marketFactBound,
     marketMetricShadow: shadow,
+    marketMetricMonthly: monthlyShadow,
     done,
     indexes: idx,
     duration_ms: Date.now() - started,

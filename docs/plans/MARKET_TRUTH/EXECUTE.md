@@ -556,6 +556,19 @@ Bend detached still 774. County unpublished.
 
 2026-08-23an landed (live webpack 3010): `/housing-market/bend` detached mix/feature leftover — garage **96.1%** (true share), **at least 85.8%** fireplace, **at least 85.4%** cooling, **at least 51.4%** HOA, conventional **63.5%** / cash **27.6%**, 3-bed **56.3%**. `/data/market/city/bend` `mix` matches. Pulse DTP **18** / sold 30d **137** stay. 0% floors omitted. County unpublished.
 
+### Grind 2026-08-23ao — leftover monthly chart series (city/region)
+
+**Locks still hold:** county unpublished; pulse 30-day sold and DTP stay; unadjusted MoM (`mom_median_price`) stays off public; extra MOS at neighborhood omitted; subdivision never a price; `commercial_lease` out; `all_residential` off public. The in-progress month stays dropped. Workers do not tick this file.
+
+**Done when a real user can:**
+1. Open `/housing-market/bend` year-overlay chart and see monthly **median close** from leftover Market Truth (`median_close`, `window_months = 1`, sample-gated min_n 10) when those cells exist. A leftover miss does not fill that month from cache in the leftover series. If leftover cannot plot (≥6 publishable months), the cache series remains (labeled as cache).
+2. Same leftover overlay on `/housing-market` and `/housing-market/central-oregon` region charts.
+3. Caption names leftover membership when leftover plots; cache caption stays when fallback.
+
+Bend detached still 774. County unpublished. Pulse DTP / 30-day stay.
+
+2026-08-23ao landed: city/region year-overlay charts prefer leftover monthly `median_close` (window_months = 1, min_n 10) when at least six months publish. A leftover miss does not fill that month from cache. Cache series remains until monthly compute writes cells (`compute_market_metrics_monthly_shadow`). Caption names leftover when leftover plots. Unadjusted MoM stays off public. Pulse DTP / 30-day stay.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

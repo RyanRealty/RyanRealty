@@ -189,4 +189,25 @@ describe('getMetric / getMetrics', () => {
     expect(row?.value).toBeNull()
     expect(row?.valueText).toContain('conventional')
   })
+
+  it('matches period_end on the calendar date even when the store returns a timestamp', async () => {
+    mockMetricRows([
+      metricRow({
+        stat_id: 'median_close',
+        value: 750000,
+        window_months: 1,
+        period_end: '2026-07-31T00:00:00+00:00',
+        sample_n: 80,
+      }),
+    ])
+    const row = await getMetric({
+      stat: 'median_close',
+      geoType: 'city',
+      geoSlug: 'bend',
+      segment: 'detached',
+      windowMonths: 1,
+      periodEnd: '2026-07-31',
+    })
+    expect(row?.value).toBe(750000)
+  })
 })

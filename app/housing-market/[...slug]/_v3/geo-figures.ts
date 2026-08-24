@@ -478,6 +478,7 @@ export function buildMonthlyMedianChart(
 export function buildCityMedianChart(
   years: readonly KbYearSeries[],
   monthly: readonly { periodStart: string; medianSalePrice: number | null }[],
+  leftoverUsed = false,
 ): V3ChartProps | undefined {
   const overlay: V3ChartSeries[] = []
   for (const year of years.slice(-3)) {
@@ -493,9 +494,16 @@ export function buildCityMedianChart(
   }
   if (overlay.length > 0) {
     return {
-      caption: v3Text('Median sale price by month, recent years'),
+      caption: v3Text(
+        leftoverUsed
+          ? 'Median close by month, Market Truth leftover, recent years'
+          : 'Median sale price by month, recent years',
+      ),
       series: overlay,
     }
   }
-  return buildMonthlyMedianChart(monthly, 'Median sale price, completed months')
+  return buildMonthlyMedianChart(
+    monthly,
+    leftoverUsed ? 'Median close, Market Truth leftover, completed months' : 'Median sale price, completed months',
+  )
 }
