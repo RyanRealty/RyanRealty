@@ -16,6 +16,14 @@ describe('autoDeadlineTasksFromCalendar', () => {
       'principal_review_due',
       'well_contingency',
     ])
+    const withWindows = autoDeadlineTasksFromCalendar(
+      dealCalendarItems({
+        address: '218 SW 4th',
+        cycles: [{ id: 'S', contract_acceptance_date: '2026-08-01', inspectionDays: 10, financingDays: 30 }],
+      }),
+    )
+    expect(withWindows.some((t) => t.kind === 'inspection_period_ends')).toBe(true)
+    expect(withWindows.some((t) => t.kind === 'financing_contingency_ends')).toBe(true)
     expect(tasks.every((t) => t.cycleId === 'S')).toBe(true)
   })
 })

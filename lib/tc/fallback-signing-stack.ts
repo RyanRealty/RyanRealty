@@ -4,7 +4,7 @@
  * this is a measured overlay of every blank on the form.
  */
 import { deriveSignerRole, type MappedField, type SignerRole } from './skyslope-field-map'
-import { requiredSignerRolesFromForm } from './required-signers'
+import { readRequiredSigners } from './required-signers'
 import type { RecipientRole } from './signing'
 
 const ROLE_TO_SIGNER: Record<string, SignerRole> = {
@@ -18,12 +18,16 @@ export function fallbackSigningStack(input: {
   pageCount: number
   formNumber?: string | null
   signerProfile?: string | null
+  documentName?: string | null
 }): MappedField[] {
   const page = Math.max(1, Math.round(input.pageCount) || 1)
-  const roles = requiredSignerRolesFromForm({
+  const read = readRequiredSigners({
     formNumber: input.formNumber,
     signerProfile: input.signerProfile,
+    documentName: input.documentName,
   })
+  if (read.identified && !read.signatureForm) return []
+  const roles = read.roles
   const signers = (roles.length ? roles : (['Seller'] as RecipientRole[])).filter((r) => ROLE_TO_SIGNER[r])
   const unique = [...new Set(signers)]
   return unique.flatMap((role, i) => {

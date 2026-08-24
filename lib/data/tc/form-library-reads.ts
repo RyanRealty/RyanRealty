@@ -60,6 +60,54 @@ export async function findFormVersionIdByNumber(formNumber: string): Promise<str
   return id ? String(id) : null
 }
 
+export async function getFormVersionBlankRow(id: string): Promise<{
+  id: string
+  name: string
+  form_number: string | null
+  signer_profile: string | null
+  page_count: number | null
+} | null> {
+  const { data } = await createServiceClient()
+    .from('tc_form_versions')
+    .select('id, name, form_number, signer_profile, page_count')
+    .eq('id', id)
+    .maybeSingle()
+  if (!data) return null
+  return {
+    id: String(data.id),
+    name: String(data.name ?? ''),
+    form_number: data.form_number == null ? null : String(data.form_number),
+    signer_profile: data.signer_profile == null ? null : String(data.signer_profile),
+    page_count: data.page_count == null ? null : Number(data.page_count),
+  }
+}
+
+export async function listLiveFormVersionsForMapping(): Promise<
+  Array<{
+    id: string
+    name: string
+    form_number: string | null
+    signer_profile: string | null
+    page_count: number | null
+    blank_pdf_storage_path: string | null
+    field_map: unknown
+  }>
+> {
+  const { data } = await createServiceClient()
+    .from('tc_form_versions')
+    .select('id, name, form_number, signer_profile, page_count, blank_pdf_storage_path, field_map')
+    .is('retired_at', null)
+  return (data ?? []).map((v) => ({
+    id: String(v.id),
+    name: String(v.name ?? ''),
+    form_number: v.form_number == null ? null : String(v.form_number),
+    signer_profile: v.signer_profile == null ? null : String(v.signer_profile),
+    page_count: v.page_count == null ? null : Number(v.page_count),
+    blank_pdf_storage_path: v.blank_pdf_storage_path == null ? null : String(v.blank_pdf_storage_path),
+    field_map: v.field_map,
+  }))
+}
+
 export async function listClauses(): Promise<ClauseRow[]> {
   const { data } = await createServiceClient()
     .from('tc_clauses')

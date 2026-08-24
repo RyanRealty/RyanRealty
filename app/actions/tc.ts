@@ -74,6 +74,8 @@ export type TcCycle = {
   escrow_closing_date: string | null
   actual_closing_date: string | null
   expiration_date: string | null
+  inspection_days: number | null
+  financing_days: number | null
   dead_date: string | null
   checklist_type: string | null
   broker_name: string | null
@@ -186,6 +188,8 @@ export async function getTcDeal(propertyKey: string): Promise<TcDeal | null> {
       escrow_closing_date: c.escrow_closing_date,
       actual_closing_date: c.actual_closing_date,
       expiration_date: c.expiration_date,
+      inspection_days: c.inspection_days == null ? null : Number(c.inspection_days),
+      financing_days: c.financing_days == null ? null : Number(c.financing_days),
       dead_date: c.dead_date,
       checklist_type: c.checklist_type,
       broker_name: c.broker_name,

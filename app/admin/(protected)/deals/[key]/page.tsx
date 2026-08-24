@@ -66,6 +66,7 @@ import { getDealParties } from '@/lib/data/tc/deal-people'
 import { CHECKLIST_GROUPS, checklistGroupForRule } from '@/lib/tc/required-documents'
 import { DealParties } from './DealParties'
 import { DealTasks } from './DealTasks'
+import { DealContingencyDays } from './DealContingencyDays'
 import { listDealTasks } from '@/lib/data/tc/task-reads'
 import { DealStageControls } from './DealStageControls'
 import { ListingFileActions } from './ListingFileActions'
@@ -248,6 +249,7 @@ function CycleSection({
   orefForm,
   propertyKey,
   address,
+  dealId,
 }: {
   cycle: TcCycle
   showArchived: boolean
@@ -256,6 +258,7 @@ function CycleSection({
   orefForm: PreferredOrefForm | null
   propertyKey: string
   address: string
+  dealId: string
 }) {
   const docs = cycle.documents.filter((doc) => (showArchived ? true : !doc.archived))
   const archivedCount = cycle.documents.filter((doc) => doc.archived).length
@@ -346,6 +349,8 @@ function CycleSection({
               contract_acceptance_date: cycle.contract_acceptance_date,
               escrow_closing_date: cycle.escrow_closing_date,
               hasWell: cycle.checklist.some((it) => /\bwell\b/i.test(`${it.name} ${it.type_name ?? ''}`)),
+              inspectionDays: cycle.inspection_days,
+              financingDays: cycle.financing_days,
             },
           ],
         }).filter((d) => d.kind !== 'contract_accepted')
@@ -364,6 +369,13 @@ function CycleSection({
           </section>
         )
       })()}
+      <DealContingencyDays
+        cycleId={cycle.id}
+        dealId={dealId}
+        propertyKey={propertyKey}
+        inspectionDays={cycle.inspection_days}
+        financingDays={cycle.financing_days}
+      />
       <AnticipatedDocs data={anticipated} />
       <FillOrefPacket cycleId={cycle.id} form={orefForm} />
       <CommissionSection rows={commissions} cycleId={cycle.id} propertyKey={propertyKey} />
@@ -625,6 +637,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
               orefForm={orefForm}
               propertyKey={deal.property_key}
               address={deal.address}
+              dealId={deal.id}
             />
           </div>
         </details>

@@ -28,6 +28,24 @@ describe('dealCalendarItems', () => {
   })
 })
 
+describe('inspection and financing from the file', () => {
+  it('clocks those days from acceptance when they are on the cycle', () => {
+    const rows = dealCalendarItems({
+      address: '218 SW 4th',
+      cycles: [
+        {
+          id: 'S',
+          contract_acceptance_date: '2026-08-01',
+          inspectionDays: 10,
+          financingDays: 30,
+        },
+      ],
+    })
+    expect(rows.find((r) => r.kind === 'inspection_period_ends')?.date).toBe('2026-08-14')
+    expect(rows.find((r) => r.kind === 'financing_contingency_ends')?.date).toBe('2026-09-14')
+  })
+})
+
 describe('well contingency', () => {
   it('adds 90 calendar days only when the file has a well', () => {
     const rows = dealCalendarItems({

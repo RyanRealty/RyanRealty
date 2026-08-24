@@ -29,6 +29,8 @@ import { buildFormCatalogCheckScript } from '@/lib/tc/form-catalog-script'
 import { CheckFormCatalog } from './CheckFormCatalog'
 import { UseFormOnDeal } from './UseFormOnDeal'
 import { FormsLibraryExtras } from './FormsLibraryExtras'
+import { ReplaceFormBlank } from './ReplaceFormBlank'
+import { RebuildLibraryMaps } from './RebuildLibraryMaps'
 
 export const dynamic = 'force-dynamic'
 
@@ -184,7 +186,10 @@ export default async function TcFormsPage({ searchParams }: Props) {
         ]}
       />
 
-      <CheckFormCatalog script={buildFormCatalogCheckScript()} />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+        <CheckFormCatalog script={buildFormCatalogCheckScript()} />
+        <RebuildLibraryMaps />
+      </div>
 
       <form method="GET" className="av2-rfilters">
         <TextField
@@ -286,12 +291,17 @@ export default async function TcFormsPage({ searchParams }: Props) {
                 ) : (
                   <span style={{ color: 'var(--a-text-2)' }}>Unavailable</span>
                 )}
-                {f.held && !f.isSample && f.blankUrl ? (
-                  <UseFormOnDeal
-                    formVersionId={f.id}
-                    formLabel={`${library.code} ${f.form_number ?? ''} ${f.name}`.replace(/\s+/g, ' ').trim()}
-                    deals={liveDeals}
-                  />
+                {f.held ? (
+                  <>
+                    {f.blankUrl ? (
+                      <UseFormOnDeal
+                        formVersionId={f.id}
+                        formLabel={`${library.code} ${f.form_number ?? ''} ${f.name}`.replace(/\s+/g, ' ').trim()}
+                        deals={liveDeals}
+                      />
+                    ) : null}
+                    <ReplaceFormBlank formVersionId={f.id} />
+                  </>
                 ) : null}
               </span>,
             ],

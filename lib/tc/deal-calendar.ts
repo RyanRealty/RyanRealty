@@ -37,6 +37,8 @@ export function dealCalendarItems(input: {
     contract_acceptance_date?: string | null
     escrow_closing_date?: string | null
     hasWell?: boolean
+    inspectionDays?: number | null
+    financingDays?: number | null
   }>
 }): DealCalendarItem[] {
   const addr = input.address.trim() || 'Deal'
@@ -94,6 +96,30 @@ export function dealCalendarItems(input: {
           cycleId: c.id,
         })
       }
+      const inspect = Number(c.inspectionDays)
+      if (Number.isFinite(inspect) && inspect > 0) {
+        const d = bankingDue(accepted, inspect)
+        if (d) {
+          out.push({
+            kind: 'inspection_period_ends',
+            date: d,
+            title: `Inspection period ends · ${addr}`,
+            cycleId: c.id,
+          })
+        }
+      }
+      const fin = Number(c.financingDays)
+      if (Number.isFinite(fin) && fin > 0) {
+        const d = bankingDue(accepted, fin)
+        if (d) {
+          out.push({
+            kind: 'financing_contingency_ends',
+            date: d,
+            title: `Financing contingency ends · ${addr}`,
+            cycleId: c.id,
+          })
+        }
+      }
       if (c.hasWell) {
         const well = addCalendarDays(accepted, 90)
         if (well) {
@@ -147,7 +173,7 @@ export async function syncDealCalendar(dealId: string): Promise<{ synced: number
   if (!deal) return { synced: 0 }
   const { data: cycles } = await sb
     .from('tc_cycles')
-    .select('id, expiration_date, contract_acceptance_date, escrow_closing_date')
+    .select('id, expiration_date, contract_acceptance_date, escrow_closing_date, inspection_days, financing_days')
     .eq('deal_id', dealId)
   const cycleIds = (cycles ?? []).map((c) => String(c.id))
   const wellIds = new Set<string>()
@@ -163,7 +189,12 @@ export async function syncDealCalendar(dealId: string): Promise<{ synced: number
   }
   const items = dealCalendarItems({
     address: String(deal.address ?? ''),
-    cycles: (cycles ?? []).map((c) => ({ ...c, hasWell: wellIds.has(String(c.id)) })),
+    cycles: (cycles ?? []).map((c) => ({
+      ...c,
+      hasWell: wellIds.has(String(c.id)),
+      inspectionDays: c.inspection_days == null ? null : Number(c.inspection_days),
+      financingDays: c.financing_days == null ? null : Number(c.financing_days),
+    })),
   })
   const { autoDeadlineTasksFromCalendar } = await import('@/lib/tc/auto-deadline-tasks')
   const brokerEmail = brokerEmailFromFileName(deal.broker_name as string) ?? null

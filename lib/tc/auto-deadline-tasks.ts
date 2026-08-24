@@ -6,6 +6,8 @@ const TASK_KINDS = new Set([
   'spds_revocation_ends',
   'principal_review_due',
   'well_contingency',
+  'inspection_period_ends',
+  'financing_contingency_ends',
 ])
 
 export type AutoDeadlineTask = {

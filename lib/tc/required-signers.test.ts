@@ -28,6 +28,21 @@ describe('requiredSignerRolesFromForm', () => {
     ).toEqual(['Buyer', 'Seller'])
   })
 
+  it('reads listing vs buyer-rep vs vacant-land from the held library name', () => {
+    expect(
+      requiredSignerRolesFromForm({
+        formNumber: '008',
+        documentName: 'Vacant Land SA (SAMPLE — replace with subscriber blank)',
+      }),
+    ).toEqual(['Buyer', 'Seller'])
+    expect(
+      requiredSignerRolesFromForm({
+        formNumber: '050',
+        documentName: 'Buyer Representation Agreement Exclusive',
+      }),
+    ).toEqual(['Buyer', 'BuyerAgent'])
+  })
+
   it('sale agreement 001 is Buyer and Seller; listing 015 is Seller and listing broker', () => {
     expect(requiredSignerRolesFromForm({ formNumber: 'OREF 001' })).toEqual(['Buyer', 'Seller'])
     expect(requiredSignerRolesFromForm({ formNumber: '015' })).toEqual(['Seller', 'SellerAgent'])

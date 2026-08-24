@@ -19,6 +19,7 @@ import {
   librarySignersToRoles,
   type FormLibraryEntry,
 } from './form-identity'
+import { signersFromHeldForm } from './library-signers-from-name'
 
 const SIGN_TYPES = new Set(['signature', 'initials'])
 
@@ -116,6 +117,14 @@ export function readRequiredSigners(input: FormSignerSource): SignerRead {
 
   const fromNumber = formLibraryEntryByNumber(input.formNumber) ?? formLibraryEntryByNumber(parseFormNumber(input.formNumber))
   if (fromNumber) return rolesFromEntries([fromNumber], ctx)
+
+  const fromHeld = signersFromHeldForm({ formNumber: input.formNumber, name: input.documentName })
+  if (fromHeld) {
+    return {
+      ...librarySignersToRoles(fromHeld, ctx),
+      identified: true,
+    }
+  }
 
   if (String(input.signerProfile ?? '').toLowerCase() === 'mutual') {
     return { roles: ['Buyer', 'Seller'], identified: true, signatureForm: true }
