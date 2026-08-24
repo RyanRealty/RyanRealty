@@ -78,11 +78,13 @@ export async function getFormVersionFieldMaps(
 export async function getListPriceByMlsNumber(mlsNumber: string): Promise<number | null> {
   const k = mlsNumber.trim()
   if (!k) return null
-  const { data } = await createServiceClient()
+  const sb = createServiceClient()
+  const { data } = await sb
     .from('listings')
-    .select('list_price')
+    .select('ListPrice, list_price')
     .eq('ListNumber', k)
     .maybeSingle()
-  const n = Number((data as { list_price?: number | null } | null)?.list_price)
+  const row = data as { ListPrice?: number | null; list_price?: number | null } | null
+  const n = Number(row?.ListPrice ?? row?.list_price)
   return Number.isFinite(n) && n > 0 ? n : null
 }

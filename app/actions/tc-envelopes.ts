@@ -949,10 +949,11 @@ export async function sendEnvelope(
     dealParties,
   )
   if (facts.listingPrice == null && (cycle as DbRow)?.mls_number) {
-    facts = overlayListingPrice(
-      facts,
-      await getListPriceByMlsNumber(String((cycle as DbRow).mls_number)),
-    )
+    const listPrice = await getListPriceByMlsNumber(String((cycle as DbRow).mls_number))
+    facts = overlayListingPrice(facts, listPrice)
+    if (listPrice != null) {
+      await supabase.from('tc_cycles').update({ listing_price: listPrice }).eq('id', env.cycle_id)
+    }
   }
   const factMsg = incompleteFactsMessage(missingRequiredFacts(formSources.map((s) => s.formNumber), facts))
   if (factMsg) return { ok: false, error: factMsg }
