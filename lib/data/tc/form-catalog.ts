@@ -4,10 +4,13 @@ import { createServiceClient } from '@/lib/supabase/service'
 import {
   diffLibraryCatalog,
   parseCatalogPayload,
+  parseFormNumber,
+  parseVersionLabel,
   type FormDisposition,
   type HeldForm,
   type LibrarySnapshot,
 } from '@/lib/tc/form-catalog-diff'
+import { formBlankStorageBucket } from '@/lib/tc/form-blank'
 
 type Row = Record<string, unknown>
 
@@ -66,6 +69,43 @@ function client() {
   return createServiceClient()
 }
 
+async function signedUrlsForBlankPaths(
+  paths: string[],
+  ttlSeconds: number,
+): Promise<Map<string, string>> {
+  const urlByPath = new Map<string, string>()
+  if (!paths.length) return urlByPath
+  const sb = client()
+  const byBucket = new Map<'tc-forms' | 'tc-documents', string[]>()
+  for (const path of paths) {
+    const bucket = formBlankStorageBucket(path)
+    const list = byBucket.get(bucket) ?? []
+    list.push(path)
+    byBucket.set(bucket, list)
+  }
+  for (const [bucket, list] of byBucket) {
+    for (let i = 0; i < list.length; i += 80) {
+      const chunk = list.slice(i, i + 80)
+      const { data: signed } = await sb.storage.from(bucket).createSignedUrls(chunk, ttlSeconds)
+      for (const s of signed ?? []) if (s.signedUrl && !s.error) urlByPath.set(s.path ?? '', s.signedUrl)
+    }
+  }
+  const missed = paths.filter((p) => !urlByPath.has(p))
+  if (missed.length) {
+    const other: Array<'tc-forms' | 'tc-documents'> = ['tc-forms', 'tc-documents']
+    for (const bucket of other) {
+      const still = missed.filter((p) => !urlByPath.has(p))
+      if (!still.length) break
+      for (let i = 0; i < still.length; i += 80) {
+        const chunk = still.slice(i, i + 80)
+        const { data: signed } = await sb.storage.from(bucket).createSignedUrls(chunk, ttlSeconds)
+        for (const s of signed ?? []) if (s.signedUrl && !s.error) urlByPath.set(s.path ?? '', s.signedUrl)
+      }
+    }
+  }
+  return urlByPath
+}
+
 function fieldStats(fieldMap: unknown): { fieldCount: number; signatureFieldCount: number } {
   const fields = Array.isArray(fieldMap) ? fieldMap : []
   return {
@@ -114,11 +154,7 @@ export async function getTcFormLibraryBoard(search?: string): Promise<TcFormLibr
 
   const liveVersions = ((versions ?? []) as Row[]).filter((v) => !v.retired_at)
   const paths = liveVersions.map((v) => v.blank_pdf_storage_path).filter(Boolean) as string[]
-  const urlByPath = new Map<string, string>()
-  if (paths.length) {
-    const { data: signed } = await sb.storage.from('tc-documents').createSignedUrls(paths, 600)
-    for (const s of signed ?? []) if (s.signedUrl && !s.error) urlByPath.set(s.path ?? '', s.signedUrl)
-  }
+  const urlByPath = await signedUrlsForBlankPaths(paths, 600)
 
   const catalogByLibrary = new Map<string, Row[]>()
   for (const item of (catalog ?? []) as Row[]) {
@@ -165,7 +201,8 @@ export async function getTcFormLibraryBoard(search?: string): Promise<TcFormLibr
           ? (urlByPath.get(asString(v.blank_pdf_storage_path)) ?? null)
           : null,
         freshness,
-        version_label: v.version_label == null ? null : asString(v.version_label),
+        version_label:
+          (v.version_label == null ? null : asString(v.version_label)) || parseVersionLabel(name),
         pending_version_label:
           v.pending_version_label == null ? null : asString(v.pending_version_label),
         held: true,
@@ -323,35 +360,24 @@ async function applyOneLibrary(
 
   for (const item of items) {
     if (!item.heldFormVersionId) continue
+    const heldRow = held.find((h) => h.id === item.heldFormVersionId)
+    const stamp: Record<string, unknown> = { source_checked_at: checkedAt }
+    const formNumber = item.formNumber || parseFormNumber(item.name)
+    const versionLabel =
+      item.versionLabel || parseVersionLabel(item.name) || parseVersionLabel(heldRow?.name ?? '')
+    if (formNumber) stamp.form_number = formNumber
+    if (versionLabel) stamp.version_label = versionLabel
     if (item.disposition === 'updated') {
-      const { error } = await sb
-        .from('tc_form_versions')
-        .update({
-          update_available: true,
-          pending_source_version_id: item.sourceVersionId,
-          pending_version_label: item.versionLabel,
-          source_checked_at: checkedAt,
-        })
-        .eq('id', item.heldFormVersionId)
-      if (error) return { data: null, error: error.message }
+      stamp.update_available = true
+      stamp.pending_source_version_id = item.sourceVersionId
+      stamp.pending_version_label = item.versionLabel
     } else if (item.disposition === 'current') {
-      const { error } = await sb
-        .from('tc_form_versions')
-        .update({
-          update_available: false,
-          pending_source_version_id: null,
-          pending_version_label: null,
-          source_checked_at: checkedAt,
-        })
-        .eq('id', item.heldFormVersionId)
-      if (error) return { data: null, error: error.message }
-    } else if (item.disposition === 'retired') {
-      const { error } = await sb
-        .from('tc_form_versions')
-        .update({ source_checked_at: checkedAt })
-        .eq('id', item.heldFormVersionId)
-      if (error) return { data: null, error: error.message }
+      stamp.update_available = false
+      stamp.pending_source_version_id = null
+      stamp.pending_version_label = null
     }
+    const { error } = await sb.from('tc_form_versions').update(stamp).eq('id', item.heldFormVersionId)
+    if (error) return { data: null, error: error.message }
   }
 
   const { error: libStampErr } = await sb

@@ -83,7 +83,7 @@ export function FormsLibraryExtras({
             ))}
           </SelectField>
           <div style={{ maxHeight: 160, overflow: 'auto', display: 'grid', gap: 4 }}>
-            {formIds.slice(0, 40).map((f) => (
+            {formIds.map((f) => (
               <ToolbarCheck
                 key={f.id}
                 label={f.label}

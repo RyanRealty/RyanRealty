@@ -43,11 +43,12 @@ const PREVIEW_COUNT = 6
 const FORM_COLUMNS: ReportColumn[] = [
   { key: 'number', label: 'Form #' },
   { key: 'name', label: 'Name' },
+  { key: 'version', label: 'Version' },
   { key: 'pages', label: 'Pages', numeric: true },
   { key: 'fields', label: 'Fields', numeric: true },
   { key: 'signers', label: 'Signers' },
-  { key: 'fresh', label: 'Library' },
-  { key: 'status', label: 'Blank' },
+  { key: 'fresh', label: 'Status' },
+  { key: 'blank', label: 'Blank' },
   { key: 'open', label: 'Open' },
 ]
 
@@ -253,6 +254,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
             cells: [
               f.form_number ?? '—',
               f.name.replace(/\s*\(SAMPLE.*\)$/i, ''),
+              f.version_label ?? (f.pending_version_label ? `held · ${f.pending_version_label} pending` : '—'),
               f.page_count ?? '—',
               f.held
                 ? f.fieldCount > 0
@@ -329,7 +331,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
               <ReportGrid
                 label={`${library.code} form versions`}
                 columns={FORM_COLUMNS}
-                template="minmax(72px, 0.5fr) minmax(180px, 2fr) minmax(56px, 0.35fr) minmax(88px, 0.7fr) minmax(76px, 0.55fr) minmax(120px, 0.9fr) minmax(88px, 0.6fr) minmax(140px, 0.8fr)"
+                template="minmax(72px, 0.5fr) minmax(180px, 2fr) minmax(72px, 0.55fr) minmax(56px, 0.35fr) minmax(88px, 0.7fr) minmax(76px, 0.55fr) minmax(120px, 0.9fr) minmax(88px, 0.6fr) minmax(140px, 0.8fr)"
                 minWidth={860}
                 rows={rows}
                 empty={<>This library holds no form in this filter.</>}
@@ -360,14 +362,20 @@ export default async function TcFormsPage({ searchParams }: Props) {
         formIds={libraries.flatMap((l) =>
           l.forms
             .filter((f) => f.held && !f.isSample && f.blankUrl)
-            .slice(0, 30)
-            .map((f) => ({ id: f.id, label: `${l.code} ${f.form_number ?? ''} ${f.name}`.replace(/\s+/g, ' ').trim() })),
+            .map((f) => ({
+              id: f.id,
+              label: `${l.code} ${f.form_number ?? ''} ${f.name}${f.freshness === 'updated' ? ' · Update available' : ''}`.replace(
+                /\s+/g,
+                ' ',
+              ).trim(),
+            })),
         )}
       />
 
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
         Field maps get placed once per form version. A newer published version is flagged here
-        before anyone sends it. Load the new blank through the ingest path before composing.
+        before anyone sends it. Load the new blank through Replace blank or ingest before composing.
+        The composer will not send a stale layout.
       </p>
     </div>
   )

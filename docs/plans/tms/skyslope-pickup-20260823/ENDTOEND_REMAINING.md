@@ -18,10 +18,9 @@ A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 
 ## This pass (complete)
 
-- Licensed Oregon library pulled from SkySlope Forms (not samples): **170 OREF + 101 Oregon Realtors + 28 ODS**, each with AcroForm field maps.
-- Forms: **Map entire library** and **Replace blank** on every held form.
-- Inspection and financing clocks: enter banking days from the sale agreement on the deal.
-
-Do not: clone Offers, mutate SkySlope, send a live envelope, guess inspection/financing windows that are not in the Oregon matrix.
+- Licensed Oregon library pulled from SkySlope Forms (not samples): **170 OREF + 101 Oregon Realtors + 27 ODS**, each with AcroForm field maps. The leftover 2024-05 ODS input sample is retired in favor of **ORE Residential Input**.
+- All three SkySlope libraries Matt uses stay first-class: OREF, Oregon Realtors, and **Oregon Data Share** (MLS entry, change forms, exclusive listing, land/farm/commercial input).
+- Versioning: catalog check filters those three libraries by `libraryId` (the list query ignores skip/libraryId). `/admin/forms` shows Current / Update available / New / Retired. The composer will not send a stale blank.
+- ODS packets on listing files: **ODS — MLS Entry (Residential)** and **ODS — MLS Change**, plus Exclusive Listing / Land / Farm / Commercial on the Forms packet list.
 
 Do not: clone Offers, mutate SkySlope, send a live envelope, guess inspection/financing windows that are not in the Oregon matrix.

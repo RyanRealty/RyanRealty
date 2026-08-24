@@ -83,3 +83,34 @@ export async function getFormSourcesForEnvelope(envelopeId: string): Promise<For
   }
   return sources
 }
+
+export type EnvelopeFormFreshness = {
+  formVersionId: string
+  name: string
+  versionLabel: string | null
+  updateAvailable: boolean
+  pendingVersionLabel: string | null
+}
+
+export async function listEnvelopeFormFreshness(envelopeId: string): Promise<EnvelopeFormFreshness[]> {
+  const supabase = createServiceClient()
+  const { data: envDocs } = await supabase
+    .from('tc_envelope_documents')
+    .select('form_version_id')
+    .eq('envelope_id', envelopeId)
+  const versionIds = [
+    ...new Set(((envDocs ?? []) as DbRow[]).map((d) => d.form_version_id).filter(Boolean).map(String)),
+  ]
+  if (!versionIds.length) return []
+  const { data: forms } = await supabase
+    .from('tc_form_versions')
+    .select('id, name, version_label, update_available, pending_version_label')
+    .in('id', versionIds)
+  return ((forms ?? []) as DbRow[]).map((f) => ({
+    formVersionId: String(f.id),
+    name: String(f.name ?? ''),
+    versionLabel: f.version_label == null ? null : String(f.version_label),
+    updateAvailable: f.update_available === true,
+    pendingVersionLabel: f.pending_version_label == null ? null : String(f.pending_version_label),
+  }))
+}

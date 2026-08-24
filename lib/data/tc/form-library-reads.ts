@@ -5,39 +5,72 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { LISTING_STANDARD_FORM_NUMBERS, SALE_STANDARD_FORM_NUMBERS } from '@/lib/tc/listing-actions'
+import { FORM_PACKET_SEEDS, formNameMatchesNeedle, type FormPacketSeed } from '@/lib/tc/form-packets'
 
 export type FormPacket = { id: string; name: string; formVersionIds: string[] }
 export type ClauseRow = { id: string; scope: string; category: string; title: string; body: string }
 
-async function seedNamedPacket(name: string, nums: readonly string[]): Promise<void> {
-  const sb = createServiceClient()
-  const { count } = await sb.from('tc_form_packets').select('id', { count: 'exact', head: true }).eq('name', name)
-  if ((count ?? 0) > 0) return
+const LEFTOVER_ODS_INPUT = 'ODS Residential Input Form 2024-05'
+
+function sameIds(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const left = [...a].sort()
+  const right = [...b].sort()
+  return left.every((id, i) => id === right[i])
+}
+
+async function resolveSeedFormIds(seed: FormPacketSeed): Promise<string[]> {
   const ids: string[] = []
-  for (const n of nums) {
-    const id = await findFormVersionIdByNumber(n)
-    if (id) ids.push(id)
+  if (seed.formNumbers) {
+    for (const n of seed.formNumbers) {
+      const id = await findFormVersionIdByNumber(n)
+      if (id) ids.push(id)
+    }
   }
+  if (seed.nameIncludes) {
+    for (const needle of seed.nameIncludes) {
+      const id = await findFormVersionIdByNeedle(needle)
+      if (id && !ids.includes(id)) ids.push(id)
+    }
+  }
+  return ids
+}
+
+async function seedPacket(seed: FormPacketSeed): Promise<void> {
+  const sb = createServiceClient()
+  const ids = await resolveSeedFormIds(seed)
   if (!ids.length) return
+  const { data: existing } = await sb
+    .from('tc_form_packets')
+    .select('id, form_version_ids')
+    .eq('name', seed.name)
+    .maybeSingle()
+  if (existing?.id) {
+    const current = Array.isArray(existing.form_version_ids) ? existing.form_version_ids.map(String) : []
+    if (sameIds(current, ids)) return
+    await sb.from('tc_form_packets').update({ form_version_ids: ids }).eq('id', existing.id)
+    return
+  }
   await sb.from('tc_form_packets').insert({
-    name,
+    name: seed.name,
     form_version_ids: ids,
     created_by: 'system',
   })
 }
 
-async function seedResidentialStandardPacket(): Promise<void> {
-  await seedNamedPacket('Residential — Standard', SALE_STANDARD_FORM_NUMBERS)
-}
-
-async function seedListingStandardPacket(): Promise<void> {
-  await seedNamedPacket('Listing — Standard', LISTING_STANDARD_FORM_NUMBERS)
+async function retireLeftoverOdsInputSample(): Promise<void> {
+  const sb = createServiceClient()
+  await sb
+    .from('tc_form_versions')
+    .update({ retired_at: new Date().toISOString().slice(0, 10) })
+    .eq('name', LEFTOVER_ODS_INPUT)
+    .is('source_version_id', null)
+    .is('retired_at', null)
 }
 
 export async function listFormPackets(): Promise<FormPacket[]> {
-  await seedResidentialStandardPacket()
-  await seedListingStandardPacket()
+  await retireLeftoverOdsInputSample()
+  for (const seed of FORM_PACKET_SEEDS) await seedPacket(seed)
   const { data } = await createServiceClient()
     .from('tc_form_packets')
     .select('id, name, form_version_ids')
@@ -52,12 +85,32 @@ export async function listFormPackets(): Promise<FormPacket[]> {
 export async function findFormVersionIdByNumber(formNumber: string): Promise<string | null> {
   const { data } = await createServiceClient()
     .from('tc_form_versions')
-    .select('id')
+    .select('id, name, source_version_id')
     .eq('form_number', formNumber)
+    .is('retired_at', null)
     .not('blank_pdf_storage_path', 'is', null)
-    .limit(1)
-  const id = data?.[0]?.id
+  const live = (data ?? []).filter((r) => !/\(SAMPLE/i.test(String(r.name ?? '')))
+  const ranked = live.sort((a, b) => {
+    const aExempt = /exempt/i.test(String(a.name ?? '')) ? 1 : 0
+    const bExempt = /exempt/i.test(String(b.name ?? '')) ? 1 : 0
+    if (aExempt !== bExempt) return aExempt - bExempt
+    const aSrc = a.source_version_id ? 0 : 1
+    const bSrc = b.source_version_id ? 0 : 1
+    return aSrc - bSrc
+  })
+  const id = ranked[0]?.id
   return id ? String(id) : null
+}
+
+export async function findFormVersionIdByNeedle(needle: string): Promise<string | null> {
+  const { data } = await createServiceClient()
+    .from('tc_form_versions')
+    .select('id, name')
+    .is('retired_at', null)
+    .not('blank_pdf_storage_path', 'is', null)
+    .ilike('name', `%${needle}%`)
+  const hit = (data ?? []).find((r) => formNameMatchesNeedle(String(r.name ?? ''), needle))
+  return hit?.id ? String(hit.id) : null
 }
 
 export async function getFormVersionBlankRow(id: string): Promise<{

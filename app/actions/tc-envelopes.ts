@@ -45,7 +45,8 @@ import {
   unionRequiredSignerRoles,
   type FormSignerSource,
 } from '@/lib/tc/required-signers'
-import { getFormSourcesForEnvelope } from '@/lib/data/tc/envelope-form-sources'
+import { getFormSourcesForEnvelope, listEnvelopeFormFreshness } from '@/lib/data/tc/envelope-form-sources'
+import { outdatedLibraryFormsMessage } from '@/lib/tc/form-packets'
 import { extractPdfPagesText } from '@/lib/tc/pdf-page-text'
 import { entriesFromDocumentText, formNumberFromClassification, identifyFormFromName } from '@/lib/tc/form-identity'
 import {
@@ -144,6 +145,8 @@ export type EnvelopeDetail = EnvelopeSummary & {
   formRead: boolean
   unreadSignersMessage: string | null
   incompletePrepareMessage: string | null
+  outdatedForms: Array<{ name: string; pendingVersionLabel: string | null }>
+  outdatedFormsMessage: string | null
 }
 
 function mapRecipient(r: DbRow): EnvelopeRecipient {
@@ -265,7 +268,15 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     signedAt: f.signed_at,
   }))
 
-  const signerRead = unionRequiredSignerReads(await getFormSourcesForEnvelope(envelopeId))
+  const [signerSources, formFreshness] = await Promise.all([
+    getFormSourcesForEnvelope(envelopeId),
+    listEnvelopeFormFreshness(envelopeId),
+  ])
+  const signerRead = unionRequiredSignerReads(signerSources)
+  const outdatedForms = formFreshness
+    .filter((f) => f.updateAvailable)
+    .map((f) => ({ name: f.name, pendingVersionLabel: f.pendingVersionLabel }))
+  const outdatedFormsMessage = outdatedLibraryFormsMessage(outdatedForms)
   const requiredSignerRoles = signerRead.roles
   const missingSignerRoles = missingRequiredSignerRoles(
     requiredSignerRoles,
@@ -308,6 +319,8 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     formRead: signerRead.identified,
     unreadSignersMessage,
     incompletePrepareMessage: prepareMessage,
+    outdatedForms,
+    outdatedFormsMessage,
   }
 }
 
@@ -856,6 +869,9 @@ export async function sendEnvelope(
   if (prepareMsg) return { ok: false, error: prepareMsg }
 
   const formSources = await getFormSourcesForEnvelope(envelopeId)
+  const stale = (await listEnvelopeFormFreshness(envelopeId)).filter((f) => f.updateAvailable)
+  const staleMsg = outdatedLibraryFormsMessage(stale)
+  if (staleMsg) return { ok: false, error: staleMsg }
   const facts = dealFactsFromRows((cycle as DbRow)?.tc_deals ?? {}, (cycle as DbRow) ?? {})
   const factMsg = incompleteFactsMessage(missingRequiredFacts(formSources.map((s) => s.formNumber), facts))
   if (factMsg) return { ok: false, error: factMsg }

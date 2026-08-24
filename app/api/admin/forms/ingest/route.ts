@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server'
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import { translateSkyslopeFields, summarizeMap, type SkySlopeSourceField, type SkySlopeSourcePage } from '@/lib/tc/skyslope-field-map'
+import { parseFormNumber, parseVersionLabel } from '@/lib/tc/form-catalog-diff'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -117,7 +118,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // 5. idempotent upsert on source_version_id
   const payload = {
     library_id: libraryId,
-    form_number: body.formNumber ?? null,
+    form_number: body.formNumber || parseFormNumber(body.name),
     name: body.name,
     effective_date: body.effectiveDate ?? null,
     blank_pdf_storage_path: path,
@@ -127,7 +128,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     field_map_source: fieldMap.length ? 'skyslope' : 'acroform',
     source_form_id: body.sourceFormId ?? null,
     source_version_id: body.sourceVersionId,
-    version_label: body.versionLabel ?? null,
+    version_label: body.versionLabel || parseVersionLabel(body.name),
     source_fields: body.sourceFields ?? null,
     source_checked_at: new Date().toISOString(),
     update_available: false,

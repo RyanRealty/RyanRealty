@@ -20,47 +20,53 @@ export function buildFormCatalogCheckScript(): string {
   const base = 'https://forms.skyslope.com/library/api';
   const libs = ${JSON.stringify(libs)};
   function parseNum(name) {
-    const oref = String(name || '').match(/\\bOREF[- ]?(\\d{3}[A-Z]?)\\b/i);
-    if (oref) return oref[1].toUpperCase();
-    const lead = String(name || '').match(/^(\\d{3}[A-Z]?)\\b/);
+    const text = String(name || '').trim();
+    const orefPrefix = text.match(/\\bOREF[- ](\\d{3}[A-Z]?)\\b/i);
+    if (orefPrefix) return orefPrefix[1].toUpperCase();
+    const orefSuffix = text.match(/\\b(\\d{3}[A-Z]?)\\s*[-–]?\\s*OREF\\b/i);
+    if (orefSuffix) return orefSuffix[1].toUpperCase();
+    const orNum = text.match(/^(\\d{1,2}\\.\\d+[A-Z]?)\\b/i);
+    if (orNum) return orNum[1].toUpperCase();
+    const lead = text.match(/^(\\d{3}[A-Z]?)\\b/);
     return lead ? lead[1].toUpperCase() : null;
   }
   function parseVer(name) {
     const dated = String(name || '').match(/\\((\\d{1,2}\\/\\d{4})\\)/);
     if (dated) return dated[1];
     const rev = String(name || '').match(/\\bRev\\.?\\s*([\\d.]+)/i);
-    return rev ? rev[1] : null;
+    if (rev) return rev[1];
+    const ymd = String(name || '').match(/\\b(20\\d{2}-\\d{2})\\b/);
+    return ymd ? ymd[1] : null;
+  }
+  const res = await fetch(base + '/form-versions?api-version=2.0', { credentials: 'include', headers: H });
+  if (!res.ok) { alert('SkySlope list failed (' + res.status + ').'); return; }
+  const json = await res.json();
+  const all = (json.result && json.result.formVersionViewModels) || [];
+  const wanted = {};
+  for (const lib of libs) wanted[String(lib.sourceLibraryId)] = lib;
+  const grouped = {};
+  for (const lib of libs) grouped[lib.libraryCode] = [];
+  for (const v of all) {
+    const lib = wanted[String(v.libraryId)];
+    if (!lib) continue;
+    if (v.status !== 'Published' || v.id !== v.publishedVersionId) continue;
+    grouped[lib.libraryCode].push({
+      sourceFormId: String(v.formId),
+      sourceVersionId: String(v.id),
+      name: v.name,
+      formNumber: parseNum(v.name),
+      pageCount: v.pageCount == null ? null : v.pageCount,
+      versionLabel: parseVer(v.name)
+    });
   }
   const out = { checkedAt: new Date().toISOString(), libraries: [] };
   for (const lib of libs) {
-    const all = [];
-    let skip = 0;
-    const take = 500;
-    for (;;) {
-      const url = base + '/form-versions?libraryId=' + lib.sourceLibraryId + '&api-version=2.0&skip=' + skip + '&take=' + take;
-      const res = await fetch(url, { credentials: 'include', headers: H });
-      if (!res.ok) { alert('SkySlope list failed for ' + lib.libraryCode + ' (' + res.status + ').'); return; }
-      const json = await res.json();
-      const batch = (json.result && json.result.formVersionViewModels) || [];
-      all.push.apply(all, batch);
-      const total = json.result && json.result.totalRecords;
-      if (batch.length < take || (typeof total === 'number' && all.length >= total)) break;
-      skip += take;
-    }
-    const current = all.filter(function (v) { return v.status === 'Published' && v.id === v.publishedVersionId; });
+    const forms = grouped[lib.libraryCode] || [];
+    if (!forms.length) { alert('SkySlope returned no published forms for ' + lib.libraryCode + '.'); return; }
     out.libraries.push({
       libraryCode: lib.libraryCode,
       sourceLibraryId: String(lib.sourceLibraryId),
-      forms: current.map(function (v) {
-        return {
-          sourceFormId: String(v.formId),
-          sourceVersionId: String(v.id),
-          name: v.name,
-          formNumber: parseNum(v.name),
-          pageCount: v.pageCount == null ? null : v.pageCount,
-          versionLabel: parseVer(v.name)
-        };
-      })
+      forms: forms
     });
   }
   const text = JSON.stringify(out);

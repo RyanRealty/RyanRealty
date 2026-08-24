@@ -52,11 +52,13 @@ export function CheckFormCatalog({ script }: { script: string }) {
     <section aria-label="Check form libraries" style={{ margin: '0 0 20px' }}>
       <SectionHead>Check OREF, Oregon Data Share, and Oregon Realtors</SectionHead>
       <p style={{ ...tiny, margin: '4px 0 10px', maxWidth: 720 }}>
-        SkySlope holds the licensed catalogs. This check lists current published
-        forms only (no PDF download) and compares them to what we hold. Open
-        Forms in the signed-in Mac Mini Chrome, paste the script in the console,
-        then paste the copied JSON here. New and revised forms still need the
-        blank ingest to become fillable.
+        SkySlope holds the three catalogs we use: OREF, Oregon Data Share (MLS
+        entry and change forms), and Oregon Realtors. This check lists current
+        published forms only (no PDF download) and compares them to what we
+        hold. Open Forms signed in, paste the script in the console, then paste
+        the copied JSON here. A held blank that is behind the published version
+        shows as Update available. New and revised forms still need the blank
+        ingest to become fillable.
       </p>
       <TextAreaField
         label="Check script"

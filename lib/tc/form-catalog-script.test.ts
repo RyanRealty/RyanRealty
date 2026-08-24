@@ -17,8 +17,14 @@ describe('buildFormCatalogCheckScript', () => {
   })
 
   it('keeps only current published versions and copies JSON', () => {
-    expect(script).toContain("status === 'Published'")
+    expect(script).toContain("v.status !== 'Published'")
     expect(script).toContain('publishedVersionId')
     expect(script).toContain('navigator.clipboard.writeText')
+  })
+
+  it('filters OREF, ODS, and Oregon Realtors by libraryId on each row (the list query ignores libraryId)', () => {
+    expect(script).toContain('v.libraryId')
+    expect(script).toContain("wanted[String(v.libraryId)]")
+    expect(script).not.toMatch(/skip \+= take/)
   })
 })

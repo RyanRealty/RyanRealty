@@ -52,9 +52,14 @@ export type LibraryCatalogDiff = {
 const MAX_FORMS_PER_LIBRARY = 5000
 
 export function parseFormNumber(name: string): string | null {
-  const oref = name.match(/\bOREF[- ]?(\d{3}[A-Z]?)\b/i)
-  if (oref) return oref[1].toUpperCase()
-  const lead = name.match(/^(\d{3}[A-Z]?)\b/)
+  const text = name.trim()
+  const orefPrefix = text.match(/\bOREF[- ](\d{3}[A-Z]?)\b/i)
+  if (orefPrefix) return orefPrefix[1].toUpperCase()
+  const orefSuffix = text.match(/\b(\d{3}[A-Z]?)\s*[-–]?\s*OREF\b/i)
+  if (orefSuffix) return orefSuffix[1].toUpperCase()
+  const orNum = text.match(/^(\d{1,2}\.\d+[A-Z]?)\b/i)
+  if (orNum) return orNum[1].toUpperCase()
+  const lead = text.match(/^(\d{3}[A-Z]?)\b/)
   if (lead) return lead[1].toUpperCase()
   return null
 }
@@ -64,6 +69,8 @@ export function parseVersionLabel(name: string): string | null {
   if (dated) return dated[1]
   const rev = name.match(/\bRev\.?\s*([\d.]+)/i)
   if (rev) return rev[1]
+  const ymd = name.match(/\b(20\d{2}-\d{2})\b/)
+  if (ymd) return ymd[1]
   return null
 }
 

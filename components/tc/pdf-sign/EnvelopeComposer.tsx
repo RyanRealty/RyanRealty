@@ -429,6 +429,9 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
             {detail.incompletePrepareMessage ? (
               <p className="text-xs text-foreground">{detail.incompletePrepareMessage}</p>
             ) : null}
+            {detail.outdatedFormsMessage ? (
+              <p className="text-xs text-foreground">{detail.outdatedFormsMessage}</p>
+            ) : null}
             {detail.status === 'awaiting_other_side' ? (
               <p className="text-xs text-foreground">
                 Our clients have signed. The signed PDF goes to the other side. This is not fully executed until they send the signed copy back and it is filed.
@@ -472,7 +475,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
             ) : (
               <>
                 <Button variant="outline" className="w-full" onClick={handleSaveDraft} disabled={busy}>Save draft</Button>
-                <Button className="w-full" onClick={handleSend} disabled={busy}>Send for signature</Button>
+                <Button className="w-full" onClick={handleSend} disabled={busy || Boolean(detail.outdatedFormsMessage)}>Send for signature</Button>
               </>
             )}
           </CardContent>

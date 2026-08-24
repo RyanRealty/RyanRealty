@@ -14,8 +14,21 @@ describe('parseFormNumber', () => {
     expect(parseFormNumber('OREF 022A Repair Addendum')).toBe('022A')
     expect(parseFormNumber('001 Residential Real Estate Sale Agreement (01/2026)')).toBe('001')
   })
+  it('reads a trailing OREF number from the live SkySlope name', () => {
+    expect(parseFormNumber('Residential Real Estate Sale Agreement - 001 OREF')).toBe('001')
+    expect(parseFormNumber('Things to Know Before Signing - 000A OREF')).toBe('000A')
+    expect(parseFormNumber('Addendum to Sale Agreement 2 page - 002A OREF')).toBe('002A')
+  })
+  it('reads Oregon Realtors dotted numbers', () => {
+    expect(parseFormNumber('1.1 Oregon Residential Real Estate Purchase And Sale Agreement - OR')).toBe(
+      '1.1',
+    )
+    expect(parseFormNumber('10.4 Initial Agency Disclosure Pamphlet (Buyer) - OR')).toBe('10.4')
+    expect(parseFormNumber('1.1A Seller Side Purchase and Sale Agreement - OR')).toBe('1.1A')
+  })
   it('does not invent a number from a mid-title year', () => {
     expect(parseFormNumber('Lead-Based Paint Disclosure')).toBeNull()
+    expect(parseFormNumber('ORE Residential Input - ODS')).toBeNull()
   })
 })
 
@@ -23,6 +36,9 @@ describe('parseVersionLabel', () => {
   it('reads a month/year stamp and a Rev label', () => {
     expect(parseVersionLabel('001 RSA (01/2026)')).toBe('01/2026')
     expect(parseVersionLabel('Listing Agreement Rev 10.4')).toBe('10.4')
+  })
+  it('reads a YYYY-MM stamp used on older ODS samples', () => {
+    expect(parseVersionLabel('ODS Residential Input Form 2024-05')).toBe('2024-05')
   })
 })
 

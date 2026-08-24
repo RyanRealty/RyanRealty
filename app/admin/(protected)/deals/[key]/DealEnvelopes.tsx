@@ -23,12 +23,16 @@ import {
 } from '@/app/actions/tc-envelopes'
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
 import { EXECUTION_STATE_LABEL, type ExecutionState } from '@/lib/tc/execution-state'
+import { dealPacketNamesForKind } from '@/lib/tc/form-packets'
 
 type EnvelopeTemplateOption = {
   id: string
   name: string
   formNumber: string | null
   libraryCode: string
+  versionLabel?: string | null
+  updateAvailable?: boolean
+  pendingVersionLabel?: string | null
 }
 
 type EnvelopePacketOption = {
@@ -102,7 +106,7 @@ function CycleEnvelopes({
           {cycle.label}
         </p>
         <span style={{ display: 'inline-flex', gap: 8 }}>
-          <PacketEnvelopeButton cycle={cycle} packets={packets} />
+          <PacketEnvelopeButtons cycle={cycle} packets={packets} />
           <NewEnvelopeDialog cycle={cycle} templates={templates} packets={packets} />
         </span>
       </div>
@@ -149,7 +153,7 @@ function CycleEnvelopes({
   )
 }
 
-function PacketEnvelopeButton({
+function PacketEnvelopeButtons({
   cycle,
   packets,
 }: {
@@ -157,25 +161,28 @@ function PacketEnvelopeButton({
   packets: EnvelopePacketOption[]
 }) {
   const router = useRouter()
-  const [busy, setBusy] = useState(false)
-  const packet =
-    cycle.kind === 'listing'
-      ? packets.find((p) => p.name === 'Listing — Standard')
-      : packets.find((p) => p.name === 'Residential — Standard')
-  if (!packet?.formVersionIds.length) return null
+  const [busyName, setBusyName] = useState<string | null>(null)
+  const wanted = new Set(dealPacketNamesForKind(cycle.kind))
+  const visible = packets.filter((p) => wanted.has(p.name) && p.formVersionIds.length)
+  if (!visible.length) return null
   return (
-    <Button
-      variant="quiet"
-      disabled={busy}
-      onClick={async () => {
-        setBusy(true)
-        const res = await createEnvelopeFromTemplate(cycle.cycleId, packet.formVersionIds, packet.name)
-        setBusy(false)
-        if (res.ok && res.envelopeId) router.push(`/admin/signing/${res.envelopeId}`)
-      }}
-    >
-      {busy ? 'Creating…' : packet.name}
-    </Button>
+    <>
+      {visible.map((packet) => (
+        <Button
+          key={packet.id}
+          variant="quiet"
+          disabled={Boolean(busyName)}
+          onClick={async () => {
+            setBusyName(packet.name)
+            const res = await createEnvelopeFromTemplate(cycle.cycleId, packet.formVersionIds, packet.name)
+            setBusyName(null)
+            if (res.ok && res.envelopeId) router.push(`/admin/signing/${res.envelopeId}`)
+          }}
+        >
+          {busyName === packet.name ? 'Creating…' : packet.name}
+        </Button>
+      ))}
+    </>
   )
 }
 
@@ -208,12 +215,13 @@ function NewEnvelopeDialog({
         }))
       : templates.map((t) => ({
           id: t.id,
-          name: `${t.libraryCode} ${t.formNumber ?? ''} ${t.name}`.replace(/\s+/g, ' ').trim(),
+          name: `${t.libraryCode} ${t.formNumber ?? ''} ${t.name}${t.updateAvailable ? ' · Update available' : ''}`.replace(
+            /\s+/g,
+            ' ',
+          ).trim(),
         }))
-  const packet =
-    cycle.kind === 'listing'
-      ? packets.find((p) => p.name === 'Listing — Standard')
-      : packets.find((p) => p.name === 'Residential — Standard')
+  const wanted = new Set(dealPacketNamesForKind(cycle.kind))
+  const packet = packets.find((p) => wanted.has(p.name) && p.formVersionIds.length)
   const canOpen = cycle.documents.length > 0 || templates.length > 0 || !!packet?.formVersionIds.length
 
   function toggle(id: string) {
