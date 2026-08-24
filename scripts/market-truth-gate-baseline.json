@@ -1,6 +1,6 @@
 {
   "stores": {
-    "total": 33,
+    "total": 32,
     "byFile": {
       "app/api/cron/loop-health-check/route.ts": 1,
       "app/api/cron/market-history-snapshot/route.ts": 3,
@@ -19,8 +19,7 @@
       "lib/data/market/getMarketTrend.ts": 1,
       "lib/data/market/getPriceHistory.ts": 1,
       "lib/data/market/marketNarrativeWrites.ts": 2,
-      "lib/data/sync/syncWrites.ts": 1,
-      "data/golf/community-kpis.ts": 1
+      "lib/data/sync/syncWrites.ts": 1
     }
   },
   "cdomConsumer": {
