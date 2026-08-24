@@ -55,6 +55,13 @@ import {
   type FormSignerSource,
 } from '@/lib/tc/required-signers'
 import { getFormSourcesForEnvelope, listEnvelopeFormFreshness } from '@/lib/data/tc/envelope-form-sources'
+import {
+  getEnvelopeCycleKindAndDeal,
+  getFormVersionFieldMaps,
+  getListPriceByMlsNumber,
+  listEnvelopeDocumentFormVersions,
+  listUnassignedEnvelopeFields,
+} from '@/lib/data/tc/envelope-composer-reads'
 import { outdatedLibraryFormsMessage } from '@/lib/tc/form-packets'
 import { extractPdfPagesText } from '@/lib/tc/pdf-page-text'
 import { entriesFromDocumentText, formNumberFromClassification, identifyFormFromName } from '@/lib/tc/form-identity'
@@ -277,10 +284,10 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     signedAt: f.signed_at,
   }))
 
-  const [signerSources, formFreshness, { data: cycleRow }] = await Promise.all([
+  const [signerSources, formFreshness, cycleRow] = await Promise.all([
     getFormSourcesForEnvelope(envelopeId),
     listEnvelopeFormFreshness(envelopeId),
-    supabase.from('tc_cycles').select('kind, deal_id').eq('id', env.cycle_id).maybeSingle(),
+    getEnvelopeCycleKindAndDeal(String(env.cycle_id)),
   ])
   const signerRead = unionRequiredSignerReads(signerSources)
   const outdatedForms = formFreshness
@@ -288,10 +295,8 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     .map((f) => ({ name: f.name, pendingVersionLabel: f.pendingVersionLabel }))
   const outdatedFormsMessage = outdatedLibraryFormsMessage(outdatedForms)
   const ourRole = ourRoleForEnvelope({
-    cycleKind: cycleRow?.kind as string | null,
-    ourPeopleRoles: cycleRow?.deal_id
-      ? (await getDealParties(String(cycleRow.deal_id))).map((p) => p.role)
-      : [],
+    cycleKind: cycleRow?.kind ?? null,
+    ourPeopleRoles: cycleRow?.dealId ? (await getDealParties(cycleRow.dealId)).map((p) => p.role) : [],
   })
   const requiredSignerRoles = rolesRequiredToSend(signerRead.roles, ourRole)
   const missingSignerRoles = missingRequiredSignerRoles(
@@ -722,56 +727,38 @@ async function assignUnassignedFieldsFromMaps(
   supabase: ReturnType<typeof getServiceSupabase>,
   envelopeId: string,
   recipients: EnvelopeRecipient[],
-): Promise<void> {
-  const [{ data: envDocs }, { data: fields }] = await Promise.all([
-    supabase
-      .from('tc_envelope_documents')
-      .select('document_id, form_version_id')
-      .eq('envelope_id', envelopeId),
-    supabase
-      .from('tc_envelope_fields')
-      .select('id, document_id, recipient_id, type, page, x, y')
-      .eq('envelope_id', envelopeId)
-      .is('recipient_id', null),
+): Promise<Map<string, string>> {
+  const patches = new Map<string, string>()
+  const [envDocs, unassigned] = await Promise.all([
+    listEnvelopeDocumentFormVersions(envelopeId),
+    listUnassignedEnvelopeFields(envelopeId),
   ])
-  const unassigned = (fields ?? []) as DbRow[]
-  if (!unassigned.length) return
-  const versionIds = [
-    ...new Set(
-      ((envDocs ?? []) as DbRow[]).map((d) => d.form_version_id).filter(Boolean).map(String),
-    ),
-  ]
-  const mapByVersion = new Map<string, MappedField[]>()
-  if (versionIds.length) {
-    const { data: forms } = await supabase
-      .from('tc_form_versions')
-      .select('id, field_map')
-      .in('id', versionIds)
-    for (const f of (forms ?? []) as DbRow[]) {
-      mapByVersion.set(String(f.id), Array.isArray(f.field_map) ? (f.field_map as MappedField[]) : [])
-    }
-  }
+  if (!unassigned.length) return patches
+  const versionIds = [...new Set(envDocs.map((d) => d.formVersionId).filter((id): id is string => Boolean(id)))]
+  const mapByVersion = await getFormVersionFieldMaps(versionIds)
   const mapByDoc = new Map<string, MappedField[]>()
-  for (const d of (envDocs ?? []) as DbRow[]) {
-    if (!d.form_version_id) continue
-    mapByDoc.set(String(d.document_id), mapByVersion.get(String(d.form_version_id)) ?? [])
+  for (const d of envDocs) {
+    if (!d.formVersionId) continue
+    mapByDoc.set(d.documentId, mapByVersion.get(d.formVersionId) ?? [])
   }
   const roster = recipients.map((r) => ({ id: r.id, role: r.role }))
   for (const f of unassigned) {
     const nextId = recipientIdForMappedField(
       {
-        recipientId: (f.recipient_id as string | null) ?? null,
-        page: Number(f.page) || 1,
-        x: Number(f.x) || 0,
-        y: Number(f.y) || 0,
-        type: String(f.type ?? ''),
+        recipientId: f.recipientId,
+        page: f.page,
+        x: f.x,
+        y: f.y,
+        type: f.type,
       },
-      mapByDoc.get(String(f.document_id)) ?? [],
+      mapByDoc.get(f.documentId) ?? [],
       roster,
     )
     if (!nextId) continue
+    patches.set(f.id, nextId)
     await supabase.from('tc_envelope_fields').update({ recipient_id: nextId }).eq('id', f.id)
   }
+  return patches
 }
 
 export type FieldInput = {
@@ -907,12 +894,15 @@ export async function sendEnvelope(
 
   if (!envDocs?.length) return { ok: false, error: 'No documents on this envelope' }
   const recipients = (recips ?? []) as DbRow[]
-  await assignUnassignedFieldsFromMaps(supabase, envelopeId, recipients.map(mapRecipient))
-  const { data: fieldsAfterAssign } = await supabase
-    .from('tc_envelope_fields')
-    .select('id, recipient_id, type, required, value')
-    .eq('envelope_id', envelopeId)
-  const fieldsForSend = (fieldsAfterAssign ?? fields ?? []) as DbRow[]
+  const fieldPatches = await assignUnassignedFieldsFromMaps(
+    supabase,
+    envelopeId,
+    recipients.map(mapRecipient),
+  )
+  const fieldsForSend = ((fields ?? []) as DbRow[]).map((f) => {
+    const next = fieldPatches.get(String(f.id))
+    return next ? { ...f, recipient_id: next } : f
+  })
   const signable = recipients.filter((r) => isSignableRole(r.role, r.action_required))
   if (!signable.length) return { ok: false, error: 'Add at least one signer' }
 
@@ -959,12 +949,10 @@ export async function sendEnvelope(
     dealParties,
   )
   if (facts.listingPrice == null && (cycle as DbRow)?.mls_number) {
-    const { data: listing } = await supabase
-      .from('listings')
-      .select('list_price')
-      .eq('ListNumber', String((cycle as DbRow).mls_number))
-      .maybeSingle()
-    facts = overlayListingPrice(facts, (listing as { list_price?: number | null } | null)?.list_price)
+    facts = overlayListingPrice(
+      facts,
+      await getListPriceByMlsNumber(String((cycle as DbRow).mls_number)),
+    )
   }
   const factMsg = incompleteFactsMessage(missingRequiredFacts(formSources.map((s) => s.formNumber), facts))
   if (factMsg) return { ok: false, error: factMsg }

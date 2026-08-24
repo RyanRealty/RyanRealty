@@ -39,7 +39,7 @@ export type FormSignerSource = {
 }
 
 export type SignerRead = {
-  roles: RecipientRole[]
+  roles: readonly RecipientRole[]
   identified: boolean
   signatureForm: boolean
 }

@@ -116,7 +116,7 @@ describe('sendBlockedBySignerKnowledge', () => {
 
   it('listing packet with 020 does not require Buyer until a buyer is on our file', () => {
     const listingPacket = {
-      roles: ['Seller', 'SellerAgent', 'Buyer'] as const,
+      roles: ['Seller', 'SellerAgent', 'Buyer'],
       identified: true,
       signatureForm: true,
     }

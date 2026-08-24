@@ -16,7 +16,11 @@ import {
 } from '@/lib/tc/required-documents'
 import { getPropertyFactsByMls } from '@/lib/data/listings/getPropertyFactsByMls'
 import { getTcCycleRawById } from '@/lib/data/tc/getTcCycleRawById'
-import { getTcCycleReferralFeeTotal, getTcDealContactRoles } from '@/lib/data/tc/getTcAnticipatedReads'
+import {
+  getTcAnticipatePresence,
+  getTcCycleReferralFeeTotal,
+  getTcDealContactRoles,
+} from '@/lib/data/tc/getTcAnticipatedReads'
 import { overlayPropertyFacts, parseSavedPropertyFacts } from '@/lib/tc/property-facts'
 
 /**
@@ -90,34 +94,9 @@ export async function getAnticipatedDocuments(cycleId: string): Promise<Anticipa
     .maybeSingle()
   if (!cycle) return null
 
-  const [{ data: items }, { data: docs }] = await Promise.all([
-    supabase.from('tc_checklist_items').select('id, name, status').eq('cycle_id', cycleId),
-    supabase.from('tc_documents').select('name, archived').eq('cycle_id', cycleId),
-  ])
-  const itemRows = (items ?? []) as Array<{ id: string; name: string; status: string }>
-  const assignedCount = new Map<string, number>()
-  if (itemRows.length) {
-    const { data: assigned } = await supabase
-      .from('tc_checklist_assignments')
-      .select('item_id')
-      .in(
-        'item_id',
-        itemRows.map((i) => i.id),
-      )
-    for (const row of assigned ?? []) {
-      const id = String((row as { item_id: string }).item_id)
-      assignedCount.set(id, (assignedCount.get(id) ?? 0) + 1)
-    }
-  }
-  const checklistNames = itemRows.map((i) => i.name)
-  const presentNames = presentNamesForAnticipate(
-    (docs ?? []) as Array<{ name: string; archived: boolean }>,
-    itemRows.map((i) => ({
-      name: i.name,
-      status: i.status,
-      assignedDocumentCount: assignedCount.get(i.id) ?? 0,
-    })),
-  )
+  const presence = await getTcAnticipatePresence(cycleId)
+  const checklistNames = presence.checklistItems.map((i) => i.name)
+  const presentNames = presentNamesForAnticipate(presence.documents, presence.checklistItems)
 
   const role = roleFromRaw(cycle.kind, cycle.raw ?? {})
   let facts = factsFromRaw(cycle.raw ?? {}, null)

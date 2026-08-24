@@ -11,6 +11,8 @@ describe('listing envelope walk wiring', () => {
     expect(src).toMatch(/mergePartyNamesIntoFacts/)
     expect(src).toMatch(/overlayListingPrice/)
     expect(src).toMatch(/assignUnassignedFieldsFromMaps/)
+    expect(src).toMatch(/getEnvelopeCycleKindAndDeal/)
+    expect(src).toMatch(/getListPriceByMlsNumber/)
   })
 
   it('does not treat seeded checklist labels as documents on file', () => {
