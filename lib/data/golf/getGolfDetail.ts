@@ -13,8 +13,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
 import { cityToGeoSlug } from '@/lib/golf-format'
-import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
-import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { leftoverCityAreaMarket } from '@/lib/data/market-truth/leftover-area-market'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
@@ -163,19 +162,10 @@ async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
     (c) => c.slug !== course.slug && cityToGeoSlug(c.city) === geoSlug,
   )
 
-  const pulse = await getMarketPulse({
-    geoType: 'city',
-    geoSlug: canonicalCityCacheSlug(geoSlug),
+  const cityMarket: AreaMarket | null = await leftoverCityAreaMarket({
+    cityName: course.city.replace(/\s*\(.*?\)/g, '').split('/')[0].trim(),
+    geoSlug,
   }).catch(() => null)
-  const cityMarket: AreaMarket | null = pulse
-    ? {
-        city: course.city.replace(/\s*\(.*?\)/g, '').split('/')[0].trim(),
-        medianListPrice: pulse.medianListPrice,
-        activeCount: pulse.activeCount,
-        monthsOfSupply: pulse.monthsOfSupply,
-        medianDaysToPending: pulse.medianDaysToPending,
-      }
-    : null
 
   return {
     course,
@@ -188,7 +178,7 @@ async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
 }
 
 export function getGolfDetail(slug: string): Promise<GolfDetail | null> {
-  return unstable_cache(() => fetchGolfDetail(slug), ['golf-detail-v2', slug], {
+  return unstable_cache(() => fetchGolfDetail(slug), ['golf-detail-v3-leftover', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'golf'],
   })()

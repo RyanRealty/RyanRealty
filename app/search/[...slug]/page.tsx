@@ -336,7 +336,6 @@ export default async function SearchPage({
   // §0: area-scoped totalCount must name the area, not the city.
   const presetAreaLabel = subdivision ? placeName : null
   const {
-    cityPulse,
     cityFaqInput,
     publishedCityInventory,
     cityMarketFaq,

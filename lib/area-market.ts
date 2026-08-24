@@ -4,8 +4,8 @@
  * The moat (docs/CONTENT_ENGINE_SPEC.md §3): every event/venue page carries a
  * LIVE, honest market read for its city — median list price, active inventory,
  * months of supply + the seller/balanced/buyer classification, and the typical
- * days to a signed contract. Data comes from getMarketPulse (market_pulse_live,
- * ~10-min freshness); nothing here is invented (CLAUDE.md §0).
+ * days to a signed contract. Data comes from leftover HUD membership. A leftover
+ * miss omits. Pulse does not fill. Nothing here is invented (CLAUDE.md §0).
  *
  * Months-of-supply thresholds are the canonical ones (CLAUDE.md §0):
  *   ≤ 4  seller's market · 4–6  balanced · ≥ 6  buyer's market

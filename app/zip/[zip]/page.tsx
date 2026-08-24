@@ -376,6 +376,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   })
   const marketData: KbMarketData = {
     active: hud.active,
+    pending: hud.pending,
     closed30: hud.closed30,
     new30: hud.new30,
     medianList: hud.medianList,

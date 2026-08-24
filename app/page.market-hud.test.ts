@@ -23,6 +23,7 @@ describe('homepage HUD leftover sale-to-list', () => {
 
   it('HUD KPI row is leftover only: miss omits, pulse does not fill', () => {
     expect(SRC).toMatch(/closed30:\s*hud\.closed30/)
+    expect(SRC).toMatch(/pending:\s*hud\.pending/)
     expect(SRC).toMatch(/daysToPending:\s*hud\.daysToPending/)
     expect(SRC).toMatch(/new30:\s*hud\.new30/)
     expect(SRC).not.toMatch(/closedCount30d\s*\?\?\s*pulse/)

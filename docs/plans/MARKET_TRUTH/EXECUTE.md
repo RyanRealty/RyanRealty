@@ -744,6 +744,17 @@ Same one-pile rule on leftover-eligible public visitor figures that still mixed.
 
 CRM / blog / report export stay pulse-gated. New · 30 days omitted.
 
+### D25 leftover pending HUD + leftover remaining visitor HUD-family
+
+Same one-pile rule. Leftover pending prints on leftover-eligible public HUD KPI rows.
+
+**Done when a real user can:**
+1. Open `/` and `/cities/bend` HUD and see **Pending · now** from leftover membership next to Active homes. Bend leftover pending is the published count. A leftover miss omits. Pulse does not fill.
+2. Open `/homes-for-sale/bend` and see leftover pending on the leftover snapshot band. Search city FAQ HUD-family cells are leftover membership, not pulse or tiles.
+3. Open an event, golf, trail, or venue page and see leftover city active / leftover MOS / leftover median / leftover 90-day median to pending when leftover can publish them. Pulse does not fill.
+
+CRM / blog / report export stay pulse-gated. New · 30 days omitted. County unpublished.
+
 ---
 
 ## 5. Definition of done for the whole program

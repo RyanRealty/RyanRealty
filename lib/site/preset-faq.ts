@@ -368,7 +368,7 @@ export function buildPresetFaq(
   if (cityPulse?.medianListPrice != null && cityPulse.medianListPrice > 0) {
     faqs.push({
       question: `What do homes cost in ${city} overall?`,
-      answer: `Across all of ${city}, the median list price for a single-family home is ${roundedThousand(cityPulse.medianListPrice)}${asOf}, based on live MLS data. That figure covers the whole city, not just the listings in this search.`,
+      answer: `Across all of ${city}, the median list price for a single-family home is ${roundedThousand(cityPulse.medianListPrice)}${asOf}, based on ${cityPulse.source === 'market-truth' ? 'leftover membership' : 'live MLS data'}. That figure covers the whole city, not just the listings in this search.`,
     })
   }
 

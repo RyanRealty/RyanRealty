@@ -1,8 +1,9 @@
 /**
  * Public HUD KPI row from leftover membership only (D19).
  * One pile, named window. Miss omits. Pulse and cache never fill these tiles.
- * New · 30 days stays omitted until leftover has a 30-day new-listings cell.
- * Do not map 12-month leftover closed onto Closed · 30 days.
+ * Pending · now is leftover pending_count. New · 30 days stays omitted until
+ * leftover has a 30-day new-listings cell. Do not map 12-month leftover closed
+ * onto Closed · 30 days.
  */
 import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import { publishMonthsOfSupply, type MarketGrain } from '@/lib/market/publish-months-of-supply'
@@ -20,6 +21,7 @@ export type LeftoverHudInventory = {
 
 export type LeftoverHudKpis = {
   active: number | null
+  pending: number | null
   closed30: number | null
   new30: null
   medianList: number | null
@@ -57,6 +59,7 @@ export function leftoverHudKpis(input: {
 
   return {
     active,
+    pending: input.pace.pendingCount,
     closed30: input.pace.closedCount30d,
     new30: null,
     medianList,
@@ -72,6 +75,7 @@ export function leftoverHudPublishes(hud: LeftoverHudKpis | null | undefined): b
   if (!hud) return false
   return (
     hud.active != null ||
+    hud.pending != null ||
     hud.closed30 != null ||
     hud.medianList != null ||
     hud.saleToList != null ||

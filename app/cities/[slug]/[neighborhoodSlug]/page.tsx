@@ -452,6 +452,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const monthsOfSupply = hud.monthsSupply
   const marketData: KbMarketData = {
     active: hud.active,
+    pending: hud.pending,
     closed30: hud.closed30,
     new30: hud.new30,
     medianList: hud.medianList,

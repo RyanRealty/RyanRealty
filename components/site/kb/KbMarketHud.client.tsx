@@ -164,6 +164,7 @@ export function KbMarketHud({
   // shown under a 30-day label. (§0)
   const kpis: { val: string; lbl: string }[] = []
   if (data.active != null) kpis.push({ val: data.active.toLocaleString('en-US'), lbl: 'Active homes' })
+  if (data.pending != null) kpis.push({ val: data.pending.toLocaleString('en-US'), lbl: 'Pending · now' })
   if (data.closed30 != null) kpis.push({ val: data.closed30.toLocaleString('en-US'), lbl: 'Closed · 30 days' })
   else if (data.sold12mo != null) kpis.push({ val: data.sold12mo.toLocaleString('en-US'), lbl: 'Sold · 12 mo' })
   if (data.new30 != null) kpis.push({ val: data.new30.toLocaleString('en-US'), lbl: 'New · 30 days' })

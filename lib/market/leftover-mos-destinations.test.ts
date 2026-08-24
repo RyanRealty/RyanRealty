@@ -18,6 +18,7 @@ const files = {
   housingOg: readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8'),
   header: readFileSync(resolve('components/site/SiteHeader.tsx'), 'utf8'),
   mega: readFileSync(resolve('lib/data/nav/getMegaMenuData.ts'), 'utf8'),
+  search: readFileSync(resolve('lib/market/search-city-sfr-publish.ts'), 'utf8'),
 }
 
 describe('D21 leftover MOS destinations and leftover remainder', () => {
@@ -48,5 +49,10 @@ describe('D21 leftover MOS destinations and leftover remainder', () => {
     expect(files.header).not.toMatch(/getMarketPulseCitySnapshots/)
     expect(files.mega).toMatch(/leftoverHudKpis/)
     expect(files.mega).not.toMatch(/getMarketPulse\(/)
+  })
+
+  it('search city FAQ leftover HUD, not pulse fill', () => {
+    expect(files.search).toMatch(/leftoverHudKpis/)
+    expect(files.search).not.toMatch(/getMarketPulse/)
   })
 })

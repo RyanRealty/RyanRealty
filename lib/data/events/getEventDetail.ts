@@ -18,8 +18,7 @@ import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getEventBySlug, CO_EVENTS, type CoEvent } from '@/data/co-events'
-import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
-import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { leftoverCityAreaMarket } from '@/lib/data/market-truth/leftover-area-market'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
@@ -189,21 +188,11 @@ async function fetchEventDetail(slug: string): Promise<EventDetail | null> {
   await attachTileVideos(homes)
   const relatedEvents = CO_EVENTS.filter((e) => e.slug !== event.slug && e.city === event.city)
 
-  // Live city market snapshot (the moat). Resilient: a miss/timeout degrades to
-  // null and the page simply omits the band — it never fails the event page.
-  const pulse = await getMarketPulse({
-    geoType: 'city',
-    geoSlug: canonicalCityCacheSlug(event.geoSlug),
+  // Leftover city market band. Miss omits. Pulse does not fill.
+  const cityMarket: AreaMarket | null = await leftoverCityAreaMarket({
+    cityName: event.city,
+    geoSlug: event.geoSlug,
   }).catch(() => null)
-  const cityMarket: AreaMarket | null = pulse
-    ? {
-        city: event.city,
-        medianListPrice: pulse.medianListPrice,
-        activeCount: pulse.activeCount,
-        monthsOfSupply: pulse.monthsOfSupply,
-        medianDaysToPending: pulse.medianDaysToPending,
-      }
-    : null
 
   return {
     event,
@@ -220,7 +209,7 @@ async function fetchEventDetail(slug: string): Promise<EventDetail | null> {
  * refresh alongside the rest of the site's listing data.
  */
 export function getEventDetail(slug: string): Promise<EventDetail | null> {
-  return unstable_cache(() => fetchEventDetail(slug), ['event-detail-v1', slug], {
+  return unstable_cache(() => fetchEventDetail(slug), ['event-detail-v2-leftover', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'events'],
   })()

@@ -1,6 +1,8 @@
-import { getCityListings, getMarketPulse } from '@/lib/data'
+import { getCityListings, getDetachedOverlays } from '@/lib/data'
 import type { FractionalInterestSubject } from '@/lib/listing/publish-listing-figure'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { leftoverHudKpis, leftoverHudPublishes, type LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { cityDetachedSlug } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments, type PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import {
@@ -12,8 +14,6 @@ import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { buildSearchPriceLadder, type SearchPriceLadder } from '@/lib/search/price-ladder'
 import { buildMarketFaq, type MarketFaqInput, type MarketFaqResult } from '@/lib/site/market-faq'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
-
-type PulseLike = Pick<MarketFaqInput, 'activeCount' | 'medianListPrice'> | null
 
 export function loadCitySfrTilesForSearch(city: string) {
   return withTimeoutFallback(
@@ -29,13 +29,13 @@ export function loadCitySfrTilesForSearch(city: string) {
   )
 }
 
+/** Tile census for the asking-price ladder. Not leftover HUD. Miss omits. */
 export function publishSearchCityInventory(
-  pulse: PulseLike,
   tiles: ReadonlyArray<FractionalInterestSubject & { listPrice?: number | null }>,
 ): CityInventoryPublish {
   return publishCityInventory({
-    pulseCount: pulse?.activeCount ?? null,
-    pulseMedian: pulse?.medianListPrice ?? null,
+    pulseCount: null,
+    pulseMedian: null,
     tileCount: tiles.length,
     tileMedian: medianListPriceOfTiles(tiles),
     tileLimit: CITY_TILE_FETCH_LIMIT,
@@ -45,17 +45,19 @@ export function publishSearchCityInventory(
 
 export function buildSearchCityMarketFaq(
   city: string,
-  pulse: PulseLike,
-  published: CityInventoryPublish | null,
+  hud: LeftoverHudKpis,
+  asOf: string | null,
 ): MarketFaqResult {
   return buildMarketFaq(city, {
-    ...(pulse ?? {}),
-    // Search city pages are city-grain: refresh_market_pulse attributes actives
-    // and closes with one identical predicate on public.listings.
     grain: 'city',
-    activeCount: published?.count ?? pulse?.activeCount ?? null,
-    pulseActiveCount: pulse?.activeCount ?? null,
-    medianListPrice: published?.medianListPrice ?? pulse?.medianListPrice ?? null,
+    source: 'market-truth',
+    activeCount: hud.active,
+    pulseActiveCount: hud.active,
+    medianListPrice: hud.medianList,
+    monthsOfSupply: hud.monthsSupply,
+    medianDaysToPending: hud.daysToPending,
+    soldCount12mo: hud.sold12mo ?? null,
+    refreshedAt: asOf,
   })
 }
 
@@ -66,34 +68,26 @@ export async function loadSearchCityMarketLayer(args: {
   isPresetDepthPage: boolean
   citySfrTiles: ReadonlyArray<FractionalInterestSubject & { listPrice?: number | null }>
 }): Promise<{
-  cityPulse: Awaited<ReturnType<typeof getMarketPulse>> | null
-  /**
-   * The same pulse row carrying the grain it was read at, for builders that take
-   * a MarketFaqInput (buildPresetFaq). Declared HERE, beside the
-   * `geoType: 'city'` read that justifies it, rather than at each call site
-   * where the grain would be a guess.
-   */
   cityFaqInput: MarketFaqInput | null
   publishedCityInventory: CityInventoryPublish | null
   cityMarketFaq: MarketFaqResult | null
   /**
-   * The below-fold asking-price ladder, banded from the SAME tiles the count
-   * and median publish from. No extra query, nothing above the fold, and null
-   * unless publishCityInventory released the tile source (i.e. the fetch was
-   * complete and did not hit the row ceiling).
+   * The below-fold asking-price ladder, banded from the SAME tiles this search
+   * listed. No extra query, nothing above the fold, and null unless the tile
+   * fetch was complete and did not hit the row ceiling.
    */
   priceLadder: SearchPriceLadder | null
   publicPace: PublicPaceRow
   publicSegments: PublicSegmentRow[]
 }> {
   const cacheSlug = args.relatedCitySlug ? canonicalCityCacheSlug(args.relatedCitySlug) : ''
-  const wantPulse = Boolean((args.isPlainCityPage || args.isPresetDepthPage) && cacheSlug)
-  const wantLeftover = Boolean(args.isPlainCityPage && cacheSlug)
-  const [cityPulse, publicPace, publicSegments] = await Promise.all([
-    wantPulse
-      ? getMarketPulse({ geoType: 'city', geoSlug: cacheSlug }).catch(() => null)
-      : Promise.resolve(null),
-    wantLeftover
+  const wantHud = Boolean((args.isPlainCityPage || args.isPresetDepthPage) && cacheSlug)
+  const wantStrip = Boolean(args.isPlainCityPage && cacheSlug)
+  const [overlays, publicPace, publicSegments] = await Promise.all([
+    wantHud
+      ? getDetachedOverlays([{ geoType: 'city', geoSlug: cacheSlug }]).catch(() => new Map())
+      : Promise.resolve(new Map()),
+    wantHud
       ? withTimeoutFallback(
           getPublicDetachedPace({ geoType: 'city', geoSlug: cacheSlug }),
           EMPTY_PUBLIC_PACE,
@@ -101,7 +95,7 @@ export async function loadSearchCityMarketLayer(args: {
           'search:publicPace',
         )
       : Promise.resolve(EMPTY_PUBLIC_PACE),
-    wantLeftover
+    wantStrip
       ? withTimeoutFallback(
           getPublicPlaceSegments({ geoType: 'city', geoSlug: cacheSlug }),
           [],
@@ -110,15 +104,33 @@ export async function loadSearchCityMarketLayer(args: {
         )
       : Promise.resolve([] as PublicSegmentRow[]),
   ])
+  const layers = cacheSlug ? overlays.get(`city:${cityDetachedSlug(cacheSlug)}`) : undefined
+  const hud = leftoverHudKpis({
+    grain: 'city',
+    headlines: layers?.headlines ?? null,
+    inventory: layers?.inventory ?? null,
+    pace: publicPace,
+  })
+  const asOf = layers?.headlines?.computedAt ?? layers?.inventory?.computedAt ?? null
+  const leftoverFaq = leftoverHudPublishes(hud)
+    ? ({
+        grain: 'city' as const,
+        source: 'market-truth' as const,
+        activeCount: hud.active,
+        pulseActiveCount: hud.active,
+        medianListPrice: hud.medianList,
+        monthsOfSupply: hud.monthsSupply,
+        medianDaysToPending: hud.daysToPending,
+        soldCount12mo: hud.sold12mo ?? null,
+        refreshedAt: asOf,
+      } satisfies MarketFaqInput)
+    : null
   const publishedCityInventory =
-    args.isPlainCityPage && args.city
-      ? publishSearchCityInventory(cityPulse, args.citySfrTiles)
-      : null
+    args.isPlainCityPage && args.city ? publishSearchCityInventory(args.citySfrTiles) : null
   const cityMarketFaq =
-    args.isPlainCityPage && args.city
-      ? buildSearchCityMarketFaq(args.city, cityPulse, publishedCityInventory)
+    args.isPlainCityPage && args.city && leftoverFaq
+      ? buildSearchCityMarketFaq(args.city, hud, asOf)
       : null
-  const cityFaqInput: MarketFaqInput | null = cityPulse ? { ...cityPulse, grain: 'city' } : null
   const priceLadder =
     args.isPlainCityPage && args.city
       ? buildSearchPriceLadder({
@@ -128,12 +140,11 @@ export async function loadSearchCityMarketLayer(args: {
         })
       : null
   return {
-    cityPulse,
-    cityFaqInput,
+    cityFaqInput: leftoverFaq,
     publishedCityInventory,
     cityMarketFaq,
     priceLadder,
-    publicPace,
+    publicPace: wantStrip ? publicPace : EMPTY_PUBLIC_PACE,
     publicSegments,
   }
 }

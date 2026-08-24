@@ -17,8 +17,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getVenueBySlug, CO_VENUES, type CoVenue } from '@/data/co-venues'
 import { CO_EVENTS, type CoEvent } from '@/data/co-events'
-import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
-import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { leftoverCityAreaMarket } from '@/lib/data/market-truth/leftover-area-market'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
@@ -190,19 +189,10 @@ async function fetchVenueDetail(slug: string): Promise<VenueDetail | null> {
       a.name.localeCompare(b.name),
   )
 
-  const pulse = await getMarketPulse({
-    geoType: 'city',
-    geoSlug: canonicalCityCacheSlug(venue.geoSlug),
+  const cityMarket: AreaMarket | null = await leftoverCityAreaMarket({
+    cityName: venue.city,
+    geoSlug: venue.geoSlug,
   }).catch(() => null)
-  const cityMarket: AreaMarket | null = pulse
-    ? {
-        city: venue.city,
-        medianListPrice: pulse.medianListPrice,
-        activeCount: pulse.activeCount,
-        monthsOfSupply: pulse.monthsOfSupply,
-        medianDaysToPending: pulse.medianDaysToPending,
-      }
-    : null
 
   return {
     venue,
@@ -215,7 +205,7 @@ async function fetchVenueDetail(slug: string): Promise<VenueDetail | null> {
 }
 
 export function getVenueDetail(slug: string): Promise<VenueDetail | null> {
-  return unstable_cache(() => fetchVenueDetail(slug), ['venue-detail-v1', slug], {
+  return unstable_cache(() => fetchVenueDetail(slug), ['venue-detail-v2-leftover', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'venues'],
   })()

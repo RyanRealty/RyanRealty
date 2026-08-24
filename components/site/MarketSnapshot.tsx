@@ -137,6 +137,7 @@ export default async function MarketSnapshot({
     pace: pace ?? EMPTY_PUBLIC_PACE,
   })
   const activeCount = hud.active
+  const pendingCount = hud.pending
   const medianListPrice = hud.medianList
   const medianDaysToPending = hud.daysToPending
   const monthsOfSupply = hud.monthsSupply
@@ -173,6 +174,11 @@ export default async function MarketSnapshot({
             label="Active single-family homes"
             value={<TabularNumber value={activeCount} />}
             sub="For sale now"
+          />
+          <StatCard
+            label="Pending · now"
+            value={<TabularNumber value={pendingCount} />}
+            sub="Under contract"
           />
           <StatCard
             label="Median list price"

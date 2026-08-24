@@ -13,8 +13,7 @@ import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getTrailBySlug, CO_TRAILS, type CoTrail } from '@/data/co-trails'
-import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
-import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { leftoverCityAreaMarket } from '@/lib/data/market-truth/leftover-area-market'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
@@ -156,19 +155,10 @@ async function fetchTrailDetail(slug: string): Promise<TrailDetail | null> {
   await attachTileVideos(homes)
   const relatedTrails = CO_TRAILS.filter((t) => t.slug !== trail.slug && t.city === trail.city)
 
-  const pulse = await getMarketPulse({
-    geoType: 'city',
-    geoSlug: canonicalCityCacheSlug(trail.geoSlug),
+  const cityMarket: AreaMarket | null = await leftoverCityAreaMarket({
+    cityName: trail.city,
+    geoSlug: trail.geoSlug,
   }).catch(() => null)
-  const cityMarket: AreaMarket | null = pulse
-    ? {
-        city: trail.city,
-        medianListPrice: pulse.medianListPrice,
-        activeCount: pulse.activeCount,
-        monthsOfSupply: pulse.monthsOfSupply,
-        medianDaysToPending: pulse.medianDaysToPending,
-      }
-    : null
 
   return {
     trail,
@@ -180,7 +170,7 @@ async function fetchTrailDetail(slug: string): Promise<TrailDetail | null> {
 }
 
 export function getTrailDetail(slug: string): Promise<TrailDetail | null> {
-  return unstable_cache(() => fetchTrailDetail(slug), ['trail-detail-v1', slug], {
+  return unstable_cache(() => fetchTrailDetail(slug), ['trail-detail-v2-leftover', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'trails'],
   })()

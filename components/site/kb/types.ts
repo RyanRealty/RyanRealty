@@ -104,6 +104,8 @@ export interface KbFeaturedItem {
 // trend -> getPriceHistory(region, monthly, 13); byTown -> getCitiesForIndex.
 export interface KbMarketData {
   active: number | null
+  /** Leftover houses under contract now. Same pile as Active homes. Miss omits. */
+  pending: number | null
   closed30: number | null
   new30: number | null
   medianList: number | null

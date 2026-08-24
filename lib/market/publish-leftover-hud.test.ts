@@ -13,9 +13,16 @@ describe('leftoverHudKpis', () => {
       grain: 'city',
       headlines: { activeCount: 774, monthsOfSupply: 4.45, medianListPrice: 915000 },
       inventory: { activeCount: 774, medianListPrice: 915000 },
-      pace: pace({ closedCount30d: 203, daysToPending90d: 19, saleToOriginal: 0.969, closedCount: 2096 }),
+      pace: pace({
+        closedCount30d: 203,
+        daysToPending90d: 19,
+        saleToOriginal: 0.969,
+        closedCount: 2096,
+        pendingCount: 314,
+      }),
     })
     expect(out.active).toBe(774)
+    expect(out.pending).toBe(314)
     expect(out.monthsSupply).toBe(4.45)
     expect(out.medianList).toBe(915000)
     expect(out.closed30).toBe(203)
@@ -48,6 +55,7 @@ describe('leftoverHudKpis', () => {
     })
     expect(out).toEqual({
       active: null,
+      pending: null,
       closed30: null,
       new30: null,
       medianList: null,
@@ -69,6 +77,18 @@ describe('leftoverHudKpis', () => {
     expect(out.daysToPending).toBeNull()
     expect(out.sold12mo).toBe(2096)
     expect(leftoverHudPublishes(out)).toBe(false)
+  })
+
+  it('prints leftover pending on the HUD and publishes when pending is the only cell', () => {
+    const out = leftoverHudKpis({
+      grain: 'city',
+      headlines: null,
+      inventory: null,
+      pace: pace({ pendingCount: 314 }),
+    })
+    expect(out.pending).toBe(314)
+    expect(out.active).toBeNull()
+    expect(leftoverHudPublishes(out)).toBe(true)
   })
 
   it('leftoverHudPublishes is true when a HUD cell exists', () => {

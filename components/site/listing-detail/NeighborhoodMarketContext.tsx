@@ -175,10 +175,13 @@ export async function NeighborhoodMarketContext({
             grid-template-columns would override that and overflow at 375px). */}
         <div
           className="mkt-kpis"
-          style={{ ['--kpi-cols' as string]: [activeCount, medianList, daysToPending, mos, leftover.pendingCount, leftover.daysToContract].filter(v => v != null).length }}
+          style={{ ['--kpi-cols' as string]: [activeCount, hud.pending, medianList, daysToPending, mos, leftover.daysToContract].filter(v => v != null).length }}
         >
           {activeCount != null ? (
             <KpiCell label={`Active in ${geoName}`} value={<TabularNumber value={activeCount} />} />
+          ) : null}
+          {hud.pending != null ? (
+            <KpiCell label="Pending · now" value={<TabularNumber value={hud.pending} />} />
           ) : null}
           {medianList != null ? (
             <KpiCell label="Median list" value={<Price value={medianList} compact />} />
@@ -191,9 +194,6 @@ export async function NeighborhoodMarketContext({
           ) : null}
           {mos != null ? (
             <KpiCell label="Months of supply" value={<TabularNumber value={mos} fractionDigits={1} />} />
-          ) : null}
-          {leftover.pendingCount != null ? (
-            <KpiCell label="Pending · now" value={<TabularNumber value={leftover.pendingCount} />} />
           ) : null}
           {leftover.daysToContract != null ? (
             <KpiCell

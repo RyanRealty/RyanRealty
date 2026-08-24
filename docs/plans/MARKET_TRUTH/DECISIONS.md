@@ -299,3 +299,15 @@ equivalents; leftover miss omits pulse fill. Site header and mega menu leftover
 inventory / leftover MOS / leftover 90-day DTP.
 
 CRM / blog / report export stay pulse-gated. New · 30 days omitted.
+
+## D25 — leftover pending HUD + leftover remaining visitor HUD-family · **DECIDED** (Matt, 2026-08-24)
+
+Leftover pending is a leftover HUD-family inventory fact. Bend leftover pending is
+the published count. It prints on leftover-eligible public HUD KPI rows next to
+Active homes, not JSON-only.
+
+Same one-pile rule on leftover-eligible public visitor HUD-family figures that still
+mixed: search city FAQ, and event / golf / trail / venue city market bands. Miss
+omits. Pulse does not fill.
+
+CRM / blog / report export stay pulse-gated. New · 30 days omitted. County unpublished.
