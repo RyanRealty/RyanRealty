@@ -1,7 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
-import { Button, StateWord } from '@/components/admin/v2'
+import { Button, SectionHead, StateWord } from '@/components/admin/v2'
 import { setTcTaskStatus } from '@/app/actions/tc-tasks'
 import type { TcTaskRow } from '@/lib/data/tc/task-reads'
 
@@ -15,18 +15,7 @@ export function DealTasks({
   if (!tasks.length) return null
   return (
     <section aria-label="File tasks">
-      <h2
-        style={{
-          margin: '16px 0 8px',
-          fontSize: 'var(--a-text-sm)',
-          fontWeight: 600,
-          letterSpacing: '0.04em',
-          textTransform: 'uppercase',
-          color: 'var(--a-text-2)',
-        }}
-      >
-        File tasks
-      </h2>
+      <SectionHead>File tasks</SectionHead>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {tasks.map((t) => (
           <TaskRow key={t.id} task={t} propertyKey={propertyKey} />
