@@ -49,6 +49,7 @@ import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeo
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { listingIsFractionalInterest } from '@/lib/listing/publish-listing-figure'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
@@ -321,7 +322,6 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     !(mtActiveRounded === 0 && tiles.length > 0)
   const activeCount: number | null = mtHit ? mtActiveRounded : tileActiveCount
   const publishedMedianList: number | null = mtHit ? mtMedianVal : medianListPrice
-  const publishedMos: number | null = mtHit && mtMosVal != null ? mtMosVal : null
   const sellMedian = publishSellMedian({
     placeMedian: publishedMedianList,
     grain: 'zip',
@@ -355,26 +355,34 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
   // ── MARKET HUD ────────────────────────────────────────────────────────────
-  // HIT: market_metric mt-v1 detached ZIP PostalCode (getMetric). MISS: live
-  // tiles for active/medianList/medianDomActive; monthsSupply stays null.
-  // new30 is tile 30-day new, never 12-month leftover new_listings.
-  // closed30/saleToList stay null. Do not invent daysToPending from active DOM.
+  // Leftover membership only (D19). Miss omits. Tiles still feed map/featured.
+  // Do not invent daysToPending from active DOM. New · 30 days omitted until
+  // leftover has a 30-day new-listings cell. Never 12-month leftover new_listings.
+  const hud = leftoverHudKpis({
+    grain: 'zip',
+    headlines:
+      mtHit && mtActiveRounded != null && mtMosVal != null
+        ? {
+            activeCount: mtActiveRounded,
+            monthsOfSupply: mtMosVal,
+            medianListPrice: mtMedianVal,
+          }
+        : null,
+    inventory:
+      mtHit && mtActiveRounded != null
+        ? { activeCount: mtActiveRounded, medianListPrice: mtMedianVal }
+        : null,
+    pace: publicPace,
+  })
   const marketData: KbMarketData = {
-    active: activeCount,
-    closed30: publicPace.closedCount30d ?? null,
-    new30: tileNew30,
-    medianList: publishedMedianList,
-    saleToList: null,
-    // §0 `medianDom` is the median days CURRENTLY-ACTIVE listings have been on
-    // market, NOT days-to-pending. Feeding it here rendered "Pending in 62 days"
-    // on 97703 where Bend's real median-to-pending is 15 — a 3-5x overstatement
-    // of market speed. They are different populations: the homes that sell fast
-    // leave the active set, so active DOM is systematically larger. Keep
-    // daysToPending null unless a publishable median_days_to_contract cell exists
-    // (HUD labels that field "pending" — do not overlay speed under the wrong name).
-    daysToPending: publicPace.daysToPending90d ?? null,
-    medianDomActive: medianDom,
-    monthsSupply: publishedMos,
+    active: hud.active,
+    closed30: hud.closed30,
+    new30: hud.new30,
+    medianList: hud.medianList,
+    saleToList: hud.saleToList,
+    daysToPending: hud.daysToPending,
+    monthsSupply: hud.monthsSupply,
+    sold12mo: hud.sold12mo,
     trend: chartMonths.months
       .slice(-13)
       .filter((p) => p.medianSalePrice != null)

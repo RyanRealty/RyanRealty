@@ -59,6 +59,8 @@ import {
   getResortCommunityBySlug,
   getBlogPostsBySlugs,
   getAreaGuideVideo,
+  getDetachedOverlays,
+  cityDetachedSlug,
 } from '@/lib/data'
 import { allCommunities } from '@/lib/data'; import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
@@ -85,7 +87,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishMonthsOfSupply, publishSoldCount } from '@/lib/market/publish-months-of-supply'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { formatPlaceHoaAnnual, placeHoaGlanceLabel, publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
@@ -282,6 +284,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
     publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly, publicMix,
+    commOverlays,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -372,6 +375,12 @@ export default async function CommunityDetailPage({ params }: Props) {
       EMPTY_PUBLIC_MIX,
       3000,
       'comm:publicMix',
+    ),
+    withTimeoutFallback(
+      getDetachedOverlays([{ geoType: 'neighborhood', geoSlug: neighborhoodSlug }]),
+      new Map(),
+      3000,
+      'comm:detachedOverlay',
     ),
   ])
 
@@ -652,39 +661,25 @@ export default async function CommunityDetailPage({ params }: Props) {
   const coreChartsRaw = chartIsCityLevel ? cityCoreCharts : commCoreCharts
   const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : coreChartsRaw
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
-  // Leftover sale-to-original is membership (12-month). Cache avg_sale_to_list
-  // is an alias join — never a fill. Miss omits. Do not map leftover
-  // daysToContract onto daysToPending.
-  const leftoverSaleToList =
-    publicPace.saleToOriginal != null && publicPace.saleToOriginal > 0
-      ? publicPace.saleToOriginal < 2
-        ? publicPace.saleToOriginal * 100
-        : publicPace.saleToOriginal
-      : null
-  // Overlay inventory (membership is_primary) is the MOS numerator. FAQ must
-  // print the same count so HUD and structured data cannot disagree (§0).
-  const hudActive = pulse?.activeCount ?? activeCount
-  const monthsOfSupply = publishMonthsOfSupply({
+  const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
+  const hud = leftoverHudKpis({
     grain: 'neighborhood',
-    source: 'market-truth',
-    pulseMos: pulse?.monthsOfSupply,
-    pulseActiveCount: pulse?.activeCount,
-    displayedActiveCount: hudActive,
+    headlines: commMt?.headlines ?? null,
+    inventory: commMt?.inventory ?? null,
+    pace: publicPace,
   })
-  const sellMedian = publishSellMedian({ placeMedian: medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
+  const hudActive = hud.active
+  const monthsOfSupply = hud.monthsSupply
+  const sellMedian = publishSellMedian({ placeMedian: hud.medianList ?? medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
   const marketData: KbMarketData = {
-    active: hudActive,
-    closed30: publicPace.closedCount30d ?? publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
-    new30: null,
-    medianList: pulse?.medianListPrice ?? medianListPrice,
-    saleToList: leftoverSaleToList,
-    daysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
-    monthsSupply: monthsOfSupply,
-    // 12-month sold is leftover membership (closedCount). Miss omits — never
-    // cache soldCount. medianDom12mo stays cache DOM; leftover daysToContract
-    // is not DOM.
-    sold12mo: publicPace.closedCount ?? null,
-    medianDom12mo: stats?.medianDaysOnMarket ?? null,
+    active: hud.active,
+    closed30: hud.closed30,
+    new30: hud.new30,
+    medianList: hud.medianList,
+    saleToList: hud.saleToList,
+    daysToPending: hud.daysToPending,
+    monthsSupply: hud.monthsSupply,
+    sold12mo: hud.sold12mo,
     trend: buildMonthlyTrend(chartPriceHist),
     byTown: [],
     countyMedian: regionPulse?.medianListPrice ?? null,
@@ -981,8 +976,8 @@ export default async function CommunityDetailPage({ params }: Props) {
           data={{
             medianListPrice: sellMedian?.value ?? null,
             medianCaption: sellMedian?.caption ?? null,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
-            soldCount30d: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
+            medianDaysToPending: hud.daysToPending,
+            soldCount30d: hud.closed30,
           }}
           eyebrow={`Sell in ${community.name}`}
         />

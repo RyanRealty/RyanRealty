@@ -351,11 +351,18 @@ export { getMetric } from '@/lib/data/market-truth/getMetric'
 export {
   getSellBendMarket,
   getCityDetachedMarket,
+  getCityDetachedInventory,
   getDetachedMarket,
   getDetachedMarkets,
+  getDetachedOverlays,
+  getDetachedInventories,
   cityDetachedSlug,
 } from '@/lib/data/market-truth/getSellBendMarket'
-export type { SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
+export type {
+  SellBendMarket,
+  DetachedInventory,
+  DetachedOverlay,
+} from '@/lib/data/market-truth/getSellBendMarket'
 export { getRegionPulse } from '@/lib/data/market/getRegionPulse'
 export type { RegionPulse } from '@/lib/data/market/getRegionPulse'
 export {

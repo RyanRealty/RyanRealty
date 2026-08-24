@@ -36,6 +36,7 @@ import {
   getRecentBlogPosts,
   getAreaGuideVideo,
   getCityDetachedMarket,
+  getCityDetachedInventory,
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
@@ -43,7 +44,7 @@ import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } fr
 import { zonedDateKey } from '@/lib/format/date'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
@@ -159,13 +160,14 @@ export default async function CityDetailPage({ params }: Props) {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
 
   const [
-    pulseRead, detached, regionPulse, priceHist, communities, neighborhoodStats,
+    pulseRead, detached, detachedInv, regionPulse, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
     publicSegments, publicPace, leftoverMonthly, publicMix,
   ] = await Promise.all([
     withTimeoutFallbackResult(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
+    withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city:detachedInv'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
     withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
     withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
@@ -264,7 +266,7 @@ export default async function CityDetailPage({ params }: Props) {
         medianPrice: publishedMedian ?? snapshot.medianListPrice,
         communityCount: communitySnapshots.length,
       }).slice(0, 2)
-  const daysFact = publishDaysLabel(publicPace.daysToPending90d ?? pulse?.medianDaysToPending)
+  const daysFact = publishDaysLabel(publicPace.daysToPending90d)
   const aboutFacts: { label: string; value: string }[] = [
     ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
     ...(publishedMedian ? [{ label: 'Median list', value: kbMoneyFull(publishedMedian) ?? '—' }] : []),
@@ -418,32 +420,24 @@ export default async function CityDetailPage({ params }: Props) {
   // Guides / blog. (§D80 — getRecentBlogPosts)
   const articlePosts = buildArticlePosts(blogPosts)
 
-  // Market HUD.
-  // Leftover sale-to-original is membership (12-month). Cache avg_sale_to_list
-  // is an alias join — never a fill. Miss omits. Do not map leftover
-  // daysToContract onto daysToPending.
-  const leftoverSaleToList =
-    publicPace.saleToOriginal != null && publicPace.saleToOriginal > 0
-      ? publicPace.saleToOriginal < 2
-        ? publicPace.saleToOriginal * 100
-        : publicPace.saleToOriginal
-      : null
-  const marketActive = detached?.activeCount ?? pulse?.activeCount ?? null
-  const monthsOfSupply = publishMonthsOfSupply({
+  const hud = leftoverHudKpis({
     grain: 'city',
-    pulseMos: detached?.monthsOfSupply ?? pulse?.monthsOfSupply,
-    pulseActiveCount: marketActive,
-    displayedActiveCount: marketActive,
+    headlines: detached,
+    inventory: detachedInv,
+    pace: publicPace,
   })
-  const marketMedian = detached?.medianListPrice ?? publishedMedian
+  const marketActive = hud.active
+  const monthsOfSupply = hud.monthsSupply
+  const marketMedian = hud.medianList
   const marketData: KbMarketData = {
-    active: marketActive,
-    closed30: publicPace.closedCount30d ?? pulse?.closedLast30Days ?? null,
-    new30: null,
-    medianList: marketMedian,
-    saleToList: leftoverSaleToList,
-    daysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
-    monthsSupply: monthsOfSupply,
+    active: hud.active,
+    closed30: hud.closed30,
+    new30: hud.new30,
+    medianList: hud.medianList,
+    saleToList: hud.saleToList,
+    daysToPending: hud.daysToPending,
+    monthsSupply: hud.monthsSupply,
+    sold12mo: hud.sold12mo,
     trend: buildMonthlyTrend(chartMonths.months),
     byTown: bendNeighborhoodItems.filter((n) => n.medianPrice != null).map((n) => ({ name: n.name, median: n.medianPrice as number })),
     countyMedian: regionPulse?.medianListPrice ?? null,
@@ -494,7 +488,7 @@ export default async function CityDetailPage({ params }: Props) {
           data={{
             activeCount,
             medianListPrice: publishedMedian,
-            medianDaysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
+            medianDaysToPending: hud.daysToPending,
           }}
           eyebrow={`${cityName} · Oregon`}
           titleTop={cityName}
@@ -563,9 +557,9 @@ export default async function CityDetailPage({ params }: Props) {
             citySlug={slug}
             geoSlug={geoSlug}
             cityName={cityName}
-            publishedMos={monthsOfSupply}
-            publishedDtp={publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null}
-            displayedActiveCount={marketActive}
+            publishedMos={hud.monthsSupply}
+            publishedDtp={hud.daysToPending}
+            displayedActiveCount={hud.active}
           />
         </KbMarketHud>
         <KbExploreTowns
@@ -601,8 +595,8 @@ export default async function CityDetailPage({ params }: Props) {
           data={{
             medianListPrice: sellMedian?.value ?? null,
             medianCaption: sellMedian?.caption ?? null,
-            medianDaysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
-            soldCount30d: pulse?.closedLast30Days ?? null,
+            medianDaysToPending: hud.daysToPending,
+            soldCount30d: hud.closed30,
           }}
           eyebrow={`Sell in ${cityName}`}
         />

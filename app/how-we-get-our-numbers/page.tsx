@@ -165,7 +165,7 @@ export default function HowWeGetOurNumbersPage() {
           eyebrow="Dictionary"
           heading="What each figure means"
           items={dictionaryItems}
-          note="A missing leftover cell is omitted, or filled from the live MLS snapshot only on the tiles that say so. We do not invent a zero."
+          note="On the HUD KPI row, a missing leftover cell is omitted. We do not invent a zero."
         />
 
         {firstDoor ? (

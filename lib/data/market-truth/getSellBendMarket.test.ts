@@ -145,7 +145,9 @@ describe('getSellBendMarket', () => {
     const page = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
     expect(page).toMatch(/getCityDetachedMarket/)
     expect(page).toMatch(/propertySubType: 'Single Family Residence'/)
-    expect(page).toMatch(/displayedActiveCount=\{marketActive\}/)
+    expect(page).toMatch(/displayedActiveCount=\{hud\.active\}/)
+    expect(page).toMatch(/leftoverHudKpis/)
+    expect(page).toMatch(/getCityDetachedInventory/)
   })
 
   it('/sell and the JSON feed both read Market Truth detached', () => {

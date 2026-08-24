@@ -224,3 +224,16 @@ to a public figure jumps to that term. The dictionary is not duplicated on every
 Do not expand leftover onto D17-locked tiles. Do not invent live figures on the dictionary page.
 MOS formula and thresholds stay imported from `lib/market/classify.ts`. Visitor copy names no
 table or SQL.
+
+## D19 — HUD KPI row is one leftover pile · **DECIDED** (Matt, 2026-08-24)
+
+Matt lifted D17 **for the public HUD KPI row only.** Industry standard: one population on
+one dashboard row. Public **KbMarketHud** tiles (Active homes, Closed · 30 days, Median to
+pending, Sale to list, Months of supply, Median list) are leftover detached membership.
+Miss omits. Pulse and cache do not fill those tiles.
+
+**New · 30 days** is omitted until leftover has a true 30-day new-listings cell. Do not print
+12-month leftover `new_listings` under that label.
+
+D17 still holds for YTD, this-month, core-chart inventory / days on market / months of supply
+/ weekly price-cuts. County unpublished. Subdivision never a price. Unadjusted MoM off public.

@@ -8,7 +8,8 @@ const SRC = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'page.tsx
 describe('community page leftover 12-month sold overlay', () => {
   it('assigns HUD sold12mo and FAQ soldCount12mo from leftover closedCount', () => {
     expect(SRC).toMatch(/getPublicDetachedPace/)
-    expect(SRC).toMatch(/sold12mo:\s*publicPace\.closedCount/)
+    expect(SRC).toMatch(/leftoverHudKpis/)
+    expect(SRC).toMatch(/sold12mo:\s*hud\.sold12mo/)
     expect(SRC).toMatch(/soldCount12mo:\s*publicPace\.closedCount/)
   })
 
@@ -20,11 +21,12 @@ describe('community page leftover 12-month sold overlay', () => {
 
   it('keeps leftover median sold and sale-to-list', () => {
     expect(SRC).toMatch(/publicPace\.medianClose/)
-    expect(SRC).toMatch(/publicPace\.saleToOriginal/)
+    expect(SRC).toMatch(/leftoverHudKpis/)
+    expect(SRC).toMatch(/saleToList:\s*hud\.saleToList/)
   })
 
   it('does not map leftover daysToContract onto median DOM', () => {
-    expect(SRC).toMatch(/medianDom12mo:\s*stats\?\.medianDaysOnMarket/)
+    expect(SRC).not.toMatch(/medianDom12mo:/)
     expect(SRC).not.toMatch(/medianDom12mo:[\s\S]{0,80}daysToContract/)
     expect(SRC).not.toMatch(/medianDom12mo:[\s\S]{0,80}publicPace\.daysToContract/)
   })

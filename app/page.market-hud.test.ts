@@ -7,8 +7,8 @@ const SRC = readFileSync(resolve('app/page.tsx'), 'utf8')
 describe('homepage HUD leftover sale-to-list', () => {
   it('reads region leftover saleToOriginal for saleToList', () => {
     expect(SRC).toMatch(/getPublicDetachedPace\(\{\s*geoType:\s*'region',\s*geoSlug:\s*'central-oregon'\s*\}\)/)
-    expect(SRC).toMatch(/sltRaw\s*=\s*publicPace\.saleToOriginal\s*\?\?\s*null/)
-    expect(SRC).toMatch(/saleToList:\s*sltRaw != null \? \(sltRaw < 2 \? sltRaw \* 100 : sltRaw\) : null/)
+    expect(SRC).toMatch(/leftoverHudKpis/)
+    expect(SRC).toMatch(/saleToList:\s*hud\.saleToList/)
   })
 
   it('does not assign saleToList from cache avg_sale_to_list_ratio', () => {
@@ -17,11 +17,13 @@ describe('homepage HUD leftover sale-to-list', () => {
     expect(SRC).not.toMatch(/getMarketStatsCacheRowForGeo/)
   })
 
-  it('overlays leftover 30-day closed and 90-day days-to-contract, pulse fills on miss', () => {
-    expect(SRC).toMatch(/closed30:\s*publicPace\.closedCount30d\s*\?\?\s*pulse\?\.soldCount30d\s*\?\?\s*null/)
-    expect(SRC).toMatch(
-      /daysToPending:\s*publicPace\.daysToPending90d\s*\?\?\s*pulse\?\.medianDaysToPending\s*\?\?\s*null/,
-    )
+  it('HUD KPI row is leftover only: miss omits, pulse does not fill', () => {
+    expect(SRC).toMatch(/closed30:\s*hud\.closed30/)
+    expect(SRC).toMatch(/daysToPending:\s*hud\.daysToPending/)
+    expect(SRC).toMatch(/new30:\s*hud\.new30/)
+    expect(SRC).not.toMatch(/closedCount30d\s*\?\?\s*pulse/)
+    expect(SRC).not.toMatch(/daysToPending90d\s*\?\?\s*pulse/)
+    expect(SRC).not.toMatch(/new30:\s*pulse/)
     expect(SRC).not.toMatch(/closed30:\s*publicPace\.closedCount\s*\?\?/)
     expect(SRC).not.toMatch(/daysToPending:\s*publicPace\.daysToContract/)
   })

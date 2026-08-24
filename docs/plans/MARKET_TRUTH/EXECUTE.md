@@ -678,6 +678,21 @@ HUD KPI `?` (Active homes, Closed · 30 days, Median to pending, Months of suppl
 median list, leftover chart) and leftover / mix / extra-type headers jump to the matching term.
 Bend Closed · 30 days still leftover **203**. Hash landings scroll to the term. D17 tiles unchanged.
 
+### HUD KPI row one leftover pile (Matt 2026-08-24, D19)
+
+Industry standard: one pile on the HUD KPI row. Miss omits. Pulse does not fill.
+
+**Done when a real user can:**
+1. Open `/` and `/cities/bend` HUD and see Active homes, Closed · 30 days, Median to pending,
+   Sale to list, Months of supply, and Median list from leftover membership when publishable.
+2. See **New · 30 days omitted** (no leftover 30-day new-listings cell). Homepage no longer
+   prints pulse new-30 on that row.
+3. Open How we get our numbers and read that HUD miss omits, not pulse-fill.
+
+D17 remainder (YTD / this-month / core-chart inventory-DOM-MOS / weekly price-cuts) stays.
+
+2026-08-24 landed (live webpack 3010): homepage HUD leftover **1,820** / Closed · 30 days **354** / **25 days** / **5.7 mo**. `/cities/bend` leftover **771** / **203** / **19 days** / **4.5 mo**. New · 30 days omitted. Dictionary updated. Pulse no longer fills the HUD KPI row.
+
 ---
 
 ## 5. Definition of done for the whole program

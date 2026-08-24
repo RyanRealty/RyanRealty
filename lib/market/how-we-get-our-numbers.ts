@@ -67,30 +67,30 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'active-homes',
     term: 'Active homes',
     body: [
-      'Houses currently for sale in that place.',
-      'On a city, neighborhood, or community page this is leftover membership when we have it, otherwise the live MLS snapshot. On the homepage region HUD it is currently the live MLS snapshot. Neighborhood inventory is the address set we have mapped, not a polygon count.',
+      'Houses currently for sale in that place, leftover membership. Same pile as Closed · 30 days, Median to pending, Sale to list, and Months of supply on that HUD.',
+      'If leftover cannot publish the count, the tile is omitted. We do not fill it from the live MLS snapshot. Neighborhood inventory is the address set we have mapped, not a polygon count.',
     ],
   },
   {
     id: 'closed-30-days',
     term: 'Closed · 30 days',
     body: [
-      'How many of those houses closed in the last 30 complete days, counted from the last complete MLS day.',
-      'Leftover membership when we can publish it. If that membership count is missing, we print the live MLS 30-day sold count under the same label. We never put a 12-month leftover closed count on this tile. Zip pages omit the tile when leftover is missing.',
+      'How many of those leftover houses closed in the last 30 complete days, counted from the last complete MLS day.',
+      'If leftover cannot publish the count, the tile is omitted. We do not fill it from the live MLS snapshot. We never put a 12-month leftover closed count on this tile.',
     ],
   },
   {
     id: 'sold-12-mo',
     term: 'Sold · 12 mo',
     body: [
-      'A 12-month closed count from the older monthly figures, shown only when a 30-day closed count is not available, and labeled as 12 months so it cannot be read as a 30-day figure.',
+      'Leftover 12-month closed count, shown only when Closed · 30 days is missing, and labeled as 12 months so it cannot be read as a 30-day figure.',
     ],
   },
   {
     id: 'new-30-days',
     term: 'New · 30 days',
     body: [
-      'Houses that came on the market in the last 30 days, from the live MLS snapshot. This tile has not moved to leftover membership.',
+      'This HUD tile is omitted until leftover membership has a true 30-day new-listings figure. We do not print the live MLS snapshot here, and we never put leftover 12-month new listings under a 30-day label. 12-month leftover new listings live in the leftover strip.',
     ],
   },
   {
@@ -105,22 +105,22 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'median-to-pending',
     term: 'Median to pending',
     body: [
-      'Median days from list date to an accepted offer over the last 90 days, leftover membership.',
-      'If that cell is missing, we print the live MLS days-to-pending figure under the same label. The leftover 12-month days-to-contract lives in the leftover strip, never on this tile.',
+      'Median days from list date to an accepted offer over the last 90 days, leftover membership. Same pile as Active homes and Closed · 30 days on that HUD.',
+      'If leftover cannot publish the figure, the tile is omitted. We do not fill it from the live MLS snapshot. The leftover 12-month days-to-contract lives in the leftover strip, never on this tile.',
     ],
   },
   {
     id: 'median-on-market-12-mo',
     term: 'Median on market · 12 mo',
     body: [
-      'A 12-month days-on-market figure from the older monthly figures, shown only when Median to pending is not available.',
+      'This label is not on the leftover HUD KPI row. Median to pending is leftover 90-day list-to-pending. Older days-on-market figures stay on core-chart tabs, not under this HUD label.',
     ],
   },
   {
     id: 'median-on-market-active',
     term: 'Median on market · active',
     body: [
-      'Median days the current active houses have been on the market, shown only when neither Median to pending nor the 12-month on-market figure is available.',
+      'This label is not on the leftover HUD KPI row. If leftover Median to pending is missing, the pending tile is omitted rather than filling from active days on market.',
     ],
   },
   {
@@ -130,14 +130,14 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
       'Months of supply is how many months it would take to sell every house currently for sale at the pace houses have actually been closing.',
       MOS_METHODOLOGY_CLAUSE,
       MOS_THRESHOLD_CLAUSE,
-      'On city pages this uses leftover membership when the inventory count next to it is the same population. Neighborhood months of supply is withheld when the two sides of the ratio do not describe the same homes. Core charts for months of supply still use the older monthly figures. The dedicated definition lives on the Months of supply page.',
+      'On the HUD this uses leftover membership, and only when the inventory count next to it is the same leftover population. If leftover months of supply cannot publish, the tile is omitted. We do not fill it from the live MLS snapshot. Neighborhood months of supply is withheld when leftover cannot publish it. Core-chart months of supply still uses the older monthly figures. The dedicated definition lives on the Months of supply page.',
     ],
   },
   {
     id: 'median-list',
     term: 'Median list price',
     body: [
-      'Median asking price of the active houses in that HUD. City pages use leftover membership when we have it. The homepage uses the live MLS snapshot.',
+      'Median asking price of the leftover active houses in that HUD. Same pile as Active homes. If leftover cannot publish it, the figure is omitted.',
     ],
   },
   {
@@ -202,7 +202,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'fill-on-miss',
     term: 'When a number is missing',
     body: [
-      'A missing leftover cell is omitted, or filled from the live MLS snapshot only on the HUD tiles that say so (Closed · 30 days and Median to pending).',
+      'On the HUD KPI row, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures.',
       'We do not invent a zero, and we do not put a longer window under a shorter label.',
     ],
   },
@@ -227,7 +227,7 @@ export const HOW_NUMBER_FAQS: readonly HowNumberFaq[] = [
   {
     question: 'When do you print a live MLS snapshot instead?',
     answer:
-      'On Closed · 30 days and Median to pending, the live MLS snapshot fills only when leftover is missing. New · 30 days, homepage active homes, YTD, this month, core-chart days on market, months of supply charts, and weekly price cuts still use the live snapshot or the older monthly figures.',
+      'The HUD KPI row does not. A missing leftover cell is omitted. YTD, this month, core-chart days on market, months of supply charts, and weekly price cuts still use the older monthly figures or the live snapshot, on those labeled surfaces.',
   },
 ]
 

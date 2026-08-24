@@ -39,9 +39,11 @@ describe('ZIP page Market Truth overlay', () => {
   })
 
   it('does not print 12-month new_listings as New · 30 days', () => {
-    expect(PAGE).toMatch(/new30: tileNew30/)
+    expect(PAGE).toMatch(/leftoverHudKpis/)
+    expect(PAGE).toMatch(/new30: hud\.new30/)
     expect(PAGE).not.toMatch(/mtNewVal/)
     expect(PAGE).not.toMatch(/publishedNew30/)
+    expect(PAGE).not.toMatch(/new30: tileNew30/)
     expect(PAGE).toMatch(/New listings last 30 days/)
     expect(PAGE).toMatch(/getPublicDetachedPace/)
     expect(PAGE).toMatch(/getPublicPlaceSegments/)

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { getRegionPulse, getListingTiles } from '@/lib/data'
+import { getRegionPulse, getListingTiles, getDetachedOverlays } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
@@ -16,7 +16,7 @@ import { buildMapPointFeatures } from '@/lib/kb/place-sections'
 import { listingDetailPath } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { buildYearSeries } from '@/lib/kb/year-series'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -115,7 +115,7 @@ const monthLabel = (iso?: string) =>
 
 export default async function Home() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [pulse, cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments, leftoverMonthly, publicMix] = await Promise.all([
+  const [pulse, cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments, leftoverMonthly, publicMix, regionOverlays] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
@@ -130,7 +130,9 @@ export default async function Home() {
       currentMonthKey,
     }).catch(() => []),
     getPublicDetachedMix({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_MIX),
+    getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]).catch(() => new Map()),
   ])
+  const regionMt = regionOverlays.get('region:central-oregon')
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
 
   const sellMedian = publishSellMedian({
@@ -211,24 +213,21 @@ export default async function Home() {
   // picks survive the resolver's video-first ordering.
   const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featured, 9)
 
-  // Leftover sale-to-original is membership (12-month). Cache avg_sale_to_list
-  // is an alias join — never a fill. Miss omits. Do not map leftover
-  // daysToContract onto daysToPending.
-  const sltRaw = publicPace.saleToOriginal ?? null
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: regionMt?.headlines ?? null,
+    inventory: regionMt?.inventory ?? null,
+    pace: publicPace,
+  })
   const marketData: KbMarketData = {
-    active: pulse?.activeCount ?? null,
-    closed30: publicPace.closedCount30d ?? pulse?.soldCount30d ?? null,
-    new30: pulse?.newCount30d ?? null,
-    medianList: pulse?.medianListPrice ?? null,
-    saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
-    daysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
-    monthsSupply: publishMonthsOfSupply({
-      // getRegionPulse — the central-oregon row, written by refresh_market_pulse.
-      grain: 'region',
-      pulseMos: pulse?.monthsOfSupply,
-      pulseActiveCount: pulse?.activeCount,
-      displayedActiveCount: pulse?.activeCount,
-    }),
+    active: hud.active,
+    closed30: hud.closed30,
+    new30: hud.new30,
+    medianList: hud.medianList,
+    saleToList: hud.saleToList,
+    daysToPending: hud.daysToPending,
+    monthsSupply: hud.monthsSupply,
+    sold12mo: hud.sold12mo,
     trend: chartMonths.months
       .slice(-13)
       .filter((p) => p.medianSalePrice != null)
@@ -249,9 +248,9 @@ export default async function Home() {
             H1 matches money queries. Live count + median stay in the sub-line. */}
         <KbHero
           data={{
-            activeCount: pulse?.activeCount ?? null,
-            medianListPrice: pulse?.medianListPrice ?? null,
-            medianDaysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
+            activeCount: hud.active,
+            medianListPrice: hud.medianList,
+            medianDaysToPending: hud.daysToPending,
           }}
           eyebrow="Central Oregon Real Estate"
           titleTop="Central Oregon"
@@ -305,13 +304,13 @@ export default async function Home() {
           data={{
             medianListPrice: sellMedian?.value ?? null,
             medianCaption: sellMedian?.caption ?? null,
-            medianDaysToPending: publicPace.daysToPending90d ?? pulse?.medianDaysToPending ?? null,
-            soldCount30d: pulse?.soldCount30d ?? null,
+            medianDaysToPending: hud.daysToPending,
+            soldCount30d: hud.closed30,
           }}
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
-        <KbMarketHud data={marketData} asOf={pulse?.updatedAt ?? null}>
+        <KbMarketHud data={marketData} asOf={regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? pulse?.updatedAt ?? null}>
           <PublicProductTypes cityName="Central Oregon" citySlug="" rows={publicSegments} />
           <PublicPaceStats cityName="Central Oregon" row={publicPace} />
           <PublicMixStats cityName="Central Oregon" row={publicMix} />
