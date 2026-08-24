@@ -510,7 +510,21 @@ Bend detached still 774. County unpublished.
 
 2026-08-23aj landed: golf cards use leftover + detached inventory, not cache. `/lp/central-oregon-golf` Sunriver `$885,000` / 56 active / 117 sold. `/lp/tetherow` leftover median `$2,600,000`. `/lp/bend` 2,096 / $759,450 / 96.9%.
 
-2026-08-23ak landed: geo snapshots overlay neighborhood/community inventory (`geo-snapshot-v8-mt-nbh-inventory`). `/cities` Bend 774. Reports hub Sales (12 mo) leftover 2,096 not cache 1,641.
+2026-08-23ak landed: geo snapshots overlay neighborhood/community inventory (`geo-snapshot-v8-mt-nbh-inventory`). `/cities` Bend 774. Reports hub Sales (12 mo) leftover 2,096 not cache 1,641. On `origin/main` as `d5c95593`…`40624e01`.
+
+### Grind 2026-08-23al — leftover 12-month closed figures still printing cache/pulse
+
+**Locks still hold:** county unpublished; pulse 30-day sold and days-to-pending stay (do not map leftover days-to-contract onto DTP); subdivision never a price; extra MOS at neighborhood stays omitted while 0 publishable; unadjusted MoM off public; `commercial_lease` out; `all_residential` off public. YTD / this-month / 30d / 90d cache windows stay cache. Workers do not tick this file.
+
+**Done when a real user can:**
+1. Open `/housing-market/annual-review` and see each report-city year-ledger median / sold count / YoY from leftover Market Truth cells (`median_close`, `closed_count`, `yoy_median_price`) when publishable. A leftover miss omits those three (not cache fill). Region closed instrument already leftover. Pulse DTP / 30-day stay off this ledger. Cache `median_dom` may stay on the row — leftover days-to-contract is not DOM.
+2. Open `/data/market/city/bend` and see `figures.medianSaleToListRatio` equal leftover `saleToOriginal` when publishable; miss omits (null), never pulse `median_sale_to_list` as if it were leftover. Pulse `soldLast30Days` and `medianDaysToPending` stay.
+3. Open `/` and see HUD sale-to-list from leftover region `saleToOriginal` when publishable; miss omits. Pulse 30-day sold and days-to-pending stay.
+4. A city-grain CMA prints leftover closed count; a leftover+trusted-cache miss omits the 365-day sold count (null / em-dash), never `0`. Neighborhood grain still cannot fill from untrusted cache sold.
+5. `/lp/seller-home-value` sale-to-list is leftover Bend `saleToOriginal` when publishable; pulse DTP / 30-day sold stay.
+6. Newsletter/CRM city blocks (`getMarketReportData`) print leftover 12-month median / sold when publishable; miss omits; pulse 30-day stays.
+
+Bend detached still 774. County unpublished.
 
 ### Step 9 — Then, and only then, the moat
 
