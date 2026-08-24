@@ -200,7 +200,7 @@ function AnticipatedDocs({
         {data.missingRequired > 0 ? ` · ${data.missingRequired} required missing` : ''}
       </p>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-        {data.documents.map((d) => (
+        {data.documents.slice(0, 8).map((d) => (
           <li
             key={d.id}
             style={{
@@ -232,6 +232,9 @@ function AnticipatedDocs({
           </li>
         ))}
       </ul>
+      {data.documents.length > 8 ? (
+        <p style={{ ...tiny, margin: '6px 0 0' }}>{data.documents.length - 8} more on the full list</p>
+      ) : null}
       {missing.length > 0 ? (
         <div style={{ margin: '8px 0 0', display: 'grid', gap: 8 }}>
           <p style={{ ...tiny, margin: 0 }}>
