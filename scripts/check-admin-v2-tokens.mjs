@@ -631,6 +631,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/deals/[key]/AddMissingChecklist.tsx',
   'app/admin/(protected)/deals/[key]/DealPropertyFacts.tsx',
   'app/admin/(protected)/deals/[key]/DealContingencyDays.tsx',
+  'app/admin/(protected)/deals/[key]/DealPrices.tsx',
   'app/admin/(protected)/deals/[key]/DocumentName.tsx',
   'app/admin/(protected)/deals/[key]/DocumentRowActions.tsx',
   'app/admin/(protected)/deals/[key]/DocumentUpload.tsx',

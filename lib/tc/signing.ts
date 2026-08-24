@@ -153,7 +153,12 @@ export function recipientRoleLabel(role: string | null | undefined): string {
 }
 
 /** Matt (or the deal broker) on a listing file is Seller Agent; on a sale/buyer file, Buyer Agent. */
-export function brokerEnvelopeRole(cycleKind: string | null | undefined): RecipientRole {
+export function brokerEnvelopeRole(
+  cycleKind: string | null | undefined,
+  ourRole?: BrokerRole | null,
+): RecipientRole {
+  if (ourRole === 'listing' || ourRole === 'dual') return 'SellerAgent'
+  if (ourRole === 'buyer') return 'BuyerAgent'
   return cycleKind === 'listing' ? 'SellerAgent' : 'BuyerAgent'
 }
 
@@ -236,7 +241,7 @@ export function seedPartyEnvelopeRecipients(input: {
     if (role === 'SellerAgent' || role === 'BuyerAgent' || role === 'Broker') return 'ReceivesACopy'
     return 'NeedsToSign'
   }
-  const brokerRole = brokerEnvelopeRole(input.cycleKind)
+  const brokerRole = brokerEnvelopeRole(input.cycleKind, ourRole)
   const whoSigns: RecipientRole[] = []
   if (mustSign('Buyer') === 'NeedsToSign') whoSigns.push('Buyer')
   if (mustSign('Seller') === 'NeedsToSign') whoSigns.push('Seller')

@@ -196,6 +196,11 @@ describe('brokerEnvelopeRole', () => {
     expect(brokerEnvelopeRole('sale')).toBe('BuyerAgent')
     expect(brokerEnvelopeRole(null)).toBe('BuyerAgent')
   })
+  it('pending sale on a listing file still seeds the listing broker as Seller Agent', () => {
+    expect(brokerEnvelopeRole('sale', 'listing')).toBe('SellerAgent')
+    expect(brokerEnvelopeRole('sale', 'dual')).toBe('SellerAgent')
+    expect(brokerEnvelopeRole('sale', 'buyer')).toBe('BuyerAgent')
+  })
 })
 
 describe('seedPartyEnvelopeRecipients', () => {
