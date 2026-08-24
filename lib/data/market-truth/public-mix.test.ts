@@ -62,6 +62,18 @@ describe('public mix / feature floors', () => {
     expect(hub).toMatch(/getPublicDetachedMix/)
     expect(region).toMatch(/getPublicDetachedMix/)
     expect(jsonRoute).toMatch(/mix: feed\.mix/)
+    const home = readFileSync(resolve('app/page.tsx'), 'utf8')
+    const cities = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+    const zip = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
+    const comm = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
+    const nbh = readFileSync(resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'), 'utf8')
+    expect(home).toMatch(/getPublicDetachedMix/)
+    expect(cities).toMatch(/getPublicDetachedMix/)
+    expect(zip).toMatch(/getPublicDetachedMix/)
+    expect(comm).toMatch(/getPublicDetachedMix/)
+    expect(nbh).toMatch(/getPublicDetachedMix/)
+    expect(home).toMatch(/PublicMixStats/)
+    expect(cities).toMatch(/PublicMixStats/)
   })
 
   it('publishes garage as a true share and other flags as at-least floors', async () => {

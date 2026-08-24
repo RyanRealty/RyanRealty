@@ -38,6 +38,8 @@ import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
+import { PublicMixStats } from '@/app/cities/[slug]/PublicMixStats'
+import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
@@ -113,7 +115,7 @@ const monthLabel = (iso?: string) =>
 
 export default async function Home() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [pulse, cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments, leftoverMonthly] = await Promise.all([
+  const [pulse, cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments, leftoverMonthly, publicMix] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
@@ -127,6 +129,7 @@ export default async function Home() {
       geoSlug: 'central-oregon',
       currentMonthKey,
     }).catch(() => []),
+    getPublicDetachedMix({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_MIX),
   ])
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
 
@@ -311,6 +314,7 @@ export default async function Home() {
         <KbMarketHud data={marketData} asOf={pulse?.updatedAt ?? null}>
           <PublicProductTypes cityName="Central Oregon" citySlug="" rows={publicSegments} />
           <PublicPaceStats cityName="Central Oregon" row={publicPace} />
+          <PublicMixStats cityName="Central Oregon" row={publicMix} />
         </KbMarketHud>
         <KbFooter towns={towns} />
       </SmoothScrollProvider>

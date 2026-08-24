@@ -138,7 +138,7 @@ export function leftoverNeighborhoodOrCityMonthly<
 }
 
 export async function getPublicDetachedMonthly(opts: {
-  geoType: 'city' | 'region' | 'neighborhood'
+  geoType: 'city' | 'region' | 'neighborhood' | 'zip'
   geoSlug: string
   currentMonthKey: string
 }): Promise<PublicMonthlyPoint[]> {

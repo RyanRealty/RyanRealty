@@ -9,7 +9,7 @@
  *   - a partial year (fewer than 12 months present) is flagged complete=false
  */
 import { describe, expect, it } from 'vitest'
-import { aggregateCityArchive, MONTHLY_VOLUME_FLOOR } from './getCityArchive'
+import { aggregateCityArchive, overlayArchiveLeftoverYears, MONTHLY_VOLUME_FLOOR } from './getCityArchive'
 import type { PriceHistoryPoint } from '@/lib/data/types/market'
 
 const p = (periodStart: string, medianSalePrice: number | null, soldCount: number | null): PriceHistoryPoint => ({
@@ -81,5 +81,36 @@ describe('aggregateCityArchive (W8.5)', () => {
 
   it('is empty for no points', () => {
     expect(aggregateCityArchive([])).toEqual([])
+  })
+})
+
+describe('overlayArchiveLeftoverYears', () => {
+  it('replaces leftover years and leaves older cache years', () => {
+    const cache = [
+      { year: 2026, homesSold: 900, monthsPresent: 8, complete: false, medianLow: 700_000, medianHigh: 800_000 },
+      { year: 2025, homesSold: 1641, monthsPresent: 12, complete: true, medianLow: 720_000, medianHigh: 780_000 },
+      { year: 2016, homesSold: 1200, monthsPresent: 12, complete: true, medianLow: 300_000, medianHigh: 400_000 },
+    ]
+    const leftover = [
+      { year: 2026, homesSold: 1100, monthsPresent: 7, complete: false, medianLow: 750_000, medianHigh: 795_000 },
+      { year: 2025, homesSold: 2096, monthsPresent: 12, complete: true, medianLow: 740_000, medianHigh: 810_000 },
+    ]
+    const out = overlayArchiveLeftoverYears(cache, leftover)
+    expect(out.leftoverYears).toEqual([2026, 2025])
+    expect(out.years.find((y) => y.year === 2026)?.homesSold).toBe(1100)
+    expect(out.years.find((y) => y.year === 2025)?.homesSold).toBe(2096)
+    expect(out.years.find((y) => y.year === 2016)?.homesSold).toBe(1200)
+  })
+
+  it('does not fill a leftover year miss from cache', () => {
+    const cache = [
+      { year: 2024, homesSold: 1641, monthsPresent: 12, complete: true, medianLow: 1, medianHigh: 2 },
+    ]
+    const leftover = [
+      { year: 2024, homesSold: 80, monthsPresent: 3, complete: false, medianLow: 3, medianHigh: 4 },
+    ]
+    const out = overlayArchiveLeftoverYears(cache, leftover)
+    expect(out.leftoverYears).toEqual([])
+    expect(out.years[0]?.homesSold).toBe(1641)
   })
 })

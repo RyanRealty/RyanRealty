@@ -31,6 +31,8 @@
 import { REPORT_CITIES } from '@/lib/data/geo/report-cities'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import type { PriceHistoryPoint } from '@/lib/data/types/market'
+import { zonedDateKey } from '@/lib/format/date'
+import { getPublicDetachedMonthly } from '@/lib/data/market-truth/public-monthly'
 
 /**
  * A month needs at least this many closings for its median to count toward the
@@ -79,6 +81,8 @@ export interface CityArchive {
   totalSold: number
   earliestYear: number | null
   latestYear: number | null
+  /** Calendar years whose sold count / median range came from leftover monthly cells. */
+  leftoverYears: number[]
 }
 
 /**
@@ -115,6 +119,27 @@ export function aggregateCityArchive(points: PriceHistoryPoint[]): CityArchiveYe
 }
 
 /**
+ * Replace a cache year with leftover monthly rollup when leftover has at least
+ * `minMonths` publishable months in that year. A leftover miss does not fill
+ * that year from cache. Older cache years remain.
+ */
+export function overlayArchiveLeftoverYears(
+  cacheYears: readonly CityArchiveYear[],
+  leftoverYears: readonly CityArchiveYear[],
+  minMonths = 6,
+): { years: CityArchiveYear[]; leftoverYears: number[] } {
+  const leftoverByYear = new Map(
+    leftoverYears.filter((year) => year.monthsPresent >= minMonths).map((year) => [year.year, year]),
+  )
+  const leftoverYearNums = [...leftoverByYear.keys()].sort((a, b) => b - a)
+  const cacheByYear = new Map(cacheYears.map((year) => [year.year, year]))
+  const years = [...new Set([...leftoverByYear.keys(), ...cacheByYear.keys()])]
+    .sort((a, b) => b - a)
+    .map((year) => leftoverByYear.get(year) ?? cacheByYear.get(year)!)
+  return { years, leftoverYears: leftoverYearNums }
+}
+
+/**
  * The decade archive for one report city. Returns null for an unknown slug (the
  * page 404s). Resolves the hyphen slug → the space-form cache slug and reads the
  * monthly cache at full depth (ARCHIVE_MONTHS).
@@ -124,18 +149,35 @@ export async function getCityArchive(slug: string): Promise<CityArchive | null> 
   if (!entry) return null
 
   const cacheSlug = entry.label.toLowerCase() // space form, matches lower("City")
-  const points = await getPriceHistory('city', cacheSlug, 'monthly', ARCHIVE_MONTHS)
-  const years = aggregateCityArchive(points)
-  const totalSold = years.reduce((sum, y) => sum + y.homesSold, 0)
-  const yearsWithSales = years.filter((y) => y.homesSold > 0).map((y) => y.year)
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
+  const [points, leftoverMonthly] = await Promise.all([
+    getPriceHistory('city', cacheSlug, 'monthly', ARCHIVE_MONTHS),
+    getPublicDetachedMonthly({
+      geoType: 'city',
+      geoSlug: entry.slug,
+      currentMonthKey,
+    }).catch(() => []),
+  ])
+  const cacheYears = aggregateCityArchive(points)
+  const leftoverYearsAgg = aggregateCityArchive(
+    leftoverMonthly.map((row) => ({
+      periodStart: row.periodStart,
+      medianSalePrice: row.medianClose,
+      soldCount: row.closedCount,
+    })),
+  )
+  const overlaid = overlayArchiveLeftoverYears(cacheYears, leftoverYearsAgg)
+  const totalSold = overlaid.years.reduce((sum, y) => sum + y.homesSold, 0)
+  const yearsWithSales = overlaid.years.filter((y) => y.homesSold > 0).map((y) => y.year)
 
   return {
     slug: entry.slug,
     label: entry.label,
     cacheSlug,
-    years,
+    years: overlaid.years,
     totalSold,
     earliestYear: yearsWithSales.length ? Math.min(...yearsWithSales) : null,
     latestYear: yearsWithSales.length ? Math.max(...yearsWithSales) : null,
+    leftoverYears: overlaid.leftoverYears,
   }
 }

@@ -173,7 +173,11 @@ export default async function CityArchivePage({ params }: PageProps) {
             headline={v3Text(`${archive.label} home sales by year`)}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(
-              'closed single-family sales through Oregon Data Share, monthly market_stats_cache rows rolled to calendar years. The price column in the table below is the range of monthly medians, not a median of medians',
+              archive.leftoverYears.length > 0
+                ? archive.leftoverYears.length === 1
+                  ? `Year ${archive.leftoverYears[0]} is Market Truth leftover monthly median close rolled to a calendar year. Earlier years are monthly cache rows rolled to calendar years. The price column is the range of monthly medians, not a median of medians`
+                  : `Years ${archive.leftoverYears[archive.leftoverYears.length - 1]} to ${archive.leftoverYears[0]} are Market Truth leftover monthly median close rolled to calendar years. Earlier years are monthly cache rows rolled to calendar years. The price column is the range of monthly medians, not a median of medians`
+                : 'closed single-family sales through Oregon Data Share, monthly market_stats_cache rows rolled to calendar years. The price column in the table below is the range of monthly medians, not a median of medians',
             )}
             action={{
               label: v3Text('Current market'),

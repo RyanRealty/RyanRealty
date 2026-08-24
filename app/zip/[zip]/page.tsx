@@ -35,9 +35,11 @@ import {
 import { getMetric } from '@/lib/data/market-truth/getMetric'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
-import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
+import { getPublicDetachedMonthly, leftoverNeighborhoodOrCityMonthly } from '@/lib/data/market-truth/public-monthly'
+import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
+import { PublicMixStats } from '@/app/cities/[slug]/PublicMixStats'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { homesForSalePath } from '@/lib/slug'
@@ -202,7 +204,9 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     mtVerdictCell,
     publicSegments,
     publicPace,
-    leftoverMonthly,
+    leftoverCityMonthly,
+    leftoverZipMonthly,
+    publicMix,
   ] = await Promise.all([
     withTimeoutFallback(
       getSurfaceImage('hero', {
@@ -239,13 +243,29 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       getPublicDetachedMonthly({ geoType: 'city', geoSlug: citySlug, currentMonthKey }),
       [],
       4500,
-      'zip:leftoverMonthly',
+      'zip:leftoverCityMonthly',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedMonthly({ geoType: 'zip', geoSlug: zip, currentMonthKey }),
+      [],
+      4500,
+      'zip:leftoverZipMonthly',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedMix({ geoType: 'zip', geoSlug: zip }),
+      EMPTY_PUBLIC_MIX,
+      3000,
+      'zip:publicMix',
     ),
   ])
-  const chartMonths = leftoverOrCacheMonthly(
-    leftoverMonthly,
-    dropCurrentMonth(cityPriceHist, currentMonthKey),
-  )
+  const chartMonths = leftoverNeighborhoodOrCityMonthly({
+    leftoverNeighborhood: leftoverZipMonthly,
+    leftoverCity: leftoverCityMonthly,
+    neighborhoodCache: [],
+    cityCache: cityPriceHist,
+    currentMonthKey,
+    neighborhoodCacheSparse: true,
+  })
 
   // ── LIVE STATS — tiles for map/featured; HUD overlays Market Truth on HIT ─
   // §0 UNKNOWN IS NOT ZERO: the tile `[]` fallback is indistinguishable from a
@@ -510,7 +530,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
         <KbMarketHud
           data={marketData}
           eyebrow={`${zip} · The market`} geoName={`ZIP ${zip}`}
-          chartScopeLabel={`${cityName} (city)`}
+          chartScopeLabel={chartMonths.cityFallback ? `${cityName} (city)` : undefined}
           asOf={hudAsOf}
         >
           <PublicProductTypes
@@ -520,6 +540,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
             rows={publicSegments}
           />
           <PublicPaceStats cityName={zip} row={publicPace} />
+          <PublicMixStats cityName={zip} row={publicMix} />
         </KbMarketHud>
 
         <KbFeatured

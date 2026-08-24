@@ -596,27 +596,39 @@ Bend detached still 774. County unpublished. Pulse DTP / 30-day stay.
 
 2026-08-23aq landed (live webpack 3010): hosted `compute_market_metrics_monthly_neighborhood_shadow(36)` upserted **1678** neighborhood window=1 cells without deleting city leftover (Bend July still **$795,000**, n=219). Sunriver July leftover median close **$890,000** (n=12). **11** neighborhood slugs have ≥6 publishable leftover months. `/cities/bend` core-chart source **Market Truth leftover, Bend city, monthly median close** / **monthly closed sales**; inventory/DOM/MOS/price-cuts stay cache or weekly; pulse Closed · 30 days / Median to pending stay. `/communities/sunriver` HUD **Median close · leftover** at neighborhood grain (no Bend (city) label) and leftover Sunriver core-chart source. `/cities/bend/larkspur` leftover neighborhood monthly (no city fallback label). Pulse DTP stays. Unadjusted MoM off. County unpublished.
 
+### Grind 2026-08-23ar — close Step 9 granular surfaces
+
+**Locks still hold:** county unpublished; pulse 30-day sold and DTP stay; unadjusted MoM off public; extra MOS at neighborhood omitted while 0 publishable; subdivision never a price; `commercial_lease` out; `all_residential` off public; YTD / this-month / 30d / 90d stay cache; core-chart inventory / DOM / MOS / weekly price-cuts stay cache or weekly. Workers do not tick this file until the Step 9 granular checkbox is literally true.
+
+**Done when a real user can:**
+1. Open `/`, `/cities/bend`, `/zip/97701`, `/communities/sunriver` and see leftover **mix/feature floors** (garage true share, other flags as "at least") when `getMetric` publishes. Miss omits. Never a 0% floor. Pulse 30-day / DTP stay.
+2. Open `/zip/97701` HUD year-series and see leftover **zip** monthly median close when ≥6 leftover zip months publish. If leftover zip cannot plot, leftover **city** monthly remains, still labeled as the parent city.
+3. Open `/housing-market/reports/archive/bend` and see leftover monthly rolled to calendar years for years leftover can plot; a leftover miss does not fill that year from cache. Older cache years remain (labeled cache). Price column stays a range of monthly medians, never a median of medians.
+4. Then the Step 9 granular checkbox is true: every public grain (region, city, zip, neighborhood, subdivision-counts) × every public segment (detached HUD + extras; not lease, not all-residential, not county) is sample-gated through `getMetric`, miss omits.
+
+Bend detached still 774. County unpublished. Pulse DTP / 30-day stay.
+
+2026-08-23ar landed (live webpack 3010): leftover mix on HUD family — `/` `/cities/bend` `/zip/97701` `/communities/sunriver` **Detached mix · leftover** (garage true share, other flags **at least**). `/zip/97701` leftover **zip** monthly (July **$621,000**, n=69) with no Bend (city) label; hosted `compute_market_metrics_monthly_zip_shadow(36)` upserted **720** zip window=1 cells; all 10 canonical zips have ≥6 leftover months. `/housing-market/reports/archive/bend` leftover years caption. Pulse 30-day / DTP stay. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
-- [ ] Granular surfaces: every segment × every grain, sample-gated.
-      2026-08-23: city + region cells now cover 11 REGISTRY segments
-      (detached, condo, townhome, manufactured_land, manufactured_park,
-      multifamily_2_4, land, farm, commercial_sale, business, all_residential).
-      Shadow compute wrote **14512** mt-v1 cells (`period_end=2026-08-23`) including
-      YoY, leftover honest stats, zip grain (canonical 10), mix/feature floors.
-      Bend detached YoY median **−1.94%**.
-      Zip grain membership is GO (PostalCode, not polygons). County is not.
-      Bend detached still **774 / 4.47 / balanced**. Bend condo 66 / 12.8 / buyer.
-      Bend townhome 78 / 3.6 / seller. Public extra segments are condo +
-      townhome beside the detached HUD. Hero stays detached houses.
-      Neighborhood leftover and extra types overlay sample-gated.
-      Neighborhood MOS publishes only when 180-day closes clear min_n 30
-      (Sunriver 7.47, Three Rivers 11.17). Pulse MOS stays untrusted.
-      Subdivision grain is counts-only (3462 cells; no prices/MOS).
-      Extra-segment active / pending / closed counts overlay GIS plat pages
-      sample-gated. Neighborhood extra types overlay pending/closed counts
-      beside on-market extras; extra MOS still 0 publishable.
-      County unpublished. `commercial_lease` (G) stays out.
+- [x] Granular surfaces: every segment × every grain, sample-gated.
+      Public grains: region, city, zip, neighborhood, subdivision-counts.
+      Public segments: detached HUD + extras (condo, townhome, manufactured_land,
+      manufactured_park, multifamily_2_4, land, farm, commercial_sale, business)
+      through `getMetric`; miss omits. `all_residential` off public.
+      `commercial_lease` (G) stays out. County unpublished.
+      Shadow compute wrote city/region/zip leftover + mix/feature + YoY.
+      Neighborhood leftover monthly (1678 window=1 cells) and zip leftover monthly
+      (720 window=1 cells) overlay HUD year-series when ≥6 months publish.
+      Mix/feature leftover on housing-market family and HUD family.
+      Extra leftover pace sample-gated on extra rows.
+      Neighborhood extra MOS omitted while 0 publishable.
+      Subdivision grain is counts-only (no prices/MOS).
+      Pulse 30-day sold and days-to-pending stay (locked; not leftover DTC).
+      YTD / this-month / 30d / 90d stay cache. Unadjusted MoM off public.
+      Core-chart inventory / DOM / MOS / weekly price-cuts stay cache or weekly.
+      Bend detached still **774**. Admin city-segment board internal.
 - [x] Leaderboards as registry queries: best performing (YoY median), most expensive, biggest movers,
       fastest to contract, most price cuts, most new inventory.
 - [x] Agent/office share — **internal only** (Matt, 2026-08-22): admin and listing presentations, not
@@ -632,7 +644,7 @@ with the registry `min_n`. YoY / movers land when those cells exist in the compu
 `getCoOfficeShareMerged` skips the MLS placeholder `"No Office"`. Admin competition desk
 stays behind `/admin`. **2026-08-23:** mart `office_id` **9412 / 12370** populated from
 `analytics_dim_office` (canonical ∪ aliases); **0** `"No Office"` rows remain (50 deleted).
-2026 sides: **318 / 389** resolved. Granular public grains wait on Step 5.
+2026 sides: **318 / 389** resolved. Granular public grains landed 2026-08-24 (23ar).
 
 ---
 

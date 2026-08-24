@@ -74,6 +74,14 @@ describe('leftover monthly chart overlay', () => {
     expect(comm).toMatch(/geoType: 'neighborhood'/)
     expect(nbh).toMatch(/geoType: 'neighborhood'/)
     expect(zip).toMatch(/getPublicDetachedMonthly\(\{\s*geoType: 'city'/)
+    expect(zip).toMatch(/geoType: 'zip'/)
+    const zipSql = readFileSync(
+      resolve('scripts/sql/compute_market_metrics_monthly_zip_shadow.sql'),
+      'utf8',
+    )
+    expect(zipSql).toMatch(/geo_type = 'zip'/)
+    expect(zipSql).toMatch(/window_months = 1/)
+    expect(zipSql).not.toMatch(/mom_median_price/)
     const sql = readFileSync(
       resolve('scripts/sql/compute_market_metrics_monthly_shadow.sql'),
       'utf8',
@@ -92,6 +100,7 @@ describe('leftover monthly chart overlay', () => {
     expect(nbhSql).not.toMatch(/geo_type IN \('city', 'region'\)/)
     const cron = readFileSync(resolve('app/api/cron/refresh-sale-pricing-facts/route.ts'), 'utf8')
     expect(cron).toMatch(/compute_market_metrics_monthly_neighborhood_shadow/)
+    expect(cron).toMatch(/compute_market_metrics_monthly_zip_shadow/)
   })
 
   it('drops the in-progress month and lists complete months oldest first', () => {

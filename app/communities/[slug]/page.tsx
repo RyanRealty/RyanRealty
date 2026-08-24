@@ -42,6 +42,8 @@ import {
 import { zonedDateKey } from '@/lib/format/date'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
+import { PublicMixStats } from '@/app/cities/[slug]/PublicMixStats'
+import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 import {
   getMarketPulse,
@@ -279,7 +281,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     boundaryRead, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
-    publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly,
+    publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly, publicMix,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -364,6 +366,12 @@ export default async function CommunityDetailPage({ params }: Props) {
       [],
       4500,
       'comm:leftoverNeighborhoodMonthly',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedMix({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
+      EMPTY_PUBLIC_MIX,
+      3000,
+      'comm:publicMix',
     ),
   ])
 
@@ -895,6 +903,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         >
           <PublicProductTypes cityName={community.name} citySlug={citySlug ?? ''} rows={publicSegments} />
           <PublicPaceStats cityName={community.name} row={publicPace} />
+          <PublicMixStats cityName={community.name} row={publicMix} />
           {coreCharts ? (
             <div className="pt-10" aria-label={`${community.name} market trend charts`}>
               <MarketCoreCharts

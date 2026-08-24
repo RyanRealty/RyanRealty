@@ -39,6 +39,8 @@ import { zonedDateKey } from '@/lib/format/date'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { resolveNeighborhoodMetricSlug } from '@/lib/data/market-truth/neighborhood-metric-slug'
 import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
+import { PublicMixStats } from '@/app/cities/[slug]/PublicMixStats'
+import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 import {
   getMarketPulse,
@@ -195,7 +197,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
     peerNeighborhoods,
     inventoryRead,
-    publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly,
+    publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly, publicMix,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     // Hot-path core figures (HUD, about facts, FAQ): a build timeout would
@@ -263,6 +265,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       [],
       4500,
       'nbh:leftoverNeighborhoodMonthly',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedMix({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }),
+      EMPTY_PUBLIC_MIX,
+      3000,
+      'nbh:publicMix',
     ),
   ])
 
@@ -587,6 +595,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         >
           <PublicProductTypes cityName={neighborhood.name} citySlug={citySlug} rows={publicSegments} />
           <PublicPaceStats cityName={neighborhood.name} row={publicPace} />
+          <PublicMixStats cityName={neighborhood.name} row={publicMix} />
           {/* The approved chart-room forms (Unit NEIGHBORHOOD 2026-08-19) —
               same market section, additive under the HUD figures. Closed-side
               cards read the district polygon assignment; the asking-price card

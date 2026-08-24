@@ -173,6 +173,15 @@ export async function GET(request: Request) {
         monthlyNbh.error.message,
       )
     }
+    const monthlyZip = await supabase.rpc('compute_market_metrics_monthly_zip_shadow', {
+      p_months: 36,
+    })
+    if (monthlyZip.error) {
+      console.error(
+        '[refresh-sale-pricing-facts] compute_market_metrics_monthly_zip_shadow',
+        monthlyZip.error.message,
+      )
+    }
   }
   if (shadowErr) {
     console.error('[refresh-sale-pricing-facts] compute_market_metrics_shadow', shadowErr.message)

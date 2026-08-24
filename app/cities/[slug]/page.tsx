@@ -88,6 +88,8 @@ import { buildCitySchemas } from './city-schemas'
 import { CityMarketCharts } from './_v3/city-market-charts'
 import { PublicProductTypes } from './PublicProductTypes'
 import { PublicPaceStats } from './PublicPaceStats'
+import { PublicMixStats } from './PublicMixStats'
+import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -160,7 +162,7 @@ export default async function CityDetailPage({ params }: Props) {
     pulseRead, detached, regionPulse, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
-    publicSegments, publicPace, leftoverMonthly,
+    publicSegments, publicPace, leftoverMonthly, publicMix,
   ] = await Promise.all([
     withTimeoutFallbackResult(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
@@ -206,6 +208,12 @@ export default async function CityDetailPage({ params }: Props) {
       [],
       4500,
       'city:leftoverMonthly',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedMix({ geoType: 'city', geoSlug: slug }),
+      EMPTY_PUBLIC_MIX,
+      3000,
+      'city:publicMix',
     ),
   ])
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
@@ -545,6 +553,7 @@ export default async function CityDetailPage({ params }: Props) {
         <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={pulse?.refreshedAt ?? null} byTownKind="neighborhood">
           <PublicProductTypes cityName={cityName} citySlug={slug} rows={publicSegments} />
           <PublicPaceStats cityName={cityName} row={publicPace} />
+          <PublicMixStats cityName={cityName} row={publicMix} />
           {coreCharts ? (
             <div className="pt-10" aria-label={`${cityName} market trend charts`}>
               <MarketCoreCharts data={toPublicCoreChartSeries(coreCharts)} heading={`${cityName} market trends`} />
