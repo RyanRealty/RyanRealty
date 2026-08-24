@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { getRegionPulse, getListingTiles } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
-import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import {
@@ -112,12 +111,11 @@ const monthLabel = (iso?: string) =>
   iso ? formatDate(iso, { month: 'short', day: undefined, year: undefined, timeZone: 'UTC' }) : ''
 
 export default async function Home() {
-  const [pulse, cities, communities, tiles, mktStats, priceHist, cityPulse, publicPace, publicSegments] = await Promise.all([
+  const [pulse, cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
-    getMarketStatsCacheRowForGeo({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getMarketPulseAllCitySnapshots().catch(() => []),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_PACE),
@@ -202,7 +200,10 @@ export default async function Home() {
   // picks survive the resolver's video-first ordering.
   const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featured, 9)
 
-  const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
+  // Leftover sale-to-original is membership (12-month). Cache avg_sale_to_list
+  // is an alias join — never a fill. Miss omits. Do not map leftover
+  // daysToContract onto daysToPending.
+  const sltRaw = publicPace.saleToOriginal ?? null
   const marketData: KbMarketData = {
     active: pulse?.activeCount ?? null,
     closed30: pulse?.soldCount30d ?? null,
