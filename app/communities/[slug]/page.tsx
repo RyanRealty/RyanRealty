@@ -55,7 +55,6 @@ import {
 } from '@/lib/data'
 import { allCommunities } from '@/lib/data'; import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
-import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -270,7 +269,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const neighborhoodSlug = slug
 
   const [
-    snapshot, pulse, stats, mktStats, regionPulse, priceHist,
+    snapshot, pulse, stats, regionPulse, priceHist,
     boundaryRead, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
@@ -279,11 +278,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 3500, 'comm:pulse'),
-    // Neighborhood closed-sale stats from market_stats_cache (market_pulse_live
-    // has no neighborhood rows) — the verified source for days-on-market +
-    // median sold when the pulse band would otherwise show dashes.
+    // Neighborhood cache still supplies 12-month sold count / DOM fallbacks.
+    // Closed median and sale-to-list come from leftover membership, not this row.
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: neighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'comm:stats'),
-    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 3000, 'comm:mktStats'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'comm:regionPulse'),
     withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
     withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),
@@ -491,11 +488,14 @@ export default async function CommunityDetailPage({ params }: Props) {
     subEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate),
   })
   const daysFact = publishDaysLabel(medianDays)
+  // Cache neighborhood medianSalePrice is an alias join. Leftover medianClose is
+  // membership. Miss omits — never an em-dash, never a cache fill.
+  const leftoverMedianSold = kbMoneyFull(publicPace.medianClose)
   const aboutFacts: { label: string; value: string }[] = [
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(medianListPrice != null ? [{ label: 'Median list', value: kbMoneyFull(medianListPrice) ?? '—' }] : []),
     ...(daysFact ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: daysFact }] : []),
-    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: kbMoneyFull(stats.medianSalePrice) ?? '—' }] : []),
+    ...(leftoverMedianSold ? [{ label: 'Median sold, 12 months', value: leftoverMedianSold }] : []),
     ...(publishedHoa ? [{ label: placeHoaGlanceLabel(publishedHoa.kind), value: formatPlaceHoaAnnual(publishedHoa.annual) }] : []),
     { label: 'City', value: cityName },
   ]
@@ -608,7 +608,15 @@ export default async function CommunityDetailPage({ params }: Props) {
   const coreChartsRaw = chartIsCityLevel ? cityCoreCharts : commCoreCharts
   const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : coreChartsRaw
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
-  const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
+  // Leftover sale-to-original is membership (12-month). Cache avg_sale_to_list
+  // is an alias join — never a fill. Miss omits. Do not map leftover
+  // daysToContract onto daysToPending.
+  const leftoverSaleToList =
+    publicPace.saleToOriginal != null && publicPace.saleToOriginal > 0
+      ? publicPace.saleToOriginal < 2
+        ? publicPace.saleToOriginal * 100
+        : publicPace.saleToOriginal
+      : null
   // Overlay inventory (membership is_primary) is the MOS numerator. FAQ must
   // print the same count so HUD and structured data cannot disagree (§0).
   const hudActive = pulse?.activeCount ?? activeCount
@@ -625,7 +633,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
     medianList: pulse?.medianListPrice ?? medianListPrice,
-    saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
+    saleToList: leftoverSaleToList,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
     // 12-month rolling fallbacks (market_stats_cache) for neighborhood scope,
@@ -793,11 +801,16 @@ export default async function CommunityDetailPage({ params }: Props) {
           aliases={registryEntry?.subdivision_aliases ?? []}
           publishedHoa={publishedHoa}
         />
-        {richContent ? null : aboutParagraphs.length > 0 ? (
+        {aboutParagraphs.length > 0 ? (
           <KbAbout
             eyebrow={communityLabel}
             heading={`Living in ${community.name}`}
-            paragraphs={aboutParagraphs}
+            // Resort overview already carries the long seoAbout. Keep one
+            // existing hero line here so leftover medianClose can print in
+            // the facts ledger without duplicating the overview.
+            paragraphs={
+              richContent ? ['Live inventory from the regional MLS.'] : aboutParagraphs
+            }
             facts={aboutFacts}
           />
         ) : null}

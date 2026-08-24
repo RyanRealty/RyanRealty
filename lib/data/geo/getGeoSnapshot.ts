@@ -24,6 +24,7 @@ import {
   getDetachedInventories,
   type DetachedInventory,
 } from '@/lib/data/market-truth/getSellBendMarket'
+import { resolveNeighborhoodMetricSlug } from '@/lib/data/market-truth/neighborhood-metric-slug'
 
 const GeoSnapshotSchema = z.object({
   geoType: z.enum(['city', 'community', 'neighborhood']),
@@ -36,7 +37,7 @@ export type GeoSnapshot = {
   geoType: 'city' | 'community' | 'neighborhood'
   geoKey: string
   geoLabel: string
-  /** City: Market Truth detached when publishable; null on miss (unknown, not zero). Community/neighborhood: MV count. */
+  /** Market Truth detached when publishable; null on miss (unknown, not zero). */
   activeSfrCount: number | null
   activeAllCount: number
   pendingCount: number
@@ -82,7 +83,9 @@ function rowToSnapshot(row: GeoSnapshotMvRow): GeoSnapshot {
 // inventory (activeSfrCount, medianListPrice as a market figure) is MT on
 // hit and null on miss — unknown is not zero; pulse 488 / polygon MV is not
 // printed as detached on /cities, mega-menu, or homepage town rows.
-// Community/neighborhood stay on the MV (REGISTRY §4: polygons unrepaired).
+// Community/neighborhood overlay the same inventory helper at geoType
+// neighborhood (GIS hulls + membership rebuilt). Miss nulls published
+// inventory; the snapshot object stays (do not 404).
 
 async function fetchPulseCityMap(): Promise<Map<string, PulseCityRow>> {
   const map = new Map<string, PulseCityRow>()
@@ -136,6 +139,71 @@ function withholdCityPublishedInventory(snap: GeoSnapshot): GeoSnapshot {
   }
 }
 
+/** Community/neighborhood MT miss/throw: keep the door; null published inventory. */
+function withholdPlacePublishedInventory(snap: GeoSnapshot): GeoSnapshot {
+  return {
+    ...snap,
+    activeSfrCount: null,
+    medianListPrice: null,
+  }
+}
+
+/**
+ * Market Truth neighborhood slugs for a community/neighborhood snapshot.
+ * Neighborhood geoKey is passed through (bend-larkspur). Community
+ * `city:name` uses resolveNeighborhoodMetricSlug candidate order
+ * (tetherow, then bend-tetherow). A key that is already a community slug
+ * is used as-is.
+ */
+export function placeInventorySlugs(
+  geoType: GeoSnapshot['geoType'],
+  geoKey: string,
+): string[] {
+  const key = geoKey.trim().toLowerCase()
+  if (!key) return []
+  if (geoType === 'neighborhood') {
+    const slug = cityDetachedSlug(key)
+    return slug ? [slug] : []
+  }
+  if (geoType !== 'community') return []
+  const colon = key.indexOf(':')
+  if (colon <= 0 || colon >= key.length - 1) {
+    const slug = cityDetachedSlug(key)
+    return slug ? [slug] : []
+  }
+  const city = cityDetachedSlug(key.slice(0, colon))
+  const name = cityDetachedSlug(key.slice(colon + 1))
+  const prefixed = [city, name].filter(Boolean).join('-')
+  const slugs: string[] = []
+  if (name) slugs.push(name)
+  if (prefixed && prefixed !== name) slugs.push(prefixed)
+  return slugs
+}
+
+function neighborhoodInventoryFromMap(
+  snap: GeoSnapshot,
+  map: Map<string, DetachedInventory>,
+): DetachedInventory | undefined {
+  for (const slug of placeInventorySlugs(snap.geoType, snap.geoKey)) {
+    const mt = map.get(`neighborhood:${slug}`)
+    if (mt) return mt
+  }
+  return undefined
+}
+
+/** Apply a loaded inventory map. Miss nulls published figures; existence fields stay. */
+export function overlayPublishedInventory(
+  snap: GeoSnapshot,
+  map: Map<string, DetachedInventory>,
+): GeoSnapshot {
+  if (snap.geoType === 'city') {
+    const mt = map.get(`city:${cityDetachedSlug(snap.geoKey)}`)
+    return mt ? withDetachedInventory(snap, mt) : withholdCityPublishedInventory(snap)
+  }
+  const mt = neighborhoodInventoryFromMap(snap, map)
+  return mt ? withDetachedInventory(snap, mt) : withholdPlacePublishedInventory(snap)
+}
+
 async function overlayOneCityDetached(snap: GeoSnapshot): Promise<GeoSnapshot> {
   if (snap.geoType !== 'city') return snap
   try {
@@ -148,18 +216,75 @@ async function overlayOneCityDetached(snap: GeoSnapshot): Promise<GeoSnapshot> {
   }
 }
 
+async function placeInventoryLookupKeys(
+  snap: GeoSnapshot,
+): Promise<Array<{ geoType: 'neighborhood'; geoSlug: string }>> {
+  if (snap.geoType === 'neighborhood') {
+    return [{ geoType: 'neighborhood', geoSlug: snap.geoKey }]
+  }
+  const key = snap.geoKey.trim()
+  const colon = key.indexOf(':')
+  const slugs = new Set<string>(placeInventorySlugs(snap.geoType, snap.geoKey))
+  if (snap.geoType === 'community' && colon > 0 && colon < key.length - 1) {
+    const resolved = await resolveNeighborhoodMetricSlug({
+      citySlug: key.slice(0, colon),
+      neighborhoodSlug: key.slice(colon + 1),
+    })
+    if (resolved) slugs.add(resolved)
+  }
+  return [...slugs].map((geoSlug) => ({ geoType: 'neighborhood' as const, geoSlug }))
+}
+
+async function overlayOnePlaceInventory(snap: GeoSnapshot): Promise<GeoSnapshot> {
+  if (snap.geoType !== 'community' && snap.geoType !== 'neighborhood') return snap
+  try {
+    const keys = await placeInventoryLookupKeys(snap)
+    if (!keys.length) return withholdPlacePublishedInventory(snap)
+    const map = await getDetachedInventories(keys)
+    return overlayPublishedInventory(snap, map)
+  } catch {
+    return withholdPlacePublishedInventory(snap)
+  }
+}
+
 async function overlayCitySnapshotsDetached(snaps: GeoSnapshot[]): Promise<GeoSnapshot[]> {
   if (!snaps.length) return snaps
   try {
     const map = await getDetachedInventories(
       snaps.map((s) => ({ geoType: 'city' as const, geoSlug: s.geoKey })),
     )
-    return snaps.map((s) => {
-      const mt = map.get(`city:${cityDetachedSlug(s.geoKey)}`)
-      return mt ? withDetachedInventory(s, mt) : withholdCityPublishedInventory(s)
-    })
+    return snaps.map((s) => overlayPublishedInventory(s, map))
   } catch {
     return snaps.map(withholdCityPublishedInventory)
+  }
+}
+
+const PLACE_INVENTORY_CHUNK = 150
+
+async function overlayPlaceSnapshotsInventory(snaps: GeoSnapshot[]): Promise<GeoSnapshot[]> {
+  if (!snaps.length) return snaps
+  try {
+    const slugs: string[] = []
+    const seen = new Set<string>()
+    for (const s of snaps) {
+      for (const slug of placeInventorySlugs(s.geoType, s.geoKey)) {
+        if (seen.has(slug)) continue
+        seen.add(slug)
+        slugs.push(slug)
+      }
+    }
+    const map = new Map<string, DetachedInventory>()
+    for (let i = 0; i < slugs.length; i += PLACE_INVENTORY_CHUNK) {
+      const chunk = slugs.slice(i, i + PLACE_INVENTORY_CHUNK).map((geoSlug) => ({
+        geoType: 'neighborhood' as const,
+        geoSlug,
+      }))
+      const part = await getDetachedInventories(chunk)
+      for (const [k, v] of part) map.set(k, v)
+    }
+    return snaps.map((s) => overlayPublishedInventory(s, map))
+  } catch {
+    return snaps.map(withholdPlacePublishedInventory)
   }
 }
 
@@ -199,7 +324,7 @@ async function fetchOneOrThrow(input: GeoSnapshotInput): Promise<GeoSnapshot | n
         return overlayOneCityDetached(pulseOnlyCitySnapshot(key, pulseRow))
       }
       const snap = rowToSnapshot(data as GeoSnapshotMvRow)
-      if (parsed.geoType !== 'city') return snap
+      if (parsed.geoType !== 'city') return overlayOnePlaceInventory(snap)
       const pulse = await fetchPulseCityMap()
       return overlayOneCityDetached(withPulseOverride(snap, pulse.get(key)))
     }
@@ -231,10 +356,11 @@ const getGeoSnapshotUncoalesced = async (input: GeoSnapshotInput): Promise<GeoSn
   const parsed = GeoSnapshotSchema.parse(input)
   const cached = unstable_cache(
     () => fetchOneOrThrow(parsed),
-    // v7 2026-08-23 — city inventory overlay (active_count) even when MOS
-    // is below min_n. v6 miss nulls published inventory (not pulse 488).
-    // Snapshot object still returned (do not 404). v5 overlay on hit.
-    ['geo-snapshot-v7-mt-inventory', parsed.geoType, parsed.geoKey],
+    // v8 2026-08-23 — community/neighborhood inventory overlay.
+    // Prior key geo-snapshot-v7-mt-inventory — city inventory overlay
+    // (active_count) even when MOS is below min_n. v6 miss nulls published
+    // inventory (not pulse 488). Snapshot object still returned (do not 404).
+    ['geo-snapshot-v8-mt-nbh-inventory', parsed.geoType, parsed.geoKey],
     {
       revalidate:
         parsed.geoType === 'city'
@@ -321,7 +447,8 @@ async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
  */
 export const getAllCitySnapshots = makeResilientCached(
   _fetchAllCitySnapshots,
-  ['geo-snapshot-all-cities-v7-mt-inventory'],
+  // Prior key geo-snapshot-all-cities-v7-mt-inventory
+  ['geo-snapshot-all-cities-v8-mt-nbh-inventory'],
   { revalidate: CACHE_WINDOWS.geoCity, tags: ['cities-index'] },
   [],
 )
@@ -344,7 +471,7 @@ async function _fetchAllCommunitySnapshots(): Promise<GeoSnapshot[]> {
     5000,
   )
   if (error) throw new Error(`[getAllCommunitySnapshots] ${error.message ?? JSON.stringify(error)}`)
-  return rows.map(rowToSnapshot)
+  return overlayPlaceSnapshotsInventory(rows.map(rowToSnapshot))
 }
 
 /**
@@ -353,7 +480,7 @@ async function _fetchAllCommunitySnapshots(): Promise<GeoSnapshot[]> {
  */
 export const getAllCommunitySnapshots = makeResilientCached(
   _fetchAllCommunitySnapshots,
-  ['geo-snapshot-all-communities-v2'],
+  ['geo-snapshot-all-communities-v8-mt-nbh-inventory'],
   { revalidate: CACHE_WINDOWS.geoCommunity, tags: ['communities-index'] },
   [],
 )
@@ -371,14 +498,14 @@ async function _fetchCityCommunitySnapshots(cityLower: string): Promise<GeoSnaps
     .limit(40)
   if (error) throw new Error(`[getCityCommunitySnapshots] ${cityLower} ${error.message ?? JSON.stringify(error)}`)
   if (!data) return []
-  return (data as GeoSnapshotMvRow[]).map(rowToSnapshot)
+  return overlayPlaceSnapshotsInventory((data as GeoSnapshotMvRow[]).map(rowToSnapshot))
 }
 
 // The cityLower arg is part of the cache key automatically; the per-city tag is
 // applied via opts.tags so a city revalidation still flushes its communities bar.
 const cachedCityCommunitySnapshots = makeResilientCached(
   _fetchCityCommunitySnapshots,
-  ['geo-snapshot-communities-v2'],
+  ['geo-snapshot-communities-v8-mt-nbh-inventory'],
   { revalidate: CACHE_WINDOWS.geoCity, tags: ['communities-index'] },
   [],
 )

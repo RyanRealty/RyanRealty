@@ -20,6 +20,7 @@ import LandingPageTracker from '@/components/LandingPageTracker'
 import HeathCmaForm from './_components/HeathCmaForm'
 import HeathAssetPerformance from './_components/HeathAssetPerformance'
 import { CONTACT } from '@/lib/brand/contact'
+import { fetchTetherowKpi } from '../data'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -131,39 +132,6 @@ type RecentClose = {
   BathroomsTotal: string | null
   TotalLivingAreaSqFt: string | null
   StreetName: string | null
-}
-
-type MarketCacheRow = {
-  geo_slug: string
-  geo_label: string | null
-  sold_count: number | null
-  median_sale_price: string | number | null
-  median_dom: string | number | null
-  avg_sale_to_list_ratio: string | number | null
-  median_ppsf: string | number | null
-  end_of_period_inventory: number | null
-  methodology_version: string | null
-  period_start: string | null
-  period_end: string | null
-  computed_at: string | null
-}
-
-async function fetchTetherowMarketStats(): Promise<MarketCacheRow | null> {
-  try {
-    void createServiceClient
-    const { getMarketStatsCacheRowForGeo } = await import('@/lib/data')
-    const data = await getMarketStatsCacheRowForGeo({
-      geoType: 'neighborhood',
-      geoSlug: 'tetherow',
-      periodType: 'rolling_365d',
-      columns:
-        'geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, methodology_version, period_start, period_end, computed_at',
-    })
-    if (!data) return null
-    return data as MarketCacheRow
-  } catch {
-    return null
-  }
 }
 
 async function fetchActiveHeathInventory(): Promise<ActiveListing[]> {
@@ -357,21 +325,16 @@ function buildJsonLd() {
 // ──────────────────────────────────────────────────────────────────────────
 export default async function HeathAtTetherowPage() {
   const { getRepeatSalesAppreciation } = await import('@/lib/data')
-  const [marketStats, activeListings, recentCloses, appreciation] = await Promise.all([
-    fetchTetherowMarketStats(),
+  const [kpi, activeListings, recentCloses, appreciation] = await Promise.all([
+    fetchTetherowKpi(),
     fetchActiveHeathInventory(),
     fetchRecentHeathClosings(),
     getRepeatSalesAppreciation('%tetherow%'),
   ])
 
   const monthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-
-  const num = (v: string | number | null | undefined): number | null => {
-    if (v == null) return null
-    const n = typeof v === 'string' ? Number.parseFloat(v) : v
-    return Number.isFinite(n) ? n : null
-  }
-  const currentMedianSale = num(marketStats?.median_sale_price)
+  const currentMedianSale = kpi?.medianSalePrice ?? null
+  const soldCountLabel = kpi?.soldCount != null ? String(kpi.soldCount) : '—'
 
   return (
     <div className="bg-background text-foreground">
@@ -452,7 +415,11 @@ export default async function HeathAtTetherowPage() {
                   Active inventory
                 </div>
                 <div className="mt-1 font-display text-3xl text-primary tabular-nums">
-                  {activeListings.length > 0 ? activeListings.length : formatInt(marketStats?.end_of_period_inventory)}
+                  {kpi?.endOfPeriodInventory != null
+                    ? kpi.endOfPeriodInventory
+                    : activeListings.length > 0
+                      ? activeListings.length
+                      : '—'}
                 </div>
                 <div className="text-xs text-muted-foreground">homes for sale, Tetherow</div>
               </CardContent>
@@ -463,7 +430,7 @@ export default async function HeathAtTetherowPage() {
                   Sold, last 12 months
                 </div>
                 <div className="mt-1 font-display text-3xl text-primary tabular-nums">
-                  {formatInt(marketStats?.sold_count)}
+                  {soldCountLabel}
                 </div>
                 <div className="text-xs text-muted-foreground">closings across Tetherow</div>
               </CardContent>
@@ -474,7 +441,7 @@ export default async function HeathAtTetherowPage() {
                   Median close
                 </div>
                 <div className="mt-1 font-display text-3xl text-primary tabular-nums">
-                  {formatCurrencyK(marketStats?.median_sale_price)}
+                  {formatCurrencyK(kpi?.medianSalePrice)}
                 </div>
                 <div className="text-xs text-muted-foreground">last 12 months, Tetherow</div>
               </CardContent>
@@ -485,7 +452,7 @@ export default async function HeathAtTetherowPage() {
                   Sale-to-list
                 </div>
                 <div className="mt-1 font-display text-3xl text-primary tabular-nums">
-                  {formatPct(marketStats?.avg_sale_to_list_ratio)}
+                  {formatPct(kpi?.avgSaleToListRatio)}
                 </div>
                 <div className="text-xs text-muted-foreground">average, last 12 months</div>
               </CardContent>
@@ -685,7 +652,7 @@ export default async function HeathAtTetherowPage() {
                   Sold count
                 </div>
                 <div className="mt-2 font-display text-3xl text-primary tabular-nums">
-                  {formatInt(marketStats?.sold_count)}
+                  {soldCountLabel}
                 </div>
                 <div className="text-xs text-muted-foreground">last 365 days</div>
               </CardContent>
@@ -696,7 +663,7 @@ export default async function HeathAtTetherowPage() {
                   Median sale price
                 </div>
                 <div className="mt-2 font-display text-3xl text-primary tabular-nums">
-                  {formatCurrencyK(marketStats?.median_sale_price)}
+                  {formatCurrencyK(kpi?.medianSalePrice)}
                 </div>
                 <div className="text-xs text-muted-foreground">last 365 days</div>
               </CardContent>
@@ -707,7 +674,7 @@ export default async function HeathAtTetherowPage() {
                   Median DOM
                 </div>
                 <div className="mt-2 font-display text-3xl text-primary tabular-nums">
-                  {formatInt(marketStats?.median_dom)} days
+                  {kpi?.medianDom != null ? `${formatInt(kpi.medianDom)} days` : '—'}
                 </div>
                 <div className="text-xs text-muted-foreground">days on market</div>
               </CardContent>
@@ -718,17 +685,17 @@ export default async function HeathAtTetherowPage() {
                   Median $/sqft
                 </div>
                 <div className="mt-2 font-display text-3xl text-primary tabular-nums">
-                  {formatPpsf(marketStats?.median_ppsf)}
+                  {formatPpsf(kpi?.medianPpsf)}
                 </div>
                 <div className="text-xs text-muted-foreground">price per sqft</div>
               </CardContent>
             </Card>
           </div>
-          {marketStats?.computed_at && (
+          {kpi?.computedAt ? (
             <p className="mt-6 text-xs text-muted-foreground">
-              Cache computed {new Date(marketStats.computed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · methodology {marketStats.methodology_version ?? '—'} · period {marketStats.period_start} to {marketStats.period_end}.
+              Inventory computed {new Date(kpi.computedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · methodology {kpi.methodologyVersion ?? '—'}
             </p>
-          )}
+          ) : null}
         </div>
       </section>
 
@@ -964,7 +931,10 @@ export default async function HeathAtTetherowPage() {
                 What would your Heath home sell for today?
               </h2>
               <p className="mt-4 text-base leading-relaxed text-foreground">
-                A free value report on your Heath home, built against recent Tetherow closings, your floor plan, your view category, and your HOA tier. Anchored to the {formatInt(marketStats?.sold_count)} Tetherow homes sold in the last 365 days.
+                A free value report on your Heath home, built against recent Tetherow closings, your floor plan, your view category, and your HOA tier.{' '}
+                {kpi?.soldCount != null
+                  ? `Anchored to the ${kpi.soldCount} Tetherow homes sold in the last 365 days.`
+                  : 'Anchored to Tetherow sales in the last 365 days.'}
               </p>
               <ul className="mt-6 space-y-3 text-sm text-foreground">
                 <li className="flex gap-3">
@@ -998,13 +968,13 @@ export default async function HeathAtTetherowPage() {
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="font-display text-2xl text-primary tabular-nums">{formatInt(marketStats?.sold_count)}</div>
+                    <div className="font-display text-2xl text-primary tabular-nums">{soldCountLabel}</div>
                     <div className="text-xs uppercase tracking-wider text-muted-foreground">Tetherow sold, 12mo</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="font-display text-2xl text-primary tabular-nums">{formatPct(marketStats?.avg_sale_to_list_ratio)}</div>
+                    <div className="font-display text-2xl text-primary tabular-nums">{formatPct(kpi?.avgSaleToListRatio)}</div>
                     <div className="text-xs uppercase tracking-wider text-muted-foreground">avg sale-to-list</div>
                   </CardContent>
                 </Card>
@@ -1042,7 +1012,7 @@ export default async function HeathAtTetherowPage() {
           <h3 className="mt-2 font-display text-xl text-primary">Where the numbers come from.</h3>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             <li>
-              KPI cards and market pulse: <code className="font-mono text-xs">market_stats_cache</code> rolling-365-day row for <code className="font-mono text-xs">geo_slug=&apos;tetherow&apos;</code>. Refreshes every 6 hours via Next.js ISR.
+              KPI cards and market pulse: Market Truth leftover (closed count, median close, sale-to-original) and detached inventory for neighborhood <code className="font-mono text-xs">geo_slug=&apos;tetherow&apos;</code>. A miss omits the figure. Months of supply only when the detached headline publishes. Refreshes every 6 hours via Next.js ISR.
             </li>
             <li>
               Active inventory: live query against the <code className="font-mono text-xs">listings</code> table where <code className="font-mono text-xs">SubdivisionName=&apos;Tetherow&apos;</code>, <code className="font-mono text-xs">StandardStatus</code> in Active / Pending / ActiveUnderContract, and <code className="font-mono text-xs">PropertyType=&apos;A&apos;</code> (single-family).

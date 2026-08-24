@@ -155,7 +155,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     pulseMos: pulse?.monthsOfSupply,
     pulseActiveCount: pulse?.activeCount,
     displayedActiveCount: pulse?.activeCount,
-    soldCount12mo: detailRolling?.soldCount,
+    soldCount12mo: publicPace.closedCount,
   })
   const mosText = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
   const verdict = marketVerdict(mosRaw)
@@ -167,7 +167,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       ...(pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null }),
       grain: geoType,
       monthsOfSupply: mosRaw,
-      soldCount12mo: detailRolling?.soldCount ?? null,
+      soldCount12mo: publicPace.closedCount ?? null,
     },
   )
 
@@ -227,7 +227,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     ytd: detailYtd,
     monthly: detail,
     lastComplete: lastCompleteMonthly,
-    rolling: detailRolling,
+    leftover: publicPace,
     currentMonthKey,
   })
   const sheet = <GeoInquirySheet geoName={geoName} />

@@ -14,11 +14,11 @@
  *     the exact DAL call app/cities/[slug]/page.tsx makes for its market HUD
  *     (activeCount, medianListPrice, monthsOfSupply, closedLast30Days,
  *     medianDaysToPending).
- *   - Trailing-12-month figures: `market_stats_cache` rolling_365d via
- *     getCityMarketDetail — the audited pattern lib/data/crm/getMarketReportData.ts
- *     established for the subscription emails (medianSalePrice, soldCount,
- *     medianDom, yoy), carrying the cache row's own period_start/period_end so
- *     the UI labels every figure with the window the cache defines.
+ *   - Trailing-12-month figures: leftover.medianClose / leftover.closedCount
+ *     overlay `market_stats_cache` rolling_365d sold/median on the hub snapshots
+ *     (`getCityReportSnapshots`). Miss omits those two fields — never cache.
+ *     medianDom and YoY stay cache. `getCityReportSnapshot` (singular) stays
+ *     cache-only so the market-stat-consistency cron still compares cache to RPC.
  *
  * The two groups are kept SEPARATE on the returned shape (live vs trailing12mo)
  * so a renderer cannot mix windows on one unlabeled surface — each group carries
@@ -48,6 +48,11 @@ import {
   cityUrlSlug,
 } from '@/lib/market/city-cache-slug'
 import type { MarketDetail, MarketPulse } from '@/lib/data/types/market'
+import {
+  EMPTY_PUBLIC_PACE,
+  getPublicDetachedPace,
+  type PublicPaceRow,
+} from '@/lib/data/market-truth/public-pace'
 
 export { citySlugCandidates, cityUrlSlug } from '@/lib/market/city-cache-slug'
 
@@ -138,6 +143,42 @@ export function buildCityReportSnapshot(args: {
   return { cityLabel, geoSlug, urlSlug: cityUrlSlug(cityLabel), live, trailing12mo }
 }
 
+async function readCityLeftover(cityLabel: string): Promise<PublicPaceRow> {
+  try {
+    return await getPublicDetachedPace({ geoType: 'city', geoSlug: cityUrlSlug(cityLabel) })
+  } catch {
+    return { ...EMPTY_PUBLIC_PACE }
+  }
+}
+
+/**
+ * Overlay leftover 12-month close onto trailing sold/median. Miss omits those
+ * two cache fields. medianDom stays cache — leftover days-to-contract is not DOM.
+ * Live pulse is untouched. Singular getCityReportSnapshot does not call this.
+ */
+export function overlayCityReportLeftover(
+  snapshot: CityReportSnapshot | null,
+  leftover: Pick<PublicPaceRow, 'medianClose' | 'closedCount'> | null,
+): CityReportSnapshot | null {
+  if (!snapshot) return null
+  const medianSalePrice = leftover?.medianClose ?? null
+  const soldCount = leftover?.closedCount ?? null
+  if (!snapshot.trailing12mo && medianSalePrice == null && soldCount == null) return snapshot
+  const trailing = snapshot.trailing12mo
+  return {
+    ...snapshot,
+    trailing12mo: {
+      medianSalePrice,
+      soldCount,
+      medianDom: trailing?.medianDom ?? null,
+      yoyMedianPriceDeltaPct: trailing?.yoyMedianPriceDeltaPct ?? null,
+      periodStart: trailing?.periodStart ?? null,
+      periodEnd: trailing?.periodEnd ?? null,
+      updatedAt: trailing?.updatedAt ?? null,
+    },
+  }
+}
+
 /**
  * True when the snapshot carries at least one real market signal: a median
  * price on either window, live inventory, or closed sales. Mirrors the audited
@@ -189,6 +230,14 @@ export async function getCityReportSnapshots(cityLabels: string[]): Promise<City
     labels.push(label)
   }
   if (labels.length === 0) return []
-  const results = await Promise.all(labels.map((label) => getCityReportSnapshot(label)))
+  const results = await Promise.all(
+    labels.map(async (label) => {
+      const [snapshot, leftover] = await Promise.all([
+        getCityReportSnapshot(label),
+        readCityLeftover(label),
+      ])
+      return overlayCityReportLeftover(snapshot, leftover)
+    }),
+  )
   return results.filter((s): s is CityReportSnapshot => s !== null)
 }

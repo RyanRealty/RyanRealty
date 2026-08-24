@@ -68,8 +68,9 @@ export type CityLedger = {
 /**
  * Active single-family inventory for this geo. Days to pending and 30-day
  * closings are a different population and do not belong on this trace. City
- * scope adds YTD / this-month-or-last-complete / 12-month closed medians via
- * buildCityPeriodFigures, and the monthly median series via Instrument.chart.
+ * scope adds YTD / this-month-or-last-complete cache figures and leftover
+ * 12-month close via buildCityPeriodFigures, and the monthly median series
+ * via Instrument.chart.
  */
 export function buildLiveFigures(pulse: MarketPulse | null, mosText: string | null, geoName: string): LiveSection {
   const medianListPrice =
@@ -132,13 +133,24 @@ export function buildPublicSegmentFigures(
   return figures
 }
 
+function isLeftoverPeriodKey(key: string): boolean {
+  return key === 'medClose' || key === 'closed' || key === 'yoy'
+}
+
+function leftoverPeriodItems(row: PublicPaceRow | null | undefined) {
+  if (!row) return []
+  return publicPaceItems(row).filter((item) => isLeftoverPeriodKey(item.key))
+}
+
 /** Leftover pace. Miss omitted. Does not replace live 30-day pulse figures. */
 export function buildPublicPaceFigures(row: PublicPaceRow | null | undefined): V3InstrumentFigure[] {
   if (!row) return []
-  return publicPaceItems(row).map((item) => ({
-    value: v3Text(item.value),
-    label: v3Text(item.label),
-  }))
+  return publicPaceItems(row)
+    .filter((item) => !isLeftoverPeriodKey(item.key))
+    .map((item) => ({
+      value: v3Text(item.value),
+      label: v3Text(item.label),
+    }))
 }
 
 /**
@@ -364,15 +376,16 @@ function priceFigure(
 }
 
 /**
- * YTD / this month or last complete month / last-12-month closed medians
- * for the city Instrument. These are period snapshots, not a series. The
- * monthly median line is the chart. Do not print marketHealthLabel.
+ * YTD / this month or last complete month from market_stats_cache, plus leftover
+ * 12-month close / count / YoY. Miss omits the 12-month cache rolling row.
+ * Do not print unadjusted MoM. Do not print marketHealthLabel.
  */
 export function buildCityPeriodFigures(args: {
   ytd: MarketDetail | null
   monthly: MarketDetail | null
   lastComplete?: MarketDetail | null
-  rolling: MarketDetail | null
+  rolling?: MarketDetail | null
+  leftover?: PublicPaceRow | null
   currentMonthKey: string
 }): { figures: V3InstrumentFigure[]; trace: string | null } {
   const figures: V3InstrumentFigure[] = []
@@ -394,8 +407,13 @@ export function buildCityPeriodFigures(args: {
     ? priceFigure(publishedMonth.value, publishedMonth.label)
     : null
   if (monthPrice) figures.push(monthPrice)
-  const rollingPrice = priceFigure(args.rolling?.medianSalePrice, '12-month median sale', HISTORY_PATH)
-  if (rollingPrice) figures.push(rollingPrice)
+  const leftoverPeriod = leftoverPeriodItems(args.leftover)
+  for (const item of leftoverPeriod) {
+    figures.push({
+      value: v3Text(item.value),
+      label: v3Text(item.label),
+    })
+  }
   if (figures.length === 0) return { figures, trace: null }
   const monthClause =
     publishedMonth?.grain === 'complete'
@@ -403,12 +421,18 @@ export function buildCityPeriodFigures(args: {
       : publishedMonth
         ? 'the current month'
         : null
-  const closedBits = ['year-to-date', monthClause, 'the last 12 months'].filter(Boolean)
-  return {
-    figures,
-    trace:
-      `Closed-sale figures are ${closedBits.join(', ')} from market_stats_cache. They are a different population from the live list-price figures`,
+  const cacheBits = ['year-to-date', monthClause].filter(Boolean)
+  const parts: string[] = []
+  if (cacheBits.length > 0) {
+    parts.push(`Closed-sale figures are ${cacheBits.join(', ')} from market_stats_cache`)
   }
+  if (leftoverPeriod.length > 0) {
+    parts.push(
+      '12-month leftover figures are Market Truth mt-v1, labeled by window, not the cache rolling row',
+    )
+  }
+  parts.push('They are a different population from the live list-price figures')
+  return { figures, trace: parts.join('. ') }
 }
 
 /**

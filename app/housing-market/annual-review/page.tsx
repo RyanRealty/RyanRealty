@@ -269,7 +269,7 @@ export default async function AnnualReviewPage() {
     medianDaysToPending: pulseFields.medianDaysToPending,
     refreshedAt: inventoryAsOf,
     medianDaysOnMarket: regionDetail?.medianDom ?? null,
-    soldCount12mo: regionDetail?.soldCount ?? null,
+    soldCount12mo: publicPace.closedCount ?? null,
   })
 
   // Sections, built from the rows (./_v3/annual-sections.ts). Built BEFORE the
@@ -283,7 +283,9 @@ export default async function AnnualReviewPage() {
       href: publicSegmentBrowseHref(null, row.segment),
     })
   }
-  for (const item of publicPaceItems(publicPace)) {
+  const paceItems = publicPaceItems(publicPace)
+  for (const item of paceItems) {
+    if (item.key === 'medClose' || item.key === 'closed' || item.key === 'yoy') continue
     extraFigures.push({
       value: v3Text(item.value),
       label: v3Text(item.label),
@@ -297,7 +299,22 @@ export default async function AnnualReviewPage() {
     regionActive: regionPulse?.activeCount ?? null,
   })
   const [firstInventoryRow, ...restInventoryRows] = inventory.rows
-  const closed = buildClosedInstrument(regionDetail)
+  const closed = buildClosedInstrument(
+    regionDetail
+      ? {
+          ...regionDetail,
+          medianSalePrice: publicPace.medianClose,
+          soldCount: publicPace.closedCount,
+          yoyMedianPriceDeltaPct:
+            publicPace.yoyMedian != null ? publicPace.yoyMedian * 100 : null,
+        }
+      : null,
+  )
+  if (publicPace.medianClose != null || publicPace.closedCount != null || publicPace.yoyMedian != null) {
+    closed.source =
+      '12-month leftover figures are Market Truth mt-v1, labeled by window, not the cache rolling row. ' +
+      closed.source.replace(/^closed/, 'Closed')
+  }
   const [firstClosedFigure, ...restClosedFigures] = closed.figures
   const year = buildYearLedger(GRID_CITIES, cityDetails)
   const [firstYearRow, ...restYearRows] = year.rows
@@ -325,16 +342,16 @@ export default async function AnnualReviewPage() {
   // Both region closed-sales variables ride the SAME on-screen figure — the
   // trailing-12-month median, whose label carries the year-over-year change — so
   // both ship on that figure's own condition and neither can outlive it.
-  if (regionDetail?.medianSalePrice != null && regionDetail.medianSalePrice > 0) {
+  if (publicPace.medianClose != null && publicPace.medianClose > 0) {
     regionFaqVariables.push({
       name: 'Central Oregon median sale price, trailing 12 months',
-      value: Math.round(regionDetail.medianSalePrice),
+      value: Math.round(publicPace.medianClose),
       unitText: 'USD',
     })
-    if (regionDetail.yoyMedianPriceDeltaPct != null) {
+    if (publicPace.yoyMedian != null) {
       regionFaqVariables.push({
         name: 'Central Oregon median sale price, year over year change',
-        value: Math.round(regionDetail.yoyMedianPriceDeltaPct * 10) / 10,
+        value: Math.round(publicPace.yoyMedian * 1000) / 10,
         unitText: 'percent',
       })
     }

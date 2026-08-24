@@ -20,13 +20,21 @@
  * drift after the fact.
  *
  * §0 trace, per column of the rendered table:
- *   Sold            -> market_stats_cache.sold_count                     (chosen period)
- *   Median price    -> market_stats_cache.median_sale_price             (chosen period, CLOSE price)
+ *   Sold            -> market_stats_cache.sold_count for rolling_30d / 90d / ytd;
+ *                      leftover.closedCount when the chosen period is rolling_365d
+ *   Median price    -> market_stats_cache.median_sale_price for 30d / 90d / ytd;
+ *                      leftover.medianClose when the chosen period is rolling_365d
  *   Median DOM      -> market_stats_cache.median_dom                     (chosen period)
  *   $/sq ft         -> market_stats_cache.median_price_per_sqft_closed   (chosen period)
  *   Active listings -> market_pulse_live.active_count                    (live, no period)
- *   Sales (12 mo)   -> market_stats_cache.sold_count                     (rolling_365d)
+ *   Sales (12 mo)   -> leftover.closedCount (Market Truth 12-month). Miss omits;
+ *                      never cache rolling_365d. Default range is 30 days — leftover
+ *                      does not map onto that Sold column.
  *   Months of supply-> market_pulse_live.months_of_supply                (canonical /6)
+ *
+ * Leftover days-to-contract is not DOM. Leftover ppsf is not the cache $/sq ft
+ * column. Those stay cache. UNKNOWN IS NOT ZERO: a leftover miss nulls the
+ * 12-month count (and rolling_365d Sold/Median) rather than printing cache.
  *
  * The median is CLOSE-based and gated at n>=3: a period with fewer than three
  * closings stores NULL rather than a "median" from one sale.
@@ -61,6 +69,11 @@ import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { citySlugCandidates, cityUrlSlug } from '@/lib/data/market/getCityReportSnapshot'
 import {
+  EMPTY_PUBLIC_PACE,
+  getPublicDetachedPace,
+  type PublicPaceRow,
+} from '@/lib/data/market-truth/public-pace'
+import {
   RANGE_PERIOD_LABELS,
   hasRangeSignal,
   envelopePeriod,
@@ -91,6 +104,34 @@ function isoDay(v: unknown): string | null {
   return v ? String(v).slice(0, 10) : null
 }
 
+async function readCityLeftover(cityLabel: string): Promise<PublicPaceRow> {
+  try {
+    return await getPublicDetachedPace({ geoType: 'city', geoSlug: cityUrlSlug(cityLabel) })
+  } catch {
+    return { ...EMPTY_PUBLIC_PACE }
+  }
+}
+
+/**
+ * Overlay leftover 12-month close onto Sales (12 mo). When the selected period
+ * is rolling_365d, Sold and Median are that same window — overlay those too.
+ * rolling_30d / 90d / ytd Sold and Median stay cache. Miss omits, never cache.
+ */
+export function overlayRangeLeftover(
+  row: CityRangeRow,
+  leftover: Pick<PublicPaceRow, 'closedCount' | 'medianClose'> | null,
+  period: RangePeriod,
+): CityRangeRow {
+  const closed = leftover?.closedCount ?? null
+  const medianClose = leftover?.medianClose ?? null
+  return {
+    ...row,
+    sales12mo: closed,
+    soldCount: period === 'rolling_365d' ? closed : row.soldCount,
+    medianSalePrice: period === 'rolling_365d' ? medianClose : row.medianSalePrice,
+  }
+}
+
 /**
  * One city's range row.
  *
@@ -100,59 +141,59 @@ function isoDay(v: unknown): string | null {
  * `lower("City")` space form ('la pine'), and for La Pine the hyphen slug also
  * matched a `boundaries` polygon — so its rows counted only inside the city
  * limits while the space rows counted the whole MLS city. Taking `soldCount`
- * from one spelling and `sales12mo` from the other produced a row describing two
- * different geographies: 44 closings "year to date" beside 58 in the last 90
- * days, a strict sub-window. An impossible row is a worse §0 failure than a
- * missing one, so candidate spellings are tried in order and the FIRST one that
- * answers supplies every field.
+ * from one spelling and cache `sales12mo` from the other produced a row
+ * describing two different geographies: 44 closings "year to date" beside 58 in
+ * the last 90 days, a strict sub-window. An impossible row is a worse §0 failure
+ * than a missing one, so candidate spellings are tried in order and the FIRST
+ * one that answers supplies every cache/pulse field.
  *
- * The underlying data was repaired at the same time (canonical ytd/quarterly rows
- * written, the 9 retired-convention city rows dropped), so the canonical spelling
- * now carries every period and this loop resolves on its first candidate.
+ * Sales (12 mo) is leftover, keyed on the URL slug, not a second cache spelling.
+ * The underlying cache data was repaired (canonical ytd/quarterly rows written,
+ * the 9 retired-convention city rows dropped), so the canonical spelling now
+ * carries every period and this loop resolves on its first candidate.
  * `lib/data/market/city-range-slug.test.ts` pins the no-mixing rule.
  */
 export async function getCityRangeRow(
   cityLabel: string,
   period: RangePeriod,
 ): Promise<CityRangeRow | null> {
+  const leftoverTask = readCityLeftover(cityLabel)
   let detail: Awaited<ReturnType<typeof getCityMarketDetail>> = null
-  let trailing: Awaited<ReturnType<typeof getCityMarketDetail>> = null
   let pulse: Awaited<ReturnType<typeof getMarketPulse>> = null
 
   for (const geoSlug of citySlugCandidates(cityLabel)) {
-    const [d, t, p] = await Promise.all([
+    const [d, p] = await Promise.all([
       getCityMarketDetail({ geoType: 'city', geoSlug, periodType: period }),
-      period === 'rolling_365d'
-        ? Promise.resolve(null)
-        : getCityMarketDetail({ geoType: 'city', geoSlug, periodType: 'rolling_365d' }),
       getMarketPulse({ geoType: 'city', geoSlug }),
     ])
-    // This candidate answers — commit to it for EVERY field and stop looking.
-    if (d || p || t) {
+    // This candidate answers — commit to it for EVERY cache/pulse field and stop.
+    if (d || p) {
       detail = d
-      trailing = t
       pulse = p
       break
     }
   }
-  if (!detail && !pulse) return null
+  const leftover = await leftoverTask
+  const leftoverHit = leftover.closedCount != null || leftover.medianClose != null
+  if (!detail && !pulse && !leftoverHit) return null
 
-  // When the chosen period IS rolling_365d, its own row supplies sales-12mo —
-  // never a second read, and never a different number for the same window.
-  const twelve = period === 'rolling_365d' ? detail : trailing
-  return {
-    city: cityLabel,
-    urlSlug: cityUrlSlug(cityLabel),
-    soldCount: toNum(detail?.soldCount),
-    medianSalePrice: toNum(detail?.medianSalePrice),
-    medianDom: toNum(detail?.medianDom),
-    medianPricePerSqft: toNum(detail?.medianPricePerSqft),
-    activeCount: toNum(pulse?.activeCount),
-    sales12mo: toNum(twelve?.soldCount),
-    monthsOfSupply: toNum(pulse?.monthsOfSupply),
-    periodStart: isoDay(detail?.periodStart),
-    periodEnd: isoDay(detail?.periodEnd),
-  }
+  return overlayRangeLeftover(
+    {
+      city: cityLabel,
+      urlSlug: cityUrlSlug(cityLabel),
+      soldCount: toNum(detail?.soldCount),
+      medianSalePrice: toNum(detail?.medianSalePrice),
+      medianDom: toNum(detail?.medianDom),
+      medianPricePerSqft: toNum(detail?.medianPricePerSqft),
+      activeCount: toNum(pulse?.activeCount),
+      sales12mo: null,
+      monthsOfSupply: toNum(pulse?.monthsOfSupply),
+      periodStart: isoDay(detail?.periodStart),
+      periodEnd: isoDay(detail?.periodEnd),
+    },
+    leftover,
+    period,
+  )
 }
 
 /**

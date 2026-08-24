@@ -1,23 +1,28 @@
 /**
- * Real-estate KPIs per golf community — pulled from market_stats_cache
- * (canonical pre-aggregated table per CLAUDE.md §0).
+ * Real-estate KPIs per golf community — Market Truth leftover + inventory.
  *
- * The 12 golf-adjacent resort communities each have a row keyed by
- * geo_slug in market_stats_cache. We pull the 12-month rolling stat row
- * and surface median sale price + active inventory + sold-12mo count on
- * the LP's Where-to-Live cards.
+ * Neighborhood cache sold/median is alias-attributed (untrusted). Cards take
+ * leftover.medianClose / leftover.closedCount and getDetachedInventories
+ * active_count when publishable. Neighborhood grain first; same-slug city
+ * fills MLS-city communities (Sunriver). Miss is null, never cache, never 0.
  *
- * Per CLAUDE.md §0: every figure traces to market_stats_cache rows
- * with a documented period_type, computed_at timestamp, and the
- * methodology_version that produced them. The page renders the
- * computed_at date as a freshness signal.
+ * medianDom stays null: leftover days-to-contract is not DOM, and the golf LP
+ * labels are median sale / sold / inventory (cannot relabel as days to contract
+ * without editing the LP).
  *
- * Fail-safe: if the cache row is missing for a community, we render
- * the card without KPIs rather than showing a wrong number.
+ * Fail-safe: missing KPI omits on the card rather than showing a wrong number.
  */
 
 import 'server-only'
-import { createServiceClient } from '@/lib/supabase/service'
+import {
+  getDetachedInventories,
+  type DetachedInventory,
+} from '@/lib/data/market-truth/getSellBendMarket'
+import {
+  EMPTY_PUBLIC_PACE,
+  getPublicDetachedPace,
+  type PublicPaceRow,
+} from '@/lib/data/market-truth/public-pace'
 
 export interface GolfCommunityKpi {
   geoSlug: string
@@ -46,49 +51,91 @@ const GOLF_COMMUNITY_SLUGS = [
 
 export type GolfCommunitySlug = (typeof GOLF_COMMUNITY_SLUGS)[number]
 
+function leftoverHasPublished(row: PublicPaceRow): boolean {
+  return row.medianClose != null || row.closedCount != null
+}
+
+export function pickGolfCommunityLeftover(
+  neighborhood: PublicPaceRow,
+  city: PublicPaceRow,
+): PublicPaceRow {
+  if (leftoverHasPublished(neighborhood)) return neighborhood
+  if (leftoverHasPublished(city)) return city
+  return neighborhood
+}
+
+export function pickGolfCommunityInventory(
+  slug: string,
+  map: Map<string, DetachedInventory>,
+): DetachedInventory | null {
+  return map.get(`neighborhood:${slug}`) ?? map.get(`city:${slug}`) ?? null
+}
+
+export function assembleGolfCommunityKpi(input: {
+  geoSlug: string
+  leftover: PublicPaceRow
+  inventory: DetachedInventory | null
+}): GolfCommunityKpi | null {
+  const medianSalePrice = input.leftover.medianClose
+  const soldCount12mo = input.leftover.closedCount
+  const activeInventory = input.inventory?.activeCount ?? null
+  if (medianSalePrice == null && soldCount12mo == null && activeInventory == null) return null
+  return {
+    geoSlug: input.geoSlug,
+    medianSalePrice,
+    soldCount12mo,
+    activeInventory,
+    medianDom: null,
+    computedAt: input.inventory?.computedAt ?? null,
+    methodologyVersion: 'mt-v1',
+  }
+}
+
+function emptyKpiRecord(): Record<GolfCommunitySlug, GolfCommunityKpi | null> {
+  const out = {} as Record<GolfCommunitySlug, GolfCommunityKpi | null>
+  for (const slug of GOLF_COMMUNITY_SLUGS) out[slug] = null
+  return out
+}
+
+async function readLeftover(slug: GolfCommunitySlug): Promise<PublicPaceRow> {
+  let neighborhood = EMPTY_PUBLIC_PACE
+  try {
+    neighborhood = await getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: slug })
+  } catch (e) {
+    console.warn(`[golf-lp] leftover miss for ${slug}:`, e)
+  }
+  if (leftoverHasPublished(neighborhood)) return neighborhood
+  try {
+    const city = await getPublicDetachedPace({ geoType: 'city', geoSlug: slug })
+    if (leftoverHasPublished(city)) return city
+  } catch (e) {
+    console.warn(`[golf-lp] city leftover miss for ${slug}:`, e)
+  }
+  return neighborhood
+}
+
 export async function loadGolfCommunityKpis(): Promise<Record<GolfCommunitySlug, GolfCommunityKpi | null>> {
-  const supabase = createServiceClient()
-  // Pull the most recent rolling_365d row per geo_slug.
-  const { data, error } = await supabase
-    .from('market_stats_cache')
-    .select(
-      'geo_slug, median_sale_price, sold_count, end_of_period_inventory, median_dom, computed_at, methodology_version, period_end',
-    )
-    .in('geo_slug', GOLF_COMMUNITY_SLUGS as unknown as string[])
-    .eq('period_type', 'rolling_365d')
-    .order('period_end', { ascending: false })
+  const leftoverTask = Promise.all(GOLF_COMMUNITY_SLUGS.map(readLeftover))
+  const inventoryTask = getDetachedInventories(
+    GOLF_COMMUNITY_SLUGS.flatMap((geoSlug) => [
+      { geoType: 'neighborhood' as const, geoSlug },
+      { geoType: 'city' as const, geoSlug },
+    ]),
+  ).catch((e) => {
+    console.warn('[golf-lp] inventory query failed:', e)
+    return new Map<string, DetachedInventory>()
+  })
 
-  const out: Record<string, GolfCommunityKpi | null> = {}
-  for (const s of GOLF_COMMUNITY_SLUGS) out[s] = null
-
-  if (error) {
-    console.warn('[golf-lp] kpi query failed:', error.message)
-    return out as Record<GolfCommunitySlug, GolfCommunityKpi | null>
-  }
-  if (!data) return out as Record<GolfCommunitySlug, GolfCommunityKpi | null>
-
-  // Take the FIRST row per geo_slug — that's the freshest period_end.
-  for (const row of data as Array<{
-    geo_slug: string
-    median_sale_price: number | null
-    sold_count: number | null
-    end_of_period_inventory: number | null
-    median_dom: number | null
-    computed_at: string | null
-    methodology_version: string | null
-  }>) {
-    if (out[row.geo_slug] != null) continue // already have the freshest
-    out[row.geo_slug] = {
-      geoSlug: row.geo_slug,
-      medianSalePrice: row.median_sale_price,
-      soldCount12mo: row.sold_count,
-      activeInventory: row.end_of_period_inventory,
-      medianDom: row.median_dom,
-      computedAt: row.computed_at,
-      methodologyVersion: row.methodology_version,
-    }
-  }
-  return out as Record<GolfCommunitySlug, GolfCommunityKpi | null>
+  const [leftovers, inventories] = await Promise.all([leftoverTask, inventoryTask])
+  const out = emptyKpiRecord()
+  GOLF_COMMUNITY_SLUGS.forEach((slug, i) => {
+    out[slug] = assembleGolfCommunityKpi({
+      geoSlug: slug,
+      leftover: leftovers[i] ?? EMPTY_PUBLIC_PACE,
+      inventory: pickGolfCommunityInventory(slug, inventories),
+    })
+  })
+  return out
 }
 
 /** Round currency to thousands per voice rules. $895,000 not $894,750. */

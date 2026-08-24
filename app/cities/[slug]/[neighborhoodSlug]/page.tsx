@@ -49,7 +49,6 @@ import {
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
-import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { communityImage, cityHero } from '@/lib/geo-images'
@@ -185,7 +184,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   })
 
   const [
-    pulse, stats, mktStats, regionPulse, priceHist,
+    pulse, stats, regionPulse, priceHist,
     boundaryRead, allCitySnapshots, blogPosts, openHouses, activity,
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
     peerNeighborhoods,
@@ -195,8 +194,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     // Hot-path core figures (HUD, about facts, FAQ): a build timeout would
     // bake the fallback into the static HTML, so the build leash is 3×.
+    // Sold median / sale-to-list do not use this GIS-boundary cache row —
+    // leftover (metric slug) is the closed-side source; miss omits.
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug, periodType: 'rolling_365d' }), null, hotRailTimeoutMs(3500), 'nbh:stats'),
-    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, hotRailTimeoutMs(3000), 'nbh:mktStats'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'nbh:regionPulse'),
     withTimeoutFallback(getPriceHistory('neighborhood', boundaryNeighborhoodSlug, 'monthly', 60), [], 4500, 'nbh:priceHistory'),
     // Result variant: a timed-out boundary yields `{ pins: [] }`, which is
@@ -303,6 +303,14 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const aboutParagraphs: string[] = [neighborhood.description ?? ''].filter(
     (p): p is string => Boolean(p && p.trim().length > 0),
   )
+  const leftover = publicPace
+  const leftoverMedianClose = leftover.medianClose != null ? kbMoneyFull(leftover.medianClose) : null
+  const leftoverSaleToList =
+    leftover.saleToOriginal != null
+      ? leftover.saleToOriginal < 2
+        ? leftover.saleToOriginal * 100
+        : leftover.saleToOriginal
+      : null
   const daysFact = publishDaysLabel(medianDays)
   const aboutFacts: { label: string; value: string }[] = [
     // Omitted, never "0", when the count is unknown (§0).
@@ -311,7 +319,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     ...(daysFact
       ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: daysFact }]
       : []),
-    ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: kbMoneyFull(stats.medianSalePrice) ?? '—' }] : []),
+    ...(leftoverMedianClose ? [{ label: 'Median close, 12 months', value: leftoverMedianClose }] : []),
     { label: 'City', value: cityName },
   ]
 
@@ -391,7 +399,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const chartIsCityLevel = isTrendSeriesTooSparse(priceHist)
   const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
 
-  const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const hudActive = pulse?.activeCount ?? activeCount ?? null
   const monthsOfSupply = publishMonthsOfSupply({
     grain: 'neighborhood',
@@ -405,7 +412,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     closed30: publishSoldCount({ value: pulse?.closedLast30Days, grain: 'neighborhood' }),
     new30: null,
     medianList: pulse?.medianListPrice ?? medianListPrice,
-    saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
+    saleToList: leftoverSaleToList,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
     trend: buildMonthlyTrend(chartPriceHist),

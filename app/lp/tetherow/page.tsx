@@ -40,7 +40,6 @@ import {
   formatPriceKpi,
   formatPriceFull,
   formatRatioPct,
-  formatDays,
   formatPpsf,
   formatCloseDate,
   currentMonthYear,
@@ -92,22 +91,20 @@ export default async function TetherowLandingPage() {
   const dynMonthYear = currentMonthYear(new Date())
   const mapUrl = buildTetherowMapUrl(boundary)
 
-  // Live-derived hero stats — overrides the static config when the cache row
-  // exists so the rendered page is always honest to the latest cache pull.
-  const soldCount = kpi?.soldCount ?? 0
+  // Live-derived hero stats — leftover closedCount / medianClose / saleToOriginal
+  // and detached inventory. Miss omits; never soldCount ?? 0.
+  const soldCount = kpi?.soldCount ?? null
+  const soldCountLabel = soldCount != null ? String(soldCount) : '—'
   const medianClose = kpi?.medianSalePrice ?? null
   const medianDom = kpi?.medianDom ?? null
   const saleToList = kpi?.avgSaleToListRatio ?? null
   const medianPpsf = kpi?.medianPpsf ?? null
   const eopInventory = kpi?.endOfPeriodInventory ?? null
-  const methodologyVersion = kpi?.methodologyVersion ?? 'v3-2026-05-07'
+  const inventoryLabel = eopInventory != null ? String(eopInventory) : '—'
+  const methodologyVersion = kpi?.methodologyVersion ?? '—'
   const methodologyDate = formatMethodologyDate(kpi?.computedAt)
 
-  // Active vs pending counts for the KPI grid.
-  const activeCount = activeListings.filter((l) => {
-    const s = l.standardStatus.toLowerCase()
-    return s === 'active'
-  }).length
+  // Pending counts for the KPI grid (from the live listing tiles).
   const pendingCount = activeListings.filter((l) => {
     const s = l.standardStatus.toLowerCase()
     return s === 'pending'
@@ -265,13 +262,17 @@ export default async function TetherowLandingPage() {
             {cfg.hero.h1_lead} <span>{dynMonthYear}</span>.
           </h1>
           <p className="mb-9 max-w-[720px] text-[19px] leading-[1.55] text-[rgba(250,248,244,0.92)]">
-            {soldCount} homes sold last year at a median {formatPriceFull(medianClose)}.{' '}
-            {eopInventory ?? 0} active right now from $1.7M to $4M.{' '}
-            {medianDom != null ? `${medianDom}-day` : '—'} median market velocity. McLay Kidd
-            country, west Bend, inside the {cfg.acres}-acre master plan.
+            {soldCount != null
+              ? `${soldCount} homes sold last year${medianClose != null ? ` at a median ${formatPriceFull(medianClose)}` : ''}. `
+              : medianClose != null
+                ? `Median close ${formatPriceFull(medianClose)} over the last 12 months. `
+                : ''}
+            {eopInventory != null ? `${eopInventory} active right now from $1.7M to $4M. ` : ''}
+            {medianDom != null ? `${medianDom}-day median market velocity. ` : ''}
+            McLay Kidd country, west Bend, inside the {cfg.acres}-acre master plan.
           </p>
           <div className="grid max-w-[940px] grid-cols-2 overflow-hidden rounded-t-xl border-t border-[rgba(250,248,244,0.15)] bg-[rgba(16,39,66,0.7)] backdrop-blur md:grid-cols-4">
-            <HeroStat value={String(soldCount)} label="Sold past 12 months" />
+            <HeroStat value={soldCountLabel} label="Sold past 12 months" />
             <HeroStat value={formatPriceKpi(medianClose)} label="Median close (12mo)" />
             <HeroStat value={String(medianDom ?? '—')} label="Median days on market" />
             <HeroStat value={formatRatioPct(saleToList)} label="Sale-to-list ratio" last />
@@ -329,8 +330,8 @@ export default async function TetherowLandingPage() {
               <FactRow term="Architect" value={cfg.architect ?? '—'} sub="Bandon Dunes pedigree" />
               <FactRow term="Course rank" value="#57 in U.S." sub="Golf Digest 100 Greatest Public" />
               <FactRow term="Recognition" value="#1 PNW Resort" sub="Conde Nast 8 consecutive years" />
-              <FactRow term="12-month closings" value={String(soldCount)} sub={`Median ${formatPriceFull(medianClose)}`} />
-              <FactRow term="Active today" value={String(eopInventory ?? activeCount)} sub="$759K to $4M" />
+              <FactRow term="12-month closings" value={soldCountLabel} sub={`Median ${formatPriceFull(medianClose)}`} />
+              <FactRow term="Active today" value={inventoryLabel} sub="$759K to $4M" />
               <FactRow term="Master HOA" value={`${formatPriceFull(cfg.hoa_master_assessment_annual)} / year`} sub="Plus sub-neighborhood dues" />
             </dl>
           </Card>
@@ -426,14 +427,18 @@ export default async function TetherowLandingPage() {
           body="Pulled from the Oregon RMLS feed at the timestamps shown at the bottom of the page."
         />
         <div className="grid gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
-          <KpiCard label="Active for sale" value={String(eopInventory ?? activeCount)} sub="Single-family residential" />
+          <KpiCard label="Active for sale" value={inventoryLabel} sub="Single-family residential" />
           <KpiCard
             label="Pending"
             value={String(pendingCount)}
             sub={`Plus ${activeUnderContractCount} active under contract`}
           />
           <KpiCard label="Median list price" value={formatPriceKpi(medianListActive)} sub="Active homes today" />
-          <KpiCard label="Median close (last 12mo)" value={formatPriceKpi(medianClose)} sub={`${soldCount} closings`} />
+          <KpiCard
+            label="Median close (last 12mo)"
+            value={formatPriceKpi(medianClose)}
+            sub={soldCount != null ? `${soldCount} closings` : 'Trailing 12 months'}
+          />
           <KpiCard
             label="Median days on market"
             value={medianDom != null ? String(Math.round(medianDom)) : '—'}
@@ -858,7 +863,11 @@ export default async function TetherowLandingPage() {
       <Section id="inventory">
         <SectionHead
           eyebrow="For sale right now"
-          headline={`Tetherow active inventory. ${eopInventory ?? activeListings.length} homes on the market today.`}
+          headline={
+            eopInventory != null
+              ? `Tetherow active inventory. ${eopInventory} homes on the market today.`
+              : 'Tetherow active inventory.'
+          }
           body="Live MLS pull, sorted by list price. Each card links to the buyer track to schedule a showing."
         />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -974,11 +983,13 @@ export default async function TetherowLandingPage() {
           </table>
         </div>
         <p className="mt-[18px] max-w-[860px] text-[13px] leading-[1.6] text-[color:var(--rr-muted)]">
-          Live close data from Supabase market cache · methodology {methodologyVersion}, computed{' '}
+          Live close data from the Oregon RMLS feed · methodology {methodologyVersion}, computed{' '}
           {methodologyDate}. Sale-to-list ratio is computed against original list price. Price
           per square foot is computed against close price and reported living area. Larger floor
-          plans show wider list-to-close gaps. The 12-month median sale-to-list at Tetherow is{' '}
-          {formatRatioPct(saleToList)} across all closings.
+          plans show wider list-to-close gaps.
+          {saleToList != null
+            ? ` The 12-month median sale-to-original at Tetherow is ${formatRatioPct(saleToList)} across all closings.`
+            : ''}
         </p>
       </Section>
 
@@ -1129,8 +1140,10 @@ export default async function TetherowLandingPage() {
         </div>
         <p className="mt-5 max-w-[860px] text-[14px] leading-[1.65] text-[color:var(--rr-text)]">
           <strong>Tetherow among its peers.</strong> Tetherow homes are
-          pricing-disciplined. {formatRatioPct(saleToList)} sale-to-list ratio with a{' '}
-          {medianDom ?? '—'}-day median market velocity. Broken Top moves on similar inventory at
+          pricing-disciplined.
+          {saleToList != null ? ` ${formatRatioPct(saleToList)} sale-to-list ratio.` : ''}
+          {medianDom != null ? ` ${medianDom}-day median market velocity.` : ''}{' '}
+          Broken Top moves on similar inventory at
           lower price points. Pronghorn sells at a higher median, but the wider list-to-close gap
           tells you sellers there are leaving more money on the table. Caldera Springs is the
           closest peer at price-per-square-foot, but Tetherow&apos;s faster market velocity keeps
@@ -1204,8 +1217,10 @@ export default async function TetherowLandingPage() {
             </h2>
             <p className="mb-4 text-[17px] leading-[1.65] text-[rgba(250,248,244,0.85)]">
               Free value report. No follow-up unless you ask. Built against your sub-neighborhood,
-              floor plan range, view category, and HOA tier. Anchored to the {soldCount}{' '}
-              Tetherow homes sold in the last 365 days.
+              floor plan range, view category, and HOA tier.{' '}
+              {soldCount != null
+                ? `Anchored to the ${soldCount} Tetherow homes sold in the last 365 days.`
+                : 'Anchored to Tetherow sales in the last 365 days.'}
             </p>
             <ul className="mt-6 list-none space-y-3 p-0">
               {[
@@ -1227,7 +1242,7 @@ export default async function TetherowLandingPage() {
           <div>
             <div className="mb-6 grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-[rgba(250,248,244,0.16)] sm:grid-cols-3">
               <TrustStripItem value="#201206613" label="OR Principal Broker" />
-              <TrustStripItem value={String(soldCount)} label="Tetherow homes sold, 12mo" />
+              <TrustStripItem value={soldCountLabel} label="Tetherow homes sold, 12mo" />
               <TrustStripItem value={formatRatioPct(saleToList)} label="Avg sale-to-list price" />
             </div>
             <TetherowMultiStepForm />
@@ -1245,10 +1260,9 @@ export default async function TetherowLandingPage() {
           <ul className="ml-5 mt-3 space-y-2">
             <li>
               <strong className="font-semibold text-[color:var(--rr-text)]">Live market pulse.</strong>{' '}
-              Computed against the City of Bend GIS Tetherow boundary and the Deschutes County
-              recorded sub-plats. Oregon RMLS feed via{' '}
-              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-[11px] text-[color:var(--rr-navy)]">market_stats_cache</code>{' '}
-              rolling-365-day window, pulled {methodologyDate}. Methodology{' '}
+              Market Truth leftover 12-month pace (closed count, median close, sale-to-original)
+              and detached inventory for Tetherow. A miss omits the figure. Months of supply
+              only when the detached headline publishes. Pulled {methodologyDate}. Methodology{' '}
               <code className="rounded bg-white px-1.5 py-0.5 font-mono text-[11px] text-[color:var(--rr-navy)]">
                 {methodologyVersion}
               </code>

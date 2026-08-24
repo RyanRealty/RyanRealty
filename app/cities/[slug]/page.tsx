@@ -39,7 +39,6 @@ import {
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
-import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
@@ -155,7 +154,7 @@ export default async function CityDetailPage({ params }: Props) {
   const geoSlug = canonicalCityCacheSlug(slug)
 
   const [
-    pulseRead, detached, regionPulse, mktStats, priceHist, communities, neighborhoodStats,
+    pulseRead, detached, regionPulse, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
     publicSegments, publicPace,
@@ -163,7 +162,6 @@ export default async function CityDetailPage({ params }: Props) {
     withTimeoutFallbackResult(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
-    withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'city', geoSlug }), null, 3000, 'city:mktStats'),
     withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
     withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
     // getBendNeighborhoodLedger → getBendNeighborhoodPublicInventory
@@ -403,7 +401,15 @@ export default async function CityDetailPage({ params }: Props) {
   const articlePosts = buildArticlePosts(blogPosts)
 
   // Market HUD.
-  const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
+  // Leftover sale-to-original is membership (12-month). Cache avg_sale_to_list
+  // is an alias join — never a fill. Miss omits. Do not map leftover
+  // daysToContract onto daysToPending.
+  const leftoverSaleToList =
+    publicPace.saleToOriginal != null && publicPace.saleToOriginal > 0
+      ? publicPace.saleToOriginal < 2
+        ? publicPace.saleToOriginal * 100
+        : publicPace.saleToOriginal
+      : null
   const marketActive = detached?.activeCount ?? pulse?.activeCount ?? null
   const monthsOfSupply = publishMonthsOfSupply({
     grain: 'city',
@@ -417,7 +423,7 @@ export default async function CityDetailPage({ params }: Props) {
     closed30: pulse?.closedLast30Days ?? null,
     new30: null,
     medianList: marketMedian,
-    saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
+    saleToList: leftoverSaleToList,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
     trend: buildMonthlyTrend(priceHist),

@@ -492,6 +492,26 @@ Bend detached still 774. County unpublished.
 
 2026-08-23ag landed: CMA leftover fields omit on miss (no cache/pulse fill). Neighborhood MOS only from Market Truth; Tetherow pulse 4.6 withheld. Comp pool still PropertyType A. Pulse DTP stays off this object.
 
+### Grind 2026-08-23ah–ak — remaining cache closed figures overlay leftover
+
+**Locks still hold:** county unpublished; pulse 30-day sold and days-to-pending stay (do not map leftover days-to-contract onto DTP); subdivision never a price; extra MOS at neighborhood stays omitted while 0 publishable. Workers do not tick this file.
+
+**Done when:**
+1. `/housing-market/bend` 12-month closed median / YoY / closed count print leftover Market Truth cells (`median_close`, `yoy_median_price`, `closed_count`) when publishable; miss omits; pulse DTP / 30-day stay on the live HUD.
+2. `/communities/sunriver` and `/cities/bend/larkspur` do not print cache `medianSalePrice` / sale-to-list as if they were membership leftover. Leftover median close / sale-to-original print when publishable; omit on miss.
+3. Golf LPs (`/lp/central-oregon-golf`, `/lp/tetherow`) use MT neighborhood inventory / leftover when publishable; omit sold/MOS if not. No cache alias sold count.
+4. Mega-menu / geo snapshot community and neighborhood inventory overlay `getDetachedInventories` (or getMetric active_count). Do not copy pulse 488. Miss omits, existence still does not 404.
+
+Bend detached still 774. County unpublished.
+
+2026-08-23ah landed: `/housing-market/bend` leftover `$759,450 median close · 12 months` / `2,096 closed` / YoY. Cache `12-month median sale` gone. Pulse DTP 18 days stays. FAQ 12-month sold is leftover closedCount.
+
+2026-08-23ai landed: `/communities/sunriver` Median sold, 12 months `$885,000` (not cache 1 yr). HUD sale to list leftover 95.2%. `/cities/bend/larkspur` HUD sale to list leftover 98.3%. `/cities/bend` HUD sale to list leftover 96.9%. Pulse DTP stays.
+
+2026-08-23aj landed: golf cards use leftover + detached inventory, not cache. `/lp/central-oregon-golf` Sunriver `$885,000` / 56 active / 117 sold. `/lp/tetherow` leftover median `$2,600,000`. `/lp/bend` 2,096 / $759,450 / 96.9%.
+
+2026-08-23ak landed: geo snapshots overlay neighborhood/community inventory (`geo-snapshot-v8-mt-nbh-inventory`). `/cities` Bend 774. Reports hub Sales (12 mo) leftover 2,096 not cache 1,641.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.

@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest'
+import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 import {
   buildCityReportSnapshot,
   citySlugCandidates,
   cityUrlSlug,
   hasReportSignal,
+  overlayCityReportLeftover,
 } from './getCityReportSnapshot'
 
 const pulse = {
@@ -140,3 +142,48 @@ describe('buildCityReportSnapshot', () => {
     expect(snap!.live!.medianListPrice).toBeNull()
   })
 })
+
+describe('overlayCityReportLeftover', () => {
+  const leftover = {
+    ...EMPTY_PUBLIC_PACE,
+    medianClose: 760_000,
+    closedCount: 2095,
+    daysToContract: 28,
+  }
+
+  it('overlays leftover medianClose/closedCount onto trailing 12-month sold/median', () => {
+    const snap = overlayCityReportLeftover(
+      buildCityReportSnapshot({ cityLabel: 'Bend', geoSlug: 'bend', pulse, detail }),
+      leftover,
+    )
+    expect(snap!.trailing12mo!.medianSalePrice).toBe(760_000)
+    expect(snap!.trailing12mo!.soldCount).toBe(2095)
+    expect(snap!.trailing12mo!.medianDom).toBe(41)
+    expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).toBe(2.1)
+    expect(snap!.live!.closedLast30Days).toBe(92)
+    expect(snap!.trailing12mo!.medianSalePrice).not.toBe(780_000)
+    expect(snap!.trailing12mo!.soldCount).not.toBe(1_240)
+  })
+
+  it('omits cache trailing sold/median on leftover miss — unknown is not zero', () => {
+    const snap = overlayCityReportLeftover(
+      buildCityReportSnapshot({ cityLabel: 'Bend', geoSlug: 'bend', pulse, detail }),
+      EMPTY_PUBLIC_PACE,
+    )
+    expect(snap!.trailing12mo!.medianSalePrice).toBeNull()
+    expect(snap!.trailing12mo!.soldCount).toBeNull()
+    expect(snap!.trailing12mo!.soldCount).not.toBe(0)
+    expect(snap!.trailing12mo!.medianDom).toBe(41)
+    expect(snap!.live!.activeCount).toBe(500)
+  })
+
+  it('does not map leftover days-to-contract onto medianDom', () => {
+    const snap = overlayCityReportLeftover(
+      buildCityReportSnapshot({ cityLabel: 'Bend', geoSlug: 'bend', pulse, detail }),
+      leftover,
+    )
+    expect(snap!.trailing12mo!.medianDom).toBe(41)
+    expect(snap!.trailing12mo!.medianDom).not.toBe(28)
+  })
+})
+

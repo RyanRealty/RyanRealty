@@ -5,16 +5,18 @@
  * Caching strategy:
  *   - The route file (page.tsx) sets `export const revalidate = 21600` (6h ISR)
  *     so the cache regenerates on a 6-hour cadence. Within a single page
- *     render this module pulls fresh rows from `market_stats_cache`, `listings`,
- *     and `boundaries`.
+ *     render this module pulls leftover + inventory from Market Truth, plus
+ *     `listings` tiles and the baked Tetherow boundary.
  *   - Static brand content (architect bio, HOA table, builder roster, signature
  *     hole, course rankings, drive times, build timeline, happenings) lives in
  *     `data/resort-community-tetherow.json` and is imported synchronously.
  *
  * Mandatory data dictionary reference:
- *   - `market_stats_cache` rolling_365d row: sold_count, median_sale_price,
- *     median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory,
- *     methodology_version, period_start/end, computed_at.
+ *   - Neighborhood `market_stats_cache` rolling_365d is alias-attributed and
+ *     untrusted. KPI figures overlay leftover (`getPublicDetachedPace`) and
+ *     inventory (`getDetachedInventories`). MOS only when `getDetachedMarket`
+ *     publishes the headline (Tetherow n=16 omits). Miss omits — never cache,
+ *     never 0.
  *   - `listings` mixed-case columns require double-quoting (see CLAUDE.md
  *     "Supabase Database — MANDATORY READ").
  *   - `boundaries` polygon centroid for Tetherow Phase 1 (599.7 acres, source:
@@ -26,23 +28,35 @@ import path from 'node:path'
 import { createServiceClient } from '@/lib/supabase/service'
 import tetherowConfig from '@/data/resort-community-tetherow.json'
 import { getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
+import {
+  getDetachedInventories,
+  getDetachedMarket,
+  type DetachedInventory,
+} from '@/lib/data/market-truth/getSellBendMarket'
+import {
+  EMPTY_PUBLIC_PACE,
+  getPublicDetachedPace,
+  type PublicPaceRow,
+} from '@/lib/data/market-truth/public-pace'
 
 export const TETHEROW_CONFIG = tetherowConfig
 
-/** rolling_365d KPI row from market_stats_cache. Drives the hero stats, the
- *  KPI grid, the comparison row, and the methodology footer timestamp. */
+/** Market Truth leftover + inventory for the Tetherow LP. Miss is null.
+ *  medianDom stays null: leftover days-to-contract is not DOM. MOS is null
+ *  unless getDetachedMarket publishes the headline. */
 export type TetherowKpi = {
   geoSlug: string
   geoLabel: string
   periodStart: string
   periodEnd: string
   computedAt: string
-  soldCount: number
+  soldCount: number | null
   medianSalePrice: number | null
   medianDom: number | null
   avgSaleToListRatio: number | null
   medianPpsf: number | null
   endOfPeriodInventory: number | null
+  monthsOfSupply: number | null
   methodologyVersion: string | null
 }
 
@@ -106,35 +120,73 @@ export type TetherowBoundary = {
   polygon: Array<[number, number]> | null
 }
 
-/** Pull the rolling-365d Tetherow KPI row. */
-export async function fetchTetherowKpi(): Promise<TetherowKpi | null> {
+function neighborhoodLabel(slug: string): string {
+  if (slug === tetherowConfig.geo_slug) return tetherowConfig.name
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
+function leftoverOverlay(leftover: PublicPaceRow) {
+  return {
+    soldCount: leftover.closedCount,
+    medianSalePrice: leftover.medianClose,
+    medianDom: null as number | null,
+    avgSaleToListRatio: leftover.saleToOriginal,
+    medianPpsf: leftover.medianPpsf,
+  }
+}
+
+async function leftoverForSlug(geoSlug: string): Promise<PublicPaceRow> {
   try {
-    void createServiceClient
-    const { getMarketStatsCacheRowForGeo } = await import('@/lib/data')
-    const data = await getMarketStatsCacheRowForGeo({
-      geoType: 'neighborhood',
-      geoSlug: tetherowConfig.geo_slug,
-      periodType: 'rolling_365d',
-      columns:
-        'geo_slug, geo_label, period_start, period_end, computed_at, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, methodology_version',
-    })
-    if (!data) return null
-    const r = data as Record<string, unknown>
+    return await getPublicDetachedPace({ geoType: 'neighborhood', geoSlug })
+  } catch (e) {
+    console.warn(`[tetherow/data] leftover miss for ${geoSlug}:`, e)
+    return { ...EMPTY_PUBLIC_PACE }
+  }
+}
+
+/** Pull leftover + inventory for Tetherow. Cache sold/median is not used. */
+export async function fetchTetherowKpi(): Promise<TetherowKpi | null> {
+  const geoSlug = tetherowConfig.geo_slug
+  try {
+    const [leftover, inventories, market] = await Promise.all([
+      leftoverForSlug(geoSlug),
+      getDetachedInventories([{ geoType: 'neighborhood', geoSlug }]).catch((e) => {
+        console.warn('[tetherow/data] inventory miss:', e)
+        return new Map<string, DetachedInventory>()
+      }),
+      getDetachedMarket('neighborhood', geoSlug).catch((e) => {
+        console.warn('[tetherow/data] MOS miss:', e)
+        return null
+      }),
+    ])
+    const inventory = inventories.get(`neighborhood:${geoSlug}`) ?? null
+    const figures = leftoverOverlay(leftover)
+    const endOfPeriodInventory = inventory?.activeCount ?? null
+    const monthsOfSupply = market?.monthsOfSupply ?? null
+    if (
+      figures.soldCount == null &&
+      figures.medianSalePrice == null &&
+      figures.avgSaleToListRatio == null &&
+      figures.medianPpsf == null &&
+      endOfPeriodInventory == null &&
+      monthsOfSupply == null
+    ) {
+      return null
+    }
     return {
-      geoSlug: String(r['geo_slug']),
-      geoLabel: String(r['geo_label']),
-      periodStart: String(r['period_start']),
-      periodEnd: String(r['period_end']),
-      computedAt: String(r['computed_at']),
-      soldCount: Number(r['sold_count'] ?? 0),
-      medianSalePrice: r['median_sale_price'] != null ? Number(r['median_sale_price']) : null,
-      medianDom: r['median_dom'] != null ? Number(r['median_dom']) : null,
-      avgSaleToListRatio:
-        r['avg_sale_to_list_ratio'] != null ? Number(r['avg_sale_to_list_ratio']) : null,
-      medianPpsf: r['median_ppsf'] != null ? Number(r['median_ppsf']) : null,
-      endOfPeriodInventory:
-        r['end_of_period_inventory'] != null ? Number(r['end_of_period_inventory']) : null,
-      methodologyVersion: r['methodology_version'] != null ? String(r['methodology_version']) : null,
+      geoSlug,
+      geoLabel: neighborhoodLabel(geoSlug),
+      periodStart: '',
+      periodEnd: '',
+      computedAt: inventory?.computedAt ?? market?.computedAt ?? '',
+      ...figures,
+      endOfPeriodInventory,
+      monthsOfSupply,
+      methodologyVersion: 'mt-v1',
     }
   } catch (e) {
     console.warn('[tetherow/data] fetchTetherowKpi failed:', e)
@@ -250,52 +302,35 @@ export async function fetchTetherowRecentClosings(): Promise<TetherowRecentClosi
   }
 }
 
-/** Pull the rolling-365d row for Tetherow + the 4 peer resorts. Returns a
- *  Tetherow-first array sorted to match the static-HTML comparison column order. */
+/** Leftover + inventory for Tetherow + the 4 peer resorts. Tetherow first.
+ *  A miss omits the cell. Cache neighborhood rolling_365d is not used. */
 export async function fetchTetherowPeerComparison(): Promise<TetherowPeerRow[]> {
+  const peers = tetherowConfig.comparison_peers as string[]
+  const allSlugs = [tetherowConfig.geo_slug, ...peers]
   try {
-    void createServiceClient
-    const peers = tetherowConfig.comparison_peers as string[]
-    const allSlugs = [tetherowConfig.geo_slug, ...peers]
-    const { getMarketStatsCacheRowsForGeos } = await import('@/lib/data')
-    const data = await getMarketStatsCacheRowsForGeos({
-      // Resort COMMUNITIES. Without this, 'sunriver' resolves to the CITY row and
-      // all of Sunriver appears as a peer community's numbers. (§0)
-      geoType: 'neighborhood',
-      geoSlugs: allSlugs,
-      periodType: 'rolling_365d',
-      columns:
-        'geo_slug, geo_label, sold_count, median_sale_price, median_dom, avg_sale_to_list_ratio, median_ppsf, end_of_period_inventory, period_end',
-      orderBy: { column: 'period_end', ascending: false },
-    })
-    if (!data) return []
-    // Multiple Sunriver rows may exist (per-day snapshots). Take the newest
-    // per geo_slug.
-    const seen = new Set<string>()
-    const newestPerSlug: TetherowPeerRow[] = []
-    for (const r of data as Array<Record<string, unknown>>) {
-      const slug = String(r['geo_slug'])
-      if (seen.has(slug)) continue
-      seen.add(slug)
-      newestPerSlug.push({
-        geoSlug: slug,
-        geoLabel: String(r['geo_label']),
-        soldCount: r['sold_count'] != null ? Number(r['sold_count']) : null,
-        medianSalePrice: r['median_sale_price'] != null ? Number(r['median_sale_price']) : null,
-        medianDom: r['median_dom'] != null ? Number(r['median_dom']) : null,
-        avgSaleToListRatio:
-          r['avg_sale_to_list_ratio'] != null ? Number(r['avg_sale_to_list_ratio']) : null,
-        medianPpsf: r['median_ppsf'] != null ? Number(r['median_ppsf']) : null,
-        endOfPeriodInventory:
-          r['end_of_period_inventory'] != null ? Number(r['end_of_period_inventory']) : null,
-      })
-    }
-    // Order: Tetherow first, then the peers in the order they appear in config.
-    const slugOrder = new Map(allSlugs.map((s, i) => [s, i]))
-    newestPerSlug.sort(
-      (a, b) => (slugOrder.get(a.geoSlug) ?? 99) - (slugOrder.get(b.geoSlug) ?? 99)
+    const leftoverBySlug = new Map<string, PublicPaceRow>()
+    const leftoverTask = Promise.all(
+      allSlugs.map(async (geoSlug) => {
+        leftoverBySlug.set(geoSlug, await leftoverForSlug(geoSlug))
+      }),
     )
-    return newestPerSlug
+    const inventoryTask = getDetachedInventories(
+      allSlugs.map((geoSlug) => ({ geoType: 'neighborhood' as const, geoSlug })),
+    ).catch((e) => {
+      console.warn('[tetherow/data] peer inventory query failed:', e)
+      return new Map<string, DetachedInventory>()
+    })
+    const [, inventories] = await Promise.all([leftoverTask, inventoryTask])
+    return allSlugs.map((geoSlug) => {
+      const leftover = leftoverBySlug.get(geoSlug) ?? EMPTY_PUBLIC_PACE
+      const inventory = inventories.get(`neighborhood:${geoSlug}`) ?? null
+      return {
+        geoSlug,
+        geoLabel: neighborhoodLabel(geoSlug),
+        ...leftoverOverlay(leftover),
+        endOfPeriodInventory: inventory?.activeCount ?? null,
+      }
+    })
   } catch (e) {
     console.warn('[tetherow/data] fetchTetherowPeerComparison failed:', e)
     return []

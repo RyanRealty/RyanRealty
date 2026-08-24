@@ -79,6 +79,7 @@ export function buildCityLedgerRows(snapshots: CityReportSnapshot[]): V3LedgerFi
   const rows: V3LedgerFigureRow[] = []
   for (const s of snapshots) {
     const listPrice = s.live?.medianListPrice
+    // trailing12mo median/sold are leftover-overlaid on getCityReportSnapshots.
     const salePrice = s.trailing12mo?.medianSalePrice
     const price = listPrice != null && listPrice > 0 ? listPrice : salePrice
     if (price == null || price <= 0) continue
@@ -106,6 +107,12 @@ export function buildRangeDataset(reportData: CityRangeReport): SchemaInput | nu
     if ((r.soldCount ?? 0) > 0) {
       datasetVariables.push({ name: `${r.city} closed sales`, value: r.soldCount as number })
     }
+    if ((r.sales12mo ?? 0) > 0) {
+      datasetVariables.push({
+        name: `${r.city} 12-month closed sales`,
+        value: r.sales12mo as number,
+      })
+    }
     if (r.medianSalePrice != null && r.medianSalePrice > 0) {
       datasetVariables.push({
         name: `${r.city} median sale price`,
@@ -131,8 +138,8 @@ export function buildRangeDataset(reportData: CityRangeReport): SchemaInput | nu
     name: `Central Oregon real estate market report, ${periodStart} to ${periodEnd}`,
     description:
       'Single-family home sales and inventory data for Central Oregon cities. ' +
-      'Includes closed sales, median sale price, median days on market, and active listings. ' +
-      'Sourced from Oregon Data Share via Ryan Realty.',
+      'Includes closed sales, 12-month leftover closed sales, median sale price, median days on market, and active listings. ' +
+      'Sourced from Oregon Data Share via Ryan Realty. 12-month closed sales are Market Truth leftover cells.',
     url: `${siteUrl}${CANONICAL_PATH}`,
     temporalCoverage: `${periodStart}/${periodEnd}`,
     spatialCoverageName: 'Central Oregon, OR',
