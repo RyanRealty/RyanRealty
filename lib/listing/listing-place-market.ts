@@ -75,3 +75,67 @@ export function resolveListingPlaceAndMarket(listing: ListingPlaceFields): {
 
   return { placeContext, marketGeo }
 }
+
+export type LeftoverListingGrain = {
+  geoType: 'city' | 'neighborhood'
+  geoSlug: string
+  name: string
+  hubHref: string
+}
+
+/**
+ * Leftover-eligible listing grains, finest first.
+ * A plat / subdivision slug is not leftover neighborhood. Neighborhood leftover
+ * uses the listing neighborhood slug, or a curated community slug when that
+ * community is itself leftover neighborhood (Tetherow). City leftover is last.
+ */
+export function leftoverListingGrains(
+  listing: ListingPlaceFields,
+  marketGeo: ListingMarketGeo | null,
+): LeftoverListingGrain[] {
+  const grains: LeftoverListingGrain[] = []
+  const seen = new Set<string>()
+  const push = (grain: LeftoverListingGrain) => {
+    const key = `${grain.geoType}:${grain.geoSlug}`
+    if (seen.has(key) || !grain.geoSlug || NOISE_SLUGS.has(grain.geoSlug)) return
+    seen.add(key)
+    grains.push(grain)
+  }
+
+  const neighborhoodSlug =
+    listing.neighborhoodSlug && !NOISE_SLUGS.has(listing.neighborhoodSlug)
+      ? listing.neighborhoodSlug
+      : null
+  if (neighborhoodSlug) {
+    push({
+      geoType: 'neighborhood',
+      geoSlug: neighborhoodSlug,
+      name: listing.neighborhoodName ?? listing.boundaryNeighborhood ?? neighborhoodSlug,
+      hubHref: listing.citySlug
+        ? `/cities/${listing.citySlug}/${neighborhoodSlug}`
+        : `/cities/${neighborhoodSlug}`,
+    })
+  } else if (
+    marketGeo?.geoType === 'community' &&
+    marketGeo.geoSlug &&
+    !NOISE_SLUGS.has(marketGeo.geoSlug)
+  ) {
+    push({
+      geoType: 'neighborhood',
+      geoSlug: marketGeo.geoSlug,
+      name: marketGeo.name,
+      hubHref: `/communities/${marketGeo.geoSlug}`,
+    })
+  }
+
+  if (listing.citySlug) {
+    push({
+      geoType: 'city',
+      geoSlug: listing.citySlug,
+      name: listing.city ?? listing.citySlug,
+      hubHref: `/cities/${listing.citySlug}`,
+    })
+  }
+
+  return grains
+}

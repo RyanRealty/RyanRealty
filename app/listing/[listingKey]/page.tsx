@@ -4,8 +4,6 @@ import {
   getListingPhotos,
   getListingVideos,
   getListingDetailOpenHouses,
-  getMarketPulse,
-  getMarketStats,
   getBrokers,
   getReviews,
   resolveListingAgent,
@@ -28,6 +26,9 @@ import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publi
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
 import { getPublishedCmaForListing } from '@/lib/data/cma/getPublishedCma'
 import { getListingPricingRead } from '@/lib/data/pricing/reads'
+import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { LivePricingRead } from '@/components/site/listing-detail/LivePricingRead'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
@@ -52,7 +53,7 @@ import { ListingLocationMap } from '@/components/site/listing-detail/ListingLoca
 import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentityLine'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
-import { resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
+import { leftoverListingGrains, resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
 import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
@@ -255,7 +256,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
       : { city: listing.city ?? undefined }
 
-  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults] =
+  const leftoverGrains = leftoverListingGrains(listing, marketGeo)
+
+  const [relatedHomes, history, photos, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -291,15 +294,28 @@ export default async function ListingDetailPage({ params }: PageProps) {
         3000,
         'listing:agent',
       ),
-      marketGeo
+      leftoverGrains.length > 0
         ? withTimeoutFallback(
-            getMarketPulse({ geoType: marketGeo.geoType, geoSlug: marketGeo.geoSlug }),
-            null,
+            getDetachedOverlays(
+              leftoverGrains.map((grain) => ({ geoType: grain.geoType, geoSlug: grain.geoSlug })),
+            ),
+            new Map(),
             3000,
-            'listing:pulse',
+            'listing:leftoverOverlay',
           )
-        : Promise.resolve(null),
-      Promise.resolve(null),
+        : Promise.resolve(new Map()),
+      leftoverGrains.length > 0
+        ? Promise.all(
+            leftoverGrains.map((grain) =>
+              withTimeoutFallback(
+                getPublicDetachedPace({ geoType: grain.geoType, geoSlug: grain.geoSlug }),
+                EMPTY_PUBLIC_PACE,
+                3000,
+                `listing:leftoverPace:${grain.geoType}`,
+              ),
+            ),
+          )
+        : Promise.resolve([]),
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
       withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
       withTimeoutFallback(getPublishedCmaForListing(listing.listingKey), null, 3000, 'listing:publishedCma'),
@@ -320,6 +336,30 @@ export default async function ListingDetailPage({ params }: PageProps) {
       // Payment rate from the ingested 30-yr series; null keeps the component default.
       withTimeoutFallback(getCalculatorDefaults(), null, 3000, 'listing:calcDefaults'),
     ])
+
+  let leftoverHud: ReturnType<typeof leftoverHudKpis> | null = null
+  let leftoverPace = EMPTY_PUBLIC_PACE
+  let leftoverLayers: ReturnType<typeof leftoverOverlays.get> = undefined
+  let leftoverGrain = leftoverGrains[leftoverGrains.length - 1] ?? null
+  for (let i = 0; i < leftoverGrains.length; i++) {
+    const grain = leftoverGrains[i]!
+    const slug = cityDetachedSlug(grain.geoSlug)
+    const layers = leftoverOverlays.get(`${grain.geoType}:${slug}`)
+    const pace = leftoverPaceRows[i] ?? EMPTY_PUBLIC_PACE
+    const hud = leftoverHudKpis({
+      grain: grain.geoType,
+      headlines: layers?.headlines ?? null,
+      inventory: layers?.inventory ?? null,
+      pace,
+    })
+    if (leftoverHudPublishes(hud) || pace.pendingCount != null) {
+      leftoverHud = hud
+      leftoverPace = pace
+      leftoverLayers = layers
+      leftoverGrain = grain
+      break
+    }
+  }
 
   const listingWithPhotos = { ...listing, photos }
 
@@ -396,14 +436,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
     { label: street || `Listing ${listingKey}` },
   ]
 
-  const marketHubHref = marketGeo
-    ? marketGeo.geoType === 'community'
-      ? `/communities/${marketGeo.geoSlug}`
-      : marketGeo.geoType === 'neighborhood' && listing.citySlug
-      ? `/cities/${listing.citySlug}/${marketGeo.geoSlug}`
-      : `/cities/${marketGeo.geoSlug}`
-    : '/housing-market'
-
   // Videos ≠ virtual tours (Matt): hero gets reels; tours get their own viewer.
   const virtualTours = videos.filter((v) => v.isVirtualTour)
   const reelVideos = videos.filter((v) => !v.isVirtualTour)
@@ -439,8 +471,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
         subjectAddress={street}
         sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
         dom={listing.dom}
-        placeMedianDays={marketPulse?.medianDaysToPending ?? null}
-        placeName={marketGeo?.name ?? listing.city ?? listing.subdivisionName ?? null}
+        placeMedianDays={leftoverHud?.daysToPending ?? null}
+        placeName={leftoverGrain?.name ?? listing.city ?? listing.subdivisionName ?? null}
         hoaMonthly={listing.hoaMonthly}
         associationFee={listing.associationFee}
         associationFeeFrequency={listing.associationFeeFrequency}
@@ -498,13 +530,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
         cityLine={listing.city}
         href={listingHref}
       />
-      {marketGeo ? (
+      {leftoverHud && leftoverGrain ? (
         <NeighborhoodMarketContext
-          geoName={marketGeo.name}
-          hubHref={marketHubHref}
-          pulse={marketPulse}
-          stats={marketStats}
+          geoName={leftoverGrain.name}
+          hubHref={leftoverGrain.hubHref}
+          hud={leftoverHud}
+          leftoverPace={leftoverPace}
           thisListPrice={wholePropertyPrice}
+          refreshedAt={leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt}
           chartCitySlug={listing.citySlug ?? null}
         />
       ) : null}

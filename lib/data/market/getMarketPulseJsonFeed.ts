@@ -17,13 +17,13 @@
  *                 City/region: inventory (active/median) overlays even when
  *                 MOS is below min_n. MOS/verdict overlay only when publishable.
  *                 A full inventory miss withholds activeListings rather than pulse.
- *                 City/region leftover pace (12-month + pending/age now) sits
- *                 beside pulse 30-day / days-to-pending. A leftover miss is
- *                 null, never 0. figures.medianSaleToListRatio is leftover
- *                 saleToOriginal (12-month), never pulse median_sale_to_list.
- *                 Neighborhood leftover and extra types overlay the same way.
- *                 Pulse MOS at neighborhood grain is withheld unless Market
- *                 Truth headlines assemble.
+ *                 HUD-family overlay: leftover Closed · 30 days, leftover
+ *                 90-day days to pending, leftover 12-month sale-to-original,
+ *                 leftover median age of actives. New · 30 days is omitted
+ *                 until leftover has a true 30-day new-listings cell. A leftover
+ *                 miss is null, never 0, never pulse fill. Neighborhood leftover
+ *                 and extra types overlay the same way. Pulse MOS at neighborhood
+ *                 grain is withheld unless Market Truth headlines assemble.
  *   - NOT_FOUND -> genuine miss (no row for this geo_type/geo_slug). All
  *                 figures null, `note` says so explicitly.
  *   - ERROR    -> getMarketPulseRowForGeo THROWS on a transient DB error
@@ -120,7 +120,7 @@ export type MarketPulseJsonFigures = {
 export type MarketPulseJsonLeftover = PublicPaceRow
 
 const LEFTOVER_NOTE =
-  'Leftover detached pace is Market Truth mt-v1, sample-gated (12-month cells plus pending/age now). figures.medianSaleToListRatio is leftover saleToOriginal (12-month), not pulse median_sale_to_list. Pulse 30-day sold and days-to-pending stay.'
+  'HUD-family figures are leftover membership. Closed · 30 days and Median to pending are leftover windows. New · 30 days is omitted until leftover has a 30-day new-listings cell. figures.medianSaleToListRatio is leftover saleToOriginal (12-month). A leftover miss omits. Pulse does not fill those fields.'
 
 const EXTRA_SEGMENTS_NOTE =
   'Extra product types are Market Truth mt-v1, sample-gated. Detached stays the HUD. Leftover pace (days to contract, sale to original, YoY, price-cut share) is 12-month, not pulse days-to-pending.'
@@ -306,6 +306,10 @@ export async function getMarketPulseJsonFeed(input: {
     applyJsonFeedDetachedOrWithhold(found, layers)
     found.leftover = leftover
     found.figures.medianSaleToListRatio = leftover?.saleToOriginal ?? null
+    found.figures.soldLast30Days = leftover?.closedCount30d ?? null
+    found.figures.medianDaysToPending = leftover?.daysToPending90d ?? null
+    found.figures.newListings30d = null
+    found.figures.medianActiveDaysOnMarket = leftover?.medianAgeActive ?? null
     found.extraSegments = extraSegments
     found.mix = mix
     if (leftover) {

@@ -95,6 +95,18 @@ const leftoverHudSurfaces = [
     path: 'app/lp/buyer-listing-alerts/page.tsx',
     label: 'buyer LP gates MOS through leftoverHudKpis',
   },
+  {
+    path: 'app/listing/[listingKey]/page.tsx',
+    label: 'listing page gates MOS through leftoverHudKpis',
+  },
+  {
+    path: 'app/search/og/[...slug]/route.tsx',
+    label: 'search OG gates MOS through leftoverHudKpis',
+  },
+  {
+    path: 'app/housing-market/og/[...slug]/route.tsx',
+    label: 'housing-market OG gates MOS through leftoverHudKpis',
+  },
 ]
 
 const surfaces = [
@@ -125,6 +137,15 @@ checks.push({
     /getMarketPulse\(/.test(blogPage) &&
     /v3-article-island/.test(blogPage) &&
     /V3ArticleIsland\.css/.test(blogPage),
+})
+
+const about = src('app/about/page.tsx')
+checks.push({
+  label: 'about city ledger reads leftover overlays, not pulse city snapshots',
+  ok:
+    /getDetachedOverlays\(/.test(about) &&
+    /from ['"]@\/lib\/data\/market-truth\/getSellBendMarket['"]/.test(about) &&
+    !/getMarketPulseCitySnapshots\(/.test(about),
 })
 
 for (const surface of leftoverHudSurfaces) {

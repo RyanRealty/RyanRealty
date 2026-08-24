@@ -1,10 +1,13 @@
 import { ImageResponse } from 'next/og'
 import { getPresetBySlug } from '@/lib/search-presets'
-import { getLiveMarketPulse } from '@/app/actions/market-stats'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { marketVerdict } from '@/lib/market/classify'
 
-// Node: getLiveMarketPulse → getMarketPulse uses unstable_cache (not Edge-safe).
+// Node: leftover overlays use unstable_cache (not Edge-safe).
 export const runtime = 'nodejs'
 
 function unslug(value: string): string {
@@ -26,23 +29,29 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
   const place = subdivision ? `${subdivision}, ${city}` : city
   const title = preset ? `${preset.label} in ${place}` : `Homes for Sale in ${place}`
 
-  const pulse = citySlug
-    ? await getLiveMarketPulse({ geoType: 'city', geoSlug: canonicalCityCacheSlug(citySlug) })
-    : null
+  const leftoverSlug = citySlug ? cityDetachedSlug(canonicalCityCacheSlug(citySlug)) : ''
+  const overlays = leftoverSlug
+    ? await getDetachedOverlays([{ geoType: 'city', geoSlug: leftoverSlug }])
+    : new Map()
+  const layers = leftoverSlug ? overlays.get(`city:${leftoverSlug}`) : undefined
+  const hud = leftoverHudKpis({
+    grain: 'city',
+    headlines: layers?.headlines ?? null,
+    inventory: layers?.inventory ?? null,
+    pace: EMPTY_PUBLIC_PACE,
+  })
 
-  const active = pulse?.active_count != null ? Math.round(Number(pulse.active_count)).toLocaleString() : 'N/A'
-  const mos =
-    pulse?.months_of_supply != null && Number.isFinite(Number(pulse.months_of_supply))
-      ? `${formatMonthsOfSupply(Number(pulse.months_of_supply))} mo supply`
-      : 'N/A'
-  const median = pulse?.median_list_price ? `$${Math.round(Number(pulse.median_list_price)).toLocaleString()}` : 'N/A'
-  const label = pulse?.market_health_label ?? 'Live'
+  const active = hud.active != null ? hud.active.toLocaleString() : null
+  const mos = hud.monthsSupply != null ? `${formatMonthsOfSupply(hud.monthsSupply)} mo supply` : null
+  const median = hud.medianList != null ? `$${Math.round(hud.medianList).toLocaleString()}` : null
+  const verdict = hud.monthsSupply != null ? marketVerdict(hud.monthsSupply) : null
+  const label = verdict && verdict.kind !== 'unknown' ? verdict.label : null
 
   const bars = [
-    Number(pulse?.active_count ?? 0) / 120,
-    Number(pulse?.months_of_supply ?? 0) / 8,
-    Number(pulse?.new_count_7d ?? 0) / 30,
-    Number(pulse?.median_list_price ?? 0) / 1_000_000,
+    Number(hud.active ?? 0) / 120,
+    Number(hud.monthsSupply ?? 0) / 8,
+    Number(hud.medianList ?? 0) / 1_000_000,
+    0.08,
   ].map((value) => Math.max(0.08, Math.min(1, Number.isFinite(value) ? value : 0.08)))
 
   const image = new ImageResponse(
@@ -64,12 +73,14 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
           <span style={{ fontSize: 24, opacity: 0.85 }}>Ryan Realty Search Snapshot</span>
           <span style={{ marginTop: 8, fontSize: 52, fontWeight: 700, lineHeight: 1.08 }}>{title}</span>
           <span style={{ marginTop: 8, fontSize: 22, opacity: 0.9 }}>
-            {label === 'Live' ? 'Live market signal' : label}
+            {label}
           </span>
         </div>
 
         <div style={{ display: 'flex', gap: 14 }}>
-          {[`Active ${active}`, mos, `Median list ${median}`].map((text) => (
+          {[active ? `Active ${active}` : null, mos, median ? `Median list ${median}` : null]
+            .filter((text): text is string => Boolean(text))
+            .map((text) => (
             <div
               key={text}
               style={{

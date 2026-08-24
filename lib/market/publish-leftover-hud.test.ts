@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
-import { leftoverHudKpis, leftoverSaleToListPct } from './publish-leftover-hud'
+import { leftoverHudKpis, leftoverHudPublishes, leftoverSaleToListPct } from './publish-leftover-hud'
 
 const pace = (over: Partial<PublicPaceRow> = {}): PublicPaceRow => ({
   ...EMPTY_PUBLIC_PACE,
@@ -68,6 +68,30 @@ describe('leftoverHudKpis', () => {
     expect(out.closed30).toBeNull()
     expect(out.daysToPending).toBeNull()
     expect(out.sold12mo).toBe(2096)
+    expect(leftoverHudPublishes(out)).toBe(false)
+  })
+
+  it('leftoverHudPublishes is true when a HUD cell exists', () => {
+    expect(
+      leftoverHudPublishes(
+        leftoverHudKpis({
+          grain: 'city',
+          headlines: { activeCount: 51, monthsOfSupply: 4.5, medianListPrice: 799000 },
+          inventory: { activeCount: 51, medianListPrice: 799000 },
+          pace: pace(),
+        }),
+      ),
+    ).toBe(true)
+    expect(
+      leftoverHudPublishes(
+        leftoverHudKpis({
+          grain: 'city',
+          headlines: null,
+          inventory: null,
+          pace: pace(),
+        }),
+      ),
+    ).toBe(false)
   })
 })
 

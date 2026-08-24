@@ -11,9 +11,12 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
-import type { MarketPulse, MarketStats } from '@/lib/data/types/market'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
-import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import {
+  EMPTY_PUBLIC_PACE,
+  getPublicDetachedPace,
+  type PublicPaceRow,
+} from '@/lib/data/market-truth/public-pace'
+import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 
@@ -33,8 +36,8 @@ import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
 type Props = {
   geoName: string
   hubHref: string
-  pulse: MarketPulse | null
-  stats: MarketStats | null
+  hud: LeftoverHudKpis | null
+  leftoverPace?: PublicPaceRow | null
   thisListPrice: number | null
   refreshedAt?: string
   className?: string
@@ -90,14 +93,14 @@ function diffPctVsMedian(price: number | null, median: number | null): number | 
 export async function NeighborhoodMarketContext({
   geoName,
   hubHref,
-  pulse,
-  stats,
+  hud,
+  leftoverPace,
   thisListPrice,
   refreshedAt,
   className,
   chartCitySlug,
 }: Props) {
-  if (!pulse && !stats) return null
+  if (!hud) return null
 
   // Tabbed core-chart module at the listing's CITY scope. City cache rows key
   // multi-word cities space-separated ("la pine"). Fails soft: no derivable
@@ -112,14 +115,16 @@ export async function NeighborhoodMarketContext({
           'listing:coreCharts',
         )
       : Promise.resolve(null),
-    citySlug
-      ? withTimeoutFallback(
-          getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug }),
-          EMPTY_PUBLIC_PACE,
-          3000,
-          'listing:pace',
-        )
-      : Promise.resolve(EMPTY_PUBLIC_PACE),
+    leftoverPace
+      ? Promise.resolve(leftoverPace)
+      : citySlug
+        ? withTimeoutFallback(
+            getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug }),
+            EMPTY_PUBLIC_PACE,
+            3000,
+            'listing:pace',
+          )
+        : Promise.resolve(EMPTY_PUBLIC_PACE),
     citySlug
       ? withTimeoutFallback(
           getPublicPlaceSegments({ geoType: 'city', geoSlug: citySlug }),
@@ -132,18 +137,11 @@ export async function NeighborhoodMarketContext({
   const cityLabel = citySlug ? cityDisplayName(citySlug) : null
   const chartScopeLabel = cityLabel && cityLabel !== geoName ? `${cityLabel} (city)` : undefined
 
-  const activeCount = pulse?.activeCount ?? null
-  const medianList = pulse?.medianListPrice ?? stats?.medianListPrice ?? null
-  const medianDom = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
-  const grain = pulse?.geoType ?? 'neighborhood'
-  const mos = publishMonthsOfSupply({
-    grain,
-    pulseMos: pulse?.monthsOfSupply,
-    pulseActiveCount: pulse?.activeCount,
-    displayedActiveCount: activeCount,
-    source: grain === 'neighborhood' || grain === 'community' ? 'market-truth' : undefined,
-  })
-  const freshness = refreshedAt ?? pulse?.refreshedAt ?? stats?.refreshedAt ?? null
+  const activeCount = hud.active
+  const medianList = hud.medianList
+  const daysToPending = hud.daysToPending
+  const mos = hud.monthsSupply
+  const freshness = refreshedAt ?? null
   const freshnessLabel = formatFreshness(freshness)
   const diffPct = diffPctVsMedian(thisListPrice, medianList)
   const aboveOrBelow = diffPct == null ? null : diffPct >= 0 ? 'above' : 'below'
@@ -177,7 +175,7 @@ export async function NeighborhoodMarketContext({
             grid-template-columns would override that and overflow at 375px). */}
         <div
           className="mkt-kpis"
-          style={{ ['--kpi-cols' as string]: [activeCount, medianList, medianDom, mos, leftover.pendingCount, leftover.daysToContract].filter(v => v != null).length }}
+          style={{ ['--kpi-cols' as string]: [activeCount, medianList, daysToPending, mos, leftover.pendingCount, leftover.daysToContract].filter(v => v != null).length }}
         >
           {activeCount != null ? (
             <KpiCell label={`Active in ${geoName}`} value={<TabularNumber value={activeCount} />} />
@@ -185,8 +183,11 @@ export async function NeighborhoodMarketContext({
           {medianList != null ? (
             <KpiCell label="Median list" value={<Price value={medianList} compact />} />
           ) : null}
-          {medianDom != null ? (
-            <KpiCell label="Median DOM" value={<><TabularNumber value={medianDom} /> days</>} />
+          {daysToPending != null ? (
+            <KpiCell
+              label="Median to pending · 90 days"
+              value={<><TabularNumber value={daysToPending} /> days</>}
+            />
           ) : null}
           {mos != null ? (
             <KpiCell label="Months of supply" value={<TabularNumber value={mos} fractionDigits={1} />} />

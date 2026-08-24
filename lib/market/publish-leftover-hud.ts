@@ -66,3 +66,16 @@ export function leftoverHudKpis(input: {
     sold12mo: input.pace.closedCount,
   }
 }
+
+/** True when leftover HUD has a visitor cell at this grain. Miss omits. */
+export function leftoverHudPublishes(hud: LeftoverHudKpis | null | undefined): boolean {
+  if (!hud) return false
+  return (
+    hud.active != null ||
+    hud.closed30 != null ||
+    hud.medianList != null ||
+    hud.saleToList != null ||
+    hud.daysToPending != null ||
+    hud.monthsSupply != null
+  )
+}

@@ -13,6 +13,9 @@ const files = {
   reports: readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8'),
   expired: readFileSync(resolve('app/lp/expired-listing/page.tsx'), 'utf8'),
   buyer: readFileSync(resolve('app/lp/buyer-listing-alerts/page.tsx'), 'utf8'),
+  listing: readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8'),
+  searchOg: readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8'),
+  housingOg: readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8'),
 }
 
 describe('D21 leftover MOS destinations and leftover remainder', () => {
@@ -30,5 +33,11 @@ describe('D21 leftover MOS destinations and leftover remainder', () => {
   it('MOS page does not fetch pulse for the published MOS figures', () => {
     expect(files.mos).not.toMatch(/getRegionPulse/)
     expect(files.mos).not.toMatch(/getMarketPulseCitySnapshots/)
+  })
+
+  it('listing place market is leftover HUD, not pulse fill', () => {
+    expect(files.listing).toMatch(/leftoverHudKpis/)
+    expect(files.listing).toMatch(/leftoverListingGrains/)
+    expect(files.listing).not.toMatch(/getMarketPulse\(/)
   })
 })

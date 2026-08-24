@@ -60,8 +60,9 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'leftover',
     term: 'Leftover',
     body: [
-      'Leftover is our name for those membership counts. Closed · 30 days, Median to pending, the leftover strip, mix, leftover monthly charts, and leftover extra product types all use this pile.',
+      'Leftover is our name for those membership counts. Closed · 30 days, Median to pending, the leftover strip, mix, leftover monthly charts, leftover extra product types, listing place market, About city rows, the public JSON feed, and city OG cards all use this pile.',
       'It is a different pile from the live MLS snapshot and from the older monthly figures. A city can show more houses on leftover than an older snapshot that only counted listings whose city field matched and whose pin sat inside a polygon. That is a definition, not a math error.',
+      'On a listing, leftover neighborhood prints when leftover can publish it. If leftover cannot, leftover city prints and the city is named. A subdivision name is not leftover neighborhood.',
     ],
   },
   {
@@ -131,7 +132,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
       'Months of supply is how many months it would take to sell every house currently for sale at the pace houses have actually been closing.',
       MOS_METHODOLOGY_CLAUSE,
       MOS_THRESHOLD_CLAUSE,
-      'On the HUD this uses leftover membership, and only when the inventory count next to it is the same leftover population. If leftover months of supply cannot publish, the tile is omitted. We do not fill it from the live MLS snapshot. Neighborhood months of supply is withheld when leftover cannot publish it. Core-chart months of supply tabs are omitted so they cannot mix older monthly figures into the leftover HUD. The dedicated Months of supply page, the housing-market hub, the region report, the annual review, and the cities index use the same leftover pile.',
+      'On the HUD this uses leftover membership, and only when the inventory count next to it is the same leftover population. If leftover months of supply cannot publish, the tile is omitted. We do not fill it from the live MLS snapshot. Neighborhood months of supply is withheld when leftover cannot publish it. Core-chart months of supply tabs are omitted so they cannot mix older monthly figures into the leftover HUD. The dedicated Months of supply page, the housing-market hub, the region report, the annual review, the cities index, listing place market, About city rows, the public JSON feed, and city OG cards use the same leftover pile.',
     ],
   },
   {
@@ -211,7 +212,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'fill-on-miss',
     term: 'When a number is missing',
     body: [
-      'On the leftover HUD, leftover MOS destinations, leftover remainder, and leftover HUD charts, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures.',
+      'On the leftover HUD, leftover MOS destinations, leftover remainder, leftover listing context, leftover about city rows, leftover JSON HUD fields, leftover OG inventory, and leftover HUD charts, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures.',
       'We do not invent a zero, and we do not put a longer window under a shorter label.',
     ],
   },

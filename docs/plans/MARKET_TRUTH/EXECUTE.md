@@ -710,6 +710,18 @@ CRM / blog / report export stay pulse-gated. New · 30 days still omitted. Count
 
 `/lp/expired-listing` and `/lp/buyer-listing-alerts` print leftover Bend HUD figures (active, leftover 90-day median to pending, leftover median list). Miss omits. Pulse does not fill.
 
+### D22 leftover listing context, about, JSON feed, OG
+
+Same one-pile rule on remaining leftover-eligible public visitor figures.
+
+**Done when a real user can:**
+1. Open a Bend listing and see leftover active / leftover 90-day median to pending / leftover MOS in the place market strip. Pulse DTP and cache days-on-market do not fill. A leftover miss omits.
+2. Open `/about` and see leftover city inventory and leftover median list. Pulse does not fill.
+3. Open `/data/market/city/bend` and see leftover Closed · 30 days and leftover 90-day days to pending. Pulse does not fill those fields. New · 30 days is null until leftover has a 30-day new-listings cell.
+4. Open a city housing-market OG image and see leftover inventory, not pulse fill.
+
+CRM / blog / report export stay pulse-gated. County unpublished. New · 30 days omitted.
+
 ---
 
 ## 5. Definition of done for the whole program

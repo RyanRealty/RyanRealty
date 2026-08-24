@@ -1,8 +1,11 @@
 import { ImageResponse } from 'next/og'
-import { getCachedStats, getLiveMarketPulse } from '@/app/actions/market-stats'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
-// Node: getLiveMarketPulse → getMarketPulse uses unstable_cache (not Edge-safe).
+// Node: leftover overlays use unstable_cache (not Edge-safe).
 export const runtime = 'nodejs'
 
 function unslug(value: string): string {
@@ -18,26 +21,37 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
   const cityName = unslug(slug?.[0] ?? 'Central Oregon')
   const communityName = slug?.[1] ? unslug(slug[1]) : null
   const geoName = communityName ?? cityName
-  const geoType = communityName ? 'subdivision' : 'city'
-  const geoSlug = communityName
-    ? (slug?.[1] ?? '')
-    : canonicalCityCacheSlug(slug?.[0] ?? '')
+  const leftoverType = communityName ? 'neighborhood' : 'city'
+  const leftoverSlug = communityName
+    ? cityDetachedSlug(slug?.[1] ?? '')
+    : cityDetachedSlug(canonicalCityCacheSlug(slug?.[0] ?? ''))
+  const overlays = leftoverSlug
+    ? await getDetachedOverlays([{ geoType: leftoverType, geoSlug: leftoverSlug }])
+    : new Map()
+  const layers = leftoverSlug ? overlays.get(`${leftoverType}:${leftoverSlug}`) : undefined
+  const hud = leftoverHudKpis({
+    grain: leftoverType,
+    headlines: layers?.headlines ?? null,
+    inventory: layers?.inventory ?? null,
+    pace: EMPTY_PUBLIC_PACE,
+  })
 
-  const [stats, pulse] = await Promise.all([
-    getCachedStats({ geoType, geoSlug, periodType: 'monthly' }),
-    getLiveMarketPulse({ geoType, geoSlug }),
-  ])
-
-  const medianSale = stats?.median_sale_price ? `$${Math.round(Number(stats.median_sale_price)).toLocaleString()}` : 'N/A'
-  const dom = stats?.median_dom != null ? `${Math.round(Number(stats.median_dom))} days` : 'N/A'
-  const health = pulse?.market_health_label ?? 'N/A'
-  const active = pulse?.active_count != null ? Math.round(Number(pulse.active_count)).toLocaleString() : 'N/A'
+  const tiles: string[] = []
+  if (!communityName && hud.medianList != null) {
+    tiles.push(`Median list $${Math.round(hud.medianList).toLocaleString()}`)
+  }
+  if (hud.monthsSupply != null) {
+    tiles.push(`${formatMonthsOfSupply(hud.monthsSupply)} mo supply`)
+  }
+  if (hud.active != null) {
+    tiles.push(`Active inventory ${hud.active.toLocaleString()}`)
+  }
 
   const bars = [
-    Number(stats?.market_health_score ?? 0) / 20,
-    Number(pulse?.active_count ?? 0) / 50,
-    Number(stats?.sold_count ?? 0) / 20,
-    Number(stats?.median_dom ?? 0) / 10,
+    Number(hud.active ?? 0) / 50,
+    Number(hud.monthsSupply ?? 0) / 8,
+    Number(hud.medianList ?? 0) / 1_000_000,
+    0.08,
   ].map((value) => Math.max(0.08, Math.min(1, Number.isFinite(value) ? value : 0.08)))
 
   const image = new ImageResponse(
@@ -60,18 +74,13 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
             <span style={{ fontSize: 24, opacity: 0.85 }}>Ryan Realty Market Snapshot</span>
             <span style={{ marginTop: 6, fontSize: 54, fontWeight: 700, lineHeight: 1.1 }}>{geoName}</span>
           </div>
-          <div style={{ fontSize: 20, opacity: 0.85 }}>
-            Updated {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          <div style={{ display: 'flex', fontSize: 20, opacity: 0.85 }}>
+            {`Updated ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 14 }}>
-          {[
-            `Median sale price ${medianSale}`,
-            `Median DOM ${dom}`,
-            health === 'N/A' ? 'Market health N/A' : health,
-            `Active inventory ${active}`,
-          ].map((text) => (
+          {tiles.map((text) => (
             <div
               key={text}
               style={{

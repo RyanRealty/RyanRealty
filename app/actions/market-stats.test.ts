@@ -14,16 +14,19 @@ describe('overlaid live pulse readers', () => {
     expect(fn).not.toMatch(/getMarketPulseRowForGeo/)
   })
 
-  it('search and housing-market OG cards read getLiveMarketPulse, not raw pulse', () => {
+  it('search and housing-market OG cards read leftover HUD, not pulse', () => {
     const search = readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8')
     const housing = readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8')
-    expect(search).toMatch(/getLiveMarketPulse/)
-    expect(housing).toMatch(/getLiveMarketPulse/)
+    expect(search).toMatch(/leftoverHudKpis/)
+    expect(housing).toMatch(/leftoverHudKpis/)
+    expect(search).toMatch(/getDetachedOverlays/)
+    expect(housing).toMatch(/getDetachedOverlays/)
+    expect(search).not.toMatch(/getLiveMarketPulse/)
+    expect(housing).not.toMatch(/getLiveMarketPulse/)
     expect(search).not.toMatch(/getMarketPulseRowForGeo/)
     expect(housing).not.toMatch(/getMarketPulseRowForGeo/)
     expect(search).not.toMatch(/runtime = 'edge'/)
     expect(housing).not.toMatch(/runtime = 'edge'/)
-    expect(housing).toMatch(/pulse\?\.market_health_label/)
   })
 
   it('getBendMarketContext reads getCityDetachedMarket and marketVerdict', () => {

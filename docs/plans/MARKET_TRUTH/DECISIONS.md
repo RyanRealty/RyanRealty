@@ -261,3 +261,13 @@ city-limits pin gap.
 
 CRM reports, blog MOS rewriter, and report export stay pulse-gated through
 `publishMonthsOfSupply`. They are not leftover HUD visitor destinations.
+
+## D22 — leftover listing context, about, JSON, OG · **DECIDED** (Matt, 2026-08-24)
+
+Same one-pile rule on remaining leftover-eligible public visitor figures. Listing
+place market, `/about` city rows, `/data/market/...` HUD-family fields, and city
+OG inventory are leftover membership. Miss omits. Pulse and cache do not fill
+Closed · 30 days, Median to pending, Active homes, or Months of supply there.
+
+New · 30 days stays omitted on the JSON HUD until leftover has a true 30-day
+new-listings cell. CRM / blog / report export stay pulse-gated.

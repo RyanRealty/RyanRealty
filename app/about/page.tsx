@@ -28,7 +28,8 @@
  */
 
 import type { Metadata } from 'next'
-import { getBrokers, getMarketPulseCitySnapshots } from '@/lib/data'
+import { getBrokers } from '@/lib/data'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { formatDate } from '@/lib/format/date'
@@ -83,24 +84,33 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 3600
 
 export default async function AboutPage() {
-  const [citySnapshots, brokers] = await Promise.all([
-    getMarketPulseCitySnapshots([...ABOUT_CITY_LABELS]),
+  const [overlays, brokers] = await Promise.all([
+    getDetachedOverlays(
+      ABOUT_CITY_LABELS.map((label) => ({
+        geoType: 'city' as const,
+        geoSlug: ABOUT_CITY_SLUG[label],
+      })),
+    ),
     getBrokers(),
   ])
 
-  const snapshotByLabel = new Map(citySnapshots.map((s) => [s.geo_label, s]))
   const cityRows: V3LedgerFigureRow[] = []
   const rowed = new Set<string>()
+  const leftoverStamps: string[] = []
   for (const label of ABOUT_CITY_LABELS) {
     const slug = ABOUT_CITY_SLUG[label]
-    const snapshot = snapshotByLabel.get(label)
-    if (!slug || !snapshot || snapshot.median_list_price == null || snapshot.active_count == null) continue
+    const layers = overlays.get(`city:${slug}`)
+    const active = layers?.headlines?.activeCount ?? layers?.inventory?.activeCount ?? null
+    const median = layers?.headlines?.medianListPrice ?? layers?.inventory?.medianListPrice ?? null
+    const stamp = layers?.headlines?.computedAt ?? layers?.inventory?.computedAt
+    if (stamp) leftoverStamps.push(stamp)
+    if (!slug || active == null || median == null) continue
     rowed.add(label)
-    const price = formatPrice(snapshot.median_list_price)
+    const price = formatPrice(median)
     if (price === '\u2014') continue
     cityRows.push({
       href: `/cities/${slug}`,
-      when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
+      when: v3Text(`${active.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
       value: v3Text(price),
       id: slug,
@@ -109,25 +119,22 @@ export default async function AboutPage() {
   const [firstCityRow, ...restCityRows] = cityRows
 
   const cityFootnotes = ABOUT_CITY_LABELS.filter((label) => !rowed.has(label)).map((label) => {
-    const snapshot = snapshotByLabel.get(label)
-    if (!snapshot) return { label, fact: `${label} returned no market row in the latest sync` }
-    if (snapshot.active_count == null) {
-      return { label, fact: `${label} has no published active single-family count` }
+    const slug = ABOUT_CITY_SLUG[label]
+    const layers = overlays.get(`city:${slug}`)
+    const active = layers?.headlines?.activeCount ?? layers?.inventory?.activeCount ?? null
+    if (active == null) {
+      return { label, fact: `${label} has no published leftover active count` }
     }
-    if (snapshot.active_count === 0) {
-      return { label, fact: `${label} shows no active single-family listings` }
+    if (active === 0) {
+      return { label, fact: `${label} shows no leftover active houses` }
     }
     return {
       label,
-      fact: `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median`,
+      fact: `${label} shows ${active.toLocaleString('en-US')} leftover active with no published median`,
     }
   })
 
-  const cityRefreshedAt = citySnapshots
-    .map((s) => s.updated_at)
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .sort()
-    .at(-1)
+  const cityRefreshedAt = leftoverStamps.sort().at(-1)
   const cityStamp = cityRefreshedAt ? formatDate(cityRefreshedAt) : ''
   const cityUpdated = cityStamp && cityStamp !== '\u2014' ? v3Text(cityStamp) : undefined
 
@@ -260,7 +267,7 @@ export default async function AboutPage() {
             )}
             rows={[firstCityRow, ...restCityRows]}
             source={v3Text(
-              'live MLS through Oregon Data Share, single-family homes, city rows from market_pulse_live',
+              'leftover membership, single-family houses, one leftover count per city. A miss omits',
             )}
             updated={cityUpdated}
             action={{
