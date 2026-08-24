@@ -62,8 +62,8 @@ for (const surface of surfaces) {
 }
 
 /**
- * Homepage hero: the count IS the region pulse row, so the sentence it sits in
- * may not name the town doors.
+ * Homepage hero: the count IS the leftover region HUD row (D19), so the
+ * sentence it sits in may not name the town doors.
  *
  * Founding case (fleet, 2026-08-17): the hero read "1,834 homes for sale Bend,
  * Redmond, Sisters, Sunriver, La Pine, and Terrebonne." 1,834 was
@@ -83,8 +83,8 @@ for (const surface of surfaces) {
   const towns = [...townOrder.matchAll(/'([^']+)'/g)].map((m) => m[1].replace(/-/g, ' '))
   const named = towns.filter((town) => lead.includes(town))
   checks.push({
-    label: 'homepage hero passes the region pulse count',
-    ok: /activeCount:\s*pulse\?\.activeCount/.test(hero),
+    label: 'homepage hero passes the leftover region HUD count',
+    ok: /activeCount:\s*hud\.active/.test(hero),
   })
   checks.push({
     label: 'homepage hero lead names the region, not the town doors',

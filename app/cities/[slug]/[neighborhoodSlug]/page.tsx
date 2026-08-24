@@ -473,9 +473,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const marketFaqInput: MarketFaqInput = {
     ...(pulse ?? {}), grain: 'neighborhood',
     source: 'market-truth',
-    activeCount: hudActive,
-    pulseActiveCount: pulse?.activeCount,
-    medianListPrice: medianListPrice ?? pulse?.medianListPrice ?? null,
+    activeCount: hud.active,
+    pulseActiveCount: hud.active,
+    medianListPrice: hud.medianList,
     monthsOfSupply,
     soldCount12mo: publicPace.closedCount ?? null,
   }

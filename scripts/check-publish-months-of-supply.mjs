@@ -29,23 +29,35 @@ checks.push({
     helper.includes('implied > sold'),
 })
 
-const surfaces = [
+const leftoverHud = src('lib/market/publish-leftover-hud.ts')
+checks.push({
+  label: 'leftoverHudKpis gates MOS through publishMonthsOfSupply',
+  ok:
+    /from ['"]@\/lib\/market\/publish-months-of-supply['"]/.test(leftoverHud) &&
+    /publishMonthsOfSupply\(/.test(leftoverHud) &&
+    leftoverHud.includes("source: 'market-truth'"),
+})
+
+const leftoverHudSurfaces = [
   {
     path: 'app/communities/[slug]/page.tsx',
-    label: 'community page gates HUD + FAQ MOS through publishMonthsOfSupply',
+    label: 'community page gates HUD + FAQ MOS through leftoverHudKpis',
   },
   {
     path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    label: 'neighborhood page gates HUD + FAQ MOS through publishMonthsOfSupply',
+    label: 'neighborhood page gates HUD + FAQ MOS through leftoverHudKpis',
   },
   {
     path: 'app/cities/[slug]/page.tsx',
-    label: 'city page gates HUD + FAQ MOS through publishMonthsOfSupply',
+    label: 'city page gates HUD + FAQ MOS through leftoverHudKpis',
   },
   {
     path: 'app/page.tsx',
-    label: 'homepage HUD gates MOS through publishMonthsOfSupply',
+    label: 'homepage HUD gates MOS through leftoverHudKpis',
   },
+]
+
+const surfaces = [
   {
     path: 'app/housing-market/[...slug]/page.tsx',
     label: 'housing-market geo gates MOS through publishMonthsOfSupply',
@@ -78,6 +90,16 @@ checks.push({
     /v3-article-island/.test(blogPage) &&
     /V3ArticleIsland\.css/.test(blogPage),
 })
+
+for (const surface of leftoverHudSurfaces) {
+  const text = src(surface.path)
+  checks.push({
+    label: surface.label,
+    ok:
+      /from ['"]@\/lib\/market\/publish-leftover-hud['"]/.test(text) &&
+      /leftoverHudKpis\(/.test(text),
+  })
+}
 
 for (const surface of surfaces) {
   const text = src(surface.path)
