@@ -15,7 +15,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Button, Dialog, StateWord, TextField, ToolbarCheck, type AdminState } from '@/components/admin/v2'
+import { Button, Dialog, SelectField, StateWord, TextField, ToolbarCheck, type AdminState } from '@/components/admin/v2'
 import {
   createEnvelopeFromDocuments,
   createEnvelopeFromTemplate,
@@ -24,12 +24,14 @@ import {
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
 import { EXECUTION_STATE_LABEL, type ExecutionState } from '@/lib/tc/execution-state'
 import { dealPacketNamesForKind } from '@/lib/tc/form-packets'
+import { filterLibraryRows, parseLibraryFilter, sortLibraryCodes } from '@/lib/tc/form-library-filter'
 
 type EnvelopeTemplateOption = {
   id: string
   name: string
   formNumber: string | null
   libraryCode: string
+  libraryName?: string
   versionLabel?: string | null
   updateAvailable?: boolean
   pendingVersionLabel?: string | null
@@ -204,6 +206,23 @@ function NewEnvelopeDialog({
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [libRaw, setLibRaw] = useState('')
+  const [formQuery, setFormQuery] = useState('')
+  const libraryCodes = sortLibraryCodes([...new Set(templates.map((t) => t.libraryCode).filter(Boolean))])
+  const libFilter = parseLibraryFilter(libRaw, libraryCodes)
+  const libraryRows = filterLibraryRows(
+    templates.map((t) => ({
+      id: t.id,
+      libraryCode: t.libraryCode,
+      formNumber: t.formNumber,
+      name: `${t.libraryCode} ${t.formNumber ?? ''} ${t.name}${t.updateAvailable ? ' · Update available' : ''}`.replace(
+        /\s+/g,
+        ' ',
+      ).trim(),
+    })),
+    libFilter,
+    formQuery,
+  )
   const rows =
     source === 'docs'
       ? cycle.documents.map((d) => ({
@@ -213,13 +232,7 @@ function NewEnvelopeDialog({
               ? `${d.name} · ${EXECUTION_STATE_LABEL[d.executionState]}`
               : d.name,
         }))
-      : templates.map((t) => ({
-          id: t.id,
-          name: `${t.libraryCode} ${t.formNumber ?? ''} ${t.name}${t.updateAvailable ? ' · Update available' : ''}`.replace(
-            /\s+/g,
-            ' ',
-          ).trim(),
-        }))
+      : libraryRows
   const wanted = new Set(dealPacketNamesForKind(cycle.kind))
   const packet = packets.find((p) => wanted.has(p.name) && p.formVersionIds.length)
   const canOpen = cycle.documents.length > 0 || templates.length > 0 || !!packet?.formVersionIds.length
@@ -298,9 +311,41 @@ function NewEnvelopeDialog({
         </div>
         <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
           {source === 'library'
-            ? 'Copy licensed blanks onto this deal as a draft envelope. Review and send from Signing. Samples are omitted.'
+            ? 'Copy licensed blanks onto this deal as a draft envelope. Filter by library first — a new market is a new library, not a mixed list. Review and send from Signing.'
             : 'Pick the PDF documents already on this cycle to send for signature.'}
         </p>
+        {source === 'library' ? (
+          <>
+            <SelectField
+              label="Filter by library"
+              value={libRaw}
+              onChange={(e) => setLibRaw(e.target.value)}
+            >
+              <option value="">All libraries</option>
+              {libraryCodes.map((code) => {
+                const named = templates.find((t) => t.libraryCode === code)
+                const n = templates.filter((t) => t.libraryCode === code).length
+                return (
+                  <option key={code} value={code}>
+                    {named?.libraryName ?? code} ({n})
+                  </option>
+                )
+              })}
+            </SelectField>
+            <TextField
+              label="Search this library"
+              value={formQuery}
+              onChange={(e) => setFormQuery(e.target.value)}
+              placeholder="Form number or name…"
+            />
+          </>
+        ) : null}
+        {source === 'library' && picked.size > 0 ? (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            {picked.size} form{picked.size === 1 ? '' : 's'} picked
+            {libFilter !== 'all' ? ' (kept if you switch libraries)' : ''}.
+          </p>
+        ) : null}
         <div className="max-h-64 space-y-1.5 overflow-y-auto">
           {rows.length ? (
             rows.map((d) => (
@@ -334,7 +379,9 @@ function NewEnvelopeDialog({
           ) : (
             <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
               {source === 'library'
-                ? 'No production blanks in the catalog yet. Ingest a current published form, or use an uploaded PDF.'
+                ? libFilter !== 'all' || formQuery
+                  ? 'No form in this library matches that search. Clear the search or pick another library.'
+                  : 'No production blanks in the catalog yet. Ingest a current published form, or use an uploaded PDF.'
                 : 'No documents on this cycle yet. Upload one first, or use Form library.'}
             </p>
           )}

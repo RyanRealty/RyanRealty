@@ -22,5 +22,6 @@ A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 - All three SkySlope libraries Matt uses stay first-class: OREF, Oregon Realtors, and **Oregon Data Share** (MLS entry, change forms, exclusive listing, land/farm/commercial input).
 - Versioning: catalog check filters those three libraries by `libraryId` (the list query ignores skip/libraryId). `/admin/forms` shows Current / Update available / New / Retired. The composer will not send a stale blank.
 - ODS packets on listing files: **ODS — MLS Entry (Residential)** and **ODS — MLS Change**, plus Exclusive Listing / Land / Farm / Commercial on the Forms packet list.
+- Library filter on search and compose (SkySlope “Filter results by: All libraries”). A new market is a new library, not a mixed pile of every blank.
 
 Do not: clone Offers, mutate SkySlope, send a live envelope, guess inspection/financing windows that are not in the Oregon matrix.

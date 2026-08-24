@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button, SectionHead, SelectField, TextAreaField, TextField, ToolbarCheck } from '@/components/admin/v2'
+import { filterLibraryRows, parseLibraryFilter, sortLibraryCodes } from '@/lib/tc/form-library-filter'
 import { saveClause, saveFormPacket, type ClauseRow, type FormPacket } from '@/app/actions/tc-library'
 import { createEnvelopeFromTemplate } from '@/app/actions/tc-envelopes'
 import { useRouter } from 'next/navigation'
@@ -17,7 +18,7 @@ export function FormsLibraryExtras({
   packets: FormPacket[]
   clauses: ClauseRow[]
   deals: LiveDealCycle[]
-  formIds: Array<{ id: string; label: string }>
+  formIds: Array<{ id: string; label: string; libraryCode?: string }>
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -26,6 +27,21 @@ export function FormsLibraryExtras({
   const [clauseTitle, setClauseTitle] = useState('')
   const [clauseBody, setClauseBody] = useState('')
   const [packetDeal, setPacketDeal] = useState(deals[0]?.cycleId ?? '')
+  const [libRaw, setLibRaw] = useState('')
+  const [formQuery, setFormQuery] = useState('')
+  const libraryCodes = sortLibraryCodes([
+    ...new Set(formIds.map((f) => f.libraryCode).filter((c): c is string => Boolean(c))),
+  ])
+  const visibleForms = filterLibraryRows(
+    formIds.map((f) => ({
+      id: f.id,
+      label: f.label,
+      name: f.label,
+      libraryCode: f.libraryCode ?? '',
+    })),
+    parseLibraryFilter(libRaw, libraryCodes),
+    formQuery,
+  )
 
   return (
     <div className="av2-rcols" style={{ display: 'grid', gap: 24, marginTop: 28 }}>
@@ -82,8 +98,22 @@ export function FormsLibraryExtras({
               </option>
             ))}
           </SelectField>
+          <SelectField label="Filter by library" value={libRaw} onChange={(e) => setLibRaw(e.target.value)}>
+            <option value="">All libraries</option>
+            {libraryCodes.map((code) => (
+              <option key={code} value={code}>
+                {code} ({formIds.filter((f) => f.libraryCode === code).length})
+              </option>
+            ))}
+          </SelectField>
+          <TextField
+            label="Search this library"
+            value={formQuery}
+            onChange={(e) => setFormQuery(e.target.value)}
+            placeholder="Form number or name…"
+          />
           <div style={{ maxHeight: 160, overflow: 'auto', display: 'grid', gap: 4 }}>
-            {formIds.map((f) => (
+            {visibleForms.map((f) => (
               <ToolbarCheck
                 key={f.id}
                 label={f.label}

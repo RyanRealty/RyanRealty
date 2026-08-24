@@ -14,6 +14,7 @@ import {
   ReportGrid,
   ReportNumbers,
   SectionHead,
+  SelectField,
   StateWord,
   TextField,
   VerdictLine,
@@ -26,6 +27,7 @@ import { getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { formatDateTime } from '@/lib/format/date'
 import { buildFormCatalogCheckScript } from '@/lib/tc/form-catalog-script'
+import { parseLibraryFilter, sortLibraryCodes } from '@/lib/tc/form-library-filter'
 import { CheckFormCatalog } from './CheckFormCatalog'
 import { UseFormOnDeal } from './UseFormOnDeal'
 import { FormsLibraryExtras } from './FormsLibraryExtras'
@@ -109,7 +111,7 @@ function formatCheckedAt(iso: string | null | undefined): string | null {
 
 export default async function TcFormsPage({ searchParams }: Props) {
   await requireAdminPage('transactions.edit')
-  const { q, lib: expanded, fresh: freshRaw } = await searchParams
+  const { q, lib: libRaw, fresh: freshRaw } = await searchParams
   const fresh = parseFresh(freshRaw)
   const [libraries, liveDealsAll, ctx, packets, clauses] = await Promise.all([
     getTcFormLibraryBoard(q),
@@ -126,27 +128,38 @@ export default async function TcFormsPage({ searchParams }: Props) {
     }),
   )
 
+  const knownCodes = sortLibraryCodes(libraries.map((l) => l.code).filter(Boolean))
+  const libFilter = parseLibraryFilter(libRaw, knownCodes)
   const populated = libraries.filter((l) => l.forms.length > 0)
-  const total = libraries.reduce((s, l) => s + l.forms.length, 0)
-  const sampleCount = libraries.reduce((s, l) => s + l.forms.filter((f) => f.isSample).length, 0)
-  const productionCount = libraries.reduce((s, l) => s + l.forms.filter((f) => f.held && !f.isSample).length, 0)
-  const updatedCount = libraries.reduce((s, l) => s + l.counts.updated, 0)
-  const newCount = libraries.reduce((s, l) => s + l.counts.new, 0)
-  const retiredCount = libraries.reduce((s, l) => s + l.counts.retired, 0)
-  const lastCheck = libraries
+  const scoped = libFilter === 'all' ? populated : populated.filter((l) => l.code === libFilter)
+  const total = scoped.reduce((s, l) => s + l.forms.length, 0)
+  const sampleCount = scoped.reduce((s, l) => s + l.forms.filter((f) => f.isSample).length, 0)
+  const productionCount = scoped.reduce((s, l) => s + l.forms.filter((f) => f.held && !f.isSample).length, 0)
+  const updatedCount = scoped.reduce((s, l) => s + l.counts.updated, 0)
+  const newCount = scoped.reduce((s, l) => s + l.counts.new, 0)
+  const retiredCount = scoped.reduce((s, l) => s + l.counts.retired, 0)
+  const lastCheck = (libFilter === 'all' ? libraries : libraries.filter((l) => l.code === libFilter))
     .map((l) => l.last_catalog_at)
     .filter((v): v is string => Boolean(v))
     .sort()
     .at(-1)
   const lastCheckLabel = formatCheckedAt(lastCheck)
+  const libLabel =
+    libFilter === 'all' ? null : (libraries.find((l) => l.code === libFilter)?.name ?? libFilter)
 
-  const allSampleLibs = populated.filter((l) => l.forms.every((f) => f.isSample)).map((l) => l.code)
+  const allSampleLibs = scoped.filter((l) => l.forms.every((f) => f.isSample)).map((l) => l.code)
+  const filterableCodes = sortLibraryCodes(
+    libraries
+      .filter((l) => l.forms.length > 0 || l.code === 'OREF' || l.code === 'OR' || l.code === 'ODS')
+      .map((l) => l.code),
+  )
 
-  const buildHref = (next: { lib?: string | null; fresh?: FreshFilter | null }) => {
+  const buildHref = (next: { lib?: string | null; fresh?: FreshFilter | null; q?: string | null }) => {
     const sp = new URLSearchParams()
-    if (q) sp.set('q', q)
-    const lib = next.lib === undefined ? expanded : next.lib
-    if (lib) sp.set('lib', lib)
+    const query = next.q === undefined ? q : next.q
+    if (query) sp.set('q', query)
+    const lib = next.lib === undefined ? (libFilter === 'all' ? null : libFilter) : next.lib
+    if (lib && lib !== 'all') sp.set('lib', lib)
     const f = next.fresh === undefined ? fresh : next.fresh
     if (f && f !== 'all') sp.set('fresh', f)
     const qs = sp.toString()
@@ -166,6 +179,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
             <>
               <b>
                 {total.toLocaleString('en-US')} form{total === 1 ? '' : 's'}
+                {libLabel ? ` in ${libLabel}` : ''}
                 {q ? ` matching “${q}”` : ''} — {productionCount.toLocaleString('en-US')} production,{' '}
                 {sampleCount.toLocaleString('en-US')} sample.
               </b>{' '}
@@ -199,11 +213,50 @@ export default async function TcFormsPage({ searchParams }: Props) {
           defaultValue={q ?? ''}
           placeholder="Search form number or name…"
         />
+        <SelectField label="Filter by library" name="lib" defaultValue={libFilter === 'all' ? '' : libFilter}>
+          <option value="">All libraries</option>
+          {filterableCodes.map((code) => {
+            const library = libraries.find((l) => l.code === code)
+            const n = library?.forms.length ?? 0
+            return (
+              <option key={code} value={code}>
+                {library?.name ?? code} ({n})
+              </option>
+            )
+          })}
+        </SelectField>
         {fresh !== 'all' ? <HiddenField name="fresh" value={fresh} /> : null}
         <Button type="submit" touch style={{ alignSelf: 'flex-end' }}>
           Search
         </Button>
       </form>
+
+      <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 8px' }}>
+        Filter results by:{' '}
+        {libFilter === 'all' ? (
+          <b>All libraries</b>
+        ) : (
+          <Link href={buildHref({ lib: null })} style={{ color: 'var(--a-accent)' }}>
+            All libraries
+          </Link>
+        )}
+        {filterableCodes.map((code) => {
+          const library = libraries.find((l) => l.code === code)
+          const label = `${library?.name ?? code} (${library?.forms.length ?? 0})`
+          return (
+            <span key={code}>
+              {' · '}
+              {libFilter === code ? (
+                <b>{label}</b>
+              ) : (
+                <Link href={buildHref({ lib: code })} style={{ color: 'var(--a-accent)' }}>
+                  {label}
+                </Link>
+              )}
+            </span>
+          )
+        })}
+      </p>
 
       <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 14px' }}>
         <Link href={buildHref({ fresh: 'all' })} style={{ color: 'var(--a-accent)' }}>
@@ -223,14 +276,15 @@ export default async function TcFormsPage({ searchParams }: Props) {
         </Link>
       </p>
 
-      {populated.length === 0 ? (
+      {scoped.length === 0 ? (
         <>
           <SectionHead>Forms</SectionHead>
           <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             {q ? (
               <>
-                No form number or name contains “{q}”.{' '}
-                <Link href="/admin/forms" style={{ color: 'var(--a-accent)' }}>
+                No form number or name contains “{q}”
+                {libLabel ? ` in ${libLabel}` : ''}.{' '}
+                <Link href={buildHref({ q: null })} style={{ color: 'var(--a-accent)' }}>
                   Clear the search
                 </Link>
               </>
@@ -240,11 +294,11 @@ export default async function TcFormsPage({ searchParams }: Props) {
           </p>
         </>
       ) : (
-        populated.map((library) => {
+        scoped.map((library) => {
           const filtered =
             fresh === 'all' ? library.forms : library.forms.filter((f) => f.freshness === fresh)
           if (filtered.length === 0) return null
-          const isExpanded = expanded === library.code
+          const isExpanded = libFilter !== 'all' || libRaw === library.code
           const visible = isExpanded ? filtered : filtered.slice(0, PREVIEW_COUNT)
           const hiddenCount = filtered.length - visible.length
           const checked = formatCheckedAt(library.last_catalog_at)
@@ -340,13 +394,13 @@ export default async function TcFormsPage({ searchParams }: Props) {
               {hiddenCount > 0 ? (
                 <p style={{ margin: '8px 0 0', fontSize: 'var(--a-text-sm)' }}>
                   <Link href={buildHref({ lib: library.code })} style={{ color: 'var(--a-accent)' }}>
-                    See all {filtered.length} forms →
+                    See all {filtered.length} {library.code} forms →
                   </Link>
                 </p>
-              ) : isExpanded && filtered.length > PREVIEW_COUNT ? (
+              ) : libFilter !== 'all' && filtered.length > PREVIEW_COUNT ? (
                 <p style={{ margin: '8px 0 0', fontSize: 'var(--a-text-sm)' }}>
                   <Link href={buildHref({ lib: null })} style={{ color: 'var(--a-accent)' }}>
-                    Show less
+                    All libraries
                   </Link>
                 </p>
               ) : null}
@@ -364,6 +418,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
             .filter((f) => f.held && !f.isSample && f.blankUrl)
             .map((f) => ({
               id: f.id,
+              libraryCode: l.code,
               label: `${l.code} ${f.form_number ?? ''} ${f.name}${f.freshness === 'updated' ? ' · Update available' : ''}`.replace(
                 /\s+/g,
                 ' ',
