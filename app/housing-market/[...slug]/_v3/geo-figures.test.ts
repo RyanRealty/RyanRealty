@@ -19,7 +19,7 @@ function pulse(overrides: Partial<MarketPulse>): MarketPulse {
   }
 }
 
-function detail(overrides: Partial<MarketDetail>): MarketDetail {
+function detail(overrides: Partial<MarketDetail> = {}): MarketDetail {
   return {
     geoType: 'city',
     geoSlug: 'bend',
