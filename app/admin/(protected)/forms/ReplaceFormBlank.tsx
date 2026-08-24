@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/admin/v2'
+import { Button, TextField } from '@/components/admin/v2'
 import { replaceFormBlankPdf } from '@/app/actions/tc-library'
 import { useRouter } from 'next/navigation'
 
@@ -31,11 +31,12 @@ export function ReplaceFormBlank({ formVersionId }: { formVersionId: string }) {
         })
       }}
     >
-      <input
+      <TextField
+        label="Blank PDF"
         type="file"
         accept="application/pdf"
+        className="av2-input cursor-pointer file:mr-3 file:text-sm"
         onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        style={{ fontSize: 'var(--a-text-xs)', maxWidth: 140 }}
       />
       <Button type="submit" variant="quiet" disabled={pending || !file}>
         {pending ? 'Saving…' : 'Replace blank'}
