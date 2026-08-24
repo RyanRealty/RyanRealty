@@ -11,6 +11,7 @@ import {
   requiredSignerRolesFromForm,
   sendBlockedBySignerKnowledge,
   unionRequiredSignerReads,
+  type SignerRead,
   unionRequiredSignerRoles,
 } from './required-signers'
 
@@ -115,7 +116,7 @@ describe('sendBlockedBySignerKnowledge', () => {
   })
 
   it('listing packet with 020 does not require Buyer until a buyer is on our file', () => {
-    const listingPacket = {
+    const listingPacket: SignerRead = {
       roles: ['Seller', 'SellerAgent', 'Buyer'],
       identified: true,
       signatureForm: true,
