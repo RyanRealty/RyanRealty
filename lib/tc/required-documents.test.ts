@@ -6,6 +6,7 @@ import {
   anticipateDocuments,
   missingChecklistSeeds,
   missingReferralW9,
+  presentNamesForAnticipate,
 } from './required-documents'
 
 describe('brokerRoleFromDealParties', () => {
@@ -68,5 +69,26 @@ describe('seedChecklistItems', () => {
     expect(missingReferralW9([], 2500).map((r) => r.name)).toEqual(['Referral payee W-9'])
     expect(missingReferralW9(['Referral payee W-9'], 2500)).toEqual([])
     expect(missingReferralW9([], 0)).toEqual([])
+  })
+
+  it('does not treat a seeded empty checklist row as a live document on file', () => {
+    expect(
+      presentNamesForAnticipate(
+        [],
+        [{ name: 'Exclusive Listing Agreement', status: 'required' }],
+      ),
+    ).toEqual([])
+    expect(
+      presentNamesForAnticipate(
+        [{ name: 'Listing Agreement - Exclusive - 015 OREF', archived: false }],
+        [{ name: 'Exclusive Listing Agreement', status: 'required' }],
+      ),
+    ).toEqual(['Listing Agreement - Exclusive - 015 OREF'])
+    expect(
+      presentNamesForAnticipate(
+        [{ name: 'archived.pdf', archived: true }],
+        [{ name: 'Exclusive Listing Agreement', status: 'completed', assignedDocumentCount: 1 }],
+      ),
+    ).toEqual(['Exclusive Listing Agreement'])
   })
 })

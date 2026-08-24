@@ -113,6 +113,41 @@ describe('sendBlockedBySignerKnowledge', () => {
       ),
     ).toMatch(/not fully executed/)
   })
+
+  it('listing packet with 020 does not require Buyer until a buyer is on our file', () => {
+    const listingPacket = {
+      roles: ['Seller', 'SellerAgent', 'Buyer'] as const,
+      identified: true,
+      signatureForm: true,
+    }
+    expect(
+      sendBlockedBySignerKnowledge(
+        listingPacket,
+        [
+          { role: 'Seller', actionRequired: 'NeedsToSign' },
+          { role: 'SellerAgent', actionRequired: 'NeedsToSign' },
+        ],
+        'listing',
+      ),
+    ).toBeNull()
+    expect(
+      sendBlockedBySignerKnowledge(
+        listingPacket,
+        [{ role: 'SellerAgent', actionRequired: 'NeedsToSign' }],
+        'listing',
+      ),
+    ).toMatch(/Seller signature/)
+    expect(
+      sendBlockedBySignerKnowledge(
+        listingPacket,
+        [
+          { role: 'Seller', actionRequired: 'NeedsToSign' },
+          { role: 'SellerAgent', actionRequired: 'NeedsToSign' },
+        ],
+        'dual',
+      ),
+    ).toMatch(/Buyer/)
+  })
 })
 
 describe('unionRequiredSignerRoles', () => {

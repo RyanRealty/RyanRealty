@@ -20,6 +20,8 @@ import {
   type FormLibraryEntry,
 } from './form-identity'
 import { signersFromHeldForm } from './library-signers-from-name'
+import { isOtherSideRecipientRole } from './representation'
+import type { BrokerRole } from './required-documents'
 
 const SIGN_TYPES = new Set(['signature', 'initials'])
 
@@ -177,13 +179,25 @@ export const UNREAD_FORM_MESSAGE =
 export const NOT_SIGNATURE_FORM_MESSAGE =
   'This document is not a party-signature form. File it on the deal instead of sending for signature.'
 
+/** Listing/buyer one-sided files only require our principals to Need to sign. */
+export function rolesRequiredToSend(
+  roles: readonly RecipientRole[],
+  ourRole?: BrokerRole | null,
+): RecipientRole[] {
+  if (!ourRole || ourRole === 'unknown') return [...roles]
+  return roles.filter((r) => !isOtherSideRecipientRole(ourRole, r))
+}
+
 export function sendBlockedBySignerKnowledge(
   read: SignerRead,
   recipients: ReadonlyArray<{ role: string; actionRequired?: string | null }>,
+  ourRole?: BrokerRole | null,
 ): string | null {
   if (!read.identified) return UNREAD_FORM_MESSAGE
   if (!read.signatureForm) return NOT_SIGNATURE_FORM_MESSAGE
-  return missingRequiredSignersMessage(missingRequiredSignerRoles(read.roles, recipients))
+  return missingRequiredSignersMessage(
+    missingRequiredSignerRoles(rolesRequiredToSend(read.roles, ourRole), recipients),
+  )
 }
 
 export function inFlightEnvelopeBlocksCompletion(status: string | null | undefined): boolean {

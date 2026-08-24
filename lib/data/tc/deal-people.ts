@@ -7,6 +7,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   dedupeParties,
+  namesByDealRole,
   parseCityFromAddress,
   propertyKeyForInhouseDeal,
   uniquePartyLinks,
@@ -509,6 +510,30 @@ export async function createDealWithPeople(
     return { data: null, error: 'Could not create the deal.' }
   }
 
+  const { data: namedPeople } = await sb
+    .from('crm_people')
+    .select('id, name')
+    .in(
+      'id',
+      parties.map((p) => p.personId),
+    )
+  const { buyers, sellers } = namesByDealRole(
+    parties.map((p) => ({
+      role: p.role,
+      name: (namedPeople ?? []).find((row) => Number(row.id) === p.personId)?.name ?? null,
+    })),
+  )
+  let listingPrice: number | null = null
+  if (mlsNumber) {
+    const { data: listing } = await sb
+      .from('listings')
+      .select('list_price')
+      .eq('ListNumber', mlsNumber)
+      .maybeSingle()
+    const n = Number((listing as { list_price?: number | null } | null)?.list_price)
+    if (Number.isFinite(n) && n > 0) listingPrice = n
+  }
+
   const { error: cycleErr } = await sb.from('tc_cycles').insert({
     id: cycleId,
     deal_id: dealId,
@@ -519,6 +544,9 @@ export async function createDealWithPeople(
     broker_name: input.brokerName,
     mls_number: mlsNumber,
     checklist_type: shape.checklistType,
+    buyers,
+    sellers,
+    listing_price: listingPrice,
   })
   if (cycleErr) {
     console.error('[createDealWithPeople] cycle', cycleErr)

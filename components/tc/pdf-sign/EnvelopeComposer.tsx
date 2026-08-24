@@ -99,10 +99,24 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     setRecipients((rs) => rs.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
   }
   function addRecipient() {
+    const taken = new Set(recipients.map((r) => storedRecipientRole(r.role)))
+    const defaultRole =
+      detail.requiredSignerRoles.find((role) => !taken.has(role)) ??
+      detail.missingSignerRoles[0] ??
+      'Seller'
+    const id = crypto.randomUUID()
     setRecipients((rs) => [
       ...rs,
-      { role: 'Buyer', actionRequired: 'NeedsToSign', name: '', email: '', signingOrder: 1 },
+      {
+        id,
+        role: defaultRole,
+        actionRequired: 'NeedsToSign',
+        name: '',
+        email: '',
+        signingOrder: defaultRole === 'SellerAgent' || defaultRole === 'BuyerAgent' ? 2 : 1,
+      },
     ])
+    setActiveRecipientId(id)
   }
   function removeRecipient(idx: number) {
     const removed = recipients[idx]

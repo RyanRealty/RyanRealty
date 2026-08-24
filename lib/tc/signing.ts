@@ -10,7 +10,7 @@
  * convention) — x→right, y→down. `page` is 1-indexed to match pdf.js page
  * numbers. The sealer converts to pdf-lib's bottom-left point space.
  */
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import type { BrokerRole } from './required-documents'
 import { isOtherSideRecipientRole } from './representation'
 
@@ -471,6 +471,88 @@ export function recipientMatchesSigner(
   if (signer === 'listing_agent') return n === 'SellerAgent'
   if (signer === 'buyer_agent') return n === 'BuyerAgent'
   return false
+}
+
+export type RecipientSaveInput = {
+  id?: string
+  role: string
+  actionRequired?: ActionRequired | string | null
+  name: string
+  email: string
+  signingOrder: number
+}
+
+/** Every upsert row needs an id — PostgREST nulls omitted keys when mixed with existing ids. */
+export function rowsForRecipientSave(
+  envelopeId: string,
+  recipients: readonly RecipientSaveInput[],
+  newId: () => string = () => randomUUID(),
+): Array<{
+  id: string
+  envelope_id: string
+  role: string
+  action_required: ActionRequired
+  name: string
+  email: string
+  signing_order: number
+}> {
+  return recipients.map((r) => ({
+    id: r.id?.trim() || newId(),
+    envelope_id: envelopeId,
+    role: storedRecipientRole(r.role),
+    action_required: coerceActionRequired(r.actionRequired, r.role),
+    name: r.name?.trim() ?? '',
+    email: r.email?.trim().toLowerCase() ?? '',
+    signing_order: Math.max(1, Math.round(r.signingOrder || 1)),
+  }))
+}
+
+const MAP_FIELD_EPS = 0.05
+
+export function nearestMappedSignerRole(
+  field: { page: number; x: number; y: number; type: string },
+  map: ReadonlyArray<{
+    page?: number
+    x?: number
+    y?: number
+    type?: string | null
+    signerRole?: string | null
+  }>,
+): 'buyer' | 'seller' | 'listing_agent' | 'buyer_agent' | null {
+  const fieldType = field.type === 'date_signed' ? 'date' : field.type
+  let best: { dist: number; signerRole: string | null } | null = null
+  for (const m of map) {
+    const mapType = m.type === 'date_signed' ? 'date' : m.type
+    if (mapType !== fieldType) continue
+    if (Math.round(m.page ?? 1) !== field.page) continue
+    const dx = (m.x ?? 0) - field.x
+    const dy = (m.y ?? 0) - field.y
+    const dist = Math.hypot(dx, dy)
+    if (dist > MAP_FIELD_EPS) continue
+    if (!best || dist < best.dist) best = { dist, signerRole: m.signerRole ?? null }
+  }
+  const role = best?.signerRole
+  if (role === 'buyer' || role === 'seller' || role === 'listing_agent' || role === 'buyer_agent') {
+    return role
+  }
+  return null
+}
+
+export function recipientIdForMappedField(
+  field: { recipientId: string | null; page: number; x: number; y: number; type: string },
+  map: ReadonlyArray<{
+    page?: number
+    x?: number
+    y?: number
+    type?: string | null
+    signerRole?: string | null
+  }>,
+  recipients: ReadonlyArray<{ id: string; role: string }>,
+): string | null {
+  if (field.recipientId) return field.recipientId
+  const signer = nearestMappedSignerRole(field, map)
+  if (!signer) return null
+  return recipients.find((r) => recipientMatchesSigner(r.role, signer))?.id ?? null
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

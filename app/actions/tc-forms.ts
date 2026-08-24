@@ -143,19 +143,21 @@ export async function createDraftEnvelope(
     .single()
   if (envErr) return { ok: false, error: envErr.message }
 
+  const { getDealParties } = await import('@/lib/data/tc/deal-people')
+  const { partyNamesForEnvelopeSeed } = await import('@/lib/tc/deal-people')
+  const dealParties = await getDealParties(String(cycle.deal_id))
+  const partyNames = partyNamesForEnvelopeSeed(cycle.buyers, cycle.sellers, dealParties)
   const recipients = applyUniquePartyEmails(
     seedPartyEnvelopeRecipients({
       envelopeId: envelope.id,
-      buyers: (cycle.buyers ?? []) as string[],
-      sellers: (cycle.sellers ?? []) as string[],
+      buyers: partyNames.buyers,
+      sellers: partyNames.sellers,
       brokerName: cycle.broker_name,
       brokerEmail: session?.user?.email ?? '',
       cycleKind: (cycle as { kind?: string }).kind,
       brokerSigningOrder: 2,
     }),
-    await peopleEmailsByNames(
-      [...((cycle.buyers ?? []) as string[]), ...((cycle.sellers ?? []) as string[])],
-    ),
+    await peopleEmailsByNames([...partyNames.buyers, ...partyNames.sellers]),
   )
   if (recipients.length) await supabase.from('tc_envelope_recipients').insert(recipients)
 

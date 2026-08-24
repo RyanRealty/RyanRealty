@@ -7,8 +7,15 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { checkAdminAction, getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
+import { partyNamesForEnvelopeSeed } from '@/lib/tc/deal-people'
 import { getDealContacts } from '@/app/actions/tc-contacts'
-import { dealFactsFromRows, mapDealFactsToFillValues, resolveFactKey } from '@/lib/tc/oref-fill'
+import {
+  dealFactsFromRows,
+  mapDealFactsToFillValues,
+  mergePartyNamesIntoFacts,
+  overlayListingPrice,
+  resolveFactKey,
+} from '@/lib/tc/oref-fill'
 import { otherSideAgentEnvelopeRole, ourRoleForEnvelope } from '@/lib/tc/representation'
 import { getDealParties } from '@/lib/data/tc/deal-people'
 import { listEnvelopeSigningRoster } from '@/lib/data/tc/envelope-recipient-reads'
@@ -17,11 +24,12 @@ import {
   isSignableRole,
   isValidEmail,
   coerceActionRequired,
-  storedRecipientRole,
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
   seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
+  rowsForRecipientSave,
+  recipientIdForMappedField,
   earlierSigningGroupPending,
   type ActionRequired,
   type EnvelopeField,
@@ -40,6 +48,7 @@ import {
   missingRequiredSignerRoles,
   readRequiredSigners,
   requiredSignersLabel,
+  rolesRequiredToSend,
   sendBlockedBySignerKnowledge,
   unionRequiredSignerReads,
   unionRequiredSignerRoles,
@@ -268,16 +277,23 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
     signedAt: f.signed_at,
   }))
 
-  const [signerSources, formFreshness] = await Promise.all([
+  const [signerSources, formFreshness, { data: cycleRow }] = await Promise.all([
     getFormSourcesForEnvelope(envelopeId),
     listEnvelopeFormFreshness(envelopeId),
+    supabase.from('tc_cycles').select('kind, deal_id').eq('id', env.cycle_id).maybeSingle(),
   ])
   const signerRead = unionRequiredSignerReads(signerSources)
   const outdatedForms = formFreshness
     .filter((f) => f.updateAvailable)
     .map((f) => ({ name: f.name, pendingVersionLabel: f.pendingVersionLabel }))
   const outdatedFormsMessage = outdatedLibraryFormsMessage(outdatedForms)
-  const requiredSignerRoles = signerRead.roles
+  const ourRole = ourRoleForEnvelope({
+    cycleKind: cycleRow?.kind as string | null,
+    ourPeopleRoles: cycleRow?.deal_id
+      ? (await getDealParties(String(cycleRow.deal_id))).map((p) => p.role)
+      : [],
+  })
+  const requiredSignerRoles = rolesRequiredToSend(signerRead.roles, ourRole)
   const missingSignerRoles = missingRequiredSignerRoles(
     requiredSignerRoles,
     rs.map((r) => ({ role: r.role, actionRequired: r.actionRequired })),
@@ -285,6 +301,7 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
   const unreadSignersMessage = sendBlockedBySignerKnowledge(
     signerRead,
     rs.map((r) => ({ role: r.role, actionRequired: r.actionRequired })),
+    ourRole,
   )
   const prepareMessage = incompletePrepareMessage(
     mappedFields.map((f) => ({
@@ -404,16 +421,18 @@ export async function createEnvelopeFromDocuments(
     formSources.push(source)
   }
   const requiredRoles = unionRequiredSignerRoles(formSources)
+  const dealParties = await getDealParties(String(cycle.deal_id))
   const ourRole = ourRoleForEnvelope({
     cycleKind,
-    ourPeopleRoles: (await getDealParties(String(cycle.deal_id))).map((p) => p.role),
+    ourPeopleRoles: dealParties.map((p) => p.role),
   })
+  const partyNames = partyNamesForEnvelopeSeed(cycle.buyers, cycle.sellers, dealParties)
 
-  // pre-seed recipients from the cycle parties (emails completed in the composer)
+  // pre-seed recipients from CRM people on the file (cycle jsonb is fallback)
   const recipients = seedPartyEnvelopeRecipients({
     envelopeId: env.id,
-    buyers: (cycle.buyers ?? []) as string[],
-    sellers: (cycle.sellers ?? []) as string[],
+    buyers: partyNames.buyers,
+    sellers: partyNames.sellers,
     brokerName: cycle.broker_name,
     brokerEmail: auth.email,
     cycleKind,
@@ -497,24 +516,24 @@ export async function createEnvelopeFromTemplate(
       documentName: (f.name as string | null) ?? null,
     })),
   )
+  const dealParties = await getDealParties(String(cycle.deal_id))
   const ourRole = ourRoleForEnvelope({
     cycleKind: (cycle as DbRow).kind,
-    ourPeopleRoles: (await getDealParties(String(cycle.deal_id))).map((p) => p.role),
+    ourPeopleRoles: dealParties.map((p) => p.role),
   })
+  const partyNames = partyNamesForEnvelopeSeed(cycle.buyers, cycle.sellers, dealParties)
   const recipients = applyUniquePartyEmails(
     seedPartyEnvelopeRecipients({
       envelopeId: env.id,
-      buyers: (cycle.buyers ?? []) as string[],
-      sellers: (cycle.sellers ?? []) as string[],
+      buyers: partyNames.buyers,
+      sellers: partyNames.sellers,
       brokerName: cycle.broker_name,
       brokerEmail: auth.email,
       cycleKind: (cycle as DbRow).kind,
       requiredRoles,
       ourRole,
     }),
-    await peopleEmailsByNames(
-      [...((cycle.buyers ?? []) as string[]), ...((cycle.sellers ?? []) as string[])],
-    ),
+    await peopleEmailsByNames([...partyNames.buyers, ...partyNames.sellers]),
   )
   let savedRecipients: DbRow[] = []
   if (recipients.length) {
@@ -565,7 +584,7 @@ export async function createEnvelopeFromTemplate(
       .insert({ envelope_id: env.id, document_id: doc.id, sort_order: sortOrder++, form_version_id: form.id })
 
     const dealRow = (cycle as DbRow).tc_deals ?? {}
-    const facts = dealFactsFromRows(dealRow, cycle as DbRow)
+    const facts = mergePartyNamesIntoFacts(dealFactsFromRows(dealRow, cycle as DbRow), dealParties)
     let map = Array.isArray(form.field_map) ? ([...form.field_map] as MappedField[]) : []
     if (!map.length) {
       try {
@@ -684,23 +703,75 @@ export async function saveEnvelopeRecipients(
   if (keepIds.length) delQuery.not('id', 'in', `(${keepIds.join(',')})`)
   await delQuery
 
-  const rows = recipients.map((r) => ({
-    ...(r.id ? { id: r.id } : {}),
-    envelope_id: envelopeId,
-    role: storedRecipientRole(r.role),
-    action_required: coerceActionRequired(r.actionRequired, r.role),
-    name: r.name?.trim() ?? '',
-    email: r.email?.trim().toLowerCase() ?? '',
-    signing_order: Math.max(1, Math.round(r.signingOrder || 1)),
-  }))
+  const rows = rowsForRecipientSave(envelopeId, recipients)
   const { data: saved, error } = await supabase
     .from('tc_envelope_recipients')
     .upsert(rows, { onConflict: 'id' })
     .select('*')
   if (error) return { ok: false, error: error.message }
 
+  const mapped = ((saved ?? []) as DbRow[]).map(mapRecipient)
+  await assignUnassignedFieldsFromMaps(supabase, envelopeId, mapped)
+
   revalidatePath('/admin/deals')
-  return { ok: true, recipients: ((saved ?? []) as DbRow[]).map(mapRecipient) }
+  revalidatePath(`/admin/signing/${envelopeId}`)
+  return { ok: true, recipients: mapped }
+}
+
+async function assignUnassignedFieldsFromMaps(
+  supabase: ReturnType<typeof getServiceSupabase>,
+  envelopeId: string,
+  recipients: EnvelopeRecipient[],
+): Promise<void> {
+  const [{ data: envDocs }, { data: fields }] = await Promise.all([
+    supabase
+      .from('tc_envelope_documents')
+      .select('document_id, form_version_id')
+      .eq('envelope_id', envelopeId),
+    supabase
+      .from('tc_envelope_fields')
+      .select('id, document_id, recipient_id, type, page, x, y')
+      .eq('envelope_id', envelopeId)
+      .is('recipient_id', null),
+  ])
+  const unassigned = (fields ?? []) as DbRow[]
+  if (!unassigned.length) return
+  const versionIds = [
+    ...new Set(
+      ((envDocs ?? []) as DbRow[]).map((d) => d.form_version_id).filter(Boolean).map(String),
+    ),
+  ]
+  const mapByVersion = new Map<string, MappedField[]>()
+  if (versionIds.length) {
+    const { data: forms } = await supabase
+      .from('tc_form_versions')
+      .select('id, field_map')
+      .in('id', versionIds)
+    for (const f of (forms ?? []) as DbRow[]) {
+      mapByVersion.set(String(f.id), Array.isArray(f.field_map) ? (f.field_map as MappedField[]) : [])
+    }
+  }
+  const mapByDoc = new Map<string, MappedField[]>()
+  for (const d of (envDocs ?? []) as DbRow[]) {
+    if (!d.form_version_id) continue
+    mapByDoc.set(String(d.document_id), mapByVersion.get(String(d.form_version_id)) ?? [])
+  }
+  const roster = recipients.map((r) => ({ id: r.id, role: r.role }))
+  for (const f of unassigned) {
+    const nextId = recipientIdForMappedField(
+      {
+        recipientId: (f.recipient_id as string | null) ?? null,
+        page: Number(f.page) || 1,
+        x: Number(f.x) || 0,
+        y: Number(f.y) || 0,
+        type: String(f.type ?? ''),
+      },
+      mapByDoc.get(String(f.document_id)) ?? [],
+      roster,
+    )
+    if (!nextId) continue
+    await supabase.from('tc_envelope_fields').update({ recipient_id: nextId }).eq('id', f.id)
+  }
 }
 
 export type FieldInput = {
@@ -828,7 +899,7 @@ export async function sendEnvelope(
     supabase
       .from('tc_cycles')
       .select(
-        'deal_id, sellers, buyers, listing_price, sale_price, tc_deals(address, city, state, zip, broker_name)',
+        'deal_id, kind, mls_number, sellers, buyers, listing_price, sale_price, tc_deals(address, city, state, zip, broker_name)',
       )
       .eq('id', env.cycle_id)
       .maybeSingle(),
@@ -836,6 +907,12 @@ export async function sendEnvelope(
 
   if (!envDocs?.length) return { ok: false, error: 'No documents on this envelope' }
   const recipients = (recips ?? []) as DbRow[]
+  await assignUnassignedFieldsFromMaps(supabase, envelopeId, recipients.map(mapRecipient))
+  const { data: fieldsAfterAssign } = await supabase
+    .from('tc_envelope_fields')
+    .select('id, recipient_id, type, required, value')
+    .eq('envelope_id', envelopeId)
+  const fieldsForSend = (fieldsAfterAssign ?? fields ?? []) as DbRow[]
   const signable = recipients.filter((r) => isSignableRole(r.role, r.action_required))
   if (!signable.length) return { ok: false, error: 'Add at least one signer' }
 
@@ -846,7 +923,7 @@ export async function sendEnvelope(
     if (!isValidEmail(r.email)) return { ok: false, error: `Missing or invalid email for ${r.name || r.role}` }
   }
   const fieldsByRecip = new Map<string, DbRow[]>()
-  for (const f of (fields ?? []) as DbRow[]) {
+  for (const f of fieldsForSend) {
     if (!f.recipient_id) continue
     const arr = fieldsByRecip.get(f.recipient_id) ?? []
     arr.push(f)
@@ -855,11 +932,11 @@ export async function sendEnvelope(
   for (const r of signable) {
     if (!(fieldsByRecip.get(r.id)?.length)) return { ok: false, error: `${r.name || r.role} has no fields to sign` }
   }
-  const hasSignature = ((fields ?? []) as DbRow[]).some((f) => f.type === 'signature')
+  const hasSignature = fieldsForSend.some((f) => f.type === 'signature')
   if (!hasSignature) return { ok: false, error: 'Place at least one signature field' }
 
   const prepareMsg = incompletePrepareMessage(
-    ((fields ?? []) as DbRow[]).map((f) => ({
+    fieldsForSend.map((f) => ({
       type: String(f.type ?? ''),
       required: f.required === true,
       recipientId: f.recipient_id ?? null,
@@ -872,7 +949,23 @@ export async function sendEnvelope(
   const stale = (await listEnvelopeFormFreshness(envelopeId)).filter((f) => f.updateAvailable)
   const staleMsg = outdatedLibraryFormsMessage(stale)
   if (staleMsg) return { ok: false, error: staleMsg }
-  const facts = dealFactsFromRows((cycle as DbRow)?.tc_deals ?? {}, (cycle as DbRow) ?? {})
+  const dealParties = cycle?.deal_id ? await getDealParties(String((cycle as DbRow).deal_id)) : []
+  const ourRole = ourRoleForEnvelope({
+    cycleKind: (cycle as DbRow)?.kind,
+    ourPeopleRoles: dealParties.map((p) => p.role),
+  })
+  let facts = mergePartyNamesIntoFacts(
+    dealFactsFromRows((cycle as DbRow)?.tc_deals ?? {}, (cycle as DbRow) ?? {}),
+    dealParties,
+  )
+  if (facts.listingPrice == null && (cycle as DbRow)?.mls_number) {
+    const { data: listing } = await supabase
+      .from('listings')
+      .select('list_price')
+      .eq('ListNumber', String((cycle as DbRow).mls_number))
+      .maybeSingle()
+    facts = overlayListingPrice(facts, (listing as { list_price?: number | null } | null)?.list_price)
+  }
   const factMsg = incompleteFactsMessage(missingRequiredFacts(formSources.map((s) => s.formNumber), facts))
   if (factMsg) return { ok: false, error: factMsg }
 
@@ -880,6 +973,7 @@ export async function sendEnvelope(
   const blocked = sendBlockedBySignerKnowledge(
     signerRead,
     recipients.map((r) => ({ role: r.role, actionRequired: r.action_required })),
+    ourRole,
   )
   if (blocked) return { ok: false, error: blocked }
 

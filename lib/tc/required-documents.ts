@@ -279,6 +279,36 @@ export type AnticipatedDoc = {
   present: boolean
 }
 
+/**
+ * Live PDFs (and completed/in-review rows that already have a document) count
+ * as on file. Seeded empty checklist labels do not — they would mark every
+ * anticipated item present on a brand-new file.
+ */
+export function presentNamesForAnticipate(
+  documents: ReadonlyArray<{ name?: string | null; archived?: boolean | null }>,
+  filedItems?: ReadonlyArray<{
+    name?: string | null
+    status?: string | null
+    assignedDocumentCount?: number | null
+  }>,
+): string[] {
+  const names: string[] = []
+  for (const d of documents) {
+    if (d.archived) continue
+    const n = d.name?.trim()
+    if (n) names.push(n)
+  }
+  for (const item of filedItems ?? []) {
+    const filed =
+      (item.status === 'completed' || item.status === 'in_review') &&
+      (item.assignedDocumentCount ?? 0) > 0
+    if (!filed) continue
+    const n = item.name?.trim()
+    if (n) names.push(n)
+  }
+  return names
+}
+
 /** Evaluate the matrix for a deal and mark each applicable doc present/missing. */
 export function anticipateDocuments(
   role: BrokerRole,

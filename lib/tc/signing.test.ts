@@ -20,6 +20,8 @@ import {
   brokerEnvelopeRole,
   recipientMatchesSigner,
   seedPartyEnvelopeRecipients,
+  rowsForRecipientSave,
+  recipientIdForMappedField,
   seedVendorEnvelopeRecipients,
   applyUniquePartyEmails,
   ENVELOPE_STATUSES,
@@ -357,5 +359,44 @@ describe('recipientMatchesSigner', () => {
     expect(recipientMatchesSigner('SellerAgent', 'buyer')).toBe(false)
     expect(recipientMatchesSigner('Broker', 'listing_agent')).toBe(false)
     expect(recipientMatchesSigner('cc', 'buyer')).toBe(false)
+  })
+})
+
+describe('rowsForRecipientSave', () => {
+  it('gives every row an id so mixed new and existing signers upsert', () => {
+    const rows = rowsForRecipientSave(
+      'e1',
+      [
+        { id: 'kept', role: 'SellerAgent', name: 'Matt Ryan', email: 'matt@ryan-realty.com', signingOrder: 2 },
+        { role: 'Seller', name: 'Vault Test Seller', email: 'marketing@ryan-realty.com', signingOrder: 1 },
+      ],
+      () => 'new-1',
+    )
+    expect(rows.map((r) => r.id)).toEqual(['kept', 'new-1'])
+    expect(rows[1]?.role).toBe('Seller')
+  })
+})
+
+describe('recipientIdForMappedField', () => {
+  it('assigns an unassigned seller signature to the seller, not the listing broker', () => {
+    const map = [{ type: 'signature', page: 6, x: 0.2, y: 0.8, signerRole: 'seller' as const }]
+    const recipients = [
+      { id: 'agent', role: 'SellerAgent' },
+      { id: 'seller', role: 'Seller' },
+    ]
+    expect(
+      recipientIdForMappedField(
+        { recipientId: null, page: 6, x: 0.2, y: 0.8, type: 'signature' },
+        map,
+        recipients,
+      ),
+    ).toBe('seller')
+    expect(
+      recipientIdForMappedField(
+        { recipientId: 'agent', page: 6, x: 0.2, y: 0.8, type: 'signature' },
+        map,
+        recipients,
+      ),
+    ).toBe('agent')
   })
 })

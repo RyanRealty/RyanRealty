@@ -6,6 +6,7 @@ import {
   isDealPersonRole,
   parseCityFromAddress,
   namesByDealRole,
+  partyNamesForEnvelopeSeed,
   propertyKeyForInhouseDeal,
   relatedPartiesForStartDeal,
   roleForRelated,
@@ -49,6 +50,15 @@ describe('deal-people', () => {
       buyers: ['Todd Chester'],
       sellers: ['PMA Investments LLC'],
     })
+  })
+
+  it('envelope seed prefers CRM deal people over empty cycle json', () => {
+    expect(
+      partyNamesForEnvelopeSeed([], [], [{ role: 'seller', name: 'Vault Test Seller' }]),
+    ).toEqual({ buyers: [], sellers: ['Vault Test Seller'] })
+    expect(
+      partyNamesForEnvelopeSeed(['Pat'], ['Lee'], [{ role: 'other', name: 'Ada' }]),
+    ).toEqual({ buyers: ['Pat'], sellers: ['Lee'] })
   })
 
   it('dedupes parties and drops bad ids', () => {

@@ -8,6 +8,7 @@ import {
   anticipateDocuments,
   missingChecklistSeeds,
   missingReferralW9,
+  presentNamesForAnticipate,
   unknownFacts,
   type AnticipatedDoc,
   type BrokerRole,
@@ -77,6 +78,7 @@ export type AnticipatedDocsResult = {
   missingConditional: number
   dealId: string
   presentNames: string[]
+  checklistNames: string[]
 }
 
 export async function getAnticipatedDocuments(cycleId: string): Promise<AnticipatedDocsResult | null> {
@@ -88,17 +90,34 @@ export async function getAnticipatedDocuments(cycleId: string): Promise<Anticipa
     .maybeSingle()
   if (!cycle) return null
 
-  // present = checklist activity names + live (non-archived) document names
   const [{ data: items }, { data: docs }] = await Promise.all([
-    supabase.from('tc_checklist_items').select('name').eq('cycle_id', cycleId),
+    supabase.from('tc_checklist_items').select('id, name, status').eq('cycle_id', cycleId),
     supabase.from('tc_documents').select('name, archived').eq('cycle_id', cycleId),
   ])
-  const presentNames = [
-    ...(items ?? []).map((i: { name: string }) => i.name),
-    ...((docs ?? []) as Array<{ name: string; archived: boolean }>)
-      .filter((d) => !d.archived)
-      .map((d) => d.name),
-  ]
+  const itemRows = (items ?? []) as Array<{ id: string; name: string; status: string }>
+  const assignedCount = new Map<string, number>()
+  if (itemRows.length) {
+    const { data: assigned } = await supabase
+      .from('tc_checklist_assignments')
+      .select('item_id')
+      .in(
+        'item_id',
+        itemRows.map((i) => i.id),
+      )
+    for (const row of assigned ?? []) {
+      const id = String((row as { item_id: string }).item_id)
+      assignedCount.set(id, (assignedCount.get(id) ?? 0) + 1)
+    }
+  }
+  const checklistNames = itemRows.map((i) => i.name)
+  const presentNames = presentNamesForAnticipate(
+    (docs ?? []) as Array<{ name: string; archived: boolean }>,
+    itemRows.map((i) => ({
+      name: i.name,
+      status: i.status,
+      assignedDocumentCount: assignedCount.get(i.id) ?? 0,
+    })),
+  )
 
   const role = roleFromRaw(cycle.kind, cycle.raw ?? {})
   let facts = factsFromRaw(cycle.raw ?? {}, null)
@@ -131,6 +150,7 @@ export async function getAnticipatedDocuments(cycleId: string): Promise<Anticipa
     missingConditional: documents.filter((d) => d.severity === 'conditional' && !d.present).length,
     dealId: String(cycle.deal_id),
     presentNames,
+    checklistNames,
   }
 }
 
@@ -143,12 +163,13 @@ export async function addMissingAnticipatedChecklist(
   if (!preview) return { ok: false, error: 'Cycle not found' }
   const supabase = getServiceSupabase()
   const referralFee = await getTcCycleReferralFeeTotal(cycleId)
+  const alreadyNamed = [...preview.checklistNames, ...preview.presentNames]
   const missing = [
-    ...missingChecklistSeeds(preview.role, preview.facts, preview.presentNames),
-    ...missingReferralW9(preview.presentNames, referralFee),
+    ...missingChecklistSeeds(preview.role, preview.facts, preview.checklistNames),
+    ...missingReferralW9(alreadyNamed, referralFee),
   ]
   if (!missing.length) return { ok: true, added: 0 }
-  const start = preview.presentNames.length
+  const start = preview.checklistNames.length
   const { error } = await supabase.from('tc_checklist_items').insert(
     missing.map((row, i) => ({
       cycle_id: cycleId,

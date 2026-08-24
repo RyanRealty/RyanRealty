@@ -110,6 +110,42 @@ export function namesByDealRole(
   return { buyers, sellers }
 }
 
+function asPartyNameList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const out: string[] = []
+  for (const item of raw) {
+    if (typeof item === 'string') {
+      const n = item.trim()
+      if (n) out.push(n)
+      continue
+    }
+    if (item && typeof item === 'object') {
+      const o = item as { name?: unknown; full_name?: unknown }
+      const n = String(o.name ?? o.full_name ?? '').trim()
+      if (n) out.push(n)
+    }
+  }
+  return out
+}
+
+/** CRM people on the file win; cycle jsonb is the SkySlope-mirror fallback. */
+export function partyNamesForEnvelopeSeed(
+  cycleBuyers: unknown,
+  cycleSellers: unknown,
+  parties: ReadonlyArray<{ role: string; name: string | null | undefined }>,
+): { buyers: string[]; sellers: string[] } {
+  const fromPeople = namesByDealRole(
+    parties.filter(
+      (p): p is { role: DealPersonRole; name: string | null | undefined } =>
+        p.role === 'buyer' || p.role === 'seller' || p.role === 'other',
+    ),
+  )
+  return {
+    buyers: fromPeople.buyers.length ? fromPeople.buyers : asPartyNameList(cycleBuyers),
+    sellers: fromPeople.sellers.length ? fromPeople.sellers : asPartyNameList(cycleSellers),
+  }
+}
+
 function normPartyName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ')
 }

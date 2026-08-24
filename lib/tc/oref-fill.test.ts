@@ -4,6 +4,7 @@ import {
   dealFactsFromRows,
   mapDealFactsToFillValues,
   mergePartyNamesIntoFacts,
+  overlayListingPrice,
   parseEarnestMoneyAmount,
   pickPreferredOrefForm,
   presentFactValues,
@@ -91,6 +92,14 @@ describe('mergePartyNamesIntoFacts', () => {
     const fallback = mergePartyNamesIntoFacts(FULL, [{ role: 'other', name: 'Ada Agent' }])
     expect(fallback.buyers).toEqual(['Todd Chester'])
     expect(fallback.sellers).toEqual(['PMA Investments LLC'])
+  })
+})
+
+describe('overlayListingPrice', () => {
+  it('fills list price from MLS only when the cycle does not already have one', () => {
+    expect(overlayListingPrice(FULL, 599000).listingPrice).toBe(FULL.listingPrice)
+    expect(overlayListingPrice({ ...FULL, listingPrice: null }, 599000).listingPrice).toBe(599000)
+    expect(overlayListingPrice({ ...FULL, listingPrice: null }, 0).listingPrice).toBeNull()
   })
 })
 

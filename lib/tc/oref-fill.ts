@@ -230,6 +230,18 @@ export function dealFactsFromRows(
   }
 }
 
+/** MLS list price fills listingPrice only when the cycle has not stored one. */
+export function overlayListingPrice(
+  facts: DealFacts,
+  listPrice: number | string | null | undefined,
+): DealFacts {
+  if (facts.listingPrice != null) return facts
+  if (listPrice == null || listPrice === '') return facts
+  const n = typeof listPrice === 'number' ? listPrice : Number(listPrice)
+  if (!Number.isFinite(n) || n <= 0) return facts
+  return { ...facts, listingPrice: n }
+}
+
 /**
  * Prefer CRM parties on the file. Cycle jsonb stays the fallback for
  * SkySlope-mirrored names when no named buyer/seller is linked yet.
