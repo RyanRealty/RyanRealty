@@ -68,6 +68,7 @@ import { DealParties } from './DealParties'
 import { DealTasks } from './DealTasks'
 import { DealContingencyDays } from './DealContingencyDays'
 import { AddMissingChecklist } from './AddMissingChecklist'
+import { DealPropertyFacts } from './DealPropertyFacts'
 import { listDealTasks } from '@/lib/data/tc/task-reads'
 import { DealStageControls } from './DealStageControls'
 import { ListingFileActions } from './ListingFileActions'
@@ -189,7 +190,7 @@ function AnticipatedDocs({
   data: AnticipatedDocsResult | null
   cycleId: string
 }) {
-  if (!data || data.documents.length === 0) return null
+  if (!data) return null
   const missing = data.documents.filter((d) => !d.present)
   return (
     <section aria-label="Documents anticipated">
@@ -199,7 +200,7 @@ function AnticipatedDocs({
         {data.missingRequired > 0 ? ` · ${data.missingRequired} required missing` : ''}
       </p>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-        {data.documents.slice(0, 12).map((d) => (
+        {data.documents.map((d) => (
           <li
             key={d.id}
             style={{
@@ -231,22 +232,18 @@ function AnticipatedDocs({
           </li>
         ))}
       </ul>
-      {data.documents.length > 12 ? (
-        <p style={{ ...tiny, margin: '8px 0 0', fontWeight: 500 }}>
-          Showing 12 of {data.documents.length}
-        </p>
-      ) : null}
       {missing.length > 0 ? (
         <div style={{ margin: '8px 0 0', display: 'grid', gap: 8 }}>
           <p style={{ ...tiny, margin: 0 }}>
             {missing.length} not yet on file.{' '}
             {data.unknown.length > 0
-              ? `Confirm to refine: ${data.unknown.slice(0, 4).join(', ')}${data.unknown.length > 4 ? '…' : ''}`
+              ? `Confirm the facts below to add well, septic, HOA, lead, and the rest.`
               : ''}
           </p>
           <AddMissingChecklist cycleId={cycleId} missingCount={missing.length} />
         </div>
       ) : null}
+      <DealPropertyFacts cycleId={cycleId} facts={data.facts} />
     </section>
   )
 }

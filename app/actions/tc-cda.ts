@@ -6,9 +6,11 @@ import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { getCommissionsForCycles } from '@/app/actions/tc-commissions'
+import { getCommissionsForCycles, updateTcCommission } from '@/app/actions/tc-commissions'
 import { getCycleForCda } from '@/lib/data/tc/listing-action-reads'
+import { inboundReferralFeePctForDeal } from '@/lib/data/tc/deal-people'
 import { partyNamesFromJson } from '@/lib/tc/listing-actions'
+import { prefillReferralFee } from '@/lib/tc/property-facts'
 
 function getServiceSupabase() {
   return createServiceClient()
@@ -31,7 +33,16 @@ export async function generateCommissionCda(
 
   const cycle = await getCycleForCda(cycleId)
   if (!cycle) return { ok: false, error: 'Cycle not found' }
-  const rows = await getCommissionsForCycles([cycleId])
+  let rows = await getCommissionsForCycles([cycleId])
+  const feePct = await inboundReferralFeePctForDeal(String(cycle.deal_id ?? ''))
+  if (feePct != null) {
+    for (const r of rows) {
+      const dollars = prefillReferralFee(r.referral_fee, r.gci, feePct)
+      if (dollars == null) continue
+      await updateTcCommission(r.id, { referral_fee: dollars })
+    }
+    rows = await getCommissionsForCycles([cycleId])
+  }
   const address = cycle.address
   const sb = getServiceSupabase()
 
@@ -69,7 +80,10 @@ export async function generateCommissionCda(
     line(
       `GCI ${money(r.gci)} · split ${r.split_percent}% · agent ${money(r.agent_net)} · office ${money(r.brokerage_net)}`,
     )
-    if (r.referral_fee) line(`Referral ${money(r.referral_fee)}`)
+    if (r.referral_fee) {
+      line(`Referral ${money(r.referral_fee)}`)
+      line('Referral payee W-9 must be on file before disbursement.', font, 8)
+    }
     y -= 4
   }
   const bytes = Buffer.from(await pdf.save())

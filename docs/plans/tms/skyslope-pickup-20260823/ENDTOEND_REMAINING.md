@@ -18,7 +18,7 @@ A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 
 ## Remaining (this grind)
 
-Unblocked: when a catalog paste shows **updated** or **new**, Vault pulls those licensed PDFs itself (previewUrl, no SkySlope mutation). A deal can add missing Oregon checklist rows from MLS property facts. Library filter + Open blanks stay on `/admin/forms`.
+Unblocked: catalog apply pulls new/revised licensed PDFs. A deal can confirm property facts (well, septic, HOA, financing, year built) and add the matching Oregon checklist rows. Generate CDA prefills inbound referral % of GCI when the client was referred in, and notes the W-9. Library filter + Open blanks stay on `/admin/forms`.
 
 Blocked on Matt: send a live envelope. Blocked on mail DNS: per-deal inbound address. Blocked on a new license: any library outside OREF / OR / ODS.
 

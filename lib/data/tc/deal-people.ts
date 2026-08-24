@@ -18,6 +18,7 @@ import {
   seedChecklistItems,
 } from '@/lib/tc/required-documents'
 import { fileShapeForRepresentation, type FileRepresentation } from '@/lib/tc/listing-actions'
+import { parseInboundFeePct } from '@/lib/tc/property-facts'
 
 export type DealParty = {
   id: string
@@ -72,6 +73,20 @@ export async function getDealParties(dealId: string): Promise<DealParty[]> {
       name,
     }
   })
+}
+
+/** Recorded inbound referral percent on a deal party, if any. */
+export async function inboundReferralFeePctForDeal(dealId: string): Promise<number | null> {
+  const parties = await getDealParties(dealId)
+  const ids = parties.map((p) => p.personId).filter((id) => Number.isFinite(id) && id > 0)
+  if (!ids.length) return null
+  const { data } = await client().from('crm_people').select('id, custom').in('id', ids)
+  let found: number | null = null
+  for (const row of data ?? []) {
+    const pct = parseInboundFeePct((row as { custom?: unknown }).custom)
+    if (pct != null) found = found == null ? pct : Math.max(found, pct)
+  }
+  return found
 }
 
 /** Attach buyers/sellers who have an email or phone on the SkySlope file. Never the deal broker. */

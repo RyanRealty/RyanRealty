@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 import {
+  EMPTY_PROPERTY_FACTS,
   anticipateDocuments,
   missingChecklistSeeds,
   unknownFacts,
@@ -12,6 +13,7 @@ import {
   type PropertyFacts,
 } from '@/lib/tc/required-documents'
 import { getPropertyFactsByMls } from '@/lib/data/listings/getPropertyFactsByMls'
+import { overlayPropertyFacts, parseSavedPropertyFacts } from '@/lib/tc/property-facts'
 
 /**
  * Anticipated-documents surface for a deal cycle. Reads the cycle's role +
@@ -95,20 +97,18 @@ export async function getAnticipatedDocuments(cycleId: string): Promise<Anticipa
   ]
 
   const role = roleFromRaw(cycle.kind, cycle.raw ?? {})
-  const facts = factsFromRaw(cycle.raw ?? {}, null)
-
-  // Auto-populate facts from the synced listing (by MLS#) via the canonical DAL
-  // function — well/septic/HOA/condo/manufactured/land/year-built light up
-  // automatically instead of all-confirm. Listing data overrides only the
-  // fields the feed actually knows; the rest stay null (confirm prompt).
+  let facts = factsFromRaw(cycle.raw ?? {}, null)
   if (cycle.mls_number) {
     const lf = await getPropertyFactsByMls(cycle.mls_number).catch(() => null)
     if (lf) {
+      const fromMls: Partial<PropertyFacts> = {}
       for (const key of Object.keys(lf) as (keyof typeof lf)[]) {
-        if (lf[key] != null) (facts as Record<string, unknown>)[key] = lf[key]
+        if (lf[key] != null) (fromMls as Record<string, unknown>)[key] = lf[key]
       }
+      facts = overlayPropertyFacts(facts, fromMls)
     }
   }
+  facts = overlayPropertyFacts(facts, parseSavedPropertyFacts((cycle.raw as Raw)?.propertyFacts))
   const documents = anticipateDocuments(role, facts, presentNames)
 
   return {
@@ -154,4 +154,42 @@ export async function addMissingAnticipatedChecklist(
   })
   revalidatePath('/admin/deals')
   return { ok: true, added: missing.length }
+}
+
+export async function saveCyclePropertyFacts(
+  cycleId: string,
+  patch: Partial<PropertyFacts>,
+): Promise<{ ok: boolean; error?: string; added?: number }> {
+  const gate = await checkAdminAction('transactions.edit')
+  if (!gate.ok) return { ok: false, error: gate.error }
+  const supabase = getServiceSupabase()
+  const { data: cycle } = await supabase
+    .from('tc_cycles')
+    .select('id, deal_id, raw')
+    .eq('id', cycleId)
+    .maybeSingle()
+  if (!cycle) return { ok: false, error: 'Cycle not found' }
+  const raw = (cycle.raw && typeof cycle.raw === 'object' ? cycle.raw : {}) as Raw
+  const nextFacts = overlayPropertyFacts(
+    overlayPropertyFacts(
+      { ...EMPTY_PROPERTY_FACTS },
+      parseSavedPropertyFacts(raw.propertyFacts),
+    ),
+    patch,
+  )
+  const { error } = await supabase
+    .from('tc_cycles')
+    .update({ raw: { ...raw, propertyFacts: nextFacts } })
+    .eq('id', cycleId)
+  if (error) return { ok: false, error: error.message }
+  await supabase.from('tc_events').insert({
+    deal_id: cycle.deal_id,
+    cycle_id: cycleId,
+    actor: gate.ctx.email,
+    action: 'property_facts_saved',
+    detail: { patch },
+  })
+  revalidatePath('/admin/deals')
+  const added = await addMissingAnticipatedChecklist(cycleId)
+  return { ok: true, added: added.ok ? added.added : 0 }
 }
