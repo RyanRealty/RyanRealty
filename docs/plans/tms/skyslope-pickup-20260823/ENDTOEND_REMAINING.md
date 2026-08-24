@@ -18,9 +18,9 @@ A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 
 ## This pass (complete)
 
-- Entire held library (110+ OREF blanks) has a field map: AcroForm widgets when present, otherwise a last-page signature stack for that form’s required signers (listing vs buyer-rep vs sale vs one-party advisory, from the form name — not a five-form shortlist).
-- Forms: **Map entire library** and **Replace blank** on every held form (licensed PDF in, sample name dropped, update flag cleared).
-- Inspection and financing clocks: enter banking days from the sale agreement on the deal; they go to calendar and file tasks. Not invented when blank.
+- Licensed Oregon library pulled from SkySlope Forms (not samples): **170 OREF + 101 Oregon Realtors + 28 ODS**, each with AcroForm field maps.
+- Forms: **Map entire library** and **Replace blank** on every held form.
+- Inspection and financing clocks: enter banking days from the sale agreement on the deal.
 
 Do not: clone Offers, mutate SkySlope, send a live envelope, guess inspection/financing windows that are not in the Oregon matrix.
 

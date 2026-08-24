@@ -115,33 +115,42 @@ export async function POST(request: Request): Promise<NextResponse> {
   const fieldMap = translateSkyslopeFields(body.sourceFields?.fields, body.sourceFields?.pages)
 
   // 5. idempotent upsert on source_version_id
-  const { data: row, error: upsertErr } = await sb
+  const payload = {
+    library_id: libraryId,
+    form_number: body.formNumber ?? null,
+    name: body.name,
+    effective_date: body.effectiveDate ?? null,
+    blank_pdf_storage_path: path,
+    sha256,
+    page_count: body.pageCount ?? null,
+    field_map: fieldMap,
+    field_map_source: fieldMap.length ? 'skyslope' : 'acroform',
+    source_form_id: body.sourceFormId ?? null,
+    source_version_id: body.sourceVersionId,
+    version_label: body.versionLabel ?? null,
+    source_fields: body.sourceFields ?? null,
+    source_checked_at: new Date().toISOString(),
+    update_available: false,
+    retired_at: null,
+    updated_at: new Date().toISOString(),
+  }
+  const { data: existing } = await sb
     .from('tc_form_versions')
-    .upsert(
-      {
-        library_id: libraryId,
-        form_number: body.formNumber ?? null,
-        name: body.name,
-        effective_date: body.effectiveDate ?? null,
-        blank_pdf_storage_path: path,
-        sha256,
-        page_count: body.pageCount ?? null,
-        field_map: fieldMap,
-        field_map_source: 'skyslope',
-        source_form_id: body.sourceFormId ?? null,
-        source_version_id: body.sourceVersionId,
-        version_label: body.versionLabel ?? null,
-        source_fields: body.sourceFields ?? null,
-        source_checked_at: new Date().toISOString(),
-        update_available: false,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'source_version_id' },
-    )
     .select('id')
-    .single()
-  if (upsertErr || !row) {
-    return NextResponse.json({ ok: false, error: `upsert: ${upsertErr?.message ?? 'failed'}` }, { status: 500, headers: CORS })
+    .eq('source_version_id', body.sourceVersionId)
+    .maybeSingle()
+  let row: { id: string } | null = existing ? { id: String(existing.id) } : null
+  if (row) {
+    const { error: updErr } = await sb.from('tc_form_versions').update(payload).eq('id', row.id)
+    if (updErr) {
+      return NextResponse.json({ ok: false, error: `update: ${updErr.message}` }, { status: 500, headers: CORS })
+    }
+  } else {
+    const { data: inserted, error: insErr } = await sb.from('tc_form_versions').insert(payload).select('id').single()
+    if (insErr || !inserted) {
+      return NextResponse.json({ ok: false, error: `insert: ${insErr?.message ?? 'failed'}` }, { status: 500, headers: CORS })
+    }
+    row = { id: String(inserted.id) }
   }
 
   // 6. Freshness (handoff §4 Step 6): a newer published version of this form
