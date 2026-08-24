@@ -571,7 +571,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       || a.label.localeCompare(b.label))
   const otherResortCounts = otherResorts.length > 0 && citySfrTiles.length > 0
     ? resortActiveSfrCounts(citySlug, citySfrTiles)
-    : resortSfrCounts
+    : new Map<string, number>()
   const communityItems: KbCommunityItem[] = otherResorts.map((r): KbCommunityItem => ({
     name: r.label,
     activeCount: otherResortCounts.get(r.slug) ?? 0,

@@ -53,10 +53,11 @@ checks.push({
 
 const cityPage = src('app/cities/[slug]/page.tsx')
 checks.push({
-  label: 'city page gates hero / facts / JSON-LD through publishCityInventory',
+  label: 'city page gates hero / facts through leftover HUD inventory',
   ok:
-    /from ['"]@\/lib\/market\/publish-city-inventory['"]/.test(cityPage) &&
-    /publishCityInventory\(/.test(cityPage) &&
+    /from ['"]@\/lib\/market\/publish-leftover-hud['"]/.test(cityPage) &&
+    /leftoverHudKpis\(/.test(cityPage) &&
+    /activeCount(?::[^=]*)?=\s*hud\.active/.test(cityPage) &&
     /CITY_TILE_FETCH_LIMIT/.test(cityPage) &&
     /placeHeroLead\(\{ placeName: cityName, activeCount \}\)/.test(cityPage),
 })
