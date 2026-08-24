@@ -9,7 +9,19 @@ import {
   missingCompleteFields,
   missingPrepareFields,
   missingRequiredFacts,
+  signerOwnsMappedField,
 } from './required-fields'
+
+describe('signerOwnsMappedField', () => {
+  it('gives the email signer Sign, initials, name, and date, not every text blank', () => {
+    expect(signerOwnsMappedField('signature')).toBe(true)
+    expect(signerOwnsMappedField('initials')).toBe(true)
+    expect(signerOwnsMappedField('date_signed')).toBe(true)
+    expect(signerOwnsMappedField('full_name')).toBe(true)
+    expect(signerOwnsMappedField('text')).toBe(false)
+    expect(signerOwnsMappedField('checkbox')).toBe(false)
+  })
+})
 
 describe('fieldRequirement', () => {
   it('does not treat unknown blanks as required', () => {

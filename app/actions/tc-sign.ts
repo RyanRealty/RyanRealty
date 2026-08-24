@@ -10,7 +10,7 @@ import {
   type SignFieldValue,
 } from '@/lib/tc/signing'
 import { advanceOrSeal } from '@/lib/tc/seal-envelope'
-import { fieldValueIsComplete } from '@/lib/tc/required-fields'
+import { fieldValueIsComplete, signerOwnsMappedField } from '@/lib/tc/required-fields'
 import { listEnvelopeSigningRoster } from '@/lib/data/tc/envelope-recipient-reads'
 
 /**
@@ -145,7 +145,9 @@ export async function getSigningSession(token: string): Promise<SigningSessionSt
           url: meta?.storage_path ? urlByPath.get(meta.storage_path) ?? null : null,
         }
       }),
-      fields: ((fields ?? []) as DbRow[]).map((f) => ({
+      fields: ((fields ?? []) as DbRow[])
+        .filter((f) => signerOwnsMappedField(String(f.type ?? '')))
+        .map((f) => ({
         id: f.id,
         documentId: f.document_id,
         recipientId: f.recipient_id,

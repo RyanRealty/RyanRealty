@@ -67,6 +67,13 @@ describe('one-sided envelopes', () => {
 })
 
 describe('dual representation', () => {
+  it('a pending sale on a listing file with our seller and our buyer is dual', () => {
+    expect(ourRoleForEnvelope({ cycleKind: 'sale', ourPeopleRoles: ['seller', 'buyer'] })).toBe('dual')
+  })
+  it('a pending sale with only our seller stays listing-side', () => {
+    expect(ourRoleForEnvelope({ cycleKind: 'sale', ourPeopleRoles: ['seller'] })).toBe('listing')
+  })
+
   it('both of our principals sign in Vault; no other-side PDF wait', () => {
     expect(ourRoleForEnvelope({ cycleKind: 'listing', ourPeopleRoles: ['buyer', 'seller'] })).toBe('dual')
     expect(isOtherSideRecipientRole('dual', 'Buyer')).toBe(false)

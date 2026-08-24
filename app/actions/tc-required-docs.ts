@@ -22,6 +22,8 @@ import {
   getTcDealContactRoles,
 } from '@/lib/data/tc/getTcAnticipatedReads'
 import { overlayPropertyFacts, parseSavedPropertyFacts } from '@/lib/tc/property-facts'
+import { ourRoleForEnvelope } from '@/lib/tc/representation'
+import { getDealParties } from '@/lib/data/tc/deal-people'
 
 /**
  * Anticipated-documents surface for a deal cycle. Reads the cycle's role +
@@ -98,7 +100,12 @@ export async function getAnticipatedDocuments(cycleId: string): Promise<Anticipa
   const checklistNames = presence.checklistItems.map((i) => i.name)
   const presentNames = presentNamesForAnticipate(presence.documents, presence.checklistItems)
 
-  const role = roleFromRaw(cycle.kind, cycle.raw ?? {})
+  const parties = cycle.deal_id ? await getDealParties(String(cycle.deal_id)) : []
+  const fromPeople = ourRoleForEnvelope({
+    cycleKind: cycle.kind == null ? null : String(cycle.kind),
+    ourPeopleRoles: parties.map((p) => p.role),
+  })
+  const role = fromPeople === 'unknown' ? roleFromRaw(String(cycle.kind ?? ''), cycle.raw ?? {}) : fromPeople
   let facts = factsFromRaw(cycle.raw ?? {}, null)
   if (cycle.mls_number) {
     const lf = await getPropertyFactsByMls(cycle.mls_number).catch(() => null)

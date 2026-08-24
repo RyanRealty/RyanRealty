@@ -76,6 +76,7 @@ import {
   incompletePrepareMessage,
   mapFieldIsRequired,
   missingRequiredFacts,
+  signerOwnsMappedField,
 } from '@/lib/tc/required-fields'
 
 /**
@@ -650,9 +651,11 @@ export async function createEnvelopeFromTemplate(
       fieldRows.push({
         envelope_id: env.id,
         document_id: doc.id,
-        recipient_id: recipientByRole(
-          f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined),
-        ),
+        recipient_id: signerOwnsMappedField(type)
+          ? recipientByRole(
+              f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined),
+            )
+          : null,
         type,
         page: Math.max(1, Math.round(f.page)),
         x: clamp01(f.x),
@@ -752,6 +755,7 @@ async function assignUnassignedFieldsFromMaps(
   }
   const roster = recipients.map((r) => ({ id: r.id, role: r.role }))
   for (const f of unassigned) {
+    if (!signerOwnsMappedField(f.type)) continue
     const nextId = recipientIdForMappedField(
       {
         recipientId: f.recipientId,

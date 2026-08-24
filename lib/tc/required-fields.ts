@@ -75,6 +75,11 @@ export function mapFieldIsRequired(input: RequirementInput): boolean {
   return fieldRequirement(input) === 'required'
 }
 
+/** Signers tap these. Fill-in text stays on the broker compose, not the email link. */
+export function signerOwnsMappedField(type: string | null | undefined): boolean {
+  return SIGNER_COMPLETED_TYPES.has(String(type ?? ''))
+}
+
 export function isRequiredContentField(field: RequiredFieldSnapshot): boolean {
   if (isSenderAnnotation(field.type)) return false
   if (field.optional) return false

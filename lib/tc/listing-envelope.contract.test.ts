@@ -13,8 +13,17 @@ describe('listing envelope walk wiring', () => {
     expect(src).toMatch(/assignUnassignedFieldsFromMaps/)
     expect(src).toMatch(/deriveSignerRole/)
     expect(src).toMatch(/mappedFieldTypeFromName/)
+    expect(src).toMatch(/signerOwnsMappedField/)
+    const sign = readFileSync(join(process.cwd(), 'app/actions/tc-sign.ts'), 'utf8')
+    expect(sign).toMatch(/signerOwnsMappedField/)
     expect(src).toMatch(/getEnvelopeCycleKindAndDeal/)
     expect(src).toMatch(/getListPriceByMlsNumber/)
+  })
+
+  it('anticipated docs take representation from people on the file', () => {
+    const src = readFileSync(join(process.cwd(), 'app/actions/tc-required-docs.ts'), 'utf8')
+    expect(src).toMatch(/ourRoleForEnvelope/)
+    expect(src).toMatch(/getDealParties/)
   })
 
   it('does not treat seeded checklist labels as documents on file', () => {

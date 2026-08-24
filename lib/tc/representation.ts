@@ -39,13 +39,15 @@ export function ourRoleFromCycleKind(kind: string | null | undefined): BrokerRol
   return 'unknown'
 }
 
-/** Dual when our CRM people include a buyer and a seller. Otherwise listing vs buyer from the file kind. */
+/** Dual when our CRM people include a buyer and a seller. People on the file beat cycle kind. */
 export function ourRoleForEnvelope(input: {
   cycleKind?: string | null
   ourPeopleRoles?: readonly string[]
 }): BrokerRole {
   const ours = input.ourPeopleRoles ?? []
   if (ours.includes('buyer') && ours.includes('seller')) return 'dual'
+  if (ours.includes('seller')) return 'listing'
+  if (ours.includes('buyer')) return 'buyer'
   return ourRoleFromCycleKind(input.cycleKind)
 }
 

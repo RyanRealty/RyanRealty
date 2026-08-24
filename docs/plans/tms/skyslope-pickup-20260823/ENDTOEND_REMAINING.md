@@ -1,3 +1,17 @@
+# End-to-end remaining Vault items — 2026-08-24 (pass 5)
+
+## Goal (e2e)
+
+A broker can walk two live Vault files from listing through close without SkySlope, and a signer can finish from email in a browser: adopt a signature once (type, draw, or upload), then tap each Sign box. No app.
+
+Apollo (60935 Apollo Place) is file 1. File 2 is a second Bend listing. Same party map: Matt as broker, Marketing Test Lead as seller, Vault Test Buyer as buyer. Each agent line is its own signer. Keep those CRM names.
+
+On each file: listing packet (already done on Apollo) → sale agreement sent and signed → inspection window on the calendar → two repair addendums (OREF 022A then 022B) → receipt/removal of contingencies (059/060) → close. Title reports stay missing. Facts on the forms write onto the cycle (price, earnest, close, inspection and financing days) and show as File deadlines.
+
+Done means the second file repeats the first without a new send/sign/assign bug.
+
+---
+
 # End-to-end remaining Vault items — 2026-08-23 (pass 4)
 
 ## Goal (e2e)
