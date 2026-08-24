@@ -429,7 +429,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     pulseActiveCount: pulse?.activeCount,
     medianListPrice: medianListPrice ?? pulse?.medianListPrice ?? null,
     monthsOfSupply,
-    soldCount12mo: publishSoldCount({ value: stats?.soldCount, grain: 'neighborhood' }),
+    soldCount12mo: publicPace.closedCount ?? null,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
 
