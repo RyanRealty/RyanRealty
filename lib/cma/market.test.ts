@@ -143,6 +143,25 @@ describe('assembleCmaMarketContext leftover', () => {
     expect(row.activeCount).toBeNull()
     expect(row.medianDom).toBeNull()
   })
+
+  it('city leftover closedCount fills soldCount365', () => {
+    const row = assemble({ leftover: { ...CITY_LEFTOVER, closedCount: 2096 } })
+    expect(row.soldCount365).toBe(2096)
+  })
+
+  it('city leftover miss fills from trusted cache sold_count', () => {
+    const row = assemble({
+      leftover: { ...EMPTY_PUBLIC_PACE },
+      stats: { ...CACHE_STATS, sold_count: 1641 },
+    })
+    expect(row.soldCount365).toBe(1641)
+  })
+
+  it('city leftover miss and no cache omits soldCount365', () => {
+    const row = assemble({ leftover: { ...EMPTY_PUBLIC_PACE }, stats: null })
+    expect(row.soldCount365).toBeNull()
+    expect(row.soldCount365).not.toBe(0)
+  })
 })
 
 describe('assembleCmaMarketContext neighborhood MOS', () => {
@@ -180,7 +199,7 @@ describe('assembleCmaMarketContext neighborhood MOS', () => {
     expect(row.monthsOfSupply).not.toBe(4.6)
     expect(row.pendingCount).toBe(6)
     expect(row.medianDom).toBe(72)
-    expect(row.soldCount365).not.toBe(16)
+    expect(row.soldCount365).toBeNull()
   })
 
   it('publishes neighborhood MOS only from Market Truth', () => {

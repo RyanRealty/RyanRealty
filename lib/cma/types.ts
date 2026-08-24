@@ -121,7 +121,8 @@ export interface CmaMarketContext {
   geoLabel: string
   periodStart: string
   periodEnd: string
-  soldCount365: number
+  /** 12-month closed count. Null when leftover and trusted cache both miss. Never a zero fill. */
+  soldCount365: number | null
   medianSalePrice: number | null
   medianDom: number | null
   medianPpsf: number | null
