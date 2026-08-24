@@ -526,6 +526,8 @@ Bend detached still 774. County unpublished.
 
 Bend detached still 774. County unpublished.
 
+2026-08-23al landed (live webpack 3010): `/data/market/city/bend` `figures.medianSaleToListRatio` = leftover `saleToOriginal` **0.969**; pulse sold 30d **137** and DTP **18** stay. Homepage HUD sale-to-list **97.0%** leftover; pulse 30-day / DTP stay. `/housing-market/annual-review` city ledger leftover **2,096** / **$759,450**. `/communities/sunriver` leftover median sold **$885,000**; extra MOS 0 omitted. `/lp/seller-home-value` leftover **96.9%**. `/lp/bend` leftover **2,096** / **$759,450** / **96.9%** including peers. CMA sold count omits on leftover miss. Neighborhood extra MOS/verdict withheld. Gate 2 **33 → 32** (golf cache read gone). Pulse 30-day / DTP stay. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
