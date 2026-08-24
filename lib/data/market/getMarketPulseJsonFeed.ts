@@ -118,7 +118,7 @@ const LEFTOVER_NOTE =
   'Leftover detached pace is Market Truth mt-v1, sample-gated (12-month cells plus pending/age now). figures.medianSaleToListRatio is leftover saleToOriginal (12-month), not pulse median_sale_to_list. Pulse 30-day sold and days-to-pending stay.'
 
 const EXTRA_SEGMENTS_NOTE =
-  'Extra product types are Market Truth mt-v1, sample-gated. Detached stays the HUD.'
+  'Extra product types are Market Truth mt-v1, sample-gated. Detached stays the HUD. Leftover pace (days to contract, sale to original, YoY, price-cut share) is 12-month, not pulse days-to-pending.'
 
 export type MarketPulseJsonExtraSegment = {
   segment: PublicPlaceSegment
@@ -128,6 +128,10 @@ export type MarketPulseJsonExtraSegment = {
   verdict: string | null
   pendingCount: number | null
   closedCount: number | null
+  daysToContract: number | null
+  saleToOriginal: number | null
+  yoyMedian: number | null
+  priceCutShare: number | null
 }
 
 export type MarketPulseJsonMethodology = {
@@ -342,6 +346,10 @@ function jsonExtraSegments(rows: readonly PublicSegmentRow[]): MarketPulseJsonEx
       verdict: row.verdict,
       pendingCount: row.pendingCount,
       closedCount: row.closedCount,
+      daysToContract: row.daysToContract,
+      saleToOriginal: row.saleToOriginal,
+      yoyMedian: row.yoyMedian,
+      priceCutShare: row.priceCutShare,
     })
   }
   return out

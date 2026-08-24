@@ -1,14 +1,17 @@
 /**
  * Public place-page extra segments (Step 9). Detached stays the HUD.
  * The mixed all-types bucket is omitted (it double-counts). Lease inventory
- * stays out. Extra types overlay inventory plus pending/closed counts.
+ * stays out. Extra types overlay inventory, pending/closed counts, and leftover
+ * pace (days to contract, sale to original, YoY, price-cut share).
  * MOS only when publishable and > 0 (0.0 months is not a figure).
- * Neighborhood extra MOS/verdict stay omitted; counts still overlay.
+ * Neighborhood extra MOS/verdict stay omitted; leftover pace is sample-gated.
+ * Leftover days-to-contract is never mapped onto DTP.
  * Miss omits the row. Figures go through getMetrics.
  */
 import { getMetrics, type MetricResult } from '@/lib/data/market-truth/getMetric'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { formatPaceDelta, formatPaceShare } from '@/lib/data/market-truth/public-pace'
 import { BOARD_STATS, type CitySegmentRow } from '@/lib/data/market-truth/city-segment-collapse'
 
 export const PUBLIC_PLACE_SEGMENTS = [
@@ -23,15 +26,29 @@ export const PUBLIC_PLACE_SEGMENTS = [
   'business',
 ] as const
 
+export const PUBLIC_SEGMENT_LEFTOVER_STATS = [
+  'median_days_to_contract',
+  'median_sale_to_original_list',
+  'yoy_median_price',
+  'pct_with_price_cut',
+] as const
+
 export const PUBLIC_SEGMENT_STATS = [
   ...BOARD_STATS,
   'pending_count',
   'closed_count',
+  ...PUBLIC_SEGMENT_LEFTOVER_STATS,
 ] as const
 
 export type PublicPlaceSegment = (typeof PUBLIC_PLACE_SEGMENTS)[number]
 
-export type PublicSegmentRow = CitySegmentRow & { segment: PublicPlaceSegment }
+export type PublicSegmentRow = CitySegmentRow & {
+  segment: PublicPlaceSegment
+  daysToContract: number | null
+  saleToOriginal: number | null
+  yoyMedian: number | null
+  priceCutShare: number | null
+}
 
 type BrowseSpec = { propertySubTypes?: string; propertyType?: string }
 
@@ -102,6 +119,10 @@ export function publicSegmentDisplayBits(row: {
   verdict: string | null
   pendingCount?: number | null
   closedCount?: number | null
+  daysToContract?: number | null
+  saleToOriginal?: number | null
+  yoyMedian?: number | null
+  priceCutShare?: number | null
 }): string[] {
   return [
     row.medianList != null ? formatPriceExact(row.medianList) : null,
@@ -114,6 +135,14 @@ export function publicSegmentDisplayBits(row: {
       : null,
     row.closedCount != null && row.closedCount >= 1
       ? `${row.closedCount.toLocaleString('en-US')} closed · 12 months`
+      : null,
+    row.daysToContract != null && row.daysToContract > 0
+      ? `${Math.round(row.daysToContract)} days to contract · 12 months`
+      : null,
+    row.saleToOriginal != null ? `${formatPaceShare(row.saleToOriginal)} sale to original · 12 months` : null,
+    row.yoyMedian != null ? `${formatPaceDelta(row.yoyMedian)} YoY median close · 12 months` : null,
+    row.priceCutShare != null
+      ? `${formatPaceShare(row.priceCutShare)} closed with a price cut · 12 months`
       : null,
   ].filter((bit): bit is string => Boolean(bit))
 }
@@ -149,8 +178,18 @@ export function publicSegmentItems(
   return items
 }
 
+function leftoverWindow(stat: string): number | undefined {
+  return (PUBLIC_SEGMENT_LEFTOVER_STATS as readonly string[]).includes(stat) ? 12 : undefined
+}
+
 function publishedNumber(cell: MetricResult | null | undefined): number | null {
   if (!cell?.isPublishable || cell.value == null || cell.value <= 0) return null
+  return cell.value
+}
+
+/** YoY and sale-to-original can be below 1 (and YoY can be negative). */
+function publishedFinite(cell: MetricResult | null | undefined): number | null {
+  if (!cell?.isPublishable || cell.value == null || !Number.isFinite(cell.value)) return null
   return cell.value
 }
 
@@ -184,6 +223,7 @@ export async function getPublicPlaceSegments(opts: {
       geoType: opts.geoType,
       geoSlug,
       segment,
+      windowMonths: leftoverWindow(stat),
     })),
   )
   const results = await getMetrics(inputs)
@@ -207,6 +247,7 @@ export async function getPublicPlaceSegments(opts: {
     const verdict = byKey.get(`${segment}:market_verdict`)
     const pending = publishedNumber(byKey.get(`${segment}:pending_count`))
     const closed = publishedNumber(byKey.get(`${segment}:closed_count`))
+    const daysToContract = publishedNumber(byKey.get(`${segment}:median_days_to_contract`))
     rows.push({
       segment,
       activeCount: Math.round(activeCount),
@@ -215,6 +256,10 @@ export async function getPublicPlaceSegments(opts: {
       verdict: withholdExtraMos ? null : publishedText(verdict),
       pendingCount: pending == null || pending < 1 ? null : Math.round(pending),
       closedCount: closed == null || closed < 1 ? null : Math.round(closed),
+      daysToContract: daysToContract == null ? null : Math.round(daysToContract),
+      saleToOriginal: publishedFinite(byKey.get(`${segment}:median_sale_to_original_list`)),
+      yoyMedian: publishedFinite(byKey.get(`${segment}:yoy_median_price`)),
+      priceCutShare: publishedFinite(byKey.get(`${segment}:pct_with_price_cut`)),
       sampleN: pickSampleN({ active, median, mos, verdict }),
     })
   }

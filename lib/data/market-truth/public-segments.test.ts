@@ -65,6 +65,26 @@ function bendCondoCells(opts?: { mos?: number; verdict?: string }): Record<strin
     }),
     'condo:pending_count': metric({ statId: 'pending_count', segment: 'condo', value: 7 }),
     'condo:closed_count': metric({ statId: 'closed_count', segment: 'condo', value: 67 }),
+    'condo:median_days_to_contract': metric({
+      statId: 'median_days_to_contract',
+      segment: 'condo',
+      value: 41,
+    }),
+    'condo:median_sale_to_original_list': metric({
+      statId: 'median_sale_to_original_list',
+      segment: 'condo',
+      value: 0.952,
+    }),
+    'condo:yoy_median_price': metric({
+      statId: 'yoy_median_price',
+      segment: 'condo',
+      value: -0.041,
+    }),
+    'condo:pct_with_price_cut': metric({
+      statId: 'pct_with_price_cut',
+      segment: 'condo',
+      value: 0.452,
+    }),
   }
 }
 
@@ -103,6 +123,14 @@ describe('getPublicPlaceSegments', () => {
     expect(SRC).toMatch(/pending_count/)
     expect(SRC).toMatch(/closed_count/)
     expect(SRC).toMatch(/PUBLIC_SEGMENT_STATS/)
+    expect(SRC).toMatch(/median_days_to_contract/)
+    expect(SRC).toMatch(/median_sale_to_original_list/)
+    expect(SRC).toMatch(/yoy_median_price/)
+    expect(SRC).toMatch(/pct_with_price_cut/)
+    expect(SRC).toMatch(/days to contract · 12 months/)
+    expect(SRC).not.toMatch(/days to pending ·/)
+    expect(SRC).toMatch(/leftoverWindow/)
+    expect(SRC).toMatch(/windowMonths: leftoverWindow\(stat\)/)
   })
 
   it('omits a miss instead of printing 0', () => {
@@ -138,7 +166,21 @@ describe('getPublicPlaceSegments', () => {
       verdict: 'buyer',
       pendingCount: 5,
       closedCount: 32,
-    })).toEqual(['$326,000', '12.8 months', "buyer's", '5 pending · now', '32 closed · 12 months'])
+      daysToContract: 41,
+      saleToOriginal: 0.952,
+      yoyMedian: -0.041,
+      priceCutShare: 0.452,
+    })).toEqual([
+      '$326,000',
+      '12.8 months',
+      "buyer's",
+      '5 pending · now',
+      '32 closed · 12 months',
+      '41 days to contract · 12 months',
+      '95.2% sale to original · 12 months',
+      '-4.1% YoY median close · 12 months',
+      '45.2% closed with a price cut · 12 months',
+    ])
     expect(publicSegmentDisplayBits({
       medianList: 589000,
       monthsOfSupply: null,
@@ -171,6 +213,10 @@ describe('getPublicPlaceSegments', () => {
           verdict: 'buyer',
           pendingCount: 5,
           closedCount: 32,
+          daysToContract: 41,
+          saleToOriginal: 0.952,
+          yoyMedian: -0.041,
+          priceCutShare: 0.452,
           sampleN: 40,
         },
         {
@@ -181,6 +227,10 @@ describe('getPublicPlaceSegments', () => {
           verdict: null,
           pendingCount: null,
           closedCount: null,
+          daysToContract: null,
+          saleToOriginal: null,
+          yoyMedian: null,
+          priceCutShare: null,
           sampleN: null,
         },
       ],
@@ -242,6 +292,10 @@ describe('getPublicPlaceSegments', () => {
       expect(rows[0]?.medianList).toBe(326000)
       expect(rows[0]?.monthsOfSupply).toBeNull()
       expect(rows[0]?.verdict).toBeNull()
+      expect(rows[0]?.daysToContract).toBe(41)
+      expect(rows[0]?.saleToOriginal).toBeCloseTo(0.952)
+      expect(rows[0]?.yoyMedian).toBeCloseTo(-0.041)
+      expect(rows[0]?.priceCutShare).toBeCloseTo(0.452)
     })
 
     it('publishes city extra MOS when sample-gated', async () => {
@@ -254,6 +308,46 @@ describe('getPublicPlaceSegments', () => {
       expect(rows[0]?.verdict).toBe('buyer')
       expect(rows[0]?.pendingCount).toBe(7)
       expect(rows[0]?.closedCount).toBe(67)
+      expect(rows[0]?.daysToContract).toBe(41)
+      expect(rows[0]?.saleToOriginal).toBeCloseTo(0.952)
+      expect(rows[0]?.yoyMedian).toBeCloseTo(-0.041)
+      expect(rows[0]?.priceCutShare).toBeCloseTo(0.452)
+    })
+
+    it('omits leftover pace when the leftover cells are not publishable', async () => {
+      mockCells({
+        ...bendCondoCells(),
+        'condo:median_days_to_contract': metric({
+          statId: 'median_days_to_contract',
+          segment: 'condo',
+          value: 41,
+          isPublishable: false,
+        }),
+        'condo:median_sale_to_original_list': metric({
+          statId: 'median_sale_to_original_list',
+          segment: 'condo',
+          value: 0.952,
+          isPublishable: false,
+        }),
+        'condo:yoy_median_price': metric({
+          statId: 'yoy_median_price',
+          segment: 'condo',
+          value: -0.041,
+          isPublishable: false,
+        }),
+        'condo:pct_with_price_cut': metric({
+          statId: 'pct_with_price_cut',
+          segment: 'condo',
+          value: 0.452,
+          isPublishable: false,
+        }),
+      })
+      const rows = await getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' })
+      expect(rows[0]?.activeCount).toBe(66)
+      expect(rows[0]?.daysToContract).toBeNull()
+      expect(rows[0]?.saleToOriginal).toBeNull()
+      expect(rows[0]?.yoyMedian).toBeNull()
+      expect(rows[0]?.priceCutShare).toBeNull()
     })
 
     it('omits MOS of 0, unknown is not zero', async () => {

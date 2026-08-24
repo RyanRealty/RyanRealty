@@ -253,6 +253,10 @@ describe('getMarketPulseJsonFeed', () => {
         verdict: 'buyer',
         pendingCount: 5,
         closedCount: 32,
+        daysToContract: 41,
+        saleToOriginal: 0.952,
+        yoyMedian: -0.041,
+        priceCutShare: 0.452,
         sampleN: 40,
       },
     ])
@@ -268,6 +272,10 @@ describe('getMarketPulseJsonFeed', () => {
         verdict: 'buyer',
         pendingCount: 5,
         closedCount: 32,
+        daysToContract: 41,
+        saleToOriginal: 0.952,
+        yoyMedian: -0.041,
+        priceCutShare: 0.452,
       },
     ])
     expect(result.note).toMatch(/Extra product types/)

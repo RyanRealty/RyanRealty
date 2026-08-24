@@ -528,6 +528,19 @@ Bend detached still 774. County unpublished.
 
 2026-08-23al landed (live webpack 3010): `/data/market/city/bend` `figures.medianSaleToListRatio` = leftover `saleToOriginal` **0.969**; pulse sold 30d **137** and DTP **18** stay. Homepage HUD sale-to-list **97.0%** leftover; pulse 30-day / DTP stay. `/housing-market/annual-review` city ledger leftover **2,096** / **$759,450**. `/communities/sunriver` leftover median sold **$885,000**; extra MOS 0 omitted. `/lp/seller-home-value` leftover **96.9%**. `/lp/bend` leftover **2,096** / **$759,450** / **96.9%** including peers. CMA sold count omits on leftover miss. Neighborhood extra MOS/verdict withheld. Gate 2 **33 → 32** (golf cache read gone). Pulse 30-day / DTP stay. County unpublished.
 
+### Grind 2026-08-23am — extra-type leftover pace on public city/region
+
+**Locks still hold:** county unpublished; pulse 30-day sold and days-to-pending stay (do not map leftover days-to-contract onto DTP); extra MOS at neighborhood stays omitted; unadjusted MoM off public; `commercial_lease` out; `all_residential` off public; subdivision never a price. Detached HUD stays detached. Workers do not tick this file.
+
+**Done when a real user can:**
+1. Open `/housing-market/bend` other-product-types (condo, townhome, and any other extra row that already has active count) and see leftover **days to contract**, **sale to original**, **YoY median close**, and **price-cut share** when `getMetric` publishes those cells. Miss omits. Never labeled days to pending.
+2. Open `/data/market/city/bend` `extraSegments` and see those four leftover fields on condo/townhome when publishable; miss is null.
+3. Neighborhood extra MOS/verdict still omitted. Extra leftover pace at neighborhood is sample-gated the same way as city (getMetric), miss omits.
+
+Bend detached still 774. County unpublished.
+
+2026-08-23am landed (live webpack 3010): `/housing-market/bend` extra types leftover pace — condos **66** / **49 days to contract** / **93.0%** sale to original / **−10.6%** YoY / **49.3%** price cuts; townhomes **79** / **45** days to contract / **96.8%** / **−33.4%** / **50.7%**. `/data/market/city/bend` extraSegments carries those four leftover fields; farm leftover miss omits. Pulse DTP **18** / sold 30d **137** stay. Neighborhood extra MOS still omitted. County unpublished.
+
 ### Step 9 — Then, and only then, the moat
 
 - [ ] Granular surfaces: every segment × every grain, sample-gated.
