@@ -165,22 +165,19 @@ describe('design directive contracts', () => {
     expect(src).not.toMatch(/company:\s*['"]{2}/)
   })
 
-  it('D78 — city hero active count comes from publishCityInventory, not geo_snapshot all-count', () => {
+  it('D78 — city hero active count is leftover HUD, not tiles or snapshot all-count', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    // Complete address-set tiles win when the fetch is under the cap.
-    // Empty / timed-out / capped fetches keep the pulse (R-020). Never
-    // snapshot.activeAllCount.
-    expect(src).toMatch(/getMarketPulse\s*\(/)
-    expect(src).toMatch(/publishCityInventory\s*\(/)
-    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*publishedInventory\.count/)
+    expect(src).toMatch(/leftoverHudKpis/)
+    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*hud\.active/)
+    expect(src).not.toMatch(/activeCount(?::[^=]*)?=\s*publishedInventory\.count/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
     expect(src).not.toMatch(/activeCount(?::[^=]*)?=[\s\S]{0,80}\?\?\s*0\b/)
   })
 
-  it('§0 — neighborhood active count is the public inventory DAL, never a second population', () => {
+  it('§0 — neighborhood active count is leftover HUD, never a second population', () => {
     const src = readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
-    expect(src).toMatch(/getNeighborhoodPublicInventory/)
-    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*inventory\?\.activeCount\s*\?\?\s*null/)
+    expect(src).toMatch(/leftoverHudKpis/)
+    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*hud\.active/)
     expect(src).not.toMatch(/inBoundaryCount \?\? pulse\?\.activeCount \?\? neighborhood\.activeCount/)
     expect(src).not.toMatch(/activeCount \?\? mapFeatures\.length/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)

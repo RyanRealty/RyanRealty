@@ -234,7 +234,7 @@ export default async function Home() {
     byTown: towns
       .filter((t) => t.medianPrice != null)
       .map((t) => ({ name: t.name, median: t.medianPrice as number })),
-    countyMedian: hud.medianList,
+    countyMedian: null,
     yearSeries: buildYearSeries(chartMonths.months, 5),
     chartLeftover: chartMonths.leftoverUsed,
   }

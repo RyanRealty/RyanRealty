@@ -47,8 +47,9 @@ describe('getSellBendMarket', () => {
     expect(pulse).toMatch(/market-pulse-v10-mt-community/)
     expect(pulse).toMatch(/geoType === 'community' \? 'neighborhood'/)
     expect(region).toMatch(/region-pulse-central-oregon-v6-mt-inventory/)
-    expect(snaps).toMatch(/market-pulse-city-snapshots-v7-mt-inventory/)
-    expect(snaps).toMatch(/market-pulse-all-city-snapshots-v7-mt-inventory/)
+    expect(snaps).toMatch(/market-pulse-city-snapshots-v8-leftover-dtp/)
+    expect(snaps).toMatch(/market-pulse-all-city-snapshots-v8-leftover-dtp/)
+    expect(snaps).toMatch(/overlayLeftoverHudFamily/)
   })
 
   it('a detached miss withholds pulse 488 / 3.54 / seller instead of publishing it as Market Truth', () => {

@@ -194,7 +194,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [
-    pulse, stats, regionPulse, priceHist,
+    pulse, stats, _regionPulse, priceHist,
     boundaryRead, allCitySnapshots, blogPosts, openHouses, activity,
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
     peerNeighborhoods,
@@ -315,9 +315,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   // ── COUNTS + PRICES ────────────────────────────────────────────────────────
   // §0 UNKNOWN IS NOT ZERO. A timed-out inventory read is null, never 0, and
   // never a different query's number.
-  const activeCount: number | null = inventory?.activeCount ?? null
-  const medianListPrice =
-    activeCount == null ? null : inventory?.medianListPrice ?? pulse?.medianListPrice ?? null
+  const activeCount: number | null = hud.active
+  const medianListPrice = hud.medianList
   const sellMedian = publishSellMedian({
     placeMedian: medianListPrice,
     grain: 'neighborhood',
@@ -462,7 +461,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     sold12mo: hud.sold12mo,
     trend: buildMonthlyTrend(chartPriceHist),
     byTown: [],
-    countyMedian: regionPulse?.medianListPrice ?? null,
+    countyMedian: null,
     yearSeries: buildYearSeries(chartPriceHist, 5),
     chartLeftover: chartMonths.leftoverUsed,
   }

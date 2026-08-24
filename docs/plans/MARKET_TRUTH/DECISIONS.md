@@ -281,3 +281,21 @@ fill. `/lp/seller-home-value` HUD-family tiles are leftover membership.
 Leftover has no 90-day median close; that tile is omitted rather than filled
 from pulse or leftover 12-month median close. New · 30 days omitted.
 County unpublished. CRM / blog / report export stay pulse-gated.
+
+## D24 — leftover remaining public visitor HUD-family · **DECIDED** (Matt, 2026-08-24)
+
+Same one-pile rule on the leftover-eligible public visitor figures that still
+sat next to leftover HUD.
+
+City, neighborhood, and community heroes print leftover HUD inventory and leftover
+median list. Pulse, tiles, and cache do not fill those published counts.
+
+`countyMedian` is omitted. County is unpublished. Region pulse does not fill a
+county label.
+
+Town MOS / DTP charts inside the leftover HUD use leftover membership. Pulse
+weekly price-cut charts are omitted. JSON HUD-family fields overlay leftover
+equivalents; leftover miss omits pulse fill. Site header and mega menu leftover
+inventory / leftover MOS / leftover 90-day DTP.
+
+CRM / blog / report export stay pulse-gated. New · 30 days omitted.

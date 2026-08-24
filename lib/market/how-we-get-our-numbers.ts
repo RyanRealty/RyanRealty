@@ -212,7 +212,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'fill-on-miss',
     term: 'When a number is missing',
     body: [
-      'On the leftover HUD, leftover MOS destinations, leftover remainder, leftover listing context, leftover about city rows, leftover JSON HUD fields, leftover OG inventory, leftover FAQ Median to pending, leftover seller LP HUD, and leftover HUD charts, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures.',
+      'On the leftover HUD, leftover MOS destinations, leftover remainder, leftover listing context, leftover about city rows, leftover JSON HUD fields, leftover OG inventory, leftover FAQ Median to pending, leftover seller LP HUD, leftover place heroes, leftover town MOS and days-to-pending charts, leftover header and menu figures, and leftover HUD charts, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures. A county median is not published.',
       'We do not invent a zero, and we do not put a longer window under a shorter label.',
     ],
   },

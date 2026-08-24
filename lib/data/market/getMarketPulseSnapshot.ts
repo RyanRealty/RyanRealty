@@ -16,6 +16,7 @@ import {
   cityDetachedSlug,
   getDetachedOverlays,
 } from '@/lib/data/market-truth/getSellBendMarket'
+import { getMetrics } from '@/lib/data/market-truth/getMetric'
 
 export type MarketPulseSnapshot = {
   geo_slug: string
@@ -97,9 +98,11 @@ export async function getMarketPulseRegionSnapshot(
   try {
     const overlays = await getDetachedOverlays([{ geoType: 'region', geoSlug: regionSlug }])
     const layers = overlays.get(`region:${regionSlug.trim().toLowerCase()}`)
-    return overlayDetachedLayers(snap, layers?.headlines ?? null, layers?.inventory ?? null)
+    const overlaid = overlayDetachedLayers(snap, layers?.headlines ?? null, layers?.inventory ?? null)
+    const [withDtp] = await overlayLeftoverHudFamily([overlaid], 'region')
+    return withDtp ?? withholdDetachedHeadlines(snap)
   } catch {
-    return withholdDetachedHeadlines(snap)
+    return withholdDetachedHeadlines({ ...snap, median_days_to_pending: null, price_reduction_share: null })
   }
 }
 
@@ -122,18 +125,67 @@ async function fetchMarketPulseCitySnapshots(
   return overlayCitySnapshots(((data ?? []) as Array<Record<string, unknown>>).map(toSnapshot))
 }
 
+/** Leftover 90-day DTP. Pulse weekly cut share has no leftover equivalent — omit. */
+async function overlayLeftoverHudFamily(
+  snaps: MarketPulseSnapshot[],
+  geoType: 'city' | 'region',
+): Promise<MarketPulseSnapshot[]> {
+  if (!snaps.length) return snaps
+  const slugs = snaps.map((s) =>
+    geoType === 'region'
+      ? s.geo_slug.trim().toLowerCase()
+      : cityDetachedSlug(s.geo_slug || s.geo_label),
+  )
+  try {
+    const results = await getMetrics(
+      slugs.map((geoSlug) => ({
+        stat: 'median_days_to_contract_90d',
+        geoType,
+        geoSlug,
+        segment: 'detached',
+        windowMonths: 0,
+      })),
+    )
+    return snaps.map((snap, i) => {
+      const cell = results[i]
+      const dtp =
+        cell?.isPublishable && cell.value != null && Number.isFinite(cell.value)
+          ? Math.round(Number(cell.value))
+          : null
+      return {
+        ...snap,
+        median_days_to_pending: dtp,
+        price_reduction_share: null,
+      }
+    })
+  } catch {
+    return snaps.map((s) => ({
+      ...s,
+      median_days_to_pending: null,
+      price_reduction_share: null,
+    }))
+  }
+}
+
 async function overlayCitySnapshots(snaps: MarketPulseSnapshot[]): Promise<MarketPulseSnapshot[]> {
   if (!snaps.length) return snaps
   try {
     const overlays = await getDetachedOverlays(
       snaps.map((s) => ({ geoType: 'city' as const, geoSlug: s.geo_slug || s.geo_label })),
     )
-    return snaps.map((s) => {
+    const overlaid = snaps.map((s) => {
       const layers = overlays.get(`city:${cityDetachedSlug(s.geo_slug || s.geo_label)}`)
       return overlayDetachedLayers(s, layers?.headlines ?? null, layers?.inventory ?? null)
     })
+    return overlayLeftoverHudFamily(overlaid, 'city')
   } catch {
-    return snaps.map((s) => withholdDetachedHeadlines(s))
+    return snaps.map((s) =>
+      withholdDetachedHeadlines({
+        ...s,
+        median_days_to_pending: null,
+        price_reduction_share: null,
+      }),
+    )
   }
 }
 
@@ -142,7 +194,7 @@ async function overlayCitySnapshots(snaps: MarketPulseSnapshot[]): Promise<Marke
  * render hit the DB and a blip rendered empty tiles). */
 export const getMarketPulseCitySnapshots = makeResilientCached(
   fetchMarketPulseCitySnapshots,
-  ['market-pulse-city-snapshots-v7-mt-inventory'],
+  ['market-pulse-city-snapshots-v8-leftover-dtp'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],
@@ -167,7 +219,7 @@ async function fetchAllMarketPulseCitySnapshots(): Promise<MarketPulseSnapshot[]
 
 export const getMarketPulseAllCitySnapshots = makeResilientCached(
   fetchAllMarketPulseCitySnapshots,
-  ['market-pulse-all-city-snapshots-v7-mt-inventory'],
+  ['market-pulse-all-city-snapshots-v8-leftover-dtp'],
   {
     revalidate: CACHE_WINDOWS.marketPulse,
     tags: [cacheTag.market],

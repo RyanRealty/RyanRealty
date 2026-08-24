@@ -111,6 +111,14 @@ const leftoverHudSurfaces = [
     path: 'app/lp/seller-home-value/data.ts',
     label: 'seller LP snapshot gates MOS through leftoverHudKpis',
   },
+  {
+    path: 'components/site/SiteHeader.tsx',
+    label: 'SiteHeader leftover region MOS through leftoverHudKpis',
+  },
+  {
+    path: 'lib/data/nav/getMegaMenuData.ts',
+    label: 'mega menu leftover MOS through leftoverHudKpis',
+  },
 ]
 
 const surfaces = [

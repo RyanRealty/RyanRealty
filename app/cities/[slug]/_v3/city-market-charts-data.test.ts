@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { MarketPulseSnapshot } from '@/lib/data/market/getMarketPulseSnapshot'
 import type { CityQuarterPair } from '@/lib/data/pricing/getCityQuarterSaleToAsk'
@@ -191,6 +193,14 @@ describe('buildStoCard', () => {
 
   it('returns null without the subject pair', () => {
     expect(buildStoCard(PAIRS.slice(0, 1), { subjectCitySlug: 'bend', subjectName: 'Bend', factsAsOf: null })).toBeNull()
+  })
+})
+
+describe('city market charts leftover HUD', () => {
+  it('the city chart room does not render pulse weekly price-cut share', () => {
+    const src = readFileSync(resolve('app/cities/[slug]/_v3/city-market-charts.tsx'), 'utf8')
+    expect(src).not.toMatch(/buildCutsCard/)
+    expect(src).toMatch(/getMarketPulseAllCitySnapshots/)
   })
 })
 

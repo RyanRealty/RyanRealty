@@ -7,6 +7,8 @@ import MobileNav from '@/components/site/MobileNav'
 import MegaMenu from '@/components/site/nav/MegaMenu'
 import { MENU } from '@/lib/site-menu'
 import type { NavData, AreaPulseRow } from '@/lib/site-menu'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 
 /**
  * SiteHeader — sticky navy bar with an EDITORIAL mega-menu (Experience System
@@ -15,13 +17,8 @@ import type { NavData, AreaPulseRow } from '@/lib/site-menu'
  * RETIRED from public chrome (2026-08-10): app/layout mounts PublicNav → KbNav.
  * Do not re-mount this in layout without removing PublicNav (dual chrome).
  *
- * DATA STRATEGY — one try/catch block, no waterfalls:
- *   1. getMarketPulseCitySnapshots (8 cities) — from market_pulse_live,
- *      10-15 min freshness, already cached via unstable_cache in the DAL.
- *   2. getPriceDropDigest (region-wide) — from activity_events, 1-hour
- *      cache, already cached in the DAL.
- *   3. getMarketPulseRegionSnapshot ('central-oregon') — for the Market
- *      panel mini-band (median/active). Already cached in the DAL.
+ * DATA STRATEGY — leftover HUD inventory for city rows and region band.
+ * Price-drop digest stays activity events.
  *
  *   All three run in parallel via Promise.allSettled so a DB hiccup on
  *   one never stalls the others. Any failure silently falls back — the
@@ -58,7 +55,7 @@ const COMMUNITY_ROWS: AreaPulseRow[] = [
   { slug: 'bend-old-mill-district', label: 'Old Mill District', href: '/communities/bend-old-mill-district', activeCount: null, medianListPrice: null },
 ]
 
-// City labels used for getMarketPulseCitySnapshots (must match geo_label in DB)
+// Leftover city slugs for the header city rows.
 const CITY_LABELS = ['Bend', 'Redmond', 'Sisters', 'Sunriver', 'La Pine', 'Prineville', 'Terrebonne', 'Powell Butte']
 
 // Slug map: geo_label -> /cities/<slug> href
@@ -134,38 +131,43 @@ async function fetchNavData(): Promise<NavData> {
     // Dynamic import keeps the DAL out of the static bundle; the functions
     // are already cached (unstable_cache / makeResilientCached) so repeated
     // calls within a request are instant.
-    const {
-      getMarketPulseCitySnapshots,
-      getMarketPulseRegionSnapshot,
-      getPriceDropDigest,
-    } = await import('@/lib/data')
+    const { getPriceDropDigest } = await import('@/lib/data')
+    const { getDetachedOverlays } = await import('@/lib/data/market-truth/getSellBendMarket')
 
-    const [cityResult, regionResult, digestResult] = await Promise.allSettled([
-      getMarketPulseCitySnapshots(CITY_LABELS),
-      getMarketPulseRegionSnapshot('central-oregon'),
+    const leftoverKeys = [
+      { geoType: 'region' as const, geoSlug: 'central-oregon' },
+      ...CITY_LABELS.map((label) => ({
+        geoType: 'city' as const,
+        geoSlug: CITY_SLUG_MAP[label] ?? label.toLowerCase().replace(/\s+/g, '-'),
+      })),
+    ]
+
+    const [overlayResult, digestResult] = await Promise.allSettled([
+      getDetachedOverlays(leftoverKeys),
       getPriceDropDigest('central-oregon', 7),
     ])
 
-    // ── City rows ──────────────────────────────────────────────────────────
-    const citySnapshots =
-      cityResult.status === 'fulfilled' ? cityResult.value : []
-    const snapshotByLabel = new Map(citySnapshots.map((s) => [s.geo_label, s]))
+    const overlays = overlayResult.status === 'fulfilled' ? overlayResult.value : new Map()
 
     const cityRows: AreaPulseRow[] = CITY_LABELS.map((label) => {
-      const snap = snapshotByLabel.get(label)
       const slugKey = CITY_SLUG_MAP[label] ?? label.toLowerCase().replace(/\s+/g, '-')
+      const layers = overlays.get(`city:${slugKey}`)
       return {
         slug: slugKey,
         label,
         href: `/cities/${slugKey}`,
-        activeCount: snap?.active_count ?? null,
-        medianListPrice: snap?.median_list_price ?? null,
+        activeCount: layers?.headlines?.activeCount ?? layers?.inventory?.activeCount ?? null,
+        medianListPrice: layers?.headlines?.medianListPrice ?? layers?.inventory?.medianListPrice ?? null,
       }
     })
 
-    // ── Region pulse (Market panel mini-band) ──────────────────────────────
-    const region =
-      regionResult.status === 'fulfilled' ? regionResult.value : null
+    const regionLayers = overlays.get('region:central-oregon')
+    const regionHud = leftoverHudKpis({
+      grain: 'region',
+      headlines: regionLayers?.headlines ?? null,
+      inventory: regionLayers?.inventory ?? null,
+      pace: EMPTY_PUBLIC_PACE,
+    })
 
     // ── Price-drop digest (Homes panel strip + badge) ──────────────────────
     const digest =
@@ -218,8 +220,8 @@ async function fetchNavData(): Promise<NavData> {
       communityRows: COMMUNITY_ROWS,
       topDrop,
       dropCount: digest?.count ?? 0,
-      regionActive: region?.active_count ?? null,
-      regionMedian: region?.median_list_price ?? null,
+      regionActive: regionHud.active,
+      regionMedian: regionHud.medianList,
     }
   } catch {
     // Any unhandled failure: render static links, no live data

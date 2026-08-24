@@ -34,9 +34,12 @@ import { marketVerdict } from '@/lib/market/classify'
 
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getGeoSnapshot } from '@/lib/data/geo/getGeoSnapshot'
-import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
-import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { getMarketStats } from '@/lib/data/market/getMarketStats'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import {
+  EMPTY_PUBLIC_PACE,
+  getPublicDetachedPace,
+} from '@/lib/data/market-truth/public-pace'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
@@ -280,15 +283,13 @@ async function buildHomes(): Promise<MegaMenuHomes> {
 }
 
 /**
- * Build one Cities card. Active count + median from the geo snapshot (Market
- * Truth detached overlay on city rows). Median days-to-pending still from
- * getMarketPulse (that field is not in the overlay).
+ * Build one Cities card. Leftover HUD inventory and leftover 90-day DTP.
  */
 async function buildCity(citySlug: string): Promise<MegaMenuCity> {
   const name = CITY_NAME_BY_SLUG.get(citySlug) ?? citySlug
-  const [snapshot, pulse] = await Promise.all([
+  const [snapshot, pace] = await Promise.all([
     getGeoSnapshot({ geoType: 'city', geoKey: citySlug }),
-    getMarketPulse({ geoType: 'city', geoSlug: canonicalCityCacheSlug(citySlug) }),
+    getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug }).catch(() => EMPTY_PUBLIC_PACE),
   ])
   return {
     name,
@@ -296,7 +297,7 @@ async function buildCity(citySlug: string): Promise<MegaMenuCity> {
     href: `/cities/${citySlug}`,
     activeCount: positiveOrNull(snapshot?.activeSfrCount ?? null),
     medianListPrice: positiveOrNull(snapshot?.medianListPrice ?? null),
-    medianDaysToPending: positiveOrNull(pulse?.medianDaysToPending ?? null),
+    medianDaysToPending: positiveOrNull(pace.daysToPending90d),
   }
 }
 
@@ -342,45 +343,52 @@ async function buildCommunities(): Promise<MegaMenuCommunities> {
  * stats for DOM + YoY, and a 12-point monthly price sparkline.
  */
 async function buildMarket(): Promise<MegaMenuMarket> {
-  const [pulse, stats, history] = await Promise.all([
-    getMarketPulse({ geoType: 'region', geoSlug: REGION_SLUG }),
-    getMarketStats({ geoType: 'region', geoSlug: REGION_SLUG, periodType: 'rolling_365d' }),
+  const [overlays, pace, history] = await Promise.all([
+    getDetachedOverlays([{ geoType: 'region', geoSlug: REGION_SLUG }]),
+    getPublicDetachedPace({ geoType: 'region', geoSlug: REGION_SLUG }).catch(() => EMPTY_PUBLIC_PACE),
     getPriceHistory('region', REGION_SLUG, 'monthly', 12),
   ])
+  const layers = overlays.get(`region:${REGION_SLUG}`)
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: layers?.headlines ?? null,
+    inventory: layers?.inventory ?? null,
+    pace,
+  })
 
-  const monthsOfSupply = positiveOrNull(pulse?.monthsOfSupply ?? stats?.monthsOfSupply ?? null)
+  const monthsOfSupply = positiveOrNull(hud.monthsSupply)
   const sparkline: MegaMenuSparkPoint[] = history.map((p) => ({
     periodStart: p.periodStart,
     medianSalePrice: positiveOrNull(p.medianSalePrice),
   }))
 
   return {
-    medianListPrice: positiveOrNull(pulse?.medianListPrice ?? stats?.medianListPrice ?? null),
+    medianListPrice: positiveOrNull(hud.medianList),
     monthsOfSupply,
     marketVerdict: verdictFromMoS(monthsOfSupply),
-    // Active days-on-market: pulse carries median_days_to_pending; the rolling
-    // stats row carries median DOM for sold homes. Prefer the active signal,
-    // fall back to the sold-side DOM.
-    avgDaysOnMarket: positiveOrNull(pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null),
-    // YoY can legitimately be negative, so it is NOT routed through
-    // positiveOrNull — only null/non-finite is omitted.
+    avgDaysOnMarket: positiveOrNull(hud.daysToPending),
     yoyPct:
-      stats?.yoyChangePct != null && Number.isFinite(stats.yoyChangePct)
-        ? stats.yoyChangePct
-        : null,
+      pace.yoyMedian != null && Number.isFinite(pace.yoyMedian) ? pace.yoyMedian : null,
     sparkline,
   }
 }
 
-/** Build the Sell panel from the same region figures. */
+/** Build the Sell panel from leftover region HUD. */
 async function buildSell(): Promise<MegaMenuSell> {
-  const [pulse, stats] = await Promise.all([
-    getMarketPulse({ geoType: 'region', geoSlug: REGION_SLUG }),
-    getMarketStats({ geoType: 'region', geoSlug: REGION_SLUG, periodType: 'rolling_365d' }),
+  const [overlays, pace] = await Promise.all([
+    getDetachedOverlays([{ geoType: 'region', geoSlug: REGION_SLUG }]),
+    getPublicDetachedPace({ geoType: 'region', geoSlug: REGION_SLUG }).catch(() => EMPTY_PUBLIC_PACE),
   ])
-  const monthsOfSupply = positiveOrNull(pulse?.monthsOfSupply ?? stats?.monthsOfSupply ?? null)
+  const layers = overlays.get(`region:${REGION_SLUG}`)
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: layers?.headlines ?? null,
+    inventory: layers?.inventory ?? null,
+    pace,
+  })
+  const monthsOfSupply = positiveOrNull(hud.monthsSupply)
   return {
-    medianListPrice: positiveOrNull(pulse?.medianListPrice ?? stats?.medianListPrice ?? null),
+    medianListPrice: positiveOrNull(hud.medianList),
     marketVerdict: verdictFromMoS(monthsOfSupply),
     valuationHref: '/sell/valuation',
   }
@@ -435,7 +443,7 @@ async function buildMegaMenuData(): Promise<MegaMenuData> {
  */
 export const getMegaMenuData = unstable_cache(
   buildMegaMenuData,
-  ['mega-menu-data-v2-mt-detached'],
+  ['mega-menu-data-v3-leftover-hud'],
   {
     revalidate: CACHE_WINDOWS.marketStats,
     tags: [cacheTag.market, 'cities-index', 'communities-index', cacheTag.blog],

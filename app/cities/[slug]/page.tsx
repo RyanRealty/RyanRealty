@@ -48,8 +48,7 @@ import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
-import { CITY_TILE_FETCH_LIMIT, publishCityInventory } from '@/lib/market/publish-city-inventory'
-import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
+import { CITY_TILE_FETCH_LIMIT } from '@/lib/market/publish-city-inventory'
 import { isStockPlaceHeroUrl } from '@/lib/market/publish-place-hero'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
@@ -160,7 +159,7 @@ export default async function CityDetailPage({ params }: Props) {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
 
   const [
-    pulseRead, detached, detachedInv, regionPulse, priceHist, communities, neighborhoodStats,
+    pulseRead, detached, detachedInv, _regionPulse, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
     publicSegments, publicPace, leftoverMonthly, publicMix,
@@ -219,25 +218,18 @@ export default async function CityDetailPage({ params }: Props) {
     ),
   ])
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
+  const hud = leftoverHudKpis({
+    grain: 'city',
+    headlines: detached,
+    inventory: detachedInv,
+    pace: publicPace,
+  })
 
-  // Hero — Bend reuses the homepage video; otherwise the VERIFIED cityHero photo
-  // (a city without one renders the LABELED regional fallback, never a wrong-city
-  // photo). DB hero_image_url override wins. (§D86)
-  // §0 UNKNOWN IS NOT ZERO: `?? 0` published a fabricated "0 homes for sale" whenever the pulse read timed out.
-  // When the address-set tile fetch is complete (under the cap), publish that
-  // count so hero / facts / JSON-LD cannot say 6 against a 24-door list.
+  // Hero — leftover HUD inventory. Pulse, tiles, and cache do not fill.
   const pulse = pulseRead.ok ? pulseRead.value : null
   const mapTiles = mapTilesRead.value
-  const publishedInventory = publishCityInventory({
-    pulseCount: pulse?.activeCount ?? null,
-    pulseMedian: pulse?.medianListPrice ?? null,
-    tileCount: mapTiles.length,
-    tileMedian: medianListPriceOfTiles(mapTiles),
-    tileLimit: CITY_TILE_FETCH_LIMIT,
-    tileFetchOk: mapTilesRead.ok,
-  })
-  const activeCount: number | null = publishedInventory.count
-  const publishedMedian = publishedInventory.medianListPrice
+  const activeCount: number | null = hud.active
+  const publishedMedian = hud.medianList
   const sellMedian = publishSellMedian({ placeMedian: publishedMedian, grain: 'city', placeName: cityName })
   const curatedHero = cityHero(slug)
   const heroImageUrl = cityMeta?.hero_image_url ?? null
@@ -420,12 +412,6 @@ export default async function CityDetailPage({ params }: Props) {
   // Guides / blog. (§D80 — getRecentBlogPosts)
   const articlePosts = buildArticlePosts(blogPosts)
 
-  const hud = leftoverHudKpis({
-    grain: 'city',
-    headlines: detached,
-    inventory: detachedInv,
-    pace: publicPace,
-  })
   const marketActive = hud.active
   const monthsOfSupply = hud.monthsSupply
   const marketMedian = hud.medianList
@@ -440,7 +426,7 @@ export default async function CityDetailPage({ params }: Props) {
     sold12mo: hud.sold12mo,
     trend: buildMonthlyTrend(chartMonths.months),
     byTown: bendNeighborhoodItems.filter((n) => n.medianPrice != null).map((n) => ({ name: n.name, median: n.medianPrice as number })),
-    countyMedian: regionPulse?.medianListPrice ?? null,
+    countyMedian: null,
     yearSeries: buildYearSeries(chartMonths.months, 5),
     chartLeftover: chartMonths.leftoverUsed,
   }

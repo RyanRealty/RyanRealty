@@ -21,10 +21,7 @@
  */
 
 import { V3Chart, V3SourceDisclosure, v3Text } from '@/components/site/v3'
-import {
-  getMarketPulseAllCitySnapshots,
-  getMarketPulseRegionSnapshot,
-} from '@/lib/data/market/getMarketPulseSnapshot'
+import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getCityYearPricing } from '@/lib/data/pricing/getCityYearPricing'
 import {
   getCityQuarterSaleToAsk,
@@ -33,7 +30,6 @@ import {
 } from '@/lib/data/pricing/getCityQuarterSaleToAsk'
 import { skippableRail } from '@/lib/build-phase'
 import {
-  buildCutsCard,
   buildDtpCard,
   buildMosCard,
   buildStoCard,
@@ -100,16 +96,15 @@ export async function CityMarketCharts({
   // Skipped during SSG (yearPricing + quarterSto timed out on 7 of 7 build
   // renders): empty rows → no cards → the whole chart room renders nothing in
   // the build HTML and ISR refills it on first revalidate.
-  const [towns, region, yearRows, quarterRows] = await Promise.all([
+  const [towns, yearRows, quarterRows] = await Promise.all([
     skippableRail(() => getMarketPulseAllCitySnapshots(), [], 3500, 'city:townPulse'),
-    skippableRail(() => getMarketPulseRegionSnapshot('central-oregon'), null, 3000, 'city:regionRow'),
     skippableRail(() => getCityYearPricing({ citySlug }), [], 4000, 'city:yearPricing'),
     skippableRail(() => getCityQuarterSaleToAsk(quarter), [], 4000, 'city:quarterSto'),
   ])
 
   const rankInput: CityRankInput = {
     towns,
-    region,
+    region: null,
     subjectGeoSlug: geoSlug,
     subjectName: cityName,
     publishedMos,
@@ -117,10 +112,11 @@ export async function CityMarketCharts({
     displayedActiveCount,
   }
   const pairs = pairCityQuarterRows(quarterRows, { quarter, currentYear: quarterYear })
+  // Pulse weekly price-cut share is omitted: leftover HUD has no honest weekly
+  // active cut series. MOS and DTP rows are leftover membership.
   const cards = [
     buildMosCard(rankInput),
     buildDtpCard(rankInput),
-    buildCutsCard(rankInput),
     buildStoCard(pairs, { subjectCitySlug: citySlug, subjectName: cityName, factsAsOf: null }),
     buildYearCard(yearRows, {
       subjectName: cityName,

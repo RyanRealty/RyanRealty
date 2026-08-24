@@ -732,6 +732,18 @@ Same one-pile rule on leftover-eligible FAQ and seller LP HUD-family figures.
 
 CRM / blog / report export stay pulse-gated. County unpublished.
 
+### D24 leftover remaining public visitor HUD-family
+
+Same one-pile rule on leftover-eligible public visitor figures that still mixed.
+
+**Done when a real user can:**
+1. Open `/cities/bend`, a neighborhood, and a community and see leftover HUD inventory in the hero, matching the leftover HUD. Pulse, tiles, and cache do not fill.
+2. Open a city HUD town-chart room and see leftover MOS / leftover 90-day DTP by town. Pulse weekly price-cuts are omitted.
+3. Open `/data/market/city/bend` and see leftover pending and leftover HUD-family fields. Pulse-only cells without a leftover equivalent are omitted.
+4. A county median tile does not print. County unpublished.
+
+CRM / blog / report export stay pulse-gated. New · 30 days omitted.
+
 ---
 
 ## 5. Definition of done for the whole program

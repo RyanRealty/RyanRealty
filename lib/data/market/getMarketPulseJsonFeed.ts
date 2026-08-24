@@ -310,6 +310,7 @@ export async function getMarketPulseJsonFeed(input: {
     found.figures.medianDaysToPending = leftover?.daysToPending90d ?? null
     found.figures.newListings30d = null
     found.figures.medianActiveDaysOnMarket = leftover?.medianAgeActive ?? null
+    applyJsonFeedLeftoverHudFamily(found, leftover)
     found.extraSegments = extraSegments
     found.mix = mix
     if (leftover) {
@@ -391,6 +392,41 @@ function jsonExtraSegments(rows: readonly PublicSegmentRow[]): MarketPulseJsonEx
   return out
 }
 
+/** Leftover HUD-family overlay. Pulse-only cells without a leftover equivalent omit. */
+function applyJsonFeedLeftoverHudFamily(
+  found: Extract<MarketPulseJsonFeedResult, { status: 'found' }>,
+  leftover: PublicPaceRow | null,
+): void {
+  found.figures.pendingListings = leftover?.pendingCount ?? null
+  found.figures.newListings7d = null
+  found.figures.avgListPrice = null
+  found.figures.soldLast90Days = null
+  found.figures.medianClosePrice90d = null
+  found.figures.pctSoldOverAskingPct = null
+  found.figures.pctSoldUnderAskingPct = null
+  found.figures.pctSoldAtAskingPct = null
+  found.figures.priceReductionSharePct =
+    leftover?.priceCutShare != null && leftover.priceCutShare > 0
+      ? leftover.priceCutShare < 2
+        ? leftover.priceCutShare * 100
+        : leftover.priceCutShare
+      : null
+  found.figures.absorptionRatePct = null
+  found.figures.pendingToActiveRatio =
+    leftover?.pendingCount != null &&
+    leftover.pendingCount > 0 &&
+    found.figures.activeListings != null &&
+    found.figures.activeListings > 0
+      ? leftover.pendingCount / found.figures.activeListings
+      : null
+  found.figures.expiredRate90dPct = null
+  found.figures.sellThroughRate90dPct = null
+  found.figures.netInventoryChange30d = null
+  found.figures.newConstructionSharePct = null
+  found.figures.avgPriceDropsActive = null
+  found.figures.marketHealthScore = null
+}
+
 /** City/region overlay. Throw and miss both withhold — never pulse 488. */
 async function readDetachedOverlay(
   geoType: 'city' | 'region' | 'neighborhood',
@@ -437,7 +473,7 @@ function applyJsonFeedDetachedOrWithhold(
       "Detached single-family (PropertyType='A' AND property_sub_type='Single Family Residence'). MLS City text, not the city-limits polygon."
     found.collectedAt = mt.computedAt
     found.note =
-      'activeListings, monthsOfSupply, medianListPrice, and verdict are Market Truth mt-v1 detached. Remaining figures are the pulse type-A polygon series until their recon line exists.'
+      'HUD-family figures are leftover membership. A leftover miss omits. Pulse does not fill.'
     return
   }
 

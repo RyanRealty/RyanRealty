@@ -92,7 +92,7 @@ import { formatPlaceHoaAnnual, placeHoaGlanceLabel, publishPlaceHoa } from '@/li
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
-import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
+
 import { getDistrictForCity } from '@/data/co-schools'
 import { homesForSalePath } from '@/lib/slug'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
@@ -279,7 +279,7 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [
-    snapshot, pulse, stats, regionPulse, priceHist,
+    snapshot, pulse, stats, _regionPulse, priceHist,
     boundaryRead, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
@@ -453,53 +453,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     communityTiles = communityTiles.filter((t) => subKeys.has(t.listingKey))
   }
 
-  // ── ALIAS-AWARE RESORT COUNT (hard requirement) ───────────────────────────
-  // When this community IS a resort in its city, its active count = the city's
-  // alias-aware SFR count for this resort slug (homes tagged under many MLS
-  // subdivision names). This makes the hero figure MATCH the city ledger, never
-  // the literal-name undercount (Widgi 0 vs true 48, Tetherow 14 vs true 55). (§0)
-  // Gate on a NON-EMPTY tile set: if the paginated city SFR fetch timed out, do NOT
-  // publish a 0 alias count — fall through to the boundary / community count. (review HIGH)
-  const haveCityTiles = isResortInCity && citySfrRead.ok && citySfrTiles.length > 0
-  const resortSfrCounts = haveCityTiles ? resortActiveSfrCounts(citySlug, citySfrTiles) : new Map<string, number>()
-  const aliasAwareCount = haveCityTiles ? resortSfrCounts.get(resortSlug) ?? null : null
-
-  // Honest active count, in priority order:
-  //   1. resort -> alias-aware count (matches the city ledger)
-  //   2. reliable boundary -> the real in-polygon count
-  //   3. else -> the count of the subdivision homes we actually resolved
-  //      (community.activeCount is itself boundary-derived and bloated for
-  //      oversized polygons, so never trust it for an unreliable boundary).
-  //
-  // §0 PAIRING RULE: the ACTIVE COUNT and the MEDIAN LIST PRICE beside it must
-  // describe the SAME homes, so the branch that picks the count also picks where
-  // the median comes from — never a second, independent chain. The old one ended
-  // at `community.medianPrice`, a median CLOSED SALE price, and three community
-  // pages published it under "Median list". See lib/market/tile-medians.ts.
-  const reliableBoundaryCount = !boundaryRead.ok || !boundaryReliable ? null : boundaryMapData.pins.length
-  const activeSet: { count: number | null; tiles: typeof communityTiles | null; median: number | null } =
-    aliasAwareCount != null
-      ? { count: aliasAwareCount, tiles: resortTiles, median: null }
-      : reliableBoundaryCount != null && reliableBoundaryCount > 0
-      ? { count: reliableBoundaryCount, tiles: communityTiles, median: null }
-      : communityTiles.length > 0
-      ? { count: communityTiles.length, tiles: communityTiles, median: null }
-      : pulse?.activeCount != null
-      ? { count: pulse.activeCount, tiles: null, median: pulse.medianListPrice }
-      : // Literal-name snapshot: its count and its median are computed from one
-        // active set by the same MV, so they pair honestly even without tiles.
-        // §0 UNKNOWN IS NOT ZERO: every source above is guarded, so `?? 0` let a fully-degraded page publish "0 homes for sale".
-      { count: snapshot?.activeSfrCount ?? null, tiles: null, median: snapshot?.medianListPrice ?? null }
-
-  const activeCount: number | null = activeSet.count
-  // Zero for sale means there is no asking price to publish: vandevert-ranch
-  // rendered "0 homes for sale" beside a "Median list" figure.
-  const medianListPrice =
-    activeCount == null || activeCount <= 0
-      ? null
-      : activeSet.tiles
-      ? medianListPriceOfTiles(activeSet.tiles)
-      : activeSet.median
+  // Published hero count is leftover HUD. Tiles still feed the map and featured rail.
+  const activeCount: number | null = hud.active
+  const medianListPrice = hud.medianList
   const medianDays = hud.daysToPending
 
   // ── HERO ──────────────────────────────────────────────────────────────────
@@ -668,7 +624,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
   const hudActive = hud.active
   const monthsOfSupply = hud.monthsSupply
-  const sellMedian = publishSellMedian({ placeMedian: hud.medianList ?? medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
+  const sellMedian = publishSellMedian({ placeMedian: hud.medianList ?? medianListPrice, regionMedian: null, grain: 'community', placeName: community.name })
   const marketData: KbMarketData = {
     active: hud.active,
     closed30: hud.closed30,
@@ -680,7 +636,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     sold12mo: hud.sold12mo,
     trend: buildMonthlyTrend(chartPriceHist),
     byTown: [],
-    countyMedian: regionPulse?.medianListPrice ?? null,
+    countyMedian: null,
     yearSeries: buildYearSeries(chartPriceHist, 5),
     chartLeftover: chartMonths.leftoverUsed,
   }

@@ -217,6 +217,9 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.figures.soldLast30Days).toBe(203)
     expect(result.figures.medianDaysToPending).toBe(19)
     expect(result.figures.newListings30d).toBeNull()
+    expect(result.figures.pendingListings).toBe(311)
+    expect(result.figures.medianClosePrice90d).toBeNull()
+    expect(result.figures.marketHealthScore).toBeNull()
   })
 
   it('leftover miss nulls figures.medianSaleToListRatio even when pulse median_sale_to_list is 0.99', async () => {
@@ -340,7 +343,7 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.figures.monthsOfSupply).toBeNull()
     expect(result.figures.marketHealthLabel).toBeNull()
     expect(result.methodology.verdictKind).toBe('unknown')
-    expect(result.figures.pendingListings).toBe(112)
+    expect(result.figures.pendingListings).toBeNull()
   })
 
   it('city miss withholds the three headlines rather than pulse 488 / 3.54 / seller', async () => {
@@ -356,9 +359,9 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.figures.activeListings).not.toBe(488)
     expect(result.figures.monthsOfSupply).not.toBe(3.54)
     expect(result.methodology.verdict).not.toMatch(/seller/)
-    expect(result.figures.pendingListings).toBe(112)
+    expect(result.figures.pendingListings).toBeNull()
     expect(result.figures.medianListPrice).toBeNull()
-    expect(result.figures.marketHealthScore).toBe(55)
+    expect(result.figures.marketHealthScore).toBeNull()
     expect(result.note).toMatch(/withheld/)
   })
 
@@ -448,6 +451,7 @@ describe('getMarketPulseJsonFeed', () => {
     expect(result.methodology.verdictKind).toBe('unknown')
     expect(result.figures.soldLast30Days).toBeNull()
     expect(result.figures.medianDaysToPending).toBeNull()
+    expect(result.figures.pendingListings).toBe(7)
   })
 
   it('neighborhood with a null pulse MOS does not invent MOS from pulse', async () => {
@@ -505,6 +509,7 @@ describe('getMarketPulseJsonFeed source', () => {
     expect(src).toMatch(/medianDaysToPending = leftover\?\.daysToPending90d \?\? null/)
     expect(src).toMatch(/newListings30d = null/)
     expect(src).toMatch(/medianActiveDaysOnMarket = leftover\?\.medianAgeActive \?\? null/)
+    expect(src).toMatch(/applyJsonFeedLeftoverHudFamily/)
     expect(src).not.toMatch(/monthsOfSupply\(/)
   })
 })
