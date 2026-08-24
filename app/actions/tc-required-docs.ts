@@ -1,8 +1,11 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { revalidatePath } from 'next/cache'
+import { checkAdminAction } from '@/lib/admin/require-admin'
 import {
   anticipateDocuments,
+  missingChecklistSeeds,
   unknownFacts,
   type AnticipatedDoc,
   type BrokerRole,
@@ -66,13 +69,15 @@ export type AnticipatedDocsResult = {
   unknown: string[]
   missingRequired: number
   missingConditional: number
+  dealId: string
+  presentNames: string[]
 }
 
 export async function getAnticipatedDocuments(cycleId: string): Promise<AnticipatedDocsResult | null> {
   const supabase = getServiceSupabase()
   const { data: cycle } = await supabase
     .from('tc_cycles')
-    .select('id, kind, raw, mls_number')
+    .select('id, deal_id, kind, raw, mls_number')
     .eq('id', cycleId)
     .maybeSingle()
   if (!cycle) return null
@@ -113,5 +118,40 @@ export async function getAnticipatedDocuments(cycleId: string): Promise<Anticipa
     unknown: unknownFacts(facts),
     missingRequired: documents.filter((d) => d.severity === 'required' && !d.present).length,
     missingConditional: documents.filter((d) => d.severity === 'conditional' && !d.present).length,
+    dealId: String(cycle.deal_id),
+    presentNames,
   }
+}
+
+export async function addMissingAnticipatedChecklist(
+  cycleId: string,
+): Promise<{ ok: boolean; added?: number; error?: string }> {
+  const gate = await checkAdminAction('transactions.edit')
+  if (!gate.ok) return { ok: false, error: gate.error }
+  const preview = await getAnticipatedDocuments(cycleId)
+  if (!preview) return { ok: false, error: 'Cycle not found' }
+  const missing = missingChecklistSeeds(preview.role, preview.facts, preview.presentNames)
+  if (!missing.length) return { ok: true, added: 0 }
+  const supabase = getServiceSupabase()
+  const start = preview.presentNames.length
+  const { error } = await supabase.from('tc_checklist_items').insert(
+    missing.map((row, i) => ({
+      cycle_id: cycleId,
+      name: row.name,
+      type_name: row.type_name,
+      status: row.status,
+      sort_order: start + i,
+      group_name: row.group,
+    })),
+  )
+  if (error) return { ok: false, error: error.message }
+  await supabase.from('tc_events').insert({
+    deal_id: preview.dealId,
+    cycle_id: cycleId,
+    actor: gate.ctx.email,
+    action: 'checklist_facts_synced',
+    detail: { added: missing.length, facts: preview.facts },
+  })
+  revalidatePath('/admin/deals')
+  return { ok: true, added: missing.length }
 }

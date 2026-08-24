@@ -4,6 +4,7 @@ import {
   brokerRoleFromDealParties,
   seedChecklistItems,
   anticipateDocuments,
+  missingChecklistSeeds,
 } from './required-documents'
 
 describe('brokerRoleFromDealParties', () => {
@@ -45,5 +46,13 @@ describe('seedChecklistItems', () => {
     const anticipated = anticipateDocuments(role, EMPTY_PROPERTY_FACTS, [])
     const seeded = seedChecklistItems(role, EMPTY_PROPERTY_FACTS)
     expect(seeded.map((r) => r.name).sort()).toEqual(anticipated.map((d) => d.label).sort())
+  })
+
+  it('adds well paperwork only when the fact is true and it is not already on the file', () => {
+    const withWell = { ...EMPTY_PROPERTY_FACTS, hasWell: true }
+    const already = seedChecklistItems('buyer', EMPTY_PROPERTY_FACTS).map((r) => r.name)
+    const missing = missingChecklistSeeds('buyer', withWell, already)
+    expect(missing.some((r) => /well/i.test(r.name))).toBe(true)
+    expect(missingChecklistSeeds('buyer', withWell, [...already, ...missing.map((r) => r.name)])).toEqual([])
   })
 })

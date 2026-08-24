@@ -106,7 +106,7 @@ Run it with **`run_in_background`-style chunking** (do one library, or 25 forms,
 3. Paste the JSON on `/admin/forms` → Apply catalog. Session-auth server action diffs against `tc_form_versions` (match `source_form_id`, then form number so samples still pair).
 4. Persist: `tc_form_catalog_items` + `tc_form_catalog_checks`; set `update_available` / `pending_source_version_id` on held rows. An empty library list is refused so we do not retire a library by accident.
 5. Optional automation: `POST /api/admin/forms/catalog-check` with `TC_FORMS_INGEST_SECRET` (same CORS as ingest).
-6. **Not yet:** `updateFormVersion` PDF pull (re-run the ingest loader for the new `sourceVersionId`). The composer / OREF packet warns when `update_available` is true. Do not send a stale layout to a client.
+6. **Update pull:** the catalog JSON includes `previewUrl`. Apply catalog pulls licensed PDFs for **updated** and **new** forms (not current). The composer still refuses send while `update_available` is true. Do not send a stale layout to a client.
 
 ---
 

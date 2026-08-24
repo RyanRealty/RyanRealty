@@ -16,6 +16,12 @@ A broker can walk into Vault and finish the leftover file jobs without SkySlope:
 8. **Dual representation.** Both principals sign in Vault. Signing groups match DigiSign: who signs first (buyers together), then who signs second (sellers), then agents if the form requires them. A later group cannot sign until the earlier group is done. The next group is emailed only when it is their turn.
 9. **Inbound PDF execution state.** A mailed PDF is fully executed only when every obligated role on that form has a signature marker. Buyer-only offer on a listing needs our sellers. Seller-only SPD is our-side signed, not complete. Email "signed/executed" is a hint, not proof. SkySlope Envelope completed is that envelope, not both sides of the deal.
 
+## Remaining (this grind)
+
+Unblocked: when a catalog paste shows **updated** or **new**, Vault pulls those licensed PDFs itself (previewUrl, no SkySlope mutation). A deal can add missing Oregon checklist rows from MLS property facts. Library filter + Open blanks stay on `/admin/forms`.
+
+Blocked on Matt: send a live envelope. Blocked on mail DNS: per-deal inbound address. Blocked on a new license: any library outside OREF / OR / ODS.
+
 ## This pass (complete)
 
 - Licensed Oregon library pulled from SkySlope Forms (not samples): **170 OREF + 101 Oregon Realtors + 27 ODS**, each with AcroForm field maps. The leftover 2024-05 ODS input sample is retired in favor of **ORE Residential Input**.

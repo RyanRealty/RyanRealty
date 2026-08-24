@@ -360,6 +360,20 @@ export function seedChecklistItems(role: BrokerRole, facts: PropertyFacts): Chec
   }))
 }
 
+/** Checklist rows the Oregon matrix requires that are not already on the file. */
+export function missingChecklistSeeds(
+  role: BrokerRole,
+  facts: PropertyFacts,
+  presentNames: readonly string[],
+): ChecklistSeedRow[] {
+  const missing = new Set(
+    anticipateDocuments(role, facts, [...presentNames])
+      .filter((d) => !d.present)
+      .map((d) => d.label),
+  )
+  return seedChecklistItems(role, facts).filter((row) => missing.has(row.name))
+}
+
 export function unknownFacts(facts: PropertyFacts): string[] {
   const labels: Record<keyof PropertyFacts, string> = {
     yearBuilt: 'Year built (lead-based paint)',

@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import {
+  catalogBlanksToPull,
   diffLibraryCatalog,
   parseCatalogPayload,
   parseFormNumber,
@@ -11,6 +12,7 @@ import {
   type LibrarySnapshot,
 } from '@/lib/tc/form-catalog-diff'
 import { formBlankStorageBucket } from '@/lib/tc/form-blank'
+import { ingestLicensedBlankPdf } from '@/lib/data/tc/ingest-licensed-blank'
 
 type Row = Record<string, unknown>
 
@@ -54,6 +56,8 @@ export type CatalogApplyLibraryResult = {
   updated: number
   new: number
   retired: number
+  pulled: number
+  pullFailed: number
 }
 
 export type CatalogApplyResult = {
@@ -404,6 +408,36 @@ async function applyOneLibrary(
   })
   if (checkErr) return { data: null, error: checkErr.message }
 
+  let pulled = 0
+  let pullFailed = 0
+  const toPull = catalogBlanksToPull(items, snapshot.forms)
+  for (const blank of toPull) {
+    if (!blank.previewUrl) continue
+    try {
+      const pdfRes = await fetch(blank.previewUrl)
+      if (!pdfRes.ok) {
+        pullFailed += 1
+        continue
+      }
+      const pdf = Buffer.from(await pdfRes.arrayBuffer())
+      const ingested = await ingestLicensedBlankPdf({
+        libraryCode: snapshot.libraryCode,
+        libraryName: snapshot.libraryName ?? undefined,
+        formNumber: blank.formNumber,
+        name: blank.name,
+        sourceFormId: blank.sourceFormId,
+        sourceVersionId: blank.sourceVersionId,
+        versionLabel: blank.versionLabel,
+        pageCount: blank.pageCount,
+        pdf,
+      })
+      if (ingested.ok) pulled += 1
+      else pullFailed += 1
+    } catch {
+      pullFailed += 1
+    }
+  }
+
   return {
     data: {
       libraryCode: snapshot.libraryCode,
@@ -412,6 +446,8 @@ async function applyOneLibrary(
       updated: counts.updated,
       new: counts.new,
       retired: counts.retired,
+      pulled,
+      pullFailed,
     },
     error: null,
   }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  catalogBlanksToPull,
   diffLibraryCatalog,
   matchHeldForm,
   normalizeFormNumber,
@@ -131,6 +132,20 @@ describe('diffLibraryCatalog', () => {
     )
     expect(counts.new).toBe(1)
   })
+
+  it('pulls preview URLs only for updated and new forms, never current', () => {
+    const incoming = [
+      { sourceFormId: 'f-001', sourceVersionId: 'v-new', name: '001', previewUrl: 'https://a/1.pdf' },
+      { sourceFormId: 'f-020', sourceVersionId: 'v-same', name: '020', previewUrl: 'https://a/2.pdf' },
+      { sourceFormId: 'f-050', sourceVersionId: 'v-1', name: '050', previewUrl: 'https://a/3.pdf' },
+    ]
+    const { items } = diffLibraryCatalog(incoming, [
+      { id: 'hold-001', sourceFormId: 'f-001', sourceVersionId: 'v-old', formNumber: '001', name: 'RSA' },
+      { id: 'hold-020', sourceFormId: 'f-020', sourceVersionId: 'v-same', formNumber: '020', name: 'SPD' },
+    ])
+    const pull = catalogBlanksToPull(items, incoming)
+    expect(pull.map((f) => f.sourceFormId).sort()).toEqual(['f-001', 'f-050'])
+  })
 })
 
 describe('parseCatalogPayload', () => {
@@ -155,6 +170,24 @@ describe('parseCatalogPayload', () => {
       ],
     })
     expect('error' in many).toBe(false)
+  })
+
+  it('keeps an https preview URL and drops anything else', () => {
+    const parsed = parseCatalogPayload({
+      libraryCode: 'ODS',
+      forms: [
+        {
+          sourceFormId: '1',
+          sourceVersionId: '2',
+          name: 'Change',
+          previewUrl: 'https://forms.example/blank.pdf',
+        },
+      ],
+    })
+    expect('error' in parsed).toBe(false)
+    if (!('error' in parsed)) {
+      expect(parsed.libraries[0]?.forms[0]?.previewUrl).toBe('https://forms.example/blank.pdf')
+    }
   })
 
   it('refuses an empty forms list so we do not retire a library by accident', () => {

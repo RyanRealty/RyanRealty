@@ -38,10 +38,13 @@ export function CheckFormCatalog({ script }: { script: string }) {
         toast.error(error ?? 'Could not apply the catalog.')
         return
       }
-      const parts = data.libraries.slice(0, 6).map(
-        (l) =>
-          `${l.libraryCode}: ${l.updated} updated, ${l.new} new, ${l.retired} retired, ${l.current} current`,
-      )
+      const parts = data.libraries.slice(0, 6).map((l) => {
+        const pull =
+          l.pulled || l.pullFailed
+            ? `, pulled ${l.pulled}${l.pullFailed ? `, ${l.pullFailed} pull failed` : ''}`
+            : ''
+        return `${l.libraryCode}: ${l.updated} updated, ${l.new} new, ${l.retired} retired, ${l.current} current${pull}`
+      })
       toast.success(parts.join(' · '))
       setCatalogJson('')
       router.refresh()
@@ -57,8 +60,9 @@ export function CheckFormCatalog({ script }: { script: string }) {
         library, filtered the same way. This check lists current published
         forms only (no PDF download) and compares them to what we hold. Open
         Forms signed in, paste the script in the console, then paste the copied
-        JSON here. A held blank that is behind the published version shows as
-        Update available.
+        JSON here. Apply compares versions and pulls licensed PDFs for new and
+        updated forms. A held blank that is behind the published version shows
+        as Update available until that pull succeeds.
       </p>
       <TextAreaField
         label="Check script"

@@ -56,7 +56,8 @@ export function buildFormCatalogCheckScript(): string {
       name: v.name,
       formNumber: parseNum(v.name),
       pageCount: v.pageCount == null ? null : v.pageCount,
-      versionLabel: parseVer(v.name)
+      versionLabel: parseVer(v.name),
+      previewUrl: v.previewUrl || null
     });
   }
   const out = { checkedAt: new Date().toISOString(), libraries: [] };
@@ -77,7 +78,7 @@ export function buildFormCatalogCheckScript(): string {
     a.download = 'form-catalog.json';
     a.click();
   }
-  alert('Catalog ready: ' + out.libraries.map(function (l) { return l.libraryCode + ' ' + l.forms.length; }).join(', ') + '. Paste it on /admin/forms.');
+  alert('Catalog ready: ' + out.libraries.map(function (l) { return l.libraryCode + ' ' + l.forms.length; }).join(', ') + '. Paste it on /admin/forms. Apply pulls new and updated blanks.');
 })();`
 }
 

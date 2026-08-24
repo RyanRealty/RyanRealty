@@ -23,6 +23,8 @@ export type CatalogFormInput = {
   formNumber?: string | null
   pageCount?: number | null
   versionLabel?: string | null
+  /** Signed SkySlope preview URL. Used only to pull updated/new blanks. Expires. */
+  previewUrl?: string | null
 }
 
 export type HeldForm = {
@@ -188,6 +190,25 @@ export function diffLibraryCatalog(
   return { items, counts }
 }
 
+const MAX_CATALOG_BLANK_PULLS = 40
+
+/** Updated or new published forms that still have a pullable preview URL. */
+export function catalogBlanksToPull(
+  items: CatalogItemResult[],
+  incoming: CatalogFormInput[],
+): CatalogFormInput[] {
+  const byId = new Map(incoming.map((f) => [f.sourceFormId, f]))
+  const out: CatalogFormInput[] = []
+  for (const item of items) {
+    if (item.disposition !== 'updated' && item.disposition !== 'new') continue
+    const raw = byId.get(item.sourceFormId)
+    if (!raw?.previewUrl) continue
+    out.push(raw)
+    if (out.length >= MAX_CATALOG_BLANK_PULLS) break
+  }
+  return out
+}
+
 export type LibrarySnapshot = {
   libraryCode: string
   sourceLibraryId?: string | null
@@ -210,6 +231,7 @@ function asForms(value: unknown): CatalogFormInput[] | null {
     const sourceVersionId = String(r.sourceVersionId ?? '').trim()
     const name = String(r.name ?? '').trim()
     if (!sourceFormId || !sourceVersionId || !name) return null
+    const previewUrl = r.previewUrl == null ? null : String(r.previewUrl).trim()
     forms.push({
       sourceFormId,
       sourceVersionId,
@@ -217,6 +239,7 @@ function asForms(value: unknown): CatalogFormInput[] | null {
       formNumber: r.formNumber == null ? null : String(r.formNumber),
       pageCount: typeof r.pageCount === 'number' ? r.pageCount : null,
       versionLabel: r.versionLabel == null ? null : String(r.versionLabel),
+      previewUrl: previewUrl && /^https:\/\//i.test(previewUrl) ? previewUrl : null,
     })
   }
   return forms

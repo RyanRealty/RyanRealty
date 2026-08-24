@@ -67,6 +67,7 @@ import { CHECKLIST_GROUPS, checklistGroupForRule } from '@/lib/tc/required-docum
 import { DealParties } from './DealParties'
 import { DealTasks } from './DealTasks'
 import { DealContingencyDays } from './DealContingencyDays'
+import { AddMissingChecklist } from './AddMissingChecklist'
 import { listDealTasks } from '@/lib/data/tc/task-reads'
 import { DealStageControls } from './DealStageControls'
 import { ListingFileActions } from './ListingFileActions'
@@ -181,7 +182,13 @@ function CommissionSection({
 }
 
 /** Anticipated-documents view — the Oregon-law required-doc predictor. */
-function AnticipatedDocs({ data }: { data: AnticipatedDocsResult | null }) {
+function AnticipatedDocs({
+  data,
+  cycleId,
+}: {
+  data: AnticipatedDocsResult | null
+  cycleId: string
+}) {
   if (!data || data.documents.length === 0) return null
   const missing = data.documents.filter((d) => !d.present)
   return (
@@ -230,12 +237,15 @@ function AnticipatedDocs({ data }: { data: AnticipatedDocsResult | null }) {
         </p>
       ) : null}
       {missing.length > 0 ? (
-        <p style={{ ...tiny, margin: '8px 0 0' }}>
-          {missing.length} not yet on file.{' '}
-          {data.unknown.length > 0
-            ? `Confirm to refine: ${data.unknown.slice(0, 4).join(', ')}${data.unknown.length > 4 ? '…' : ''}`
-            : ''}
-        </p>
+        <div style={{ margin: '8px 0 0', display: 'grid', gap: 8 }}>
+          <p style={{ ...tiny, margin: 0 }}>
+            {missing.length} not yet on file.{' '}
+            {data.unknown.length > 0
+              ? `Confirm to refine: ${data.unknown.slice(0, 4).join(', ')}${data.unknown.length > 4 ? '…' : ''}`
+              : ''}
+          </p>
+          <AddMissingChecklist cycleId={cycleId} missingCount={missing.length} />
+        </div>
       ) : null}
     </section>
   )
@@ -376,7 +386,7 @@ function CycleSection({
         inspectionDays={cycle.inspection_days}
         financingDays={cycle.financing_days}
       />
-      <AnticipatedDocs data={anticipated} />
+      <AnticipatedDocs data={anticipated} cycleId={cycle.id} />
       <FillOrefPacket cycleId={cycle.id} form={orefForm} />
       <CommissionSection rows={commissions} cycleId={cycle.id} propertyKey={propertyKey} />
       {cycle.checklist.some((it) => /buyer representation/i.test(it.name)) ? (

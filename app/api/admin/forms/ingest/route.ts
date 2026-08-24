@@ -12,15 +12,13 @@
  * Idempotent: keyed on source_version_id (unique index). Re-running is safe.
  */
 import { NextResponse } from 'next/server'
-import { createHash, timingSafeEqual } from 'node:crypto'
-import { createServiceClient } from '@/lib/supabase/service'
-import { translateSkyslopeFields, summarizeMap, type SkySlopeSourceField, type SkySlopeSourcePage } from '@/lib/tc/skyslope-field-map'
-import { parseFormNumber, parseVersionLabel } from '@/lib/tc/form-catalog-diff'
+import { timingSafeEqual } from 'node:crypto'
+import { ingestLicensedBlankPdf } from '@/lib/data/tc/ingest-licensed-blank'
+import type { SkySlopeSourceField, SkySlopeSourcePage } from '@/lib/tc/skyslope-field-map'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const BUCKET = process.env.TC_FORMS_BUCKET ?? 'tc-forms'
 const ALLOW_ORIGIN = 'https://forms.skyslope.com'
 
 const CORS = {
@@ -42,10 +40,6 @@ function authorized(request: Request): boolean {
   const a = Buffer.from(got)
   const b = Buffer.from(secret)
   return a.length === b.length && timingSafeEqual(a, b)
-}
-
-function slugify(s: string): string {
-  return (s || 'form').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
 }
 
 interface IngestBody {
@@ -79,94 +73,26 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'missing libraryCode/name/sourceVersionId/pdfBase64' }, { status: 422, headers: CORS })
   }
 
-  const sb = createServiceClient()
-
-  // 1. PDF → bytes + sha256
-  const pdf = Buffer.from(body.pdfBase64, 'base64')
-  if (pdf.byteLength < 100) {
-    return NextResponse.json({ ok: false, error: 'pdf decode too small' }, { status: 422, headers: CORS })
-  }
-  const sha256 = createHash('sha256').update(pdf).digest('hex')
-
-  // 2. upload the blank (idempotent path)
-  const path = `${slugify(body.libraryCode)}/${body.sourceVersionId}__${slugify(body.name)}.pdf`
-  const up = await sb.storage.from(BUCKET).upload(path, pdf, { contentType: 'application/pdf', upsert: true })
-  if (up.error) {
-    return NextResponse.json({ ok: false, error: `storage: ${up.error.message}` }, { status: 500, headers: CORS })
-  }
-
-  // 3. library row (find or create by code)
-  let libraryId: string
-  const { data: existingLib } = await sb.from('tc_form_libraries').select('id').eq('code', body.libraryCode).maybeSingle()
-  if (existingLib?.id) {
-    libraryId = existingLib.id as string
-  } else {
-    const { data: newLib, error: libErr } = await sb
-      .from('tc_form_libraries')
-      .insert({ code: body.libraryCode, name: body.libraryName ?? body.libraryCode, region: body.region ?? 'US-OR' })
-      .select('id')
-      .single()
-    if (libErr || !newLib) {
-      return NextResponse.json({ ok: false, error: `library: ${libErr?.message ?? 'insert failed'}` }, { status: 500, headers: CORS })
-    }
-    libraryId = newLib.id as string
-  }
-
-  // 4. translate fields → field_map
-  const fieldMap = translateSkyslopeFields(body.sourceFields?.fields, body.sourceFields?.pages)
-
-  // 5. idempotent upsert on source_version_id
-  const payload = {
-    library_id: libraryId,
-    form_number: body.formNumber || parseFormNumber(body.name),
+  const result = await ingestLicensedBlankPdf({
+    libraryCode: body.libraryCode,
+    libraryName: body.libraryName,
+    region: body.region,
+    formNumber: body.formNumber,
     name: body.name,
-    effective_date: body.effectiveDate ?? null,
-    blank_pdf_storage_path: path,
-    sha256,
-    page_count: body.pageCount ?? null,
-    field_map: fieldMap,
-    field_map_source: fieldMap.length ? 'skyslope' : 'acroform',
-    source_form_id: body.sourceFormId ?? null,
-    source_version_id: body.sourceVersionId,
-    version_label: body.versionLabel || parseVersionLabel(body.name),
-    source_fields: body.sourceFields ?? null,
-    source_checked_at: new Date().toISOString(),
-    update_available: false,
-    retired_at: null,
-    updated_at: new Date().toISOString(),
+    sourceFormId: body.sourceFormId,
+    sourceVersionId: body.sourceVersionId,
+    versionLabel: body.versionLabel,
+    pageCount: body.pageCount,
+    effectiveDate: body.effectiveDate,
+    pdf: Buffer.from(body.pdfBase64, 'base64'),
+    sourceFields: body.sourceFields,
+  })
+  if (!result.ok) {
+    const status = result.error.startsWith('storage:') || result.error.startsWith('library:') || result.error.startsWith('update:') || result.error.startsWith('insert:') ? 500 : 422
+    return NextResponse.json({ ok: false, error: result.error }, { status, headers: CORS })
   }
-  const { data: existing } = await sb
-    .from('tc_form_versions')
-    .select('id')
-    .eq('source_version_id', body.sourceVersionId)
-    .maybeSingle()
-  let row: { id: string } | null = existing ? { id: String(existing.id) } : null
-  if (row) {
-    const { error: updErr } = await sb.from('tc_form_versions').update(payload).eq('id', row.id)
-    if (updErr) {
-      return NextResponse.json({ ok: false, error: `update: ${updErr.message}` }, { status: 500, headers: CORS })
-    }
-  } else {
-    const { data: inserted, error: insErr } = await sb.from('tc_form_versions').insert(payload).select('id').single()
-    if (insErr || !inserted) {
-      return NextResponse.json({ ok: false, error: `insert: ${insErr?.message ?? 'failed'}` }, { status: 500, headers: CORS })
-    }
-    row = { id: String(inserted.id) }
-  }
-
-  // 6. Freshness (handoff §4 Step 6): a newer published version of this form
-  // just arrived — retire prior versions and point them at the new row, so the
-  // composer always offers the current published form.
-  if (body.sourceFormId) {
-    await sb
-      .from('tc_form_versions')
-      .update({ update_available: true, superseded_by: row.id, retired_at: new Date().toISOString().slice(0, 10) })
-      .eq('source_form_id', body.sourceFormId)
-      .neq('source_version_id', body.sourceVersionId)
-  }
-
   return NextResponse.json(
-    { ok: true, formVersionId: row.id, sha256, fields: summarizeMap(fieldMap) },
+    { ok: true, formVersionId: result.formVersionId, sha256: result.sha256, fields: result.fields },
     { headers: CORS },
   )
 }
