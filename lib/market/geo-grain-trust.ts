@@ -104,8 +104,9 @@ export function publishSoldCount(input: {
    */
   source?: 'pulse' | 'market-truth'
 }): number | null {
-  if (input.source !== 'market-truth' && !isSoldAttributionTrusted(input.grain)) return null
   const { value } = input
   if (value == null || !Number.isFinite(value) || value < 0) return null
+  if (input.source === 'market-truth') return value
+  if (!isSoldAttributionTrusted(input.grain)) return null
   return value
 }
