@@ -23,6 +23,7 @@
  * sentence written at the render site drifts from the query that produced the
  * number. No sentence in this file contains a number.
  */
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import {
   v3Text,
   type V3InstrumentFigure,
@@ -267,9 +268,15 @@ export function liveFigures(
   links: { browse: string; cityReport: string; monthsOfSupply: string },
 ): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
-  if (shipsFigure(pulse.monthsOfSupply) && pulse.monthsOfSupply != null) {
+  const mos = publishMonthsOfSupply({
+    grain: 'neighborhood',
+    pulseMos: pulse.monthsOfSupply,
+    pulseActiveCount: pulse.activeCount,
+    displayedActiveCount: pulse.activeCount,
+  })
+  if (shipsFigure(mos) && mos != null) {
     figures.push({
-      value: v3Text(formatMonthsOfSupply(pulse.monthsOfSupply)),
+      value: v3Text(formatMonthsOfSupply(mos)),
       label: v3Text('months of supply, single-family'),
       href: links.monthsOfSupply,
     })

@@ -156,6 +156,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     pulseActiveCount: pulse?.activeCount,
     displayedActiveCount: pulse?.activeCount,
     soldCount12mo: publicPace.closedCount,
+    source: geoType === 'neighborhood' ? 'market-truth' : undefined,
   })
   const mosText = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
   const verdict = marketVerdict(mosRaw)

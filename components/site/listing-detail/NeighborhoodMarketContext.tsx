@@ -12,6 +12,7 @@ import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
 import type { MarketPulse, MarketStats } from '@/lib/data/types/market'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
@@ -134,7 +135,14 @@ export async function NeighborhoodMarketContext({
   const activeCount = pulse?.activeCount ?? null
   const medianList = pulse?.medianListPrice ?? stats?.medianListPrice ?? null
   const medianDom = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
-  const mos = pulse?.monthsOfSupply ?? stats?.monthsOfSupply ?? null
+  const grain = pulse?.geoType ?? 'neighborhood'
+  const mos = publishMonthsOfSupply({
+    grain,
+    pulseMos: pulse?.monthsOfSupply,
+    pulseActiveCount: pulse?.activeCount,
+    displayedActiveCount: activeCount,
+    source: grain === 'neighborhood' || grain === 'community' ? 'market-truth' : undefined,
+  })
   const freshness = refreshedAt ?? pulse?.refreshedAt ?? stats?.refreshedAt ?? null
   const freshnessLabel = formatFreshness(freshness)
   const diffPct = diffPctVsMedian(thisListPrice, medianList)

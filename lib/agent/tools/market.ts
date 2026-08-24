@@ -14,6 +14,7 @@ import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getCityMarketDetail, getCompleteMonthlyMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishCompleteMonthMedian } from '@/lib/market/publish-complete-month-median'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { zonedDateKey } from '@/lib/format/date'
 import type { GeoType } from '@/lib/data/types/shared'
 import type { AgentContext, AgentCitation, AgentTool, ToolOutcome } from '@/lib/agent/types'
@@ -42,7 +43,7 @@ function isGeoType(v: unknown): v is GeoType {
 }
 
 function usesDetachedOverlay(geoType: GeoType): boolean {
-  return geoType === 'city' || geoType === 'region'
+  return geoType === 'city' || geoType === 'region' || geoType === 'neighborhood' || geoType === 'community'
 }
 
 function liveInventoryCitation(
@@ -86,6 +87,15 @@ async function marketStatsHandler(input: Record<string, unknown>, _ctx: AgentCon
   }
 
   const citations: AgentCitation[] = []
+  const publishedMos = pulse
+    ? publishMonthsOfSupply({
+        grain: geoType,
+        pulseMos: pulse.monthsOfSupply,
+        pulseActiveCount: pulse.activeCount,
+        displayedActiveCount: pulse.activeCount,
+        source: usesDetachedOverlay(geoType) ? 'market-truth' : undefined,
+      })
+    : null
 
   if (pulse) {
     const refreshedAt = pulse.refreshedAt
@@ -102,10 +112,11 @@ async function marketStatsHandler(input: Record<string, unknown>, _ctx: AgentCon
         source: liveInventoryCitation(geoType, geoSlug, medianStat, pulse.medianListPrice, refreshedAt),
       })
     }
-    if (pulse.monthsOfSupply != null) {
+    const mos = publishedMos
+    if (mos != null) {
       citations.push({
-        figure: `${pulse.monthsOfSupply} months of supply`,
-        source: liveInventoryCitation(geoType, geoSlug, 'months_of_supply', pulse.monthsOfSupply, refreshedAt),
+        figure: `${mos} months of supply`,
+        source: liveInventoryCitation(geoType, geoSlug, 'months_of_supply', mos, refreshedAt),
       })
     }
     if (pulse.medianDaysToPending != null) {
@@ -152,7 +163,17 @@ async function marketStatsHandler(input: Record<string, unknown>, _ctx: AgentCon
     }
   }
 
-  return { result: { found: true, city: cityRaw, geoType, geoSlug, pulse, detail }, citations }
+  return {
+    result: {
+      found: true,
+      city: cityRaw,
+      geoType,
+      geoSlug,
+      pulse: pulse ? { ...pulse, monthsOfSupply: publishedMos } : pulse,
+      detail,
+    },
+    citations,
+  }
 }
 
 export const marketTools: AgentTool[] = [
