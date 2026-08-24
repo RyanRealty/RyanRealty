@@ -14,6 +14,7 @@ import {
   type PropertyFacts,
 } from '@/lib/tc/required-documents'
 import { getPropertyFactsByMls } from '@/lib/data/listings/getPropertyFactsByMls'
+import { getTcCycleRawById } from '@/lib/data/tc/getTcCycleRawById'
 import { overlayPropertyFacts, parseSavedPropertyFacts } from '@/lib/tc/property-facts'
 
 /**
@@ -186,11 +187,7 @@ export async function saveCyclePropertyFacts(
   const gate = await checkAdminAction('transactions.edit')
   if (!gate.ok) return { ok: false, error: gate.error }
   const supabase = getServiceSupabase()
-  const { data: cycle } = await supabase
-    .from('tc_cycles')
-    .select('id, deal_id, raw')
-    .eq('id', cycleId)
-    .maybeSingle()
+  const cycle = await getTcCycleRawById(cycleId)
   if (!cycle) return { ok: false, error: 'Cycle not found' }
   const raw = (cycle.raw && typeof cycle.raw === 'object' ? cycle.raw : {}) as Raw
   const nextFacts = overlayPropertyFacts(

@@ -35,7 +35,7 @@ export function parseSavedPropertyFacts(raw: unknown): Partial<PropertyFacts> | 
     'hasTeam',
   ]
   for (const key of boolKeys) {
-    if (o[key] === true || o[key] === false) out[key] = o[key]
+    if (o[key] === true || o[key] === false) Object.assign(out, { [key]: o[key] })
   }
   if (o.yearBuilt != null) {
     const n = Number(o.yearBuilt)
