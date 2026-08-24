@@ -36,6 +36,7 @@
 
 import type { MarketDetail, MarketPulse, MarketPulseSnapshot } from '@/lib/data'
 import type { ReportCity } from '@/lib/data/geo/report-cities'
+import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import { marketVerdict } from '@/lib/market/classify'
 import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -346,8 +347,70 @@ export function buildClosedInstrument(detail: MarketDetail | null): ClosedInstru
 }
 
 /* -------------------------------------------------------------------------- */
-/* Section 4 — trailing 12 months by report city (market_stats_cache)          */
+/* Section 4 — trailing 12 months by report city (leftover overlay)            */
 /* -------------------------------------------------------------------------- */
+
+type YearLeftover = Pick<PublicPaceRow, 'medianClose' | 'closedCount' | 'yoyMedian'>
+
+function leftoverClosedFields(leftover: YearLeftover | null | undefined): Pick<
+  MarketDetail,
+  'medianSalePrice' | 'soldCount' | 'yoyMedianPriceDeltaPct'
+> {
+  return {
+    medianSalePrice: leftover?.medianClose ?? null,
+    soldCount: leftover?.closedCount ?? null,
+    yoyMedianPriceDeltaPct: leftover?.yoyMedian != null ? leftover.yoyMedian * 100 : null,
+  }
+}
+
+function leftoverClosedHasFigure(leftover: YearLeftover | null | undefined): boolean {
+  return leftover?.medianClose != null || leftover?.closedCount != null || leftover?.yoyMedian != null
+}
+
+/** Cache-shaped stub so leftover-only cities can still print a year-ledger row. */
+function emptyCityYearDetail(city?: Pick<ReportCity, 'slug' | 'label'>): MarketDetail {
+  return {
+    geoType: 'city',
+    geoSlug: city?.slug ?? '',
+    geoLabel: city?.label ?? null,
+    periodType: 'rolling_365d',
+    periodStart: null,
+    periodEnd: null,
+    medianSalePrice: null,
+    avgSalePrice: null,
+    totalVolume: null,
+    soldCount: null,
+    medianDom: null,
+    medianPricePerSqft: null,
+    avgSaleToListRatio: null,
+    yoyMedianPriceDeltaPct: null,
+    yoyPpsfChangePct: null,
+    yoyDomChange: null,
+    marketHealthLabel: null,
+    marketHealthScore: null,
+    endOfPeriodInventory: null,
+    cashPurchasePct: null,
+    medianConcessionsAmount: null,
+    updatedAt: null,
+    methodologyVersion: null,
+  }
+}
+
+/**
+ * City year-ledger median / sold / YoY from leftover Market Truth. Miss omits
+ * those three (never cache fill). Cache medianDom stays. Leftover-only still
+ * returns a printable row when any of the three is publishable.
+ */
+export function overlayYearDetailWithLeftover(
+  detail: MarketDetail | null,
+  leftover: YearLeftover | null | undefined,
+  city?: Pick<ReportCity, 'slug' | 'label'>,
+): MarketDetail | null {
+  const closed = leftoverClosedFields(leftover)
+  if (detail) return { ...detail, ...closed }
+  if (!leftoverClosedHasFigure(leftover)) return null
+  return { ...emptyCityYearDetail(city), ...closed }
+}
 
 /**
  * D9 leftover: each city is a door into its own report. Year-over-year change

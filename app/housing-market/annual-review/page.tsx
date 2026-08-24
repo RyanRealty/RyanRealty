@@ -42,13 +42,13 @@
  *
  *   regionPulse / citySnapshots — market_pulse_live, single-family. Live inventory
  *     (active count, median list price, months of supply from refresh_market_pulse(),
- *     median days to pending). 10-15 min freshness.
- *   regionDetail / cityDetails  — market_stats_cache, period_type='rolling_365d'.
- *     Trailing-12-month closed sales (median sale price, sold count, median DOM,
- *     average sale to list, median dollars per sqft) plus the yoy_* columns the
- *     SAME cache job computes against the same 12-month window one year earlier.
- *     The page reads those columns rather than re-deriving them, so it cannot
- *     drift from the job's own methodology. 6h freshness.
+ *     median days to pending). 10-15 min freshness. Pulse DTP / 30-day stay off
+ *     the city year ledger.
+ *   regionDetail                — leftover overlay on the region closed instrument
+ *     (medianClose / closedCount / yoyMedian). Cache median DOM may stay.
+ *   cityDetails                 — leftover overlay on each report-city cache row
+ *     (medianClose / closedCount / yoyMedian × 100). Miss omits those three,
+ *     never cache fill. Cache median DOM may stay.
  *
  * THE INVARIANTS THIS FILE IS WRITTEN TO HOLD:
  *
@@ -173,6 +173,7 @@ import {
   buildRegionFigures,
   buildYearLedger,
   buildAnnualCharts,
+  overlayYearDetailWithLeftover,
   type MissingCity,
 } from './_v3/annual-sections'
 
@@ -201,7 +202,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AnnualReviewPage() {
-  const [regionPulse, regionDetail, citySnapshots, cityDetails, priceHistory, publicSegments, publicPace] =
+  const [regionPulse, regionDetail, citySnapshots, cityDetailRows, priceHistory, publicSegments, publicPace, cityPaces] =
     await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
     getCityMarketDetail({ geoType: 'region', geoSlug: REGION_GEO_SLUG, periodType: PERIOD_TYPE }),
@@ -214,7 +215,11 @@ export default async function AnnualReviewPage() {
     getPriceHistory('region', REGION_GEO_SLUG, 'monthly', 60),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
     getPublicDetachedPace({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
+    Promise.all(GRID_CITIES.map((c) => getPublicDetachedPace({ geoType: 'city', geoSlug: c.slug }))),
   ])
+  const cityDetails = cityDetailRows.map((detail, i) =>
+    overlayYearDetailWithLeftover(detail, cityPaces[i], GRID_CITIES[i]),
+  )
 
   // Stamps are the REAL refresh timestamps off the rows, never now(). The region
   // pulse row stamps the live-inventory tier and the region detail row stamps the
@@ -369,8 +374,9 @@ export default async function AnnualReviewPage() {
     ' ' +
     MOS_THRESHOLD_CLAUSE
   const yearTrace =
-    'closed MLS sales through Oregon Data Share, single-family homes, the trailing 12 months against ' +
-    'the same 12-month window one year earlier, one row per report city. Not active inventory.'
+    '12-month leftover figures are Market Truth mt-v1, labeled by window, not the cache rolling row. ' +
+    'Closed MLS sales through Oregon Data Share, single-family homes, the trailing 12 months against ' +
+    'the same 12-month window one year earlier, one row per report city. Not active inventory. Cache median days on market may remain on the row.'
 
   // Methodology and coverage: every claim the KB page made in its Methodology
   // section and its exemption caption, the Oregon Data Share citation MarketSources
@@ -381,7 +387,7 @@ export default async function AnnualReviewPage() {
       kind: 'prose',
       term: 'What these figures cover',
       body: [
-        "Single-family homes only (MLS PropertyType 'A'). Year-over-year figures compare the trailing 12 months against the same 12-month window one year earlier, computed by the same cache job for both windows, never a partial-year or quarter-versus-year comparison.",
+        "Single-family homes only (MLS PropertyType 'A'). Year-over-year figures compare the trailing 12 months against the same 12-month window one year earlier, never a partial-year or quarter-versus-year comparison. Report-city year-ledger median, sold count, and YoY are leftover Market Truth cells; a leftover miss omits those three rather than filling from cache.",
         'Active inventory and closed sales are two tiers on two clocks: inventory refreshes every 10 to 15 minutes, closed-sales figures every 6 hours. Each section above prints the refresh timestamp of the query behind it, never a render-time clock.',
       ],
     },
