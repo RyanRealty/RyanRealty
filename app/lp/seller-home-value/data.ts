@@ -6,6 +6,10 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getMarketPulseRowForGeo } from '@/lib/data'
+import {
+  EMPTY_PUBLIC_PACE,
+  getPublicDetachedPace,
+} from '@/lib/data/market-truth/public-pace'
 import { TESTIMONIALS, type Testimonial } from '@/lib/testimonials'
 
 export type BendMarketSnapshot = {
@@ -14,9 +18,9 @@ export type BendMarketSnapshot = {
   /** Median closed sale price over the trailing 90 days (SFR) — the honest
    *  "what homes actually sell for" anchor. */
   medianSold90d: number | null
-  /** Median days from list to under-contract (list-to-pending). */
+  /** Median days from list to under-contract (list-to-pending). Pulse. */
   medianDaysToPending: number | null
-  /** Median final-price-to-list-price ratio, as a percent (0.99 → 99.0). */
+  /** Leftover 12-month sale-to-original as a percent (0.969 → 96.9). Miss omits. */
   saleToListPct: number | null
   /** Closed sales in the trailing 30 days (SFR). */
   soldCount30d: number | null
@@ -34,6 +38,14 @@ function num(v: unknown): number | null {
   if (v == null) return null
   const n = typeof v === 'number' ? v : Number(v)
   return Number.isFinite(n) ? n : null
+}
+
+/** Leftover sale-to-original as a percent. Fraction (< 2) times 100. Miss omits. */
+function leftoverSaleToListPct(saleToOriginal: number | null): number | null {
+  if (saleToOriginal == null || !Number.isFinite(saleToOriginal) || saleToOriginal <= 0) {
+    return null
+  }
+  return saleToOriginal < 2 ? saleToOriginal * 100 : saleToOriginal
 }
 
 /** A single Ryan Realty listing card for the LP social-proof grid. */
@@ -382,26 +394,32 @@ export async function getOurListings(): Promise<OurListing[]> {
 
 /**
  * Live Bend market snapshot (city-level residential).
- * Pulled from market_pulse_live so the LP shows the same figures as the
- * weekly market packets and city pages. Never invented.
+ * Pulse: 90-day close, days-to-pending, 30-day sold/new. Sale-to-list is leftover
+ * Bend saleToOriginal when publishable; miss omits. Do not map leftover
+ * days-to-contract onto DTP or leftover 12-month median onto the 90-day close.
  */
 export async function getBendMarketSnapshot(): Promise<BendMarketSnapshot | null> {
   try {
-    // Pull the wider SFR pulse projection (the default DAL columns omit the
-    // sale-to-list / days-to-pending / sold-90d fields the LP stat cards show).
+    const leftoverTask = getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }).catch(
+      (e) => {
+        console.warn('[seller-lp/data] leftover pace miss:', e)
+        return { ...EMPTY_PUBLIC_PACE }
+      },
+    )
+    // Wider SFR pulse projection (default DAL columns omit DTP / sold-90d).
     const row = await getMarketPulseRowForGeo({
       geoType: 'city',
       geoSlug: 'bend',
       columns:
-        'median_list_price, median_close_price_90d, median_days_to_pending, median_sale_to_list, sold_count_30d, months_of_supply, active_count, new_count_30d, market_health_label, updated_at',
+        'median_list_price, median_close_price_90d, median_days_to_pending, sold_count_30d, months_of_supply, active_count, new_count_30d, market_health_label, updated_at',
     })
     if (!row) return null
-    const saleToList = num(row['median_sale_to_list'])
+    const leftover = await leftoverTask
     return {
       medianListPrice: num(row['median_list_price']),
       medianSold90d: num(row['median_close_price_90d']),
       medianDaysToPending: num(row['median_days_to_pending']),
-      saleToListPct: saleToList == null ? null : saleToList * 100,
+      saleToListPct: leftoverSaleToListPct(leftover.saleToOriginal),
       soldCount30d: num(row['sold_count_30d']),
       monthsOfSupply: num(row['months_of_supply']),
       activeCount: num(row['active_count']),

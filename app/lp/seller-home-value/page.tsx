@@ -117,9 +117,10 @@ export default async function SellerHomeValuePage({
   const snap = marketSnapshot
 
   // Stat band values — formatted live, em-dash placeholder when unavailable.
-  // Pulse keeps 90-day median, days-to-pending, sale-to-list, and 30-day sold.
-  // Leftover 12-month / pending-now cells sit beside them, labeled by window.
-  const LP_LEFTOVER_KEYS = new Set(['pending', 'dtc', 'medClose', 'sto', 'yoy'])
+  // Pulse keeps 90-day median, days-to-pending, and 30-day sold.
+  // Sale-to-list is leftover saleToOriginal via getBendMarketSnapshot (omit on miss).
+  // Other leftover 12-month / pending-now cells sit beside them, labeled by window.
+  const LP_LEFTOVER_KEYS = new Set(['pending', 'dtc', 'medClose', 'yoy'])
   const leftoverCards = publicPaceItems(publicPace)
     .filter((item) => LP_LEFTOVER_KEYS.has(item.key))
     .map((item) => {
@@ -158,7 +159,7 @@ export default async function SellerHomeValuePage({
     {
       value: snap?.saleToListPct != null ? `${snap.saleToListPct.toFixed(1)}%` : MDASH,
       label: 'Sale to list',
-      sub: 'Median final price vs asking',
+      sub: 'Median close vs original list, 12 months',
     },
     {
       value: snap?.soldCount30d != null ? snap.soldCount30d.toLocaleString('en-US') : MDASH,
