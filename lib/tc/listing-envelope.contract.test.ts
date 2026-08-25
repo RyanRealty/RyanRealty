@@ -52,3 +52,14 @@ describe('listing envelope walk wiring', () => {
     expect(src).toMatch(/listing_price/)
   })
 })
+
+describe('an unassigned signing field is never required', () => {
+  it('is enforced where the envelope rows are built, not only in the field map', () => {
+    // The field map can always name a role the envelope has no recipient for.
+    // If that row lands required, send refuses forever and no broker action
+    // clears it, so the guard has to sit at the row, next to recipient_id.
+    const src = readFileSync(join(process.cwd(), 'app/actions/tc-envelopes.ts'), 'utf8')
+    expect(src).toMatch(/ownedButUnassigned/)
+    expect(src).toMatch(/required:\s*\n?\s*!ownedButUnassigned &&/)
+  })
+})

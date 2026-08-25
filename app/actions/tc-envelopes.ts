@@ -664,27 +664,32 @@ export async function createEnvelopeFromTemplate(
       const type = mappedFieldTypeFromName(f.dataRef, f.label, raw)
       const factKey = resolveFactKey(f.dataRef ?? '')
       const filledText = factKey ? textByFact.get(factKey) : undefined
+      const recipientId = signerOwnsMappedField(type)
+        ? recipientByRole(f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined))
+        : null
+      // Nobody cannot be required to sign. A mapped blank naming a role this
+      // envelope has no recipient for still gets its box — a broker can assign
+      // it — but marking it required would block the send with no way out.
+      const ownedButUnassigned = signerOwnsMappedField(type) && !recipientId
       fieldRows.push({
         envelope_id: env.id,
         document_id: doc.id,
-        recipient_id: signerOwnsMappedField(type)
-          ? recipientByRole(
-              f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined),
-            )
-          : null,
+        recipient_id: recipientId,
         type,
         page: Math.max(1, Math.round(f.page)),
         x: clamp01(f.x),
         y: clamp01(f.y),
         w: clamp01(f.w),
         h: clamp01(f.h),
-        required: mapFieldIsRequired({
-          type,
-          optional: f.optional,
-          signerRole: f.signerRole,
-          dataRef: f.dataRef,
-          formNumber: form.form_number,
-        }),
+        required:
+          !ownedButUnassigned &&
+          mapFieldIsRequired({
+            type,
+            optional: f.optional,
+            signerRole: f.signerRole,
+            dataRef: f.dataRef,
+            formNumber: form.form_number,
+          }),
         value:
           type === 'text' && filledText
             ? { kind: 'text', text: filledText }
