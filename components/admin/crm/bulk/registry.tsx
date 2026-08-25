@@ -10,7 +10,7 @@
  * every spec here plugs into.
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   bulkAssignBrokerAction,
   bulkAddTagAction,
@@ -28,6 +28,7 @@ import {
   bulkAddCollaboratorAction,
   bulkRemoveCollaboratorAction,
   bulkAddNewsletterAction,
+  sendBatchEmailTestAction,
 } from '@/app/actions/crm-bulk'
 import { bulkMergePeopleAction } from '@/app/actions/crm-person-gaps'
 import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
@@ -39,10 +40,11 @@ import {
   AttachmentControl,
   useComposerAttachments,
 } from '@/components/admin/crm/ComposerAttachments'
-import { Combobox, SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
+import { Button, Combobox, SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { FormSelect } from './FormSelect'
 import { TagCombo, bulkTagError, normalizeBulkTag } from './TagCombo'
 import { BatchRecipients, EMPTY_RECIPIENTS, type BatchRecipientsState } from './BatchRecipients'
+import type { BulkActionSelection } from '@/lib/crm/bulk-helpers'
 import {
   defineBulkAction,
   type ActionId,
@@ -324,7 +326,58 @@ function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohort
         </span>
       </div>
       <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
+      <BatchTestSend selection={ctx.selection} value={value} />
     </>
+  )
+}
+
+/**
+ * "Send one to me first." The only way to see what a 400-person send actually
+ * looks like — merged, link-wrapped, footer and attachment included — before it
+ * goes. Lives beside the composer rather than behind Run, because the point is
+ * to check BEFORE committing.
+ */
+function BatchTestSend({
+  selection,
+  value,
+}: {
+  selection: BulkActionSelection
+  value: EmailCohortValue
+}) {
+  const [state, setState] = useState<{ kind: 'idle' | 'sending' | 'done' | 'error'; msg?: string }>({ kind: 'idle' })
+  const ready = Boolean(value.templateId.trim() || (value.subject.trim() && value.body.trim()))
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        variant="quiet"
+        disabled={!ready || state.kind === 'sending'}
+        onClick={async () => {
+          setState({ kind: 'sending' })
+          const res = await sendBatchEmailTestAction(selection, {
+            templateId: value.templateId.trim() || undefined,
+            subject: value.subject.trim() || undefined,
+            body: value.body || undefined,
+            attachments: value.attachments && value.attachments !== UPLOADING ? value.attachments : undefined,
+          })
+          setState(res.ok
+            ? { kind: 'done', msg: `Sent to ${res.sentTo}, merged against ${res.mergedAgainst}.` }
+            : { kind: 'error', msg: res.error })
+        }}
+      >
+        {state.kind === 'sending' ? 'Sending…' : 'Send one to me first'}
+      </Button>
+      {state.msg ? (
+        <span
+          style={{
+            fontSize: 'var(--a-text-xs)',
+            color: state.kind === 'error' ? 'var(--a-danger)' : 'var(--a-text-2)',
+          }}
+          role={state.kind === 'error' ? 'alert' : undefined}
+        >
+          {state.msg}
+        </span>
+      ) : null}
+    </div>
   )
 }
 

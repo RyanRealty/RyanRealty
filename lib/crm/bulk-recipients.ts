@@ -10,10 +10,17 @@
 
 /**
  * How many recipients the dialog will list one by one. Past this the cohort is
- * shown as a count plus a sample and cannot be hand-edited — a 200-row sample
+ * shown as a count plus a sample and cannot be hand-edited — a partial sample
  * must never silently become the send.
+ *
+ * 500, not 200 (Matt 2026-08-25). The real bulk sends here are a newsletter, a
+ * neighborhood segment, and an expired-listing blast of 300-400 — that last one
+ * is core business, and at a 200 cap it would have been the one send you could
+ * not review or trim by hand. The cap exists to stop someone editing a
+ * 200-row slice of an 18,000-person cohort, not to block the sends actually
+ * being made.
  */
-export const BULK_RECIPIENT_PREVIEW_CAP = 200
+export const BULK_RECIPIENT_PREVIEW_CAP = 500
 
 export type BulkRecipient = {
   id: number

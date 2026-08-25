@@ -661,3 +661,54 @@ export async function searchBulkRecipientsAction(
     return { ok: false, error: e instanceof Error ? e.message : 'Search failed' }
   }
 }
+
+// ── Send one to yourself first ───────────────────────────────────────────────
+
+/**
+ * Send a single test copy of a batch email to the signed-in broker, merged
+ * against a REAL recipient from the cohort.
+ *
+ * Before a 400-contact expired blast, the one thing worth knowing is what the
+ * message actually looks like once %contact_first_name% resolves, the links get
+ * wrapped, the attachment rides along and the footer lands. Reading the compose
+ * box does not tell you that. Nothing else in this dialog does either.
+ *
+ * It merges against the first person in the cohort rather than the broker's own
+ * record, because a token that is empty for a real recipient is exactly the bug
+ * a test is meant to catch — merging against yourself would hide it.
+ *
+ * NOT a job, NOT recorded as a campaign send: one message, to the operator, so
+ * it never touches email_events and never inflates the cohort's numbers. The
+ * subject carries a [TEST] prefix so it cannot be confused with the real thing
+ * in an inbox.
+ */
+export async function sendBatchEmailTestAction(
+  selection: BulkActionSelection,
+  params: { templateId?: string; subject?: string; body?: string; attachments?: string },
+): Promise<{ ok: true; sentTo: string; mergedAgainst: string } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+
+  const preview = await previewBulkRecipientsAction(selection)
+  if (!preview.ok) return { ok: false, error: preview.error }
+  const sample = preview.people[0]
+  if (!sample) return { ok: false, error: 'No recipients to preview against' }
+
+  const refs = parseAttachmentRefsFor(params?.attachments, 'email', {
+    kind: 'batch',
+    actorKey: actorKeyFor(access.email),
+  })
+  if (!refs.ok) return { ok: false, error: refs.error }
+
+  const { sendBatchTestEmail } = await import('@/lib/crm/bulk-handlers/email-cohort-test')
+  return sendBatchTestEmail({
+    to: access.email,
+    samplePersonId: sample.id,
+    params: {
+      templateId: params.templateId ? Number(params.templateId) : null,
+      subject: params.subject ?? null,
+      body: params.body ?? null,
+      attachments: refs.items.length ? refs.items : null,
+    },
+  })
+}

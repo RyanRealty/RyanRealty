@@ -1,5 +1,5 @@
 {
-  "$comment": "Ratchet baseline for check-governed-send.mjs (G56, admin rebuild §A4). Each key is a file with DIRECT provider-rail call sites (sendSms / sendSmsViaMessagingService / sendGroupMms / sendCrmEmail / sendEmail / sendBatchEmails / raw .messages.create) and the value is the call-site count. Counts may only SHRINK. Route a send through lib/comms/sendGovernedSms or sendGovernedEmail and regenerate with: node scripts/check-governed-send.mjs --write-baseline. NEVER hand-add an entry or bump a count.",
+  "$comment": "Ratchet baseline for check-governed-send.mjs (G56, admin rebuild \u00a7A4). Each key is a file with DIRECT provider-rail call sites (sendSms / sendSmsViaMessagingService / sendGroupMms / sendCrmEmail / sendEmail / sendBatchEmails / raw .messages.create) and the value is the call-site count. Counts may only SHRINK. Route a send through lib/comms/sendGovernedSms or sendGovernedEmail and regenerate with: node scripts/check-governed-send.mjs --write-baseline. NEVER hand-add an entry or bump a count.",
   "files": {
     "app/actions/admin-email.ts": 1,
     "app/actions/appointments.ts": 1,
@@ -40,7 +40,6 @@
     "lib/expired-alert.ts": 1,
     "lib/fsbo-alert.ts": 1,
     "lib/market-stat-alert.ts": 1,
-    "lib/marketing-brain/daily-digest.ts": 1,
     "lib/newsletter/send-queue.ts": 1,
     "lib/seller-lead-alert.ts": 1,
     "lib/tc/signing-emails.ts": 3
