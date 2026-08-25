@@ -53,10 +53,32 @@ export function prepareOutboundEmailBody(
   return { html: null, plain: body }
 }
 
+/**
+ * Bare http(s) URLs in a typed body, as anchors.
+ *
+ * Runs AFTER escaping, so it only ever sees `&amp;` where the author typed `&`
+ * — the href is rebuilt from the escaped text, which is what an HTML attribute
+ * wants anyway. The trailing-punctuation trim keeps "see https://x.com/a." from
+ * swallowing the sentence's full stop, and the closing-paren rule keeps a URL
+ * inside parentheses intact.
+ *
+ * This is not cosmetic. Click tracking wraps `<a href>`, so a URL that never
+ * becomes an anchor is a link the CRM cannot measure and the reader cannot
+ * click — which is exactly what a plain-text batch send used to produce.
+ */
+function linkifyEscaped(escaped: string): string {
+  return escaped.replace(/https?:\/\/[^\s<]+/g, (raw) => {
+    const trimmed = raw.replace(/[.,;:!?]+$/, '')
+    const url = trimmed.endsWith(')') && !trimmed.includes('(') ? trimmed.slice(0, -1) : trimmed
+    const tail = raw.slice(url.length)
+    return `<a href="${url}" style="color:#102742">${url}</a>${tail}`
+  })
+}
+
 /** Plain composer text → the exact HTML wrapper the send path uses. Pure — safe in client bundles. */
 export function wrapPlainTextHtml(text: string): string {
   const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  return `<div style="font-family:${EMAIL_FONT_STACK};font-size:14px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap">${escaped}</div>`
+  return `<div style="font-family:${EMAIL_FONT_STACK};font-size:14px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap">${linkifyEscaped(escaped)}</div>`
 }
 
 /**

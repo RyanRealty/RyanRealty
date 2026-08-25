@@ -79,8 +79,19 @@ if (!/name="street"/.test(crmNew) || !/name="city"/.test(crmNew) || !/name="zip"
 if (/name="note"/.test(crmNew) || /label="Note"/.test(crmNew)) {
   fails.push('/admin/crm/new must not have a Note field')
 }
-if (!/createContactAddress/.test(createContact) || !/Add an email, or a street address/.test(createContact) || !/Phone required/.test(createContact)) {
-  fails.push('lib/crm/create-contact.ts must require name and phone, plus email or street, and build a structured address')
+// Quick add requires a name and ONE way to reach the person. Phone used to be
+// mandatory, which made an email-only contact impossible to create in the UI
+// even though the book holds tens of thousands of them and every web lead
+// arrives that way. The structured-address build is unchanged and still gated.
+if (
+  !/createContactAddress/.test(createContact) ||
+  !/Add an email, or a phone number/.test(createContact) ||
+  !/First name required/.test(createContact)
+) {
+  fails.push('lib/crm/create-contact.ts must require a first name plus an email or a phone, and build a structured address')
+}
+if (!/input\.email\.trim\(\) \|\| input\.phone\.trim\(\)/.test(createContact)) {
+  fails.push('canSubmitCreateContact must accept an email-only contact (email OR phone), never require both')
 }
 if (!/createContactAddress/.test(listAction) || !/persistCreatedContactAddress/.test(listAction)) {
   fails.push('createCrmContactAction must persist the structured address after create')

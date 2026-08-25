@@ -18,9 +18,14 @@ vi.mock('@/lib/resend', () => ({
 // measurement row — there is no separate recordEmailEvent after the send.
 const mockInsertEmailEvent = vi.fn()
 const mockDeleteEmailEvent = vi.fn()
+// After a successful wire send the handler stamps Resend's message id onto the
+// claim row, so the provider's delivered/bounce webhooks (which key on that id)
+// can be joined back to the campaign.
+const mockStampMessageId = vi.fn(async () => ({ ok: true as const }))
 vi.mock('@/lib/data/crm/insertEmailEvent', () => ({
   insertEmailEvent: (...args: unknown[]) => mockInsertEmailEvent(...args),
   deleteEmailEventByDedupeKey: (...args: unknown[]) => mockDeleteEmailEvent(...args),
+  stampEmailEventMessageId: (...args: unknown[]) => mockStampMessageId(...(args as [])),
 }))
 
 const mockGetRecipients = vi.fn()

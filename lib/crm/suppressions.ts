@@ -6,27 +6,14 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
-
-export type SendChannel = 'email' | 'sms' | 'call'
+import { TAG_CHANNEL, type SendChannel } from '@/lib/crm/tag-channel'
 
 /**
- * Tag → channel suppression mapping (tags are live the instant they land on a
- * person). Exported read-only so a consent-decision reader projects the SAME
- * authoritative tag footprint isSuppressed enforces at send time — one mapping,
- * never a second copy that can drift.
+ * Re-exported from lib/crm/tag-channel.ts, which carries the mapping without
+ * 'server-only' so client code (the bulk tag form) can read it too. Still one
+ * source — this module remains the place every send path checks.
  */
-export const TAG_CHANNEL: ReadonlyArray<{ tag: string; channels: ReadonlyArray<'all' | SendChannel> }> = [
-  { tag: 'compliance:hard-stop', channels: ['all'] },
-  { tag: 'contact:do-not-text', channels: ['sms'] },
-  // TCPA: a text message is legally a "call". A do-not-call contact must be
-  // blocked from SMS as well as voice (incident 2026-06-16: do-not-call
-  // homeowners were texted because this mapped to 'call' only).
-  { tag: 'contact:do-not-call', channels: ['call', 'sms'] },
-  { tag: 'do_not_email', channels: ['email'] },
-  { tag: 'unsubscribed', channels: ['email'] },
-  { tag: 'bounced', channels: ['email'] },
-  { tag: 'complained', channels: ['email'] },
-]
+export { type SendChannel, TAG_CHANNEL } from '@/lib/crm/tag-channel'
 
 export async function isSuppressed(personId: number, channel: SendChannel): Promise<{ suppressed: boolean; reasons: string[] }> {
   const sb = createServiceClient()

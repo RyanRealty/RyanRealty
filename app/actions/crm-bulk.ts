@@ -41,6 +41,7 @@
  * happen here — they happen in the worker's handlers.
  */
 
+import { after } from 'next/server'
 import { createHash } from 'node:crypto'
 import {
   enqueueBulkJob,
@@ -180,6 +181,28 @@ async function enqueue(
       // the job reaches a terminal state, so a deliberate later re-send works.
       dedupeKey: bulkDedupeKey(access.email, kind, built, params),
     })
+    // Kick one chunk right now instead of leaving the job parked until the next
+    // crm-bulk-worker tick. A five-contact tag or a six-recipient test send is a
+    // sub-second chunk, and watching a 0% bar for minutes is what made batch work
+    // in this UI feel broken. after() runs it once the response is sent, so the
+    // action still returns the jobId immediately; claimNextChunk is an atomic
+    // lease-guarded claim, so this racing the cron is a no-op for the loser.
+    // Anything past one chunk drains on the cron exactly as before.
+    try {
+      after(async () => {
+        try {
+          const { drainBulkJobs } = await import('@/lib/crm/bulk-drain')
+          await drainBulkJobs({ maxChunks: 1 })
+        } catch {
+          // The cron is the guarantee. A failed kick only costs the head start.
+        }
+      })
+    } catch {
+      // after() needs a request scope and throws without one (a unit test, a
+      // CLI caller). The job is already enqueued and correct at this point, so
+      // losing the head start must never turn a successful enqueue into an
+      // error — which is exactly what letting this reach the outer catch did.
+    }
     return { ok: true, jobId }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Could not start the bulk job' }

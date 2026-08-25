@@ -54,6 +54,18 @@ export function EmailBodyEditor(props: {
   signatureHtml?: string | null
   /** Hide the CRM merge-field dropdown (host resolves its own token syntax). */
   hideMergeFields?: boolean
+  /**
+   * What the body IS.
+   *
+   * 'resolved' (default) — a single message to one contact, already merged. A
+   * leftover %token% is a genuine hole and the composer says so.
+   *
+   * 'template' — one body that the send path merges per recipient. Every token
+   * is unresolved here BY CONSTRUCTION, so the same warning told a broker to
+   * delete the personalisation, which is exactly backwards. In this mode the
+   * tokens are listed as what will be filled in, not as a defect.
+   */
+  mergeMode?: 'resolved' | 'template'
   /** Live crm_field_definitions → Custom Fields group in the merge dropdown. */
   customFields?: CustomFieldToken[]
   /** Extra toolbar control (EmailComposer injects its attachment button). */
@@ -168,9 +180,15 @@ export function EmailBodyEditor(props: {
         />
       ) : null}
       {unresolved.length > 0 ? (
-        <p className="text-xs font-medium" style={{ color: 'var(--a-warn)' }}>
-          Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
-        </p>
+        props.mergeMode === 'template' ? (
+          <p className="text-xs" style={{ color: 'var(--a-text-2)' }}>
+            Filled in per recipient: {unresolved.join(', ')}.
+          </p>
+        ) : (
+          <p className="text-xs font-medium" style={{ color: 'var(--a-warn)' }}>
+            Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
+          </p>
+        )
       ) : null}
     </div>
   )

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { htmlToPlainText, looksLikeHtml, prepareOutboundEmailBody } from '@/lib/crm/email-body'
+import { htmlToPlainText, looksLikeHtml, prepareOutboundEmailBody, wrapPlainTextHtml } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
 
 describe('crm email-body', () => {
@@ -32,5 +32,35 @@ describe('renderCrmMerge', () => {
       custom: { customSellerPropertyAddress: '123 Main St, Bend' },
     })
     expect(out).toBe('Audit for 123 Main St, Bend')
+  })
+})
+
+describe('wrapPlainTextHtml — bare URLs become trackable anchors', () => {
+  it('links a bare https URL', () => {
+    const html = wrapPlainTextHtml('See https://ryan-realty.com/housing-market for numbers.')
+    expect(html).toContain('<a href="https://ryan-realty.com/housing-market"')
+    expect(html).toContain('>https://ryan-realty.com/housing-market</a>')
+  })
+
+  it('leaves the sentence full stop outside the href', () => {
+    const html = wrapPlainTextHtml('Numbers: https://ryan-realty.com/housing-market.')
+    expect(html).toContain('href="https://ryan-realty.com/housing-market"')
+    expect(html).toMatch(/<\/a>\.$|<\/a>\.</)
+  })
+
+  it('keeps query strings intact through escaping', () => {
+    const html = wrapPlainTextHtml('https://ryan-realty.com/x?a=1&b=2')
+    expect(html).toContain('href="https://ryan-realty.com/x?a=1&amp;b=2"')
+  })
+
+  it('still escapes markup and preserves line breaks via pre-wrap', () => {
+    const html = wrapPlainTextHtml('a <b>bold</b>\nsecond line')
+    expect(html).toContain('&lt;b&gt;bold&lt;/b&gt;')
+    expect(html).toContain('white-space:pre-wrap')
+    expect(html).toContain('\nsecond line')
+  })
+
+  it('does not link plain text with no URL', () => {
+    expect(wrapPlainTextHtml('no links here')).not.toContain('<a ')
   })
 })

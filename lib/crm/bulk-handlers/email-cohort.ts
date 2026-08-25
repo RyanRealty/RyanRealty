@@ -42,8 +42,10 @@ import { type EmailSendType } from '@/lib/crm/email-events'
 import {
   insertEmailEvent,
   deleteEmailEventByDedupeKey,
+  stampEmailEventMessageId,
 } from '@/lib/data/crm/insertEmailEvent'
 import { renderCrmMerge } from '@/lib/crm/merge'
+import { composeOutboundHtml } from '@/lib/crm/email-body'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import {
   getEmailCohortRecipients,
@@ -57,7 +59,8 @@ export const EMAIL_COHORT_KIND = 'email-cohort' as const
 /**
  * Params the enqueue action freezes onto the job. Either a saved templateId OR an
  * inline subject+body (one or the other — validated by the enqueue action). The
- * fromIdentity is the verified Resend sender; emailKey anchors open/click + event
+ * fromIdentity is the verified Resend sender; replyTo defaults to the acting
+ * broker so a reply reaches a person; emailKey anchors open/click + event
  * dedupe across the whole cohort.
  */
 export type EmailCohortParams = {
@@ -69,6 +72,8 @@ export type EmailCohortParams = {
   body?: string | null
   /** Verified From address; falls back to RESEND_FROM in lib/resend when omitted. */
   fromIdentity?: string | null
+  /** Where replies go; falls back to the acting broker frozen on the job. */
+  replyTo?: string | null
   /** Per-send instrumentation key, e.g. 'bulk:campaign:<jobId>'. */
   emailKey?: string | null
   /** Reporting bucket for the email_events rows. Defaults to 'campaign'. */
@@ -199,7 +204,19 @@ export async function sendOneCohortEmail(
     senderSlug: recipient.assigned_broker ?? null,
   })
   const subject = renderCrmMerge(content.subject, recipient, mergeContext)
-  const renderedBody = renderCrmMerge(content.body, recipient, mergeContext)
+  // composeOutboundHtml is the module's "what you see is byte-equal to what
+  // sends" primitive, and the one-to-one path (lib/crm/gmail.ts sendCrmEmail)
+  // already routes through it. The cohort did not: a typed plain-text body went
+  // out as raw text inside a text/html part, so every newline collapsed and the
+  // one URL in it was never an anchor — unclickable for the reader and
+  // invisible to click tracking, while the composer preview showed the wrapped
+  // version. 'auto' is the shared default: a crm_templates HTML body passes
+  // through untouched, a typed message gets the wrapper.
+  const renderedBody = composeOutboundHtml(
+    renderCrmMerge(content.body, recipient, mergeContext),
+    null,
+    'auto',
+  )
 
   // 3) Attribution + open/click instrumentation (broker routing + tracking).
   const emailKey = cohortEmailKey(params, ctx.jobId)
@@ -244,20 +261,43 @@ export async function sendOneCohortEmail(
   if (!claim.inserted) return { kind: 'skipped', bucket: 'already-sent' }
 
   // 6) SEND.
+  //
+  // REPLY-TO. The cohort goes out over Resend from the verified RESEND_FROM
+  // sender (a noreply@ on the sending subdomain) — not from a broker's Gmail.
+  // Without an explicit Reply-To, a contact who hits Reply is writing to a
+  // mailbox nobody reads. The job froze the acting broker's address at enqueue,
+  // and that broker is the one who pressed Send, so replies go to them.
   const fromIdentity = params.fromIdentity?.trim() || undefined
+  const replyTo = params.replyTo?.trim() || ctx.actorEmail?.trim() || undefined
   const res = await sendEmail({
     to: email,
     subject: prepared.subject,
     html: prepared.html,
     text: prepared.text,
     from: fromIdentity,
+    replyTo,
     headers: prepared.headers,
   })
   if (res.error) {
     // Roll the claim back so a later run can re-attempt (no false `sent` left).
     await deleteEmailEventByDedupeKey(dedupeKey)
+    // The breakdown key stays coarse on purpose (one bucket, not one per Resend
+    // message, which would explode across 18K recipients) — but the reason has
+    // to land SOMEWHERE. Without this line a whole cohort could fail on an
+    // unverified sender and the job would report "18000 send-error" with no way
+    // to find out why.
+    console.error('[email-cohort] send failed', {
+      jobId: ctx.jobId,
+      personId: recipient.id,
+      error: res.error,
+    })
     return { kind: 'skipped', bucket: 'send-error' }
   }
+
+  // The claim row was written before the wire, so it carries no provider id.
+  // Stamp it now: Resend keys its delivered / bounce / complaint webhooks on the
+  // message id, and without it those rows cannot be joined back to this campaign.
+  if (res.id) await stampEmailEventMessageId(dedupeKey, res.id)
 
   return { kind: 'processed' }
 }

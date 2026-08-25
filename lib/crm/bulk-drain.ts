@@ -1,0 +1,312 @@
+/**
+ * The CRM bulk-job drain step, lifted out of app/api/cron/crm-bulk-worker so it
+ * has two callers instead of one.
+ *
+ * The cron still owns the long haul: it drains several chunks per invocation and
+ * carries an ~18K-contact job across many runs. But a five-contact tag or a
+ * six-recipient test send used to sit in `queued` until the next cron tick, which
+ * is minutes of an operator watching a 0% progress bar for work that takes under
+ * a second. The enqueue path now kicks ONE chunk through Next's `after()` as soon
+ * as the job is stored, so a small job is already done by the time the progress
+ * poller first asks. Anything bigger than one chunk falls through to the cron
+ * exactly as before.
+ *
+ * Concurrency is unchanged and is the reason this is safe to call from two
+ * places: claimNextChunk() is an atomic, lease-guarded, SKIP-LOCKed claim, so an
+ * enqueue-kick racing a cron run cannot drain the same chunk twice — the loser
+ * claims nothing and returns idle.
+ */
+
+import 'server-only'
+import {
+  claimNextChunk,
+  reLeaseBulkJob,
+  getBulkHandler,
+  markChunkProgress,
+  markJob,
+  normalizeResult,
+  selectionIds,
+  chunkIds,
+  isDrained,
+  type BulkContext,
+  type BulkSelection,
+} from '@/lib/crm/bulk-jobs'
+// Side-effect import: registers every real bulk mutation handler so
+// getBulkHandler(kind) resolves at runtime.
+import '@/lib/crm/bulk-handlers'
+import { createServiceClient } from '@/lib/supabase/service'
+import { validateSegment, EMPTY_SEGMENT } from '@/lib/crm/segment-ast'
+import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
+
+/** Default page size for ast resolution — well under PostgREST's response cap. */
+export const AST_RESOLVE_PAGE = 1000
+
+/** Fetch one page of ids for a segment under scope. Injectable so the paging
+ *  loop is unit-testable without a live database. */
+export type AstPageFetcher = (
+  ast: unknown,
+  brokerScope: string | null,
+  page: { limit: number; offset: number },
+) => Promise<number[]>
+
+const defaultPageFetcher: AstPageFetcher = async (ast, brokerScope, page) => {
+  const segment = validateSegment(ast)
+  const sb = createServiceClient()
+  // The resolver returns the people-list select; we only read id off each row.
+  // (The compiled query is a filter/transform builder with no .select() to
+  // override, so we take the full select and project id here.)
+  const { query } = buildCrmPeopleQuery(sb, segment, brokerScope, { limit: page.limit, offset: page.offset })
+  const { data, error } = await query
+  if (error) throw new Error(`ast resolution failed: ${error.message}`)
+  return ((data ?? []) as Array<{ id: number }>).map((r) => r.id)
+}
+
+/**
+ * Resolve an ast-mode selection to a concrete, ordered id list by paging the
+ * fetcher in fixed windows until a short (under-full) page signals the end. Pure
+ * given the fetcher — the page math (accumulate across pages, stop on short page)
+ * is what the unit test exercises. Validates the AST up front so a malformed AST
+ * never starts a paging loop.
+ */
+export async function resolveAstToIds(
+  ast: unknown,
+  brokerScope: string | null,
+  opts?: { pageSize?: number; fetcher?: AstPageFetcher },
+): Promise<number[]> {
+  validateSegment(ast)
+  const limit = Math.max(1, opts?.pageSize ?? AST_RESOLVE_PAGE)
+  const fetcher = opts?.fetcher ?? defaultPageFetcher
+  const ids: number[] = []
+  for (let offset = 0; ; offset += limit) {
+    const rows = await fetcher(ast, brokerScope, { limit, offset })
+    for (const id of rows) ids.push(id)
+    if (rows.length < limit) break
+  }
+  return ids
+}
+
+/**
+ * Defensive per-chunk scope re-clamp for an ids-mode job under a restricted
+ * broker_scope. The enqueue path already pre-clamps an ids selection to the
+ * caller's book (resolveBulkSelection -> resolveAudienceIds), so in the normal
+ * case this is a no-op. It exists as a second wall: if a foreign id ever lands on
+ * a stored ids job (a hand-crafted job row, a future enqueue regression), the
+ * worker re-intersects the chunk with the SAME buildCrmPeopleQuery scope clamp the
+ * list/count use and drops anything outside the book, counting the drops as
+ * skipped so the offset still advances. Superuser jobs (null scope) skip the
+ * round-trip entirely. Injectable fetcher for unit testing without a database.
+ */
+export type ScopeIdFetcher = (
+  chunk: number[],
+  brokerScope: string,
+) => Promise<number[]>
+
+const defaultScopeIdFetcher: ScopeIdFetcher = async (chunk, brokerScope) => {
+  const sb = createServiceClient()
+  const { query } = buildCrmPeopleQuery(sb, EMPTY_SEGMENT, brokerScope, {
+    limit: chunk.length,
+    offset: 0,
+  })
+  const { data, error } = await query.select('id').in('id', chunk)
+  if (error) throw new Error(`scope re-clamp failed: ${error.message}`)
+  return ((data ?? []) as Array<{ id: number }>).map((r) => r.id)
+}
+
+export async function clampChunkToScope(
+  chunk: number[],
+  brokerScope: string | null,
+  fetcher: ScopeIdFetcher = defaultScopeIdFetcher,
+): Promise<{ allowed: number[]; excluded: number }> {
+  if (!brokerScope || chunk.length === 0) return { allowed: chunk, excluded: 0 }
+  const inScope = new Set(await fetcher(chunk, brokerScope))
+  const allowed = chunk.filter((id) => inScope.has(id))
+  return { allowed, excluded: chunk.length - allowed.length }
+}
+
+/** How many chunks one drain pass may run. The cron passes several; an enqueue
+ *  kick passes one, so a small job finishes inline without a slow request. */
+export const CHUNKS_PER_CRON_RUN = 4
+
+export type DrainOutcome = {
+  status: 'idle' | 'progress' | 'done' | 'error'
+  jobId: number | null
+  chunksRun: number
+  rowsProcessed: number
+  drained: boolean
+  error: string | null
+}
+
+/**
+ * Drain up to `maxChunks` chunks off the bulk queue. Never throws — every
+ * failure comes back on the outcome so a cron retry never sees a 500 and an
+ * enqueue kick never fails the enqueue that scheduled it.
+ */
+export async function drainBulkJobs(opts?: { maxChunks?: number }): Promise<DrainOutcome> {
+  const maxChunks = Math.max(1, opts?.maxChunks ?? CHUNKS_PER_CRON_RUN)
+
+  let claimedJobId: number | null = null
+  let chunksRun = 0
+  let rowsProcessed = 0
+  let drained = false
+  let status: DrainOutcome['status'] = 'idle'
+  let errorMsg: string | null = null
+
+  try {
+    for (let i = 0; i < maxChunks; i++) {
+      const claim = await claimNextChunk()
+      if (!claim) {
+        status = chunksRun > 0 ? (drained ? 'done' : 'progress') : 'idle'
+        break
+      }
+      const { job } = claim
+      claimedJobId = job.id
+
+      const handler = getBulkHandler(job.kind)
+      if (!handler) {
+        await markJob(job.id, { status: 'failed', error: `no handler registered for kind "${job.kind}"` })
+        status = 'error'
+        errorMsg = `no handler for kind "${job.kind}"`
+        break
+      }
+
+      // Resolve the frozen id set for this job.
+      let ids = selectionIds(job.selection)
+      if (ids === null) {
+        // ast-mode: resolve the saved-view / filter AST to a concrete id set under
+        // the FROZEN job.broker_scope, then freeze it onto the job as {ids:[...]}
+        // so every subsequent chunk is deterministic and resumable (identical to
+        // ids-mode from here on). The same compiler the list/count/audience use,
+        // so the bulk id set can never drift from what the operator saw.
+        const ast = (job.selection as { ast: unknown }).ast
+        let resolved: number[]
+        try {
+          resolved = await resolveAstToIds(ast, job.broker_scope)
+        } catch (e) {
+          await markJob(job.id, {
+            status: 'failed',
+            error: `ast resolution failed: ${e instanceof Error ? e.message : String(e)}`,
+          })
+          status = 'error'
+          errorMsg = e instanceof Error ? e.message : String(e)
+          break
+        }
+        // Freeze the resolved ids + total onto the job. From here every chunk is
+        // sliced from this stable list — resumable across cron runs / redeploys.
+        const frozen: BulkSelection = { ids: resolved }
+        await markJob(job.id, { selection: frozen, total: resolved.length })
+        job.selection = frozen
+        job.total = resolved.length
+        ids = resolved
+      }
+
+      // Set total on first touch if it was not stamped at enqueue.
+      if (job.total === null || job.total === undefined) {
+        await markJob(job.id, { total: ids.length })
+        job.total = ids.length
+      }
+
+      // Already fully drained (resume after the last chunk) -> finish.
+      if (isDrained(job.total ?? ids.length, job.processed)) {
+        await markJob(job.id, { status: 'done' })
+        drained = true
+        status = 'done'
+        break
+      }
+
+      const chunk = chunkIds(ids, job.processed)
+      if (chunk.length === 0) {
+        await markJob(job.id, { status: 'done' })
+        drained = true
+        status = 'done'
+        break
+      }
+
+      // Re-lease before running the chunk so a multi-chunk drain inside this one
+      // cron run keeps the job exclusively ours (a concurrent worker's claim
+      // SKIP-LOCKs past a live lease). Best-effort — a failed re-lease only
+      // shortens our exclusive window; the atomic claim still prevents a true
+      // double-drain.
+      await reLeaseBulkJob(job.id)
+
+      // Defensive scope re-clamp: drop any chunk id outside the FROZEN
+      // broker_scope (a no-op on the normal pre-clamped path; the second wall
+      // against a foreign id on a stored ids job). Excluded ids count as skipped
+      // so the offset still advances over the full chunk.
+      let allowed = chunk
+      let excludedByScope = 0
+      try {
+        const clamped = await clampChunkToScope(chunk, job.broker_scope)
+        allowed = clamped.allowed
+        excludedByScope = clamped.excluded
+      } catch (e) {
+        await markJob(job.id, {
+          status: 'failed',
+          error: `scope re-clamp failed: ${e instanceof Error ? e.message : String(e)}`,
+        })
+        status = 'error'
+        errorMsg = e instanceof Error ? e.message : String(e)
+        break
+      }
+
+      const ctx: BulkContext = {
+        jobId: job.id,
+        actorEmail: job.actor_email,
+        brokerScope: job.broker_scope,
+      }
+
+      let result
+      try {
+        result = normalizeResult(await handler(allowed, job.params ?? {}, ctx))
+      } catch (e) {
+        // A handler blow-up fails the job (visible, not silent) rather than
+        // looping the same chunk forever.
+        await markJob(job.id, {
+          status: 'failed',
+          error: `handler "${job.kind}" threw: ${e instanceof Error ? e.message : String(e)}`,
+        })
+        status = 'error'
+        errorMsg = e instanceof Error ? e.message : String(e)
+        break
+      }
+
+      // Fold the out-of-scope drops into the chunk result so the offset advances
+      // over the FULL chunk (processed + skipped === chunk.length) and the
+      // breakdown records why.
+      if (excludedByScope > 0) {
+        result.skipped += excludedByScope
+        result.breakdown = {
+          ...result.breakdown,
+          'out-of-scope': (result.breakdown['out-of-scope'] ?? 0) + excludedByScope,
+        }
+      }
+
+      await markChunkProgress(
+        job.id,
+        { processed: job.processed, skipped: job.skipped, breakdown: job.breakdown },
+        result,
+      )
+      chunksRun++
+      rowsProcessed += chunk.length
+      status = 'progress'
+
+      const newProcessed = job.processed + result.processed + result.skipped
+      if (isDrained(job.total ?? ids.length, newProcessed)) {
+        await markJob(job.id, { status: 'done' })
+        drained = true
+        status = 'done'
+        break
+      }
+    }
+
+    return { status, jobId: claimedJobId, chunksRun, rowsProcessed, drained, error: errorMsg }
+  } catch (e) {
+    return {
+      status: 'error',
+      jobId: claimedJobId,
+      chunksRun,
+      rowsProcessed,
+      drained,
+      error: e instanceof Error ? e.message : String(e),
+    }
+  }
+}

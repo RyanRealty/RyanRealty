@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * New contact quick add. Name and phone, plus email or street.
+ * New contact quick add. A name plus an email or a phone number.
  * After save, open person detail for stage, tags, related people, and notes.
  *
  * Cancel vs Esc: v2 Dialog routes every close through one onClose. The `open`
@@ -13,7 +13,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { createQuickContactAction } from '@/app/actions/crm-quick-add'
-import { canSubmitCreateContact } from '@/lib/crm/create-contact'
+import { canSubmitCreateContact, createContactRequirement } from '@/lib/crm/create-contact'
 import { Button, Dialog, SectionHead, TextField } from '@/components/admin/v2'
 
 function useAddPersonForm(onCreated: () => void) {
@@ -84,7 +84,8 @@ function useAddPersonForm(onCreated: () => void) {
     zip, setZip,
     error,
     created,
-    canSubmit: canSubmitCreateContact({ firstName, email, phone, street }),
+    canSubmit: canSubmitCreateContact({ firstName, email, phone }),
+    requirement: createContactRequirement({ firstName, email, phone }),
     reset,
     submit,
   }
@@ -114,7 +115,6 @@ function AddPersonFields({ form }: { form: ReturnType<typeof useAddPersonForm> }
         value={form.phone}
         onChange={(e) => form.setPhone(e.target.value)}
         autoComplete="off"
-        required
       />
       <TextField
         label="Email"
@@ -154,10 +154,13 @@ function AddPersonFields({ form }: { form: ReturnType<typeof useAddPersonForm> }
         />
       </div>
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-        First name and phone, plus an email or a street. Stage, tags, related people, and notes open on the person after save.
+        First name, plus an email or a phone number. Stage, tags, related people, and notes open on the person after save.
       </p>
       {form.error ? (
         <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }} role="alert">{form.error}</p>
+      ) : null}
+      {!form.error && form.requirement ? (
+        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>{form.requirement}</p>
       ) : null}
     </div>
   )

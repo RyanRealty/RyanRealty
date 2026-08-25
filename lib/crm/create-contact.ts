@@ -1,7 +1,14 @@
 /**
- * Quick-add contact: name + phone plus email OR street.
+ * Quick-add contact: a name plus at least one way to reach the person —
+ * an email address or a phone number.
  * Address is a first-class field, never a note.
  * Stage, tags, relationships, notes, and property live on person detail.
+ *
+ * Phone was required here until 2026-08-25. That rule made an email-only
+ * contact impossible to create in the UI, so every web lead, newsletter
+ * signup, and email-test address had to be inserted around the CRM. The
+ * book already holds tens of thousands of email-only people; the form now
+ * accepts what the data model always allowed.
  */
 
 import { personAddressFromFields, type PersonAddress } from '@/lib/crm/person-address'
@@ -34,22 +41,31 @@ export function canSubmitCreateContact(input: {
   firstName: string
   email: string
   phone: string
-  street: string
 }): boolean {
-  return Boolean(
-    input.firstName.trim() &&
-    input.phone.trim() &&
-    (input.email.trim() || input.street.trim()),
-  )
+  return Boolean(input.firstName.trim() && (input.email.trim() || input.phone.trim()))
+}
+
+/**
+ * What is still missing before the form can submit, phrased for the operator.
+ * Null once the form is submittable. The submit button renders this instead of
+ * sitting disabled with no explanation.
+ */
+export function createContactRequirement(input: {
+  firstName: string
+  email: string
+  phone: string
+}): string | null {
+  if (!input.firstName.trim()) return 'Add a first name'
+  if (!input.email.trim() && !input.phone.trim()) return 'Add an email or a phone number'
+  return null
 }
 
 export function validateCreateContact(
   input: CreateContactInput,
 ): { ok: true } | { ok: false; error: string } {
   if (!input.firstName) return { ok: false, error: 'First name required' }
-  if (!input.phone) return { ok: false, error: 'Phone required' }
-  if (!input.email && !input.street) {
-    return { ok: false, error: 'Add an email, or a street address' }
+  if (!input.email && !input.phone) {
+    return { ok: false, error: 'Add an email, or a phone number' }
   }
   return { ok: true }
 }

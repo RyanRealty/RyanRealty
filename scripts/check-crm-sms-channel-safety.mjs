@@ -25,7 +25,12 @@ import { readFileSync } from 'node:fs'
 
 const ENGINE = 'app/api/cron/crm-sequence-engine/route.ts'
 const RELAY = 'scripts/crm-alert-relay.mjs'
-const SUPPRESS = 'lib/crm/suppressions.ts'
+// The tag -> channel mapping lives in its own module (no 'server-only') so the
+// bulk tag form can read it in the browser; lib/crm/suppressions.ts re-exports
+// it and is still the chokepoint every send path calls. This gate follows the
+// mapping to where it is DEFINED — reading the re-exporting file would pass on
+// an import line and stop checking the thing it exists to check.
+const SUPPRESS = 'lib/crm/tag-channel.ts'
 
 const fails = []
 const read = (p) => {
@@ -101,6 +106,15 @@ if (self) {
 
 // ── 3. do-not-call must suppress SMS (TCPA: a text is a call) ────────────────
 const suppress = read(SUPPRESS)
+// The chokepoint must still consume that mapping — if isSuppressed ever stopped
+// reading TAG_CHANNEL, the mapping above would be decoration.
+const chokepoint = read('lib/crm/suppressions.ts')
+if (chokepoint && !/TAG_CHANNEL/.test(chokepoint)) {
+  fails.push(
+    "lib/crm/suppressions.ts: the send-time chokepoint must read TAG_CHANNEL — " +
+      'without it the tag mapping is never enforced at send time.',
+  )
+}
 const dncLine = suppress.match(/contact:do-not-call'[^\n]*channels:\s*\[([^\]]*)\]/)
 if (suppress && (!dncLine || !/'sms'/.test(dncLine[1]))) {
   fails.push(

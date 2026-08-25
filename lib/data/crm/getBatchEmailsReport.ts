@@ -5,6 +5,7 @@ import {
   getEmailCampaigns,
   getCampaignEngagement,
 } from './getEmailReporting'
+import { getBulkEmailCampaigns, type BulkEmailCampaign } from './getBulkEmailCampaigns'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,13 @@ export type BatchEmailRow = {
   status: 'finished' | 'draft'
   /** Whether any email_events rows were found for this campaign. */
   tracked: boolean
+  /**
+   * Where the send came from: 'admin-blast' is the one-off email admin
+   * (email_campaigns), 'crm-batch' is a Batch Email off the People list
+   * (crm_bulk_jobs + email_events). The report used to show only the first,
+   * so a broker who batched their own list saw an empty page.
+   */
+  source: 'admin-blast' | 'crm-batch'
 }
 
 export type BatchEmailsResult = {
@@ -176,10 +184,56 @@ async function readBatchEmailsReport(
         clickRate,
         status: c.sentAtIso ? 'finished' : 'draft',
         tracked: eng?.tracked ?? false,
+        source: 'admin-blast' as const,
       }
     })
 
-  return { rows, unreadable: false }
+  // 7. The other half of the report: batches sent from the People list. Same
+  //    row shape, engagement from the same email_events tally, merged into one
+  //    date-ordered list so "recent batch emails" means every batch email.
+  const bulk = await getBulkEmailCampaigns(100, brokerSlug)
+  const bulkRows = bulk.rows.map((b) => bulkRowToBatchRow(b, brokerNameBySlug))
+
+  const merged = [...rows, ...bulkRows].sort(
+    (a, b) => Date.parse(b.sentAtIso ?? b.createdAtIso) - Date.parse(a.sentAtIso ?? a.createdAtIso),
+  )
+
+  return { rows: merged, unreadable: false }
+}
+
+/**
+ * Project one email-cohort bulk job onto the report's row shape. The engagement
+ * numbers and the honest-rate rule (NULL, never a fake 0%, on a zero
+ * denominator) are the same ones the email_campaigns path applies.
+ */
+function bulkRowToBatchRow(
+  b: BulkEmailCampaign,
+  brokerNameBySlug: Map<string, string>,
+): BatchEmailRow {
+  const eng = b.engagement
+  const sent = eng.tracked ? eng.sent : b.total
+  const delivered = eng.tracked && eng.delivered > 0 ? eng.delivered : sent
+  const fromSlug = b.brokerScope
+  return {
+    id: b.emailKey,
+    // A cohort merges each recipient's own subject line, so the campaign's
+    // subject is the one the broker typed, tokens and all.
+    subject: b.subject,
+    fromBrokerSlug: fromSlug,
+    fromBrokerName: fromSlug ? (brokerNameBySlug.get(fromSlug) ?? fromSlug) : b.actorEmail,
+    createdAtIso: b.createdAtIso,
+    sentAtIso: b.finishedAtIso,
+    recipientCount: b.total,
+    sent,
+    opens: eng.opened,
+    clicks: eng.clicked,
+    unsubscribes: eng.unsubscribed,
+    openRate: delivered > 0 ? eng.opened / delivered : null,
+    clickRate: delivered > 0 ? eng.clicked / delivered : null,
+    status: b.finishedAtIso ? 'finished' : 'draft',
+    tracked: eng.tracked,
+    source: 'crm-batch',
+  }
 }
 
 // ── Cached public API ─────────────────────────────────────────────────────────
@@ -214,7 +268,9 @@ export async function getBatchEmailsReport(
 ): Promise<BatchEmailsResult> {
   const cached = unstable_cache(
     () => readBatchEmailsReport(brokerSlug),
-    ['crm-batch-emails-report-v1', brokerSlug ?? 'all'],
+    // v2: the reader gained the crm-batch source and a `source` field on
+    // every row, so a v1 entry cached before this change is a different shape.
+    ['crm-batch-emails-report-v2', brokerSlug ?? 'all'],
     {
       tags: ['crm-batch-emails', 'crm-reporting', 'crm-email-reporting'],
       revalidate: 600,

@@ -16,8 +16,9 @@ import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getBatchEmailsReport, type BatchEmailRow } from '@/lib/data/crm/getBatchEmailsReport'
 import { formatDate } from '@/lib/format/date'
-import { SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
+import { Button, SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
 import { ReportingSubNav } from '../_components/ReportingSubNav'
+import { refreshBatchEmailsAction } from './actions'
 
 export const metadata = { title: 'Batch Emails | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -89,6 +90,19 @@ const NUM: CSSProperties = {
 const NUM_MUTED: CSSProperties = { ...NUM, color: 'var(--a-text-2)' }
 const RATE: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginLeft: 4 }
 const LINK: CSSProperties = { color: 'var(--a-accent)' }
+
+/**
+ * A text-styled Refresh control. It has to be a form + submit button rather than
+ * a link, because the thing that needs busting is a cache tag, not a URL.
+ */
+function RefreshLink({ children }: { children: React.ReactNode }) {
+  return (
+    <form action={refreshBatchEmailsAction} style={{ display: 'inline-block' }}>
+      <Button type="submit" variant="quiet">{children}</Button>
+    </form>
+  )
+}
+
 const MUTED: CSSProperties = { color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }
 const NOTE: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 12 }
 const STATE_PANEL: CSSProperties = {
@@ -146,11 +160,17 @@ export default async function BatchEmailsPage({
   const sp = await searchParams
   const scope = scopeBroker(access)
 
-  const result = await getBatchEmailsReport(scope).catch(() => null)
+  // A bare .catch(() => null) here rendered a thrown read as the honest-looking
+  // "No batch emails found" empty state, which is the worst of both: the page
+  // looks fine and the failure is invisible. Log it, and let the row below
+  // report it as unreadable rather than as empty.
+  const result = await getBatchEmailsReport(scope).catch((e) => {
+    console.error('[batch-emails report]', e instanceof Error ? e.message : e)
+    return null
+  })
   const rows: BatchEmailRow[] = result?.rows ?? []
-  const unreadable = result?.unreadable ?? false
+  const unreadable = result === null || result.unreadable
 
-  const refreshHref = `/admin/crm/reporting/batch-emails?t=${Date.now()}`
   const finished = rows.filter((r) => r.status === 'finished').length
 
   return (
@@ -173,10 +193,10 @@ export default async function BatchEmailsPage({
       )}
 
       <div style={TOOLBAR}>
-        {/* Refresh: appends ?t= to bust the 10-min cache */}
-        <Link href={refreshHref} className="av2-btn" style={{ textDecoration: 'none' }}>
-          Refresh
-        </Link>
+        {/* Revalidates the reader's cache tags — see ./actions.ts. */}
+        <form action={refreshBatchEmailsAction}>
+          <Button type="submit">Refresh</Button>
+        </form>
       </div>
 
       <SectionHead>Recent batch emails</SectionHead>
@@ -185,15 +205,13 @@ export default async function BatchEmailsPage({
         /* DB error — honest error state, never fake data */
         <div style={STATE_PANEL}>
           Could not load email campaign data.{' '}
-          <Link href={refreshHref} style={LINK}>
-            Try again
-          </Link>
+          <RefreshLink>Try again</RefreshLink>
           .
         </div>
       ) : rows.length === 0 ? (
         /* No campaigns yet — honest empty state */
         <div style={STATE_PANEL}>
-          No batch emails found. Campaigns sent from the email admin appear here.
+          No batch emails found. Batch Email sends from the People list and blasts from the email admin both appear here.
         </div>
       ) : (
         <div style={SCROLLER} tabIndex={0}>
@@ -260,13 +278,7 @@ export default async function BatchEmailsPage({
         campaign has no delivery events rather than a fabricated 0%.
       </p>
 
-      <p style={NOTE}>
-        Results may be cached for up to 10 minutes.{' '}
-        <Link href={refreshHref} style={LINK}>
-          Refresh results
-        </Link>
-        .
-      </p>
+      <p style={NOTE}>Results may be cached for up to 10 minutes. Refresh re-reads them.</p>
     </div>
   )
 }

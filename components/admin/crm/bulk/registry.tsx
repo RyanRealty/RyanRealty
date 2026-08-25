@@ -35,6 +35,7 @@ import { PROPERTY_TYPES } from '@/lib/property-type'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import { SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { FormSelect } from './FormSelect'
+import { TagCombo, bulkTagError, normalizeBulkTag } from './TagCombo'
 import {
   defineBulkAction,
   type ActionId,
@@ -87,12 +88,7 @@ const assignBroker = defineBulkAction<AssignBrokerValue>({
 type TagValue = { tag: string }
 
 function TagFields({ value, onChange, ctx }: BulkFieldsProps<TagValue>) {
-  return (
-    <FormSelect
-      label="Tag" value={value.tag} onChange={(v) => onChange({ tag: v })}
-      placeholder="Pick a tag" options={ctx.tags}
-    />
-  )
+  return <TagCombo value={value.tag} onChange={(v) => onChange({ tag: v })} options={ctx.tags} />
 }
 
 const addTag = defineBulkAction<TagValue>({
@@ -101,8 +97,8 @@ const addTag = defineBulkAction<TagValue>({
   jobKind: 'crm:add-tag',
   initialValue: { tag: '' },
   Fields: TagFields,
-  validate: (v) => (!v.tag.trim() ? 'Pick or type a tag' : null),
-  run: async (v, sel) => ({ mode: 'job', result: await bulkAddTagAction(sel, v.tag.trim()) }),
+  validate: (v) => bulkTagError(v.tag),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkAddTagAction(sel, normalizeBulkTag(v.tag)) }),
 })
 
 const removeTag = defineBulkAction<TagValue>({
@@ -111,8 +107,8 @@ const removeTag = defineBulkAction<TagValue>({
   jobKind: 'crm:remove-tag',
   initialValue: { tag: '' },
   Fields: TagFields,
-  validate: (v) => (!v.tag.trim() ? 'Pick or type a tag' : null),
-  run: async (v, sel) => ({ mode: 'job', result: await bulkRemoveTagAction(sel, v.tag.trim()) }),
+  validate: (v) => bulkTagError(v.tag),
+  run: async (v, sel) => ({ mode: 'job', result: await bulkRemoveTagAction(sel, normalizeBulkTag(v.tag)) }),
 })
 
 // ── set_stage ──────────────────────────────────────────────────────────────────
@@ -245,15 +241,25 @@ function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohort
       />
       {!value.templateId ? (
         // The canonical email editing surface — same interface as every other
-        // email send (the bulk pipeline resolves its own tokens, so the CRM
-        // merge dropdown is hidden).
+        // email send. The merge dropdown used to be hidden here on the premise
+        // that "the bulk pipeline resolves its own tokens"; it does not. The
+        // cohort handler calls the SAME renderCrmMerge with the same
+        // buildMergeContext the one-to-one composer uses, so %contact_first_name%
+        // and friends work in a batch and the broker should be able to insert
+        // them.
         <EmailBodyEditor
           subject={value.subject}
           onSubjectChange={(v) => onChange({ ...value, subject: v })}
           body={value.body}
           onBodyChange={(v) => onChange({ ...value, body: v })}
           signatureHtml={null}
-          hideMergeFields
+          mergeMode="template"
+          // The editor's default placeholder describes the one-to-one composer,
+          // which does send from the broker's own mailbox. A batch goes out over
+          // Resend from the verified sending domain, with the sender set as the
+          // reply address. Saying otherwise on a send surface is worse than
+          // saying nothing.
+          bodyPlaceholder="Message. Sends from Ryan Realty's sending address; replies come back to you."
         />
       ) : null}
     </>

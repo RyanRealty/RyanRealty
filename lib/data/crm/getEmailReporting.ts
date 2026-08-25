@@ -161,11 +161,16 @@ export function sendKey(row: {
   recipient_email: string
   subject?: string | null
 }): string {
+  const recip = (row.recipient_email ?? '').trim().toLowerCase()
   const mid = (row.message_id ?? '').trim()
   if (mid) return `mid:${mid}`
   const ek = (row.email_key ?? '').trim()
-  if (ek) return `ek:${ek}`
-  const recip = (row.recipient_email ?? '').trim().toLowerCase()
+  // The recipient is part of the key, not just a fallback. An email_key
+  // identifies a CAMPAIGN, and a batch campaign shares one key across every
+  // recipient — keying on it alone collapsed a 6,000-person cohort into a
+  // single "send", so sent/delivered/open/click all capped at 1 and every rate
+  // computed off that. One send is one message to one person.
+  if (ek) return `ek:${ek}|${recip}`
   const subj = (row.subject ?? '').trim().toLowerCase()
   return `rs:${recip}|${subj}`
 }

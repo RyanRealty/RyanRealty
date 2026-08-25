@@ -15,7 +15,6 @@ import { revalidatePath, unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { normalizeCrmPhone } from '@/lib/crm/mirror'
 import {
   CRM_STAGES,
   CRM_BROKERS,
@@ -210,6 +209,16 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
   if (filters.stage) overlays.push({ field: 'stage', value: filters.stage })
   if (filters.tag) overlays.push({ field: 'tag', op: 'has', value: filters.tag })
   if (filters.neighborhood) overlays.push({ field: 'neighborhood', value: filters.neighborhood })
+  // Free-text q goes through the SAME compiler every other consumer uses
+  // (search_blob: name + emails + phones + digits-only phones). It used to be a
+  // chained overlay here — exact-match on crm_contact_points for anything with
+  // an '@', capped at 200 ids, and a bare `ilike('name', ...)` otherwise. That
+  // made the list disagree with its own bulk bar: searching "marketing+" listed
+  // one contact (a name match) while "select all matching" resolved five
+  // (search_blob), so the cohort an operator saw was not the cohort that got
+  // mailed. One compiler, one cohort.
+  const qText = filters.q?.trim()
+  if (qText) overlays.push({ field: 'q', value: qText })
   const segment: CrmSegment =
     overlays.length > 0 ? { type: 'group', op: 'and', nodes: overlays } : EMPTY_SEGMENT
 
@@ -233,35 +242,6 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
   // compiler, so this can't widen a restricted broker's book.
   const pondId = Number(filters.pond)
   if (filters.pond && Number.isInteger(pondId) && pondId > 0) query = query.eq('pond_id', pondId)
-
-  // Free-text q: email/phone resolve to an exact contact-point id set; a bare token
-  // is a name search. Kept as a chained overlay (not a segment field) so the exact
-  // email/phone matching semantics are preserved verbatim.
-  const q = filters.q?.trim()
-  if (q) {
-    if (q.includes('@')) {
-      const { data: pts } = await sb
-        .from('crm_contact_points')
-        .select('person_id')
-        .eq('kind', 'email')
-        .eq('value', q.toLowerCase())
-        .limit(200)
-      const ids = (pts ?? []).map((p) => p.person_id)
-      query = query.in('id', ids.length ? ids : [-1])
-    } else if (q.replace(/\D/g, '').length >= 7) {
-      const normalized = normalizeCrmPhone(q)
-      const { data: pts } = await sb
-        .from('crm_contact_points')
-        .select('person_id')
-        .eq('kind', 'phone')
-        .eq('value', normalized ?? '')
-        .limit(200)
-      const ids = (pts ?? []).map((p) => p.person_id)
-      query = query.in('id', ids.length ? ids : [-1])
-    } else {
-      query = query.ilike('name', `%${q}%`)
-    }
-  }
 
   const { data, count, error } = await query
 

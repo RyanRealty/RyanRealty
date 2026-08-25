@@ -10,7 +10,7 @@ import {
   resolveAstToIds,
   AST_RESOLVE_PAGE,
   clampChunkToScope,
-} from '@/app/api/cron/crm-bulk-worker/route'
+} from '@/lib/crm/bulk-drain'
 
 const EMPTY_AST = { type: 'group', op: 'and', nodes: [] }
 

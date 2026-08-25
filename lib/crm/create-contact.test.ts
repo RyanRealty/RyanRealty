@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createContactAddress, parseCreateContactForm, validateCreateContact } from './create-contact'
+import {
+  canSubmitCreateContact,
+  createContactAddress,
+  createContactRequirement,
+  parseCreateContactForm,
+  validateCreateContact,
+} from './create-contact'
 
 function fd(fields: Record<string, string>) {
   const form = new FormData()
@@ -8,7 +14,7 @@ function fd(fields: Record<string, string>) {
 }
 
 describe('create-contact quick add', () => {
-  it('requires name + email + phone', () => {
+  it('accepts a name with both an email and a phone', () => {
     const input = parseCreateContactForm(
       fd({ firstName: 'Odessa', email: 'odessa@example.com', phone: '5415550100' }),
     )
@@ -41,22 +47,39 @@ describe('create-contact quick add', () => {
     })
   })
 
-  it('accepts name + phone + street without email', () => {
+  it('accepts name + phone with no email', () => {
     const input = parseCreateContactForm(
       fd({ firstName: 'Nealon', phone: '5415550101', street: '123 NW Bond St' }),
     )
     expect(validateCreateContact(input)).toEqual({ ok: true })
   })
 
-  it('rejects missing email and street', () => {
-    const input = parseCreateContactForm(fd({ firstName: 'Odessa', phone: '5415550100' }))
-    expect(validateCreateContact(input)).toEqual({ ok: false, error: 'Add an email, or a street address' })
+  it('accepts name + email with no phone', () => {
+    const input = parseCreateContactForm(
+      fd({ firstName: 'Blake', email: 'marketing+blake@ryan-realty.com' }),
+    )
+    expect(validateCreateContact(input)).toEqual({ ok: true })
+    expect(canSubmitCreateContact(input)).toBe(true)
   })
 
-  it('rejects a missing phone', () => {
-    const input = parseCreateContactForm(
-      fd({ firstName: 'Odessa', email: 'odessa@example.com' }),
+  it('rejects a contact with no email and no phone', () => {
+    const input = parseCreateContactForm(fd({ firstName: 'Odessa', street: '123 NW Bond St' }))
+    expect(validateCreateContact(input)).toEqual({
+      ok: false,
+      error: 'Add an email, or a phone number',
+    })
+  })
+
+  it('rejects a missing first name', () => {
+    const input = parseCreateContactForm(fd({ email: 'odessa@example.com' }))
+    expect(validateCreateContact(input)).toEqual({ ok: false, error: 'First name required' })
+  })
+
+  it('names the missing field instead of silently disabling submit', () => {
+    expect(createContactRequirement({ firstName: '', email: '', phone: '' })).toBe('Add a first name')
+    expect(createContactRequirement({ firstName: 'Blake', email: '', phone: '' })).toBe(
+      'Add an email or a phone number',
     )
-    expect(validateCreateContact(input)).toEqual({ ok: false, error: 'Phone required' })
+    expect(createContactRequirement({ firstName: 'Blake', email: 'b@x.com', phone: '' })).toBeNull()
   })
 })

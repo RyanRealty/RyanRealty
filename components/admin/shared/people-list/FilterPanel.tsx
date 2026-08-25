@@ -43,7 +43,9 @@ export type FilterPanelProps = {
 
 type FilterField = 'stage' | 'tag' | 'neighborhood' | 'q'
 
-const FIELD_LABEL: Record<FilterField, string> = { stage: 'Stage', tag: 'Tags', neighborhood: 'Neighborhood', q: 'Name' }
+// `q` searches name, email and phone (the search_blob column the list compiler
+// reads), so it is not a name filter and is no longer labelled as one.
+const FIELD_LABEL: Record<FilterField, string> = { stage: 'Stage', tag: 'Tags', neighborhood: 'Neighborhood', q: 'Name, email or phone' }
 
 export default function FilterPanel({ filters, stageOptions, tagOptions, neighborhoodOptions, carry }: FilterPanelProps) {
   const router = useRouter()
@@ -67,7 +69,7 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, neighbo
   if (filters.stage) active.push({ field: 'stage', summary: `Stage includes any of: ${filters.stage}` })
   if (filters.tagsAny?.length) active.push({ field: 'tag', summary: `Tags include any of: ${filters.tagsAny.join(', ')}` })
   if (filters.neighborhood) active.push({ field: 'neighborhood', summary: `Neighborhood is: ${neighborhoodOptions.find((n) => n.key === filters.neighborhood)?.label ?? filters.neighborhood}` })
-  if (filters.q) active.push({ field: 'q', summary: `Name contains: ${filters.q}` })
+  if (filters.q) active.push({ field: 'q', summary: `Name, email or phone contains: ${filters.q}` })
 
   const rows: Array<{ field: FilterField; summary: string; isDraft: boolean }> = [
     ...active.map((a) => ({ ...a, isDraft: false })),
@@ -229,8 +231,8 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, neighbo
                           name="qv"
                           type="text"
                           defaultValue={filters.q ?? ''}
-                          placeholder="Name contains"
-                          aria-label="Name contains"
+                          placeholder="Name, email or phone"
+                          aria-label="Name, email or phone contains"
                           style={{ width: '100%', maxWidth: 'none' }}
                         />
                       </form>

@@ -52,7 +52,7 @@ describe('formatRate', () => {
 describe('sendKey', () => {
   it('prefers message_id, then email_key, then recipient+subject', () => {
     expect(sendKey({ message_id: 'm1', recipient_email: 'a@b.com' })).toBe('mid:m1')
-    expect(sendKey({ email_key: 'k1', recipient_email: 'a@b.com' })).toBe('ek:k1')
+    expect(sendKey({ email_key: 'k1', recipient_email: 'a@b.com' })).toBe('ek:k1|a@b.com')
     expect(sendKey({ recipient_email: 'A@B.com', subject: 'Hi' })).toBe('rs:a@b.com|hi')
   })
 
@@ -270,5 +270,30 @@ describe('summarizeCampaign', () => {
     expect(c.tracked).toBe(true)
     expect(c.opened).toBe(1)
     expect(c.openRate).toBe(1)
+  })
+})
+
+describe('sendKey — a batch campaign is many sends, not one', () => {
+  it('separates two recipients of the same campaign', () => {
+    const a = sendKey({ email_key: 'bulk:email-cohort:18', recipient_email: 'a@example.com' })
+    const b = sendKey({ email_key: 'bulk:email-cohort:18', recipient_email: 'b@example.com' })
+    expect(a).not.toBe(b)
+  })
+
+  it('counts one sent per recipient across a shared email_key', () => {
+    const key = 'bulk:email-cohort:18'
+    const rows = ['a@example.com', 'b@example.com', 'c@example.com'].flatMap((recipient_email) => [
+      { message_id: null, recipient_email, person_id: null, broker: null, send_type: 'campaign', event: 'sent', email_key: key, subject: 'S', occurred_at: '2026-08-25T19:46:00Z' },
+      { message_id: null, recipient_email, person_id: null, broker: null, send_type: 'campaign', event: 'delivered', email_key: key, subject: 'S', occurred_at: '2026-08-25T19:46:01Z' },
+    ])
+    const sum = summarizeEngagement(rows)
+    expect(sum.sent).toBe(3)
+    expect(sum.delivered).toBe(3)
+  })
+
+  it('still collapses a duplicate event for the same recipient', () => {
+    const key = 'bulk:email-cohort:18'
+    const row = { message_id: null, recipient_email: 'a@example.com', person_id: null, broker: null, send_type: 'campaign', event: 'open', email_key: key, subject: 'S', occurred_at: '2026-08-25T19:46:02Z' }
+    expect(summarizeEngagement([row, { ...row, occurred_at: '2026-08-25T19:47:00Z' }]).opened).toBe(1)
   })
 })

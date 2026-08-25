@@ -13,7 +13,7 @@
  * the handlers without pulling in 'server-only'.
  */
 
-import { TAG_CHANNEL } from '@/lib/crm/suppressions'
+import { TAG_CHANNEL } from '@/lib/crm/tag-channel'
 
 /** Lower-cased set of every tag that drives a suppression channel. */
 const PROTECTED_TAGS: ReadonlySet<string> = new Set(

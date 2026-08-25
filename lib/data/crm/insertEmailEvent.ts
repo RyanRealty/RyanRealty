@@ -76,3 +76,33 @@ export async function deleteEmailEventByDedupeKey(
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
 }
+
+/**
+ * Stamp the provider's message id onto a claim row after the wire send returns.
+ *
+ * The cohort claims its `sent` row BEFORE the send (that is what makes a double
+ * send impossible), so at insert time there is no Resend id yet. Without this
+ * follow-up the id is never written, and every delivered / bounce / complaint
+ * webhook — which Resend keys on the message id — lands as a row that cannot be
+ * traced back to the campaign it belongs to. The batch report then reads zero
+ * deliveries and shows "—" for every rate.
+ *
+ * Best-effort by contract: a failure here costs reporting fidelity, never the
+ * send, and never throws.
+ */
+export async function stampEmailEventMessageId(
+  dedupeKey: string,
+  messageId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const sb = createServiceClient()
+    const { error } = await sb
+      .from('email_events')
+      .update({ message_id: messageId })
+      .eq('dedupe_key', dedupeKey)
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
