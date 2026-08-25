@@ -25,7 +25,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getBlogPostBySlug, getRelatedBlogPosts, getMarketPulse } from '@/lib/data'
+import { getBlogPostBySlug, getRelatedBlogPosts, getDetachedMarket } from '@/lib/data'
 import { getBlogRelatedHomes } from '@/lib/data/blog/getBlogRelatedHomes'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
 import {
@@ -169,10 +169,35 @@ export default async function BlogPostPage({ params }: PageProps) {
         rawBody,
         publishBlogCurrentMos(
           BLOG_CURRENT_MOS_PLACES,
+          // D27: the live months-of-supply guard reads leftover detached membership,
+          // the same pile every public page and client document reads. This is not a
+          // published figure from the post — it exists so an archived post cannot
+          // assert a stale verdict — so moving it does not rewrite the archive. A
+          // leftover miss returns null, and publishBlogCurrentMos withholds that
+          // place rather than asserting a verdict off a population we did not read.
           await Promise.all(
-            BLOG_CURRENT_MOS_PLACES.map((place) =>
-              getMarketPulse({ geoType: place.geoType, geoSlug: place.geoSlug }),
-            ),
+            BLOG_CURRENT_MOS_PLACES.map(async (place) => {
+              // Leftover publishes city, region and neighborhood. "Central Oregon
+              // overall" is the region row and is the row this guard exists for, so
+              // it must not be narrowed away. getDetachedMarket normalises the slug,
+              // which is what makes the list's cache-alphabet 'la pine' resolve to
+              // the metric alphabet 'la-pine'. Any other grain withholds rather than
+              // being coerced into one we did not read.
+              if (
+                place.geoType !== 'city' &&
+                place.geoType !== 'region' &&
+                place.geoType !== 'neighborhood'
+              ) {
+                return null
+              }
+              const row = await getDetachedMarket(place.geoType, place.geoSlug).catch(() => null)
+              if (!row || row.monthsOfSupply == null) return null
+              return {
+                monthsOfSupply: row.monthsOfSupply,
+                activeCount: row.activeCount,
+                refreshedAt: row.computedAt,
+              }
+            }),
           ),
         ),
       )
