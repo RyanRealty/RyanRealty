@@ -13,7 +13,8 @@
  */
 
 import type { ReactNode } from 'react'
-import type { BlogPostCard, MarketPulse, MarketPulseSnapshot } from '@/lib/data'
+import type { BlogPostCard, MarketPulseSnapshot } from '@/lib/data'
+import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { formatDate } from '@/lib/format/date'
 import {
   v3Text,
@@ -40,7 +41,7 @@ import type { PublicMixRow } from '@/lib/data/market-truth/public-mix'
 type Props = {
   cityName: string
   citySlug: string
-  pulse: MarketPulse | null
+  hud: LeftoverHudKpis | null
   mosText: string | null
   verdict: { kind: MarketKind; label: string }
   refreshedAt: string | null
@@ -60,7 +61,7 @@ type Props = {
 export function CityMarketView({
   cityName,
   citySlug,
-  pulse,
+  hud,
   mosText,
   verdict,
   refreshedAt,
@@ -76,7 +77,7 @@ export function CityMarketView({
   publicPace = null,
   publicMix = null,
 }: Props) {
-  const live = buildLiveFigures(pulse, mosText, cityName)
+  const live = buildLiveFigures(hud, mosText, cityName)
   const segmentFigures = buildPublicSegmentFigures(publicSegments, citySlug)
   const paceFigures = buildPublicPaceFigures(publicPace)
   const mixFigures = buildPublicMixFigures(publicMix)

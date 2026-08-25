@@ -186,11 +186,12 @@ describe('getSellBendMarket', () => {
     expect(report).not.toMatch(/Pulse overlay is the fallback/)
   })
 
-  it('housing-market city and hub pages read overlaid pulse (getDetachedOverlays)', () => {
+  it('housing-market city and hub pages read leftover HUD (getDetachedOverlays)', () => {
     const geo = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
     const hub = readFileSync(resolve('app/housing-market/page.tsx'), 'utf8')
     const pulse = readFileSync(resolve('lib/data/market/getMarketPulse.ts'), 'utf8')
-    expect(geo).toMatch(/getMarketPulse/)
+    expect(geo).toMatch(/leftoverHudKpis/)
+    expect(geo).not.toMatch(/getMarketPulse\(/)
     expect(hub).toMatch(/getMarketPulse/)
     expect(pulse).toMatch(/getDetachedOverlays/)
   })

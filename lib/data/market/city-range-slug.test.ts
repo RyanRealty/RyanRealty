@@ -17,10 +17,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 
-const { detailMock, pulseMock, leftoverMock } = vi.hoisted(() => ({
+const { detailMock, pulseMock, leftoverMock, overlaysMock } = vi.hoisted(() => ({
   detailMock: vi.fn(),
   pulseMock: vi.fn(),
   leftoverMock: vi.fn(),
+  overlaysMock: vi.fn(),
 }))
 
 vi.mock('@/lib/data/market/getCityMarketDetail', () => ({
@@ -38,6 +39,15 @@ vi.mock('@/lib/data/market-truth/public-pace', async () => {
     getPublicDetachedPace: (...args: unknown[]) => leftoverMock(...args),
   }
 })
+vi.mock('@/lib/data/market-truth/getSellBendMarket', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/data/market-truth/getSellBendMarket')>(
+    '@/lib/data/market-truth/getSellBendMarket',
+  )
+  return {
+    ...actual,
+    getDetachedOverlays: (...args: unknown[]) => overlaysMock(...args),
+  }
+})
 
 const { getCityRangeRow } = await import('@/lib/data/market/getCityRangeReport')
 
@@ -50,6 +60,8 @@ beforeEach(() => {
   pulseMock.mockReset()
   leftoverMock.mockReset()
   leftoverMock.mockResolvedValue({ ...EMPTY_PUBLIC_PACE })
+  overlaysMock.mockReset()
+  overlaysMock.mockResolvedValue(new Map())
 })
 
 describe('getCityRangeRow — one spelling supplies every field', () => {
@@ -81,7 +93,7 @@ describe('getCityRangeRow — one spelling supplies every field', () => {
     expect(row!.medianSalePrice).toBe(415000)
     // Sales (12 mo) is leftover, not a second cache spelling. Default leftover miss omits.
     expect(row!.sales12mo).toBeNull()
-    expect(row!.activeCount).toBe(170)
+    expect(row!.activeCount).toBeNull()
   })
 
   it('falls through to the next spelling ONLY when the first answers nothing at all', async () => {
@@ -115,7 +127,7 @@ describe('getCityRangeRow — one spelling supplies every field', () => {
 
     const row = await getCityRangeRow('La Pine', 'ytd')
     expect(row).not.toBeNull()
-    expect(row!.activeCount).toBe(170)
+    expect(row!.activeCount).toBeNull()
     // The hyphen spelling's 44 must NOT appear beside the space spelling's pulse.
     expect(row!.soldCount).toBeNull()
     expect(row!.medianSalePrice).toBeNull()
@@ -153,7 +165,7 @@ describe('getCityRangeRow — one spelling supplies every field', () => {
     // Committed to the space spelling: its pulse renders, leftover (miss) omits
     // Sales (12 mo), and the hyphen's 44 must NOT appear as this row's YTD.
     expect(row!.sales12mo).toBeNull()
-    expect(row!.activeCount).toBe(170)
+    expect(row!.activeCount).toBeNull()
     expect(row!.soldCount).toBeNull()
     expect(row!.medianSalePrice).toBeNull()
     // Guard the impossible-row signature directly.

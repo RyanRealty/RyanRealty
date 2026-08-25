@@ -69,6 +69,8 @@
 
 import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { leftoverHudKpis, type LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { citySlugCandidates, cityUrlSlug } from '@/lib/data/market/getCityReportSnapshot'
 import {
   EMPTY_PUBLIC_PACE,
@@ -124,6 +126,7 @@ export function overlayRangeLeftover(
   row: CityRangeRow,
   leftover: Pick<PublicPaceRow, 'closedCount' | 'medianClose' | 'medianPpsf'> | null,
   period: RangePeriod,
+  hud?: Pick<LeftoverHudKpis, 'active' | 'monthsSupply'> | null,
 ): CityRangeRow {
   const closed = leftover?.closedCount ?? null
   const medianClose = leftover?.medianClose ?? null
@@ -134,6 +137,8 @@ export function overlayRangeLeftover(
     soldCount: period === 'rolling_365d' ? closed : row.soldCount,
     medianSalePrice: period === 'rolling_365d' ? medianClose : row.medianSalePrice,
     medianPricePerSqft: period === 'rolling_365d' ? medianPpsf : row.medianPricePerSqft,
+    activeCount: hud ? hud.active : row.activeCount,
+    monthsOfSupply: hud ? hud.monthsSupply : row.monthsOfSupply,
   }
 }
 
@@ -180,7 +185,17 @@ export async function getCityRangeRow(
   }
   const leftover = await leftoverTask
   const leftoverHit = leftover.closedCount != null || leftover.medianClose != null
-  if (!detail && !pulse && !leftoverHit) return null
+  const overlays = await getDetachedOverlays([{ geoType: 'city', geoSlug: cityUrlSlug(cityLabel) }]).catch(
+    () => new Map(),
+  )
+  const layers = overlays.get(`city:${cityDetachedSlug(cityUrlSlug(cityLabel))}`)
+  const hud = leftoverHudKpis({
+    grain: 'city',
+    headlines: layers?.headlines ?? null,
+    inventory: layers?.inventory ?? null,
+    pace: leftover,
+  })
+  if (!detail && !pulse && !leftoverHit && hud.active == null && hud.monthsSupply == null) return null
 
   return overlayRangeLeftover(
     {
@@ -198,6 +213,7 @@ export async function getCityRangeRow(
     },
     leftover,
     period,
+    hud,
   )
 }
 

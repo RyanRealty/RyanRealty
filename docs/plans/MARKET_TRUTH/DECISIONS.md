@@ -311,3 +311,17 @@ mixed: search city FAQ, and event / golf / trail / venue city market bands. Miss
 omits. Pulse does not fill.
 
 CRM / blog / report export stay pulse-gated. New · 30 days omitted. County unpublished.
+
+## D26 — leftover housing instrument, leftover reports live, leftover as-of · **DECIDED** (Matt, 2026-08-24)
+
+Housing-market geo instruments print leftover HUD-family figures. Pulse is not
+spread. Leftover pending, leftover Closed · 30 days, leftover 90-day Median to
+pending print on that instrument when leftover can publish them.
+
+Reports hub live inventory / MOS / closed-30 / days-to-pending overlay leftover HUD.
+Range-table active and MOS overlay leftover HUD. Leftover miss omits. Pulse does not fill.
+
+City, neighborhood, and community HUD as-of stamps and leftover FAQ HUD-family cells
+are leftover membership. Pulse does not fill those leftover cells.
+
+CRM / blog / report export stay pulse-gated. New · 30 days omitted. County unpublished.

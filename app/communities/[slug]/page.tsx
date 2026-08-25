@@ -279,7 +279,7 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [
-    snapshot, pulse, stats, _regionPulse, priceHist,
+    snapshot, _pulse, stats, _regionPulse, priceHist,
     boundaryRead, resortBoundary, allCitySnapshots, communities,
     blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
@@ -668,7 +668,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     monthsOfSupply,
     medianDaysToPending: hud.daysToPending,
     medianDaysOnMarket: null,
-    refreshedAt: pulse?.refreshedAt ?? snapshot?.refreshedAt ?? null,
+    refreshedAt: commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? snapshot?.refreshedAt ?? null,
     // Extended fields — leftover 12-month closed count. Miss omits.
     soldCount12mo: publicPace.closedCount ?? null,
     subdivisionAliases: registryEntry?.subdivision_aliases?.length
@@ -846,7 +846,7 @@ export default async function CommunityDetailPage({ params }: Props) {
             HUD section, not a second stacked headed section. */}
         <KbMarketHud
           data={marketData}
-          eyebrow={`${community.name} · The market`} geoName={community.name} asOf={pulse?.refreshedAt ?? null}
+          eyebrow={`${community.name} · The market`} geoName={community.name} asOf={commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? null}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         >
           <PublicProductTypes cityName={community.name} citySlug={citySlug ?? ''} rows={publicSegments} />

@@ -4,10 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 import type { CityRangeRow } from '@/lib/market/range-periods'
 
-const { detailMock, pulseMock, leftoverMock } = vi.hoisted(() => ({
+const { detailMock, pulseMock, leftoverMock, overlaysMock } = vi.hoisted(() => ({
   detailMock: vi.fn(),
   pulseMock: vi.fn(),
   leftoverMock: vi.fn(),
+  overlaysMock: vi.fn(),
 }))
 
 vi.mock('@/lib/data/market/getCityMarketDetail', () => ({
@@ -23,6 +24,15 @@ vi.mock('@/lib/data/market-truth/public-pace', async () => {
   return {
     ...actual,
     getPublicDetachedPace: (...args: unknown[]) => leftoverMock(...args),
+  }
+})
+vi.mock('@/lib/data/market-truth/getSellBendMarket', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/data/market-truth/getSellBendMarket')>(
+    '@/lib/data/market-truth/getSellBendMarket',
+  )
+  return {
+    ...actual,
+    getDetachedOverlays: (...args: unknown[]) => overlaysMock(...args),
   }
 })
 
@@ -169,6 +179,22 @@ describe('overlayRangeLeftover', () => {
     expect(year.soldCount).not.toBe(0)
   })
 
+  it('overlays leftover HUD active/MOS and omits on leftover miss', () => {
+    const withHud = overlayRangeLeftover(rangeRow(), LEFTOVER, 'rolling_30d', {
+      active: 768,
+      monthsSupply: 4.4,
+    })
+    expect(withHud.activeCount).toBe(768)
+    expect(withHud.monthsOfSupply).toBe(4.4)
+    const miss = overlayRangeLeftover(rangeRow(), LEFTOVER, 'rolling_30d', {
+      active: null,
+      monthsSupply: null,
+    })
+    expect(miss.activeCount).toBeNull()
+    expect(miss.monthsOfSupply).toBeNull()
+    expect(miss.activeCount).not.toBe(772)
+  })
+
   it('omits rolling_365d $/sq ft on leftover ppsf miss even when cache had a value', () => {
     const year = overlayRangeLeftover(
       rangeRow({ medianPricePerSqft: 385, medianDom: 25 }),
@@ -188,6 +214,8 @@ describe('getCityRangeRow leftover overlay', () => {
     leftoverMock.mockReset()
     leftoverMock.mockResolvedValue({ ...LEFTOVER })
     pulseMock.mockResolvedValue({ activeCount: 772, monthsOfSupply: 4.5 })
+    overlaysMock.mockReset()
+    overlaysMock.mockResolvedValue(new Map())
   })
 
   it('default 30-day range keeps cache Sold and overlays leftover onto Sales (12 mo)', async () => {

@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import type { MarketDetail, MarketPulse } from '@/lib/data'
+import type { MarketDetail } from '@/lib/data'
+import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import { buildCityPeriodFigures, buildLiveFigures, buildPublicPaceFigures } from './geo-figures'
 
-function pulse(overrides: Partial<MarketPulse>): MarketPulse {
+function hud(overrides: Partial<LeftoverHudKpis> = {}): LeftoverHudKpis {
   return {
-    geoType: 'city',
-    geoSlug: 'madras',
-    activeCount: 47,
-    medianListPrice: 399900,
-    newThisWeek: 0,
-    priceDropsThisWeek: 0,
-    closedLast30Days: 0,
-    monthsOfSupply: 4.9,
-    medianDaysToPending: null,
-    refreshedAt: '2026-08-19T00:00:00Z',
+    active: 47,
+    pending: null,
+    closed30: null,
+    new30: null,
+    medianList: 399900,
+    saleToList: null,
+    daysToPending: null,
+    monthsSupply: 4.9,
+    sold12mo: null,
     ...overrides,
   }
 }
@@ -63,11 +63,21 @@ function leftover(overrides: Partial<PublicPaceRow> = {}): PublicPaceRow {
 const CURRENT_MONTH_KEY = '2026-08'
 
 describe('buildLiveFigures — list median digits', () => {
-  it('Madras: prints the exact pulse median the FAQ publishes, not a thousand-round', () => {
-    const live = buildLiveFigures(pulse({ medianListPrice: 399900 }), '4.9', 'Madras')
+  it('Madras: prints the exact leftover median the FAQ publishes, not a thousand-round', () => {
+    const live = buildLiveFigures(hud({ medianList: 399900 }), '4.9', 'Madras')
     const list = live.figures.find((f) => String(f.label).includes('median list price'))
     expect(list?.value).toBe('$399,900')
     expect(String(list?.value)).not.toContain('$400,000')
+  })
+
+  it('prints leftover pending on the live instrument and leftover-membership trace', () => {
+    const live = buildLiveFigures(hud({ pending: 316, closed30: 180, daysToPending: 19 }), '4.4', 'Bend')
+    const labels = live.figures.map((f) => String(f.label))
+    expect(labels).toContain('pending · now')
+    expect(labels).toContain('closed in the last 30 days')
+    expect(labels).toContain('median to pending · 90 days')
+    expect(live.trace).toMatch(/leftover membership/)
+    expect(live.trace).not.toMatch(/live MLS/)
   })
 })
 
@@ -149,10 +159,10 @@ describe('buildCityPeriodFigures — leftover 12-month overlay', () => {
 })
 
 describe('buildPublicPaceFigures — 12-month close trio belongs on period figures', () => {
-  it('keeps pending and days to contract, and does not reprint leftover close/count/YoY', () => {
+  it('keeps days to contract, and does not reprint leftover close/count/YoY or HUD pending', () => {
     const figures = buildPublicPaceFigures(leftover())
     const labels = figures.map((f) => String(f.label))
-    expect(labels).toContain('pending · now')
+    expect(labels).not.toContain('pending · now')
     expect(labels).toContain('days to contract · 12 months')
     expect(labels).not.toContain('median close · 12 months')
     expect(labels).not.toContain('closed sales · 12 months')

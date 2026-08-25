@@ -194,7 +194,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [
-    pulse, stats, _regionPulse, priceHist,
+    _pulse, stats, _regionPulse, priceHist,
     boundaryRead, allCitySnapshots, blogPosts, openHouses, activity,
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
     peerNeighborhoods,
@@ -468,8 +468,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   }
 
   // ── PAGE CONTRACT: AI-citable verified Q&A + structured data ───────────────
+  const leftoverStamp = nbhMt?.headlines?.computedAt ?? nbhMt?.inventory?.computedAt ?? null
   const marketFaqInput: MarketFaqInput = {
-    ...(pulse ?? {}), grain: 'neighborhood',
+    grain: 'neighborhood',
     source: 'market-truth',
     activeCount: hud.active,
     pulseActiveCount: hud.active,
@@ -477,6 +478,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     monthsOfSupply,
     medianDaysToPending: hud.daysToPending,
     soldCount12mo: publicPace.closedCount ?? null,
+    refreshedAt: leftoverStamp,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
 
@@ -593,7 +595,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         ) : null}
         <KbMarketHud
           data={marketData}
-          eyebrow={`${neighborhood.name} · The market`} geoName={neighborhood.name} asOf={pulse?.refreshedAt ?? null}
+          eyebrow={`${neighborhood.name} · The market`} geoName={neighborhood.name} asOf={leftoverStamp}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         >
           <PublicProductTypes cityName={neighborhood.name} citySlug={citySlug} rows={publicSegments} />

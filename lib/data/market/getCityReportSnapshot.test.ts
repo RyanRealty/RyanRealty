@@ -3,10 +3,11 @@ import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 
-const { detailMock, leftoverMock, pulseMock } = vi.hoisted(() => ({
+const { detailMock, leftoverMock, pulseMock, overlaysMock } = vi.hoisted(() => ({
   detailMock: vi.fn(),
   leftoverMock: vi.fn(),
   pulseMock: vi.fn(),
+  overlaysMock: vi.fn(),
 }))
 
 vi.mock('@/lib/data/market/getCityMarketDetail', () => ({
@@ -22,6 +23,15 @@ vi.mock('@/lib/data/market-truth/public-pace', async () => {
   return {
     ...actual,
     getPublicDetachedPace: (...args: unknown[]) => leftoverMock(...args),
+  }
+})
+vi.mock('@/lib/data/market-truth/getSellBendMarket', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/data/market-truth/getSellBendMarket')>(
+    '@/lib/data/market-truth/getSellBendMarket',
+  )
+  return {
+    ...actual,
+    getDetachedOverlays: (...args: unknown[]) => overlaysMock(...args),
   }
 })
 
@@ -240,9 +250,11 @@ describe('getCityReportSnapshot leftover overlay', () => {
     pulseMock.mockReset()
     detailMock.mockReset()
     leftoverMock.mockReset()
+    overlaysMock.mockReset()
     pulseMock.mockResolvedValue(pulse)
     detailMock.mockResolvedValue(detail)
     leftoverMock.mockResolvedValue(leftover)
+    overlaysMock.mockResolvedValue(new Map())
   })
 
   it('singular path source-contracts leftover overlay so cache 12-month close cannot print', () => {
@@ -260,22 +272,51 @@ describe('getCityReportSnapshot leftover overlay', () => {
     expect(snap!.trailing12mo!.soldCount).toBe(2095)
     expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).toBeCloseTo(-1.9, 5)
     expect(snap!.trailing12mo!.medianDom).toBe(41)
-    expect(snap!.live!.closedLast30Days).toBe(92)
-    expect(snap!.live!.activeCount).toBe(500)
-    expect(snap!.live!.medianDaysToPending).toBe(38)
+    expect(snap!.live).toBeNull()
     expect(snap!.trailing12mo!.medianSalePrice).not.toBe(780_000)
     expect(snap!.trailing12mo!.soldCount).not.toBe(1_240)
     expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).not.toBe(2.1)
   })
 
-  it('singular leftover miss nulls trailing median/sold/yoy and keeps pulse plus cache medianDom', async () => {
+  it('singular leftover miss nulls trailing median/sold/yoy and omits live HUD-family', async () => {
     leftoverMock.mockResolvedValue(EMPTY_PUBLIC_PACE)
     const snap = await getCityReportSnapshot('Bend')
     expect(snap!.trailing12mo!.medianSalePrice).toBeNull()
     expect(snap!.trailing12mo!.soldCount).toBeNull()
     expect(snap!.trailing12mo!.yoyMedianPriceDeltaPct).toBeNull()
     expect(snap!.trailing12mo!.medianDom).toBe(41)
-    expect(snap!.live!.closedLast30Days).toBe(92)
+    expect(snap!.live).toBeNull()
+  })
+
+  it('overlays leftover HUD onto live closed30 / DTP / inventory', async () => {
+    leftoverMock.mockResolvedValue({
+      ...leftover,
+      closedCount30d: 180,
+      daysToPending90d: 19,
+      pendingCount: 316,
+    })
+    overlaysMock.mockResolvedValue(
+      new Map([
+        [
+          'city:bend',
+          {
+            headlines: {
+              activeCount: 768,
+              monthsOfSupply: 4.4,
+              medianListPrice: 925_000,
+              computedAt: '2026-08-24T00:00:00Z',
+            },
+            inventory: { activeCount: 768, medianListPrice: 925_000, computedAt: '2026-08-24T00:00:00Z' },
+          },
+        ],
+      ]),
+    )
+    const snap = await getCityReportSnapshot('Bend')
+    expect(snap!.live!.activeCount).toBe(768)
+    expect(snap!.live!.closedLast30Days).toBe(180)
+    expect(snap!.live!.medianDaysToPending).toBe(19)
+    expect(snap!.live!.medianListPrice).toBe(925_000)
+    expect(snap!.live!.closedLast30Days).not.toBe(92)
   })
 })
 

@@ -109,6 +109,12 @@ export function buildRegionInstruments(
       href: listingsBrowsePath(),
     })
   }
+  if (hud.pending != null && hud.pending > 0) {
+    liveFigures.push({
+      value: v3Text(hud.pending.toLocaleString('en-US')),
+      label: v3Text('pending · now'),
+    })
+  }
   if (mosText != null) {
     liveFigures.push({
       value: v3Text(mosText),

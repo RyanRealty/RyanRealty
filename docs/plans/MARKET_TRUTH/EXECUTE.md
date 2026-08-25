@@ -755,6 +755,26 @@ Same one-pile rule. Leftover pending prints on leftover-eligible public HUD KPI 
 
 CRM / blog / report export stay pulse-gated. New · 30 days omitted. County unpublished.
 
+### D26 leftover housing instrument, leftover reports live, leftover as-of
+
+**Done when a real user can:**
+1. Open `/housing-market/bend` and see leftover pending, leftover Closed · 30 days, leftover 90-day Median to pending, leftover inventory, leftover MOS. Pulse does not fill. A leftover miss omits.
+2. Open `/housing-market/reports` city live figures and the range-table active / MOS columns and see leftover HUD. Leftover miss omits.
+3. Open `/cities/bend` HUD and see the leftover as-of stamp, not a pulse fill.
+
+CRM / blog / report export stay pulse-gated. New · 30 days omitted. County unpublished.
+
+2026-08-25 landed (live webpack 3010): `/housing-market/bend` homes for sale **764**, pending · now **311**, months of supply **4.4**, median to pending · 90 days **19**, closed in the last 30 days **190**, median list **$934,500**; `/housing-market/reports` 200 with leftover naming x12; `/cities/bend` HUD **Updated 11:21 AM** = leftover `market_metric.computed_at` `2026-08-25T18:21:22.696537+00:00` (the page no longer reads market pulse at all), Active single-family **764**, Median to pending **19 days**; `/cities/bend/awbrey-butte` **Updated 11:40 AM**; `/communities/sunriver` **Updated 11:40 AM**, Active single-family **55**, Median to pending **18 days**. The two stamps differ by grain, which is what proves they are leftover `computed_at` and not one shared pulse refresh. County unpublished.
+
+**G52 moved with the architecture.** Dropping the pulse read left the three pages with no
+`pulse ?? snapshot` for `check-kb-page-contract.mjs` to find, and the gate failed them for doing
+the stricter thing — `buildMarketFaq` is now called unconditionally with an all-nullable leftover
+input, so the JSON-LD cannot vanish at all. The rule moved to
+`scripts/lib/kb-market-faq-resilience.mjs` with failing fixtures beside it
+(`kb-market-faq-resilience.test.mjs`): the vanishing shape `pulse ? buildMarketFaq(...) : null`
+still fails, market-truth prose in a comment cannot rescue it, and the two legacy pulse arms are
+pinned as deliberately text-based so the looseness is recorded rather than silent.
+
 ---
 
 ## 5. Definition of done for the whole program

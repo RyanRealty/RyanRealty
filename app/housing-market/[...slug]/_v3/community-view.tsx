@@ -14,7 +14,8 @@
  */
 
 import type { ReactNode } from 'react'
-import type { MarketDetail, MarketPulse, MarketPulseSnapshot } from '@/lib/data'
+import type { MarketDetail, MarketPulseSnapshot } from '@/lib/data'
+import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { formatDate } from '@/lib/format/date'
 import {
   v3Text,
@@ -38,7 +39,7 @@ type Props = {
   geoName: string
   cityName: string
   citySlug: string
-  pulse: MarketPulse | null
+  hud: LeftoverHudKpis | null
   mosText: string | null
   verdict: { kind: MarketKind; label: string }
   refreshedAt: string | null
@@ -56,7 +57,7 @@ export function CommunityMarketView({
   geoName,
   cityName,
   citySlug,
-  pulse,
+  hud,
   mosText,
   verdict,
   refreshedAt,
@@ -69,7 +70,7 @@ export function CommunityMarketView({
   chart,
   sheet,
 }: Props) {
-  const live = buildLiveFigures(pulse, mosText, geoName)
+  const live = buildLiveFigures(hud, mosText, geoName)
   const closed = buildClosedFigures(detail, lastComplete, currentMonthKey)
   const figures = [...live.figures, ...closed]
   const [firstFigure, ...restFigures] = figures

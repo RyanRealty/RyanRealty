@@ -52,6 +52,12 @@ export function buildRegionFigures(
       href: '/homes-for-sale?view=list',
     })
   }
+  if (hud.pending != null && hud.pending > 0) {
+    figures.push({
+      value: v3Text(hud.pending.toLocaleString('en-US')),
+      label: v3Text('pending · now'),
+    })
+  }
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   if (mosRaw != null) {
     const verdict = marketVerdict(mosRaw)

@@ -9,11 +9,12 @@
  * same `!= null && > 0` condition buildMarketFaq applies, so an Instrument
  * cannot print a number the shared builder declined to answer for.
  *
- * ABSENT IS NOT ZERO. A covered city with no live row is a Quiet footnote,
- * never "0 active" under a live-MLS source line.
+ * ABSENT IS NOT ZERO. A covered city with no leftover HUD is a Quiet footnote,
+ * never "0 active" under a leftover source line.
  */
 
-import type { BlogPostCard, MarketDetail, MarketPulse, MarketPulseSnapshot } from '@/lib/data'
+import type { BlogPostCard, MarketDetail, MarketPulseSnapshot } from '@/lib/data'
+import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import type { KbYearSeries } from '@/lib/kb/year-series'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice, formatPriceCompact, formatPriceExact } from '@/lib/format/money'
@@ -74,16 +75,18 @@ export type CityLedger = {
  * 12-month close via buildCityPeriodFigures, and the monthly median series
  * via Instrument.chart.
  */
-export function buildLiveFigures(pulse: MarketPulse | null, mosText: string | null, geoName: string): LiveSection {
-  const medianListPrice =
-    pulse?.medianListPrice != null && pulse.medianListPrice > 0 ? pulse.medianListPrice : null
-  const activeCount = pulse != null && pulse.activeCount != null && pulse.activeCount > 0 ? pulse.activeCount : null
+export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | null, geoName: string): LiveSection {
+  const medianListPrice = hud?.medianList != null && hud.medianList > 0 ? hud.medianList : null
+  const activeCount = hud?.active != null && hud.active > 0 ? hud.active : null
+  const pendingCount = hud?.pending != null && hud.pending > 0 ? hud.pending : null
+  const closed30 = hud?.closed30 != null && hud.closed30 > 0 ? hud.closed30 : null
+  const daysToPending = hud?.daysToPending != null && hud.daysToPending > 0 ? hud.daysToPending : null
 
   const figures: V3InstrumentFigure[] = []
   if (medianListPrice != null) {
     figures.push({
       // THE DIGITS THE FAQ PUBLISHES, NOT A SECOND ROUNDING. buildMarketFaq
-      // uses formatPriceExact on the same pulse.medianListPrice. formatPrice
+      // uses formatPriceExact on the same leftover median list. formatPrice
       // rounds to the nearest $1,000, so Madras $399,900 printed $400,000 in
       // the Instrument beside $399,900 in the FAQ (fleet:6f45be4c).
       value: v3Text(formatPriceExact(medianListPrice)),
@@ -98,6 +101,12 @@ export function buildLiveFigures(pulse: MarketPulse | null, mosText: string | nu
       href: listingsBrowsePath(),
     })
   }
+  if (pendingCount != null) {
+    figures.push({
+      value: v3Text(pendingCount.toLocaleString('en-US')),
+      label: v3Text('pending · now'),
+    })
+  }
   if (mosText != null) {
     figures.push({
       value: v3Text(mosText),
@@ -105,10 +114,20 @@ export function buildLiveFigures(pulse: MarketPulse | null, mosText: string | nu
       href: '/months-of-supply',
     })
   }
+  if (daysToPending != null) {
+    figures.push({
+      value: v3Text(String(daysToPending)),
+      label: v3Text('median to pending · 90 days'),
+    })
+  }
+  if (closed30 != null) {
+    figures.push({
+      value: v3Text(closed30.toLocaleString('en-US')),
+      label: v3Text('closed in the last 30 days'),
+    })
+  }
 
-  const clauses = [
-    `live MLS through Oregon Data Share, active single-family listings in ${geoName}`,
-  ]
+  const clauses = [`leftover membership, active single-family houses in ${geoName}`]
   const trace =
     `${clauses.join('. ')}.` + (mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
 
@@ -144,11 +163,11 @@ function leftoverPeriodItems(row: PublicPaceRow | null | undefined) {
   return publicPaceItems(row).filter((item) => isLeftoverPeriodKey(item.key))
 }
 
-/** Leftover pace. Miss omitted. Does not replace live 30-day pulse figures. */
+/** Leftover pace. Miss omitted. Pending · now lives on leftover HUD live figures. */
 export function buildPublicPaceFigures(row: PublicPaceRow | null | undefined): V3InstrumentFigure[] {
   if (!row) return []
   return publicPaceItems(row)
-    .filter((item) => !isLeftoverPeriodKey(item.key))
+    .filter((item) => !isLeftoverPeriodKey(item.key) && item.key !== 'pending')
     .map((item) => ({
       value: v3Text(item.value),
       label: v3Text(item.label),

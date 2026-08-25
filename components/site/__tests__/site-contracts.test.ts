@@ -1,6 +1,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+// The single shared G52 rule, also used by scripts/check-kb-page-contract.mjs,
+// so this contract test and the gate can never drift apart.
+import { isResilientMarketFaq } from '../../../scripts/lib/kb-market-faq-resilience.mjs'
 
 /**
  * Primitive contract tests. Each test asserts that a specific design
@@ -12,6 +15,10 @@ import { describe, expect, it } from 'vitest'
  * gate to reference for component-contract directives that are not
  * naturally caught by ESLint or `lint-design-tokens.js`.
  */
+
+function stripTsComments(src: string): string {
+  return src.replace(/(^|[^:])\/\/.*$/gm, '$1').replace(/\/\*[\s\S]*?\*\//g, '')
+}
 
 function readSrc(rel: string): string {
   return readFileSync(resolve(rel), 'utf8')
@@ -370,11 +377,18 @@ describe('design directive contracts', () => {
     expect(oh).toMatch(/onClick=\{\(\) => setActiveIndex\(i\)\}/)
   })
 
-  it('D91 — market structured data survives a getMarketPulse timeout (snapshot fallback)', () => {
+  it('D91 — market structured data cannot vanish (MARKET_TRUTH D26)', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    // JSON-LD must not vanish on a slow/missing market row — fall back to the snapshot
-    expect(src).toMatch(/pulse \?\? \{/)
-    expect(src).toMatch(/snapshot\.activeSfrCount/)
+    // This used to pin the spelling `pulse ?? { snapshot.activeSfrCount }`. D26
+    // dropped the market-pulse read entirely — a leftover miss OMITS and pulse
+    // never fills — so there is no pulse to fall back from. What replaced it is
+    // stronger: buildMarketFaq is called unconditionally with an all-nullable
+    // leftover input, so the Dataset/FAQPage JSON-LD emits on every render and a
+    // miss costs one figure, not the markup. Asserted through the single shared
+    // rule so this test and G52 can never drift apart.
+    expect(isResilientMarketFaq(src, stripTsComments(src))).toBe(true)
+    // and the vanishing shape is still rejected by that same rule
+    expect(isResilientMarketFaq(`const f = pulse ? buildMarketFaq(c, pulse) : null`, `const f = pulse ? buildMarketFaq(c, pulse) : null`)).toBe(false)
   })
 
   // ── Phase 9 wave 2: community page (golf/resort/master-planned) ──────────────

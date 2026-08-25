@@ -159,7 +159,7 @@ export default async function CityDetailPage({ params }: Props) {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
 
   const [
-    pulseRead, detached, detachedInv, _regionPulse, priceHist, communities, neighborhoodStats,
+    _pulseRead, detached, detachedInv, _regionPulse, priceHist, communities, neighborhoodStats,
     communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
     cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
     publicSegments, publicPace, leftoverMonthly, publicMix,
@@ -226,7 +226,6 @@ export default async function CityDetailPage({ params }: Props) {
   })
 
   // Hero — leftover HUD inventory. Pulse, tiles, and cache do not fill.
-  const pulse = pulseRead.ok ? pulseRead.value : null
   const mapTiles = mapTilesRead.value
   const activeCount: number | null = hud.active
   const publishedMedian = hud.medianList
@@ -434,11 +433,13 @@ export default async function CityDetailPage({ params }: Props) {
 
   // AI-citability: verified market Q&A + structured data. The PAGE CONTRACT
   // requires SEO/LLM-citable data on EVERY render, so the Dataset/FAQPage JSON-LD
-  // must not vanish when getMarketPulse times out or has no row. Fall back to the
-  // always-present geo snapshot (active SFR count + median list + as-of), which is
-  // awaited above and never null. Every figure stays verified (§0).
+  // must not vanish. It no longer can: D26 dropped the market-pulse read and its
+  // snapshot fallback, and buildMarketFaq is now called unconditionally with an
+  // all-nullable leftover input — a leftover miss omits that one figure and the
+  // JSON-LD still emits. The as-of stamp is leftover membership's own
+  // computed_at, so it names the population the figures came from (§0).
+  const leftoverStamp = detached?.computedAt ?? detachedInv?.computedAt ?? null
   const marketFaqInput: MarketFaqInput = {
-    ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }),
     grain: 'city',
     source: 'market-truth',
     activeCount: marketActive,
@@ -447,6 +448,7 @@ export default async function CityDetailPage({ params }: Props) {
     monthsOfSupply,
     medianDaysToPending: hud.daysToPending,
     soldCount12mo: hud.sold12mo,
+    refreshedAt: leftoverStamp,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, marketFaqInput)
   const hasMap = mapFeatures.length > 0
@@ -534,7 +536,7 @@ export default async function CityDetailPage({ params }: Props) {
             section, not as a second stacked, separately-headed section. The communities
             page adopted this the day it was asked for; the city page was the last
             stacker (C-17). */}
-        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={pulse?.refreshedAt ?? null} byTownKind="neighborhood">
+        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={leftoverStamp} byTownKind="neighborhood">
           <PublicProductTypes cityName={cityName} citySlug={slug} rows={publicSegments} />
           <PublicPaceStats cityName={cityName} row={publicPace} />
           <PublicMixStats cityName={cityName} row={publicMix} />

@@ -72,3 +72,21 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
     expect(files.dictionary).toMatch(/id: 'pending-now'/)
   })
 })
+
+describe('D26 leftover housing instrument and leftover as-of', () => {
+  it('housing-market geo instrument is leftover HUD, not pulse fill', () => {
+    const geo = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
+    const figures = readFileSync(resolve('app/housing-market/[...slug]/_v3/geo-figures.ts'), 'utf8')
+    expect(geo).toMatch(/leftoverHudPublishes/)
+    expect(geo).not.toMatch(/getMarketPulse\(/)
+    expect(figures).toMatch(/leftover membership/)
+    expect(figures).toMatch(/pending · now/)
+    expect(figures).not.toMatch(/live MLS through Oregon Data Share/)
+  })
+
+  it('city HUD as-of is leftover stamp, not pulse fill', () => {
+    const city = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+    expect(city).toMatch(/asOf=\{leftoverStamp\}/)
+    expect(city).not.toMatch(/asOf=\{pulse\?\.refreshedAt/)
+  })
+})

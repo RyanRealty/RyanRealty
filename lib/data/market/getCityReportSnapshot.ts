@@ -10,15 +10,14 @@
  * cards from the SAME cache reads the KB city pages use, so the hub card and the
  * city page can never disagree:
  *
- *   - Live figures: `market_pulse_live` (10-15 min freshness) via getMarketPulse —
- *     the exact DAL call app/cities/[slug]/page.tsx makes for its market HUD
- *     (activeCount, medianListPrice, monthsOfSupply, closedLast30Days,
- *     medianDaysToPending).
+ *   - Live figures: leftover HUD (active, median list, months of supply,
+ *     Closed · 30 days, Median to pending). Leftover miss omits. Pulse does not fill.
  *   - Trailing-12-month figures: leftover.medianClose / leftover.closedCount /
  *     leftover.yoyMedian overlay `market_stats_cache` rolling_365d sold/median/YoY
  *     on `getCityReportSnapshot` (singular) and `getCityReportSnapshots`. Miss
  *     omits those three fields — never cache. medianDom stays cache (leftover
- *     days-to-contract is not DOM). Pulse live fields stay pulse.
+ *     days-to-contract is not DOM). Live HUD-family cells overlay leftover HUD.
+ *     Leftover miss omits. Pulse does not fill.
  *
  * The two groups are kept SEPARATE on the returned shape (live vs trailing12mo)
  * so a renderer cannot mix windows on one unlabeled surface — each group carries
@@ -43,6 +42,12 @@
 
 import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import {
+  leftoverHudKpis,
+  leftoverHudPublishes,
+  type LeftoverHudKpis,
+} from '@/lib/market/publish-leftover-hud'
 import {
   citySlugCandidates,
   cityUrlSlug,
@@ -160,32 +165,43 @@ async function readCityLeftover(cityLabel: string): Promise<PublicPaceRow> {
 export function overlayCityReportLeftover(
   snapshot: CityReportSnapshot | null,
   leftover: Pick<PublicPaceRow, 'medianClose' | 'closedCount' | 'yoyMedian'> | null,
+  hud?: LeftoverHudKpis | null,
+  leftoverAsOf?: string | null,
 ): CityReportSnapshot | null {
   if (!snapshot) return null
   const medianSalePrice = leftover?.medianClose ?? null
   const soldCount = leftover?.closedCount ?? null
   const yoyMedianPriceDeltaPct =
     leftover?.yoyMedian != null ? leftover.yoyMedian * 100 : null
-  if (
-    !snapshot.trailing12mo &&
-    medianSalePrice == null &&
-    soldCount == null &&
-    yoyMedianPriceDeltaPct == null
-  ) {
-    return snapshot
-  }
   const trailing = snapshot.trailing12mo
+  const trailing12mo =
+    trailing || medianSalePrice != null || soldCount != null || yoyMedianPriceDeltaPct != null
+      ? {
+          medianSalePrice,
+          soldCount,
+          medianDom: trailing?.medianDom ?? null,
+          yoyMedianPriceDeltaPct,
+          periodStart: trailing?.periodStart ?? null,
+          periodEnd: trailing?.periodEnd ?? null,
+          updatedAt: trailing?.updatedAt ?? null,
+        }
+      : snapshot.trailing12mo
+  const live = leftoverHudPublishes(hud)
+    ? {
+        activeCount: hud?.active ?? null,
+        medianListPrice: hud?.medianList ?? null,
+        monthsOfSupply: hud?.monthsSupply ?? null,
+        closedLast30Days: hud?.closed30 ?? null,
+        medianDaysToPending: hud?.daysToPending ?? null,
+        refreshedAt: leftoverAsOf ?? null,
+      }
+    : hud !== undefined
+      ? null
+      : snapshot.live
   return {
     ...snapshot,
-    trailing12mo: {
-      medianSalePrice,
-      soldCount,
-      medianDom: trailing?.medianDom ?? null,
-      yoyMedianPriceDeltaPct,
-      periodStart: trailing?.periodStart ?? null,
-      periodEnd: trailing?.periodEnd ?? null,
-      updatedAt: trailing?.updatedAt ?? null,
-    },
+    live,
+    trailing12mo,
   }
 }
 
@@ -211,20 +227,34 @@ export function hasReportSignal(s: CityReportSnapshot): boolean {
  * first). Underlying reads are already resiliently cached (getMarketPulse
  * 10-15 min, getCityMarketDetail 6h) — no extra cache layer here.
  * Leftover overlays 12-month close/sold/YoY so this path cannot print cache
- * rolling_365d. Pulse live fields stay pulse.
+ * rolling_365d. Live HUD-family cells overlay leftover HUD. Miss omits.
  */
 export async function getCityReportSnapshot(cityLabel: string): Promise<CityReportSnapshot | null> {
   const candidates = citySlugCandidates(cityLabel)
   const leftoverP = readCityLeftover(cityLabel)
+  const overlayP = getDetachedOverlays([{ geoType: 'city', geoSlug: cityUrlSlug(cityLabel) }]).catch(
+    () => new Map(),
+  )
   for (const geoSlug of candidates) {
     const [pulse, detail] = await Promise.all([
       getMarketPulse({ geoType: 'city', geoSlug }),
       getCityMarketDetail({ geoType: 'city', geoSlug, periodType: 'rolling_365d' }),
     ])
     if (pulse || detail) {
+      const leftover = await leftoverP
+      const overlays = await overlayP
+      const layers = overlays.get(`city:${cityDetachedSlug(cityUrlSlug(cityLabel))}`)
+      const hud = leftoverHudKpis({
+        grain: 'city',
+        headlines: layers?.headlines ?? null,
+        inventory: layers?.inventory ?? null,
+        pace: leftover,
+      })
       return overlayCityReportLeftover(
         buildCityReportSnapshot({ cityLabel, geoSlug, pulse, detail }),
-        await leftoverP,
+        leftover,
+        hud,
+        layers?.headlines?.computedAt ?? layers?.inventory?.computedAt ?? null,
       )
     }
   }

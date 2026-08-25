@@ -39,7 +39,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import {
-  getMarketPulse,
   getPriceHistory,
   getMarketPulseCitySnapshots,
   getCityMarketDetailByTimeframe,
@@ -56,7 +55,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
-import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { zonedDateKey } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -128,9 +127,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   // behind a confident empty page.
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const leftoverGeo = geoType === 'neighborhood' || geoType === 'city' ? geoType : null
-  const [pulse, priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix, leftoverMonthly, mtOverlays] =
+  const [priceHistory, citySnapshots, timeframes, lastCompleteMonthly, blogPosts, publicSegments, publicPace, publicMix, leftoverMonthly, mtOverlays] =
     await Promise.all([
-    getMarketPulse({ geoType, geoSlug }),
     getPriceHistory(geoType, geoSlug, 'monthly', priceHistoryLimit),
     getMarketPulseCitySnapshots([...COMPARISON_CITY_LABELS]),
     getCityMarketDetailByTimeframe(geoType, geoSlug),
@@ -156,11 +154,6 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   const detail = timeframes?.monthly ?? null
   const detailRolling = timeframes?.rolling_365d ?? null
 
-  // Unknown-geo guard: a URL with NO pulse row and NO price history is not a
-  // place we cover. dynamicParams is true, so without this the route is an
-  // infinite thin-page space.
-  if (!pulse && priceHistory.length === 0) notFound()
-
   const completePriceMonths = priceHistory.filter((p) => p.periodStart.slice(0, 7) !== currentMonthKey)
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, completePriceMonths)
 
@@ -171,24 +164,20 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     inventory: mt?.inventory ?? null,
     pace: publicPace,
   })
+
+  // Unknown-geo guard: leftover HUD miss and no leftover/cache monthly series
+  // is not a place we cover. dynamicParams is true, so without this the route
+  // is an infinite thin-page space.
+  if (!leftoverHudPublishes(hud) && chartMonths.months.length === 0) notFound()
+
   const mosRaw = hud.monthsSupply
   const mosText = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
   const verdict = marketVerdict(mosRaw)
-  const leftoverPulse = pulse
-    ? {
-        ...pulse,
-        activeCount: hud.active,
-        medianListPrice: hud.medianList,
-        monthsOfSupply: hud.monthsSupply,
-        medianDaysToPending: hud.daysToPending,
-      }
-    : null
 
-  const refreshedAt = mt?.headlines?.computedAt ?? mt?.inventory?.computedAt ?? pulse?.refreshedAt ?? null
+  const refreshedAt = mt?.headlines?.computedAt ?? mt?.inventory?.computedAt ?? null
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     geoName,
     {
-      ...(pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null }),
       grain: geoType,
       source: 'market-truth',
       monthsOfSupply: mosRaw,
@@ -197,6 +186,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       pulseActiveCount: hud.active,
       medianListPrice: hud.medianList,
       medianDaysToPending: hud.daysToPending,
+      refreshedAt,
     },
   )
 
@@ -287,7 +277,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
           <CityMarketView
             cityName={cityName}
             citySlug={citySlug}
-            pulse={leftoverPulse}
+            hud={hud}
             mosText={mosText}
             verdict={verdict}
             refreshedAt={refreshedAt}
@@ -308,7 +298,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             geoName={geoName}
             cityName={cityName}
             citySlug={citySlug}
-            pulse={leftoverPulse}
+            hud={hud}
             mosText={mosText}
             verdict={verdict}
             refreshedAt={refreshedAt}
