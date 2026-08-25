@@ -29,7 +29,9 @@ function ev(partial: Partial<LookingAtRaw> & Pick<LookingAtRaw, 'personId' | 'li
 describe('lookingAtAlertBody', () => {
   it('is the locked two-line SMS', () => {
     expect(lookingAtAlertBody('Jane Doe', '123 Main St', 42)).toBe(
-      'Jane Doe is looking at 123 Main St.\nhttps://ryan-realty.com/admin/people/42',
+      // Line 2 carries the "View lead:" label as of 2026-08-25 (Matt: one line
+      // on what happened, then the labelled link).
+      'Jane Doe is looking at 123 Main St.\nView lead: https://ryan-realty.com/admin/people/42',
     )
   })
 

@@ -52,7 +52,7 @@ export default async function MySettingsPage() {
   const sb = createServiceClient()
   const { data: broker } = await sb
     .from('brokers')
-    .select('id, display_name, email, notify_new_leads, notify_deal_activity, notify_task_due, notify_sms, email_signature, gmail_signature_html, gmail_signature_synced_at, social_instagram, social_facebook, social_linkedin')
+    .select('id, display_name, email, notify_new_leads, notify_deal_activity, notify_task_due, notify_return_visit, notify_cma_ready, notify_sms, notify_quiet_start_hour, notify_quiet_end_hour, notify_max_per_day, email_signature, gmail_signature_html, gmail_signature_synced_at, social_instagram, social_facebook, social_linkedin')
     .eq('email', email)
     .maybeSingle()
 
@@ -73,6 +73,8 @@ export default async function MySettingsPage() {
         notifyNewLeads: (broker.notify_new_leads as boolean | null) ?? true,
         notifyDealActivity: (broker.notify_deal_activity as boolean | null) ?? true,
         notifyTaskDue: (broker.notify_task_due as boolean | null) ?? true,
+        notifyReturnVisit: (broker.notify_return_visit as boolean | null) ?? true,
+        notifyCmaReady: (broker.notify_cma_ready as boolean | null) ?? true,
         notifySms: (broker.notify_sms as boolean | null) ?? false,
         emailSignature: (broker.email_signature as string | null) ?? '',
       }
@@ -116,7 +118,12 @@ export default async function MySettingsPage() {
             notifyNewLeads={broker.notify_new_leads ?? true}
             notifyDealActivity={broker.notify_deal_activity ?? true}
             notifyTaskDue={broker.notify_task_due ?? true}
+            notifyReturnVisit={broker.notify_return_visit ?? true}
+            notifyCmaReady={broker.notify_cma_ready ?? true}
             notifySms={broker.notify_sms ?? false}
+            notifyQuietStartHour={(broker.notify_quiet_start_hour as number | null) ?? null}
+            notifyQuietEndHour={(broker.notify_quiet_end_hour as number | null) ?? null}
+            notifyMaxPerDay={(broker.notify_max_per_day as number | null) ?? null}
             emailSignature={broker.email_signature ?? ''}
             gmailSignatureHtml={broker.gmail_signature_html ?? null}
             gmailSignatureSyncedAt={broker.gmail_signature_synced_at ?? null}

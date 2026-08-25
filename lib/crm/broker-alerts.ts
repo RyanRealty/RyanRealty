@@ -19,6 +19,16 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { recentHealthAlertExists, insertHealthAlert } from '@/lib/data/crm/healthAlertQueue'
 import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
 import {
+  getBrokerNotifyPrefs,
+  countBrokerAlertsLast24h,
+} from '@/lib/data/crm/getBrokerNotifyPrefs'
+import {
+  categoryForAlertKind,
+  decideBrokerAlert,
+  DEFAULT_BROKER_NOTIFY_PREFS,
+} from '@/lib/crm/broker-notify-prefs'
+import { hourInTimeZone, DEFAULT_SMS_TIMEZONE } from '@/lib/crm/quiet-hours'
+import {
   BROKER_ALERT_MAILBOXES,
   addressFromListingUrl,
   formatLookingAtAddress,
@@ -26,6 +36,13 @@ import {
   lookingAtCanQueue,
   lookingAtDedupeKind,
 } from '@/lib/crm/looking-at'
+
+/**
+ * Canonical host for every broker deep link. The vercel.app alias redirects and
+ * STRIPS AUTH COOKIES (memory project_domain), so a broker tapping a
+ * non-canonical link lands logged out.
+ */
+export const BROKER_ALERT_ORIGIN = 'https://ryan-realty.com'
 
 const ALERT_PHONE_BY_BROKER: Record<string, string | undefined> = {
   matt: process.env.TWILIO_FORWARD_MATT,
@@ -141,21 +158,39 @@ export async function queueBrokerAlert(params: {
     const toPhone = ALERT_PHONE_BY_BROKER[broker]
     if (!toPhone) return false
 
-    // Per-broker SMS opt-in — default OFF (Matt 2026-06-28). Both SMS drainers
-    // (the mac-mini relay, scripts/crm-alert-relay.mjs:75, and the serverless
-    // drain's listPendingAlerts) select status='pending', so an opted-out broker
-    // is gated HERE at queue time. Email + dashboard alert paths are separate and
-    // unaffected. (Ops health alerts use queueBrokerHealthAlert and are NOT gated.)
+    // Per-broker preferences decide BOTH whether this alert exists and which
+    // channel carries it. Every gate below runs HERE, at queue time, because
+    // both SMS drainers (the serverless drain's listPendingAlerts and the
+    // legacy relay) select status='pending' — so what is never queued as
+    // 'pending' can never be texted.
     //
-    // W5.5 leg b: SMS opt-out used to mean NO row at all, which silently killed
-    // web push for that broker too (Paul and Rebecca, brokers.notify_sms = false).
-    // A broker with a registered push device now still gets the alert — queued as
-    // status 'push_only', a status NEITHER SMS drainer selects, so it can only
-    // ever leave as a notification. No new text can escape through this path.
-    const tel = await getBrokerTelephony()
-    const smsOptIn = Boolean(tel.bySlug[broker as keyof typeof tel.bySlug]?.smsOptIn)
-    const pushOptIn = smsOptIn ? false : await brokerHasActivePushDevice(broker)
-    if (!smsOptIn && !pushOptIn) return false
+    //   - notify_sms — the SMS opt-in, default OFF (Matt 2026-06-28).
+    //   - the CATEGORY switches on /admin/settings/account (Matt 2026-08-25).
+    //     Until then only notify_sms was read and those switches were
+    //     decorative: turning "New lead assigned" off still sent the text.
+    //   - the personal quiet window + daily cap, which downgrade rather than
+    //     drop — a preference may silence a text, never lose a lead.
+    //
+    // W5.5 leg b: an SMS opt-out used to mean NO row at all, which silently
+    // killed web push for that broker too. A broker with a registered push
+    // device still gets the alert, queued 'push_only' — a status NEITHER SMS
+    // drainer selects, so it can only ever leave as a notification.
+    //
+    // Ops health alarms bypass all of it (queueBrokerHealthAlert, and the
+    // 'health' branch in decideBrokerAlert). See lib/crm/broker-notify-prefs.
+    const prefsBySlug = await getBrokerNotifyPrefs()
+    const prefs = prefsBySlug[broker] ?? DEFAULT_BROKER_NOTIFY_PREFS
+    const category = categoryForAlertKind(params.kind)
+    const hasPushDevice = prefs.smsOptIn ? false : await brokerHasActivePushDevice(broker)
+    const decision = decideBrokerAlert({
+      category,
+      prefs,
+      hour: hourInTimeZone(new Date(), DEFAULT_SMS_TIMEZONE),
+      // Only pay for the count when a cap is actually configured.
+      sentLast24h: prefs.maxPerDay != null ? await countBrokerAlertsLast24h(broker) : 0,
+      hasPushDevice,
+    })
+    if (!decision.queue) return false
 
     // dedupe gate — first writer wins
     const { error: dedupeErr } = await sb.from('crm_timeline').insert({
@@ -174,7 +209,7 @@ export async function queueBrokerAlert(params: {
       to_phone: toPhone,
       body: params.body.slice(0, 600),
       person_id: params.personId,
-      status: smsOptIn ? 'pending' : 'push_only',
+      status: decision.status,
     })
     return true
   } catch (err) {
@@ -202,11 +237,11 @@ export async function queueCmaReadyAlert(params: {
     personId: params.personId,
     kind: `cma-ready:${params.slug}`,
     body: [
-      `CMA draft ready — ${params.subjectAddress ?? params.slug}`,
+      `CMA ready: ${params.subjectAddress ?? params.slug}`,
       // Canonical host, matching newLeadAlertBody — the vercel.app alias
       // redirects and STRIPS AUTH COOKIES (memory project_domain), so a broker
       // tapping a non-canonical deep link lands logged out.
-      `Review and send: https://ryan-realty.com/admin/cmas/${params.slug}`,
+      `View CMA: ${BROKER_ALERT_ORIGIN}/admin/cmas/${params.slug}`,
     ].join('\n'),
   })
 }
@@ -249,7 +284,15 @@ export async function queueBrokerHealthAlert(params: {
   }
 }
 
-/** Compose the standard new-lead alert text. */
+/**
+ * Compose the standard new-lead alert text.
+ *
+ * TWO LINES, always: what happened, then the labelled link (Matt 2026-08-25 —
+ * "a simple link about what's going on, and then View Lead"). `source`, `stage`
+ * and `detail` stay in the signature because callers pass them and they are
+ * worth having on the record, but they no longer ride the text: all three are
+ * on the lead page the link opens, one tap away.
+ */
 export function newLeadAlertBody(p: {
   name?: string | null
   source?: string | null
@@ -261,10 +304,9 @@ export function newLeadAlertBody(p: {
    *  inbound message reads as seller intent (hasSellerIntent). */
   intent?: 'cma'
 }): string {
-  const lines = [
-    `New lead: ${p.name ?? 'Unknown'}${p.source ? ` (${p.source})` : ''}`,
-    p.detail ?? null,
-    `ryan-realty.com/admin/people/${p.personId}${p.intent ? `?intent=${p.intent}` : ''}`,
-  ].filter(Boolean)
-  return lines.join('\n')
+  const query = p.intent ? `?intent=${p.intent}` : ''
+  return [
+    `New lead: ${p.name ?? 'Unknown'}`,
+    `View lead: ${BROKER_ALERT_ORIGIN}/admin/people/${p.personId}${query}`,
+  ].join('\n')
 }

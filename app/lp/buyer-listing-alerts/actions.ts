@@ -353,6 +353,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     if (!hardStopped) {
       try {
         const alertSets = buildBuyerAlertFilterSets({ budgetMin, budgetMax, bedsMin, searchAreas: searchAreasArr })
+        const mintedAlertIds: string[] = []
         for (const set of alertSets) {
           const persisted = await upsertListingAlert({
             email,
@@ -364,7 +365,21 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
           })
           if (!persisted.ok) {
             console.warn(`[buyer-lp] listing alert persist failed for ${set.filtersHash}:`, persisted.error)
+          } else if (persisted.id) {
+            mintedAlertIds.push(persisted.id)
           }
+        }
+
+        // Send the first batch NOW. The page promises matches in half an hour,
+        // and leaving it to the hourly cron made that promise up to a full
+        // cadence period late. Fire-and-forget so a slow MLS read never holds
+        // the buyer on a spinner, and routed through runListingAlerts so
+        // compliance, ODS rules and the notified-key cursor stay single-source
+        // (the cursor it advances is what stops the cron resending this batch).
+        if (mintedAlertIds.length) {
+          void import('@/app/actions/saved-search-alerts')
+            .then(({ runListingAlerts }) => runListingAlerts({ alertIds: mintedAlertIds }))
+            .catch((e) => console.warn('[buyer-lp] first-batch send failed:', e))
         }
       } catch (e) {
         console.warn('[buyer-lp] listing alert setup failed (non-blocking):', e)

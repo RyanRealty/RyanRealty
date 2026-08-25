@@ -54,6 +54,8 @@ type Broker = {
   notifyNewLeads: boolean
   notifyDealActivity: boolean
   notifyTaskDue: boolean
+  notifyReturnVisit: boolean
+  notifyCmaReady: boolean
   notifySms: boolean
   emailSignature: string
 }
@@ -96,6 +98,8 @@ export default function MobileSettingsScreen({
     newLeads: broker?.notifyNewLeads ?? true,
     dealActivity: broker?.notifyDealActivity ?? true,
     taskDue: broker?.notifyTaskDue ?? true,
+    returnVisit: broker?.notifyReturnVisit ?? true,
+    cmaReady: broker?.notifyCmaReady ?? true,
     sms: broker?.notifySms ?? false,
   })
   const [signature, setSignature] = useState(broker?.emailSignature ?? '')
@@ -234,6 +238,35 @@ export default function MobileSettingsScreen({
                 </div>
                 <span className="shrink-0 text-[15px]" style={{ color: 'var(--a-text-2)' }}>{prefs.taskDue ? 'Enabled' : 'Disabled'}</span>
               </button>
+              <RowDivider />
+              {/* Switch rows, not tappable rows: the admin-ui ratchet counts raw
+                  <button> and only ever shrinks, so new prefs use the v2 Switch
+                  the SMS row already uses. */}
+              <div className="flex min-h-16 items-center gap-3 px-4 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-semibold" style={{ color: 'var(--a-text)' }}>Lead back on the site</p>
+                  <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>Alert when a lead you know views a home</p>
+                </div>
+                <Switch
+                  label="Lead back on the site"
+                  labelHidden
+                  checked={prefs.returnVisit}
+                  onChange={(e) => save({ ...prefs, returnVisit: e.target.checked }, { notify_return_visit: e.target.checked })}
+                />
+              </div>
+              <RowDivider />
+              <div className="flex min-h-16 items-center gap-3 px-4 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-semibold" style={{ color: 'var(--a-text)' }}>CMA ready to review</p>
+                  <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>Alert when a CMA draft is waiting on you</p>
+                </div>
+                <Switch
+                  label="CMA ready to review"
+                  labelHidden
+                  checked={prefs.cmaReady}
+                  onChange={(e) => save({ ...prefs, cmaReady: e.target.checked }, { notify_cma_ready: e.target.checked })}
+                />
+              </div>
               <RowDivider inset={false} />
               {/* SMS alerts — the switch row (mob-06 row 5 anatomy: no icon) */}
               <div className="flex min-h-16 items-center gap-3 px-4 py-2.5">

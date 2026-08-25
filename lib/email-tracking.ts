@@ -136,11 +136,32 @@ export function isComplianceLink(url: string): boolean {
  * links). Unsubscribe/compliance links stay plain. Returns the instrumented
  * HTML.
  */
+/**
+ * Undo HTML entity escaping on an href before it becomes a redirect target.
+ *
+ * The href sits in HTML, so a multi-param URL is written `?a=1&amp;b=2`. That
+ * text was previously signed into the click token verbatim, and the browser
+ * then landed on a URL whose second parameter was literally named `amp;b` —
+ * every listing link in every alert email lost utm_medium and utm_campaign to
+ * GA4 (found 2026-08-25). Ampersand is decoded LAST so `&amp;#38;` cannot
+ * double-decode into a stray separator.
+ */
+export function decodeHtmlHref(href: string): string {
+  return href
+    .replace(/&(?:quot|#34|#x22);/gi, '"')
+    .replace(/&(?:lt|#60|#x3c);/gi, '<')
+    .replace(/&(?:gt|#62|#x3e);/gi, '>')
+    .replace(/&(?:amp|#38|#x26);/gi, '&')
+}
+
 export function instrumentEmailHtml(html: string, ctx: EmailTrackContext): string {
   const base = `${SITE_URL}/api/track/e`
   const pixelToken = signEmailToken({ personId: ctx.personId, emailKey: ctx.emailKey, label: ctx.label, broker: ctx.broker, ttlSeconds: ctx.ttlSeconds })
 
-  const out = html.replace(/href="(https?:\/\/[^"]+)"/gi, (m, url: string) => {
+  const out = html.replace(/href="(https?:\/\/[^"]+)"/gi, (m, rawHref: string) => {
+    // The capture is HTML source, not a URL. Decode before signing, or the
+    // redirect target keeps its &amp; separators (see decodeHtmlHref).
+    const url = decodeHtmlHref(rawHref)
     if (url.includes('/api/track/e/')) return m // already wrapped
     if (isComplianceLink(url)) return m // unsubscribe/compliance links stay plain
     const tok = signEmailToken({ personId: ctx.personId, emailKey: ctx.emailKey, label: ctx.label, url, broker: ctx.broker, ttlSeconds: ctx.ttlSeconds })

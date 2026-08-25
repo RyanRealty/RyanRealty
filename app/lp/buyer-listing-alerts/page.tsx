@@ -274,7 +274,7 @@ export default async function BuyerLPPage() {
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#faf8f4] drop-shadow-sm">
               Tell us what you are looking for. A Bend broker pulls listings that match, usually
-              within 30 minutes during business hours. Overnight requests go out the next morning.
+              within 30 minutes. Your first batch goes out as soon as you submit this.
             </p>
 
             {/* Live inventory pill — only renders when the count is available */}
@@ -317,7 +317,7 @@ export default async function BuyerLPPage() {
               </h2>
               <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
                 Pulled from the MLS. When a home that matches your criteria lists, it reaches your
-                inbox the morning it hits the market.
+                inbox within the hour.
               </p>
             </ScrollReveal>
             <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

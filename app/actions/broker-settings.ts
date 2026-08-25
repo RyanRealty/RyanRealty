@@ -20,8 +20,17 @@ export type BrokerSettingsPayload = {
   notify_new_leads?: boolean
   notify_deal_activity?: boolean
   notify_task_due?: boolean
+  /** Alert when an identified lead comes back and views a home. */
+  notify_return_visit?: boolean
+  /** Alert when a CMA draft finishes building. */
+  notify_cma_ready?: boolean
   /** Opt-in for SMS lead/activity alerts (default OFF). Gates queueBrokerAlert. */
   notify_sms?: boolean
+  /** Personal quiet window for internal alerts, local hour 0-23. null clears it. */
+  notify_quiet_start_hour?: number | null
+  notify_quiet_end_hour?: number | null
+  /** Cap on alerts per rolling 24h. null clears it. */
+  notify_max_per_day?: number | null
   email_signature?: string
   social_instagram?: string
   social_facebook?: string
@@ -34,6 +43,20 @@ function sanitizeSocialUrl(raw: string): string | null {
   if (trimmed.length > 500) return null
   if (!/^https:\/\//i.test(trimmed)) return null
   return trimmed
+}
+
+/** Local hour 0-23, or null to clear. Anything else is refused as null. */
+function sanitizeHour(raw: number | null | undefined): number | null {
+  if (raw === null || raw === undefined) return null
+  const n = Number(raw)
+  return Number.isInteger(n) && n >= 0 && n <= 23 ? n : null
+}
+
+/** 1-200 alerts per day, or null for unlimited. Mirrors the CHECK constraint. */
+function sanitizeMaxPerDay(raw: number | null | undefined): number | null {
+  if (raw === null || raw === undefined) return null
+  const n = Number(raw)
+  return Number.isInteger(n) && n >= 1 && n <= 200 ? n : null
 }
 
 function bust(brokerId: string) {
@@ -81,7 +104,17 @@ export async function saveBrokerSettingsAction(
   if (typeof payload.notify_new_leads === 'boolean') update.notify_new_leads = payload.notify_new_leads
   if (typeof payload.notify_deal_activity === 'boolean') update.notify_deal_activity = payload.notify_deal_activity
   if (typeof payload.notify_task_due === 'boolean') update.notify_task_due = payload.notify_task_due
+  if (typeof payload.notify_return_visit === 'boolean') update.notify_return_visit = payload.notify_return_visit
+  if (typeof payload.notify_cma_ready === 'boolean') update.notify_cma_ready = payload.notify_cma_ready
   if (typeof payload.notify_sms === 'boolean') update.notify_sms = payload.notify_sms
+  // Volume controls. `null` is a meaningful value here (clears the setting), so
+  // these check for `undefined` rather than truthiness — 0 is also a valid hour.
+  if (payload.notify_quiet_start_hour !== undefined)
+    update.notify_quiet_start_hour = sanitizeHour(payload.notify_quiet_start_hour)
+  if (payload.notify_quiet_end_hour !== undefined)
+    update.notify_quiet_end_hour = sanitizeHour(payload.notify_quiet_end_hour)
+  if (payload.notify_max_per_day !== undefined)
+    update.notify_max_per_day = sanitizeMaxPerDay(payload.notify_max_per_day)
   if (typeof payload.email_signature === 'string') update.email_signature = payload.email_signature.slice(0, 4000)
   if (typeof payload.social_instagram === 'string') update.social_instagram = sanitizeSocialUrl(payload.social_instagram)
   if (typeof payload.social_facebook === 'string') update.social_facebook = sanitizeSocialUrl(payload.social_facebook)

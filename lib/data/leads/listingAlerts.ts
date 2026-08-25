@@ -143,6 +143,27 @@ async function alertExplicitlyOptedOut(
   return (data as { is_active: boolean | null } | null)?.is_active === false
 }
 
+/**
+ * The cadence already stored for (email, filters_hash), or null when this is a
+ * first save. Re-saving the SAME search must not silently reset a cadence the
+ * subscriber chose in /account — so the upsert writes a frequency only when
+ * there is nothing to preserve.
+ */
+async function existingAlertFrequency(
+  supabase: ReturnType<typeof createServiceClient>,
+  email: string,
+  filtersHash: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from(TABLE)
+    .select('notification_frequency')
+    .eq('email', email)
+    .eq('filters_hash', filtersHash)
+    .limit(1)
+    .maybeSingle()
+  return (data as { notification_frequency: string | null } | null)?.notification_frequency ?? null
+}
+
 export type ListingAlertInput = {
   email: string
   filters: Record<string, unknown>
@@ -153,6 +174,14 @@ export type ListingAlertInput = {
   crmPersonId?: number | null
   /** Auth user id when the subscriber is signed in (the /account create path). */
   userId?: string | null
+  /**
+   * Cadence for a NEW row. Defaults to 'instant' — the buyer LP and the
+   * /search capture both promise a match "as soon as we find it", and until
+   * 2026-08-25 neither passed a frequency at all, so every self-serve
+   * registration silently took the column default of 'daily'. An existing
+   * row's stored cadence always wins over this.
+   */
+  frequency?: SavedSearchFrequency
 }
 
 /**
@@ -160,7 +189,9 @@ export type ListingAlertInput = {
  * on /search + signed-in save). Re-submitting the same search re-activates +
  * refreshes the row rather than creating a duplicate.
  */
-export async function upsertListingAlert(input: ListingAlertInput): Promise<{ ok: boolean; error?: string }> {
+export async function upsertListingAlert(
+  input: ListingAlertInput,
+): Promise<{ ok: boolean; error?: string; id?: string }> {
   const supabase = createServiceClient()
   const email = input.email.trim().toLowerCase()
   const crmPersonId = input.crmPersonId
@@ -171,7 +202,8 @@ export async function upsertListingAlert(input: ListingAlertInput): Promise<{ ok
     })
   // Resurrection guard: an existing explicit opt-out stays muted on re-save.
   const optedOut = await alertExplicitlyOptedOut(supabase, email, input.filtersHash)
-  const { error } = await supabase.from(TABLE).upsert(
+  const storedFrequency = await existingAlertFrequency(supabase, email, input.filtersHash)
+  const { data, error } = await supabase.from(TABLE).upsert(
     {
       email,
       filters: input.filters,
@@ -182,18 +214,25 @@ export async function upsertListingAlert(input: ListingAlertInput): Promise<{ ok
       crm_person_id: crmPersonId,
       origin: 'user',
       source: input.userId ? 'user' : 'idx-registration',
+      notification_frequency:
+        storedFrequency ?? normalizeSavedSearchFrequency(input.frequency ?? 'instant'),
       is_active: !optedOut,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'email,filters_hash' },
   )
+    // The id comes back so the caller can send this row's first batch
+    // immediately (runListingAlerts({ alertIds })) instead of leaving the
+    // buyer waiting on the next cron tick.
+    .select('id')
+    .maybeSingle()
   if (error) {
     // Log the raw DB error server-side; return a generic code so a careless
     // caller edit can never leak schema/constraint details to the client.
     console.error('[upsertListingAlert]', error.message)
     return { ok: false, error: 'persist_failed' }
   }
-  return { ok: true }
+  return { ok: true, id: (data as { id: string } | null)?.id }
 }
 
 /**

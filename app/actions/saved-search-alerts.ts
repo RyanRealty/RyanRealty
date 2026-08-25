@@ -8,6 +8,7 @@ import type { ListingTileRow } from '@/app/actions/listings'
 import { hasNarrowingFilter } from '@/lib/search-filters'
 import {
   getActiveListingAlertsDue,
+  getListingAlertsByIds,
   getListingAlertById,
   markListingAlertNotified,
   claimListingAlertSend,
@@ -111,6 +112,21 @@ async function fetchHiddenKeysForUser(userId: string): Promise<Set<string>> {
 export async function runListingAlerts(options?: {
   maxAlerts?: number
   dryRun?: boolean
+  /**
+   * Send these specific alert rows NOW, ignoring the cadence gate.
+   *
+   * The buyer LP promises "your first batch of matches in 30 minutes", and
+   * before 2026-08-25 nothing delivered it: the submission minted the row and
+   * left it to the hourly cron, so the real wait was up to a full cadence
+   * period. The LP now calls this straight after minting so the first batch
+   * goes out while the buyer is still on the page.
+   *
+   * Deliberately routed through THIS function rather than a second sender —
+   * compliance stops, event toggles, ODS/VOW rules, preview-mode queuing and
+   * the notified-key cursor all have exactly one implementation. Advancing the
+   * cursor on the way out is what stops the next cron run resending the batch.
+   */
+  alertIds?: string[]
 }): Promise<AlertRunSummary> {
   const now = new Date()
   const maxAlerts = Math.min(1000, Math.max(1, options?.maxAlerts ?? 120))
@@ -124,7 +140,13 @@ export async function runListingAlerts(options?: {
   // budget on rows that could not send. Most-overdue first (never-notified rows
   // lead) so the queue drains fairly across runs instead of newest-created rows
   // starving the rest.
-  const rows: ListingAlertRow[] = await getActiveListingAlertsDue(maxAlerts)
+  // A targeted first send reads its rows by id; is_active is re-checked here
+  // because getListingAlertsByIds has no status filter of its own, and a row
+  // born muted by the resurrection guard must stay muted.
+  const targeted = (options?.alertIds ?? []).filter(Boolean)
+  const rows: ListingAlertRow[] = targeted.length
+    ? (await getListingAlertsByIds(targeted)).filter((r) => r.is_active !== false)
+    : await getActiveListingAlertsDue(maxAlerts)
   const summary: AlertRunSummary = { scanned: rows.length, sent: 0, skipped: 0, queued: 0, errors: [] }
 
   // Per-run memo of each signed-in subscriber's hidden homes — one user can
@@ -145,8 +167,9 @@ export async function runListingAlerts(options?: {
       if (summary.sent >= MAX_SENDS_PER_RUN) break
 
       // Cadence gate — includes the weekly schedule_days day-of-week filter
-      // (0=Sunday..6=Saturday, America/Los_Angeles).
-      if (!isCadenceDue(row, now)) {
+      // (0=Sunday..6=Saturday, America/Los_Angeles). A targeted first send
+      // skips it: the row was created seconds ago and has never been due.
+      if (targeted.length === 0 && !isCadenceDue(row, now)) {
         summary.skipped += 1
         continue
       }

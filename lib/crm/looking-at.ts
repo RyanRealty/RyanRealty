@@ -43,7 +43,7 @@ export function lookingAtDedupeKind(sessionId: string, listingKey: string): stri
 export function lookingAtAlertBody(name: string, address: string, personId: number): string {
   const who = name.trim() || 'Someone'
   const home = address.trim()
-  return `${who} is looking at ${home}.\nhttps://ryan-realty.com/admin/people/${personId}`
+  return `${who} is looking at ${home}.\nView lead: https://ryan-realty.com/admin/people/${personId}`
 }
 
 /** Today row title — same sentence as the SMS first line. */

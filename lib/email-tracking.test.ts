@@ -4,6 +4,7 @@ import {
   isComplianceLink,
   signEmailToken,
   verifyEmailToken,
+  decodeHtmlHref,
 } from './email-tracking'
 
 const CTX = { personId: 42, emailKey: 'manual:42:123', label: 'Hello' }
@@ -115,5 +116,38 @@ describe('instrumentEmailHtml', () => {
   it('appends the pixel even without a </body> tag', () => {
     const out = instrumentEmailHtml('<p>hi</p>', CTX)
     expect(out).toContain('/api/track/e/open?t=')
+  })
+})
+
+describe('decodeHtmlHref (utm separator regression, 2026-08-25)', () => {
+  it('turns &amp; separators back into real ones', () => {
+    expect(
+      decodeHtmlHref('https://x.test/p?utm_source=a&amp;utm_medium=b&amp;utm_campaign=c'),
+    ).toBe('https://x.test/p?utm_source=a&utm_medium=b&utm_campaign=c')
+  })
+
+  it('decodes numeric and hex ampersand entities', () => {
+    expect(decodeHtmlHref('https://x.test/p?a=1&#38;b=2&#x26;c=3')).toBe(
+      'https://x.test/p?a=1&b=2&c=3',
+    )
+  })
+
+  it('leaves a clean url untouched', () => {
+    const clean = 'https://x.test/p?a=1&b=2'
+    expect(decodeHtmlHref(clean)).toBe(clean)
+  })
+
+  it('signs the DECODED url into the click token, so every param keeps its name', () => {
+    // The defect: utm_medium arrived at GA4 as a param literally named
+    // "amp;utm_medium", so medium and campaign were lost on every alert email.
+    const html =
+      '<a href="https://ryan-realty.com/homes-for-sale/x?utm_source=ryan-realty&amp;utm_medium=email&amp;utm_campaign=listing-alerts">Home</a>'
+    const out = instrumentEmailHtml(html, { personId: 1, emailKey: 'k', label: 'l' })
+    const token = decodeURIComponent(out.match(/click\?t=([^"]+)"/)![1])
+    const payload = JSON.parse(Buffer.from(token.split('.')[0], 'base64url').toString())
+    const params = new URL(payload.u).searchParams
+    expect(params.get('utm_medium')).toBe('email')
+    expect(params.get('utm_campaign')).toBe('listing-alerts')
+    expect([...params.keys()].some((k) => k.startsWith('amp;'))).toBe(false)
   })
 })

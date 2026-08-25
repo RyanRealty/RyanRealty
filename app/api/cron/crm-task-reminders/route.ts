@@ -102,15 +102,17 @@ export async function GET(request: Request) {
     const anchor = tasks[0]
     if (anchor.person_id == null) continue
 
-    const parts = [
-      `${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'} need attention today.`,
+    // Two lines: what happened, then the labelled link (Matt 2026-08-25). The
+    // old build joined a sentence that ALREADY ended in a period with ', ' and
+    // shipped "173 tasks need attention today., 171 overdue" to Matt's phone.
+    const noun = tasks.length === 1 ? 'task' : 'tasks'
+    const split = [
       overdue ? `${overdue} overdue` : null,
       dueToday ? `${dueToday} due today` : null,
     ].filter(Boolean)
     const body = [
-      parts.join(overdue && dueToday ? ', ' : ' '),
-      `Next: ${anchor.name.slice(0, 80)}`,
-      'Open the queue: https://ryan-realty.com/admin/crm/tasks',
+      `${tasks.length} ${noun} need attention${split.length ? ` (${split.join(', ')})` : ''}.`,
+      'View tasks: https://ryan-realty.com/admin/crm/tasks',
     ].join('\n')
 
     const ok = await queueBrokerAlert({

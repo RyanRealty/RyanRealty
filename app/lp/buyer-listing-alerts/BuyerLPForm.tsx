@@ -107,7 +107,7 @@ export default function BuyerLPForm() {
         } catch {
           // best-effort residual
         }
-        setResult({ ok: true, msg: "Got it. Your first batch of matches will be in your inbox within 30 minutes." })
+        setResult({ ok: true, msg: "Got it. Your first batch of matches is on its way to your inbox." })
       } else {
         setResult({ ok: false, msg: r.error })
       }

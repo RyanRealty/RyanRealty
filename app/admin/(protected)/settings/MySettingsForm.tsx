@@ -21,13 +21,22 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, SectionHead, Switch, TextField } from '@/components/admin/v2'
+import { Button, SectionHead, SelectField, Switch, TextField } from '@/components/admin/v2'
 import { saveBrokerSettingsAction, syncGmailSignatureAction } from '@/app/actions/broker-settings'
 import { buildEmailPreviewDoc } from '@/lib/crm/email-body'
 import { CONTACT, BRAND } from '@/lib/brand/contact'
 
 /** The section card: the lightest surface in the language, held by a hairline. */
 const CARD_STYLE = { borderColor: 'var(--a-border)', background: 'var(--a-bg)' } as const
+
+/**
+ * Hour choices for the quiet window. Value is the 24h number the column stores,
+ * label is the 12h clock a broker reads.
+ */
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({
+  value: String(h),
+  label: h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`,
+}))
 
 /** Hairline rule between notification rows (replaces the shadcn Separator). */
 function RowRule() {
@@ -40,7 +49,14 @@ type Props = {
   notifyNewLeads: boolean
   notifyDealActivity: boolean
   notifyTaskDue: boolean
+  notifyReturnVisit: boolean
+  notifyCmaReady: boolean
   notifySms: boolean
+  /** Personal quiet window for internal alerts, local hour 0-23. null = none. */
+  notifyQuietStartHour: number | null
+  notifyQuietEndHour: number | null
+  /** Cap on alerts per rolling 24h. null = unlimited. */
+  notifyMaxPerDay: number | null
   emailSignature: string
   /** Gmail-synced signature (brokers.gmail_signature_html) — when set it is
    *  THE signature on every CRM email, so CRM sends match Gmail exactly. */
@@ -57,7 +73,12 @@ export default function MySettingsForm({
   notifyNewLeads: initNewLeads,
   notifyDealActivity: initDealActivity,
   notifyTaskDue: initTaskDue,
+  notifyReturnVisit: initReturnVisit,
+  notifyCmaReady: initCmaReady,
   notifySms: initSms,
+  notifyQuietStartHour: initQuietStart,
+  notifyQuietEndHour: initQuietEnd,
+  notifyMaxPerDay: initMaxPerDay,
   emailSignature: initSig,
   gmailSignatureHtml = null,
   gmailSignatureSyncedAt = null,
@@ -69,7 +90,14 @@ export default function MySettingsForm({
   const [notifyNewLeads, setNotifyNewLeads] = useState(initNewLeads)
   const [notifyDealActivity, setNotifyDealActivity] = useState(initDealActivity)
   const [notifyTaskDue, setNotifyTaskDue] = useState(initTaskDue)
+  const [notifyReturnVisit, setNotifyReturnVisit] = useState(initReturnVisit)
+  const [notifyCmaReady, setNotifyCmaReady] = useState(initCmaReady)
   const [notifySms, setNotifySms] = useState(initSms)
+  // The three volume controls are held as strings because a <select> value is a
+  // string and '' is the "not set" option. They convert on save.
+  const [quietStart, setQuietStart] = useState(initQuietStart == null ? '' : String(initQuietStart))
+  const [quietEnd, setQuietEnd] = useState(initQuietEnd == null ? '' : String(initQuietEnd))
+  const [maxPerDay, setMaxPerDay] = useState(initMaxPerDay == null ? '' : String(initMaxPerDay))
   const [emailSignature, setEmailSignature] = useState(initSig)
   const [socialInstagram, setSocialInstagram] = useState(initIg)
   const [socialFacebook, setSocialFacebook] = useState(initFb)
@@ -106,7 +134,12 @@ export default function MySettingsForm({
       notify_new_leads: notifyNewLeads,
       notify_deal_activity: notifyDealActivity,
       notify_task_due: notifyTaskDue,
+      notify_return_visit: notifyReturnVisit,
+      notify_cma_ready: notifyCmaReady,
       notify_sms: notifySms,
+      notify_quiet_start_hour: quietStart === '' ? null : Number(quietStart),
+      notify_quiet_end_hour: quietEnd === '' ? null : Number(quietEnd),
+      notify_max_per_day: maxPerDay === '' ? null : Number(maxPerDay),
       email_signature: emailSignature,
       social_instagram: socialInstagram,
       social_facebook: socialFacebook,
@@ -153,12 +186,75 @@ export default function MySettingsForm({
         />
         <RowRule />
         <NotifToggle
+          id="notify-return-visit"
+          label="Lead back on the site"
+          description="Alert when a lead you know comes back and views a home."
+          checked={notifyReturnVisit}
+          onChange={setNotifyReturnVisit}
+        />
+        <RowRule />
+        <NotifToggle
+          id="notify-cma-ready"
+          label="CMA ready to review"
+          description="Alert when a CMA draft finishes building and is waiting on you."
+          checked={notifyCmaReady}
+          onChange={setNotifyCmaReady}
+        />
+        <RowRule />
+        <NotifToggle
           id="notify-sms"
           label="Text me these alerts (SMS)"
           description="Off by default. When on, your lead and activity alerts are also sent to your cell by text."
           checked={notifySms}
           onChange={setNotifySms}
         />
+      </section>
+
+      {/* How often — the volume controls. These never drop an alert: anything
+          they hold back still lands in the CRM and on web push, it just does
+          not text. Switch a category off above to stop one entirely. */}
+      <section className="rounded-xl border px-6 py-5 space-y-5" style={CARD_STYLE}>
+        <SectionHead>How often</SectionHead>
+        <p className="text-xs -mt-2" style={{ color: 'var(--a-text-2)' }}>
+          Limits on the texts, not on the alerts. Anything held back is still waiting in the CRM.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SelectField
+            label="Quiet from"
+            value={quietStart}
+            onChange={(e) => setQuietStart(e.target.value)}
+          >
+            <option value="">No quiet hours</option>
+            {HOUR_OPTIONS.map((h) => (
+              <option key={h.value} value={h.value}>{h.label}</option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Quiet until"
+            value={quietEnd}
+            onChange={(e) => setQuietEnd(e.target.value)}
+          >
+            <option value="">No quiet hours</option>
+            {HOUR_OPTIONS.map((h) => (
+              <option key={h.value} value={h.value}>{h.label}</option>
+            ))}
+          </SelectField>
+        </div>
+        <p className="text-xs -mt-1" style={{ color: 'var(--a-text-2)' }}>
+          Pacific time. Set both to switch the window on.
+        </p>
+
+        <SelectField
+          label="Most texts per day"
+          value={maxPerDay}
+          onChange={(e) => setMaxPerDay(e.target.value)}
+        >
+          <option value="">No limit</option>
+          {[5, 10, 15, 20, 30, 50].map((n) => (
+            <option key={n} value={String(n)}>{n} a day</option>
+          ))}
+        </SelectField>
       </section>
 
       {/* Gmail signature section — the highest-precedence signature source. */}
