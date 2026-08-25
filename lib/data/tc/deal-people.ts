@@ -4,7 +4,9 @@
  * Raw .from() stays here (G1). No SkySlope writes.
  */
 import 'server-only'
+import { createHash } from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
+import { existingDocumentIdByHash } from '@/lib/tc/document-dedupe'
 import {
   dedupeParties,
   namesByDealRole,
@@ -255,14 +257,14 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
     if (facts.pdfs?.length) {
       const cycleId = (cycles ?? [])[0]?.id
       if (cycleId) {
-        const { data: existingDocs } = await sb
-          .from('tc_documents')
-          .select('name')
-          .eq('cycle_id', cycleId)
-        const haveDoc = new Set((existingDocs ?? []).map((d) => String(d.name).toLowerCase()))
         for (const pdf of facts.pdfs) {
           const name = pdf.filename || 'Offer.pdf'
-          if (haveDoc.has(name.toLowerCase())) continue
+          // Filenames repeat across unrelated messages and the same PDF arrives
+          // under several names, so the bytes decide. Writing sha256 is what
+          // makes that possible — this writer used to leave it null, and ten of
+          // Apollo's forty documents were unhashed duplicates because of it.
+          const sha256 = createHash('sha256').update(pdf.bytes).digest('hex')
+          if (await existingDocumentIdByHash(sb, cycleId, sha256)) continue
           const path = `inbox/${cycleId}/offer-${Date.now()}-${name}`.replace(/\s+/g, '_')
           const up = await sb.storage.from('tc-documents').upload(path, pdf.bytes, {
             contentType: 'application/pdf',
@@ -273,11 +275,11 @@ export async function ensureDealPartiesFromFile(dealId: string): Promise<void> {
             cycle_id: cycleId,
             name,
             storage_path: path,
+            sha256,
             bytes: pdf.bytes.byteLength,
             content_type: 'application/pdf',
             classification: { source: 'mailbox_offer' },
           })
-          haveDoc.add(name.toLowerCase())
         }
       }
     }

@@ -24,6 +24,7 @@ import {
   type ExecutionState,
 } from '@/lib/tc/execution-state'
 import { readPdfPagesText } from '@/lib/tc/pdf-page-text'
+import { existingDocumentIdByHash } from '@/lib/tc/document-dedupe'
 import { extractOrefNumbers } from '@/lib/tc/form-identity'
 import { ourRoleForEnvelope } from '@/lib/tc/representation'
 
@@ -175,6 +176,20 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
       }
     } catch (err) {
       console.warn('[fileCommsToVault] pdf classify', err instanceof Error ? err.message : err)
+    }
+    // The same signed PDF reaches the file from the seal, our completion copy,
+    // Gmail sync, and the other side's reply. Same bytes on this cycle is the
+    // same document, whatever attachment id it arrived under.
+    const alreadyFiled = await existingDocumentIdByHash(sb, cycleId, sha256)
+    if (alreadyFiled) {
+      if (!documentIds.includes(alreadyFiled)) documentIds.push(alreadyFiled)
+      if (checklistItemIds.length) {
+        await sb.from('tc_checklist_assignments').upsert(
+          checklistItemIds.map((item_id) => ({ item_id, document_id: alreadyFiled })),
+          { onConflict: 'item_id,document_id', ignoreDuplicates: true },
+        )
+      }
+      continue
     }
     const up = await sb.storage.from('tc-documents').upload(path, att.bytes, {
       contentType: att.contentType || 'application/pdf',
