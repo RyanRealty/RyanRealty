@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { TC_DOCUMENT_URL_TTL_SECONDS } from '@/lib/tc/document-urls'
+import { existingDocumentIdByHash } from '@/lib/tc/document-dedupe'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -577,21 +578,29 @@ export async function createEnvelopeFromTemplate(
     const up = await supabase.storage.from('tc-documents').upload(path, bytes, { contentType: 'application/pdf', upsert: true })
     if (up.error) return { ok: false, error: `storage: ${up.error.message}` }
 
-    const { data: doc, error: docErr } = await supabase
-      .from('tc_documents')
-      .insert({
-        cycle_id: cycleId,
-        name: form.name,
-        storage_path: path,
-        sha256,
-        bytes: bytes.byteLength,
-        content_type: 'application/pdf',
-        page_count: form.page_count ?? null,
-        classification: { source: 'form_template', form_version_id: form.id },
-      })
-      .select('id')
-      .single()
-    if (docErr || !doc) return { ok: false, error: `document: ${docErr?.message ?? 'insert failed'}` }
+    // Re-opening a packet on the same cycle must not stack another copy of the
+    // same blank onto the file.
+    const existingId = await existingDocumentIdByHash(supabase, cycleId, sha256)
+    let documentId = existingId
+    if (!documentId) {
+      const { data: doc, error: docErr } = await supabase
+        .from('tc_documents')
+        .insert({
+          cycle_id: cycleId,
+          name: form.name,
+          storage_path: path,
+          sha256,
+          bytes: bytes.byteLength,
+          content_type: 'application/pdf',
+          page_count: form.page_count ?? null,
+          classification: { source: 'form_template', form_version_id: form.id },
+        })
+        .select('id')
+        .single()
+      if (docErr || !doc) return { ok: false, error: `document: ${docErr?.message ?? 'insert failed'}` }
+      documentId = String(doc.id)
+    }
+    const doc = { id: documentId }
     await supabase
       .from('tc_envelope_documents')
       .insert({ envelope_id: env.id, document_id: doc.id, sort_order: sortOrder++, form_version_id: form.id })
