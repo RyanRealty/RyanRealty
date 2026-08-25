@@ -325,3 +325,41 @@ City, neighborhood, and community HUD as-of stamps and leftover FAQ HUD-family c
 are leftover membership. Pulse does not fill those leftover cells.
 
 CRM / blog / report export stay pulse-gated. New · 30 days omitted. County unpublished.
+
+## D27 — client documents read leftover · **DECIDED** (Matt, 2026-08-25)
+
+Every public page reads leftover detached membership. Client-facing documents did not, so
+an emailed figure and the page a client opens next could disagree by population. That is the
+§0 contradiction this program exists to remove, and it is the largest remaining risk surface.
+
+**CRM market blocks, blog, report export, CMA and BPO read leftover membership.** A leftover
+miss **omits the figure and the document still sends** — same rule as the site, fewer numbers
+rather than one wrong one. A send is never blocked by a leftover gap, and pulse never fills a
+leftover cell inside a document.
+
+**Delivered documents are frozen.** A CMA or BPO already in a client's hands keeps the figures
+that were true when the broker signed it. Leftover governs new builds only. The serve path
+already passes `hydrateArea: false` at both call sites, so this is the behaviour today — D27
+makes it structural rather than incidental so the flag cannot be flipped back by accident.
+
+**Blog: new posts only.** Published posts keep the figures that were true and sourced when they
+ran; the archive is not rewritten. The render-time months-of-supply claim guard is not a
+published figure — it exists so an old post cannot assert a stale verdict — so it moves to
+leftover with the rest of the estate, and a leftover miss omits the claim instead of asserting
+one. A post's own stored stats are untouched.
+
+**New · 30 days returns.** Leftover gains a true 30-day new-listings cell
+(`new_listings_30d`), so the D19 one-pile HUD row stops printing one tile short. Counted by
+on-market date in the trailing 30 days, per the RESO/ODS convention already adopted in D15
+for the 60-day first-on-market reset.
+
+**Dead column closed.** The gate-6 `CumulativeDaysOnMarket` baseline goes to **0**. The column
+is genuinely dead — 0 of 4,628 non-null on active SFR — while `OnMarketDate` is 4,628 of 4,628,
+so consumer days-on-market derives from on-market date. The raw `"DaysOnMarket"` column stays
+banned on consumer surfaces.
+
+**Unchanged.** D17 holds: YTD, this-month, core-chart inventory / days on market / months of
+supply, and weekly price cuts stay pulse or cache. County stays unpublished, permanently.
+`all_residential` and `commercial_lease` stay off public, permanently. Subdivision is never a
+price. Ship it and review after — no delta gate.
+

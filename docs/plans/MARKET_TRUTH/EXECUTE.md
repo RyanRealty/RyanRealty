@@ -775,6 +775,25 @@ input, so the JSON-LD cannot vanish at all. The rule moved to
 still fails, market-truth prose in a comment cannot rescue it, and the two legacy pulse arms are
 pinned as deliberately text-based so the looseness is recorded rather than silent.
 
+### D27 client documents read leftover
+
+**Done when a real user can:**
+1. Receive a CRM market block, a report export, a CMA and a BPO whose market figures are
+   leftover membership — the same population as the page they open next. A leftover miss omits
+   that figure and the document still sends. Pulse does not fill a leftover cell in a document.
+2. Reopen a CMA or BPO already delivered and see the figures that were true when it was signed.
+   Delivered documents are frozen; leftover governs new builds only.
+3. Open `/` and `/cities/bend` and see **New · 30 days** printing again from leftover
+   `new_listings_30d`, so the D19 one-pile HUD row is no longer a tile short. A miss omits.
+4. Read a published blog post whose stored stats are untouched, whose live months-of-supply
+   claim guard reads leftover, and which omits the claim on a leftover miss rather than
+   asserting a stale verdict.
+5. Trust that no consumer surface reads `CumulativeDaysOnMarket` — gate 6 baseline is **0**.
+
+**Locks:** D17 remainder stays pulse or cache. County unpublished. `all_residential` and
+`commercial_lease` off public. Subdivision never a price. Delivered documents never re-render
+their market figures.
+
 ---
 
 ## 5. Definition of done for the whole program
