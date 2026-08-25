@@ -27,7 +27,7 @@ export type DateRange = { startDate: string; endDate: string }
 
 /**
  * Parse the searchParams `range` value into ISO dates.
- *   "today" | "7d" | "30d" | "90d" — relative to now
+ *   "today" | "7d" | "30d" | "90d" | "12m" | "ytd" — relative to now
  *   "custom" — uses startDate / endDate searchParams (YYYY-MM-DD)
  */
 export function resolveDateRange(searchParams: Record<string, string | undefined>): DateRange {
@@ -48,6 +48,12 @@ export function resolveDateRange(searchParams: Record<string, string | undefined
     start.setUTCHours(0, 0, 0, 0)
   } else if (range === '90d') {
     start.setUTCDate(start.getUTCDate() - 89)
+    start.setUTCHours(0, 0, 0, 0)
+  } else if (range === '12m') {
+    start.setUTCFullYear(start.getUTCFullYear() - 1)
+    start.setUTCHours(0, 0, 0, 0)
+  } else if (range === 'ytd') {
+    start.setUTCMonth(0, 1)
     start.setUTCHours(0, 0, 0, 0)
   } else {
     // default 30d

@@ -18,6 +18,8 @@ const RANGE_OPTIONS = [
   { value: '7d', label: 'Last 7 days' },
   { value: '30d', label: 'Last 30 days' },
   { value: '90d', label: 'Last 90 days' },
+  { value: '12m', label: 'Last 12 months' },
+  { value: 'ytd', label: 'Year to date' },
   { value: 'custom', label: 'Custom range' },
 ] as const
 

@@ -606,8 +606,10 @@ const SCAN_DIRS = [
 
   'app/admin/(protected)/analytics/_components/DateRangePicker.tsx',
   'app/admin/(protected)/analytics/_components/ReportCatalog.tsx',
+  'app/admin/(protected)/analytics/_components/SalesFunnelTab.tsx',
   'app/admin/(protected)/analytics/_components/charts.tsx',
   'app/admin/(protected)/analytics/_components/v2/DataGrid.tsx',
+  'app/admin/(protected)/analytics/_components/v2/FunnelAudienceControl.tsx',
   'app/admin/(protected)/analytics/_components/v2/RangeControl.tsx',
   'app/admin/(protected)/analytics/_components/v2/VariantControl.tsx',
   'app/admin/(protected)/analytics/_components/v2/kit.tsx',

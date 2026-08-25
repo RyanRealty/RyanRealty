@@ -11,7 +11,7 @@
  *
  * Data trace:
  *   - Overview / Acquisition / Behavior  → GA4 Data API (getGA4Summary)
- *   - Funnel                              → GA4 + public.crm_people (getLeadIntake) + public.cmas
+ *   - Funnel                              → getSalesFunnel (visitor_sessions + crm_people + crm_timeline + crm_deals + marketing_channel_daily). GA4 LP event funnel is secondary.
  *   - Conversions                         → GA4 + public.crm_people (getLeadIntake) + public.marketing_channel_daily
  *
  * Per-figure citation lives in ./citations.json.
@@ -24,7 +24,7 @@
  */
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { SectionHead, StateWord } from '@/components/admin/v2'
+import { SectionHead } from '@/components/admin/v2'
 import { DataList, Figures, Loading } from './_components/v2/kit'
 import { getReportCities } from '@/app/actions/reports'
 import {
@@ -32,12 +32,11 @@ import {
   fetchOverview,
   fetchAcquisition,
   fetchBehavior,
-  fetchFunnel,
   fetchConversions,
 } from './_lib/queries'
 import { formatInt, formatPct, formatUsd, formatDuration } from './_lib/formatters'
 import { RangeControl } from './_components/v2/RangeControl'
-import { VariantControl } from './_components/v2/VariantControl'
+import { SalesFunnelTab } from './_components/SalesFunnelTab'
 import { HorizontalBarChart, TimeSeriesChart, BrokerPieChart, StackedBarMix } from './_components/charts'
 import ReportCatalog from './_components/ReportCatalog'
 
@@ -67,10 +66,10 @@ type TabKey = (typeof TAB_DEFS)[number]['key']
 
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = normalizeParams(await searchParams)
-  const range = resolveDateRange(sp)
   const tab: TabKey = TAB_DEFS.some((t) => t.key === sp.tab) ? (sp.tab as TabKey) : 'overview'
   const lpVariant = sp.lpVariant || ''
-  const rangeChoice = sp.range || '30d'
+  const rangeChoice = sp.range || (tab === 'funnel' ? '12m' : '30d')
+  const range = resolveDateRange({ ...sp, range: rangeChoice })
   const { cities } = await getReportCities()
 
   // Tab links carry the current range/variant params so switching tabs keeps
@@ -79,7 +78,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const tabHref = (t: TabKey) => {
     const p = new URLSearchParams()
     if (t !== 'overview') p.set('tab', t)
-    for (const k of ['range', 'startDate', 'endDate', 'lpVariant'] as const) {
+    for (const k of ['range', 'startDate', 'endDate', 'lpVariant', 'audience'] as const) {
       if (sp[k]) p.set(k, String(sp[k]))
     }
     const qs = p.toString()
@@ -125,7 +124,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         ) : tab === 'behavior' ? (
           <BehaviorTab range={range} />
         ) : tab === 'funnel' ? (
-          <FunnelTab range={range} lpVariant={lpVariant} />
+          <SalesFunnelTab range={range} sp={sp} lpVariant={lpVariant} />
         ) : (
           <ConversionsTab range={range} />
         )}
@@ -328,56 +327,6 @@ async function BehaviorTab({ range }: { range: { startDate: string; endDate: str
         ) : (
           <Figures figures={[{ label: 'scroll_depth events', value: formatInt(d.scrollTotal) }]} />
         )}
-      </section>
-    </>
-  )
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// Funnel
-// ────────────────────────────────────────────────────────────────────────────
-
-async function FunnelTab({ range, lpVariant }: { range: { startDate: string; endDate: string }; lpVariant: string }) {
-  const d = await fetchFunnel(range, lpVariant || undefined)
-  const max = Math.max(1, ...d.steps.map((s) => s.count))
-
-  return (
-    <>
-      <VariantControl variants={d.availableVariants} current={lpVariant} />
-
-      <section aria-label="Lead path">
-        <SectionHead>
-          Lead path{lpVariant ? <> <StateWord state="accent">lp_variant = {lpVariant}</StateWord></> : null}
-        </SectionHead>
-        <div style={{ marginBottom: 'var(--a-s4)' }}>
-          {d.steps.map((step, i) => {
-            const widthPct = (step.count / max) * 100
-            return (
-              <div key={step.label} className="av2-step">
-                <div className="av2-step__l">{i + 1}. {step.label}</div>
-                <div className="av2-step__track">
-                  <div className="av2-step__fill" style={{ width: `${Math.max(2, widthPct)}%` }} />
-                </div>
-                <div className="av2-step__n">
-                  <b style={{ color: 'var(--a-text)' }}>{formatInt(step.count)}</b>
-                  {step.dropOffPct !== null ? (
-                    <>
-                      {' · '}
-                      {step.dropOffPct >= 0
-                        ? `drop ${formatPct(step.dropOffPct, 1)}`
-                        : `gain ${formatPct(-step.dropOffPct, 1)}`}
-                    </>
-                  ) : (
-                    <>{' · '}start</>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <p className="av2-note">
-          Steps 1 through 5 from GA4. Step 6 (leads captured) from public.crm_people, inbound sources only. Step 7 from public.cmas where status is delivered, final, or sent.
-        </p>
       </section>
     </>
   )

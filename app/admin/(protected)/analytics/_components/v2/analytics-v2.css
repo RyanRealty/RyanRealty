@@ -103,3 +103,80 @@
   .av2-step { grid-template-columns: 220px 1fr 170px; align-items: center; gap: var(--a-s3); }
   .av2-step__n { text-align: right; }
 }
+
+/* ---- cohort funnel (spine + discovery + doors) ---- */
+.av2-funnel-disc-group { margin: 0 0 var(--a-s4); }
+.av2-funnel-disc-group__h {
+  font-size: var(--a-text-xs);
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--a-text-2);
+  margin: 0 0 var(--a-s2);
+}
+.av2-funnel-disc {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--a-s3);
+  margin: 0;
+}
+@media (min-width: 760px) {
+  .av2-funnel-disc { grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); }
+}
+.av2-funnel-disc__item {
+  padding: var(--a-s3);
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-r-lg);
+  background: var(--a-surface);
+}
+.av2-funnel-disc__k {
+  font-size: var(--a-text-xs);
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--a-text-2);
+  margin: 0 0 var(--a-s1);
+}
+.av2-funnel-disc__n {
+  font-size: var(--a-text-num);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--a-text);
+  line-height: 1.15;
+}
+.av2-funnel-disc__c {
+  font-size: var(--a-text-xs);
+  color: var(--a-text-2);
+  margin-top: var(--a-s1);
+}
+.av2-funnel-gap {
+  font-size: var(--a-text-sm);
+  color: var(--a-text-2);
+  padding: var(--a-s3) 0;
+  border-top: 1px dashed var(--a-border);
+  border-bottom: 1px dashed var(--a-border);
+  margin: 0 0 var(--a-s4);
+}
+a.av2-step {
+  text-decoration: none;
+  color: inherit;
+  min-height: 44px;
+  padding-left: var(--a-s2);
+  padding-right: var(--a-s2);
+  margin-left: calc(var(--a-s2) * -1);
+  margin-right: calc(var(--a-s2) * -1);
+  border-radius: var(--a-r-md);
+}
+a.av2-step:hover,
+a.av2-step:focus-visible {
+  background: var(--a-accent-wash);
+}
+a.av2-step.is-on {
+  background: var(--a-accent-wash);
+  box-shadow: inset 3px 0 0 var(--a-accent);
+}
+.av2-funnel-kind {
+  font-size: var(--a-text-xs);
+  color: var(--a-text-2);
+  font-weight: 400;
+}
