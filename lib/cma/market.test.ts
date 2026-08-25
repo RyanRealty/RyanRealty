@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   assembleCmaMarketContext,
+  cmaMarketSources,
   resolveCmaMarketTargets,
   type CmaMarketAssembleInput,
 } from '@/lib/cma/market'
@@ -296,6 +297,41 @@ describe('D27 — a resort CMA omits the verdict it has not earned', () => {
     // resort slug, this is the assertion that catches it.
     expect(out.marketVerdict).not.toBe('balanced')
     expect(out.geoSlug).toBe('tetherow')
+  })
+})
+
+describe('D27 — the CMA citation names the store that produced each figure', () => {
+  // The defect: market_context carried one fixed string, "market_stats_cache
+  // (rolling_365d) + market_pulse_live", long after the board moved onto leftover.
+  // A CMA is broker-signed and its citation is what a reviewer audits against, so
+  // a wrong store name makes the figure unverifiable. §0.
+  it('attributes the leftover figures to market-truth, not the cache', () => {
+    const src = cmaMarketSources(assemble())
+    for (const key of [
+      'median_sale_price',
+      'median_ppsf',
+      'sale_to_list_ratio',
+      'yoy_median_price_delta_pct',
+      'pending_count',
+      'active_count',
+      'months_of_supply',
+      'market_verdict',
+    ]) {
+      expect(src[key]).toContain('market-truth leftover detached membership')
+      expect(src[key]).not.toContain('market_stats_cache')
+    }
+  })
+
+  it("keeps days on market on the cache, per D17's carve-out", () => {
+    const src = cmaMarketSources(assemble())
+    expect(src.median_dom).toContain('market_stats_cache')
+    expect(src.median_dom).not.toContain('leftover')
+  })
+
+  it('says none rather than naming a store for a figure it does not have', () => {
+    const src = cmaMarketSources(assemble({ leftover: { ...EMPTY_PUBLIC_PACE }, stats: null }))
+    expect(src.median_dom).toBe('none')
+    expect(src.sold_count_365).toBe('none')
   })
 })
 

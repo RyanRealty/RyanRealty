@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getCmaServeHead = vi.fn()
@@ -130,5 +132,21 @@ describe('serveCmaDocument', () => {
     expect(result).toEqual({ kind: 'json', status: 404, body: { error: 'CMA not found' } })
     expect(renderImmersiveCmaHtml).not.toHaveBeenCalled()
     expect(getCmaStoredHtmlBySlug).not.toHaveBeenCalled()
+  })
+})
+
+describe('D27 — a delivered CMA is frozen', () => {
+  // The freeze is currently true only because both call sites happen to pass
+  // false. That is one edit away from silently restating the market figures on a
+  // document a client already holds, so pin it here rather than trusting the
+  // argument to stay put.
+  it('never re-hydrates the market area on the served document', () => {
+    const src = readFileSync(resolve(process.cwd(), 'lib/cma/serve-document.ts'), 'utf8')
+    // Single-line matches only, so the multi-line declaration is not mistaken
+    // for a call site.
+    const calls = src.match(/immersiveFromRow\([^)\n]+\)/g) ?? []
+    expect(calls.length).toBeGreaterThan(0)
+    for (const call of calls) expect(call).toContain('false')
+    expect(src).not.toMatch(/immersiveFromRow\([^)]*,\s*true\s*\)/)
   })
 })

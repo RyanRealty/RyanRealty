@@ -101,7 +101,8 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'new-30-days',
     term: 'New · 30 days',
     body: [
-      'This HUD tile is omitted until leftover membership has a true 30-day new-listings figure. We do not print the live MLS snapshot here, and we never put leftover 12-month new listings under a 30-day label. 12-month leftover new listings live in the leftover strip.',
+      'Detached homes that came on the market in the last 30 days, counted by the date they listed, from leftover membership.',
+      'A home counts here even if it has already gone pending or sold, because it still came to market in the window. Homes marked Coming Soon are not counted until they are actually on the market. A missing leftover cell omits the tile. We do not print the live MLS snapshot here, and we never put leftover 12-month new listings under a 30-day label. 12-month leftover new listings live in the leftover strip.',
     ],
   },
   {
@@ -221,7 +222,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'fill-on-miss',
     term: 'When a number is missing',
     body: [
-      'On the leftover HUD, leftover MOS destinations, leftover remainder, leftover listing context, leftover about city rows, leftover JSON HUD fields, leftover OG inventory, leftover FAQ Median to pending, leftover seller LP HUD, leftover place heroes, leftover town MOS and days-to-pending charts, leftover header and menu figures, leftover HUD charts, leftover search city FAQ, leftover city market on event, golf, trail, and venue pages, leftover housing-market instruments, leftover reports live inventory, and leftover as-of stamps, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures. A county median is not published.',
+      'On the leftover HUD, leftover MOS destinations, leftover remainder, leftover listing context, leftover about city rows, leftover JSON HUD fields, leftover OG inventory, leftover FAQ Median to pending, leftover seller LP HUD, leftover place heroes, leftover town MOS and days-to-pending charts, leftover header and menu figures, leftover HUD charts, leftover search city FAQ, leftover city market on event, golf, trail, and venue pages, leftover housing-market instruments, leftover reports live inventory, leftover as-of stamps, New · 30 days, and the market figures in the reports and CMAs we send, a missing leftover cell is omitted. We do not fill it from the live MLS snapshot or the older monthly figures. A county median is not published.',
       'We do not invent a zero, and we do not put a longer window under a shorter label.',
     ],
   },

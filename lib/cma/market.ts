@@ -252,3 +252,39 @@ export async function getCmaMarketContext(
     yearMart,
   })
 }
+
+/**
+ * Per-figure source attribution for the CMA's market_context citation.
+ *
+ * D27: this block used to carry one fixed string, `market_stats_cache
+ * (rolling_365d) + market_pulse_live`, which stopped being true as the board
+ * migrated onto leftover detached membership. Median close, price per sq ft,
+ * sale-to-original, YoY and pending are leftover only; sold count and median
+ * list read leftover first and fall back; days on market is still cache under
+ * D17's carve-out. A CMA is signed by a broker, and its citation is what a
+ * reviewer audits the number against — naming a store that did not produce the
+ * figure makes it unauditable, which is a §0 failure, not a cosmetic one.
+ */
+export function cmaMarketSources(ctx: CmaMarketContext): Record<string, string> {
+  const MT = 'market-truth leftover detached membership (mt-v1)'
+  const CACHE = 'market_stats_cache rolling_365d'
+  const PULSE = 'market_pulse_live'
+  return {
+    median_sale_price: MT,
+    median_ppsf: MT,
+    sale_to_list_ratio: MT,
+    yoy_median_price_delta_pct: MT,
+    pending_count: MT,
+    active_count: MT,
+    months_of_supply: MT,
+    market_verdict: MT,
+    // Leftover first, cache only if leftover withheld the closed count.
+    sold_count_365: ctx.soldCount365 == null ? 'none' : MT,
+    // Leftover first, pulse only if the detached board had no median list.
+    median_list_price: ctx.medianListPrice == null ? 'none' : ctx.computedAt ? MT : PULSE,
+    // D17 carve-out: days on market and the monthly trend stay cache.
+    median_dom: ctx.medianDom == null ? 'none' : CACHE,
+    trend: ctx.trend && ctx.trend.length > 0 ? CACHE : 'none',
+  }
+}
+

@@ -39,6 +39,18 @@ export type CmaServeResult =
   | { kind: 'json'; status: number; body: Record<string, unknown> }
   | { kind: 'redirect'; url: string; status: number }
 
+/**
+ * A DELIVERED CMA IS FROZEN (D27). Both call sites pass hydrateArea: false, so a
+ * document already in a client's hands renders the figures that were true when
+ * the broker signed it. Leftover governs NEW builds; it never reaches back into a
+ * delivered one.
+ *
+ * The flag is kept rather than deleted because an admin preview may one day want
+ * a live board, but flipping it to true on the client path would silently restate
+ * a signed document's market figures with no visible reason — the client sees
+ * different numbers than they were sent. If you are about to pass true here,
+ * that is the decision you are making.
+ */
 async function immersiveFromRow(
   row: CmaRenderSource,
   origin: string,
