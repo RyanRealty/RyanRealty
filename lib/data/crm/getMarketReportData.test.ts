@@ -1,6 +1,50 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
+
+// Mocks for the full getMarketReportData() fetch path (D27 integration tests
+// below) — every DAL dependency the module calls, so the test never touches
+// a real Supabase connection. vi.mock is hoisted above these imports by
+// vitest regardless of source position; vi.hoisted keeps the fn references
+// available inside the factory closures. Pattern mirrors
+// lib/data/market/getCityReportSnapshot.test.ts.
+const { detailMock, pulseMock, trendMock, detachedMock, leftoverMock } = vi.hoisted(() => ({
+  detailMock: vi.fn(),
+  pulseMock: vi.fn(),
+  trendMock: vi.fn(),
+  detachedMock: vi.fn(),
+  leftoverMock: vi.fn(),
+}))
+
+vi.mock('@/lib/data/market/getCityMarketDetail', () => ({
+  getCityMarketDetail: (args: unknown) => detailMock(args),
+}))
+vi.mock('@/lib/data/market/getMarketPulse', () => ({
+  getMarketPulse: (args: unknown) => pulseMock(args),
+}))
+vi.mock('@/lib/data/market/getMarketTrend', () => ({
+  getMarketTrend: (...args: unknown[]) => trendMock(...args),
+}))
+vi.mock('@/lib/data/market-truth/getSellBendMarket', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/data/market-truth/getSellBendMarket')>(
+    '@/lib/data/market-truth/getSellBendMarket',
+  )
+  return {
+    ...actual,
+    getDetachedMarkets: (...args: unknown[]) => detachedMock(...args),
+  }
+})
+vi.mock('@/lib/data/market-truth/public-pace', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/data/market-truth/public-pace')>(
+    '@/lib/data/market-truth/public-pace',
+  )
+  return {
+    ...actual,
+    getPublicDetachedPace: (...args: unknown[]) => leftoverMock(...args),
+  }
+})
+
 import {
   computeMonthsOfSupply,
   classifyMarketVerdict,
@@ -8,9 +52,9 @@ import {
   buildAreaBlock,
   buildTrendSummary,
   monthLabel,
+  getMarketReportData,
 } from './getMarketReportData'
 import type { MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
-import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 
 describe('buildTrendSummary', () => {
   const pt = (
@@ -337,5 +381,138 @@ describe('getMarketReportData leftover fetch path', () => {
     expect(src).toMatch(/getPublicDetachedPace/)
     expect(src).toMatch(/readAreaLeftover\(geoType, slug\)/)
     expect(src).toMatch(/leftover,/)
+  })
+})
+
+/**
+ * D27 integration tests — the ACTUAL async getMarketReportData() the send
+ * engine calls, every DAL dependency mocked so nothing touches a real
+ * Supabase connection. Proves the exported function itself (not just the
+ * pure buildAreaBlock helper) publishes leftover on a hit, omits — never
+ * cache-fills — on a miss, and never throws (the document still sends) when
+ * leftover errors outright.
+ */
+describe('getMarketReportData (D27 leftover fetch integration)', () => {
+  const detail = {
+    medianSalePrice: 721000,
+    soldCount: 1657,
+    medianDom: 25,
+    yoyMedianPriceDeltaPct: -1.22,
+    marketHealthLabel: 'Warm',
+    endOfPeriodInventory: 491,
+    updatedAt: '2026-06-25T00:00:00Z',
+  }
+  const detachedBend = {
+    activeCount: 480,
+    monthsOfSupply: 3.5,
+    mosLabel: '3.5 months',
+    verdictKind: 'sellers' as const,
+    verdictLabel: "Seller's market",
+    medianListPrice: 799000,
+    computedAt: '2026-06-25T12:00:00Z',
+    completeThrough: '2026-06-25',
+  }
+  const leftoverHit = { ...EMPTY_PUBLIC_PACE, medianClose: 760_000, closedCount: 2095, yoyMedian: -0.0194 }
+
+  beforeEach(() => {
+    detailMock.mockReset()
+    pulseMock.mockReset()
+    trendMock.mockReset()
+    detachedMock.mockReset()
+    leftoverMock.mockReset()
+    detailMock.mockResolvedValue(detail)
+    pulseMock.mockResolvedValue(null)
+    trendMock.mockResolvedValue([])
+    detachedMock.mockResolvedValue(new Map([['city:bend', detachedBend]]))
+    leftoverMock.mockResolvedValue(leftoverHit)
+  })
+
+  it('(a) a leftover hit publishes the leftover value', async () => {
+    const blocks = await getMarketReportData(['bend'])
+    expect(leftoverMock).toHaveBeenCalled()
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0].medianPrice).toBe(760_000)
+    expect(blocks[0].soldLast12mo).toBe(2095)
+    expect(blocks[0].yoyPct).toBeCloseTo(-1.94)
+    // Never the cache row's own trailing-12mo figures.
+    expect(blocks[0].medianPrice).not.toBe(detail.medianSalePrice)
+    expect(blocks[0].soldLast12mo).not.toBe(detail.soldCount)
+  })
+
+  it('(b) a leftover miss omits the figure — never falls back to pulse or cache', async () => {
+    leftoverMock.mockResolvedValue(EMPTY_PUBLIC_PACE)
+    const blocks = await getMarketReportData(['bend'])
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0].medianPrice).toBeNull()
+    expect(blocks[0].soldLast12mo).toBeNull()
+    expect(blocks[0].soldLast12mo).not.toBe(0)
+    expect(blocks[0].yoyPct).toBeNull()
+    // Not silently backfilled from the cache row, which DID carry values.
+    expect(blocks[0].medianPrice).not.toBe(detail.medianSalePrice)
+    expect(blocks[0].soldLast12mo).not.toBe(detail.soldCount)
+    // D17/D27 unchanged carve-out: live inventory, MoS, and DOM are not
+    // leftover cells, so a leftover miss does not touch them.
+    expect(blocks[0].activeListings).toBe(480)
+    expect(blocks[0].monthsOfSupply).toBe(3.5)
+    expect(blocks[0].domMedian).toBe(25)
+  })
+
+  it('(c) a leftover fetch failure never blocks the send — the block still builds, figure omitted', async () => {
+    leftoverMock.mockRejectedValue(new Error('market truth timeout'))
+    // The promise itself must resolve (not reject) — a rejection here would
+    // fail this await and fail the test, proving the send is never blocked.
+    const blocks = await getMarketReportData(['bend'])
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0].medianPrice).toBeNull()
+    expect(blocks[0].soldLast12mo).toBeNull()
+    expect(blocks[0].yoyPct).toBeNull()
+    // The rest of the block is unaffected — the document still sends with
+    // everything else intact, just this one line omitted.
+    expect(blocks[0].activeListings).toBe(480)
+    expect(blocks[0].areaLabel).toBe('Bend')
+    expect(blocks[0].href).toBe('/cities/bend')
+  })
+
+  it('(c) a leftover miss on ONE of several areas does not drop or block the others', async () => {
+    detailMock.mockImplementation(async ({ geoSlug }: { geoSlug: string }) =>
+      geoSlug === 'redmond' ? { ...detail, medianSalePrice: 610000, endOfPeriodInventory: 210 } : detail,
+    )
+    detachedMock.mockResolvedValue(
+      new Map([
+        ['city:bend', detachedBend],
+        ['city:redmond', { ...detachedBend, activeCount: 150, medianListPrice: 610000 }],
+      ]),
+    )
+    leftoverMock.mockImplementation(async ({ geoSlug }: { geoSlug: string }) =>
+      geoSlug === 'redmond' ? EMPTY_PUBLIC_PACE : leftoverHit,
+    )
+    const blocks = await getMarketReportData(['bend', 'redmond'])
+    expect(blocks).toHaveLength(2)
+    const bend = blocks.find((b) => b.slug === 'bend')!
+    const redmond = blocks.find((b) => b.slug === 'redmond')!
+    expect(bend.medianPrice).toBe(760_000)
+    expect(redmond.medianPrice).toBeNull()
+    // Redmond's miss doesn't drop it from the send or touch Bend's hit.
+    expect(redmond.activeListings).toBe(150)
+  })
+
+  it('resort neighborhoods also overlay leftover 12-month close (no city-only carve-out)', async () => {
+    detailMock.mockResolvedValue({
+      medianSalePrice: 2081750,
+      soldCount: 36,
+      medianDom: 24,
+      yoyMedianPriceDeltaPct: null,
+      marketHealthLabel: 'Cool',
+      endOfPeriodInventory: 35,
+      updatedAt: '2026-08-16T00:00:00Z',
+    })
+    detachedMock.mockResolvedValue(new Map())
+    pulseMock.mockResolvedValue({ activeCount: 35, monthsOfSupply: 4.6, refreshedAt: '2026-08-16T19:00:00Z' })
+    leftoverMock.mockResolvedValue({ ...EMPTY_PUBLIC_PACE, medianClose: 2_200_000, closedCount: 40, yoyMedian: 0.03 })
+    const blocks = await getMarketReportData(['tetherow'])
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0].medianPrice).toBe(2_200_000)
+    expect(blocks[0].soldLast12mo).toBe(40)
+    expect(blocks[0].source).toBe('market_pulse_live')
   })
 })

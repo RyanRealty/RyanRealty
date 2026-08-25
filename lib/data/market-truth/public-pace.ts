@@ -27,6 +27,7 @@ export const PUBLIC_PACE_STATS = [
   'pending_count',
   'median_age_active_inventory',
   'closed_count_30d',
+  'new_listings_30d',
   'median_days_to_contract_90d',
 ] as const
 
@@ -49,6 +50,7 @@ export type PublicPaceRow = {
   pendingCount: number | null
   medianAgeActive: number | null
   closedCount30d: number | null
+  newCount30d: number | null
   daysToPending90d: number | null
 }
 
@@ -69,6 +71,7 @@ export const EMPTY_PUBLIC_PACE: PublicPaceRow = {
   pendingCount: null,
   medianAgeActive: null,
   closedCount30d: null,
+  newCount30d: null,
   daysToPending90d: null,
 }
 
@@ -87,6 +90,7 @@ function paceWindow(statId: string): number {
     statId === 'pending_count' ||
     statId === 'median_age_active_inventory' ||
     statId === 'closed_count_30d' ||
+    statId === 'new_listings_30d' ||
     statId === 'median_days_to_contract_90d'
   ) {
     return 0
@@ -240,6 +244,7 @@ export async function getPublicDetachedPace(opts: {
   const newListings = pick('new_listings')
   const pendingCount = pick('pending_count')
   const closedCount30d = pick('closed_count_30d')
+  const newCount30d = pick('new_listings_30d')
   const daysToPending90d = pick('median_days_to_contract_90d')
   const priceCutShare = pick('pct_with_price_cut')
   const medianPriceCut = pick('median_price_cut_pct')
@@ -269,6 +274,9 @@ export async function getPublicDetachedPace(opts: {
     pendingCount: pendingCount == null || pendingCount <= 0 ? null : Math.round(pendingCount),
     medianAgeActive: medianAgeActive == null ? null : Math.round(medianAgeActive),
     closedCount30d: closedCount30d == null || closedCount30d <= 0 ? null : Math.round(closedCount30d),
+    // D27: a zero new-listings count is a real answer (nothing came on market), but it is
+    // not a figure worth a tile, so it omits like the other counts rather than printing 0.
+    newCount30d: newCount30d == null || newCount30d <= 0 ? null : Math.round(newCount30d),
     daysToPending90d: daysToPending90d == null ? null : Math.round(daysToPending90d),
   }
 }

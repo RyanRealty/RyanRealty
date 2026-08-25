@@ -23,7 +23,7 @@ export type LeftoverHudKpis = {
   active: number | null
   pending: number | null
   closed30: number | null
-  new30: null
+  new30: number | null
   medianList: number | null
   saleToList: number | null
   daysToPending: number | null
@@ -61,7 +61,7 @@ export function leftoverHudKpis(input: {
     active,
     pending: input.pace.pendingCount,
     closed30: input.pace.closedCount30d,
-    new30: null,
+    new30: input.pace.newCount30d ?? null,
     medianList,
     saleToList: leftoverSaleToListPct(input.pace.saleToOriginal),
     daysToPending: input.pace.daysToPending90d,

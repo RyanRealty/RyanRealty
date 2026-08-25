@@ -32,6 +32,7 @@ const IN_WINDOW = new Date('2026-07-22T18:00:00.000Z')
 
 function block(slug: string, over: Partial<MarketReportAreaBlock> = {}): MarketReportAreaBlock {
   return {
+    twelveMonthSource: 'market-truth',
     slug,
     areaLabel: slug === 'bend' ? 'Bend' : slug[0]!.toUpperCase() + slug.slice(1),
     geoType: 'city',

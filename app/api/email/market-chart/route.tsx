@@ -18,6 +18,14 @@
  * When the geo has fewer than 3 usable points, this 404s and the email simply
  * omits the image rather than rendering a fabricated chart.
  *
+ * D27 (docs/plans/MARKET_TRUTH/DECISIONS.md) migrated the CRM market-report
+ * text blocks (lib/data/crm/getMarketReportData.ts) onto leftover Market
+ * Truth membership for the trailing-12-month median/sold/YoY figures. This
+ * chart is deliberately UNCHANGED — it renders the "core-chart" monthly
+ * inventory/DOM/median-price series, which D17/D27 explicitly keep on
+ * `market_stats_cache` (leftover has no monthly time series to chart from).
+ * Do not migrate this route to leftover.
+ *
  * Cache: s-maxage 6h (matches market_stats_cache freshness) + a day of SWR.
  */
 

@@ -62,6 +62,7 @@ function block(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportArea
     marketHealthLabel: 'Warm',
     refreshedAt: '2026-06-25T12:00:00Z',
     source: 'market_pulse_live',
+    twelveMonthSource: 'market-truth',
     href: '/cities/bend',
     trend: trend(),
     ...overrides,
@@ -227,6 +228,7 @@ function thinArea(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportA
     marketVerdict: 'buyers',
     yoyPct: -17.0558,
     source: 'market_stats_cache:rolling_365d',
+    twelveMonthSource: 'market_stats_cache',
     ...overrides,
   })
 }
@@ -541,3 +543,42 @@ describe('renderMarketReportEmail', () => {
     expect(hits).toEqual([])
   })
 })
+
+describe('D27 — the audit trace names the store that produced the figure', () => {
+  const traceFor = (area: MarketReportAreaBlock, needle: string) => {
+    const out = renderMarketReportEmail({
+      contactName: 'Jordan',
+      areas: [area],
+      unsubscribeUrl: 'https://ryan-realty.com/api/email/unsubscribe?t=abc.def',
+    })
+    return out.traces.find((t) => t.source.includes(needle))?.source ?? ''
+  }
+
+  // The defect this closes: all three of these were hardcoded to market_stats_cache,
+  // so a leftover figure on a client's document carried a trace pointing at a store
+  // that did not produce it. A trace an auditor cannot follow is a §0 failure.
+  for (const needle of ['median_sale_price', 'yoy_median_price_delta_pct', 'sold_count']) {
+    it(`traces ${needle} to market-truth when the block is a leftover overlay`, () => {
+      const t = traceFor(block({ twelveMonthSource: 'market-truth' }), needle)
+      expect(t).toContain('market-truth leftover detached membership')
+      expect(t).not.toContain('market_stats_cache')
+    })
+
+    it(`traces ${needle} to the cache when the block is not an overlay`, () => {
+      const t = traceFor(block({ twelveMonthSource: 'market_stats_cache' }), needle)
+      expect(t).toContain('market_stats_cache')
+      expect(t).not.toContain('leftover detached membership')
+    })
+  }
+
+  // D17's carve-out: these three legitimately stay cache no matter the overlay,
+  // so they must NOT follow the twelve-month source.
+  for (const needle of ['median_dom', 'end_of_period_inventory']) {
+    it(`keeps ${needle} on the cache trace even for a leftover overlay block`, () => {
+      const t = traceFor(block({ twelveMonthSource: 'market-truth' }), needle)
+      expect(t).toContain('market_stats_cache')
+      expect(t).not.toContain('leftover detached membership')
+    })
+  }
+})
+

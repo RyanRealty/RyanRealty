@@ -258,6 +258,22 @@ function cacheSource(area: MarketReportAreaBlock): string {
   return `market_stats_cache geo_type=${area.geoType} geo=${area.slug} period=rolling_365d`
 }
 
+/**
+ * Audit trace for the three trailing-12-month figures (median sale price, YoY,
+ * sold count). D27 moved them onto leftover detached membership on the fetch
+ * path, but legacy callers that pass no `leftover` still get cache values — so
+ * the block reports which store actually produced them and the trace follows.
+ *
+ * Naming the wrong store on a document a client reads is a §0 defect: the trace
+ * is the thing a reviewer audits the number against, so a trace that always said
+ * `market_stats_cache` would make a leftover figure unverifiable.
+ */
+function twelveMonthSource(area: MarketReportAreaBlock): string {
+  return area.twelveMonthSource === 'market-truth'
+    ? `market-truth leftover detached membership geo_type=${area.geoType} geo=${area.slug} window=12mo`
+    : cacheSource(area)
+}
+
 function pulseOrCacheSource(area: MarketReportAreaBlock): string {
   return area.source === 'market_pulse_live'
     ? `market_pulse_live geo_type=${area.geoType} geo=${area.slug}`
@@ -324,13 +340,13 @@ function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
   if (area.medianPrice != null) {
     traces.push({
       figure: `${area.areaLabel} median sale price ${priceLine} (trailing 12 months)`,
-      source: `${cacheSource(area)} (median_sale_price)`,
+      source: `${twelveMonthSource(area)} (median_sale_price)`,
     })
   }
   if (area.yoyPct != null && Number.isFinite(area.yoyPct)) {
     traces.push({
       figure: `${area.areaLabel} median price ${formatYoy(area.yoyPct)}`,
-      source: `${cacheSource(area)} (yoy_median_price_delta_pct)`,
+      source: `${twelveMonthSource(area)} (yoy_median_price_delta_pct)`,
     })
   }
 
@@ -442,7 +458,7 @@ function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
   if (area.soldLast12mo != null) {
     traces.push({
       figure: `${area.areaLabel} homes sold last 12 months ${formatCount(area.soldLast12mo)}`,
-      source: `${cacheSource(area)} (sold_count)`,
+      source: `${twelveMonthSource(area)} (sold_count)`,
     })
   }
 

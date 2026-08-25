@@ -33,6 +33,7 @@ function sub(over: Partial<MarketReportSubscriber> = {}): MarketReportSubscriber
 }
 
 const BLOCK: MarketReportAreaBlock = {
+  twelveMonthSource: 'market-truth',
   slug: 'bend',
   areaLabel: 'Bend',
   geoType: 'city',

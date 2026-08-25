@@ -1,26 +1,41 @@
 /**
  * getMarketReportData — the §0-accurate market figures for a contact's
- * subscribed report areas (Wave 8, market-report subscription product).
+ * subscribed report areas (Wave 8, market-report subscription product;
+ * migrated onto leftover detached membership for the trailing-12-month
+ * close figures under D27, docs/plans/MARKET_TRUTH/DECISIONS.md).
  *
- * Every figure returned here traces to the canonical market cache via the
- * EXISTING market DAL. This module NEVER aggregates raw `listings` and NEVER
- * fabricates a placeholder number. A subscribed area with no cache data is
- * omitted (honest empty), not filled with a guess. A wrong stat in a sent
- * email is a compliance failure (CLAUDE.md §0).
+ * Every figure returned here traces to a NAMED source, never a blend: the
+ * trailing-12-month median/sold/YoY come from leftover Market Truth pace
+ * cells, live inventory + MoS come from Market Truth city overlays (falling
+ * back to pulse for resort neighborhoods, then to the historical cache row),
+ * and DOM + the monthly trend chart stay on `market_stats_cache` — see the
+ * per-field breakdown below. This module NEVER aggregates raw `listings` and
+ * NEVER fabricates a placeholder number. A subscribed area with NO usable
+ * signal at all is omitted entirely (honest empty); a single figure missing
+ * inside an otherwise-usable area is nulled and the caller omits that one
+ * line — it is never filled from a different source, and a missing figure
+ * never blocks the rest of the document from sending (D27). A wrong stat in
+ * a sent email is a compliance failure (CLAUDE.md §0).
  *
  * Source of every block:
- *   - Trailing 12-month median / sold / YoY: leftover Market Truth cells via
- *     `getPublicDetachedPace` (`medianClose`, `closedCount`, `yoyMedian`).
- *     Miss omits those fields — never cache fill. `medianDom` stays
- *     `market_stats_cache` rolling_365d; leftover days-to-contract is not DOM.
+ *   - Trailing 12-month median / sold / YoY (D27): leftover Market Truth
+ *     cells via `getPublicDetachedPace` (`medianClose`, `closedCount`,
+ *     `yoyMedian`). Miss omits those fields — never cache fill, never pulse
+ *     fill, and a miss never stops the rest of the block (or the send) from
+ *     going out. `medianDom` stays `market_stats_cache` rolling_365d;
+ *     leftover days-to-contract is a different measurement and is never
+ *     mapped onto it (D2/D17) — see `readAreaLeftover` / the `leftover`
+ *     param of `buildAreaBlock`.
  *   - Cache `getCityMarketDetail(rolling_365d)` still supplies DOM, health
  *     label, historical inventory, and the existence row the block needs.
+ *     Unchanged by D27 (D17's carve-out: DOM stays pulse/cache).
  *   - Live inventory + MoS for cities: `getDetachedMarkets` (Market Truth
  *     detached, same three figures as `/sell`). A city miss does not fall
  *     back to pulse 488 / 3.54 / seller — live headlines stay empty and the
  *     block uses rolling_365d inventory/MOS. Resort neighborhoods still read
  *     `getMarketPulse` (`refresh_community_market_pulse`); MoS at that grain
  *     is withheld (`geo-grain-trust`). Do not invent MOS from leftover sold.
+ *     Unchanged by D27 (D17's carve-out: core inventory/MOS stay pulse/cache).
  *
  * Months of supply (CLAUDE.md §0): MoS = active / (closed_6mo / 6). Thresholds:
  * <= 4 sellers, 4-6 balanced, >= 6 buyers. The returned `marketVerdict` is
@@ -75,7 +90,16 @@ import { isSoldAttributionTrusted } from '@/lib/market/geo-grain-trust'
 import type { MoSVerdict } from '@/lib/data/types/market'
 import { formatDate } from '@/lib/format/date'
 
-/** Source tag carried on every block so a reviewer can audit the trace. */
+/**
+ * Source tag for a block's LIVE inventory + months-of-supply figures ONLY
+ * (`activeListings`, `monthsOfSupply`) — whether that live pair came from
+ * `market_pulse_live` (or its Market Truth city-overlay equivalent) or fell
+ * back to the `market_stats_cache` rolling_365d row. It does NOT describe
+ * `medianPrice` / `soldLast12mo` / `yoyPct`, which are leftover Market Truth
+ * pace cells (D27) when present and null on a miss — never this tag's two
+ * values — nor `domMedian`, which always stays `market_stats_cache`
+ * rolling_365d regardless of this tag.
+ */
 export type MarketReportSource = 'market_stats_cache:rolling_365d' | 'market_pulse_live'
 
 /**
@@ -137,8 +161,22 @@ export type MarketReportAreaBlock = {
   marketHealthLabel: string | null
   /** ISO timestamp of the underlying cache row's freshness. */
   refreshedAt: string | null
-  /** Where every figure in this block came from (audit trace). */
+  /**
+   * Where this block's live `activeListings` + `monthsOfSupply` came from
+   * (pulse vs cache) — see the `MarketReportSource` doc for what this does
+   * NOT cover: `medianPrice` / `soldLast12mo` / `yoyPct` are leftover when
+   * present (D27), and `domMedian` is always cache, independent of this tag.
+   */
   source: MarketReportSource
+  /**
+   * Which store actually produced `medianPrice` / `soldLast12mo` / `yoyPct` on
+   * THIS block. D27: the audit trace on a client-facing document must name the
+   * store the number came from. These three are leftover on the fetch path and
+   * cache for legacy callers that pass no `leftover`, so a fixed trace string
+   * would be false half the time — and a false source trace on a document a
+   * client reads is a §0 defect, not a cosmetic one.
+   */
+  twelveMonthSource: 'market-truth' | 'market_stats_cache'
   /** Canonical web path to the full report for this area. */
   href: string
   /**
@@ -403,6 +441,7 @@ export function buildAreaBlock(args: {
     areaLabel: labelForSlug(slug),
     geoType,
     medianPrice,
+    twelveMonthSource: overlay ? 'market-truth' : 'market_stats_cache',
     activeListings,
     soldLast12mo,
     monthsOfSupply,
@@ -423,7 +462,14 @@ export function buildAreaBlock(args: {
  * (getCityMarketDetail at rolling_365d), leftover 12-month pace
  * (getPublicDetachedPace), and live inventory (city: Market Truth detached
  * only — no pulse headline fallback; resort neighborhood: getMarketPulse).
- * Areas with no cache data are OMITTED. The result preserves input order, de-duped by slug.
+ * Areas with no usable signal at all are OMITTED. The result preserves input
+ * order, de-duped by slug.
+ *
+ * D27: a leftover fetch failure or miss NEVER throws out of this function
+ * and NEVER blocks the areas that do have leftover data — `readAreaLeftover`
+ * catches per-area, so one area's miss nulls that area's three leftover
+ * fields (never a pulse/cache fill) while every other area, and every other
+ * figure on the SAME area, builds normally. The document always sends.
  *
  * The send engine (Phase B) calls this, then renderMarketReportEmail, then the
  * suppression-gated send path.
