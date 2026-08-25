@@ -141,12 +141,19 @@ const surfaces = [
 ]
 
 const blogPage = src('app/blog/[slug]/page.tsx')
+// D27 moved the live months-of-supply guard off market pulse and onto leftover
+// detached membership, so requiring `getMarketPulse(` here would pin the source
+// this change deliberately replaced. What the gate is for is unchanged: the guard
+// must still exist, still route its figures through publishBlogCurrentMos, and the
+// page must still sit on the v3 gutter. Reading pulse for the guard is now the
+// regression, so the check asserts its absence.
 checks.push({
-  label: 'blog post page rewrites current MOS from pulse and sits on the v3 gutter',
+  label: 'blog post page rewrites current MOS from leftover and sits on the v3 gutter',
   ok:
     /from ['"]@\/lib\/blog\/publish-blog-current-mos['"]/.test(blogPage) &&
     /publishBlogCurrentMos\(/.test(blogPage) &&
-    /getMarketPulse\(/.test(blogPage) &&
+    /getDetachedMarket\(/.test(blogPage) &&
+    !/getMarketPulse\(/.test(blogPage) &&
     /v3-article-island/.test(blogPage) &&
     /V3ArticleIsland\.css/.test(blogPage),
 })

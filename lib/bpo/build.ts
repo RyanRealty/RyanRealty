@@ -16,6 +16,7 @@
  * reconciliation (lib/bpo/history.ts + opinion.ts).
  */
 
+import { cmaMarketSources } from '@/lib/cma/market'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data'
 import {
   getBpoListingCyclesByAddress,
@@ -385,7 +386,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       })),
       market_context: market
         ? {
-            source: 'market_stats_cache (rolling_365d) + market_pulse_live',
+            sources: cmaMarketSources(market),
             geo_slug: market.geoSlug,
             period: `${market.periodStart}..${market.periodEnd}`,
             methodology_version: market.methodologyVersion,
