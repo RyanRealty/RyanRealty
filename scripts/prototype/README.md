@@ -20,6 +20,11 @@ Artifact was the sole survivor. Everything here exists so that recovery is one c
    Scan for the closing tag with a loop that skips **escaped** ones (`<\/script>`) — a
    plain non-greedy regex stops inside the payload and silently truncates it.
 
+3. **Strip the `<body>` and the trailing `</body></html>`** off `shell.html`. The publish
+   wrapper supplies its own, and a copy carried over from the extracted artifact produces a
+   duplicate `<body>` in the published page. Browsers drop the second one so nothing visibly
+   breaks, which is exactly why it survives a render check unnoticed.
+
 ## build.py
 
 Reassembles `shell.html` + `pages/` + `data/` into the single-file bundle. Validates that
