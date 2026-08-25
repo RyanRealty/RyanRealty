@@ -22,7 +22,7 @@ import type { GovernedFailure } from './types'
 
 /** The quiet-hours refusal shown to brokers (kept byte-identical to the composer's). */
 export const QUIET_HOURS_ERROR =
-  'Quiet hours (TCPA): texts pause 9pm to 8am Pacific. Call instead, or check "send anyway" to override.'
+  'Quiet hours: texts pause 8pm to 8am Pacific (Oregon, ORS 646.563). Call instead, or check "send anyway" to override.'
 
 const HARD_STOP_REASON = 'tag:compliance:hard-stop'
 

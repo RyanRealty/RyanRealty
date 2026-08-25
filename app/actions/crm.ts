@@ -790,7 +790,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
 
   // TCPA quiet hours: one time-based check for the whole send (it also covers
   // the carrier-group path below, which cannot ride the per-person chokepoint).
-  // Block 9pm–8am Pacific unless the broker explicitly overrides (a deliberate
+  // Block 8pm–8am Pacific unless the broker explicitly overrides (a deliberate
   // manual reply — the ONE exception §A6 allows). The governed layer re-checks
   // per recipient with the same helper + the same canonical message.
   const { inSmsQuietHours } = await import('@/lib/crm/quiet-hours')

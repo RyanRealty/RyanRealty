@@ -201,9 +201,9 @@ export async function sendProspectingIntro(
     const to = toE164(prospect.contactPhone)
     if (!to) return { ok: false, error: 'No valid phone on file for this owner.', code: 'no-phone' }
 
-    // 8. TCPA quiet hours (8am–9pm Pacific).
+    // 8. Quiet hours (8am–8pm Pacific — Oregon's window, see lib/crm/quiet-hours).
     if (inSmsQuietHours()) {
-      return { ok: false, error: 'TCPA quiet hours (before 8am / after 9pm Pacific). Try again inside the window.', code: 'quiet-hours' }
+      return { ok: false, error: 'Quiet hours (before 8am / after 8pm Pacific). Try again inside the window.', code: 'quiet-hours' }
     }
 
     // 9. Ensure a native CRM lead + LIVE suppression re-check (a newly created

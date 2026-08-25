@@ -7,7 +7,7 @@
  *
  *   1. hard-stop tags        (compliance:hard-stop — blocks every channel)
  *   2. channel suppression   (crm_suppressions + TAG_CHANNEL, FAIL CLOSED)
- *   3. quiet hours           (SMS only — TCPA 9pm–8am Pacific)
+ *   3. quiet hours           (SMS only — 8pm–8am Pacific, Oregon's window)
  *   4. idempotency           (crm_idempotency_keys, existing key patterns)
  *   5. provider send         (existing rails: Twilio / Gmail DWD / Resend)
  *   6. persistence           (crm_timeline + conversation shadow-write)
