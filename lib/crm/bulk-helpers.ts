@@ -46,6 +46,7 @@ export type BulkKind =
   | 'crm:assign-pond'
   | 'crm:add-collaborator'
   | 'crm:remove-collaborator'
+  | 'crm:add-newsletter'
   | 'email-cohort'
 
 // ── Protected-tag policy (PURE, exported for tests) ──────────────────────────

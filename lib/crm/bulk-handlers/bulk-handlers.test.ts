@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { primaryEmailOf, signalsFor } from './add-newsletter'
+import { canSubscribe } from '@/lib/crm/membership-consent'
 
 // ── In-memory Supabase double ────────────────────────────────────────────────
 // Records updates / inserts / upserts and serves canned reads. Each handler reads
@@ -435,5 +437,35 @@ describe('assignSavedSearchHandler', () => {
     expect(res.skipped).toBe(2)
     expect(res.breakdown?.missing_or_deleted).toBe(2)
     accountedFor(res, 2)
+  })
+})
+
+describe('add-newsletter — consent is checked, not assumed', () => {
+  it('folds tags into the same signals the chokepoint reads', () => {
+    // An inherited "Unsubscribed" tag with no suppression row must still read
+    // as an email opt-out — that is how the migrated book carries opt-outs.
+    const signals = signalsFor(['Unsubscribed'], [])
+    expect(signals).toContainEqual({ channel: 'email', reason: 'tag:unsubscribed' })
+    expect(canSubscribe('email', signals).allowed).toBe(false)
+  })
+
+  it('treats a do-not-call tag as call+sms, not email', () => {
+    const signals = signalsFor(['contact:do-not-call'], [])
+    expect(canSubscribe('email', signals).allowed).toBe(true)
+    expect(canSubscribe('sms', signals).allowed).toBe(false)
+  })
+
+  it('honours a hard-stop suppression row on every channel', () => {
+    const signals = signalsFor([], [{ channel: 'all', reason: 'tcpa-hard-stop' }])
+    expect(canSubscribe('email', signals).allowed).toBe(false)
+  })
+
+  it('lets a clean contact through', () => {
+    expect(canSubscribe('email', signalsFor(['audience:buyer'], [])).allowed).toBe(true)
+  })
+
+  it('reads the first non-empty address as primary', () => {
+    expect(primaryEmailOf({ emails: [{ value: '' }, { value: ' A@B.com ' }] })).toBe('a@b.com')
+    expect(primaryEmailOf({ emails: null })).toBe('')
   })
 })

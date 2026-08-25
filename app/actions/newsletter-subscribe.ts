@@ -107,6 +107,9 @@ export async function subscribeNewsletterAction(formData: FormData): Promise<{ o
     source,
     segment,
     crmPersonId: personId > 0 ? personId : null,
+    // The person just submitted the signup form. Someone who unsubscribed and
+    // then deliberately signs up again is opting in, not being resurrected.
+    reactivate: 'allowed',
   })
   if (!r.ok) return { ok: false, error: r.error }
 

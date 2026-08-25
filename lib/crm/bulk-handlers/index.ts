@@ -23,6 +23,7 @@
  *   crm:enroll-workflow        { sequenceId }   per-id manualEnrollPerson
  *   crm:set-report-subscription{ areas, frequency, isActive }
  *   crm:assign-saved-search    { filters, name, frequency }  refuses empty filters
+ *   crm:add-newsletter         { segment }        canSubscribe-gated, never revives an opt-out
  *
  * This module exports nothing — its only job is the registration side effect.
  */
@@ -41,6 +42,7 @@ import {
   setSourceHandler, setTimeframeHandler, setLenderHandler, assignPondHandler,
 } from './update-person-field'
 import { addCollaboratorHandler, removeCollaboratorHandler } from './collaborators'
+import { addNewsletterHandler } from './add-newsletter'
 
 registerBulkHandler('crm:assign-broker', assignBrokerHandler)
 registerBulkHandler('crm:add-tag', addTagHandler)
@@ -55,6 +57,7 @@ registerBulkHandler('crm:set-source', setSourceHandler)
 registerBulkHandler('crm:set-timeframe', setTimeframeHandler)
 registerBulkHandler('crm:set-lender', setLenderHandler)
 registerBulkHandler('crm:assign-pond', assignPondHandler)
+registerBulkHandler('crm:add-newsletter', addNewsletterHandler)
 registerBulkHandler('crm:add-collaborator', addCollaboratorHandler)
 registerBulkHandler('crm:remove-collaborator', removeCollaboratorHandler)
 

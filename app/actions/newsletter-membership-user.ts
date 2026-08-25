@@ -66,7 +66,9 @@ export async function setMyNewsletterMembership(subscribed: boolean): Promise<Se
 
   const name =
     session?.user?.user_metadata?.full_name ?? session?.user?.user_metadata?.name ?? null
-  const r = await subscribeToNewsletter({ email, name, source: 'account-notifications' })
+  // The account owner turning their OWN subscription back on, past the
+  // canSubscribe decision above (which already refuses bounce/complaint/hard-stop).
+  const r = await subscribeToNewsletter({ email, name, source: 'account-notifications', reactivate: 'allowed' })
   if (!r.ok) return { ok: false, error: 'Could not update your subscription. Try again.' }
 
   // The owner re-opting-in clears ONLY the soft email 'unsubscribe' suppression

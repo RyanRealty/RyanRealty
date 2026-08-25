@@ -27,9 +27,9 @@ import {
   bulkAssignPondAction,
   bulkAddCollaboratorAction,
   bulkRemoveCollaboratorAction,
+  bulkAddNewsletterAction,
 } from '@/app/actions/crm-bulk'
 import { bulkMergePeopleAction } from '@/app/actions/crm-person-gaps'
-import { adminBulkAssignNewsletterAction } from '@/app/actions/newsletter'
 import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
 import { getFiltersSummary } from '@/lib/search-filters'
 import { PROPERTY_TYPES } from '@/lib/property-type'
@@ -369,7 +369,7 @@ const emailCohort = defineBulkAction<EmailCohortValue>({
   },
 })
 
-// ── newsletter (legacy — ids only) ────────────────────────────────────────────
+// ── newsletter ────────────────────────────────────────────────────────────────
 
 type NewsletterValue = { segment: string }
 
@@ -385,18 +385,17 @@ function NewsletterFields({ value, onChange }: BulkFieldsProps<NewsletterValue>)
 const newsletter = defineBulkAction<NewsletterValue>({
   id: 'newsletter',
   title: 'Add to newsletter',
+  jobKind: 'crm:add-newsletter',
   initialValue: { segment: 'general' },
   Fields: NewsletterFields,
-  run: async (v, _sel, ctx) => {
-    const res = await adminBulkAssignNewsletterAction(
-      ctx.selectedIds,
-      v.segment as 'general' | 'buyer' | 'seller' | 'past-client',
-    )
-    if (!res.ok) {
-      return { mode: 'legacy', result: { ok: false, error: res.error ?? 'Could not add to the newsletter' } }
-    }
-    return { mode: 'legacy', result: { ok: true, assigned: res.assigned ?? 0, skipped: res.skipped ?? 0 } }
-  },
+  // Was `mode: 'legacy'` on ctx.selectedIds — it ignored the selection, so
+  // "all 616 matching" subscribed the ≤50 checked rows on the page. It is a
+  // real job now: same selection, same chunking, same progress bar as every
+  // other mass action, and per-contact consent enforced in the handler.
+  run: async (v, sel) => ({
+    mode: 'job',
+    result: await bulkAddNewsletterAction(sel, v.segment),
+  }),
 })
 
 // ── saved_search ───────────────────────────────────────────────────────────────

@@ -134,6 +134,8 @@ async function applyGoogleCommsConsent(opts: {
           name: opts.name ?? null,
           source: 'google-comms',
           crmPersonId: personId,
+          // Guarded by opts.consent.emailOpt above — they ticked the box.
+          reactivate: 'allowed',
         })
       }
       await enrichNativeLead({

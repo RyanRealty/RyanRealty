@@ -65,8 +65,21 @@ const SUB_COLS =
 
 /**
  * Subscribe an email (public signup OR admin/CRM assign). Upserts by
- * lower(email): a re-subscribe of a previously-unsubscribed email reactivates
- * the row. Returns the row.
+ * lower(email).
+ *
+ * REACTIVATION IS OPT-IN, AND DEFAULTS TO NEVER. Re-adding someone who
+ * unsubscribed is the one thing CAN-SPAM does not forgive, and this function
+ * used to do it silently for every caller: an unsubscribed row was flipped
+ * back to 'active' with no evidence that the person had asked. Every guarded
+ * caller in the app checked consent BEFORE calling (canSubscribe, an explicit
+ * status check, a ticked box) — the two CRM-assign paths did not, so the admin
+ * "Add to newsletter" button resurrected opt-outs.
+ *
+ * `reactivate: 'allowed'` means the CALLER has evidence this person is opting
+ * in again right now — they submitted the signup form, ticked the consent box
+ * at sign-in, or flipped their own preference. An operator selecting rows in
+ * the CRM is not that evidence, so the default refuses and reports
+ * `skippedOptedOut` instead of quietly resubscribing.
  */
 export async function subscribeToNewsletter(input: {
   email: string
@@ -75,7 +88,9 @@ export async function subscribeToNewsletter(input: {
   segment?: NewsletterSegment
   crmPersonId?: number | null
   fubPersonId?: number | null
-}): Promise<{ ok: boolean; reactivated?: boolean; error?: string }> {
+  /** 'allowed' only when the PERSON just opted in. Default 'never'. */
+  reactivate?: 'never' | 'allowed'
+}): Promise<{ ok: boolean; reactivated?: boolean; skippedOptedOut?: boolean; error?: string }> {
   const email = input.email.trim().toLowerCase()
   if (!email || !email.includes('@')) return { ok: false, error: 'invalid_email' }
   const sb = createServiceClient()
@@ -95,6 +110,11 @@ export async function subscribeToNewsletter(input: {
   const { data: existing } = await sb.from(SUBS).select('id, status').ilike('email', email).maybeSingle()
   if (existing) {
     const reactivated = existing.status !== 'active'
+    if (reactivated && (input.reactivate ?? 'never') === 'never') {
+      // Opted out and nobody has evidence they changed their mind. Not an
+      // error — the caller counts it and moves on.
+      return { ok: true, skippedOptedOut: true }
+    }
     const { error } = await sb
       .from(SUBS)
       .update({

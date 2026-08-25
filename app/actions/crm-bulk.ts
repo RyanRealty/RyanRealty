@@ -394,6 +394,23 @@ export async function bulkEmailCohortAction(
   })
 }
 
+/**
+ * Bulk-subscribe a cohort to the newsletter. Runs through the bulk-job
+ * framework like every other mass action, so it honours the SELECTION rather
+ * than the checked rows, chunks, and resumes. Consent is enforced per contact
+ * in the handler (canSubscribe), never here.
+ */
+export async function bulkAddNewsletterAction(
+  selection: BulkActionSelection,
+  segment: string,
+): Promise<BulkEnqueueResult> {
+  const seg = String(segment ?? 'general').trim()
+  if (!['general', 'buyer', 'seller', 'past-client'].includes(seg)) {
+    return { ok: false, error: 'Pick a newsletter segment' }
+  }
+  return enqueue('crm:add-newsletter', selection, { segment: seg })
+}
+
 // ── Preflight count ──────────────────────────────────────────────────────────
 
 /**

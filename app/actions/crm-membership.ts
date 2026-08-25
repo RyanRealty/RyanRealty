@@ -162,6 +162,10 @@ export async function setNewsletterSubscription(input: {
       source: `crm-toggle:${access.email}`,
       crmPersonId: personId,
       fubPersonId: identity.fubLegacyId,
+      // Past canSubscribe above, one contact at a time, and written to
+      // crm_timeline with the broker's name on it. That is a deliberate,
+      // audited act of consent — unlike a bulk selection, which is not.
+      reactivate: 'allowed',
     })
     if (!sub.ok) return { ok: false, error: sub.error ?? 'Subscribe failed' }
 

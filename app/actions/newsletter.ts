@@ -117,6 +117,10 @@ export async function adminAddSubscriberAction(formData: FormData): Promise<{ ok
   const name = String(formData.get('name') ?? '').trim() || null
   const segment = asSegment(formData.get('segment'))
   const r = await subscribeToNewsletter({ email, name, source: 'admin', segment })
+  // Default reactivate:'never' — this path has no evidence the person opted
+  // back in, so an opt-out is skipped. Saying "ok" without saying that would be
+  // a silent no-op the admin reads as success.
+  if (r.ok && r.skippedOptedOut) return { ok: false, error: 'This address unsubscribed. It can only be re-added by the person themselves.' }
   return { ok: r.ok, error: r.error }
 }
 
@@ -127,6 +131,7 @@ export async function adminAssignCrmPersonAction(personId: number, segment?: New
   const contact = await getCrmPersonContact(personId)
   if (!contact) return { ok: false, error: 'no_email' }
   const r = await subscribeToNewsletter({ email: contact.email, name: contact.name, source: 'crm-assign', segment: segment ?? 'general', crmPersonId: personId })
+  if (r.ok && r.skippedOptedOut) return { ok: false, error: 'This contact unsubscribed. It can only be re-added by the person themselves.' }
   return { ok: r.ok, error: r.error }
 }
 
