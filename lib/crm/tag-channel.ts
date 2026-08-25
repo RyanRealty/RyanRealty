@@ -21,6 +21,19 @@ export const TAG_CHANNEL: ReadonlyArray<{ tag: string; channels: ReadonlyArray<'
   // blocked from SMS as well as voice (incident 2026-06-16: do-not-call
   // homeowners were texted because this mapped to 'call' only).
   { tag: 'contact:do-not-call', channels: ['call', 'sms'] },
+  // On the national Do Not Call registry. §227(c) reaches a MANUALLY dialed
+  // call or text, so "we send them one at a time" is not an exemption — this
+  // has to block at the chokepoint, not just describe the contact.
+  //
+  // It was a label the send path never read. All 138 people carrying it today
+  // are blocked, but only because each also happens to carry
+  // contact:do-not-call or compliance:hard-stop — coincidence, not enforcement.
+  // The next contact imported with a DNC flag and nothing else would have been
+  // textable. Phone channels only: the DNC registry is telephone, email is
+  // CAN-SPAM's business.
+  { tag: 'compliance:dnc-registry', channels: ['call', 'sms'] },
+  // Alias seen in the migrated book alongside contact:do-not-text.
+  { tag: 'do_not_text', channels: ['sms'] },
   { tag: 'do_not_email', channels: ['email'] },
   { tag: 'unsubscribed', channels: ['email'] },
   { tag: 'bounced', channels: ['email'] },

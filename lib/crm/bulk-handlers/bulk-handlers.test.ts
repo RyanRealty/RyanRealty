@@ -469,3 +469,25 @@ describe('add-newsletter — consent is checked, not assumed', () => {
     expect(primaryEmailOf({ emails: null })).toBe('')
   })
 })
+
+describe('DNC blocks at the chokepoint, not by coincidence', () => {
+  it('a contact whose ONLY flag is the DNC registry is blocked from call and sms', () => {
+    // The failure this pins: compliance:dnc-registry used to be a label the
+    // send path never read. Every contact carrying it was blocked only because
+    // it also carried contact:do-not-call. A DNC-only import was textable.
+    const signals = signalsFor(['compliance:dnc-registry'], [])
+    // canSubscribe only speaks email/sms (ConsentChannel), so the call channel
+    // is asserted on the signals themselves — that is what isSuppressed reads.
+    expect(signals).toContainEqual({ channel: 'call', reason: 'tag:compliance:dnc-registry' })
+    expect(signals).toContainEqual({ channel: 'sms', reason: 'tag:compliance:dnc-registry' })
+    expect(canSubscribe('sms', signals).allowed).toBe(false)
+  })
+
+  it('leaves email alone — the DNC registry is telephone, not email', () => {
+    expect(canSubscribe('email', signalsFor(['compliance:dnc-registry'], [])).allowed).toBe(true)
+  })
+
+  it('honours the do_not_text alias carried in from the old CRM', () => {
+    expect(canSubscribe('sms', signalsFor(['do_not_text'], [])).allowed).toBe(false)
+  })
+})
