@@ -22,7 +22,7 @@ import { execFileSync } from 'node:child_process'
  */
 
 const REPO = resolve(new URL('.', import.meta.url).pathname, '../..')
-const SANDBOX = join(tmpdir(), 'rr-alert-capture-gate-sandbox')
+const SANDBOX = join(tmpdir(), `rr-alert-capture-gate-sandbox-${process.pid}-${Math.random().toString(16).slice(2)}`)
 const GATE = join(SANDBOX, 'scripts/check-alert-capture-disclosure.mjs')
 
 const FILES = [

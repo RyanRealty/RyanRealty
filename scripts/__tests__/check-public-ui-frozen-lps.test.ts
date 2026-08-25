@@ -47,7 +47,7 @@ describe('frozen noindex LPs (ci:public-ui B exclusion)', () => {
   })
 
   it('rejects a non-LP path, an indexable LP, a missing why, and a missing file', () => {
-    const dir = join(tmpdir(), `rr-frozen-lp-${Date.now()}`)
+    const dir = join(tmpdir(), `rr-frozen-lp-${Date.now()}-${process.pid}-${Math.random().toString(16).slice(2)}`)
     mkdirSync(join(dir, 'app/lp/x'), { recursive: true })
     writeFileSync(
       join(dir, 'app/lp/x/page.tsx'),

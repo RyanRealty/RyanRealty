@@ -23,7 +23,7 @@ import { execFileSync } from 'node:child_process'
  */
 
 const REPO = resolve(new URL('.', import.meta.url).pathname, '../..')
-const SANDBOX = join(tmpdir(), 'rr-activity-event-labels-gate-sandbox')
+const SANDBOX = join(tmpdir(), `rr-activity-event-labels-gate-sandbox-${process.pid}-${Math.random().toString(16).slice(2)}`)
 const GATE = join(SANDBOX, 'scripts/check-activity-event-labels.mjs')
 
 const FILES = [

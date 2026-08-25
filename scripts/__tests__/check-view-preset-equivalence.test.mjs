@@ -21,7 +21,16 @@ import { execFileSync } from 'node:child_process'
  */
 
 const REPO = resolve(new URL('.', import.meta.url).pathname, '../..')
-const SANDBOX = join(tmpdir(), 'rr-view-preset-gate-sandbox')
+// Unique per process. This file runs in more than one vitest project, so a fixed
+// sandbox name means two concurrent instances share one directory and overwrite
+// each other's fixtures mid-run — the gate then reads a half-written map and the
+// --report case exits 1 where the test expects 0. It passes standalone and fails
+// only in the full parallel suite, which is the signature of exactly this race.
+// check-entity-scope.test.ts already learned this; the fix never propagated here.
+const SANDBOX = join(
+  tmpdir(),
+  `rr-view-preset-gate-sandbox-${process.pid}-${Math.random().toString(16).slice(2)}`,
+)
 const GATE = join(SANDBOX, 'scripts/check-view-preset-equivalence.mjs')
 const ROW_CACHE = join(SANDBOX, 'rows.json')
 
