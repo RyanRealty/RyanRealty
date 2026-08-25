@@ -9,6 +9,7 @@ import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { duplicatedDocumentPath, nextDuplicatePropertyKey, todayIsoDate } from '@/lib/tc/listing-actions'
 import { EMPTY_PROPERTY_FACTS, brokerRoleFromDealParties, seedChecklistItems } from '@/lib/tc/required-documents'
 import { getPropertyFactsByMls } from '@/lib/data/listings/getPropertyFactsByMls'
+import { overlayPropertyFacts, parseSavedPropertyFacts } from '@/lib/tc/property-facts'
 import { getDealParties } from '@/lib/data/tc/deal-people'
 import {
   getDealByPropertyKey,
@@ -62,6 +63,7 @@ export async function acceptListingContract(
   if (deal.stage !== 'active_listing') return { ok: false, error: 'Only an active listing can accept a contract.' }
 
   const listing = await getLatestListingCycle(deal.id)
+  const confirmedFacts = parseSavedPropertyFacts(listing?.property_facts)
   const cycleId = crypto.randomUUID()
   const { error: cycleErr } = await supabase.from('tc_cycles').insert({
     id: cycleId,
@@ -77,6 +79,10 @@ export async function acceptListingContract(
     broker_name: deal.broker_name,
     contract_acceptance_date: todayIsoDate(),
     checklist_type: listing?.checklist_type ?? null,
+    // A well does not appear when a contract is accepted. Carry what the broker
+    // already confirmed on the listing onto the sale, or the same eleven
+    // property questions come back blank on the same house.
+    raw: confirmedFacts ? { propertyFacts: confirmedFacts } : {},
   })
   if (cycleErr) return { ok: false, error: cycleErr.message }
 
@@ -88,6 +94,9 @@ export async function acceptListingContract(
     const lf = await getPropertyFactsByMls(String(mls)).catch(() => null)
     if (lf) facts = { ...EMPTY_PROPERTY_FACTS, ...lf }
   }
+  // The broker's answer outranks the feed: the feed is what the MLS knows, and
+  // these questions exist because it does not know them.
+  facts = overlayPropertyFacts(facts, confirmedFacts)
   const checklist = seedChecklistItems(role === 'unknown' ? 'listing' : role, facts)
   if (checklist.length) {
     await supabase.from('tc_checklist_items').insert(

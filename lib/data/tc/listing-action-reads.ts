@@ -20,6 +20,8 @@ export type TcDealActionRow = {
 export type ListingCycleCopy = {
   id: string
   mls_number: string | null
+  /** What the broker confirmed on the listing, from raw.propertyFacts. */
+  property_facts: unknown
   sellers: unknown
   buyers: unknown
   listing_price: number | null
@@ -139,7 +141,7 @@ export async function getLatestListingCycle(dealId: string): Promise<ListingCycl
   const { data } = await client()
     .from('tc_cycles')
     .select(
-      'id, mls_number, sellers, buyers, listing_price, checklist_type, status, listing_date, expiration_date',
+      'id, mls_number, sellers, buyers, listing_price, checklist_type, status, listing_date, expiration_date, raw',
     )
     .eq('deal_id', dealId)
     .eq('kind', 'listing')
@@ -150,6 +152,10 @@ export async function getLatestListingCycle(dealId: string): Promise<ListingCycl
   return {
     id: String(row.id),
     mls_number: row.mls_number == null ? null : String(row.mls_number),
+    property_facts:
+      row.raw && typeof row.raw === 'object' && !Array.isArray(row.raw)
+        ? (row.raw as Record<string, unknown>).propertyFacts
+        : null,
     sellers: row.sellers ?? [],
     buyers: row.buyers ?? [],
     listing_price: row.listing_price == null ? null : Number(row.listing_price),

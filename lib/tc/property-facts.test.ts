@@ -55,3 +55,21 @@ describe('referralFeeDollars', () => {
     expect(prefillReferralFee(0, 100_000, 25)).toBe(25000)
   })
 })
+
+describe('accepting a contract keeps the answers the broker already gave', () => {
+  it('lets a confirmed answer beat the feed, and leaves unanswered keys to the feed', () => {
+    // The MLS knows water and sewer. It does not know solar, tenants, or a
+    // short sale — that is why the panel asks. Re-seeding the sale checklist
+    // from the feed alone threw those answers away and asked again.
+    const fromFeed = overlayPropertyFacts(EMPTY_PROPERTY_FACTS, { hasWell: true, hasSeptic: true })
+    const withBroker = overlayPropertyFacts(fromFeed, { hasWell: false, hasSolar: false })
+    expect(withBroker.hasWell).toBe(false)
+    expect(withBroker.hasSolar).toBe(false)
+    expect(withBroker.hasSeptic).toBe(true)
+  })
+
+  it('reads nothing out of a cycle that never saved facts', () => {
+    expect(parseSavedPropertyFacts(null)).toBeNull()
+    expect(parseSavedPropertyFacts(undefined)).toBeNull()
+  })
+})
