@@ -144,3 +144,25 @@ describe('demoteImplausibleSignatureFields', () => {
     expect(out[0]?.type).toBe('text')
   })
 })
+
+describe('promoteInitialsBoxes on a form with one principal', () => {
+  it('gives the whole initials row to the seller on a listing form', () => {
+    // OREF 015 has no buyer. Splitting the row buyer-left / seller-right put 19
+    // required initials on a signer the envelope does not have, and every
+    // listing packet refused to send.
+    const xs = [0.124, 0.193, 0.262, 0.331, 0.668, 0.737, 0.806, 0.875]
+    const map = xs.map((x, i) => field({ label: `i${i}`, x, y: 0.897, w: 0.051, h: 0.016 }))
+    const out = promoteInitialsBoxes(map, ['seller'])
+    expect(out.filter((f) => f.type === 'initials')).toHaveLength(8)
+    expect(out.filter((f) => f.signerRole === 'seller')).toHaveLength(8)
+    expect(out.filter((f) => f.signerRole === 'buyer')).toHaveLength(0)
+  })
+
+  it('still splits the row when both principals sign', () => {
+    const xs = [0.124, 0.193, 0.262, 0.331, 0.668, 0.737, 0.806, 0.875]
+    const map = xs.map((x, i) => field({ label: `i${i}`, x, y: 0.897, w: 0.051, h: 0.016 }))
+    const out = promoteInitialsBoxes(map, ['buyer', 'seller'])
+    expect(out.filter((f) => f.signerRole === 'buyer')).toHaveLength(4)
+    expect(out.filter((f) => f.signerRole === 'seller')).toHaveLength(4)
+  })
+})

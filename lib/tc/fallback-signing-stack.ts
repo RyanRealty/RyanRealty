@@ -88,10 +88,37 @@ export function withFallbackSignatures(
       type: mappedFieldTypeFromName(f.dataRef, f.label, f.type),
     })),
   )
-  const promoted = promoteInitialsBoxes(promoteLinedFormFields(typed))
+  const read = readRequiredSigners({
+    formNumber: input.formNumber,
+    signerProfile: input.signerProfile,
+    documentName: input.documentName,
+  })
+  const allowed = new Set<SignerRole>(
+    (read.roles.length ? read.roles : (['Seller'] as RecipientRole[]))
+      .map((r) => ROLE_TO_SIGNER[r])
+      .filter((r): r is SignerRole => Boolean(r)),
+  )
+  const promoted = promoteInitialsBoxes(promoteLinedFormFields(typed), [...allowed])
   const have = new Set(promoted.filter((f) => f.type === 'signature').map((f) => f.signerRole))
   const extra = fallbackSigningStack(input).filter((f) => !have.has(f.signerRole))
-  return extra.length ? [...promoted, ...extra] : promoted
+  return withNoUnsignableRequirement([...promoted, ...extra], allowed)
+}
+
+/**
+ * A required signature, initials, or date belonging to a role that does not
+ * sign this form can never be filled — send refuses on it forever. Keep the
+ * box (a broker may reassign it) but stop it holding the envelope hostage.
+ */
+export function withNoUnsignableRequirement(
+  map: readonly MappedField[],
+  allowed: ReadonlySet<SignerRole>,
+): MappedField[] {
+  const SIGNED = new Set(['signature', 'initials', 'date_signed'])
+  return map.map((f) =>
+    SIGNED.has(f.type) && f.optional !== true && !allowed.has(f.signerRole ?? null)
+      ? { ...f, optional: true }
+      : { ...f },
+  )
 }
 
 export { deriveSignerRole }

@@ -14,6 +14,7 @@
 // and data never goes in a state word.
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import Link from 'next/link'
 import { Button, Dialog, SelectField, StateWord, TextField, ToolbarCheck, type AdminState } from '@/components/admin/v2'
 import {
@@ -178,7 +179,14 @@ function PacketEnvelopeButtons({
             setBusyName(packet.name)
             const res = await createEnvelopeFromTemplate(cycle.cycleId, packet.formVersionIds, packet.name)
             setBusyName(null)
-            if (res.ok && res.envelopeId) router.push(`/admin/signing/${res.envelopeId}`)
+            if (res.ok && res.envelopeId) {
+              router.push(`/admin/signing/${res.envelopeId}`)
+              return
+            }
+            // A packet that cannot be built used to fail in silence — the button
+            // un-busied itself and the broker was left looking at a file with no
+            // envelope on it and no reason why.
+            toast.error(res.error ?? `Could not build ${packet.name}.`)
           }}
         >
           {busyName === packet.name ? 'Creating…' : packet.name}

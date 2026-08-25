@@ -144,7 +144,17 @@ function isInitialsBox(f: MappedField): boolean {
  * Footer initial rows (OREF 060): a line of small boxes, buyers on the left,
  * sellers on the right. First box per side is required; extras stay optional.
  */
-export function promoteInitialsBoxes(map: readonly MappedField[]): MappedField[] {
+/**
+ * Which principals actually sign this form. A listing packet has no buyer, so
+ * splitting an initials row buyer-left / seller-right invents a signer nobody
+ * on the envelope can be, and every one of those boxes lands required and
+ * unassigned — which blocks the send outright.
+ */
+export function promoteInitialsBoxes(
+  map: readonly MappedField[],
+  principals: readonly SignerRole[] = ['buyer', 'seller'],
+): MappedField[] {
+  const signing = principals.filter((r): r is Exclude<SignerRole, null> => r === 'buyer' || r === 'seller')
   const out = map.map((f) => ({ ...f }))
   const boxes = out
     .map((f, i) => ({ f, i }))
@@ -167,8 +177,11 @@ export function promoteInitialsBoxes(map: readonly MappedField[]): MappedField[]
         out[g.i] = { ...g.f, type: 'initials', signerRole: role, optional: idx > 0 }
       })
     }
-    assign(left, 'buyer')
-    assign(right, 'seller')
+    // One principal on the form means the whole row is theirs, both clusters.
+    const leftRole = signing.length > 1 ? signing[0]! : (signing[0] ?? null)
+    const rightRole = signing.length > 1 ? signing[1]! : (signing[0] ?? null)
+    assign(left, leftRole)
+    assign(right, rightRole)
   }
   return out
 }

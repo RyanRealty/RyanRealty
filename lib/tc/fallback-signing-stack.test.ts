@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { fallbackSigningStack, withFallbackSignatures } from './fallback-signing-stack'
+import { fallbackSigningStack, withFallbackSignatures,
+  withNoUnsignableRequirement,
+} from './fallback-signing-stack'
 
 describe('fallbackSigningStack', () => {
   it('puts buyer, seller, and both licensee signature rows on the last page of 001', () => {
@@ -150,5 +152,20 @@ describe('withFallbackSignatures', () => {
     )
     expect(map.filter((f) => f.type === 'signature' && f.signerRole === 'seller')).toHaveLength(1)
     expect(map.some((f) => f.type === 'signature' && f.signerRole === 'listing_agent')).toBe(true)
+  })
+})
+
+describe('withNoUnsignableRequirement', () => {
+  it('stops a field nobody on the form can sign from blocking the send', () => {
+    const map = [
+      { type: 'signature' as const, page: 1, x: 0.1, y: 0.8, w: 0.3, h: 0.04, signerRole: 'buyer' as const, optional: false, dataRef: 'BuyerSignature', label: 'Buyer signature' },
+      { type: 'initials' as const, page: 1, x: 0.1, y: 0.9, w: 0.05, h: 0.02, signerRole: 'seller' as const, optional: false, dataRef: 'SellerInitials', label: 'Seller initials' },
+      { type: 'text' as const, page: 1, x: 0.1, y: 0.5, w: 0.3, h: 0.02, signerRole: null, optional: false, dataRef: 'Notes', label: 'Notes' },
+    ]
+    const out = withNoUnsignableRequirement(map, new Set(['seller']))
+    expect(out[0]).toMatchObject({ type: 'signature', signerRole: 'buyer', optional: true })
+    expect(out[1]).toMatchObject({ type: 'initials', signerRole: 'seller', optional: false })
+    // Text is not a signing obligation — leave it exactly as it was.
+    expect(out[2]).toMatchObject({ type: 'text', optional: false })
   })
 })
