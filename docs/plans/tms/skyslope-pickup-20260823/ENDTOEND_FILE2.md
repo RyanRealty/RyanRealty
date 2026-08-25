@@ -105,3 +105,36 @@ proven end to end on a real envelope.
 
 Stages 3-8 remain: sale agreement, inspection window, 022A, 022B, 059/060,
 close. The listing side is done.
+
+**Contract accepted — 2026-08-25.** Sale cycle `5e90e2af`, accepted today, sale
+price $539,900, inspection 10 banking days, financing 30. Vault Test Buyer
+added as the buyer party. File deadlines computed and on the file: earnest
+money, executed copies, SPDS revocation 2026-09-01, principal review 2026-09-03
+(OAR 863-015-0140), inspection ends 2026-09-09, financing ends 2026-10-07.
+
+Found and shipped on the way: accepting a contract re-seeded the sale checklist
+from the MLS feed alone and threw away every property answer the broker had
+just given (`20c40019`).
+
+**Sale agreement — completed 2026-08-25.** Envelope `30248345`, sealed
+`c62b07e0d8`, executed copy 17 pages carrying `fully_executed` and its page
+count. Four signers, all from their own email, in order:
+
+1. Buyer (Vault Test Buyer) — 3 Sign, 52 Initials, 16 pages, nothing else
+2. Seller (Marketing Test Lead) — 2 Sign, 52 Initials
+3. Buyer Agent (Matt) — 1 Sign
+4. Seller Agent (Matt) — 1 Sign
+
+### Worth another look
+
+Both agent lines share one email and one signing order. Both were minted a
+token, but only one invite reached the inbox; the seller-agent's arrived only
+after pressing **Send reminder** on the envelope. It resolved through the
+product's own control, so the file was never stuck — but a dual-agency file
+should not need a reminder to reach its second agent line. Not yet diagnosed.
+
+The listing packet's completion copy auto-files onto the sale cycle as
+`Signed Listing Standard.pdf` with a null page count and `unknown` execution
+state, where the same document on the listing cycle reads `fully_executed`.
+Worth checking whether the mail path is re-reading a document we sealed
+ourselves instead of recognising it.
