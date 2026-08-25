@@ -9,6 +9,7 @@ import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
 import { notifyDealMailbox } from '@/lib/tc/deal-notify'
 import { getDealByPropertyKey, listCycleIdsForDeal, listInFlightEnvelopes } from '@/lib/data/tc/listing-action-reads'
 import { inFlightCompletionBlock, inFlightCompletionMessage } from '@/lib/tc/required-signers'
+import { TC_DOCUMENT_URL_TTL_SECONDS } from '@/lib/tc/document-urls'
 
 /**
  * TC system actions — Ryan Realty's own transaction system of record
@@ -337,12 +338,22 @@ export async function setDealBroker(input: {
   return { ok: true }
 }
 
-/** Short-lived signed URL for a stored document (5 minutes). */
+/**
+ * Signed URL for a stored document, good for one reading session (1 hour).
+ *
+ * Storage serves these with HTTP Range, and the browser PDF viewer fetches the
+ * rest of the file as the reader scrolls. A short TTL therefore does not just
+ * expire a link — it truncates an open document mid-read, because the later
+ * range requests come back 400 InvalidJWT and the viewer renders only the
+ * pages it already had. An hour outlasts reading a 15-page sale agreement.
+ */
 export async function getTcDocumentUrl(documentId: string): Promise<{ url: string | null; error?: string }> {
   const supabase = getServiceSupabase()
   const { data: doc } = await supabase.from('tc_documents').select('storage_path').eq('id', documentId).maybeSingle()
   if (!doc?.storage_path) return { url: null, error: 'No stored binary for this document' }
-  const { data, error } = await supabase.storage.from('tc-documents').createSignedUrl(doc.storage_path, 300)
+  const { data, error } = await supabase.storage
+    .from('tc-documents')
+    .createSignedUrl(doc.storage_path, TC_DOCUMENT_URL_TTL_SECONDS)
   if (error) return { url: null, error: error.message }
   return { url: data.signedUrl }
 }

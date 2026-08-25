@@ -44,7 +44,7 @@ export type SealEnvelopeInput = {
   sealedAtIso: string
 }
 
-export type SealResult = { bytes: Uint8Array; sha256: string }
+export type SealResult = { bytes: Uint8Array; sha256: string; pageCount: number }
 
 const NAVY = rgb(16 / 255, 39 / 255, 66 / 255)
 const INK = rgb(0.1, 0.1, 0.1)
@@ -208,9 +208,10 @@ export async function sealEnvelope(input: SealEnvelopeInput): Promise<SealResult
 
   appendCertificate(out, helv, helvBold, input, docHashes)
 
+  const pageCount = out.getPageCount()
   const bytes = await out.save()
   const sha256 = createHash('sha256').update(bytes).digest('hex')
-  return { bytes, sha256 }
+  return { bytes, sha256, pageCount }
 }
 
 function appendCertificate(

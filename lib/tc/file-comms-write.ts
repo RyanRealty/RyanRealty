@@ -14,7 +14,7 @@ import {
   scoreDealHaystack,
   shouldCompleteFromOtherSideReturn,
   fromOtherSideContact,
-  pickWaitingEnvelopesForReturn,
+  pickWaitingEnvelopesForExecutedDocument,
 } from '@/lib/tc/file-comms'
 import {
   classifyFromFormAndText,
@@ -23,7 +23,8 @@ import {
   shouldFileAsFullyExecuted,
   type ExecutionState,
 } from '@/lib/tc/execution-state'
-import { extractPdfPagesText } from '@/lib/tc/pdf-page-text'
+import { readPdfPagesText } from '@/lib/tc/pdf-page-text'
+import { extractOrefNumbers } from '@/lib/tc/form-identity'
 import { ourRoleForEnvelope } from '@/lib/tc/representation'
 
 export type FileCommsAttachment = {
@@ -143,6 +144,8 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
 
   const documentIds: string[] = []
   const executionByDoc: Record<string, ExecutionState> = {}
+  const nameByDoc: Record<string, string> = {}
+  const formNumbersByDoc: Record<string, string[]> = {}
   for (const att of input.attachments ?? []) {
     if (!att.bytes?.length) continue
     const sha256 = createHash('sha256').update(att.bytes).digest('hex')
@@ -151,13 +154,23 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
     const path = `inbox/${cycleId}/${sourceDocId}__${safeName}`
     let pageText = ''
     let executionState: ExecutionState = 'unknown'
+    let pageCount: number | null = null
+    let pagesRead: number | null = null
+    let readComplete = false
     try {
       if ((att.contentType || '').includes('pdf') || /\.pdf$/i.test(att.name)) {
-        pageText = await extractPdfPagesText(att.bytes, 8)
+        // Read every page. Signatures sit on the last pages of an OREF form, so a
+        // capped read cannot tell "unsigned" from "not read that far".
+        const read = await readPdfPagesText(att.bytes)
+        pageText = read.text
+        pageCount = read.pageCount
+        pagesRead = read.pagesRead
+        readComplete = read.complete
         executionState = classifyFromFormAndText({
           form: { documentName: att.name, pageText },
           pageText,
           ourRole,
+          textComplete: read.complete,
         })
       }
     } catch (err) {
@@ -182,9 +195,15 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
         sha256,
         bytes: att.bytes.byteLength,
         content_type: att.contentType || 'application/pdf',
+        page_count: pageCount,
         classification: {
           source: input.channel === 'mail' ? 'gmail_auto_file' : 'twilio_auto_file',
           execution_state: executionState,
+          // The read that produced execution_state, so an auditor can see whether
+          // the whole document was scanned.
+          pages_read: pagesRead,
+          page_count: pageCount,
+          read_complete: readComplete,
         },
       })
       .select('id')
@@ -196,6 +215,8 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
     if (doc?.id) {
       documentIds.push(String(doc.id))
       executionByDoc[String(doc.id)] = executionState
+      nameByDoc[String(doc.id)] = att.name
+      formNumbersByDoc[String(doc.id)] = readComplete ? extractOrefNumbers(pageText) : []
       if (checklistItemIds.length) {
         await sb.from('tc_checklist_assignments').upsert(
           checklistItemIds.map((item_id) => ({ item_id, document_id: doc.id })),
@@ -243,7 +264,10 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
     fromOtherSideContact(fromEmails, otherEmails) || fromPhones.some((p) => otherPhones.has(p))
   const hint = executionHintFromMail(haystack, fromOtherSide)
   const states = Object.values(executionByDoc)
-  const anyFullyExecuted = states.some((s) => shouldFileAsFullyExecuted(s))
+  // Only a document that is itself fully executed can close an envelope. Rolling
+  // "any attachment executed" up to the whole message marked unsigned forms as
+  // executed and attached the wrong PDF as the executed copy.
+  const executedDocIds = documentIds.filter((id) => shouldFileAsFullyExecuted(executionByDoc[id] ?? 'unknown'))
   const anyNeedsOurs = states.some((s) => inboundNeedsOurSignatures(s, hint))
   if (anyNeedsOurs) {
     await sb.from('tc_events').insert({
@@ -256,11 +280,12 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
     })
   }
   if (
+    executedDocIds.length &&
     shouldCompleteFromOtherSideReturn({
       haystack,
-      hasPdf: documentIds.length > 0,
+      hasPdf: true,
       fromOtherSide,
-      executionState: anyFullyExecuted ? 'fully_executed' : states[0] ?? 'unknown',
+      executionState: 'fully_executed',
     })
   ) {
     const { data: waiting } = await sb
@@ -268,26 +293,40 @@ export async function fileCommsToVault(input: FileCommsInput): Promise<FileComms
       .select('id, name')
       .eq('cycle_id', cycleId)
       .eq('status', 'awaiting_other_side')
-    const returnedId = documentIds.find((id) => shouldFileAsFullyExecuted(executionByDoc[id] ?? 'unknown')) ?? documentIds[0]
     const now = new Date().toISOString()
-    const targets = pickWaitingEnvelopesForReturn(waiting ?? [], haystack)
-    for (const env of targets) {
-      await sb
-        .from('tc_envelopes')
-        .update({
-          status: 'completed',
-          completed_at: now,
-          executed_document_id: returnedId,
-        })
-        .eq('id', env.id)
-      await sb.from('tc_events').insert({
-        deal_id: picked.dealId,
-        cycle_id: cycleId,
-        document_id: returnedId,
-        actor: input.actor,
-        action: 'envelope_completed_from_return',
-        detail: { envelope: env.name, channel: input.channel, title: input.title ?? null },
+    const claimed = new Set<string>()
+    for (const returnedId of executedDocIds) {
+      const targets = pickWaitingEnvelopesForExecutedDocument({
+        waiting: waiting ?? [],
+        haystack,
+        documentName: nameByDoc[returnedId] ?? '',
+        formNumbers: formNumbersByDoc[returnedId] ?? [],
       })
+      for (const env of targets) {
+        if (claimed.has(env.id)) continue
+        claimed.add(env.id)
+        await sb
+          .from('tc_envelopes')
+          .update({
+            status: 'completed',
+            completed_at: now,
+            executed_document_id: returnedId,
+          })
+          .eq('id', env.id)
+        await sb.from('tc_events').insert({
+          deal_id: picked.dealId,
+          cycle_id: cycleId,
+          document_id: returnedId,
+          actor: input.actor,
+          action: 'envelope_completed_from_return',
+          detail: {
+            envelope: env.name,
+            channel: input.channel,
+            title: input.title ?? null,
+            matchedForms: formNumbersByDoc[returnedId] ?? [],
+          },
+        })
+      }
     }
   }
 

@@ -233,7 +233,7 @@ export async function sealAndCompleteEnvelope(
   }))
 
   const sealedAtIso = new Date().toISOString()
-  const { bytes, sha256 } = await sealEnvelope({
+  const { bytes, sha256, pageCount } = await sealEnvelope({
     envelopeId,
     envelopeName: env.name,
     documents: sealDocs,
@@ -267,9 +267,17 @@ export async function sealAndCompleteEnvelope(
     bytes: bytes.byteLength,
     content_type: 'application/pdf',
     source_uploaded_at: sealedAtIso,
+    page_count: pageCount,
     classification: {
       source: opts?.awaitOtherSide ? 'envelope_our_side_signed' : 'envelope_executed',
       envelope_id: envelopeId,
+      // Our own envelope: who signed is a fact we hold, not something to guess
+      // by scanning the PDF for "DigiSign Verified" text our seal never writes.
+      // Without this every document we execute ourselves reads back as unsigned.
+      execution_state: opts?.awaitOtherSide ? 'our_side_signed' : 'fully_executed',
+      signed_by: recipSummaries
+        .filter((r) => r.completedAt)
+        .map((r) => ({ role: r.roleLabel, name: r.name, at: r.completedAt })),
     },
   })
 

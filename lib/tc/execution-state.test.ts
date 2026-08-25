@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   classifyExecutionState,
+  classifyFromFormAndText,
+  downgradeUnreadDocument,
   EXECUTION_STATE_LABEL,
   executionHintFromMail,
   executionStateFromClassification,
@@ -139,5 +141,44 @@ describe('mail is a hint not proof', () => {
     expect(shouldFileAsFullyExecuted('needs_our_signatures')).toBe(false)
     expect(shouldFileAsFullyExecuted('our_side_signed')).toBe(false)
     expect(shouldFileAsFullyExecuted('fully_executed')).toBe(true)
+  })
+})
+
+describe('a partial read may never claim a document is done', () => {
+  // The signature pages of an OREF 001 are pages 13-15 of 15. Reading eight
+  // pages and finding no signatures is not evidence that nobody signed.
+  const agentBlocks = `DigiSign Verified
+Matt Ryan
+Seller Agent
+2026-07-21 10:40:00 PST
+
+DigiSign Verified
+Matt Ryan
+Buyer Agent
+2026-07-21 10:41:00 PST`
+  const fullyRead = `<<< Page 1 >>>
+OREF 001 Residential Real Estate Sale Agreement
+${buyerBlock}
+${sellerBlock}
+${agentBlocks}`
+  const form = { documentName: 'Residential Real Estate Sale Agreement - 001 OREF.pdf' }
+
+  it('a complete read of an all-signed 001 is fully executed', () => {
+    expect(
+      classifyFromFormAndText({ form, pageText: fullyRead, ourRole: 'listing', textComplete: true }),
+    ).toBe('fully_executed')
+  })
+
+  it('the same text from a truncated read is unknown, never executed', () => {
+    expect(
+      classifyFromFormAndText({ form, pageText: fullyRead, ourRole: 'listing', textComplete: false }),
+    ).toBe('unknown')
+  })
+
+  it('keeps a missing-signature verdict, which a partial read still supports', () => {
+    expect(downgradeUnreadDocument('needs_our_signatures')).toBe('needs_our_signatures')
+    expect(downgradeUnreadDocument('fully_executed')).toBe('unknown')
+    expect(downgradeUnreadDocument('our_side_signed')).toBe('unknown')
+    expect(downgradeUnreadDocument('unsigned')).toBe('unknown')
   })
 })

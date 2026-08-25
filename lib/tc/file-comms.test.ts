@@ -10,6 +10,7 @@ import {
   shouldCompleteFromOtherSideReturn,
   fromOtherSideContact,
   pickWaitingEnvelopesForReturn,
+  pickWaitingEnvelopesForExecutedDocument,
 } from './file-comms'
 
 describe('pickDealForComms', () => {
@@ -148,5 +149,56 @@ describe('looksLikeReturnedSignedPacket', () => {
       { id: 'rsa', name: 'Residential Real Estate Sale Agreement' },
     ]
     expect(pickWaitingEnvelopesForReturn(waiting, 'SW 45th - Signed SPD.pdf').map((e) => e.id)).toEqual(['spd'])
+  })
+})
+
+describe('pickWaitingEnvelopesForExecutedDocument', () => {
+  const waiting = [
+    { id: 'env-sale', name: 'Residential Real Estate Sale Agreement - 001 OREF' },
+    { id: 'env-spds', name: 'Sellers Property Disclosure Statement - 020 OREF' },
+  ]
+
+  it('a returned 043 advisory does not close the sale-agreement envelope', () => {
+    expect(
+      pickWaitingEnvelopesForExecutedDocument({
+        waiting,
+        haystack: 'signed docs attached',
+        documentName: 'Advisory Regarding Electronic Funds - 043 OREF.pdf',
+        formNumbers: ['043'],
+      }),
+    ).toEqual([])
+  })
+
+  it('a returned 001 closes the sale-agreement envelope and nothing else', () => {
+    expect(
+      pickWaitingEnvelopesForExecutedDocument({
+        waiting,
+        haystack: 'signed docs attached',
+        documentName: 'Residential Real Estate Sale Agreement - 001 OREF.pdf',
+        formNumbers: ['001'],
+      }).map((e) => e.id),
+    ).toEqual(['env-sale'])
+  })
+
+  it('a lone waiting envelope is still not closed by an unrelated form', () => {
+    expect(
+      pickWaitingEnvelopesForExecutedDocument({
+        waiting: [waiting[0]],
+        haystack: 'here you go',
+        documentName: 'Advisory Regarding Electronic Funds - 043 OREF.pdf',
+        formNumbers: ['043'],
+      }),
+    ).toEqual([])
+  })
+
+  it('falls back to subject matching only when the document names no form', () => {
+    expect(
+      pickWaitingEnvelopesForExecutedDocument({
+        waiting: [waiting[0]],
+        haystack: 'signed sale agreement back from the buyer',
+        documentName: 'scan0012.pdf',
+        formNumbers: [],
+      }).map((e) => e.id),
+    ).toEqual(['env-sale'])
   })
 })

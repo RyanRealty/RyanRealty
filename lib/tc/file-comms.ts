@@ -134,6 +134,47 @@ export function fromOtherSideContact(
   return fromAddresses.some((e) => otherSideEmails.has(e.trim().toLowerCase()))
 }
 
+/** Form numbers printed in a name, either order: "OREF 022A" or "022A OREF". */
+export function formNumbersInText(text: string): string[] {
+  const out = new Set<string>()
+  for (const re of [/OREF\s*[-]?\s*(\d{3}[A-Z]?)\b/gi, /\b(\d{3}[A-Z]?)\s*OREF\b/gi]) {
+    let m: RegExpExecArray | null
+    while ((m = re.exec(text))) out.add(m[1].toUpperCase())
+  }
+  return [...out]
+}
+
+/**
+ * Which waiting envelope does THIS executed document close?
+ *
+ * The document is the evidence, not the email. When the read gave us the form
+ * numbers printed on the page and the envelope names a form too, they must be
+ * the same form — a returned 043 advisory never closes the sale-agreement
+ * envelope, not even when it is the only one waiting. Only when one side names
+ * no form do we fall back to subject-and-name matching.
+ */
+export function pickWaitingEnvelopesForExecutedDocument(input: {
+  waiting: ReadonlyArray<{ id: string; name: string }>
+  haystack: string
+  documentName: string
+  formNumbers: readonly string[]
+}): Array<{ id: string; name: string }> {
+  if (!input.waiting.length) return []
+  const docNumbers = new Set(
+    [...input.formNumbers, ...formNumbersInText(input.documentName)].map((n) => n.toUpperCase()),
+  )
+  if (docNumbers.size) {
+    const named = input.waiting.filter((e) => formNumbersInText(e.name).length > 0)
+    const hits = named.filter((e) => formNumbersInText(e.name).some((n) => docNumbers.has(n)))
+    if (hits.length) return hits
+    // Every waiting envelope names a form and none is this one: close nothing.
+    if (named.length === input.waiting.length) return []
+    const unnamed = input.waiting.filter((e) => formNumbersInText(e.name).length === 0)
+    return pickWaitingEnvelopesForReturn(unnamed, `${input.documentName}\n${input.haystack}`)
+  }
+  return pickWaitingEnvelopesForReturn(input.waiting, `${input.documentName}\n${input.haystack}`)
+}
+
 export function pickWaitingEnvelopesForReturn(
   waiting: ReadonlyArray<{ id: string; name: string }>,
   haystack: string,

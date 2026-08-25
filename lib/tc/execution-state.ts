@@ -7,7 +7,7 @@
  */
 import type { BrokerRole } from './required-documents'
 import { isOtherSideRecipientRole } from './representation'
-import { entriesFromDocumentText, identifyFormFromName } from './form-identity'
+import { entriesFromDocumentText } from './form-identity'
 import { readRequiredSigners, type FormSignerSource } from './required-signers'
 import type { RecipientRole } from './signing'
 
@@ -121,14 +121,23 @@ export function classifyFromFormAndText(input: {
   form: FormSignerSource
   pageText: string
   ourRole: BrokerRole
+  /**
+   * Was every page of the PDF read? A partial read cannot distinguish "nobody
+   * signed" from "we stopped reading before the signature page", so it may
+   * never award an execution state. Callers that only have text pass the value
+   * from readPdfPagesText().complete. Defaults to true for callers that read
+   * the whole document by construction.
+   */
+  textComplete?: boolean
 }): ExecutionState {
   const source = { ...input.form, pageText: input.pageText }
   const read = readRequiredSigners(source)
   const entries = entriesFromDocumentText(input.pageText)
-  const named = identifyFormFromName(input.form.documentName)
-  const entry = entries[0] ?? named
+  // A filename is not a reading of the document. Only text-derived identification
+  // may relax the obligated-role rule to "one party is enough".
+  const entry = entries[0] ?? null
   const anyPartySufficient = !!entry?.signers.some((s) => s === 'single_party' || s === 'acknowledger')
-  return classifyExecutionState({
+  const state = classifyExecutionState({
     identified: read.identified || anyPartySufficient,
     signatureForm: read.signatureForm || anyPartySufficient,
     requiredRoles: read.roles,
@@ -136,6 +145,21 @@ export function classifyFromFormAndText(input: {
     ourRole: input.ourRole,
     anyPartySufficient,
   })
+  if (input.textComplete === false) return downgradeUnreadDocument(state)
+  return state
+}
+
+/**
+ * The document was not read end to end. Anything that claims completeness is a
+ * guess, so it becomes 'unknown' and the file keeps waiting. States that only
+ * assert missing signatures survive — they are still true of a partial read.
+ */
+export function downgradeUnreadDocument(state: ExecutionState): ExecutionState {
+  if (state === 'fully_executed' || state === 'our_side_signed' || state === 'not_a_signature_form') {
+    return 'unknown'
+  }
+  if (state === 'unsigned') return 'unknown'
+  return state
 }
 
 /** Mail language is a hint. Never use it to award fully_executed. */

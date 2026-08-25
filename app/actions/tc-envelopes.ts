@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { TC_DOCUMENT_URL_TTL_SECONDS } from '@/lib/tc/document-urls'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -257,7 +258,7 @@ export async function getEnvelopeDetail(envelopeId: string): Promise<EnvelopeDet
   const paths = [...docMeta.values()].map((d) => d.storage_path).filter(Boolean) as string[]
   const urlByPath = new Map<string, string>()
   if (paths.length) {
-    const { data: signed } = await supabase.storage.from('tc-documents').createSignedUrls(paths, 900)
+    const { data: signed } = await supabase.storage.from('tc-documents').createSignedUrls(paths, TC_DOCUMENT_URL_TTL_SECONDS)
     for (const s of signed ?? []) if (s.signedUrl && !s.error) urlByPath.set(s.path ?? '', s.signedUrl)
   }
 
