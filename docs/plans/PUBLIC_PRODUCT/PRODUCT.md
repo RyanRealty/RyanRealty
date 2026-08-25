@@ -314,3 +314,33 @@ The product walk is live. Three leftovers were still on disk and would make the 
 **Will not do:** looking-at send, ad spend, I6, page-grade, new OS, migrate the orphan charts onto V3Chart, publish 1990.
 
 **Progress:** leftover 1 walked on https://ryan-realty.com 2026-08-15 (`welcome=1`, `buy=0`). Leftover 2–3 live on `d4cece6d` (Vercel READY): five unmounted recharts modules deleted, `recharts` removed from `package.json`, D109 walks `app/` + `components/`, cube table rewritten so the next agent does not redo 1998. Dead `lib/report-year-compare.ts` deleted (explore tool retired; only its test imported it).
+
+---
+
+## The 27-screen UX prototype is idea-mining, not a build target (Matt 2026-08-22)
+
+A prototype of nine surfaces × three competing directions was built and wired to working
+interactions, published at
+https://claude.ai/code/artifact/ac30bb52-5b6b-4fa4-8370-53806b2e832a. It invents 27 distinct
+visual languages — Demand Tape, Cold Open Chapters, Instrument Rail, Sheet Over Terrain, Cut
+Sheet, Testimony Feed and the rest. **None of them ships as drawn.**
+
+Matt, asked directly whether the prototype breaks the six-pattern lock above:
+
+1. **The ban holds.** The shop stays Field, Instrument, Ledger, Stage, Sheet, Quiet plus chrome.
+   The prototype is mined for mechanics, and each one folds into an existing primitive or a
+   page. A screen that cannot fold does not get a seventh pattern — it does not get built.
+2. **One language across the whole site**, not the strongest direction per surface. Where a
+   prototype direction is better in isolation but would make search, listing and market feel
+   like three different sites, coherence wins and the direction dies.
+3. **Matt does not review 27 screens.** The deliverable is a recommendation: what to take from
+   each surface, which primitive it folds into, what to kill. He reacts to that.
+
+The prototype's value is the *interaction model* it proves out — an ask that answers from the
+record and escalates what the record does not hold, a payment dial that recomputes from a real
+amortisation, a price-band ladder whose verdict recomputes from months of supply — never its
+chrome. Tooling to rebuild or re-extract it is at `scripts/prototype/`.
+
+**Do not treat any prototype screen as a spec.** Do not port its CSS. Do not add a component so
+one of its ideas has a home. If a future agent finds the artifact and starts building from it,
+that is the lock break this section exists to prevent.
