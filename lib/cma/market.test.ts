@@ -247,3 +247,55 @@ describe('CMA market readers', () => {
     expect(src).not.toMatch(/getCmaSubdivision/)
   })
 })
+
+describe('D27 — a resort CMA omits the verdict it has not earned', () => {
+  // Verified on the live layer 2026-08-25: at neighborhood grain, detached, 24 places
+  // publish a 12-month median and only 15 publish a 6-month verdict. The nine that
+  // publish a median but no verdict are awbrey-glen, bend-old-bend,
+  // bend-southern-crossing, black-butte-ranch, brasada-ranch, broken-top,
+  // caldera-springs, northwest-crossing and tetherow — precisely the places our
+  // highest-value CMAs are written for. lib/cma/market.ts reads neighborhood grain
+  // FIRST for resort subdivisions, so this is the shape a Tetherow CMA actually hits.
+  //
+  // The failure this pins is not a blank pill. It is a Tetherow document rendering
+  // Bend's verdict under Tetherow's name — one population labelled as another, on a
+  // page a broker signs. §0.
+  const RESORT_MEDIAN_NO_VERDICT: SellBendMarket = {
+    activeCount: 21,
+    monthsOfSupply: 0,
+    mosLabel: '',
+    verdictKind: null as unknown as SellBendMarket['verdictKind'],
+    verdictLabel: '',
+    medianListPrice: 2450000,
+    computedAt: '2026-08-25T00:00:00.000Z',
+    completeThrough: '2026-08-24',
+  }
+
+  const resortBoard = () =>
+    assemble({
+      city: 'Bend',
+      geoType: 'neighborhood',
+      geoSlug: 'tetherow',
+      // No rolling_365d cache row at this grain — that is exactly why the real
+      // resolver keeps the resort slug rather than inheriting the city's.
+      stats: null,
+      pulse: null,
+      detached: RESORT_MEDIAN_NO_VERDICT,
+      leftover: { ...CITY_LEFTOVER, medianClose: 1875000 },
+    })
+
+  it('publishes the resort median and leaves the verdict null', () => {
+    const out = resortBoard()
+    expect(out.medianSalePrice).toBe(1875000)
+    expect(out.marketVerdict).toBeNull()
+  })
+
+  it('never carries the city verdict onto a neighborhood board', () => {
+    const out = resortBoard()
+    // CITY_DETACHED is 'balanced'. If a fallback ever leaks the city board onto a
+    // resort slug, this is the assertion that catches it.
+    expect(out.marketVerdict).not.toBe('balanced')
+    expect(out.geoSlug).toBe('tetherow')
+  })
+})
+
