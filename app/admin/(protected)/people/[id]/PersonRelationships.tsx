@@ -23,7 +23,13 @@ export function PersonRelationships({
   relationships: ContactRelationship[]
 }) {
   const router = useRouter()
-  const [open, setOpen] = useState(true)
+  // Closed on first paint (Matt 2026-08-25). It opened by default from the
+  // 2026-08-05 lock, which put six relationship-type buttons and a search field
+  // on every contact page whether or not anyone was linking a household — most
+  // of the page's control count, most of the time, for a task that happens once
+  // per contact. The existing !open branch already renders the Add trigger and
+  // the empty word, so this is the flip, not a rewrite.
+  const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
   const [hits, setHits] = useState<RelationshipSearchHit[]>([])
   const [type, setType] = useState<(typeof SIMPLE_RELATIONSHIP_TYPES)[number]>('spouse')
@@ -67,9 +73,6 @@ export function PersonRelationships({
   return (
     <section aria-label="Related people" style={{ margin: '0 0 20px' }}>
       <SectionHead>Related people</SectionHead>
-      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>
-        Pick spouse or parent, then the person. That click saves.
-      </p>
       <ul className="av2-quietlist">
         {relationships.map((r) => (
           <li key={r.id} className="av2-quiet">
@@ -100,6 +103,11 @@ export function PersonRelationships({
         </Button>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 480 }}>
+          {/* The instruction belongs to the form, so it appears with the form.
+              Collapsed, it was explaining controls that were not on screen. */}
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 0 }}>
+            Pick spouse or parent, then the person. That click saves.
+          </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {SIMPLE_RELATIONSHIP_TYPES.map((t) => (
               <Button

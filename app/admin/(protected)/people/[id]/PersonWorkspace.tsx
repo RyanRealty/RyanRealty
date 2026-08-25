@@ -276,24 +276,25 @@ export async function PersonWorkspace({
             cmas={cmas}
             composeCma={sp.composeCma ?? null}
           />
-        </section>
 
-        <Suspense
-          fallback={
-            <section aria-label="Send">
-              <SectionHead>Send</SectionHead>
-              <div className="av2-sysnote" style={{ padding: 12 }}>Loading send options…</div>
-            </section>
-          }
-        >
-          <SendSection
-            personId={idNum}
-            emailSuppressed={emailSuppressed}
-            defaultCity={geo?.city ?? null}
-            cmas={cmas}
-            bpos={bpos}
-          />
-        </Suspense>
+          {/* One send surface (Matt 2026-08-25). This page carried TWO: the
+              composer here, and a separate "Send" section below it whose whole
+              body was one trigger button. Writing a message and sending a
+              deliverable are the same intent — "get something to this person" —
+              so the deliverable trigger now sits with the composer instead of
+              asking which of two panels to scroll to. */}
+          <Suspense
+            fallback={<div className="av2-sysnote" style={{ padding: 12 }}>Loading send options…</div>}
+          >
+            <SendSection
+              personId={idNum}
+              emailSuppressed={emailSuppressed}
+              defaultCity={geo?.city ?? null}
+              cmas={cmas}
+              bpos={bpos}
+            />
+          </Suspense>
+        </section>
 
         <TasksSection
           tasks={foldTasks}

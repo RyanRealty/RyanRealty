@@ -3,7 +3,6 @@
  * chokepoint (BPO / CMA / market report / newsletter / listing alerts), as-is
  * inside the v2 layout (restyle comes later). Async — streams under Suspense.
  */
-import { SectionHead } from '@/components/admin/v2'
 import { ContactSendCenter } from '@/components/admin/crm/ContactSendCenter'
 import type { ContactBpo } from '@/lib/data/crm/getContactBpos'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
@@ -36,9 +35,11 @@ export async function SendSection({
     getLatestNewsletterIssue(),
   ])
 
+  // No section + heading of its own any more: this mounts INSIDE the Messages
+  // section, beside the composer, so the page has one send surface rather than
+  // two competing ones.
   return (
-    <section aria-label="Send">
-      <SectionHead>Send</SectionHead>
+    <div style={{ marginTop: 12 }}>
       <ContactSendCenter
       triggerClassName="av2-btn av2-btn--quiet av2-btn--touch"
         personId={personId}
@@ -62,6 +63,6 @@ export async function SendSection({
         }
         newsletterSendAction={sendDeliverableForPerson.bind(null, personId, 'newsletter')}
       />
-    </section>
+    </div>
   )
 }

@@ -22,12 +22,19 @@ export function StartDealForm({
 }) {
   return (
     <section aria-label="Start a deal" className="av2-pane" style={{ marginBottom: 20 }}>
-      <p style={{ margin: '0 0 8px', fontSize: 'var(--a-text-md)', fontWeight: 500 }}>
-        Start a deal
-      </p>
-      <p style={{ margin: '0 0 12px', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
-        Accepted offer. This person is one party. Add the others now or on the file.
-      </p>
+      {/* Closed until asked for (Matt 2026-08-25). Starting a deal happens once
+          in a contact's life, and the expanded form — address, role, party
+          checkboxes, submit — sat open on every contact forever. `details` is
+          the disclosure here rather than a client toggle: this is a server
+          component, and the native element needs no JS, which is what you want
+          on a phone. */}
+      <details>
+        <summary style={{ cursor: 'pointer', fontSize: 'var(--a-text-md)', fontWeight: 500 }}>
+          Start a deal
+        </summary>
+        <p style={{ margin: '8px 0 12px', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          Accepted offer. This person is one party. Add the others now or on the file.
+        </p>
       <form action={startDealFromPerson} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <HiddenField name="personId" value={personId} />
         <TextField
@@ -60,6 +67,7 @@ export function StartDealForm({
         ) : null}
         <Button type="submit">Start deal</Button>
       </form>
+      </details>
     </section>
   )
 }

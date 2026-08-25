@@ -90,7 +90,11 @@ describe('People new-contact primary path', () => {
     const action = readFileSync('app/actions/crm-relationships.ts', 'utf8')
     expect(ui).toContain('Search an existing person')
     expect(ui).toContain('SIMPLE_RELATIONSHIP_TYPES')
-    expect(ui).toContain('useState(true)')
+    // Closed on first paint (Matt 2026-08-25) — the open form was most of the
+    // contact page's controls for a once-per-contact task. What must hold is
+    // that it is one click away, which the Add trigger below covers.
+    expect(ui).toContain('useState(false)')
+    expect(ui).toContain('setOpen(true)')
     expect(ui).toContain('linkExistingRelationshipAction')
     expect(ui).toContain("useState<(typeof SIMPLE_RELATIONSHIP_TYPES)[number]>('spouse')")
     expect(ui).toContain('saveHit')

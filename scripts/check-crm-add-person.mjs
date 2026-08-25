@@ -117,6 +117,19 @@ if (!/PersonWorkspace/.test(personPage) || !/Suspense/.test(personPage) || !/Per
 if (!/PersonRelationships/.test(personPage) || !/PersonNotesAdd/.test(personPage) || !/FieldEditors/.test(personPage) || !/getPersonNotes/.test(personPage)) {
   fails.push('person detail must first-paint stage, related people, and notes')
 }
+
+// ONE send surface. The page carried both a composer and a separate "Send"
+// section whose entire body was a trigger button; the deliverable centre now
+// mounts inside Messages. A second top-level Send section coming back is the
+// regression this catches.
+const workspace = read('app/admin/(protected)/people/[id]/PersonWorkspace.tsx')
+const sendSection = read('app/admin/(protected)/people/[id]/SendSection.tsx')
+if (/aria-label="Send"/.test(workspace) || /aria-label="Send"/.test(sendSection)) {
+  fails.push('person detail must have ONE send surface — mount the deliverable centre inside Messages, not a second Send section')
+}
+if (!/<SendSection/.test(workspace)) {
+  fails.push('person detail must still mount SendSection (the deliverable chokepoint) inside Messages')
+}
 if (!/getPersonGlance/.test(personPage) || !/nextLine/.test(personPage) || !/nowLine/.test(personPage)) {
   fails.push('person detail must first-paint Next and Now from getPersonGlance')
 }
@@ -125,8 +138,16 @@ if (!/savePersonNoteAction/.test(read('app/admin/(protected)/people/[id]/PersonN
 }
 const relUi = read('app/admin/(protected)/people/[id]/PersonRelationships.tsx')
 const relAction = read('app/actions/crm-relationships.ts')
-if (!/useState\(true\)/.test(relUi)) {
-  fails.push('Related people add form must be open on first paint')
+// Closed on first paint (Matt 2026-08-25, reversing the 2026-08-05 lock). The
+// open form put six relationship buttons and a search field on every contact
+// page for a task that happens once per contact. What still has to be true is
+// that adding a relationship is ONE click away and the empty state says so —
+// a collapsed form that hides its own trigger would be the real regression.
+if (/useState\(true\)/.test(relUi)) {
+  fails.push('Related people add form must be CLOSED on first paint (useState(false))')
+}
+if (!/No relationships yet/.test(relUi) || !/setOpen\(true\)/.test(relUi)) {
+  fails.push('Collapsed Related people must still show the empty state and a one-click Add trigger')
 }
 if (!/Search an existing person/.test(relUi) || !/SIMPLE_RELATIONSHIP_TYPES/.test(relUi) || !/saveHit/.test(relUi)) {
   fails.push('Relationships add must search an existing person and save on that click')
