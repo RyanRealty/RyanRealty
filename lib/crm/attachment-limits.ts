@@ -90,6 +90,49 @@ export function attachmentPathFor(channel: CrmAttachmentChannel, personId: numbe
 const PATH_RE = /^(email|mms)\/person-(\d+)\/\d+-[\w.\-]+$/
 
 /**
+ * A batch send has no single contact to hang the file off, so its attachments
+ * are namespaced by the BROKER who is sending — `email/batch-<actorKey>/...`.
+ * That keeps the same ownership property the person paths have: the send action
+ * re-derives the key from the session, so a client cannot reference another
+ * broker's uploads (or an arbitrary bucket object) by editing the hidden field.
+ */
+export function actorKeyFor(actorEmail: string): string {
+  return actorEmail.trim().toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 80)
+}
+
+export function batchAttachmentPathFor(
+  channel: CrmAttachmentChannel,
+  actorKey: string,
+  filename: string,
+  nowMs: number,
+): string {
+  const safe = filename.replace(/[^\w.\-]/g, '_').slice(-120)
+  return `${channel}/batch-${actorKey}/${nowMs}-${safe}`
+}
+
+const BATCH_PATH_RE = /^(email|mms)\/batch-([a-z0-9_]+)\/\d+-[\w.\-]+$/
+
+export function isValidBatchAttachmentPath(
+  channel: CrmAttachmentChannel,
+  actorKey: string,
+  path: string,
+): boolean {
+  const m = BATCH_PATH_RE.exec(path)
+  return !!m && m[1] === channel && m[2] === actorKey
+}
+
+/** Who an attachment belongs to — one contact, or one broker's batch. */
+export type AttachmentOwner =
+  | { kind: 'person'; personId: number }
+  | { kind: 'batch'; actorKey: string }
+
+function ownsPath(owner: AttachmentOwner, channel: CrmAttachmentChannel, path: string): boolean {
+  return owner.kind === 'person'
+    ? isValidAttachmentPath(channel, owner.personId, path)
+    : isValidBatchAttachmentPath(channel, owner.actorKey, path)
+}
+
+/**
  * A posted attachment path must be a well-formed crm-files outbound path that
  * belongs to THIS person + channel — a client can't reference another
  * contact's files (or an arbitrary bucket object) by editing the hidden field.
@@ -115,6 +158,19 @@ export function parseAttachmentRefs(
   channel: CrmAttachmentChannel,
   personId: number,
 ): { ok: true; items: CrmAttachmentRef[] } | { ok: false; error: string } {
+  return parseAttachmentRefsFor(raw, channel, { kind: 'person', personId })
+}
+
+/**
+ * The same parse + limit enforcement for either owner. The person form above
+ * delegates here so a batch send can never end up on a looser rule than a
+ * one-to-one send.
+ */
+export function parseAttachmentRefsFor(
+  raw: string | null | undefined,
+  channel: CrmAttachmentChannel,
+  owner: AttachmentOwner,
+): { ok: true; items: CrmAttachmentRef[] } | { ok: false; error: string } {
   const text = (raw ?? '').trim()
   if (!text) return { ok: true, items: [] }
   let arr: unknown
@@ -133,8 +189,13 @@ export function parseAttachmentRefs(
     if (typeof e.path !== 'string' || typeof e.name !== 'string' || typeof e.sizeBytes !== 'number' || typeof e.contentType !== 'string') {
       return { ok: false, error: 'Malformed attachment entry' }
     }
-    if (!isValidAttachmentPath(channel, personId, e.path)) {
-      return { ok: false, error: 'Attachment does not belong to this contact' }
+    if (!ownsPath(owner, channel, e.path)) {
+      return {
+        ok: false,
+        error: owner.kind === 'person'
+          ? 'Attachment does not belong to this contact'
+          : 'Attachment does not belong to this send',
+      }
     }
     const fileCheck = validateAttachmentFile(channel, { name: e.name, sizeBytes: e.sizeBytes, contentType: e.contentType })
     if (!fileCheck.ok) return fileCheck

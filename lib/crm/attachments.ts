@@ -19,6 +19,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   attachmentPathFor,
+  batchAttachmentPathFor,
   validateAttachmentFile,
   type CrmAttachmentChannel,
   type CrmAttachmentRef,
@@ -52,6 +53,34 @@ export async function createAttachmentUploadUrl(params: {
 
   const sb = createServiceClient()
   const path = attachmentPathFor(params.channel, params.personId, params.filename, Date.now())
+  const { data, error } = await sb.storage.from(BUCKET).createSignedUploadUrl(path)
+  if (error || !data?.signedUrl) {
+    return { ok: false, error: error?.message ?? 'Could not create upload URL' }
+  }
+  return { ok: true, grant: { path: data.path ?? path, signedUrl: data.signedUrl, token: data.token } }
+}
+
+/**
+ * Upload grant for a BATCH send's attachment. Same bucket, same validators; the
+ * path is namespaced by the sending broker instead of a contact, because a
+ * cohort has no single contact to hang the file off.
+ */
+export async function createBatchAttachmentUploadUrl(params: {
+  channel: CrmAttachmentChannel
+  actorKey: string
+  filename: string
+  contentType: string
+  sizeBytes: number
+}): Promise<{ ok: true; grant: AttachmentUploadGrant } | { ok: false; error: string }> {
+  const check = validateAttachmentFile(params.channel, {
+    name: params.filename,
+    sizeBytes: params.sizeBytes,
+    contentType: params.contentType,
+  })
+  if (!check.ok) return check
+
+  const sb = createServiceClient()
+  const path = batchAttachmentPathFor(params.channel, params.actorKey, params.filename, Date.now())
   const { data, error } = await sb.storage.from(BUCKET).createSignedUploadUrl(path)
   if (error || !data?.signedUrl) {
     return { ok: false, error: error?.message ?? 'Could not create upload URL' }

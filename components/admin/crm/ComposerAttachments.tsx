@@ -28,7 +28,10 @@
  */
 import { useRef, useState } from 'react'
 import { Loader2, Paperclip, X } from 'lucide-react'
-import { createCrmAttachmentUploadAction } from '@/app/actions/crm-attachments'
+import {
+  createCrmAttachmentUploadAction,
+  createCrmBatchAttachmentUploadAction,
+} from '@/app/actions/crm-attachments'
 import {
   limitsFor,
   validateAttachmentFile,
@@ -56,8 +59,19 @@ type PendingItem = {
   error?: string
 }
 
-export function useComposerAttachments(params: { personId?: number; channel: CrmAttachmentChannel }) {
-  const { personId, channel } = params
+/**
+ * `personId` scopes the upload to one contact. A BATCH send has no single
+ * contact, so it passes `batch: true` instead and the grant is namespaced by
+ * the signed-in broker (derived server-side from the session). Exactly one of
+ * the two must be set — with neither, addFiles is a no-op, which is what kept
+ * a person-less mount from silently uploading to the wrong place.
+ */
+export function useComposerAttachments(params: {
+  personId?: number
+  batch?: boolean
+  channel: CrmAttachmentChannel
+}) {
+  const { personId, batch, channel } = params
   const [items, setItems] = useState<PendingItem[]>([])
   // itemsRef mirrors state so sequential awaits in addFiles see fresh totals.
   const itemsRef = useRef<PendingItem[]>([])
@@ -77,7 +91,7 @@ export function useComposerAttachments(params: { personId?: number; channel: Crm
   }
 
   async function addFiles(files: FileList | File[]) {
-    if (!personId) return
+    if (!personId && !batch) return
     const limits = limitsFor(channel)
     const list = Array.from(files)
     for (const file of list) {
@@ -102,9 +116,13 @@ export function useComposerAttachments(params: { personId?: number; channel: Crm
       const key = nextChipKey()
       setItemsSynced((prev) => [...prev, { key, name: file.name, sizeBytes: file.size, contentType, status: 'uploading' }])
       try {
-        const grant = await createCrmAttachmentUploadAction({
-          personId, channel, filename: file.name, contentType, sizeBytes: file.size,
-        })
+        const grant = batch
+          ? await createCrmBatchAttachmentUploadAction({
+              channel, filename: file.name, contentType, sizeBytes: file.size,
+            })
+          : await createCrmAttachmentUploadAction({
+              personId: personId as number, channel, filename: file.name, contentType, sizeBytes: file.size,
+            })
         if (!grant.ok) throw new Error(grant.error)
         const put = await fetch(grant.signedUrl, {
           method: 'PUT',
@@ -150,7 +168,7 @@ export function useComposerAttachments(params: { personId?: number; channel: Crm
     .map((i) => ({ path: i.path, name: i.name, sizeBytes: i.sizeBytes, contentType: i.contentType }))
   const uploading = items.some((i) => i.status === 'uploading')
 
-  return { items, addFiles, addReady, addRef, remove, clear, ready, uploading, enabled: Boolean(personId) }
+  return { items, addFiles, addReady, addRef, remove, clear, ready, uploading, enabled: Boolean(personId) || Boolean(batch) }
 }
 
 export function AttachmentChips(props: {

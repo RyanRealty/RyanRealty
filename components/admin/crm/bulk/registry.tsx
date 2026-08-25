@@ -10,6 +10,7 @@
  * every spec here plugs into.
  */
 
+import { useEffect, useRef } from 'react'
 import {
   bulkAssignBrokerAction,
   bulkAddTagAction,
@@ -33,9 +34,15 @@ import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-
 import { getFiltersSummary } from '@/lib/search-filters'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
-import { SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
+import {
+  AttachmentChips,
+  AttachmentControl,
+  useComposerAttachments,
+} from '@/components/admin/crm/ComposerAttachments'
+import { Combobox, SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { FormSelect } from './FormSelect'
 import { TagCombo, bulkTagError, normalizeBulkTag } from './TagCombo'
+import { BatchRecipients, EMPTY_RECIPIENTS, type BatchRecipientsState } from './BatchRecipients'
 import {
   defineBulkAction,
   type ActionId,
@@ -229,15 +236,59 @@ const setReportSubscription = defineBulkAction<ReportSubscriptionValue>({
 
 // ── email_cohort ───────────────────────────────────────────────────────────────
 
-type EmailCohortValue = { templateId: string; subject: string; body: string }
+/** Sentinel for "an attachment upload is still in flight" (see validate). */
+const UPLOADING = '__uploading__'
+
+type EmailCohortValue = {
+  templateId: string
+  subject: string
+  body: string
+  attachments: string
+  recipients: BatchRecipientsState
+}
 
 function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohortValue>) {
+  // Batch mode: a cohort has no single contact, so the upload grant is
+  // namespaced by the signed-in broker instead. Same bucket, same limits, same
+  // client-direct upload the one-to-one composer uses — the dialog only ever
+  // posts storage paths.
+  const attachments = useComposerAttachments({ batch: true, channel: 'email' })
+  // The hook owns the pending list; mirror the uploaded refs onto the action's
+  // value so validate/run read one source of truth. In an effect, not during
+  // render — onChange sets parent state, and calling it from a render body is
+  // the classic "cannot update a component while rendering another" loop.
+  // One sentinel the validator can see: while anything is uploading the value
+  // is not a valid ref list, so Run is blocked with a reason.
+  const readyJson = attachments.uploading ? UPLOADING : JSON.stringify(attachments.ready)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const valueRef = useRef(value)
+  valueRef.current = value
+  useEffect(() => {
+    if (valueRef.current.attachments !== readyJson) {
+      onChangeRef.current({ ...valueRef.current, attachments: readyJson })
+    }
+  }, [readyJson])
   return (
     <>
-      <FormSelect
-        label="Template (optional)" value={value.templateId} onChange={(v) => onChange({ ...value, templateId: v })}
-        placeholder="Pick a template, or write below"
-        options={ctx.emailTemplates.filter((t) => t.channel === 'email').map((t) => ({ key: String(t.id), label: t.name }))}
+      <BatchRecipients
+        selection={ctx.selection}
+        state={value.recipients}
+        onChange={(recipients) => onChangeRef.current({ ...valueRef.current, recipients })}
+      />
+      {/* 51 email templates in a native select is a scroll-and-squint. The v2
+          Combobox is the barrel's answer for exactly this ("reach for it when
+          the list is long enough to need a search") and keeps APG arrow-key
+          selection, which a hand-rolled search panel loses. */}
+      <Combobox
+        label="Template (optional)"
+        placeholder="Search templates, or leave blank and write below"
+        emptyText="No template matches."
+        value={value.templateId}
+        onSelect={(v) => onChange({ ...value, templateId: v === value.templateId ? '' : v })}
+        options={ctx.emailTemplates
+          .filter((t) => t.channel === 'email')
+          .map((t) => ({ value: String(t.id), label: t.name }))}
       />
       {!value.templateId ? (
         // The canonical email editing surface — same interface as every other
@@ -262,6 +313,17 @@ function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohort
           bodyPlaceholder="Message. Sends from Ryan Realty's sending address; replies come back to you."
         />
       ) : null}
+      {/* Outside the template branch on purpose: a template send needs to be
+          able to carry a flyer just as much as a typed one does. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <AttachmentControl attachments={attachments} ariaLabel="Attach files" />
+        <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          {attachments.items.length === 0
+            ? 'Attach files'
+            : `Every recipient gets the same ${attachments.items.length === 1 ? 'file' : 'files'}.`}
+        </span>
+      </div>
+      <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
     </>
   )
 }
@@ -270,22 +332,38 @@ const emailCohort = defineBulkAction<EmailCohortValue>({
   id: 'email_cohort',
   title: 'Batch Email',
   jobKind: 'email-cohort',
-  initialValue: { templateId: '', subject: '', body: '' },
+  initialValue: { templateId: '', subject: '', body: '', attachments: '', recipients: EMPTY_RECIPIENTS },
   Fields: EmailCohortFields,
   validate: (v) => {
     const tId = v.templateId.trim()
-    return !tId && !(v.subject.trim() && v.body.trim())
-      ? 'Pick a template, or write a subject and body'
-      : null
+    if (!tId && !(v.subject.trim() && v.body.trim())) {
+      return 'Pick a template, or write a subject and body'
+    }
+    // A file still uploading has no storage path yet, so enqueueing now would
+    // send the cohort without it — silently, and to everyone.
+    if (v.attachments === UPLOADING) return 'Wait for the attachments to finish uploading'
+    // An edited cohort that ends up empty would enqueue a job with no one in it.
+    if (v.recipients.edited && (v.recipients.people ?? []).length === 0) {
+      return 'No recipients left — add someone, or cancel'
+    }
+    return null
   },
   run: async (v, sel) => {
     const tId = v.templateId.trim()
+    // Untouched, the original selection passes through so a saved-view or
+    // "all matching" send still resolves at run time. Edited, the send becomes
+    // exactly the people on screen.
+    const selection =
+      v.recipients.edited && !v.recipients.capped
+        ? { mode: 'ids' as const, ids: (v.recipients.people ?? []).map((p) => p.id) }
+        : sel
     return {
       mode: 'job',
-      result: await bulkEmailCohortAction(sel, {
+      result: await bulkEmailCohortAction(selection, {
         templateId: tId || undefined,
         subject: v.subject.trim() || undefined,
         body: v.body || undefined,
+        attachments: v.attachments && v.attachments !== UPLOADING ? v.attachments : undefined,
       }),
     }
   },

@@ -45,6 +45,8 @@ import {
   stampEmailEventMessageId,
 } from '@/lib/data/crm/insertEmailEvent'
 import { renderCrmMerge } from '@/lib/crm/merge'
+import type { CrmAttachmentRef } from '@/lib/crm/attachment-limits'
+import { loadEmailAttachments } from '@/lib/crm/attachments'
 import { composeOutboundHtml } from '@/lib/crm/email-body'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import {
@@ -74,6 +76,12 @@ export type EmailCohortParams = {
   fromIdentity?: string | null
   /** Where replies go; falls back to the acting broker frozen on the job. */
   replyTo?: string | null
+  /**
+   * Files to attach to every recipient's copy, as crm-files storage refs the
+   * enqueue action already validated. The bytes are loaded ONCE per chunk and
+   * reused — a 10MB PDF must not be re-downloaded 18,000 times.
+   */
+  attachments?: CrmAttachmentRef[] | null
   /** Per-send instrumentation key, e.g. 'bulk:campaign:<jobId>'. */
   emailKey?: string | null
   /** Reporting bucket for the email_events rows. Defaults to 'campaign'. */
@@ -151,8 +159,8 @@ function emptyResult(): BulkResult {
   return { processed: 0, skipped: 0, breakdown: {} }
 }
 
-function bump(result: BulkResult, key: string): void {
-  result.breakdown[key] = (result.breakdown[key] ?? 0) + 1
+function bump(result: BulkResult, key: string, n = 1): void {
+  result.breakdown[key] = (result.breakdown[key] ?? 0) + n
 }
 
 // ── The per-recipient send (holds BOTH isSuppressed + sendEmail) ───────────────
@@ -185,6 +193,8 @@ export async function sendOneCohortEmail(
   content: ResolvedCohortContent,
   params: EmailCohortParams,
   ctx: BulkContext,
+  /** Attachment bytes, loaded once for the whole chunk by the handler. */
+  attachments?: Array<{ filename: string; content: Buffer }>,
 ): Promise<SendOneOutcome> {
   const email = recipient.email.trim()
   if (!email) return { kind: 'skipped', bucket: 'no-email' }
@@ -277,6 +287,7 @@ export async function sendOneCohortEmail(
     from: fromIdentity,
     replyTo,
     headers: prepared.headers,
+    attachments,
   })
   if (res.error) {
     // Roll the claim back so a later run can re-attempt (no false `sent` left).
@@ -324,6 +335,23 @@ export async function emailCohortHandler(
     params.templateId != null ? await getCrmTemplateForSend(params.templateId) : null
   const content = resolveCohortContent(params, template)
 
+  // Attachment bytes once per chunk, never per recipient. A failed load fails
+  // the WHOLE chunk rather than sending a body that says "see attached" with
+  // nothing attached — every id is counted so the worker offset still advances,
+  // and the next run retries (no `sent` row was claimed for any of them).
+  let attachmentBytes: Array<{ filename: string; content: Buffer }> | undefined
+  const refs = params.attachments ?? []
+  if (refs.length > 0) {
+    const loaded = await loadEmailAttachments(refs)
+    if (!loaded.ok) {
+      result.skipped += ids.length
+      bump(result, 'attachment-load-failed', ids.length)
+      console.error('[email-cohort] attachment load failed', { jobId: ctx.jobId, error: loaded.error })
+      return result
+    }
+    attachmentBytes = (loaded.attachments ?? []).map((a) => ({ filename: a.filename, content: a.content }))
+  }
+
   const recipients = await getEmailCohortRecipients(ids)
   const byId = new Map(recipients.map((r) => [r.id, r]))
 
@@ -339,7 +367,7 @@ export async function emailCohortHandler(
       bump(result, 'no-content')
       continue
     }
-    const outcome = await sendOneCohortEmail(recipient, content, params, ctx)
+    const outcome = await sendOneCohortEmail(recipient, content, params, ctx, attachmentBytes)
     if (outcome.kind === 'processed') {
       result.processed += 1
       bump(result, 'sent')

@@ -56,12 +56,19 @@ import {
 } from '@/lib/crm/constants'
 import {
   validateSegment,
+  upgradeLegacyFilters,
   type CrmSegment,
 } from '@/lib/crm/segment-ast'
 import { getSavedViewSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { normalizeSavedSearchFilters } from '@/lib/search-filters'
 import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
 import { resolveAudienceIds } from '@/lib/crm/audience'
+import { actorKeyFor, parseAttachmentRefsFor } from '@/lib/crm/attachment-limits'
+import {
+  BULK_RECIPIENT_PREVIEW_CAP,
+  type BulkRecipient,
+  type BulkRecipientPreview,
+} from '@/lib/crm/bulk-recipients'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   buildBulkSelection,
@@ -356,7 +363,7 @@ export async function bulkAssignSavedSearchAction(
  */
 export async function bulkEmailCohortAction(
   selection: BulkActionSelection,
-  params: { templateId?: string; subject?: string; body?: string },
+  params: { templateId?: string; subject?: string; body?: string; attachments?: string },
 ): Promise<BulkEnqueueResult> {
   const templateIdRaw = typeof params?.templateId === 'string' ? params.templateId.trim() : ''
   const subject = typeof params?.subject === 'string' ? params.subject.trim() : ''
@@ -364,10 +371,27 @@ export async function bulkEmailCohortAction(
   if (!templateIdRaw && !(subject && body)) {
     return { ok: false, error: 'Pick a template, or write a subject and body' }
   }
+  // Attachments arrive as storage paths, never bytes (a form POST caps at
+  // ~4.5MB). Re-validate ownership + per-file + total limits here, against the
+  // actor key derived from THIS session — the same bar the one-to-one composer
+  // clears, so a batch can never attach a file the caller does not own.
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const refs = parseAttachmentRefsFor(params?.attachments, 'email', {
+    kind: 'batch',
+    actorKey: actorKeyFor(access.email),
+  })
+  if (!refs.ok) return { ok: false, error: refs.error }
+
   // EmailCohortParams.templateId is number|null — coerce from the UI's string input.
   const parsed = templateIdRaw ? parseInt(templateIdRaw, 10) : NaN
   const templateId: number | null = Number.isFinite(parsed) && parsed > 0 ? parsed : null
-  return enqueue('email-cohort', selection, { templateId, subject: subject || null, body: body || null })
+  return enqueue('email-cohort', selection, {
+    templateId,
+    subject: subject || null,
+    body: body || null,
+    attachments: refs.items.length ? refs.items : null,
+  })
 }
 
 // ── Preflight count ──────────────────────────────────────────────────────────
@@ -514,5 +538,109 @@ export async function bulkPreflightCount(
     return { ok: true, total: total ?? 0, suppressedEstimate }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Could not count the selection' }
+  }
+}
+
+// ── Who is actually getting this ─────────────────────────────────────────────
+
+/**
+ * The Batch Email dialog used to say "6 contacts." and nothing else — no names,
+ * no addresses, no way to drop someone or add someone who wasn't in the filter.
+ * Sending to a cohort you cannot see is how the wrong list goes out.
+ *
+ * This resolves the SAME segment the job will run, under the SAME frozen scope,
+ * through the SAME compiler (buildCrmPeopleQuery) as the count and the worker —
+ * so the names on screen are the cohort, not an approximation of it.
+ *
+ * Capped: a book-sized cohort is not a list a human reviews. Past the cap the
+ * dialog shows the count plus a sample and says so, rather than pretending the
+ * first 200 are all of them.
+ */
+function rowToRecipient(r: {
+  id: number
+  name: string | null
+  emails: unknown
+  tags: string[] | null
+}): BulkRecipient {
+  const list = Array.isArray(r.emails) ? (r.emails as Array<{ value?: string }>) : []
+  const email = list.map((e) => (e?.value ?? '').trim()).find(Boolean) ?? ''
+  const tags = (r.tags ?? []).map((t) => t.toLowerCase())
+  return {
+    id: r.id,
+    name: r.name?.trim() || email || `#${r.id}`,
+    email,
+    suppressed: EMAIL_SUPPRESS_TAGS.some((t) => tags.includes(t.toLowerCase())),
+  }
+}
+
+export async function previewBulkRecipientsAction(
+  selection: BulkActionSelection,
+): Promise<BulkRecipientPreview> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+
+  let built: BulkSelection
+  try {
+    built = await resolveBulkSelection(selection)
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Invalid selection' }
+  }
+
+  const brokerScope = scopeBroker(access)
+  const sb = createServiceClient()
+  const segment = selectionToSegment(built) ?? { type: 'group' as const, op: 'and' as const, nodes: [] }
+  const explicitIds = 'ids' in built ? built.ids : null
+
+  try {
+    let q = buildCrmPeopleQuery(sb, segment, brokerScope, {
+      limit: BULK_RECIPIENT_PREVIEW_CAP,
+      select: 'id,name,emails,tags',
+    }).query
+    if (explicitIds) q = q.in('id', explicitIds)
+    const { data, count, error } = await q
+    if (error) return { ok: false, error: error.message }
+    const rows = (data ?? []) as Array<{ id: number; name: string | null; emails: unknown; tags: string[] | null }>
+    const total = count ?? rows.length
+    return {
+      ok: true,
+      total,
+      capped: total > rows.length,
+      people: rows.map(rowToRecipient),
+    }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Could not read the recipients' }
+  }
+}
+
+/**
+ * Type-ahead for "add someone to this send". Runs the same free-text `q`
+ * condition the People list runs (name + email + phone via search_blob) under
+ * the caller's scope, so a broker can only ever add a contact from their own
+ * book — and can find them by address, which is how you look up the person you
+ * mean to add to an email.
+ */
+export async function searchBulkRecipientsAction(
+  q: string,
+): Promise<{ ok: true; results: BulkRecipient[] } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const term = (q ?? '').trim()
+  if (term.length < 2) return { ok: true, results: [] }
+
+  const sb = createServiceClient()
+  try {
+    const segment = upgradeLegacyFilters({ q: term })
+    const { query } = buildCrmPeopleQuery(sb, segment, scopeBroker(access), {
+      limit: 8,
+      select: 'id,name,emails,tags',
+      includeCount: false,
+    })
+    const { data, error } = await query
+    if (error) return { ok: false, error: error.message }
+    const rows = (data ?? []) as Array<{ id: number; name: string | null; emails: unknown; tags: string[] | null }>
+    // A contact with no address cannot receive an email — do not offer them.
+    return { ok: true, results: rows.map(rowToRecipient).filter((r) => r.email) }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Search failed' }
   }
 }

@@ -60,6 +60,12 @@ export type BulkRunOutcome =
  * once per render in BulkActions.tsx from its own props + top-level state.
  */
 export type BulkCtx = {
+  /**
+   * The selection the active scope toggle produces right now — the same value
+   * `run` receives. Fields need it too: the email cohort resolves it to a real
+   * recipient list so the operator can see and edit who is getting the send.
+   */
+  selection: BulkActionSelection
   selectedIds: number[]
   selectedRows: Array<{ id: number; name: string | null }>
   brokers: BulkPickerOption[]

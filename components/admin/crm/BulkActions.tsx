@@ -237,6 +237,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   // Context every spec's Fields / validate / run reads from — the picker data
   // this component already receives as props, plus the live selection state.
   const ctx: BulkCtx = {
+    selection: buildSelection(),
     selectedIds,
     selectedRows,
     brokers,

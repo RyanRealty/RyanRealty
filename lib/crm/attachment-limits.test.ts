@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
+  actorKeyFor,
   attachmentPathFor,
+  batchAttachmentPathFor,
   isValidAttachmentPath,
+  isValidBatchAttachmentPath,
   parseAttachmentPath,
   parseAttachmentRefs,
+  parseAttachmentRefsFor,
   validateAttachmentFile,
 } from './attachment-limits'
 
@@ -82,5 +86,52 @@ describe('parseAttachmentRefs', () => {
   it('enforces the max-files cap', () => {
     const items = Array.from({ length: 11 }, (_, i) => ref({ path: `email/person-42/172054000000${i}-a.pdf` }))
     expect(parseAttachmentRefs(JSON.stringify(items), 'email', 42).ok).toBe(false)
+  })
+})
+
+describe('batch attachment ownership', () => {
+  const KEY = actorKeyFor('matt@ryan-realty.com')
+
+  it('derives a stable, path-safe key from the broker email', () => {
+    expect(KEY).toBe('matt_ryan_realty_com')
+    expect(actorKeyFor('  Matt@Ryan-Realty.com ')).toBe(KEY)
+  })
+
+  it('builds and accepts its own path', () => {
+    const p = batchAttachmentPathFor('email', KEY, 'Spring flyer.pdf', 1720540000000)
+    expect(p).toBe('email/batch-matt_ryan_realty_com/1720540000000-Spring_flyer.pdf')
+    expect(isValidBatchAttachmentPath('email', KEY, p)).toBe(true)
+  })
+
+  it('refuses another broker key, another channel, and a person path', () => {
+    const p = batchAttachmentPathFor('email', KEY, 'f.pdf', 1)
+    expect(isValidBatchAttachmentPath('email', actorKeyFor('paul@ryan-realty.com'), p)).toBe(false)
+    expect(isValidBatchAttachmentPath('mms', KEY, p)).toBe(false)
+    expect(isValidBatchAttachmentPath('email', KEY, 'email/person-42/1-f.pdf')).toBe(false)
+  })
+
+  it('parses a batch ref list and rejects one owned by someone else', () => {
+    const mine = batchAttachmentPathFor('email', KEY, 'a.pdf', 1)
+    const theirs = batchAttachmentPathFor('email', actorKeyFor('paul@ryan-realty.com'), 'b.pdf', 2)
+    const ref = (path: string) => ({ path, name: 'a.pdf', sizeBytes: 1024, contentType: 'application/pdf' })
+    const owner = { kind: 'batch' as const, actorKey: KEY }
+    expect(parseAttachmentRefsFor(JSON.stringify([ref(mine)]), 'email', owner)).toEqual({
+      ok: true,
+      items: [ref(mine)],
+    })
+    expect(parseAttachmentRefsFor(JSON.stringify([ref(theirs)]), 'email', owner)).toEqual({
+      ok: false,
+      error: 'Attachment does not belong to this send',
+    })
+  })
+
+  it('holds a batch to the same size limit as a one-to-one send', () => {
+    const path = batchAttachmentPathFor('email', KEY, 'big.pdf', 1)
+    const res = parseAttachmentRefsFor(
+      JSON.stringify([{ path, name: 'big.pdf', sizeBytes: 11 * 1024 * 1024, contentType: 'application/pdf' }]),
+      'email',
+      { kind: 'batch', actorKey: KEY },
+    )
+    expect(res.ok).toBe(false)
   })
 })

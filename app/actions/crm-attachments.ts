@@ -8,7 +8,8 @@
  */
 
 import { requireCrmAccess, requirePersonInScope } from '@/app/actions/crm'
-import { createAttachmentUploadUrl } from '@/lib/crm/attachments'
+import { createAttachmentUploadUrl, createBatchAttachmentUploadUrl } from '@/lib/crm/attachments'
+import { actorKeyFor } from '@/lib/crm/attachment-limits'
 
 export async function createCrmAttachmentUploadAction(input: {
   personId: number
@@ -29,6 +30,35 @@ export async function createCrmAttachmentUploadAction(input: {
   const res = await createAttachmentUploadUrl({
     channel: input.channel === 'mms' ? 'mms' : 'email',
     personId,
+    filename: String(input.filename ?? 'file'),
+    contentType: String(input.contentType ?? 'application/octet-stream'),
+    sizeBytes: Number(input.sizeBytes ?? 0),
+  })
+  if (!res.ok) return res
+  return { ok: true, path: res.grant.path, signedUrl: res.grant.signedUrl, token: res.grant.token }
+}
+
+/**
+ * Upload grant for a BATCH send. A cohort has no single contact, so authz is
+ * "can this caller use the CRM at all" (the same bar the batch send itself
+ * clears) and the file is namespaced by the caller's own key — derived here
+ * from the session, never accepted from the client, so one broker can never
+ * reference another's uploads.
+ */
+export async function createCrmBatchAttachmentUploadAction(input: {
+  channel: 'email' | 'mms'
+  filename: string
+  contentType: string
+  sizeBytes: number
+}): Promise<
+  | { ok: true; path: string; signedUrl: string; token: string }
+  | { ok: false; error: string }
+> {
+  const access = await requireCrmAccess()
+  if (!access.ok) return access
+  const res = await createBatchAttachmentUploadUrl({
+    channel: input.channel === 'mms' ? 'mms' : 'email',
+    actorKey: actorKeyFor(access.access.email),
     filename: String(input.filename ?? 'file'),
     contentType: String(input.contentType ?? 'application/octet-stream'),
     sizeBytes: Number(input.sizeBytes ?? 0),
