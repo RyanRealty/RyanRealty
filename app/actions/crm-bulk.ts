@@ -63,6 +63,7 @@ import { getSavedViewSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { normalizeSavedSearchFilters } from '@/lib/search-filters'
 import { buildCrmPeopleQuery } from '@/lib/data/crm/buildCrmPeopleQuery'
 import { resolveAudienceIds } from '@/lib/crm/audience'
+import { normalizeScheduledAt } from '@/lib/crm/compose-audience'
 import { actorKeyFor, parseAttachmentRefsFor } from '@/lib/crm/attachment-limits'
 import {
   BULK_RECIPIENT_PREVIEW_CAP,
@@ -711,4 +712,87 @@ export async function sendBatchEmailTestAction(
       attachments: refs.items.length ? refs.items : null,
     },
   })
+}
+
+// ── Send it later ────────────────────────────────────────────────────────────
+
+/**
+ * Schedule a Batch Email for a future time.
+ *
+ * The machinery already existed — crm_scheduled_sends, the crm-scheduled-sends
+ * cron that atomically claims a due row and enqueues it through the SAME bulk
+ * worker — but only /admin/email/compose could reach it. A batch off the People
+ * list, which is where the expired blasts and neighborhood segments actually get
+ * built, could only send the instant you pressed Run.
+ *
+ * THE COHORT IS FROZEN TO IDS NOW, not resolved at fire time. Whoever is on
+ * screen when you schedule is who receives it. A saved-view or "all matching"
+ * audience that re-resolved on Friday would quietly mail everyone who joined the
+ * filter since Tuesday, and the count you reviewed would not be the count that
+ * sent. Suppression still runs per recipient in the worker, so anyone who opts
+ * out in between is still dropped — freezing the audience never freezes consent.
+ */
+export async function scheduleBulkEmailCohortAction(
+  selection: BulkActionSelection,
+  params: { templateId?: string; subject?: string; body?: string; attachments?: string },
+  scheduledAt: string,
+): Promise<{ ok: true; id: number; count: number; sendsAt: string } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+
+  const templateIdRaw = typeof params?.templateId === 'string' ? params.templateId.trim() : ''
+  const subject = typeof params?.subject === 'string' ? params.subject.trim() : ''
+  const body = typeof params?.body === 'string' ? params.body : ''
+  if (!templateIdRaw && !(subject && body)) {
+    return { ok: false, error: 'Pick a template, or write a subject and body' }
+  }
+
+  const when = normalizeScheduledAt(scheduledAt, Date.now())
+  if (!when.ok) return { ok: false, error: when.error }
+
+  // Same attachment ownership + limit check the immediate send clears.
+  const refs = parseAttachmentRefsFor(params?.attachments, 'email', {
+    kind: 'batch',
+    actorKey: actorKeyFor(access.email),
+  })
+  if (!refs.ok) return { ok: false, error: refs.error }
+
+  const brokerScope = scopeBroker(access)
+  const sb = createServiceClient()
+  let frozenIds: number[]
+  try {
+    const built = await resolveBulkSelection(selection, brokerScope)
+    frozenIds = await resolveAudienceIds(sb, built as Parameters<typeof resolveAudienceIds>[1], brokerScope)
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Invalid selection' }
+  }
+  if (frozenIds.length === 0) return { ok: false, error: 'No contacts in your book match that selection' }
+
+  const parsedTid = templateIdRaw ? parseInt(templateIdRaw, 10) : NaN
+  const templateId: number | null = Number.isFinite(parsedTid) && parsedTid > 0 ? parsedTid : null
+
+  const { data, error } = await sb
+    .from('crm_scheduled_sends')
+    .insert({
+      kind: 'email-cohort',
+      selection: { ids: frozenIds },
+      // attachments ride in params so the worker's handler reads them exactly as
+      // it does on an immediate send. Scheduling predates batch attachments; a
+      // scheduled send that silently dropped the flyer would be worse than none.
+      params: {
+        templateId,
+        subject: subject || null,
+        body: body || null,
+        attachments: refs.items.length ? refs.items : null,
+      },
+      actor_email: access.email,
+      broker_scope: brokerScope,
+      scheduled_at: when.iso,
+      status: 'scheduled',
+    })
+    .select('id')
+    .single()
+
+  if (error || !data) return { ok: false, error: error?.message ?? 'Could not schedule the send' }
+  return { ok: true, id: Number((data as { id: number }).id), count: frozenIds.length, sendsAt: when.iso }
 }

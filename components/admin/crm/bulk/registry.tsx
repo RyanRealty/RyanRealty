@@ -29,6 +29,7 @@ import {
   bulkRemoveCollaboratorAction,
   bulkAddNewsletterAction,
   sendBatchEmailTestAction,
+  scheduleBulkEmailCohortAction,
 } from '@/app/actions/crm-bulk'
 import { bulkMergePeopleAction } from '@/app/actions/crm-person-gaps'
 import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
@@ -247,6 +248,8 @@ type EmailCohortValue = {
   body: string
   attachments: string
   recipients: BatchRecipientsState
+  /** Empty = send on Run. Set = hand it to the scheduled-sends cron. */
+  scheduledAt: string
 }
 
 function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohortValue>) {
@@ -327,6 +330,16 @@ function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohort
       </div>
       <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
       <BatchTestSend selection={ctx.selection} value={value} />
+      {/* Empty means send now, which is what Run has always done. The backend
+          (crm_scheduled_sends + the crm-scheduled-sends cron) already existed
+          and only /admin/email/compose could reach it. */}
+      <TextField
+        label="Send later (optional)"
+        type="datetime-local"
+        value={value.scheduledAt}
+        onChange={(e) => onChange({ ...value, scheduledAt: e.target.value })}
+        hint={value.scheduledAt ? 'Recipients are locked in when you schedule; opt-outs still drop at send time.' : 'Leave blank to send as soon as you press Run.'}
+      />
     </>
   )
 }
@@ -385,7 +398,7 @@ const emailCohort = defineBulkAction<EmailCohortValue>({
   id: 'email_cohort',
   title: 'Batch Email',
   jobKind: 'email-cohort',
-  initialValue: { templateId: '', subject: '', body: '', attachments: '', recipients: EMPTY_RECIPIENTS },
+  initialValue: { templateId: '', subject: '', body: '', attachments: '', recipients: EMPTY_RECIPIENTS, scheduledAt: '' },
   Fields: EmailCohortFields,
   validate: (v) => {
     const tId = v.templateId.trim()
@@ -403,6 +416,12 @@ const emailCohort = defineBulkAction<EmailCohortValue>({
   },
   run: async (v, sel) => {
     const tId = v.templateId.trim()
+    const content = {
+      templateId: tId || undefined,
+      subject: v.subject.trim() || undefined,
+      body: v.body || undefined,
+      attachments: v.attachments && v.attachments !== UPLOADING ? v.attachments : undefined,
+    }
     // Untouched, the original selection passes through so a saved-view or
     // "all matching" send still resolves at run time. Edited, the send becomes
     // exactly the people on screen.
@@ -410,15 +429,18 @@ const emailCohort = defineBulkAction<EmailCohortValue>({
       v.recipients.edited && !v.recipients.capped
         ? { mode: 'ids' as const, ids: (v.recipients.people ?? []).map((p) => p.id) }
         : sel
-    return {
-      mode: 'job',
-      result: await bulkEmailCohortAction(selection, {
-        templateId: tId || undefined,
-        subject: v.subject.trim() || undefined,
-        body: v.body || undefined,
-        attachments: v.attachments && v.attachments !== UPLOADING ? v.attachments : undefined,
-      }),
+
+    if (v.scheduledAt.trim()) {
+      const res = await scheduleBulkEmailCohortAction(selection, content, v.scheduledAt)
+      // A scheduled send has no bulk job to watch yet — the cron creates it at
+      // fire time — so it reports through the legacy result channel instead of
+      // handing the progress poller an id that does not exist.
+      return res.ok
+        ? { mode: 'legacy', result: { ok: true, assigned: res.count, skipped: 0 } }
+        : { mode: 'legacy', result: { ok: false, error: res.error } }
     }
+
+    return { mode: 'job', result: await bulkEmailCohortAction(selection, content) }
   },
 })
 
