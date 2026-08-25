@@ -55,8 +55,21 @@ interface ListingRow {
   TotalLivingAreaSqFt: number | null
   PhotoURL: string | null
   StandardStatus: string | null
-  CumulativeDaysOnMarket: number | null
+  OnMarketDate: string | null
   SubdivisionName: string | null
+}
+
+// The raw cumulative-days-on-market column is dead on this table (0 of 4,628
+// non-null on PropertyType='A' + StandardStatus='Active' rows, verified live
+// 2026-08-25). Every row this query returns is Active, so days on market is
+// simply the whole-day span from OnMarketDate to now.
+function daysOnMarketFrom(onMarketDate: string | null): number | null {
+  if (!onMarketDate) return null
+  const start = new Date(onMarketDate)
+  if (Number.isNaN(start.getTime())) return null
+  const diffMs = Date.now() - start.getTime()
+  if (diffMs < 0) return null
+  return Math.floor(diffMs / (24 * 60 * 60 * 1000))
 }
 
 function rowToCard(row: ListingRow): ListingCardData | null {
@@ -74,7 +87,7 @@ function rowToCard(row: ListingRow): ListingCardData | null {
     sqft: row.TotalLivingAreaSqFt,
     photoUrl: row.PhotoURL,
     statusLabel: row.StandardStatus,
-    daysOnMarket: row.CumulativeDaysOnMarket,
+    daysOnMarket: daysOnMarketFrom(row.OnMarketDate),
     subdivision: row.SubdivisionName,
   }
 }
@@ -95,7 +108,7 @@ export async function loadGolfFeaturedListings(): Promise<
       const { data, error } = await supabase
         .from('listings')
         .select(
-          '"ListingKey","ListNumber","StreetNumber","StreetName","City","ListPrice","BedroomsTotal","BathroomsTotal","TotalLivingAreaSqFt","PhotoURL","StandardStatus","CumulativeDaysOnMarket","SubdivisionName"',
+          '"ListingKey","ListNumber","StreetNumber","StreetName","City","ListPrice","BedroomsTotal","BathroomsTotal","TotalLivingAreaSqFt","PhotoURL","StandardStatus","OnMarketDate","SubdivisionName"',
         )
         .eq('PropertyType', 'A')
         .eq('"StandardStatus"', 'Active')

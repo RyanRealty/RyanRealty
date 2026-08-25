@@ -118,7 +118,7 @@ type ActiveListing = {
   BedroomsTotal: number | null
   BathroomsTotal: string | null
   TotalLivingAreaSqFt: string | null
-  CumulativeDaysOnMarket: number | null
+  daysOnMarket: number | null
   StandardStatus: string | null
   PhotoURL: string | null
 }
@@ -156,7 +156,7 @@ async function fetchActiveHeathInventory(): Promise<ActiveListing[]> {
       BedroomsTotal: t.beds ?? 0,
       BathroomsTotal: t.baths ?? 0,
       TotalLivingAreaSqFt: t.sqft ?? 0,
-      CumulativeDaysOnMarket: t.dom ?? 0,
+      daysOnMarket: t.dom ?? 0,
       StandardStatus: t.status,
       PhotoURL: t.photoUrl,
     })) as unknown as ActiveListing[]

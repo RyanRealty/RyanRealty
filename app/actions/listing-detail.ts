@@ -494,32 +494,33 @@ function mapRowToListing(row: AnyRow): ListingDetailListing {
   const now = new Date().toISOString()
   const listingKey = String(row.ListingKey ?? '').trim()
 
-  // Prefer typed columns, then Spark details, then derive for closed (CloseDate − on market) or active (vs now).
-  let dom =
-    safeNum(row.DaysOnMarket) ??
-    safeNum(d.DaysOnMarket)
-  let cdom =
-    safeNum(row.CumulativeDaysOnMarket) ??
-    safeNum(d.CumulativeDaysOnMarket)
-
   const statusLower = String(row.StandardStatus ?? '').toLowerCase()
   const isClosed = statusLower.includes('closed')
   const onMarketIso = row.OnMarketDate ?? row.ListDate ?? d.OnMarketDate ?? d.ListDate
   const closeIso = row.CloseDate ?? d.CloseDate
 
-  if (dom == null && isClosed && closeIso && onMarketIso) {
+  // The raw cumulative-days-on-market column is dead — 0 of 4,628 non-null on
+  // live Active SFR rows (verified 2026-08-25) — so derive days on market
+  // directly from OnMarketDate/CloseDate: closed listings get CloseDate −
+  // OnMarketDate, active listings get now − OnMarketDate. Never fall back to
+  // the also-banned raw DaysOnMarket column for this value.
+  let derivedDom: number | null = null
+  if (isClosed && closeIso && onMarketIso) {
     const end = new Date(closeIso)
     const start = new Date(onMarketIso)
     if (!Number.isNaN(end.getTime()) && !Number.isNaN(start.getTime()) && end >= start) {
-      dom = Math.max(0, Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)))
+      derivedDom = Math.max(0, Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)))
     }
-  } else if (dom == null && onMarketIso && !isClosed) {
+  } else if (!isClosed && onMarketIso) {
     const onMarket = new Date(onMarketIso)
     if (!Number.isNaN(onMarket.getTime())) {
-      dom = Math.max(0, Math.floor((Date.now() - onMarket.getTime()) / (24 * 60 * 60 * 1000)))
+      derivedDom = Math.max(0, Math.floor((Date.now() - onMarket.getTime()) / (24 * 60 * 60 * 1000)))
     }
   }
-  if (cdom == null) cdom = dom
+
+  // Prefer typed columns, then Spark details, then the OnMarketDate derivation above.
+  const dom = safeNum(row.DaysOnMarket) ?? safeNum(d.DaysOnMarket) ?? derivedDom
+  const cdom = derivedDom
 
   return {
     id: listingKey,

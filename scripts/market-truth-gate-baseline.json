@@ -23,12 +23,8 @@
     }
   },
   "cdomConsumer": {
-    "total": 7,
-    "byFile": {
-      "app/actions/listing-detail.ts": 2,
-      "app/lp/tetherow/heath/page.tsx": 2,
-      "data/golf/featured-listings.ts": 3
-    }
+    "total": 0,
+    "byFile": {}
   },
   "daysOnMarketConsumer": {
     "total": 0,
