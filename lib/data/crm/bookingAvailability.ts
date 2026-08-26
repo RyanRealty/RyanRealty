@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getGcalBusyIntervals } from '@/lib/google-calendar'
+import { zonedInstant } from '@/lib/booking/slots'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import type { BusyInterval } from '@/lib/booking/slots'
 
@@ -26,7 +27,10 @@ export async function getBrokerBusyIntervals(args: {
   brokerSlug: string
   fromIso: string
   toIso: string
+  /** Brokerage timezone. Blackout dates are LOCAL calendar days, not UTC ones. */
+  timeZone?: string
 }): Promise<BusyInterval[]> {
+  const timeZone = args.timeZone || 'America/Los_Angeles'
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('crm_appointments')
@@ -58,6 +62,33 @@ export async function getBrokerBusyIntervals(args: {
     const endMs = Date.parse(row.end_at)
     if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) continue
     out.push({ startMs, endMs })
+  }
+
+  // Explicitly blacked-out days (Matt 2026-08-26). All-day calendar events are
+  // skipped above because the TC system writes milestones that way, so a day
+  // off is stated here instead of guessed from an event title. Each blackout
+  // becomes one busy span covering the whole local day range, which the slot
+  // engine's overlap check then removes.
+  const { data: blackouts, error: blackoutErr } = await sb
+    .from('broker_booking_blackouts')
+    .select('starts_on, ends_on')
+    .eq('broker_slug', args.brokerSlug)
+    .lt('starts_on', args.toIso)
+    .gt('ends_on', args.fromIso)
+  if (blackoutErr) {
+    // Same posture as the appointments read: a blackout we could not verify
+    // must not become a bookable day.
+    console.error('[getBrokerBusyIntervals blackouts]', blackoutErr.message)
+    throw new Error('availability_unavailable')
+  }
+  for (const b of (blackouts ?? []) as Array<{ starts_on: string; ends_on: string }>) {
+    // LOCAL midnight, not UTC midnight. A blackout is a calendar day in the
+    // brokerage's timezone; building it from `T00:00:00Z` would shift the whole
+    // span by the UTC offset and blank out the wrong afternoon.
+    const start = zonedInstant(b.starts_on, 0, timeZone)
+    const end = zonedInstant(b.ends_on, 0, timeZone)
+    if (!start || !end || end.getTime() <= start.getTime()) continue
+    out.push({ startMs: start.getTime(), endMs: end.getTime() })
   }
 
   // Google Calendar for the same broker. A throw here propagates on purpose:

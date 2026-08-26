@@ -67,6 +67,7 @@ export default async function BookPage({
       brokerSlug,
       fromIso: now.toISOString(),
       toIso: horizon.toISOString(),
+      timeZone,
     })
     for (const dateKey of upcomingDateKeys(now, HORIZON_DAYS, timeZone)) {
       const slots = generateDaySlots({
