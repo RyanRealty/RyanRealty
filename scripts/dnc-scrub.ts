@@ -67,109 +67,40 @@ function arg(name: string): string | null {
 async function main() {
   const limitRaw = arg('limit')
   const dryRun = process.argv.includes('--dry-run')
+  const source = arg('source')
   const limit = Number(limitRaw)
   if (!limitRaw || !Number.isFinite(limit) || limit <= 0) {
     console.error('Refusing to run without an explicit --limit (this spends money per number).')
     process.exit(1)
   }
 
-  const { listUncheckedPhones, recordDncChecks } = await import('@/lib/data/crm/dncChecks')
-  const { scrubPhones, tagsForResult, MAX_PHONES_PER_REQUEST } = await import('@/lib/crm/dnc-scrub')
-  const { createServiceClient } = await import('@/lib/supabase/service')
-  const { addSuppression } = await import('@/lib/crm/suppressions')
+  const { listUncheckedPhones } = await import('@/lib/data/crm/dncChecks')
+  const { runDncScrub } = await import('@/lib/crm/dnc-scrub-run')
 
-  const source = arg('source')
-  const backlog = await withRetry('backlog read', () => listUncheckedPhones(limit, source))
-  console.log(`backlog pulled: ${backlog.length} number(s) (limit ${limit}${source ? `, source=${source}` : ''})`)
   if (dryRun) {
+    const backlog = await listUncheckedPhones(limit, source)
+    console.log(`backlog: ${backlog.length} number(s) (limit ${limit}${source ? `, source=${source}` : ''})`)
     console.log('DRY RUN — nothing sent, nothing spent. Sample:', backlog.slice(0, 5).join(', '))
     return
   }
-  if (backlog.length === 0) return
 
-  const sb = createServiceClient()
-  let answered = 0, flagged = 0, contactsSuppressed = 0, litigators = 0, litigatorChecked = 0, batchFailures = 0
+  // One shared implementation with the weekly cron, so a scrub applies flags
+  // the same way whoever starts it.
+  const r = await runDncScrub({ limit, source, onProgress: (m) => console.log('  ' + m) })
 
-  for (let i = 0; i < backlog.length; i += MAX_PHONES_PER_REQUEST) {
-    const batch = backlog.slice(i, i + MAX_PHONES_PER_REQUEST)
-    let results
-    try {
-      results = await withRetry(`scrub batch ${i / MAX_PHONES_PER_REQUEST + 1}`, () => scrubPhones(batch))
-    } catch (e) {
-      // A batch that will not settle is skipped, not fatal: those numbers stay
-      // UNCHECKED (never recorded clean) and the next run picks them up.
-      batchFailures++
-      console.error(`  batch ${i / MAX_PHONES_PER_REQUEST + 1} abandoned: ${e instanceof Error ? e.message.slice(0, 160) : e}`)
-      continue
-    }
-    answered += results.length
-    litigatorChecked += results.filter((r) => r.litigatorChecked).length
-    litigators += results.filter((r) => r.isLitigator).length
-    const wrote = await withRetry('record', () => recordDncChecks(results))
-    if (!wrote.ok) throw new Error(`record failed: ${wrote.error}`)
-
-    for (const r of results) {
-      const tags = tagsForResult(r)
-      if (tags.length === 0) continue
-      flagged++
-      // Every LIVE contact holding this number inherits the flag — the registry
-      // is a property of the number, and a spouse on the same line is equally
-      // off limits. Matched on DIGITS via crm_people_by_phone_last10: a jsonb
-      // containment filter was tried first and found 1 contact for 9 flagged
-      // numbers, because it needs the stored element to be byte-identical.
-      const { data: ids, error: idErr } = await sb.rpc('crm_people_by_phone_last10', { p_last10: r.phoneLast10 })
-      if (idErr) throw new Error(`holder lookup failed for ${r.phoneLast10}: ${idErr.message}`)
-      const holderIds = ((ids ?? []) as Array<{ person_id: number }>).map((x) => x.person_id)
-      const { data: holders } = await sb.from('crm_people').select('id,tags').in('id', holderIds.length ? holderIds : [-1])
-      for (const p of (holders ?? []) as Array<{ id: number; tags: string[] | null }>) {
-        const next = [...new Set([...(p.tags ?? []), ...tags])]
-        const { error: tagErr } = await sb
-          .from('crm_people')
-          .update({ tags: next, updated_at: new Date().toISOString() })
-          .eq('id', p.id)
-        if (tagErr) throw new Error(`tagging ${p.id} failed: ${tagErr.message}`)
-
-        // addSuppression is the canonical writer: it also enqueues removal from
-        // the Meta custom audience, which a DNC contact must leave. A raw upsert
-        // was tried first and failed silently — crm_suppressions has no unique
-        // constraint on (person_id, channel, reason), so onConflict had nothing
-        // to target and every row errored while the script reported success.
-        // It plain-inserts, so the existence check is ours to do.
-        for (const channel of ['call', 'sms'] as const) {
-          const { data: existing } = await sb
-            .from('crm_suppressions')
-            .select('id')
-            .eq('person_id', p.id)
-            .eq('channel', channel)
-            .eq('reason', 'do-not-call')
-            .maybeSingle()
-          if (!existing) {
-            await addSuppression({
-              personId: p.id, channel, reason: 'do-not-call',
-              source: 'batchdata-dnc-scrub', value: r.phoneLast10,
-            })
-          }
-        }
-        contactsSuppressed++
-      }
-    }
-    console.log(`  batch ${i / MAX_PHONES_PER_REQUEST + 1}: asked ${batch.length}, answered ${results.length}`)
-  }
-
-  const unanswered = backlog.length - answered
-  console.log(`\nasked      ${backlog.length}`)
-  console.log(`answered   ${answered}  (recorded)`)
-  console.log(`no answer  ${unanswered}  (left UNCHECKED on purpose — not recorded as clean)`)
-  console.log(`on registry ${flagged}  -> ${contactsSuppressed} contact(s) tagged + suppressed`)
-  console.log(`litigator   ${litigators} of ${litigatorChecked} answered`)
-  if (litigatorChecked > 0 && litigators === 0) {
+  console.log(`\nasked      ${r.asked}`)
+  console.log(`answered   ${r.answered}  (recorded)`)
+  console.log(`no answer  ${r.asked - r.answered}  (left UNCHECKED on purpose — not recorded as clean)`)
+  console.log(`on registry ${r.onRegistry}  -> ${r.contactsFlagged} contact(s) tagged + suppressed`)
+  console.log(`litigator   ${r.litigators} of ${r.litigatorChecked} answered`)
+  if (r.litigatorChecked > 0 && r.litigators === 0) {
     console.log('  note: zero litigator hits. Expected on a small batch (they are rare);')
     console.log('  if this holds across thousands, ask BatchData whether the product is enabled.')
   }
-  if (batchFailures > 0) {
-    console.log(`\nBATCHES ABANDONED: ${batchFailures} — those numbers are still unchecked; re-run to pick them up.`)
+  if (r.batchesAbandoned > 0) {
+    console.log(`\nBATCHES ABANDONED: ${r.batchesAbandoned} — those numbers are still unchecked; re-run to pick them up.`)
   }
-  console.log(`\nAt roughly $0.02-0.05/number this batch cost about $${(answered * 0.03).toFixed(2)}.`)
+  console.log(`\nAt roughly $0.02-0.05/number this batch cost about $${(r.answered * 0.03).toFixed(2)}.`)
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1) })
