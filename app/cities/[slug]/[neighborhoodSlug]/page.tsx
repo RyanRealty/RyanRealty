@@ -118,6 +118,8 @@ import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
 import { lifestyleNearLatLng } from '@/lib/explore/lifestyle-near'
 import { mapCentroid } from '@/lib/explore/subdivision-page-extras'
 import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
+import { PlaceDocuments } from '@/components/site/PlaceDocuments'
+import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
 import { buildNeighborhoodSchemas } from './neighborhood-schemas'
@@ -201,6 +203,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     inventoryRead,
     publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly, publicMix,
     nbhOverlays,
+    placeDocuments,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     // Hot-path core figures (HUD, about facts, FAQ): a build timeout would
@@ -281,6 +284,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       3000,
       'nbh:detachedOverlay',
     ),
+      // metricNeighborhoodSlug, NOT the route param. The route serves 13 Bend
+    // districts under short slugs ("mountain-view") while the boundary row that
+    // carries the documents is "bend-mountain-view", and a resort neighborhood
+    // resolves differently again. Every other neighborhood read on this page
+    // uses the resolved slug; using the raw param here would silently find
+    // nothing and look exactly like "this place has no CC&Rs".
+    withTimeoutFallback(getPlaceDocuments('neighborhood', metricNeighborhoodSlug), [], 4000, 'nbh:documents'),
   ])
   const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -637,6 +647,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           eyebrow={`${neighborhood.name} · Lifestyle`}
           title="Parks, trails, golf, and events nearby"
         />
+        <PlaceDocuments displayName={neighborhood.name} documents={placeDocuments} />
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
         {/* Open houses + the feed are fetched city-wide (the MLS carries no
             neighborhood scope on either), so they are labeled with the city (§0). */}

@@ -131,6 +131,8 @@ import { KbSchools } from '@/components/site/kb/KbSchools'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'; import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
+import { PlaceDocuments } from '@/components/site/PlaceDocuments'
+import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { kbMoneyFull } from '@/components/site/kb/types'
@@ -285,6 +287,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
     publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly, publicMix,
     commOverlays,
+    placeDocuments,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -382,6 +385,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       3000,
       'comm:detachedOverlay',
     ),
+      withTimeoutFallback(getPlaceDocuments('community', slug), [], 4000, 'comm:documents'),
   ])
   const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -889,6 +893,7 @@ export default async function CommunityDetailPage({ params }: Props) {
             getDistrictForCity(). Specific school names/attendance zones are NOT
             shown because per-address boundary data is not in the system. (§0) */}
         <KbSchools communityName={community.name} districtName={schoolDistrictInfo?.district ?? null} districtSlug={schoolDistrictInfo?.districtSlug ?? null} />
+        <PlaceDocuments displayName={community.name} documents={placeDocuments} />
         <CommunityGolfLinks communitySlug={slug} communityName={community.name} />
         <KbArticles
           posts={articlePosts}
