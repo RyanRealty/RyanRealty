@@ -62,6 +62,7 @@ export interface PlaceDocument {
 
 type LinkRow = {
   match_method?: string | null
+  geo_slug?: string | null
   place_document?: {
     id?: string | null
     source?: string | null
@@ -215,37 +216,25 @@ export function documentKindLabel(kind: PlaceDocumentKind): string {
   }
 }
 
-async function fetchPlaceDocuments(geoType: string, geoSlug: string): Promise<PlaceDocument[]> {
-  const slug = geoSlug.trim()
-  const type = geoType.trim()
-  if (!slug || !type) return []
+/** Every column the renderer needs, in the shape both reads select. */
+const LINK_SELECT =
+  'match_method, place_document!inner(id, source, published_name, doc_kind, recording_ref, recording_type, book, page, instrument_number, recording_year, publisher, document_date, county, storage_path, file_bytes, page_count)'
 
-  const supabase = supabaseAnon()
-  if (!supabase) return []
-
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
-  if (!base) return []
-
-  const { data, error } = await supabase
-    .from('place_document_link')
-    .select(
-      'match_method, place_document!inner(id, source, published_name, doc_kind, recording_ref, recording_type, book, page, instrument_number, recording_year, publisher, document_date, county, storage_path, file_bytes, page_count)',
-    )
-    .eq('geo_type', type)
-    .eq('geo_slug', slug)
-    .eq('status', 'published')
-
-  if (error) {
-    // Thrown, never swallowed: a read that discards its error renders a hard
-    // failure as a confident "this place has no CC&Rs on file", which is the
-    // exact false-absence D13 and R3 exist to prevent.
-    throw new Error(`place_document_link read failed for ${type}/${slug}: ${error.message}`)
-  }
-
-  const out: PlaceDocument[] = []
-  for (const row of (data ?? []) as LinkRow[]) {
+/**
+ * Link rows -> renderable documents, deduplicated by instrument.
+ *
+ * The dedupe is load-bearing for the by-label read: one recorded declaration is
+ * routinely linked to several plats, and where a label is shared by more than
+ * one plat (the county files three separate plats as "Bend") the same
+ * instrument comes back once per plat. A buyer must see one document, not three
+ * copies of it.
+ */
+function mapLinkRows(rows: LinkRow[], base: string): PlaceDocument[] {
+  const byId = new Map<string, PlaceDocument>()
+  for (const row of rows) {
     const d = row.place_document
     if (!d?.id || !d.storage_path || !d.recording_ref) continue
+    if (byId.has(d.id)) continue
     const kind = d.doc_kind as PlaceDocumentKind
     if (!PUBLISHABLE_KINDS.includes(kind)) continue
     const recordingType =
@@ -255,7 +244,7 @@ async function fetchPlaceDocuments(geoType: string, geoSlug: string): Promise<Pl
         ? d.recording_type
         : 'unparsed'
     const attribution = SOURCE_ATTRIBUTION[d.source ?? '']
-    out.push({
+    byId.set(d.id, {
       id: d.id,
       publishedName: (d.published_name ?? '').trim(),
       kind,
@@ -275,7 +264,100 @@ async function fetchPlaceDocuments(geoType: string, geoSlug: string): Promise<Pl
       pageCount: d.page_count ?? null,
     })
   }
-  return sortPlaceDocuments(out)
+  return sortPlaceDocuments([...byId.values()])
+}
+
+async function fetchPlaceDocuments(geoType: string, geoSlug: string): Promise<PlaceDocument[]> {
+  const slug = geoSlug.trim()
+  const type = geoType.trim()
+  if (!slug || !type) return []
+
+  const supabase = supabaseAnon()
+  if (!supabase) return []
+
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!base) return []
+
+  const { data, error } = await supabase
+    .from('place_document_link')
+    .select(LINK_SELECT)
+    .eq('geo_type', type)
+    .eq('geo_slug', slug)
+    .eq('status', 'published')
+
+  if (error) {
+    // Thrown, never swallowed: a read that discards its error renders a hard
+    // failure as a confident "this place has no CC&Rs on file", which is the
+    // exact false-absence D13 and R3 exist to prevent.
+    throw new Error(`place_document_link read failed for ${type}/${slug}: ${error.message}`)
+  }
+
+  return mapLinkRows((data ?? []) as LinkRow[], base)
+}
+
+/** The documents for a plat, plus the plat slug they were found under. */
+export interface PlatDocumentSet {
+  geoSlug: string
+  documents: PlaceDocument[]
+}
+
+/**
+ * PostgREST relays the Postgres SQLSTATE. 42703 is undefined_column, which for
+ * this read means one thing only: `place_document_link.geo_label` has not been
+ * added yet. That is "ask the other way", not a failure — the caller falls back
+ * to the slug path — so it is the ONE error this read is allowed to absorb.
+ */
+const UNDEFINED_COLUMN = '42703'
+
+/**
+ * Documents for a plat matched by its LABEL rather than its slug.
+ *
+ * `listings.boundary_subdivision` carries `boundaries.geo_label` verbatim, so
+ * this compares the string the listing holds against the string the link row
+ * holds — no derivation in between. See getPlaceDocumentsForListing for why the
+ * derivation it replaces was wrong on 202 of 3,218 plats.
+ *
+ * Returns null when nothing matches, so the caller can tell "no label match" from
+ * "matched a plat that has no documents" and fall back accordingly.
+ */
+async function fetchPlaceDocumentsByLabel(
+  geoType: string,
+  geoLabel: string,
+): Promise<PlatDocumentSet | null> {
+  const label = geoLabel.trim()
+  const type = geoType.trim()
+  if (!label || !type) return null
+
+  const supabase = supabaseAnon()
+  if (!supabase) return null
+
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!base) return null
+
+  const { data, error } = await supabase
+    .from('place_document_link')
+    .select(`geo_slug, ${LINK_SELECT}`)
+    .eq('geo_type', type)
+    .eq('geo_label', label)
+    .eq('status', 'published')
+
+  if (error) {
+    if (error.code === UNDEFINED_COLUMN) return null
+    throw new Error(`place_document_link label read failed for ${type}/${label}: ${error.message}`)
+  }
+
+  const rows = (data ?? []) as LinkRow[]
+  const documents = mapLinkRows(rows, base)
+  if (documents.length === 0) return null
+
+  // One label can name more than one recorded plat. The documents are the union
+  // (deduplicated above); the slug is only the "see the plat" destination, so it
+  // is picked deterministically — the same label always links to the same page.
+  const slugs = rows.map((r) => (r.geo_slug ?? '').trim()).filter(Boolean).sort()
+  const geoSlug = slugs[0] ?? ''
+  if (!geoSlug) return null
+
+  return { geoSlug, documents }
 }
 
 /**
@@ -287,4 +369,12 @@ export const getPlaceDocuments = makeResilientCached(
   ['place-documents-v1'],
   { revalidate: CACHE_WINDOWS.marketStats, tags: [cacheTag.market] },
   [],
+)
+
+/** Cached 6h, same as the slug read — the same rows under a different key. */
+export const getPlaceDocumentsByPlatLabel = makeResilientCached(
+  fetchPlaceDocumentsByLabel,
+  ['place-documents-by-label-v1'],
+  { revalidate: CACHE_WINDOWS.marketStats, tags: [cacheTag.market] },
+  null as PlatDocumentSet | null,
 )

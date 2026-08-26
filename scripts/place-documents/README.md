@@ -45,6 +45,7 @@ node --env-file=.env.local scripts/place-documents/classify.mjs
 node --env-file=.env.local scripts/place-documents/foreign-association.mjs --apply
 node --env-file=.env.local scripts/place-documents/regate.mjs
 node --env-file=.env.local scripts/place-documents/two-signal-publish.mjs --apply
+node --env-file=.env.local scripts/place-documents/backfill-geo-label.mjs
 npm run ci:place-documents
 ```
 
@@ -59,7 +60,33 @@ npm run ci:place-documents
 | `foreign-association` | Flags a document whose front matter names only associations foreign to the plat. This is what caught Crooked Horseshoe on Indian Ford Meadows |
 | `regate` | Applies the publish policy both ways: demotes anything that now fails, promotes exact matches whose document names the plat |
 | `two-signal-publish` | Clears parent matches carrying two independent confirmations |
-| `verify` | `ci:place-documents`. Asserts no published link is a non-governing instrument or unconfirmed-and-unreviewed |
+| `backfill-geo-label` | Stamps each link with its plat's `boundaries.geo_label`, so a listing page can match the label its own row carries instead of re-deriving the slug — see below |
+| `verify` | `ci:place-documents`. Asserts no published link is a non-governing instrument, unconfirmed-and-unreviewed, or unreachable from a listing page |
+
+## Why the link row carries the plat's label
+
+`listings.boundary_subdivision` holds `boundaries.geo_label` verbatim —
+`refresh_listing_boundary_tags` copies the label and throws the slug away. The
+listing page therefore used to re-derive the slug by running lib/slug.ts
+`slugify()` over that label, and `slugify()` is not the function that minted
+`geo_slug`. Measured 2026-08-26 over all 3,218 `geo_type='subdivision'` rows, it
+fails to reproduce the slug on **202** of them:
+
+- **187 punctuation.** `geo_slug` turns `&` into `and` and every other
+  non-alphanumeric run into a hyphen; `slugify()` deletes them.
+  `Redmond Vacation Alley Blocks 1 & 20` is
+  `redmond-vacation-alley-blocks-1-and-20`, slugify says
+  `redmond-vacation-alley-blocks-1-20`. 98 listing rows across 53 labels sit on
+  one of these plats.
+- **15 duplicated labels.** The county files more than one plat under one name,
+  so all but one carry a numeric suffix: `Bend` is `bend`, `bend-05281` **and**
+  `bend-16913`. In every one of the 13 duplicated groups a row holds the bare
+  slug, so those 15 plats resolved onto a real, DIFFERENT recorded plat — not,
+  as the old comment claimed, onto nothing.
+
+Only `Evergreen Park` among the 15 has a published document today, and its
+collision target is linked to the same instrument, so nothing wrong ever reached
+a page. That is the corpus, not the code. `geo_label` removes the derivation.
 
 ## What decides whether a document publishes
 
