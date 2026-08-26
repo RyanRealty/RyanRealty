@@ -48,7 +48,7 @@ export interface HealthSignals {
   /** Outbound SMS send attempts in the trailing window (sms_out timeline rows). */
   smsSendAttempts24h: number
   /** New crm_people leads created in the trailing 24h (across every source). */
-  newLeads24h: number
+  newLeads48h: number
   /** Twilio API reachability with the configured creds. false = creds present
    *  but the account call failed (rotated/invalid token → all inbound webhooks
    *  403 + all outbound blocked). null = creds not configured (skip the rule). */
@@ -140,14 +140,18 @@ export function evaluateHealthRules(signals: HealthSignals): { alarms: HealthAla
   }
 
   // Rule 5: lead volume cratered.
-  // Zero new leads in a full day, across every source, is a strong signal that
-  // capture broke upstream (LP form, webhook, native capture) rather than a quiet day.
-  if (signals.newLeads24h <= 0) {
+  // TWO full days, not one. Measured 2026-08-26: 5.4 new leads a day on average,
+  // range 0 to 16, and exactly ONE zero-day in the trailing 30. A single quiet day
+  // is ordinary here, so firing on it produced a false alarm that trains the reader
+  // to ignore the alert — the failure mode an alert cannot afford. Two consecutive
+  // silent days is genuinely abnormal and still catches a broken form or webhook
+  // inside two days.
+  if (signals.newLeads48h <= 0) {
     alarms.push({
       key: 'lead-volume-cratered',
       severity: 'warning',
       message:
-        'No new leads in the last 24 hours from any source. Lead capture may be broken upstream (landing-page forms, webhooks, or native capture).',
+        'No new leads in the last 48 hours from any source. Two silent days is well outside normal volume, so lead capture is likely broken upstream (landing-page forms, webhooks, or native capture).',
     })
   }
 

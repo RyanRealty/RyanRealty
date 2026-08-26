@@ -17,7 +17,7 @@ function healthy(): HealthSignals {
     hoursSinceLastInbound: 0.5,
     a2pStatus: 'VERIFIED',
     smsSendAttempts24h: 12,
-    newLeads24h: 4,
+    newLeads48h: 4,
     twilioReachable: true,
     geoSmartLists: [],
     mvLagDays: 0,
@@ -104,14 +104,14 @@ describe('evaluateHealthRules', () => {
 
   describe('rule: lead volume cratered', () => {
     it('fires when zero new leads in 24h', () => {
-      const alarm = evaluateHealthRules({ ...healthy(), newLeads24h: 0 }).alarms.find(
+      const alarm = evaluateHealthRules({ ...healthy(), newLeads48h: 0 }).alarms.find(
         (a) => a.key === 'lead-volume-cratered',
       )
       expect(alarm).toBeDefined()
       expect(alarm?.severity).toBe('warning')
     })
     it('clears with at least one new lead', () => {
-      expect(keys({ ...healthy(), newLeads24h: 1 })).not.toContain('lead-volume-cratered')
+      expect(keys({ ...healthy(), newLeads48h: 1 })).not.toContain('lead-volume-cratered')
     })
   })
 
@@ -199,7 +199,7 @@ describe('evaluateHealthRules', () => {
         hoursSinceLastInbound: null,
         a2pStatus: 'FAILED',
         smsSendAttempts24h: 3,
-        newLeads24h: 0,
+        newLeads48h: 0,
         mvLagDays: 0,
         mvRefreshAgeHours: 0.2,
         twilioReachable: false,
@@ -220,7 +220,7 @@ describe('evaluateHealthRules', () => {
         hoursSinceLastInbound: null,
         a2pStatus: 'FAILED',
         smsSendAttempts24h: 3,
-        newLeads24h: 0,
+        newLeads48h: 0,
         twilioReachable: false,
         geoSmartLists: [{ id: 9, name: 'Bad list', exactCount: 0, signalCount: 100 }],
         mvLagDays: 8,
@@ -241,7 +241,7 @@ describe('rule 8: listing_tile_mv staleness', () => {
     hoursSinceLastInbound: 0.5,
     a2pStatus: 'VERIFIED',
     smsSendAttempts24h: 12,
-    newLeads24h: 4,
+    newLeads48h: 4,
     twilioReachable: true,
     geoSmartLists: [],
     mvLagDays: 0,

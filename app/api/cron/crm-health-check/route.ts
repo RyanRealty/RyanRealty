@@ -122,7 +122,11 @@ export async function GET(request: Request) {
 
   const inboundSince = new Date(now.getTime() - INBOUND_LOOKBACK_HOURS * 3600 * 1000).toISOString()
   const sendSince = new Date(now.getTime() - SEND_LOOKBACK_HOURS * 3600 * 1000).toISOString()
-  const leadSince = new Date(now.getTime() - 24 * 3600 * 1000).toISOString()
+  // 48h, not 24h. Matt averages 5.4 new leads a day with a normal range of 0 to 16,
+  // and had exactly ONE zero-day in the last 30 — so a single quiet day is ordinary
+  // and firing on it taught him to ignore the alert. Two consecutive silent days is
+  // not ordinary, and still catches a genuine capture break inside two days.
+  const leadSince = new Date(now.getTime() - 48 * 3600 * 1000).toISOString()
 
   // ── Gather the vitals (each read independent; one failure does not block the
   // others — a read error degrades to the "unknown" value that rule already
@@ -148,7 +152,7 @@ export async function GET(request: Request) {
       .select('id', { count: 'exact', head: true })
       .eq('kind', 'sms_out')
       .gte('ts', sendSince),
-    // New leads created in the trailing 24h (any source).
+    // New leads created in the trailing 48h (any source).
     sb
       .from('crm_people')
       .select('id', { count: 'exact', head: true })
@@ -202,7 +206,7 @@ export async function GET(request: Request) {
     hoursSinceLastInbound,
     a2pStatus,
     smsSendAttempts24h: smsOut24h.count ?? 0,
-    newLeads24h: newLeads24h.count ?? 0,
+    newLeads48h: newLeads24h.count ?? 0,
     twilioReachable,
     geoSmartLists,
     mvLagDays,
