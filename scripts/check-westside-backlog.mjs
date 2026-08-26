@@ -52,20 +52,27 @@ checks.push({
   ok: popular.includes('href="/luxury-homes-bend"'),
 })
 
+// Both index pages moved onto components/site/v3 (2026-08-26), where an
+// outbound edge is a `{ label, href }` item rather than an anchor attribute.
+// What this gate locks is that the two indexes still LINK the luxury page
+// through the shared builder, so it accepts either spelling of the href. It
+// does not lock which register renders it.
+const LUXURY_HREF = /href\s*[:=]\s*["']\/luxury-homes-bend["']/
+
 const cities = src('app/cities/page.tsx')
 const cityLinks = src('app/cities/CityFeaturedLinks.tsx')
 checks.push({
   label: 'cities index Bend row links /luxury-homes-bend',
   ok:
-    cities.includes('CityFeaturedLinks') &&
-    cityLinks.includes('href="/luxury-homes-bend"') &&
+    /cityFeaturedLinks/i.test(cities) &&
+    LUXURY_HREF.test(cityLinks) &&
     cityLinks.includes("slug === 'bend'"),
 })
 
 const communities = src('app/communities/page.tsx')
 checks.push({
   label: 'communities index links /luxury-homes-bend',
-  ok: communities.includes('href="/luxury-homes-bend"'),
+  ok: LUXURY_HREF.test(communities),
 })
 
 const template = src('lib/crm/review-ask.ts')

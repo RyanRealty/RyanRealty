@@ -35,6 +35,7 @@
  * and timezone in one place and keeps every rendered string identical to the one its
  * source trace covers.
  */
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
@@ -104,6 +105,15 @@ type V3LedgerRowBase = {
    * substitute for `what`.
    */
   ariaLabel?: V3Text
+  /**
+   * The row opens a file or a site we do not own, so it opens in a new tab. One
+   * flag rather than a `target` plus a `rel`, because the pair is what makes the
+   * new tab safe: `target="_blank"` without `rel="noopener"` hands the opened
+   * document a handle on this one. A caller cannot get half of it right.
+   *
+   * Default off. An internal door stays in the tab the visitor is already in.
+   */
+  newTab?: boolean
 }
 
 /**
@@ -171,6 +181,19 @@ type V3LedgerBase = {
   note?: V3Text
   /** The one ask this list earns, if it earns one. Ghost by default: the rows are the point. */
   action?: V3LedgerAction
+  /**
+   * The caveat that belongs to these rows, under the list. `note` states the
+   * basis before a visitor reads the list; this states what the list does not
+   * establish after they have.
+   *
+   * A ReactNode, not text, for one reason: a provenance caveat usually ends by
+   * naming the index the rows were copied from, and that name is a link. Splitting
+   * it out would either drop the attribution or turn the last sentence of a caveat
+   * into a control. Nothing here computes an accessible name, which is why this is
+   * the one slot in the pattern that is not `V3Text`: put prose and at most a plain
+   * link in it, never a button, a heading, or a figure.
+   */
+  footnote?: ReactNode
   /** Sets the section id and, from it, the heading id used by aria-labelledby. */
   id?: string
   className?: string
@@ -252,6 +275,7 @@ export function V3Ledger(props: V3LedgerProps) {
     updated,
     emptyMessage,
     action,
+    footnote,
     id,
     className,
   } = props
@@ -301,6 +325,8 @@ export function V3Ledger(props: V3LedgerProps) {
                 href={row.href}
                 className="v3-ledger__row"
                 aria-label={row.ariaLabel}
+                target={row.newTab ? '_blank' : undefined}
+                rel={row.newTab ? 'noopener noreferrer' : undefined}
               >
                 <span className="v3-ledger__when">{row.when}</span>
                 <span
@@ -335,6 +361,8 @@ export function V3Ledger(props: V3LedgerProps) {
           ))}
         </ul>
       )}
+
+      {footnote ? <p className="v3-ledger__footnote">{footnote}</p> : null}
 
       {trace ? (
         <V3SourceLine source={trace} className="v3-ledger__source" />

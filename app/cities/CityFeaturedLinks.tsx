@@ -1,29 +1,22 @@
-type CityFeaturedLinksProps = {
-  slug: string
-  name: string
-}
+import type { V3QuietItem } from '@/components/site/v3'
 
-const linkClass = 'underline-offset-4 hover:underline'
-const linkStyle = { color: 'var(--navy)' } as const
-
-/** Guide / inventory / open-house links; Bend also points at /luxury-homes-bend. */
-export function CityFeaturedLinks({ slug, name }: CityFeaturedLinksProps) {
-  return (
-    <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
-      <a href={`/cities/${slug}`} className={linkClass} style={linkStyle}>
-        {name} guide
-      </a>
-      <a href={`/homes-for-sale/${slug}`} className={linkClass} style={linkStyle}>
-        Homes for sale
-      </a>
-      <a href={`/open-houses/${slug}`} className={linkClass} style={linkStyle}>
-        Open houses
-      </a>
-      {slug === 'bend' ? (
-        <a href="/luxury-homes-bend" className={linkClass} style={linkStyle}>
-          Luxury homes
-        </a>
-      ) : null}
-    </div>
-  )
+/**
+ * The doors every featured city carries: its guide, its inventory, its open
+ * houses, and for Bend the luxury page (G7, ci:westside-backlog).
+ *
+ * It returns Quiet items rather than markup. The cities index is a Ledger of
+ * cities and a Ledger row is ONE door by definition (PUBLIC_UI.md section 3),
+ * so the second, third and fourth door per city belong in the block that
+ * carries this node's outbound edges. The set itself did not change.
+ */
+export function cityFeaturedLinks(slug: string, name: string): V3QuietItem[] {
+  const items: V3QuietItem[] = [
+    { label: `${name} guide`, href: `/cities/${slug}` },
+    { label: `Homes for sale in ${name}`, href: `/homes-for-sale/${slug}` },
+    { label: `Open houses in ${name}`, href: `/open-houses/${slug}` },
+  ]
+  if (slug === 'bend') {
+    items.push({ label: 'Luxury homes in Bend', href: '/luxury-homes-bend' })
+  }
+  return items
 }

@@ -1,14 +1,29 @@
-// @no-parity — place-family index, reuses the /communities KB index language
+// @no-parity — place-family index, built from the v3 barrel like /neighborhoods
 /**
- * Subdivisions index — same KB index language as /communities.
+ * Subdivisions index — recorded plats across Central Oregon, on
+ * components/site/v3.
+ *
+ * PUBLIC_UI.md (locked 2026-08-11) section 3:
+ *
+ *   Instrument  the live answer: homes for sale across these plats, and how
+ *               many plats are in the index.
+ *   Ledger      one row per featured plat, every row a door.
+ *   Sheet       the A-to-Z browser: a filter set over the full index. It is the
+ *               pre-barrel client component (components/community/
+ *               CommunityIndexBrowser); the pattern it serves is Sheet, and it
+ *               is not re-skinned in this pass.
+ *   Quiet       the outbound edges, including the Oregon Data Share citation
+ *               that MarketSources used to carry.
+ *
  * Featured rows and the A-to-Z list are recorded child plats from the
  * community registry (not marketing community slugs). The county-wide
  * indexable set still feeds the sitemap. It is too heavy to render here.
+ *
+ * MetadataBlock stays: JSON-LD is not visual language, and ci:ai-structured-data
+ * pins this route to it by name.
  */
 
 import type { Metadata } from 'next'
-import Image from 'next/image'
-import Link from 'next/link'
 import {
   getSurfaceImages,
   pickSurfaceImage,
@@ -19,17 +34,28 @@ import {
 } from '@/lib/data/geo/plat-public-inventory'
 import { communityImage, cityHero } from '@/lib/geo-images'
 import { publishFeaturedPlats } from '@/lib/market/publish-featured-plat-inventory'
+import { formatCount } from '@/lib/format/count'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { MarketSources } from '@/components/site/MarketSources'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import {
+  V3Breadcrumb,
+  V3Footer,
+  V3Heading,
+  V3Instrument,
+  V3Lede,
+  V3Ledger,
+  V3Quiet,
+  V3SectionTracker,
+  V3_FOOTER_COLUMNS,
+  V3_ROOT_CLASS,
+  v3Text,
+  type V3InstrumentFigure,
+  type V3LedgerFigureRow,
+  type V3LedgerPlainRow,
+} from '@/components/site/v3'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import '@/components/site/kb/kb.css'
 
 export const revalidate = 1800
 
@@ -41,6 +67,17 @@ export const metadata: Metadata = pageMetadata({
     'Recorded plats across Central Oregon with live single-family inventory from the regional MLS.',
   path: '/subdivisions',
 })
+
+/**
+ * The section 0 traces. The plat population is named because three other reads
+ * once answered the same question differently (plat-public-inventory's header,
+ * the Ridge At Eagle Crest 12 / 14 / 26 split).
+ */
+const LEDGER_TRACE =
+  'live MLS through Oregon Data Share, active single-family listings filed under each plat name (Active and Active Under Contract, Coming Soon excluded). The median is the list price of those same listings'
+
+const PULSE_TRACE =
+  'live MLS through Oregon Data Share, single-family active inventory on recorded plats inside the known communities'
 
 function fmtPrice(n: number | null | undefined): string | null {
   return formatIndexMedianUsd(n)
@@ -92,8 +129,8 @@ export default async function SubdivisionsPage() {
         slug: p.slug,
         name: p.name,
         city: p.city,
-                activeCount: inventoryOk ? (inv?.activeCount ?? 0) : 0,
-                href: `/subdivisions/${p.slug}`,
+        activeCount: inventoryOk ? (inv?.activeCount ?? 0) : 0,
+        href: `/subdivisions/${p.slug}`,
       },
     ]
   })
@@ -102,6 +139,43 @@ export default async function SubdivisionsPage() {
     ? azSource.reduce((sum, p) => sum + (p.activeCount ?? 0), 0)
     : null
   const platCount = azSource.length
+
+  const rowBase = featured.map((p) => ({
+    id: p.slug,
+    href: p.href,
+    when: v3Text(`${p.parent} · ${p.city} · Oregon`),
+    what: v3Text(p.name),
+    detail: (() => {
+      const median = fmtPrice(p.medianPrice)
+      const bits = [median ? `Median list ${median}` : null, p.sentence].filter(Boolean)
+      return bits.length > 0 ? v3Text(bits.join(' · ')) : undefined
+    })(),
+    // A curated photograph of the parent community only. The pooled city frame
+    // is a fallback, and the Ledger's media slot takes no fallbacks.
+    media: p.photoIsPlat ? { src: p.photoSrc } : undefined,
+    ariaLabel: v3Text(`Homes for sale in ${p.name}, ${p.city} Oregon`),
+  }))
+
+  // A degraded inventory read publishes no counts at all rather than a column
+  // of zeros that would each read as "nothing for sale here".
+  const figureRows: V3LedgerFigureRow[] = rowBase.map((row, i) => ({
+    ...row,
+    value: v3Text(`${formatCount(featured[i]?.activeCount ?? 0)} for sale`),
+  }))
+  const plainRows: V3LedgerPlainRow[] = rowBase
+
+  const figures: V3InstrumentFigure[] = []
+  if (totalActive != null && totalActive > 0) {
+    figures.push({
+      value: v3Text(formatCount(totalActive)),
+      label: v3Text('Homes for sale across these plats'),
+    })
+  }
+  figures.push({
+    value: v3Text(formatCount(platCount)),
+    label: v3Text('Community plats in this index'),
+  })
+  const [leadFigure, ...restFigures] = figures
 
   const schemas: SchemaInput[] = [
     {
@@ -113,260 +187,124 @@ export default async function SubdivisionsPage() {
     },
   ]
 
+  const [firstFigureRow, ...restFigureRows] = figureRows
+  const [firstPlainRow, ...restPlainRows] = plainRows
+
   return (
-    <main className="kb-root">
-      <KbSectionTracker />
-      <MetadataBlock schemas={schemas} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            name: 'Central Oregon subdivisions',
-            description:
-              'Recorded plats across Central Oregon, with live MLS inventory.',
-            url: `${siteUrl}/subdivisions`,
-            publisher: { '@type': 'Organization', name: 'Ryan Realty' },
-            mainEntity: {
-              '@type': 'ItemList',
-              itemListElement: featured.map((p, i) => ({
-                '@type': 'ListItem',
-                position: i + 1,
-                name: `${p.name}, ${p.city}, Oregon`,
-                url: `${siteUrl}${p.href}`,
-              })),
-            },
-          }),
-        }}
-      />
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <V3SectionTracker />
+        <MetadataBlock schemas={schemas} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'CollectionPage',
+              name: 'Central Oregon subdivisions',
+              description:
+                'Recorded plats across Central Oregon, with live MLS inventory.',
+              url: `${siteUrl}/subdivisions`,
+              publisher: { '@type': 'Organization', name: 'Ryan Realty' },
+              mainEntity: {
+                '@type': 'ItemList',
+                itemListElement: featured.map((p, i) => ({
+                  '@type': 'ListItem',
+                  position: i + 1,
+                  name: `${p.name}, ${p.city}, Oregon`,
+                  url: `${siteUrl}${p.href}`,
+                })),
+              },
+            }),
+          }}
+        />
 
-      <KbBreadcrumb
-        overlay
-        trail={[{ label: 'Home', href: '/' }, { label: 'Subdivisions' }]}
-      />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Subdivisions' }]} />
 
-      <SmoothScrollProvider>
+        {leadFigure ? (
+          <V3Instrument
+            id="subdivisions-pulse"
+            level={1}
+            eyebrow={v3Text('Live market')}
+            headline={v3Text('Recorded plats across Central Oregon.')}
+            note={v3Text(
+              'County plats with live single-family inventory. Each name opens the listings and sales history for that plat.',
+            )}
+            figures={[leadFigure, ...restFigures]}
+            source={v3Text(PULSE_TRACE)}
+            action={{ label: v3Text('Search all listings'), href: '/search', variant: 'primary' }}
+          />
+        ) : null}
+
+        {inventoryOk && firstFigureRow ? (
+          <V3Ledger
+            id="featured-plats"
+            eyebrow={v3Text('Recorded plats')}
+            heading={v3Text('Plats inside the known communities')}
+            rows={[firstFigureRow, ...restFigureRows]}
+            source={v3Text(LEDGER_TRACE)}
+          />
+        ) : firstPlainRow ? (
+          <V3Ledger
+            id="featured-plats"
+            eyebrow={v3Text('Recorded plats')}
+            heading={v3Text('Plats inside the known communities')}
+            note={v3Text(
+              'The live inventory read did not return on this refresh, so these rows name the plats without a count.',
+            )}
+            rows={[firstPlainRow, ...restPlainRows]}
+          />
+        ) : (
+          <V3Ledger
+            id="featured-plats"
+            eyebrow={v3Text('Recorded plats')}
+            heading={v3Text('Plats inside the known communities')}
+            rows={[]}
+            emptyMessage={v3Text('The community registry returned no child plat on this refresh.')}
+          />
+        )}
+
+        {/* Pattern 5, Sheet: a filter set over the full index. The control is
+            the pre-barrel client browser, which owns its own markup. */}
         <section
-          className="section region"
-          id="subdivisions-pulse"
-          aria-label="Central Oregon subdivisions market pulse"
-          style={{ paddingTop: 'clamp(128px, 18vh, 170px)' }}
-        >
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index mkt-live">
-                <span className="dot" aria-hidden />
-                Live market
-              </span>
-              <h1 className="sec-title display">
-                Recorded plats across <br />Central Oregon.
-              </h1>
-            </div>
-            <p className="neigh-sub" style={{ marginTop: '20px' }}>
-              County plats with live single-family inventory. Each name opens the
-              listings and sales history for that plat.
-            </p>
-            <div className="region-grid" style={{ marginTop: '26px' }}>
-              <div className="stat-cell">
-                <span className="stat-num mono-num">
-                  {totalActive != null && totalActive > 0 ? totalActive.toLocaleString() : '-'}
-                </span>
-                <span className="stat-label">Homes for sale across these plats</span>
-              </div>
-              <div className="stat-cell">
-                <span className="stat-num mono-num">{platCount.toLocaleString()}</span>
-                <span className="stat-label">Community plats in this index</span>
-              </div>
-            </div>
-            <div className="region-foot">
-              <p className="note">
-                Single-family active inventory on recorded plats inside the
-                known communities. Figures from the regional MLS.
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                <Link href="/communities" className="btn ghost">
-                  Communities <span className="arr">→</span>
-                </Link>
-                <Link href="/search" className="btn">
-                  Search all listings <span className="arr">→</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="section towns" id="featured-plats">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Recorded plats</span>
-              <h2 className="sec-title display">
-                Plats inside the <br />known communities
-              </h2>
-            </div>
-            <div>
-              {featured.map((p, i) => (
-                <article
-                  key={p.slug}
-                  className="py-8 md:py-10 first:pt-8"
-                  style={{ borderBottom: 'var(--edge) solid var(--navy)' }}
-                >
-                  <div className="grid gap-5 md:grid-cols-12 md:items-center md:gap-10">
-                    <a
-                      href={p.href}
-                      className={`relative block aspect-[16/10] overflow-hidden md:col-span-5 md:aspect-[4/3] ${
-                        i % 2 === 1 ? 'md:order-2' : ''
-                      }`}
-                      style={{ border: 'var(--edge) solid var(--navy)' }}
-                      aria-label={`Homes for sale in ${p.name}, ${p.city} Oregon`}
-                    >
-                      <Image
-                        src={p.photoSrc}
-                        alt={p.photoAlt}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 42vw"
-                        className="object-cover transition-transform duration-500 hover:scale-[1.03]"
-                        priority={i < 2}
-                      />
-                      {p.photoIsPlat ? null : (
-                        <span className="hero-caption">Area view · {p.city}</span>
-                      )}
-                    </a>
-                    <div className={`md:col-span-7 ${i % 2 === 1 ? 'md:order-1' : ''}`}>
-                      <a href={p.href} className="group inline-block">
-                        <h3
-                          className="display"
-                          style={{ fontSize: 'clamp(2rem, 4.4vw, 3.4rem)', lineHeight: 0.92 }}
-                        >
-                          {p.name}
-                        </h3>
-                      </a>
-                      <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '10px' }}>
-                        {p.parent} · {p.city} · Oregon
-                      </p>
-                      <p
-                        className="mt-3 max-w-prose"
-                        style={{
-                          color: 'var(--navy-70)',
-                          fontSize: 'clamp(.95rem,1.5vw,1.1rem)',
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {p.sentence}
-                      </p>
-                      <div className="mt-6 flex flex-wrap items-baseline gap-x-9 gap-y-4">
-                        <div>
-                          <p
-                            className="display mono-num"
-                            style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}
-                          >
-                            {p.activeCount != null ? p.activeCount.toLocaleString() : '-'}
-                          </p>
-                          <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
-                            Active
-                          </p>
-                        </div>
-                        <div>
-                          <p
-                            className="display mono-num"
-                            style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}
-                          >
-                            {fmtPrice(p.medianPrice) ?? '-'}
-                          </p>
-                          <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
-                            Median list
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
-                        <a
-                          href={p.href}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          {p.name} plat
-                        </a>
-                        <a
-                          href={`/communities/${p.parentSlug}`}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          {p.parent} guide
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section
-          className="section towns"
           id="all-plats"
-          style={{ background: 'rgba(16,39,66,0.04)' }}
+          aria-labelledby="all-plats-heading"
+          className="mx-auto w-full max-w-5xl px-5 pb-16"
         >
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">The full index</span>
-              <h2 className="sec-title display">
-                Community plats, <br />A to Z
-              </h2>
-            </div>
-            <p
-              className="mt-4 max-w-prose"
-              style={{
-                color: 'var(--navy-70)',
-                fontSize: 'clamp(.95rem,1.5vw,1.05rem)',
-                lineHeight: 1.5,
-              }}
-            >
-              {`${platCount.toLocaleString()} recorded plats inside the known communities. Search by name or city.`}
-            </p>
-            <div className="pt-2">
-              <CommunityIndexBrowser
-                items={azSource}
-                searchLabel="Search plats by name or city"
-                searchPlaceholder="Search by plat or city name"
-                emptyLabel="No plats match your search."
-                countNoun={{ singular: 'plat', plural: 'plats' }}
-              />
-            </div>
-          </div>
+          <V3Heading level={2} id="all-plats-heading">
+            Community plats, A to Z
+          </V3Heading>
+          <V3Lede>
+            {formatCount(platCount)} recorded plats inside the known communities. Search by name
+            or city.
+          </V3Lede>
+          <CommunityIndexBrowser
+            items={azSource}
+            searchLabel="Search plats by name or city"
+            searchPlaceholder="Search by plat or city name"
+            emptyLabel="No plats match your search."
+            countNoun={{ singular: 'plat', plural: 'plats' }}
+          />
         </section>
 
-        <section className="section region" id="subdivisions-cta" aria-label="Search Central Oregon plats">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">
-                Find a home, or <br />price the one you have.
-              </h2>
-            </div>
-            <div className="max-w-xl pt-6 pb-12">
-              <p className="neigh-sub" style={{ margin: 0 }}>
-                Search active listings across every city, or start with what your
-                home is worth today.
-              </p>
-              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
-                <Link href="/search" className="btn">
-                  Search all listings <span className="arr">→</span>
-                </Link>
-                <Link href="/neighborhoods" className="btn ghost">
-                  Neighborhoods
-                </Link>
-                <Link href="/sell/valuation" className="btn ghost">
-                  Value my home
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        <V3Quiet
+          id="edges"
+          eyebrow="Central Oregon"
+          heading="Find a home, or price the one you have"
+          items={[
+            { label: 'Search all listings', href: '/search' },
+            { label: 'Communities', href: '/communities' },
+            { label: 'Neighborhoods', href: '/neighborhoods' },
+            { label: 'Value my home', href: '/sell/valuation' },
+            { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
+          ]}
+          note="Oregon Data Share is the regional MLS cooperative behind the live listing and market data on this page."
+        />
+      </main>
 
-        <MarketSources sources={['ods']} />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo
+          only when it is NOT nested in sectioning content. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

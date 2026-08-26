@@ -167,6 +167,18 @@ export type V3InstrumentProps = {
   updated?: V3Text
   /** The context line above the verdict: where the visitor is. One line, never a sentence. */
   eyebrow?: V3Text
+  /**
+   * One sentence between the verdict and the figures, when the answer needs its
+   * basis stated in words before the numbers arrive: how many, of what, in which
+   * place. The same slot V3Ledger has carried since it landed, and the reason it
+   * is here is the same one: a heading that names a subject ("Condos in Sunriver")
+   * and a figure set that measures it leave the count itself with nowhere to be
+   * said except inside a label, which is not a sentence a reader can quote.
+   *
+   * Never a second verdict, and never a number the figures do not also carry with
+   * their own label.
+   */
+  note?: V3Text
   /** The next step this answer earns, if it earns one. */
   action?: V3InstrumentAction
   /**
@@ -219,6 +231,7 @@ export function V3Instrument({
   source,
   updated,
   eyebrow,
+  note,
   action,
   chart,
   chartSecondary,
@@ -270,6 +283,8 @@ export function V3Instrument({
       <V3Heading level={level} id={headlineId} className="v3-instrument__headline">
         {headline}
       </V3Heading>
+
+      {note ? <p className="v3-instrument__note">{note}</p> : null}
 
       <div
         className={cn(

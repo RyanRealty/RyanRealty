@@ -43,7 +43,7 @@ import {
   getSubdivisionCounts,
 } from '@/lib/data/market-truth/subdivision-counts'
 import { PublicSubdivisionCounts } from './PublicSubdivisionCounts'
-import { PlacePropertyTypes } from '@/components/site/PlacePropertyTypes'
+import { V3PlaceCharacter, V3PlacePropertyTypes } from '@/components/site/v3'
 import { SubdivisionExploreTail } from '@/components/site/explore/SubdivisionExploreTail'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import {
@@ -65,7 +65,6 @@ import { SubdivisionSchools } from './SubdivisionSchools'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
-import { PlaceCharacter } from '@/components/site/PlaceCharacter'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -574,13 +573,13 @@ export default async function SubdivisionPage({ params }: Props) {
             withholds price and months of supply below neighbourhood grain, so a
             plat supplies counts alone — and a type with no counts never reaches
             the component at all, which is the point. */}
-        <PlacePropertyTypes
+        <V3PlacePropertyTypes
           placeName={displayName}
           citySlug={citySlug}
           rows={mtCounts.extras}
         />
 
-        <PlaceCharacter placeName={displayName} character={placeCharacter} />
+        <V3PlaceCharacter placeName={displayName} character={placeCharacter} />
 
         <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />
 

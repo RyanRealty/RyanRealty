@@ -11,8 +11,13 @@ import {
   type Slot,
 } from '@/lib/booking/slots'
 import { formatDate } from '@/lib/format/date'
-import { H1, Body, Container, Section } from '@/components/site/primitives'
-import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
+import {
+  V3Footer,
+  V3Quiet,
+  V3SectionTracker,
+  V3_FOOTER_COLUMNS,
+  V3_ROOT_CLASS,
+} from '@/components/site/v3'
 import BookingClient from './BookingClient'
 
 /**
@@ -89,30 +94,37 @@ export default async function BookPage({
   }
 
   return (
-    <>
-      <Section>
-      <Container>
-        <div className="mx-auto max-w-3xl">
-          <H1>Book time with a broker</H1>
-          <Body className="mt-4 max-w-2xl">
-            Pick a time that works. A licensed Oregon broker will be on the other end, not a call
-            center.
-          </Body>
+    <main className={V3_ROOT_CLASS}>
+      <V3SectionTracker />
 
-          <div className="mt-10">
-            <BookingClient
-              days={days}
-              brokerSlug={brokerSlug}
-              timeZone={timeZone}
-              available={available}
-            />
-          </div>
-        </div>
-      </Container>
-        </Section>
+      {/* Quiet opens the surface and the Sheet does the work, which is the
+          opening PUBLIC_UI.md section 3 gives About and every other page whose
+          job is a single step. The lede is one passage, so it is a Quiet prose
+          item rather than a loose paragraph the token scope would not style. */}
+      <V3Quiet
+        id="book-intro"
+        heading="Book time with a broker"
+        headingLevel={1}
+        items={[
+          {
+            kind: 'prose',
+            body: 'Pick a time that works. A licensed Oregon broker will be on the other end, not a call center.',
+          },
+        ]}
+      />
+
+      <section aria-label="Available times" className="mx-auto w-full max-w-3xl px-5 pb-16">
+        <BookingClient
+          days={days}
+          brokerSlug={brokerSlug}
+          timeZone={timeZone}
+          available={available}
+        />
+      </section>
+
       {/* This surface shows the site header, so it owes the site footer too:
           the footer is route-owned here, not rendered by the layout. */}
       <V3Footer columns={V3_FOOTER_COLUMNS} />
-    </>
+    </main>
   )
 }

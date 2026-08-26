@@ -118,11 +118,13 @@ import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
 import { lifestyleNearLatLng } from '@/lib/explore/lifestyle-near'
 import { mapCentroid } from '@/lib/explore/subdivision-page-extras'
 import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
-import { PlaceDocuments } from '@/components/site/PlaceDocuments'
-import { PlacePropertyTypes } from '@/components/site/PlacePropertyTypes'
+import {
+  V3PlaceCharacter,
+  V3PlaceDocuments,
+  V3PlacePropertyTypes,
+} from '@/components/site/v3'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
-import { PlaceCharacter } from '@/components/site/PlaceCharacter'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
 import { buildNeighborhoodSchemas } from './neighborhood-schemas'
@@ -662,13 +664,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           eyebrow={`${neighborhood.name} · Lifestyle`}
           title="Parks, trails, golf, and events nearby"
         />
-        <PlacePropertyTypes
+        <V3PlacePropertyTypes
           placeName={neighborhood.name}
           citySlug={citySlug}
           rows={publicSegments}
         />
-        <PlaceCharacter placeName={neighborhood.name} character={placeCharacter} />
-        <PlaceDocuments displayName={neighborhood.name} documents={placeDocuments} />
+        <V3PlaceCharacter placeName={neighborhood.name} character={placeCharacter} />
+        <V3PlaceDocuments displayName={neighborhood.name} documents={placeDocuments} />
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
         {/* Open houses + the feed are fetched city-wide (the MLS carries no
             neighborhood scope on either), so they are labeled with the city (§0). */}

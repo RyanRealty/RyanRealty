@@ -8,6 +8,11 @@ body, voice canon) — everything about shape, rhythm, and motion is derived her
 prototype (docs/plans/PUBLIC_PRODUCT/decisions.md). The pattern set is closed: a section
 that fits none of the six changes this file, it never earns a page exemption.**
 
+**Amendments to the lock.** One so far. **2026-08-26 (Matt):** §3's rhythm rule now says
+what an enumeration is, so a run of one section rendered once per member of a set the
+place determines counts once. The pattern set itself is unchanged — still six, still
+closed.
+
 ## 1. Thesis
 
 **A calm instrument for exploring Central Oregon real estate, where the data is the
@@ -63,6 +68,33 @@ not get an exception — the pattern set changes here, by editing this file.
 
 **Rhythm rule:** no two adjacent sections share a pattern, and no page uses more than four
 of the six. A page needing five patterns is doing two jobs — split it or cut one.
+
+**An enumeration is one section (amended 2026-08-26, Matt).** A run of sections that is
+ONE section rendered once per member of a set the PLACE determines — one per property type
+present, one per school level assigned, one per governing-document kind held — is one
+logical section for the rhythm rule, however many members the set has. The run counts once,
+as its pattern, and "no two adjacent" is judged on what sits either side of the run. Matt
+chose this over collapsing a four-type property run into a single section: a buyer looking
+for a townhome and a buyer looking for land are asking different questions and each deserves
+its own heading.
+
+Four conditions, all of them. Break one and it is N adjacent sections again:
+
+1. **One template.** Every member is the same section: same pattern, same slots, same
+   heading shape, same level. The only permitted variation is the template's own documented
+   degradation when the data for one member is withheld — the fallback the primitive itself
+   specifies, never a second design. A hand-written section dropped into the run ends it.
+2. **The data picks the members.** The set is exactly the members the place has. A member
+   with nothing publishable is absent, never an empty section and never a zero.
+3. **One eyebrow names the run.** Every member carries the same context line
+   (`<Place> · Property types`), so the run reads as one thing enumerated rather than
+   several things stacked.
+4. **The member is the only variable.** Order, heading level, and the shape of the one
+   action are identical across members.
+
+What this does not license: repeating a pattern because two unrelated sections happen to
+suit it; a run whose members a person chose; or a fifth pattern. An enumeration spends one
+of the four patterns a page may use, exactly like any other section.
 
 **One shop, five place rhythms** (Matt 2026-08-14). Chrome, type, tokens, Field/Ledger
 row language, and the motion ladder are the same site. The first pattern names the grain.

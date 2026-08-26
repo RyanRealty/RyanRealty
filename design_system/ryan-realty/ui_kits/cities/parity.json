@@ -2,51 +2,66 @@
   "route": "app/cities/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
   "competitiveTarget": "Beat portal city-directory pages with leftover regional inventory and a ledger of Central Oregon cities, not a link farm.",
-  "note": "PUBLIC_UI.md §3 city grain (2026-08-14). First screen is doors to cities: name, median, months of supply, count. Not a city essay, not a number hero, not a house-stamp dump. Section order: Breadcrumb, Ledger (cities), Instrument (leftover region figures below the fold), Sheet (SFR alerts), Quiet (edges), Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company).",
+  "note": "PUBLIC_UI.md §3 city grain (2026-08-14). First screen is doors to cities: name, median, months of supply, count. Not a city essay, not a number hero, not a house-stamp dump. Section order: V3Breadcrumb, Instrument (region pulse), Ledger (featured cities), Quiet (the rest of each city's doors), Ledger (the remaining cities), Sheet (SFR alerts), Quiet (edges), V3Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company). REQUIRED-COMPONENTS RECONCILED 2026-08-26: this contract's requiredComponents still named the five KB-era components its own removedComponents list said the migration replaces, so the gate required exactly what the contract forbade. The v3 names below are the ones the route now imports; removedComponents is unchanged and is the record of what each one replaced.",
   "requiredComponents": [
     {
-      "name": "KbSectionTracker",
-      "section": "tracking \u2014 section_view telemetry. pageType=index. Wiring, not visual language.",
+      "name": "V3SectionTracker",
+      "section": "tracking — section_view telemetry. pageType=index. Wiring, not visual language.",
       "blocking": true
     },
     {
       "name": "MetadataBlock",
-      "section": "structured data \u2014 breadcrumb schema; CollectionPage + ItemList rendered inline.",
+      "section": "structured data — breadcrumb + Dataset schema; CollectionPage + ItemList rendered inline. JSON-LD is not visual language, so this one flat-register import stays and ci:public-ui counts it.",
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
+      "name": "V3Breadcrumb",
       "section": "breadcrumb — Home / Cities. JSON-LD is in MetadataBlock.",
       "blocking": true
     },
     {
-      "name": "RegionalSfrAlertsBand",
-      "section": "SFR listing-alert capture.",
+      "name": "V3Instrument",
+      "section": "Instrument — the live region pulse: active count, median list, months of supply with its verdict, pending now, days to contract.",
       "blocking": true
     },
     {
-      "name": "KbFooter",
-      "section": "footer.",
+      "name": "V3Ledger",
+      "section": "Ledger — the featured cities, then the remaining cities. Every row a door, the live count in the value column.",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "Quiet — the second, third and fourth door per city, then the page's outbound edges and the Oregon Data Share citation.",
+      "blocking": true
+    },
+    {
+      "name": "RegionalAlertSheet",
+      "section": "SFR listing-alert capture, as a barrel Sheet. Same submitSearchAlertSignup payload and same company trap the KB band posted.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "footer, outside main.",
       "blocking": true
     },
     {
       "name": "leftoverHudKpis",
-      "section": "Instrument \u2014 leftover region stats (active count, median list, months of supply). Miss omits.",
+      "section": "Instrument — leftover region stats (active count, median list, months of supply). Miss omits.",
       "blocking": true
     },
     {
       "name": "getDetachedOverlays",
-      "section": "Ledger \u2014 leftover per-city active count and median. Miss omits.",
+      "section": "Ledger — leftover per-city active count and median. Miss omits.",
       "blocking": true
     },
     {
       "name": "cityHero",
-      "section": "Ledger media \u2014 verified per-city photography only. Unverified cities get no photo.",
+      "section": "Ledger media — verified per-city photography only. Unverified cities get no photo.",
       "blocking": true
     },
     {
-      "name": "MarketSources",
-      "section": "Oregon Data Share citation.",
+      "name": "cityFeaturedLinks",
+      "section": "Quiet — guide, inventory and open-house doors per city, plus Bend's luxury page (G7, ci:westside-backlog).",
       "blocking": true
     }
   ],
@@ -61,6 +76,7 @@
     "KbNav (never remount; layout owns chrome)",
     "KbFooter (replaced by V3Footer outside main)",
     "KbBreadcrumb (replaced by V3Breadcrumb)",
+    "KbSectionTracker (replaced by V3SectionTracker)",
     "SmoothScrollProvider",
     "RegionalSfrAlertsBand (same capture, V3Sheet markup via RegionalAlertSheet)",
     "MarketSources (Oregon Data Share citation is the Instrument source line plus a Quiet edge)",

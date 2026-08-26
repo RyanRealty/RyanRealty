@@ -1,12 +1,24 @@
-// @no-parity — place-family index, reuses the /cities KB index language
+// @no-parity — place-family index, built from the v3 barrel like /cities
 /**
- * Neighborhoods index — same KB index language as /cities.
+ * Neighborhoods index — the City of Bend districts, on components/site/v3.
+ *
+ * PUBLIC_UI.md (locked 2026-08-11) section 3, three patterns, no two adjacent
+ * sharing one:
+ *
+ *   Instrument  the live answer: how many homes are for sale across the
+ *               districts, and how many districts there are.
+ *   Ledger      one row per district, every row a door into the district page.
+ *   Quiet       the outbound edges, including the Oregon Data Share citation
+ *               that MarketSources used to carry.
+ *
+ * Chrome is layout-owned (app/layout.tsx mounts V3Chrome); the footer is
+ * route-owned and sits outside <main>. MetadataBlock stays: it is JSON-LD, not
+ * visual language, and ci:ai-structured-data pins this route to it by name.
+ *
  * Each row opens the existing neighborhood detail at /cities/{city}/{slug}.
  */
 
 import type { Metadata } from 'next'
-import Image from 'next/image'
-import Link from 'next/link'
 import {
   getBendNeighborhoodLedger,
   getNeighborhoodDirectory,
@@ -15,16 +27,25 @@ import {
 } from '@/lib/data'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/getBendNeighborhoodLedger'
 import { cityHero } from '@/lib/geo-images'
+import { formatCount } from '@/lib/format/count'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { MarketSources } from '@/components/site/MarketSources'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import {
+  V3Breadcrumb,
+  V3Footer,
+  V3Instrument,
+  V3Ledger,
+  V3Quiet,
+  V3SectionTracker,
+  V3_FOOTER_COLUMNS,
+  V3_ROOT_CLASS,
+  v3Text,
+  type V3InstrumentFigure,
+  type V3LedgerFigureRow,
+  type V3LedgerPlainRow,
+} from '@/components/site/v3'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import '@/components/site/kb/kb.css'
 
 export const revalidate = 1800
 
@@ -36,6 +57,18 @@ export const metadata: Metadata = pageMetadata({
     'City of Bend neighborhood districts with live single-family inventory and list prices from the regional MLS.',
   path: '/neighborhoods',
 })
+
+/**
+ * The section 0 trace for the district rows. The population is named because
+ * two other tables also hold a per-neighborhood "active" figure and disagree
+ * with this one (getBendNeighborhoodLedger's header, the 52 / 62 / 63 split on
+ * Awbrey Butte).
+ */
+const LEDGER_TRACE =
+  'live MLS through Oregon Data Share, active single-family listings inside each district boundary polygon. The median is the list price of those same listings'
+
+const PULSE_TRACE =
+  'live MLS through Oregon Data Share, single-family only, summed across the City of Bend neighborhood districts'
 
 const NEIGHBORHOOD_SENTENCE: Record<string, string> = {
   'awbrey-butte': 'West-side volcanic butte above downtown Bend, with Cascade views from the ridge.',
@@ -108,6 +141,49 @@ export default async function NeighborhoodsPage() {
 
   const totalActive = featured.reduce((sum, n) => sum + (n.activeCount ?? 0), 0)
 
+  /**
+   * A count column is published only when EVERY district has a measured count.
+   * A degraded ledger read returns [], and `?? 0` on a timeout would print
+   * thirteen fake zeros (city-places invariant 4). So the value column either
+   * carries a real number for every row or the ledger carries none at all.
+   */
+  const countsPublishable = ledger.length > 0 && featured.every((n) => n.activeCount != null)
+
+  const rowBase = featured.map((n) => ({
+    id: n.slug,
+    href: n.href,
+    when: v3Text(`${n.cityName} · Oregon`),
+    what: v3Text(n.name),
+    detail: (() => {
+      const median = fmtMedian(n.medianListPrice)
+      const bits = [median ? `Median list ${median}` : null, n.sentence].filter(Boolean)
+      return bits.length > 0 ? v3Text(bits.join(' · ')) : undefined
+    })(),
+    // Only a photograph of the district itself. The city hero is a fallback,
+    // and the Ledger's media slot takes no fallbacks.
+    media: n.photoIsPlace ? { src: n.photoSrc } : undefined,
+    ariaLabel: v3Text(`Homes for sale in ${n.name}, ${n.cityName} Oregon`),
+  }))
+
+  const figureRows: V3LedgerFigureRow[] = rowBase.map((row, i) => ({
+    ...row,
+    value: v3Text(`${formatCount(featured[i]?.activeCount ?? 0)} for sale`),
+  }))
+  const plainRows: V3LedgerPlainRow[] = rowBase
+
+  const figures: V3InstrumentFigure[] = []
+  if (countsPublishable && totalActive > 0) {
+    figures.push({
+      value: v3Text(formatCount(totalActive)),
+      label: v3Text('Active homes across these districts'),
+    })
+  }
+  figures.push({
+    value: v3Text(formatCount(featured.length)),
+    label: v3Text('Neighborhood districts'),
+  })
+  const [leadFigure, ...restFigures] = figures
+
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -118,238 +194,101 @@ export default async function NeighborhoodsPage() {
     },
   ]
 
+  const [firstFigureRow, ...restFigureRows] = figureRows
+  const [firstPlainRow, ...restPlainRows] = plainRows
+
   return (
-    <main className="kb-root">
-      <KbSectionTracker />
-      <MetadataBlock schemas={schemas} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            name: 'Bend neighborhoods',
-            description:
-              'City of Bend neighborhood districts with live single-family inventory from the regional MLS.',
-            url: `${siteUrl}/neighborhoods`,
-            publisher: { '@type': 'Organization', name: 'Ryan Realty' },
-            mainEntity: {
-              '@type': 'ItemList',
-              itemListElement: featured.map((n, i) => ({
-                '@type': 'ListItem',
-                position: i + 1,
-                name: `${n.name}, ${n.cityName}, Oregon`,
-                url: `${siteUrl}${n.href}`,
-              })),
-            },
-          }),
-        }}
-      />
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <V3SectionTracker />
+        <MetadataBlock schemas={schemas} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'CollectionPage',
+              name: 'Bend neighborhoods',
+              description:
+                'City of Bend neighborhood districts with live single-family inventory from the regional MLS.',
+              url: `${siteUrl}/neighborhoods`,
+              publisher: { '@type': 'Organization', name: 'Ryan Realty' },
+              mainEntity: {
+                '@type': 'ItemList',
+                itemListElement: featured.map((n, i) => ({
+                  '@type': 'ListItem',
+                  position: i + 1,
+                  name: `${n.name}, ${n.cityName}, Oregon`,
+                  url: `${siteUrl}${n.href}`,
+                })),
+              },
+            }),
+          }}
+        />
 
-      <KbBreadcrumb
-        overlay
-        trail={[{ label: 'Home', href: '/' }, { label: 'Neighborhoods' }]}
-      />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Neighborhoods' }]} />
 
-      <SmoothScrollProvider>
-        <section
-          className="section region"
-          id="neighborhoods-pulse"
-          aria-label="Bend neighborhoods market pulse"
-          style={{ paddingTop: 'clamp(128px, 18vh, 170px)' }}
-        >
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index mkt-live">
-                <span className="dot" aria-hidden />
-                Live market
-              </span>
-              <h1 className="sec-title display">
-                Bend, <br />neighborhood by neighborhood.
-              </h1>
-            </div>
-            <p className="neigh-sub" style={{ marginTop: '20px' }}>
-              The City of Bend neighborhood districts. Live single-family inventory
-              from the regional MLS, refreshed through the day.
-            </p>
-            <div className="region-grid" style={{ marginTop: '26px' }}>
-              <div className="stat-cell">
-                <span className="stat-num mono-num">
-                  {totalActive > 0 ? totalActive.toLocaleString() : '-'}
-                </span>
-                <span className="stat-label">Active homes across these districts</span>
-              </div>
-              <div className="stat-cell">
-                <span className="stat-num mono-num">{featured.length.toLocaleString()}</span>
-                <span className="stat-label">Neighborhood districts</span>
-              </div>
-            </div>
-            <div className="region-foot">
-              <p className="note">
-                Single-family homes only. Figures come from the regional MLS.
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                <Link href="/cities" className="btn ghost">
-                  All cities <span className="arr">→</span>
-                </Link>
-                <Link href="/cities/bend" className="btn">
-                  Bend guide <span className="arr">→</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        {leadFigure ? (
+          <V3Instrument
+            id="neighborhoods-pulse"
+            level={1}
+            eyebrow={v3Text('Live market')}
+            headline={v3Text('Bend, neighborhood by neighborhood.')}
+            note={v3Text(
+              'The City of Bend neighborhood districts. Live single-family inventory from the regional MLS, refreshed through the day.',
+            )}
+            figures={[leadFigure, ...restFigures]}
+            source={v3Text(PULSE_TRACE)}
+            action={{ label: v3Text('Bend guide'), href: '/cities/bend', variant: 'primary' }}
+          />
+        ) : null}
 
-        <section className="section towns" id="bend-neighborhoods">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">City of Bend</span>
-              <h2 className="sec-title display">
-                Pick a district. <br />See what is listed.
-              </h2>
-            </div>
-            <div>
-              {featured.map((n, i) => (
-                <article
-                  key={n.href}
-                  className="py-8 md:py-10 first:pt-8"
-                  style={{ borderBottom: 'var(--edge) solid var(--navy)' }}
-                >
-                  <div className="grid gap-5 md:grid-cols-12 md:items-center md:gap-10">
-                    <a
-                      href={n.href}
-                      className={`relative block aspect-[16/10] overflow-hidden md:col-span-5 md:aspect-[4/3] ${
-                        i % 2 === 1 ? 'md:order-2' : ''
-                      }`}
-                      style={{ border: 'var(--edge) solid var(--navy)' }}
-                      aria-label={`Homes for sale in ${n.name}, ${n.cityName} Oregon`}
-                    >
-                      <Image
-                        src={n.photoSrc}
-                        alt={n.photoAlt}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 42vw"
-                        className="object-cover transition-transform duration-500 hover:scale-[1.03]"
-                        priority={i < 2}
-                      />
-                      {n.photoIsPlace ? null : (
-                        <span className="hero-caption">Area view · {n.cityName}</span>
-                      )}
-                    </a>
-                    <div className={`md:col-span-7 ${i % 2 === 1 ? 'md:order-1' : ''}`}>
-                      <a href={n.href} className="group inline-block">
-                        <h3
-                          className="display"
-                          style={{ fontSize: 'clamp(2rem, 4.4vw, 3.4rem)', lineHeight: 0.92 }}
-                        >
-                          {n.name}
-                        </h3>
-                      </a>
-                      <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '10px' }}>
-                        {n.cityName} · Oregon
-                      </p>
-                      {n.sentence ? (
-                        <p
-                          className="mt-3 max-w-prose"
-                          style={{
-                            color: 'var(--navy-70)',
-                            fontSize: 'clamp(.95rem,1.5vw,1.1rem)',
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          {n.sentence}
-                        </p>
-                      ) : null}
-                      {n.activeCount != null && n.activeCount > 0 || n.medianListPrice != null ? (
-                        <div className="mt-6 flex flex-wrap items-baseline gap-x-9 gap-y-4">
-                          <div>
-                            <p
-                              className="display mono-num"
-                              style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}
-                            >
-                              {n.activeCount != null && n.activeCount > 0 ? n.activeCount.toLocaleString() : '-'}
-                            </p>
-                            <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
-                              Active
-                            </p>
-                          </div>
-                          <div>
-                            <p
-                              className="display mono-num"
-                              style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}
-                            >
-                              {fmtMedian(n.medianListPrice) ?? '-'}
-                            </p>
-                            <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
-                              Median list
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '24px' }}>
-                          {n.activeCount === 0
-                            ? 'No active listings right now. '
-                            : ''}
-                          <a href={n.href} style={{ color: 'var(--navy)', textDecoration: 'underline' }}>
-                            See the district
-                          </a>
-                          .
-                        </p>
-                      )}
-                      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
-                        <a
-                          href={n.href}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          {n.name} guide
-                        </a>
-                        <a
-                          href={`/homes-for-sale/${n.citySlug}`}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          Homes for sale in {n.cityName}
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+        {countsPublishable && firstFigureRow ? (
+          <V3Ledger
+            id="bend-neighborhoods"
+            eyebrow={v3Text('City of Bend')}
+            heading={v3Text('Pick a district. See what is listed.')}
+            rows={[firstFigureRow, ...restFigureRows]}
+            source={v3Text(LEDGER_TRACE)}
+          />
+        ) : firstPlainRow ? (
+          <V3Ledger
+            id="bend-neighborhoods"
+            eyebrow={v3Text('City of Bend')}
+            heading={v3Text('Pick a district. See what is listed.')}
+            note={v3Text(
+              'The live inventory read did not return on this refresh, so these rows name the districts without a count.',
+            )}
+            rows={[firstPlainRow, ...restPlainRows]}
+          />
+        ) : (
+          <V3Ledger
+            id="bend-neighborhoods"
+            eyebrow={v3Text('City of Bend')}
+            heading={v3Text('Pick a district. See what is listed.')}
+            rows={[]}
+            emptyMessage={v3Text('The neighborhood directory returned no district on this refresh.')}
+          />
+        )}
 
-        <section className="section region" id="neighborhoods-cta" aria-label="Search Bend listings">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">
-                Search every listing <br />in Central Oregon
-              </h2>
-            </div>
-            <div className="max-w-xl pt-6 pb-12">
-              <p className="neigh-sub" style={{ margin: 0 }}>
-                Filter by price, beds, and location across every city on the list.
-              </p>
-              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
-                <Link href="/search" className="btn">
-                  Search all listings <span className="arr">→</span>
-                </Link>
-                <Link href="/communities" className="btn ghost">
-                  Communities
-                </Link>
-                <Link href="/subdivisions" className="btn ghost">
-                  Recorded plats
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        <V3Quiet
+          id="edges"
+          eyebrow="Central Oregon"
+          heading="Search every listing in Central Oregon"
+          items={[
+            { label: 'Search all listings', href: '/search' },
+            { label: 'All cities', href: '/cities' },
+            { label: 'Communities', href: '/communities' },
+            { label: 'Recorded plats', href: '/subdivisions' },
+            { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
+          ]}
+          note="Filter by price, beds, and location across every city on the list. Oregon Data Share is the regional MLS cooperative behind the live listing and market data on this page."
+        />
+      </main>
 
-        <MarketSources sources={['ods']} />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo
+          only when it is NOT nested in sectioning content. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

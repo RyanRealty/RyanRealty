@@ -175,6 +175,30 @@
   color: var(--v3-ink-muted);
 }
 
+/* Footnote -----------------------------------------------------------------
+   The caveat that belongs to the rows: what the list does not establish, and
+   where the rows were copied from. Quieter than a row, louder than the trace,
+   and held to the reading measure so a legal paragraph does not run the full
+   width of the ledger. */
+.v3-ledger__footnote {
+  margin: var(--v3-space-md) 0 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+/* Layered on purpose (ci:css-layers): an un-layered element color rule beats
+   the whole Tailwind utilities layer whatever its specificity, which is how the
+   invisible-CTA-text P0 shipped on 2026-07-08. */
+@layer base {
+  .v3-ledger__footnote a {
+    color: var(--v3-ink);
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
+}
+
 /* Trace and the one ask the list earns ------------------------------------- */
 .v3-ledger__source {
   margin-top: var(--v3-space-md);

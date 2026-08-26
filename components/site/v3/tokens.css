@@ -464,6 +464,18 @@
   text-shadow: var(--v3-media-shadow);
 }
 
+/* V3Lede --------------------------------------------------------------------
+   The one sentence of basis under a heading, for a surface whose working
+   control carries no note slot of its own. Same voice as every pattern's
+   `note`: muted, body size, held to the reading measure. */
+.v3 .v3-lede {
+  margin: var(--v3-space-sm) 0 var(--v3-space-lg);
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
 /* V3Heading ----------------------------------------------------------------- */
 .v3 .v3-heading {
   margin: 0;

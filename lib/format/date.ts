@@ -57,6 +57,22 @@ export function formatCalendarDay(
 }
 
 /**
+ * "2023-08-26" reads as "August 2023". The day a measurement window opened is
+ * noise beside the month, and a window stated to the day invites a precision
+ * the window does not have.
+ *
+ * Returns the empty string for anything that is not a calendar day, which is
+ * what the place-character sentences branch on: with no month to name, the
+ * sentence drops its "since ..." clause rather than printing a lone dash.
+ */
+export function formatMonthYear(ymd: string | null | undefined): string {
+  if (ymd == null) return ''
+  const trimmed = String(ymd).trim()
+  if (!DATE_ONLY.test(trimmed)) return ''
+  return formatCalendarDay(trimmed, { month: 'long', day: undefined })
+}
+
+/**
  * YYYY-MM-DD calendar-day key for an instant in the brand timezone. Used by the
  * §09 Tasks/Calendar surfaces to group true-instant timestamps (crm_tasks.due_at)
  * into Pacific calendar days. Lives here so Intl stays inside lib/format

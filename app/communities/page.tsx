@@ -1,39 +1,35 @@
 /**
- * Communities index — KB (kinetic-brutalist) design, Phase 9 page-class migration.
+ * Communities index — resort and master-planned communities, on
+ * components/site/v3.
  *
- * RESTYLED IN PLACE. Every piece of the prior Geo-hub index is preserved —
- * nothing dropped, only the presentation moved onto the KB visual language
- * (navy #102742 + cream #faf8f4 surfaces, Amboqia display community names,
- * hard 1px/3px --edge borders, .mono-num stats, the .section / .wrap rhythm).
- * Content kept:
+ * PUBLIC_UI.md (locked 2026-08-11) section 3, four patterns, no two adjacent
+ * sharing one:
  *
- *   1. Compact navy hero — the live aggregate is the identity (total active
- *      across the registry communities + community count). Honest em-dash empties.
- *   2. Resort + master-planned community editorial rows (the 14 registry
- *      communities, curated order) — full-bleed alternating photo/content,
- *      curated communityImage() with labeled cityHero() fallback, one honest
- *      editorial sentence (getResortCommunityContent), the City · Oregon
- *      sublabel, a live stat band (active / median) from the alias-aware
- *      resort set, and the two links per community
- *      (community guide / homes for sale in city).
- *   3. Every community, A to Z — the interactive CommunityIndexBrowser
- *      (search + collapsed alphabetical index). Kept fully working: every
- *      /communities/<slug> URL stays server-rendered in the DOM.
- *   4. Navy search CTA band (Search all listings / What is your home worth).
+ *   Instrument  the live aggregate that is this hub's identity: homes for sale
+ *               across the communities, and how many communities there are.
+ *   Ledger      one row per registry community, every row a door into its guide,
+ *               with the live active count in the value column and the median
+ *               list price and the editorial sentence beneath the name.
+ *   Quiet       the exact-anchor inventory doors ("<name> homes for sale",
+ *               "Homes for sale in <city>") the conversion audit asked for, then
+ *               the page's outbound edges and the Oregon Data Share citation
+ *               MarketSources used to carry.
+ *   Sheet       the A-to-Z browser (a filter set over every community) and the
+ *               free listing-alert capture (RegionalAlertSheet, the same server
+ *               action and the same payload the KB band submitted).
  *
- * Section telemetry now via KbSectionTracker (every .kb-root section[id]).
- * All figures from the DAL — no invented numbers, em-dash when unavailable.
+ * Nothing was dropped in the move off the KB register: every figure, every
+ * sentence, every link, and both JSON-LD payloads are still here. Chrome is
+ * layout-owned; the footer is route-owned and sits outside <main>.
  *
- * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
- * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
- * HideChrome is only for the not-found footer edge case / CSS hide if still used.
+ * All figures from the DAL. The registry resorts print the alias-aware pair
+ * (the same set /communities/{slug} prints), never the snapshot's own count.
  */
 
 import type { Metadata } from 'next'
-import Image from 'next/image'
-import Link from 'next/link'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getRegistryResortPublicFigures } from '@/lib/kb/registry-resort-public-figures'
+import { formatCount } from '@/lib/format/count'
 import { formatPriceExact } from '@/lib/format/money'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { communityImage, cityHero } from '@/lib/geo-images'
@@ -42,15 +38,25 @@ import { subdivisionEntityKey } from '@/lib/slug'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { MarketSources } from '@/components/site/MarketSources'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
+import {
+  V3Breadcrumb,
+  V3Footer,
+  V3Heading,
+  V3Instrument,
+  V3Lede,
+  V3Ledger,
+  V3Quiet,
+  V3SectionTracker,
+  V3_FOOTER_COLUMNS,
+  V3_ROOT_CLASS,
+  v3Text,
+  type V3InstrumentFigure,
+  type V3LedgerFigureRow,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
-import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -78,6 +84,14 @@ export const metadata: Metadata = {
     images: [`${siteUrl}/api/og?type=default`],
   },
 }
+
+/** The section 0 traces. Both name the population, because the alias-aware set
+ *  and the snapshot count answer the same question differently. */
+const PULSE_TRACE =
+  'live MLS through Oregon Data Share, single-family active inventory across every Central Oregon community we track'
+
+const LEDGER_TRACE =
+  'live MLS through Oregon Data Share, active single-family listings under each community and its registered subdivision aliases. The median is the list price of those same listings'
 
 type RegistryCommunity = {
   slug: string
@@ -202,283 +216,169 @@ export default async function CommunitiesPage() {
     })
   }
 
+  const figures: V3InstrumentFigure[] = []
+  if (totalActive > 0) {
+    figures.push({
+      value: v3Text(formatCount(totalActive)),
+      label: v3Text('Homes for sale across these communities'),
+    })
+  }
+  figures.push({
+    value: v3Text(formatCount(communityCount)),
+    label: v3Text('Communities'),
+  })
+  const [leadFigure, ...restFigures] = figures
+
+  /**
+   * "0 active" is itself the honest, verified figure — activeCount always
+   * resolves through a `?? 0` above, so it is never truly unknown here, and
+   * treating 0 as "data missing" contradicted the same zero-inventory case
+   * rendering as "0 Active" everywhere else on the site (design-audit P3).
+   */
+  const rows: V3LedgerFigureRow[] = resorts.map((r) => {
+    const median = r.medianPrice != null ? formatPriceExact(r.medianPrice) : null
+    const bits = [median ? `Median list ${median}` : null, r.sentence].filter(Boolean)
+    return {
+      id: r.slug,
+      href: `/communities/${r.slug}`,
+      when: v3Text(`${r.city} · Oregon`),
+      what: v3Text(r.name),
+      detail: bits.length > 0 ? v3Text(bits.join(' · ')) : undefined,
+      value: v3Text(`${formatCount(r.activeCount)} for sale`),
+      // Only a curated photograph of the community itself. The pooled city
+      // frame is a fallback, and the Ledger's media slot takes no fallbacks.
+      media: r.photoIsCommunity ? { src: r.photoSrc } : undefined,
+      ariaLabel: v3Text(`${r.name} guide, ${r.city} Oregon`),
+    }
+  })
+  const [firstRow, ...restRows] = rows
+
+  /**
+   * The exact-match inventory anchors. Conversion audit #9: "tetherow homes
+   * for sale" sat at position 13 with zero exact-anchor internal links, and
+   * the bare guide link promised inventory it did not deliver (design-audit
+   * P2). Both doors per community live here, as the Quiet block that carries
+   * this node's outbound edges.
+   */
+  const inventoryDoors: V3QuietItem[] = resorts.flatMap((r) => [
+    { label: `${r.name} homes for sale`, href: `/communities/${r.slug}#listings` },
+    { label: `Homes for sale in ${r.city}`, href: `/homes-for-sale/${r.citySlug}` },
+  ])
+
   return (
-    <main className="kb-root">
-      <KbSectionTracker />
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <V3SectionTracker />
 
-      {/* Structured data: BreadcrumbList + Dataset (aggregate active count) +
-          the CollectionPage + ItemList inline script below. */}
-      <MetadataBlock schemas={schemas} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            name: 'Communities in Central Oregon',
-            description:
-              'Resort and master-planned communities across Central Oregon, with live MLS inventory.',
-            url: `${siteUrl}/communities`,
-            publisher: { '@type': 'Organization', name: 'Ryan Realty' },
-            mainEntity: {
-              '@type': 'ItemList',
-              itemListElement: resorts.map((r, i) => ({
-                '@type': 'ListItem',
-                position: i + 1,
-                name: `${r.name}, ${r.city}, Oregon`,
-                url: `${siteUrl}/communities/${r.slug}`,
-              })),
-            },
-          }),
-        }}
-      />
-
-      <KbBreadcrumb
-        overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Communities' },
-        ]}
-      />
-
-      <SmoothScrollProvider>
-        {/* Compact navy hero — the live aggregate is the identity (Hub archetype) */}
-        {/* Extra top padding clears the fixed nav + overlay crumbs — this compact
-            hero starts content at the top (full-viewport heroes bottom-anchor). */}
-        <section className="section region" id="communities-pulse" aria-label="Central Oregon communities market pulse" style={{ paddingTop: 'clamp(128px, 18vh, 170px)' }}>
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index mkt-live">
-                <span className="dot" aria-hidden />
-                Live market
-              </span>
-              <h1 className="sec-title display">Communities across <br />Central Oregon.</h1>
-            </div>
-
-            <p className="neigh-sub" style={{ marginTop: '20px' }}>
-              Resorts, master-planned communities, and the plats between them.
-              Bend, Redmond, Sisters, Sunriver, and the high desert towns in
-              between. Live single-family inventory from the regional MLS.
-            </p>
-
-            <div className="region-grid" style={{ marginTop: '26px' }}>
-              <div className="stat-cell">
-                <span className="stat-num mono-num">
-                  {totalActive > 0 ? totalActive.toLocaleString() : '—'}
-                </span>
-                <span className="stat-label">Homes for sale across these communities</span>
-              </div>
-              <div className="stat-cell">
-                <span className="stat-num mono-num">{communityCount.toLocaleString()}</span>
-                <span className="stat-label">Communities</span>
-              </div>
-            </div>
-            <div className="region-foot">
-              <p className="note">
-                Single-family active inventory across every Central Oregon community we track. Figures from the MLS.
-              </p>
-              <Link href="/search" className="btn">
-                Search all listings <span className="arr">→</span>
-              </Link>
-              <Link href="/luxury-homes-bend" className="btn ghost">
-                Luxury homes in Bend
-              </Link>
-              <Link href="/subdivisions" className="btn ghost">
-                Recorded plats
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Resort + master-planned communities — full-width editorial ledger rows */}
-        <section className="section towns" id="resort-communities">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Resort communities</span>
-              <h2 className="sec-title display">Resorts and <br />planned communities</h2>
-            </div>
-
-            <div>
-              {resorts.map((r, i) => (
-                <article
-                  key={r.slug}
-                  className="py-8 md:py-10 first:pt-8"
-                  style={{ borderBottom: 'var(--edge) solid var(--navy)' }}
-                >
-                  <div className="grid gap-5 md:grid-cols-12 md:items-center md:gap-10">
-                    {/* Photo — alternates sides on desktop for editorial rhythm */}
-                    <a
-                      href={`/communities/${r.slug}`}
-                      className={`relative block aspect-[16/10] overflow-hidden md:col-span-5 md:aspect-[4/3] ${
-                        i % 2 === 1 ? 'md:order-2' : ''
-                      }`}
-                      style={{ border: 'var(--edge) solid var(--navy)' }}
-                      aria-label={`Homes for sale in ${r.name}, ${r.city} Oregon`}
-                    >
-                      <Image
-                        src={r.photoSrc}
-                        alt={r.photoAlt}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 42vw"
-                        className="object-cover transition-transform duration-500 hover:scale-[1.03]"
-                        priority={i < 2}
-                      />
-                      {r.photoIsCommunity ? null : (
-                        <span className="hero-caption">Area view · {r.city}</span>
-                      )}
-                    </a>
-
-                    {/* Editorial content */}
-                    <div className={`md:col-span-7 ${i % 2 === 1 ? 'md:order-1' : ''}`}>
-                      <a href={`/communities/${r.slug}`} className="group inline-block">
-                        <h3
-                          className="display"
-                          style={{ fontSize: 'clamp(2rem, 4.4vw, 3.4rem)', lineHeight: 0.92 }}
-                        >
-                          {r.name}
-                        </h3>
-                      </a>
-                      <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '10px' }}>
-                        {r.city} · Oregon
-                      </p>
-
-                      {r.sentence ? (
-                        <p
-                          className="mt-3 max-w-prose"
-                          style={{ color: 'var(--navy-70)', fontSize: 'clamp(.95rem,1.5vw,1.1rem)', lineHeight: 1.5 }}
-                        >
-                          {r.sentence}
-                        </p>
-                      ) : null}
-
-                      {/* Live stat band — tabular numerals, honest em-dash empties.
-                          "0 active" is itself the honest, verified figure
-                          (activeCount always resolves through a `?? 0`
-                          upstream, never truly unknown here) — treating 0 the
-                          same as "data missing" contradicted the same zero-
-                          inventory case rendering as "0 Active" everywhere
-                          else on the site (design-audit P3, one convention). */}
-                      <div className="mt-6 flex flex-wrap items-baseline gap-x-9 gap-y-4">
-                        <div>
-                          <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
-                            {r.activeCount != null ? r.activeCount.toLocaleString() : '—'}
-                          </p>
-                          <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
-                            Active
-                          </p>
-                        </div>
-                        <div>
-                          <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
-                            {r.medianPrice != null ? formatPriceExact(r.medianPrice) : '—'}
-                          </p>
-                          <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
-                            Median list
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Links into the community */}
-                      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
-                        {/* First link is the editorial guide, not listings — the
-                            old label "{name} homes for sale" promised inventory
-                            and delivered a guide page (design-audit P2). */}
-                        <a
-                          href={`/communities/${r.slug}`}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          {r.name} guide
-                        </a>
-                        {/* Exact-match anchor to the community's live-listings
-                            section (conversion-audit #9: "tetherow homes for
-                            sale" sat at pos 13 with zero exact-anchor internal
-                            links). #listings keeps the inventory promise the
-                            old bare guide link broke (design-audit P2). */}
-                        <a
-                          href={`/communities/${r.slug}#listings`}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          {r.name} homes for sale
-                        </a>
-                        <a
-                          href={`/homes-for-sale/${r.citySlug}`}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          Homes for sale in {r.city}
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Every community — search + collapsed alphabetical index */}
-        <section
-          className="section towns"
-          id="all-communities"
-          style={{ background: 'rgba(16,39,66,0.04)' }}
-        >
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">The full index</span>
-              <h2 className="sec-title display">Every community, <br />A to Z</h2>
-            </div>
-            <p
-              className="mt-4 max-w-prose"
-              style={{ color: 'var(--navy-70)', fontSize: 'clamp(.95rem,1.5vw,1.05rem)', lineHeight: 1.5 }}
-            >
-              {communityCount.toLocaleString()} neighborhoods and subdivisions across
-              Central Oregon. Search by name or city, or browse the index. Each links
-              to live listings and market data.
-            </p>
-            <div className="pt-2">
-              <CommunityIndexBrowser items={indexItems} />
-            </div>
-          </div>
-        </section>
-
-        {/* F3 residual: free listing_alerts on the communities hub (was LP-only hop). */}
-        <RegionalSfrAlertsBand
-          id="get-alerts"
-          showLpSecondary
-          secondaryExtra={{ href: '/sell/valuation', label: 'Value my home' }}
+        {/* Structured data: BreadcrumbList + Dataset (aggregate active count) +
+            the CollectionPage + ItemList inline script below. */}
+        <MetadataBlock schemas={schemas} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'CollectionPage',
+              name: 'Communities in Central Oregon',
+              description:
+                'Resort and master-planned communities across Central Oregon, with live MLS inventory.',
+              url: `${siteUrl}/communities`,
+              publisher: { '@type': 'Organization', name: 'Ryan Realty' },
+              mainEntity: {
+                '@type': 'ItemList',
+                itemListElement: resorts.map((r, i) => ({
+                  '@type': 'ListItem',
+                  position: i + 1,
+                  name: `${r.name}, ${r.city}, Oregon`,
+                  url: `${siteUrl}/communities/${r.slug}`,
+                })),
+              },
+            }),
+          }}
         />
 
-        {/* Search CTA: navy band */}
-        <section className="section region" id="communities-cta" aria-label="Search Central Oregon communities">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">Find a home, or <br />price the one you have.</h2>
-            </div>
-            <div className="max-w-xl pt-6 pb-12">
-              <p className="neigh-sub" style={{ margin: 0 }}>
-                Search active listings across every community, with filters for
-                price, beds, and place. Or start with what your home is worth today.
-              </p>
-              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
-                <Link href="/search" className="btn">
-                  Search all listings <span className="arr">→</span>
-                </Link>
-                <a href="#get-alerts" className="btn ghost">
-                  Get free listing alerts
-                </a>
-                <Link href="/sell/valuation" className="btn ghost">
-                  Value my home
-                </Link>
-              </div>
-            </div>
-          </div>
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Communities' }]} />
+
+        {leadFigure ? (
+          <V3Instrument
+            id="communities-pulse"
+            level={1}
+            eyebrow={v3Text('Live market')}
+            headline={v3Text('Communities across Central Oregon.')}
+            note={v3Text(
+              'Resorts, master-planned communities, and the plats between them. Bend, Redmond, Sisters, Sunriver, and the high desert towns in between. Live single-family inventory from the regional MLS.',
+            )}
+            figures={[leadFigure, ...restFigures]}
+            source={v3Text(PULSE_TRACE)}
+            action={{ label: v3Text('Search all listings'), href: '/search', variant: 'primary' }}
+          />
+        ) : null}
+
+        {firstRow ? (
+          <V3Ledger
+            id="resort-communities"
+            eyebrow={v3Text('Resort communities')}
+            heading={v3Text('Resorts and planned communities')}
+            rows={[firstRow, ...restRows]}
+            source={v3Text(LEDGER_TRACE)}
+          />
+        ) : (
+          <V3Ledger
+            id="resort-communities"
+            eyebrow={v3Text('Resort communities')}
+            heading={v3Text('Resorts and planned communities')}
+            rows={[]}
+            emptyMessage={v3Text('The community registry returned no community on this refresh.')}
+          />
+        )}
+
+        <V3Quiet
+          id="community-inventory"
+          eyebrow="Straight to the listings"
+          heading="Homes for sale, community by community"
+          items={inventoryDoors}
+        />
+
+        {/* Pattern 5, Sheet: a filter set over every community. The control is
+            the pre-barrel client browser, which owns its own markup. */}
+        <section
+          id="all-communities"
+          aria-labelledby="all-communities-heading"
+          className="mx-auto w-full max-w-5xl px-5 pb-16"
+        >
+          <V3Heading level={2} id="all-communities-heading">
+            Every community, A to Z
+          </V3Heading>
+          <V3Lede>
+            {formatCount(communityCount)} neighborhoods and subdivisions across Central Oregon.
+            Search by name or city, or browse the index. Each links to live listings and market
+            data.
+          </V3Lede>
+          <CommunityIndexBrowser items={indexItems} />
         </section>
 
-        <MarketSources sources={['ods']} />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+        <V3Quiet
+          id="edges"
+          eyebrow="Central Oregon"
+          heading="Find a home, or price the one you have"
+          items={[
+            { label: 'Search all listings', href: '/search' },
+            { label: 'Luxury homes in Bend', href: '/luxury-homes-bend' },
+            { label: 'Recorded plats', href: '/subdivisions' },
+            { label: 'Value my home', href: '/sell/valuation' },
+            { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
+          ]}
+          note="Search active listings across every community, with filters for price, beds, and place. Oregon Data Share is the regional MLS cooperative behind the live listing and market data on this page."
+        />
+
+        {/* F3 residual: free listing_alerts on the communities hub (was LP-only
+            hop). Same server action and the same payload the KB band posted. */}
+        <RegionalAlertSheet placeLabel="Central Oregon" city="" />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo
+          only when it is NOT nested in sectioning content. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

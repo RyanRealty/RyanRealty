@@ -132,11 +132,13 @@ import { KbSchools } from '@/components/site/kb/KbSchools'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'; import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
-import { PlaceDocuments } from '@/components/site/PlaceDocuments'
-import { PlacePropertyTypes } from '@/components/site/PlacePropertyTypes'
+import {
+  V3PlaceCharacter,
+  V3PlaceDocuments,
+  V3PlacePropertyTypes,
+} from '@/components/site/v3'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
-import { PlaceCharacter } from '@/components/site/PlaceCharacter'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { kbMoneyFull } from '@/components/site/kb/types'
@@ -934,13 +936,13 @@ export default async function CommunityDetailPage({ params }: Props) {
             getDistrictForCity(). Specific school names/attendance zones are NOT
             shown because per-address boundary data is not in the system. (§0) */}
         <KbSchools communityName={publicName} districtName={schoolDistrictInfo?.district ?? null} districtSlug={schoolDistrictInfo?.districtSlug ?? null} />
-        <PlacePropertyTypes
+        <V3PlacePropertyTypes
           placeName={publicName}
           citySlug={citySlug ?? ''}
           rows={publicSegments}
         />
-        <PlaceCharacter placeName={publicName} character={placeCharacter} />
-        <PlaceDocuments displayName={publicName} documents={placeDocuments} />
+        <V3PlaceCharacter placeName={publicName} character={placeCharacter} />
+        <V3PlaceDocuments displayName={publicName} documents={placeDocuments} />
         <CommunityGolfLinks communitySlug={slug} communityName={publicName} />        <KbArticles
           posts={articlePosts}
           eyebrow="Guides and news"

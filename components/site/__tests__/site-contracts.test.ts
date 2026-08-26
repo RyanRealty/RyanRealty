@@ -634,12 +634,16 @@ describe('design directive contracts', () => {
 })
 
 describe('place-family indexes', () => {
-  it('neighborhoods and subdivisions indexes exist and use the KB index language', () => {
+  it('neighborhoods and subdivisions indexes exist and carry a breadcrumb, their SoR read, and real doors', () => {
     const neighborhoods = readSrc('app/neighborhoods/page.tsx')
     const subdivisions = readSrc('app/subdivisions/page.tsx')
     expect(neighborhoods).toMatch(/from '@\/lib\/data'/)
     expect(neighborhoods).toMatch(/getBendNeighborhoodLedger/)
-    expect(neighborhoods).toMatch(/KbBreadcrumb/)
+    // Either register's breadcrumb satisfies the contract, the same allowance
+    // check-breadcrumb.mjs makes. Both indexes moved to components/site/v3 on
+    // 2026-08-26; what is locked here is that the page renders a trail at all,
+    // not which visual language draws it.
+    expect(neighborhoods).toMatch(/KbBreadcrumb|V3Breadcrumb/)
     expect(neighborhoods).toMatch(/\/cities\/\$\{n\.citySlug\}\/\$\{n\.slug\}/)
     expect(subdivisions).toMatch(/from '@\/lib\/data'/)
     expect(subdivisions).toMatch(/getRegistryPlatPublicInventory/)

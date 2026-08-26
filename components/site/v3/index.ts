@@ -52,7 +52,15 @@ export type {
 /* Atoms — the small pieces the six patterns share                             */
 /* -------------------------------------------------------------------------- */
 
-export { V3Button, V3Figure, V3SourceLine, V3SourceDisclosure, V3Eyebrow, V3Heading } from './atoms'
+export {
+  V3Button,
+  V3Figure,
+  V3SourceLine,
+  V3SourceDisclosure,
+  V3Eyebrow,
+  V3Heading,
+  V3Lede,
+} from './atoms'
 
 export type {
   V3ButtonProps,
@@ -63,6 +71,7 @@ export type {
   V3EyebrowProps,
   V3HeadingProps,
   V3HeadingSize,
+  V3LedeProps,
 } from './atoms'
 
 /**
@@ -178,6 +187,42 @@ export type {
 export { V3Quiet } from './V3Quiet'
 
 export type { V3QuietProps, V3QuietItem, V3QuietLink, V3QuietProse } from './V3Quiet'
+
+/* -------------------------------------------------------------------------- */
+/* PLACE SECTIONS — compositions of the six, not a seventh                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Three sections every place grain shares (subdivision, community,
+ * neighborhood). Each is ONE of the six patterns with place data poured into
+ * it, and each names its pattern and defends the choice in its own header:
+ *
+ *   V3PlaceDocuments      Ledger    recorded instruments, every row a door
+ *   V3PlaceCharacter      Quiet     build years and HOA, stated as sentences
+ *                                   because PLACE_CONTENT_RULES R1-R3 forbid
+ *                                   publishing them as bare figures
+ *   V3PlacePropertyTypes  Instrument  one per property type the place holds
+ *
+ * They live in the barrel rather than beside it because they were the last
+ * place sections still rendering `section`/`wrap`/`sec-head`/`sec-title`, four
+ * class names with no unscoped definition in this repo, and a shared component
+ * that only renders styled under someone else's root class is a defect waiting
+ * for its first reuse. Growing this list is ordinary; growing the pattern set
+ * above it is not.
+ */
+export { V3PlaceDocuments } from './V3PlaceDocuments'
+
+export {
+  V3PlaceCharacter,
+  placeCharacterHeading,
+  yearBuiltSentence,
+  hoaPresenceSentence,
+  duesSentence,
+} from './V3PlaceCharacter'
+
+export { V3PlacePropertyTypes } from './V3PlacePropertyTypes'
+
+export type { PlaceSegmentInput } from './V3PlacePropertyTypes'
 
 /* -------------------------------------------------------------------------- */
 /* CHROME: the persistent frame the six patterns sit inside                    */

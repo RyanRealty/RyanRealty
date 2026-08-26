@@ -53,6 +53,21 @@
   margin-bottom: var(--v3-space-xl);
 }
 
+/* The optional sentence between the verdict and the figures. It takes the space
+   the headline was already holding rather than adding to it, so an instrument
+   with a note and one without keep the same rhythm above the hairline. */
+.v3.v3-instrument .v3-instrument__headline:has(+ .v3-instrument__note) {
+  margin-bottom: var(--v3-space-md);
+}
+
+.v3.v3-instrument .v3-instrument__note {
+  margin: 0 0 var(--v3-space-xl);
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
 /* Two columns at 390 so a four-figure set reads without scrolling, then as many
    equal tracks as fit from 768 up. auto-fit with a 1fr max gives exactly one
    track per figure whenever they fit, which is four across at 1280 and stays

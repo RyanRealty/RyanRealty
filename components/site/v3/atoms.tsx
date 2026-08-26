@@ -355,6 +355,34 @@ export function V3Eyebrow({ children, onMedia, id, className }: V3EyebrowProps) 
 }
 
 /* -------------------------------------------------------------------------- */
+/* V3Lede                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export type V3LedeProps = {
+  /** The sentence. Non-nullable: an empty lede is a hole in the layout. */
+  children: NonNullable<ReactNode>
+  id?: string
+  className?: string
+}
+
+/**
+ * The one sentence of basis that sits under a heading. Instrument, Ledger and
+ * Quiet each own this shape as a `note` prop; this is the same paragraph for a
+ * surface whose working control is a client component that predates the barrel
+ * and therefore carries no note slot of its own (the A-to-Z place browsers).
+ *
+ * Muted, held to the reading measure, never a figure. A number belongs in an
+ * Instrument with its source line.
+ */
+export function V3Lede({ children, id, className }: V3LedeProps) {
+  return (
+    <p id={id} className={cn('v3-lede', className)}>
+      {children}
+    </p>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
 /* V3Heading                                                                   */
 /* -------------------------------------------------------------------------- */
 
