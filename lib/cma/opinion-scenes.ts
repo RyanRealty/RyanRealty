@@ -8,7 +8,8 @@ import { renderCompStripHtml } from '@/lib/cma/comp-strip'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { compsPriceChartSvg } from '@/lib/cma/comps-price-chart'
-import { whyThisListPrice } from '@/lib/cma/client-facing'
+import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
+import { clientSourceLine, whyThisListPrice } from '@/lib/cma/client-facing'
 import { immersiveWiderMarketChapters } from '@/lib/cma/market-area-chapters'
 import { dateLong, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -69,6 +70,27 @@ function competitionScene(a: OpinionSceneArgs): string {
     pendingCount: b.pendingCount,
     rivals: b.rivals ?? [],
   })
+}
+
+/** Web twin of seasonalityPage. Same gate, same numbers, same source line. */
+function seasonalityScene(a: OpinionSceneArgs): string {
+  const x = a.extras?.seasonality
+  if (!x || x.byMonth.filter((m) => m.medianDaysToPending != null).length < 6) return ''
+  const svg = seasonalityChartSvg(x)
+  if (!svg) return ''
+  const fastest = x.fastestMonths.length ? x.fastestMonths.join(' and ') : null
+  return `
+  <section class="sc sc-cream" id="seasonality">
+    <div class="in wide">
+      <div class="kick r">When to list</div>
+      <h2 class="h r">When homes here sell fastest</h2>
+      <p class="lede r">Median days from list to pending, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales.${
+        fastest ? ` The shortest waits land in ${esc(fastest)}.` : ''
+      }</p>
+      <div class="r">${svg}</div>
+      <p class="src r">${esc(clientSourceLine(x.source, `Closed single-family sales in ${a.subject.city}, grouped by close month.`))}</p>
+    </div>
+  </section>`
 }
 
 function salesScene(a: OpinionSceneArgs): string {
@@ -204,6 +226,7 @@ export function assembleOpinionScenes(a: OpinionSceneArgs): string {
     competitionScene(a),
     salesScene(a),
     subdivisionScene(a),
+    seasonalityScene(a),
     immersiveWiderMarketChapters(a),
     expiredScene(a),
     nextScene(a),

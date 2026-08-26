@@ -7,6 +7,7 @@ import { buildLinePlot } from '@/lib/charts/plot'
 import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
 import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { renderCompMapKeyHtml, renderCompStripHtml } from '@/lib/cma/comp-strip'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import {
@@ -348,6 +349,61 @@ function subdivisionYearChartSvg(years: readonly { year: number; count: number }
   })
 }
 
+/**
+ * When to list. Median days to pending by close month, over the years the
+ * market actually covers.
+ *
+ * This chapter was computed and then never drawn: buildCmaExtras() has always
+ * returned `seasonality`, but the price-opinion-spine refactor (9a73b6f1) took
+ * out the only renderer and nothing replaced it. Nothing else in the document
+ * answers a seller asking when to go on the market.
+ */
+export function seasonalityPage(a: OpinionPageArgs): CmaPageDef | null {
+  const x = a.extras?.seasonality
+  // Two months of bars is not a season. Say nothing rather than imply a shape.
+  if (!x || x.byMonth.filter((m) => m.medianDaysToPending != null).length < 6) return null
+  const svg = seasonalityChartSvg(x)
+  if (!svg) return null
+  const fastest = x.fastestMonths.length ? x.fastestMonths.join(' and ') : null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · When homes here sell fastest`,
+    toc: 'When homes here sell fastest',
+    body: `
+  <h2 class="section">When homes here sell fastest</h2>
+  <p>Median days from list to pending, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales.${
+    fastest ? ` The shortest waits land in ${esc(fastest)}.` : ''
+  }</p>
+  <div class="szn is-hero" data-anim="chart">${svg}</div>
+  <p class="small">${esc(clientSourceLine(x.source, `Closed single-family sales in ${a.subject.city}, grouped by close month.`))}</p>`,
+  }
+}
+
+/**
+ * Annual closed volume for this market. `market.yearMart` has always been
+ * computed (getCmaMarketBoardYear) and is already cited in citations.json as
+ * `year_volume`, but the only renderer lived in the market page the
+ * price-opinion-spine refactor orphaned, so the figure was gathered, cited, and
+ * never shown.
+ *
+ * Only the year mart moved here. The rest of that page — a market verdict and a
+ * median-close-by-month chart — is what marketKpiPage already draws from the
+ * same CmaMarketContext, and a second verdict computed a second way is exactly
+ * the divergence CLAUDE.md §0 forbids in a client valuation document.
+ */
+export function marketVolumePage(a: OpinionPageArgs): CmaPageDef | null {
+  const y = a.market?.yearMart
+  if (!y || y.source !== 'mart' || y.soldCount <= 0 || y.totalVolume <= 0) return null
+  const geo = y.geoType === 'city' ? y.geoLabel : 'Central Oregon'
+  return {
+    meta: `${esc(a.subject.streetAddress)} · ${esc(geo)} closed sales, ${esc(String(y.year))}`,
+    toc: `${geo} closed sales, ${y.year}`,
+    body: `
+  <h2 class="section">${esc(geo)} closed sales, ${esc(String(y.year))}</h2>
+  <p>${esc(geo)} closed ${esc(usd(Math.round(y.totalVolume)))} across ${esc(int(y.soldCount))} sales (${esc(y.typeLabel)}).</p>
+  <p class="small">Closed ${esc(y.typeLabel)} in ${esc(geo)} for ${esc(String(y.year))}, pulled ${esc(dateLong(y.computedAt))}.</p>`,
+  }
+}
+
 export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
   const b = a.extras?.band
   if (!b) return null
@@ -470,6 +526,10 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   if (kpis) rest.push(kpis)
   const trends = trendChartsPage(a)
   if (trends) rest.push(trends)
+  const seasonality = seasonalityPage(a)
+  if (seasonality) rest.push(seasonality)
+  const volume = marketVolumePage(a)
+  if (volume) rest.push(volume)
   const competition = competitionPage(a)
   if (competition) rest.push(competition)
   rest.push(salesAndMapPage(a))

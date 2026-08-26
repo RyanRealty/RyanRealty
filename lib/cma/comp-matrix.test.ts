@@ -63,35 +63,57 @@ describe('renderCompMatrixHtml', () => {
     expect(html).not.toMatch(/[—;]/)
   })
 
-  it('holds one table at four sales and chunks past that, subject repeated', () => {
-    // The page-contract defect: one table per sale set was thirteen columns
-    // wide at twelve comps, ran past the right margin, and `overflow-x: auto`
-    // then clipped sales 4 through 12 out of the delivered PDF entirely.
-    const four = renderCompMatrixHtml(subject, Array.from({ length: 4 }, () => comp))
-    expect(four.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(1)
-    expect(four).not.toContain('<h4 class="subhead">')
+  it('keeps the CMA a seller actually gets to one undivided table', () => {
+    // TARGET_COMPS is 5 and MIN_COMPS is 3 (lib/cma/comps.ts), so the whole
+    // ordinary range must render as a single table with no group captions.
+    for (const n of [3, 4, 5]) {
+      const html = renderCompMatrixHtml(subject, Array.from({ length: n }, () => comp))
+      expect(html.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(1)
+      expect(html).not.toContain('<h4 class="subhead">')
+    }
+  })
 
+  it('never strands a table holding a single sale', () => {
+    // Filling greedily to the ceiling would print 5 then a lone column at six
+    // comps, which reads as an error on a page a seller studies. Sizes may
+    // never differ by more than one, and no table may hold one sale unless the
+    // whole CMA has one.
+    for (let n = 6; n <= 13; n++) {
+      const html = renderCompMatrixHtml(subject, Array.from({ length: n }, () => comp))
+      const sizes = [...html.matchAll(/<colgroup>(.*?)<\/colgroup>/g)].map(
+        // minus the label column and the repeated subject column
+        (m) => (m[1]!.match(/<col /g) ?? []).length - 2,
+      )
+      expect(sizes.reduce((a, b) => a + b, 0)).toBe(n)
+      expect(Math.max(...sizes)).toBeLessThanOrEqual(5)
+      expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(1)
+      expect(Math.min(...sizes)).toBeGreaterThan(1)
+      expect(sizes).toHaveLength(Math.ceil(n / 5))
+    }
+  })
+
+  it('captions each table with the sales it holds, and loses none of them', () => {
     const twelve = renderCompMatrixHtml(subject, Array.from({ length: 12 }, () => comp))
     expect(twelve.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(3)
     expect(twelve).toContain('<h4 class="subhead">Sales 1 through 4</h4>')
     expect(twelve).toContain('<h4 class="subhead">Sales 5 through 8</h4>')
     expect(twelve).toContain('<h4 class="subhead">Sales 9 through 12</h4>')
-    // Every sale still reaches the page, and the subject anchors each table.
+    // The defect this whole shape exists to prevent: sales falling off the page.
     expect(twelve).toContain('12. 947 6th')
     expect(twelve.match(/648 Douglas/g)).toHaveLength(3)
     expect(twelve).not.toMatch(/[—;]/)
 
-    // A remainder chunk names its own sale rather than a range.
     const thirteen = renderCompMatrixHtml(subject, Array.from({ length: 13 }, () => comp))
-    expect(thirteen).toContain('<h4 class="subhead">Sale 13</h4>')
+    expect(thirteen).toContain('<h4 class="subhead">Sales 1 through 5</h4>')
+    expect(thirteen).toContain('<h4 class="subhead">Sales 10 through 13</h4>')
   })
 
   it('pins every column width so no cell can push the table past the margin', () => {
     // Fixed layout plus a colgroup is what makes the width independent of how
     // long an address or a subdivision name happens to be.
-    const html = renderCompMatrixHtml(subject, Array.from({ length: 4 }, () => comp))
+    const html = renderCompMatrixHtml(subject, Array.from({ length: 5 }, () => comp))
     const cols = html.match(/<col style="width:[\d.]+%">/g) ?? []
-    expect(cols).toHaveLength(6) // label + subject + 4 sales
+    expect(cols).toHaveLength(7) // label + subject + 5 sales
     const widths = cols.map((c) => Number(c.match(/([\d.]+)%/)![1]))
     expect(widths[0]).toBe(20)
     expect(widths.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(100)

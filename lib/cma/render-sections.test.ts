@@ -23,6 +23,7 @@ import {
   zoningExplainerBlock,
 } from './render-blocks'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
+import { seasonalityPage } from './opinion-pages'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 
 const subject: CmaSubject = {
@@ -249,5 +250,42 @@ describe('use-of-property and pricing pages in the assembled document', () => {
     expect(html).toContain('How this home is priced')
     expect(html).toContain('How we priced this')
     expect(html).not.toContain('What You Can Do With This Property')
+  })
+})
+
+describe('when-to-list chapter', () => {
+  // buildCmaExtras() has always computed `seasonality`; the price-opinion-spine
+  // refactor (9a73b6f1) removed the only renderer and nothing replaced it, so
+  // the document silently stopped answering when a seller should go to market.
+  const months = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    monthName: ['January','February','March','April','May','June','July','August','September','October','November','December'][i]!,
+    closedCount: 20,
+    medianDaysToPending: 30 + i,
+  }))
+  const seasonality = {
+    byMonth: months,
+    fastestMonths: ['January'],
+    slowestMonths: ['December'],
+    yearsCovered: 3,
+    totalClosed: 240,
+    source: 'Closed single-family sales in Bend, 2023 through 2026.',
+  }
+
+  it('draws the chart and carries its own source line', () => {
+    const page = seasonalityPage({ ...bareArgs, extras: { seasonality } } as never)
+    expect(page).not.toBeNull()
+    expect(page!.toc).toBe('When homes here sell fastest')
+    expect(page!.body).toContain('<svg')
+    expect(page!.body).toContain('3 years and 240 closed sales')
+    expect(page!.body).toContain('The shortest waits land in January.')
+    // Every figure on a client page traces to a named source (CLAUDE.md §0).
+    expect(page!.body).toContain('Closed single-family sales in Bend, 2023 through 2026.')
+  })
+
+  it('says nothing rather than implying a shape from too few months', () => {
+    const thin = { ...seasonality, byMonth: months.map((m, i) => (i < 5 ? m : { ...m, medianDaysToPending: null })) }
+    expect(seasonalityPage({ ...bareArgs, extras: { seasonality: thin } } as never)).toBeNull()
+    expect(seasonalityPage({ ...bareArgs, extras: null } as never)).toBeNull()
   })
 })

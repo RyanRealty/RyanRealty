@@ -2,8 +2,8 @@
  * Side-by-side sold-comp matrix. Same grain as an RPR comparison:
  * subject in the first column, each kept sale as a column, one row per fact.
  *
- * The matrix is CHUNKED. One table per COMPS_PER_TABLE sales, subject repeated
- * at the head of each. A single table holding every sale is what broke the page
+ * The matrix is CHUNKED. At most MAX_COMPS_PER_TABLE sales per table, spread
+ * evenly, with the subject repeated at the head of each. A single table holding every sale is what broke the page
  * contract: at twelve comps it was thirteen columns wide, ran past the right
  * margin, and `overflow-x: auto` then CLIPPED the tail — sales 4 through 12
  * were absent from the delivered PDF with no error and no visible truncation.
@@ -19,11 +19,16 @@ const esc = escapeHtml
 const ACRES_TO_SQFT = 43560
 
 /**
- * Sales per table. Four sales plus the subject is six columns; against the
- * 7.3in content box that leaves 16% (about 112px) per value column, which
- * holds every value we print without wrapping a figure.
+ * Most sales one table may hold. Five plus the subject is seven columns;
+ * against the 7.3in content box that leaves 13.3% (about 93px) per value
+ * column, which holds every value we print without wrapping a figure — checked
+ * against eight-figure prices and 22-acre lots, not the fixture's tidy ones.
+ *
+ * Five is the ceiling because TARGET_COMPS is five (lib/cma/comps.ts): the
+ * CMA a seller actually receives is one table, undivided, and MAX_COMPS of ten
+ * is two even tables of five.
  */
-const COMPS_PER_TABLE = 4
+const MAX_COMPS_PER_TABLE = 5
 
 /** Row-label column share. The rest is split evenly across the value columns. */
 const LABEL_COL_PCT = 20
@@ -132,6 +137,27 @@ const ROWS: ReadonlyArray<{ label: string; figure: boolean }> = [
   { label: 'This sale as your house', figure: true },
 ]
 
+/**
+ * Spread the sales across the fewest tables that respect the ceiling, evenly
+ * rather than greedily. Filling to five and letting the rest fall through
+ * strands a table holding one sale: six comps would print five and then a lone
+ * column, which reads as an error on a page a seller studies. Six prints 3 and
+ * 3; seven prints 4 and 3; ten prints 5 and 5.
+ */
+function splitEvenly(cols: Col[]): Col[][] {
+  const tableCount = Math.max(1, Math.ceil(cols.length / MAX_COMPS_PER_TABLE))
+  const groups: Col[][] = []
+  let cut = 0
+  for (let t = 0; t < tableCount; t++) {
+    // Distribute the remainder one column at a time across the leading tables,
+    // so sizes never differ by more than one.
+    const size = Math.ceil((cols.length - cut) / (tableCount - t))
+    groups.push(cols.slice(cut, cut + size))
+    cut += size
+  }
+  return groups
+}
+
 function groupHeading(startIndex: number, size: number): string {
   const first = startIndex + 1
   const last = startIndex + size
@@ -172,16 +198,13 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
   if (comps.length === 0) return ''
   const subj = subjectCol(subject)
   const compCols = comps.map((c, i) => compCol(c, i))
-  const groups: Col[][] = []
-  for (let i = 0; i < compCols.length; i += COMPS_PER_TABLE) {
-    groups.push(compCols.slice(i, i + COMPS_PER_TABLE))
-  }
+  const groups = splitEvenly(compCols)
+  let seen = 0
   const tables = groups
-    .map((group, gi) => {
+    .map((group) => {
       const heading =
-        groups.length > 1
-          ? `<h4 class="subhead">${esc(groupHeading(gi * COMPS_PER_TABLE, group.length))}</h4>`
-          : ''
+        groups.length > 1 ? `<h4 class="subhead">${esc(groupHeading(seen, group.length))}</h4>` : ''
+      seen += group.length
       return `${heading}${matrixTable([subj, ...group])}`
     })
     .join('')
