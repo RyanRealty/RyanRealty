@@ -22,14 +22,19 @@ export const dynamic = 'force-dynamic'
 export default async function StudioPage() {
   await requireAdminPage('content.view')
 
-  const [drafts, places] = await Promise.all([listStudioDrafts({ limit: 24 }), studioPlaceOptions()])
+  const [drafts, places] = await Promise.all([listStudioDrafts({ limit: 40 }), studioPlaceOptions()])
   const waiting = drafts.filter((d) => d.status === 'ready')
+  // Killed drafts are noise on a console whose job is "decide the ones that
+  // survived". They stay counted, and their reasons stay on the row, but they
+  // do not each take a card.
+  const live = drafts.filter((d) => d.status !== 'killed')
+  const killed = drafts.filter((d) => d.status === 'killed')
 
   const spentToday = drafts
     .filter((d) => d.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10))
     .reduce((sum, d) => sum + (d.spendUsd ?? 0), 0)
 
-  const cards: DraftCardModel[] = drafts.map((d) => ({
+  const cards: DraftCardModel[] = live.map((d) => ({
     id: d.id,
     label: d.label,
     formatLabel: getStudioFormat(d.formatId)?.label ?? d.formatId,
@@ -86,6 +91,9 @@ export default async function StudioPage() {
 
       <p style={{ marginTop: 18, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
         Spent today: ${spentToday.toFixed(2)}. Every figure in a caption traces to a named source.
+        {killed.length > 0
+          ? ` ${killed.length} draft${killed.length === 1 ? '' : 's'} did not pass and were killed.`
+          : ''}
       </p>
     </div>
   )

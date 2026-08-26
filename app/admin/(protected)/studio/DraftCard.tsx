@@ -111,7 +111,11 @@ export function DraftCard({ draft }: { draft: DraftCardModel }) {
         {draft.platforms.join(', ') || 'no platforms'}
         {' · '}
         <span style={{ color: qaTone(draft.qaScore) }}>
-          {draft.qaScore != null ? `frame ${draft.qaScore}/100` : 'source photograph'}
+          {draft.qaScore != null
+            ? `frame ${draft.qaScore}/100`
+            : draft.mediaUrl
+              ? 'source photograph'
+              : 'no frame'}
         </span>
         {' · '}
         {draft.citationCount} cited
