@@ -18,10 +18,27 @@
  * Response is `results.phoneNumbers[]` of
  * `{ number, dnc: boolean, meta: { error, matched, dateRetrieved } }`.
  *
- * IT DOES NOT RETURN LITIGATOR STATUS. That signal comes from the address-based
- * skip trace (lib/owner-resolution.mjs), so a clean result here means "not on
- * the registry", NOT "not a TCPA plaintiff". isLitigator stays false and the
- * caller must not present a scrub as litigator screening.
+ * TWO ENDPOINTS, NOT ONE. /phone/dnc answers the registry question;
+ * /phone/tcpa answers the litigator question (is this a known TCPA plaintiff —
+ * the people who actually file the suits). Both are probed live and both are
+ * asked, because screening the registry without screening litigators leaves the
+ * expensive population unscreened.
+ *
+ * THEIR `matched` SEMANTICS DIFFER AND THE DIFFERENCE IS LOAD-BEARING.
+ * On /phone/dnc every sampled number came back matched:true with `dnc` carrying
+ * the answer — so matched:false there means "no answer" and must not be stored.
+ * On /phone/tcpa every sampled number came back matched:false with tcpa:false
+ * and errorCount:0, which is what a rare-population lookup looks like: the query
+ * succeeded and the number simply is not on the litigator list. So for the
+ * litigator check the ANSWER is `tcpa`, gated only on meta.error.
+ *
+ * That reading is not yet proven by a positive. The account has 138 contacts
+ * carrying tcpa:litigator, but every one of them also carries
+ * compliance:dnc-registry and none is litigator-only — one mapping applied both
+ * tags, so those are DNC hits, not confirmed litigator hits. A run at scale
+ * settles it: any true is proof the signal works; 9,000 consecutive falses is
+ * a reason to ask BatchData whether the product is enabled. The runner prints
+ * the match rate so the answer is visible rather than assumed.
  *
  * WHAT A RESULT MEANS. `checked_at` is the point. A row says "asked on this
  * date"; no row says "never asked". Registry status changes — a number can be
@@ -48,6 +65,8 @@ export type DncScrubResult = {
   phoneLast10: string
   onDnc: boolean
   isLitigator: boolean
+  /** True when the litigator endpoint actually answered for this number. */
+  litigatorChecked: boolean
   lineType: string | null
   carrier: string | null
   raw: Record<string, unknown>
@@ -82,12 +101,28 @@ export function mapScrubRecord(rec: Record<string, unknown>): DncScrubResult | n
   return {
     phoneLast10,
     onDnc: rec.dnc === true,
-    // Not available from this endpoint — see the file header.
+    // Filled in by the litigator pass — see scrubPhones.
     isLitigator: false,
+    litigatorChecked: false,
     lineType: (rec.type as string | undefined) ?? null,
     carrier: (rec.carrier as string | undefined) ?? null,
     raw: rec,
   }
+}
+
+/**
+ * Map one /phone/tcpa record. Unlike the DNC endpoint, a non-match IS the
+ * answer here (the number is not on the litigator list), so only a transport
+ * error disqualifies it. PURE.
+ */
+export function mapLitigatorRecord(
+  rec: Record<string, unknown>,
+): { phoneLast10: string; isLitigator: boolean } | null {
+  const phoneLast10 = normalizeLast10(rec.number as string | undefined)
+  if (!phoneLast10) return null
+  const meta = (rec.meta ?? {}) as Record<string, unknown>
+  if (meta.error === true) return null
+  return { phoneLast10, isLitigator: rec.tcpa === true }
 }
 
 /**
@@ -109,25 +144,42 @@ export async function scrubPhones(phones: string[]): Promise<DncScrubResult[]> {
   const key = process.env.BATCHDATA_API_KEY?.trim()
   if (!key) throw new Error('BATCHDATA_API_KEY missing — cannot scrub, and must not assume clean')
 
-  const res = await fetch(`${BATCHDATA_BASE}/phone/dnc`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    // Plain strings — see the header. Objects are rejected.
-    body: JSON.stringify({ requests: last10s }),
-    signal: AbortSignal.timeout(30000),
-  })
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`BatchData DNC scrub failed ${res.status}: ${body.slice(0, 300)}`)
+  const ask = async (path: string) => {
+    const r = await fetch(`${BATCHDATA_BASE}${path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      // Plain strings — see the header. Objects are rejected.
+      body: JSON.stringify({ requests: last10s }),
+      signal: AbortSignal.timeout(30000),
+    })
+    if (!r.ok) {
+      const body = await r.text().catch(() => '')
+      throw new Error(`BatchData ${path} failed ${r.status}: ${body.slice(0, 300)}`)
+    }
+    return (await r.json()) as Record<string, unknown>
   }
 
-  const json = (await res.json()) as Record<string, unknown>
-  const results = extractRecords(json)
-  return results.map(mapScrubRecord).filter((r): r is DncScrubResult => r !== null)
+  const [dncJson, tcpaJson] = await Promise.all([ask('/phone/dnc'), ask('/phone/tcpa')])
+
+  const litigators = new Map<string, boolean>()
+  for (const rec of extractRecords(tcpaJson)) {
+    const m = mapLitigatorRecord(rec)
+    if (m) litigators.set(m.phoneLast10, m.isLitigator)
+  }
+
+  const results = extractRecords(dncJson)
+  return results
+    .map(mapScrubRecord)
+    .filter((r): r is DncScrubResult => r !== null)
+    .map((r) => ({
+      ...r,
+      isLitigator: litigators.get(r.phoneLast10) === true,
+      litigatorChecked: litigators.has(r.phoneLast10),
+    }))
 }
 
 /**

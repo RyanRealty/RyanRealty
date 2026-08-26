@@ -3,7 +3,7 @@
  *
  *   npx tsx scripts/dnc-scrub.ts --limit 25            # scrub 25 numbers
  *   npx tsx scripts/dnc-scrub.ts --limit 25 --dry-run  # show the backlog, spend nothing
- *   npx tsx scripts/dnc-scrub.ts --limit 5000          # a real backfill chunk
+ *   npx tsx scripts/dnc-scrub.ts --limit 5000 --source Farm   # the unscreened cohort
  *
  * SPENDS MONEY. BatchData bills per number, so --limit is required and there is
  * no default that quietly scrubs the whole book. Start with --dry-run, then a
@@ -53,8 +53,9 @@ async function main() {
   const { createServiceClient } = await import('@/lib/supabase/service')
   const { addSuppression } = await import('@/lib/crm/suppressions')
 
-  const backlog = await listUncheckedPhones(limit)
-  console.log(`backlog pulled: ${backlog.length} number(s) (limit ${limit})`)
+  const source = arg('source')
+  const backlog = await listUncheckedPhones(limit, source)
+  console.log(`backlog pulled: ${backlog.length} number(s) (limit ${limit}${source ? `, source=${source}` : ''})`)
   if (dryRun) {
     console.log('DRY RUN — nothing sent, nothing spent. Sample:', backlog.slice(0, 5).join(', '))
     return
@@ -62,12 +63,14 @@ async function main() {
   if (backlog.length === 0) return
 
   const sb = createServiceClient()
-  let answered = 0, flagged = 0, contactsSuppressed = 0
+  let answered = 0, flagged = 0, contactsSuppressed = 0, litigators = 0, litigatorChecked = 0
 
   for (let i = 0; i < backlog.length; i += MAX_PHONES_PER_REQUEST) {
     const batch = backlog.slice(i, i + MAX_PHONES_PER_REQUEST)
     const results = await scrubPhones(batch)
     answered += results.length
+    litigatorChecked += results.filter((r) => r.litigatorChecked).length
+    litigators += results.filter((r) => r.isLitigator).length
     const wrote = await recordDncChecks(results)
     if (!wrote.ok) throw new Error(`record failed: ${wrote.error}`)
 
@@ -124,6 +127,11 @@ async function main() {
   console.log(`answered   ${answered}  (recorded)`)
   console.log(`no answer  ${unanswered}  (left UNCHECKED on purpose — not recorded as clean)`)
   console.log(`on registry ${flagged}  -> ${contactsSuppressed} contact(s) tagged + suppressed`)
+  console.log(`litigator   ${litigators} of ${litigatorChecked} answered`)
+  if (litigatorChecked > 0 && litigators === 0) {
+    console.log('  note: zero litigator hits. Expected on a small batch (they are rare);')
+    console.log('  if this holds across thousands, ask BatchData whether the product is enabled.')
+  }
   console.log(`\nAt roughly $0.02-0.05/number this batch cost about $${(backlog.length * 0.03).toFixed(2)}.`)
 }
 

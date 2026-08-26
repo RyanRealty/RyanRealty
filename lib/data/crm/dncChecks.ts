@@ -92,12 +92,16 @@ export async function recordDncChecks(
 }
 
 /**
- * Phones on live contacts that have never been checked (or whose check went
- * stale), newest contacts first. The backlog a scrub run works through.
+ * Phones on live contacts never checked (or whose check went stale). Optionally
+ * narrowed to one lead source, because coverage is uneven: expired-listing-cron
+ * screens at intake, the bulk Farm load never did.
  */
-export async function listUncheckedPhones(limit: number): Promise<string[]> {
+export async function listUncheckedPhones(limit: number, source?: string | null): Promise<string[]> {
   const sb = createServiceClient()
-  const { data, error } = await sb.rpc('crm_unchecked_dnc_phones', { p_limit: limit })
+  const { data, error } = await sb.rpc('crm_unchecked_dnc_phones', {
+    p_limit: limit,
+    p_source: source ?? null,
+  })
   if (error) throw new Error(`listUncheckedPhones: ${error.message}`)
   return ((data ?? []) as Array<{ phone_last10: string }>).map((r) => r.phone_last10)
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   extractRecords,
+  mapLitigatorRecord,
   mapScrubRecord,
   normalizeLast10,
   tagsForResult,
@@ -68,5 +69,33 @@ describe('mapScrubRecord — an answer, or nothing', () => {
   it('earns no tags when the number is clean', () => {
     const r = mapScrubRecord(extractRecords(LIVE_ENVELOPE)[0]!)
     expect(tagsForResult(r!)).toEqual([])
+  })
+})
+
+describe('mapLitigatorRecord — a non-match IS the answer here', () => {
+  it('reads tcpa:true as a litigator', () => {
+    expect(mapLitigatorRecord({ number: '5415550100', tcpa: true, meta: { error: false, matched: true } }))
+      .toEqual({ phoneLast10: '5415550100', isLitigator: true })
+  })
+
+  it('treats an unmatched number as NOT a litigator, unlike the DNC endpoint', () => {
+    // The semantics genuinely differ and the difference is load-bearing.
+    // /phone/dnc returned matched:true for every sampled number, so matched:false
+    // there means "no answer". /phone/tcpa returns matched:false with tcpa:false
+    // and errorCount:0 for ordinary numbers — that is a rare-population lookup
+    // succeeding, not failing. Confirmed by a live run: 2 of 100 came back true.
+    expect(mapLitigatorRecord({ number: '5415550100', tcpa: false, meta: { error: false, matched: false } }))
+      .toEqual({ phoneLast10: '5415550100', isLitigator: false })
+  })
+
+  it('still drops a transport error rather than calling it clean', () => {
+    expect(mapLitigatorRecord({ number: '5415550100', tcpa: false, meta: { error: true } })).toBeNull()
+  })
+
+  it('a litigator earns the full hard-stop, not just do-not-call', () => {
+    expect(tagsForResult({
+      phoneLast10: '5415550100', onDnc: false, isLitigator: true,
+      litigatorChecked: true, lineType: null, carrier: null, raw: {},
+    })).toEqual(['tcpa:litigator', 'contact:do-not-call', 'contact:do-not-text', 'compliance:hard-stop'])
   })
 })
