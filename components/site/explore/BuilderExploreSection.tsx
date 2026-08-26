@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { listingDetailPath, slugify } from '@/lib/slug'
+import { listingDetailPath } from '@/lib/slug'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 
 type Props = {
@@ -21,15 +21,11 @@ export function BuilderExploreSection({ builderName, tiles }: Props) {
           <span className="sec-index">Builder</span>
           <h2 className="sec-title display">More by {builderName}</h2>
         </div>
-        <p className="mt-2 text-sm" style={{ color: 'var(--navy-70)' }}>
-          <Link
-            href={`/builders/${slugify(builderName)}`}
-            className="underline"
-            style={{ color: 'var(--navy)' }}
-          >
-            See all {builderName} homes
-          </Link>
-        </p>
+        {/* No "see all" link: /builders/:slug permanently redirects to a generic
+            new-construction search, and the search field registry has no builder
+            key to carry the name across. The rows below already are this
+            builder's homes, so a link that discards the builder is worse than
+            none. Restore it only alongside a real builder filter. */}
         <ul
           style={{
             listStyle: 'none',
