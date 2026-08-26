@@ -3,7 +3,61 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-25 (Claude Code) — buyer/seller journeys walked as real people; 5 silent defects fixed; /book shipped
+# Current — 2026-08-25 (Claude Opus 5) — MARKET_TRUTH D26+D27 shipped, 2,526 unshipped lines rescued, sandbox race killed
+
+**Surface:** `origin/main` `bb604b78`. D26 and D27 deployed and verified on ryan-realty.com.
+
+**Shipped**
+- `f2a81fa7` **D26** — picked up from a Grok session that ran out of weekly tokens mid-verification.
+  Housing-market instruments, reports-hub live figures and city/neighborhood/community as-of stamps
+  read leftover membership. Live: `/cities/bend` stamp 11:21 AM = leftover `market_metric.computed_at`;
+  neighborhood and community stamp 11:40 AM. The stamps differing BY GRAIN is what proves they are
+  leftover computed_at and not one shared pulse refresh.
+- `4150dccd` **admin sales-funnel tab, rescued.** 2,526 lines across 12 files existed ONLY as untracked
+  files in the main checkout, which sat 611 commits behind and was approved for reset. A `git clean`
+  would have destroyed it. Two type errors kept it from building (`filterCohort` widened `cohort` past
+  `PersonRow`); made generic over the row type. Enrolled `SalesFunnelTab` + `FunnelAudienceControl` in
+  the G65 SCAN_DIRS rather than exempting them.
+- `96aed416`..`3f04ee4c` **D27 — client documents read leftover.** Most of the migration was already
+  done by `214b0a01`; the real defect was that the CRM market report, the CMA and the BPO still
+  DECLARED `market_stats_cache + market_pulse_live` for figures leftover produces. On a broker-signed
+  document the citation is what makes a number auditable, so those figures were unverifiable against
+  the store they named. All three now carry per-figure source attribution.
+  Also: `new_listings_30d` cell built and live (Bend **247**, region **505**, Coming Soon excluded —
+  4 Bend listings were pre-marketing); **New · 30 days** tile restored; blog months-of-supply guard
+  moved to leftover; gate-6 `CumulativeDaysOnMarket` baseline **7 → 0** (verified dead: 0 of 4,628
+  non-null on Active SFR).
+- `bb604b78` **parallel-suite sandbox race, fixed as a class.** `check-view-preset-equivalence` used a
+  FIXED `tmpdir` sandbox while running in two vitest projects, so concurrent instances overwrote each
+  other — passing standalone, failing only in the full suite. `check-entity-scope` had already solved
+  this and the fix never propagated; three more files carried it. All four uniquified.
+  Adds `scripts/apply-sql-function.mjs`: applies `scripts/sql/*.sql` in a transaction and reads the
+  deployed definition BACK, so "applied" means verified. Those four compute functions previously had
+  no applier and were hand-pasted.
+
+**Rejected with evidence** — work-graph node `bedc35f4` (regression of G15, "sold search shows no
+homes"). Does not reproduce at 390 or 1280 on production: 86,330 homes, Sold badges, prices, and the
+reported empty-state string is absent from the page. A blank map pane seen in the in-app browser is an
+artifact of THAT browser — constructing a `google.maps.Map` there paints nothing while real Chrome
+renders tiles. No code change; nothing on the shopper path is broken.
+
+**Three guards that held only by luck, now pinned by mutation-checked tests:** the delivered-CMA
+freeze (both call sites pass `hydrateArea: false` — one edit from silently restating a signed
+document), the resort verdict gate (dropping it makes a Tetherow board render Bend's verdict — one
+population labelled as another), and the client report's source trace.
+
+**THE GRAPH DOES NOT KNOW ANY OF THIS.** `loop_work_nodes` has no node for D26, D27, the salvage or
+the tooling fix; its only intake is `fleet-intake-core.ts` (bot findings), and nothing reconciles
+shipped commits against it. `site_improvement_ledger` carries a `commit_sha` column and has **0 rows
+shipped since 2026-08-17** — every ship since, not just this session, has bypassed it. Treat the
+commit messages and `docs/plans/MARKET_TRUTH/` as the durable record until that gap is closed.
+
+**Gate lesson, third time this session:** G52, the D91 contract test and `ci:publish-months-of-supply`
+each pinned the SPELLING of a mechanism rather than its outcome, and each failed a change that was
+strictly stronger than what it replaced. When a gate fails a correct improvement, move the rule to a
+shared module with failing fixtures and assert the outcome — write the negative fixture first.
+
+## Prior — 2026-08-25 (Claude Code) — buyer/seller journeys walked as real people; 5 silent defects fixed; /book shipped
 
 **Surface:** `origin/main` `ee4b3534`. Deployed and verified in a real browser on ryan-realty.com.
 
