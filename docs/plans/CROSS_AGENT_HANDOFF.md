@@ -3,6 +3,85 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
+# Current — 2026-08-25 (Claude Code) — buyer/seller journeys walked as real people; 5 silent defects fixed; /book shipped
+
+**Surface:** `origin/main` `ee4b3534`. Deployed and verified in a real browser on ryan-realty.com.
+
+**Why this session found things gates could not:** every defect below was silent.
+Nothing errored, no gate failed, and each surface looked correct in a screenshot.
+They only appeared by running the journey as an actual buyer/seller against
+production data.
+
+**Shipped**
+- `0d33be7e` **broker notify prefs**. `brokers.notify_new_leads` /
+  `notify_deal_activity` / `notify_task_due` were written by
+  /admin/settings/account and read by NO send path — the switches were
+  decorative. Now gated in `queueBrokerAlert` via `lib/crm/broker-notify-prefs`
+  (24 tests). Adds `notify_return_visit`, `notify_cma_ready`, a personal quiet
+  window and a per-day cap. Quiet window + cap DOWNGRADE to `push_only`, never
+  drop: a preference may silence a text, never lose a lead. Health alarms bypass
+  everything. Also: self-serve alerts now default to `instant` (they silently
+  took the column default `daily` while the LP promised 30 minutes) and the LP
+  fires the first batch on submit via `runListingAlerts({ alertIds })`.
+  Also: `instrumentEmailHtml` signed the HTML-ESCAPED href into the click token,
+  so every tracked link in every alert/report/newsletter landed on params named
+  `amp;utm_medium` / `amp;utm_campaign` — GA4 lost medium+campaign on all of it.
+- `1a899f45` **cma-ready alert**. `queueCmaReadyAlert` had NEVER fired in
+  production (0 `cma-ready:*` timeline rows, all time) against 335 drafts / 7
+  delivered, because it required an opt-in notify list most build paths never
+  set. Now falls back to the linked person's assigned broker.
+- `0b1ae82c` **LP cookie identity hijack** — the big one. All four intakes took
+  the `rr_pid` cookie unconditionally, ignoring a DIFFERENT submitted email.
+  Live repro filed Quinn's home, seller tags, a CMA of a house she does not own,
+  two call tasks and an auto-sending seller sequence onto BLAKE. Now routed
+  through `lib/crm/submitted-identity` (6 tests). VERIFIED FIXED in production.
+- `37407524` + `fddebdf3` **public /book**. Real calendar, not a request form.
+  Pure slot engine (`lib/booking/slots`, 16 tests): DST-safe, 30-min slots, 2h
+  lead, 21-day horizon, 15-min buffers. Slot race re-checked INSIDE the write
+  path (`slot_taken` → refresh, never a double-book). `booking_hours` is a NEW
+  column, deliberately NOT `office_hours` — that one gates inbound CALL ROUTING
+  where empty means "always ring", so filling it would have sent after-hours
+  callers to voicemail. The two disagree about empty on purpose.
+  `fddebdf3`: all-day rows are TC milestone pins ("Contract accepted · …"), not
+  meetings — counting them as busy showed 4 bookable days out of 15. Excluded.
+- `ee4b3534` LP no longer promises "your first batch is on its way" to a buyer
+  whose search matches nothing (4 of 24 active alerts, 17%, match zero).
+
+**Verified end to end in production**, not from the UI: appointment #44
+(17:30Z = 10:30 PDT), person 63551 created as Quinn with her OWN email (the
+identity fix, from the same cookied browser that broke it), broker SMS `sent`,
+confirmation email delivered.
+
+**Open, needs Matt**
+1. `booking_hours` seeded Mon-Fri 09:00-17:00 Pacific — AN ASSUMPTION. One
+   column value. Saturdays likely worth it for buyers.
+2. 335 CMA drafts vs 7 delivered. Alert fixed going forward; backlog untouched
+   on purpose (retro-alerting = 335 texts). Suggest filtering to drafts whose
+   person has SINCE shown activity.
+
+**Open, not built**
+- Overlapping saved searches send simultaneous near-duplicate emails (Blake got
+  2 Redmond alerts in one minute). Needs per-recipient batching in
+  `runListingAlerts`.
+- A zero-match alert tells nobody — not the buyer, not the broker. 17% of active
+  alerts. That is a coaching signal being dropped.
+- Meta pixel throws repeated CSP errors iframing facebook.com (frame-src).
+- **Phase 3 (FSBO)** not started. `sendFsboIntroSmsAction` is a DELIBERATE dead
+  end (`retiredProspectingSendError`) — cold outreach was consolidated into
+  `/admin/prospecting` → `sendProspectingIntro`, which requires a client-ready
+  CMA before it will text. Data: 52 FSBOs, 29 reachable, **23 with no contact
+  path at all**, 2 added in the last 7 days.
+- **Phase 4 (returning-user dashboard)** not started. Most surfaces already
+  exist under `/account` (saved-homes, saved-searches, hidden, collections,
+  history, notifications). The gaps Matt named that I do NOT see: request a CMA
+  from the dashboard, and easy sharing of saved homes to messages/social.
+
+**Method note worth keeping:** twice a single query nearly produced a wrong
+report — 461 unconsumed `content:cma` rows looked like a dead pipeline (335 real
+drafts existed), and 677 "CMA" broker alerts looked healthy (~672 were fixtures
+from one day). Also nearly reported a dead button that was drifted coordinates.
+Run the second query shape before escalating a null result.
+
 # Current — 2026-08-21 (Claude worktree) — SSG rail timeouts zeroed (G70 round 2)
 
 **Surface:** `main` `9162c204`, deployed `dpl_C7NtuaxP3KRrpzR9CE9qHKS8dqmn` READY, verified in a real browser on ryan-realty.com.
