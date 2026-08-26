@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Apply the publish gate to links written before the gate existed.
+ * Apply the publish policy in BOTH directions.
  *
  * The database trigger enforces the rule on every future write, but 1,314 links
  * were published by the ingest before the title-plant-bucket problem was found.
@@ -49,6 +49,36 @@ for (let i = 0; i < demote.length; i += 100) {
   else n += chunk.length
 }
 console.error(`demoted ${n}`)
+
+// PROMOTE — an exact name match whose document vouches for itself.
+//
+// ingest.mjs writes every link as pending_review on purpose: the database
+// trigger is the authority on what may publish, and at ingest time a document
+// has not been OCR'd yet, so nothing is known about it. Once classify.mjs has
+// read the front matter, an exact match whose own text names the plat has met
+// the same bar the trigger enforces, and holding it back adds no safety — a
+// human reviewing it would be reading the same two facts.
+//
+// Parent matches are NOT promoted here. Those are inferences and go to review,
+// or to two-signal-publish.mjs where a second independent confirmation clears
+// them.
+const promote = links.filter((l) => {
+  if (l.status !== 'pending_review') return false
+  if (l.match_method !== 'exact') return false
+  const d = l.place_document
+  return GOVERNING.has(d.doc_kind) && d.name_confirmed === true
+})
+console.error(`\nto promote (exact match, document names the plat): ${promote.length} links across ${new Set(promote.map((p) => p.geo_slug)).size} plats`)
+let up = 0
+for (let i = 0; i < promote.length; i += 200) {
+  const chunk = promote.slice(i, i + 200)
+  const { error } = await sb.from('place_document_link')
+    .update({ status: 'published' })
+    .in('id', chunk.map((c) => c.id))
+  if (error) console.error(`  promote chunk @${i} FAIL: ${error.message}`)
+  else up += chunk.length
+}
+console.error(`promoted ${up}`)
 
 // Re-read and assert the invariant holds.
 const check = []

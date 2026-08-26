@@ -206,3 +206,7 @@ docs/design-audit/assets/fix-*.png
 
 # eslint cache dropped by the push chain
 .eslintcache
+
+# Compiled OCR helper — build with:
+#   swiftc -O -o scripts/place-documents/ocr scripts/place-documents/ocr.swift
+scripts/place-documents/ocr

@@ -71,11 +71,67 @@ function classify(text) {
   return 'other'
 }
 
+
+/**
+ * name_confirmed — does the document itself vouch for the plat it was filed
+ * under? Matching a recorded declaration to a subdivision is heuristic (R7),
+ * so this is the document's own evidence rather than the index's filing.
+ *
+ * Two signals, and either alone confirms:
+ *
+ *   THE STAMP. The county's recording block carries the instrument number. When
+ *   it equals the reference the index filed the document under, this IS that
+ *   instrument — identity, not inference. Only year-instrument recordings have
+ *   one; the book-page era has no stamped equivalent.
+ *
+ *   THE NAME. Every distinctive word of the plat name appears in the front
+ *   matter. Fuzzy to one substitution because OCR of microfilm mangles
+ *   characters ("TETHEROW" reads as "TETHERQW").
+ *
+ * A name made only of common words cannot be tested, and returns null rather
+ * than false — unknown is not the same as contradicted.
+ */
+const NOISE = new Set([
+  'the','of','a','an','at','and','to','in','for','on','subdivision','phase','unit',
+  'no','number','addition','section','tract','tracts','condominium','condominiums',
+  'condo','condos','homesites','homesite','estates','estate','first','second','third',
+])
+
+function fuzzyIn(hay, tok) {
+  for (let i = 0; i + tok.length <= hay.length; i++) {
+    let d = 0
+    for (let j = 0; j < tok.length; j++) if (hay[i + j] !== tok[j]) { if (++d > 1) break }
+    if (d <= 1) return true
+  }
+  return false
+}
+
+function nameConfirmed(publishedName, text) {
+  if (!text || text.length < 30) return null
+  const hay = text.toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').replace(/\s+/g, ' ')
+  const tokens = publishedName.toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').split(/\s+/)
+    .filter((t) => t.length >= 4 && !NOISE.has(t.toLowerCase()))
+  if (!tokens.length) return null
+  return tokens.every((t) => hay.includes(t) || fuzzyIn(hay, t))
+}
+
+function stampConfirmed(recordingRef, recordingType, text) {
+  if (!text || text.length < 30 || !recordingRef) return null
+  if (recordingType !== 'year-instrument') return null
+  const m = recordingRef.match(/^(\d{4})-0*(\d+)$/)
+  if (!m) return null
+  const [, year, num] = m
+  const flat = text.replace(/\s+/g, ' ')
+  if (new RegExp(`\\b${year}\\s*-?\\s*0*${num}\\b`).test(flat)) return true
+  // The stamp often OCRs as one long digit run: "00727225201000189750410416".
+  return new RegExp(`${year}0*${num}`).test(text.replace(/[^0-9]/g, ''))
+}
+
 const rows = []
 for (let last = '00000000-0000-0000-0000-000000000000'; ; ) {
   const { data, error } = await sb
     .from('place_document')
-    .select('id, doc_kind, ocr_text, published_name')
+    .select('id, doc_kind, ocr_text, published_name, recording_ref, recording_type, name_confirmed')
     .gt('id', last)
     .order('id', { ascending: true })
     .limit(500)
@@ -90,21 +146,37 @@ console.error(`${rows.length} documents`)
 const before = {}
 const after = {}
 const changes = []
+let skippedNoOcr = 0
+const confirmTally = { true: 0, false: 0 }
 for (const r of rows) {
   before[r.doc_kind] = (before[r.doc_kind] || 0) + 1
-  const k = classify(r.ocr_text || '')
+  // NO OCR MEANS NO OPINION. An unreadable document is not evidence that the
+  // document is 'other' — it is evidence of nothing. Association-published
+  // copies carry a real text layer and are classified from their manifest at
+  // ingest, so they have no ocr_text and must be left exactly as they are.
+  // Defaulting them to 'other' silently unpublished six Caldera Springs
+  // governing documents on 2026-08-26; the gate caught it.
+  if (!r.ocr_text || r.ocr_text.trim().length < 30) { skippedNoOcr++; continue }
+  const k = classify(r.ocr_text)
   after[k] = (after[k] || 0) + 1
-  if (k !== r.doc_kind) changes.push({ id: r.id, from: r.doc_kind, to: k, name: r.published_name })
+  const byName = nameConfirmed(r.published_name, r.ocr_text)
+  const byStamp = stampConfirmed(r.recording_ref, r.recording_type, r.ocr_text)
+  const confirmed = byStamp === true || byName === true ? true : byStamp === null && byName === null ? null : false
+  if (confirmed !== null) confirmTally[String(confirmed)]++
+  if (k !== r.doc_kind || confirmed !== r.name_confirmed) {
+    changes.push({ id: r.id, from: r.doc_kind, to: k, confirmed, name: r.published_name })
+  }
 }
 console.error('before:', before)
 console.error('after :', after)
-console.error(`changes: ${changes.length}`)
+console.error(`changes: ${changes.length}   skipped (no OCR, left untouched): ${skippedNoOcr}`)
 
 let n = 0
 for (const c of changes) {
-  const { error } = await sb.from('place_document').update({ doc_kind: c.to }).eq('id', c.id)
+  const { error } = await sb.from('place_document').update({ doc_kind: c.to, name_confirmed: c.confirmed }).eq('id', c.id)
   if (error) console.error('  update fail', c.id, error.message)
   else n++
   if (n % 200 === 0) console.error(`  ${n}/${changes.length}`)
 }
 console.error(`updated ${n}`)
+console.error('name_confirmed:', confirmTally)

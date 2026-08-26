@@ -29,15 +29,37 @@ below exists to stop that.
 
 ## Pipeline
 
-| Step | Script | What it does |
-|---|---|---|
-| 1 | `fetch-index.mjs` | Parse the index into rows: name, recording ref, PDF URL |
-| 2 | `match-plats.mjs` | Match `boundaries` subdivision slugs to published names. `exact` = name equality. `parent` = a phase-level plat (`tetherow-phase-5`) resolved to its declaration-level entry (`Tetherow`). Ambiguous parents are rejected — a guess is not a match |
-| 3 | `download.mjs` | Fetch the PDFs. Polite: 3 concurrent, 250 ms apart, identifying UA. **Checks `%PDF-` magic bytes** — the source serves 404s as HTTP 200 with `Content-Type: application/pdf`, so a content-type check would ingest HTML error pages as CC&Rs |
-| 4 | `ingest.mjs` | Upload to the `place-documents` bucket, insert `place_document`, write `place_document_link` |
-| 5 | `ocr.swift` | On-device Apple Vision OCR of the front matter. Free, nothing leaves the machine. The scans have no text layer, so without this the corpus is opaque to us and to every crawler |
-| 6 | `classify.mjs` | Set `doc_kind` and `name_confirmed` from `ocr_text`. Idempotent — re-runnable from the database alone, no local files needed |
-| 7 | `verify.mjs` | Assert no published link violates the gate. Wired as `ci:place-documents` |
+Run in order. Every step is idempotent, so the whole thing is safe to re-run —
+and it **must** be re-run when `boundaries` grows. Five plats were added on
+2026-08-26 after the first pass, and Sunrise Village alone had 29 documents
+sitting in the index that nothing had fetched.
+
+```
+node scripts/place-documents/fetch-index.mjs
+node --env-file=.env.local scripts/place-documents/match-plats.mjs
+node --env-file=.env.local scripts/place-documents/download.mjs
+node --env-file=.env.local scripts/place-documents/ingest.mjs
+swiftc -O -o scripts/place-documents/ocr scripts/place-documents/ocr.swift
+node --env-file=.env.local scripts/place-documents/ocr.mjs
+node --env-file=.env.local scripts/place-documents/classify.mjs
+node --env-file=.env.local scripts/place-documents/foreign-association.mjs --apply
+node --env-file=.env.local scripts/place-documents/regate.mjs
+node --env-file=.env.local scripts/place-documents/two-signal-publish.mjs --apply
+npm run ci:place-documents
+```
+
+| Step | What it does |
+|---|---|
+| `fetch-index` | Parse the index into rows: name, recording reference, PDF URL |
+| `match-plats` | Match `boundaries` plats to published names. `exact` = name equality. `parent` = a phase-level plat resolved to its declaration-level entry. An ambiguous parent is REJECTED — a guess is not a match |
+| `download` | Fetch only documents not already hosted, so a re-run does not re-request thousands of files from a small title company's host. **Checks `%PDF-` magic bytes** — the source serves 404s as HTTP 200 with `Content-Type: application/pdf` |
+| `ingest` | Upload to the bucket, insert `place_document`, write links as `pending_review`. Reuses an existing row on a sha collision, because one instrument can legitimately serve two plats |
+| `ocr` | On-device Apple Vision OCR of the front matter, for rows with none yet. Free, nothing leaves the machine |
+| `classify` | `doc_kind` and `name_confirmed` from the document's own front matter. **Skips rows with no OCR** rather than calling them `other` — an unreadable document is evidence of nothing, and defaulting them silently unpublished six Caldera governing documents once |
+| `foreign-association` | Flags a document whose front matter names only associations foreign to the plat. This is what caught Crooked Horseshoe on Indian Ford Meadows |
+| `regate` | Applies the publish policy both ways: demotes anything that now fails, promotes exact matches whose document names the plat |
+| `two-signal-publish` | Clears parent matches carrying two independent confirmations |
+| `verify` | `ci:place-documents`. Asserts no published link is a non-governing instrument or unconfirmed-and-unreviewed |
 
 ## What decides whether a document publishes
 
