@@ -116,8 +116,14 @@ function videoRows(
         },
       },
       { ...base, metric: 'subscribers_gained', value: v.subscribersGained },
-      { ...base, metric: 'impressions', value: v.impressions },
-      { ...base, metric: 'impressions_click_through_rate', value: v.impressionsClickThroughRate },
+      // impressions and CTR are NOT emitted at video scope. YouTube Analytics
+      // does not return them at the video dimension — lib/youtube.ts omits them
+      // from videoMetrics for exactly that reason, the column lookup returns -1,
+      // and the consumer read 0. That wrote a fabricated 0 every day for a figure
+      // the API had never been asked for: 54 rows in the last 30 days, all zero.
+      //
+      // They exist only at channel scope and are emitted by the account ingestor.
+      // A number we cannot measure is absent, not zero (§0).
     ]
   })
 }

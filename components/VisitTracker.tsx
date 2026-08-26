@@ -78,9 +78,21 @@ function categorizePage(pathname: string): string {
 function consentLevel(): 'all' | 'analytics' | 'essential' | 'declined' {
   if (typeof window === 'undefined') return 'declined'
   const stored = getStoredConsent()
-  // No banner answer yet -> 'essential': the track endpoint stores ONLY the
-  // minimal functional record (session_id + page URL; UTMs, geo, listing meta,
-  // referrer all stripped server-side). Treating "no choice" as declined made
+  // No banner answer yet -> 'essential': the track endpoint stores a minimal
+  // functional record — session_id + page URL + REFERRER; UTMs, geo, user agent,
+  // fbclid and listing meta are stripped server-side.
+  //
+  // Referrer is NOT stripped, despite what this comment claimed until 2026-08-26.
+  // Verified against the data: 11,043 of the last 90 days' essential-only sessions
+  // carry a referrer and exactly 0 carry a UTM. The claim mattered because anyone
+  // "fixing" the code to match it would have silently destroyed the only source
+  // attribution that still works for 99.5% of visitors.
+  //
+  // That 99.5% is the real ceiling on attribution here: almost nobody answers the
+  // banner, so almost every visit lands in 'essential' and arrives with its campaign
+  // tags discarded. Tagging links does not help until that changes. Whether UTM —
+  // our own tag on our own link, not a fact about the person — belongs in the
+  // stripped set is a privacy-policy decision for Matt, not a code cleanup. Treating "no choice" as declined made
   // every visitor who ignored the banner invisible (2 sessions/day sitewide,
   // and email-click leads never created the session their identity param was
   // supposed to stitch — found in the 2026-07-10 E2E pass). An explicit

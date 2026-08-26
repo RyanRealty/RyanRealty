@@ -23,6 +23,7 @@ import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-cl
 import { fleetNodePriority, isStaleInProgress, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
 import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
+import { classifyFeed, formatSilentZeroReport } from '../lib/data/loop/silent-zero'
 
 config({ path: '.env.local' })
 
@@ -174,6 +175,36 @@ async function main() {
   }
   for (const n of blocked) {
     push(`  BLOCKED ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — ${n.blocked_reason ?? 'no reason recorded'}`)
+  }
+  push('')
+  push('--- SILENT ZEROS (feeds reporting healthy while producing nothing) ---')
+  try {
+    const WINDOW = 30
+    const since = new Date(Date.now() - WINDOW * 86400_000).toISOString().slice(0, 10)
+    const { data: feedRows } = await sb
+      .from('marketing_channel_daily')
+      .select('channel,metric,value,date')
+      .gte('date', since)
+    type Agg = { rows: number; total: number; nonZeroRows: number; latest: string | null }
+    const byKey = new Map<string, Agg>()
+    for (const r of (feedRows ?? []) as Array<{ channel: string; metric: string; value: number; date: string }>) {
+      const key = `${r.channel}\u0000${r.metric}`
+      const a = byKey.get(key) ?? { rows: 0, total: 0, nonZeroRows: 0, latest: null }
+      a.rows += 1
+      const v = Number(r.value) || 0
+      a.total += v
+      if (v !== 0) a.nonZeroRows += 1
+      if (!a.latest || r.date > a.latest) a.latest = r.date
+      byKey.set(key, a)
+    }
+    const verdicts = [...byKey.entries()].map(([key, a]) => {
+      const [channel, metric] = key.split('\u0000')
+      return classifyFeed({ channel: channel ?? '', metric: metric ?? '', ...a })
+    })
+    for (const line of formatSilentZeroReport(verdicts)) push(line)
+  } catch (err) {
+    // Never block the boot on a diagnostic.
+    push(`silent-zero check unavailable: ${(err as Error).message.slice(0, 120)}`)
   }
   push('')
   push('--- SHIP RECONCILIATION (what shipped without the loop) ---')
