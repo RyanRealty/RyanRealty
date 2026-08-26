@@ -141,7 +141,7 @@ brasada-canyons 2007 → 2006 · aspen-lakes 1996 → 1997 · widgi-creek 1989 �
 rivers-edge 1987 → 1988. With awbrey-glen (2003 → 1993, fixed 2026-08-25) and the three
 cuts, **twelve of 26 rows carried a year that could not be supported.**
 
-## Designer — partly audited
+## Designer — audited
 
 Confirmed against the course's own site:
 
@@ -149,33 +149,79 @@ Confirmed against the course's own site:
 |---|---|---|
 | tetherow-golf-club | David McLay Kidd | tetherow.com/luxury-golf-resort/golf-course/ |
 | broken-top-club | Tom Weiskopf & Jay Morrish | brokentop.com/golf |
-| bend-golf-club | H. Chandler Egan | bendgolfclub.com ("Our Chandler Egan-designed course") |
+| bend-golf-club | H. Chandler Egan (& Bob Baldock) | bendgolfclub.com ("Our Chandler Egan-designed course") |
 | black-butte-big-meadow | Robert Muir Graves | blackbutteranch.com ("This straightforward Robert Muir Graves design") |
 | black-butte-glaze-meadow | John Fought (2012 renovation) | blackbutteranch.com |
 | aspen-lakes | William Overdorf | aspenlakes.com ("under the watchful eye of ... William Overdorf") |
 | awbrey-glen | Gene "Bunny" Mason, updated by David McLay Kidd | awbreyglen.com/golf |
 | eagle-crest-ridge | John Thronson | eagle-crest.com ("in-house architect John Thronson") |
 
-Confirmed against a named archive: sunriver-meadows (John Fought), sunriver-woodlands
-(Robert Trent Jones Jr.), eagle-crest-resort (Gene "Bunny" Mason), juniper (John F.
-Harbottle III), lost-tracks (Brian Whitcomb), crooked-river-ranch (Gene Mason 1979, Jim
-Ramey 1996), quail-run (Jim Ramey), pronghorn-nicklaus (Jack Nicklaus), pronghorn-fazio
-(Tom Fazio) — all The Bulletin or GolfPass.
+Confirmed against a named archive (The Bulletin, GolfPass, Top100, Where2Golf):
+sunriver-meadows (John Fought) · sunriver-woodlands (Robert Trent Jones Jr.) ·
+eagle-crest-resort (Gene "Bunny" Mason) · eagle-crest-challenge (John Thronson) ·
+juniper (John F. Harbottle III) · lost-tracks (Brian Whitcomb) · crooked-river-ranch
+(Gene Mason 1979, Jim Ramey redesign 1996) · quail-run (Jim Ramey) ·
+pronghorn-nicklaus (Jack Nicklaus) · pronghorn-fazio (Tom Fazio) · crosswater (Bob
+Cupp & John Fought) · caldera-links (Bob Cupp with Jim Ramey) · brasada-canyons (Peter
+Jacobsen with Jim Hardy) · widgi-creek (Robert Muir Graves) · rivers-edge (Robert Muir
+Graves) · meadow-lakes (Bill Robinson) · greens-at-redmond (Robert Muir Graves).
 
-**Two open discrepancies, deliberately left rather than guessed:**
+**The eagle-crest-challenge conflict is RESOLVED in our favour.** GolfPass credits John
+Thronson — "Designed by John Thronson, the Challenge golf course opened in 1999" — which
+also recovered a year for a row that had been cut, and corrected the 1995 we shipped.
 
-- **bend-golf-club** carries the composite "H. Chandler Egan & Bob Baldock", and it is
-  RIGHT: `data/golf/architects.ts` records that Egan routed the back nine in 1925 and
-  Bob Baldock added the front nine in 1973. That also explains why the club's own site
-  and The Bulletin name only Egan — he is the 1925 credit, which is the year this file
-  carries. The Bulletin additionally credits William Hanley alongside Egan. The Baldock
-  1973 attribution comes from our own architects.ts bio and has NOT been traced to an
-  outside source; it is coherent and load-bearing, so it stays, flagged.
-- **eagle-crest-challenge** shipped "John Thronson". GolfPass credits **Robert Muir
-  Graves**. Unresolved.
+**Two notes, neither a correction:**
 
-Still unverified: crosswater, brasada-canyons, widgi-creek, rivers-edge, meadow-lakes,
-greens-at-redmond, desert-peaks, caldera-links.
+- **crosswater** carries "Robert E. Cupp & John Fought". Several sources add a third
+  name, **David Johnson**. Left alone: `designerSlug` feeds the by-architect grouping,
+  so adding a name is a taxonomy change rather than a string edit.
+- **desert-peaks** carries "City of Madras", which is the OWNER, not an architect. No
+  architect was found in any source. It is a placeholder standing where a fact should
+  be, and it should either be sourced or emptied.
+
+## Architect bios
+
+`data/golf/architects.ts` was audited the same day. Confirmed: Fought's 1977 US
+Amateur, Weiskopf's 1973 Open Championship, Egan's 1925 back nine and Baldock's 1973
+front nine at Bend Golf Club. Nothing contradicts "the only signature Nicklaus in
+Oregon", but nobody has positively confirmed that exclusivity either.
+
+Overdorf's bio dated Aspen Lakes' front nine to 1996 while the course row had just been
+corrected to 1997 — constructed versus opened for play. Reconciled, and that class of
+drift is now gated (see below).
+
+## FAQs and season calendar
+
+`data/golf/faqs.ts` renders as **FAQPage schema**, so a wrong answer there is wrong in
+Google's answer box. Three defects, fixed 2026-08-26:
+
+- The hole count claimed "roughly 270 holes across 14 named courses" and "the other 14
+  destination-area courses" against an inventory of **279 across 16** and **171 across
+  10**. Its own itemised list summed to 261 and double-counted Crosswater and Caldera
+  Links inside Sunriver's 63. It is now DERIVED from `GOLF_COURSES`.
+- Green fees ($25–$55, $20–$75) and home-price bands ($300Ks, $1M) were published as
+  fact with no source and a shelf life measured in months. Cut; the answers now point
+  at the course and at us.
+- "All three are public-access" was false for two of the three named — Tetherow is
+  semi-private, Brasada Canyons is resort play.
+- "Roughly 8 percent further" for altitude carry had no named basis. Cut.
+
+`data/golf/seasons.ts` cites NOAA KBDN 1991-2020 normals. Cross-checked against a NOAA
+NCEI aggregation for Bend: four months match exactly, the rest sit within 1–2°F, and
+our lows run consistently colder — the expected airport-versus-town siting spread. The
+figures stand; only the dead citation was replaced.
+
+## Gated
+
+`scripts/check-golf-figure-parity.mjs` (`ci:golf-figure-parity`, path lane on
+`data/golf/**`) fails the commit when a figure in prose disagrees with the structured
+field beside it: a yardage or par in a course `signature` versus `yardsBackTees`/`par`,
+and a year in an architect bio versus that architect's own course rows. "7,000+" is
+read as at-least-7,000, which is how Big Meadow's claim slipped past a human. It was
+verified by re-injecting all four historical defects and confirming each one fails.
+
+Exceptions live in `KNOWN_NON_COURSE_YEARS` and each carries a written reason — playing
+careers, and renovation or staged-build years a course row cannot hold.
 
 ## Naming
 

@@ -65,7 +65,7 @@ export const INSIDER_NOTES: InsiderNote[] = [
   {
     slug: 'crooked-river-canyon',
     hook: 'Hole #5 at Crooked River Ranch plays across a corner of a real canyon.',
-    body: 'A 220-yard carry over the Crooked River Canyon corner. Public, $25-$55 green fees, no resort gates. One of the cheapest "wow" holes in American golf.',
+    body: 'A 220-yard carry over the Crooked River Canyon corner. Public, no resort gates, and among the cheapest green fees in the region. One of the cheapest "wow" holes in American golf.',
     course: 'Crooked River Ranch',
     source: 'Crooked River Ranch GC course-tour page',
   },

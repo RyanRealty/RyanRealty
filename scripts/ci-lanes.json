@@ -587,6 +587,12 @@
       "lib/geo-imagery/**",
       "data/geo*"
     ],
+    "ci:golf-figure-parity": [
+      "data/golf/**",
+      "app/lp/central-oregon-golf/**",
+      "app/central-oregon/golf/**",
+      "lib/golf-format.ts"
+    ],
     "ci:header-search": [
       "components/site/**",
       "lib/search/**",
@@ -748,6 +754,16 @@
       "app/communities/**",
       "app/reports/**"
     ],
+    "ci:market-truth": [
+      "lib/data/market-truth/**",
+      "lib/data/market/**",
+      "lib/market/**",
+      "app/sell/**",
+      "docs/plans/MARKET_TRUTH/**",
+      "scripts/check-market-truth.mjs",
+      "scripts/market-truth-gate-baseline.json",
+      "supabase/migrations/**market*"
+    ],
     "ci:marketing-request-intake": [
       "app/marketing/**",
       "lib/marketing-brain/**",
@@ -777,16 +793,6 @@
       "app/**/page.tsx",
       "design_system/**/parity.json",
       "design_system/**/ui_kits/**"
-    ],
-    "ci:market-truth": [
-      "lib/data/market-truth/**",
-      "lib/data/market/**",
-      "lib/market/**",
-      "app/sell/**",
-      "docs/plans/MARKET_TRUTH/**",
-      "scripts/check-market-truth.mjs",
-      "scripts/market-truth-gate-baseline.json",
-      "supabase/migrations/**market*"
     ],
     "ci:mos-grain-trust": [
       "lib/data/**",
@@ -1080,6 +1086,10 @@
       "app/**",
       "components/**"
     ],
+    "ci:script-stat-source": [
+      "scripts/**",
+      "scripts/script-stat-source-baseline.json"
+    ],
     "ci:search-completeness-accept": [
       "docs/plans/ENTERPRISE_MAP/search-completeness-accept.json",
       "lib/data/loop/search-completeness.ts",
@@ -1174,9 +1184,8 @@
       "lib/sms/**",
       "app/api/**"
     ],
-    "ci:script-stat-source": [
-      "scripts/**",
-      "scripts/script-stat-source-baseline.json"
+    "ci:ssg-budget": [
+      "app/**"
     ],
     "ci:stat-source": [
       "lib/data/**",
@@ -1202,6 +1211,14 @@
       "next.config.*",
       "lib/routing/**",
       "scripts/streamed-redirect-baseline.json"
+    ],
+    "ci:studio-geo-contract": [
+      "lib/studio/**",
+      "lib/data/studio/**",
+      "lib/data/market/**",
+      "lib/listing/**",
+      "app/communities/**",
+      "lib/listing-mapper.ts"
     ],
     "ci:subdivision-stats-integrity": [
       "lib/data/**",
@@ -1272,17 +1289,6 @@
       "lib/crm/review-ask.ts",
       "app/cities/**",
       "app/communities/**"
-    ],
-    "ci:ssg-budget": [
-      "app/**"
-    ],
-    "ci:studio-geo-contract": [
-      "lib/studio/**",
-      "lib/data/studio/**",
-      "lib/data/market/**",
-      "lib/listing/**",
-      "app/communities/**",
-      "lib/listing-mapper.ts"
     ]
   },
   "nightly": [

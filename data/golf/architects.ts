@@ -1,7 +1,20 @@
 /**
  * Architect cross-cut — the SERP wedge no competitor owns.
  *
- * Source: out/golf-lp-research/research-notes.md §5.
+ * Source of record: data/golf/SOURCES.md. The former citation,
+ * out/golf-lp-research/research-notes.md §5, pointed into gitignored scratch that
+ * no longer exists.
+ *
+ * Bios audited 2026-08-26. Confirmed: Fought's 1977 US Amateur, Weiskopf's 1973
+ * Open, Egan's 1925 back nine with Baldock's 1973 front nine at Bend Golf Club.
+ * Overdorf's Aspen Lakes dates were RECONCILED to the course row — the bio said the
+ * front nine was 1996 while courses.ts had just been corrected to 1997, which is
+ * constructed-versus-opened. Nothing found contradicts "the only signature Nicklaus
+ * in Oregon", but it is an exclusivity claim nobody has positively confirmed.
+ *
+ * A year in a bio must agree with the course row it describes. ci:golf-figure-parity
+ * enforces that.
+ *
  * Voice rules per CLAUDE.md §3 — no banned words, no marketing slop,
  * Matt-direct + honest.
  */

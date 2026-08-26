@@ -1,7 +1,8 @@
 /**
  * Central Oregon Golf — top-of-funnel landing page at /lp/central-oregon-golf/.
  *
- * Strategic angle (per out/golf-lp-research/research-notes.md):
+ * Strategic angle (the SERP research this was built on lived in gitignored scratch
+ * and is gone; the data's source of record is now data/golf/SOURCES.md):
  *   Zero competing brokers on this SERP. Every page-1 result is either a
  *   tourism directory (centraloregon.golf, visitcentraloregon.com,
  *   nwgolfmaps.com) or a single resort. Three exploitable gaps:
@@ -9,7 +10,7 @@
  *     2. No architect-grouped cross-cut even though McLay Kidd / Nicklaus /
  *        Fazio / Weiskopf / Fought / Cupp / RTJ Jr designed Central Oregon
  *        courses — huge SERP wedge nobody owns.
- *     3. No "where to live near each course" tie-in. 12 of 14 resort
+ *     3. No "where to live near each course" tie-in. Most resort
  *        communities in our registry are golf-adjacent.
  *
  * Voice rules: CLAUDE.md §3. Banned words enforced. Sentence case. Tabular
@@ -327,8 +328,8 @@ function IntroSection() {
             mid-summer and the ground game opens up. Links rules in the high desert.
           </p>
           <p>
-            <strong>The elevation.</strong> 3,500-3,800 feet across the playing field. The ball
-            carries about 8 percent further than it does at sea level. Yardage maps for Bandon Dunes
+            <strong>The elevation.</strong> Every course here plays above 3,000 feet. The ball
+            carries further in thin air than it does at sea level. Yardage maps for Bandon Dunes
             do not apply here. Bring a half-club less.
           </p>
         </div>

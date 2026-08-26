@@ -1,10 +1,17 @@
 /**
  * Central Oregon golf season calendar — month-by-month playing conditions.
  *
- * Source: out/golf-lp-research/research-notes.md §8.
- * Temperature data sourced from NOAA Bend Airport (KBDN) climate normals
- * 1991-2020. Locals\' notes verified via published interviews with course
- * superintendents (research file footnotes).
+ * Temperature source: NOAA Bend Airport (KBDN) climate normals, 1991-2020.
+ *
+ * Cross-checked 2026-08-26 against a NOAA NCEI 1991-2020 aggregation for Bend
+ * (currentresults.com): four months match exactly and the rest sit within 1-2F,
+ * except January at -2 high / -3 low. Our LOWS run consistently colder, which is
+ * the expected airport-versus-town siting spread and supports the KBDN
+ * attribution rather than undermining it, so the figures stand.
+ *
+ * The former citation, out/golf-lp-research/research-notes.md S8, pointed into
+ * gitignored scratch that no longer exists. See data/golf/SOURCES.md.
+ * localsMove notes are editorial and carry no figure to verify.
  *
  * Voice rules per CLAUDE.md §3 — no banned words. Stays factual + direct.
  */
