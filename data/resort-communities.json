@@ -405,38 +405,21 @@
     44.0838
    ],
    "subdivision_aliases": [
-    "Awbrey Glen",
-    "Shevlin Bluffs",
-    "Shevlin Estates",
-    "Awbrey Court",
-    "Shevlin Court",
-    "The Farm"
+    "Awbrey Glen"
    ],
-   "child_count": 5,
+   "child_count": 0,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
-     {
-      "name": "Shevlin Bluffs",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Shevlin Estates",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Awbrey Court",
-      "pct_inside": 95.5
-     },
-     {
-      "name": "Shevlin Court",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "The Farm",
-      "pct_inside": 100.0
-     }
-    ]
+    "method": "Deschutes County GIS Subdivisions plat union (boundaries.geo_slug='awbrey-glen', source='county_plat_union'). Membership = recorded Awbrey Glen Homesites plats ONLY, confirmed by community_subdivisions(neighborhood,'awbrey-glen') -> 7 rows on 2026-08-25: Phases One, Two, Four, Five, Six, Seven, Eight (no Phase Three is recorded).",
+    "corrected_2026_08_25": {
+     "removed": [
+      "Shevlin Bluffs",
+      "Shevlin Estates",
+      "Awbrey Court",
+      "Shevlin Court",
+      "The Farm"
+     ],
+     "why": "The prior '>=80% inside-test' asserted membership from listing PROXIMITY, not from plat record. Each removed name is its own independently recorded Deschutes County plat with its own HOA -- Awbrey Court (CSNUM 15074), Shevlin Court (18773), Shevlin Bluffs Phases 1/2/3&4 (18786/19688/19714), Shevlin Estates (19088), Farm (the) (07193) -- none of them an Awbrey Glen Homesites phase. Rendering them under 'Subdivisions in Awbrey Glen' was a false membership claim (CLAUDE.md S0)."
+    }
    }
   },
   {

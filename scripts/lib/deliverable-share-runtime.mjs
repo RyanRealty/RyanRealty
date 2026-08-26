@@ -10,13 +10,19 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
+import { resolvingNodeModules } from './resolve-node-modules.mjs'
 
 export const SHARE_MODULE_REL = 'lib/marketing-brain/deliverable-share.ts'
 
 export async function loadShareModule(repoRoot) {
   const src = join(repoRoot, SHARE_MODULE_REL)
   if (!existsSync(src)) return { ok: false, error: `${SHARE_MODULE_REL} not found` }
-  const esbuild = join(repoRoot, 'node_modules/.bin/esbuild')
+  // Resolve esbuild the way every other executing gate does. A git worktree has
+  // its own (usually empty) node_modules, so joining repoRoot hard-failed this
+  // SECURITY gate to "esbuild not installed" in every worktree — a false red
+  // that invites being waved past. resolvingNodeModules() walks up to the real
+  // install the same Node resolution the scripts already rely on would find.
+  const esbuild = join(resolvingNodeModules(), '.bin/esbuild')
   if (!existsSync(esbuild)) return { ok: false, error: 'esbuild not installed' }
 
   const dir = mkdtempSync(join(tmpdir(), 'rr-share-'))
