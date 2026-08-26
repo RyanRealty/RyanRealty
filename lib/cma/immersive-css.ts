@@ -81,9 +81,12 @@ img{max-width:100%;display:block}
 .comp-why{font-size:15px;line-height:1.45;margin-top:12px;max-width:none}
 .comp-matrix-wrap{overflow-x:auto;margin:18px 0 8px}
 table.comp-matrix{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
-table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:nowrap}
+table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}
+table.comp-matrix td.n{white-space:nowrap}
 table.comp-matrix thead th:first-child,table.comp-matrix tbody th{text-align:left}
 table.comp-matrix td.is-diff{font-weight:600}
+h3.subhead{font-size:17px;font-weight:600;margin:26px 0 8px}
+h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:20px 0 6px}
 .rival-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:8px}
 .rival-card{background:var(--cream);border:1px solid var(--ink12);overflow:hidden}
 .sc-navy .rival-card{background:rgba(250,248,244,.06);border-color:rgba(250,248,244,.14)}

@@ -63,6 +63,43 @@ describe('renderCompMatrixHtml', () => {
     expect(html).not.toMatch(/[—;]/)
   })
 
+  it('holds one table at four sales and chunks past that, subject repeated', () => {
+    // The page-contract defect: one table per sale set was thirteen columns
+    // wide at twelve comps, ran past the right margin, and `overflow-x: auto`
+    // then clipped sales 4 through 12 out of the delivered PDF entirely.
+    const four = renderCompMatrixHtml(subject, Array.from({ length: 4 }, () => comp))
+    expect(four.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(1)
+    expect(four).not.toContain('<h4 class="subhead">')
+
+    const twelve = renderCompMatrixHtml(subject, Array.from({ length: 12 }, () => comp))
+    expect(twelve.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(3)
+    expect(twelve).toContain('<h4 class="subhead">Sales 1 through 4</h4>')
+    expect(twelve).toContain('<h4 class="subhead">Sales 5 through 8</h4>')
+    expect(twelve).toContain('<h4 class="subhead">Sales 9 through 12</h4>')
+    // Every sale still reaches the page, and the subject anchors each table.
+    expect(twelve).toContain('12. 947 6th')
+    expect(twelve.match(/648 Douglas/g)).toHaveLength(3)
+    expect(twelve).not.toMatch(/[—;]/)
+
+    // A remainder chunk names its own sale rather than a range.
+    const thirteen = renderCompMatrixHtml(subject, Array.from({ length: 13 }, () => comp))
+    expect(thirteen).toContain('<h4 class="subhead">Sale 13</h4>')
+  })
+
+  it('pins every column width so no cell can push the table past the margin', () => {
+    // Fixed layout plus a colgroup is what makes the width independent of how
+    // long an address or a subdivision name happens to be.
+    const html = renderCompMatrixHtml(subject, Array.from({ length: 4 }, () => comp))
+    const cols = html.match(/<col style="width:[\d.]+%">/g) ?? []
+    expect(cols).toHaveLength(6) // label + subject + 4 sales
+    const widths = cols.map((c) => Number(c.match(/([\d.]+)%/)![1]))
+    expect(widths[0]).toBe(20)
+    expect(widths.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(100)
+    // Figures never wrap; free text does. Both classes must actually be emitted.
+    expect(html).toMatch(/<td class="v n[^"]*">\$495,000<\/td>/)
+    expect(html).toMatch(/<td class="v(?: is-diff)?">Single Family Residence<\/td>/)
+  })
+
   it('does not print MLS N/A into the grid', () => {
     const html = renderCompMatrixHtml(
       { ...subject, subdivision: 'N/A', propertySubType: 'None' },

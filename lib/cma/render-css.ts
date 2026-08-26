@@ -145,6 +145,15 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--navy);
     margin: 12px 0 5px 0;
   }
+  /* Group caption inside a chunked table run (the side-by-side matrix). */
+  h4.subhead {
+    font-weight: 600;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 10px 0 3px 0;
+  }
   p { font-size: 11px; line-height: 1.45; margin: 0 0 6px 0; }
   .small { font-size: 10px; color: var(--muted); line-height: 1.45; }
 

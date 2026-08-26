@@ -232,9 +232,27 @@ export function cmaSectionStyles(): string {
   table.kv.is-wide th { width: 26%; }
   table.kv.is-wide td.v { width: 22%; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
   table.kv.compare-board th.v, table.kv.compare-board td.v { width: 18%; text-align: right; }
-  .comp-matrix-wrap { overflow-x: auto; margin: 8px 0 14px; }
-  table.comp-matrix { font-size: 10.5px; }
-  table.comp-matrix th, table.comp-matrix td { padding: 5px 6px; white-space: nowrap; }
+  /* The side-by-side matrix is chunked to at most four sales per table
+     (lib/cma/comp-matrix.ts) and carries a colgroup. Fixed layout reads its
+     widths from that colgroup, so the table is exactly the content box wide
+     whatever an address or a subdivision is called, and no cell can push a
+     column off the right margin.
+
+     overflow-x:auto is a SCREEN affordance and nothing else. On paper it is a
+     clipper: it is what removed sales 4 through 12 from a twelve-comp CMA with
+     no error and no visible truncation. In print the box stays visible, so any
+     future overflow is loud instead of silent. */
+  .comp-matrix-wrap { overflow-x: visible; margin: 8px 0 14px; }
+  @media screen { .comp-matrix-wrap { overflow-x: auto; } }
+  table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }
+  table.kv.is-wide.comp-matrix th, table.kv.is-wide.comp-matrix td { width: auto; }
+  table.comp-matrix th, table.comp-matrix td {
+    padding: 5px 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  /* Only figures hold the line. Free text wraps rather than widening a column. */
+  table.comp-matrix td.n { white-space: nowrap; }
   table.comp-matrix thead th { text-align: right; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }
   table.comp-matrix td.is-diff { font-weight: 600; }
@@ -388,7 +406,7 @@ export function cmaSectionStyles(): string {
   @media (max-width: 700px) {
     .use-board { grid-template-columns: 1fr; }
   }
-  h2.section, h3.subhead { break-after: avoid; page-break-after: avoid; }
+  h2.section, h3.subhead, h4.subhead { break-after: avoid; page-break-after: avoid; }
   table.comps tr, table.kv tr { break-inside: avoid; page-break-inside: avoid; }
 
 `
