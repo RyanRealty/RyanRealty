@@ -79,3 +79,34 @@ describe('the page-1 agency acknowledgment block', () => {
     expect(formBlankIsReserved(null, 'Buyer')).toBe(false)
   })
 })
+
+describe('OREF 060 contingency removal', () => {
+  it('keeps the header name lines binding', () => {
+    // Lines 1-3 really are named Buyers / Sellers / Property Address or Tax ID,
+    // so the generic matcher handles them and must not be reserved away.
+    expect(formBlankIsReserved('060', 'Buyers')).toBe(false)
+    expect(formBlankIsReserved('060', 'Sellers')).toBe(false)
+  })
+
+  it('reserves every signature line on page 2', () => {
+    for (const name of ['Buyer', 'Buyer_2', 'Buyer_3', 'Buyer 1', 'Seller_3', 'Seller_4', 'Seller 1']) {
+      expect(formBlankIsReserved('060', name)).toBe(true)
+    }
+  })
+
+  it('puts buyer names on the first four print lines and sellers on the next four', () => {
+    expect(formBindingFactKey('060', 'Print')).toBe('buyers')
+    expect(formBindingFactKey('060', 'Print_4')).toBe('buyers')
+    expect(formBindingFactKey('060', 'Print_5')).toBe('sellers')
+    expect(formBindingFactKey('060', 'Print_8')).toBe('sellers')
+  })
+})
+
+describe('OREF 059 delivery addendum needs no table', () => {
+  it('signs by Delivering and Receiving Party, which never collide with the aliases', () => {
+    // Either side can deliver, so those print lines stay unbound on purpose.
+    expect(formBindingFactKey('059', 'Delivering Party')).toBeNull()
+    expect(formBindingFactKey('059', 'Receiving Party')).toBeNull()
+    expect(formBlankIsReserved('059', 'Delivering Party')).toBe(false)
+  })
+})
