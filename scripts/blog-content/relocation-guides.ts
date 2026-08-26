@@ -27,7 +27,7 @@ export const posts: BlogPostSeed[] = [
 
 <ul>
 <li><strong>Outdoor access is genuinely exceptional.</strong> Mt. Bachelor is 22 minutes from downtown. The Deschutes River Trail starts in the middle of town. Phil's Trail complex offers some of the best mountain biking in the Pacific Northwest, five minutes from most neighborhoods. You can ski in the morning and paddle the river in the afternoon for about five months of the year.</li>
-<li><strong>300 days of sunshine per year.</strong> This stat gets thrown around a lot, and it's roughly accurate. Central Oregon sits in a high desert on the east side of the Cascades, so you get dramatically more sun than Portland or Seattle. Even winter days are frequently clear and cold rather than gray and drizzly.</li>
+<li><strong>Far more sun than the valley.</strong> The "300 days of sunshine" line is a marketing figure, not a weather record. Central Oregon sits in a high desert on the east side of the Cascades, so you get dramatically more sun than Portland or Seattle. Even winter days are frequently clear and cold rather than gray and drizzly.</li>
 <li><strong>The food and beer scene punches above its weight.</strong> For a city of about 105,000, Bend has a remarkable density of breweries (around 30), solid restaurants, and a growing coffee roaster community. You won't mistake it for Portland, but you also won't feel like you're in a culinary desert.</li>
 <li><strong>Community feel despite growth.</strong> Bend still operates like a town where people know each other. Neighborhood events, trail running groups, cycling clubs, and volunteer organizations are genuinely active and welcoming.</li>
 </ul>

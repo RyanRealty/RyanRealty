@@ -1086,7 +1086,7 @@ export const posts: BlogPostSeed[] = [
     excerpt:
       'Retiring to Bend means finding the right balance of recreation, healthcare access, home maintenance, and community. These neighborhoods deliver on the things retirees actually care about.',
     content: `
-<p>Bend has become one of the most popular retirement destinations in the Pacific Northwest, and the reasons are straightforward: 300 days of sunshine, four seasons of outdoor recreation, no sales tax, good healthcare, and a town that is genuinely interesting to live in. But "retire to Bend" is a broad directive. Where you live within the area matters enormously for daily quality of life, and what works for a young family looks different from what works for someone in their 60s or 70s. This guide covers the neighborhoods and communities that consistently work well for retirees, with practical details about what matters most.</p>
+<p>Bend has become one of the most popular retirement destinations in the Pacific Northwest, and the reasons are straightforward: high-desert sun, four seasons of outdoor recreation, no sales tax, good healthcare, and a town that is genuinely interesting to live in. But "retire to Bend" is a broad directive. Where you live within the area matters enormously for daily quality of life, and what works for a young family looks different from what works for someone in their 60s or 70s. This guide covers the neighborhoods and communities that consistently work well for retirees, with practical details about what matters most.</p>
 
 <h2>What Retirees Look For</h2>
 

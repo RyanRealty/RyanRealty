@@ -445,7 +445,7 @@ export const posts: BlogPostSeed[] = [
 <li><strong>Insulation and windows:</strong> Upgrading from code-minimum insulation to higher R-values and from standard double-pane to high-performance windows pays back quickly in Central Oregon's cold winters. The comfort difference is noticeable.</li>
 <li><strong>Heating system:</strong> Heat pump systems (especially cold-climate heat pumps) are increasingly popular and offer both heating and cooling. Given Central Oregon's 100-degree summers and single-digit winters, this matters.</li>
 <li><strong>Garage space:</strong> Central Oregon buyers value garage and shop space more than most markets. If the standard plan includes a 2-car garage, upgrading to 3-car or adding a separate shop space is almost always worth the investment.</li>
-<li><strong>Outdoor living:</strong> Covered patios, decks, and built-in outdoor features get heavy use here. The high desert climate offers 300+ days of sunshine, making outdoor living spaces genuinely functional most of the year.</li>
+<li><strong>Outdoor living:</strong> Covered patios, decks, and built-in outdoor features get heavy use here. The high desert climate is dry and mild enough to make outdoor living spaces genuinely functional most of the year.</li>
 <li><strong>Electrical pre-wiring:</strong> Pre-wiring for future EV charging, solar panels, and home automation is much cheaper during construction than retrofitting later.</li>
 </ul>
 
@@ -718,7 +718,7 @@ export const posts: BlogPostSeed[] = [
 <li>Quartz countertops (granite feels dated; butcher block is niche)</li>
 <li>Stainless or matte black appliances (white appliances drag value)</li>
 <li>A functional pantry (walk-in if space allows)</li>
-<li>Good natural lighting (Central Oregon has 300+ days of sunshine; capitalize on it)</li>
+<li>Good natural lighting (Central Oregon light is bright and direct; capitalize on it)</li>
 <li>An island with seating if the space supports it</li>
 </ul>
 
@@ -740,7 +740,7 @@ export const posts: BlogPostSeed[] = [
 
 <h2>Outdoor Living Spaces</h2>
 
-<p>This is where Central Oregon diverges significantly from national averages. Outdoor living space is disproportionately valued here because the climate supports outdoor use for 8 to 9 months of the year. 300+ days of sunshine, low humidity, and warm summer evenings make outdoor spaces genuinely functional rather than aspirational.</p>
+<p>This is where Central Oregon diverges significantly from national averages. Outdoor living space is disproportionately valued here because the climate supports outdoor use for 8 to 9 months of the year. Dry air, low humidity, and warm summer evenings make outdoor spaces genuinely functional rather than aspirational.</p>
 
 <h3>Covered Patio or Deck (Cost: $15,000 to $40,000)</h3>
 

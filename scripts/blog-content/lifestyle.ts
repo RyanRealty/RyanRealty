@@ -283,7 +283,7 @@ export const posts: BlogPostSeed[] = [
 
 <h3>The 300 Days of Sunshine Claim</h3>
 
-<p>You will hear that Central Oregon gets 300 days of sunshine per year. This is broadly true in the sense that most days see at least some sun, but it is misleading if you interpret it as 300 warm, cloudless days. Many of those "sunshine days" are 25-degree January mornings with clear skies. Summer, specifically July and August, is reliably sunny with highs in the 80s and low 90s. June can be variable (locals call it "Junuary" when cool, rainy weather lingers into early summer). September is consistently excellent.</p>
+<p>You will hear that Central Oregon gets 300 days of sunshine per year. It is a marketing line rather than a weather record, and it does not hold up as a count of sunny days. Many of those "sunshine days" are 25-degree January mornings with clear skies. Summer, specifically July and August, is reliably sunny with highs in the 80s and low 90s. June can be variable (locals call it "Junuary" when cool, rainy weather lingers into early summer). September is consistently excellent.</p>
 
 <h3>Smoke Season</h3>
 
