@@ -14,7 +14,15 @@
  *       3. Set hot_lead_fired_at so we never fire twice for the same session.
  *
  *   - ANONYMOUS session (no CRM person):
- *       1. No email. No task. Mark fired so the cron does not retry.
+ *       1. captureHotAnonymous(rr_vid) — mints ONE behaviour-only crm_people
+ *          lead when the visitor is SUSTAINED hot (5+ listing views across 2+
+ *          distinct sessions in 14 days), not merely hot once. No email, no
+ *          phone, so it is A2P-safe; the identity map is stitched on the same
+ *          rr_vid so a later form fill enriches this record instead of
+ *          creating a second one.
+ *       2. No email. No task. Mark fired so the cron does not retry.
+ *          Skips are counted by reason in the response, so the rail cannot go
+ *          quietly dark the way it did while this was unwired.
  *
  * The threshold is environment-configurable so we can tune it without a
  * deploy (set VISITOR_HOT_LEAD_THRESHOLD in Vercel env).
@@ -28,6 +36,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { captureHotAnonymous } from '@/lib/data/crm/captureHotAnonymous'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { visitorEscalateEmailEnabled } from '@/lib/crm/visitor-escalate'
@@ -51,6 +60,8 @@ function getServiceSupabase() {
 }
 
 type HotSession = {
+  /** Durable first-party visitor id (middleware cookie). Null on legacy rows. */
+  rr_vid: string | null
   session_id: string
   source_domain: string
   first_seen_at: string
@@ -87,7 +98,7 @@ async function fetchHotSessions(threshold: number): Promise<HotSession[]> {
   if (!supabase) return []
   const { data, error } = await supabase
     .from('visitor_sessions')
-    .select('session_id, source_domain, first_seen_at, last_seen_at, engagement_score, peak_score, intent_tags, fub_person_id, crm_person_id, identified_email, utm_source, utm_medium, utm_campaign, ip_city, ip_region, ip_country')
+    .select('session_id, rr_vid, source_domain, first_seen_at, last_seen_at, engagement_score, peak_score, intent_tags, fub_person_id, crm_person_id, identified_email, utm_source, utm_medium, utm_campaign, ip_city, ip_region, ip_country')
     .gte('engagement_score', threshold)
     .is('hot_lead_fired_at', null)
     .order('engagement_score', { ascending: false })
@@ -286,6 +297,8 @@ export async function GET(request: NextRequest) {
   const firedSessionIds: string[] = []
   let tasksCreated = 0
   let emailsSent = 0
+  let anonymousCaptured = 0
+  const anonymousSkipped: Record<string, number> = {}
   const errors: string[] = []
 
   for (const session of sessions) {
@@ -308,6 +321,28 @@ export async function GET(request: NextRequest) {
         tasksCreated += 1
       } catch (e) {
         errors.push(`CRM task for ${session.session_id}: ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
+
+    // 1b. ANONYMOUS session: mint a durable behaviour-only record.
+    //
+    // This branch used to do nothing durable, so a high-intent shopper who
+    // never submitted a form was lost the moment their cookie cleared. The
+    // capture is gated on the visitor being SUSTAINED (5+ listing views across
+    // 2+ distinct sessions in 14 days), not merely hot once, and it writes a
+    // lead with no email and no phone — A2P-safe by construction.
+    if (!person && session.rr_vid) {
+      try {
+        const captured = await captureHotAnonymous(session.rr_vid)
+        if (captured.status === 'created') {
+          anonymousCaptured += 1
+        } else if (captured.status === 'skipped') {
+          // Expected for most hot sessions: hot once is not sustained. Counted
+          // so the rail is never silently dark.
+          anonymousSkipped[captured.reason] = (anonymousSkipped[captured.reason] ?? 0) + 1
+        }
+      } catch (e) {
+        errors.push(`hot-anonymous capture for ${session.session_id}: ${e instanceof Error ? e.message : String(e)}`)
       }
     }
 
@@ -334,6 +369,8 @@ export async function GET(request: NextRequest) {
     escalated: firedSessionIds.length,
     tasksCreated,
     emailsSent,
+    anonymousCaptured,
+    anonymousSkipped,
     errors,
     fetchedAt: new Date().toISOString(),
   })
