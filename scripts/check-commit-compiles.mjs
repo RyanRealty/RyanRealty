@@ -217,8 +217,16 @@ const tscResult = spawnSync(
   {
     cwd: TMP,
     encoding: 'utf8',
-    // Give tsc up to 5 minutes — correctness wins over speed per spec
-    timeout: 300_000,
+    // Give tsc up to 15 minutes — correctness wins over speed per spec.
+    // Raised from 5 min on 2026-08-26: the repo outgrew that budget the same way
+    // it outgrew Node's default heap (see the NODE_OPTIONS note below). A COLD
+    // run — which is what you get right after a rebase invalidates the cached
+    // buildinfo — measured 317s and 370s on an otherwise idle machine, so the
+    // gate reported INCONCLUSIVE on every push and could not recover: the
+    // buildinfo below is only persisted when tsc finishes WITHOUT a signal, so
+    // one timeout guarantees the next run is cold too. A budget the gate cannot
+    // meet is not a safety property, it is a wedge.
+    timeout: 900_000,
     maxBuffer: 10 * 1024 * 1024,
     // The repo outgrew Node's default heap: without the same 8GB every other
     // tsc invocation here gets (pre-push build, ci scripts), tsc dies with
