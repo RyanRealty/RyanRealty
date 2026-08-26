@@ -99,15 +99,67 @@ function wrapPage(page: PageDef): string {
 </section>`
 }
 
-function heroForSubject(subject: CmaSubject): { src: string | null; caption: string } {
+/**
+ * A subject photo older than this no longer shows today's house.
+ *
+ * 24 months is not arbitrary: it is the same recency window the accuracy
+ * contract already enforces on comparable sales ("close date within 24
+ * months"). A photo we would not accept as evidence of a comp's condition is
+ * not evidence of the subject's either.
+ */
+const STALE_SUBJECT_PHOTO_MONTHS = 24
+
+function monthsSince(iso: string | null): number | null {
+  if (!iso) return null
+  const then = Date.parse(iso)
+  if (!Number.isFinite(then)) return null
+  return (Date.now() - then) / (1000 * 60 * 60 * 24 * 30.44)
+}
+
+/**
+ * Cover + subject hero.
+ *
+ * SKILL.md step 5 (locked 2026-06-13, Matt directive): with no MLS photos OR
+ * ONLY STALE ONES, the hero is an AERIAL VIEW — never a blank panel. Only the
+ * first half of that was built: any photo won regardless of age, and the
+ * no-photo branch returned null rather than the aerial. The 655 12th CMA led
+ * with a January 2023 photo on a 2026 pricing document (found 2026-08-25).
+ *
+ * Order: a current photo, else the aerial, else the stale photo captioned
+ * honestly (a dated picture of the house beats no picture), else nothing.
+ */
+function heroForSubject(
+  subject: CmaSubject,
+  mapDataUri: string | null,
+): { src: string | null; caption: string } {
   const src = sparkPhotoAt(subject.photoUrl, '1024x768')
-  if (src) {
-    const when = monthYear(subject.lastListDate)
+  const when = monthYear(subject.lastListDate)
+  const ageMonths = monthsSince(subject.lastListDate)
+  const stale = ageMonths != null && ageMonths > STALE_SUBJECT_PHOTO_MONTHS
+
+  if (src && !stale) {
     return {
       src,
       caption: `Most recent MLS listing photo${when !== '—' ? ` (${when})` : ''} · MLS ${subject.mlsNumber ?? '—'}`,
     }
   }
+
+  if (mapDataUri) {
+    return {
+      src: mapDataUri,
+      caption: stale
+        ? `Aerial view · subject parcel. The most recent MLS photo is from ${when} and may not show the home today.`
+        : 'Aerial view · subject parcel. No MLS photo on file.',
+    }
+  }
+
+  if (src) {
+    return {
+      src,
+      caption: `MLS listing photo from ${when} · MLS ${subject.mlsNumber ?? '—'}. This may not show the home today.`,
+    }
+  }
+
   return { src: null, caption: 'No MLS photo on file for the subject.' }
 }
 
@@ -132,7 +184,7 @@ function coverSpecsLine(subject: CmaSubject): string {
 }
 
 function coverPage(a: RenderCmaArgs): PageDef {
-  const hero = heroForSubject(a.subject)
+  const hero = heroForSubject(a.subject, a.mapDataUri)
   const specs = coverSpecsLine(a.subject)
   const prepared = [
     a.client.name ? `Prepared for ${a.client.name}` : null,

@@ -260,19 +260,19 @@ export function computePricing(
   const reasons: string[] = []
   if (adjusted.length < 5) {
     confidence = 'Moderate'
-    reasons.push(`${adjusted.length} comps (5+ preferred)`)
+    reasons.push(`only ${adjusted.length} comparable sales`)
   }
   if (medianCompAgeMonths > 9) {
     confidence = 'Moderate'
-    reasons.push(`median comp age ${medianCompAgeMonths.toFixed(0)} months`)
+    reasons.push(`half the comparable sales are over ${medianCompAgeMonths.toFixed(0)} months old`)
   }
   if (!converged) {
     confidence = confidence === 'Moderate' ? 'Supportable' : 'Moderate'
-    reasons.push(`method spread ${convergenceSpreadPct}%`)
+    reasons.push(`the pricing methods land ${convergenceSpreadPct}% apart`)
   }
   if (adjusted.length < 4) {
     confidence = 'Supportable'
-    reasons.push('thin comp set')
+    reasons.push('fewer than four comparable sales')
   }
 
   // The dispersion guard: floor confidence and flag for broker review.
@@ -286,13 +286,18 @@ export function computePricing(
     reviewReason = `Comparable sales span a wide price-per-square-foot range ($${lo} to $${hi}/sqft, ${Math.round(
       compPpsfCv * 100,
     )}% variation). The set mixes different quality or location tiers, so a broker should confirm the comp selection before this goes to a client.`
-    reasons.push(`wide comp dispersion (${Math.round(compPpsfCv * 100)}%)`)
+    reasons.push(
+      `the comparable sales vary ${Math.round(compPpsfCv * 100)}% in price per square foot`,
+    )
     notes.push(reviewReason)
   }
 
   const confidenceReason =
     reasons.length > 0
-      ? `Capped by ${reasons.join(', ')}.`
+      // "Capped by method spread 6%" is engine vocabulary. This line sits on the
+      // cover of a document a homeowner opens, so it says what actually limited
+      // the confidence in words they already own (Matt 2026-08-25).
+      ? `Held to this level by ${reasons.join(', ')}.`
       : `${adjusted.length} closed comps, methods within ${convergenceSpreadPct ?? 0}%, median comp age ${medianCompAgeMonths.toFixed(0)} months.`
 
   return {

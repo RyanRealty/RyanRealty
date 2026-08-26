@@ -238,7 +238,11 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   trace.push(
     subjectArea
       ? `Subject market area: ${subjectAreaName} (City of Bend GIS neighborhood mesh, point-in-polygon).`
-      : 'Subject is outside every mapped neighborhood polygon, so comps fall back to distance from the subject.',
+      : // The mesh is City of Bend only, so EVERY Redmond, Sisters, Sunriver,
+        // La Pine and Prineville subject reaches this line. "Outside every
+        // mapped polygon" reads to a homeowner like their property could not be
+        // found (Matt 2026-08-25). State the two facts instead.
+        'The neighborhood mesh covers the City of Bend. This property sits outside it, so comps are chosen by distance from the subject.',
   )
 
 
