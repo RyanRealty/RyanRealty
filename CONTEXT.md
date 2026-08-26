@@ -17,7 +17,7 @@ A GIS-only place (Deschutes/Bend polygons in `boundaries`). There is **no** MLS 
 _Avoid_: District (unless school district), Community (for Bend GIS areas), Subdivision
 
 **Subdivision**:
-MLS `SubdivisionName` (a plat / named development). Public route `/subdivisions/{slug}` only when indexable (GIS polygon + minimum lifetime sales — see `isSubdivisionIndexable`). Not every MLS string gets a page.
+MLS `SubdivisionName` (a plat / named development). Public route `/subdivisions/{slug}` only when indexable (GIS polygon + minimum lifetime sales — see `getIndexableSubdivisions`). Not every MLS string gets a page.
 _Avoid_: Community (when meaning a raw MLS plat), Neighborhood, HOA name (unless it equals the MLS subdivision)
 
 **Community**:

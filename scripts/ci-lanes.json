@@ -1063,6 +1063,11 @@
       "data/resort-community-*.json",
       "lib/geo/**"
     ],
+    "ci:resort-membership-evidence": [
+      "data/resort-communities.json",
+      "scripts/resort-membership-baseline.json",
+      "scripts/check-resort-membership-evidence.mjs"
+    ],
     "ci:resume-toggle": [
       "app/admin/**",
       "components/admin/**",

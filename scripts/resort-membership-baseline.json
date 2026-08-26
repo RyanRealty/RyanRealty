@@ -1,0 +1,8 @@
+{
+  "_doc": "Communities whose subdivision_aliases the 2026-08-26 membership audit could NOT settle from data alone, because an explicit Matt directive says the opposite of what the geometry says. They are exempt from scripts/check-resort-membership-evidence.mjs until Matt rules. THIS LIST MAY ONLY SHRINK \u2014 same ratchet as scripts/gates-wired-baseline.json. Do not add a community here to get a commit through; re-verify it instead.",
+  "pending_matt_decision": [],
+  "why": {
+    "_resolved_three_rivers_2026_08_26": "RESOLVED without a Matt decision: the evidence answered it. Three Rivers is a census-designated PLACE of 4,819 acres made of 20+ subdivisions (our own cited content names Water Wonderland, DRRH and River Meadows among them), so all 11 aliases are genuine area members; the boundary polygon was the wrong test, covering only 51.9% of the CDP. The 8 aliases that failed it sit CLOSER to the CDP centre (1.1-2.8 km) than the 3 that passed (3.05-4.12 km). Aliases kept; the polygon is logged for widening in the entry's verification block.",
+    "_resolved_crosswater_2026_08_26": "RESOLVED by research at Matt's direction. Osprey Pointe Condo KEPT: its recorded declaration (Deschutes 97-33704, Book 462 Page 1137) names Crosswater Owners' Association as its master association and submits the condominium to the Crosswater Master Declaration; it is a condo carved out of Crosswater, which is why the plat-union polygon misses it. Pace Estate and Lisle Acres REMOVED: no association owns a parcel in either plat, MLS carries CCR's YN = No, and the active Lisle Acres listing says 'just outside the resort area with no HOA & no CC & Rs'. This overturns two thirds of Matt's 2026-05-15 directive on evidence he asked for."
+  }
+}

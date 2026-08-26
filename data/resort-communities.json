@@ -1,8 +1,8 @@
 {
  "version": "v2-2026-05-15",
  "source": "Spark MLS API spatial discovery + Matt-approved manual overrides",
- "verification_trace": "Each child verified \u226580% of its listings inside parent's broad area (per-parent radius 2-6km). Sunriver center hardcoded to 43.875,-121.450 (Matt-approved 2026-05-15). 'The Highlands at Broken Top' assigned to Broken Top via name-override (Matt-approved). 5 unassigned variants (River Forest Acres, North Rim, Skyline, Wildflower, Rock Ridge) are outside any resort community \u2014 they remain stand-alone subdivisions using SubdivisionName text equality. v2 patch (Matt 2026-05-15): Crosswater trimmed to 4 aliases (was 9). Vandevert Ranch promoted to own parent (single name). Three Rivers added as new parent (11 children). Kitty Hawk stays under Sunriver per closest-parent rule. 2026-06-27: 4 communities appended by hand from live MLS subdivision data \u2014 Mt Bachelor Village, Inn of the 7th Mountain, River's Edge, Mountain High. Method: exact MLS SubdivisionName match; center_lon_lat = centroid of that subdivision's listing coordinates (avg Latitude/Longitude over all listings, authoritative MLS data, 2026-06-27). | mls_cities added 2026-07-29: per-community MLS City spellings carrying active alias listings (audit sweep, Supabase listings); communities whose MLS City differs from the registry city were rendering 0 homes.",
- "generated_at": "2026-06-27",
+ "verification_trace": "Each child verified \u226580% of its listings inside parent's broad area (per-parent radius 2-6km). Sunriver center hardcoded to 43.875,-121.450 (Matt-approved 2026-05-15). 'The Highlands at Broken Top' assigned to Broken Top via name-override (Matt-approved). 5 unassigned variants (River Forest Acres, North Rim, Skyline, Wildflower, Rock Ridge) are outside any resort community \u2014 they remain stand-alone subdivisions using SubdivisionName text equality. v2 patch (Matt 2026-05-15): Crosswater trimmed to 4 aliases (was 9). Vandevert Ranch promoted to own parent (single name). Three Rivers added as new parent (11 children). Kitty Hawk stays under Sunriver per closest-parent rule. 2026-06-27: 4 communities appended by hand from live MLS subdivision data \u2014 Mt Bachelor Village, Inn of the 7th Mountain, River's Edge, Mountain High. Method: exact MLS SubdivisionName match; center_lon_lat = centroid of that subdivision's listing coordinates (avg Latitude/Longitude over all listings, authoritative MLS data, 2026-06-27). | mls_cities added 2026-07-29: per-community MLS City spellings carrying active alias listings (audit sweep, Supabase listings); communities whose MLS City differs from the registry city were rendering 0 homes. | 2026-08-26 membership audit: the '>=80% inside-test' entries were re-verified one at a time against Deschutes County plat records + polygon containment. 21 false children removed (tetherow 7, northwest-crossing 7, broken-top 4, eagle-crest 3, brasada-ranch 1); sunriver, black-butte-ranch and widgi-creek confirmed unchanged. three-rivers keeps all 11 (the POLYGON is under-drawn, covering 51.9% of the 4,819-acre CDP). crosswater was settled by research at Matt's direction: Osprey Pointe Condo KEPT on its recorded declaration naming Crosswater Owners' Association as master association, Pace Estate and Lisle Acres removed (no HOA, no CC&Rs, across the river). Enforced from now on by scripts/check-resort-membership-evidence.mjs.",
+ "generated_at": "2026-08-26",
  "communities": [
   {
    "slug": "tetherow",
@@ -17,14 +17,7 @@
    ],
    "subdivision_aliases": [
     "Tetherow",
-    "Sunrise Village",
-    "Westbrook Meadows",
-    "Braeburn",
-    "1st On The Hillsites",
-    "Lodges at Bachelor V",
-    "Triple",
-    "Campbell Road",
-    "Roald West"
+    "Triple"
    ],
    "sub_neighborhoods": [
     {
@@ -50,43 +43,35 @@
      "data_thin_note": "MLS does not tag Heath separately. SubdivisionName is always 'Tetherow'. Page uses parent Tetherow stats with a footnote."
     }
    ],
-   "child_count": 8,
+   "child_count": 1,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Deschutes County GIS Subdivisions plat record + spatial containment (2026-08-26). Membership = plats recorded as phases of this community, confirmed two ways: community_subdivisions('neighborhood','tetherow') containment, and point-in-polygon of EVERY geocoded listing carrying each MLS alias against boundaries.geo_slug='tetherow'. Replaces the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test', which asserted membership from listing PROXIMITY -- a community's envelope naturally contains the independent plats next door (same defect fixed for Awbrey Glen in 05917a61).",
+    "confirmed": [
      {
-      "name": "Sunrise Village",
-      "pct_inside": 99.7
-     },
-     {
-      "name": "Westbrook Meadows",
-      "pct_inside": 99.6
-     },
-     {
-      "name": "Braeburn",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "1st On The Hillsites",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Lodges at Bachelor V",
-      "pct_inside": 100.0
+      "name": "Tetherow",
+      "listings_geocoded": 1453,
+      "inside_parent_polygon": 1445,
+      "pct_inside": 99.4
      },
      {
       "name": "Triple",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Campbell Road",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Roald West",
-      "pct_inside": 100.0
+      "listings_geocoded": 9,
+      "inside_parent_polygon": 9,
+      "pct_inside": 100
      }
-    ]
+    ],
+    "corrected_2026_08_26": {
+     "removed": [
+      "Sunrise Village",
+      "Westbrook Meadows",
+      "Braeburn",
+      "1st On The Hillsites",
+      "Lodges at Bachelor V",
+      "Campbell Road",
+      "Roald West"
+     ],
+     "why": "Each is its own independently recorded Deschutes County plat, none of them a Tetherow phase -- Sunrise Village River Bluff/Outback/West Knoll/East Knoll (CSNUM 10007/10003/10016/09995), Westbrook Meadows P.U.D. Phases 1&2 and 3 (13961/14255), Braeburn Phases I-IV (13919/14323/14639/15213), Lodges at Bachelor View Phases 1/2/West (19647/19980/21609), Campbell Road Subdivision (16724), Roald West (18634). '1st On The Hillsites' matches no recorded plat at all. NONE appears in Tetherow's containment list (22 rows: Tetherow Phases 1-7, Golf Homes, Highlands Ridge, North Forty, Trailhead, Outrider Overlook, Tetherow Rim, Cascades Vista, Vacation Homes), and 0 of their 1,062 geocoded listings fall inside the Tetherow plat-union polygon -- while 1,445/1,453 'Tetherow' listings do."
+    }
    }
   },
   {
@@ -101,33 +86,28 @@
     44.0433
    ],
    "subdivision_aliases": [
-    "Broken Top",
-    "Golden Butte",
-    "Parks At Broken Top",
-    "Overturf Butte",
-    "The Highlands at Broken Top"
+    "Broken Top"
    ],
-   "child_count": 4,
+   "child_count": 0,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Deschutes County GIS Subdivisions plat record + spatial containment (2026-08-26). Membership = plats recorded as phases of this community, confirmed two ways: community_subdivisions('neighborhood','broken-top') containment, and point-in-polygon of EVERY geocoded listing carrying each MLS alias against boundaries.geo_slug='broken-top'. Replaces the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test', which asserted membership from listing PROXIMITY -- a community's envelope naturally contains the independent plats next door (same defect fixed for Awbrey Glen in 05917a61).",
+    "confirmed": [
      {
-      "name": "Golden Butte",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Parks At Broken Top",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Overturf Butte",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "The Highlands at Broken Top",
-      "pct_inside": 100.0
+      "name": "Broken Top",
+      "listings_geocoded": 2982,
+      "inside_parent_polygon": 2301,
+      "pct_inside": 77.2
      }
-    ]
+    ],
+    "corrected_2026_08_26": {
+     "removed": [
+      "Golden Butte",
+      "Parks At Broken Top",
+      "Overturf Butte",
+      "The Highlands at Broken Top"
+     ],
+     "why": "Each is its own recorded plat with its own HOA -- Golden Butte Phases 1-3 (CSNUM 11877/12132/12579), Parks at Broken Top Tracts A-D and Phases 2-5 (13729/14822/15794/16329/16789), Overturf Butte (08712), Highlands at Broken Top Phases 1-4 (15548/15983/16540/16708). The Broken Top boundary polygon ITSELF already excluded three of them by name ('excludes Highlands, Skyliner Summit, Parks at Broken Top'), so the registry and the polygon were contradicting each other. None appears in the 49-row containment list; 2 of 540 geocoded listings fall inside the polygon (0.4%). Golden Butte and Overturf Butte are Bend westside subdivisions ~3km away that map to bend-summit-west. NOTE: this removes 'The Highlands at Broken Top', which the v2 registry had assigned here by a Matt-approved NAME-OVERRIDE (2026-05-15). That override chose Broken Top over Tetherow when the proximity algorithm forced a parent; the geometry says it is inside NEITHER (0/66 listings in Broken Top, and the RPC's own comment records its oversized 1,072-acre county geometry landing in Tetherow's footprint). Reversible -- restore the alias if Matt wants it kept."
+    }
    }
   },
   {
@@ -143,32 +123,33 @@
    ],
    "subdivision_aliases": [
     "Eagle Crest",
-    "Ridge At Eagle Crest",
-    "Cline Falls Oasis",
-    "Coppermill",
-    "Cline Falls Mob Park"
+    "Ridge At Eagle Crest"
    ],
-   "child_count": 4,
+   "child_count": 1,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Deschutes County GIS Subdivisions plat record + spatial containment (2026-08-26). Membership = plats recorded as phases of this community, confirmed two ways: community_subdivisions('neighborhood','eagle-crest') containment, and point-in-polygon of EVERY geocoded listing carrying each MLS alias against boundaries.geo_slug='eagle-crest'. Replaces the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test', which asserted membership from listing PROXIMITY -- a community's envelope naturally contains the independent plats next door (same defect fixed for Awbrey Glen in 05917a61).",
+    "confirmed": [
+     {
+      "name": "Eagle Crest",
+      "listings_geocoded": 6501,
+      "inside_parent_polygon": 6030,
+      "pct_inside": 92.8
+     },
      {
       "name": "Ridge At Eagle Crest",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Cline Falls Oasis",
-      "pct_inside": 98.1
-     },
-     {
-      "name": "Coppermill",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Cline Falls Mob Park",
-      "pct_inside": 100.0
+      "listings_geocoded": 201,
+      "inside_parent_polygon": 201,
+      "pct_inside": 100
      }
-    ]
+    ],
+    "corrected_2026_08_26": {
+     "removed": [
+      "Cline Falls Oasis",
+      "Coppermill",
+      "Cline Falls Mob Park"
+     ],
+     "why": "Each is its own recorded plat west of the resort across Cline Falls Highway, not an Eagle Crest phase -- Cline Falls Oasis Subdivision and #2 (CSNUM 06448/06451, TRS 151215/151211), Coppermill (19818, TRS 151210). 'Cline Falls Mob Park' matches no recorded plat. None appears in Eagle Crest's 83-row containment list, and 0 of their 85 geocoded listings fall inside the Eagle Crest polygon. 'Ridge At Eagle Crest' STAYS -- 201/201 of its listings are inside, and the containment list holds 40+ Ridge At Eagle Crest plats."
+    }
    }
   },
   {
@@ -258,135 +239,199 @@
     "Camp Abbot Hangars",
     "Sunriver Lodge"
    ],
-   "child_count": 31,
+   "child_count": 30,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Deschutes County GIS Subdivisions plat record + spatial containment (2026-08-26). Membership = plats recorded as phases of this community, confirmed two ways: community_subdivisions('neighborhood','sunriver') containment, and point-in-polygon of EVERY geocoded listing carrying each MLS alias against boundaries.geo_slug='sunriver'. Replaces the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test', which asserted membership from listing PROXIMITY -- a community's envelope naturally contains the independent plats next door (same defect fixed for Awbrey Glen in 05917a61).",
+    "confirmed": [
+     {
+      "name": "Sunriver",
+      "listings_geocoded": 0,
+      "inside_parent_polygon": 0,
+      "pct_inside": null,
+      "evidence": "No listing carries the bare MLS SubdivisionName 'Sunriver' (0 rows), so the point-in-polygon test has nothing to measure -- an empty result about the QUERY, not about the world (CLAUDE.md S0). This is the community's own label, kept so the registry resolves its own name; every one of its 30 children measures 89.7-100% inside."
+     },
      {
       "name": "The Ridge",
-      "pct_inside": 100.0
+      "listings_geocoded": 542,
+      "inside_parent_polygon": 542,
+      "pct_inside": 100
      },
      {
       "name": "StoneTH",
-      "pct_inside": 100.0
+      "listings_geocoded": 494,
+      "inside_parent_polygon": 494,
+      "pct_inside": 100
      },
      {
       "name": "Deer Park",
-      "pct_inside": 98.7
+      "listings_geocoded": 607,
+      "inside_parent_polygon": 603,
+      "pct_inside": 99.3
      },
      {
       "name": "Mtn Village East",
-      "pct_inside": 99.7
+      "listings_geocoded": 687,
+      "inside_parent_polygon": 686,
+      "pct_inside": 99.9
      },
      {
       "name": "River Village",
-      "pct_inside": 100.0
+      "listings_geocoded": 477,
+      "inside_parent_polygon": 477,
+      "pct_inside": 100
      },
      {
       "name": "Fairway Crest Village",
-      "pct_inside": 99.5
+      "listings_geocoded": 990,
+      "inside_parent_polygon": 989,
+      "pct_inside": 99.9
      },
      {
       "name": "Forest Park",
-      "pct_inside": 99.5
+      "listings_geocoded": 397,
+      "inside_parent_polygon": 396,
+      "pct_inside": 99.7
      },
      {
       "name": "Meadow Village",
-      "pct_inside": 100.0
+      "listings_geocoded": 266,
+      "inside_parent_polygon": 266,
+      "pct_inside": 100
      },
      {
       "name": "Overlook Park",
-      "pct_inside": 100.0
+      "listings_geocoded": 151,
+      "inside_parent_polygon": 150,
+      "pct_inside": 99.3
      },
      {
       "name": "Mtn Village West",
-      "pct_inside": 100.0
+      "listings_geocoded": 152,
+      "inside_parent_polygon": 152,
+      "pct_inside": 100
      },
      {
       "name": "Tennis Village",
-      "pct_inside": 100.0
+      "listings_geocoded": 112,
+      "inside_parent_polygon": 112,
+      "pct_inside": 100
      },
      {
       "name": "Meadow House",
-      "pct_inside": 96.6
+      "listings_geocoded": 122,
+      "inside_parent_polygon": 120,
+      "pct_inside": 98.4
      },
      {
       "name": "Fairway Vill Condo",
-      "pct_inside": 100.0
+      "listings_geocoded": 85,
+      "inside_parent_polygon": 85,
+      "pct_inside": 100
      },
      {
       "name": "Fremont Crossing",
-      "pct_inside": 100.0
+      "listings_geocoded": 73,
+      "inside_parent_polygon": 73,
+      "pct_inside": 100
      },
      {
       "name": "Abbot House Condo",
-      "pct_inside": 98.0
+      "listings_geocoded": 68,
+      "inside_parent_polygon": 67,
+      "pct_inside": 98.5
      },
      {
       "name": "Kitty Hawk",
-      "pct_inside": 100.0
+      "listings_geocoded": 61,
+      "inside_parent_polygon": 61,
+      "pct_inside": 100
      },
      {
       "name": "Quelah Condos",
-      "pct_inside": 100.0
+      "listings_geocoded": 78,
+      "inside_parent_polygon": 78,
+      "pct_inside": 100
      },
      {
       "name": "WildflS",
-      "pct_inside": 97.2
+      "listings_geocoded": 80,
+      "inside_parent_polygon": 79,
+      "pct_inside": 98.8
      },
      {
       "name": "Polehouse",
-      "pct_inside": 100.0
+      "listings_geocoded": 52,
+      "inside_parent_polygon": 52,
+      "pct_inside": 100
      },
      {
       "name": "Aquila Lodges",
-      "pct_inside": 89.3
+      "listings_geocoded": 49,
+      "inside_parent_polygon": 46,
+      "pct_inside": 93.9
      },
      {
       "name": "Fairway Island",
-      "pct_inside": 100.0
+      "listings_geocoded": 61,
+      "inside_parent_polygon": 61,
+      "pct_inside": 100
      },
      {
       "name": "Cluster Court",
-      "pct_inside": 100.0
+      "listings_geocoded": 48,
+      "inside_parent_polygon": 47,
+      "pct_inside": 97.9
      },
      {
       "name": "Skypark",
-      "pct_inside": 100.0
+      "listings_geocoded": 36,
+      "inside_parent_polygon": 36,
+      "pct_inside": 100
      },
      {
       "name": "Mtn View Lodge",
-      "pct_inside": 100.0
+      "listings_geocoded": 37,
+      "inside_parent_polygon": 37,
+      "pct_inside": 100
      },
      {
       "name": "Ranch Cabins",
-      "pct_inside": 95.0
+      "listings_geocoded": 49,
+      "inside_parent_polygon": 48,
+      "pct_inside": 98.0
      },
      {
       "name": "SkylinC",
-      "pct_inside": 95.0
+      "listings_geocoded": 25,
+      "inside_parent_polygon": 24,
+      "pct_inside": 96
      },
      {
       "name": "Quelah Estates",
-      "pct_inside": 100.0
+      "listings_geocoded": 42,
+      "inside_parent_polygon": 42,
+      "pct_inside": 100
      },
      {
       "name": "Aspen Meadows",
-      "pct_inside": 81.2
-     },
-     {
-      "name": "Pace Estate",
-      "pct_inside": 100.0
+      "listings_geocoded": 29,
+      "inside_parent_polygon": 26,
+      "pct_inside": 89.7
      },
      {
       "name": "Camp Abbot Hangars",
-      "pct_inside": 100.0
+      "listings_geocoded": 26,
+      "inside_parent_polygon": 26,
+      "pct_inside": 100
      },
      {
       "name": "Sunriver Lodge",
-      "pct_inside": 100.0
+      "listings_geocoded": 7,
+      "inside_parent_polygon": 7,
+      "pct_inside": 100
      }
-    ]
+    ],
+    "verified_2026_08_26": "All 30 children confirmed inside the Sunriver polygon (Deschutes County GIS Unincorporated Communities, COMMUNITY=SUNRIVER): 89.7%-100% of each alias's geocoded listings fall inside, lowest Aspen Meadows 26/29. No alias removed. ('Pace Estate' was dropped from this list in the v2 patch when it moved to Crosswater; the stale pct row is gone.)"
    },
    "mls_cities": [
     "Sunriver",
@@ -434,48 +479,31 @@
     44.0611
    ],
    "subdivision_aliases": [
-    "NorthWest Crossing",
-    "Skyliner Summit",
-    "Shevlin Ridge",
-    "Westside Pines",
-    "Westside Meadows",
-    "Valhalla Heights",
-    "Treeline Phase 1",
-    "Outcrop"
+    "NorthWest Crossing"
    ],
-   "child_count": 7,
+   "child_count": 0,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Deschutes County GIS Subdivisions plat record + spatial containment (2026-08-26). Membership = plats recorded as phases of this community, confirmed two ways: community_subdivisions('neighborhood','northwest-crossing') containment, and point-in-polygon of EVERY geocoded listing carrying each MLS alias against boundaries.geo_slug='northwest-crossing'. Replaces the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test', which asserted membership from listing PROXIMITY -- a community's envelope naturally contains the independent plats next door (same defect fixed for Awbrey Glen in 05917a61).",
+    "confirmed": [
      {
-      "name": "Skyliner Summit",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Shevlin Ridge",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Westside Pines",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Westside Meadows",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Valhalla Heights",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Treeline Phase 1",
-      "pct_inside": 100.0
-     },
-     {
-      "name": "Outcrop",
-      "pct_inside": 100.0
+      "name": "NorthWest Crossing",
+      "listings_geocoded": 2957,
+      "inside_parent_polygon": 2901,
+      "pct_inside": 98.1
      }
-    ]
+    ],
+    "corrected_2026_08_26": {
+     "removed": [
+      "Skyliner Summit",
+      "Shevlin Ridge",
+      "Westside Pines",
+      "Westside Meadows",
+      "Valhalla Heights",
+      "Treeline Phase 1",
+      "Outcrop"
+     ],
+     "why": "Each is its own recorded plat elsewhere on Bend's west side, not a NorthWest Crossing phase -- Skyliner Summit AT BROKEN TOP Phases 1-10d (CSNUM 14534-15698, and the county names it after Broken Top, not NWX), Shevlin Ridge Phases 1-6 (15285-17637), Westside Pines Phases I-III (13324/13704/14481), Westside Meadows and II (14650/15585), Valhalla Heights Phases I-VII (10269-14653), Treeline Phase 1 (20630), Outcrop and Phase 2 (20391/21734). None appears in NorthWest Crossing's 42-row containment list. Of 2,063 geocoded listings across the seven, 3 fall inside the NWX polygon (0.1%) -- while 2,901/2,957 'NorthWest Crossing' listings do. All seven sit inside the wider bend-summit-west neighbourhood, which is what the radius picked up."
+    }
    }
   },
   {
@@ -491,30 +519,34 @@
    ],
    "subdivision_aliases": [
     "Crosswater",
-    "Osprey Pointe Condo",
-    "Pace Estate",
-    "Lisle Acres"
+    "Osprey Pointe Condo"
    ],
-   "child_count": 3,
+   "child_count": 1,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Recorded condominium/subdivision declarations + Deschutes County parcel records (2026-08-26), cross-checked against polygon containment. Membership = the recorded Crosswater plats PLUS any plat whose own recorded declaration submits it to the Crosswater Master Declaration. Supersedes the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test'.",
+    "confirmed": [
+     {
+      "name": "Crosswater",
+      "listings_geocoded": 331,
+      "inside_parent_polygon": 260,
+      "pct_inside": 78.5
+     },
      {
       "name": "Osprey Pointe Condo",
-      "pct_inside": 100.0,
-      "note": "Matt-curated 2026-05-15"
-     },
-     {
-      "name": "Pace Estate",
-      "pct_inside": 100.0,
-      "note": "Matt-curated 2026-05-15"
-     },
-     {
-      "name": "Lisle Acres",
-      "pct_inside": 100.0,
-      "note": "Matt-curated 2026-05-15"
+      "listings_geocoded": 9,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "0/9 inside the polygon, and KEPT on the strongest shape there is: its own recorded instrument. The Declaration of Osprey Pointe Condominiums (Deschutes County 97-33704, Book 462 Page 1137, recorded 1997-09-17) defines Master Association as CROSSWATER OWNERS' ASSOCIATION, INC. (S1.1.11), names the Crosswater CC&Rs (Book 346 Page 1105) as its Master Declaration (S1.1.14), submits the condominium to it (S12), and divides the Master Association Assessment into 24 equal parts, one per unit (Exhibit D). Its only frontage is Canoe Camp Drive -- a private road DIAL shows as owned by Crosswater Owners' Association and platted in Crosswater Phases 1 And 2 -- and the Crosswater Club's own address is 17600 Canoe Camp Dr, 0.3 mi away. It is a condominium carved OUT of Crosswater, which is exactly why it is absent from the union of the Crosswater Phase plats: the polygon test is what is wrong here, not the membership (CLAUDE.md S0 -- absence from one query shape is not absence)."
      }
     ],
+    "corrected_2026_08_26": {
+     "removed": [
+      "Pace Estate",
+      "Lisle Acres"
+     ],
+     "why": "Neither is Crosswater, on county records and on their own listings. Pace Estates (CSNUM 08718, map 20-11-06) is a 4-lot subdivision on Spring River Rd; DIAL shows no association owning any parcel, MLS carries CCR's YN = No on 17340 and 17350, and the Deschutes County Title CC&R library holds zero Pace Estates documents against 10 for Crosswater and 13 for Osprey Pointe. Lisle Acres (CSNUM 08000, map 20-11-07-B) is a 6-lot subdivision on Lunar Dr adjoining the Deschutes River Recreation Homesites plat; the active listing for 56680 Lunar Dr states it is 'located just outside the resort area with no HOA & no CC & Rs', HOA dues $0, and Redfin files Lunar Dr under Three Rivers, not Crosswater. Both sit across the Deschutes from the gate -- 2.15 mi and 2.34 mi by road -- and 0 of their 32 geocoded listings fall inside the Crosswater polygon. Lisle Acres shares Section 7 with Crosswater Phases 1 & 2 and Osprey Pointe but on the opposite bank, which is most likely what seeded the original proximity match.",
+     "supersedes": "Matt's 2026-05-15 directive named Osprey Pointe Condo, Pace Estate and Lisle Acres as part of Crosswater. Matt asked for this to be researched rather than decided on geometry (2026-08-26). The research upheld the directive for Osprey Pointe -- and the recorded declaration proves it more strongly than the polygon could -- and overturned it for the other two."
+    },
     "matt_directive_2026_05_15": "Crosswater is its own specific community. Osprey Pointe Condo, Pace Estate, Lisle Acres are part of Crosswater. Oww/DrrhTrs/Deschutes River Recreation Homesites are NOT Crosswater \u2014 they are Three Rivers."
    },
    "mls_cities": [
@@ -542,25 +574,41 @@
    ],
    "child_count": 4,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Deschutes County GIS Subdivisions plat record + spatial containment (2026-08-26). Membership = plats recorded as phases of this community, confirmed two ways: community_subdivisions('neighborhood','black-butte-ranch') containment, and point-in-polygon of EVERY geocoded listing carrying each MLS alias against boundaries.geo_slug='black-butte-ranch'. Replaces the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test', which asserted membership from listing PROXIMITY -- a community's envelope naturally contains the independent plats next door (same defect fixed for Awbrey Glen in 05917a61).",
+    "confirmed": [
+     {
+      "name": "Black Butte Ranch",
+      "listings_geocoded": 220,
+      "inside_parent_polygon": 190,
+      "pct_inside": 86.4
+     },
      {
       "name": "Bbr",
-      "pct_inside": 100.0
+      "listings_geocoded": 102,
+      "inside_parent_polygon": 102,
+      "pct_inside": 100
      },
      {
       "name": "South Meadow",
-      "pct_inside": 100.0
+      "listings_geocoded": 50,
+      "inside_parent_polygon": 50,
+      "pct_inside": 100
      },
      {
       "name": "Glaze Meadow Homesite Section",
-      "pct_inside": 100.0
+      "listings_geocoded": 46,
+      "inside_parent_polygon": 45,
+      "pct_inside": 97.8
      },
      {
       "name": "Country House Condo",
-      "pct_inside": 100.0
+      "listings_geocoded": 5,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "0/5 inside the polygon, but KEPT on a second query shape: 6/6 of its listings carry MLS City='Black Butte Ranch' -- BBR is its own MLS city -- at 12960 Hawks Beard, inside the ranch. The polygon is a plat-union of HOMESITE SECTIONS and does not cover the condo tract, so absence from it is a fact about that polygon, not about membership (CLAUDE.md S0)."
      }
-    ]
+    ],
+    "verified_2026_08_26": "All 4 children confirmed: Bbr 102/102 inside, South Meadow 50/50, Glaze Meadow Homesite Section 45/46, and the containment list is 54 plats every one of which is literally named '... Of Black Butte Ranch'. 'Country House Condo' is KEPT on a second query shape: 0/5 of its listings fall inside the polygon (a plat-union of HOMESITE SECTIONS, which does not cover the condo tract), but 6/6 carry MLS City='Black Butte Ranch' -- BBR is its own MLS city -- at 12960 Hawks Beard inside the ranch. Absence from the polygon test alone is not absence (CLAUDE.md S0)."
    },
    "mls_cities": [
     "Black Butte Ranch",
@@ -579,18 +627,25 @@
     44.162
    ],
    "subdivision_aliases": [
-    "Brasada Ranch",
-    "Powell Butte View"
+    "Brasada Ranch"
    ],
-   "child_count": 1,
+   "child_count": 0,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Deschutes County GIS Subdivisions plat record + spatial containment (2026-08-26). Membership = plats recorded as phases of this community, confirmed two ways: community_subdivisions('neighborhood','brasada-ranch') containment, and point-in-polygon of EVERY geocoded listing carrying each MLS alias against boundaries.geo_slug='brasada-ranch'. Replaces the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test', which asserted membership from listing PROXIMITY -- a community's envelope naturally contains the independent plats next door (same defect fixed for Awbrey Glen in 05917a61).",
+    "confirmed": [
      {
-      "name": "Powell Butte View",
-      "pct_inside": 89.7
+      "name": "Brasada Ranch",
+      "listings_geocoded": 2293,
+      "inside_parent_polygon": 2066,
+      "pct_inside": 90.1
      }
-    ]
+    ],
+    "corrected_2026_08_26": {
+     "removed": [
+      "Powell Butte View"
+     ],
+     "why": "Scattered rural Powell Butte parcels, not a Brasada Ranch phase: 1 of 148 geocoded listings falls inside the Brasada polygon (0.7%) -- while 2,066/2,293 'Brasada Ranch' listings do. Sample addresses sit 6-9km off the ranch (9001 Desert Sage 44.237/-120.961; 13486 Meadowlark 44.185/-121.031 vs a Brasada centroid of 44.162/-121.039). Second query shape used deliberately: community_subdivisions returns 0 rows for brasada-ranch because `boundaries` carries Deschutes County plats and Brasada is in CROOK county -- an empty containment list here is a fact about the query, not about the world (CLAUDE.md S0), so the point-in-polygon test is the evidence."
+    }
    }
   },
   {
@@ -610,31 +665,36 @@
     "Elkai Woods",
     "Milepost 1"
    ],
-   "child_count": 5,
+   "child_count": 3,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": [
+    "method": "Deschutes County GIS Subdivisions plat record + spatial containment (2026-08-26). Membership = plats recorded as phases of this community, confirmed two ways: community_subdivisions('neighborhood','widgi-creek') containment, and point-in-polygon of EVERY geocoded listing carrying each MLS alias against boundaries.geo_slug='widgi-creek'. Replaces the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test', which asserted membership from listing PROXIMITY -- a community's envelope naturally contains the independent plats next door (same defect fixed for Awbrey Glen in 05917a61).",
+    "confirmed": [
      {
-      "name": "Inn Of The 7th",
-      "pct_inside": 99.7
-     },
-     {
-      "name": "7th Mtn Golf Village",
-      "pct_inside": 100.0
+      "name": "Widgi Creek",
+      "listings_geocoded": 148,
+      "inside_parent_polygon": 148,
+      "pct_inside": 100
      },
      {
       "name": "PointsWest",
-      "pct_inside": 100.0
+      "listings_geocoded": 136,
+      "inside_parent_polygon": 136,
+      "pct_inside": 100
      },
      {
       "name": "Elkai Woods",
-      "pct_inside": 100.0
+      "listings_geocoded": 58,
+      "inside_parent_polygon": 58,
+      "pct_inside": 100
      },
      {
       "name": "Milepost 1",
-      "pct_inside": 100.0
+      "listings_geocoded": 34,
+      "inside_parent_polygon": 34,
+      "pct_inside": 100
      }
-    ]
+    ],
+    "verified_2026_08_26": "All 3 children confirmed 100% inside: PointsWest 136/136, Elkai Woods 58/58, Milepost 1 34/34, and the containment list holds Points West, Milepost 1 and Elkai Woods Townhomes Phases I-VI. CAVEAT: widgi-creek's polygon is the Deschutes County INN OF 7TH MOUNTAIN unincorporated-community polygon, shared with the separate inn-of-the-7th-mountain registry entry, so it also contains Seventh Mountain Golf Village and Inn Of The Seventh Mountain Phase IV. The three aliases above are the Widgi Creek golf-course plats; the polygon is wider than the community and should be narrowed to a Widgi plat union."
    }
   },
   {
@@ -684,64 +744,84 @@
    ],
    "child_count": 11,
    "verification": {
-    "method": "Spark /listings/nearby scan from composite center, \u226560% inside-test, Sunriver/Crosswater/Caldera/Vandevert subs excluded per Matt directive",
-    "children_with_pct": [
+    "method": "Three Rivers CDP membership (2026-08-26). Three Rivers is not a resort or a single plat: it is an unincorporated CENSUS-DESIGNATED PLACE of 7.53 sq mi / 4,819 acres in south Deschutes County, and our own cited content (data/resort-community-three-rivers.json) records that 'more than 20 named subdivisions make up Three Rivers', naming Deschutes River Recreation Homesites, Water Wonderland and Vandevert Ranch among them, and describing River Meadows' own HOA amenities as Three Rivers amenities. Membership is therefore area membership, tested by locality, not by the resort plat-containment rule. Supersedes the prior '>=60% inside-test'.",
+    "confirmed": [
      {
       "name": "Oww",
-      "pct_inside": 100.0,
-      "total": 976
+      "listings_geocoded": 3092,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "Inside the Three Rivers CDP but outside boundaries.geo_slug='three-rivers', which is the ST_Union of the Deschutes River Recreation Homesites plats ALONE and measures 2,503 acres -- 51.9% of the 4,819-acre CDP. The polygon is under-drawn, not the membership: this subdivision's listings average 1.36 km from the CDP centre, CLOSER in than the three DRRH spellings that DO pass the polygon test (3.05-4.12 km). All 11 aliases cluster within ~3 km of each other, 27-30 km SW of Bend, ZIP 97707. Distinct from '3 Rivers Rec' (Three Rivers Recreation Area, Lake Billy Chinook), which is 535 listings in Culver 97734, 56 km NW of Bend, and is NOT in this registry. Re-test this alias against the polygon once the boundary is widened to the CDP."
      },
      {
       "name": "DrrhTrs",
-      "pct_inside": 81.0,
-      "total": 877
+      "listings_geocoded": 1489,
+      "inside_parent_polygon": 1469,
+      "pct_inside": 98.7
      },
      {
       "name": "River Meadows",
-      "pct_inside": 100.0,
-      "total": 589
+      "listings_geocoded": 599,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "Inside the Three Rivers CDP but outside boundaries.geo_slug='three-rivers', which is the ST_Union of the Deschutes River Recreation Homesites plats ALONE and measures 2,503 acres -- 51.9% of the 4,819-acre CDP. The polygon is under-drawn, not the membership: this subdivision's listings average 2.8 km from the CDP centre, CLOSER in than the three DRRH spellings that DO pass the polygon test (3.05-4.12 km). All 11 aliases cluster within ~3 km of each other, 27-30 km SW of Bend, ZIP 97707. Distinct from '3 Rivers Rec' (Three Rivers Recreation Area, Lake Billy Chinook), which is 535 listings in Culver 97734, 56 km NW of Bend, and is NOT in this registry. Re-test this alias against the polygon once the boundary is widened to the CDP."
      },
      {
       "name": "Sun Dance",
-      "pct_inside": 99.0,
-      "total": 140
+      "listings_geocoded": 143,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "Inside the Three Rivers CDP but outside boundaries.geo_slug='three-rivers', which is the ST_Union of the Deschutes River Recreation Homesites plats ALONE and measures 2,503 acres -- 51.9% of the 4,819-acre CDP. The polygon is under-drawn, not the membership: this subdivision's listings average 1.17 km from the CDP centre, CLOSER in than the three DRRH spellings that DO pass the polygon test (3.05-4.12 km). All 11 aliases cluster within ~3 km of each other, 27-30 km SW of Bend, ZIP 97707. Distinct from '3 Rivers Rec' (Three Rivers Recreation Area, Lake Billy Chinook), which is 535 listings in Culver 97734, 56 km NW of Bend, and is NOT in this registry. Re-test this alias against the polygon once the boundary is widened to the CDP."
      },
      {
       "name": "Deschutes River Recreation Homesites",
-      "pct_inside": 66.0,
-      "total": 297
+      "listings_geocoded": 335,
+      "inside_parent_polygon": 332,
+      "pct_inside": 99.1
      },
      {
       "name": "Drrh Trs",
-      "pct_inside": 80.0,
-      "total": 205
+      "listings_geocoded": 226,
+      "inside_parent_polygon": 223,
+      "pct_inside": 98.7
      },
      {
       "name": "Deschutes Pines",
-      "pct_inside": 100.0,
-      "total": 16
+      "listings_geocoded": 16,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "Inside the Three Rivers CDP but outside boundaries.geo_slug='three-rivers', which is the ST_Union of the Deschutes River Recreation Homesites plats ALONE and measures 2,503 acres -- 51.9% of the 4,819-acre CDP. The polygon is under-drawn, not the membership: this subdivision's listings average 1.11 km from the CDP centre, CLOSER in than the three DRRH spellings that DO pass the polygon test (3.05-4.12 km). All 11 aliases cluster within ~3 km of each other, 27-30 km SW of Bend, ZIP 97707. Distinct from '3 Rivers Rec' (Three Rivers Recreation Area, Lake Billy Chinook), which is 535 listings in Culver 97734, 56 km NW of Bend, and is NOT in this registry. Re-test this alias against the polygon once the boundary is widened to the CDP."
      },
      {
       "name": "Blissful Acres",
-      "pct_inside": 100.0,
-      "total": 14
+      "listings_geocoded": 14,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "Inside the Three Rivers CDP but outside boundaries.geo_slug='three-rivers', which is the ST_Union of the Deschutes River Recreation Homesites plats ALONE and measures 2,503 acres -- 51.9% of the 4,819-acre CDP. The polygon is under-drawn, not the membership: this subdivision's listings average 1.56 km from the CDP centre, CLOSER in than the three DRRH spellings that DO pass the polygon test (3.05-4.12 km). All 11 aliases cluster within ~3 km of each other, 27-30 km SW of Bend, ZIP 97707. Distinct from '3 Rivers Rec' (Three Rivers Recreation Area, Lake Billy Chinook), which is 535 listings in Culver 97734, 56 km NW of Bend, and is NOT in this registry. Re-test this alias against the polygon once the boundary is widened to the CDP."
      },
      {
       "name": "Fountainbleau",
-      "pct_inside": 100.0,
-      "total": 7
+      "listings_geocoded": 7,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "Inside the Three Rivers CDP but outside boundaries.geo_slug='three-rivers', which is the ST_Union of the Deschutes River Recreation Homesites plats ALONE and measures 2,503 acres -- 51.9% of the 4,819-acre CDP. The polygon is under-drawn, not the membership: this subdivision's listings average 1.41 km from the CDP centre, CLOSER in than the three DRRH spellings that DO pass the polygon test (3.05-4.12 km). All 11 aliases cluster within ~3 km of each other, 27-30 km SW of Bend, ZIP 97707. Distinct from '3 Rivers Rec' (Three Rivers Recreation Area, Lake Billy Chinook), which is 535 listings in Culver 97734, 56 km NW of Bend, and is NOT in this registry. Re-test this alias against the polygon once the boundary is widened to the CDP."
      },
      {
       "name": "Swarens Fancher",
-      "pct_inside": 100.0,
-      "total": 6
+      "listings_geocoded": 6,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "Inside the Three Rivers CDP but outside boundaries.geo_slug='three-rivers', which is the ST_Union of the Deschutes River Recreation Homesites plats ALONE and measures 2,503 acres -- 51.9% of the 4,819-acre CDP. The polygon is under-drawn, not the membership: this subdivision's listings average 1.4 km from the CDP centre, CLOSER in than the three DRRH spellings that DO pass the polygon test (3.05-4.12 km). All 11 aliases cluster within ~3 km of each other, 27-30 km SW of Bend, ZIP 97707. Distinct from '3 Rivers Rec' (Three Rivers Recreation Area, Lake Billy Chinook), which is 535 listings in Culver 97734, 56 km NW of Bend, and is NOT in this registry. Re-test this alias against the polygon once the boundary is widened to the CDP."
      },
      {
       "name": "OWW2",
-      "pct_inside": 100.0,
-      "total": 7
+      "listings_geocoded": 23,
+      "inside_parent_polygon": 0,
+      "pct_inside": 0,
+      "evidence": "Inside the Three Rivers CDP but outside boundaries.geo_slug='three-rivers', which is the ST_Union of the Deschutes River Recreation Homesites plats ALONE and measures 2,503 acres -- 51.9% of the 4,819-acre CDP. The polygon is under-drawn, not the membership: this subdivision's listings average 1.13 km from the CDP centre, CLOSER in than the three DRRH spellings that DO pass the polygon test (3.05-4.12 km). All 11 aliases cluster within ~3 km of each other, 27-30 km SW of Bend, ZIP 97707. Distinct from '3 Rivers Rec' (Three Rivers Recreation Area, Lake Billy Chinook), which is 535 listings in Culver 97734, 56 km NW of Bend, and is NOT in this registry. Re-test this alias against the polygon once the boundary is widened to the CDP."
      }
     ],
+    "boundary_followup_2026_08_26": "boundaries.geo_slug='three-rivers' covers 2,503 of the CDP's 4,819 acres (51.9%). Widen it to the Three Rivers CDP (or to the union of its constituent plats: Oregon Water Wonderland Units 1-2 CSNUM 08661/08674, River Meadows + 1st/Second Addition 09342/12578/12781, and the rest) so the map on /communities/three-rivers stops contradicting the subdivision list beside it. Matt's 2026-05-15 directive still governs the exclusions: Vandevert Ranch, Crosswater and Caldera Springs are their own registry entries and stay out of Three Rivers.",
     "matt_directive_2026_05_15": "Three Rivers gets its own area report, but it will not include Vandevert Ranch, Crosswater, or Caldera Springs."
    },
    "mls_cities": [
@@ -784,9 +864,23 @@
     "Inn Of The 7th",
     "7th Mtn Golf Village"
    ],
-   "child_count": 0,
+   "child_count": 2,
    "verification": {
-    "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+    "method": "Deschutes County GIS plat containment (2026-08-26). Both aliases are recorded plats inside the Deschutes County Unincorporated Community polygon COMMUNITY=INN OF 7TH MOUNTAIN (stored as boundaries.geo_slug='widgi-creek'; that polygon covers this community, and community_subdivisions on it returns 'Seventh Mountain Golf Village' and 'Inn Of The Seventh Mountain (the) Phase IV'). No geo_slug='inn-of-the-7th-mountain' polygon exists, so the containment test runs against the polygon that does. Supersedes the prior '<0.5km from centroid' method.",
+    "confirmed": [
+     {
+      "name": "Inn Of The 7th",
+      "listings_geocoded": 795,
+      "inside_parent_polygon": 722,
+      "pct_inside": 90.8
+     },
+     {
+      "name": "7th Mtn Golf Village",
+      "listings_geocoded": 142,
+      "inside_parent_polygon": 142,
+      "pct_inside": 100.0
+     }
+    ],
     "children_with_pct": []
    }
   },
@@ -805,9 +899,25 @@
     "Rivers Edge Village",
     "Phase 5 Rivers Edge"
    ],
-   "child_count": 0,
+   "child_count": 2,
    "verification": {
-    "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+    "method": "Name-record + centroid clustering (2026-08-26). NO polygon exists for this community at any geo_type, and no Deschutes County plat is recorded under 'Rivers Edge', so the containment test has nothing to run against -- an absence about the query, not about the world (CLAUDE.md S0). Both aliases carry the community's OWN name plus a village/phase word, which is a phase claim on its face rather than the proximity inference that produced the Awbrey Glen defect (differently-named neighbours). Recorded as measured; upgrade this entry the day a Rivers Edge polygon is ingested.",
+    "confirmed": [
+     {
+      "name": "Rivers Edge Village",
+      "listings_geocoded": 1364,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No polygon exists to test against. Evidence is the name itself ('Rivers Edge' + 'Village') plus clustering: mean 0.52 km from the registry centroid across 1,364 geocoded listings, all City='Bend'."
+     },
+     {
+      "name": "Phase 5 Rivers Edge",
+      "listings_geocoded": 14,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No polygon exists to test against. Evidence is the name itself ('Phase 5' of 'Rivers Edge') plus clustering: mean 1.16 km from the registry centroid across 14 geocoded listings, all City='Bend'."
+     }
+    ],
     "children_with_pct": []
    }
   },
@@ -825,9 +935,18 @@
    "subdivision_aliases": [
     "Mtn High"
    ],
-   "child_count": 0,
+   "child_count": 1,
    "verification": {
-    "method": "Subdivision_aliases = exact name-match core + obvious phase aliases confirmed <0.5km from centroid (live MLS, 2026-06-27). Nearby but separate subdivisions are intentionally EXCLUDED (a radius over-includes neighbors). Full boundary-based multi-subdivision assignment (closest-parent + >=80%-inside, like Tetherow) is deferred to the registry generation script for any of these that genuinely span more subdivisions (e.g. Mountain High golf area).",
+    "method": "Deschutes County GIS plat containment (2026-08-26). 'Mtn High' is the MLS abbreviation of this community's own label, measured against the recorded Mountain High plat (boundaries geo_type='subdivision', geo_slug='mountain-high', CSNUM 08296, TRS 181216). No geo_type='neighborhood' polygon exists for this community. Supersedes the prior '<0.5km from centroid' method.",
+    "confirmed": [
+     {
+      "name": "Mtn High",
+      "listings_geocoded": 720,
+      "inside_parent_polygon": 398,
+      "pct_inside": 55.3,
+      "evidence": "55.3% rather than ~100% because the single recorded Mountain High plat (CSNUM 08296) is smaller than the Mountain High golf community the MLS name covers; mean distance from the registry centroid is 0.33 km over all 720 listings, and every one is City='Bend'. Above the 50% bar on the polygon test alone -- this note records why it is not higher."
+     }
+    ],
     "children_with_pct": []
    }
   },

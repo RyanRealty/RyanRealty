@@ -124,7 +124,12 @@ describe('resolveCanonicalCommunitySlug', () => {
   const universe = candidateUniverse()
 
   it('covers a non-trivial slug space', () => {
-    expect(universe.length).toBeGreaterThan(2000)
+    // 24 service-area cities x 78 distinct community/alias/sub-neighbourhood
+    // names, plus the bare registry slugs and controls. Was >2000 until the
+    // 2026-08-26 membership audit removed 21 falsely-claimed aliases (~500
+    // city-prefixed candidates); the space is smaller because the registry is
+    // now true, not because coverage was cut.
+    expect(universe.length).toBeGreaterThan(1800)
   })
 
   it('lands on the same destination the page body chose, for every slug', () => {
@@ -151,9 +156,31 @@ describe('resolveCanonicalCommunitySlug', () => {
   })
 
   it('consolidates the GSC self-cannibalization case onto one URL', () => {
-    expect(resolveCanonicalCommunitySlug('bend-parks-at-broken-top')).toBe('broken-top')
-    expect(resolveCanonicalCommunitySlug('bend-the-highlands-at-broken-top')).toBe('broken-top')
+    // bend-broken-top is the real case, and the one production was sampled on
+    // (see the header). It still consolidates.
     expect(resolveCanonicalCommunitySlug('bend-broken-top')).toBe('broken-top')
+    // sunriver-river-village, also production-sampled, is the alias form of the
+    // same rule and River Village is a VERIFIED Sunriver child (100% inside).
+    expect(resolveCanonicalCommunitySlug('sunriver-river-village')).toBe('sunriver')
+  })
+
+  it('stops claiming a neighbouring plat for the resort next door', () => {
+    // Until 2026-08-26 this resolver sent bend-parks-at-broken-top and
+    // bend-the-highlands-at-broken-top to /communities/broken-top, because the
+    // registry listed both as Broken Top aliases. Neither is: each is its own
+    // recorded Deschutes County plat with its own HOA (Parks at Broken Top
+    // CSNUM 13729/14822/15794/16329/16789, Highlands 15548/15983/16540/16708),
+    // and the Broken Top boundary polygon already excluded them by name. The
+    // 308 was a canonical claim that these places BELONG to Broken Top, so
+    // dropping it is the same correction as dropping the alias (CLAUDE.md §0).
+    expect(resolveCanonicalCommunitySlug('bend-parks-at-broken-top')).toBeNull()
+    expect(resolveCanonicalCommunitySlug('bend-the-highlands-at-broken-top')).toBeNull()
+    // NOTE the side effect, which is PRE-EXISTING and much wider than these two:
+    // /communities/<city>-<anything> renders an index,follow page for ANY name,
+    // verified 2026-08-26 with the never-registered control
+    // /communities/bend-some-ordinary-plat. These names now land in that bucket
+    // instead of redirecting. The fix is the junk-slug guard on the
+    // /communities route, not a fake alias — tracked for Matt.
   })
 
   it('leaves a non-resort registry entry alone under its verified city', () => {

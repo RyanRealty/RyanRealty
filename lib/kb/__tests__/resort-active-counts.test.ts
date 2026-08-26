@@ -25,13 +25,18 @@ describe('resortActiveSfrCounts', () => {
   })
 
   it('assigns each tile to at most one resort (longest alias prefix wins)', () => {
-    // "Parks At Broken Top" is a Broken Top alias; "Broken Top" is the generic one.
+    // "Sunriver Lodge" is a Sunriver alias and "Sunriver" is the generic one that
+    // is ALSO a prefix of it, so the tile matches both entries in the index and
+    // the longest-first ordering has to pick one. (This used to be spelled with
+    // "Parks At Broken Top" / "Broken Top"; Parks at Broken Top is its own
+    // recorded plat and was removed from the registry 2026-08-26 — the guard is
+    // the prefix relation, not those particular names.)
     const tiles = [
-      { subdivisionName: 'Parks At Broken Top Phase 2', propertyType: 'A' },
-      { subdivisionName: 'Broken Top', propertyType: 'A' },
+      { subdivisionName: 'Sunriver Lodge', propertyType: 'A' },
+      { subdivisionName: 'Sunriver', propertyType: 'A' },
     ]
-    // both belong to broken-top; neither is dropped or double-counted elsewhere
-    expect(resortActiveSfrCounts('bend', tiles).get('broken-top')).toBe(2)
+    // both belong to sunriver; neither is dropped or double-counted elsewhere
+    expect(resortActiveSfrCounts('sunriver', tiles).get('sunriver')).toBe(2)
   })
 
   it('returns 0 for a registered resort with no active tiles (drops, no stale number)', () => {

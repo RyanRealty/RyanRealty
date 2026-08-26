@@ -55,7 +55,7 @@ import {
 import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
-import { isSubdivisionIndexable } from '@/lib/data/subdivisions/getIndexableSubdivisions'
+import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
@@ -150,6 +150,11 @@ function slugToTitle(slug: string): string {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+/** Same title-casing, but null-in/null-out — an absent city stays absent (§0). */
+function titleCaseSlug(slug: string | null | undefined): string | null {
+  return slug ? slugToTitle(slug) : null
+}
+
 /** Visitor plat name. MLS alias stays the ingest key; Triple → Triple Knot. */
 function publishSubdivisionPageName(slug: string, registryMatch: RegistryMatch | null): string {
   const raw = registryMatch?.canonicalName ?? slugToTitle(slug)
@@ -164,17 +169,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const registryMatch = resolveRegistryAlias(slug)
   const name = publishSubdivisionPageName(slug, registryMatch)
-  const city = registryMatch?.city ?? 'Central Oregon'
   // Indexability threshold (W2.1): a plat earns index,follow only with a GIS
   // polygon AND >= SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime closed sales
   // (lib/data/subdivisions/subdivision-index.ts — the same set the sitemap
   // submits and llms.txt enumerates). Below the bar the page still renders,
   // it just carries noindex via the central pageMetadata robots policy so
   // thin plat pages never dilute the programmatic-page quality signal.
-  const indexable = await isSubdivisionIndexable(slug)
+  //
+  // The same cached set also carries each plat's citySlug (the city
+  // contributing the most closed sales), so the title gets a REAL city for
+  // free — no second query. Before this, every non-registry plat (~3,200
+  // pages) titled itself "Central Oregon, Oregon", because the fallback
+  // string was interpolated into a "<city>, Oregon" template. §0: when the
+  // city is genuinely unknown, the page says nothing about it rather than
+  // naming a place that does not exist.
+  const indexableEntry = (await getIndexableSubdivisions()).find((s) => s.slug === slug)
+  const indexable = indexableEntry != null
+  const cityName = registryMatch?.city ?? titleCaseSlug(indexableEntry?.citySlug)
   return pageMetadata({
-    title: `Homes for Sale in ${name} | ${city}, Oregon`,
-    description: `Active homes in ${name}, a subdivision in ${city}. Boundary map and live MLS listings.`,
+    title: cityName
+      ? `Homes for Sale in ${name} | ${cityName}, Oregon`
+      : `Homes for Sale in ${name} | Central Oregon`,
+    description: cityName
+      ? `Active homes in ${name}, a subdivision in ${cityName}. Boundary map and live MLS listings.`
+      : `Active homes in ${name}, a Central Oregon subdivision. Boundary map and live MLS listings.`,
     path: `/subdivisions/${slug}`,
     noindex: !indexable,
   })

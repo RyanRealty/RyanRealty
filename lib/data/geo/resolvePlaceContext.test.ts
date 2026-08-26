@@ -6,20 +6,25 @@ import {
 import { getResortCommunityBySubdivisionName } from '@/lib/data/communities/registry'
 
 describe('resolvePlaceContextFromListing', () => {
-  it('builds city → community → plat when the plat is a registry child (Valhalla → NWX)', () => {
+  // Was spelled "Valhalla Heights → NorthWest Crossing" until 2026-08-26. Valhalla
+  // Heights is its own recorded Deschutes County plat (CSNUM 10269-14653) that the
+  // old proximity-based alias list had claimed for NWX, and it was removed. Elkai
+  // Woods is a verified Widgi Creek child (100% of its listings inside the Widgi
+  // polygon), so the case under test — a plat that IS a registry child — is unchanged.
+  it('builds city → community → plat when the plat is a registry child (Elkai Woods → Widgi Creek)', () => {
     const ctx = resolvePlaceContextFromListing({
       city: 'Bend',
       citySlug: 'bend',
-      neighborhoodName: 'Northwest Crossing',
-      neighborhoodSlug: 'northwest-crossing',
-      subdivisionName: 'Valhalla Heights',
-      subdivisionSlug: 'valhalla-heights',
+      neighborhoodName: 'Widgi Creek',
+      neighborhoodSlug: 'widgi-creek',
+      subdivisionName: 'Elkai Woods',
+      subdivisionSlug: 'elkai-woods',
     })
 
     expect(ctx.city?.href).toBe('/cities/bend')
-    // Registry lists Valhalla Heights under NorthWest Crossing (curated Community).
-    expect(ctx.curatedCommunity?.href).toBe('/communities/northwest-crossing')
-    expect(ctx.subdivision?.href).toBe('/subdivisions/valhalla-heights')
+    // Registry lists Elkai Woods under Widgi Creek (curated Community).
+    expect(ctx.curatedCommunity?.href).toBe('/communities/widgi-creek')
+    expect(ctx.subdivision?.href).toBe('/subdivisions/elkai-woods')
     expect(ctx.preferredMarketGrain).toBe('community')
     // Neighborhood deduped against same Community slug.
     expect(ctx.breadcrumb.map((b) => b.type)).toEqual([
@@ -27,7 +32,7 @@ describe('resolvePlaceContextFromListing', () => {
       'community',
       'subdivision',
     ])
-    expect(ctx.identityLine).toContain('Valhalla Heights')
+    expect(ctx.identityLine).toContain('Elkai Woods')
     expect(ctx.identityLine).toContain('Bend')
   })
 

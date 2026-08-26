@@ -81,7 +81,7 @@
     "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) \u2014 the market Instrument's first choice. ci:subdivision-stats-integrity pins the period.",
     "getSubdivisionSchools(city, alias) \u2014 the closing Quiet's school entries. ci:subdivision-stats-integrity pins the call.",
     "fetchSubdivMarketExtras({ citySlug, resortSlug }) \u2014 the community and city pulse rows, of which the market Instrument uses exactly one. READ CONDITIONALLY: it runs only when the plat has no market_stats_cache row of its own, because the band renders the plat row when there is one and both pulse queries would then be discarded. It used to run on every request.",
-    "isSubdivisionIndexable(slug) \u2014 the robots policy in generateMetadata."
+    "getIndexableSubdivisions() \u2014 the robots policy in generateMetadata, AND the plat's city. One cached read serves both: the matching row carries citySlug (the city contributing the most closed sales), so the title names a real city instead of the old \"Central Oregon, Oregon\" fallback that ~3,200 non-registry plat pages carried. Absent from the set = noindex AND no city claimed (\u00a70)."
   ],
   "sectionOrder": [
     "MetadataBlock",
