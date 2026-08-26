@@ -107,7 +107,11 @@ export default function BuyerLPForm() {
         } catch {
           // best-effort residual
         }
-        setResult({ ok: true, msg: "Got it. Your first batch of matches is on its way to your inbox." })
+        // True whether or not anything matches today. The submission fires a
+        // first batch immediately, but a narrow search can match nothing yet —
+        // promising "your first batch is on its way" would be a lie to exactly
+        // the buyer who most needs to know why their inbox is quiet.
+        setResult({ ok: true, msg: "Got it. Matches reach your inbox as they hit the market." })
       } else {
         setResult({ ok: false, msg: r.error })
       }
