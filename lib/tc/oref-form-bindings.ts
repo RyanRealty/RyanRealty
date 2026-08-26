@@ -103,6 +103,37 @@ export const OREF_FORM_BINDINGS: Record<string, readonly FormFieldBinding[]> = {
     { fact: 'address', match: /^Text09$/ },
     { fact: 'listingPrice', match: /^Text02113$/ },
   ],
+  /**
+   * The repair addendums share the standard OREF addendum header, the same
+   * three lines 060 carries — but named Text<n> rather than Buyers/Sellers, so
+   * they need positions:
+   *
+   *   1  Buyer(s) ______
+   *   2  Seller(s) ______
+   *   3  Property Address or Tax ID # ______
+   *
+   * Their signature blocks are anonymous too, which means there is nothing for
+   * the generic matcher to misbind and nothing to reserve. The repair language
+   * on lines 10-32 is the broker's to write; it is not a deal fact.
+   */
+  '022A': [
+    { fact: 'buyers', match: /^Text125$/ },
+    { fact: 'sellers', match: /^Text126$/ },
+    { fact: 'address', match: /^Text127$/ },
+  ],
+  '022B': [
+    { fact: 'buyers', match: /^Text60$/ },
+    { fact: 'sellers', match: /^Text61$/ },
+    { fact: 'address', match: /^Text62$/ },
+  ],
+  /**
+   * OREF 020 is deliberately absent. Its header is one line — Property Address
+   * or Tax ID — and, like the 015, that line carries no AcroForm widget on this
+   * blank. Everything else on the form is the seller's own answers about the
+   * property, which are not deal facts and are not ours to write. Guessing a
+   * position on a disclosure statement that carries consequences under
+   * ORS 105.464-105.475 is worse than leaving it to the seller.
+   */
 }
 
 /** True when this blank is a signature or date line the generic matcher must keep its hands off. */

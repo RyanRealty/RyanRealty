@@ -110,3 +110,25 @@ describe('OREF 059 delivery addendum needs no table', () => {
     expect(formBlankIsReserved('059', 'Delivering Party')).toBe(false)
   })
 })
+
+describe('the repair addendums', () => {
+  it('binds the standard addendum header on both', () => {
+    // Lines 1-3 on 022A and 022B, same layout as 060 but Text<n>-named.
+    expect(formBindingFactKey('022A', 'Text125')).toBe('buyers')
+    expect(formBindingFactKey('022A', 'Text126')).toBe('sellers')
+    expect(formBindingFactKey('022A', 'Text127')).toBe('address')
+    expect(formBindingFactKey('022B', 'Text60')).toBe('buyers')
+    expect(formBindingFactKey('022B', 'Text61')).toBe('sellers')
+    expect(formBindingFactKey('022B', 'Text62')).toBe('address')
+  })
+
+  it('does not cross the two forms, whose numbering differs', () => {
+    expect(formBindingFactKey('022A', 'Text60')).toBeNull()
+    expect(formBindingFactKey('022B', 'Text125')).toBeNull()
+  })
+
+  it('reserves nothing, because their signature blocks are anonymous', () => {
+    expect(formBlankIsReserved('022A', 'Text159')).toBe(false)
+    expect(formBlankIsReserved('022B', 'Text95')).toBe(false)
+  })
+})
