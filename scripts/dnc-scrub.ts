@@ -34,6 +34,31 @@ const resolveFilename = (Module as unknown as { _resolveFilename: (r: string, ..
   return resolveFilename.call(this, req, ...args)
 }
 
+
+/**
+ * Retry a transient failure. A scrub run is minutes long, costs money per
+ * number, and talks to two networks — a single Supabase 521 (Cloudflare
+ * reporting the origin unreachable) killed a run mid-way once. Work already
+ * recorded is never lost (each batch commits before the next), so a retry only
+ * has to get past the blip.
+ */
+async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 4): Promise<T> {
+  let lastErr: unknown
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      if (i === attempts) break
+      const waitMs = 2000 * 2 ** (i - 1)
+      console.warn(`  ${label} failed (attempt ${i}/${attempts}): ${e instanceof Error ? e.message.slice(0, 120) : e}`)
+      console.warn(`  retrying in ${waitMs / 1000}s`)
+      await new Promise((r) => setTimeout(r, waitMs))
+    }
+  }
+  throw lastErr
+}
+
 function arg(name: string): string | null {
   const i = process.argv.indexOf(`--${name}`)
   return i >= 0 ? (process.argv[i + 1] ?? '') : null
@@ -54,7 +79,7 @@ async function main() {
   const { addSuppression } = await import('@/lib/crm/suppressions')
 
   const source = arg('source')
-  const backlog = await listUncheckedPhones(limit, source)
+  const backlog = await withRetry('backlog read', () => listUncheckedPhones(limit, source))
   console.log(`backlog pulled: ${backlog.length} number(s) (limit ${limit}${source ? `, source=${source}` : ''})`)
   if (dryRun) {
     console.log('DRY RUN — nothing sent, nothing spent. Sample:', backlog.slice(0, 5).join(', '))
@@ -63,15 +88,24 @@ async function main() {
   if (backlog.length === 0) return
 
   const sb = createServiceClient()
-  let answered = 0, flagged = 0, contactsSuppressed = 0, litigators = 0, litigatorChecked = 0
+  let answered = 0, flagged = 0, contactsSuppressed = 0, litigators = 0, litigatorChecked = 0, batchFailures = 0
 
   for (let i = 0; i < backlog.length; i += MAX_PHONES_PER_REQUEST) {
     const batch = backlog.slice(i, i + MAX_PHONES_PER_REQUEST)
-    const results = await scrubPhones(batch)
+    let results
+    try {
+      results = await withRetry(`scrub batch ${i / MAX_PHONES_PER_REQUEST + 1}`, () => scrubPhones(batch))
+    } catch (e) {
+      // A batch that will not settle is skipped, not fatal: those numbers stay
+      // UNCHECKED (never recorded clean) and the next run picks them up.
+      batchFailures++
+      console.error(`  batch ${i / MAX_PHONES_PER_REQUEST + 1} abandoned: ${e instanceof Error ? e.message.slice(0, 160) : e}`)
+      continue
+    }
     answered += results.length
     litigatorChecked += results.filter((r) => r.litigatorChecked).length
     litigators += results.filter((r) => r.isLitigator).length
-    const wrote = await recordDncChecks(results)
+    const wrote = await withRetry('record', () => recordDncChecks(results))
     if (!wrote.ok) throw new Error(`record failed: ${wrote.error}`)
 
     for (const r of results) {
@@ -132,7 +166,10 @@ async function main() {
     console.log('  note: zero litigator hits. Expected on a small batch (they are rare);')
     console.log('  if this holds across thousands, ask BatchData whether the product is enabled.')
   }
-  console.log(`\nAt roughly $0.02-0.05/number this batch cost about $${(backlog.length * 0.03).toFixed(2)}.`)
+  if (batchFailures > 0) {
+    console.log(`\nBATCHES ABANDONED: ${batchFailures} — those numbers are still unchecked; re-run to pick them up.`)
+  }
+  console.log(`\nAt roughly $0.02-0.05/number this batch cost about $${(answered * 0.03).toFixed(2)}.`)
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1) })
