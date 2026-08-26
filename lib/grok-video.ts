@@ -102,9 +102,13 @@ export async function generateImageToVideo(options: ImageToVideoOptions): Promis
 
   const body: Record<string, unknown> = {
     model: MODEL,
-    // xAI API field is `image` per docs. The TypeScript option is named `image_url` for backward
-    // compatibility with the original implementation but the API expects `image`.
-    image: options.image_url,
+    // xAI wants `image` as an OBJECT — { url } — not a bare string. Sending the
+    // string returns 422 "invalid type: string ... expected struct ImageUrl", which
+    // is what every image-to-video call had been doing, so this path had never
+    // produced a single video. Confirmed against the live API 2026-08-26: the
+    // string form 422s and { url } returns 200 with a request_id.
+    // The TypeScript option stays named `image_url` for backward compatibility.
+    image: { url: options.image_url },
     prompt: options.prompt ?? IMAGE_TO_VIDEO_PROMPT,
     duration: Math.min(15, Math.max(1, options.duration ?? IMAGE_TO_VIDEO_DURATION)),
     aspect_ratio: options.aspect_ratio ?? '16:9',
