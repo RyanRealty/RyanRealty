@@ -203,6 +203,28 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
             broker: entry.broker,
           })
         }
+      } else if (kickPersonId) {
+        // A finished CMA that belongs to a real lead but carries no notify list
+        // used to tell NOBODY: queueCmaReadyAlert had never once fired in
+        // production (0 `cma-ready:*` rows in crm_timeline, all time) while 335
+        // drafts sat undelivered against 7 delivered. The notify list is opt-in
+        // and most build paths never set it, so the person link is the better
+        // signal — if we know whose home this is, their broker hears about it.
+        //
+        // Volume is the reason this is safe: person-linked drafts run 2-9 a day,
+        // and queueBrokerAlert dedupes on (slug, personId), so a rebuild of the
+        // same CMA cannot re-text. An unassigned person routes to Matt inside
+        // queueBrokerAlert, and the broker's own notify_cma_ready switch still
+        // governs whether it reaches their phone.
+        const { queueCmaReadyAlert } = await import('@/lib/crm/broker-alerts')
+        const { resolvePersonAssignedBroker } = await import('@/lib/data/crm/leadAssignedBroker')
+        const assigned = await resolvePersonAssignedBroker(kickPersonId)
+        await queueCmaReadyAlert({
+          slug,
+          subjectAddress: str(payload['subject_address']),
+          personId: kickPersonId,
+          broker: assigned.assignedBroker,
+        })
       }
     } catch (e) {
       console.warn('[cma-worker] ready-notify failed:', e instanceof Error ? e.message : String(e))
