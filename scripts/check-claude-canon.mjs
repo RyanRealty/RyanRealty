@@ -63,6 +63,21 @@ for (const f of bannedDocs) {
 
 const tracked = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter(Boolean)
 const SCAN_SKIP = new Set([BASELINE_PATH, 'scripts/check-claude-canon.mjs'])
+
+/**
+ * Line-level escape hatch, same shape as the "reachability: entry-point" marker
+ * check-reachable-exports.mjs uses.
+ *
+ * The rule this gate enforces is "stop POINTING people at the retired vendor
+ * CRM." It is not "the string may never appear," and those came apart the first
+ * time a line needed the literal to do its job: lib/data/analytics/captureDoors.ts
+ * matches lead-source text imported from that CRM, so deleting the name there
+ * would silently stop classifying real historical leads — the gate would have
+ * been obeyed and the data quietly broken. A marker keeps the ban absolute
+ * everywhere it means something and makes each exception state its reason on
+ * the line.
+ */
+const CANON_ALLOW = 'canon-allow: vendor-literal'
 const nameHits = []
 for (const f of tracked) {
   if (SCAN_SKIP.has(f) || BINARY_RE.test(f)) continue
@@ -72,10 +87,18 @@ for (const f of tracked) {
   } catch {
     continue
   }
-  if (VENDOR_NAME_RE.test(text)) nameHits.push(f)
+  if (!VENDOR_NAME_RE.test(text)) continue
+  // A hit clears only if EVERY offending line carries the marker, so adding one
+  // exempted line cannot blanket-exempt the rest of the file.
+  const offending = text.split('\n').filter((line) => VENDOR_NAME_RE.test(line))
+  if (offending.every((line) => line.includes(CANON_ALLOW))) continue
+  nameHits.push(f)
 }
 for (const f of nameHits) {
-  failures.push(`${f} still names the retired vendor CRM. Point at /admin/crm or delete the line.`)
+  failures.push(
+    `${f} still names the retired vendor CRM. Point at /admin/crm, delete the line, or ` +
+      `if the literal is load-bearing for legacy data, mark that line \`${CANON_ALLOW} <reason>\`.`,
+  )
 }
 
 const claudeBytes = Buffer.byteLength(readFileSync(path.join(ROOT, 'CLAUDE.md')))

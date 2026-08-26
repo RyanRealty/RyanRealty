@@ -87,7 +87,10 @@ const RULES: Array<{ test: (s: string) => boolean; id: CaptureDoorId }> = [
   { id: 'outreach', test: (s) => /\bexpired\b/.test(s) },
   { id: 'fsbo-lp', test: (s) => /\bfsbo lp\b|\bfsbo-lp\b/.test(s) },
   { id: 'outreach', test: (s) => /\bfsbo\b|for sale by owner/.test(s) },
-  { id: 'outreach', test: (s) => /\bimport\b|migration|follow up boss|followupboss|\bfub\b|\bsphere\b/.test(s) },
+  // Matches lead_source text on records imported from the retired vendor CRM.
+  // This is data we hold, not a tool we point anyone at; dropping the literal
+  // stops classifying those historical leads.
+  { id: 'outreach', test: (s) => /\bimport\b|migration|follow up boss|followupboss|\bfub\b|\bsphere\b/.test(s) }, // canon-allow: vendor-literal legacy lead_source values
   { id: 'join-team', test: (s) => /\bjoin\b|\brecruit\b|\bcareer\b|\bagent application\b/.test(s) },
   { id: 'home-valuation', test: (s) => /home valuation|cma request|cma-request|valuation/.test(s) },
   { id: 'cma-download', test: (s) => /\bcma download\b|\bcma-download\b/.test(s) },

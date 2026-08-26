@@ -33,7 +33,14 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { join, dirname, resolve, relative, extname } from 'node:path'
 
 const ROOT = process.cwd()
-const SCAN_DIRS = ['app', 'components', 'lib']
+// scripts/** is scanned for EDGES ONLY — CANDIDATE_DIRS below keeps it out of
+// the orphan set, and isExempt() exempts it a second time. Leaving it unscanned
+// meant a lib module imported solely by a script had zero in-edges and read as
+// dead: lib/data/loop/ship-reconcile.ts was reported an orphan while
+// scripts/loop-brief.ts imported it, and loop-brief is the session-boot command
+// in CLAUDE.md. A gate that tells you to delete load-bearing code is worse than
+// no gate, because someone eventually obeys it.
+const SCAN_DIRS = ['app', 'components', 'lib', 'scripts']
 const CANDIDATE_DIRS = ['components', 'lib']
 const BASELINE = 'scripts/reachable-exports-baseline.json'
 const MARKER = 'reachability: entry-point'
