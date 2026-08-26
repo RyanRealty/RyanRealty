@@ -164,8 +164,15 @@ const CACHE_DIR = path.join(os.homedir(), '.cache', 'rr-commit-check');
 const CACHE_BUILDINFO = path.join(CACHE_DIR, 'tsbuildinfo');
 const TMP_BUILDINFO = path.join(TMP, '.tsbuildinfo.check');
 const useCache = process.env.COMMIT_COMPILES_NO_CACHE !== '1';
+// Whether a buildinfo was ACTUALLY loaded — not merely whether caching is on.
+// The PASS line used to print ", incremental" off useCache alone, so a cold run
+// reported itself as incremental and made the 641s it took look inexplicable.
+let warmStart = false;
 if (useCache && fs.existsSync(CACHE_BUILDINFO)) {
-  try { fs.copyFileSync(CACHE_BUILDINFO, TMP_BUILDINFO); } catch { /* cold run */ }
+  try {
+    fs.copyFileSync(CACHE_BUILDINFO, TMP_BUILDINFO);
+    warmStart = true;
+  } catch { /* cold run */ }
 }
 
 const wrapperTsconfig = {
@@ -217,16 +224,20 @@ const tscResult = spawnSync(
   {
     cwd: TMP,
     encoding: 'utf8',
-    // Give tsc up to 15 minutes — correctness wins over speed per spec.
-    // Raised from 5 min on 2026-08-26: the repo outgrew that budget the same way
-    // it outgrew Node's default heap (see the NODE_OPTIONS note below). A COLD
-    // run — which is what you get right after a rebase invalidates the cached
-    // buildinfo — measured 317s and 370s on an otherwise idle machine, so the
-    // gate reported INCONCLUSIVE on every push and could not recover: the
-    // buildinfo below is only persisted when tsc finishes WITHOUT a signal, so
-    // one timeout guarantees the next run is cold too. A budget the gate cannot
-    // meet is not a safety property, it is a wedge.
-    timeout: 900_000,
+    // Correctness wins over speed per spec, so the budget follows the work.
+    //
+    // Raised from a flat 5 min on 2026-08-26: the repo outgrew it the same way it
+    // outgrew Node's default heap (see the NODE_OPTIONS note below). Worse, the
+    // gate could not recover on its own. tsc writes its buildinfo only when it
+    // finishes, so a kill leaves none, the persist below is skipped, and the NEXT
+    // run starts cold — slower, against the same budget, and equally certain to
+    // time out. One timeout wedged the gate permanently.
+    //
+    // So a cold start gets double. That is the run with no buildinfo to lean on,
+    // which is exactly the run that needs the room, and it is what breaks the
+    // loop: a timeout leads to a cold run, and a cold run is the one given 30 min.
+    // A warm run measured 641s here, so 15 min is the floor to keep, not a target.
+    timeout: warmStart ? 900_000 : 1_800_000,
     maxBuffer: 10 * 1024 * 1024,
     // The repo outgrew Node's default heap: without a raised ceiling tsc dies
     // with SIGABRT ~50s in and the gate reports INCONCLUSIVE on every push
@@ -257,7 +268,7 @@ if (useCache && !tscResult.signal && !tscResult.error && fs.existsSync(TMP_BUILD
 }
 
 if (tscResult.status === 0) {
-  console.log(`PASS  (${elapsed}s, tsc ${tscSecs}s${useCache ? ', incremental' : ''})\n`);
+  console.log(`PASS  (${elapsed}s, tsc ${tscSecs}s, ${warmStart ? 'incremental' : 'cold'})\n`);
   console.log('✓  COMMIT IS SELF-CONTAINED — all referenced symbols exist in the committed tree.\n');
   process.exit(0);
 } else {
@@ -277,6 +288,8 @@ if (tscResult.status === 0) {
     console.error('  This is a timeout/kill, NOT a self-containment verdict. Likely the');
     console.error('  machine is under heavy load (another build/session). Re-run when');
     console.error('  load drops. The gate still blocks: an unverified commit must not ship.');
+    console.error(`  This run was ${warmStart ? 'warm' : 'cold'}. A kill leaves no buildinfo, so the next run`);
+    console.error('  starts cold — and a cold run is given 30 min rather than 15.');
     console.error('════════════════════════════════════════════════════════════════════');
     process.exit(1);
   }
