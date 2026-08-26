@@ -151,6 +151,26 @@ export function sortPlaceDocuments(docs: PlaceDocument[]): PlaceDocument[] {
  * a recording.
  */
 export function recordingLabel(d: PlaceDocument): string {
+  return recordingFaceText(d)
+}
+
+/**
+ * The same rule, over the raw fields rather than a rendered PlaceDocument, so
+ * the admin review queue prints the identical face text a published page would.
+ * One definition: a reviewer who approves "Published by Caldera Springs Owners'
+ * Association · February 4, 2026" has read the line the buyer will read.
+ */
+export interface RecordingFace {
+  recordingType: string
+  recordingRef: string
+  book: number | null
+  page: number | null
+  instrumentNumber: string | null
+  publisher: string | null
+  documentDate: string | null
+}
+
+export function recordingFaceText(d: RecordingFace): string {
   if (d.recordingType === 'association-published') {
     const when = formatDocumentDate(d.documentDate)
     if (d.publisher && when) return `Published by ${d.publisher} · ${when}`

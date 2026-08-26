@@ -2,9 +2,10 @@
  * getPendingPlaceDocuments — the review queue behind PLACE_CONTENT_RULES R7.
  *
  * A heuristic match lands in `place_document_link` as `pending_review` and
- * renders nowhere until a human says otherwise. Measured 2026-08-26 against
- * `dwvlophlbvvygjfxcrhm`: 5,444 pending links over 878 subdivision plats,
- * carrying 1,461 distinct recorded instruments.
+ * renders nowhere until a human says otherwise. Read from this function against
+ * `dwvlophlbvvygjfxcrhm` on 2026-08-26: 5,474 pending links over 890
+ * subdivision plats, filed under 353 recorded names. The ingest is still
+ * running, so treat those as the shape rather than the count.
  *
  * WHY THIS READ GROUPS BY published_name. The link is what waits, but the link
  * is not what a reviewer decides. One recorded declaration chain governs every
@@ -31,11 +32,17 @@ import { createServiceClient } from '@/lib/data/client'
 import {
   PLACE_DOCUMENTS_BUCKET,
   PUBLISHABLE_KINDS,
+  recordingFaceText,
   type PlaceDocumentKind,
 } from '@/lib/data/places/getPlaceDocuments'
 
-/** Groups per page. 353 groups is still a scroll; the queue reads a slice. */
-export const PENDING_GROUP_PAGE_SIZE = 25
+/**
+  * Groups per page. 353 names is still a scroll, and the biggest ones carry a
+  * dozen documents each — a full slice of 25 renders ~250 document rows. Ten is
+  * a screenful of decisions, and the plat-count ordering puts the ones that
+  * clear the most plats on the first pages.
+  */
+export const PENDING_GROUP_PAGE_SIZE = 10
 
 /** How much of the front matter the row quotes. Enough for the title line. */
 const OCR_EXCERPT_CHARS = 200
@@ -93,7 +100,13 @@ export interface PendingPlaceDocument {
   id: string
   /** Verbatim recording reference: '346-1105' or '2007-36361'. */
   recordingRef: string
-  /** 'Book 346, Page 1105' / 'Instrument 2007-36361' — the R7 face text. */
+  /**
+   * The R7 face text, produced by the SAME function the public page uses:
+   * 'Book 346, Page 1105', 'Instrument 2007-36361', or — for an association's
+   * own execution copy, which carries no clerk's stamp — 'Published by Caldera
+   * Springs Owners' Association · February 4, 2026'. A reviewer therefore
+   * approves the exact line a buyer will read.
+   */
   recordingLabel: string
   kind: string
   kindLabel: string
@@ -108,8 +121,11 @@ export interface PendingPlaceDocument {
   url: string
   /** First ~200 characters of the OCR front matter, whitespace collapsed. */
   ocrExcerpt: string
-  /** The plats this document is pending against, inside this group. */
-  platSlugs: string[]
+  /**
+   * Plats this document is still pending against. One link per plat — the
+   * table's unique (document_id, geo_type, geo_slug) makes the two the same
+   * number.
+   */
   pendingLinkCount: number
 }
 
@@ -150,6 +166,8 @@ type DocDetailRow = {
   book: number | null
   page: number | null
   instrument_number: string | null
+  publisher: string | null
+  document_date: string | null
   county: string | null
   storage_path: string
   file_bytes: number | string | null
@@ -213,15 +231,16 @@ async function readDocumentIndex(): Promise<DocIndexRow[]> {
   return out
 }
 
-/** 'Book 346, Page 1105' / 'Instrument 2007-36361', falling back to the raw ref. */
 function recordingLabelOf(d: DocDetailRow): string {
-  if (d.recording_type === 'book-page' && d.book != null && d.page != null) {
-    return `Book ${d.book}, Page ${d.page}`
-  }
-  if (d.recording_type === 'year-instrument' && d.instrument_number) {
-    return `Instrument ${d.instrument_number}`
-  }
-  return d.recording_ref
+  return recordingFaceText({
+    recordingType: d.recording_type ?? 'unparsed',
+    recordingRef: d.recording_ref,
+    book: d.book,
+    page: d.page,
+    instrumentNumber: d.instrument_number,
+    publisher: d.publisher,
+    documentDate: d.document_date,
+  })
 }
 
 function excerpt(text: string | null): string {
@@ -255,7 +274,7 @@ export async function getPendingPlaceDocuments(
     links: number
     approvable: number
     blocked: number
-    docs: Map<string, { plats: Set<string>; links: number }>
+    docs: Map<string, { links: number }>
   }
   const buckets = new Map<string, Bucket>()
   const allPlats = new Set<string>()
@@ -282,10 +301,9 @@ export async function getPendingPlaceDocuments(
     else b.blocked += 1
     let d = b.docs.get(doc.id)
     if (!d) {
-      d = { plats: new Set(), links: 0 }
+      d = { links: 0 }
       b.docs.set(doc.id, d)
     }
-    d.plats.add(link.geo_slug)
     d.links += 1
     allPlats.add(link.geo_slug)
   }
@@ -308,7 +326,7 @@ export async function getPendingPlaceDocuments(
       const { data, error } = await supabase
         .from('place_document')
         .select(
-          'id, published_name, doc_kind, recording_ref, recording_type, book, page, instrument_number, county, storage_path, file_bytes, page_count, name_confirmed, ocr_text',
+          'id, published_name, doc_kind, recording_ref, recording_type, book, page, instrument_number, publisher, document_date, county, storage_path, file_bytes, page_count, name_confirmed, ocr_text',
         )
         .in('id', chunk)
       if (error) throw new Error(`place_document detail read failed: ${error.message}`)
@@ -336,7 +354,6 @@ export async function getPendingPlaceDocuments(
         county: (d.county ?? 'Deschutes').trim(),
         url: base ? `${base}/storage/v1/object/public/${PLACE_DOCUMENTS_BUCKET}/${d.storage_path}` : '',
         ocrExcerpt: excerpt(d.ocr_text),
-        platSlugs: [...agg.plats].sort(),
         pendingLinkCount: agg.links,
       })
     }

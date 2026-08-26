@@ -20,6 +20,7 @@
     "ci:gates-wired",
     "ci:governed-send",
     "ci:hidden-exclusion-surfaces",
+    "ci:hooks-installed",
     "ci:identity-stitch-paths",
     "ci:jsonb-cast-guard",
     "ci:jsonb-contains",

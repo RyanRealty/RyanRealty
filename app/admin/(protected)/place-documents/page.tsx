@@ -9,10 +9,10 @@
 // a heuristic match sits in place_document_link as pending_review, unreadable
 // to the public RLS policy, until a human agrees with it.
 //
-// WHY THE PAGE IS GROUPED. There are 5,444 pending links over 878 plats. Nobody
-// reviews 5,444 rows. One declaration chain governs every phase of a plat, so
-// the question is asked once per recorded NAME and answered for every plat at
-// once: 353 decisions, biggest first.
+// WHY THE PAGE IS GROUPED. On 2026-08-26 there were 5,474 pending links over
+// 890 plats. Nobody reviews 5,474 rows. One declaration chain governs every
+// phase of a plat, so the question is asked once per recorded NAME and answered
+// for every plat at once: 353 decisions, biggest first.
 //
 // WHY THE OCR LINE IS THERE. The document's own front matter is the evidence.
 // It is quoted here as an internal machine read for a human to judge, and never
@@ -167,7 +167,7 @@ function GroupBlock({ group, page }: { group: PendingPlaceDocumentGroup; page: n
                 {doc.ocrExcerpt ? (
                   <span style={QUOTE}>{doc.ocrExcerpt}</span>
                 ) : (
-                  <span style={QUOTE}>No text was read from this scan.</span>
+                  <span style={QUOTE}>No text has been read from this file.</span>
                 )}
               </>
             }
