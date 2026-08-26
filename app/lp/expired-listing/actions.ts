@@ -6,6 +6,8 @@ import {
   type LeadEventPerson,
 } from '@/lib/crm/send-event'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
+import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
+import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
 import { saveAnonymousPartialAddress } from '@/lib/data'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
@@ -97,19 +99,26 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     const contactPath = submission.contactPath ?? 'audit'
     const notes = submission.notes?.trim() ?? ''
 
-    // ─── Resolve a pre-known person (identity-bridge cookie only) ──────────
-    // The old CRM findPersonByEmail pre-lookup was a dead no-op after the
-    // 2026-06-24 decommission and was deleted — sendEvent below resolves the
-    // native person by email (ensureNativeLead dedupes email-first).
+    // ─── Resolve who this submission belongs to ────────────────────────────
+    // The submitted email outranks the identity cookie. This block used to take
+    // the cookie unconditionally, which on a shared or previously-identified
+    // browser filed one person's details onto somebody else's record. Rules +
+    // regression tests: lib/crm/submitted-identity.ts.
+    // A null personId here is deliberate — it lets sendEvent/ensureNativeLead
+    // dedupe email-first and create the lead that actually submitted.
     let fubPersonId: number | null = null
     let alreadyKnown = false
 
     {
       const cookiePersonId = await getPersonIdFromCookie()
-      if (cookiePersonId) {
-        fubPersonId = cookiePersonId
-        alreadyKnown = true
-      }
+      const emailPersonId = email ? await findCrmPersonIdByEmail(email) : null
+      const resolved = resolveSubmittedIdentity({
+        cookiePersonId,
+        emailPersonId,
+        hasEmail: Boolean(email),
+      })
+      fubPersonId = resolved.personId
+      alreadyKnown = resolved.alreadyKnown
     }
 
     const assignment = await assignExpiredLead()

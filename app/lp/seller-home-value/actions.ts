@@ -19,6 +19,8 @@ import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
+import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
+import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
@@ -192,7 +194,9 @@ async function recordSellerAssignment(params: {
  * Submit the dedicated seller landing page form.
  *
  * Seller LP intake (archive: lib/crm/send-event.ts; live: lib/crm/enroll.ts):
- *  1. Resolve or create CRM person (email match > cookie > new)
+ *  1. Resolve or create CRM person. The submitted email outranks the
+ *     identity cookie; the cookie is used only when it agrees with the email
+ *     or when no email was given (see the block itself for why).
  *  2. Round-robin assign to Matt or Rebecca via public.marketing_assignments
  *  3. Apply canonical kebab-case namespaced tags:
  *       audience:seller + seller:{tier} + source:seller-lp + broker:{slug}
@@ -255,19 +259,26 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       // malformed referer — fall back to the bare LP url
     }
 
-    // ─── Resolve a pre-known person (identity-bridge cookie only) ──────────
-    // The old CRM findPersonByEmail pre-lookup was a dead no-op after the
-    // 2026-06-24 decommission and was deleted — sendEvent below resolves the
-    // native person by email (ensureNativeLead dedupes email-first).
+    // ─── Resolve who this submission belongs to ────────────────────────────
+    // The submitted email outranks the identity cookie. This block used to take
+    // the cookie unconditionally, which on a shared or previously-identified
+    // browser filed one person's home and seller intent onto somebody else's
+    // record. Rules + regression tests: lib/crm/submitted-identity.ts.
+    // A null personId here is deliberate — it lets sendEvent/ensureNativeLead
+    // dedupe email-first and create the lead that actually submitted.
     let fubPersonId: number | null = null
     let alreadyKnown = false
 
     {
       const cookiePersonId = await getPersonIdFromCookie()
-      if (cookiePersonId) {
-        fubPersonId = cookiePersonId
-        alreadyKnown = true
-      }
+      const emailPersonId = email ? await findCrmPersonIdByEmail(email) : null
+      const resolved = resolveSubmittedIdentity({
+        cookiePersonId,
+        emailPersonId,
+        hasEmail: Boolean(email),
+      })
+      fubPersonId = resolved.personId
+      alreadyKnown = resolved.alreadyKnown
     }
 
     if (!email && !fubPersonId) {

@@ -156,7 +156,7 @@ export default function MySettingsForm({
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Notifications section */}
       <section className="rounded-xl border px-6 py-5 space-y-5" style={CARD_STYLE}>
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--a-text)' }}>Notifications</h2>
+        <SectionHead flush>Notifications</SectionHead>
         <p className="text-xs -mt-2" style={{ color: 'var(--a-text-2)' }}>
           Controls which events trigger an alert for {displayName}.
         </p>
@@ -259,7 +259,7 @@ export default function MySettingsForm({
 
       {/* Gmail signature section — the highest-precedence signature source. */}
       <section className="rounded-xl border px-6 py-5 space-y-4" style={CARD_STYLE}>
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--a-text)' }}>Gmail signature</h2>
+        <SectionHead flush>Gmail signature</SectionHead>
         <p className="text-xs -mt-2" style={{ color: 'var(--a-text-2)' }}>
           Your real Gmail signature, synced from your mailbox. When synced, every email you
           send from the CRM carries this exact signature, so CRM emails match your Gmail
@@ -296,7 +296,7 @@ export default function MySettingsForm({
 
       {/* Fallback (custom plain-text) signature section */}
       <section className="rounded-xl border px-6 py-5 space-y-4" style={CARD_STYLE}>
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--a-text)' }}>Fallback signature</h2>
+        <SectionHead flush>Fallback signature</SectionHead>
         <p className="text-xs -mt-2" style={{ color: 'var(--a-text-2)' }}>
           Used only when no Gmail signature is synced. Leave blank to use the standard
           Ryan Realty signature. Plain text only. The Oregon agency disclosure link is

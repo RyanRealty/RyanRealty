@@ -36,9 +36,6 @@
     "app/admin/(protected)/settings/MobileSettingsScreen.tsx": {
       "button": 5
     },
-    "app/admin/(protected)/settings/MySettingsForm.tsx": {
-      "h2": 3
-    },
     "app/admin/(protected)/settings/page.tsx": {
       "h2": 1
     },
