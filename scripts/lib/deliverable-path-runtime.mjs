@@ -18,6 +18,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
+import { resolvingNodeModules } from './resolve-node-modules.mjs'
 
 export const PURE_MODULE_REL = 'lib/marketing-brain/deliverable-path.ts'
 
@@ -30,7 +31,12 @@ export async function loadDeliverablePath(repoRoot) {
   const src = join(repoRoot, PURE_MODULE_REL)
   if (!existsSync(src)) return { ok: false, error: `${PURE_MODULE_REL} not found` }
 
-  const esbuild = join(repoRoot, 'node_modules/.bin/esbuild')
+  // Same resolution every other executing gate uses. Joining repoRoot is wrong
+  // in a git worktree: node_modules there is a stub and imports resolve by
+  // walking up to the main checkout, so this reported "esbuild not installed"
+  // on machines where esbuild was installed. That took ci:deliverable-library-scope
+  // (28 adversarial path fixtures) and scripts/render-worker.mjs dark at once.
+  const esbuild = join(resolvingNodeModules(), '.bin/esbuild')
   if (!existsSync(esbuild)) return { ok: false, error: 'esbuild not installed' }
 
   const dir = mkdtempSync(join(tmpdir(), 'rr-deliv-path-'))

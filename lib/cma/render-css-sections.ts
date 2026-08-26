@@ -250,10 +250,13 @@ export function cmaSectionStyles(): string {
     padding: 5px 6px;
     white-space: normal;
     overflow-wrap: anywhere;
+    /* Values sit under their own column head. Only the thead rule carried
+       this before, so every figure in the body left-aligned away from the
+       address it belonged to. The immersive stylesheet always aligned both. */
+    text-align: right;
   }
   /* Only figures hold the line. Free text wraps rather than widening a column. */
   table.comp-matrix td.n { white-space: nowrap; }
-  table.comp-matrix thead th { text-align: right; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }
   table.comp-matrix td.is-diff { font-weight: 600; }
   .trend-svg { width: 100%; height: auto; display: block; }
