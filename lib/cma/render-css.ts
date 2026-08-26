@@ -476,6 +476,13 @@ export function cmaStylesheet(siteUrl: string): string {
     margin-top: 22px;
     padding-top: 22px;
     border-top: 1px solid var(--navy-line);
+    /* The sign-off is one object. Split, its rule and padding stay on the
+       previous sheet and the 44px signature starts flush against the top of
+       the content box, where the ascender crosses into the reserved band —
+       measured at +6.3pt on a real 34-page CMA for 833 Maple. Keeping the
+       block whole means the padding above the name always comes with it. */
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   .signature-page .portrait { width: 100%; height: auto; display: block; }
   .signature-page .sig-content { padding-bottom: 6px; }

@@ -399,8 +399,8 @@ export function marketVolumePage(a: OpinionPageArgs): CmaPageDef | null {
     toc: `${geo} closed sales, ${y.year}`,
     body: `
   <h2 class="section">${esc(geo)} closed sales, ${esc(String(y.year))}</h2>
-  <p>${esc(geo)} closed ${esc(usd(Math.round(y.totalVolume)))} across ${esc(int(y.soldCount))} sales (${esc(y.typeLabel)}).</p>
-  <p class="small">Closed ${esc(y.typeLabel)} in ${esc(geo)} for ${esc(String(y.year))}, pulled ${esc(dateLong(y.computedAt))}.</p>`,
+  <p>${esc(geo)} closed ${esc(usd(Math.round(y.totalVolume)))} across ${esc(int(y.soldCount))} sales, all property types.</p>
+  <p class="small">Closed sales in ${esc(geo)} for ${esc(String(y.year))}, all property types, pulled ${esc(dateLong(y.computedAt))}.</p>`,
   }
 }
 

@@ -62,9 +62,17 @@ export function renderPrintChartSvg(
     )
   }
 
+  // When a chart names the bars that matter, ONLY those bars are emphasized.
+  // `b.index === 0` used to force the first bar solid as well, which quietly
+  // contradicted the caption: the CMA seasonality chart said the shortest waits
+  // land in May and April while drawing January — the SLOWEST month, and index
+  // 0 — in exactly the same navy, and the comps chart emphasized comp 1 as
+  // strongly as the recommended list price. The first-bar rule stays for charts
+  // that declare no highlights, where it means "primary series".
+  const anyHighlight = plot.bars.some((b) => b.highlight)
   const rects = plot.bars
     .map((b) => {
-      const opacity = b.highlight || b.index === 0 ? '1' : '0.35'
+      const opacity = b.highlight || (!anyHighlight && b.index === 0) ? '1' : '0.35'
       return `<rect x="${b.x.toFixed(2)}" y="${b.y.toFixed(2)}" width="${b.w.toFixed(2)}" height="${b.h.toFixed(2)}" rx="2" fill="${colors.ink}" opacity="${opacity}"/>`
     })
     .join('')

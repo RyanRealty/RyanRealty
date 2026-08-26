@@ -62,6 +62,21 @@ function isSourceFile(name) {
   return true
 }
 
+/**
+ * .mjs/.cjs are read for EDGES ONLY, and only under scripts/.
+ *
+ * ~20 lib modules are reached from plain-JS scripts — lib/crm/send-event,
+ * lib/cma/pricing, lib/agent/send, lib/asset-library among them. None of those
+ * imports counted, so a lib module reached ONLY that way read as dead, the same
+ * bug that hid ship-reconcile behind the .ts blind spot. They are never
+ * candidates: isSourceFile() still gates CANDIDATE_DIRS, so a stray lib/*.mjs
+ * cannot become a new orphan by way of this.
+ */
+function isEdgeOnlyFile(name) {
+  if (!/\.(mjs|cjs)$/.test(name)) return false
+  return !/\.(test|spec)\.(mjs|cjs)$/.test(name)
+}
+
 function walk(dir, acc) {
   let entries
   try {
@@ -74,6 +89,8 @@ function walk(dir, acc) {
       if (SKIP_DIRS.has(e.name) || e.name.startsWith('.')) continue
       walk(join(dir, e.name), acc)
     } else if (e.isFile() && isSourceFile(e.name)) {
+      acc.push(toPosix(join(dir, e.name)))
+    } else if (e.isFile() && dir.startsWith('scripts') && isEdgeOnlyFile(e.name)) {
       acc.push(toPosix(join(dir, e.name)))
     }
   }
