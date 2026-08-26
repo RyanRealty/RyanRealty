@@ -210,6 +210,32 @@ describe('resolveCanonicalCommunitySlug', () => {
     }
   })
 
+  it("a renamed community's own label resolves to its durable slug", () => {
+    // Pronghorn rebranded to Juniper Preserve in 2022. The slug deliberately
+    // stays `pronghorn` — geo_snapshot_mv keys on bend:pronghorn and a cron
+    // sentinels on it — so the label is the only name the public now uses, and
+    // it used to 404 while the compound form already worked.
+    expect(resolveCanonicalCommunitySlug('juniper-preserve')).toBe('pronghorn')
+    expect(resolveCanonicalCommunitySlug('bend-juniper-preserve')).toBe('pronghorn')
+    // The canonical URL stays canonical.
+    expect(resolveCanonicalCommunitySlug('pronghorn')).toBeNull()
+  })
+
+  it('a BARE subdivision alias does NOT hop — only a label does', () => {
+    // subdivision_aliases hold MLS subdivision names that sit INSIDE a
+    // community, and those are their own places. Hopping them here would
+    // assert an identity that is not true: Ridge at Eagle Crest is a separate
+    // HOA with its own plats and governing documents, and Aspen Meadows names a
+    // recorded plat elsewhere in the county. Both must stay null so the route
+    // 404s honestly rather than redirecting confidently to the wrong community.
+    expect(resolveCanonicalCommunitySlug('ridge-at-eagle-crest')).toBeNull()
+    expect(resolveCanonicalCommunitySlug('aspen-meadows')).toBeNull()
+    expect(resolveCanonicalCommunitySlug('river-village')).toBeNull()
+    expect(resolveCanonicalCommunitySlug('triple')).toBeNull()
+    // The COMPOUND form still consolidates them — that is what it is for.
+    expect(resolveCanonicalCommunitySlug('sunriver-river-village')).toBe('sunriver')
+  })
+
   it('nested city URLs for a registry community hop to /communities/{slug}', () => {
     expect(resolveCityNeighborhoodCommunityPath('/cities/sunriver/sunriver')).toBe(
       '/communities/sunriver',

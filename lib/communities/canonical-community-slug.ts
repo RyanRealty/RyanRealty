@@ -114,6 +114,34 @@ const ENTRY_BY_NAME_SLUG: ReadonlyMap<string, RegistryEntry> = (() => {
 })()
 
 /**
+ * LABEL ONLY — a community's own public name. Deliberately NOT the alias set.
+ *
+ * `subdivision_aliases` holds MLS subdivision names that sit INSIDE a community
+ * (Sunriver's "River Village", Tetherow's "Triple"), and those are their own
+ * places with their own /subdivisions/ pages. Hopping them at /communities/
+ * would assert an identity that is not true: `ridge-at-eagle-crest` is a
+ * separate HOA with its own 57 plats and its own governing documents, and
+ * `aspen-meadows` names a recorded plat elsewhere in the county. Both 404
+ * honestly today, and a confident redirect to the wrong community is worse than
+ * an honest 404 — the compound form still consolidates them, which is the case
+ * that hop was built for.
+ *
+ * A LABEL is different: it is what the community calls itself. When a community
+ * is renamed and the slug stays as a durable data key, the label is the only
+ * name the public now uses.
+ */
+const ENTRY_BY_LABEL_SLUG: ReadonlyMap<string, RegistryEntry> = (() => {
+  const map = new Map<string, RegistryEntry>()
+  for (const entry of ENTRIES) {
+    const key = slugifyName(entry.label)
+    // Same round-trip guard as above.
+    if (key.replace(/-/g, ' ') !== entry.label.trim().toLowerCase()) continue
+    if (!map.has(key)) map.set(key, entry)
+  }
+  return map
+})()
+
+/**
  * The canonical `/communities` slug for `slug`, or null when `slug` is already
  * canonical (or names no registered community).
  *
@@ -122,6 +150,27 @@ const ENTRY_BY_NAME_SLUG: ReadonlyMap<string, RegistryEntry> = (() => {
 export function resolveCanonicalCommunitySlug(rawSlug: string): string | null {
   const slug = rawSlug.trim().toLowerCase()
   if (!slug || CANONICAL_SLUGS.has(slug)) return null
+
+  // HOP 0 — a BARE registry name that is not itself a canonical slug.
+  //
+  // The city-prefix scan below only ever fired for compound `<city>-<name>`
+  // URLs, so a URL naming a community by its own label went to notFound(). That
+  // is how /communities/juniper-preserve 404'd while
+  // /communities/bend-juniper-preserve correctly 308'd to /communities/pronghorn
+  // (verified live and locally 2026-08-26): Pronghorn's registry label IS
+  // "Juniper Preserve" since the 2022 rebrand, and the slug deliberately stays
+  // `pronghorn` because geo_snapshot_mv keys on bend:pronghorn and a cron
+  // sentinels on it. The public name changed; the durable key did not.
+  //
+  // A brand's CURRENT name 404'ing is the worst possible outcome for the one
+  // term people now search. This converts that 404 into the same 308 the
+  // compound form already produced — and only ever a 404: an unregistered name
+  // still falls through to null, and a canonical slug never reaches here.
+  //
+  // LABELS ONLY, not the alias set — see ENTRY_BY_LABEL_SLUG for why hopping a
+  // subdivision alias here would assert an identity that is not true.
+  const bare = ENTRY_BY_LABEL_SLUG.get(slug)
+  if (bare && bare.slug !== slug) return bare.slug
 
   const parts = slug.split('-')
   if (parts.length < 2) return null
