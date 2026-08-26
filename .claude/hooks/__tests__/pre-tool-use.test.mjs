@@ -294,21 +294,24 @@ run(
         '-- audit: broad count before claiming the plats are not ingested\nSELECT geo_type, count(*) FROM boundaries GROUP BY 1',
     },
   },
-  { deny: true, contains: 'getBoundariesByGeoType' },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
 )
+// There is no exemption set. An aggregate either goes through the DAL or it
+// does not happen — a 28-table "plumbing" allowlist was invented in the first
+// pass and is gone. A table the DAL does not cover is simply not a stat.
 run(
-  'execute_sql: aggregate on PLUMBING (sync bookkeeping) passes — not a statistic',
+  'execute_sql: aggregate on a DAL-covered table denies with no allowlist to escape through',
   {
     tool_name: 'mcp__5adfee1a-x__execute_sql',
     tool_input: { query: '-- audit: is the delta cursor wedged\nSELECT count(*) FROM sync_state' },
   },
-  { deny: false },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
 )
 run(
-  'execute_sql: aggregate on PLUMBING (lookup rows) passes — not a statistic',
+  'execute_sql: aggregate on a table the DAL does NOT cover passes',
   {
     tool_name: 'mcp__5adfee1a-x__execute_sql',
-    tool_input: { query: '-- audit: how many task types configured\nSELECT count(*) FROM crm_task_types' },
+    tool_input: { query: '-- audit: role rows\nSELECT role, count(*) FROM admin_roles GROUP BY 1' },
   },
   { deny: false },
 )

@@ -114,127 +114,24 @@ function getVocab() {
   return VOCAB
 }
 
-// ─── Lazy-load the schema snapshot to find DAL-covered tables ────────
+// ─── The ONE definition of a statistic ───────────────────────────────
+//
+// scripts/stat-tables.cjs, required the same way the brand-voice vocabulary
+// already is. A stat is an aggregate over a table the DAL covers, and the
+// covered set is parsed from docs/DAL_INDEX.md, which G16 regenerates from
+// the code. No list is kept here, because keeping one here is how the hook
+// and the CI gate drift apart.
 
-let DAL_TABLES = null
-function getDalCoveredTables() {
-  if (DAL_TABLES) return DAL_TABLES
-  // Tables a DAL function reads. Extracted from docs/DAL_INDEX.md
-  // reverse-index — but parsed lazily from the file at hook time so a
-  // newly-added DAL function gets honored without a redeploy.
+let STATS = null
+function getStats() {
+  if (STATS) return STATS
   try {
-    const md = readFileSync(join(projectRoot, 'docs/DAL_INDEX.md'), 'utf8')
-    // Pull `Tables:` lines + reverse-index table column.
-    const tables = new Set()
-    const tableLineRe = /^\*\*Tables:\*\* (.+)$/gm
-    let m
-    while ((m = tableLineRe.exec(md))) {
-      const list = m[1]
-      for (const tok of list.split(',')) {
-        const name = tok.trim().replace(/^`|`$/g, '')
-        if (name) tables.add(name)
-      }
-    }
-    DAL_TABLES = tables
+    STATS = require(join(projectRoot, 'scripts/stat-tables.cjs'))
   } catch {
-    DAL_TABLES = new Set()
+    STATS = null
   }
-  return DAL_TABLES
+  return STATS
 }
-
-// ─── Stat-bearing tables + the DAL family that owns each one ─────────
-//
-// Matt, 2026-08-26: "all stats should come through one process, enforce
-// this." A STAT is an aggregate over a filtered window.
-//
-// WHAT COUNTS AS STAT-BEARING (widened 2026-08-26, second pass). The first
-// pass enumerated market-data tables and closed exactly one of the four
-// abuses Matt named: inventory counts. CMA draft/delivery ratios, comp-pool
-// depths and CRM lead counts still walked through, because those live on
-// operational tables. A hand-kept list was always going to drift behind the
-// schema anyway, so the rule now runs the other way round:
-//
-//   stat-bearing  =  every DAL-covered table (docs/DAL_INDEX.md, regenerated
-//                    by G16)  MINUS  the plumbing allowlist below.
-//
-// Default-deny is the fail-safe direction. A business table added to the DAL
-// tomorrow is covered the day it lands, with nobody remembering to edit this
-// file; only an explicit plumbing entry escapes, and adding one is a visible
-// decision in the diff.
-//
-// The map below is no longer the membership test — it is the HINT table, so
-// the refusal can name the exact DAL family for the tables people reach for
-// most. A stat-bearing table with no entry still refuses, with a generic
-// pointer at docs/DAL_INDEX.md.
-const STAT_TABLES = new Map([
-  // Listings — core + the derived materialized views.
-  ['listings', 'getMarketPulse() / getMarketStats() (lib/data/market/)'],
-  ['listing_history', 'getPriceHistory() / getMarketTrend() (lib/data/market/)'],
-  ['listing_tile_mv', 'getMarketPulse() / getSearchFacetCounts() (lib/data/market/, lib/data/listings/)'],
-  ['listing_search_mv', 'getSearchFacetCounts() (lib/data/listings/searchFacets.ts)'],
-  ['similar_listings_mv', 'getSimilarListings() (lib/data/listings/getSimilarListings.ts)'],
-  ['listing_boundary_xref_mv', 'getMarketPulse() / getRegionPulse() (lib/data/market/)'],
-  ['geo_snapshot_mv', 'getMarketPulse() / getRegionPulse() (lib/data/market/)'],
-  ['neighborhood_year_pricing_mv', 'getPricingMarketIndex() / getPricingSubdivisionCells() (lib/data/pricing/facts.ts)'],
-  // Market — the live caches the DAL actually serves from.
-  ['market_pulse_live', 'getMarketPulse({geoType, geoSlug}) (lib/data/market/getMarketPulse.ts)'],
-  ['market_stats_cache', 'getMarketStats() / getMarketStatsCacheRows.ts (lib/data/market/)'],
-  ['market_history_weekly', 'getMarketHistoryWeekly() (lib/data/market/getMarketHistoryWeekly.ts)'],
-  ['market_fact_sale', 'getMarketStats() / getCityRangeReport() (lib/data/market/)'],
-  ['market_fact_listing_span', 'getMarketStats() / getCityRangeReport() (lib/data/market/)'],
-  // Analytics marts — pre-aggregated by rebuildAnalyticsMarts(), read by the DAL.
-  ['analytics_mart_market_annual', 'getCoMarketAnnual() (lib/data/analytics/getCoMarketAnnual.ts)'],
-  ['analytics_mart_feature_annual', 'getCoFeatureAnnual() (lib/data/analytics/getCoFeatureAnnual.ts)'],
-  ['analytics_mart_office_share_annual', 'getCoOfficeShare() (lib/data/analytics/getCoOfficeShare.ts)'],
-  ['analytics_inventory_snapshot', 'analyzeClosedSales() (lib/data/analytics/analyzeClosedSales.ts)'],
-  // Operational records whose counts get quoted as facts — the three abuses
-  // the first pass missed, plus their nearest neighbours.
-  ['cmas', 'listCmasForAdmin() / countCmasInRange() (lib/data/cma/)'],
-  ['cma_comps', 'the CMA comp selectors in lib/cma/comps.ts'],
-  ['crm_people', 'the CRM readers in lib/data/crm/ (searchCrmPeople and friends)'],
-  ['listing_inquiries', 'countListingInquiriesSince() (lib/data/)'],
-  ['saved_searches', 'countSavedSearchesSince() (lib/data/)'],
-  ['expired_listings', 'listExpiredListingsForAdmin() (lib/data/)'],
-  ['boundaries', 'getBoundariesByGeoType() (lib/data/) — this is also how the §0 coverage counter-query should run'],
-])
-
-// Plumbing: config, taxonomy/lookup rows, and sync bookkeeping. Counting
-// these is operations, never a figure anybody quotes, so an aggregate here
-// is not a statistic. Everything NOT listed and covered by the DAL denies —
-// when in doubt a table stays out of this set, because the cost of being
-// wrong here is a published number nobody verified, and the cost of being
-// wrong the other way is one `-- audit:` row read.
-const PLUMBING_TABLES = new Set([
-  // config + settings
-  'app_config', 'crm_company_settings', 'crm_assignment_config',
-  'crm_assignment_rules', 'crm_automation_rules', 'crm_field_definitions',
-  'crm_saved_views', 'lead_flow_rules', 'lead_flows',
-  // taxonomy / lookup rows
-  'crm_task_types', 'crm_appointment_types', 'crm_appointment_outcomes',
-  'crm_stages', 'crm_deal_stages', 'crm_pipelines', 'crm_sequence_folders',
-  'tc_form_catalog_items', 'tc_form_catalog_checks', 'tc_form_libraries',
-  'tc_form_versions', 'tc_clauses',
-  // sync bookkeeping
-  'sync_cursor', 'sync_history', 'sync_logs', 'sync_state',
-  'strict_verify_runs', 'target_query_benchmark',
-])
-
-// Is an aggregate over this table a statistic? Explicit stat tables always
-// count (they stay covered even if the DAL index cannot be read); otherwise
-// DAL-covered and not plumbing.
-function isStatBearing(table, dalTables) {
-  if (STAT_TABLES.has(table)) return true
-  return dalTables.has(table) && !PLUMBING_TABLES.has(table)
-}
-
-// Aggregate functions that produce a STATISTIC. Deliberately narrow: the
-// collection aggregates (array_agg, string_agg, json_agg) gather rows into
-// a list rather than measuring anything, so they stay legal for a targeted
-// row read. A gate that cries wolf gets loosened until it stops biting.
-// Each name requires a following `(`, so column names like `max_price`,
-// `sold_count`, and `search_facet_counts` do not match.
-const STAT_AGGREGATE_RE =
-  /\b(count|sum|avg|min|max|median|mode|stddev|stddev_pop|stddev_samp|variance|var_pop|var_samp|percentile_cont|percentile_disc|corr)\s*\(/i
 
 // ─── Refusal 1+2: Bash destructive + DB CLI ──────────────────────────
 
@@ -317,7 +214,7 @@ if (/__execute_sql$/.test(tool_name) || /__apply_migration$/.test(tool_name)) {
 
   // Refusal 4: SELECT against a DAL-covered table without -- audit:.
   if (!hasAuditComment) {
-    const dalTables = getDalCoveredTables()
+    const dalTables = getStats()?.getDalCoveredTables(projectRoot) ?? new Set()
     if (dalTables.size > 0) {
       const fromMatches = [...sqlLower.matchAll(/\bfrom\s+([a-z_][a-z_0-9]*)/g)].map((m) => m[1])
       for (const t of fromMatches) {
@@ -332,48 +229,38 @@ if (/__execute_sql$/.test(tool_name) || /__apply_migration$/.test(tool_name)) {
     }
   }
 
-  // Refusal 4b: an AGGREGATE over a stat-bearing table. No bypass.
+  // Refusal 4b: an AGGREGATE over a DAL-covered table. No bypass.
   //
-  // Matt, 2026-08-26: "all stats should come through one process, enforce
-  // this." The `-- audit:` escape above is honor-system, and in one session
-  // it was used to compute inventory counts, closed-sale counts by property
-  // sub type, CMA draft/delivery ratios, and comp-pool depths. Those are
-  // statistics. They informed product decisions and were quoted in commit
-  // messages and a cross-agent handoff, having passed neither the DAL nor
-  // the caches the DAL reads.
+  // Matt, 2026-08-26: "all stats shoule come through one process, enforce
+  // this." The `-- audit:` escape above is honor-system, and in one session it
+  // computed inventory counts, closed-sale counts by property sub type, CMA
+  // draft/delivery ratios and comp-pool depths. Those are statistics. They
+  // informed product decisions and were quoted in commit messages and a
+  // cross-agent handoff, having passed neither the DAL nor the caches it reads.
   //
   // The distinction that makes it enforceable:
-  //   - a data-quality check is a targeted ROW read ("show me this row",
-  //     "does this key exist"). That is what `-- audit:` is for, and it
-  //     keeps working.
-  //   - a STAT is an AGGREGATE — count / sum / avg / min / max / median /
-  //     percentile / GROUP BY — over a filtered window. It has exactly one
-  //     legitimate source. CLAUDE.md §7.6 already said "don't aggregate raw
-  //     listings, use the cache" in prose; nothing enforced it for agent SQL.
+  //   - a data-quality check is a targeted ROW read ("show me this row", "does
+  //     this key exist"). That is what `-- audit:` is for, and it keeps working.
+  //   - a STAT is an AGGREGATE over a filtered window, and it has exactly one
+  //     legitimate source: the DAL.
+  //
+  // What counts as a stat table is NOT decided here — scripts/stat-tables.cjs
+  // is the one definition, and it reads the generated docs/DAL_INDEX.md. The
+  // CI gate for scripts/ requires the same file, so the two cannot disagree.
   //
   // `apply_migration` is exempt on purpose: the DDL that builds a cache or a
   // materialized view HAS to aggregate the base tables. That DDL *is* the one
-  // process — this rule exists to keep everything else out of it.
+  // process; this rule keeps everything else out of it.
   if (!/__apply_migration$/.test(tool_name)) {
-    // Strip comments first so an `-- audit:` reason mentioning an aggregate,
-    // or a commented-out `from listings`, cannot fire (or dodge) the rule.
-    const bare = stripSqlComments(sqlLower)
-    if (STAT_AGGREGATE_RE.test(bare) || /\bgroup\s+by\b/.test(bare)) {
-      // FROM *and* JOIN, with optional `only`, `public.` prefix, and quoting —
-      // a stat table pulled in through a join is still in the measured window.
-      const refs = [
-        ...bare.matchAll(/\b(?:from|join)\s+(?:only\s+)?(?:public\.)?"?([a-z_][a-z_0-9]*)"?/g),
-      ].map((m) => m[1])
-      const dalTables = getDalCoveredTables()
-      const hit = refs.find((t) => isStatBearing(t, dalTables))
+    const stats = getStats()
+    if (stats) {
+      const dalTables = stats.getDalCoveredTables(projectRoot)
+      const hit = stats.sqlAggregatesDalTable(sql, dalTables)
       if (hit) {
-        const hint =
-          STAT_TABLES.get(hit) ??
-          `the DAL function that owns \`${hit}\` — look it up in the reverse index at the bottom of docs/DAL_INDEX.md`
         deny(
           'SQL-STAT-BYPASS',
           `Aggregate SQL over \`${hit}\` is refused — an aggregate over a filtered window is a STATISTIC, and \`-- audit:\` does not license one. Snippet: ${sql.slice(0, 160)}`,
-          `Stats come through one process: the DAL, which reads the caches instead of aggregating raw rows. Use ${hint}. \`-- audit:\` still covers a targeted ROW read on \`${hit}\` (show me this row, does this key exist) — drop the aggregate and it passes. If the figure you need has no DAL function yet, add one under lib/data/ and call it; do not aggregate raw here (CLAUDE.md §0 + §7.6). A coverage check ("is there any data for X") is a DAL read too — see getBoundariesByGeoType() for the shape.`,
+          `Stats come through one process: the DAL. Use the function that owns \`${hit}\` — the reverse index at the bottom of docs/DAL_INDEX.md names it. \`-- audit:\` still covers a targeted ROW read on \`${hit}\` (show me this row, does this key exist), so drop the aggregate and it passes. If the figure has no DAL function yet, add one under lib/data/ and call it (CLAUDE.md §0 + §7.6).`,
         )
       }
     }
@@ -484,15 +371,6 @@ function stripRoot(path, root) {
 
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-// Strip `--` line comments and block comments from SQL. Used only by
-// Refusal 4b, so that the `-- audit: <reason>` text itself — and any
-// commented-out SQL — is neither a trigger nor a hiding place for the
-// aggregate detector. Naive on `--` inside a string literal, which is
-// the safe direction: it can only make the rule look at less text.
-function stripSqlComments(sql) {
-  return sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ')
 }
 
 // Heuristic — does this chunk look like JavaScript / TypeScript code
