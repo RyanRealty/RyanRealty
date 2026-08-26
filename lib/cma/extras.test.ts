@@ -101,7 +101,13 @@ describe('computeFinancing', () => {
 describe('computeBandPosition', () => {
   it('medians the live band and passes counts through', () => {
     const b = computeBandPosition(
-      { activeAsks: [700000, 725000, 750000], activeDaysOnMarket: [10, 30, 50], pendingCount: 4 },
+      {
+        activeAsks: [700000, 725000, 750000],
+        activeDaysOnMarket: [10, 30, 50],
+        activeCount: 3,
+        pendingCount: 4,
+        truncated: false,
+      },
       'Bend',
       675000,
       825000,
@@ -110,6 +116,60 @@ describe('computeBandPosition', () => {
     expect(b!.activeMedianAsk).toBe(725000)
     expect(b!.activeMedianDom).toBe(30)
     expect(b!.pendingCount).toBe(4)
+  })
+
+  // The defect this replaced: the DAL fetched 40 rows and the count was the
+  // length of that page, so a 200-listing band reported 40 and the medians
+  // described 40 arbitrary rows. activeCount now comes from the database.
+  it('reports the database count, not the number of rows it happened to hold', () => {
+    const b = computeBandPosition(
+      {
+        activeAsks: [700000, 725000, 750000],
+        activeDaysOnMarket: [10, 30, 50],
+        activeCount: 212,
+        pendingCount: 18,
+        truncated: false,
+      },
+      'Bend',
+      675000,
+      825000,
+    )
+    expect(b!.activeCount).toBe(212)
+    expect(b!.pendingCount).toBe(18)
+    expect(b!.source).toContain('all 212 active listings in the band')
+  })
+
+  it('says so in the source line when the band exceeded the read ceiling', () => {
+    const b = computeBandPosition(
+      {
+        activeAsks: [700000],
+        activeDaysOnMarket: [10],
+        activeCount: 9000,
+        pendingCount: 0,
+        truncated: true,
+        activeRows: [
+          {
+            ListingKey: 'k1',
+            StreetNumber: '1',
+            StreetName: 'A St',
+            ListPrice: 700000,
+            StandardStatus: 'Active',
+            DaysOnMarket: 10,
+            OnMarketDate: null,
+            PhotoURL: null,
+            Latitude: null,
+            Longitude: null,
+            property_sub_type: 'Single Family Residence',
+          },
+        ],
+        pendingRows: [],
+      },
+      'Bend',
+      675000,
+      825000,
+    )
+    expect(b!.source).toContain('exceeded the read ceiling')
+    expect(b!.source).toContain('of 9000 active listings')
   })
   it('a failed inventory pull ships nothing', () => {
     expect(computeBandPosition(null, 'Bend', 1, 2)).toBeNull()
@@ -120,7 +180,9 @@ describe('computeBandPosition', () => {
       {
         activeAsks: [465000, 438995],
         activeDaysOnMarket: [17, 40],
+        activeCount: 2,
         pendingCount: 1,
+        truncated: false,
         activeRows: [
           {
             ListingKey: 'sfr',
@@ -129,6 +191,7 @@ describe('computeBandPosition', () => {
             ListPrice: 465000,
             StandardStatus: 'Active',
             DaysOnMarket: 17,
+            OnMarketDate: null,
             PhotoURL: null,
             Latitude: 44.05,
             Longitude: -121.29,
@@ -141,6 +204,7 @@ describe('computeBandPosition', () => {
             ListPrice: 438995,
             StandardStatus: 'Active',
             DaysOnMarket: 40,
+            OnMarketDate: null,
             PhotoURL: null,
             Latitude: 44.04,
             Longitude: -121.28,

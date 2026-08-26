@@ -9,7 +9,15 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 
 const BAND_SELECT =
-  'ListingKey, StreetNumber, StreetName, ListPrice, StandardStatus, DaysOnMarket, PhotoURL, Latitude, Longitude, property_sub_type'
+  'ListingKey, StreetNumber, StreetName, ListPrice, StandardStatus, DaysOnMarket, OnMarketDate, PhotoURL, Latitude, Longitude, property_sub_type'
+
+// The band is one city, one property type, one status, inside a +/- price
+// window, so it is bounded in practice. Page it rather than truncating: the
+// medians downstream are only correct over the whole band. CEILING exists so a
+// pathological band cannot pull the table; when it is hit, `truncated` says so
+// and the CMA discloses it instead of quietly publishing a sample.
+const PAGE_SIZE = 1000
+const CEILING = 4000
 
 export type CmaBandListingRow = {
   ListingKey: string
@@ -18,6 +26,7 @@ export type CmaBandListingRow = {
   ListPrice: number | null
   StandardStatus: string | null
   DaysOnMarket: number | null
+  OnMarketDate: string | null
   PhotoURL: string | null
   Latitude: number | null
   Longitude: number | null
@@ -27,7 +36,11 @@ export type CmaBandListingRow = {
 export type CmaBandInventory = {
   activeAsks: number[]
   activeDaysOnMarket: number[]
+  /** Exact row counts from the database, NOT the length of the arrays above. */
+  activeCount: number
   pendingCount: number
+  /** True if the band exceeded CEILING and the rows are a prefix, not the band. */
+  truncated: boolean
   activeRows: CmaBandListingRow[]
   pendingRows: CmaBandListingRow[]
 }
@@ -52,32 +65,79 @@ export async function getCmaBandInventory(
   const sb = client()
   if (!sb) return null
   const subType = subjectSubType?.trim() || null
-  const scoped = (status: 'Active' | 'Pending') => {
+
+  const scoped = (status: 'Active' | 'Pending', head: boolean) => {
     let q = sb
       .from('listings')
-      .select(BAND_SELECT, { count: 'exact' })
+      .select(head ? 'ListingKey' : BAND_SELECT, { count: 'exact', head })
       .eq('City', city)
       .eq('PropertyType', 'A')
       .eq('StandardStatus', status)
       .gte('ListPrice', lo)
       .lte('ListPrice', hi)
     if (subType) q = q.eq('property_sub_type', subType)
-    return q.limit(40)
+    return q
   }
-  const [actives, pendings] = await Promise.all([scoped('Active'), scoped('Pending')])
-  if (actives.error || pendings.error) {
-    console.error('[getCmaBandInventory]', actives.error?.message ?? pendings.error?.message)
+
+  // Page the whole band. `.order()` is not decoration: an unordered range is
+  // an arbitrary slice, so paging without it can repeat and skip rows.
+  const readAll = async (status: 'Active' | 'Pending') => {
+    const rows: CmaBandListingRow[] = []
+    let truncated = false
+    for (let offset = 0; offset < CEILING; offset += PAGE_SIZE) {
+      const { data, error } = await scoped(status, false)
+        .order('ListPrice', { ascending: true })
+        .order('ListingKey', { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1)
+      if (error) throw new Error(error.message)
+      const page = asRows(data)
+      rows.push(...page)
+      if (page.length < PAGE_SIZE) return { rows, truncated }
+    }
+    truncated = true
+    return { rows, truncated }
+  }
+
+  try {
+    const [activeHead, pendingHead, actives, pendings] = await Promise.all([
+      scoped('Active', true),
+      scoped('Pending', true),
+      readAll('Active'),
+      readAll('Pending'),
+    ])
+    if (activeHead.error || pendingHead.error) {
+      throw new Error(activeHead.error?.message ?? pendingHead.error?.message)
+    }
+    const activeRows = actives.rows
+    return {
+      activeAsks: activeRows
+        .map((r) => Number(r.ListPrice))
+        .filter((n) => Number.isFinite(n) && n > 0),
+      // Days on market derived from OnMarketDate, not the "DaysOnMarket"
+      // column: docs/DATABASE_FOR_AI_AGENTS.md warns that column is
+      // list-to-close. Measured on live Active rows 2026-08-26 it tracks
+      // days-since-on-market to within 0-4 days (it lags the sync), so the
+      // date arithmetic is both exact and free of the canon's objection.
+      activeDaysOnMarket: activeRows
+        .map((r) => daysOnMarket(r.OnMarketDate))
+        .filter((n): n is number => n != null),
+      activeCount: activeHead.count ?? activeRows.length,
+      pendingCount: pendingHead.count ?? pendings.rows.length,
+      truncated: actives.truncated || pendings.truncated,
+      activeRows,
+      pendingRows: pendings.rows,
+    }
+  } catch (e) {
+    console.error('[getCmaBandInventory]', e instanceof Error ? e.message : String(e))
     return null
   }
-  const activeRows = asRows(actives.data)
-  const pendingRows = asRows(pendings.data)
-  return {
-    activeAsks: activeRows.map((r) => Number(r.ListPrice)).filter((n) => Number.isFinite(n) && n > 0),
-    activeDaysOnMarket: activeRows
-      .map((r) => Number(r.DaysOnMarket))
-      .filter((n) => Number.isFinite(n) && n >= 0),
-    pendingCount: pendings.count ?? pendingRows.length,
-    activeRows,
-    pendingRows,
-  }
+}
+
+/** Whole days between OnMarketDate and now. Null when the date is unusable. */
+function daysOnMarket(onMarketDate: string | null): number | null {
+  if (!onMarketDate) return null
+  const then = new Date(onMarketDate)
+  if (Number.isNaN(then.getTime())) return null
+  const days = Math.floor((Date.now() - then.getTime()) / 86_400_000)
+  return days >= 0 ? days : null
 }

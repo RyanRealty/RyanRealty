@@ -244,7 +244,9 @@ export function computeBandPosition(
   inv: {
     activeAsks: number[]
     activeDaysOnMarket: number[]
+    activeCount: number
     pendingCount: number
+    truncated: boolean
     activeRows?: CmaBandListingRow[]
     pendingRows?: CmaBandListingRow[]
   } | null,
@@ -267,18 +269,39 @@ export function computeBandPosition(
     ? activeRows.map((r) => Number(r.ListPrice)).filter((n) => Number.isFinite(n) && n > 0)
     : inv.activeAsks
   const doms = hasRows
-    ? activeRows.map((r) => Number(r.DaysOnMarket)).filter((n) => Number.isFinite(n) && n >= 0)
+    ? activeRows
+        .map((r) => daysOnMarketOf(r.OnMarketDate))
+        .filter((n): n is number => n != null)
     : inv.activeDaysOnMarket
+  // The DAL pages the whole band, so `activeRows` IS the band and these lengths
+  // are real counts rather than a page size. They can still differ from the
+  // database counts when the subject has no property sub type, because
+  // keepSameProductType() then narrows to detached in JS — so report the
+  // filtered length and let the source line say what was measured.
+  const typeFiltered = hasRows && activeRows.length !== inv.activeCount
   return {
     lo,
     hi,
-    activeCount: hasRows ? asks.length : inv.activeAsks.length,
+    activeCount: hasRows ? activeRows.length : inv.activeCount,
     pendingCount: hasRows ? pendingRows.length : inv.pendingCount,
     activeMedianAsk: median(asks),
     activeMedianDom: median(doms),
     rivals: pickBandRivals(raw, subject),
-    source: `Supabase listings, City='${city}', same property type${subject?.propertySubType ? ` (${subject.propertySubType})` : ''}, Active + Pending, ListPrice ${lo}..${hi}, pulled at build time`,
+    source: `Supabase listings, City='${city}', same property type${subject?.propertySubType ? ` (${subject.propertySubType})` : ''}, Active + Pending, ListPrice ${lo}..${hi}, pulled at build time — ${
+      inv.truncated
+        ? `band exceeded the read ceiling, so these figures cover the first ${activeRows.length} of ${inv.activeCount} active listings`
+        : `all ${inv.activeCount} active listings in the band${typeFiltered ? `, ${activeRows.length} after the same-product-type filter` : ''}`
+    }; days on market measured from OnMarketDate`,
   }
+}
+
+/** Whole days since a listing went on market. Null when the date is unusable. */
+function daysOnMarketOf(onMarketDate: string | null | undefined): number | null {
+  if (!onMarketDate) return null
+  const then = new Date(onMarketDate)
+  if (Number.isNaN(then.getTime())) return null
+  const days = Math.floor((Date.now() - then.getTime()) / 86_400_000)
+  return days >= 0 ? days : null
 }
 
 export function computeSubdivisionPulse(
