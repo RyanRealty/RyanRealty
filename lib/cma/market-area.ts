@@ -203,7 +203,24 @@ export function lotCharacterCompatible(subjectAcres: number | null, compAcres: n
 }
 
 /** Product class a comp competes in. Null = the MLS did not say. */
-export type ProductClass = 'detached' | 'attached' | 'manufactured' | 'leased-land' | 'coop'
+export type ProductClass =
+  | 'detached'
+  | 'attached'
+  | 'manufactured'
+  | 'leased-land'
+  | 'coop'
+  // Added 2026-08-26. Each of these used to fall through to null, and null
+  // fails closed in productTypeCompatible — so a lot, a duplex or a
+  // manufactured-in-park subject drew ZERO comps and could not be valued at
+  // all. That was 1,652 closed sales over 12 months, ~15% of inventory.
+  | 'lots'
+  | 'recreational'
+  | 'agriculture'
+  | 'rangeland'
+  | 'in-park'
+  | 'multi-2-4'
+  | 'commercial'
+  | 'timeshare'
 
 /**
  * Map the MLS `property_sub_type` to a product class.
@@ -226,9 +243,43 @@ export function productClass(subType: string | null): ProductClass | null {
   // fall through to null and fail OPEN against a detached subject.
   if (s.includes('leased land')) return 'leased-land'
   if (s.includes('cooperative') || s.includes('co-op')) return 'coop'
+  // "In Park" before manufactured: a home in a park sits on ground the buyer
+  // does not own, which is the leased-land problem, not the
+  // manufactured-on-land one. 429 closed sales in 12 months.
+  if (s.includes('in park')) return 'in-park'
   if (s.includes('manufactured') || s.includes('mobile')) return 'manufactured'
+  // Land, each type its own class (Matt 2026-08-26). A residential building lot
+  // and a rangeland parcel are not the same market, and acreage alone does not
+  // bridge them. Thin pools are the honest cost of that: the comp floor will
+  // refuse to build rather than reach for a different kind of dirt.
+  // 'rangeland' contains "land" but not "leased land", so the guard above
+  // leaves it alone.
+  if (s.includes('residential lots') || s.includes('lot')) return 'lots'
+  if (s.includes('recreational')) return 'recreational'
+  if (s.includes('agricult')) return 'agriculture'
+  if (s.includes('rangeland')) return 'rangeland'
+  // 2-4 units as ONE class (Matt 2026-08-26), matching how conventional
+  // financing treats them. Unit count is an adjustment, not a wall. Checked
+  // before the detached match because "Multi Family" carries the word family.
+  if (
+    s.includes('duplex') ||
+    s.includes('triplex') ||
+    s.includes('quadruplex') ||
+    s.includes('fourplex') ||
+    s.includes('multi family') ||
+    s.includes('multi-family')
+  ) {
+    return 'multi-2-4'
+  }
+  if (s.includes('commercial') || s.includes('industrial') || s.includes('investment')) return 'commercial'
+  if (s.includes('timeshare')) return 'timeshare'
   if (s.includes('town') || s.includes('condo') || s.includes('tenancy') || s.includes('attached')) return 'attached'
   if (s.includes('single family') || s.includes('detached') || s.includes('residence')) return 'detached'
+  // Still null for a subtype nobody has mapped, and null still FAILS CLOSED in
+  // productTypeCompatible. That is deliberate and load-bearing: PropertyType='A'
+  // once mixed 14% attached/manufactured into a detached pool, which is how
+  // Santorini townhomes appeared beside an SFR. A new MLS value gets a class
+  // here on purpose, never by falling open.
   return null
 }
 
@@ -288,6 +339,13 @@ export const DETACHED_PROPERTY_SUB_TYPE = 'Single Family Residence'
 export function compPoolPropertySubType(subjectSubType: string | null): string | null {
   const cls = productClass(subjectSubType)
   if (cls === 'detached') return DETACHED_PROPERTY_SUB_TYPE
+  // 2-4 unit is ONE class spanning several MLS values, so pinning the SQL to
+  // the subject's own value would hide every other size from the pool — a
+  // duplex subject would never see a triplex sale. Leave the SQL open and let
+  // the JS class check (productTypeCompatible, a hard exclusion at every tier)
+  // do the matching. Same reasoning as an unknown subtype: SQL narrows where it
+  // safely can, JS is the gate.
+  if (cls === 'multi-2-4') return null
   const trimmed = subjectSubType?.trim() || ''
   if (cls != null && trimmed) return trimmed
   return null

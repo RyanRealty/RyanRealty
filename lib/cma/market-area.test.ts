@@ -188,3 +188,86 @@ describe('bathCountCompatible — same whole-bath count', () => {
     expect(bathCountCompatible(null, 2)).toBe(true)
   })
 })
+
+describe('productClass — every MLS sub type reaches a class (2026-08-26)', () => {
+  // 12 of 21 registry sub types used to return null, and null fails closed in
+  // productTypeCompatible — so a lot, a duplex or a manufactured-in-park
+  // subject drew ZERO comps and could not be valued. 1,652 closed sales over
+  // 12 months, ~15% of inventory.
+  it.each([
+    ['Single Family Residence', 'detached'],
+    ['Townhouse', 'attached'],
+    ['Condominium', 'attached'],
+    ['Tenancy in Common', 'attached'],
+    ['Manufactured On Land', 'manufactured'],
+    ['Residential Leased Land', 'leased-land'],
+    ['On Leased Land', 'leased-land'],
+    ['Stock Cooperative', 'coop'],
+    ['In Park', 'in-park'],
+    ['Residential Lots', 'lots'],
+    ['Recreational', 'recreational'],
+    ['Agriculture', 'agriculture'],
+    ['Rangeland', 'rangeland'],
+    ['Duplex', 'multi-2-4'],
+    ['Triplex', 'multi-2-4'],
+    ['Quadruplex', 'multi-2-4'],
+    ['Multi Family', 'multi-2-4'],
+    ['Commercial', 'commercial'],
+    ['Industrial', 'commercial'],
+    ['Investment', 'commercial'],
+    ['Timeshare', 'timeshare'],
+  ])('%s -> %s', (subType, expected) => {
+    expect(productClass(subType)).toBe(expected)
+  })
+
+  it('still returns null for an unmapped value, so it still fails closed', () => {
+    // Load-bearing. PropertyType='A' once mixed 14% attached/manufactured into
+    // a detached pool — that is how Santorini townhomes appeared beside an SFR.
+    // A new MLS value earns a class deliberately, never by falling open.
+    expect(productClass('Some New MLS Value')).toBeNull()
+    expect(productClass(null)).toBeNull()
+    expect(productTypeCompatible('Some New MLS Value', 'Single Family Residence')).toBe(false)
+  })
+
+  it('keeps "In Park" apart from "Manufactured On Land"', () => {
+    // A home in a park sits on ground the buyer does not own. That is the
+    // leased-land problem, not the manufactured-on-land one, and the two do not
+    // price from each other.
+    expect(productTypeCompatible('In Park', 'Manufactured On Land')).toBe(false)
+    expect(productTypeCompatible('In Park', 'In Park')).toBe(true)
+  })
+
+  it('does not let "Rangeland" trip the leased-land guard', () => {
+    expect(productClass('Rangeland')).toBe('rangeland')
+  })
+
+  it('comps 2-4 unit against each other, not against a house', () => {
+    expect(productTypeCompatible('Duplex', 'Triplex')).toBe(true)
+    expect(productTypeCompatible('Duplex', 'Quadruplex')).toBe(true)
+    expect(productTypeCompatible('Duplex', 'Single Family Residence')).toBe(false)
+  })
+
+  it('keeps each land type in its own market', () => {
+    // Matt 2026-08-26: land comps each type separately. A building lot and a
+    // rangeland parcel are not one market.
+    expect(productTypeCompatible('Residential Lots', 'Residential Lots')).toBe(true)
+    expect(productTypeCompatible('Residential Lots', 'Agriculture')).toBe(false)
+    expect(productTypeCompatible('Agriculture', 'Rangeland')).toBe(false)
+    expect(productTypeCompatible('Recreational', 'Residential Lots')).toBe(false)
+  })
+
+  it('leaves the comps SQL open for 2-4 unit so sizes can mix', () => {
+    // Pinning the subject's own value would hide every other unit count from
+    // the pool — a duplex subject would never see a triplex sale. JS does the
+    // class match instead.
+    expect(compPoolPropertySubType('Duplex')).toBeNull()
+    // Land still pins, because each type is its own market.
+    expect(compPoolPropertySubType('Residential Lots')).toBe('Residential Lots')
+    expect(compPoolPropertySubType('Single Family Residence')).toBe(DETACHED_PROPERTY_SUB_TYPE)
+  })
+
+  it('still drops attached product for an unknown subject on soft surfaces', () => {
+    expect(keepSameProductType(null, 'Townhouse')).toBe(false)
+    expect(keepSameProductType(null, 'Single Family Residence')).toBe(true)
+  })
+})
