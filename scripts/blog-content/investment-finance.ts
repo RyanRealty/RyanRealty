@@ -149,15 +149,15 @@ export const posts: BlogPostSeed[] = [
     excerpt:
       'A comprehensive breakdown of short-term rental regulations in Bend and Deschutes County, including permit types, resort community exemptions, tax obligations, and what buyers need to verify before purchasing.',
     content: `
-<p>If you're thinking about buying a property in Central Oregon with plans to rent it out on a short-term basis, you need to understand the regulatory landscape before you make an offer. The rules are more complex than most buyers expect, they vary significantly between jurisdictions, and getting them wrong can mean fines, permit revocation, or discovering that the property you just bought can't legally be used the way you planned.</p>
+<p>If you're buying a property in Central Oregon to rent out short-term, you need to understand the regulatory landscape before you make an offer. The rules vary between jurisdictions, and getting them wrong can mean fines, permit revocation, or discovering that the property you just bought can't legally be used the way you planned.</p>
 
-<p>This guide covers the current rules as of late 2025. Regulations in this space change frequently, so always verify current requirements with the relevant jurisdiction before making a purchase decision.</p>
+<p>These are the rules as of late 2025. Regulations in this space change frequently. Always verify current requirements with the relevant jurisdiction before making a purchase decision.</p>
 
-<h2>Bend City Short-Term Rental Regulations</h2>
+<h2>Bend city short-term rental regulations</h2>
 
-<p>Bend regulates short-term rentals (defined as rentals of fewer than 30 consecutive days) through its Development Code and a permitting system. The city has taken an increasingly active approach to STR regulation over the past several years, and enforcement has ramped up significantly.</p>
+<p>Bend regulates short-term rentals (defined as rentals of fewer than 30 consecutive days) through its Development Code and a permitting system. The city has taken an increasingly active approach to STR regulation over the past several years, and enforcement has increased.</p>
 
-<h3>Permit Types</h3>
+<h3>Permit types</h3>
 
 <p>Bend classifies short-term rental permits into three types:</p>
 
@@ -176,7 +176,7 @@ export const posts: BlogPostSeed[] = [
 <li>Historically available in certain zones, but the city has capped the total number</li>
 <li>No new Type 2 permits are being issued in most zones as of 2024</li>
 <li>Existing permits can transfer with property sale, but check the specific conditions</li>
-<li>If a property has an active Type 2 permit, it adds meaningful value to the listing price</li>
+<li>If a property has an active Type 2 permit, it can add value to the listing price</li>
 </ul>
 
 <p><strong>Type 3: Resort Zone</strong></p>
@@ -186,7 +186,7 @@ export const posts: BlogPostSeed[] = [
 <li>Different setback and operational requirements</li>
 </ul>
 
-<h3>Key Restrictions in Bend</h3>
+<h3>Key restrictions in Bend</h3>
 
 <ul>
 <li>Maximum occupancy limits based on bedroom count (generally 2 per bedroom plus 2)</li>
@@ -198,13 +198,13 @@ export const posts: BlogPostSeed[] = [
 <li>Operating without a permit carries fines starting at $1,000 per violation</li>
 </ul>
 
-<h3>What This Means for Buyers</h3>
+<h3>What buyers should know</h3>
 
-<p>If you're looking to buy a property in Bend for vacation rental use, the most critical question is whether the property has an existing, transferable STR permit. A home with a Type 2 permit is significantly more valuable for investment purposes than an identical home without one. We've seen the permit premium add $30,000 to $75,000 to a property's effective market value.</p>
+<p>If you're looking to buy a property in Bend for vacation rental use, the most critical question is whether the property has an existing, transferable STR permit. A home with a Type 2 permit is more valuable for investment purposes than an identical home without one. We've seen the permit premium add $30,000 to $75,000 to a property's effective market value.</p>
 
 <p>For properties without an existing permit, your realistic options within Bend city limits are Type 1 (owner-occupied, rent while you're present) or exploring whether the property qualifies for a new permit under the current cap. Your real estate agent should be able to help you navigate this. Contact our <a href="/team">team</a> if you need guidance on specific properties.</p>
 
-<h2>Deschutes County Rules (Unincorporated Areas)</h2>
+<h2>Deschutes County rules (unincorporated areas)</h2>
 
 <p>Properties outside city limits but within Deschutes County follow county regulations, which differ from Bend's. The county has also tightened its approach to STRs in recent years.</p>
 
@@ -218,19 +218,19 @@ export const posts: BlogPostSeed[] = [
 
 <p>The county planning department is the definitive source for whether a specific parcel can legally operate as a short-term rental. Check before you buy, not after.</p>
 
-<h2>Resort Community Exemptions</h2>
+<h2>Resort community exemptions</h2>
 
-<p>This is where things get more favorable for investors. Several resort <a href="/communities">communities</a> in Central Oregon operate under resort zoning that explicitly allows short-term rentals. These communities were designed and approved with vacation rental use in mind, which means the regulatory path is much clearer.</p>
+<p>Several resort <a href="/communities">communities</a> in Central Oregon operate under resort zoning that explicitly allows short-term rentals. These communities were designed and approved with vacation rental use in mind.</p>
 
 <h3>Sunriver</h3>
 
-<p>Sunriver is Central Oregon's largest resort community, with roughly 4,500 homes and condos. Short-term rentals have been part of Sunriver's DNA since the community was developed in the 1960s. The Sunriver Resort Owners Association (SROA) allows short-term rentals in most areas, though individual homeowner associations within Sunriver may have additional rules.</p>
+<p>Sunriver is Central Oregon's largest resort community, with roughly 4,500 homes and condos. Short-term rentals have been allowed in Sunriver since the community was developed in the 1960s. The Sunriver Resort Owners Association (SROA) allows short-term rentals in most areas, though individual homeowner associations within Sunriver may have additional rules.</p>
 
 <p>Sunriver operates its own rental management programs, and several independent property management companies service the area. Typical gross rental income ranges from $40,000 to $90,000 per year depending on the property size, location within Sunriver, and management quality. Summer and winter holiday weeks are peak, with shoulder seasons seeing lower occupancy.</p>
 
 <h3>Caldera Springs</h3>
 
-<p>Located south of Sunriver, Caldera Springs is a newer, upscale resort community. Short-term rentals are allowed under the resort's governing documents. Properties here command higher nightly rates (often $400 to $800+ per night in peak season) but the property values are also higher, so the yield math isn't dramatically different from Sunriver on a percentage basis.</p>
+<p>Located south of Sunriver, Caldera Springs is a newer, upscale resort community. Short-term rentals are allowed under the resort's governing documents. Properties here command higher nightly rates (often $400 to $800+ per night in peak season) but the property values are also higher, so the yield math isn't much different from Sunriver on a percentage basis.</p>
 
 <h3>Eagle Crest</h3>
 
@@ -238,21 +238,32 @@ export const posts: BlogPostSeed[] = [
 
 <h3>Brasada Ranch</h3>
 
-<p>Brasada Ranch near Powell Butte allows short-term rentals and offers its own rental management program. This is a higher-end resort with correspondingly higher property values and nightly rates. The community is smaller than Sunriver, which can mean less competition among rental properties but also a smaller brand awareness footprint among travelers.</p>
+<p>Brasada Ranch near Powell Butte allows short-term rentals and offers its own rental management program. This is a higher-end resort with correspondingly higher property values and nightly rates. The community is smaller than Sunriver, which can mean less competition among rental properties but also less name recognition among travelers.</p>
 
-<h2>Tax Obligations</h2>
+<h2>Tax obligations</h2>
 
 <p>Short-term rental operators in Central Oregon are responsible for collecting and remitting several taxes:</p>
 
-<p><strong>Transient Room Tax (TRT):</strong> Bend charges 10.4% on rentals of fewer than 30 days. Deschutes County charges 9% on unincorporated-area rentals. These rates are subject to change, so verify current rates with the relevant tax authority.</p>
+<p><strong>Transient room tax:</strong> the rate follows the jurisdiction the property sits in. Inside a city, the city rate applies. Outside every city, the county rate applies.</p>
 
-<p><strong>State Lodging Tax:</strong> Oregon charges a 1.8% state lodging tax on all transient lodging.</p>
+<ul>
+<li>City of Bend: 10.4%</li>
+<li>City of Redmond: 9%</li>
+<li>Unincorporated Deschutes County: 8%</li>
+<li>Unincorporated Crook County: 8.5%</li>
+</ul>
+
+<p>Deschutes County collects its 8% only outside the city limits of Bend, Redmond, Sisters, and La Pine. Sunriver, Caldera Springs, and Eagle Crest all sit in that unincorporated area, so the county rate applies to them rather than a city rate. Brasada Ranch sits in Crook County near Powell Butte, so the Crook County rate applies there instead.</p>
+
+<p><strong>State lodging tax:</strong> Oregon charges 1.5% on transient lodging for stays ending on or before December 31, 2026. That rate rises to 2.75% for stays ending on or after January 1, 2027.</p>
+
+<p>Rates change. Verify the current rate with the jurisdiction that collects it before you build it into your numbers.</p>
 
 <p><strong>Federal Income Tax:</strong> Rental income is taxable at your ordinary income rate. However, short-term rental operators may be able to deduct expenses including mortgage interest, property taxes, insurance, management fees, maintenance, depreciation, and supplies. The IRS has specific rules about passive activity losses and material participation that affect how much of a rental loss you can deduct against other income. Talk to a CPA who understands short-term rental taxation.</p>
 
 <p>Platforms like Airbnb and Vrbo collect and remit some taxes on your behalf, but you are ultimately responsible for ensuring all tax obligations are met. Keep meticulous records.</p>
 
-<h2>Insurance Requirements</h2>
+<h2>Insurance requirements</h2>
 
 <p>Standard homeowner's insurance policies do not cover short-term rental activity. You need either a commercial policy, a landlord policy with short-term rental endorsement, or a specialized vacation rental policy. Expect to pay 20% to 40% more than a standard homeowner's policy.</p>
 
@@ -266,7 +277,7 @@ export const posts: BlogPostSeed[] = [
 
 <p>Some management companies require minimum insurance levels as a condition of managing your property. Check their requirements before selecting a policy.</p>
 
-<h2>Management Options</h2>
+<h2>Management options</h2>
 
 <p>You have three basic choices for managing a short-term rental in Central Oregon:</p>
 
@@ -276,9 +287,9 @@ export const posts: BlogPostSeed[] = [
 
 <p><strong>Hybrid approach:</strong> You manage listings and guest communication (using tools like Hospitable or Guesty), and hire local cleaners and a handyman. Typical cost is 10% to 15% of gross revenue. Requires more involvement but retains more income.</p>
 
-<h2>Realistic Income Expectations</h2>
+<h2>Realistic income expectations</h2>
 
-<p>Every listing agent and property manager will show you best-case income numbers. Here's what we actually see in practice across the Central Oregon market:</p>
+<p>Every listing agent and property manager will show you best-case income numbers. Here's what we see in practice across the Central Oregon market:</p>
 
 <ul>
 <li><strong>Sunriver 3-bedroom home:</strong> $45,000 to $70,000 gross per year. After management (25%), cleaning, maintenance, and taxes, net before mortgage is roughly $25,000 to $40,000.</li>
@@ -289,13 +300,13 @@ export const posts: BlogPostSeed[] = [
 
 <p>These numbers assume competent management, competitive pricing, and a well-maintained property. New listings often take 6 to 12 months to build enough reviews to achieve stabilized occupancy rates.</p>
 
-<h2>Enforcement Trends</h2>
+<h2>Enforcement trends</h2>
 
 <p>Both Bend and Deschutes County have increased enforcement of STR regulations. Bend now uses third-party monitoring services that scan rental platforms to identify unpermitted listings. Fines for operating without a permit start at $1,000 and escalate for repeat violations.</p>
 
-<p>The trend is clearly toward more regulation, not less. Neighboring cities in Oregon have implemented their own STR restrictions, and state-level legislation around vacation rentals continues to evolve. Factor this regulatory trajectory into your investment analysis.</p>
+<p>The trend is toward more regulation. Neighboring cities in Oregon have implemented their own STR restrictions, and state-level legislation around vacation rentals continues to evolve.</p>
 
-<h2>What to Verify Before Purchasing</h2>
+<h2>What to verify before purchasing</h2>
 
 <p>Before making an offer on a property you intend to use as a short-term rental, verify these items:</p>
 
@@ -310,7 +321,7 @@ export const posts: BlogPostSeed[] = [
 <li>Condition and furnishing costs if the property needs updates to compete</li>
 </ul>
 
-<p>Our <a href="/team">team</a> works with investors regularly and can help you evaluate the rental potential of specific properties. We'll give you the real numbers, not the optimistic projections. Check our <a href="/homes-for-sale">current listings</a> to see what's available in resort communities and STR-eligible areas.</p>
+<p>Our <a href="/team">team</a> works with investors regularly and can help you evaluate the rental potential of specific properties. Check our <a href="/homes-for-sale">current listings</a> to see what's available in resort communities and STR-eligible areas.</p>
 `,
   },
 
