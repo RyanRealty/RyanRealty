@@ -39,7 +39,7 @@ export type FeedWindow = {
 }
 
 export type SilentZeroVerdict = FeedWindow & {
-  verdict: 'silent-zero' | 'sparse' | 'healthy' | 'absent' | 'dormant'
+  verdict: 'silent-zero' | 'sparse' | 'healthy' | 'absent' | 'dormant' | 'retired'
   /** Written for a human deciding whether to act. */
   note: string
 }
@@ -74,6 +74,40 @@ export const KNOWN_DORMANT: Record<string, string> = {
     'no per-video rows are produced. following_count is 0 because the account follows nobody. Idle, not broken.',
 }
 
+/**
+ * Metric names the PLATFORM has retired, whose historical rows are fabricated.
+ *
+ * This is a different animal from KNOWN_DORMANT and must not be confused with it.
+ * A dormant feed's zeros are REAL measurements of a quiet account. A retired
+ * metric's zeros were never measured at all: the API 400d on the name, the error
+ * was caught, and a 0 was written. Every stored row for these is a false claim
+ * under §0, and no future row will be written — the pipeline stopped asking.
+ *
+ * Verified 2026-08-26 by asking the live API for each name ALONE, and confirmed
+ * against write timestamps: rows for these names stop at the last pre-fix cron
+ * run, while every metric beside them carries the post-fix timestamp.
+ *
+ * They are listed so the guard NAMES them instead of reporting them as a live
+ * defect to chase every session. The historical rows are a separate cleanup
+ * decision — deleting production data is Matt's call, not the guard's.
+ */
+export const RETIRED_METRICS: Record<string, string> = {
+  'instagram:impressions':
+    'retired by Meta at Graph v22. Replaced by `views`, which is now published. ' +
+    'Asking for this name 400s the whole batch, which is what zeroed reach and saved beside it.',
+  'instagram:engagement':
+    'retired by Meta at Graph v22 — superseded by `total_interactions`, which is now published.',
+  'meta_page:post_impressions':
+    'retired at post scope, along with every variant tried alone (_unique, _organic, post_activity). ' +
+    'There is NO post-level reach or impressions at this API version, so none is published rather than a stand-in.',
+  'meta_page:post_engaged_users':
+    'retired at post scope. `post_clicks`, `post_reactions_like_total` and `post_video_views` survive and are published.',
+}
+
+function retiredReason(channel: string, metric: string): string | null {
+  return RETIRED_METRICS[`${channel}:${metric}`] ?? null
+}
+
 function dormantReason(channel: string, metric: string): string | null {
   return KNOWN_DORMANT[`${channel}:${metric}`] ?? KNOWN_DORMANT[`${channel}:*`] ?? null
 }
@@ -96,6 +130,18 @@ export function classifyFeed(w: FeedWindow, minRows = 14): SilentZeroVerdict {
     return { ...w, verdict: 'sparse', note: `only ${w.rows} rows — too few to judge` }
   }
   if (w.nonZeroRows === 0) {
+    // Retired is checked first: these rows are fabricated, not measured, so
+    // calling them "dormant" (zeros are real) would be exactly backwards.
+    const retired = retiredReason(w.channel, w.metric)
+    if (retired) {
+      return {
+        ...w,
+        verdict: 'retired',
+        note:
+          `metric retired upstream — ${retired} No new rows are written. The ${w.rows} stored ` +
+          `rows were never measured; treat them as absent, not as zeros.`,
+      }
+    }
     const dormant = dormantReason(w.channel, w.metric)
     if (dormant) {
       return { ...w, verdict: 'dormant', note: `zeros are real — ${dormant}` }
@@ -117,7 +163,8 @@ export function classifyFeed(w: FeedWindow, minRows = 14): SilentZeroVerdict {
 export function formatSilentZeroReport(verdicts: SilentZeroVerdict[]): string[] {
   const bad = verdicts.filter((v) => v.verdict === 'silent-zero')
   const absent = verdicts.filter((v) => v.verdict === 'absent')
-  if (bad.length === 0 && absent.length === 0) {
+  const retired = verdicts.filter((v) => v.verdict === 'retired')
+  if (bad.length === 0 && absent.length === 0 && retired.length === 0) {
     return [`${verdicts.length} feed/metric pairs checked — none reporting only zeros`]
   }
   const out: string[] = []
@@ -128,6 +175,13 @@ export function formatSilentZeroReport(verdicts: SilentZeroVerdict[]): string[] 
   if (absent.length) {
     out.push(`${absent.length} feed(s) with no rows at all:`)
     for (const v of absent) out.push(`  ${v.channel}.${v.metric}`)
+  }
+  if (retired.length) {
+    out.push(
+      `${retired.length} metric(s) RETIRED upstream — stored zeros are fabricated, not measured.`
+    )
+    out.push('  Nothing to chase; the pipeline stopped asking. Deleting the old rows is a decision, not a fix.')
+    for (const v of retired) out.push(`  ${v.channel}.${v.metric}: ${v.rows} stale rows, latest ${v.latest ?? '?'}`)
   }
   return out
 }

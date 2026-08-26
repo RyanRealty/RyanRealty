@@ -41,6 +41,14 @@ const SOURCE = 'gbp_performance_api_v1'
 const CHANNEL = 'gbp' as const
 
 /**
+ * How far back a default run re-pulls. Google's daily performance metrics are
+ * computed with a lag — measured 2026-08-26, Aug 21 had a value and Aug 22-26
+ * did not — so a window narrower than the lag collects nothing, forever. Ten
+ * days covers the observed five with room for a slow week.
+ */
+const GBP_REPORTING_LAG_DAYS = 10
+
+/**
  * Maps a GBP API metric enum to the snake_case metric name stored in
  * marketing_channel_daily. All metrics are at account scope (scope='account',
  * scope_id='') because the Performance API returns location-level aggregates.
@@ -70,6 +78,22 @@ export async function GET(request: NextRequest) {
       { error: e instanceof Error ? e.message : 'invalid date range' },
       { status: 400 }
     )
+  }
+
+  // Google's performance data lands roughly five days late: asking for
+  // yesterday returns a dated entry with no value at all. The daily cron did
+  // exactly that, every day, so every GBP row it ever wrote was a placeholder
+  // and the real numbers were never collected — the lag window had already
+  // moved on by the next run.
+  //
+  // So a default (unparameterised) run re-pulls a trailing window instead of
+  // one day. Upsert makes it idempotent: a day that was unread stays absent
+  // until Google computes it, then fills in on a later run. An explicit
+  // ?startDate/&endDate is honoured as given, for backfills.
+  const explicitRange = request.nextUrl.searchParams.has('startDate')
+  if (!explicitRange) {
+    const lagStart = new Date(Date.now() - GBP_REPORTING_LAG_DAYS * 86400_000)
+    startDate = lagStart.toISOString().slice(0, 10)
   }
 
   // The Performance API natively supports multi-day ranges in a single call,

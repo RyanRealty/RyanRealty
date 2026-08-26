@@ -85,3 +85,38 @@ platform, none null. Before: 5 account metrics that were all fabricated zeros.
 The lesson is the one the guard exists for. A fix that typechecks, passes its tests and reads
 correctly can still be wrong about the platform, and only the platform can say so. A commit
 message is a claim; the API response is the source.
+
+## The guard found a fifth system, and then a defect in itself — 2026-08-26
+
+**The guard was reading 1,000 rows of an 11,595-row window.** PostgREST caps a select at 1,000
+and the query had no pagination, so every verdict came from the OLDEST three days of a thirty-day
+window. It reported `latest 2026-07-28` on a metric that had been written minutes earlier. A
+truncated read presented as a complete one — the same class of defect the guard exists to catch,
+inside the guard. Fixed with ordered pagination; `.order()` is not optional, an unordered
+`range()` re-shuffles between requests and drops rows.
+
+**With the full window it immediately surfaced Google Business Profile: nine metrics, thirty days,
+every value zero.** Ryan Realty's listing is live and verified (`hasVoiceOfMerchant: true`). The
+API returns real numbers — mobile-search impressions of 3, 4, 11, 8, 2 for Aug 10–14, dates the
+table stored as 0.
+
+The cause is a reporting lag, not a retired metric. Google computes daily performance about five
+days late, and an uncomputed day comes back as a dated entry with **no `value` field at all**.
+The parse read `dv.value ?? '0'` and stored 0. The daily cron only ever asked for yesterday —
+always inside the lag — so the real number was never collected: by the next run the window had
+moved on and the placeholder was already written. **All 1,602 GBP rows were fabricated.**
+
+Two changes, because either alone leaves it broken:
+
+1. A missing value is UNREAD and is dropped, so the day stays absent and a later run can fill it.
+   An explicit `"0"` is a real measurement and is kept.
+2. A default cron run re-pulls a trailing ten days instead of one, wide enough to cover the lag.
+   Upsert makes it idempotent.
+
+Measured after: a 17-day request returns 12 real values and correctly drops the 5 lag days
+instead of inventing them.
+
+The pattern across all five systems is now unmistakable, and it is not "Meta changed their API".
+It is that **every one of these pipelines had a way to turn "I could not read this" into the
+number zero**, and zero is indistinguishable from a measurement. The fix is never a metric name.
+It is removing the coercion.

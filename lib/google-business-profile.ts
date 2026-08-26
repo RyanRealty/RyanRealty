@@ -59,7 +59,7 @@ interface GBPTimeSeries {
   }>
 }
 
-interface GBPPerformanceApiResponse {
+export interface GBPPerformanceApiResponse {
   timeSeries?: GBPTimeSeries
   error?: { message?: string; code?: number }
 }
@@ -119,19 +119,41 @@ async function fetchGBPMetricTimeSeries(
     )
   }
 
+  return parseGBPTimeSeries(json, metric)
+}
+
+/**
+ * Turn a Performance API response into points. Pure — no I/O — so the rule that
+ * matters here can be tested directly.
+ *
+ * THE RULE: a day Google has not finished computing comes back as a dated entry
+ * with NO `value` field at all, and its data lands about five days late. The old
+ * `parseInt(dv.value ?? '0', 10) || 0` turned every one of those into a stored 0.
+ * Because the daily cron only ever asked for yesterday — always inside the lag —
+ * EVERY GBP row it ever wrote was a placeholder, and the real numbers were never
+ * collected. Verified 2026-08-26: Aug 10-14 stored as 0 while the API returned
+ * 3, 4, 11, 8, 2 for those same dates.
+ *
+ * A missing value is UNREAD and is dropped, so the row stays absent and a later
+ * run can fill it. An explicit "0" is a real measurement and is kept.
+ */
+export function parseGBPTimeSeries(
+  json: GBPPerformanceApiResponse,
+  metric: GBPDailyMetric
+): GBPDailyMetricPoint[] {
   const datedValues = json.timeSeries?.datedValues ?? []
-  return datedValues
-    .filter((dv) => dv.date?.year && dv.date?.month && dv.date?.day)
-    .map((dv) => {
-      const y = dv.date!.year!
-      const m = String(dv.date!.month!).padStart(2, '0')
-      const d = String(dv.date!.day!).padStart(2, '0')
-      return {
-        date: `${y}-${m}-${d}`,
-        metric,
-        value: parseInt(dv.value ?? '0', 10) || 0,
-      }
-    })
+  const points: GBPDailyMetricPoint[] = []
+  for (const dv of datedValues) {
+    if (!dv.date?.year || !dv.date?.month || !dv.date?.day) continue
+    if (typeof dv.value !== 'string' || dv.value === '') continue
+    const parsed = Number.parseInt(dv.value, 10)
+    if (!Number.isFinite(parsed)) continue
+    const y = dv.date.year
+    const m = String(dv.date.month).padStart(2, '0')
+    const d = String(dv.date.day).padStart(2, '0')
+    points.push({ date: `${y}-${m}-${d}`, metric, value: parsed })
+  }
+  return points
 }
 
 /**

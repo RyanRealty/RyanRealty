@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { classifyFeed, formatSilentZeroReport, type FeedWindow } from './silent-zero'
+import { classifyFeed, formatSilentZeroReport, RETIRED_METRICS, type FeedWindow } from './silent-zero'
 
+// The generic fixture uses `reach`, a metric that is still LIVE. It used to use
+// `impressions` — the original real case — but that name is now classified
+// `retired`, because Meta removed it and its stored rows were never measured.
+// Reusing it here would test the retired path while claiming to test the
+// silent-zero path.
 const w = (over: Partial<FeedWindow> = {}): FeedWindow => ({
   channel: 'instagram',
-  metric: 'impressions',
+  metric: 'reach',
   rows: 90,
   total: 0,
   nonZeroRows: 0,
@@ -52,7 +57,7 @@ describe('formatSilentZeroReport', () => {
       classifyFeed(w({ channel: 'meta_page', metric: 'post_impressions' })),
       classifyFeed(w({ channel: 'youtube', metric: 'impressions', rows: 0, latest: null })),
     ]).join('\n')
-    expect(out).toContain('instagram.impressions')
+    expect(out).toContain('instagram.reach')
     expect(out).toContain('meta_page.post_impressions')
     expect(out).toContain('youtube.impressions')
     expect(out).toContain('ONLY ZEROS')
@@ -77,7 +82,9 @@ describe('KNOWN_DORMANT — the guard\'s first false positive', () => {
   })
 
   it('still flags channels that are NOT on the list', () => {
-    expect(classifyFeed(w({ channel: 'instagram', metric: 'impressions' })).verdict).toBe('silent-zero')
+    // `reach` is live on Instagram, so a run of zeros there is a real defect.
+    // (`impressions` is no longer the example: it is now classified `retired`.)
+    expect(classifyFeed(w({ channel: 'instagram', metric: 'reach' })).verdict).toBe('silent-zero')
   })
 
   it('dormant feeds do not appear in the report', () => {
@@ -92,3 +99,52 @@ describe('KNOWN_DORMANT — the guard\'s first false positive', () => {
   })
 })
 
+
+describe('retired metrics are named, not chased', () => {
+  // The distinction that matters: a DORMANT feed's zeros are real measurements
+  // of a quiet account. A RETIRED metric's zeros were never measured — the API
+  // 400d on the name and a 0 was written. Calling the second one "dormant"
+  // would assert the opposite of the truth.
+  const win = (channel: string, metric: string): FeedWindow => ({
+    channel, metric, rows: 30, total: 0, nonZeroRows: 0, latest: '2026-08-25',
+  })
+
+  it('classifies a retired metric as retired, never as a silent zero', () => {
+    const v = classifyFeed(win('instagram', 'impressions'))
+    expect(v.verdict).toBe('retired')
+    expect(v.note).toContain('retired')
+  })
+
+  it('says the stored rows were never measured', () => {
+    const v = classifyFeed(win('meta_page', 'post_impressions'))
+    expect(v.note).toContain('never measured')
+  })
+
+  it('retired outranks dormant so a channel-wide dormant rule cannot mislabel it', () => {
+    // If a retired metric ever sat on a KNOWN_DORMANT channel, "zeros are real"
+    // would be exactly backwards. Retired is checked first, on purpose.
+    const retiredKeys = Object.keys(RETIRED_METRICS)
+    expect(retiredKeys.length).toBeGreaterThan(0)
+    for (const key of retiredKeys) {
+      const [channel, metric] = key.split(':')
+      expect(classifyFeed(win(channel, metric)).verdict).toBe('retired')
+    }
+  })
+
+  it('a live metric on the same channel is still judged on its own merits', () => {
+    expect(classifyFeed(win('instagram', 'views')).verdict).toBe('silent-zero')
+    expect(classifyFeed({ ...win('instagram', 'views'), nonZeroRows: 12 }).verdict).toBe('healthy')
+  })
+
+  it('the report separates retired from a defect to chase', () => {
+    const lines = formatSilentZeroReport([
+      classifyFeed(win('instagram', 'impressions')),
+      classifyFeed(win('instagram', 'views')),
+    ])
+    const joined = lines.join('\n')
+    expect(joined).toContain('RETIRED')
+    expect(joined).toContain('ONLY ZEROS')
+    // The retired one must NOT be counted among the feeds to chase.
+    expect(joined).toContain('1 feed(s) landing on schedule and reporting ONLY ZEROS')
+  })
+})

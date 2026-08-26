@@ -181,13 +181,33 @@ async function main() {
   try {
     const WINDOW = 30
     const since = new Date(Date.now() - WINDOW * 86400_000).toISOString().slice(0, 10)
-    const { data: feedRows } = await sb
-      .from('marketing_channel_daily')
-      .select('channel,metric,value,date')
-      .gte('date', since)
+
+    // PAGINATE. PostgREST caps a select at 1000 rows, and this window holds
+    // ~11,600. Reading it unpaginated returned the OLDEST three days and the
+    // guard then judged a 30-day window from them — a truncated read reported
+    // as a complete one, which is the very defect class this section exists to
+    // catch. `.order()` is not optional: an unordered range() re-shuffles
+    // between requests and silently drops rows.
+    const PAGE = 1000
+    const feedRows: Array<{ channel: string; metric: string; value: number; date: string }> = []
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await sb
+        .from('marketing_channel_daily')
+        .select('channel,metric,value,date')
+        .gte('date', since)
+        .order('date', { ascending: true })
+        .order('channel', { ascending: true })
+        .order('metric', { ascending: true })
+        .range(from, from + PAGE - 1)
+      if (error) throw error
+      const page = (data ?? []) as typeof feedRows
+      feedRows.push(...page)
+      if (page.length < PAGE) break
+    }
+
     type Agg = { rows: number; total: number; nonZeroRows: number; latest: string | null }
     const byKey = new Map<string, Agg>()
-    for (const r of (feedRows ?? []) as Array<{ channel: string; metric: string; value: number; date: string }>) {
+    for (const r of feedRows) {
       const key = `${r.channel}\u0000${r.metric}`
       const a = byKey.get(key) ?? { rows: 0, total: 0, nonZeroRows: 0, latest: null }
       a.rows += 1
