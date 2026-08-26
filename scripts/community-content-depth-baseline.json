@@ -30,5 +30,13 @@
     "three-rivers": 758,
     "vandevert-ranch": 708,
     "widgi-creek": 752
+  },
+  "corrections": {
+    "awbrey-glen": {
+      "from": 624,
+      "to": 587,
+      "commit": "05917a61",
+      "reason": "Removed a claim that five neighbouring subdivisions are part of Awbrey Glen, and a second contradictory yardage for the course. The words came out because they were false; §0 outranks the word count."
+    }
   }
 }

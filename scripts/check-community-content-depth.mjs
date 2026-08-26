@@ -198,16 +198,42 @@ if (WRITE_BASELINE) {
   process.exit(0)
 }
 
-const baseline = existsSync(BASELINE_PATH)
-  ? JSON.parse(readFileSync(BASELINE_PATH, 'utf8')).words ?? {}
+const baselineFile = existsSync(BASELINE_PATH)
+  ? JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
   : {}
+const baseline = baselineFile.words ?? {}
+
+/**
+ * CORRECTIONS — the one way a count may legitimately go down.
+ *
+ * A pure ratchet makes deleting a false claim cost more than leaving it in,
+ * which puts this gate in direct conflict with §0. That is not theoretical: on
+ * 2026-08-26 the gate went red on main because commit 05917a61 removed Awbrey
+ * Glen's claim to five neighbouring subdivisions it does not contain, plus a
+ * second contradictory yardage for its course. Accuracy shrank the prose by 37
+ * words and the ratchet punished it. §0 outranks a word count, always.
+ *
+ * So a shrink is allowed ONLY when it is declared here with the exact before
+ * and after counts, the commit that caused it, and the reason. Declaring it is
+ * the point — a correction is a deliberate, reviewable act, and an undeclared
+ * shrink still fails. The counts must match exactly, so a correction entry
+ * cannot be left behind to license future thinning.
+ */
+const corrections = baselineFile.corrections ?? {}
 
 for (const [slug, words] of Object.entries(measured)) {
   const was = baseline[slug]
   if (was !== undefined && words < was) {
-    failures.push(
-      `data/resort-community-${slug}.json: about_prose shrank from ${was} to ${words} words. This ratchet only moves up.`
-    )
+    const c = corrections[slug]
+    const declared =
+      c && c.from === was && c.to === words && typeof c.reason === 'string' && c.reason.trim().length > 20
+    if (!declared) {
+      failures.push(
+        `data/resort-community-${slug}.json: about_prose shrank from ${was} to ${words} words. This ratchet only moves up.\n` +
+          `      If the words came out because they were WRONG, declare it in scripts/community-content-depth-baseline.json:\n` +
+          `        "corrections": { "${slug}": { "from": ${was}, "to": ${words}, "commit": "<sha>", "reason": "<what was false>" } }`
+      )
+    }
   }
   if (words < MIN_WORDS && (was === undefined || was >= MIN_WORDS)) {
     failures.push(
