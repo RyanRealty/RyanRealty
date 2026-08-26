@@ -38,7 +38,14 @@ export interface PlaceDocument {
   kind: PlaceDocumentKind
   /** Verbatim recording reference: '346-1105' (book-page) or '2007-36361'. */
   recordingRef: string
-  recordingType: 'book-page' | 'year-instrument' | 'unparsed'
+  recordingType: 'book-page' | 'year-instrument' | 'unparsed' | 'association-published'
+  /**
+   * Set only for association-published copies. These carry no clerk's stamp, so
+   * the publisher and the document's own date ARE the provenance — they stand
+   * in for the instrument number a recorded copy would show.
+   */
+  publisher: string | null
+  documentDate: string | null
   book: number | null
   page: number | null
   instrumentNumber: string | null
@@ -66,6 +73,8 @@ type LinkRow = {
     page?: number | null
     instrument_number?: string | null
     recording_year?: number | null
+    publisher?: string | null
+    document_date?: string | null
     county?: string | null
     storage_path?: string | null
     file_bytes?: number | string | null
@@ -79,7 +88,7 @@ type LinkRow = {
  * second opinion. Deeds, easements, liens and trust deeds live in the same
  * source bucket and are never governing documents.
  */
-const PUBLISHABLE_KINDS: readonly PlaceDocumentKind[] = [
+export const PUBLISHABLE_KINDS: readonly PlaceDocumentKind[] = [
   'ccr',
   'amendment',
   'bylaws',
@@ -103,6 +112,10 @@ const SOURCE_ATTRIBUTION: Record<string, { url: string; label: string }> = {
   deschutes_county_title: {
     url: 'https://deschutescountytitle.com/ccrs',
     label: 'Deschutes County Title',
+  },
+  caldera_springs_hoa: {
+    url: 'https://calderasprings.com/owners-association/',
+    label: "Caldera Springs Owners' Association",
   },
 }
 
@@ -128,8 +141,22 @@ export function sortPlaceDocuments(docs: PlaceDocument[]): PlaceDocument[] {
   })
 }
 
-/** "Book 346, Page 1105" / "Instrument 2007-36361" — the R7 face text. */
+/**
+ * The R7 face text — how this document identifies itself.
+ *
+ * Recorded copies say "Book 346, Page 1105" or "Instrument 2007-36361". An
+ * association-published copy has no clerk's stamp and therefore no instrument
+ * number, so it says who published it and what date the document carries.
+ * Different provenance, stated as what it actually is rather than dressed up as
+ * a recording.
+ */
 export function recordingLabel(d: PlaceDocument): string {
+  if (d.recordingType === 'association-published') {
+    const when = formatDocumentDate(d.documentDate)
+    if (d.publisher && when) return `Published by ${d.publisher} · ${when}`
+    if (d.publisher) return `Published by ${d.publisher}`
+    return 'Published by the association'
+  }
   if (d.recordingType === 'book-page' && d.book != null && d.page != null) {
     return `Book ${d.book}, Page ${d.page}`
   }
@@ -137,6 +164,18 @@ export function recordingLabel(d: PlaceDocument): string {
     return `Instrument ${d.instrumentNumber}`
   }
   return d.recordingRef
+}
+
+function formatDocumentDate(iso: string | null): string {
+  if (!iso) return ''
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return ''
+  const [, y, mo, dd] = m
+  // A bare "2026-01-01" on an association PDF usually means "the 2026 edition",
+  // not the first of January, so a January-1 date renders as the year alone.
+  if (mo === '01' && dd === '01') return y
+  const month = ['January','February','March','April','May','June','July','August','September','October','November','December'][Number(mo) - 1]
+  return `${month} ${Number(dd)}, ${y}`
 }
 
 export function documentKindLabel(kind: PlaceDocumentKind): string {
@@ -170,7 +209,7 @@ async function fetchPlaceDocuments(geoType: string, geoSlug: string): Promise<Pl
   const { data, error } = await supabase
     .from('place_document_link')
     .select(
-      'match_method, place_document!inner(id, source, published_name, doc_kind, recording_ref, recording_type, book, page, instrument_number, recording_year, county, storage_path, file_bytes, page_count)',
+      'match_method, place_document!inner(id, source, published_name, doc_kind, recording_ref, recording_type, book, page, instrument_number, recording_year, publisher, document_date, county, storage_path, file_bytes, page_count)',
     )
     .eq('geo_type', type)
     .eq('geo_slug', slug)
@@ -190,7 +229,9 @@ async function fetchPlaceDocuments(geoType: string, geoSlug: string): Promise<Pl
     const kind = d.doc_kind as PlaceDocumentKind
     if (!PUBLISHABLE_KINDS.includes(kind)) continue
     const recordingType =
-      d.recording_type === 'book-page' || d.recording_type === 'year-instrument'
+      d.recording_type === 'book-page' ||
+      d.recording_type === 'year-instrument' ||
+      d.recording_type === 'association-published'
         ? d.recording_type
         : 'unparsed'
     const attribution = SOURCE_ATTRIBUTION[d.source ?? '']
@@ -204,6 +245,8 @@ async function fetchPlaceDocuments(geoType: string, geoSlug: string): Promise<Pl
       page: d.page ?? null,
       instrumentNumber: d.instrument_number ?? null,
       recordingYear: d.recording_year ?? null,
+      publisher: (d.publisher ?? '').trim() || null,
+      documentDate: d.document_date ?? null,
       county: (d.county ?? 'Deschutes').trim(),
       sourceIndexUrl: attribution?.url ?? '',
       sourceLabel: attribution?.label ?? '',

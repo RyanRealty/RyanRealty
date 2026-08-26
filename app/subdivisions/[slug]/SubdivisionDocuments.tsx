@@ -38,6 +38,13 @@ export function SubdivisionDocuments({ displayName, documents }: Props) {
   const attribution = documents.find((d) => d.sourceIndexUrl)
   const declarations = documents.filter((d) => d.kind === 'ccr').length
   const amendments = documents.filter((d) => d.kind === 'amendment').length
+  // Two provenance stories can appear on one page: recorded county instruments,
+  // and copies the association publishes itself. The caveat has to describe
+  // whichever are actually here — telling a reader that an unstamped
+  // association PDF was "recorded in Deschutes County" would be false.
+  const hasRecorded = documents.some((d) => d.recordingType !== 'association-published')
+  const hasAssociation = documents.some((d) => d.recordingType === 'association-published')
+  const publisher = documents.find((d) => d.publisher)?.publisher ?? null
 
   return (
     <section className="section" id="documents" aria-label="Recorded documents">
@@ -106,10 +113,24 @@ export function SubdivisionDocuments({ displayName, documents }: Props) {
         </ul>
 
         <p style={{ fontSize: '.8rem', color: 'var(--navy-70)', margin: 0, maxWidth: '44rem' }}>
-          These are copies of instruments recorded in {county} County, Oregon. Oregon records are
-          indexed by party, document type and instrument number, not by subdivision, and nothing in
-          them marks a declaration as current or superseded. Later amendments may exist that are not
-          shown here. Confirm the governing chain through title before relying on it.
+          {hasRecorded ? (
+            <>
+              Documents marked with a book, page or instrument number are copies of instruments
+              recorded in {county} County, Oregon. Oregon records are indexed by party, document
+              type and instrument number, not by subdivision, and nothing in them marks a
+              declaration as current or superseded.{' '}
+            </>
+          ) : null}
+          {hasAssociation ? (
+            <>
+              Documents marked as published by {publisher ?? 'the association'} are the
+              association&apos;s own copies. They are not stamped by the county recorder, so they
+              carry no instrument number, and an association can replace a published file at any
+              time.{' '}
+            </>
+          ) : null}
+          Later amendments may exist that are not shown here. Confirm the governing chain through
+          title before relying on it.
           {attribution ? (
             <>
               {' '}

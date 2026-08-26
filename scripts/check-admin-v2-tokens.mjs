@@ -434,6 +434,10 @@ const SCAN_DIRS = [
   'app/admin/(protected)/operations',
   'app/admin/(protected)/performance',
   'app/admin/(protected)/photos',
+  // The R7 recorded-document review queue (2026-08-26). BARE DIR: page.tsx and
+  // actions.ts are the whole route, both born on the v2 language, so a new file
+  // under it is covered the day it lands.
+  'app/admin/(protected)/place-documents',
   'app/admin/(protected)/query-builder',
   'app/admin/(protected)/resort-communities',
   'app/admin/(protected)/search',

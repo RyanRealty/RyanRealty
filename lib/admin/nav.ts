@@ -246,6 +246,10 @@ export const DESTINATIONS: NavDestination[] = [
       { label: 'Guides', href: '/admin/guides', icon: 'files', capability: 'content.guides' },
       { label: 'Media library', href: '/admin/media', icon: 'folder-open', capability: 'content.media' },
       { label: 'Newsletters', href: '/admin/newsletters', icon: 'mail', capability: 'content.marketing' },
+      // The R7 review gate: recorded CC&Rs matched to plats by heuristic publish
+      // to subdivision pages only once a human agrees. content.communities is
+      // superuser-only, so this renders for the principal alone.
+      { label: 'Recorded documents', href: '/admin/place-documents', icon: 'file-search', capability: 'content.communities' },
       // Content library, Site pages, Email campaigns, Ad links live on the hub.
     ],
   },
