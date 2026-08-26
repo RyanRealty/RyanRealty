@@ -22,6 +22,11 @@ been invisible in review.
 
 ## R1 — Year-built range: percentiles, never min–max
 
+**Built 2026-08-26.** `get_place_character()` measures it, `lib/data/places/getPlaceCharacter.ts`
+decides what may be said, `components/site/PlaceCharacter.tsx` says it. Wired at all three
+grains. The sample floor and the copy live in the same file, and
+`lib/data/places/getPlaceCharacter.test.ts` holds the refusals.
+
 **Rule.** Publish the **10th to 90th percentile** of `year_built`, over rows where the value is
 between 1850 and 2030. Never `min`–`max`.
 
@@ -44,6 +49,11 @@ no denominator is not a fact.
 
 ## R2 — HOA dues: segment-scoped, never across property types
 
+**Built 2026-08-26**, same three files as R1. Dues are additionally measured over a
+36-month window rather than over a place's whole listing history: dues are a current
+fact, and a 2008 figure published as this year's median is a wrong number. The window's
+actual opening date rides along in the row so the copy states the real one.
+
 **Rule.** Compute median dues **within one property type**, and label the type. Never median
 `hoa_monthly` across a whole subdivision.
 
@@ -63,6 +73,11 @@ pages is not a rounding problem.
 ---
 
 ## R3 — HOA presence: report what was counted, never assert absence
+
+**Built 2026-08-26**, same three files as R1, and deliberately one notch stricter than
+this rule: a reported-yes count of ZERO is not published either. "0 of 161 listings that
+reported it have an HOA" is arithmetically a count and is read as "no HOA here", which is
+the sentence this rule exists to prevent.
 
 **Rule.** Publish as a count of what listings reported:
 *"9 of the 12 listings here that reported it have an HOA, median $145 a month (detached)."*

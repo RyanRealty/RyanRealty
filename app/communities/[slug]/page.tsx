@@ -135,6 +135,8 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import { PlaceDocuments } from '@/components/site/PlaceDocuments'
 import { PlacePropertyTypes } from '@/components/site/PlacePropertyTypes'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
+import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
+import { PlaceCharacter } from '@/components/site/PlaceCharacter'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { kbMoneyFull } from '@/components/site/kb/types'
@@ -311,6 +313,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly, publicMix,
     commOverlays,
     placeDocuments,
+    placeCharacter,
   ] = await Promise.all([
     // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -409,6 +412,18 @@ export default async function CommunityDetailPage({ params }: Props) {
       'comm:detachedOverlay',
     ),
       withTimeoutFallback(getPlaceDocuments('community', slug), [], 4000, 'comm:documents'),
+    // Build years + HOA, measured from member listings (PLACE_CONTENT_RULES
+    // R1/R2/R3). geo_type 'neighborhood', like every other market read on this
+    // page: boundaries holds no community polygons, so a resort community's
+    // membership lives under its neighborhood boundary. Measured 2026-08-26,
+    // community/sunriver has 0 member listings and neighborhood/sunriver has
+    // 10,228.
+    withTimeoutFallback(
+      getPlaceCharacter('neighborhood', neighborhoodSlug),
+      null,
+      4000,
+      'comm:character',
+    ),
   ])
   const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -924,6 +939,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           citySlug={citySlug ?? ''}
           rows={publicSegments}
         />
+        <PlaceCharacter placeName={publicName} character={placeCharacter} />
         <PlaceDocuments displayName={publicName} documents={placeDocuments} />
         <CommunityGolfLinks communitySlug={slug} communityName={publicName} />        <KbArticles
           posts={articlePosts}

@@ -63,7 +63,9 @@ import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
+import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
+import { PlaceCharacter } from '@/components/site/PlaceCharacter'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -405,7 +407,7 @@ export default async function SubdivisionPage({ params }: Props) {
   // RPC (fails soft to [] until the migration is applied); stats = the
   // market_stats_cache geo_type='subdivision' row when one exists (most plats
   // have none until the cache backfill — the section feature-detects both).
-  const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments] =
+  const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments, placeCharacter] =
     await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -423,6 +425,10 @@ export default async function SubdivisionPage({ params }: Props) {
           )
         : Promise.resolve([]),
       withTimeoutFallback(getPlaceDocuments('subdivision', slug), [], 4500, 'sub:documents'),
+      // Build years + HOA, measured from this plat's own member listings
+      // (PLACE_CONTENT_RULES R1/R2/R3). Same geo key as the documents read:
+      // place_membership carries subdivision membership under the URL slug.
+      withTimeoutFallback(getPlaceCharacter('subdivision', slug), null, 4500, 'sub:character'),
     ])
   const placeContext = subdivisionPlaceContext({ cityName, citySlug, displayName, slug })
   const peerPlats = peerPlatsForResort(resortSlug, slug)
@@ -573,6 +579,8 @@ export default async function SubdivisionPage({ params }: Props) {
           citySlug={citySlug}
           rows={mtCounts.extras}
         />
+
+        <PlaceCharacter placeName={displayName} character={placeCharacter} />
 
         <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />
 

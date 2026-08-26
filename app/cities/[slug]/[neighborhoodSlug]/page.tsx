@@ -121,6 +121,8 @@ import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSec
 import { PlaceDocuments } from '@/components/site/PlaceDocuments'
 import { PlacePropertyTypes } from '@/components/site/PlacePropertyTypes'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
+import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
+import { PlaceCharacter } from '@/components/site/PlaceCharacter'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
 import { buildNeighborhoodSchemas } from './neighborhood-schemas'
@@ -205,6 +207,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly, publicMix,
     nbhOverlays,
     placeDocuments,
+    placeCharacter,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     // Hot-path core figures (HUD, about facts, FAQ): a build timeout would
@@ -292,6 +295,17 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     // uses the resolved slug; using the raw param here would silently find
     // nothing and look exactly like "this place has no CC&Rs".
     withTimeoutFallback(getPlaceDocuments('neighborhood', metricNeighborhoodSlug), [], 4000, 'nbh:documents'),
+    // Build years + HOA, measured from member listings (PLACE_CONTENT_RULES
+    // R1/R2/R3). boundaryNeighborhoodSlug, NOT the metric slug: place_membership
+    // assigns neighborhood membership from the boundaries polygon, so the key
+    // is the prefixed GIS slug. Measured 2026-08-26, neighborhood/mountain-view
+    // has 0 member listings and neighborhood/bend-mountain-view has 11,663.
+    withTimeoutFallback(
+      getPlaceCharacter('neighborhood', boundaryNeighborhoodSlug),
+      null,
+      4000,
+      'nbh:character',
+    ),
   ])
   const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -653,6 +667,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           citySlug={citySlug}
           rows={publicSegments}
         />
+        <PlaceCharacter placeName={neighborhood.name} character={placeCharacter} />
         <PlaceDocuments displayName={neighborhood.name} documents={placeDocuments} />
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
         {/* Open houses + the feed are fetched city-wide (the MLS carries no
