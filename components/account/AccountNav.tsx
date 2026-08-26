@@ -21,6 +21,11 @@ const ACCOUNT_NAV_LINKS = [
   { href: '/account/notifications', label: 'Notifications' },
   { href: '/account/buying-preferences', label: 'Buying preferences' },
   { href: '/account/profile', label: 'Profile' },
+  // Most people saving homes also own one. The dashboard carried no way to ask
+  // what theirs is worth — a signed-in owner had to leave the portal and find
+  // /sell on their own (Matt 2026-08-26). External to /account on purpose: the
+  // valuation flow is its own funnel, not an account settings page.
+  { href: '/sell', label: 'Value my home' },
 ] as const
 
 export default function AccountNav() {
