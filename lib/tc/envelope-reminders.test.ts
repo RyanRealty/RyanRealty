@@ -143,3 +143,50 @@ describe('an invite that was never opened is retried in half an hour', () => {
     ).toEqual([])
   })
 })
+
+describe('the unopened retry backs off instead of drumming hourly', () => {
+  const base = {
+    recipientId: 'r1',
+    envelopeId: 'e1',
+    envelopeName: '022B',
+    envelopeStatus: 'sent',
+    remindersEnabled: true,
+    cycleId: 'c1',
+    createdBy: 'matt@ryan-realty.com',
+    propertyAddress: '2840 NE Sedalia Loop, Bend, OR 97701',
+    email: 'marketing@ryan-realty.com',
+    name: 'Marketing Test Lead',
+    role: 'Seller',
+    actionRequired: 'NeedsToSign',
+    completedAt: null,
+    declinedAt: null,
+    sentAt: null,
+    authTokenHash: 'hash',
+    viewedAt: null,
+  }
+  const now = Date.parse('2026-08-26T18:00:00Z')
+  const minsAgo = (n: number) => new Date(now - n * 60_000).toISOString()
+  const due = (linkEmailsSent: number, mins: number) =>
+    pickEnvelopeReminders([{ ...base, linkEmailsSent, lastRemindedAt: minsAgo(mins) }], now).length === 1
+
+  it('retries 30 minutes after the first invite', () => {
+    expect(due(1, 31)).toBe(true)
+    expect(due(1, 20)).toBe(false)
+  })
+
+  it('waits two hours before the second retry, not another hour', () => {
+    // 022B went out at 05:46 and was re-sent at 07:00, 08:01 and 09:01 before
+    // the cap stopped it. Three emails in three hours is not a reminder.
+    expect(due(2, 61)).toBe(false)
+    expect(due(2, 121)).toBe(true)
+  })
+
+  it('waits eight hours before the last one', () => {
+    expect(due(3, 200)).toBe(false)
+    expect(due(3, 481)).toBe(true)
+  })
+
+  it('stops entirely at the cap', () => {
+    expect(due(4, 10_000)).toBe(false)
+  })
+})

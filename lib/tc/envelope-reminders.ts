@@ -15,8 +15,15 @@
 import { isSignableRole, isValidEmail } from './signing'
 
 export const ENVELOPE_REMINDER_INTERVAL_MS = 48 * 60 * 60 * 1000
-/** Never opened: assume the mail may not have arrived and send another link. */
-export const ENVELOPE_INVITE_UNSEEN_RETRY_MS = 30 * 60 * 1000
+/**
+ * Never opened: assume the mail may not have arrived and send another link —
+ * then back off. The first retry is fast because a lost invite should not cost
+ * a live file a day. After that, silence is more likely a person who has not
+ * got to it than a message that vanished, and an hourly drip is what a real
+ * signer would call harassment. Watched happen on 022B: the half-hour rule
+ * re-sent at 07:00, 08:01 and 09:01 before the cap stopped it.
+ */
+export const ENVELOPE_INVITE_UNSEEN_BACKOFF_MS = [30 * 60 * 1000, 2 * 60 * 60 * 1000, 8 * 60 * 60 * 1000]
 /** Total signing links one recipient may be emailed before we stop and flag. */
 export const ENVELOPE_MAX_LINK_EMAILS = 4
 export const ENVELOPE_REMINDER_BATCH = 40
@@ -50,8 +57,12 @@ export function linkEmailBudgetSpent(candidate: { linkEmailsSent?: number }): bo
 }
 
 /** How long to wait before sending this recipient another link. */
-export function reminderWaitMs(candidate: { viewedAt: string | null }): number {
-  return candidate.viewedAt ? ENVELOPE_REMINDER_INTERVAL_MS : ENVELOPE_INVITE_UNSEEN_RETRY_MS
+export function reminderWaitMs(candidate: { viewedAt: string | null; linkEmailsSent?: number }): number {
+  if (candidate.viewedAt) return ENVELOPE_REMINDER_INTERVAL_MS
+  // One email out (the invite itself) still means the first retry is the fast one.
+  const sent = Math.max(0, candidate.linkEmailsSent ?? 0)
+  const step = Math.min(Math.max(0, sent - 1), ENVELOPE_INVITE_UNSEEN_BACKOFF_MS.length - 1)
+  return ENVELOPE_INVITE_UNSEEN_BACKOFF_MS[step]!
 }
 
 /** Recipients whose turn has started and who are due another link. */
