@@ -104,7 +104,9 @@ export function fbPostRows(date: string, posts: PagePost[]): MetricRow[] {
     }
     return dropUnread(base, [
       { metric: 'post_reactions_by_type_total', value: post.post_reactions_by_type_total },
+      { metric: 'post_reactions_like_total', value: post.post_reactions_like_total },
       { metric: 'post_clicks', value: post.post_clicks },
+      { metric: 'post_video_views', value: post.post_video_views },
     ])
   })
 }
@@ -113,18 +115,27 @@ export function fbPostRows(date: string, posts: PagePost[]): MetricRow[] {
 // Instagram — row builders
 // ---------------------------------------------------------------------------
 
-function igAccountRows(
+export function igAccountRows(
   date: string,
   igInsights: Awaited<ReturnType<typeof getIGAccountInsights>>
 ): MetricRow[] {
   const base = { date, channel: 'instagram' as const, scope: 'account' as const, scope_id: '', source: SOURCE }
-  return [
-    { ...base, metric: 'impressions', value: igInsights.impressions },
-    { ...base, metric: 'reach', value: igInsights.reach },
-    { ...base, metric: 'profile_views', value: igInsights.profile_views },
-    { ...base, metric: 'follower_count', value: igInsights.follower_count },
-    { ...base, metric: 'website_clicks', value: igInsights.website_clicks },
-  ]
+  // `impressions` is gone for good — Meta retired the name at v22. `views` is
+  // its replacement. A metric we could not read is DROPPED, not written as 0.
+  return dropUnread(base, [
+    { metric: 'views', value: igInsights.views },
+    { metric: 'reach', value: igInsights.reach },
+    { metric: 'profile_views', value: igInsights.profile_views },
+    { metric: 'website_clicks', value: igInsights.website_clicks },
+    { metric: 'accounts_engaged', value: igInsights.accounts_engaged },
+    { metric: 'total_interactions', value: igInsights.total_interactions },
+    { metric: 'likes', value: igInsights.likes },
+    { metric: 'comments', value: igInsights.comments },
+    { metric: 'shares', value: igInsights.shares },
+    { metric: 'saves', value: igInsights.saves },
+    { metric: 'new_followers', value: igInsights.new_followers },
+    { metric: 'follower_count', value: igInsights.follower_count },
+  ])
 }
 
 export function igMediaRows(date: string, media: IGMedia[]): MetricRow[] {

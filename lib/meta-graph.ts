@@ -742,14 +742,16 @@ export interface PagePost {
   permalink_url: string
   message: string
   /**
-   * post_impressions and post_engaged_users are retired (verified live
-   * 2026-08-26) with no replacement at this API version. What survives is
+   * post_impressions and post_engaged_users are retired, and so is every
+   * unique/organic variant of them — verified live 2026-08-26 by asking for
+   * each one alone. There is NO post-level reach or impressions at this API
+   * version, so we publish none rather than a stand-in. What survives is
    * clicks, reactions and video views. null = unread, never a fabricated 0.
    */
-  post_impressions: number | null
-  post_engaged_users: number | null
   post_reactions_by_type_total: number | null
+  post_reactions_like_total: number | null
   post_clicks: number | null
+  post_video_views: number | null
 }
 
 /**
@@ -777,7 +779,9 @@ export async function getPagePostsWithInsights(
   const postMetrics = [
     // post_impressions and post_engaged_users retired 2026-08-26 — asking for
     // either 400s the ENTIRE batch, which is what zeroed the metrics beside them.
+    // Every name below was verified to return 200 ALONE before being added.
     'post_reactions_by_type_total',
+    'post_reactions_like_total',
     'post_clicks',
     'post_video_views',
   ]
@@ -807,18 +811,18 @@ export async function getPagePostsWithInsights(
           created_time: post.created_time,
           permalink_url: post.permalink_url,
           message: (post.message ?? '').slice(0, 200),
-          post_impressions: insightMap['post_impressions'] ?? null,
-          post_engaged_users: insightMap['post_engaged_users'] ?? null,
           post_reactions_by_type_total: insightMap['post_reactions_by_type_total'] ?? null,
+          post_reactions_like_total: insightMap['post_reactions_like_total'] ?? null,
           post_clicks: insightMap['post_clicks'] ?? null,
+          post_video_views: insightMap['post_video_views'] ?? null,
         }
       } catch (err) {
         // §0 data-accuracy: a swallowed error used to write a SILENT false 0 to
-        // marketing_channel_daily with no trace. Log loudly so a corrupted row is
-        // auditable. (0-vs-null honesty needs a nullable value column + reporting
-        // aggregation change — tracked follow-up.)
+        // marketing_channel_daily with no trace. Every metric is now null — the
+        // caller DROPS a null rather than storing it, so a failed read leaves a
+        // gap that the silent-zero guard can see, not a zero that looks measured.
         console.error(
-          `[meta-graph] getPagePostsWithInsights: insights failed for post ${post.id}, recording 0 (UNVERIFIED)`,
+          `[meta-graph] getPagePostsWithInsights: insights failed for post ${post.id}; every metric recorded as unread (null), nothing written`,
           err instanceof Error ? err.message : err
         )
         return {
@@ -826,10 +830,10 @@ export async function getPagePostsWithInsights(
           created_time: post.created_time,
           permalink_url: post.permalink_url,
           message: (post.message ?? '').slice(0, 200),
-          post_impressions: null,
-          post_engaged_users: null,
           post_reactions_by_type_total: null,
+          post_reactions_like_total: null,
           post_clicks: null,
+          post_video_views: null,
         }
       }
     })
@@ -842,17 +846,69 @@ export async function getPagePostsWithInsights(
 
 export interface IGAccountInsightsDay {
   date: string
-  impressions: number
-  reach: number
-  profile_views: number
-  /** Snapshot: follower count as of end of day */
-  follower_count: number
-  website_clicks: number
+  /**
+   * Times the content was played or displayed. This REPLACES the retired
+   * `impressions` — Meta removed that name at v22, and because one dead name
+   * 400s the whole batch, asking for it zeroed every metric beside it.
+   */
+  views: number | null
+  reach: number | null
+  profile_views: number | null
+  website_clicks: number | null
+  accounts_engaged: number | null
+  total_interactions: number | null
+  likes: number | null
+  comments: number | null
+  shares: number | null
+  saves: number | null
+  /** Followers gained ON this day. `follower_count` at period=day is a delta. */
+  new_followers: number | null
+  /**
+   * Lifetime follower total. Read from the `followers_count` FIELD on the user
+   * object, NOT from insights: `follower_count` at period=lifetime is a 400
+   * ("periods (lifetime) are incompatible"), so the old snapshot call could
+   * never have returned anything.
+   */
+  follower_count: number | null
+}
+
+/**
+ * Instagram account metrics that must be asked for with `metric_type=total_value`
+ * and read off `total_value.value`. Verified against the live account 2026-08-26.
+ */
+const IG_TOTAL_VALUE_METRICS = [
+  'reach',
+  'views',
+  'profile_views',
+  'website_clicks',
+  'accounts_engaged',
+  'total_interactions',
+  'likes',
+  'comments',
+  'shares',
+  'saves',
+] as const
+
+interface IGTotalValueResponse extends MetaErrorBody {
+  data?: Array<{ name: string; period: string; total_value?: { value?: number }; id: string }>
+}
+
+interface IGUserFieldsResponse extends MetaErrorBody {
+  followers_count?: number
 }
 
 /**
  * Fetch Instagram Business account-level insights for a single calendar day.
- * `follower_count` is a snapshot metric queried at period=lifetime.
+ *
+ * Three INDEPENDENT reads, because the v22 API splits these into families that
+ * cannot be combined and because one failing read must not zero the others:
+ *
+ *   1. `metric_type=total_value` — the scalar family, read off `total_value.value`
+ *   2. `period=day` `follower_count` — a time series, read off `values[0].value`
+ *   3. the `followers_count` field on the user object — the lifetime total
+ *
+ * A metric we could not read comes back `null`, never 0. `null` means "not
+ * measured" and is dropped before write; a real 0 from the API still stores.
  */
 export async function getIGAccountInsights(
   accessToken: string,
@@ -865,38 +921,62 @@ export async function getIGAccountInsights(
   const since = Math.floor(sinceDate.getTime() / 1000)
   const until = Math.floor(untilDate.getTime() / 1000)
 
-  const dayMetrics = ['impressions', 'reach', 'profile_views', 'website_clicks']
-  const snapshotMetrics = ['follower_count']
+  const totals: Record<string, number> = {}
+  let newFollowers: number | null = null
+  let followerCount: number | null = null
 
-  const [dayData, snapshotData] = await Promise.all([
-    getJson<InsightsResponse>(
+  const [totalsResult, followersResult, profileResult] = await Promise.allSettled([
+    getJson<IGTotalValueResponse>(
       `${META_GRAPH_BASE}/${igUserId}/insights` +
-        `?metric=${dayMetrics.join(',')}&period=day` +
+        `?metric=${IG_TOTAL_VALUE_METRICS.join(',')}&metric_type=total_value&period=day` +
         `&since=${since}&until=${until}` +
         `&access_token=${encodeURIComponent(accessToken)}`
     ),
     getJson<InsightsResponse>(
       `${META_GRAPH_BASE}/${igUserId}/insights` +
-        `?metric=${snapshotMetrics.join(',')}&period=lifetime` +
+        `?metric=follower_count&period=day` +
+        `&since=${since}&until=${until}` +
         `&access_token=${encodeURIComponent(accessToken)}`
+    ),
+    getJson<IGUserFieldsResponse>(
+      `${META_GRAPH_BASE}/${igUserId}` +
+        `?fields=followers_count&access_token=${encodeURIComponent(accessToken)}`
     ),
   ])
 
-  const values: Record<string, number> = {}
-  for (const item of [...(dayData.data ?? []), ...(snapshotData.data ?? [])]) {
-    const v = item.values?.[0]
-    if (v !== undefined && typeof v.value === 'number') {
-      values[item.name] = v.value
+  if (totalsResult.status === 'fulfilled') {
+    for (const item of totalsResult.value.data ?? []) {
+      const v = item.total_value?.value
+      if (typeof v === 'number') totals[item.name] = v
     }
   }
 
+  if (followersResult.status === 'fulfilled') {
+    const v = followersResult.value.data?.[0]?.values?.[0]?.value
+    if (typeof v === 'number') newFollowers = v
+  }
+
+  if (profileResult.status === 'fulfilled') {
+    const v = profileResult.value.followers_count
+    if (typeof v === 'number') followerCount = v
+  }
+
+  const read = (name: string): number | null => (name in totals ? totals[name] : null)
+
   return {
     date,
-    impressions: values['impressions'] ?? 0,
-    reach: values['reach'] ?? 0,
-    profile_views: values['profile_views'] ?? 0,
-    follower_count: values['follower_count'] ?? 0,
-    website_clicks: values['website_clicks'] ?? 0,
+    views: read('views'),
+    reach: read('reach'),
+    profile_views: read('profile_views'),
+    website_clicks: read('website_clicks'),
+    accounts_engaged: read('accounts_engaged'),
+    total_interactions: read('total_interactions'),
+    likes: read('likes'),
+    comments: read('comments'),
+    shares: read('shares'),
+    saves: read('saves'),
+    new_followers: newFollowers,
+    follower_count: followerCount,
   }
 }
 
