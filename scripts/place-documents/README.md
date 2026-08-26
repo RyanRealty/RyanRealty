@@ -45,6 +45,7 @@ node --env-file=.env.local scripts/place-documents/classify.mjs
 node --env-file=.env.local scripts/place-documents/foreign-association.mjs --apply
 node --env-file=.env.local scripts/place-documents/regate.mjs
 node --env-file=.env.local scripts/place-documents/two-signal-publish.mjs --apply
+node --env-file=.env.local scripts/place-documents/book-page-stamp-publish.mjs --apply
 node --env-file=.env.local scripts/place-documents/backfill-geo-label.mjs
 npm run ci:place-documents
 ```
@@ -60,6 +61,7 @@ npm run ci:place-documents
 | `foreign-association` | Flags a document whose front matter names only associations foreign to the plat. This is what caught Crooked Horseshoe on Indian Ford Meadows |
 | `regate` | Applies the publish policy both ways: demotes anything that now fails, promotes exact matches whose document names the plat |
 | `two-signal-publish` | Clears parent matches carrying two independent confirmations |
+| `book-page-stamp-publish` | The same bar for the book-page era, where no instrument number exists: the recorder's volume-and-page stamp running across consecutive pages of the document itself |
 | `backfill-geo-label` | Stamps each link with its plat's `boundaries.geo_label`, so a listing page can match the label its own row carries instead of re-deriving the slug — see below |
 | `verify` | `ci:place-documents`. Asserts no published link is a non-governing instrument, unconfirmed-and-unreviewed, or unreachable from a listing page |
 
@@ -116,6 +118,40 @@ Three signals feed `name_confirmed`, in increasing order of strength:
 
 The clerk's own stamped type code (`D-CCR`, `D-BYLAWS`) outranks any inference
 drawn from title text and is tried first when classifying.
+
+## The book-page era's identity mark
+
+Signal 2 above is a year-instrument number, and the book-page era has none — so
+1,358 governing, name-confirmed parent links had no second signal available to
+them, which was most of the review queue. They have their own mark, and it is
+stronger than an instrument number: the recorder stamped the volume and page on
+**every page**, and the page number increments. `book-page-stamp-publish.mjs`
+requires the index's book and page on one OCR'd page and the same book with the
+next page on the page after it — Chuckanut Estates 276-28 reads `VOL 276 PACE
+28` then `VOL 276 PACE: 29`.
+
+The increment is the whole point. A declaration is full of book-and-page
+references to other instruments ("recorded in Volume 235, Page 835"), so a
+single reference proves nothing about which document you are holding. Only the
+recorder's own header walks forward one page at a time. Measured over the 1,159
+book-page documents with OCR: 0 fires in 3,476,975 (document, synthetic
+reference) pairs, and 7 fires in 1,289,967 (document, every other real
+reference) pairs — all seven a stamp the document physically carries, from a
+re-recording that bears two stamp sequences or an adjacent-page instrument.
+Never once did the matcher invent a stamp that is not on the page.
+
+A fuzzy book number was tried, to recover OCR manglings like `BOOK 3222 PAGE
+190` for 322-190. It recovers 26 documents and produces 38 cross-subdivision
+false fires — 233-710 "Meadow Village" answering to 293-710 "West Ridge" and 37
+more of that shape. The book number is matched exactly and the manglings go to a
+human.
+
+**The stamp proves identity, not governance**, so this script also holds a link
+whose document names a different phase than the plat: a declaration titled
+ROCKWOOD ESTATES PHASE IV does not publish onto `rockwood-estates-phase-ii`.
+`two-signal-publish.mjs` does not make that check, and 99 links it published sit
+on a plat whose phase their own document contradicts — an open item, not
+something this script changed.
 
 ## OCR text is never page copy
 

@@ -212,16 +212,38 @@ CC&R to review, while a false pass puts a wrong CC&R on a page.
 The clerk's own stamped document-type code (`D-CCR`, `D-BYLAWS`) outranks any inference from
 title text and is tried first.
 
+**A parent match clears without a human only on two independent confirmations.** The document's
+own text names the place, AND the county's recording mark says this is the instrument the index
+filed. For a year-instrument recording that mark is the stamped instrument number
+(`two-signal-publish.mjs`). The book-page era has no instrument number, so it uses the mark it
+does have — the volume and page the recorder stamped on **every page**, which increments
+(`book-page-stamp-publish.mjs`). Requiring the index's book and page on one OCR'd page and the
+same book with the next page on the page after it is what separates a stamp from a recital: a
+declaration is full of references to other instruments, but only the recorder's header walks
+forward one page at a time. Measured over 1,159 book-page documents: 0 fires in 3,476,975
+(document, synthetic reference) pairs; 7 in 1,289,967 (document, every other real reference)
+pairs, every one of them a stamp the document physically carries.
+
+**Open item — the stamp proves identity, not governance.** A declaration titled ROCKWOOD ESTATES
+PHASE IV is genuinely the instrument the index filed, and the parent match would still fan it
+across all four Rockwood phases. `book-page-stamp-publish.mjs` holds a link whose document names
+a different phase than the plat; `two-signal-publish.mjs` does not, and **99 links it published
+sit on a plat whose phase their own document contradicts**. Matt's call whether a phase-specific
+declaration belongs on its sibling phases at all.
+
 **OCR text is never rendered as page copy.** Vision misreads microfilm-era type badly enough
 that a quoted covenant would risk misstating a legal restriction. It is used for
 classification, verification and search only.
 
 | Match | Plats | Treatment |
 |---|---:|---|
-| Exact name, document self-confirms | 391 | published |
-| Parent (phase → declaration), or unconfirmed | 745 | `pending_review` at `/admin/place-documents` |
+| At least one document cleared to publish | 1,072 | published |
+| Pending only — unconfirmed, or an uncleared parent inference | 107 | `pending_review` at `/admin/place-documents` |
 | Ambiguous parent | 0 | rejected — a guess is not a match |
-| No CC&R in the index | 2,044 | no documents section |
+| No CC&R in the index | 2,039 | no documents section |
+
+Measured 2026-08-26 over all 3,218 `geo_type='subdivision'` plats: 4,220 published
+links, 2,506 pending. Re-measure rather than quoting these — the pipeline moves them.
 
 Standing check: `scripts/place-documents/verify.mjs` (`ci:place-documents`). It exists because
 the trigger fires on the link, not the document — a document reclassified after its link was
