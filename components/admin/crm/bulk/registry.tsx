@@ -36,6 +36,7 @@ import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-
 import { getFiltersSummary } from '@/lib/search-filters'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
+import { SaveAsTemplateButton } from '@/components/admin/crm/SaveAsTemplateDialog'
 import {
   AttachmentChips,
   AttachmentControl,
@@ -329,7 +330,15 @@ function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohort
         </span>
       </div>
       <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
-      <BatchTestSend selection={ctx.selection} value={value} />
+      <div className="flex flex-wrap items-center gap-2">
+        <BatchTestSend selection={ctx.selection} value={value} />
+        {/* Same dialog the one-to-one composer uses, so a batch you built once
+            joins the same template list rather than a parallel one. Merge tokens
+            are stored as tokens, which is what makes it reusable. */}
+        {!value.templateId && value.subject.trim() && value.body.trim() ? (
+          <SaveAsTemplateButton channel="email" subject={value.subject} body={value.body} />
+        ) : null}
+      </div>
       {/* Empty means send now, which is what Run has always done. The backend
           (crm_scheduled_sends + the crm-scheduled-sends cron) already existed
           and only /admin/email/compose could reach it. */}
