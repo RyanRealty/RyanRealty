@@ -903,10 +903,18 @@ export interface IGMedia {
   media_url: string
   permalink: string
   caption: string
-  impressions: number
-  reach: number
-  engagement: number
-  saved: number
+  /**
+   * Meta retired `impressions` for IG media at Graph v22 — the API answers
+   * "the impressions metric is no longer supported for the queried media"
+   * (verified live 2026-08-26). `views` is the replacement and is what the
+   * platform itself now reports. null means the metric could not be read;
+   * it is NEVER 0, because a fabricated 0 is indistinguishable from a real
+   * one and had been silently filling this table for months.
+   */
+  views: number | null
+  reach: number | null
+  total_interactions: number | null
+  saved: number | null
 }
 
 /**
@@ -932,7 +940,10 @@ export async function getIGMediaWithInsights(
 
   if (recentMedia.length === 0) return []
 
-  const insightMetrics = ['impressions', 'reach', 'engagement', 'saved']
+  // Verified live against the Graph API 2026-08-26. `impressions` and
+  // `engagement` now 400 with "(#100) The value must be a valid insights metric";
+  // these five return 200.
+  const insightMetrics = ['views', 'reach', 'saved', 'shares', 'total_interactions']
 
   return Promise.all(
     recentMedia.map(async (media): Promise<IGMedia> => {
@@ -954,16 +965,19 @@ export async function getIGMediaWithInsights(
           media_url: media.media_url ?? '',
           permalink: media.permalink,
           caption: (media.caption ?? '').slice(0, 200),
-          impressions: insightMap['impressions'] ?? 0,
-          reach: insightMap['reach'] ?? 0,
-          engagement: insightMap['engagement'] ?? 0,
-          saved: insightMap['saved'] ?? 0,
+          views: insightMap['views'] ?? null,
+          reach: insightMap['reach'] ?? null,
+          total_interactions: insightMap['total_interactions'] ?? null,
+          saved: insightMap['saved'] ?? null,
         }
       } catch (err) {
         // §0 data-accuracy: log the failure instead of silently writing a false 0
         // to marketing_channel_daily (see getPagePostsWithInsights above).
+        // §0: a metric we could not read is null, not 0. The caller drops null
+        // rows rather than writing a number nobody measured — the defect that
+        // put 869 days of false zeros into marketing_channel_daily.
         console.error(
-          `[meta-graph] getIGMediaWithInsights: insights failed for media ${media.id}, recording 0 (UNVERIFIED)`,
+          `[meta-graph] getIGMediaWithInsights: insights failed for media ${media.id}, recording null`,
           err instanceof Error ? err.message : err
         )
         return {
@@ -973,10 +987,10 @@ export async function getIGMediaWithInsights(
           media_url: media.media_url ?? '',
           permalink: media.permalink,
           caption: (media.caption ?? '').slice(0, 200),
-          impressions: 0,
-          reach: 0,
-          engagement: 0,
-          saved: 0,
+          views: null,
+          reach: null,
+          total_interactions: null,
+          saved: null,
         }
       }
     })

@@ -110,7 +110,7 @@ function igAccountRows(
   ]
 }
 
-function igMediaRows(date: string, media: IGMedia[]): MetricRow[] {
+export function igMediaRows(date: string, media: IGMedia[]): MetricRow[] {
   return media.flatMap((m): MetricRow[] => {
     const base = {
       date,
@@ -126,12 +126,20 @@ function igMediaRows(date: string, media: IGMedia[]): MetricRow[] {
         timestamp: m.timestamp,
       },
     }
-    return [
-      { ...base, metric: 'impressions', value: m.impressions },
-      { ...base, metric: 'reach', value: m.reach },
-      { ...base, metric: 'engagement', value: m.engagement },
-      { ...base, metric: 'saved', value: m.saved },
+    // A metric we could not read is DROPPED, not written as 0. marketing_channel_daily.value
+    // is NOT NULL, so the only honest way to say "unmeasured" is the absence of a row —
+    // and a missing row reads correctly downstream ("no rows for impressions in this
+    // window") while a 0 lies. `impressions` and `engagement` are gone: Meta retired
+    // them for IG media at v22, and `views` / `total_interactions` replace them.
+    const candidates: Array<{ metric: string; value: number | null }> = [
+      { metric: 'views', value: m.views },
+      { metric: 'reach', value: m.reach },
+      { metric: 'total_interactions', value: m.total_interactions },
+      { metric: 'saved', value: m.saved },
     ]
+    return candidates
+      .filter((c): c is { metric: string; value: number } => c.value != null)
+      .map((c) => ({ ...base, metric: c.metric, value: c.value }))
   })
 }
 
