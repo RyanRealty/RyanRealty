@@ -72,6 +72,35 @@ export const KNOWN_DORMANT: Record<string, string> = {
   'tiktok:*':
     'verified 2026-08-26: 3 videos, 15 followers, none posted inside the cron 30-day lookback, so ' +
     'no per-video rows are produced. following_count is 0 because the account follows nobody. Idle, not broken.',
+
+  // The three below are MEASURED zeros, and the distinction is provable rather
+  // than assumed: since the lag fix, a day Google has not computed is DROPPED.
+  // So a stored GBP row exists only because Google returned an explicit "0".
+  // Their neighbours on the same calls carry real numbers over the same window
+  // (mobile_search 306, desktop_search 88, direction_requests 48), which rules
+  // out a broken call.
+  'gbp:business_bookings':
+    'verified 2026-08-26: Google returns an explicit "0" across 52 days. The listing has no ' +
+    'booking integration, so there is nothing to count. Real zero.',
+  'gbp:business_conversations':
+    'verified 2026-08-26: explicit "0" across 52 days. Business messaging is not enabled on the ' +
+    'listing. Real zero.',
+  'gbp:call_clicks':
+    'verified 2026-08-26: explicit "0" across 52 days, while website_clicks on the same window is ' +
+    '18 and direction_requests is 48. Nobody taps call from the listing. Real zero.',
+
+  // Instagram/Facebook post engagement, verified against the live API 2026-08-26:
+  // the same calls returned views 27/43/26/55 and reach 16/24/18/35 on those very
+  // posts, so the calls work and the accounts are simply not being engaged with.
+  'instagram:saved':
+    'verified 2026-08-26 on the live API: saved=0 on all 5 recent media, while views (27/43/26/55) ' +
+    'and reach (16/24/18/35) on the same call are real. Nobody is saving the posts. Real zero.',
+  'meta_page:post_clicks':
+    'verified 2026-08-26 on the live API: 0 across all 10 recent posts, while post_video_views on ' +
+    'the same call is non-zero on two of them. Real zero.',
+  'meta_page:post_reactions_by_type_total':
+    'verified 2026-08-26 on the live API: the reactions object comes back EMPTY ({}) for all 10 ' +
+    'recent posts, which sums to a true 0 rather than a failed read. Real zero.',
 }
 
 /**
