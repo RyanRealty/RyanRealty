@@ -5,7 +5,7 @@
  *   Zero competing brokers on this SERP. Every page-1 result is either a
  *   tourism directory (centraloregon.golf, visitcentraloregon.com,
  *   nwgolfmaps.com) or a single resort. Three exploitable gaps:
- *     1. No editorial voice helping first-timers pick from 30 courses.
+ *     1. No editorial voice helping first-timers pick from the full course list.
  *     2. No architect-grouped cross-cut even though McLay Kidd / Nicklaus /
  *        Fazio / Weiskopf / Fought / Cupp / RTJ Jr designed Central Oregon
  *        courses — huge SERP wedge nobody owns.
@@ -32,7 +32,7 @@ import {
   type GolfCourse,
   type CourseAccess,
 } from '@/data/golf/courses'
-import { coursesByArchitect } from '@/data/golf/architects'
+import { GOLF_ARCHITECTS, coursesByArchitect } from '@/data/golf/architects'
 import { architectPhotoFor } from '@/data/golf/architect-photos'
 import { GOLF_SEASON } from '@/data/golf/seasons'
 import { INSIDER_NOTES } from '@/data/golf/insider-notes'
@@ -53,15 +53,20 @@ export const revalidate = 21600 // 6h
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
+// Counts are DERIVED, never typed. The page shipped "30 courses" in four places
+// and "27 named courses" in a fifth while data/golf/courses.ts held 26, and
+// "14 architects" against a roster of 15 (CLAUDE.md §0). A hand-typed count is a
+// number without a source; these read the arrays the page itself renders.
+const COURSE_COUNT = GOLF_COURSES.length
+const ARCHITECT_COUNT = GOLF_ARCHITECTS.filter((a) => a.name !== 'Other').length
+
 export const metadata: Metadata = {
   title: 'Central Oregon golf, every course by architect',
-  description:
-    "30 courses across Bend, Sunriver, Sisters, Redmond, Powell Butte. Grouped by designer, mapped, and tied to the community you'd live in if you played here every week.",
+  description: `${COURSE_COUNT} courses across Bend, Sunriver, Sisters, Redmond, Powell Butte. Grouped by designer, mapped, and tied to the community you'd live in if you played here every week.`,
   alternates: { canonical: `${siteUrl}/lp/central-oregon-golf/` },
   openGraph: {
     title: 'Central Oregon golf, every course by architect',
-    description:
-      "30 courses, 14 architects, 300 days of sunshine. The full Central Oregon golf brief, plus where to live if you'd play here every week.",
+    description: `${COURSE_COUNT} courses, ${ARCHITECT_COUNT} architects, high-desert sun. The full Central Oregon golf brief, plus where to live if you'd play here every week.`,
     type: 'website',
     url: `${siteUrl}/lp/central-oregon-golf/`,
     images: [
@@ -76,7 +81,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Central Oregon golf, every course by architect',
-    description: '30 courses, 14 architects, 300 days of sunshine.',
+    description: `${COURSE_COUNT} courses, ${ARCHITECT_COUNT} architects, high-desert sun.`,
     images: [`${siteUrl}/lp/central-oregon-golf/img/tetherow-hero.jpg`],
   },
   robots: { index: false, follow: false },
@@ -266,9 +271,9 @@ function HeroSection() {
         <div className="golf-hero__eyebrow">CENTRAL OREGON · GOLF</div>
         <h1 className="golf-hero__h1">Central Oregon golf, by the architects who built it.</h1>
         <p className="golf-hero__sub">
-          27 named courses. McLay Kidd, Nicklaus, Fazio, RTJ Jr, Weiskopf, Fought. 3,600 feet of
-          elevation. 300 days of sunshine. The eight destination courses, the season window
-          next to Bandon, and the Cascade back-nine views at Tetherow and Pronghorn.
+          {COURSE_COUNT} named courses. McLay Kidd, Nicklaus, Fazio, RTJ Jr, Weiskopf, Fought.
+          3,600 feet of elevation. The eight destination courses, the season window
+          next to Bandon, and the Cascade back-nine views at Tetherow and Juniper Preserve.
         </p>
         <div className="golf-hero__cta-row">
           <Link
@@ -317,7 +322,7 @@ function IntroSection() {
             four times. The terrain writes the shots.
           </p>
           <p>
-            <strong>The climate.</strong> 300 days of sunshine, low humidity, cool nights. Even in
+            <strong>The climate.</strong> Low humidity, cool nights. Even in
             July the morning round is sweater weather. The high-desert dry hardens the fairways
             mid-summer and the ground game opens up. Links rules in the high desert.
           </p>
@@ -425,7 +430,7 @@ function ByArchitectSection() {
         <div className="golf-eyebrow">Who designed what</div>
         <h2 className="golf-h2">By architect.</h2>
         <p className="golf-lede">
-          Same 30 courses, grouped by the designer who routed them. The Pacific NW does not have
+          Same {COURSE_COUNT} courses, grouped by the designer who routed them. The Pacific NW does not have
           another concentration of national-name architects like this.
         </p>
 
@@ -609,7 +614,7 @@ function WhereToLiveSection({
       pitch: 'You play Nicklaus. The Fazio is next door if you can get a member to walk you on.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/pronghorn-01.jpg',
-      imageAlt: 'Pronghorn Resort with the Nicklaus signature course',
+      imageAlt: 'Juniper Preserve (formerly Pronghorn Resort) with the Nicklaus signature course',
     },
     sunriver: {
       name: 'Sunriver',
@@ -641,7 +646,7 @@ function WhereToLiveSection({
     },
     'brasada-ranch': {
       name: 'Brasada Ranch',
-      pitch: 'Hardy & Jacobsen 18 with no two holes parallel. 25 minutes east of Bend, 300 days of sunshine.',
+      pitch: 'Hardy & Jacobsen 18 with no two holes parallel. 25 minutes east of Bend.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/brasada-02.jpg',
       imageAlt: 'Brasada Ranch residences along Brasada Canyons',

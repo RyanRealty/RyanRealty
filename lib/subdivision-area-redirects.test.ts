@@ -94,17 +94,29 @@ describe('resolveSubdivisionAreaRedirect', () => {
     const entries = subdivisionAreaRedirectEntries()
     const keys = new Set(entries.map(([k]) => k))
 
-    it('every destination is a single absolute /communities/* or /cities/bend/* path', () => {
+    // /subdivisions/* and /homes-for-sale/* joined the allowed destinations on
+    // 2026-08-26. A marketing AREA name goes to a community or city page, but a
+    // plat ALIAS has to land on the plat itself — the county records The Farm as
+    // "Farm (the)", slug farm-the — or, when the MLS name spans several plats
+    // (Shevlin Bluffs is three), on the browse pair that carries all of them.
+    it('every destination is a single absolute path in the allowed set', () => {
+      const ALLOWED = ['/communities/', '/cities/bend/', '/subdivisions/', '/homes-for-sale/']
       for (const [, dest] of entries) {
-        expect(dest.startsWith('/communities/') || dest.startsWith('/cities/bend/')).toBe(true)
+        expect(ALLOWED.some((p) => dest.startsWith(p))).toBe(true)
+        expect(dest.split('?')[0].endsWith('/')).toBe(false)
       }
     })
 
     it('no destination is itself a redirect key (no chains / loops)', () => {
       for (const [, dest] of entries) {
-        // strip the leading slug segment of the dest and confirm the FULL dest
-        // path is never also a source key the middleware would re-process.
+        // The FULL dest path is never a source key.
         expect(keys.has(dest)).toBe(false)
+        // And — the case that matters now that /subdivisions/* is a legal
+        // destination — the dest's own SLUG is never a key either, or the
+        // middleware would 308 the hop it just served into a second hop.
+        if (dest.startsWith('/subdivisions/')) {
+          expect(keys.has(dest.slice('/subdivisions/'.length))).toBe(false)
+        }
       }
     })
 

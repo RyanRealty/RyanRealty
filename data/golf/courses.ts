@@ -1,14 +1,25 @@
 /**
  * Central Oregon golf course inventory.
  *
- * Data source: out/golf-lp-research/research-notes.md §3 (verified 2026-05-22).
- * Coordinates: approximations for v1 map; refine against Google Geocoding API
- * once the maps regression is resolved.
+ * SOURCE OF RECORD: data/golf/SOURCES.md (committed, next to this file).
  *
- * Per CLAUDE.md §0 Data Accuracy, every figure here traces to a primary
- * source documented in the research file. Green-fee bands deliberately
- * omitted where we can't verify from a course-page primary source —
- * "verify with the course" is the only ship-safe default.
+ * par / yardsBackTees come from the USGA National Course Rating Database, verified
+ * per course on 2026-08-26; yardsBackTees is the LONGEST rated men's tee. The
+ * previous header cited out/golf-lp-research/research-notes.md — gitignored scratch
+ * that no longer exists, so no figure here had a retrievable trace. The audit that
+ * replaced it corrected 13 of 26 rows.
+ *
+ * designer / yearOpened are NOT yet audited: USGA publishes neither, and only five
+ * rows have been confirmed against the course's own site (see SOURCES.md). Do not
+ * treat those two fields as verified.
+ *
+ * This data is public-facing (the golf LP, 26 sitemap-submitted /central-oregon/golf
+ * detail pages, and the FAQ + JSON-LD in lib/golf-format.ts), so CLAUDE.md §0
+ * applies: change a number here only with a source, and record it in SOURCES.md.
+ *
+ * Coordinates: approximations for v1 map; refine against Google Geocoding API
+ * once the maps regression is resolved. Green-fee bands deliberately omitted where
+ * we can't verify from a course-page primary source.
  */
 
 export type CourseAccess =
@@ -108,7 +119,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Bend (NE)',
     holes: 18,
     par: 72,
-    yardsBackTees: 7470,
+    yardsBackTees: 7456,
     designer: 'Tom Fazio',
     designerSlug: 'tom-fazio',
     yearOpened: 2007,
@@ -164,7 +175,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Sunriver',
     holes: 18,
     par: 72,
-    yardsBackTees: 6932,
+    yardsBackTees: 6947,
     designer: 'Robert Trent Jones Jr.',
     designerSlug: 'robert-trent-jones-jr',
     yearOpened: 1981,
@@ -181,6 +192,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Sunriver / Caldera Springs',
     holes: 9,
     par: 27,
+    yardsBackTees: 1142,
     designer: 'Bob Cupp & Jim Ramey',
     designerSlug: 'cupp-fought',
     yearOpened: 2007,
@@ -198,13 +210,13 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Sisters',
     holes: 18,
     par: 72,
-    yardsBackTees: 7002,
+    yardsBackTees: 6946,
     designer: 'Robert Muir Graves',
     designerSlug: 'robert-muir-graves',
     yearOpened: 1972,
     access: 'resort',
     signature:
-      '7,000+ yards from championship tees. Towering ponderosa and expansive fairways below Black Butte itself.',
+      '6,946 yards from championship tees. Towering ponderosa and expansive fairways below Black Butte itself.',
     lat: 44.3785,
     lng: -121.6239,
     communitySlug: 'black-butte-ranch',
@@ -217,7 +229,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Sisters',
     holes: 18,
     par: 72,
-    yardsBackTees: 7007,
+    yardsBackTees: 6903,
     designer: 'John Fought (2012 renovation)',
     designerSlug: 'john-fought',
     yearOpened: 1980,
@@ -255,12 +267,12 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Redmond',
     holes: 18,
     par: 72,
-    yardsBackTees: 6673,
+    yardsBackTees: 6672,
     designer: 'Gene "Bunny" Mason',
     designerSlug: 'bunny-mason',
     yearOpened: 1986,
     access: 'resort',
-    signature: '6,673 yards from the tips. The original Eagle Crest course.',
+    signature: '6,672 yards from the tips. The original Eagle Crest course.',
     lat: 44.3196,
     lng: -121.2461,
     communitySlug: 'eagle-crest',
@@ -271,8 +283,8 @@ export const GOLF_COURSES: GolfCourse[] = [
     shortName: 'Eagle Crest Ridge',
     city: 'Redmond',
     holes: 18,
-    par: 71,
-    yardsBackTees: 6927,
+    par: 72,
+    yardsBackTees: 6965,
     designer: 'John Thronson & Bunny Mason',
     designerSlug: 'bunny-mason',
     yearOpened: 1993,
@@ -290,6 +302,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Redmond',
     holes: 18,
     par: 63,
+    yardsBackTees: 4187,
     designer: 'John Thronson',
     designerSlug: 'bunny-mason',
     yearOpened: 1995,
@@ -324,7 +337,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Bend',
     holes: 18,
     par: 72,
-    yardsBackTees: 6905,
+    yardsBackTees: 6763,
     designer: 'Robert Muir Graves',
     designerSlug: 'robert-muir-graves',
     yearOpened: 1989,
@@ -342,7 +355,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Bend',
     holes: 18,
     par: 72,
-    yardsBackTees: 6647,
+    yardsBackTees: 6562,
     designer: 'Robert Muir Graves',
     designerSlug: 'robert-muir-graves',
     yearOpened: 1987,
@@ -376,7 +389,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Redmond',
     holes: 18,
     par: 72,
-    yardsBackTees: 7200,
+    yardsBackTees: 7186,
     designer: 'John Harbottle III',
     designerSlug: 'john-harbottle-iii',
     yearOpened: 2005,
@@ -393,7 +406,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'La Pine',
     holes: 18,
     par: 72,
-    yardsBackTees: 6859,
+    yardsBackTees: 6897,
     designer: 'Jim Ramey',
     designerSlug: 'cupp-fought',
     yearOpened: 1991,
@@ -409,7 +422,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Prineville',
     holes: 18,
     par: 72,
-    yardsBackTees: 6841,
+    yardsBackTees: 6783,
     designer: 'Bill Robinson',
     designerSlug: 'bill-robinson',
     yearOpened: 1993,
@@ -442,6 +455,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Redmond',
     holes: 18,
     par: 58,
+    yardsBackTees: 3426,
     designer: 'Robert Muir Graves',
     designerSlug: 'robert-muir-graves',
     yearOpened: 1995,
@@ -475,7 +489,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     city: 'Bend',
     holes: 18,
     par: 72,
-    yardsBackTees: 7000,
+    yardsBackTees: 7010,
     designer: 'H. Chandler Egan & Bob Baldock',
     designerSlug: 'egan-baldock',
     yearOpened: 1925,

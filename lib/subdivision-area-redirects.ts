@@ -69,6 +69,25 @@ function buildRedirectMap(): Map<string, string> {
     if (c.city_slug) map.set(`${c.city_slug}-${c.slug}`, dest) // 'bend-tetherow'
   }
 
+  // MLS / marketing plat names whose canonical home is slugged differently in
+  // the county plat data, or which span several plats. Added 2026-08-26 after
+  // 05917a61 removed these from Awbrey Glen's subdivision_aliases: they had been
+  // reachable ONLY through that (false) alias list, so dropping it left
+  // /subdivisions/the-farm serving a hollow 200 with no <title> and no <h1> —
+  // exactly the soft-404 this module exists to prevent. Both destinations are
+  // verified to render a real <h1>.
+  //   the-farm       -> the county plat is recorded as "Farm (the)", slug farm-the.
+  //   shevlin-bluffs -> spans three county plats (Phase 1, Phase 2, Phases 3 & 4),
+  //                     so no single /subdivisions page is the honest canonical;
+  //                     the browse pair carries the whole MLS subdivision.
+  // Never overwrite a registry- or GIS-derived key: those are canonical.
+  for (const [alias, dest] of [
+    ['the-farm', '/subdivisions/farm-the'],
+    ['shevlin-bluffs', '/homes-for-sale/bend/shevlin-bluffs'],
+  ] as const) {
+    if (!map.has(alias)) map.set(alias, dest)
+  }
+
   return map
 }
 

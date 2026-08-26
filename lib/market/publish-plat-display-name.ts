@@ -19,6 +19,12 @@ import { displaySubdivision } from '@/lib/slug'
 /** MLS ingest token → recorded visitor name. Keys are lowercased. */
 const RECORDED_PLAT_DISPLAY: Record<string, string> = {
   triple: 'Triple Knot',
+  // Deschutes County records the plat as "Farm (the)" (CSNUM 07193), which
+  // title-cases out of the slug as "Farm The". MLS calls it "The Farm". Both
+  // spellings map to the recorded visitor name — this is a reordering of the
+  // county's own words, not an invented expansion.
+  'farm the': 'The Farm',
+  'farm (the)': 'The Farm',
 }
 
 const KNOWN_MLS_ABBREVIATIONS = new Set(
