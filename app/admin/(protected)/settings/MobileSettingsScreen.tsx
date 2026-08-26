@@ -56,6 +56,7 @@ type Broker = {
   notifyTaskDue: boolean
   notifyReturnVisit: boolean
   notifyCmaReady: boolean
+  notifyAppointment: boolean
   notifySms: boolean
   emailSignature: string
 }
@@ -100,6 +101,7 @@ export default function MobileSettingsScreen({
     taskDue: broker?.notifyTaskDue ?? true,
     returnVisit: broker?.notifyReturnVisit ?? true,
     cmaReady: broker?.notifyCmaReady ?? true,
+    appointment: broker?.notifyAppointment ?? true,
     sms: broker?.notifySms ?? false,
   })
   const [signature, setSignature] = useState(broker?.emailSignature ?? '')
@@ -265,6 +267,19 @@ export default function MobileSettingsScreen({
                   labelHidden
                   checked={prefs.cmaReady}
                   onChange={(e) => save({ ...prefs, cmaReady: e.target.checked }, { notify_cma_ready: e.target.checked })}
+                />
+              </div>
+              <RowDivider />
+              <div className="flex min-h-16 items-center gap-3 px-4 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-semibold" style={{ color: 'var(--a-text)' }}>Appointment booked</p>
+                  <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>Alert when someone books time from the website</p>
+                </div>
+                <Switch
+                  label="Appointment booked"
+                  labelHidden
+                  checked={prefs.appointment}
+                  onChange={(e) => save({ ...prefs, appointment: e.target.checked }, { notify_appointment: e.target.checked })}
                 />
               </div>
               <RowDivider inset={false} />

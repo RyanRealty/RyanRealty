@@ -46,6 +46,10 @@ export type CrmCompanySettings = {
   legal_disclosure_audio_url: string | null
   // §1.5 Office hours
   office_hours: OfficeHoursBlock[]
+  /** Bookable windows for the public /book page. EMPTY MEANS CLOSED — the
+   *  opposite of office_hours, which gates inbound calls and treats empty as
+   *  always open. See migration 20260825200000. */
+  booking_hours: OfficeHoursBlock[]
   // §1.6 Subdomain
   subdomain: string
   // §1.7 Business insights
@@ -75,6 +79,7 @@ export const DEFAULT_COMPANY_SETTINGS: CrmCompanySettings = {
   legal_disclosure_auto_play: false,
   legal_disclosure_audio_url: null,
   office_hours: [],
+  booking_hours: [],
   subdomain: 'ryan-realty',
   production_goal: 1000000,
   production_goal_year: new Date().getFullYear(),
@@ -104,6 +109,9 @@ function mapRow(data: RawRow): CrmCompanySettings {
     legal_disclosure_audio_url: (data.legal_disclosure_audio_url as string | null) ?? null,
     office_hours: Array.isArray(data.office_hours)
       ? (data.office_hours as OfficeHoursBlock[])
+      : [],
+    booking_hours: Array.isArray(data.booking_hours)
+      ? (data.booking_hours as OfficeHoursBlock[])
       : [],
     subdomain: String(data.subdomain ?? ''),
     production_goal: Number(data.production_goal ?? 0),

@@ -17,6 +17,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess } from '@/app/actions/crm'
+import { sendAppointmentInvites } from '@/lib/crm/appointment-invites'
 import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import {
@@ -47,95 +48,6 @@ function toTimestamptz(raw: string): string {
   // Pad seconds if missing (YYYY-MM-DDTHH:mm → YYYY-MM-DDTHH:mm:00)
   const padded = raw.length === 16 ? `${raw}:00` : raw
   return `${padded}Z`
-}
-
-/**
- * Send the §2.11 invitation email to each contact invitee's PRIMARY email
- * (secondary emails excluded, per spec), from the assigned broker's own Gmail
- * mailbox, suppression-checked per recipient. Text reminders (the CRM
- * Power-Up) are deliberately not implemented — the modal copy says so.
- * Returns the number of invitations actually sent.
- */
-async function sendAppointmentInvites(params: {
-  apptId: number
-  title: string
-  startAt: string
-  endAt: string
-  allDay: boolean
-  timezone: string | null
-  location: string | null
-  description: string | null
-  brokerSlug: string
-  personIds: number[]
-}): Promise<number> {
-  const ids = [...new Set(params.personIds)].filter(Boolean)
-  if (ids.length === 0) return 0
-
-  const sb = createServiceClient()
-  const { data: people } = await sb
-    .from('crm_people')
-    .select('id,name,first_name,emails')
-    .in('id', ids)
-  if (!people || people.length === 0) return 0
-
-  const { isSuppressed } = await import('@/lib/crm/suppressions')
-  const { CRM_MAILBOXES, sendCrmEmail } = await import('@/lib/crm/gmail')
-  const { taskGroupLabel, time12, wallDateKey, wallMinutes } = await import('@/lib/crm/calendar')
-  const mailbox = CRM_MAILBOXES.find((m) => m.slug === params.brokerSlug) ?? CRM_MAILBOXES[0]
-
-  const dayLabel = taskGroupLabel(wallDateKey(params.startAt))
-  const tzLabel =
-    params.timezone === 'America/New_York' ? 'Eastern Time'
-    : params.timezone === 'America/Chicago' ? 'Central Time'
-    : params.timezone === 'America/Denver' ? 'Mountain Time'
-    : 'Pacific Time'
-  const when = params.allDay
-    ? `${dayLabel} (all day)`
-    : `${dayLabel}, ${time12(wallMinutes(params.startAt))}–${time12(wallMinutes(params.endAt))} (${tzLabel})`
-  const notesPlain = (params.description ?? '')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .trim()
-
-  let sent = 0
-  for (const p of people as Array<{ id: number; name: string | null; first_name: string | null; emails: Array<{ value?: string; isPrimary?: number | boolean }> | null }>) {
-    const to = (p.emails ?? [])
-      .slice()
-      .sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary))[0]?.value
-    if (!to) continue
-    const gate = await isSuppressed(p.id, 'email')
-    if (gate.suppressed) continue
-
-    const first = (p.first_name ?? p.name ?? '').split(' ')[0]
-    const subject = `Appointment: ${params.title}`
-    const lines = [
-      first ? `Hi ${first},` : 'Hi,',
-      '',
-      `You have an appointment scheduled: ${params.title}`,
-      `When: ${when}`,
-      params.location ? `Where: ${params.location}` : null,
-      notesPlain ? `Notes: ${notesPlain}` : null,
-      '',
-      'Reply to this email if you need to reschedule.',
-    ].filter((l): l is string => l !== null)
-
-    const res = await sendCrmEmail({
-      fromMailbox: mailbox.email,
-      to,
-      subject,
-      bodyText: lines.join('\n'),
-      withSignature: true,
-      track: { personId: p.id, emailKey: `appt:${params.apptId}:${p.id}:${Date.now()}`, label: subject },
-    })
-    if (!res.ok) continue
-    sent += 1
-    await sb.from('crm_timeline').insert({
-      person_id: p.id, kind: 'email_out', title: subject, body: res.plainBody,
-      payload: { gmailId: res.gmailId, to, mailbox: mailbox.email, appointmentId: params.apptId },
-      broker: mailbox.slug, source: 'app', dedupe_key: `gmail:${res.gmailId}:p${p.id}`,
-    })
-  }
-  return sent
 }
 
 // ── createAppointmentAction ───────────────────────────────────────────────────

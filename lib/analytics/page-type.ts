@@ -44,6 +44,7 @@ export const PUBLIC_PAGE_SEGMENTS = [
   'about',
   'accessibility',
   'account',
+  'book',
   'activity',
   'alerts',
   'area-guides',

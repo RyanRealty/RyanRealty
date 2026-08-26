@@ -24,6 +24,8 @@ export type BrokerSettingsPayload = {
   notify_return_visit?: boolean
   /** Alert when a CMA draft finishes building. */
   notify_cma_ready?: boolean
+  /** Alert when someone books an appointment from the public site. */
+  notify_appointment?: boolean
   /** Opt-in for SMS lead/activity alerts (default OFF). Gates queueBrokerAlert. */
   notify_sms?: boolean
   /** Personal quiet window for internal alerts, local hour 0-23. null clears it. */
@@ -106,6 +108,7 @@ export async function saveBrokerSettingsAction(
   if (typeof payload.notify_task_due === 'boolean') update.notify_task_due = payload.notify_task_due
   if (typeof payload.notify_return_visit === 'boolean') update.notify_return_visit = payload.notify_return_visit
   if (typeof payload.notify_cma_ready === 'boolean') update.notify_cma_ready = payload.notify_cma_ready
+  if (typeof payload.notify_appointment === 'boolean') update.notify_appointment = payload.notify_appointment
   if (typeof payload.notify_sms === 'boolean') update.notify_sms = payload.notify_sms
   // Volume controls. `null` is a meaningful value here (clears the setting), so
   // these check for `undefined` rather than truthiness — 0 is also a valid hour.

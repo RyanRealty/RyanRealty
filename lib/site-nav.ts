@@ -407,6 +407,7 @@ export const FOOTER_NAV: FooterGroup[] = [
       { href: '/team', label: 'Meet the team' },
       { href: '/about', label: 'About us' },
       { href: '/contact', label: 'Contact' },
+      { href: '/book', label: 'Book a broker' },
       { href: '/reviews', label: 'Client reviews' },
       { href: '/join', label: 'Join the team' },
       { href: '/refer-a-client', label: 'Refer a client' },

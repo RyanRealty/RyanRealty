@@ -26,7 +26,7 @@ export async function getBrokerNotifyPrefs(): Promise<Record<string, BrokerNotif
   const { data, error } = await sb
     .from('brokers')
     .select(
-      'email, notify_sms, notify_new_leads, notify_deal_activity, notify_task_due, notify_return_visit, notify_cma_ready, notify_quiet_start_hour, notify_quiet_end_hour, notify_max_per_day',
+      'email, notify_sms, notify_new_leads, notify_deal_activity, notify_task_due, notify_return_visit, notify_cma_ready, notify_appointment, notify_quiet_start_hour, notify_quiet_end_hour, notify_max_per_day',
     )
     .eq('is_active', true)
 
@@ -47,6 +47,7 @@ export async function getBrokerNotifyPrefs(): Promise<Record<string, BrokerNotif
       taskDue: bool(row.notify_task_due, DEFAULT_BROKER_NOTIFY_PREFS.taskDue),
       returnVisit: bool(row.notify_return_visit, DEFAULT_BROKER_NOTIFY_PREFS.returnVisit),
       cmaReady: bool(row.notify_cma_ready, DEFAULT_BROKER_NOTIFY_PREFS.cmaReady),
+      appointment: bool(row.notify_appointment, DEFAULT_BROKER_NOTIFY_PREFS.appointment),
       quietStartHour: hour(row.notify_quiet_start_hour),
       quietEndHour: hour(row.notify_quiet_end_hour),
       maxPerDay:

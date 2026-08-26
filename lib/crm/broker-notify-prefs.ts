@@ -31,6 +31,7 @@ export type BrokerAlertCategory =
   | 'return_visit'
   | 'cma_ready'
   | 'task_due'
+  | 'appointment'
   | 'deal_activity'
   | 'health'
   /** An alert kind with no category yet. Deliberately UNGATED — see below. */
@@ -52,6 +53,7 @@ export function categoryForAlertKind(kind: string): BrokerAlertCategory {
   if (k.startsWith('return-visit:') || k.startsWith('looking-at:')) return 'return_visit'
   if (k.startsWith('cma-ready:')) return 'cma_ready'
   if (k.startsWith('task-reminder:') || k.startsWith('task-due:')) return 'task_due'
+  if (k.startsWith('appointment-booked:')) return 'appointment'
   if (k.startsWith('deal:')) return 'deal_activity'
   return 'other'
 }
@@ -63,6 +65,7 @@ export type BrokerNotifyPrefs = {
   taskDue: boolean
   returnVisit: boolean
   cmaReady: boolean
+  appointment: boolean
   /** Local-hour quiet window for internal alerts. Both null = no window. */
   quietStartHour: number | null
   quietEndHour: number | null
@@ -78,6 +81,7 @@ export const DEFAULT_BROKER_NOTIFY_PREFS: BrokerNotifyPrefs = {
   taskDue: true,
   returnVisit: true,
   cmaReady: true,
+  appointment: true,
   quietStartHour: null,
   quietEndHour: null,
   maxPerDay: null,
@@ -91,6 +95,7 @@ export function categoryEnabled(category: BrokerAlertCategory, prefs: BrokerNoti
     case 'task_due': return prefs.taskDue
     case 'return_visit': return prefs.returnVisit
     case 'cma_ready': return prefs.cmaReady
+    case 'appointment': return prefs.appointment
     case 'health':
     case 'other':
       return true

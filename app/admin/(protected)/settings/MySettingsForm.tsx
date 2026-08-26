@@ -51,6 +51,7 @@ type Props = {
   notifyTaskDue: boolean
   notifyReturnVisit: boolean
   notifyCmaReady: boolean
+  notifyAppointment: boolean
   notifySms: boolean
   /** Personal quiet window for internal alerts, local hour 0-23. null = none. */
   notifyQuietStartHour: number | null
@@ -75,6 +76,7 @@ export default function MySettingsForm({
   notifyTaskDue: initTaskDue,
   notifyReturnVisit: initReturnVisit,
   notifyCmaReady: initCmaReady,
+  notifyAppointment: initAppointment,
   notifySms: initSms,
   notifyQuietStartHour: initQuietStart,
   notifyQuietEndHour: initQuietEnd,
@@ -92,6 +94,7 @@ export default function MySettingsForm({
   const [notifyTaskDue, setNotifyTaskDue] = useState(initTaskDue)
   const [notifyReturnVisit, setNotifyReturnVisit] = useState(initReturnVisit)
   const [notifyCmaReady, setNotifyCmaReady] = useState(initCmaReady)
+  const [notifyAppointment, setNotifyAppointment] = useState(initAppointment)
   const [notifySms, setNotifySms] = useState(initSms)
   // The three volume controls are held as strings because a <select> value is a
   // string and '' is the "not set" option. They convert on save.
@@ -136,6 +139,7 @@ export default function MySettingsForm({
       notify_task_due: notifyTaskDue,
       notify_return_visit: notifyReturnVisit,
       notify_cma_ready: notifyCmaReady,
+      notify_appointment: notifyAppointment,
       notify_sms: notifySms,
       notify_quiet_start_hour: quietStart === '' ? null : Number(quietStart),
       notify_quiet_end_hour: quietEnd === '' ? null : Number(quietEnd),
@@ -199,6 +203,14 @@ export default function MySettingsForm({
           description="Alert when a CMA draft finishes building and is waiting on you."
           checked={notifyCmaReady}
           onChange={setNotifyCmaReady}
+        />
+        <RowRule />
+        <NotifToggle
+          id="notify-appointment"
+          label="Appointment booked"
+          description="Alert when someone books time on your calendar from the website."
+          checked={notifyAppointment}
+          onChange={setNotifyAppointment}
         />
         <RowRule />
         <NotifToggle
