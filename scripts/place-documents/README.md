@@ -46,6 +46,7 @@ node --env-file=.env.local scripts/place-documents/foreign-association.mjs --app
 node --env-file=.env.local scripts/place-documents/regate.mjs
 node --env-file=.env.local scripts/place-documents/two-signal-publish.mjs --apply
 node --env-file=.env.local scripts/place-documents/book-page-stamp-publish.mjs --apply
+node --env-file=.env.local scripts/place-documents/phase-governance.mjs --apply
 node --env-file=.env.local scripts/place-documents/backfill-geo-label.mjs
 npm run ci:place-documents
 ```
@@ -62,6 +63,7 @@ npm run ci:place-documents
 | `regate` | Applies the publish policy both ways: demotes anything that now fails, promotes exact matches whose document names the plat |
 | `two-signal-publish` | Clears parent matches carrying two independent confirmations |
 | `book-page-stamp-publish` | The same bar for the book-page era, where no instrument number exists: the recorder's volume-and-page stamp running across consecutive pages of the document itself |
+| `phase-governance` | The per-chain ruling on parent matches whose document names a different phase than the plat. Both stamp signals prove identity, not governance. **Must run after both publish scripts** — they select on `pending_review` + `parent` and would re-publish what this demotes |
 | `backfill-geo-label` | Stamps each link with its plat's `boundaries.geo_label`, so a listing page can match the label its own row carries instead of re-deriving the slug — see below |
 | `verify` | `ci:place-documents`. Asserts no published link is a non-governing instrument, unconfirmed-and-unreviewed, or unreachable from a listing page |
 
@@ -149,9 +151,29 @@ human.
 **The stamp proves identity, not governance**, so this script also holds a link
 whose document names a different phase than the plat: a declaration titled
 ROCKWOOD ESTATES PHASE IV does not publish onto `rockwood-estates-phase-ii`.
-`two-signal-publish.mjs` does not make that check, and 99 links it published sit
-on a plat whose phase their own document contradicts — an open item, not
-something this script changed.
+`two-signal-publish.mjs` does not make that check, and 99 links it published sat
+on a plat whose phase their own document contradicts.
+
+## Identity is not governance
+
+`phase-governance.mjs` rules on those 263 links — 99 published, 164 held here —
+one declaration chain at a time, by reading the documents. A Phase 1 declaration
+is often the master, with later phases brought in by an annexation or a
+supplemental declaration; then the fan-out is right. A phase-specific
+declaration with no expansion mechanism does not reach its siblings. Both
+patterns sit inside this corpus, so no blanket rule works.
+
+A plat may only be published on a line that is verbatim in the cited
+instrument's stored `ocr_text`; the script re-checks that on every run and
+refuses to publish a ruling it cannot show. A hold needs no evidence — it goes
+to a human. Three rulings quote a page rendered at higher scale instead, because
+Vision reads Plat III as Plat II and would have demoted three links off the plat
+they actually govern.
+
+The RULINGS table in that file is the evidence ledger: per document, the plats it
+binds, the line that says so, and the instrument the line comes from. The rule it
+implements is R7 in
+[`PLACE_CONTENT_RULES.md`](../../docs/plans/MARKET_TRUTH/PLACE_CONTENT_RULES.md).
 
 ## OCR text is never page copy
 

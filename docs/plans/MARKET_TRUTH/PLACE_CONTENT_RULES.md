@@ -224,12 +224,68 @@ forward one page at a time. Measured over 1,159 book-page documents: 0 fires in 
 (document, synthetic reference) pairs; 7 in 1,289,967 (document, every other real reference)
 pairs, every one of them a stamp the document physically carries.
 
-**Open item — the stamp proves identity, not governance.** A declaration titled ROCKWOOD ESTATES
-PHASE IV is genuinely the instrument the index filed, and the parent match would still fan it
-across all four Rockwood phases. `book-page-stamp-publish.mjs` holds a link whose document names
-a different phase than the plat; `two-signal-publish.mjs` does not, and **99 links it published
-sit on a plat whose phase their own document contradicts**. Matt's call whether a phase-specific
-declaration belongs on its sibling phases at all.
+### Identity is not governance — what promotes a parent match across phases
+
+**Settled 2026-08-26, per chain, by reading the documents.** Both signals above prove the
+document's IDENTITY: this IS the instrument the index filed. Neither says which plats it
+GOVERNS. A declaration titled ROCKWOOD ESTATES PHASE IV is genuinely that instrument, and the
+parent match still fans it across all four Rockwood phases. 99 already-published links and 164
+withheld ones sat on a plat whose phase their own document contradicts — 78 documents, 46
+chains.
+
+**No blanket rule is correct.** In an Oregon planned community (ORS 94.550–94.785) a Phase 1
+declaration is frequently the MASTER, with later phases brought in by a Declaration of
+Annexation or a Supplemental Declaration; where that happened the fan-out is right. Where the
+declaration is phase-specific with no expansion mechanism it is wrong. Both patterns appear in
+this corpus, sometimes inside one chain — Stonebrook's 263-2035 is the master and its four
+supplementals each annex exactly one phase.
+
+**The rule. A parent match may sit on a plat whose phase the document does not name only when a
+recorded instrument says it reaches that plat.** Four things count, and nothing else:
+
+1. **The document names the plat.** "COLVIN ESTATES – PHASE I, II AND III"; "LOVESTONE ACRES and
+   LOVESTONE ACRES, 1st ADDITION"; an amendment "for Pinebrook (LOTS), Phases I, II and III".
+2. **A recorded annexation or supplemental declaration brings that plat under this document.**
+   Windance Estates 337-1758 annexes Phase II to the Phase I declaration, so the Phase I
+   declaration reaches Phase II — and 337-1758 itself does not reach back to Phase I.
+3. **An amendment to this document regulates the other plat.** City View's declaration is titled
+   Phase I; its own First Amendment sets a square-footage minimum for "Lots 11 thru 34, City
+   View, Phase II".
+4. **The document names no phase and its scope is the whole community** — association bylaws
+   binding "any parcel within the Tetherow Crossing Development", a declaration over a whole
+   quarter-section tract reserving the right to bring in future stages, an association's
+   architecture rules. Most of these were flagged only because the phase reader counts
+   `SECTION 9` and `THIRD AMENDMENT` as phase designators.
+
+**A reservation of the right to annex is not annexation.** Canyon Rim Village's phase
+declarations each define the subdivision as "all of the real property now or hereinafter made
+subject to this Declaration" and carry an "Annexation" heading — which is an assessment
+reallocation clause. Seven separate phase declarations were recorded. That chain is
+phase-specific.
+
+**Evidence is asymmetric.** A slug may only publish on a line that is verbatim in the cited
+instrument's stored `ocr_text`, and `scripts/place-documents/phase-governance.mjs` re-checks
+that on every run and refuses to publish one it cannot show. Holding a link needs no evidence:
+a hold sends it to a human, and a human with the PDF open knows more than the OCR does. **If a
+chain cannot be decided from the documents we hold, it goes to review.** Sunset View Estates
+Phases III-A, III-B and III-C are held for exactly that reason — the repealing instrument names
+"Phases I, II and III" and no instrument in the corpus names the lettered plats.
+
+**Where the OCR decides it, render the page.** Vision misreads microfilm: Shevlin Meadows
+2002-08038 reads PHASE I in the text layer and PHASE III on the page, Stonehedge West 504-2718
+reads "PHASE II!" for PHASE III, Sunpointe 413-1710 reads PHASE I for PHASE II. All three would
+have been demoted off the plat they actually govern. A ruling read off a rendered page says so
+(`renderPage`) and prints its line for audit.
+
+The ledger is the RULINGS table in
+[`scripts/place-documents/phase-governance.mjs`](../../../scripts/place-documents/phase-governance.mjs)
+— one row per document, with the plats it binds, the line that says so, and the instrument that
+line comes from. It runs AFTER the two publish scripts, which would otherwise re-publish what it
+demotes: the pipeline is idempotent as a whole, not step by step.
+
+One finding is not a phase problem at all. Hillside Park carried four published links to a
+declaration for HOLLIDAY PARK, THIRD ADDITION — a different subdivision in the same
+title-plant bucket.
 
 **OCR text is never rendered as page copy.** Vision misreads microfilm-era type badly enough
 that a quoted covenant would risk misstating a legal restriction. It is used for
@@ -237,13 +293,13 @@ classification, verification and search only.
 
 | Match | Plats | Treatment |
 |---|---:|---|
-| At least one document cleared to publish | 1,072 | published |
-| Pending only — unconfirmed, or an uncleared parent inference | 107 | `pending_review` at `/admin/place-documents` |
+| At least one document cleared to publish | 1,080 | published |
+| Pending only — unconfirmed, an uncleared parent inference, or a governance hold | 99 | `pending_review` at `/admin/place-documents` |
 | Ambiguous parent | 0 | rejected — a guess is not a match |
 | No CC&R in the index | 2,039 | no documents section |
 
-Measured 2026-08-26 over all 3,218 `geo_type='subdivision'` plats: 4,220 published
-links, 2,506 pending. Re-measure rather than quoting these — the pipeline moves them.
+Measured 2026-08-26 over all 3,218 `geo_type='subdivision'` plats: 4,169 published
+links, 2,557 pending. Re-measure rather than quoting these — the pipeline moves them.
 
 Standing check: `scripts/place-documents/verify.mjs` (`ci:place-documents`). It exists because
 the trigger fires on the link, not the document — a document reclassified after its link was
