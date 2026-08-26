@@ -138,3 +138,31 @@ The listing packet's completion copy auto-files onto the sale cycle as
 state, where the same document on the listing cycle reads `fully_executed`.
 Worth checking whether the mail path is re-reading a document we sealed
 ourselves instead of recognising it.
+
+**Deadlines on the CRM calendar — verified.** Six auto-deadline tasks on the
+sale cycle, one row each, inspection included (2026-09-09). The calendar text
+reads each twice only because the page renders the desktop and mobile shells
+into the same DOM; the data is clean and a broker sees one. Not a defect.
+
+**Buyer's repair addendum 022A — completed 2026-08-26.** Envelope `f0828992`
+built from the form library, sealed `33ac4c6841`, executed copy 3 pages,
+`fully_executed`. Buyer signed first, seller second; both agent lines were
+seeded **Receives a copy**, which is right for 022A.
+
+## The one thing that needs Matt
+
+**Signing invites are not delivering reliably. Reminders always do.**
+
+Of roughly nine invites sent on this file, three never arrived: the sale
+agreement's seller-agent line, and both 022A invites. In every case the token
+was minted, the envelope moved to `sent`, and `sendEnvelope` had already
+checked Resend's response — it refuses to mark an envelope sent when Resend
+returns an error, so Resend accepted all three. Pressing **Send reminder** on
+the envelope delivered within a minute every time.
+
+So the failure is between Resend accepting and the message landing. Our API key
+is send-only and cannot read delivery logs, so the next step is the Resend
+dashboard: look at the events for `noreply@mail.ryan-realty.com` around
+2026-08-25 22:39-22:50 UTC and see whether those three were deferred, bounced,
+or dropped. A signer who never gets the mail has no way to know, and the only
+recovery today is a broker noticing and reminding.
