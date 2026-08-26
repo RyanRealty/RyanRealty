@@ -12,6 +12,7 @@ import {
 } from '@/lib/booking/slots'
 import { formatDate } from '@/lib/format/date'
 import { H1, Body, Container, Section } from '@/components/site/primitives'
+import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
 import BookingClient from './BookingClient'
 
 /**
@@ -88,7 +89,8 @@ export default async function BookPage({
   }
 
   return (
-    <Section>
+    <>
+      <Section>
       <Container>
         <div className="mx-auto max-w-3xl">
           <H1>Book time with a broker</H1>
@@ -107,6 +109,10 @@ export default async function BookPage({
           </div>
         </div>
       </Container>
-    </Section>
+        </Section>
+      {/* This surface shows the site header, so it owes the site footer too:
+          the footer is route-owned here, not rendered by the layout. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
