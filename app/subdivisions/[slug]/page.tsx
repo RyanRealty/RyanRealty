@@ -61,6 +61,8 @@ import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { SubdivisionSchools } from './SubdivisionSchools'
+import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
+import { SubdivisionDocuments } from './SubdivisionDocuments'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -384,7 +386,7 @@ export default async function SubdivisionPage({ params }: Props) {
   // RPC (fails soft to [] until the migration is applied); stats = the
   // market_stats_cache geo_type='subdivision' row when one exists (most plats
   // have none until the cache backfill — the section feature-detects both).
-  const [salesHistory, subdivisionStats, subdivisionSchools] =
+  const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments] =
     await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -401,6 +403,7 @@ export default async function SubdivisionPage({ params }: Props) {
             'sub:schools',
           )
         : Promise.resolve([]),
+      withTimeoutFallback(getPlaceDocuments('subdivision', slug), [], 4500, 'sub:documents'),
     ])
   const placeContext = subdivisionPlaceContext({ cityName, citySlug, displayName, slug })
   const peerPlats = peerPlatsForResort(resortSlug, slug)
@@ -542,6 +545,8 @@ export default async function SubdivisionPage({ params }: Props) {
         {/* Assigned schools (W2.4 MPC parity) — §0-thresholded modal assignment
             from this subdivision's own listings; renders null when no level
             clears the DAL majority rule. */}
+        <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />
+
         <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} />
         <SubdivisionExploreTail
           displayName={displayName}

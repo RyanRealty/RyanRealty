@@ -1274,6 +1274,7 @@
     "ci:int-test-residue",
     "ci:mockup-coverage",
     "ci:no-mojibake",
+    "ci:place-documents",
     "ci:public-ui",
     "ci:public-v3",
     "ci:reachable-exports",

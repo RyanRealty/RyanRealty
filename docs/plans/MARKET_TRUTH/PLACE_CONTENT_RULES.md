@@ -136,21 +136,81 @@ outside the area simply never acquire a subdivision.
 
 ## R7 — Documents: provenance on the face, or it does not publish
 
-Applies to recorded CC&Rs, plats, and HOA documents if and when they are hosted.
+Applies to recorded CC&Rs, plats, and HOA documents. **Built 2026-08-26.**
 
-**Rule.** A hosted document displays its **instrument number, recording date, and county**, and
-states that later amendments may exist and the current chain should be confirmed through title.
+**Rule.** A hosted document displays its **instrument number (or book and page) and county**,
+and states that later amendments may exist and the current chain should be confirmed through
+title.
 
-**Why.** Oregon's recording statute (ORS 205.160) indexes only party name, document type, date and
-instrument number — **there is no subdivision or plat field**, and no structured cross-reference
-chaining an amendment to the declaration it amends. Nothing in the county systems marks a
-declaration as current or superseded. A hosted CC&R that misses a 2019 amendment looks
-authoritative and is wrong, and no statutory safe harbour for that was found.
+**Why.** Oregon's recording statute (ORS 205.160) indexes only party name, document type, date
+and instrument number — **there is no subdivision or plat field**, and no structured
+cross-reference chaining an amendment to the declaration it amends. Nothing in the county
+systems marks a declaration as current or superseded. A hosted CC&R that misses a 2019
+amendment looks authoritative and is wrong, and no statutory safe harbour for that was found.
 
-Matching a recorded declaration to a subdivision is therefore heuristic. Every association is
-verified by a human before it publishes, or the document does not publish.
+### The trap, measured
 
----
+The source is the Deschutes County Title public index — 3,787 documents across 971 subdivision
+names, each row carrying its recording reference, and 645 names carrying an enumerated
+amendment chain.
+
+**It is a title-plant research bucket, not a curated governing-document set.** It files
+everything recorded that touches a plat. Across the 2,189 documents ingested:
+
+| Bucket | What is actually in it |
+|---|---|
+| `Larch Meadows` | a warranty deed |
+| `Indian Ford Meadows` | Crooked Horseshoe Homeowner's Association declarations, a water-system sale agreement, an easement, a contract assignment |
+| `Awbrey Court` | declarations titled VALHALLA HEIGHTS PHASE IV |
+
+Corpus-wide, instruments that are not governing documents at all: **118 easements, 41 deeds,
+40 liens, 16 trust deeds, 12 assignments**. Publishing the bucket verbatim under the heading
+"CC&Rs and governing documents" puts another subdivision's declaration, and a warranty deed, in
+front of a buyer as this plat's governing documents.
+
+### How R7 is enforced
+
+**Two tables, because one instrument serves many plats.** `place_document` is the recorded
+instrument; `place_document_link` is its association to a place. The Tetherow declaration
+governs seven phase-level plats and is stored once.
+
+**The gate lives in the database, not in a script** (§6). `place_document_link_publish_gate()`
+refuses the write. Two conditions, deliberately asymmetric:
+
+- **`doc_kind` must be a governing instrument** — always, no human override. A warranty deed is
+  not this subdivision's CC&Rs no matter who says so.
+- **the document's own text must name the subdivision** — unless a human reviewed the link. OCR
+  reads the first pages only, so a one-page amendment may never restate the plat name, and a
+  reviewer who opened the PDF knows more than the OCR does.
+
+The anon RLS policy is `status = 'published'`, so an unreviewed match is unreadable rather than
+merely unrendered.
+
+**The scans have no text layer**, so on-device OCR reads their front matter. Three signals feed
+the name check, strongest last: a fuzzy token scan; the county's stamped instrument number
+compared against the index reference (887 of the 1,036 applicable documents agree — when they
+agree the document is definitively the one the index claims); and a foreign-association check
+that flags a document whose front matter names only associations foreign to the plat. The last
+is what caught Crooked Horseshoe. It is deliberately narrow — a false flag only sends a real
+CC&R to review, while a false pass puts a wrong CC&R on a page.
+
+The clerk's own stamped document-type code (`D-CCR`, `D-BYLAWS`) outranks any inference from
+title text and is tried first.
+
+**OCR text is never rendered as page copy.** Vision misreads microfilm-era type badly enough
+that a quoted covenant would risk misstating a legal restriction. It is used for
+classification, verification and search only.
+
+| Match | Plats | Treatment |
+|---|---:|---|
+| Exact name, document self-confirms | 391 | published |
+| Parent (phase → declaration), or unconfirmed | 745 | `pending_review` at `/admin/place-documents` |
+| Ambiguous parent | 0 | rejected — a guess is not a match |
+| No CC&R in the index | 2,044 | no documents section |
+
+Standing check: `scripts/place-documents/verify.mjs` (`ci:place-documents`). It exists because
+the trigger fires on the link, not the document — a document reclassified after its link was
+published would otherwise leave a published link behind.
 
 ## What is NOT governed here
 
