@@ -31,13 +31,55 @@
     { "minutes": 20, "destination": "Hoodoo Ski Area", "note": "12 miles west via US-20" },
     { "minutes": 45, "destination": "Bend", "note": "About 30 miles east via US-20" }
   ],
+  "membership_tiers": [
+    {
+      "label": "7-day full",
+      "eyebrow": "Optional, not the HOA assessment",
+      "name": "7-day full golf annual pass",
+      "description": "Black Butte Ranch sells season passes for Big Meadow and Glaze Meadow rather than a club membership with an initiation fee. Play any day. Passholders get 20 percent off in the golf shops. The 2026 passes run through March 31, 2027.",
+      "details": [
+        { "label": "Individual", "value": "$2,775" },
+        { "label": "Second family member", "value": "$2,325" }
+      ],
+      "featured": true
+    },
+    {
+      "label": "5-day weekday",
+      "eyebrow": "Monday to Friday",
+      "name": "5-day weekday golf annual pass",
+      "description": "Weekday play only, Monday through Friday, excluding May 27 and September 2.",
+      "details": [
+        { "label": "Individual", "value": "$2,275" },
+        { "label": "Second family member", "value": "$1,975" }
+      ]
+    },
+    {
+      "label": "7-day afternoon",
+      "eyebrow": "After 1pm",
+      "name": "7-day afternoon golf annual pass",
+      "description": "Any day of the week, tee times after 1pm.",
+      "details": [
+        { "label": "Individual", "value": "$1,525" }
+      ]
+    },
+    {
+      "label": "Cart",
+      "eyebrow": "Add-on",
+      "name": "Golf cart annual pass",
+      "description": "Unlimited cart use for the season at half the rider price.",
+      "details": [
+        { "label": "Annual", "value": "$560" }
+      ]
+    }
+  ],
   "course_specs": { "summary": "Two 18-hole championship courses: Big Meadow (Robert Muir Graves, 7,000+ yds) and Glaze Meadow (John Fought renovation 2012, 7,007 yds), plus the 12-hole Little Meadow putting course." },
   "citations": [
     { "fact": "1,800 acres, 8 mi NW of Sisters, developed by Brooks Resources from 1970", "source_url": "https://brooksresources.com/2025/06/brooks-resources-first-project-in-central-oregon-black-butte-ranchcelebrates-its-55th-anniversary/" },
     { "fact": "HOA got roads/common areas 1982; bought golf courses + Lodge 1987", "source_url": "https://www.blackbutteranch.com/the-ranch/history/" },
     { "fact": "27 mi paved paths, 5 pools, 14 tennis, 12 pickleball courts", "source_url": "https://www.blackbutteranch.com/activities/ranch-attractions/" },
     { "fact": "Big Meadow (Robert Muir Graves, 7,000+ yds); Glaze Meadow (7,007 yds, 2012 Fought renovation); Little Meadow 12-hole putting", "source_url": "https://www.blackbutteranch.com/golf/golf-courses/" },
-    { "fact": "7 mi west of Sisters; RDM 16 mi north", "source_url": "https://www.blackbutteranch.com/directions/" }
+    { "fact": "7 mi west of Sisters; RDM 16 mi north", "source_url": "https://www.blackbutteranch.com/directions/" },
+    { "fact": "2026 golf annual pass rates: 7-day full $2,775 individual / $2,325 second family member; 5-day weekday $2,275 / $1,975; 7-day afternoon $1,525; golf cart annual pass $560. Valid through 3/31/27. These are OPTIONAL golf passes, not the association's mandatory assessment, which Black Butte Ranch does not publish.", "source_url": "https://www.blackbutteranch.com/golf/golf-rates/" }
   ],
   "sources": [
     { "url": "https://en.wikipedia.org/wiki/Black_Butte_Ranch,_Oregon", "publisher": "Wikipedia (Black Butte Ranch, Oregon), citing U.S. Census figures and local reporting", "supports": "Elevation 3,376 ft; Black Butte is a 6,436-ft cinder cone; Deschutes National Forest border; 2020 Census 260 year-round residents, down from 366 in 2010; peak-season population near 5,000; Sisters School District 6 serves the ranch; wildfire history (2002 Cache Mountain Fire, 2003 B&B Complex fires, 2007 GW Fire); first residents arrived and the post office opened in 1971." },
@@ -48,8 +90,9 @@
     { "url": "https://www.blackbutteranch.com/lodging/policies/", "publisher": "Black Butte Ranch (official)", "supports": "Owners can enroll homes in the ranch's own nightly rental program." },
     { "url": "https://ktvz.com/news/business/2023/04/27/black-butte-ranch-gives-us-a-grand-tour-of-new-20-million-lodge-ahead-of-next-mondays-opening/", "publisher": "KTVZ (local news)", "supports": "The original 50-year-old Lodge was replaced by a new 22,100-square-foot building that opened May 2023, clad in charred cedar siding with a Douglas fir and slate interior and a stone fireplace patterned after volcanic rock." },
     { "url": "https://district.ssd6.org/schools/", "publisher": "Sisters School District 6 (official)", "supports": "Confirms Sisters School District 6 operates Sisters Elementary, Middle, and High Schools; cross-checked against the Wikipedia school-district attribution for Black Butte Ranch." },
+    { "url": "https://www.blackbutteranch.com/golf/golf-rates/", "publisher": "Black Butte Ranch (official), 2026 Golf Rates and Fees", "supports": "Read from the raw page HTML, not a summary. The Golf Annual Pass table lists, verbatim, \"7-DAY FULL ANNUAL PASS 7 Days Anytime\", \"7-DAY AFTERNOON ANNUAL PASS After 1pm\", \"5 1/2-DAY ANNUAL PASS Sun Noon - Fri\", \"5-DAY WEEKDAY PASS Mon-Fri Excludes 5/27 & 9/2\" and \"4 1/2-DAY GOLF PASS Sun 12pm-Thurs\", with an INDIVIDUAL row of $2,775, $1,525, $2,475, $2,275, $1,875 and a 2ND FAMILY MEMBER row of $2,325, blank, $2,175, $1,975, $1,575, plus \"GOLF CART ANNUAL PASS 1/2 rider price Unlimited use $560\". Also verbatim: \"Passes are valid through 3/31/27\" and \"All Passholders receive a 20% discount at Black Butte Ranch Golf Shops.\" The page's own early-payment discount, \"$50 discount if paid by 3/31/26\", has expired and is deliberately not published here. Only the 7-day full, 5-day weekday, 7-day afternoon and cart passes are carried into membership_tiers. These passes are optional. Black Butte Ranch's mandatory association assessment is NOT published anywhere reachable: blackbutteranchhoa.com serves a login form and nothing else, and the association's own recorded Rules and Regulations reference \"dues and Assessments\" without stating an amount." },
     { "url": "https://www.blackbutteranch.com/directions/", "publisher": "Black Butte Ranch (official)", "supports": "Drive times consistent with the existing drive_times field: 45 minutes to Bend, about 30 minutes to Redmond Municipal Airport." }
   ],
-  "last_modified": "2026-08-03T00:00:00Z",
+  "last_modified": "2026-08-26T00:00:00Z",
   "source": "about_prose rewritten 2026-08-03 as long-form editorial per docs/audits/WEBSITE_AUDIT_2026-08-02.md. Every claim traces to the 'sources' array above, cross-checked against blackbutteranch.com (official), Brooks Resources Corporation, Wikipedia (citing U.S. Census), KTVZ, and Sisters School District 6. No market figures, prices, or percentages included by design; live market data renders separately from the database."
 }
