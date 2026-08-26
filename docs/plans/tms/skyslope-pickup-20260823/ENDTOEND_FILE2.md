@@ -166,3 +166,39 @@ dashboard: look at the events for `noreply@mail.ryan-realty.com` around
 2026-08-25 22:39-22:50 UTC and see whether those three were deferred, bounced,
 or dropped. A signer who never gets the mail has no way to know, and the only
 recovery today is a broker noticing and reminding.
+
+## Stop-the-line finding: executed forms carry no terms
+
+**The four-party executed sale agreement on this file does not say what is being
+sold or for how much.**
+
+Extracted text from the sealed 17-page copy: no "Sedalia", no "Bend", no
+"539,900". Page one still reads `SALE AGREEMENT # __________________`. Character
+counts per page are within 40 of the blank on page 1 and identical on pages
+2-14 — the executed document is the blank form plus signatures and a
+certificate. The only names present come from the signature blocks.
+
+Across every envelope on the file: **646 text fields, 0 assigned to a signer, 2
+carrying any value.** So nobody fills them. The composer has no editor for a
+text value, and the signing view only offers a field to whoever it is assigned
+to — which, for text, is nobody.
+
+Why nothing fills: `createEnvelopeFromTemplate` binds a blank to a deal fact
+through `resolveFactKey`, which matches `DEAL_FACT_ALIASES`. The live 001 map is
+AcroForm-derived — **413 fields, of which 2 bind to a fact**. The widget names
+are the form's own paragraph text: `1 PARTIESPROPERTY DESCRIPTIONPRICE Buyer
+insert names`, `35 CLOSING Closing will occur on a date mutually agreed on
+between Buyer and Seller on or before insert date`, `Buyers Agent 1s Office
+Address`. Real names, none of them in the alias table. The checked-in
+`oref001OverlayFieldMap()` does bind all 8 of its fields — but
+`resolveOrefFieldMap` prefers a non-empty DB map, and the composer only reaches
+for the overlay when the map is empty, so the curated bindings never run.
+
+This is requirement 6 of the 2026-08-23 pass ("001 needs parties/address/price")
+still unmet, and it outranks the layout question that opened this thread: there
+is no long text to lay out because there is no text at all.
+
+Next build: bind the terms that matter on 001 — parties, property, price,
+closing, earnest money, agent and firm lines — matching on the paragraph number
+and keywords the blanks actually carry, and prove it by extracting the terms
+back out of a freshly sealed copy.
