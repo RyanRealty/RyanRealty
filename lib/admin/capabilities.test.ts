@@ -118,10 +118,13 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the nav budget: 38 superuser items, 27 broker items (Production + Signing + Sign-off on Closings)', () => {
+  // 38 -> 39 on 2026-08-26: bdc84f7d added the "Recorded documents" destination
+  // (/admin/place-documents, capability content.communities). The broker count is
+  // unchanged because brokers do not hold content.communities.
+  it('renders the nav budget: 39 superuser items, 27 broker items (Production + Signing + Sign-off on Closings)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(38)
+    expect(count('superuser')).toBe(39)
     expect(count('broker')).toBe(27)
   })
 

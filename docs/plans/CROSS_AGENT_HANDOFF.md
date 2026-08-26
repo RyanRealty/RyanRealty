@@ -3,7 +3,58 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-26 (Claude Code) — CMA client document, FSBO first touch unblocked, dashboard gap closed
+# Current — 2026-08-26 (Claude Code) — resort membership audit: 23 false children removed, now gated
+
+**Surface:** `origin/main` `238c2f31`.
+
+`data/resort-communities.json` → `subdivision_aliases` is rendered as a literal
+"Subdivisions in X" claim by THREE components (KbResortOverview, peerPlatsForResort,
+and `buildPlaceKnowledge`'s subdivision doors — that third one is easy to miss), and
+it also SCOPES NUMBERS: the alias-aware active count, the community market scope, and
+`lib/cma/resort-guard.ts`, where a false alias makes an ordinary home price as a
+resort home. Most entries earned their list from a ">=80% inside-test" that infers
+membership from listing PROXIMITY. Awbrey Glen was fixed in `05917a61`; this pass
+finished the other nine. **23 removed** (tetherow 7, northwest-crossing 7, broken-top
+4, eagle-crest 3, crosswater 2, brasada-ranch 1) — about 2,900 closed sales had been
+mis-flagged as resort property to the CMA comp guard.
+
+**The lesson worth carrying: the POLYGON is sometimes the thing that is wrong.**
+Three entries would have lost CORRECT children to a containment rule.
+- **Crosswater** — Matt asked for research instead of a geometry call. Osprey Pointe
+  Condo STAYS: its recorded declaration (Deschutes 97-33704, Bk 462 Pg 1137) names
+  Crosswater Owners' Association as master association. It is a condo carved OUT of
+  Crosswater, so a union of the Crosswater plats necessarily misses it. Pace Estate
+  and Lisle Acres removed (no HOA, no CC&Rs, across the river).
+- **Three Rivers** — keeps all 11. It is a 4,819-acre CDP of 20+ subdivisions; the
+  polygon is the DRRH plat union alone (2,503 acres, 51.9%). The 8 aliases that fail
+  containment sit CLOSER to the CDP centre than the 3 that pass. **Widen the polygon**
+  — that is the open follow-up, logged in the entry's `verification` block.
+- **Black Butte Ranch** — Country House Condo is 0/5 inside a homesite-section union
+  that omits the condo tract, but 6/6 of its listings carry MLS City='Black Butte
+  Ranch'.
+
+Also: Matt's "3 rivers homesites north of bend" is a DIFFERENT PLACE — MLS
+`3 Rivers Rec`, 535 listings, City=Culver 97734, Lake Billy Chinook, Jefferson County,
+56km NW. No registry entry, no page. Never merge it with `three-rivers`.
+
+**Gated:** `ci:resort-membership-evidence` fails the commit when an alias has no
+measurement in `verification.confirmed[]`, when a `pct_inside` does not recompute from
+its own counts, when a sub-50% row carries no written evidence naming another query
+shape, when `child_count` drifts, or when an entry re-declares the proximity method.
+`scripts/resort-membership-baseline.json` is EMPTY — all 19 communities are evidenced.
+
+**Open, filed but not fixed (pre-existing, wider than this change):**
+`/communities/<city>-<anything>` renders an `index, follow` page with a self-canonical
+for ANY name — proved with the never-registered control
+`/communities/bend-some-ordinary-plat`. The 23 names now land in that unbounded bucket
+instead of 308-ing. The fix is a junk-slug guard on the /communities route (and the
+streaming trap means the redirect must come from middleware, not the page body).
+
+Also fixed here: `generateMetadata` on `/subdivisions/[slug]` titled ~3,200 non-registry
+plat pages "Central Oregon, Oregon". It now takes the city from the indexable set it
+already fetches.
+
+# Prior — 2026-08-26 (Claude Code) — CMA client document, FSBO first touch unblocked, dashboard gap closed
 
 **Surface:** `origin/main`. Continues the "buyer/seller journeys" block below.
 
