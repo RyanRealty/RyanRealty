@@ -18,22 +18,114 @@
     "The clubhouse runs a full-service restaurant and bar with an outdoor deck and a banquet room that holds up to 150, open to the public rather than just members. Pickleball courts operate on site with lessons available through the club, and Operation 36 Golf Academy staffs instruction alongside the club's own teaching professionals. None of that requires owning a home here. It does mean a Widgi Creek address puts a restaurant, a pro shop, and instructors within a short drive rather than across town. That fits a buyer who plays golf or pickleball often enough for the distance to matter, and who would rather look out at an active public course than pay for the privacy of a members-only one. It is a poor fit for a buyer set on a gated community. Bend has those elsewhere, and they are built for exactly that instead."
   ],
   "amenities": [
-    { "category": "Golf", "name": "The Golf Club at Widgi Creek", "description": "18-hole course by Robert Muir Graves, with bent-grass fairways and greens, tight tree-lined fairways, and undulating greens along the Deschutes River Canyon.", "access": "Public tee times; membership options" },
-    { "category": "Golf", "name": "Practice Facility", "description": "Natural-grass driving range, two putting greens, and a practice bunker and chipping area.", "access": "Included with rounds and membership" },
-    { "category": "Dining", "name": "The Grill", "description": "Full-service restaurant and bar in the clubhouse with an outdoor deck and banquet facilities up to 150.", "access": "Open to public" },
-    { "category": "Recreation", "name": "Pickleball Courts", "description": "On-site pickleball with lessons available through the club.", "access": "Members and guests" },
-    { "category": "Golf", "name": "Golf Instruction", "description": "Operation 36 Golf Academy and on-staff professionals offer lessons for all levels.", "access": "Open to public" }
+    {
+      "category": "Golf",
+      "name": "The Golf Club at Widgi Creek",
+      "description": "18-hole course by Robert Muir Graves, with bent-grass fairways and greens, tight tree-lined fairways, and undulating greens along the Deschutes River Canyon.",
+      "access": "Public tee times; membership options"
+    },
+    {
+      "category": "Golf",
+      "name": "Practice Facility",
+      "description": "Natural-grass driving range, two putting greens, and a practice bunker and chipping area.",
+      "access": "Included with rounds and membership"
+    },
+    {
+      "category": "Dining",
+      "name": "The Grill",
+      "description": "Full-service restaurant and bar in the clubhouse with an outdoor deck and banquet facilities up to 150.",
+      "access": "Open to public"
+    },
+    {
+      "category": "Recreation",
+      "name": "Pickleball Courts",
+      "description": "On-site pickleball with lessons available through the club.",
+      "access": "Members and guests"
+    },
+    {
+      "category": "Golf",
+      "name": "Golf Instruction",
+      "description": "Operation 36 Golf Academy and on-staff professionals offer lessons for all levels.",
+      "access": "Open to public"
+    }
+  ],
+  "membership_tiers": [
+    {
+      "label": "Seven-day",
+      "eyebrow": "Full week",
+      "name": "Seven-day golf membership",
+      "description": "Course access any day of the week, for the year.",
+      "details": [
+        {
+          "label": "Annual, starting at",
+          "value": "$3,350"
+        }
+      ],
+      "featured": true
+    },
+    {
+      "label": "Five-day",
+      "eyebrow": "Weekdays",
+      "name": "Five-day golf membership",
+      "description": "Course access Monday through Friday, for the year.",
+      "details": [
+        {
+          "label": "Annual, starting at",
+          "value": "$2,950"
+        }
+      ]
+    },
+    {
+      "label": "Widgi Pass",
+      "eyebrow": "Not a membership",
+      "name": "Widgi Pass",
+      "description": "Discounted green fees for golfers who do not want a full membership.",
+      "details": [
+        {
+          "label": "Annual",
+          "value": "$149"
+        }
+      ]
+    }
   ],
   "drive_times": [
-    { "minutes": 22, "destination": "Mt. Bachelor", "note": "Same road (SW Century Drive); Mt. Bachelor is 22 miles west of Bend" },
-    { "minutes": 35, "destination": "Redmond Airport (RDM)", "note": "RDM is about 16 miles north of Bend; Widgi Creek is 5 miles southwest" }
+    {
+      "minutes": 22,
+      "destination": "Mt. Bachelor",
+      "note": "Same road (SW Century Drive); Mt. Bachelor is 22 miles west of Bend"
+    },
+    {
+      "minutes": 35,
+      "destination": "Redmond Airport (RDM)",
+      "note": "RDM is about 16 miles north of Bend; Widgi Creek is 5 miles southwest"
+    }
   ],
-  "course_specs": { "par": 72, "yardage": 6911, "summary": "18 holes along the Deschutes River Canyon; bent-grass fairways and greens; rating 73.4, slope 134 from the back tees." },
+  "course_specs": {
+    "par": 72,
+    "yardage": 6911,
+    "summary": "18 holes along the Deschutes River Canyon; bent-grass fairways and greens; rating 73.4, slope 134 from the back tees."
+  },
   "citations": [
-    { "fact": "Robert Muir Graves architect, opened 1991, par 72, 6,911 yds, slope 134, rating 73.4", "source_url": "https://www.golflink.com/golf-courses/or/bend/widgi-creek-golf-club" },
-    { "fact": "Voted Central Oregon's favorite public course by The Source 20+ times; pickleball, Operation 36 academy, The Grill, banquet 150", "source_url": "https://www.widgi.com/" },
-    { "fact": "18707 SW Century Dr; bent-grass; range balls with greens fees", "source_url": "https://www.golfpass.com/travel-advisor/courses/62-widgi-creek-golf-club" },
-    { "fact": "Elkai Woods townhomes front Widgi Creek fairways", "source_url": "https://www.redfin.com/OR/Bend/60462-Elkai-Woods-Dr-97702/home/146731913" }
+    {
+      "fact": "Robert Muir Graves architect, opened 1991, par 72, 6,911 yds, slope 134, rating 73.4",
+      "source_url": "https://www.golflink.com/golf-courses/or/bend/widgi-creek-golf-club"
+    },
+    {
+      "fact": "Voted Central Oregon's favorite public course by The Source 20+ times; pickleball, Operation 36 academy, The Grill, banquet 150",
+      "source_url": "https://www.widgi.com/"
+    },
+    {
+      "fact": "18707 SW Century Dr; bent-grass; range balls with greens fees",
+      "source_url": "https://www.golfpass.com/travel-advisor/courses/62-widgi-creek-golf-club"
+    },
+    {
+      "fact": "Elkai Woods townhomes front Widgi Creek fairways",
+      "source_url": "https://www.redfin.com/OR/Bend/60462-Elkai-Woods-Dr-97702/home/146731913"
+    },
+    {
+      "fact": "Widgi Creek golf membership: seven-day from $3,350 a year, five-day from $2,950, Widgi Pass $149. Golf membership is optional and is not an HOA assessment.",
+      "source_url": "https://www.widgi.com/golf/memberships"
+    }
   ],
   "source": "Original citations[] (GolfLink, widgi.com, GolfPass, Redfin) verified in a prior pass. about_prose rewritten and expanded 2026-08-03 to long-form editorial per docs/audits/WEBSITE_AUDIT_2026-08-02.md, drawing on the same base sources plus the Bend Bulletin (1991 opening and the course's original name), Wikipedia (architect Robert Muir Graves biography and other Central Oregon work), hoa-bend.com and a 2020 Oregon Court of Appeals case (three-HOA governance structure), Deschutes County Road Department (seasonal Century Drive/Cascade Lakes Highway closure), and maplogs.com (elevation). No market figures included by design. See the sources array for per-claim provenance.",
   "sources": [
@@ -86,6 +178,11 @@
       "url": "https://elevation.maplogs.com/poi/sw_century_dr_bend_or_usa.369730.html",
       "publisher": "Maplogs",
       "supports": "Elevation of SW Century Dr, Bend, OR at approximately 3,927 feet"
+    },
+    {
+      "url": "https://www.widgi.com/golf/memberships",
+      "publisher": "Widgi Creek Golf Club",
+      "supports": "Verbatim from the page HTML: \"Starting at just $2,950 for the entire year, we offer a five-day\", \"seven-day memberships starting at just $3,350\", \"The $149 Widgi Pass provides discounted green\". Read from raw HTML, not a summary."
     }
   ],
   "last_modified": "2026-08-03T00:00:00Z"

@@ -50,6 +50,65 @@
       "access": "Per membership and ownership agreements"
     }
   ],
+  "membership_tiers": [
+    {
+      "label": "Resident",
+      "eyebrow": "Crosswater property owners",
+      "name": "Resident membership",
+      "description": "For owners at Crosswater. Course access, member tee-time windows, and the clubhouse.",
+      "details": [
+        {
+          "label": "Initiation",
+          "value": "$60,000"
+        },
+        {
+          "label": "Monthly, local",
+          "value": "$725"
+        },
+        {
+          "label": "Monthly, out of area",
+          "value": "$625"
+        }
+      ],
+      "featured": true
+    },
+    {
+      "label": "Golf",
+      "eyebrow": "Open to non-owners",
+      "name": "Golf membership",
+      "description": "Course access without owning at Crosswater. Same monthly dues as Resident, lower initiation.",
+      "details": [
+        {
+          "label": "Initiation",
+          "value": "$40,000"
+        },
+        {
+          "label": "Monthly, local",
+          "value": "$725"
+        },
+        {
+          "label": "Monthly, out of area",
+          "value": "$625"
+        }
+      ]
+    },
+    {
+      "label": "Social",
+      "eyebrow": "No course access",
+      "name": "Social membership",
+      "description": "Clubhouse, dining, and the club calendar. No golf.",
+      "details": [
+        {
+          "label": "Initiation",
+          "value": "$2,500"
+        },
+        {
+          "label": "Monthly dues",
+          "value": "$145"
+        }
+      ]
+    }
+  ],
   "drive_times": [
     {
       "minutes": 5,
@@ -110,6 +169,10 @@
     {
       "fact": "Golfweek #17 Best Residential; rating 76.5 slope 145; 3 miles of trails; Sage Springs Spa; The Grille",
       "source_url": "https://sunriverrealty.com/neighborhoods/crosswater"
+    },
+    {
+      "fact": "Crosswater club membership 2026: Resident $60,000 initiation / $725 monthly local / $625 out of area; Golf $40,000 / $725 / $625; Social $2,500 / $145. Club membership is optional and is not an HOA assessment.",
+      "source_url": "https://crosswater.com/membership"
     }
   ],
   "source": "Wikipedia (Crosswater Club), crosswater.com, sunriverresort.com, sunriverrealty.com. See citations[] for the per-fact course/ranking trace. Long-form about_prose rewrite added 2026-08-03 (geography, ownership composition, schools, Dark Sky designation). See sources[] below for that pass's provenance.",
@@ -184,6 +247,11 @@
       "url": "https://www.sunriverresort.com/accommodations/osprey-pointe-at-crosswater",
       "publisher": "Sunriver Resort",
       "supports": "Osprey Pointe units at Crosswater are offered through Sunriver Resort's vacation rental program"
+    },
+    {
+      "url": "https://crosswater.com/membership",
+      "publisher": "Crosswater, Sunriver Resort",
+      "supports": "Verbatim from the page HTML: \"INITIATION FEE* $60,000 MONTHLY LOCAL AREA $725 MONTHLY OUT-OF-AREA $625\" (Resident), \"INITIATION FEE $40,000\" (Golf), \"INITIATION FEE $2,500 MONTHLY DUES $145\" (Social). Read from raw HTML, not a summary."
     }
   ]
 }
