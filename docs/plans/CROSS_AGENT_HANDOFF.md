@@ -3,7 +3,85 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-25 (Claude Opus 5) — MARKET_TRUTH D26+D27 shipped, 2,526 unshipped lines rescued, sandbox race killed
+# Current — 2026-08-26 (Claude Code) — CMA client document, FSBO first touch unblocked, dashboard gap closed
+
+**Surface:** `origin/main`. Continues the "buyer/seller journeys" block below.
+
+**CMA — READ `marketing_brain_skills/producers/cma/SKILL.md` BEFORE TOUCHING THE
+ENGINE.** Matt stopped a change mid-flight with "you must know how we do cmas
+before implementing anything". Two of my first instincts were wrong:
+- The missing comp subtype filter I flagged was ALREADY FIXED (hard product-type
+  exclusion, Fannie Mae B4-1.3-08, `6f37d466` Aug 23). The CMA I judged was built
+  Aug 12 and predates it. Judge a FRESH build, never an old artifact.
+- Unknown subtype FAILS CLOSED on purpose (SKILL.md:275) — `PropertyType='A'`
+  once mixed 14% attached/manufactured into Bend sales, "that is how Santorini
+  townhomes appeared next to an SFR". Never loosen it.
+
+Shipped:
+- `6148d113` **recommended list no longer prints at its own floor.** Not policy,
+  a collapse: `recommended` is Method 3, and when the method spread landed at or
+  below it the clamp pulled `conservative` DOWN to meet it and flattened the
+  band ("$395,000 · supported range $395,000 to $420,000"). Now the midpoint.
+  STAYS WITHIN SUPPORT — SKILL.md §4 step 9 forbids the engine listing above
+  support unilaterally, and the accuracy contract hard-checks
+  conservative <= recommended <= highEnd. A broker priceOverride is untouched.
+- `59733785` **stale photo, plain English, neighborhood wording.** The
+  aerial-fallback rule was locked 2026-06-13 and only HALF built: heroForSubject
+  had no age check (a Jan 2023 photo led a 2026 pricing document) and its
+  no-photo branch returned null — the blank the directive forbids. Staleness is
+  24 months, matching the contract's comp-recency window. "Capped by method
+  spread 6%" is now plain English, and the Bend-only mesh no longer tells every
+  Redmond/Sisters/Sunriver/La Pine seller they sit "outside every mapped
+  neighborhood polygon".
+
+**Property-type comp coverage — DECISIONS MADE, CODE NOT WRITTEN.**
+`productClass` maps only detached / attached / manufactured-on-land /
+leased-land / coop. Everything else returns null and `productTypeCompatible`
+fails closed, so those subjects get ZERO comps and cannot be CMA'd at all:
+**1,652 closed sales in 12 months, ~15% of inventory** — Residential Lots 773,
+In Park 429, Duplex 136, Recreational 89, Agriculture 63, Multi Family 41,
+Quadruplex 41, Commercial 35, Rangeland 15, Triplex 15, Industrial 9,
+Investment 4, Timeshare 2.
+**Matt's grouping:** land = EACH TYPE SEPARATE (lots comp only to lots, ag to
+ag); multi-family = 2-4 UNITS AS ONE CLASS. Give each its own ProductClass so
+exact-match still holds. This is the next piece of CMA work.
+
+**FSBO first touch — was dead, now live.** `fsbo-first-touch-v1` had
+`is_active = false` and `sendProspectingIntro` hard-fails on an inactive
+template, so EVERY FSBO first touch failed while expired worked (expired revised
+Aug 6, FSBO untouched since Jul 15). Rewritten to mirror the expired body (169
+chars, one segment, service pitch moved into the CMA the link opens), voice
+clean, activated with Matt's approval. Everything else on that path was already
+built and well guarded: quiet hours, ensureNativeLead, person AND phone-keyed
+suppression, token fail-close, short-linking, `_pid` stitch.
+
+**Dashboard.** Most of the Phase 4 list already worked — saved homes carry Share
+(native sheet, SMS, WhatsApp, Facebook, X, LinkedIn, copy) plus
+like/save/remove via ListingTile's CardActionBar; hidden / saved-searches /
+collections / history all render. I nearly built a duplicate share component
+before checking. The real gap was no CMA/home-value entry in the account
+dashboard; added to AccountNav as "Value my home" (ci:brand-voice rejects
+"What's my home worth?" as a CTA outright).
+
+**Booking.** Google Calendar merged into availability for all three brokers
+(`bc311742`) after Matt asked whether scheduling read the calendars — it did
+not. Read via a NEW `getGcalBusyIntervals`, because `getGcalEvents` collapses a
+failed API call into an empty list, which here would publish a free week.
+All-day events are skipped: the CRM writes its own TC milestones into that
+calendar and counting them is what showed 4 bookable days out of 15.
+Consequence: an all-day "Vacation" does not hold time, use a timed event.
+Hours Mon-Sat 09:00-17:00.
+
+**Open**
+- Property-type comp coverage (above) — the next CMA task.
+- CMA PDF right-margin overflow on the adjustment grid at high comp counts.
+  Pre-existing, verified on a clean tree, running in its own session.
+- Overlapping saved searches still send simultaneous near-duplicate emails.
+- A zero-match alert still tells nobody (4 of 24 active alerts).
+- 332 CMA drafts vs **2** real client deliveries (the other 5 "delivered" are
+  zz-test fixtures). Matt: document first, backlog after.
+
+## Prior — 2026-08-25 (Claude Opus 5) — MARKET_TRUTH D26+D27 shipped, 2,526 unshipped lines rescued, sandbox race killed
 
 **Surface:** `origin/main` `bb604b78`. D26 and D27 deployed and verified on ryan-realty.com.
 
