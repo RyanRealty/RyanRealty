@@ -9,6 +9,8 @@
   "is_master_planned": true,
   "acres": 1000,
   "founded": 2006,
+  "hoa_master_assessment_quarterly": 1095,
+  "hoa_master_assessment_annual": 4380,
   "about_prose": [
     "Caldera Springs sits fifteen miles south of Bend, next to Sunriver Resort, at roughly 4,170 feet of elevation in the high desert along the upper Deschutes River. The community's own design guidelines place the site in a semi-arid Montane Life Zone, a transition band between the Great Basin Desert and the Cascade Range, covered in ponderosa and lodgepole pine with an understory of sagebrush, bitterbrush, and manzanita. Average annual precipitation runs 18 inches and average snowfall 49 inches, though the range swings hard from year to year. One winter brought 13 inches of snow, the next brought 144, according to those same guidelines. Every builder in the community designs around that swing. Snow-load framing, solar gain through winter windows, and wildfire resistance all run through the same approval process. Caldera Springs holds Firewise Community status, and the guidelines require wildfire-resistant roofing, building materials, and defensible landscaping before anyone breaks ground.",
     "PacTrust opened the community in 2006 on 400 acres, with an original plan for 320 single-family homesites and 45 cabins. A 600-acre eastward expansion, launched in 2021, brought the master plan to its current 1,000 acres. Roughly a fifth of that total, 220 acres, was set aside rather than built on, carried in the plat as a protected wildlife mitigation area and marketed today as the Wildlife Forest Preserve. The lake and stream system at the center of the community, 14.7 acres of water including Obsidian Lake and Trailmere Lake, predates the expansion and still anchors it. So does Caldera Links, a nine-hole, par-27 course designed by golf architect Bob Cupp, with holes running a tight 60 to 185 yards and built for an afternoon rather than a full day on the course.",
@@ -17,28 +19,106 @@
     "Kids in the community feed into Three Rivers School, a K-8 public school in Sunriver and one of 36 schools in the Bend-La Pine School District. That K-8 structure matters before you buy. There is no town center inside the gates and no high school on site, so daily life runs on a drive, into Sunriver Village for basics or up US-97 into Bend for anything larger. The other trade-off is that privacy only goes so far here. The golf course, the trails, and now the Lake House restaurant are shared with Sunriver Resort's overnight guests as well as owners, so a quiet Tuesday morning at Obsidian Lake can turn crowded the moment resort occupancy fills for a holiday weekend. And every custom home has to clear the Design Review Committee before a shovel goes in the ground, which protects the look of the neighborhood but limits how far a buyer can depart from the approved Northwest Mountain palette."
   ],
   "amenities": [
-    { "category": "Dining", "name": "Lake House", "description": "Waterfront restaurant on Obsidian Lake with indoor-outdoor dining and Mt. Bachelor views, plus the adjacent Shore Shack walkup bar with fire-pit seating.", "access": "Public" },
-    { "category": "Recreation", "name": "Forest House", "description": "Recreation center with multiple heated outdoor pools, one of Oregon's longest dual-racer water slides, a lazy river, a kids' pool, a 1,748-square-foot fitness center, a game room, and poolside dining.", "access": "Owners and Sunriver Resort vacation-home guests only" },
-    { "category": "Recreation", "name": "The Quarry", "description": "Infinity-edge pool overlooking Obsidian Lake, outdoor year-round spas, and a fitness center with stocked locker rooms.", "access": "Owners and resort guests" },
-    { "category": "Recreation", "name": "Forest Park", "description": "Four-season park with six pickleball courts, a dog park, a children's play area, and a winter sledding hill.", "access": "Owners and resort guests" },
-    { "category": "Recreation", "name": "Caldera Links Golf Course", "description": "A 9-hole, par-27 course designed by Bob Cupp, with holes from 60 to 185 yards plus putting and chipping greens.", "access": "Owners and Sunriver Resort guests" },
-    { "category": "Recreation", "name": "Lakes and Trails", "description": "14.7 acres of lakes and streams with paddleboard, kayak, and canoe rentals through The Outpost, connected by 13 miles of paved and soft trails.", "access": "Owners and resort guests" },
-    { "category": "Wellness", "name": "Spa at Sunriver Resort", "description": "Full-service spa at the adjacent Sunriver Resort, with complimentary fitness-center access for Caldera Springs owners and guests.", "access": "Owners and resort guests" },
-    { "category": "Other", "name": "Wildlife Forest Preserve", "description": "A 220-acre permanently protected open space supporting habitat for river otters and bald eagles observed on the community's waterways.", "access": "Community open space" }
+    {
+      "category": "Dining",
+      "name": "Lake House",
+      "description": "Waterfront restaurant on Obsidian Lake with indoor-outdoor dining and Mt. Bachelor views, plus the adjacent Shore Shack walkup bar with fire-pit seating.",
+      "access": "Public"
+    },
+    {
+      "category": "Recreation",
+      "name": "Forest House",
+      "description": "Recreation center with multiple heated outdoor pools, one of Oregon's longest dual-racer water slides, a lazy river, a kids' pool, a 1,748-square-foot fitness center, a game room, and poolside dining.",
+      "access": "Owners and Sunriver Resort vacation-home guests only"
+    },
+    {
+      "category": "Recreation",
+      "name": "The Quarry",
+      "description": "Infinity-edge pool overlooking Obsidian Lake, outdoor year-round spas, and a fitness center with stocked locker rooms.",
+      "access": "Owners and resort guests"
+    },
+    {
+      "category": "Recreation",
+      "name": "Forest Park",
+      "description": "Four-season park with six pickleball courts, a dog park, a children's play area, and a winter sledding hill.",
+      "access": "Owners and resort guests"
+    },
+    {
+      "category": "Recreation",
+      "name": "Caldera Links Golf Course",
+      "description": "A 9-hole, par-27 course designed by Bob Cupp, with holes from 60 to 185 yards plus putting and chipping greens.",
+      "access": "Owners and Sunriver Resort guests"
+    },
+    {
+      "category": "Recreation",
+      "name": "Lakes and Trails",
+      "description": "14.7 acres of lakes and streams with paddleboard, kayak, and canoe rentals through The Outpost, connected by 13 miles of paved and soft trails.",
+      "access": "Owners and resort guests"
+    },
+    {
+      "category": "Wellness",
+      "name": "Spa at Sunriver Resort",
+      "description": "Full-service spa at the adjacent Sunriver Resort, with complimentary fitness-center access for Caldera Springs owners and guests.",
+      "access": "Owners and resort guests"
+    },
+    {
+      "category": "Other",
+      "name": "Wildlife Forest Preserve",
+      "description": "A 220-acre permanently protected open space supporting habitat for river otters and bald eagles observed on the community's waterways.",
+      "access": "Community open space"
+    }
   ],
   "drive_times": [
-    { "minutes": 2, "destination": "Sunriver Resort", "note": "Directly adjacent" },
-    { "minutes": 15, "destination": "Bend / Old Mill District", "note": "Sunriver is 15 miles south of Bend via US-97" },
-    { "minutes": 20, "destination": "Mt. Bachelor", "note": "Via Century Drive and Cascade Lakes Highway" },
-    { "minutes": 42, "destination": "Redmond Airport (RDM)", "note": "34 miles via US-97 north through Bend" }
+    {
+      "minutes": 2,
+      "destination": "Sunriver Resort",
+      "note": "Directly adjacent"
+    },
+    {
+      "minutes": 15,
+      "destination": "Bend / Old Mill District",
+      "note": "Sunriver is 15 miles south of Bend via US-97"
+    },
+    {
+      "minutes": 20,
+      "destination": "Mt. Bachelor",
+      "note": "Via Century Drive and Cascade Lakes Highway"
+    },
+    {
+      "minutes": 42,
+      "destination": "Redmond Airport (RDM)",
+      "note": "34 miles via US-97 north through Bend"
+    }
   ],
   "citations": [
-    { "fact": "Established 2006 on 400 acres; original plan 320 homes + 45 cabins", "source_url": "https://www.pactrust.com/about/partnerships/caldera-springs/" },
-    { "fact": "600-acre expansion began 2021; master plan now 1,000 acres; 220-acre Wildlife Forest Preserve", "source_url": "https://ktvz.com/news/business/2024/09/10/caldera-springs-in-sunriver-expands-amenities-adds-new-elements-for-visitors-residents-to-enjoy/" },
-    { "fact": "14.7 acres of lakes; Forest House with pools, dual-racer slide, 1,748 sq ft fitness center; 13 miles of trails", "source_url": "https://calderasprings.com/lifestyle/" },
-    { "fact": "Forest Park: six pickleball courts, dog park, play area, sledding hill; Lake House public", "source_url": "https://www.bendsource.com/business/sunriver-resort-expands-its-amenity-offerings-with-the-debut-of-forest-house-forest-park-and-reimagined-lake-house-at-caldera-springs-21612444/" },
-    { "fact": "Caldera Links 9-hole par-27 (Bob Cupp), holes 60-185 yds", "source_url": "https://www.golforegon.com/golfcourses/sunriver-resort-caldera-links" },
-    { "fact": "Forestbrook homes from $1.29M, first nine delivered summer 2024; managed by CoralTree Hospitality", "source_url": "https://westernhomejournal.com/bend-oregon/a-new-era-at-caldera-springs/" }
+    {
+      "fact": "Established 2006 on 400 acres; original plan 320 homes + 45 cabins",
+      "source_url": "https://www.pactrust.com/about/partnerships/caldera-springs/"
+    },
+    {
+      "fact": "600-acre expansion began 2021; master plan now 1,000 acres; 220-acre Wildlife Forest Preserve",
+      "source_url": "https://ktvz.com/news/business/2024/09/10/caldera-springs-in-sunriver-expands-amenities-adds-new-elements-for-visitors-residents-to-enjoy/"
+    },
+    {
+      "fact": "14.7 acres of lakes; Forest House with pools, dual-racer slide, 1,748 sq ft fitness center; 13 miles of trails",
+      "source_url": "https://calderasprings.com/lifestyle/"
+    },
+    {
+      "fact": "Forest Park: six pickleball courts, dog park, play area, sledding hill; Lake House public",
+      "source_url": "https://www.bendsource.com/business/sunriver-resort-expands-its-amenity-offerings-with-the-debut-of-forest-house-forest-park-and-reimagined-lake-house-at-caldera-springs-21612444/"
+    },
+    {
+      "fact": "Caldera Links 9-hole par-27 (Bob Cupp), holes 60-185 yds",
+      "source_url": "https://www.golforegon.com/golfcourses/sunriver-resort-caldera-links"
+    },
+    {
+      "fact": "Forestbrook homes from $1.29M, first nine delivered summer 2024; managed by CoralTree Hospitality",
+      "source_url": "https://westernhomejournal.com/bend-oregon/a-new-era-at-caldera-springs/"
+    },
+    {
+      "fact": "CSOA assessment 2025: $1,095 per quarter ($365 per month); Working Capital Contribution $1,095 at closing",
+      "source_url": "https://calderasprings.com/wp-content/uploads/2025/01/2025-CS-Facts-and-Figures.pdf"
+    }
   ],
   "last_modified": "2026-08-03T00:00:00Z",
   "sources": [
@@ -86,6 +166,11 @@
       "url": "https://www.greatschools.org/oregon/sunriver/210-Three-Rivers-K-8-School/",
       "publisher": "GreatSchools",
       "supports": "Three Rivers School is a K-8 public school in Sunriver and one of 36 schools in the Bend-La Pine School District."
+    },
+    {
+      "url": "https://calderasprings.com/wp-content/uploads/2025/01/2025-CS-Facts-and-Figures.pdf",
+      "publisher": "Caldera Springs Owners' Association (CSOA), Facts and Figures 2025",
+      "supports": "Verbatim: \"Association assessments for 2025 are $1,095 per quarter ($365 per month)\" and \"The 2025 Working Capital Contribution for any lot or home is $1,095.\" Read directly from the PDF text layer, not a summary."
     }
   ]
 }
