@@ -48,6 +48,16 @@ export type ResortCommunityEntry = {
    *  for the registry city PLUS these, or alias matching sees zero homes.
    *  Verified 2026-07-29 audit sweep; gated by check-community-alias-cities. */
   mls_cities?: string[]
+  /** Names this community used to go by, still live in the MLS. A rebrand does
+   *  NOT retire the old name: Juniper Preserve renamed from Pronghorn in Oct
+   *  2022, but every one of its listings is still tagged SubdivisionName
+   *  'Pronghorn' (zero MLS rows anywhere contain 'preserve'), and the HOA, the
+   *  recorded plats and the streets all still say Pronghorn. So the former name
+   *  stays in `subdivision_aliases` and keeps matching — it is only hidden from
+   *  the "Subdivisions in X" membership rendering, which would otherwise
+   *  publish the community's own former self as a neighbourhood inside it.
+   *  One rule, one place: lib/communities/community-own-names.ts. */
+  former_labels?: string[]
   sub_neighborhoods: SubNeighborhood[]
   child_count: number
   character?: string | null

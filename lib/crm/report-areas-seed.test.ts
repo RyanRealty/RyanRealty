@@ -37,11 +37,58 @@ function readAllSeededRows(): Array<{ key: string; label: string }> {
   return SEED_MIGRATIONS.flatMap((f) => readSeededRows(f))
 }
 
+/**
+ * Migrations that RENAME a seeded label after the fact. A place can be renamed
+ * without being re-seeded — Pronghorn became Juniper Preserve in October 2022
+ * and the registry caught up on 2026-08-26 — and the row `key` deliberately does
+ * NOT change, because it is the join key for existing contact subscriptions.
+ *
+ * Parsed rather than hardcoded so this test keeps checking the real migration.
+ */
+const RENAME_MIGRATIONS = ['20260826140000_crm_report_areas_juniper_preserve.sql'] as const
+
+/** key -> { from, to } for every label rename applied after the seed. */
+function readLabelRenames(): Map<string, { from: string; to: string }> {
+  const renames = new Map<string, { from: string; to: string }>()
+  for (const file of RENAME_MIGRATIONS) {
+    const src = readFileSync(join(ROOT, 'supabase', 'migrations', file), 'utf8')
+    const re =
+      /update\s+public\.crm_report_areas\s+set\s+label\s*=\s*'([^']+)'\s+where\s+key\s*=\s*'([a-z0-9-]+)'\s*and\s+label\s*=\s*'([^']+)'/gi
+    for (const m of src.matchAll(re)) renames.set(m[2], { from: m[3], to: m[1] })
+  }
+  return renames
+}
+
+/** The catalog as it stands in the DB: seeded rows with renames applied. */
+function effectiveRows(): Array<{ key: string; label: string }> {
+  const renames = readLabelRenames()
+  return readAllSeededRows().map((row) =>
+    renames.get(row.key)?.from === row.label
+      ? { key: row.key, label: renames.get(row.key)!.to }
+      : row,
+  )
+}
+
+/** Undo the renames on builder output, giving the labels as they were at seed time. */
+function asSeedTimeLabels(
+  rows: Array<{ key: string; label: string }>,
+): Array<{ key: string; label: string }> {
+  const renames = readLabelRenames()
+  return rows.map((row) =>
+    renames.get(row.key)?.to === row.label
+      ? { key: row.key, label: renames.get(row.key)!.from }
+      : row,
+  )
+}
+
 const byKey = (a: { key: string }, b: { key: string }) => a.key.localeCompare(b.key)
 
 describe('crm_report_areas seed', () => {
   it('seeds exactly buildMarketReportAreas() across both seed migrations', () => {
-    const seeded = [...readAllSeededRows()].sort(byKey)
+    // Compares the catalog's EFFECTIVE state — seed plus any later rename
+    // migration — so a registry rename must be carried into the DB, and a
+    // registry edit with no migration still fails.
+    const seeded = [...effectiveRows()].sort(byKey)
     const built = buildMarketReportAreas()
       .map((a) => ({ key: a.slug, label: a.label }))
       .sort(byKey)
@@ -49,9 +96,19 @@ describe('crm_report_areas seed', () => {
   })
 
   it('original migration keeps builder label-sort order for its 25 areas', () => {
+    // This one is about the seed FILE's physical row order, which was written in
+    // the builder's label-sort order and cannot be rewritten now. A rename moves
+    // a place in that sort (Pronghorn sat between Powell Butte and Redmond;
+    // Juniper Preserve sorts up under J), so the builder is compared at its
+    // SEED-TIME labels. The rename migration renumbers `position`, which is what
+    // actually drives display order.
     const seeded = readSeededRows(SEED_MIGRATIONS[0])
-    const builtSubset = buildMarketReportAreas()
-      .map((a) => ({ key: a.slug, label: a.label }))
+    const builtSubset = asSeedTimeLabels(
+      buildMarketReportAreas().map((a) => ({ key: a.slug, label: a.label })),
+    )
+      // Re-sort on the seed-time labels: reversing the rename is not enough,
+      // because the builder emits label-sorted and the rename moved the row.
+      .sort((a, b) => a.label.localeCompare(b.label))
       .filter((a) => seeded.some((s) => s.key === a.key))
     expect(seeded).toEqual(builtSubset)
   })

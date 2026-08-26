@@ -1,5 +1,6 @@
 // brand-voice:exempt — factual market Q&A generated from verified live data, no marketing prose
 import type { StatValue } from '@/lib/site/json-ld'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { marketVerdict, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -229,7 +230,14 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   // Subdivisions / areas that make up this community — answered from the registry.
   // Only emit when there are 2+ distinct aliases (a single-alias community has
   // nothing interesting to list). Cap display at 6 so the answer stays readable.
-  const aliases = (pulse.subdivisionAliases ?? []).filter(Boolean)
+  // Same publish contract the alias chips use: an MLS abbreviation is an ingest
+  // key, not a name a buyer reads, and publishPlatDisplayName withholds it by
+  // returning null. Without this the answer read "Sunriver includes The Ridge,
+  // StoneTH, ..." — and before the caller switched to childAliasesOf it also
+  // opened "Sunriver includes Sunriver". (ci:publish-place-names)
+  const aliases = (pulse.subdivisionAliases ?? [])
+    .map((a) => publishPlatDisplayName(a))
+    .filter((a): a is string => Boolean(a))
   if (aliases.length >= 2) {
     const display = aliases.slice(0, 6)
     const more = aliases.length > 6 ? ` and ${aliases.length - 6} more` : ''

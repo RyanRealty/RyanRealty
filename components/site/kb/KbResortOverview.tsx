@@ -52,7 +52,17 @@ export function KbResortOverview({
   // NOT display-corrected here, because slugify(a) below must match the same
   // raw subdivision_name the destination /subdivisions/[slug] page filters
   // listings by; only the visible TEXT gets the display-name correction.
-  const aliasChips = aliases.filter((a) => a.toLowerCase().trim() !== name.toLowerCase().trim())
+  // `aliases` already excludes the community's own names (the page filters with
+  // childAliasesOf before passing them), so this only has to drop the ones the
+  // publish contract WITHHOLDS. publishPlatDisplayName returns null for an MLS
+  // abbreviation on purpose — "StoneTH", "WildflS", "Oww", "DrrhTrs" are ingest
+  // keys, not names a buyer should read. This used to render `?? a`, which
+  // printed the raw abbreviation and defeated the contract; peerPlatsForResort
+  // has always dropped them, so the two renderers disagreed on the same list.
+  // Drop, do not fall back. (ci:publish-place-names)
+  const aliasChips = aliases
+    .map((a) => ({ alias: a, display: publishPlatDisplayName(a) }))
+    .filter((chip): chip is { alias: string; display: string } => Boolean(chip.display))
 
   const hoa = publishedHoa ?? publishPlaceHoa({ masterAnnual: content.hoaMasterAnnual })
   const facts: { label: string; value: string }[] = [
@@ -118,9 +128,13 @@ export function KbResortOverview({
               <div className="ov-aliases">
                 <span className="ov-sub mono-lab">Subdivisions in {name}</span>
                 <div className="ov-alias-row">
-                  {aliasChips.map((a) => (
-                    <Link key={a} href={`/subdivisions/${slugify(a)}`} className="ov-alias ov-alias-link">
-                      {publishPlatDisplayName(a) ?? a}
+                  {aliasChips.map(({ alias, display }) => (
+                    <Link
+                      key={alias}
+                      href={`/subdivisions/${slugify(alias)}`}
+                      className="ov-alias ov-alias-link"
+                    >
+                      {display}
                       <span className="ov-alias-arr" aria-hidden="true">›</span>
                     </Link>
                   ))}

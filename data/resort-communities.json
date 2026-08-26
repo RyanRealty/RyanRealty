@@ -154,7 +154,7 @@
   },
   {
    "slug": "pronghorn",
-   "label": "Pronghorn",
+   "label": "Juniper Preserve",
    "city": "Bend",
    "city_slug": "bend",
    "is_resort": true,
@@ -168,9 +168,21 @@
    ],
    "child_count": 0,
    "verification": {
-    "method": "Spark /listings/nearby + closest-parent assignment + \u226580% inside-test",
-    "children_with_pct": []
-   }
+    "method": "Single-name community: the only MLS SubdivisionName is 'Pronghorn' and it names the community itself, so there is no membership claim to test. Verified 2026-08-26 against Deschutes County records and the resort's own site. Supersedes the prior 'Spark /listings/nearby + closest-parent assignment + >=80% inside-test', which asserted nothing here because the entry has no children.",
+    "confirmed": [],
+    "rename_2026_08_26": {
+     "from": "Pronghorn",
+     "to": "Juniper Preserve",
+     "announced": "2022-10-17",
+     "why": "Primary source: the resort's own site publishes og:site_name 'Juniper Preserve' and the footer 'JUNIPER PRESERVE GOLF & WELLNESS RESORT, 65600 Pronghorn Club Drive, Bend, Oregon 97701' (juniperpreserve.com). The rebrand was announced 2022-10-17 ('Pronghorn Club and Resort Rebrands as Juniper Preserve, a Destination Wellness Resort', PRWeb), reported by KTVZ 2022-11-11 and The Bulletin 2022-11-13, and is still current: the GM filed Oregon House Revenue testimony on 2026-02-04 signed 'General Manager, Juniper Preserve'. Owner The Resort Group, operator Troon.",
+     "what_kept_the_old_name": "EVERYTHING OF RECORD. The HOA is PRONGHORN COMMUNITY ASSOC INC; the recorded subdivisions are Core Area at Pronghorn, Estates at Pronghorn Phases 1-6, Villas at Pronghorn Townhomes and Residence Club at Pronghorn Villas Condominiums; the streets are Pronghorn Club Dr and Pronghorn Estates Dr; Troon lists the club as 'Pronghorn at Juniper Preserve'. A Deschutes County DIAL subdivision search for 'juniper preserve' returns no matches, and county-wide 'preserve' returns none either. Decisively for us: MLS SubdivisionName has exactly one Pronghorn value -- 'Pronghorn' -- and ZERO rows anywhere contain 'preserve'. So 'Pronghorn' stays a LIVE alias, not a redirect-only relic, and it is listed in former_labels so no renderer publishes it as a subdivision OF Juniper Preserve.",
+     "name_matching_hazard": "Match the full string 'Juniper Preserve' only, never 'Juniper'. Deschutes County records Juniper Acres, Juniper Creek, Juniper Glen, Juniper Hill, Juniper Meadows, Juniper Ridge (the City of Bend industrial district), Juniper Rim, Juniper Vista and Lone Juniper Estates; the MLS adds Juniper Hills, Juniper Crest, Juniper Estate and Juniper Mob Park; and Redmond has a municipal Juniper Golf Course. JUNIPER LODGE CONDOMINIUM is the recorded plat for the hotel INSIDE this resort and must not stand in for the community."
+    }
+   },
+   "former_labels": [
+    "Pronghorn"
+   ],
+   "slug_note": "SLUG STAYS 'pronghorn' ON PURPOSE. The hospitality brand renamed to Juniper Preserve in Oct 2022, but the slug is a durable KEY, not a display name: geo_snapshot_mv carries geo_key='bend:pronghorn' (the market-stat-consistency cron sentinels on it), market_stats_cache rows are keyed geo_slug='pronghorn', and lib/community-slug.ts, luxury-rows.ts and the RESORT_IMG map all key on it. Renaming the slug orphans live figures on a $1M+ community page until every cache rebuilds. The PUBLIC NAME is what changed; /communities/juniper-preserve resolves to this entry by label."
   },
   {
    "slug": "caldera-springs",

@@ -96,6 +96,7 @@ import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-sourc
 import { getDistrictForCity } from '@/data/co-schools'
 import { homesForSalePath } from '@/lib/slug'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { childAliasesOf } from '@/lib/communities/community-own-names'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { CONTACT } from '@/lib/brand/contact'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -188,10 +189,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
+  // THE REGISTRY LABEL IS THE PUBLIC NAME. `community.name` is rebuilt from the
+  // SLUG by parseCommunitySlug, so it can only ever say what the slug says —
+  // and a slug is a durable key, not a display name. Juniper Preserve is the
+  // case that proved it: the body read "Juniper Preserve" (from the content
+  // file) while this <title> still read "Pronghorn Homes for Sale", because the
+  // slug stays 'pronghorn' to keep geo_snapshot_mv's geo_key 'bend:pronghorn'
+  // and the market_stats_cache rows valid. One name, one source. (§0)
+  const publicName = getResortCommunityBySlug(slug)?.label ?? community.name
   // §0 NO COUNT HERE: `activeCount` fell through to the parent CITY's, so
   // three-rivers read "1000 homes for sale" (Bend's, row-capped) and sunriver 121
   // vs a body showing 102. Re-deriving it here is out (the SEO-58 incident).
-  const desc = `Active single-family homes in ${community.name}, ${community.city}, Oregon. Live inventory, open houses, and market stats from the regional MLS.`
+  const desc = `Active single-family homes in ${publicName}, ${community.city}, Oregon. Live inventory, open houses, and market stats from the regional MLS.`
 
   // OG image: use the community's curated KB hero photo when one exists, else the
   // generic branded card. Both paths are absolute at render time via pageMetadata.
@@ -219,13 +228,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ogImage =
     KB_HERO[slug] ??
     COMMUNITY_HERO[slug] ??
-    `/api/og?type=community&name=${encodeURIComponent(community.name)}&city=${encodeURIComponent(community.city)}`
+    `/api/og?type=community&name=${encodeURIComponent(publicName)}&city=${encodeURIComponent(community.city)}`
 
   return pageMetadata({
     // Fix 2: Title ≤60 chars — community override (not the global template).
     // Format: "[Community] Homes for Sale | [City], OR"
     // cleanTitle in page-metadata.ts strips any trailing brand suffix + caps at 60.
-    title: `${community.name} Homes for Sale | ${community.city}, OR`,
+    title: `${publicName} Homes for Sale | ${community.city}, OR`,
     description: desc,
     path: `/communities/${slug}`,
     ogImage,
@@ -271,6 +280,19 @@ export default async function CommunityDetailPage({ params }: Props) {
   const resortSlug = resortMatch?.slug ?? slug
   const registryEntry = getResortCommunityBySlug(resortSlug)
   const isResort = registryEntry?.is_resort === true || community.isResort
+  // The aliases that name a subdivision INSIDE this community — the only ones a
+  // membership claim may list. Drops the community's own current and former
+  // names; the FULL `subdivision_aliases` list stays the key for counts, market
+  // scope and the CMA resort guard, where a former label must still match.
+  const childAliases = registryEntry
+    ? childAliasesOf(registryEntry, registryEntry.subdivision_aliases)
+    : []
+  // Same rule as generateMetadata: the registry label is the public name, and
+  // `community.name` is only ever the slug read back through parseCommunitySlug.
+  // Juniper Preserve keeps slug 'pronghorn' (a durable cache key — geo_snapshot_mv
+  // geo_key 'bend:pronghorn', market_stats_cache geo_slug), so the two disagree
+  // by design and every visitor-facing string below takes the label. (§0)
+  const publicName = registryEntry?.label ?? community.name
   const isResortInCity = Boolean(resortMatch)
 
   // community geo snapshot keys are stored as "city:subdivision" lowercase.
@@ -551,7 +573,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const mapPolygons = polygonGeometry
     ? {
         type: 'FeatureCollection' as const,
-        features: [{ type: 'Feature' as const, geometry: polygonGeometry as unknown, properties: { name: community.name } }],
+        features: [{ type: 'Feature' as const, geometry: polygonGeometry as unknown, properties: { name: publicName } }],
       }
     : undefined
 
@@ -628,7 +650,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
   const hudActive = hud.active
   const monthsOfSupply = hud.monthsSupply
-  const sellMedian = publishSellMedian({ placeMedian: hud.medianList ?? medianListPrice, regionMedian: null, grain: 'community', placeName: community.name })
+  const sellMedian = publishSellMedian({ placeMedian: hud.medianList ?? medianListPrice, regionMedian: null, grain: 'community', placeName: publicName })
   const marketData: KbMarketData = {
     active: hud.active,
     pending: hud.pending,
@@ -675,9 +697,12 @@ export default async function CommunityDetailPage({ params }: Props) {
     refreshedAt: commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? snapshot?.refreshedAt ?? null,
     // Extended fields — leftover 12-month closed count. Miss omits.
     soldCount12mo: publicPace.closedCount ?? null,
-    subdivisionAliases: registryEntry?.subdivision_aliases?.length
-      ? registryEntry.subdivision_aliases
-      : null,
+    // CHILD aliases only. This feeds market-faq's "What neighborhoods and
+    // subdivisions are in X?" answer, which prints the list as a membership
+    // claim — so the community's own names must not be in it, or the page
+    // answers that Sunriver includes Sunriver, and that Juniper Preserve
+    // includes Pronghorn (its own former name, still the live MLS key).
+    subdivisionAliases: childAliases.length > 0 ? childAliases : null,
     hoaMasterAnnual: richContent?.hoaMasterAnnual ?? null,
     hoaAnnualEstimate: registryEntry?.hoa_annual_estimate ?? null,
     hoaSubEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate) ?? null,
@@ -689,7 +714,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // marketFaqInput field above (pulse?.x ?? snapshot?.x ?? community.x).
   // The inline marker satisfies the gate's resilience check.
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
-    community.name,
+    publicName,
     /* pulse ?? snapshot */ marketFaqInput,
   )
   // Fix 4: hasMap is true whenever we have listing pins, a polygon, OR registry
@@ -708,7 +733,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // Fix 1: containedInPlace — use the city, not the community itself (avoids
   // circular "Sunriver contained in Sunriver"). A community is contained in
   // its city; the city name is always present from community.city. (§0)
-  const placeContainedIn = cityName !== community.name ? cityName : 'Deschutes County'
+  const placeContainedIn = cityName !== publicName ? cityName : 'Deschutes County'
 
   const communitySchemas: SchemaInput[] = [
     {
@@ -717,14 +742,14 @@ export default async function CommunityDetailPage({ params }: Props) {
         { name: 'Home', url: '/' },
         { name: 'Communities', url: '/communities' },
         ...(cityName ? [{ name: cityName, url: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
-        { name: community.name, url: `/communities/${slug}` },
+        { name: publicName, url: `/communities/${slug}` },
       ],
     },
     {
       type: 'place',
       placeType: 'Place',
-      name: community.name,
-      description: `${community.name}, a community in ${cityName}, Oregon. Homes for sale and live single-family market data.`,
+      name: publicName,
+      description: `${publicName}, a community in ${cityName}, Oregon. Homes for sale and live single-family market data.`,
       url: `/communities/${slug}`,
       // Fix 1: GeoCoordinates from registry center_lon_lat — never hardcoded. (§0)
       geo: placeGeo,
@@ -738,22 +763,22 @@ export default async function CommunityDetailPage({ params }: Props) {
   if (datasetVariables.length > 0) {
     communitySchemas.push({
       type: 'dataset',
-      name: `${community.name} real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
-      description: `Live single-family home market data for ${community.name} in ${cityName}, Oregon. Median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
+      name: `${publicName} real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
+      description: `Live single-family home market data for ${publicName} in ${cityName}, Oregon. Median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
       url: `/communities/${slug}`,
       dateModified: asOfIso ?? undefined,
-      spatialCoverageName: `${community.name}, ${cityName}, OR`,
+      spatialCoverageName: `${publicName}, ${cityName}, OR`,
       variableMeasured: datasetVariables,
     })
   }
 
-  const communityLabel = `${community.name} · ${cityName}`
+  const communityLabel = `${publicName} · ${cityName}`
 
   return (
     <main className="kb-root">
       <CommunityPageTracker
         slug={slug}
-        communityName={community.name}
+        communityName={publicName}
         city={cityName}
         activeCount={activeCount}
         medianPrice={medianListPrice}
@@ -766,7 +791,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           { label: 'Home', href: '/' },
           { label: 'Communities', href: '/communities' },
           ...(cityName ? [{ label: cityName, href: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
-          { label: community.name },
+          { label: publicName },
         ]}
       />
       <SmoothScrollProvider>
@@ -777,32 +802,32 @@ export default async function CommunityDetailPage({ params }: Props) {
             medianDaysToPending: hud.daysToPending,
           }}
           eyebrow={communityLabel}
-          titleTop={community.name}
+          titleTop={publicName}
           titleBottom="Homes for Sale"
           lead={placeHeroLead({
-            placeName: community.name, parentName: cityName, activeCount,
+            placeName: publicName, parentName: cityName, activeCount,
             knownSuffix: 'Live inventory from the regional MLS.',
           })}
           videoSrc={null}
           posterSrc={heroPhoto}
           // Fix 6: descriptive alt text for the hero image. (§0)
-          posterAlt={`${community.name} in ${cityName}, Oregon`}
+          posterAlt={`${publicName} in ${cityName}, Oregon`}
           mediaCaption={mediaCaption}
-          cta={{ href: '#homes', label: `See ${community.name} homes` }}
+          cta={{ href: '#homes', label: `See ${publicName} homes` }}
         />
         {/* Overview directly after the hero (Matt 2026-07-29, supersedes the
             inventory-first order): hero → overview → homes → map → market. */}
         <KbResortOverview
           content={richContent}
-          name={community.name}
+          name={publicName}
           postsBySlug={amenityPosts}
-          aliases={registryEntry?.subdivision_aliases ?? []}
+          aliases={childAliases}
           publishedHoa={publishedHoa}
         />
         {aboutParagraphs.length > 0 ? (
           <KbAbout
             eyebrow={communityLabel}
-            heading={`Living in ${community.name}`}
+            heading={`Living in ${publicName}`}
             // Resort overview already carries the long seoAbout. Keep one
             // existing hero line here so leftover medianClose can print in
             // the facts ledger without duplicating the overview.
@@ -814,9 +839,9 @@ export default async function CommunityDetailPage({ params }: Props) {
         ) : null}
         <KbFeatured
           items={featuredItems}
-          eyebrow={`${community.name} · For sale`}
+          eyebrow={`${publicName} · For sale`}
           viewAllHref="#homes"
-          viewAllLabel={`See every ${community.name} home for sale`} viewAllPlace={community.name}
+          viewAllLabel={`See every ${publicName} home for sale`} viewAllPlace={publicName}
           totalCount={activeCount || null}
         />
         <KbTicker items={tickerItems} />
@@ -832,7 +857,7 @@ export default async function CommunityDetailPage({ params }: Props) {
             the public brokerage number — same as the footer). Sourced from
             lib/brand/contact.ts (never hardcoded). (§0) */}
         <p className="community-contact-line">
-          Questions about {community.name}?{' '}
+          Questions about {publicName}?{' '}
           <a href={`tel:${CONTACT.phoneDirectTel}`} className="community-contact-phone">
             {CONTACT.phoneDirect}
           </a>
@@ -841,7 +866,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           tiles={communityTiles}
           mapGeo={mapGeo}
           polygons={mapPolygons}
-          placeName={community.name}
+          placeName={publicName}
           totalActive={activeCount ?? mapFeatures.length}
           centerLonLat={registryEntry?.center_lon_lat ?? undefined}
           viewAllHref={homesForSalePath(cityName, community.subdivision)}
@@ -850,17 +875,17 @@ export default async function CommunityDetailPage({ params }: Props) {
             HUD section, not a second stacked headed section. */}
         <KbMarketHud
           data={marketData}
-          eyebrow={`${community.name} · The market`} geoName={community.name} asOf={commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? null}
+          eyebrow={`${publicName} · The market`} geoName={publicName} asOf={commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? null}
           chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
         >
-          <PublicProductTypes cityName={community.name} citySlug={citySlug ?? ''} rows={publicSegments} />
-          <PublicPaceStats cityName={community.name} row={publicPace} />
-          <PublicMixStats cityName={community.name} row={publicMix} />
+          <PublicProductTypes cityName={publicName} citySlug={citySlug ?? ''} rows={publicSegments} />
+          <PublicPaceStats cityName={publicName} row={publicPace} />
+          <PublicMixStats cityName={publicName} row={publicMix} />
           {coreCharts ? (
-            <div className="pt-10" aria-label={`${community.name} market trend charts`}>
+            <div className="pt-10" aria-label={`${publicName} market trend charts`}>
               <MarketCoreCharts
                 data={coreCharts}
-                heading={`${community.name} market trends`}
+                heading={`${publicName} market trends`}
                 scopeLabel={coreChartsScopeLabel}
               />
             </div>
@@ -870,7 +895,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         {/* Per-location area guide video — self-hides when this community has no
             approved guide video. Sits after the communities rail, before the
             this-week / activity / FAQ / sell blocks. */}
-        <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={community.name} posterSrc={heroPhoto} />
+        <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={publicName} posterSrc={heroPhoto} />
         {buildTimeRails(true) || openHouseItems.length > 0 ? (
         <KbOpenHouses
           items={openHouseItems}
@@ -892,14 +917,14 @@ export default async function CommunityDetailPage({ params }: Props) {
         {/* Schools district — sourced exclusively from data/co-schools.ts
             getDistrictForCity(). Specific school names/attendance zones are NOT
             shown because per-address boundary data is not in the system. (§0) */}
-        <KbSchools communityName={community.name} districtName={schoolDistrictInfo?.district ?? null} districtSlug={schoolDistrictInfo?.districtSlug ?? null} />
-        <PlaceDocuments displayName={community.name} documents={placeDocuments} />
-        <CommunityGolfLinks communitySlug={slug} communityName={community.name} />
+        <KbSchools communityName={publicName} districtName={schoolDistrictInfo?.district ?? null} districtSlug={schoolDistrictInfo?.districtSlug ?? null} />
+        <PlaceDocuments displayName={publicName} documents={placeDocuments} />
+        <CommunityGolfLinks communitySlug={slug} communityName={publicName} />
         <KbArticles
           posts={articlePosts}
           eyebrow="Guides and news"
-          heading={`${community.name} real estate guides`}
-          subtitle={`Housing news, market data, and buyer and seller advice for ${community.name} and ${cityName}.`}
+          heading={`${publicName} real estate guides`}
+          subtitle={`Housing news, market data, and buyer and seller advice for ${publicName} and ${cityName}.`}
         />
         <KbExploreTowns
           towns={otherCityItems}
@@ -916,16 +941,16 @@ export default async function CommunityDetailPage({ params }: Props) {
             URL. community.subdivision is the MLS name; for resorts, the registry
             aliases make the search inclusive of all tagged sub-neighborhoods. (§0) */}
         <KbBuyCta
-          communityName={community.name}
+          communityName={publicName}
           listingsHref={homesForSalePath(cityName, community.subdivision)}
-          contactHref={`/contact?inquiryType=Buying&message=${encodeURIComponent(`Interested in ${community.name}. Please get in touch.`)}`}
+          contactHref={`/contact?inquiryType=Buying&message=${encodeURIComponent(`Interested in ${publicName}. Please get in touch.`)}`}
         />
         {/* Listing-alert email capture — reuses submitSearchAlertSignup + the
             canonical listing_alerts table (same path as SearchAlertCapture on
             /search). City + subdivision prefilled from community data so the
             alert matches what the visitor is looking at. No new backend. (§0) */}
         <KbCommunityAlerts
-          communityName={community.name}
+          communityName={publicName}
           city={cityName}
           subdivision={community.subdivision}
         />
@@ -937,19 +962,19 @@ export default async function CommunityDetailPage({ params }: Props) {
             medianDaysToPending: hud.daysToPending,
             soldCount30d: hud.closed30,
           }}
-          eyebrow={`Sell in ${community.name}`}
+          eyebrow={`Sell in ${publicName}`}
         />
         {/* Second-home / investment note — resort pages only. Generic framing:
             confirms the community is a popular second-home / vacation destination
             and that STR potential exists and varies by HOA. No specific STR rules,
             permit caps, occupancy limits, or income figures (§0 hard rule). (§0) */}
         {isResort ? (
-          <div className="comm-str-note" aria-label={`${community.name} second home information`}>
+          <div className="comm-str-note" aria-label={`${publicName} second home information`}>
             <div className="comm-str-note-inner">
               <span className="comm-str-label">Second homes</span>
               <p className="comm-str-text">
-                Short-term rental potential in {community.name} varies by HOA rules, community covenants, and Oregon regulations.{' '}
-                <a href={`/contact?inquiryType=Buying&message=${encodeURIComponent(`I have questions about short-term rental rules in ${community.name}.`)}`}>
+                Short-term rental potential in {publicName} varies by HOA rules, community covenants, and Oregon regulations.{' '}
+                <a href={`/contact?inquiryType=Buying&message=${encodeURIComponent(`I have questions about short-term rental rules in ${publicName}.`)}`}>
                   Reach out for current rental guidelines
                 </a>
                 {' '}before you assume what is permitted or what it could earn.
@@ -958,8 +983,8 @@ export default async function CommunityDetailPage({ params }: Props) {
           </div>
         ) : null}
         {faqs.length > 0 ? (
-          <section id="faq" aria-label={`${community.name} real estate questions`}>
-            <FAQBlock items={faqs} eyebrow="Common questions" title={`${community.name} real estate questions`} />
+          <section id="faq" aria-label={`${publicName} real estate questions`}>
+            <FAQBlock items={faqs} eyebrow="Common questions" title={`${publicName} real estate questions`} />
           </section>
         ) : null}
         <MarketSources sources={['ods']} /><KbFooter towns={[]} />

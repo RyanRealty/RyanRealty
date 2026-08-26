@@ -92,12 +92,19 @@ for (const c of communities) {
   const isPending = pending.has(id)
   if (isPending) seenPending.add(id)
 
-  // A community whose only alias is its OWN LABEL claims no membership: every
-  // renderer drops the label before printing chips (KbResortOverview's
-  // aliasChips, peerPlatsForResort, place-knowledge), so nothing is asserted
-  // about anyone. Those entries are out of scope here — not exempted by a
-  // list, but by there being no claim to police.
-  const children = aliases.filter((a) => String(a).trim().toLowerCase() !== label)
+  // A community whose only aliases are its OWN NAMES claims no membership:
+  // every renderer drops them before printing chips (KbResortOverview's
+  // aliasChips, place-knowledge's child-plat doors, peerPlatsForResort), so
+  // nothing is asserted about anyone. Those entries are out of scope here —
+  // not exempted by a list, but by there being no claim to police.
+  //
+  // OWN NAMES = the current label PLUS any `former_labels`. A resort that
+  // rebrands keeps its old name as a live MLS alias (Juniper Preserve still
+  // carries every listing under SubdivisionName 'Pronghorn'), and that alias
+  // must not be read as a subdivision OF the community. Same rule, one source:
+  // lib/communities/community-own-names.ts.
+  const ownNames = new Set([label, ...(c?.former_labels ?? []).map((n) => String(n).trim().toLowerCase())])
+  const children = aliases.filter((a) => !ownNames.has(String(a).trim().toLowerCase()))
   const claimsMembership = children.length > 0
 
   // ── 1. The banned method ────────────────────────────────────────────────

@@ -1,9 +1,9 @@
 {
-  "note": "Per-slug about_prose word counts. RATCHET: a config may never drop below its recorded count. Regenerate with --write-baseline only when counts have GROWN.",
+  "note": "Per-slug about_prose word counts. RATCHET: a config may never drop below its recorded count. Regenerate with --write-baseline only when counts have GROWN. | 2026-08-26 EXCEPTION: awbrey-glen lowered 624 -> 587. Commit 05917a61 removed five FALSE subdivision claims from that copy (Shevlin Bluffs, Shevlin Estates, Awbrey Court, Shevlin Court and The Farm are each their own recorded Deschutes County plat, not Awbrey Glen phases). The ratchet cannot tell a §0 accuracy deletion from prose rot, and accuracy outranks word count (CLAUDE.md §0). This is the only sanctioned reason to lower an entry: deleting something that was not true.",
   "minWords": 400,
   "generatedAt": "2026-08-03T15:09:26.455Z",
   "words": {
-    "awbrey-glen": 624,
+    "awbrey-glen": 587,
     "bend-awbrey-butte": 685,
     "bend-boyd-acres": 725,
     "bend-century-west": 544,
