@@ -21,6 +21,8 @@ import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
 import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
 import { fleetNodePriority, isStaleInProgress, type WorkNodeState } from '../lib/data/loop/work-node'
+import { execFileSync } from 'node:child_process'
+import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
 
 config({ path: '.env.local' })
 
@@ -36,6 +38,7 @@ type NodeRow = {
   state: WorkNodeState
   blocked_reason: string | null
   owner_session: string | null
+  evidence?: string | null
   updated_at: string
 }
 
@@ -101,7 +104,7 @@ async function main() {
     sb
       .from('loop_work_nodes')
       .select(
-        'id,depends_on,domain,version_gap,title,objective,output,accept,state,blocked_reason,owner_session,updated_at',
+        'id,depends_on,domain,version_gap,title,objective,output,accept,state,evidence,blocked_reason,owner_session,updated_at',
       )
       .order('created_at', { ascending: true }),
   ])
@@ -171,6 +174,35 @@ async function main() {
   }
   for (const n of blocked) {
     push(`  BLOCKED ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — ${n.blocked_reason ?? 'no reason recorded'}`)
+  }
+  push('')
+  push('--- SHIP RECONCILIATION (what shipped without the loop) ---')
+  try {
+    const WINDOW_DAYS = 14
+    const raw = execFileSync(
+      'git',
+      ['log', `--since=${WINDOW_DAYS}.days`, '--first-parent', '--pretty=format:%H%x1f%ad%x1f%s', '--date=short', 'origin/main'],
+      { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },
+    )
+    const commits = raw
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [sha, date, subject] = line.split('\x1f')
+        return { sha: sha ?? '', date: date ?? '', subject: subject ?? '' }
+      })
+    const ledgerRes = await sb.from('site_improvement_ledger').select('commit_sha')
+    const ledgerShas = (ledgerRes.data ?? [])
+      .map((r) => (r as { commit_sha: string | null }).commit_sha)
+      .filter((v): v is string => Boolean(v))
+    const nodeEvidence = nodes.map((n) => n.evidence ?? '').filter(Boolean)
+    for (const line of formatReconcileReport(reconcileShips({ commits, ledgerShas, nodeEvidence }), WINDOW_DAYS)) {
+      push(line)
+    }
+  } catch (err) {
+    // Never let reconciliation stop the boot — a brief that refuses to print is
+    // worse than one that admits it could not check.
+    push(`reconciliation unavailable: ${(err as Error).message.slice(0, 120)}`)
   }
   push('')
   push('--- SHIP CLASS (one rebuild for this whole set) ---')
