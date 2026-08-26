@@ -18,6 +18,11 @@
 //   4. mcp__*__execute_sql — refuse SELECTs against tables a DAL
 //      function covers, unless the SQL carries an explicit `-- audit:`
 //      comment justifying the raw read.
+//   4b. mcp__*__execute_sql — refuse AGGREGATES (count/sum/avg/min/max/
+//      median/percentile/GROUP BY) over a stat-bearing table even WITH an
+//      `-- audit:` comment. An aggregate over a filtered window is a
+//      statistic, and statistics come from the DAL. `-- audit:` keeps
+//      licensing targeted row reads, which is what it was for.
 //   5. Write|Edit — refuse edits to `app/<route>/page.tsx` when the
 //      matching `design_system/ryan-realty/ui_kits/<route>/parity.json`
 //      mockup contract does not exist on disk.
@@ -34,7 +39,9 @@
 //     command to override (rare; only for confirmed user-approved
 //     destructive ops).
 //   - execute_sql refusals: include `-- audit: <reason>` in the
-//     SQL to allow a raw read past the DAL boundary.
+//     SQL to allow a raw ROW read past the DAL boundary. It does NOT
+//     license an aggregate over a stat-bearing table — that has no
+//     bypass, because a stat has exactly one legitimate source.
 //   - Write|Edit voice refusals: include `// brand-voice:exempt`
 //     ONE LINE ABOVE the banned token (escape hatch for code
 //     references like `import dynamic from 'next/dynamic'` — but
@@ -135,6 +142,46 @@ function getDalCoveredTables() {
   return DAL_TABLES
 }
 
+// ─── Stat-bearing tables + the DAL family that owns each one ─────────
+//
+// Matt, 2026-08-26: "all stats should come through one process, enforce
+// this." A STAT is an aggregate over a filtered window. Every table below
+// holds the rows our published figures are computed from, so an aggregate
+// over any of them IS a published-class statistic whether or not it ever
+// reaches a page. The value is the DAL function family to reach for
+// instead — printed in the refusal so the fix is one hop away.
+const STAT_TABLES = new Map([
+  // Listings — core + the derived materialized views.
+  ['listings', 'getMarketPulse() / getMarketStats() (lib/data/market/)'],
+  ['listing_history', 'getPriceHistory() / getMarketTrend() (lib/data/market/)'],
+  ['listing_tile_mv', 'getMarketPulse() / getSearchFacetCounts() (lib/data/market/, lib/data/listings/)'],
+  ['listing_search_mv', 'getSearchFacetCounts() (lib/data/listings/searchFacets.ts)'],
+  ['similar_listings_mv', 'getSimilarListings() (lib/data/listings/getSimilarListings.ts)'],
+  ['listing_boundary_xref_mv', 'getMarketPulse() / getRegionPulse() (lib/data/market/)'],
+  ['geo_snapshot_mv', 'getMarketPulse() / getRegionPulse() (lib/data/market/)'],
+  ['neighborhood_year_pricing_mv', 'getPricingMarketIndex() / getPricingSubdivisionCells() (lib/data/pricing/facts.ts)'],
+  // Market — the live caches the DAL actually serves from.
+  ['market_pulse_live', 'getMarketPulse({geoType, geoSlug}) (lib/data/market/getMarketPulse.ts)'],
+  ['market_stats_cache', 'getMarketStats() / getMarketStatsCacheRows.ts (lib/data/market/)'],
+  ['market_history_weekly', 'getMarketHistoryWeekly() (lib/data/market/getMarketHistoryWeekly.ts)'],
+  ['market_fact_sale', 'getMarketStats() / getCityRangeReport() (lib/data/market/)'],
+  ['market_fact_listing_span', 'getMarketStats() / getCityRangeReport() (lib/data/market/)'],
+  // Analytics marts — pre-aggregated by rebuildAnalyticsMarts(), read by the DAL.
+  ['analytics_mart_market_annual', 'getCoMarketAnnual() (lib/data/analytics/getCoMarketAnnual.ts)'],
+  ['analytics_mart_feature_annual', 'getCoFeatureAnnual() (lib/data/analytics/getCoFeatureAnnual.ts)'],
+  ['analytics_mart_office_share_annual', 'getCoOfficeShare() (lib/data/analytics/getCoOfficeShare.ts)'],
+  ['analytics_inventory_snapshot', 'analyzeClosedSales() (lib/data/analytics/analyzeClosedSales.ts)'],
+])
+
+// Aggregate functions that produce a STATISTIC. Deliberately narrow: the
+// collection aggregates (array_agg, string_agg, json_agg) gather rows into
+// a list rather than measuring anything, so they stay legal for a targeted
+// row read. A gate that cries wolf gets loosened until it stops biting.
+// Each name requires a following `(`, so column names like `max_price`,
+// `sold_count`, and `search_facet_counts` do not match.
+const STAT_AGGREGATE_RE =
+  /\b(count|sum|avg|min|max|median|mode|stddev|stddev_pop|stddev_samp|variance|var_pop|var_samp|percentile_cont|percentile_disc|corr)\s*\(/i
+
 // ─── Refusal 1+2: Bash destructive + DB CLI ──────────────────────────
 
 if (tool_name === 'Bash') {
@@ -227,6 +274,49 @@ if (/__execute_sql$/.test(tool_name) || /__apply_migration$/.test(tool_name)) {
             `Use the DAL function for \`${t}\` (see docs/DAL_INDEX.md). If a one-off audit query is required, prepend \`-- audit: <reason>\` to the SQL.`,
           )
         }
+      }
+    }
+  }
+
+  // Refusal 4b: an AGGREGATE over a stat-bearing table. No bypass.
+  //
+  // Matt, 2026-08-26: "all stats should come through one process, enforce
+  // this." The `-- audit:` escape above is honor-system, and in one session
+  // it was used to compute inventory counts, closed-sale counts by property
+  // sub type, CMA draft/delivery ratios, and comp-pool depths. Those are
+  // statistics. They informed product decisions and were quoted in commit
+  // messages and a cross-agent handoff, having passed neither the DAL nor
+  // the caches the DAL reads.
+  //
+  // The distinction that makes it enforceable:
+  //   - a data-quality check is a targeted ROW read ("show me this row",
+  //     "does this key exist"). That is what `-- audit:` is for, and it
+  //     keeps working.
+  //   - a STAT is an AGGREGATE — count / sum / avg / min / max / median /
+  //     percentile / GROUP BY — over a filtered window. It has exactly one
+  //     legitimate source. CLAUDE.md §7.6 already said "don't aggregate raw
+  //     listings, use the cache" in prose; nothing enforced it for agent SQL.
+  //
+  // `apply_migration` is exempt on purpose: the DDL that builds a cache or a
+  // materialized view HAS to aggregate the base tables. That DDL *is* the one
+  // process — this rule exists to keep everything else out of it.
+  if (!/__apply_migration$/.test(tool_name)) {
+    // Strip comments first so an `-- audit:` reason mentioning an aggregate,
+    // or a commented-out `from listings`, cannot fire (or dodge) the rule.
+    const bare = stripSqlComments(sqlLower)
+    if (STAT_AGGREGATE_RE.test(bare) || /\bgroup\s+by\b/.test(bare)) {
+      // FROM *and* JOIN, with optional `only`, `public.` prefix, and quoting —
+      // a stat table pulled in through a join is still in the measured window.
+      const refs = [
+        ...bare.matchAll(/\b(?:from|join)\s+(?:only\s+)?(?:public\.)?"?([a-z_][a-z_0-9]*)"?/g),
+      ].map((m) => m[1])
+      const hit = refs.find((t) => STAT_TABLES.has(t))
+      if (hit) {
+        deny(
+          'SQL-STAT-BYPASS',
+          `Aggregate SQL over \`${hit}\` is refused — an aggregate over a filtered window is a STATISTIC, and \`-- audit:\` does not license one. Snippet: ${sql.slice(0, 160)}`,
+          `Stats come through one process: the DAL, which reads the caches (market_pulse_live, market_stats_cache) instead of aggregating raw rows. Use ${STAT_TABLES.get(hit)} — full list in docs/DAL_INDEX.md. \`-- audit:\` still covers a targeted ROW read on \`${hit}\` (show me this row, does this key exist) — drop the aggregate and it passes. If the figure you need has no DAL function yet, add one under lib/data/ and call it; do not aggregate raw here (CLAUDE.md §0 + §7.6).`,
+        )
       }
     }
   }
@@ -336,6 +426,15 @@ function stripRoot(path, root) {
 
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Strip `--` line comments and block comments from SQL. Used only by
+// Refusal 4b, so that the `-- audit: <reason>` text itself — and any
+// commented-out SQL — is neither a trigger nor a hiding place for the
+// aggregate detector. Naive on `--` inside a string literal, which is
+// the safe direction: it can only make the rule look at less text.
+function stripSqlComments(sql) {
+  return sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ')
 }
 
 // Heuristic — does this chunk look like JavaScript / TypeScript code

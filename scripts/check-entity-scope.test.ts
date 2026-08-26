@@ -150,10 +150,15 @@ if (!existsSync(join(SANDBOX, 'package.json'))) {
 
 afterAll(() => rmSync(SANDBOX, { recursive: true, force: true }))
 
+// This hook is OUTSIDE the describe below, so that block's `timeout: 30_000`
+// never reached it and it fell back to vitest's 10s default hookTimeout —
+// which is what "Hook timed out in 10000ms" was, on 2026-08-26, when the
+// fixture writes crawled under full-suite load. Hooks take their timeout as
+// the second argument, not from the describe.
 beforeEach(() => {
   writeFixtures()
   seed()
-})
+}, 30_000)
 
 // Each case spawns the checker as a subprocess (test 9 spawns three); under
 // parallel-suite machine load the default 5s timeout flakes — seen twice 2026-08-11.

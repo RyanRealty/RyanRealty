@@ -400,6 +400,7 @@ next.
 | Every `app/<route>/page.tsx` imports the DAL | gated | `check-page-dal.mjs` |
 | `listings` mixed-case columns are quoted | gated | `check-dal-column-quoting.mjs` |
 | MoS formula + thresholds | gated | `check-market-formula.mjs` |
+| Aggregate SQL over a stat table (an aggregate is a stat) | gated at tool time | `pre-tool-use.mjs` |
 | Schema snapshot + DAL index stay current | gated, local/nightly (needs DB creds) | `check-data-access.mjs` |
 | Every cron route registered in `vercel.json` | gated | `check-cron-registered.mjs` |
 | THE LOOP process canon, no rogue plan files, ship-class (no rebuild per fleet finding) | gated | `check-process-canon.mjs` |

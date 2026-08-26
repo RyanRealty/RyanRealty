@@ -194,6 +194,129 @@ run(
   { deny: false },
 )
 
+// ── execute_sql stat bypass (Refusal 4b) ──────────────────────────────
+// Matt, 2026-08-26: "all stats should come through one process, enforce
+// this." `-- audit:` licenses a targeted ROW read. It does not license an
+// aggregate, because an aggregate over a filtered window is a statistic.
+run(
+  'execute_sql: aggregate on listings WITH -- audit: is denied (a stat, not a row read)',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query:
+        "-- audit: sizing the active inventory before the CMA comp-pool change\nSELECT count(*) FROM listings WHERE \"StandardStatus\" = 'Active'",
+    },
+  },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
+)
+run(
+  'execute_sql: GROUP BY on listings WITH -- audit: is denied',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query:
+        '-- audit: closed-sale mix by sub type\nSELECT "PropertySubType", count(*) FROM listings WHERE "CloseDate" > \'2026-01-01\' GROUP BY 1',
+    },
+  },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
+)
+run(
+  'execute_sql: aggregate on market_stats_cache WITH -- audit: is denied',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query:
+        '-- audit: median check\nSELECT avg(median_close_price) FROM market_stats_cache WHERE geo_type = \'city\'',
+    },
+  },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
+)
+run(
+  'execute_sql: aggregate reaching listings through a JOIN is denied',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query:
+        '-- audit: comp depth per subdivision\nSELECT b.slug, count(*) FROM boundaries b JOIN listings l ON l."SubdivisionName" = b.name GROUP BY 1',
+    },
+  },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
+)
+run(
+  'execute_sql: plain row read on listings WITH -- audit: still passes (data-quality check)',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query:
+        '-- audit: does this listing key exist after the delta sync wedge\nSELECT "ListingKey", "StandardStatus" FROM listings WHERE "ListingKey" = \'220198765\'',
+    },
+  },
+  { deny: false },
+)
+run(
+  'execute_sql: aggregate on a non-stat table passes (the §0 counter-query)',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query:
+        '-- audit: broad count before claiming the plats are not ingested\nSELECT geo_type, count(*) FROM boundaries GROUP BY 1',
+    },
+  },
+  { deny: false },
+)
+run(
+  'execute_sql: aggregate on listings with NO audit comment is still SQL-DAL-BYPASS',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: { query: 'SELECT count(*) FROM listings' },
+  },
+  { deny: true, contains: 'SQL-DAL-BYPASS' },
+)
+run(
+  'apply_migration: DDL aggregating listings into a cache MV passes (that DDL is the one process)',
+  {
+    tool_name: 'mcp__5adfee1a-x__apply_migration',
+    tool_input: {
+      query:
+        '-- audit: rebuilding the geo snapshot cache the DAL reads\nCREATE MATERIALIZED VIEW geo_snapshot_mv AS SELECT city, count(*) AS active FROM listings GROUP BY city;',
+    },
+  },
+  { deny: false },
+)
+run(
+  'execute_sql: the same cache-building aggregate outside a migration is denied',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query:
+        '-- audit: rebuilding the geo snapshot cache the DAL reads\nSELECT city, count(*) AS active FROM listings GROUP BY city',
+    },
+  },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
+)
+run(
+  'execute_sql: aggregate-shaped COLUMN names are not aggregates',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query:
+        '-- audit: reading one cache row to debug a stale pill\nSELECT max_price, sold_count FROM market_stats_cache WHERE geo_slug = \'bend\'',
+    },
+  },
+  { deny: false },
+)
+run(
+  'execute_sql: an audit reason that mentions an aggregate does not itself trigger the rule',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query:
+        '-- audit: confirming the row behind the max(ClosePrice) figure on the Bend report\nSELECT "ListingKey", "ClosePrice" FROM listings WHERE "ListingKey" = \'220111111\'',
+    },
+  },
+  { deny: false },
+)
+
 // ── Write|Edit voice ──────────────────────────────────────────────────
 run(
   'Write: banned word in user-facing JSX is denied',
