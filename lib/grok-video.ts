@@ -1,156 +1,51 @@
 /**
- * Generate a short aerial flyover video using xAI Grok Imagine Video API.
- * Async: start request, poll until done, return temporary URL (caller must download and store).
- * Set XAI_API_KEY in .env.local.
+ * Shim. The Grok surface now lives in lib/grok/.
+ * Kept for the hero-video and Today produce callers, which want a URL string.
  */
-
-const XAI_VIDEOS_URL = 'https://api.x.ai/v1/videos/generations'
-const XAI_VIDEO_STATUS_URL = 'https://api.x.ai/v1/videos'
-const MODEL = 'grok-imagine-video-1.5'
-const DEFAULT_DURATION = 10
-const POLL_INTERVAL_MS = 5000
-const POLL_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes
+import {
+  generateGrokVideo,
+  type GrokVideoAspect,
+  type GrokVideoResolution,
+} from '@/lib/grok/video'
 
 export type FlyoverVideoOptions = {
-  /** e.g. "Aerial drone flyover of Bend, Oregon" or "Satellite-style flyover at 44.05°N, 121.31°W" */
   prompt: string
   duration?: number
-  aspect_ratio?: '16:9' | '9:16' | '1:1'
-  resolution?: '720p' | '480p' | '1080p'
-}
-
-/**
- * Start video generation, poll until done, return video URL.
- * URL is temporary — download and re-upload to your storage promptly.
- */
-export async function generateFlyoverVideo(options: FlyoverVideoOptions): Promise<string> {
-  const apiKey = process.env.XAI_API_KEY
-  if (!apiKey?.trim()) {
-    throw new Error('XAI_API_KEY is not set. Add it to .env.local for video generation.')
-  }
-
-  const res = await fetch(XAI_VIDEOS_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      prompt: options.prompt,
-      duration: options.duration ?? DEFAULT_DURATION,
-      aspect_ratio: options.aspect_ratio ?? '16:9',
-      resolution: options.resolution ?? '720p',
-    }),
-  })
-
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`xAI video API error ${res.status}: ${text}`)
-  }
-
-  const startData = (await res.json()) as { request_id?: string }
-  const requestId = startData?.request_id
-  if (!requestId) throw new Error('xAI video API did not return request_id')
-
-  const deadline = Date.now() + POLL_TIMEOUT_MS
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
-    const statusRes = await fetch(`${XAI_VIDEO_STATUS_URL}/${requestId}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    })
-    if (!statusRes.ok) throw new Error(`xAI video status error ${statusRes.status}`)
-    const statusData = (await statusRes.json()) as {
-      status?: string
-      video?: { url?: string }
-    }
-    if (statusData.status === 'done' && statusData.video?.url) {
-      return statusData.video.url
-    }
-    if (statusData.status === 'expired') {
-      throw new Error('Video generation expired')
-    }
-  }
-
-  throw new Error('Video generation timed out')
+  aspect_ratio?: GrokVideoAspect
+  resolution?: GrokVideoResolution
 }
 
 export type ImageToVideoOptions = {
-  /** Public URL of the source image to animate. xAI API field is `image` (NOT `image_url`). */
+  /** Public URL of the source image to animate. */
   image_url: string
-  /** Motion/prompt for animation. Default: gentle cinematic motion. */
   prompt?: string
-  /** Duration in seconds (1–15). Default 5; use 3–8 for short hero clips. */
   duration?: number
-  aspect_ratio?: '16:9' | '9:16' | '1:1'
-  resolution?: '720p' | '480p' | '1080p'
+  aspect_ratio?: GrokVideoAspect
+  resolution?: GrokVideoResolution
 }
 
-const IMAGE_TO_VIDEO_DURATION = 5
 const IMAGE_TO_VIDEO_PROMPT =
   'Gentle cinematic motion, slow zoom, landscape comes to life. No text, no people. Subtle movement only.'
 
-/**
- * Animate a still image to a short video using xAI Grok Imagine Video (image-to-video).
- * Returns temporary video URL — download and store promptly.
- */
-export async function generateImageToVideo(options: ImageToVideoOptions): Promise<string> {
-  const apiKey = process.env.XAI_API_KEY
-  if (!apiKey?.trim()) {
-    throw new Error('XAI_API_KEY is not set. Add it to .env.local for image-to-video.')
-  }
-
-  const body: Record<string, unknown> = {
-    model: MODEL,
-    // xAI wants `image` as an OBJECT — { url } — not a bare string. Sending the
-    // string returns 422 "invalid type: string ... expected struct ImageUrl", which
-    // is what every image-to-video call had been doing, so this path had never
-    // produced a single video. Confirmed against the live API 2026-08-26: the
-    // string form 422s and { url } returns 200 with a request_id.
-    // The TypeScript option stays named `image_url` for backward compatibility.
-    image: { url: options.image_url },
-    prompt: options.prompt ?? IMAGE_TO_VIDEO_PROMPT,
-    duration: Math.min(15, Math.max(1, options.duration ?? IMAGE_TO_VIDEO_DURATION)),
-    aspect_ratio: options.aspect_ratio ?? '16:9',
+/** Text-to-video. Returns a temporary URL: download and store it promptly. */
+export async function generateFlyoverVideo(options: FlyoverVideoOptions): Promise<string> {
+  const result = await generateGrokVideo({
+    prompt: options.prompt,
+    duration: options.duration ?? 10,
+    aspectRatio: options.aspect_ratio ?? '16:9',
     resolution: options.resolution ?? '720p',
-  }
-
-  const res = await fetch(XAI_VIDEOS_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
   })
+  return result.url
+}
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`xAI image-to-video API error ${res.status}: ${text}`)
-  }
-
-  const startData = (await res.json()) as { request_id?: string }
-  const requestId = startData?.request_id
-  if (!requestId) throw new Error('xAI video API did not return request_id')
-
-  const deadline = Date.now() + POLL_TIMEOUT_MS
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
-    const statusRes = await fetch(`${XAI_VIDEO_STATUS_URL}/${requestId}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    })
-    if (!statusRes.ok) throw new Error(`xAI video status error ${statusRes.status}`)
-    const statusData = (await statusRes.json()) as {
-      status?: string
-      video?: { url?: string }
-    }
-    if (statusData.status === 'done' && statusData.video?.url) {
-      return statusData.video.url
-    }
-    if (statusData.status === 'expired') {
-      throw new Error('Video generation expired')
-    }
-  }
-
-  throw new Error('Video generation timed out')
+/** Image-to-video. Returns a temporary URL: download and store it promptly. */
+export async function generateImageToVideo(options: ImageToVideoOptions): Promise<string> {
+  const result = await generateGrokVideo({
+    prompt: options.prompt ?? IMAGE_TO_VIDEO_PROMPT,
+    image: { url: options.image_url },
+    duration: options.duration ?? 5,
+    aspectRatio: options.aspect_ratio ?? '16:9',
+    resolution: options.resolution ?? '720p',
+  })
+  return result.url
 }

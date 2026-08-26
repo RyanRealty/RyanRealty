@@ -56,6 +56,61 @@ already fetches.
 
 # Prior — 2026-08-26 (Claude Code) — CMA client document, FSBO first touch unblocked, dashboard gap closed
 
+# Current — 2026-08-26 (Claude Code) — Grok Studio: the social/media producer rebuilt
+
+**Surface:** `origin/main`. Matt: "rebuild our social media / media content
+producer using grok imagine and all of the other grok features, easy and
+streamlined" + "we cannot have slop at all ever no way."
+
+**Canon to read first: `docs/GROK_CRAFT_CANON.md`.** CLAUDE.md §4 now points at it.
+
+**Shape.** `lib/grok/` is the ONE Grok transport (client / text / image / video /
+vision); `lib/grok-*.ts` are shims. `lib/studio/` is pure + adapter-injected
+(`craft` builds every prompt, `formats`, `slate` is the editorial layer,
+`produce` is the one pipeline, `caption`, `spend`). `lib/data/studio/` is the DAL.
+Console `/admin/studio`, cron `/api/cron/studio-slate` (13:10 UTC daily). Drafts
+are `marketing_brain_actions` rows, so the existing approval queue and
+`publisher-sweep` still own publishing. Nothing auto-posts.
+
+**The anti-slop method:** hero still → Grok vision inspects it against a closed
+defect enum → ONE regenerate on the inspector's own fix hint → kill. Only a
+passing frame gets animated. A real MLS photo is never generated or restyled.
+
+**Verified live, not asserted:** listing_motion $0.483 / 95s; place_video $0.567
+(vision scored the frame 86/100, no defects). Clip is 1088x1920, 6.04s, no audio
+track, house geometry holds across the push.
+
+**Three API facts that cost real money to learn** (in
+`.claude` memory as `reference-grok-api-surface`):
+- Live Search is DEAD (HTTP 410). Research is `/v1/responses` with
+  `web_search`/`x_search`; citations are in `output[].content[].annotations[]`.
+- `generate_audio` DEFAULTS TRUE on video. Forced false.
+- `cost_in_usd_ticks` does not reconcile (~5e-12 USD/tick text vs ~5e-11 image).
+  We price from the published rate card. **Do not price from ticks.**
+- Open-ended search costs ~$2.60-$3.18 per question; the same craft question as a
+  structured `/chat/completions` call cost ~$0.01 and answered better.
+
+**Two silently-empty query shapes found by counter-query, now gated
+(`ci:studio-geo-contract`):** SFR is `property_sub_type` (bare lower case;
+`PropertySubType` errors and reads as empty), and `geo_type='community'` has ZERO
+rows in BOTH `market_pulse_live` and `market_stats_cache` — resort communities
+live under `neighborhood`. Note `market_pulse_live` NOW has 28 neighborhood rows;
+the older "zero neighborhood rows" note is stale.
+
+**New gates:** `ci:grok-models` (nightly, needs XAI_API_KEY) and
+`ci:studio-geo-contract` (static chain). `ci:claude-canon` was red on main from a
+legitimate vendor-name detector regex in `lib/data/analytics/captureDoors.ts`;
+fixed with an inline `@vendor-name-detector` opt-out rather than a silent
+allowlist.
+
+**Open / next:** trend_reactive and market_pulse formats are built and typed but
+have not been run live end to end (listing_motion and place_video have).
+`/admin/studio` renders behind admin auth and was verified by compile + the cron
+path, not by a signed-in browser pass.
+
+# Current — 2026-08-26 (Claude Code) — CMA client document, FSBO first touch unblocked, dashboard gap closed
+
+
 **Surface:** `origin/main`. Continues the "buyer/seller journeys" block below.
 
 **CMA — READ `marketing_brain_skills/producers/cma/SKILL.md` BEFORE TOUCHING THE

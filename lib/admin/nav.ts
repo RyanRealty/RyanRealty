@@ -242,6 +242,9 @@ export const DESTINATIONS: NavDestination[] = [
     defaultOpen: false,
     children: [
       { label: 'Home', href: '/admin/content', icon: 'files', capability: 'content.view' },
+      // The Grok Studio: make a post, judge it, approve or kill. Sits at the
+      // top of Content because it is the one door here used every day.
+      { label: 'Studio', href: '/admin/studio', icon: 'zap', capability: 'content.view' },
       { label: 'Blog', href: '/admin/blog', icon: 'file-text', capability: 'content.blog' },
       { label: 'Guides', href: '/admin/guides', icon: 'files', capability: 'content.guides' },
       { label: 'Media library', href: '/admin/media', icon: 'folder-open', capability: 'content.media' },

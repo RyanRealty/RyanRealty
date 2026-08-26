@@ -118,14 +118,14 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  // 38 -> 39 on 2026-08-26: bdc84f7d added the "Recorded documents" destination
-  // (/admin/place-documents, capability content.communities). The broker count is
-  // unchanged because brokers do not hold content.communities.
-  it('renders the nav budget: 39 superuser items, 27 broker items (Production + Signing + Sign-off on Closings)', () => {
+  // 40/28: 38/27 plus "Recorded documents" (bdc84f7d, superuser-only via
+  // content.communities, which is why the broker count moved by one fewer)
+  // and "Studio" (the Grok content console, content.view so brokers see it).
+  it('renders the nav budget: 40 superuser items, 28 broker items (Production + Signing + Sign-off on Closings)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(39)
-    expect(count('broker')).toBe(27)
+    expect(count('superuser')).toBe(40)
+    expect(count('broker')).toBe(28)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {

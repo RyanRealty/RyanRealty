@@ -1270,12 +1270,21 @@
     ],
     "ci:ssg-budget": [
       "app/**"
+    ],
+    "ci:studio-geo-contract": [
+      "lib/studio/**",
+      "lib/data/studio/**",
+      "lib/data/market/**",
+      "lib/listing/**",
+      "app/communities/**",
+      "lib/listing-mapper.ts"
     ]
   },
   "nightly": [
     "ci:dead-ui",
     "ci:file-size-budget",
     "ci:fub-identifiers",
+    "ci:grok-models",
     "ci:int-test-residue",
     "ci:mockup-coverage",
     "ci:no-mojibake",

@@ -280,6 +280,10 @@
     {
       "path": "/api/cron/dnc-scrub",
       "schedule": "0 17 * * 1"
+    },
+    {
+      "path": "/api/cron/studio-slate",
+      "schedule": "10 13 * * *"
     }
   ]
 }

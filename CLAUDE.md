@@ -328,28 +328,28 @@ or override?" Research sources at `docs/research/best-practices-*.md`.
 
 ---
 
-# §4. Video — Remotion factory retired (2026-08-18)
+# §4. Media — Grok surface + Studio (2026-08-26)
 
-The Remotion tree (`video/`, `listing_video_v4/`, `video_production_skills/`,
-`lib/youtube-market-report/`) is deleted. New motion uses **Grok Imagine** and
-**Grok Video** (`lib/grok-video.ts`, `lib/social/imagine-produce.ts`). Do not
-add remotion, `@remotion/*`, or a second video factory.
+Never add a second video factory; Remotion is deleted.
+**Every Grok call goes through [`lib/grok/`](lib/grok/)** (text, JSON, search,
+vision, stills, edits, motion). Model ids sit in `lib/grok/client.ts`, gated by
+`ci:grok-models`. Never call `api.x.ai` elsewhere.
 
-Live site video stays: `public/videos/cities|communities|hero*.mp4` via
-`data/city-hero-videos.resolved.json`, plus MLS embeds (`lib/video-embed.ts`).
-§0 still applies to any number on screen. Do not invent a listing.
+
+**Production is the Studio:** [`lib/studio/`](lib/studio/), `/admin/studio`,
+`/api/cron/studio-slate`. Drafts land `ready`; only Matt's approval plus
+`publisher-sweep` posts (§1).
+**Read [`docs/GROK_CRAFT_CANON.md`](docs/GROK_CRAFT_CANON.md) before generating.**
+Non-negotiable: vision-inspect a hero still BEFORE paying for motion; 6s, one
+camera axis; `generate_audio` off; no rendered text or logos in frame. Prompts
+come from [`lib/studio/craft.ts`](lib/studio/craft.ts), never hand-written.
 
 # §5. Marketing brain — producer runtime retired (2026-08-18)
 
-Hourly SKILL.md producers (`producer-runtime`, `producer-dispatcher`, weekly
-cycle, audit-run, daily-digest) are off. Inbox + `/marketing/request` still
-file a row; they do not execute a producer. CMA, newsletter, CRM, and the
-Facebook seller optimization report stay as TypeScript products.
-
-Human voice canon remains
-[`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).
-Producer template (THE LOOP pointer) remains
-[`marketing_brain_skills/producers/TEMPLATE.md`](marketing_brain_skills/producers/TEMPLATE.md).
+Hourly SKILL.md producers are off. Inbox + `/marketing/request` file a row but
+run no producer. CMA, newsletter, CRM, and the Facebook seller report stay as
+TypeScript products. Social/media production is the Studio (§4).
+Voice canon: [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).
 
 # §6. Mechanical guardrails
 
