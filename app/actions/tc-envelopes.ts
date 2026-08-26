@@ -1024,7 +1024,22 @@ export async function sendEnvelope(
       customSubject: env.invite_subject ?? null,
       customBody: env.invite_body ?? null,
     })
-    if (sent.error) failed.push(r.name || r.email || r.role)
+    if (sent.error) {
+      failed.push(r.name || r.email || r.role)
+      continue
+    }
+    // Stamp the contact so the watchdog can tell "invited and unopened" from
+    // "not their turn yet", and leave an audit row per link we email.
+    await supabase
+      .from('tc_envelope_recipients')
+      .update({ last_reminded_at: new Date().toISOString() })
+      .eq('id', r.id)
+    await supabase.from('tc_events').insert({
+      cycle_id: env.cycle_id,
+      actor: auth.email,
+      action: 'envelope_invite_sent',
+      detail: { envelope: env.name, recipient: r.name || r.email, role: r.role, recipientId: r.id },
+    })
   }
   if (failed.length) {
     return {

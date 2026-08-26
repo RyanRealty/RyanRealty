@@ -10,6 +10,7 @@
  * Schedule: vercel.json daily.
  */
 import { NextResponse } from 'next/server'
+import { fetchAllRows } from '@/lib/supabase/paginate'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { generateSigningToken } from '@/lib/tc/signing'
@@ -56,6 +57,24 @@ export async function GET(request: Request) {
   }
 
   const envById = new Map((envs as DbRow[]).map((e) => [e.id as string, e]))
+
+  // How many signing links each recipient has already been emailed. The cap
+  // stops a recipient whose address is simply wrong from being mailed forever.
+  const linksByRecipient = new Map<string, number>()
+  const cycleIds = [...new Set((envs as DbRow[]).map((e) => String(e.cycle_id ?? '')).filter(Boolean))]
+  if (cycleIds.length) {
+    const linkEvents = await fetchAllRows<DbRow>(sb, 'tc_events', 'id, action, detail', (q) =>
+      q
+        .in('cycle_id', cycleIds)
+        .in('action', ['envelope_invite_sent', 'envelope_reminder_sent'])
+        .order('id', { ascending: true }),
+    )
+    for (const ev of linkEvents) {
+      const id = (ev.detail as DbRow | null)?.recipientId
+      if (!id) continue
+      linksByRecipient.set(String(id), (linksByRecipient.get(String(id)) ?? 0) + 1)
+    }
+  }
   const candidates: EnvelopeReminderCandidate[] = ((recips ?? []) as DbRow[]).map((r) => {
     const env = envById.get(r.envelope_id) as DbRow | undefined
     const cycle = env?.tc_cycles
@@ -78,6 +97,7 @@ export async function GET(request: Request) {
       lastRemindedAt: r.last_reminded_at ?? null,
       authTokenHash: r.auth_token_hash ?? null,
       viewedAt: r.viewed_at ?? null,
+      linkEmailsSent: linksByRecipient.get(String(r.id)) ?? 0,
     }
   })
 
@@ -109,7 +129,13 @@ export async function GET(request: Request) {
         cycle_id: c.cycleId || null,
         actor: 'system',
         action: 'envelope_reminder_sent',
-        detail: { envelope: c.envelopeName, recipient: c.name || c.email, automatic: true },
+        detail: {
+          envelope: c.envelopeName,
+          recipient: c.name || c.email,
+          recipientId: c.recipientId,
+          automatic: true,
+          unopened: !c.viewedAt,
+        },
       })
       reminded++
     } catch (err) {

@@ -136,7 +136,7 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
     for (const r of toNotify) {
       const { token, hash } = generateSigningToken()
       await supabase.from('tc_envelope_recipients').update({ auth_token_hash: hash }).eq('id', r.id)
-      await sendSigningInvite({
+      const sent = await sendSigningInvite({
         to: r.email,
         recipientName: r.name || 'there',
         envelopeName: (env as DbRow)?.name ?? 'documents',
@@ -144,6 +144,22 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
         signUrl: `${siteUrl()}/sign/${token}`,
         customSubject: (env as DbRow)?.invite_subject ?? null,
         customBody: (env as DbRow)?.invite_body ?? null,
+      })
+      await supabase
+        .from('tc_envelope_recipients')
+        .update({ last_reminded_at: new Date().toISOString() })
+        .eq('id', r.id)
+      await supabase.from('tc_events').insert({
+        cycle_id: (env as DbRow)?.cycle_id ?? null,
+        actor: 'system',
+        action: sent.error ? 'envelope_invite_failed' : 'envelope_invite_sent',
+        detail: {
+          envelope: (env as DbRow)?.name ?? null,
+          recipient: r.name || r.email,
+          role: r.role,
+          recipientId: r.id,
+          ...(sent.error ? { error: sent.error } : {}),
+        },
       })
     }
   }
