@@ -128,6 +128,34 @@ describe('computePricing', () => {
     expect(pricing!.recommended % 5000).toBe(0)
   })
 
+  it('never prints the recommendation at the floor of its own band', () => {
+    // THE 655 12TH DEFECT (2026-08-25). The cover read "$395,000, supported
+    // range $395,000 to $420,000" — the recommendation sitting on the bottom
+    // edge, which a seller reads as being priced to the floor. It happened
+    // whenever the method spread landed at or below Method 3: the old clamp
+    // pulled conservative DOWN to meet recommended and collapsed the band.
+    const adjusted = adjustComps(subject(), comps, market)
+    const pricing = computePricing(subject(), adjusted, market)
+    expect(pricing).not.toBeNull()
+    // Still inside support — SKILL.md §4 step 9 forbids the engine listing
+    // above the supported range on its own, and the accuracy contract
+    // hard-checks this ordering.
+    expect(pricing!.conservative).toBeLessThanOrEqual(pricing!.recommended)
+    expect(pricing!.recommended).toBeLessThanOrEqual(pricing!.highEnd)
+    // And not ON the floor, unless the band is genuinely a single point.
+    if (pricing!.highEnd > pricing!.conservative) {
+      expect(pricing!.recommended).toBeGreaterThan(pricing!.conservative)
+    }
+  })
+
+  it('leaves a broker price override alone, even at the band floor', () => {
+    // A broker who deliberately sets the number owns it. The midpoint rule
+    // must not quietly move a price Matt chose.
+    const adjusted = adjustComps(subject(), comps, market)
+    const pricing = computePricing(subject(), adjusted, market, { priceOverride: 600000 })
+    expect(pricing!.recommended).toBe(600000)
+  })
+
   it('re-anchors the tier grid on a broker price override', () => {
     const adjusted = adjustComps(subject(), comps, market)
     const pricing = computePricing(subject(), adjusted, market, { priceOverride: 750000 })

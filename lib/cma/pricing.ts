@@ -212,6 +212,31 @@ export function computePricing(
     }
   }
 
+  // THE RECOMMENDATION MUST NOT PRINT AT THE FLOOR OF ITS OWN BAND
+  // (Matt 2026-08-25: "mid-range, stay within support").
+  //
+  // recommended is Method 3, and the tiers are derived AROUND it. When the
+  // method spread lands at or below Method 3, the old clamp pulled
+  // conservative DOWN to meet recommended, collapsing the band to a single
+  // edge — the 655 12th CMA printed "$395,000, supported range $395,000 to
+  // $420,000", and a seller reasonably reads that as being priced at the
+  // bottom. Instead, keep the comp-supported floor where the data put it and
+  // move the recommendation to the middle of the band it is already inside.
+  //
+  // This stays WITHIN support on purpose. SKILL.md §4 step 9 is explicit that
+  // listing ABOVE the supported range is the broker's call and the engine must
+  // never do it unilaterally, and the accuracy contract hard-checks
+  // conservative <= recommended <= highEnd. Both still hold: the midpoint of
+  // [conservative, highEnd] is by definition inside the band. A broker
+  // priceOverride is untouched — it has already run above and is deliberate.
+  if (conservative > recommended && priceOverride == null) {
+    const bandMid = round5000((conservative + highEnd) / 2)
+    recommended = Math.min(Math.max(bandMid, conservative), highEnd)
+    notes.push(
+      'The recommended list sits at the midpoint of the comp-supported range rather than its floor. The conservative tier is the quick-sale floor the comps support, not the asking price.',
+    )
+  }
+
   if (conservative > recommended) conservative = recommended
   if (highEnd < recommended) highEnd = recommended
 
