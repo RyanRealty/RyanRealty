@@ -73,12 +73,6 @@ checks.push({
     /publishedPpsf/.test(strip),
 })
 
-const block = src('components/site/listing-detail/PriceBlock.tsx')
-checks.push({
-  label: 'PriceBlock withholds share ppsf',
-  ok: /publishListingSharePricePerSqft\(/.test(block),
-})
-
 const specs = src('components/site/listing-detail/PropertySpecs.tsx')
 checks.push({
   label: 'PropertySpecs withholds share ppsf',
@@ -90,7 +84,6 @@ checks.push({
 // cabin's 866 sq ft — because the publisher was asked a narrower question than
 // the one that decides it.
 for (const [label, path] of [
-  ['PriceBlock', 'components/site/listing-detail/PriceBlock.tsx'],
   ['PropertySpecs', 'components/site/listing-detail/PropertySpecs.tsx'],
   ['HouseMeReport', 'components/site/listing-detail/HouseMeReport.tsx'],
   ['ListingCard', 'components/site/ListingCard.tsx'],

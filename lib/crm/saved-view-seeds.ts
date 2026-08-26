@@ -1,6 +1,13 @@
 /**
  * saved-view-seeds — the canonical Ryan Realty smart lists as CrmSegment ASTs.
  *
+ * reachability: entry-point — the drift guard for the migration's seed block.
+ * No runtime module imports this; its only consumer is saved-view-seeds.test.ts,
+ * which reads 20260703140000_crm_saved_views_canonical.sql and asserts the SQL
+ * still mirrors these defs. check-reachable-exports.mjs does not count test
+ * files as importers, so without this marker the file reads as dead and the
+ * gate's own remedy ("delete it") would silently remove the check.
+ *
  * This is the SINGLE definition of the seeded system views. A migration
  * (supabase/migrations/20260703140000_crm_saved_views_canonical.sql) replaces the
  * system-view set with the same rows; the seed test (saved-view-seeds.test.ts)
