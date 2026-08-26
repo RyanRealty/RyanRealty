@@ -98,10 +98,22 @@ export async function recordDncChecks(
  */
 export async function listUncheckedPhones(limit: number, source?: string | null): Promise<string[]> {
   const sb = createServiceClient()
-  const { data, error } = await sb.rpc('crm_unchecked_dnc_phones', {
-    p_limit: limit,
-    p_source: source ?? null,
-  })
-  if (error) throw new Error(`listUncheckedPhones: ${error.message}`)
-  return ((data ?? []) as Array<{ phone_last10: string }>).map((r) => r.phone_last10)
+  // PostgREST caps a single response at max-rows (1000 here) REGARDLESS of the
+  // LIMIT inside the function, and returns the truncated set without an error.
+  // Asking for 5000 and silently getting 1000 made a scrub run look complete
+  // when it had covered a fifth of what was requested. Page explicitly with
+  // .range() and stop on a short page.
+  const PAGE = 1000
+  const out: string[] = []
+  for (let offset = 0; out.length < limit; offset += PAGE) {
+    const want = Math.min(PAGE, limit - out.length)
+    const { data, error } = await sb
+      .rpc('crm_unchecked_dnc_phones', { p_limit: limit, p_source: source ?? null })
+      .range(offset, offset + want - 1)
+    if (error) throw new Error(`listUncheckedPhones: ${error.message}`)
+    const page = ((data ?? []) as Array<{ phone_last10: string }>).map((r) => r.phone_last10)
+    out.push(...page)
+    if (page.length < want) break
+  }
+  return out
 }
