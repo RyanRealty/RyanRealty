@@ -659,14 +659,23 @@ interface IGMediaInsightsResponse extends MetaErrorBody {
 
 export interface PageInsightsDay {
   date: string
-  page_impressions: number
-  page_impressions_unique: number
-  page_engaged_users: number
-  page_post_engagements: number
-  /** Snapshot: fan count as of end of the day window */
-  page_fans: number
-  page_fan_adds: number
-  page_video_views: number
+  /**
+   * Verified live 2026-08-26: page_impressions, page_impressions_unique,
+   * page_engaged_users, page_fan_adds and page_fans are ALL rejected by the
+   * Graph API now ("(#100) The value must be a valid insights metric"). There
+   * is no impressions replacement for Pages at this version — page_views_total
+   * counts profile views, which is a different thing and is reported under its
+   * own name rather than relabelled as impressions.
+   *
+   * null means "could not be read". Never 0 — a fabricated 0 is what put months
+   * of false numbers into marketing_channel_daily.
+   */
+  page_post_engagements: number | null
+  page_video_views: number | null
+  page_views_total: number | null
+  page_daily_follows: number | null
+  /** Snapshot: total follower count. Replaces the retired page_fans. */
+  page_follows: number | null
 }
 
 /**
@@ -679,15 +688,10 @@ export async function getPageInsights(
   pageId: string,
   date: string
 ): Promise<PageInsightsDay> {
-  const dayMetrics = [
-    'page_impressions',
-    'page_impressions_unique',
-    'page_engaged_users',
-    'page_post_engagements',
-    'page_fan_adds',
-    'page_video_views',
-  ]
-  const snapshotMetrics = ['page_fans']
+  // Only metrics the API actually serves. Asking for a retired one 400s the
+  // WHOLE request, which is how a single dead metric silently zeroed the batch.
+  const dayMetrics = ['page_post_engagements', 'page_video_views', 'page_views_total', 'page_daily_follows']
+  const snapshotMetrics = ['page_follows']
 
   const sinceDate = new Date(`${date}T00:00:00Z`)
   const untilDate = new Date(sinceDate)
@@ -720,13 +724,11 @@ export async function getPageInsights(
 
   return {
     date,
-    page_impressions: values['page_impressions'] ?? 0,
-    page_impressions_unique: values['page_impressions_unique'] ?? 0,
-    page_engaged_users: values['page_engaged_users'] ?? 0,
-    page_post_engagements: values['page_post_engagements'] ?? 0,
-    page_fans: values['page_fans'] ?? 0,
-    page_fan_adds: values['page_fan_adds'] ?? 0,
-    page_video_views: values['page_video_views'] ?? 0,
+    page_post_engagements: values['page_post_engagements'] ?? null,
+    page_video_views: values['page_video_views'] ?? null,
+    page_views_total: values['page_views_total'] ?? null,
+    page_daily_follows: values['page_daily_follows'] ?? null,
+    page_follows: values['page_follows'] ?? null,
   }
 }
 
@@ -739,10 +741,15 @@ export interface PagePost {
   created_time: string
   permalink_url: string
   message: string
-  post_impressions: number
-  post_engaged_users: number
-  post_reactions_by_type_total: number
-  post_clicks: number
+  /**
+   * post_impressions and post_engaged_users are retired (verified live
+   * 2026-08-26) with no replacement at this API version. What survives is
+   * clicks, reactions and video views. null = unread, never a fabricated 0.
+   */
+  post_impressions: number | null
+  post_engaged_users: number | null
+  post_reactions_by_type_total: number | null
+  post_clicks: number | null
 }
 
 /**
@@ -768,10 +775,11 @@ export async function getPagePostsWithInsights(
   if (posts.length === 0) return []
 
   const postMetrics = [
-    'post_impressions',
-    'post_engaged_users',
+    // post_impressions and post_engaged_users retired 2026-08-26 — asking for
+    // either 400s the ENTIRE batch, which is what zeroed the metrics beside them.
     'post_reactions_by_type_total',
     'post_clicks',
+    'post_video_views',
   ]
 
   return Promise.all(
@@ -799,10 +807,10 @@ export async function getPagePostsWithInsights(
           created_time: post.created_time,
           permalink_url: post.permalink_url,
           message: (post.message ?? '').slice(0, 200),
-          post_impressions: insightMap['post_impressions'] ?? 0,
-          post_engaged_users: insightMap['post_engaged_users'] ?? 0,
-          post_reactions_by_type_total: insightMap['post_reactions_by_type_total'] ?? 0,
-          post_clicks: insightMap['post_clicks'] ?? 0,
+          post_impressions: insightMap['post_impressions'] ?? null,
+          post_engaged_users: insightMap['post_engaged_users'] ?? null,
+          post_reactions_by_type_total: insightMap['post_reactions_by_type_total'] ?? null,
+          post_clicks: insightMap['post_clicks'] ?? null,
         }
       } catch (err) {
         // §0 data-accuracy: a swallowed error used to write a SILENT false 0 to
@@ -818,10 +826,10 @@ export async function getPagePostsWithInsights(
           created_time: post.created_time,
           permalink_url: post.permalink_url,
           message: (post.message ?? '').slice(0, 200),
-          post_impressions: 0,
-          post_engaged_users: 0,
-          post_reactions_by_type_total: 0,
-          post_clicks: 0,
+          post_impressions: null,
+          post_engaged_users: null,
+          post_reactions_by_type_total: null,
+          post_clicks: null,
         }
       }
     })

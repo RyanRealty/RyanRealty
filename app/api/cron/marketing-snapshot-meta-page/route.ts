@@ -53,23 +53,42 @@ function* dateIter(startDate: string, endDate: string): Generator<string> {
 // Facebook Page — row builders
 // ---------------------------------------------------------------------------
 
-function fbAccountRows(
+/**
+ * Turn candidate metrics into rows, DROPPING any the API could not give us.
+ *
+ * marketing_channel_daily.value is NOT NULL, so absence is the only honest way
+ * to record "unmeasured". A dropped row reads correctly downstream ("no rows in
+ * this window"); a 0 is indistinguishable from a real zero and had been filling
+ * this table for months. A genuine 0 from the API still passes through.
+ */
+function dropUnread(
+  base: Omit<MetricRow, 'metric' | 'value'>,
+  candidates: Array<{ metric: string; value: number | null }>,
+): MetricRow[] {
+  return candidates
+    .filter((c): c is { metric: string; value: number } => c.value != null)
+    .map((c) => ({ ...base, metric: c.metric, value: c.value }))
+}
+
+export function fbAccountRows(
   date: string,
   pageInsights: Awaited<ReturnType<typeof getPageInsights>>
 ): MetricRow[] {
   const base = { date, channel: 'meta_page' as const, scope: 'account' as const, scope_id: '', source: SOURCE }
-  return [
-    { ...base, metric: 'page_impressions', value: pageInsights.page_impressions },
-    { ...base, metric: 'page_impressions_unique', value: pageInsights.page_impressions_unique },
-    { ...base, metric: 'page_engaged_users', value: pageInsights.page_engaged_users },
-    { ...base, metric: 'page_post_engagements', value: pageInsights.page_post_engagements },
-    { ...base, metric: 'page_fans', value: pageInsights.page_fans },
-    { ...base, metric: 'page_fan_adds', value: pageInsights.page_fan_adds },
-    { ...base, metric: 'page_video_views', value: pageInsights.page_video_views },
-  ]
+  // page_impressions, page_impressions_unique, page_engaged_users, page_fans and
+  // page_fan_adds are retired with no replacement. page_views_total is profile
+  // views — a different measurement, carried under its own name, never relabelled
+  // as impressions. A metric we could not read is dropped, not written as 0.
+  return dropUnread(base, [
+    { metric: 'page_post_engagements', value: pageInsights.page_post_engagements },
+    { metric: 'page_video_views', value: pageInsights.page_video_views },
+    { metric: 'page_views_total', value: pageInsights.page_views_total },
+    { metric: 'page_daily_follows', value: pageInsights.page_daily_follows },
+    { metric: 'page_follows', value: pageInsights.page_follows },
+  ])
 }
 
-function fbPostRows(date: string, posts: PagePost[]): MetricRow[] {
+export function fbPostRows(date: string, posts: PagePost[]): MetricRow[] {
   return posts.flatMap((post): MetricRow[] => {
     const base = {
       date,
@@ -83,12 +102,10 @@ function fbPostRows(date: string, posts: PagePost[]): MetricRow[] {
         message: post.message,
       },
     }
-    return [
-      { ...base, metric: 'post_impressions', value: post.post_impressions },
-      { ...base, metric: 'post_engaged_users', value: post.post_engaged_users },
-      { ...base, metric: 'post_reactions_by_type_total', value: post.post_reactions_by_type_total },
-      { ...base, metric: 'post_clicks', value: post.post_clicks },
-    ]
+    return dropUnread(base, [
+      { metric: 'post_reactions_by_type_total', value: post.post_reactions_by_type_total },
+      { metric: 'post_clicks', value: post.post_clicks },
+    ])
   })
 }
 
