@@ -228,11 +228,19 @@ const tscResult = spawnSync(
     // meet is not a safety property, it is a wedge.
     timeout: 900_000,
     maxBuffer: 10 * 1024 * 1024,
-    // The repo outgrew Node's default heap: without the same 8GB every other
-    // tsc invocation here gets (pre-push build, ci scripts), tsc dies with
-    // SIGABRT ~50s in and the gate reports INCONCLUSIVE on every push
+    // The repo outgrew Node's default heap: without a raised ceiling tsc dies
+    // with SIGABRT ~50s in and the gate reports INCONCLUSIVE on every push
     // (observed live 2026-08-05, three consecutive pushes).
-    env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=8192' },
+    //
+    // Raised 8GB -> 12GB on 2026-08-26, alongside the timeout above and for the
+    // same reason. Measured that day, on this repo: a bare `tsc --noEmit` at
+    // Node's 4GB default spent 300s in Mark-Compact and died "allocation
+    // failure"; at 8GB it was SIGKILLed; at 12GB it completed with 0 errors.
+    // 8GB was no longer a ceiling the tree fits under, so the gate was
+    // reporting the heap, not the code — four consecutive pushes INCONCLUSIVE.
+    // This is the honest kind of widening: the verdict at 12GB is a real
+    // type-check, where the verdict at 8GB was no verdict at all.
+    env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=12288' },
   }
 );
 

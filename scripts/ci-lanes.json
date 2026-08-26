@@ -1174,6 +1174,10 @@
       "lib/sms/**",
       "app/api/**"
     ],
+    "ci:script-stat-source": [
+      "scripts/**",
+      "scripts/script-stat-source-baseline.json"
+    ],
     "ci:stat-source": [
       "lib/data/**",
       "lib/stats/**",

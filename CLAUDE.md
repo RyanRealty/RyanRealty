@@ -268,12 +268,10 @@ and the `--primary` oklch (evaluates to navy) are correct — do not edit.
 
 ## Assets
 
-Full inventory in [`MANIFEST.md`](design_system/ryan-realty/MANIFEST.md). Most-used:
-heritage wordmark [`logo-blue.png`](design_system/ryan-realty/assets/brand/logo-blue.png);
-signature lockup `illustration-05.png`; mascot **Jax** `blue-dog.png` / `white-dog.png` for
-dark backgrounds; scene illustrations `scene-tower.png`, `scene-water-pageant.png`; 14
-numbered wordmark variations `illustration-01..14.png`; element cutouts under
-`assets/brand/navy-cream/`.
+Inventory lives in [`MANIFEST.md`](design_system/ryan-realty/MANIFEST.md) — open it rather
+than naming a file from memory. The two this file keeps referring to: the heritage wordmark
+[`logo-blue.png`](design_system/ryan-realty/assets/brand/logo-blue.png), and the mascot
+**Jax** (`blue-dog.png`, `white-dog.png` on dark).
 
 **CANONICAL BRAND HERO PHOTO (locked 2026-05-13):**
 [`hero-old-mill-master-4k.jpg`](design_system/ryan-realty/assets/hero/hero-old-mill-master-4k.jpg)
@@ -296,20 +294,14 @@ the Supabase `listings` row (`ListAgentEmail`, `ListAgentFullName`). For brand-l
 (market reports, news clips, memes, neighborhood guides) the brokerage speaks — omit the
 headshot, use Jax.
 
-## Migration conflicts vs the retired v1 spec (resolved 2026-05-12)
+## Migration from the retired v1 spec
 
-| Surface | v1 — retired | v2 — locked |
-|---|---|---|
-| Listing video footer logo bar | retired gold `#C8A864` logo on a 70%-black bar | Navy logo on a cream-tinted bar, from `logo-blue.png` |
-| News clip caption pill | retired: navy pill, gold top border, AzoSans 56px | No pill. Single-word Amboqia caption, white + drop shadow (§4) |
-| Body / UI / caption font | retired: AzoSans | Geist for body/UI/data, Amboqia for display + video captions |
-| Cream background | retired `#F2EBDD` | `#faf8f4` |
-| Palette | retired: navy, gold, cream, charcoal | Navy + cream only |
-| Gold accents `#D4AF37` | retired everywhere | none — navy on cream |
-| Mascot | not specified | **Jax** the blue lab, explicitly part of brand |
-
-Already-rendered videos in `public/v5_library/` stay as-is. New renders use v2; a re-render
-migrates to v2.
+Everything above IS the v2 answer, so the old side-by-side table is gone. The retired v1
+tokens — retired `#D4AF37`, retired `#C8A864`, retired `#F2EBDD`, AzoSans body type, the
+gold logo bar — are held out by
+[`check-claude-canon.mjs`](scripts/check-claude-canon.mjs), which fails any line
+reintroducing one without marking it retired. Already-rendered videos in `public/v5_library/`
+stay as-is. New renders use v2; a re-render migrates to v2.
 
 ## Skill self-binding
 
@@ -401,6 +393,7 @@ next.
 | `listings` mixed-case columns are quoted | gated | `check-dal-column-quoting.mjs` |
 | MoS formula + thresholds | gated | `check-market-formula.mjs` |
 | Aggregate SQL over a stat table (an aggregate is a stat) | gated at tool time | `pre-tool-use.mjs` |
+| No NEW raw stat aggregate in `scripts/` | gated (ratchet) | `check-script-stat-source.mjs` |
 | Schema snapshot + DAL index stay current | gated, local/nightly (needs DB creds) | `check-data-access.mjs` |
 | Every cron route registered in `vercel.json` | gated | `check-cron-registered.mjs` |
 | THE LOOP process canon, no rogue plan files, ship-class (no rebuild per fleet finding) | gated | `check-process-canon.mjs` |

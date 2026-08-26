@@ -253,8 +253,40 @@ run(
   },
   { deny: false },
 )
+// Widened 2026-08-26: stat-bearing is now every DAL-covered table MINUS the
+// plumbing allowlist, so the three abuses the first pass missed are covered.
 run(
-  'execute_sql: aggregate on a non-stat table passes (the §0 counter-query)',
+  'execute_sql: CMA draft/delivery ratio WITH -- audit: is denied',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query: '-- audit: cma draft vs delivered\nSELECT status, count(*) FROM cmas GROUP BY 1',
+    },
+  },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
+)
+run(
+  'execute_sql: comp-pool depth WITH -- audit: is denied',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query: '-- audit: comp pool depth\nSELECT cma_id, count(*) FROM cma_comps GROUP BY 1',
+    },
+  },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
+)
+run(
+  'execute_sql: CRM lead counts by source WITH -- audit: is denied',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: {
+      query: '-- audit: lead volume by source\nSELECT lead_source, count(*) FROM crm_people GROUP BY 1',
+    },
+  },
+  { deny: true, contains: 'SQL-STAT-BYPASS' },
+)
+run(
+  'execute_sql: the §0 coverage counter-query is denied too — it goes through the DAL',
   {
     tool_name: 'mcp__5adfee1a-x__execute_sql',
     tool_input: {
@@ -262,7 +294,39 @@ run(
         '-- audit: broad count before claiming the plats are not ingested\nSELECT geo_type, count(*) FROM boundaries GROUP BY 1',
     },
   },
+  { deny: true, contains: 'getBoundariesByGeoType' },
+)
+run(
+  'execute_sql: aggregate on PLUMBING (sync bookkeeping) passes — not a statistic',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: { query: '-- audit: is the delta cursor wedged\nSELECT count(*) FROM sync_state' },
+  },
   { deny: false },
+)
+run(
+  'execute_sql: aggregate on PLUMBING (lookup rows) passes — not a statistic',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: { query: '-- audit: how many task types configured\nSELECT count(*) FROM crm_task_types' },
+  },
+  { deny: false },
+)
+run(
+  'execute_sql: a row read on an operational table still passes',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: { query: "-- audit: does this cma exist\nSELECT id, status FROM cmas WHERE slug = 'abc'" },
+  },
+  { deny: false },
+)
+run(
+  'execute_sql: a stat-bearing table with no hint entry still refuses, generically',
+  {
+    tool_name: 'mcp__5adfee1a-x__execute_sql',
+    tool_input: { query: '-- audit: deal volume\nSELECT stage, count(*) FROM crm_deals GROUP BY 1' },
+  },
+  { deny: true, contains: 'DAL_INDEX.md' },
 )
 run(
   'execute_sql: aggregate on listings with NO audit comment is still SQL-DAL-BYPASS',

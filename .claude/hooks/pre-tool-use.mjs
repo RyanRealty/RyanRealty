@@ -145,11 +145,27 @@ function getDalCoveredTables() {
 // ─── Stat-bearing tables + the DAL family that owns each one ─────────
 //
 // Matt, 2026-08-26: "all stats should come through one process, enforce
-// this." A STAT is an aggregate over a filtered window. Every table below
-// holds the rows our published figures are computed from, so an aggregate
-// over any of them IS a published-class statistic whether or not it ever
-// reaches a page. The value is the DAL function family to reach for
-// instead — printed in the refusal so the fix is one hop away.
+// this." A STAT is an aggregate over a filtered window.
+//
+// WHAT COUNTS AS STAT-BEARING (widened 2026-08-26, second pass). The first
+// pass enumerated market-data tables and closed exactly one of the four
+// abuses Matt named: inventory counts. CMA draft/delivery ratios, comp-pool
+// depths and CRM lead counts still walked through, because those live on
+// operational tables. A hand-kept list was always going to drift behind the
+// schema anyway, so the rule now runs the other way round:
+//
+//   stat-bearing  =  every DAL-covered table (docs/DAL_INDEX.md, regenerated
+//                    by G16)  MINUS  the plumbing allowlist below.
+//
+// Default-deny is the fail-safe direction. A business table added to the DAL
+// tomorrow is covered the day it lands, with nobody remembering to edit this
+// file; only an explicit plumbing entry escapes, and adding one is a visible
+// decision in the diff.
+//
+// The map below is no longer the membership test — it is the HINT table, so
+// the refusal can name the exact DAL family for the tables people reach for
+// most. A stat-bearing table with no entry still refuses, with a generic
+// pointer at docs/DAL_INDEX.md.
 const STAT_TABLES = new Map([
   // Listings — core + the derived materialized views.
   ['listings', 'getMarketPulse() / getMarketStats() (lib/data/market/)'],
@@ -171,7 +187,45 @@ const STAT_TABLES = new Map([
   ['analytics_mart_feature_annual', 'getCoFeatureAnnual() (lib/data/analytics/getCoFeatureAnnual.ts)'],
   ['analytics_mart_office_share_annual', 'getCoOfficeShare() (lib/data/analytics/getCoOfficeShare.ts)'],
   ['analytics_inventory_snapshot', 'analyzeClosedSales() (lib/data/analytics/analyzeClosedSales.ts)'],
+  // Operational records whose counts get quoted as facts — the three abuses
+  // the first pass missed, plus their nearest neighbours.
+  ['cmas', 'listCmasForAdmin() / countCmasInRange() (lib/data/cma/)'],
+  ['cma_comps', 'the CMA comp selectors in lib/cma/comps.ts'],
+  ['crm_people', 'the CRM readers in lib/data/crm/ (searchCrmPeople and friends)'],
+  ['listing_inquiries', 'countListingInquiriesSince() (lib/data/)'],
+  ['saved_searches', 'countSavedSearchesSince() (lib/data/)'],
+  ['expired_listings', 'listExpiredListingsForAdmin() (lib/data/)'],
+  ['boundaries', 'getBoundariesByGeoType() (lib/data/) — this is also how the §0 coverage counter-query should run'],
 ])
+
+// Plumbing: config, taxonomy/lookup rows, and sync bookkeeping. Counting
+// these is operations, never a figure anybody quotes, so an aggregate here
+// is not a statistic. Everything NOT listed and covered by the DAL denies —
+// when in doubt a table stays out of this set, because the cost of being
+// wrong here is a published number nobody verified, and the cost of being
+// wrong the other way is one `-- audit:` row read.
+const PLUMBING_TABLES = new Set([
+  // config + settings
+  'app_config', 'crm_company_settings', 'crm_assignment_config',
+  'crm_assignment_rules', 'crm_automation_rules', 'crm_field_definitions',
+  'crm_saved_views', 'lead_flow_rules', 'lead_flows',
+  // taxonomy / lookup rows
+  'crm_task_types', 'crm_appointment_types', 'crm_appointment_outcomes',
+  'crm_stages', 'crm_deal_stages', 'crm_pipelines', 'crm_sequence_folders',
+  'tc_form_catalog_items', 'tc_form_catalog_checks', 'tc_form_libraries',
+  'tc_form_versions', 'tc_clauses',
+  // sync bookkeeping
+  'sync_cursor', 'sync_history', 'sync_logs', 'sync_state',
+  'strict_verify_runs', 'target_query_benchmark',
+])
+
+// Is an aggregate over this table a statistic? Explicit stat tables always
+// count (they stay covered even if the DAL index cannot be read); otherwise
+// DAL-covered and not plumbing.
+function isStatBearing(table, dalTables) {
+  if (STAT_TABLES.has(table)) return true
+  return dalTables.has(table) && !PLUMBING_TABLES.has(table)
+}
 
 // Aggregate functions that produce a STATISTIC. Deliberately narrow: the
 // collection aggregates (array_agg, string_agg, json_agg) gather rows into
@@ -310,12 +364,16 @@ if (/__execute_sql$/.test(tool_name) || /__apply_migration$/.test(tool_name)) {
       const refs = [
         ...bare.matchAll(/\b(?:from|join)\s+(?:only\s+)?(?:public\.)?"?([a-z_][a-z_0-9]*)"?/g),
       ].map((m) => m[1])
-      const hit = refs.find((t) => STAT_TABLES.has(t))
+      const dalTables = getDalCoveredTables()
+      const hit = refs.find((t) => isStatBearing(t, dalTables))
       if (hit) {
+        const hint =
+          STAT_TABLES.get(hit) ??
+          `the DAL function that owns \`${hit}\` — look it up in the reverse index at the bottom of docs/DAL_INDEX.md`
         deny(
           'SQL-STAT-BYPASS',
           `Aggregate SQL over \`${hit}\` is refused — an aggregate over a filtered window is a STATISTIC, and \`-- audit:\` does not license one. Snippet: ${sql.slice(0, 160)}`,
-          `Stats come through one process: the DAL, which reads the caches (market_pulse_live, market_stats_cache) instead of aggregating raw rows. Use ${STAT_TABLES.get(hit)} — full list in docs/DAL_INDEX.md. \`-- audit:\` still covers a targeted ROW read on \`${hit}\` (show me this row, does this key exist) — drop the aggregate and it passes. If the figure you need has no DAL function yet, add one under lib/data/ and call it; do not aggregate raw here (CLAUDE.md §0 + §7.6).`,
+          `Stats come through one process: the DAL, which reads the caches instead of aggregating raw rows. Use ${hint}. \`-- audit:\` still covers a targeted ROW read on \`${hit}\` (show me this row, does this key exist) — drop the aggregate and it passes. If the figure you need has no DAL function yet, add one under lib/data/ and call it; do not aggregate raw here (CLAUDE.md §0 + §7.6). A coverage check ("is there any data for X") is a DAL read too — see getBoundariesByGeoType() for the shape.`,
         )
       }
     }

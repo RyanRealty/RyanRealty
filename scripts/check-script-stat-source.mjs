@@ -1,0 +1,380 @@
+#!/usr/bin/env node
+/**
+ * check-script-stat-source.mjs — ci:script-stat-source (§0, §7.6).
+ *
+ * Matt, 2026-08-26: "all stats shoule come through one process, enforce this."
+ *
+ * The runtime hook (.claude/hooks/pre-tool-use.mjs, refusal SQL-STAT-BYPASS)
+ * closed the door an AGENT walks through: mcp__*__execute_sql. It cannot see
+ * the other door. A script under scripts/ holds a supabase-js client of its
+ * own, and `.from('listings').select('*', { count: 'exact', head: true })`
+ * computes exactly the same figure with the hook none the wiser — same hole,
+ * different door. This gate is that door.
+ *
+ * ── WHAT IS A VIOLATION ─────────────────────────────────────────────────────
+ * Two shapes, both mechanical:
+ *
+ *   1. A supabase `.select(..., { count: ... })` on a chain whose `.from()`
+ *      names a stat-bearing table. That is a COUNT of a filtered window.
+ *   2. A SQL string literal carrying an aggregate (count/sum/avg/min/max/
+ *      median/percentile/…) or a GROUP BY, over a stat-bearing table. That
+ *      covers the `execute_sql` RPC and any raw pg client.
+ *
+ * ── WHAT THIS GATE HONESTLY DOES NOT CATCH ──────────────────────────────────
+ * Aggregation performed in JavaScript AFTER the rows are fetched — `.length`
+ * on a full select, a `.reduce()` that sums a column, a groupBy built with a
+ * Map. Catching that needs dataflow analysis, not a syntax walk. It is written
+ * here rather than left implied, because a gate that quietly covers less than
+ * it appears to is worse than no gate: it reads as coverage. If that shape
+ * starts producing published figures, it needs its own detector, not a
+ * loosened version of this one.
+ *
+ * ── WHY A RATCHET AND NOT A HARD BLOCK ──────────────────────────────────────
+ * 18 script files already do this, and they are not one thing. A backfill
+ * counting how many rows are left to process is operations — the number is
+ * never quoted at anybody. A probe computing inventory by subdivision is a
+ * statistic wearing a script for a hat. No syntax tells those apart, and a
+ * gate that fires on both gets loosened until it stops biting (the exact
+ * failure mode check-stat-source.mjs warns about in its own header).
+ *
+ * So: the existing set is baselined and MAY ONLY SHRINK. A NEW one fails the
+ * build unless the line carries `stat-source-ok: <reason>` saying why the
+ * figure is not published. The ratchet makes the direction one-way without
+ * pretending the current 18 are all defects.
+ *
+ * ── CHECK 0 · the detector proves itself before it scans ────────────────────
+ * Runs first, always, on in-memory fixtures, the same discipline
+ * check-stat-source.mjs adopted after its first detector shipped broken and
+ * printed a confident green. A detector that stops flagging a known-bad
+ * fixture, or starts flagging a known-good one, fails the build before a
+ * single repo file is opened.
+ *
+ * Refresh the baseline after a real removal:
+ *   node scripts/check-script-stat-source.mjs --write-baseline
+ */
+
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { relative } from 'node:path'
+import ts from 'typescript'
+import { walkFiles } from './lib/walk.mjs'
+
+const ROOT = process.cwd()
+const BASELINE_PATH = 'scripts/script-stat-source-baseline.json'
+const WRITE_BASELINE = process.argv.includes('--write-baseline')
+const REPORT = process.argv.includes('--report')
+
+// Stat-bearing tables. Deliberately the SAME spine as the runtime hook's
+// STAT_TABLES + "DAL-covered minus plumbing" rule, but stated explicitly here
+// because a gate must not depend on a hook file to know what it is guarding.
+// Keep the two in step: a table that is a stat at tool time is a stat here.
+const STAT_TABLES = new Set([
+  // listings core + derived MVs
+  'listings', 'listing_history', 'listing_tile_mv', 'listing_tile_mv_src',
+  'listing_search_mv', 'similar_listings_mv', 'listing_boundary_xref_mv',
+  'geo_snapshot_mv', 'neighborhood_year_pricing_mv',
+  // market caches + facts
+  'market_pulse_live', 'market_stats_cache', 'market_history_weekly',
+  'market_fact_sale', 'market_fact_listing_span', 'reporting_cache',
+  // analytics marts
+  'analytics_mart_market_annual', 'analytics_mart_feature_annual',
+  'analytics_mart_office_share_annual', 'analytics_inventory_snapshot',
+  // operational records whose counts get quoted as facts
+  'cmas', 'cma_comps', 'crm_people', 'crm_deals', 'listing_inquiries',
+  'saved_searches', 'expired_listings', 'fsbo_listings', 'boundaries',
+  'newsletter_subscribers', 'listing_alerts',
+])
+
+// Aggregate names, each requiring a following paren so `max_price` and
+// `sold_count` read as the column names they are. Collection aggregates
+// (array_agg/string_agg/json_agg) gather rows rather than measure, so they
+// are not here — same line the runtime hook draws.
+const AGG_RE =
+  /\b(count|sum|avg|min|max|median|mode|stddev|stddev_pop|stddev_samp|variance|var_pop|var_samp|percentile_cont|percentile_disc|corr)\s*\(/i
+const GROUP_BY_RE = /\bgroup\s+by\b/i
+const MARKER_RE = /stat-source-ok:/
+
+function stripSqlComments(sql) {
+  return sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ')
+}
+
+/** Does this SQL text aggregate over a stat-bearing table? Returns the table. */
+function sqlStatHit(text) {
+  const bare = stripSqlComments(text.toLowerCase())
+  if (!AGG_RE.test(bare) && !GROUP_BY_RE.test(bare)) return null
+  for (const m of bare.matchAll(
+    /\b(?:from|join)\s+(?:only\s+)?(?:public\.)?"?([a-z_][a-z_0-9]*)"?/g,
+  )) {
+    if (STAT_TABLES.has(m[1])) return m[1]
+  }
+  return null
+}
+
+/**
+ * Walk one source file. Returns [{line, table, kind}].
+ *
+ * Shape 1 — supabase chain: find a `.select(...)` whose 2nd argument is an
+ * object literal with a `count` property, then walk back down the callee
+ * chain looking for `.from('<stat table>')`. Walking the chain (rather than
+ * matching text nearby) is what keeps a `count` option on some OTHER table's
+ * query from being blamed on a `listings` call ten lines up.
+ *
+ * Shape 2 — any string/template literal whose text is SQL that aggregates a
+ * stat-bearing table.
+ */
+function scanSource(rel, src) {
+  const hits = []
+  const kind = /\.tsx?$/.test(rel) ? ts.ScriptKind.TS : ts.ScriptKind.JS
+  let sf
+  try {
+    sf = ts.createSourceFile(rel, src, ts.ScriptTarget.Latest, true, kind)
+  } catch {
+    return hits
+  }
+  const lineOf = (node) => sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1
+
+  // Resolve the table a supabase call chain reads, by descending the callee.
+  function tableOfChain(node) {
+    let cur = node
+    while (cur) {
+      if (
+        ts.isCallExpression(cur) &&
+        ts.isPropertyAccessExpression(cur.expression) &&
+        cur.expression.name.text === 'from' &&
+        cur.arguments.length > 0 &&
+        ts.isStringLiteralLike(cur.arguments[0])
+      ) {
+        return cur.arguments[0].text
+      }
+      if (ts.isCallExpression(cur)) cur = cur.expression
+      else if (ts.isPropertyAccessExpression(cur)) cur = cur.expression
+      else return null
+    }
+    return null
+  }
+
+  function visit(node) {
+    // Shape 1: .select(<cols>, { count: ... })
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'select' &&
+      node.arguments.length >= 2 &&
+      ts.isObjectLiteralExpression(node.arguments[1])
+    ) {
+      const hasCount = node.arguments[1].properties.some(
+        (p) => p.name && ts.isIdentifier(p.name) && p.name.text === 'count',
+      )
+      if (hasCount) {
+        const table = tableOfChain(node.expression.expression)
+        if (table && STAT_TABLES.has(table)) {
+          hits.push({ line: lineOf(node), table, kind: 'supabase-count' })
+        }
+      }
+    }
+    // Shape 2: SQL text in a literal.
+    if (ts.isStringLiteralLike(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      const table = sqlStatHit(node.text || '')
+      if (table) hits.push({ line: lineOf(node), table, kind: 'raw-sql' })
+    }
+    if (ts.isTemplateExpression(node)) {
+      const text = node.getText(sf)
+      const table = sqlStatHit(text)
+      if (table) hits.push({ line: lineOf(node), table, kind: 'raw-sql' })
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+
+  // Drop anything whose line, or the line above it, carries the marker.
+  const lines = src.split('\n')
+  return hits.filter((h) => {
+    const here = lines[h.line - 1] ?? ''
+    const above = lines[h.line - 2] ?? ''
+    return !MARKER_RE.test(here) && !MARKER_RE.test(above)
+  })
+}
+
+// ─── CHECK 0 · prove the detector on fixtures before scanning ───────────────
+
+const FIXTURES = [
+  {
+    name: 'supabase count on a stat table',
+    file: 'f.mjs',
+    src: "const { count } = await sb.from('listings').select('*', { count: 'exact', head: true })",
+    expect: true,
+  },
+  {
+    name: 'supabase count on a NON-stat table',
+    file: 'f.mjs',
+    src: "const { count } = await sb.from('sync_state').select('*', { count: 'exact', head: true })",
+    expect: false,
+  },
+  {
+    name: 'supabase plain select on a stat table (a row read)',
+    file: 'f.mjs',
+    src: "const { data } = await sb.from('listings').select('ListingKey').eq('ListingKey', k)",
+    expect: false,
+  },
+  {
+    name: 'raw SQL aggregate on a stat table',
+    file: 'f.mjs',
+    src: "const q = 'SELECT status, count(*) FROM cmas GROUP BY 1'",
+    expect: true,
+  },
+  {
+    name: 'raw SQL row read on a stat table',
+    file: 'f.mjs',
+    src: "const q = 'SELECT id FROM cmas WHERE slug = $1'",
+    expect: false,
+  },
+  {
+    name: 'aggregate-shaped column names are not aggregates',
+    file: 'f.mjs',
+    src: "const q = 'SELECT max_price, sold_count FROM market_stats_cache WHERE geo_slug = $1'",
+    expect: false,
+  },
+  {
+    name: 'the marker on the line suppresses',
+    file: 'f.mjs',
+    src: "const q = 'SELECT count(*) FROM listings' // stat-source-ok: backfill progress, never published",
+    expect: false,
+  },
+  {
+    name: 'the marker one line above suppresses',
+    file: 'f.mjs',
+    src: "// stat-source-ok: backfill progress, never published\nconst q = 'SELECT count(*) FROM listings'",
+    expect: false,
+  },
+  {
+    name: 'a count option on a different table is not blamed on a nearby stat table',
+    file: 'f.mjs',
+    src:
+      "await sb.from('listings').select('ListingKey')\n" +
+      "const { count } = await sb.from('sync_state').select('*', { count: 'exact', head: true })",
+    expect: false,
+  },
+]
+
+const detectorFailures = []
+for (const f of FIXTURES) {
+  const got = scanSource(f.file, f.src).length > 0
+  if (got !== f.expect) {
+    detectorFailures.push(
+      `detector fixture "${f.name}": expected ${f.expect ? 'FLAG' : 'clean'}, got ${got ? 'FLAG' : 'clean'}`,
+    )
+  }
+}
+if (detectorFailures.length > 0) {
+  console.error('script stat-source gate (ci:script-stat-source)')
+  console.error('===============================================')
+  console.error('')
+  console.error('✗ CHECK 0 FAILED — the detector is broken, so the scan below would be')
+  console.error('  meaningless. Fix the detector before trusting any green from this gate.')
+  for (const d of detectorFailures) console.error(`  - ${d}`)
+  process.exit(1)
+}
+
+// ─── Scan scripts/ ──────────────────────────────────────────────────────────
+
+const files = walkFiles('scripts', {
+  ext: /\.(mjs|js|ts)$/,
+  skip: /(^|\/)(node_modules|\.next|\.git|__tests__)(\/|$)/,
+}).sort()
+
+const offenders = new Map() // relative path -> hit count
+for (const f of files) {
+  if (f.endsWith('check-script-stat-source.mjs')) continue // this file names the tables
+  let src
+  try {
+    src = readFileSync(f, 'utf8')
+  } catch {
+    continue
+  }
+  const hits = scanSource(f, src)
+  if (hits.length > 0) offenders.set(relative(ROOT, f), hits.length)
+}
+
+const total = [...offenders.values()].reduce((a, b) => a + b, 0)
+
+if (WRITE_BASELINE) {
+  writeFileSync(
+    BASELINE_PATH,
+    JSON.stringify(
+      {
+        note:
+          'Ratchet for ci:script-stat-source. `files` lists scripts that aggregate a stat-bearing table directly, with their hit counts. The list MAY ONLY SHRINK: a new entry, or a higher count on an existing one, fails the build. Clear an entry by routing the figure through lib/data/, or mark the line `stat-source-ok: <reason>` when the number is operational and never published. Refresh: node scripts/check-script-stat-source.mjs --write-baseline',
+        generatedAt: new Date().toISOString(),
+        total,
+        files: Object.fromEntries([...offenders.entries()].sort()),
+      },
+      null,
+      2,
+    ) + '\n',
+  )
+  console.log(`baseline written: ${total} hit(s) across ${offenders.size} file(s).`)
+  process.exit(0)
+}
+
+if (!existsSync(BASELINE_PATH)) {
+  console.error(`✗ ci:script-stat-source — missing ${BASELINE_PATH}.`)
+  console.error(`  Seed it: node scripts/check-script-stat-source.mjs --write-baseline`)
+  process.exit(1)
+}
+
+let baseline
+try {
+  baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
+} catch (e) {
+  console.error(`✗ ci:script-stat-source — unparseable ${BASELINE_PATH}: ${e.message}`)
+  process.exit(1)
+}
+const baseFiles = baseline.files ?? {}
+
+const failures = []
+for (const [file, count] of offenders) {
+  const allowed = baseFiles[file]
+  if (allowed === undefined) {
+    failures.push(
+      `NEW: ${file} aggregates a stat-bearing table directly (${count} hit(s)).\n` +
+        `     Route the figure through a function in lib/data/ (docs/DAL_INDEX.md), or if the\n` +
+        `     number is operational and never published, mark the line: stat-source-ok: <reason>`,
+    )
+  } else if (count > allowed) {
+    failures.push(
+      `GREW: ${file} went from ${allowed} to ${count} raw stat aggregate(s). The baseline may only shrink.`,
+    )
+  }
+}
+
+if (REPORT) {
+  console.log(`script stat-source scan — ${total} hit(s) across ${offenders.size} file(s)\n`)
+  for (const [file, count] of [...offenders.entries()].sort()) {
+    const base = baseFiles[file]
+    const tag = base === undefined ? 'NEW ' : count > base ? 'GREW' : '    '
+    console.log(`  ${tag} ${file} — ${count}${base !== undefined ? ` (baseline ${base})` : ''}`)
+  }
+  console.log('')
+}
+
+console.log('script stat-source gate (ci:script-stat-source)')
+console.log('===============================================')
+console.log(
+  `  detector: ${FIXTURES.length}/${FIXTURES.length} fixtures · scanned ${files.length} script(s) · ${total} hit(s) in ${offenders.size} file(s) (baseline ${Object.keys(baseFiles).length} file(s))`,
+)
+
+// A file that left the offender set but is still baselined is fine (it shrank);
+// report it so the baseline gets refreshed rather than drifting upward forever.
+const cleared = Object.keys(baseFiles).filter((f) => !offenders.has(f))
+if (cleared.length > 0) {
+  console.log(`  ${cleared.length} baselined file(s) now clean — refresh with --write-baseline.`)
+}
+
+if (failures.length > 0) {
+  console.error('')
+  console.error(`✗ ci:script-stat-source — ${failures.length} failure(s):`)
+  for (const f of failures) console.error(`  - ${f}`)
+  process.exit(1)
+}
+
+console.log('')
+console.log('✓ No new raw stat aggregates in scripts/.')
