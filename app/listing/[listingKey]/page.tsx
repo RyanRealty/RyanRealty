@@ -45,6 +45,8 @@ import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBl
 import { NeighborhoodMarketContext } from '@/components/site/listing-detail/NeighborhoodMarketContext'
 import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
 import { ParksNearbyBlock } from '@/components/site/listing-detail/ParksNearbyBlock'
+import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
+import { getPlaceDocumentsForListing } from '@/lib/data/places/getPlaceDocumentsForListing'
 import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
 import { RoomRestyle } from '@/components/site/listing-detail/RoomRestyle.client'
 import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
@@ -249,6 +251,17 @@ export default async function ListingDetailPage({ params }: PageProps) {
   // "Similar homes" = active homes in THIS listing's place (subdivision first,
   // then neighborhood, then city) — the same canonical featured-homes rail the
   // city/community pages use, not a bespoke MV. Scope mirrors marketGeo.
+  // The plat's recorded CC&Rs. Resolved through place_membership (boundary
+  // polygons), not the MLS SubdivisionName text — on this page a buyer is
+  // deciding about one specific house, and the wrong plat's covenants would be
+  // worse than none. Timeout-guarded like every other arm here.
+  const platDocuments = await withTimeoutFallback(
+    getPlaceDocumentsForListing(listing.boundarySubdivision),
+    null,
+    4500,
+    'listing:plat-documents',
+  )
+
   const nearbyScope =
     marketGeo?.geoType === 'community'
       ? { subdivision: marketGeo.name, city: listing.city ?? undefined }
@@ -539,6 +552,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
           thisListPrice={wholePropertyPrice}
           refreshedAt={leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt}
           chartCitySlug={listing.citySlug ?? null}
+        />
+      ) : null}
+      {platDocuments ? (
+        <GoverningDocumentsBlock
+          platName={platDocuments.platName}
+          platHref={`/subdivisions/${platDocuments.geoSlug}`}
+          documents={platDocuments.documents}
         />
       ) : null}
       <SchoolsBlock listing={listingWithPhotos} />
