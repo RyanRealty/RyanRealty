@@ -133,6 +133,7 @@ import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'; import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { PlaceDocuments } from '@/components/site/PlaceDocuments'
+import { PlacePropertyTypes } from '@/components/site/PlacePropertyTypes'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -918,9 +919,13 @@ export default async function CommunityDetailPage({ params }: Props) {
             getDistrictForCity(). Specific school names/attendance zones are NOT
             shown because per-address boundary data is not in the system. (§0) */}
         <KbSchools communityName={publicName} districtName={schoolDistrictInfo?.district ?? null} districtSlug={schoolDistrictInfo?.districtSlug ?? null} />
+        <PlacePropertyTypes
+          placeName={publicName}
+          citySlug={citySlug ?? ''}
+          rows={publicSegments}
+        />
         <PlaceDocuments displayName={publicName} documents={placeDocuments} />
-        <CommunityGolfLinks communitySlug={slug} communityName={publicName} />
-        <KbArticles
+        <CommunityGolfLinks communitySlug={slug} communityName={publicName} />        <KbArticles
           posts={articlePosts}
           eyebrow="Guides and news"
           heading={`${publicName} real estate guides`}

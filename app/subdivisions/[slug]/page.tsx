@@ -43,6 +43,7 @@ import {
   getSubdivisionCounts,
 } from '@/lib/data/market-truth/subdivision-counts'
 import { PublicSubdivisionCounts } from './PublicSubdivisionCounts'
+import { PlacePropertyTypes } from '@/components/site/PlacePropertyTypes'
 import { SubdivisionExploreTail } from '@/components/site/explore/SubdivisionExploreTail'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import {
@@ -563,6 +564,16 @@ export default async function SubdivisionPage({ params }: Props) {
         {/* Assigned schools (W2.4 MPC parity) — §0-thresholded modal assignment
             from this subdivision's own listings; renders null when no level
             clears the DAL majority rule. */}
+        {/* One section per property type the plat actually contains. The registry
+            withholds price and months of supply below neighbourhood grain, so a
+            plat supplies counts alone — and a type with no counts never reaches
+            the component at all, which is the point. */}
+        <PlacePropertyTypes
+          placeName={displayName}
+          citySlug={citySlug}
+          rows={mtCounts.extras}
+        />
+
         <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />
 
         <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} />

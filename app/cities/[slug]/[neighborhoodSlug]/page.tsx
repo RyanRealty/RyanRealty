@@ -119,6 +119,7 @@ import { lifestyleNearLatLng } from '@/lib/explore/lifestyle-near'
 import { mapCentroid } from '@/lib/explore/subdivision-page-extras'
 import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
 import { PlaceDocuments } from '@/components/site/PlaceDocuments'
+import { PlacePropertyTypes } from '@/components/site/PlacePropertyTypes'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
@@ -646,6 +647,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           items={nbhLifestyle}
           eyebrow={`${neighborhood.name} · Lifestyle`}
           title="Parks, trails, golf, and events nearby"
+        />
+        <PlacePropertyTypes
+          placeName={neighborhood.name}
+          citySlug={citySlug}
+          rows={publicSegments}
         />
         <PlaceDocuments displayName={neighborhood.name} documents={placeDocuments} />
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
