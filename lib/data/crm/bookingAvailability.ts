@@ -1,5 +1,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getGcalBusyIntervals } from '@/lib/google-calendar'
+import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import type { BusyInterval } from '@/lib/booking/slots'
 
 /**
@@ -7,6 +9,18 @@ import type { BusyInterval } from '@/lib/booking/slots'
  * busy intervals. Titles and people are deliberately NOT returned: this feeds a
  * PUBLIC availability view, and a visitor must never be able to infer who a
  * broker is meeting or where. Only "that time is taken".
+ *
+ * TWO SOURCES, MERGED (Matt 2026-08-25). crm_appointments alone is not the
+ * broker's life: a showing, a listing presentation or a dentist appointment
+ * booked straight into Google would have been invisible here, and the public
+ * page would have handed that hour to a stranger. Google Calendar is now read
+ * for every broker alongside the CRM.
+ *
+ * Google is read through getGcalBusyIntervals, NOT getGcalEvents, because that
+ * one collapses a failed API call into an empty list — which here would mean
+ * "totally free". A Google read that FAILS throws and takes the whole call down
+ * to the caller's closed-calendar path; a broker whose DWD is simply not
+ * configured returns configured:false and falls back to CRM-only.
  */
 export async function getBrokerBusyIntervals(args: {
   brokerSlug: string
@@ -45,6 +59,15 @@ export async function getBrokerBusyIntervals(args: {
     if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) continue
     out.push({ startMs, endMs })
   }
+
+  // Google Calendar for the same broker. A throw here propagates on purpose:
+  // the caller renders a closed calendar rather than an unverified open one.
+  const brokerEmail = CRM_MAILBOXES.find((m) => m.slug === args.brokerSlug)?.email
+  if (brokerEmail) {
+    const gcal = await getGcalBusyIntervals(brokerEmail, args.fromIso, args.toIso)
+    if (gcal.configured) out.push(...gcal.intervals)
+  }
+
   return out
 }
 
