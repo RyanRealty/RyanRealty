@@ -14,6 +14,7 @@
 
 import { namesByDealRole, type DealPersonRole } from './deal-people'
 import { isOref001OverlayApplicable, oref001OverlayFieldMap } from './oref-001-field-map'
+import { formBindingFactKey, formBlankIsReserved } from './oref-form-bindings'
 
 export const PREFERRED_OREF_LIBRARY = 'OREF'
 export const PREFERRED_OREF_FORM_NUMBER = '001'
@@ -329,6 +330,8 @@ export function resolveOrefFieldMap(opts: {
 export function mapDealFactsToFillValues(
   facts: DealFacts,
   fieldMap: FillableField[] | null | undefined,
+  /** Licensed OREF blanks name their widgets after the paragraph, not the fact. */
+  formNumber?: string | null,
 ): { filled: FillValue[]; omittedBindings: string[]; omittedFactKeys: DealFactKey[] } {
   const present = presentFactValues(facts)
   const omittedFactKeys = (Object.keys(DEAL_FACT_ALIASES) as DealFactKey[]).filter((k) => present[k] == null)
@@ -338,7 +341,9 @@ export function mapDealFactsToFillValues(
 
   for (const field of fields) {
     const binding = fieldBinding(field)
-    const factKey = resolveFactKey(binding)
+    const factKey =
+      formBindingFactKey(formNumber, binding) ??
+      (formBlankIsReserved(formNumber, binding) ? null : resolveFactKey(binding))
     if (!factKey) {
       if (binding.trim()) omittedBindings.push(binding)
       continue

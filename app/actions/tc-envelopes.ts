@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { TC_DOCUMENT_URL_TTL_SECONDS } from '@/lib/tc/document-urls'
+import { formBindingFactKey, formBlankIsReserved } from '@/lib/tc/oref-form-bindings'
 import { existingDocumentIdByHash } from '@/lib/tc/document-dedupe'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
@@ -657,12 +658,16 @@ export async function createEnvelopeFromTemplate(
       signerProfile: form.signer_profile,
       documentName: form.name,
     })
-    const { filled } = mapDealFactsToFillValues(facts, map)
+    const { filled } = mapDealFactsToFillValues(facts, map, form.form_number as string | null)
     const textByFact = new Map(filled.map((v) => [v.factKey, v.value]))
     for (const f of map) {
       const raw = ((f.type as string) === 'date' ? 'date_signed' : f.type) as MappedFieldType
       const type = mappedFieldTypeFromName(f.dataRef, f.label, raw)
-      const factKey = resolveFactKey(f.dataRef ?? '')
+      const factKey =
+        formBindingFactKey(form.form_number as string | null, f.dataRef ?? '') ??
+        (formBlankIsReserved(form.form_number as string | null, f.dataRef ?? '')
+          ? null
+          : resolveFactKey(f.dataRef ?? ''))
       const filledText = factKey ? textByFact.get(factKey) : undefined
       const recipientId = signerOwnsMappedField(type)
         ? recipientByRole(f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined))
