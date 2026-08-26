@@ -78,23 +78,104 @@ Ranch's own site says Glaze Meadow "plays 7,007 yards from the back tees"; the U
 rating record measures the BLACK tee at 6,903. Rating and slope are measured against
 the played course for handicap purposes, so that record is the one to publish.
 
-## Designer and year opened — NOT yet audited
+## Year opened
 
-USGA publishes neither. These were verified against the course's own site on
-2026-08-26 and are sourced:
+USGA publishes no opening year, and Central Oregon course sites overwhelmingly do not
+either — of eleven checked directly, **two** stated one (Bend Golf Club, Awbrey Glen).
+Cutting every unstated year would have emptied the column on roughly 22 of 26 rows, so
+per Matt (2026-08-26) a **named archive** may carry the year where the course is silent.
+Every year below names its source. Where sources conflict and none clearly wins, the
+year is CUT rather than picked.
 
-| slug | verified | source |
+Convention: **`yearOpened` = the year the course FIRST opened for play**, which is how
+golf archives use it. Several of these opened as nine holes and reached eighteen later;
+that is noted rather than silently folded in.
+
+Primary source used throughout for the courses it covers: The Bulletin (Bend), *How a
+sleepy lumber town turned into a golf hotbed*, 2018-05-06 — a local-press history that
+dates nineteen Central Oregon courses in one piece.
+
+| slug | year | source |
 |---|---|---|
-| tetherow-golf-club | David McLay Kidd | tetherow.com/luxury-golf-resort/golf-course/ — "par 72 course layout that was designed by award-winning architect David McLay Kidd" |
-| broken-top-club | Tom Weiskopf & Jay Morrish | brokentop.com/golf — "designed by the team of Tom Weiskopf and Jay Morrish", "The par 72, 7,161-yard course" |
-| bend-golf-club | H. Chandler Egan, 1925 | bendgolfclub.com — "Our Chandler Egan-designed course has been the heart of BGC since 1925" |
-| black-butte-glaze-meadow | John Fought, 2012 renovation | blackbutteranch.com/golf/golf-courses/ — "reopened in 2012 after an extensive renovation by architect John Fought" |
-| awbrey-glen | Gene "Bunny" Mason 1993, updated by David McLay Kidd | awbreyglen.com/golf — quoted verbatim in `data/resort-community-awbrey-glen.json` |
+| bend-golf-club | 1925 | bendgolfclub.com ("the heart of BGC since 1925"); The Bulletin gives May 3, 1925 |
+| sunriver-meadows | 1968 | The Bulletin ("opened in 1968") |
+| black-butte-big-meadow | 1970 | The Bulletin |
+| crooked-river-ranch | 1979 | Where2Golf / PGA.com (Gene Mason 1979, Jim Ramey redesign 1996) |
+| sunriver-woodlands | 1981 | The Bulletin ("opened in '81") |
+| black-butte-glaze-meadow | 1982 | The Bulletin ("completed in '82"); reopened 2012 after the Fought renovation |
+| eagle-crest-resort | 1986 | The Bulletin |
+| rivers-edge | 1988 | The Bulletin |
+| quail-run | 1991 | The Bulletin. Opened as NINE holes; the second nine came in 2006 |
+| widgi-creek | 1991 | The Bulletin |
+| broken-top-club | 1993 | brokentop.com/about-us/history-1 — grand opening July 4, 1993 |
+| awbrey-glen | 1993 | awbreyglen.com/golf |
+| meadow-lakes | 1993 | The Bulletin |
+| crosswater | 1995 | The Bulletin |
+| greens-at-redmond | 1995 | GolfPass / Albrecht Golf Guide. First nine 1995, second nine 1999 |
+| lost-tracks | 1996 | AllTrips Bend ("built in 1996"), owner-architect Brian Whitcomb |
+| aspen-lakes | 1997 | Cascade Business News. aspenlakes.com says the first nine were CONSTRUCTED in 1996; opened for play 1997, second nine 1999–2000 |
+| pronghorn-nicklaus | 2004 | The Bulletin |
+| juniper | 2005 | GolfPass / Golfing Oregon (new course 2005, Harbottle III) |
+| brasada-canyons | 2006 | The Bulletin |
+| caldera-links | 2007 | The Bulletin (par-3 Caldera Links and Golf Park, 2007) |
+| pronghorn-fazio | 2007 | The Bulletin |
+| tetherow-golf-club | 2008 | The Bulletin; GolfPass |
 
-**The other 21 rows' `designer` and `yearOpened` values remain unverified** and still
-trace only to the lost research file. `awbrey-glen` shipped `yearOpened: 2003` for a
-course that opened in 1993 until 2026-08-25, so this field has a demonstrated error
-rate. Treat it as unaudited until this table covers every slug.
+### Cut for want of a source
+
+| slug | why |
+|---|---|
+| eagle-crest-ridge | Sources conflict — one has it BUILT in 1992, another OPENED in 1987, and the 1993 previously shipped matches neither |
+| eagle-crest-challenge | No opening year found in any source |
+| desert-peaks | Sources conflict badly — 1962, or first six holes 1958 plus three in 1960, or 1992 for the current configuration. The 1980 previously shipped matches none of them |
+
+`yearOpened` is therefore OPTIONAL. Four render sites were rendering it
+unconditionally — the LP card, the comparison-table cell, the map label, and the FAQ
+answer "X was designed by Y and opened in Z" — and all now degrade instead.
+
+### Corrected 2026-08-26
+
+Eight years were wrong: pronghorn-nicklaus 2003 → 2004 · sunriver-meadows 1981 → 1968 ·
+black-butte-big-meadow 1972 → 1970 · black-butte-glaze-meadow 1980 → 1982 ·
+brasada-canyons 2007 → 2006 · aspen-lakes 1996 → 1997 · widgi-creek 1989 → 1991 ·
+rivers-edge 1987 → 1988. With awbrey-glen (2003 → 1993, fixed 2026-08-25) and the three
+cuts, **twelve of 26 rows carried a year that could not be supported.**
+
+## Designer — partly audited
+
+Confirmed against the course's own site:
+
+| slug | designer | source |
+|---|---|---|
+| tetherow-golf-club | David McLay Kidd | tetherow.com/luxury-golf-resort/golf-course/ |
+| broken-top-club | Tom Weiskopf & Jay Morrish | brokentop.com/golf |
+| bend-golf-club | H. Chandler Egan | bendgolfclub.com ("Our Chandler Egan-designed course") |
+| black-butte-big-meadow | Robert Muir Graves | blackbutteranch.com ("This straightforward Robert Muir Graves design") |
+| black-butte-glaze-meadow | John Fought (2012 renovation) | blackbutteranch.com |
+| aspen-lakes | William Overdorf | aspenlakes.com ("under the watchful eye of ... William Overdorf") |
+| awbrey-glen | Gene "Bunny" Mason, updated by David McLay Kidd | awbreyglen.com/golf |
+| eagle-crest-ridge | John Thronson | eagle-crest.com ("in-house architect John Thronson") |
+
+Confirmed against a named archive: sunriver-meadows (John Fought), sunriver-woodlands
+(Robert Trent Jones Jr.), eagle-crest-resort (Gene "Bunny" Mason), juniper (John F.
+Harbottle III), lost-tracks (Brian Whitcomb), crooked-river-ranch (Gene Mason 1979, Jim
+Ramey 1996), quail-run (Jim Ramey), pronghorn-nicklaus (Jack Nicklaus), pronghorn-fazio
+(Tom Fazio) — all The Bulletin or GolfPass.
+
+**Two open discrepancies, deliberately left rather than guessed:**
+
+- **bend-golf-club** carries the composite "H. Chandler Egan & Bob Baldock", and it is
+  RIGHT: `data/golf/architects.ts` records that Egan routed the back nine in 1925 and
+  Bob Baldock added the front nine in 1973. That also explains why the club's own site
+  and The Bulletin name only Egan — he is the 1925 credit, which is the year this file
+  carries. The Bulletin additionally credits William Hanley alongside Egan. The Baldock
+  1973 attribution comes from our own architects.ts bio and has NOT been traced to an
+  outside source; it is coherent and load-bearing, so it stays, flagged.
+- **eagle-crest-challenge** shipped "John Thronson". GolfPass credits **Robert Muir
+  Graves**. Unresolved.
+
+Still unverified: crosswater, brasada-canyons, widgi-creek, rivers-edge, meadow-lakes,
+greens-at-redmond, desert-peaks, caldera-links.
 
 ## Naming
 

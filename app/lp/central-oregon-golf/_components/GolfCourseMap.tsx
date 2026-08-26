@@ -121,7 +121,7 @@ export function GolfCourseMap() {
                   {c.city} · {c.holes} holes · par {c.par}
                 </div>
                 <div style={{ fontSize: 12, color: 'rgba(16,39,66,0.7)', marginTop: 6 }}>
-                  {c.designer}, {c.yearOpened}
+                  {c.designer}{c.yearOpened ? `, ${c.yearOpened}` : ''}
                 </div>
                 {c.communitySlug && (
                   <Link

@@ -155,7 +155,9 @@ export default async function GolfDetailPage({ params }: Props) {
   quietItems.push({
     kind: 'prose',
     term: 'Designer',
-    body: `${course.designer}. Opened ${course.yearOpened}.`,
+    body: course.yearOpened
+      ? `${course.designer}. Opened ${course.yearOpened}.`
+      : `${course.designer}.`,
   })
   quietItems.push({
     kind: 'prose',

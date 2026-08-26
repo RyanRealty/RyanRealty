@@ -374,7 +374,7 @@ function DestinationCoursesSection() {
                 <div className="golf-rank-meta">
                   <span>{c.designer}</span>
                   <span>·</span>
-                  <span>{c.yearOpened}</span>
+                  <span>{c.yearOpened ?? '—'}</span>
                   <span>·</span>
                   <span>
                     {c.holes} holes, par {c.par}
@@ -831,7 +831,7 @@ function DataTableSection() {
                   <td>{c.par}</td>
                   <td>{c.yardsBackTees ? c.yardsBackTees.toLocaleString() : '—'}</td>
                   <td>{c.designer}</td>
-                  <td>{c.yearOpened}</td>
+                  <td>{c.yearOpened ?? '—'}</td>
                   <td>{ACCESS_LABEL[c.access]}</td>
                 </tr>
               ))}

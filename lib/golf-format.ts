@@ -67,7 +67,9 @@ export function buildGolfFaq(
 
   faq.push({
     question: `Who designed ${c.shortName}?`,
-    answer: `${c.name} was designed by ${c.designer} and opened in ${c.yearOpened}.`,
+    answer: c.yearOpened
+      ? `${c.name} was designed by ${c.designer} and opened in ${c.yearOpened}.`
+      : `${c.name} was designed by ${c.designer}.`,
   })
 
   faq.push({

@@ -111,7 +111,7 @@ export const GOLF_ARCHITECTS: GolfArchitect[] = [
     slug: 'william-overdorf',
     name: 'William Overdorf',
     monogram: 'WO',
-    bio: 'Oregon-based architect. Aspen Lakes was a multi-phase build: front nine 1996, back nine 2000. The Cyrus family commissioned and still owns the course.',
+    bio: 'Oregon-based architect. Aspen Lakes was a multi-phase build: the front nine was constructed in 1996 and opened for play in 1997, the back nine followed by 2000. The Cyrus family commissioned and still owns the course.',
     alsoKnownFor: ['Crooked River Ranch (renovation)'],
   },
   {

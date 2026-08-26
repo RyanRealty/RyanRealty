@@ -9,9 +9,10 @@
  * that no longer exists, so no figure here had a retrievable trace. The audit that
  * replaced it corrected 13 of 26 rows.
  *
- * designer / yearOpened are NOT yet audited: USGA publishes neither, and only five
- * rows have been confirmed against the course's own site (see SOURCES.md). Do not
- * treat those two fields as verified.
+ * yearOpened was audited 2026-08-26 and is now sourced per course in SOURCES.md —
+ * eight rows were wrong, three had no source that survives §0 and carry none, so the
+ * field is OPTIONAL and every render site degrades. designer is PARTLY audited: 17 of
+ * 26 confirmed, two open discrepancies, the rest listed in SOURCES.md as unverified.
  *
  * This data is public-facing (the golf LP, 26 sitemap-submitted /central-oregon/golf
  * detail pages, and the FAQ + JSON-LD in lib/golf-format.ts), so CLAUDE.md §0
@@ -39,7 +40,9 @@ export interface GolfCourse {
   yardsBackTees?: number
   designer: string
   designerSlug: string
-  yearOpened: number
+  /** Year the course FIRST opened for play. Optional: three rows have no
+   *  source that survives §0 (see data/golf/SOURCES.md). Render defensively. */
+  yearOpened?: number
   access: CourseAccess
   signature: string
   /** Approximate lat/lng. Verify before publishing. */
@@ -103,7 +106,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 7379,
     designer: 'Jack Nicklaus',
     designerSlug: 'jack-nicklaus',
-    yearOpened: 2003,
+    yearOpened: 2004,
     access: 'public',
     signature:
       "Oregon's only Jack Nicklaus signature design. Public access. Dramatic lava outcroppings and ancient juniper.",
@@ -161,7 +164,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 7012,
     designer: 'John Fought (2008 renovation)',
     designerSlug: 'john-fought',
-    yearOpened: 1981,
+    yearOpened: 1968,
     access: 'resort',
     signature: 'Public resort course. Water hazards, sloping fairways, deep bunkers.',
     lat: 43.8762,
@@ -213,7 +216,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 6946,
     designer: 'Robert Muir Graves',
     designerSlug: 'robert-muir-graves',
-    yearOpened: 1972,
+    yearOpened: 1970,
     access: 'resort',
     signature:
       '6,946 yards from championship tees. Towering ponderosa and expansive fairways below Black Butte itself.',
@@ -232,7 +235,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 6903,
     designer: 'John Fought (2012 renovation)',
     designerSlug: 'john-fought',
-    yearOpened: 1980,
+    yearOpened: 1982,
     access: 'resort',
     signature:
       'John Fought rebuilt the course in 2012.',
@@ -251,7 +254,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 7295,
     designer: 'Jim Hardy & Peter Jacobsen',
     designerSlug: 'hardy-jacobsen',
-    yearOpened: 2007,
+    yearOpened: 2006,
     access: 'resort',
     signature:
       'Five tee sets, 4,722-7,295 yards. "Best 18 views in the state." Members, resort guests, and accompanied guests.',
@@ -287,7 +290,6 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 6965,
     designer: 'John Thronson & Bunny Mason',
     designerSlug: 'bunny-mason',
-    yearOpened: 1993,
     access: 'resort',
     signature:
       '"A driver\'s dream." Open year-round. The longest playing season in Central Oregon.',
@@ -305,7 +307,6 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 4187,
     designer: 'John Thronson',
     designerSlug: 'bunny-mason',
-    yearOpened: 1995,
     access: 'resort',
     signature: 'Executive layout. Pairs with the Ridge for the area\'s longest playing season.',
     lat: 44.3181,
@@ -322,7 +323,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 7302,
     designer: 'William Overdorf',
     designerSlug: 'william-overdorf',
-    yearOpened: 1996,
+    yearOpened: 1997,
     access: 'public',
     signature:
       'Family-owned. Distinctive red-cinder sand bunkers. The Cyrus family crushed their own volcanic cinders for them.',
@@ -340,7 +341,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 6763,
     designer: 'Robert Muir Graves',
     designerSlug: 'robert-muir-graves',
-    yearOpened: 1989,
+    yearOpened: 1991,
     access: 'public',
     signature:
       'Ponderosa corridor along the Deschutes. Voted Central Oregon\'s favorite public course 20+ times by The Source readers.',
@@ -358,7 +359,7 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 6562,
     designer: 'Robert Muir Graves',
     designerSlug: 'robert-muir-graves',
-    yearOpened: 1987,
+    yearOpened: 1988,
     access: 'public',
     signature:
       'In-town public course. Cascade and Deschutes River views. Golf Digest "Best Places to Play."',
@@ -475,7 +476,6 @@ export const GOLF_COURSES: GolfCourse[] = [
     yardsBackTees: 3231,
     designer: 'City of Madras',
     designerSlug: 'other',
-    yearOpened: 1980,
     access: 'municipal',
     signature: 'Open year-round weather permitting. Cascade views from the high desert.',
     lat: 44.6332,
