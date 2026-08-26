@@ -16,8 +16,16 @@ export async function getBrokerBusyIntervals(args: {
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('crm_appointments')
-    .select('start_at, end_at, all_day')
+    .select('start_at, end_at')
     .eq('broker_slug', args.brokerSlug)
+    // All-day rows are NOT busy time. In this CRM they are transaction
+    // milestone pins written by the TC system — "Contract accepted · 2840 NE
+    // Sedalia Loop" — spanning 00:00 to 00:00 the next day. Counting them as
+    // busy let a single marker erase a whole bookable day: the live /book page
+    // showed 4 open days out of 15 weekdays because Matt had one or two pins
+    // on nearly every date (found 2026-08-25, first render). A milestone is a
+    // note about a deal, not a meeting the broker is sitting in.
+    .eq('all_day', false)
     // Overlap, not containment: an appointment that STARTS before the window
     // and runs into it still blocks slots inside it.
     .lt('start_at', args.toIso)
@@ -31,7 +39,7 @@ export async function getBrokerBusyIntervals(args: {
   }
 
   const out: BusyInterval[] = []
-  for (const row of (data ?? []) as Array<{ start_at: string; end_at: string; all_day: boolean | null }>) {
+  for (const row of (data ?? []) as Array<{ start_at: string; end_at: string }>) {
     const startMs = Date.parse(row.start_at)
     const endMs = Date.parse(row.end_at)
     if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) continue
