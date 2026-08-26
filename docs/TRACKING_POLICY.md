@@ -47,6 +47,36 @@ satisfies this. The legacy `UploadClickConversions` API also migrates to the Dat
 Manager API on the same date — build any offline-upload job (backlog #2) to the new
 model. (Source: Google Analytics Help answer 17016975; corroborated, vote 2-1.)
 
+## First-party capture and consent (Matt 2026-08-26)
+
+**Campaign parameters and the referrer are recorded at every consent tier that
+stores anything. Geo, user agent and listing meta stay gated on analytics consent.**
+
+The reasoning: a UTM tag or an `fbclid` describes the LINK THAT WAS CLICKED, not the
+person who clicked it. The referrer has always been treated that way; campaign params
+now match it.
+
+What forced the change. 99.5% of visitors never answer the cookie banner, so almost
+every arrival lands at `essential`. While campaign params were stripped there, **357 of
+79,220 sessions in 90 days carried one** — every paid click landed with its attribution
+already destroyed, which made tagging links pointless.
+
+The limits, which are not negotiable:
+
+- An explicit **decline** still stops tracking entirely.
+- A **Global Privacy Control** signal still stops tracking entirely, enforced server-side
+  before any write (`app/api/visitors/track/route.ts`).
+- Geo, user agent, listing meta, scroll and dwell remain analytics-gated.
+- It is **disclosed** in `app/privacy/page.tsx` under Cookies. The code and that page
+  must not drift apart — changing one without the other means collecting more than we
+  say we collect.
+
+**Development traffic never reaches a production property.** Measured 2026-08-26: 43
+sessions arrived in GA4 as a `127.0.0.1:8777` referral. All four tag loaders (GA4, GTM
+head + body, Meta Pixel) return null on a non-production build via
+`lib/analytics/non-production-build.ts`, and `fireGa4Event` refuses a non-production
+`page_location` on the server path.
+
 ## Backlog — outward changes, ship only on Matt's go
 
 These change live ad/tracking behavior, so they are NOT auto-enforced. Each needs

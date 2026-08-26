@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Script from 'next/script'
+import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
@@ -73,6 +74,8 @@ export default function GoogleAnalytics() {
   const hasAdSense = !!ADSENSE_ID
   const hasGoogleAds = !!GOOGLE_ADS_ID
   if (!hasGA4 && !hasAdSense && !hasGoogleAds && !hasGTM) return null
+  // Never load a Google tag from a dev server or a preview deploy.
+  if (IS_NON_PRODUCTION_BUILD) return null
 
   const gtagScriptId = hasGA4 ? GA4_ID! : (!hasGTM && hasGoogleAds ? GOOGLE_ADS_ID! : null)
 

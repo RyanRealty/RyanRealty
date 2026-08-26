@@ -51,6 +51,7 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
       renderCrmMerge(req.payload.body, person, ctx),
       slug,
       person.fub_legacy_id as number | null,
+      req.personId,
     )
 
     // Send from the broker's OWN Twilio business line, else the A2P service.

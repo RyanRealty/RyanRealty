@@ -548,7 +548,7 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
   const actingSlugForLinks = access.access.brokerSlug ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
   const mergeCtx = await buildMergeContext({ person, senderSlug: actingSlugForLinks })
   const mergedSubject = renderCrmMerge(subject, person, mergeCtx)
-  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person, mergeCtx), actingSlugForLinks, person.fub_legacy_id as number | null)
+  const mergedBody = attributeSiteLinks(renderCrmMerge(body, person, mergeCtx), actingSlugForLinks, person.fub_legacy_id as number | null, personId)
 
   // Idempotency backstop (admin rebuild §A5): a per-attempt key from the
   // composer, enforced inside the governed chokepoint with the same

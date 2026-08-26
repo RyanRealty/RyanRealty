@@ -112,8 +112,10 @@ type ListingMeta = {
  *  - 'all'       → full tracking (UTMs, geo, listing meta, intent tags)
  *  - 'analytics' → analytics-only (treated like 'all' for our first-party
  *                  store; we do not share visitor_events with third parties)
- *  - 'essential' → minimal record (session_id + page_url + event_type only;
- *                  strip UTMs, geo, listing meta, scroll, referrer)
+ *  - 'essential' → functional record: session_id, page_url, event_type,
+ *                  REFERRER and CAMPAIGN PARAMS (they describe the click, not
+ *                  the person). Geo, user agent, listing meta, scroll and dwell
+ *                  are stripped.
  *  - 'declined'  → REJECT the event entirely, no writes
  *  - undefined   → REJECT (defense in depth: snippet must opt in explicitly) */
 type ConsentLevel = 'all' | 'analytics' | 'essential' | 'declined'
@@ -258,7 +260,9 @@ export async function POST(request: NextRequest) {
       { headers: corsHeaders(origin) },
     )
   }
-  // 'essential' = minimal record (no UTMs, geo, listing meta, scroll, dwell).
+  // 'essential' = minimal record: no geo, no user agent, no listing meta, no
+  // scroll or dwell. Campaign params and referrer ARE kept — they describe how
+  // the visit arrived, not who arrived.
   // 'analytics' or 'all' = full record.
   const minimalOnly = consent === 'essential'
 
@@ -305,10 +309,22 @@ export async function POST(request: NextRequest) {
   }
 
   const sourceDomain = resolveSourceDomain(pageUrl, body.sourceDomain)
-  // Geo + UA + UTMs are PII-adjacent. Under essential-only consent, strip them.
+  // Geo + UA describe the PERSON, and stay gated on analytics consent.
   const geo = minimalOnly ? {} as ReturnType<typeof readIpGeo> : readIpGeo(request)
   const userAgent = minimalOnly ? undefined : (request.headers.get('user-agent')?.slice(0, 512) || undefined)
-  const campaign = !minimalOnly && body.campaign && Object.values(body.campaign).some(Boolean) ? body.campaign : undefined
+  // Campaign parameters describe the LINK THAT WAS CLICKED, not the visitor, and
+  // are kept at every tier that stores anything — the same treatment `referrer`
+  // has always had, and for the same reason (Matt 2026-08-26).
+  //
+  // They used to be stripped under essential. Because 99.5% of visitors never
+  // answer the banner, that discarded the campaign tag on 99.5% of arrivals:
+  // 357 of 79,220 sessions in 90 days carried one. Every paid click was landing
+  // with its attribution already destroyed.
+  //
+  // An explicit decline and a GPC signal both still stop tracking entirely —
+  // GPC is enforced above, before any write. Disclosed in app/privacy/page.tsx
+  // under Cookies; the code and that page must not drift apart.
+  const campaign = body.campaign && Object.values(body.campaign).some(Boolean) ? body.campaign : undefined
 
   // 1. UPSERT visitor_sessions. On first event we want to capture first-touch
   //    attribution and geo; on subsequent events we want to NOT overwrite
@@ -321,9 +337,10 @@ export async function POST(request: NextRequest) {
   // Use a direct UPSERT via the supabase-js builder. The trigger handles
   // last_seen_at updates on event insert; we still upsert here so first-touch
   // fields land on session creation.
-  // fbclid is PII-adjacent (identifies a specific Meta ad click); only capture
-  // it when the visitor has granted analytics or full consent — same gate as UTMs.
-  const fbclid = !minimalOnly && typeof body.fbclid === 'string' && body.fbclid.trim()
+  // fbclid identifies which Meta ad was clicked. Same treatment as the UTMs
+  // above (Matt 2026-08-26): it describes the click, not the person, and an
+  // explicit decline or a GPC signal still stops it along with everything else.
+  const fbclid = typeof body.fbclid === 'string' && body.fbclid.trim()
     ? body.fbclid.trim().slice(0, 512)
     : undefined
 

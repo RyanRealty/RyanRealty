@@ -619,6 +619,12 @@
       "app/**",
       "components/**"
     ],
+    "ci:identity-stamp": [
+      "lib/crm/**",
+      "lib/comms/**",
+      "app/actions/**",
+      "app/api/cron/**"
+    ],
     "ci:integration-health": [
       "docs/plans/ENTERPRISE_MAP/integration-health-probes.json",
       "lib/data/loop/integration-health.ts",

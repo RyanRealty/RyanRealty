@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { hasAnalyticsConsent } from './CookieConsentBanner'
 import { pageTypeFromPath } from '@/lib/analytics/page-type'
+import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
 
@@ -30,6 +31,9 @@ export default function GTMHead() {
     return () => window.removeEventListener('cookie-consent', onConsent)
   }, [])
 
+  // GTM ships its own GA4 configuration tag, so it leaks page views into the
+  // production property from a dev server just as gtag does.
+  if (IS_NON_PRODUCTION_BUILD) return null
   if (!GTM_ID || !consent) return null
 
   return (

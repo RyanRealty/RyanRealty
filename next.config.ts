@@ -65,6 +65,10 @@ const nextConfig: NextConfig = {
   // explicit request — they don't bloat user payloads.
   productionBrowserSourceMaps: true,
   env: {
+    // Exposed so the analytics tag loaders can tell a preview deploy from the
+    // live site at BUILD time — a runtime host check in a 'use client' component
+    // would desync SSR and hydration. See lib/analytics/non-production-build.ts.
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV ?? 'development',
     ...(supabaseFromEnvLocal.NEXT_PUBLIC_SUPABASE_URL && {
       NEXT_PUBLIC_SUPABASE_URL: supabaseFromEnvLocal.NEXT_PUBLIC_SUPABASE_URL,
     }),

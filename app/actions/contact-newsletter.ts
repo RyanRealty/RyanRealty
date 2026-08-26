@@ -188,7 +188,7 @@ async function sendNewsletterToContactCore(
     // the broker baked into the token (§5/H1) + a 180-day TTL (T-5).
     let html: string | undefined
     if (letter.body_html) {
-      const attributed = attributeSiteLinks(letter.body_html, actingSlug, fubId)
+      const attributed = attributeSiteLinks(letter.body_html, actingSlug, fubId, personId)
       const wrapped = wrapNewsletterHtml({ bodyHtml: attributed, previewText: letter.preview_text, unsubscribeUrl: u })
       html = instrumentEmailHtml(wrapped, {
         personId,
@@ -199,7 +199,7 @@ async function sendNewsletterToContactCore(
       })
     }
     const text = letter.body_text
-      ? attributeSiteLinks(letter.body_text, actingSlug, fubId) + newsletterTextFooter(u)
+      ? attributeSiteLinks(letter.body_text, actingSlug, fubId, personId) + newsletterTextFooter(u)
       : undefined
 
     const res = await sendEmail({

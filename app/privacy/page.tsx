@@ -108,6 +108,7 @@ const ITEMS: V3QuietItem[] = [
       'Essential: sign-in session, cookie-consent choice. Required for the site to work.',
       'Analytics: with your consent, to understand how the site is used.',
       'Marketing: with your consent, for advertising and retargeting.',
+      'Whatever you choose, we record how each visit reached us: the page you came from and any campaign tag on the link you clicked. That tells us which of our ads, emails and posts are working. It describes the link, not you. If you decline cookies, or your browser sends a Global Privacy Control signal, we record nothing at all.',
       'You can change your cookie preferences via the cookie banner or your browser settings.',
     ],
   },

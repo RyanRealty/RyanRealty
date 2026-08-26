@@ -65,11 +65,26 @@ export type Step = {
 
 export function renderMerge(
   text: string,
-  person: MergePersonLike & { assigned_broker?: string | null; fub_legacy_id?: number | null },
+  person: MergePersonLike & {
+    id?: number | null
+    assigned_broker?: string | null
+    fub_legacy_id?: number | null
+  },
   ctx?: MergeContext,
 ): string {
   // Every site link in an automated send carries the assigned broker (routing)
-  // AND the recipient's CRM id (?_fuid=) — so a click identifies them, cookies
-  // the browser to the contact, and backfills their anonymous sessions.
-  return attributeSiteLinks(renderCrmMerge(text, person, ctx), person.assigned_broker ?? 'matt', person.fub_legacy_id ?? null)
+  // AND the recipient's identity — so a click identifies them, cookies the
+  // browser to the contact, and backfills their anonymous sessions.
+  //
+  // BOTH ids are passed on purpose. `_fuid` is the legacy Follow Up Boss id and
+  // only 18,188 of 23,078 contacts have one; `_pid` is the native crm_people id
+  // and every contact has one. Passing only _fuid left 4,890 people — everyone
+  // created since the CRM cutover, and the only segment still growing —
+  // permanently unidentifiable no matter how many links they clicked.
+  return attributeSiteLinks(
+    renderCrmMerge(text, person, ctx),
+    person.assigned_broker ?? 'matt',
+    person.fub_legacy_id ?? null,
+    person.id ?? null,
+  )
 }

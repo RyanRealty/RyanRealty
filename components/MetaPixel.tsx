@@ -1,6 +1,7 @@
 'use client'
 
 import Script from 'next/script'
+import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
 
@@ -21,6 +22,9 @@ const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
  * Mode (fbq('consent','revoke') by default, 'grant' on accept) instead.
  */
 export default function MetaPixel() {
+  // Same reason as the Google tags: a dev pageview must not become a real
+  // PageView event in the ad account's optimisation data.
+  if (IS_NON_PRODUCTION_BUILD) return null
   if (!PIXEL_ID) return null
 
   return (
