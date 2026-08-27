@@ -223,12 +223,27 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
  * describe the LINK, not the person, and are kept at every consent tier.
  */
 async function FirstPartyAcquisition({ range }: { range: { startDate: string; endDate: string } }) {
-  const startIso = new Date(`${range.startDate}T00:00:00Z`).toISOString()
-  const endIso = new Date(`${range.endDate}T23:59:59Z`).toISOString()
-  const [sources, book] = await Promise.all([
-    getLeadSources(startIso, endIso),
-    getBookConversion(startIso, endIso),
-  ])
+  // A diagnostic must never be able to take down the page it reports on. If
+  // either read fails, say so in place and let the GA4 blocks below still render.
+  let sources: Awaited<ReturnType<typeof getLeadSources>>
+  let book: Awaited<ReturnType<typeof getBookConversion>>
+  try {
+    const startIso = new Date(`${range.startDate}T00:00:00Z`).toISOString()
+    const endIso = new Date(`${range.endDate}T23:59:59Z`).toISOString()
+    ;[sources, book] = await Promise.all([
+      getLeadSources(startIso, endIso),
+      getBookConversion(startIso, endIso),
+    ])
+  } catch (e) {
+    return (
+      <section aria-label="Where visits came from">
+        <SectionHead>Where visits came from — measured first-party</SectionHead>
+        <div className="av2-empty">
+          Could not read the first-party numbers: {e instanceof Error ? e.message : String(e)}
+        </div>
+      </section>
+    )
+  }
 
   const sends = book.touches.emailOut + book.touches.smsOut + book.touches.calls
   const activeClients = book.standing.find((s) => s.stage === 'Active Client')?.people ?? 0
