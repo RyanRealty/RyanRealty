@@ -39,6 +39,7 @@ import { assembleCompFlyerPages } from '@/lib/cma/opinion-flyers'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaMarketArea, CmaSoldBand } from '@/lib/cma/market-status'
+import { subjectSectionTitle } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 
@@ -143,11 +144,12 @@ export function snapshotPage(a: OpinionPageArgs): CmaPageDef {
   const history = s.listingHistoryLine?.trim()
     ? `<p>${esc(s.listingHistoryLine.trim())}</p>`
     : ''
+  const sectionTitle = subjectSectionTitle(s)
   return {
-    meta: `${esc(s.streetAddress)} · The house`,
-    toc: 'The house',
+    meta: `${esc(s.streetAddress)} · ${sectionTitle}`,
+    toc: sectionTitle,
     body: `
-  <h2 class="section">The house</h2>
+  <h2 class="section">${sectionTitle}</h2>
   ${aerial}
   ${kvTable(rows)}
   ${history}`,

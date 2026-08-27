@@ -14,6 +14,7 @@
 
 import { cleanText, dateLong, dec, escapeHtml, int, usd, usdSigned } from '@/lib/cma/render-blocks'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
+import { subjectNoun } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 const ACRES_TO_SQFT = 43560
@@ -177,6 +178,10 @@ function matrixTable(cols: Col[]): string {
     `</colgroup>`
   const head = `<tr><th>Fact</th>${cols.map((c) => `<th class="v">${esc(c.label)}</th>`).join('')}</tr>`
   const body = ROWS.map((row, i) => {
+    // A row every column left blank carries nothing. On a land matrix that is
+    // Bedrooms, Bathrooms, Living sqft, Year built and Garage — five empty
+    // rows the reader has to scan past to reach the lot size that matters.
+    if (cols.every((c) => (c.cells[i] ?? '-') === '-')) return ''
     const subjectVal = cols[0]!.cells[i] ?? '-'
     const tds = cols
       .map((c, ci) => {
@@ -211,11 +216,17 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
       return `${heading}${matrixTable([subj, ...group])}`
     })
     .join('')
+  const noun = subjectNoun(subject)
+  const sizeNoun = noun === 'home' ? 'living area' : 'acreage'
   const split =
     groups.length > 1
-      ? ` The sales run across ${groups.length} tables so every column stays readable. Your house repeats at the head of each one.`
+      ? ` The sales run across ${groups.length} tables so every column stays readable. Your ${noun} repeats at the head of each one.`
+      : ''
+  const perFoot =
+    noun === 'home'
+      ? ' Sale price per square foot is close price over living area.'
       : ''
   return `
   <h3 class="subhead">Side by side</h3>
-  <p>Subject in the first column. Each kept sale is a column. Sale date is when that house closed. This sale as your house is the sold price after bringing that sale to today and to your living area. It is not a second list price. Sale price per square foot is close price over living area. Lot square feet is acres times 43,560.${split}</p>${tables}`
+  <p>Subject in the first column. Each kept sale is a column. Sale date is when that sale closed. This sale as your ${noun} is the sold price after bringing that sale to today and to your ${sizeNoun}. It is not a second list price.${perFoot} Lot square feet is acres times 43,560.${split}</p>${tables}`
 }

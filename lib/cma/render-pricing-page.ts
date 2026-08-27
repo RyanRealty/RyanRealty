@@ -9,6 +9,7 @@ import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
+import { subjectNoun } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 
@@ -18,7 +19,7 @@ function saleToListPct(ratio: number | null | undefined): string | null {
   return dec(pct, 1)
 }
 
-function adjustmentRows(comps: CmaAdjustedComp[]): string {
+function adjustmentRows(comps: CmaAdjustedComp[], noun: string, sizeNoun: string): string {
   if (comps.length === 0) return ''
   const rows = comps
     .map((c) => {
@@ -35,7 +36,7 @@ function adjustmentRows(comps: CmaAdjustedComp[]): string {
     .join('')
   return `
   <h3 class="subhead">What each sale becomes on your house</h3>
-  <p>Close $ is the contract price. Time brings the sale to today. Size brings it to your living area. As your house is that sale as if it were your house. It is not a second list price.</p>
+  <p>Close $ is the contract price. Time brings the sale to today. Size brings it to your ${sizeNoun}. As your ${noun} is that sale as if it were your ${noun}. It is not a second list price.</p>
   <table class="kv is-wide comps-adjust">
     <thead><tr><th>Sale</th><th class="v">Sold</th><th class="v">Close $</th><th class="v">Time</th><th class="v">Size</th><th class="v">As your house</th></tr></thead>
     <tbody>${rows}</tbody>
@@ -51,10 +52,10 @@ function sellerNetBlock(p: CmaPricing): string {
   <p class="small">${n.givenCount} of ${n.knownCount} comparable sales reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
 }
 
-function howWePriced(n: number, market: CmaMarketContext | null, searchBody: string | null): string {
+function howWePriced(n: number, market: CmaMarketContext | null, searchBody: string | null, sizeNoun: string): string {
   const bits = [
     ...(searchBody ? [searchBody] : []),
-    `${n} closed ${n === 1 ? 'sale' : 'sales'}, each brought to today and to your living area.`,
+    `${n} closed ${n === 1 ? 'sale' : 'sales'}, each brought to today and to your ${sizeNoun}.`,
     'Closed MLS sales only. Automated estimates are not used.',
     'The close is the contract price. Concessions come off after that.',
     'The search keeps going until eight closed sales when the pool allows, and never prices on more than ten.',
@@ -84,11 +85,17 @@ export function pricingPage(input: {
   const recPpsf = sqft ? usd(Math.round(p.recommended / sqft)) : null
   const notes = clientFacingNotes(p.notes, p)
   const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
+  const noun = subjectNoun(s)
+  // Land is adjusted to ACREAGE, not to living area. Telling the owner of a
+  // vacant parcel that comps were brought "to your living area" describes an
+  // adjustment the engine did not make.
+  const sizeNoun = noun === 'home' ? 'living area' : 'acreage'
+  const pricedTitle = `How this ${noun} is priced`
   return {
-    meta: `${esc(s.streetAddress)} · How this home is priced`,
-    toc: 'How this home is priced',
+    meta: `${esc(s.streetAddress)} · ${pricedTitle}`,
+    toc: pricedTitle,
     body: `
-  <h2 class="section">How this home is priced</h2>
+  <h2 class="section">${pricedTitle}</h2>
   <p>${esc(listPriceLead(p, { perSqft: recPpsf }))}${
     range.outOfRange ? ` ${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
   }${range.note ? ` ${esc(range.note)}` : ''}</p>
@@ -98,8 +105,8 @@ export function pricingPage(input: {
     <div class="stat"><div class="lbl">List high</div><div class="val">${usd(p.highEnd)}</div></div>
   </div>
   <h3 class="subhead">How we priced this</h3>
-  ${howWePriced(input.comps.length, input.market, search.body)}
-  ${adjustmentRows(input.comps)}
+  ${howWePriced(input.comps.length, input.market, search.body, sizeNoun)}
+  ${adjustmentRows(input.comps, noun, sizeNoun)}
   ${sellerNetBlock(p)}
   ${notes.length > 0 ? `<ul class="note-list">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
 `,

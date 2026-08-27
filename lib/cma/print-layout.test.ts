@@ -18,6 +18,9 @@ const subject = {
   beds: 3,
   baths: 1,
   sqft: 1056,
+  // A real Bend house record carries a lot size. Without one the matrix's Lot
+  // sqft row has no value in any column, and an all-empty row is dropped.
+  lotAcres: 0.16,
   latitude: 44.052,
   longitude: -121.291,
 } as CmaSubject
@@ -33,6 +36,7 @@ const comp = {
   beds: 3,
   baths: 1,
   sqft: 1036,
+  lotAcres: 0.14,
   closePrice: 495000,
   adjustedPrice: 465744,
   timeAdjustment: 0,

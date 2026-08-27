@@ -83,6 +83,30 @@ export function landProduct(subject: {
   return acres >= ACREAGE_THRESHOLD_ACRES ? 'acreage' : 'lots'
 }
 
+/**
+ * What the document should call the subject. A CMA for a vacant parcel titled
+ * "The house" tells the client we did not read their property.
+ */
+export function subjectNoun(subject: {
+  propertySubType: string | null
+  lotAcres: number | null
+  sqft?: number | null
+}): 'lot' | 'land' | 'home' {
+  const product = landProduct(subject)
+  if (!product) return 'home'
+  return product === 'lots' ? 'lot' : 'land'
+}
+
+/** Section title for the subject page: "The house" / "The lot" / "The land". */
+export function subjectSectionTitle(subject: {
+  propertySubType: string | null
+  lotAcres: number | null
+  sqft?: number | null
+}): string {
+  const noun = subjectNoun(subject)
+  return noun === 'home' ? 'The house' : noun === 'lot' ? 'The lot' : 'The land'
+}
+
 export type LandAdjustedComp = {
   comp: CmaComp
   acres: number
