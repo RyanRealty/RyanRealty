@@ -413,10 +413,13 @@ describe('public place pages', () => {
     expect(buyer).toMatch(/getPublicPlaceSegments/)
     const citiesIndex = readFileSync(resolve('app/cities/page.tsx'), 'utf8')
     expect(citiesIndex).toMatch(/getPublicPlaceSegments/)
+    // The homepage's region-scoped property-type run was CUT 2026-08-27 (Matt,
+    // on the Search Console data): eight filter sections between the inventory
+    // and every ask on a page judged on conversion, duplicating the city-scoped
+    // run app/cities/[slug] carries -- which this test still asserts above. The
+    // homepage must NOT read segments only to discard them.
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
-    expect(home).toMatch(/getPublicPlaceSegments/)
-    // v3 homepage (2026-08-27): the enumeration is the shared barrel section.
-    expect(home).toMatch(/V3PlacePropertyTypes/)
+    expect(home).not.toMatch(/getPublicPlaceSegments/)
     const community = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
     const neighborhood = readFileSync(
       resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'),

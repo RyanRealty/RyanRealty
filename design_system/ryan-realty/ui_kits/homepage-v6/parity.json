@@ -55,7 +55,8 @@
     {
       "name": "SmoothScrollProvider",
       "where": "deleted; motion is the barrel's ladder"
-    }
+    },
+    "V3PlacePropertyTypes -- the eight region-scoped property-type sections, removed 2026-08-27. A search filter rendered as page content, sitting between the inventory and every ask. The SAME run is carried city-scoped on app/cities/[slug]/page.tsx, which is the stronger surface for 'condos in Bend' than a region-wide 'condos in Central Oregon', so nothing left search -- it moved to where it ranks better. Search Console (28d to 2026-08-24) puts this page at average position 34.1 on 490 impressions: it is not a ranking surface, its traffic arrives from the Google Business Profile and converts at 2.2%, and eight filter sections between the houses and the ask are conversion drag. getPublicPlaceSegments went with it rather than being read and discarded."
   ],
   "requiredComponents": [
     {
@@ -81,10 +82,6 @@
     {
       "name": "V3Instrument",
       "section": "the market question, leftover KPI row, year overlay"
-    },
-    {
-      "name": "V3PlacePropertyTypes",
-      "section": "the property-type run (enumerated Instrument tail)"
     },
     {
       "name": "V3Footer",
@@ -126,28 +123,24 @@
     ]
   },
   "openDefects": {
-    "_": "What the page does today that the purpose above says it should not. Drafted 2026-08-27 from the rendered page.",
+    "_": "Open against this page's purpose as of 2026-08-27.",
     "items": [
-      "SIXTEEN market figures in one row. The purpose owes an ANSWER ('a balanced market, 5.6 months of supply') plus a door to the full report. Sixteen KPIs is the market report, inlined, and the answer is lost inside it.",
-      "EIGHT property-type sections (condo, townhome, manufactured-on-land, manufactured-in-park, multifamily 2-4, land, farm, commercial, business) are roughly half the page's sections and are a search filter rendered as content. They push the trust and capture sections below any realistic scroll.",
-      "'Where the sales are happening' is labelled as SALES and shows ACTIVE INVENTORY -- count and median LIST price per town. The label and the data disagree. This is the labelled-vs-behaves class Matt named.",
-      "Four asks stack at the bottom -- seller form, reviews, brokers, alert capture -- so the page ends in a run of pitches after the visitor has already scrolled past the houses.",
-      "The hero carries no figure at all while the count line sits below it, so the first screen states no inventory number on a page whose head term is inventory."
+      "SIXTEEN market figures in one row. The page owes an ANSWER ('a balanced market, 5.6 months of supply') plus a door to the full report. Sixteen KPIs is the market report inlined, and the answer is lost inside it. NOT YET FIXED -- several of those figures are pinned by publish gates and cutting them needs a pass through each.",
+      "The hero states no inventory figure while the count line sits below it, so the first screen carries no number on a page whose head term is inventory."
     ]
   },
   "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH (Matt 2026-08-27). They publish inventory; they do not publish a local verdict, and they never show what produced a number. This page publishes both on one crawlable screen: the live Central Oregon active count and per-town medians, AND the buyer-or-seller answer with the trace and the stamp under it. The other Bend brokerages have the local credibility and static pages -- no live figures at all. So the edge is the intersection: the only Central Oregon homepage where the inventory is live, the market answer is stated in words, and both name the query that produced them. No aggregator publishes the trace under the number.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage (hero) -- the flyover clip, the H1 carrying the head term, ONE primary: See homes",
+    "V3Stage #hero -- the flyover clip, the H1 carrying the head term, ONE primary: See homes",
     "HomeHomesField -- the houses and the map, with the live regional count as the caption",
-    "V3Ledger #towns -- each town's active count and median list price, and what they cost",
+    "V3Ledger #towns -- each town's active count and median list price",
     "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
-    "V3PlacePropertyTypes -- the eight enumerated property-type sections (SEE openDefects: this is search's job)",
     "V3Ledger #communities -- resorts and master-planned communities",
-    "Sheet #sell -- the seller ask (SellValueForm)",
-    "V3Quiet #reviews -- Google reviews",
-    "AboutFaces -- the three brokers",
-    "HomeAlertSheet #alerts -- the alert capture",
+    "HomeAlertSheet #alerts -- THE ASK, where the browsing ends (was last on the page until 2026-08-27)",
+    "V3Quiet #reviews -- Google reviews, as proof after the ask",
+    "AboutFaces -- the three brokers, as proof",
+    "section #sell -- the seller ask, last on purpose: a different audience, and /sell is its page",
     "V3Footer"
   ]
 }

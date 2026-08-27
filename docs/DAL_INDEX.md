@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-08-27T14:38:59.887Z
+**Generated:** 2026-08-27T21:18:13.632Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -259,6 +259,16 @@ Companion files:
 **TTL windows:** `CACHE_WINDOWS.marketStats`
 
 **Cache tags:** `cacheTag.market, 'analytics-co-office-share-merged'`
+
+---
+
+### `lib/data/analytics/getFinancingMix.ts`
+
+**Exports:** `getFinancingMix`
+
+**TTL windows:** `CACHE_WINDOWS.marketStats`
+
+**Cache tags:** `cacheTag.market, 'analytics-financing-mix'`
 
 ---
 

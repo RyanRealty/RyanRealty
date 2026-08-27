@@ -61,6 +61,7 @@
  */
 
 import { notFound } from 'next/navigation'
+import { getFinancingMix } from '@/lib/data/analytics/getFinancingMix'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import type { Metadata } from 'next'
 import {
@@ -327,6 +328,12 @@ export default async function CityDetailPage({ params }: Props) {
   const marketFaq = buildMarketFaq(cityName, marketFaqInput)
   const { faqs } = marketFaq
 
+  // HOW HOMES HERE GET BOUGHT (2026-08-27). The six-brokerage competitor sweep
+  // found no local competitor publishes financing mix as data (Ladd states one
+  // cash-share sentence a month in prose; the rest publish nothing). We hold it
+  // for every CO closed sale. Rolling 365d, never a partial year.
+  const financingMix = await getFinancingMix({ city: cityName, days: 365 })
+
   const mart = pickPlaceMart(cityMartRow, regionMartRow)
   const figures: V3InstrumentFigure[] = leftoverMarketFigures(hud, {
     browse: homesForSalePath(cityName),
@@ -340,6 +347,25 @@ export default async function CityDetailPage({ params }: Props) {
     figures.push({ value: v3Text(item.value), label: v3Text(item.label) })
   }
   for (const figure of buildPublicMixFigures(publicMix)) figures.push(figure)
+  // Cash share and the leading financed method. Published only when the sample
+  // is real (>= 50 sales in the window): a mix over a handful of closings is a
+  // coin flip wearing a percent sign (section 0).
+  if (financingMix.source === 'rpc' && financingMix.totalSales >= 50) {
+    const cash = financingMix.rows.find((r) => r.financing === 'Cash')
+    const conv = financingMix.rows.find((r) => r.financing === 'Conventional')
+    if (cash) {
+      figures.push({
+        value: v3Text(`${cash.pctOfSales.toFixed(1)}%`),
+        label: v3Text('bought with cash · 12 months'),
+      })
+    }
+    if (conv) {
+      figures.push({
+        value: v3Text(`${conv.pctOfSales.toFixed(1)}%`),
+        label: v3Text('conventional financing · 12 months'),
+      })
+    }
+  }
   figures.push(...placeMartFigures(mart, `/housing-market/history?year=${PLACE_MART_YEAR}`))
   const [firstMarketFigure, ...restMarketFigures] = figures
 

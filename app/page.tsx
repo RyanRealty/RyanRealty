@@ -20,7 +20,6 @@ import { formatPriceExact } from '@/lib/format/money'
 import { homesForSalePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
@@ -46,7 +45,6 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
-  V3PlacePropertyTypes,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { HomeHomesField } from './_v3/HomeHomesField'
@@ -150,7 +148,7 @@ const COMM_FEATURED = [
 
 export default async function Home() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [cities, communities, tiles, priceHist, cityPulse, publicPace, publicSegments, leftoverMonthly, publicMix, regionOverlays, brokers] = await Promise.all([
+  const [cities, communities, tiles, priceHist, cityPulse, publicPace, leftoverMonthly, publicMix, regionOverlays, brokers] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     // SFR sub-type since C-02: the sibling geo Fields all pull Single Family
@@ -159,7 +157,6 @@ export default async function Home() {
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getMarketPulseAllCitySnapshots().catch(() => []),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_PACE),
-    getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
     getPublicDetachedMonthly({
       geoType: 'region',
       geoSlug: 'central-oregon',
@@ -379,9 +376,24 @@ export default async function Home() {
           />
         )}
 
-        {/* The property-type run — one section per segment the region holds,
-            the enumerated tail of the market grouping (the ZIP/plat form). */}
-        <V3PlacePropertyTypes placeName="Central Oregon" citySlug={null} rows={publicSegments} />
+        {/* NO PROPERTY-TYPE RUN HERE (Matt 2026-08-27, on the search data).
+            It rendered EIGHT sections -- condos, townhomes, manufactured on land,
+            manufactured in parks, 2-4 unit, lots, farms, commercial, business --
+            region-scoped, between the inventory and every ask on the page. Three
+            reasons it went:
+              1. It is a search filter rendered as page content. /homes-for-sale
+                 exists to filter; this duplicated it as eight headings.
+              2. The city pages carry the SAME run city-scoped
+                 (app/cities/[slug]/page.tsx), which is the stronger surface for
+                 "condos in Bend" than a region-wide "condos in Central Oregon".
+                 Nothing is lost to search; it moves to where it ranks better.
+              3. Search Console, 28 days to 2026-08-24: this page sits at average
+                 position 34.1 on 490 impressions. It is not a ranking surface and
+                 will not become one against Zillow on the head term. Its traffic
+                 arrives from the Google Business Profile and converts at 2.2%,
+                 the best on the site. So the homepage is judged on CONVERSION,
+                 and eight filter sections between the houses and the ask are
+                 conversion drag. */}
 
         {/* Pattern 3 again, non-adjacent — the featured communities, printing
             the index count (ci:publish-resort-index-figures pins the wiring). */}
@@ -396,28 +408,28 @@ export default async function Home() {
           />
         ) : null}
 
-        {/* ── THE FOUR SECTIONS THE CAP HAD DELETED (Matt 2026-08-27) ────────
-            PUBLIC_UI section 3 capped a page at four of the six patterns, and the
-            draft of this page held the cap by deleting the seller ask, the
-            reviews, the brokers and the alert capture. Matt killed the cap:
-            "a visual-language rule may not decide what content a page carries."
-            All four are back, each as an EXISTING v3 treatment -- nothing new was
-            built, because nothing new was ever needed. The ticker is the one that
-            does not return: Matt cut it deliberately in the same exchange.
+        {/* ── ORDERED FOR CONVERSION (Matt 2026-08-27, on the search data) ──
+            The alert capture used to be LAST, below the seller form, the reviews
+            and the brokers, and below eight property-type sections. On a page
+            whose job is turning an arrival into a lead, the low-friction ask sat
+            at the very bottom of the scroll.
 
-            The rhythm rule that DOES still bind is "no two adjacent share a
-            pattern", and this order holds it:
-              Ledger (communities) -> Sheet (sell) -> Quiet (reviews)
-              -> Faces (brokers) -> Sheet (alerts) -> Footer                  */}
+            The order now follows what a visitor is doing: houses, then where and
+            what they cost, then the market answer, then the communities -- and
+            the moment they have finished browsing, the cheapest possible ask
+            (tell me when a new one lists). Proof follows it. The SELLER ask goes
+            last on purpose: it is a different audience, and /sell is its page.
 
-        {/* Pattern 5, Sheet — the seller ask, as its own section again rather
-            than a ghost link on the market Instrument. Same form component /sell
-            opens on, with pagePath '/' so the attribution stays honest about
-            where the address was typed, and its own formId so two forms on one
-            document cannot collide on element ids. */}
-        <section id="sell" className={V3_ROOT_CLASS}>
-          <SellValueForm pagePath="/" formId="home-get-value" />
-        </section>
+            Still holding "no two adjacent share a pattern":
+              Ledger (communities) -> Sheet (alerts) -> Quiet (reviews)
+              -> Faces (brokers) -> Sheet (sell) -> Footer                    */}
+
+        {/* THE ASK, where the browsing ends. HomeAlertSheet carries the capture
+            contract unchanged: same server action, same payload, same field and
+            trap names. */}
+        <HomeAlertSheet />
+
+
 
         {/* Pattern 6, Quiet — the reviews, in the shape /team renders them in. */}
         {testimonialItems.length > 0 ? (
@@ -435,11 +447,15 @@ export default async function Home() {
           <AboutFaces people={faces} heading="The brokers" headingLevel={2} />
         ) : null}
 
-        {/* Pattern 5 again, non-adjacent — the alert capture. This component was
-            written for this route and left orphaned by the deleting draft; it
-            carries KbCommunityAlerts' capture contract unchanged (same server
-            action, same payload, same field and trap names). */}
-        <HomeAlertSheet />
+        {/* The seller ask, last on purpose -- a different audience from the one
+            this page is built for, and /sell is its page. Same form component
+            /sell opens on, pagePath '/' so attribution stays honest about where
+            the address was typed, its own formId so two forms on one document
+            cannot collide on element ids. */}
+        <section id="sell" className={V3_ROOT_CLASS}>
+          <SellValueForm pagePath="/" formId="home-get-value" />
+        </section>
+
       </main>
 
       {/* Outside <main> on purpose: HTML-AAM maps <footer> to contentinfo only
