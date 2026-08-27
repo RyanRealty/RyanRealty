@@ -44,6 +44,7 @@ import {
   type V3FieldItem,
 } from '@/components/site/v3'
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
@@ -257,11 +258,22 @@ export function zipSearchHref(zip: string, subdivision?: string): string {
 
 /** Beds, baths, size, and the neighborhood, in the order a buyer scans them. */
 export function tileMeta(tile: ListingTile): string | undefined {
+  // A fractional-interest ask never prints unlabelled (section 0, the Camp
+  // Sherman rule; 2026-08-27 audit: 38 rows on /zip/97702 rendered a $3,000
+  // share as a $3,000 home). The share kind rides the meta line, exactly as
+  // the community and homepage Fields already do.
+  const shareKind = publishListingShareKind({
+    propertySubType: tile.propertySubType,
+    subdivisionName: tile.subdivisionName,
+    city: tile.city,
+    listNumber: tile.listNumber,
+  })
   const parts = [
     tile.beds != null ? `${tile.beds} bd` : '',
     tile.baths != null ? `${tile.baths} ba` : '',
     tile.sqft ? `${tile.sqft.toLocaleString('en-US')} sq ft` : '',
     displaySubdivision(tile.subdivisionName) ?? '',
+    shareKind ?? '',
   ].filter(Boolean)
   return parts.length > 0 ? parts.join(' · ') : undefined
 }
@@ -269,7 +281,11 @@ export function tileMeta(tile: ListingTile): string | undefined {
 /** Caption beside the ZIP Field. The count is the listed set. No MoS at ZIP scope. */
 export function zipFieldCaption(zip: string, count: number): string | null {
   if (count <= 0) return null
-  return `${count.toLocaleString('en-US')} ${count === 1 ? 'home' : 'homes'} in ${zip}`
+  // "listings", not "homes" (2026-08-27 audit): the set includes
+  // fractional-interest rows, where the price buys a share of a dwelling. Each
+  // such row is labelled on its own meta line; the caption names the honest
+  // population for all of them.
+  return `${count.toLocaleString('en-US')} active single-family ${count === 1 ? 'listing' : 'listings'} in ${zip}`
 }
 
 /**

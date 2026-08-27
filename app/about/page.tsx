@@ -267,7 +267,9 @@ export default async function AboutPage() {
             )}
             rows={[firstCityRow, ...restCityRows]}
             source={v3Text(
-              'leftover membership, single-family houses, one leftover count per city. A miss omits',
+              // The trace names the SOURCE, not the pipeline (2026-08-27 audit: "leftover
+              // membership" is an internal term that names no source of truth).
+              'live MLS through Oregon Data Share, active single-family listings and their median list price, one count per city. A miss omits',
             )}
             updated={cityUpdated}
             action={{

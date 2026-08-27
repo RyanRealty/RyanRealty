@@ -383,7 +383,28 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     if (CITY_PACE_KEYS_ON_THE_HUD.has(item.key)) continue
     figures.push({ value: v3Text(item.value), label: v3Text(item.label) })
   }
-  for (const figure of buildPublicMixFigures(publicMix)) figures.push(figure)
+  // ONE FIGURE PER LABEL (2026-08-27 audit): pace and mix both read the finance
+  // cells, so "cash closes · 12 months" printed twice in this run.
+  {
+    const seen = new Set(figures.map((f) => String(f.label)))
+    for (const figure of buildPublicMixFigures(publicMix)) {
+      if (seen.has(String(figure.label))) continue
+      seen.add(String(figure.label))
+      figures.push(figure)
+    }
+  }
+  // PACE FIRST (this page's own plan: "First screen is this neighborhood's
+  // pace (months of supply, then days to pending)"; the audit found months of
+  // supply rendering EIGHTH). The two pace figures lead; everything else keeps
+  // its builder order behind them.
+  {
+    const lead = ['months of supply', 'median to pending · 90 days']
+    figures.sort((a, b) => {
+      const ai = lead.indexOf(String(a.label))
+      const bi = lead.indexOf(String(b.label))
+      return (ai === -1 ? lead.length : ai) - (bi === -1 ? lead.length : bi)
+    })
+  }
   const [firstMarketFigure, ...restMarketFigures] = figures
 
   // City-fallback for a too-sparse neighborhood series; the caption names the
@@ -517,6 +538,15 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     asOfIso,
     asOfLabel,
   })
+  // FAQPage rides with the schemas (2026-08-27 audit: the visible FAQ rendered
+  // with NO FAQPage emission, against this contract's own jsonLd requirement —
+  // the items are the same faqs array V3Quiet renders, one source, two sinks).
+  if (faqs.length > 0) {
+    neighborhoodSchemas.push({
+      type: 'faqPage',
+      items: faqs.map((f) => ({ question: f.question, answer: f.answer })),
+    })
+  }
 
   return (
     <>

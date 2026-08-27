@@ -1230,3 +1230,29 @@ express.
 per-destination opening table (what each grain opens on); an enumeration counts
 once; and every pattern, new ones included, reads the token file so a style
 template still reaches all of them.
+
+## 2026-08-27 — MISSION (endtoend): every page built to its plan
+
+**The goal, written before the work.** All 20 public page contracts
+(`design_system/ryan-realty/ui_kits/*/parity.json`) are walked against their
+RENDERED pages. Every claim a contract's `competitiveTarget` makes that the page
+does not deliver is recorded in that contract's `openDefects`. Every recorded
+defect is then closed — by changing the page, or, where the claim itself is
+wrong, by changing the claim with the reason stated. Done means: zero
+undocumented gaps between plan and page, every fix verified in the rendered
+browser output (not inferred from source), `ci:gates` green, pushed to main.
+
+**The bar per page:** the target's specific claims hold on the rendered page
+(a claimed figure is present with its trace, a claimed section exists, a claimed
+ask is where the claim says); §0 holds (no unlabelled or untraced figure); one
+primary ask per viewport; the JSON-LD the contract names is emitted.
+
+**Method:** read-only audit fanned out (contract vs rendered HTML, four
+auditors, five pages each), then fixes applied serially by the orchestrator
+because the pages share gates and builders. Each page's fix lands as its own
+commit with the contract updated in the same diff (ci:page-purpose enforces the
+pairing).
+
+**Out of scope, recorded not smuggled:** the homepage hero inventory figure
+(already an open defect), the /activity share-label defect (recorded in
+ci:publish-listing-ask), skin switching.

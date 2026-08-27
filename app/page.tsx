@@ -264,7 +264,7 @@ export default async function Home() {
     'detached homes for sale',
     'months of supply',
     'median to pending · 90 days',
-    'sale to list',
+    'sale to original list · 12 months',
   ])
   const figures = leftoverMarketFigures(hud, {
     browse: publishRegionalSearchHref(),

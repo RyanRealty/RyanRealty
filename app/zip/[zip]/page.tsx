@@ -376,7 +376,9 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   if (hud.saleToList != null) {
     marketFigures.push({
       value: v3Text(`${hud.saleToList.toFixed(1)}%`),
-      label: v3Text('sale to list'),
+      // pace.saleToOriginal, a 12-month statistic; bare-labelled until the
+      // 2026-08-27 audit.
+      label: v3Text('sale to original list · 12 months'),
     })
   }
   if (hud.daysToPending != null && hud.daysToPending > 0) {

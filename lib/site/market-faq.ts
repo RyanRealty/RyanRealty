@@ -136,7 +136,7 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   if (pulse.medianListPrice != null && pulse.medianListPrice > 0) {
     faqs.push({
       question: `What is the median home price in ${geoName}?`,
-      answer: `The median list price for a single-family home in ${geoName} is ${formatPriceExact(pulse.medianListPrice)}${asOf}, based on ${pulse.source === 'market-truth' ? 'leftover membership' : 'live MLS data'}.`,
+      answer: `The median list price for a single-family home in ${geoName} is ${formatPriceExact(pulse.medianListPrice)}${asOf}, based on ${pulse.source === 'market-truth' ? 'a direct count of the active MLS listings' : 'live MLS data'}.`,
     })
     datasetVariables.push({ name: 'Median List Price', value: Math.round(pulse.medianListPrice), unitText: 'USD' })
   }

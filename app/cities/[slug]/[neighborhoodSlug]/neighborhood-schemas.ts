@@ -63,7 +63,12 @@ export function buildNeighborhoodSchemas({
     schemas.push({
       type: 'dataset',
       name: `${neighborhoodName} real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
-      description: `Live single-family home market data for ${neighborhoodName} in ${cityName}, Oregon. Includes median list price, active inventory, and market statistics. Sourced from the regional MLS via Ryan Realty.`,
+      // DERIVED from the variables actually measured (2026-08-27 audit: the
+      // fixed sentence promised statistics the Dataset did not always carry,
+      // and the contract had already retired it).
+      description: `Single-family market statistics for ${neighborhoodName} in ${cityName}, Oregon: ${datasetVariables
+        .map((v) => v.name.toLowerCase())
+        .join(', ')}. Sourced from the regional MLS through Oregon Data Share via Ryan Realty.`,
       url,
       dateModified: asOfIso ?? undefined,
       spatialCoverageName: `${neighborhoodName}, ${cityName}, OR`,

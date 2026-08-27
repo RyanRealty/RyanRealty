@@ -120,7 +120,15 @@ export function placeFigureRows(
         what: v3Text(name),
         ...(detail ? { detail: v3Text(detail) } : {}),
         value: v3Text(
-          item.activeCount != null ? `${item.activeCount.toLocaleString('en-US')} active` : 'not measured',
+          // A MEASURED zero prints as the absence it is, matching /cities'
+          // "None listed now" (2026-08-27 audit: "Vandevert Ranch — 0 active"
+          // was the one bare zero left on the site). null stays 'not measured':
+          // unknown is not zero, and zero is not unknown.
+          item.activeCount == null
+            ? 'not measured'
+            : item.activeCount === 0
+              ? 'none listed now'
+              : `${item.activeCount.toLocaleString('en-US')} active`,
         ),
         ...(media(item.img) ? { media: media(item.img) } : {}),
       },
@@ -312,7 +320,10 @@ export function leftoverMarketFigures(
   if (hud.saleToList != null) {
     figures.push({
       value: v3Text(`${hud.saleToList.toFixed(1)}%`),
-      label: v3Text('sale to list'),
+      // The value is the pace row's saleToOriginal — a 12-month statistic.
+      // It wore the bare label 'sale to list' while the surrounding run
+      // promises "every figure names its own window" (2026-08-27 audit).
+      label: v3Text('sale to original list · 12 months'),
     })
   }
   // Tenths, through publishDaysFigure — the medians land on half-days, and

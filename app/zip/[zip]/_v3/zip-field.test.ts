@@ -23,8 +23,9 @@ function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): 
 
 describe('zipFieldCaption', () => {
   it('names the listed set and omits an empty set', () => {
-    expect(zipFieldCaption('97702', 408)).toBe('408 homes in 97702')
-    expect(zipFieldCaption('97702', 1)).toBe('1 home in 97702')
+    // 'listings', not 'homes' (2026-08-27): the set can include fractional shares.
+    expect(zipFieldCaption('97702', 408)).toBe('408 active single-family listings in 97702')
+    expect(zipFieldCaption('97702', 1)).toBe('1 active single-family listing in 97702')
     expect(zipFieldCaption('97702', 0)).toBeNull()
   })
 })

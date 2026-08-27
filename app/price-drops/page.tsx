@@ -18,6 +18,7 @@
  */
 
 import type { Metadata } from 'next'
+import { formatDate } from '@/lib/format/date'
 import { unstable_noStore as noStore } from 'next/cache'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -135,10 +136,20 @@ export default async function PriceDropsRegionPage() {
 
         {captionCount > 0 ? (
           <>
+            {/* THE COUNT IS THE FULL POPULATION (2026-08-27 audit: the page said
+                "48 price cuts this week" while its own Dataset told crawlers 60 —
+                two answers to the page's headline question). The caption states
+                the total; when the rendered list is capped, the label says so. */}
             <PriceDropsOpening
               heading="Price drops in Central Oregon"
-              captionValue={captionCount.toLocaleString('en-US')}
-              captionLabel={captionCount === 1 ? 'price cut this week' : 'price cuts this week'}
+              captionValue={total.toLocaleString('en-US')}
+              captionLabel={
+                total === 1
+                  ? 'price cut this week'
+                  : total > captionCount
+                    ? `price cuts this week · ${captionCount} shown below`
+                    : 'price cuts this week'
+              }
             />
             <V3Field
               id="cuts"
@@ -148,7 +159,15 @@ export default async function PriceDropsRegionPage() {
               mapSlot={<PriceDropPhotos items={fieldItems} />}
               emptyMessage="No price cut on this pull has both a street and a list price, so this list has nothing to name."
             />
-            <V3SourceLine source={dropsTrace('Central Oregon')} />
+            {/* The "by how much" in text, not only in ld+json, and the stamp the
+                Dataset already carried but the page never printed (same audit). */}
+            <V3SourceLine
+              source={`${dropsTrace('Central Oregon')}${
+                medianDropPctLabel ? `. Median drop ${medianDropPctLabel}` : ''
+              }${totalReducedLabel ? `, ${totalReducedLabel} in asking prices cut this week` : ''}${
+                fetchedAt ? ` · updated ${formatDate(fetchedAt)}` : ''
+              }`}
+            />
           </>
         ) : (
           <V3Quiet
