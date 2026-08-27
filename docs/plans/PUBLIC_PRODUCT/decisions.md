@@ -1147,3 +1147,56 @@ NeighborhoodActivityLedger (+ their tests).
 tests above, and the dev-pane screenshot raster that blanks at deep scroll
 (content verified via DOM + computed styles; the top-of-page and mobile
 captures render).
+
+## 2026-08-27 — DECIDED: the four-pattern cap is dead (Matt)
+
+**Matt, in session:** "I want this site built correctly using a consistent style and design
+throughout, if i change the style it should be instantaneous, i do not want old design
+decisions fucking up things going forward."
+
+The rule he killed is PUBLIC_UI §3's rhythm rule as locked 2026-08-11: *"no page uses more
+than four of the six. A page needing five patterns is doing two jobs — split it or cut
+one."*
+
+**What it actually did.** No page was ever split. The cap cut content, on every migration
+that hit it:
+
+- `app/page.tsx` (the p-home draft `e2e908e2`, built 2026-08-27 06:34, never merged) held
+  the cap by deleting SEVEN sections that are live on the site today: the community alert
+  capture, the seller ask, the Google reviews, the three brokers, the listing ticker, and
+  the pace and mix market figures. Matt caught it on sight: "the home page removed a bunch
+  of sections that were needed."
+- `/communities/[slug]` held it by deleting the featured rail, the ticker, both market
+  chart modules, the open-house list and the activity feed — recorded, at the time, in its
+  own `parity.json` `removedComponents`.
+- The 2026-08-26 place-family exception exists only because the cap was about to eat six
+  standing Matt directives (D80, D83, D84, D85, D88, D93) on three more routes.
+
+Three strikes on one rule. Matt killed it rather than grant a fourth exception.
+
+**The new rule, in full:** no two adjacent sections share a pattern. A page uses as many of
+the six as its content needs, up to all six.
+
+**The principle behind it, so this class cannot regrow:** a visual-language rule may not
+decide what content a page carries. The section set is a PRODUCT decision — Matt's, and the
+standing directives'. The pattern set decides how a section LOOKS, never whether it exists.
+A migration that cannot express a section in one of the six patterns reports the missing
+primitive as a gap in the barrel; it does not delete the section. This is the rule that
+would have caught the community page's deleted charts, which were dropped with the reason
+"the barrel has no chart primitive and the pattern set is closed" — the barrel has had
+`V3Chart` since 2026-08-25.
+
+**What survives, unchanged.** The pattern set is still SIX and still closed (a seventh is
+still a lock break, and so is a section that is none of the six). "No two adjacent" binds.
+The per-destination opening table still fixes what each grain opens on, which is what keeps
+five place grains reading as five places. An enumeration still counts once. The
+place-family exception is retired into the new rule — superseded, not revoked.
+
+**The homepage section set Matt confirmed in the same exchange:** all seven restored EXCEPT
+the ticker, which he cut deliberately. So the v3 homepage carries hero, homes + map, towns,
+communities, market (with pace and mix), alert capture, seller ask, reviews, brokers,
+footer. The ticker is gone for good and `KbTicker` goes with it.
+
+**Still open, not this unit's:** `/communities/[slug]`, `/cities/[slug]` and the
+neighborhood page each shipped with cap-driven deletions still in place. Now that the cap
+is gone, each is a restore pass. Flagged to Matt 2026-08-27; not yet scheduled.

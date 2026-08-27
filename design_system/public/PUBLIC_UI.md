@@ -76,20 +76,34 @@ not get an exception — the pattern set changes here, by editing this file.
 6. **Quiet** — hairline-separated supporting content (FAQ, proof, definitions, legal,
    related links). Near-zero visual weight; carries the graph's outbound edges.
 
-**Rhythm rule:** no two adjacent sections share a pattern, and no page uses more than four
-of the six. A page needing five patterns is doing two jobs — split it or cut one.
+**Rhythm rule (amended 2026-08-27, Matt — the pattern cap is GONE).** No two adjacent
+sections share a pattern. That is the whole rule. **A page uses as many of the six as its
+content needs, up to all six.**
 
-**The place-family exception (Matt 2026-08-26).** Exactly three routes may spend a fifth
-pattern: `/cities/[slug]`, `/communities/[slug]`, and the Bend neighborhood page
-(`/cities/[slug]/[neighborhoodSlug]`). Those pages carry standing product directives
-(D80, D83, D84, D85, D88, D93 — each a contract test in
-`components/site/__tests__/site-contracts.test.ts`) whose sections do not fit inside four
-patterns without deleting a directive, and Matt ruled the directives outrank the cap on
-these three grains only. The bounds of the exception: it is these three routes and no
-others; a sixth pattern is still a lock break everywhere, these pages included; "no two
-adjacent" still binds; and each of the three declares which pattern its fifth slot is
-spent on, and why, in its `parity.json`. A fourth route wanting a fifth pattern is not
-covered — it comes back here, to Matt, as a new amendment.
+The old rule capped a page at four of the six and told the author to "split it or cut one."
+In practice nobody split a page; the cap cut content. It deleted seven sections off the
+homepage (the alert capture, the seller ask, the reviews, the brokers, the ticker, and the
+pace and mix market figures) and it deleted the featured rail, the ticker, the market
+charts, the open-house list and the activity feed off `/communities/[slug]`. Matt granted a
+place-family exception on 2026-08-26 to stop it eating six standing directives, which was
+the same rule failing the same way on three more routes. **A visual-language rule may not
+decide what content a page carries.** Matt killed the cap on 2026-08-27 rather than grant a
+fourth exception; the place-family exception is retired into this rule, having been
+superseded rather than revoked.
+
+**What replaces it.** The section set of a page is a PRODUCT decision and belongs to Matt
+and to the standing directives (the contract tests in
+`components/site/__tests__/site-contracts.test.ts`). The pattern set decides how a section
+LOOKS, never whether it exists. A migration that cannot express a section in one of the six
+patterns reports the missing primitive here as a gap in the barrel — it does not delete the
+section. The pattern set is still SIX and still closed: a seventh pattern remains a lock
+break, and so does a section that is none of the six.
+
+**What still binds, and why it is enough.** "No two adjacent share a pattern" is what stops
+a page reading as mush, and it does that work without touching content: a run of Ledgers
+becomes Ledger / Quiet / Ledger, which is a rhythm decision, not a cut. The per-destination
+opening table below still fixes what each grain OPENS on, so five grains still read as five
+places. And an enumeration still counts once (see below).
 
 **An enumeration is one section (amended 2026-08-26, Matt).** A run of sections that is
 ONE section rendered once per member of a set the PLACE determines — one per property type
@@ -115,8 +129,8 @@ Four conditions, all of them. Break one and it is N adjacent sections again:
    action are identical across members.
 
 What this does not license: repeating a pattern because two unrelated sections happen to
-suit it; a run whose members a person chose; or a fifth pattern. An enumeration spends one
-of the four patterns a page may use, exactly like any other section.
+suit it; or a run whose members a person chose. An enumeration counts once for the
+adjacency rule, exactly like any other section.
 
 **One shop, five place rhythms** (Matt 2026-08-14). Chrome, type, tokens, Field/Ledger
 row language, and the motion ladder are the same site. The first pattern names the grain.
