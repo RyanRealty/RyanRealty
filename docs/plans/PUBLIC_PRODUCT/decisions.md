@@ -1050,3 +1050,24 @@ KbMarketHud geoName, a v3 question headline, or the visible market FAQ — and p
 the template inside KbMarketHud and buildMarketFaq. Falsified both ways on the
 ZIP page before shipping. The sibling rebuild of the city, neighborhood, and
 community pages keeps the question under the same ruling and inherits the gate.
+## 2026-08-26 — Visual lock amendment: the place family may spend a fifth pattern (Matt)
+
+Matt decided the cap-versus-directives question the "where the v3 roll stands"
+entry above asked for, for the family, before the first of the three was
+written: `/cities/[slug]`, `/communities/[slug]`, and the Bend neighborhood page
+(`/cities/[slug]/[neighborhoodSlug]`) may spend a FIFTH pattern. The six
+directives the city page's reverted v3 header records (D80 city guides, D83
+designated neighborhoods, D84 the other-cities exit, D85 the separate golf and
+master-planned section, D88 the full communities rail, D93 the live activity
+feed) outrank the rhythm preference on these three grains, and deleting ledgers
+to hold the cap deleted directives — the 2026-08-15 collision.
+
+The bounds, written into `design_system/public/PUBLIC_UI.md` §3: three routes
+exactly, a sixth pattern is still a lock break everywhere, "no two adjacent"
+still binds, each of the three declares its fifth slot in its `parity.json`,
+and a fourth route wanting five patterns is a new amendment for Matt, not a
+precedent. Everywhere else stays four-of-six. No mechanical gate counts
+patterns per page (verified against check-public-ui.mjs, check-public-v3.mjs,
+check-mockup-parity.mjs, and site-contracts.test.ts on 2026-08-26) — the cap's
+enforcement mechanism is unchanged: the per-route parity.json declaration plus
+review. This unblocks the v3 rebuild of the place-page family as one unit.

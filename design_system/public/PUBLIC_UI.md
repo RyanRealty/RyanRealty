@@ -19,6 +19,9 @@ amendments to §2: the Ledger register's working UI text runs a 13px base (the �
 governs reading prose, which Ledger surfaces do not carry), and Ledger rows run 32px
 (the row is a full-width target, clearing WCAG 2.5.8's 24px floor; the 44px thumb floor
 stays on every discrete control).
+closed. **2026-08-26 (Matt, second):** the three big place pages may spend a FIFTH
+pattern — the scoped exception §3 states in full. The cap stays four everywhere else,
+and the pattern set is still six and still closed.
 
 ## 1. Thesis
 
@@ -75,6 +78,18 @@ not get an exception — the pattern set changes here, by editing this file.
 
 **Rhythm rule:** no two adjacent sections share a pattern, and no page uses more than four
 of the six. A page needing five patterns is doing two jobs — split it or cut one.
+
+**The place-family exception (Matt 2026-08-26).** Exactly three routes may spend a fifth
+pattern: `/cities/[slug]`, `/communities/[slug]`, and the Bend neighborhood page
+(`/cities/[slug]/[neighborhoodSlug]`). Those pages carry standing product directives
+(D80, D83, D84, D85, D88, D93 — each a contract test in
+`components/site/__tests__/site-contracts.test.ts`) whose sections do not fit inside four
+patterns without deleting a directive, and Matt ruled the directives outrank the cap on
+these three grains only. The bounds of the exception: it is these three routes and no
+others; a sixth pattern is still a lock break everywhere, these pages included; "no two
+adjacent" still binds; and each of the three declares which pattern its fifth slot is
+spent on, and why, in its `parity.json`. A fourth route wanting a fifth pattern is not
+covered — it comes back here, to Matt, as a new amendment.
 
 **An enumeration is one section (amended 2026-08-26, Matt).** A run of sections that is
 ONE section rendered once per member of a set the PLACE determines — one per property type
