@@ -91,11 +91,20 @@ explicit approval before shipping (ops-explicit / Draft-First).
    reads the consent cookie (or an `ldu` body flag from server-to-server callers) and
    `lib/meta-capi.ts` sends `data_processing_options: ['LDU']` for opted-out visitors,
    so the browser + server channels stay consistent. Both locked by G48 (`ci:tracking-policy`).
-2. **Offline-conversion upload (closed-loop ROAS).** On FUB close/won, upload the
-   conversion back to Meta (CAPI offline event) and Google (Enhanced Conversions for
-   leads / Data Manager) keyed by the stored fbclid/gclid. Windows: **GCLID 90 days,
-   hashed-PII Enhanced Conversions 63 days** — the upload job must run inside them.
-   Not implemented today. This is the single biggest ROAS gap. (Verified 3-0.)
+2. ~~**Offline-conversion upload to Meta (closed-loop ROAS).**~~ ✅ **DONE 2026-08-26.**
+   `/api/cron/offline-conversions` runs daily, maps deal stages to milestones
+   (`lib/marketing/offline-milestones.ts`) and uploads through
+   `uploadOfflineConversion`. Only the closing carries a value, and that value is the
+   COMMISSION — never the sale price, which would overstate return ~30x and teach the
+   campaign to chase expensive homes instead of profitable business. `Offer` is not a
+   milestone: it evaporates too often to optimize toward. Idempotent through
+   `crm_idempotency_keys` keyed `deal:<id>:<milestone>`. A `channel='all'` suppression
+   SKIPS the contact entirely rather than uploading under LDU — a do-not-sell signal
+   means do not send them. **Meta's /events rejects an event_time older than ~7 days,
+   so there is no backfill**: measured 2026-08-26, all 18 milestone-eligible deals were
+   39–417 days old and none could be uploaded. The loop starts at the next milestone.
+   **Google Enhanced Conversions is still NOT built** — Google Ads has never run
+   ($0 spend, ever). Windows when it does: **GCLID 90 days, hashed-PII 63 days.**
 3. **Versioned, timestamped consent record.** Store consent text version + scope +
    timestamp + IP per lead before any call/text automation fires. The FCC abandoned
    the federal one-to-one consent rule, but **state mini-TCPA laws (FL FTSA, OK OTSA)
