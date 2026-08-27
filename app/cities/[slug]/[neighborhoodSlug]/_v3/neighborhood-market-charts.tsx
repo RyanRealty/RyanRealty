@@ -1,8 +1,10 @@
 /**
- * NeighborhoodMarketCharts — the approved chart-room forms on a Bend district
- * page, rendered INSIDE the market HUD section (one market section per page,
- * Matt 2026-07-29 / ci:market-section-nesting). Additive: it sits under the
- * HUD figures and replaces nothing.
+ * neighborhoodMarketChartCards — the approved chart-room forms on a Bend
+ * district page, as V3ChartCard entries for the market Instrument's `cards`
+ * slot (one market section per page, Matt 2026-07-29). The KB-era component
+ * form rendered the same four cards inside KbMarketHud; the v3 Instrument
+ * mounts cards itself, so this module now builds props instead of markup.
+ * Additive: the cards sit under the Instrument figures and replace nothing.
  *
  * Four cards, all drawn by the V3Chart series atom (no new chart component, no
  * second geometry — lib/charts/plot.ts):
@@ -24,7 +26,7 @@
  * renders nothing — fewer charts, never an invented one (CLAUDE.md §0).
  */
 
-import { V3Chart, V3ChartSwitch, V3SourceDisclosure, v3Text } from '@/components/site/v3'
+import { v3Text, type V3ChartCardProps, type V3ChartProps } from '@/components/site/v3'
 import {
   ALL_BEND_DISTRICTS_SLUG,
   getAllNeighborhoodYearPricing,
@@ -47,58 +49,47 @@ export type NeighborhoodMarketChartsProps = {
   districtName: string
 }
 
-function Chart({ view, id }: { view: NeighborhoodChartView; id: string }) {
-  return (
-    <V3Chart
-      id={id}
-      caption={v3Text(view.caption)}
-      kind={view.kind}
-      series={view.series}
-      rows={view.rows}
-      marks={view.marks}
-      run={view.run}
-      baselineLabel={view.baselineLabel != null ? v3Text(view.baselineLabel) : undefined}
-      sampleKey={view.sampleKey != null ? v3Text(view.sampleKey) : undefined}
-    />
-  )
+
+/** One view as V3Chart props — same field mapping the KB card rendered. */
+function viewChart(view: NeighborhoodChartView): V3ChartProps {
+  return {
+    caption: v3Text(view.caption),
+    kind: view.kind,
+    series: view.series,
+    rows: view.rows,
+    marks: view.marks,
+    run: view.run,
+    baselineLabel: view.baselineLabel != null ? v3Text(view.baselineLabel) : undefined,
+    sampleKey: view.sampleKey != null ? v3Text(view.sampleKey) : undefined,
+  }
 }
 
-function ChartCard({ card, wide }: { card: NeighborhoodChartCard; wide: boolean }) {
-  const views = card.views
-  return (
-    <article
-      className={
-        'rounded-2xl border border-border bg-card p-4 text-card-foreground sm:p-6' +
-        (wide ? ' lg:col-span-2' : '')
-      }
-    >
-      <h3 className="mb-1 text-base font-semibold text-primary">{card.title}</h3>
-      <p className="mb-3 text-sm text-muted-foreground">{card.displayLine}</p>
-      {views ? (
-        <V3ChartSwitch
-          label={v3Text(views.switchLabel)}
-          items={views.items.map((it) => ({ key: it.key, label: v3Text(it.label) }))}
-        >
-          {views.panels.map((panel, i) => (
-            <Chart
-              key={views.items[i]?.key ?? i}
-              view={panel}
-              id={`nbh-${card.key}-${views.items[i]?.key ?? i}`}
-            />
-          ))}
-        </V3ChartSwitch>
-      ) : null}
-      {card.view ? <Chart view={card.view} id={`nbh-${card.key}`} /> : null}
-      <V3SourceDisclosure className="mt-3" source={card.source} />
-    </article>
-  )
+function toCardProps(card: NeighborhoodChartCard, wide: boolean): V3ChartCardProps {
+  const base = {
+    id: `nbh-${card.key}`,
+    title: v3Text(card.title),
+    line: v3Text(card.displayLine),
+    source: v3Text(card.source),
+    wide,
+  }
+  if (card.views) {
+    return {
+      ...base,
+      switcher: {
+        label: v3Text(card.views.switchLabel),
+        items: card.views.items.map((it) => ({ key: it.key, label: v3Text(it.label) })),
+        panels: card.views.panels.map((panel) => viewChart(panel)),
+      },
+    }
+  }
+  return { ...base, chart: card.view ? viewChart(card.view) : undefined }
 }
 
-export async function NeighborhoodMarketCharts({
+export async function neighborhoodMarketChartCards({
   geoSlug,
   districtName,
-}: NeighborhoodMarketChartsProps) {
-  // Skipped during SSG: empty rows → no cards → the chart room renders
+}: NeighborhoodMarketChartsProps): Promise<V3ChartCardProps[]> {
+  // Skipped during SSG: empty rows -> no cards -> the chart room ships
   // nothing in the build HTML and ISR refills it on first revalidate.
   const [yearRows, inventory] = await Promise.all([
     skippableRail(() => getAllNeighborhoodYearPricing(), [], 4000, 'nbh:yearPricing'),
@@ -116,7 +107,7 @@ export async function NeighborhoodMarketCharts({
     buildClosedRankCard(yearRows, { subjectGeoSlug: geoSlug, districtName, currentYear }),
     buildAskingRankCard(inventory, { subjectGeoSlug: geoSlug, districtName }),
   ].filter((c): c is NeighborhoodChartCard => c != null)
-  if (cards.length === 0) return null
+  if (cards.length === 0) return []
 
   // The two time series always run full width. With an odd number of the
   // remaining rank cards, the last one spans too, so the grid never ends on a
@@ -126,15 +117,5 @@ export async function NeighborhoodMarketCharts({
     Boolean(card.wide) ||
     (rankCards.length % 2 === 1 && rankCards[rankCards.length - 1]?.key === card.key)
 
-  return (
-    <div
-      role="group"
-      className="grid gap-4 pt-6 lg:grid-cols-2"
-      aria-label={`${districtName} sales history and Bend district comparisons`}
-    >
-      {cards.map((card) => (
-        <ChartCard key={card.key} card={card} wide={wideFor(card)} />
-      ))}
-    </div>
-  )
+  return cards.map((card) => toCardProps(card, wideFor(card)))
 }

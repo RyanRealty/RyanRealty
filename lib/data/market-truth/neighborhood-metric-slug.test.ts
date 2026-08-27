@@ -93,9 +93,9 @@ describe('nested city neighborhood page wiring', () => {
     expect(page).toMatch(
       /getGeoBoundaryMapData\(\{ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug \}\)/,
     )
-    expect(page).toMatch(
-      /getMarketPulse\(\{ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug \}\)/,
-    )
+    // The pulse read left with the barrel migration (2026-08-26): neighborhood
+    // is a sold-attribution UNTRUSTED grain and the leftover HUD is the SoR,
+    // so no getMarketPulse call exists on this page at all — asserted below.
     expect(page).toMatch(
       /getPublicDetachedPace\(\{ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug \}\)/,
     )
@@ -108,8 +108,6 @@ describe('nested city neighborhood page wiring', () => {
     expect(page).not.toMatch(
       /getPublicPlaceSegments\(\{ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug \}\)/,
     )
-    expect(page).not.toMatch(
-      /getMarketPulse\(\{ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug \}\)/,
-    )
+    expect(page).not.toMatch(/getMarketPulse/)
   })
 })

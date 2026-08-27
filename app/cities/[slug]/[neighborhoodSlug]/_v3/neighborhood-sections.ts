@@ -1,572 +1,211 @@
 /**
- * Route-local shaping for the v3 neighborhood node. Pure functions only: every
- * one takes rows the page already fetched and returns barrel-shaped props.
+ * Section shaping for the neighborhood node on the components/site/v3 barrel —
+ * the Field rows, the captions, the traces, the About block, and the closing
+ * edges. Nothing here fetches. Nothing here reaches outside the barrel.
  *
- * WHY THIS FILE EXISTS. Two reasons, both mechanical. `ci:file-size-budget`
- * refuses any file under app/ or lib/ at 600 lines or more, and the page it
- * serves has to stay a readable list of sections rather than a wall of row
- * mapping. Nothing here fetches, and nothing here reaches outside the barrel.
+ * REWRITTEN 2026-08-26 for the leftover-HUD world. The 2026-08-15 revert left
+ * the old copy of this module on disk carrying pulse- and stats-cache-driven
+ * figure builders (liveFigures, soldFigures) that MARKET_TRUTH made wrong at
+ * this grain: neighborhood is a SOLD_ATTRIBUTION_UNTRUSTED grain
+ * (lib/market/geo-grain-trust.ts — bend-century-west published 48.0 months of
+ * supply off a 2-close alias join against 42 real in-polygon closes), so every
+ * market figure now comes off leftoverHudKpis through the shared
+ * leftoverMarketFigures builder in app/cities/[slug]/_v3/city-sections.ts, and
+ * the pulse builders did not survive. What lives here is what is genuinely
+ * neighborhood-shaped.
  *
- * NOTHING HERE INVENTS A FIGURE. Every function returns only what its input
- * actually carried: a null field produces no figure, no row, and no sentence.
- * The rounding and currency rules stay in lib/format, so the string a visitor
- * reads is the string the caller's source trace covers (CLAUDE.md section 0).
- *
- * ONE POPULATION PER BUILDER. `liveFigures` reads the market_pulse_live row and
- * nothing else; `soldFigures` reads the market_stats_cache row and nothing else.
- * They are separate functions because they are separate populations with
- * separate traces and separate stamps, and a builder that could mix them is a
- * builder that eventually does.
- *
- * THE TRACES LIVE HERE TOO, next to the builders whose figures they cover, for
- * the reason app/subdivisions/[slug]/_v3/subdivision-traces.ts states: a source
- * sentence written at the render site drifts from the query that produced the
- * number. No sentence in this file contains a number.
+ * NOTHING HERE INVENTS A FIGURE, AND UNKNOWN IS NEVER ZERO (CLAUDE.md §0).
+ * The Field rows publish a price only through formatPublishedAsk and an
+ * address only through publishStreetLine (ci:publish-listing-ask,
+ * ci:publish-street-line — both pin this file). The caption counts the LISTED
+ * set and says so when a cap trimmed it.
  */
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
-import {
-  v3Text,
-  type V3InstrumentFigure,
-  type V3FieldItem,
-  type V3LedgerFigureRow,
-  type V3QuietItem,
-} from '@/components/site/v3'
-import { formatPrice, formatPriceExact } from '@/lib/format/money'
+
+import { v3Text, type V3FieldItem, type V3QuietItem } from '@/components/site/v3'
+import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
-import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import { publishDaysFigure, publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { listingDetailPath } from '@/lib/slug'
-import type { ResortCommunityContent } from '@/lib/resort-community-content'
 
-/**
- * `p_limit` inside getGeoBoundaryMapData's fetchPins. At the cap the true
- * in-boundary total is higher than the row count, so no count may be published
- * from a capped read.
- */
-export const BOUNDARY_PIN_CAP = 200
-
-/** How many in-boundary homes the Field lists. The KB split rail showed 24. */
+/** The Field lists at most this many rows — the same preview discipline the
+ *  KB dual-pane list carried. The caption states the trim when it binds. */
 export const FIELD_ROW_LIMIT = 24
 
-/**
- * The short `$895K` form, for the character-constrained meta description ONLY.
- * Everything a visitor reads on the page uses formatPrice ($895,000), per the
- * brand rule. Carried across from the KB page unchanged.
- */
-export function fmtK(n: number | null): string | null {
-  return n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null
+/** One boundary tile as the Field reads it (a getListingTiles row). */
+export type FieldTile = {
+  listingKey: string | null | undefined
+  listNumber: string | null | undefined
+  listPrice: number | null | undefined
+  beds: number | null | undefined
+  baths: number | null | undefined
+  sqft: number | null | undefined
+  streetNumber: string | null | undefined
+  streetName: string | null | undefined
+  streetSuffix?: string | null | undefined
+  city: string | null | undefined
+  subdivisionName: string | null | undefined
+  photoUrl: string | null | undefined
+  lat: number | null | undefined
+  lng: number | null | undefined
 }
 
 /**
- * A curated `seo_description` carrying a banned cliche (the live "charming" on
- * /cities/bend/old-bend) must never reach the SERP. Carried across from the KB
- * page unchanged, including the word list.
+ * A tile earns a row when it carries a price and an address — both are the
+ * row's visible text and V3FieldItem types neither as optional. A photograph
+ * is optional: a home with no photo is still listed and, when it has
+ * coordinates, plotted. Highest price first, capped at FIELD_ROW_LIMIT.
  */
-export const BANNED_DESCRIPTION_RE =
-  /\b(charming|stunning|nestled|boasts|pristine|breathtaking|must-see|hidden gem|luxurious|meticulously|gorgeous|immaculate)\b/i
+export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
+  const items: V3FieldItem[] = []
+  const sorted = [...tiles].sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
+  for (const t of sorted) {
+    if (items.length >= FIELD_ROW_LIMIT) break
+    const key = t.listingKey?.trim()
+    if (!key) continue
+    if (t.listPrice == null || !Number.isFinite(t.listPrice) || t.listPrice <= 0) continue
+    const street = publishStreetLine({
+      streetNumber: t.streetNumber,
+      streetName: t.streetName,
+      streetSuffix: t.streetSuffix,
+    })
+    if (!street) continue
+    const meta = [
+      t.beds != null ? `${t.beds} bd` : null,
+      t.baths != null ? `${t.baths} ba` : null,
+      t.sqft != null && t.sqft > 0 ? `${t.sqft.toLocaleString('en-US')} sqft` : null,
+    ]
+      .filter((part): part is string => part !== null)
+      .join(' · ')
+    const photo = t.photoUrl?.trim()
+    items.push({
+      id: key,
+      href: listingDetailPath(
+        key,
+        { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city },
+        { city: t.city, subdivision: t.subdivisionName },
+        { mlsNumber: t.listNumber },
+      ),
+      priceLabel: formatPublishedAsk(t.listPrice) ?? 'Price on request',
+      title: street,
+      ...(photo ? { photoSrc: photo } : {}),
+      ...(meta ? { meta } : {}),
+      lat: t.lat,
+      lng: t.lng,
+    })
+  }
+  return items
+}
 
 /* -------------------------------------------------------------------------- */
-/* The two boundary populations, and how they are named                        */
+/* Captions + traces                                                          */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Every figure on this page traces to one feed. This is how it is named, and it
- * is named on EVERY source line, including the one over the block that renders
- * individual listing records.
- */
 const FEED = 'live MLS through Oregon Data Share'
 
 /**
- * THE SUBTYPE IS THE WHOLE DIFFERENCE BETWEEN THIS PAGE'S TWO LIVE COUNTS, and
- * it is why they must never be spelled the same way.
- *
- * Verified live against the source 2026-08-12. `refresh_community_market_pulse()`
- * (migration 20260727180000_bl016_community_pulse_and_yearly.sql) computes
- * market_pulse_live.active_count off `listing_boundary_xref_mv` filtered
- * `property_type = 'A' AND (property_sub_type IS NULL OR property_sub_type =
- * 'Single Family Residence')`. The Field's set comes from the SAME recorded
- * polygon through listings_in_boundary, narrowed by getListingTiles to
- * `PropertyType = 'A'` and nothing further. PropertyType A is a BUCKET (repo
- * memory: property-type-A-is-a-bucket), so the second set also holds townhouses
- * and condominiums:
- *
- *   bend-southern-crossing, active: 2 Single Family Residence, 10 Townhouse,
- *                                   4 Condominium  ->  pulse 2, boundary set 16
- *   bend-old-bend,          active: 7 Single Family Residence, 1 Condominium
- *                                                    ->  pulse 7, boundary set 8
- *
- * Same geography, same feed, same status filter, different property population.
- * Both figures are true. Calling both of them "active single-family listings",
- * which is what this page did before, made one of them false in the H1, in the
- * visible Q&A, and in the FAQPage and Dataset markup.
+ * Caption beside the Field. The count is the LISTED set — never a pulse
+ * figure, never the membership count, never pin length — and when the row cap
+ * trimmed the set the caption says which slice survived. Names the
+ * neighborhood, never the parent city (ci:place-hero-grain binds on the
+ * literal `in ${input.placeName}` here).
  */
-export const SFR_SUB_TYPE = 'Single Family Residence'
-
-/** The subtypes PropertyType A holds, for the source line that names the bucket. */
-export const A_BUCKET_PROSE = 'single-family homes, townhouses, and condominiums'
-
-/**
- * The row-level home type, in plain words. A verbatim passthrough for anything
- * the feed reports that is not one of the three the A bucket actually carries in
- * Central Oregon, because renaming a value this file has never seen is how a row
- * ends up labelled as something it is not.
- */
-const SUB_TYPE_LABEL: Readonly<Record<string, string>> = {
-  [SFR_SUB_TYPE]: 'Single family',
-  Townhouse: 'Townhouse',
-  Condominium: 'Condo',
-}
-
-function subTypeLabel(raw: string | null | undefined): string | null {
-  const value = raw?.trim()
-  if (!value) return null
-  return SUB_TYPE_LABEL[value] ?? value
-}
-
-/* -------------------------------------------------------------------------- */
-/* Source traces                                                               */
-/* -------------------------------------------------------------------------- */
-
-/**
- * The trace over the market_pulse_live figures. It covers EVERY figure that
- * block publishes, and it says so figure by figure, because the four do not
- * share a population:
- *
- *  - homes for sale + median list price: the active and coming-soon single-family
- *    listings inside the recorded polygon (the filter quoted above).
- *  - median days to pending: single-family sales that CLOSED in the last 90 days,
- *    resolved through the neighborhood_subdivisions alias join rather than the
- *    polygon. It is not measured on the active set the first sentence names,
- *    which is the gap this argument closes.
- *  - months of supply: that active count over the same closed series, which the
- *    canonical methodology clause states in full.
- *
- * IT IS THIS SHORT ON PURPOSE, AND THE LENGTH IS A LAYOUT FACT, NOT A STYLE ONE.
- * V3Instrument renders eyebrow, headline, figures, THIS LINE, then the action, in
- * that fixed order. At 390 the trace ran 18 lines and 337px, which put the page's
- * only filled seller CTA at y=892 on an 844px viewport: measured, the first
- * viewport carried zero visible filled controls, which is the exact defect the
- * ghost-to-primary repair was supposed to close (PUBLIC_UI.md section 1 counts
- * VISIBLE filled controls; migration-recipe.md addendum 2). Three sentences came
- * out, and NOT one of them covered a figure that prints:
- *
- *  - the forward reference to the boundary section. The Field's own source line
- *    already reconciles the two counts, standing next to the second one.
- *  - "publishes only when at least five of those closings carry the figure."
- *    That explains an ABSENCE, and this clause only renders when the figure is
- *    present. It is recorded in parity.json's dataLayer entry instead.
- *  - "The closings in that denominator are the same subdivision sales, over the
- *    last 180 days." MOS_METHODOLOGY_CLAUSE already states the denominator as
- *    closings over the last 6 months.
- *
- * Every population, filter, and window that backs a printed number is still here.
- * Adding a sentence to this function costs first-viewport pixels on a money
- * route, so anything added must cover a figure that ships.
- */
-export function livePulseTrace(
-  placeName: string,
-  opts: { showDaysToPending: boolean; showMonthsOfSupply: boolean },
-): string {
-  if (opts.showMonthsOfSupply) {
-    let trace = `${FEED}. Months of supply for single-family homes inside the recorded ${placeName} boundary.`
-    if (opts.showDaysToPending) {
-      trace += ` Median days to pending is single-family sales that closed in the last 90 days.`
-    }
-    return trace
+export function neighborhoodFieldCaption(input: {
+  placeName: string
+  count: number
+  totalQualifying: number
+}): string | null {
+  if (input.count <= 0) return null
+  if (input.totalQualifying > input.count) {
+    return `The ${input.count.toLocaleString('en-US')} highest-priced single-family listings in ${input.placeName}`
   }
-  if (opts.showDaysToPending) {
-    return `${FEED}. Median days to pending is single-family sales that closed in the last 90 days under the subdivision names recorded for ${placeName}.`
-  }
-  return `${FEED}. Live single-family facts inside the recorded ${placeName} boundary.`
+  return `${input.count.toLocaleString('en-US')} single-family ${input.count === 1 ? 'home' : 'homes'} for sale in ${input.placeName}`
 }
 
-/**
- * The trace over the no-pulse branch. A different population from every other
- * block on the page: getNeighborhoodBySlug counts listing_tile_mv rows matched on
- * the neighborhood NAME and keeps every residential inventory type, so this
- * branch's figure is not the single-family subtype and does not claim to be.
- */
-export function liveFallbackTrace(placeName: string, cityName: string, pulseRead: 'ok' | 'timeout'): string {
+/** Trace over the Field's listed set. The counted membership is named. */
+export function neighborhoodFieldTrace(placeName: string): string {
   return (
-    `${FEED} through the live listing index, active residential listings whose recorded ` +
-    `neighborhood is ${placeName}, ${cityName}. This branch counts every residential inventory ` +
-    `type rather than the ${SFR_SUB_TYPE} subtype alone. ` +
-    (pulseRead === 'ok'
-      ? 'No market-pulse row is published for this neighborhood, so no days-to-pending and no months-of-supply figure is shown.'
-      : 'The market row did not answer on this refresh, so no days-to-pending and no months-of-supply figure is shown.')
+    `${FEED}, active single-family homes inside the recorded ${placeName} boundary ` +
+    `(the same counted set the neighborhoods index uses), each with a list price and a street. ` +
+    `The map plots this same set`
   )
 }
 
+export function nbhFieldEmptyMessage(placeName: string, readOk: boolean): string {
+  return readOk
+    ? `No single-family home is listed inside the ${placeName} boundary right now.`
+    : 'The boundary inventory read did not answer on this refresh, so this frame is not claiming an inventory.'
+}
+
 /**
- * The trace over the Field, the block that renders individual MLS listing records
- * with address, price, beds, baths, and size. It names the feed first, for the
- * same reason MarketSources used to: a block displaying listing data has to say
- * whose listing data it is. It then reconciles itself to the figure above it, so
- * a reader who can see both numbers is told why they differ instead of left to
- * guess which one is wrong.
+ * The trace over the Instrument's leftover-HUD figures. Same discipline as the
+ * city node: every figure names its own window, a withheld cell is absent, and
+ * the MoS clauses ride along only when a supply figure prints.
  */
-export function fieldCountTrace(placeName: string): string {
+export function neighborhoodMarketTrace(placeName: string, hasMos: boolean): string {
   return (
-    `${FEED}. Active listings inside the recorded ${placeName} boundary, PropertyType A, ` +
-    `a bucket that holds ${A_BUCKET_PROSE}.`
+    `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
+    `detached single-family houses assigned to ${placeName} by the recorded boundary polygon. ` +
+    `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
+    (hasMos ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
   )
 }
 
-/* -------------------------------------------------------------------------- */
-/* Instrument figures                                                          */
-/* -------------------------------------------------------------------------- */
-
-export type LivePulse = {
-  activeCount: number
-  medianListPrice: number | null
-  medianDaysToPending: number | null
-  monthsOfSupply: number | null
-}
-
-/**
- * Whether a pulse figure ships. Present and positive, nothing more, but it is a
- * FUNCTION because two places have to agree about it: liveFigures, which decides
- * whether the figure renders, and livePulseTrace, which decides whether to print
- * the argument covering it. A source line covering a figure that is not there is
- * noise. A figure with no coverage is the defect this repair closed.
- */
-export function shipsFigure(value: number | null | undefined): boolean {
-  return value != null && value > 0
-}
-
-/**
- * The live-inventory figures, every one off the SAME market_pulse_live row, so
- * the one trace and the one stamp the caller prints under them cover all of
- * them.
- *
- * THE COUNT LABEL SAYS SINGLE-FAMILY because the count IS single-family, and
- * because the block below it publishes a larger, correct number over the same
- * boundary. A figure reading "16 homes" under a headline figure reading "2 homes
- * for sale" is a contradiction the visitor can see; "2 single-family homes for
- * sale" over "16 active homes inside the boundary" is two facts. See SFR_SUB_TYPE.
- *
- * Pace only: months of supply first, then days to pending. Inventory and
- * median list price stay off this set. The array may be empty, and the page
- * then opens a Quiet instead of inventing a hero number.
- *
- * MONTHS OF SUPPLY GOES THROUGH formatMonthsOfSupply, THE ONE DISPLAY RULE, and
- * that is the whole reason this figure no longer has a suppression condition.
- * The earlier revision rounded to one decimal here and had the page withhold the
- * figure whenever the rounded form classified differently from the raw value, on
- * the stated ground that "there is no third number to print". That
- * premise was false: formatMonthsOfSupply IS the third number (4.02 prints 4.1,
- * 5.97 prints 5.9, so the printed figure never crosses a threshold the raw value
- * did not), and this same page was already printing it thirty rows below through
- * buildMarketFaq. The observable result at mos = 4.02 was an Instrument that
- * dropped the figure and a closing Q&A, off the same row, stating "4.1 months of
- * supply, which is a balanced market" — the page suppressing a number it was
- * simultaneously publishing.
- */
-export function liveFigures(
-  pulse: LivePulse,
-  links: { browse: string; cityReport: string; monthsOfSupply: string },
-): V3InstrumentFigure[] {
-  const figures: V3InstrumentFigure[] = []
-  const mos = publishMonthsOfSupply({
-    grain: 'neighborhood',
-    pulseMos: pulse.monthsOfSupply,
-    pulseActiveCount: pulse.activeCount,
-    displayedActiveCount: pulse.activeCount,
-  })
-  if (shipsFigure(mos) && mos != null) {
-    figures.push({
-      value: v3Text(formatMonthsOfSupply(mos)),
-      label: v3Text('months of supply, single-family'),
-      href: links.monthsOfSupply,
-    })
-  }
-  const daysToPending = publishDaysFigure(pulse.medianDaysToPending)
-  if (shipsFigure(pulse.medianDaysToPending) && daysToPending) {
-    figures.push({
-      value: v3Text(daysToPending),
-      label: v3Text('median days to pending, single-family'),
-      href: links.cityReport,
-    })
-  }
-  return figures
-}
-
-/**
- * The no-pulse branch's figures, off getNeighborhoodBySlug's own read of
- * listing_tile_mv. A DIFFERENT population from liveFigures: every residential
- * inventory type, matched on the neighborhood name rather than the polygon. It
- * therefore gets its own label wording ("homes for sale", not "single-family
- * homes for sale"), its own trace (liveFallbackTrace), and no stamp, because
- * that read carries none.
- *
- * Median only when it ships. Empty when it does not. Inventory is not a hero.
- */
-export function liveFallbackFigures(
-  neighborhood: { activeCount: number; medianPrice: number | null },
-  browseHref: string,
-): V3InstrumentFigure[] {
-  if (shipsFigure(neighborhood.medianPrice) && neighborhood.medianPrice != null) {
-    return [
-      {
-        value: v3Text(formatPriceExact(neighborhood.medianPrice)),
-        label: v3Text('median list price'),
-        href: browseHref,
-      },
-    ]
-  }
-  return []
-}
-
-export type SoldStats = {
-  medianSalePrice: number | null
-  soldCount: number | null
-  saleToListRatio: number | null
-  medianDaysOnMarket: number | null
-}
-
-/**
- * The closed-sales figures, every one off the SAME market_stats_cache row.
- *
- * The sale-to-list normalization is carried across from the KB market HUD
- * unchanged: the column is stored as a ratio on some rows (0.9556) and as a
- * percent on others, so a value under 2 is multiplied by 100 and anything else
- * is already a percent. Units are stated on the figure, never assumed.
- *
- * No figure here is a door. Individual sold listings are VOW-only under ODS
- * rule 5-4 A.4, so there is no public sold surface to send a reader to, and a
- * figure that links to the wrong population is worse than one that links
- * nowhere.
- */
-export function soldFigures(stats: SoldStats): V3InstrumentFigure[] {
-  const figures: V3InstrumentFigure[] = []
-  if (stats.medianSalePrice != null && stats.medianSalePrice > 0) {
-    figures.push({
-      value: v3Text(formatPrice(stats.medianSalePrice)),
-      label: v3Text('median sale price, single-family'),
-    })
-  }
-  if (stats.soldCount != null && stats.soldCount > 0) {
-    figures.push({
-      value: v3Text(stats.soldCount.toLocaleString('en-US')),
-      label: v3Text('homes sold, single-family'),
-    })
-  }
-  if (stats.saleToListRatio != null && stats.saleToListRatio > 0) {
-    const pct = stats.saleToListRatio < 2 ? stats.saleToListRatio * 100 : stats.saleToListRatio
-    figures.push({
-      value: v3Text(`${pct.toFixed(1)}%`),
-      label: v3Text('average sale to list, single-family'),
-    })
-  }
-  const daysOnMarket = publishDaysLabel(stats.medianDaysOnMarket)
-  if (daysOnMarket) {
-    figures.push({
-      value: v3Text(daysOnMarket),
-      label: v3Text('median days on market, single-family'),
-    })
-  }
-  return figures
+/** The stated absence for the no-figures render. No count of its own. */
+export function neighborhoodMarketAbsenceItems(placeName: string, hasRows: boolean): V3QuietItem[] {
+  const tail = hasRows ? ' The homes below carry their own live list prices.' : ''
+  const body =
+    `The Market Truth metric layer published no figure for ${placeName} on this refresh, ` +
+    `so this page is not printing a median, a supply figure, or a verdict.${tail}`
+  return [{ kind: 'prose', term: 'No live market figures right now', body }]
 }
 
 /* -------------------------------------------------------------------------- */
-/* Field rows                                                                  */
+/* Quiet content                                                              */
 /* -------------------------------------------------------------------------- */
-
-export type FieldTile = {
-  listingKey: string | null
-  listNumber: string | null
-  listPrice: number | null
-  beds: number | null
-  baths: number | null
-  sqft: number | null
-  streetNumber: string | null
-  streetName: string | null
-  streetSuffix?: string | null
-  city: string | null
-  subdivisionName: string | null
-  /**
-   * The home type, straight off listing_tile_mv. Rendered on every row that has
-   * one, because this set is the PropertyType A bucket and the single-family
-   * figure above it is a strict narrowing of that bucket: a reader comparing the
-   * two numbers can see, row by row, which homes the smaller figure left out.
-   */
-  propertySubType?: string | null
-  lat: number | null
-  lng: number | null
-  photoUrl?: string | null
-}
 
 /**
- * In-boundary homes as Field rows, highest price first, capped at
- * FIELD_ROW_LIMIT. Highest-price-first and the 24-row cap are both carried
- * across from the KB rail this replaces.
- *
- * A tile with no listing key is dropped: the key is the row identity the
- * pin-to-row binding runs on, and it is also what listingDetailPath needs to
- * build a door. A tile with no price renders "Price on request" rather than an
- * empty column, because the Field's price is a visible column and a blank one
- * reads as free.
- *
- * The meta line ends with the home type when the feed reports one. That is not
- * decoration: this set is the PropertyType A bucket, the figure above it counts
- * only the Single Family Residence subtype, and the row-level type is what lets a
- * reader reconcile the two counts themselves.
+ * The About block: curated prose where it exists
+ * (data/resort-community-{citySlug}-{neighborhoodSlug}.json), else the
+ * neighborhoods-table description — the same either/or the KB page ran. NO
+ * FIGURES: a number belongs in the Instrument with its source line, which is
+ * V3Quiet's own contract. Empty input returns nothing and the block does not
+ * render, never generated filler.
  */
-export function fieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
-  return [...tiles]
-    .filter((t) => Boolean(t.photoUrl?.trim()) && Boolean(t.listingKey?.trim()))
-    .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
-    .slice(0, FIELD_ROW_LIMIT)
-    .flatMap((t) => {
-      const key = t.listingKey?.trim()
-      const photo = t.photoUrl?.trim()
-      if (!key || !photo) return []
-      const street = publishStreetLine({
-        streetNumber: t.streetNumber,
-        streetName: t.streetName,
-        streetSuffix: t.streetSuffix,
-      })
-      const meta = [
-        t.beds != null ? `${t.beds} bd` : null,
-        t.baths != null ? `${t.baths} ba` : null,
-        t.sqft != null && t.sqft > 0 ? `${t.sqft.toLocaleString('en-US')} sqft` : null,
-        subTypeLabel(t.propertySubType),
-      ]
-        .filter(Boolean)
-        .join(' · ')
-      return [
-        {
-          id: key,
-          href: listingDetailPath(
-            key,
-            { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city },
-            { city: t.city, subdivision: t.subdivisionName },
-            { mlsNumber: t.listNumber },
-          ),
-          priceLabel: formatPublishedAsk(t.listPrice) ?? 'Price on request',
-          title: street || t.subdivisionName?.trim() || 'Address withheld',
-          meta: meta || undefined,
-          photoSrc: photo,
-          lat: t.lat,
-          lng: t.lng,
-        } satisfies V3FieldItem,
-      ]
-    })
-}
-
-/* -------------------------------------------------------------------------- */
-/* Quiet content                                                               */
-/* -------------------------------------------------------------------------- */
-
-/** Cap so the About block stays a block and not a second page. */
-const AMENITY_LIMIT = 8
-
-/**
- * The verified depth block: the curated prose, the drive times, and the
- * amenities, from data/resort-community-{citySlug}-{neighborhoodSlug}.json.
- *
- * `fallbackProse` is the neighborhoods-table description, used ONLY when no
- * curated config exists. That is the same either/or the KB page ran (the rich
- * overview suppressed the plain About), stated here as one expression instead
- * of two components that had to agree.
- */
-export function aboutItems(
-  content: ResortCommunityContent | null,
-  fallbackProse: string | null,
-): V3QuietItem[] {
+export function neighborhoodAboutItems(input: {
+  curatedProse: readonly string[] | null | undefined
+  description: string | null | undefined
+  cityName: string
+}): V3QuietItem[] {
   const items: V3QuietItem[] = []
-
   const prose =
-    content && content.aboutProse.length > 0
-      ? content.aboutProse
-      : (fallbackProse ?? '').trim()
-        ? [(fallbackProse ?? '').trim()]
-        : []
-  if (prose.length > 0) items.push({ kind: 'prose', body: prose })
-
-  const drives = (content?.driveTimes ?? []).filter(
-    (d) => Number.isFinite(d.minutes) && d.minutes > 0 && d.destination?.trim(),
-  )
-  if (drives.length > 0) {
-    items.push({
-      kind: 'prose',
-      term: 'Drive times',
-      body: drives.map(
-        (d) =>
-          `${d.destination.trim()}, about ${Math.round(d.minutes)} minutes${d.note?.trim() ? ` (${d.note.trim()})` : ''}.`,
-      ),
-    })
+    input.curatedProse && input.curatedProse.length > 0
+      ? input.curatedProse
+      : [input.description?.trim() ?? ''].filter(Boolean)
+  for (const p of prose) {
+    const body = p.trim()
+    if (body) items.push({ kind: 'prose', body })
   }
-
-  for (const amenity of (content?.amenities ?? []).slice(0, AMENITY_LIMIT)) {
-    const name = amenity.name?.trim()
-    const body = [amenity.description?.trim(), amenity.access?.trim()].filter(
-      (line): line is string => Boolean(line),
-    )
-    if (!name || body.length === 0) continue
-    items.push({ kind: 'prose', term: name, body })
-  }
-
+  if (items.length > 0) items.push({ kind: 'prose', term: 'City', body: input.cityName })
   return items
 }
 
 /**
- * A labeled door, dropped when either half is missing. V3Quiet drops a nameless
- * or destination-less row itself, but building one here at all means the page
- * asserted an edge it could not honor, so the filter runs at the source.
+ * The closing edges. `links.valuation` arrives from lib/site/valuation-href.ts
+ * so the seller lead's stored source_url names this neighborhood page.
  */
-export function edge(label: string | null | undefined, href: string | null | undefined): V3QuietItem[] {
-  const text = label?.trim()
-  const to = href?.trim()
-  if (!text || !to) return []
-  return [{ label: text, href: to }]
-}
-
-/* -------------------------------------------------------------------------- */
-/* Live activity rows                                                          */
-/* -------------------------------------------------------------------------- */
-
-/**
- * One MLS event on one listing. Optional everywhere the feed can come back
- * without the field, because a row missing its door or its address is dropped
- * rather than rendered as dead text.
- */
-export type ActivityRow = {
-  label?: string | null
-  address?: string | null
-  cityLine?: string | null
-  price?: number | null
-  imageUrl?: string | null
-  href?: string | null
-  whenLabel?: string | null
-}
-
-/**
- * Live MLS events as Ledger rows. The price is the figure, so the caller owes the
- * trace, and the trace has to name the scope the caller actually used — the
- * boundary set or the city's. Every row carries the listing's own photo, which is
- * the thumbnail contract this section has had since D93.
- */
-export function neighborhoodActivityRows(items: readonly ActivityRow[]): V3LedgerFigureRow[] {
-  return items.flatMap((item) => {
-    const href = item.href?.trim()
-    const address = item.address?.trim()
-    if (!href || !address) return []
-    const when = [item.label?.trim(), item.whenLabel?.trim()].filter(Boolean).join(' · ')
-    const detail = item.cityLine?.trim()
-    return [
-      {
-        id: `${href}-${item.label ?? ''}-${item.whenLabel ?? ''}`,
-        href,
-        when: v3Text(when || 'Update'),
-        what: v3Text(address),
-        ...(detail ? { detail: v3Text(detail) } : {}),
-        value: v3Text(
-          formatPublishedAsk(item.price) ?? 'Price on request',
-        ),
-        ...(item.imageUrl?.trim() ? { media: { src: item.imageUrl.trim() } } : {}),
-      },
-    ]
-  })
+export function neighborhoodExploreItems(input: {
+  placeName: string
+  cityName: string
+  citySlug: string
+  links: { browse: string; valuation: string }
+}): V3QuietItem[] {
+  return [
+    { label: `See every ${input.placeName} home for sale`, href: input.links.browse },
+    { label: `${input.cityName} market report`, href: `/housing-market/${input.citySlug}` },
+    { label: `Open houses in ${input.cityName}`, href: `/open-houses/${input.citySlug}` },
+    { label: `All of ${input.cityName}`, href: `/cities/${input.citySlug}` },
+    { label: 'Every neighborhood', href: '/neighborhoods' },
+    { label: 'Value my home', href: input.links.valuation },
+    { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
+  ]
 }

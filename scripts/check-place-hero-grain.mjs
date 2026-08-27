@@ -39,8 +39,16 @@ checks.push({
 const pages = [
   {
     path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    label: 'neighborhood page uses placeHeroLead (not in ${cityName})',
+    label: 'neighborhood page opening count names the neighborhood, not the city',
     forbid: /lead=\{`in \$\{cityName\}/,
+    // The v3 Field replaced KbHero here (2026-08-26). The count that opens the
+    // frame is neighborhoodFieldCaption's, and that builder interpolates the
+    // neighborhood name itself.
+    v3: {
+      module: 'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts',
+      builder: 'neighborhoodFieldCaption',
+      names: 'in ${input.placeName}',
+    },
   },
   {
     path: 'app/communities/[slug]/page.tsx',

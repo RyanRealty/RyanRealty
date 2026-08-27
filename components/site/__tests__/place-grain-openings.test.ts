@@ -4,10 +4,9 @@ import type { ListingTile } from '@/lib/data/types/listing'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import {
-  fieldItems,
-  liveFallbackFigures,
-  liveFigures,
-  livePulseTrace,
+  nbhFieldItems,
+  neighborhoodFieldCaption,
+  neighborhoodMarketTrace,
 } from '@/app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections'
 import { dailyLifeRows } from '@/app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-daily-life'
 import {
@@ -46,50 +45,34 @@ function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): 
 }
 
 describe('neighborhood pace', () => {
-  it('withholds pulse MOS at neighborhood grain and keeps days to pending', () => {
-    const figures = liveFigures(
-      {
-        activeCount: 62,
-        medianListPrice: 1_385_000,
-        medianDaysToPending: 28.6,
-        monthsOfSupply: 4.2,
-      },
-      links,
-    )
-    expect(figures.map((figure) => figure.label)).toEqual([
-      'median days to pending, single-family',
-    ])
-    expect(figures.some((figure) => /months of supply/i.test(String(figure.label)))).toBe(false)
-    expect(figures.some((figure) => /home|inventory|list price/i.test(String(figure.label)))).toBe(false)
-  })
+  // The pulse-figure builders (liveFigures, liveFallbackFigures) are gone with
+  // the 2026-08-26 barrel migration: neighborhood is a sold-attribution
+  // UNTRUSTED grain (lib/market/geo-grain-trust.ts), so every market figure
+  // now comes off leftoverHudKpis through the shared leftoverMarketFigures
+  // builder, whose MoS is already publish-gated upstream. What is tested here
+  // is what stayed neighborhood-shaped: the Field rows, the caption's grain,
+  // and the trace's clause discipline.
 
-  it('returns no figures when pace is absent', () => {
+  it('caption names the neighborhood and states the cap when it binds', () => {
     expect(
-      liveFigures(
-        {
-          activeCount: 62,
-          medianListPrice: 1_385_000,
-          medianDaysToPending: null,
-          monthsOfSupply: null,
-        },
-        links,
-      ),
-    ).toEqual([])
+      neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 24, totalQualifying: 62 }),
+    ).toBe('The 24 highest-priced single-family listings in Awbrey Butte')
+    expect(
+      neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 9, totalQualifying: 9 }),
+    ).toBe('9 single-family homes for sale in Awbrey Butte')
+    expect(neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 0, totalQualifying: 0 })).toBeNull()
   })
 
-  it('publishes fallback median only, never a zero inventory hero', () => {
-    expect(liveFallbackFigures({ activeCount: 0, medianPrice: 900_000 }, links.browse)).toHaveLength(1)
-    expect(liveFallbackFigures({ activeCount: 12, medianPrice: null }, links.browse)).toEqual([])
+  it('recites the MoS clauses only beside a published supply figure', () => {
+    const withMos = neighborhoodMarketTrace('Awbrey Butte', true)
+    const withoutMos = neighborhoodMarketTrace('Awbrey Butte', false)
+    expect(withMos).toMatch(/Months of supply/)
+    expect(withoutMos).not.toMatch(/seller's|buyer's|balanced|threshold/)
+    expect(withoutMos).toMatch(/Awbrey Butte/)
   })
 
-  it('does not recite MoS thresholds in the pulse trace', () => {
-    const trace = livePulseTrace('Awbrey Butte', { showDaysToPending: true, showMonthsOfSupply: true })
-    expect(trace).toMatch(/Months of supply/)
-    expect(trace).not.toMatch(/seller's|buyer's|balanced|threshold|4–6|<= 4|≥ 6/)
-  })
-
-  it('keeps photographed homes and sets photoSrc', () => {
-    const items = fieldItems([
+  it('keeps the counted set even when a tile has no photograph', () => {
+    const items = nbhFieldItems([
       {
         listingKey: 'a',
         listNumber: '1',
@@ -121,9 +104,34 @@ describe('neighborhood pace', () => {
         lng: -121.3,
       },
     ])
-    expect(items).toHaveLength(1)
-    expect(items[0]?.photoSrc).toBe('https://img.example/house.jpg')
-    expect(items[0]?.title).toBe('10 Pine')
+    // Both qualify (price + street). Highest price first; the photo rides when
+    // it exists and its absence never drops a counted home.
+    expect(items).toHaveLength(2)
+    expect(items[0]?.title).toBe('11 Pine')
+    expect(items[0]?.photoSrc).toBeUndefined()
+    expect(items[1]?.photoSrc).toBe('https://img.example/house.jpg')
+    expect(items[1]?.title).toBe('10 Pine')
+  })
+
+  it('drops a home with no list price or no street', () => {
+    const items = nbhFieldItems([
+      {
+        listingKey: 'a',
+        listNumber: '1',
+        listPrice: null,
+        beds: 3,
+        baths: 2,
+        sqft: 1800,
+        streetNumber: '10',
+        streetName: 'Pine',
+        city: 'Bend',
+        subdivisionName: 'Awbrey Butte',
+        photoUrl: null,
+        lat: 44.1,
+        lng: -121.3,
+      },
+    ])
+    expect(items).toEqual([])
   })
 })
 

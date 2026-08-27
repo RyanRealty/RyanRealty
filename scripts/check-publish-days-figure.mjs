@@ -56,7 +56,12 @@ const surfaces = [
   },
   {
     path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    label: 'neighborhood about-facts gate days through publishDaysLabel',
+    label: 'neighborhood page prints no hand-rounded days figure',
+    // MOVED, NOT DROPPED (2026-08-26). The v3 neighborhood page dropped the KB
+    // about-facts row; its days figures flow through the shared
+    // leftoverMarketFigures builder in app/cities/[slug]/_v3/city-sections.ts,
+    // the surface below, which still hard-requires the publisher.
+    negativeOnly: true,
   },
   {
     path: 'app/cities/[slug]/_v3/city-sections.ts',
@@ -64,7 +69,12 @@ const surfaces = [
   },
   {
     path: 'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts',
-    label: 'neighborhood Instrument days gate through publishDaysFigure',
+    label: 'neighborhood sections module prints no hand-rounded days figure',
+    // The module's own days figures left with the pulse builders (2026-08-26):
+    // the Instrument figures are built by the shared city-sections module, the
+    // surface above, which still hard-requires publishDaysFigure. What this
+    // file still owes is the negative half.
+    negativeOnly: true,
   },
 ]
 

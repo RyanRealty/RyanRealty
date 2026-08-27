@@ -109,7 +109,9 @@ describe('public pace surfaces', () => {
     expect(community).toMatch(/getPublicDetachedPace/)
     expect(community).toMatch(/PublicPaceStats/)
     expect(neighborhood).toMatch(/getPublicDetachedPace/)
-    expect(neighborhood).toMatch(/PublicPaceStats/)
+    // v3 neighborhood page (2026-08-26): the pace items print as Instrument
+    // figures through publicPaceItems, the builder PublicPaceStats renders from.
+    expect(neighborhood).toMatch(/publicPaceItems/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })
 })

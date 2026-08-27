@@ -59,21 +59,43 @@ checks.push({
     /leftoverHudKpis\(/.test(cityPage) &&
     /activeCount(?::[^=]*)?=\s*hud\.active/.test(cityPage) &&
     /CITY_TILE_FETCH_LIMIT/.test(cityPage) &&
-    /placeHeroLead\(\{ placeName: cityName, activeCount \}\)/.test(cityPage),
+    // The v3 Field replaced KbHero (2026-08-26): the opening count sentence is
+    // cityFieldCaption's, which interpolates the city name itself — the same
+    // grain rule placeHeroLead carried, asserted by ci:place-hero-grain's v3
+    // arm on the builder's own literal.
+    /cityFieldCaption\(\{/.test(cityPage),
 })
 
-const hero = src('lib/market/publish-place-hero.ts')
-checks.push({
-  label: 'publishPlaceHeroUrl rejects Unsplash stock',
-  ok: /unsplash/i.test(hero) && /export function publishPlaceHeroUrl/.test(hero),
-})
+// lib/market/publish-place-hero.ts was deleted with its last consumer when
+// the neighborhood page moved onto the barrel (2026-08-26) — the v3 place
+// pages mount no hero photo, so there is no hero position for a stock image.
+// If the module returns, it must reject Unsplash stock again; a page that
+// reintroduces a hero without it fails the neighborhood arm below.
+try {
+  const hero = src('lib/market/publish-place-hero.ts')
+  checks.push({
+    label: 'publishPlaceHeroUrl rejects Unsplash stock',
+    ok: /unsplash/i.test(hero) && /export function publishPlaceHeroUrl/.test(hero),
+  })
+} catch {
+  // Module absent: the rule is carried by the per-page no-unvetted-hero arms.
+}
 
 const nbh = src('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
 checks.push({
-  label: 'neighborhood page gates the hero through publishPlaceHeroUrl',
+  label: 'neighborhood page mounts no unvetted hero photo',
+  // The v3 page (2026-08-26) has no full-bleed hero at all — PUBLIC_UI.md §3
+  // opens a neighborhood on the Instrument — so the founding defect (a stock
+  // Unsplash palm-tree hero on /cities/bend/century-west) has no surface to
+  // land on. The rule is satisfied either way: a page that reintroduces a hero
+  // image source must gate it through publishNeighborhoodHero again.
   ok:
-    /from ['"]@\/lib\/market\/publish-place-hero['"]/.test(nbh) &&
-    /publishNeighborhoodHero\(/.test(nbh),
+    (/from ['"]@\/lib\/market\/publish-place-hero['"]/.test(nbh) &&
+      /publishNeighborhoodHero\(/.test(nbh)) ||
+    // `c.heroImageUrl` on a ledger row is a community banner thumb, not a
+    // hero; the hero-position sources are the place's own db hero and the
+    // city-photo fallback.
+    (!/neighborhood\.heroImageUrl|cityHero\(/.test(nbh) && !/unsplash/i.test(nbh)),
 })
 
 const method = src('lib/market/publish-public-methodology.ts')

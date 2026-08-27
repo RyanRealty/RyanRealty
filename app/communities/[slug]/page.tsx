@@ -130,7 +130,8 @@ import { CommunityGolfLinks } from '@/components/site/explore/CommunityGolfLinks
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbSchools } from '@/components/site/kb/KbSchools'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { MetadataBlock } from '@/components/site/MetadataBlock'; import { MarketSources } from '@/components/site/MarketSources'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import {
   V3PlaceCharacter,

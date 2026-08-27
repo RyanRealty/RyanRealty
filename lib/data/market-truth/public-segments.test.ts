@@ -424,7 +424,8 @@ describe('public place pages', () => {
     expect(community).toMatch(/getPublicPlaceSegments/)
     expect(community).toMatch(/PublicProductTypes/)
     expect(neighborhood).toMatch(/getPublicPlaceSegments/)
-    expect(neighborhood).toMatch(/PublicProductTypes/)
+    // v3 neighborhood page (2026-08-26): the enumeration is the barrel section.
+    expect(neighborhood).toMatch(/V3PlacePropertyTypes/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
     expect(strip).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })

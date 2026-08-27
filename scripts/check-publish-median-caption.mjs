@@ -55,7 +55,13 @@ const surfaces = [
   },
   {
     path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
-    label: 'neighborhood page gates KbSell median through publishSellMedian',
+    label: 'neighborhood sell surface publishes no uncaptioned median',
+    // MOVED, NOT DROPPED (2026-08-26). The neighborhood page left the KB
+    // register and KbSell left with it; the page's one capture sheet publishes
+    // no median at all, and every median it prints sits in a section that
+    // names its geography and its trace. Put a money formatter or a median
+    // prop into the sheet and this fires.
+    noMedianSurface: 'app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodAlertsSheet.client.tsx',
   },
   {
     path: 'app/page.tsx',

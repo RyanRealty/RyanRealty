@@ -32,7 +32,6 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
     // The KB spelling: `pending: hud.pending` inside the KbMarketData literal.
     for (const [name, src] of Object.entries({
       home: files.home,
-      nbh: files.nbh,
       community: files.community,
     })) {
       expect(src, name).toMatch(/pending:\s*hud\.pending/)
@@ -49,6 +48,11 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
     expect(citySections).toMatch(/label: v3Text\('pending · now'\)/)
     expect(files.city, 'city').not.toMatch(/pending:\s*pulse/)
     expect(files.city, 'city').not.toMatch(/getMarketPulse/)
+    // Same v3 rule for the neighborhood page (2026-08-26): its figures come
+    // from the same shared builder, and no pulse read exists to fill from.
+    expect(files.nbh, 'nbh').toMatch(/leftoverMarketFigures/)
+    expect(files.nbh, 'nbh').not.toMatch(/pending:\s*pulse/)
+    expect(files.nbh, 'nbh').not.toMatch(/getMarketPulse/)
     // The v3 spelling, MOVED not dropped (2026-08-26). /zip/[zip] left the KB
     // register: there is no KbMarketData literal to key, so the same rule is
     // asserted on the figure the market Instrument actually prints — the value
