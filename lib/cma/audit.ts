@@ -17,6 +17,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
+import { setAuditUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -185,6 +186,7 @@ export async function auditCma(args: {
   /** Authoritative zoning/water/septic — so the auditor can refute buildability/utility claims. */
   site?: CmaSiteData | null
 }): Promise<CmaAudit | null> {
+  setAuditUnavailableReason(null)
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return null
   const { subject, comps, excluded, pricing, judgment, market, finalOpinion, site } = args
@@ -340,7 +342,9 @@ export async function auditCma(args: {
       usedLlm: true,
     }
   } catch (err) {
-    console.warn('[cma/audit] adversarial audit failed:', err instanceof Error ? err.message : String(err))
+    const reason = err instanceof Error ? err.message : String(err)
+    setAuditUnavailableReason(reason)
+    console.warn('[cma/audit] adversarial audit failed:', reason)
     return null
   }
 }

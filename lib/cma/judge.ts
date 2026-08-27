@@ -29,6 +29,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
+import { setJudgeUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import {
   EXCLUSION_BASES,
@@ -375,6 +376,7 @@ export async function judgeComps(
   comps: CmaComp[],
   market: CmaMarketContext | null,
 ): Promise<CompJudgment | null> {
+  setJudgeUnavailableReason(null)
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey || comps.length === 0) return null
 
@@ -555,7 +557,9 @@ export async function judgeComps(
       usedLlm: true,
     }
   } catch (err) {
-    console.warn('[cma/judge] comparability judgment failed, falling back to deterministic:', err instanceof Error ? err.message : String(err))
+    const reason = err instanceof Error ? err.message : String(err)
+    setJudgeUnavailableReason(reason)
+    console.warn('[cma/judge] comparability judgment failed, falling back to deterministic:', reason)
     return null
   }
 }

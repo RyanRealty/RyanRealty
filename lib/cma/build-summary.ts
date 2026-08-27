@@ -13,6 +13,7 @@
  */
 
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
+import { judgeUnavailableReason, auditUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { countByTier } from '@/lib/cma/comp-trace'
 import type { AccuracyContract } from '@/lib/cma/contract'
 import type { CmaAudit } from '@/lib/cma/audit'
@@ -98,7 +99,7 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
         }
       : {
           used_llm: false as const,
-          note: 'LLM comparability judge unavailable (no key or call failed); priced on the full comp set with the dispersion guard as backstop.',
+          note: `LLM comparability judge unavailable${judgeUnavailableReason() ? ` — ${judgeUnavailableReason()}` : ' (no key or call failed)'}; priced on the full comp set with the dispersion guard as backstop.`,
         },
     // Top-level so the admin queue + batch reports can filter flagged CMAs
     // without digging into the pricing sub-object.
@@ -127,7 +128,7 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
         }
       : {
           used_llm: false as const,
-          note: 'Adversarial audit unavailable (no key or call failed); needs_review forced via the contract.',
+          note: `Adversarial audit unavailable${auditUnavailableReason() ? ` — ${auditUnavailableReason()}` : ' (no key or call failed)'}; needs_review forced via the contract.`,
         },
     // The full accuracy-contract evaluation — every check, pass or fail.
     accuracy_contract: i.contract,
