@@ -121,5 +121,13 @@
         "blocking": true
       }
     ]
-  }
+  },
+  "sectionOrder": [
+    "V3SectionTracker + MetadataBlock (not sections)",
+    "V3Breadcrumb",
+    "AboutFaces -- the brokers, transparent PNGs",
+    "V3Ledger #brokers -- who you work with, Oregon licenses, each a door to /team/[slug]",
+    "V3Quiet #reviews-faq -- verbatim Google reviews + working with a Bend broker",
+    "V3Footer"
+  ]
 }

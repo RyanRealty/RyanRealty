@@ -72,12 +72,15 @@
     "note": "Route-local constants and Field/JSON-LD builders live in app/price-drops/_v3/ so the route file stays under the ci:file-size-budget floor."
   },
   "sectionOrder": [
-    "MetadataBlock",
-    "KbSectionTracker",
+    "V3SectionTracker + TrackSearchView + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "V3Field OR V3Quiet (empty window)",
-    "PriceDropAlertsSheet (V3Sheet, listing alerts)",
-    "V3Quiet (edges)",
+    "PriceDropsOpening -- the H1 and the count of homes that cut price",
+    "V3Field #cuts -- the reduced homes, each a door",
+    "V3SourceLine -- the trace and the stamp under the set",
+    "V3Quiet #answer -- what a price cut means here, in text, for the query",
+    "PriceDropAlertsSheet -- the ask: tell me when a home cuts price",
+    "V3Quiet #edges -- keep looking",
     "V3Footer"
-  ]
+  ],
+  "competitiveTarget": "Beat Zillow's and Redfin's price-cut filters on a page a search engine can actually rank. Their reductions live behind a filter state with no indexable URL; this is a standing page for 'price reductions bend oregon' and 'price drops central oregon' that publishes the cut homes themselves, each one a door, with the source trace and the refresh stamp under the set. The answer -- how many homes cut price and by how much -- is in text, not only in the list."
 }

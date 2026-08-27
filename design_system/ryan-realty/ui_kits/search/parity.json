@@ -51,5 +51,13 @@
     "Search-as-you-move: pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch",
     "Split body: map + results side-by-side on desktop; intentional mobile list/map toggle (not dual conflicting chrome)",
     "V3Chrome is sticky in flow, not fixed. Search-app-frame height is calc(100dvh - 3.5rem) with margin-top 0. Filter dock sticks at top 3.5rem."
+  ],
+  "sectionOrder": [
+    "APP FRAME, not a document. It renders no breadcrumb and no footer on purpose: the map/list split is viewport-fit.",
+    "SentenceSearch + SearchFilters -- the query surface",
+    "HideAwareSearchMap / MapSearchView -- search-as-you-move; pan/zoom re-queries the visible area",
+    "SearchResults -- the list, in lockstep with the markers from ONE viewport fetch",
+    "SearchAlertCapture -- save this search",
+    "ResultsStamp -- the count and the stamp"
   ]
 }

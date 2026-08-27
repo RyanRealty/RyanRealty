@@ -42,5 +42,12 @@
       "note": "ci:mockup-parity auto-satisfies a V3Chrome requiredComponent via layout. This page does not remount it."
     }
   ],
-  "deferredComponents": []
+  "deferredComponents": [],
+  "sectionOrder": [
+    "V3SectionTracker + MetadataBlock (not sections)",
+    "V3Breadcrumb",
+    "V3Heading + V3Quiet #compare-empty -- up to four homes",
+    "CompareClient -- the side-by-side table",
+    "V3Footer"
+  ]
 }

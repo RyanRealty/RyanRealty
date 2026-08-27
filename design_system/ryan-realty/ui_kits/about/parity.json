@@ -73,5 +73,15 @@
     "SmoothScrollProvider — Lenis + GSAP. v3 motion is CSS tokens.",
     "KbFooter — replaced by V3Footer outside <main>.",
     "kb-root and the kb.css import."
+  ],
+  "sectionOrder": [
+    "V3SectionTracker + MetadataBlock (not sections)",
+    "V3Breadcrumb",
+    "AboutFaces -- the three brokers, transparent PNGs, each a door to /team/[slug]",
+    "V3Quiet #about -- how it started, the concrete origin, zero marketing-speak",
+    "V3Instrument #record -- the verified record, with live city inventory behind it",
+    "V3Ledger #service-area -- where we work, each city a door",
+    "V3Quiet #faq -- working with Ryan Realty",
+    "V3Footer"
   ]
 }

@@ -81,5 +81,22 @@
     "RegionalSfrAlertsBand (same capture, V3Sheet markup via RegionalAlertSheet)",
     "MarketSources (Oregon Data Share citation is the Instrument source line plus a Quiet edge)",
     "HideChrome / SiteHeader / SiteFooter pairing on this route"
-  ]
+  ],
+  "sectionOrder": [
+    "V3SectionTracker + MetadataBlock (not sections)",
+    "V3Breadcrumb",
+    "V3Instrument #region-pulse -- the regional answer with its trace",
+    "V3Ledger #featured-cities -- pick a city, see what is listed (with live counts)",
+    "V3Quiet #city-doors -- every city, every door",
+    "V3Ledger #other-cities -- the rest of Central Oregon",
+    "RegionalAlertSheet -- the ask",
+    "V3Quiet #edges -- search every listing",
+    "V3Footer"
+  ],
+  "openDefects": {
+    "_": "Drafted 2026-08-27 against this page's own competitiveTarget.",
+    "items": [
+      "THREE SEPARATE CITY LISTS -- #featured-cities, #city-doors and #other-cities. The target for this page is 'a ledger of Central Oregon cities, NOT a link farm', and three overlapping lists of the same cities is the link farm it names. One ledger carrying every city with its live count is the page; the other two are the defect."
+    ]
+  }
 }

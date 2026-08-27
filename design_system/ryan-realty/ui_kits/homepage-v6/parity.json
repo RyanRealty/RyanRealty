@@ -134,5 +134,20 @@
       "Four asks stack at the bottom -- seller form, reviews, brokers, alert capture -- so the page ends in a run of pitches after the visitor has already scrolled past the houses.",
       "The hero carries no figure at all while the count line sits below it, so the first screen states no inventory number on a page whose head term is inventory."
     ]
-  }
+  },
+  "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH (Matt 2026-08-27). They publish inventory; they do not publish a local verdict, and they never show what produced a number. This page publishes both on one crawlable screen: the live Central Oregon active count and per-town medians, AND the buyer-or-seller answer with the trace and the stamp under it. The other Bend brokerages have the local credibility and static pages -- no live figures at all. So the edge is the intersection: the only Central Oregon homepage where the inventory is live, the market answer is stated in words, and both name the query that produced them. No aggregator publishes the trace under the number.",
+  "sectionOrder": [
+    "V3SectionTracker + analytics islands (not a section)",
+    "V3Stage (hero) -- the flyover clip, the H1 carrying the head term, ONE primary: See homes",
+    "HomeHomesField -- the houses and the map, with the live regional count as the caption",
+    "V3Ledger #towns -- each town's active count and median list price, and what they cost",
+    "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
+    "V3PlacePropertyTypes -- the eight enumerated property-type sections (SEE openDefects: this is search's job)",
+    "V3Ledger #communities -- resorts and master-planned communities",
+    "Sheet #sell -- the seller ask (SellValueForm)",
+    "V3Quiet #reviews -- Google reviews",
+    "AboutFaces -- the three brokers",
+    "HomeAlertSheet #alerts -- the alert capture",
+    "V3Footer"
+  ]
 }
