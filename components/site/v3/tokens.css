@@ -27,6 +27,20 @@
    1. TOKENS
    --------------------------------------------------------------------------- */
 
+/* THE TOKEN BLOCK LIVES AT THE DOCUMENT ROOT (Matt 2026-08-27).
+   It was scoped to `.v3`, which meant the four surfaces still on the KB
+   stylesheet could not see a single token: changing a value here changed 82
+   pages and left 4 behind, which is precisely the inconsistency Matt was
+   looking at. The block is pure custom properties (no paint), so hoisting it
+   to :root has no visual effect of its own -- it only makes the tokens
+   REACHABLE from kb.css and from the flat legacy components. The paint block
+   further down stays on `.v3`, and the Ledger re-declaration
+   (`.v3.v3--ledger, .v3--ledger .v3`, specificity 0,2,0) still outranks :root
+   (0,1,0), so the register switch is unchanged.
+
+   This is what makes a style change instantaneous and site-wide: ONE file,
+   118 pages. */
+:root,
 .v3 {
   /* -- Brand color. The only two-color palette; white is a legibility layer. -- */
   --v3-navy: #102742;
@@ -53,9 +67,17 @@
        section   2px navy     a section opening on content above it
        mast      4px navy     the site header's bottom rule, nothing else */
   --v3-hairline: rgba(16, 39, 66, 0.08);
-  --v3-rule-hairline: 1px solid var(--v3-hairline);
-  --v3-rule-section: 2px solid var(--v3-navy);
-  --v3-rule-mast: 4px solid var(--v3-navy);
+  /* The three rule WIDTHS are their own tokens (2026-08-27). The shorthands
+     below compose them. A consumer that can only set a border-width -- kb.css's
+     `--edge`, which is always paired with full-strength navy or cream -- reads
+     the width token directly, so changing rule weight here changes it on every
+     surface at once instead of on the 82 that mount `.v3`. */
+  --v3-rule-weight-hairline: 1px;
+  --v3-rule-weight-section: 2px;
+  --v3-rule-weight-mast: 4px;
+  --v3-rule-hairline: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
+  --v3-rule-section: var(--v3-rule-weight-section) solid var(--v3-navy);
+  --v3-rule-mast: var(--v3-rule-weight-mast) solid var(--v3-navy);
 
   /* Sunken panel (a chart card, a fact block). Broadside panels sit flush on
      the raised surface with a box edge; the Ledger register sinks them into a
@@ -357,8 +379,10 @@
 
   /* Rules: 3px navy sections and mast; hairlines drop to 6% alpha. */
   --v3-hairline: rgba(16, 39, 66, 0.06);
-  --v3-rule-section: 3px solid var(--v3-navy);
-  --v3-rule-mast: 3px solid var(--v3-navy);
+  --v3-rule-weight-section: 3px;
+  --v3-rule-weight-mast: 3px;
+  --v3-rule-section: var(--v3-rule-weight-section) solid var(--v3-navy);
+  --v3-rule-mast: var(--v3-rule-weight-mast) solid var(--v3-navy);
 
   /* Sunken panels: 3% navy wash inside a 12% edge. Still no shadow. */
   --v3-panel-bg: rgba(16, 39, 66, 0.03);
