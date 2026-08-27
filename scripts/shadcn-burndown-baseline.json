@@ -67,7 +67,7 @@
     "components/site/ListingCard.tsx",
     "components/site/MobileNav.tsx",
     "components/site/NewsletterSignup.tsx",
-    "components/site/PhotoGalleryLightbox.tsx",
+    "components/site/listing-detail/PhotoGalleryLightbox.tsx",
     "components/site/SmsConsentDisclosure.tsx",
     "components/site/VideoFeedClient.tsx",
     "components/site/golf/GolfCommunityCards.tsx",

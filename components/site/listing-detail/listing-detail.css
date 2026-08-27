@@ -18,7 +18,18 @@
   --navy-70: var(--v3-navy-70);
   --navy-12: var(--v3-edge);
   --navy-90: var(--v3-pressed);
+  /* Cream alpha stops for the navy market surface (.mkt). Same values kb.css
+     declared on .kb-root; the market section's ink contract is unchanged.
+     cream-40 is a divider value, never a text color (AA note in kb.css). */
+  --cream-70: rgba(250, 248, 244, 0.7);
+  --cream-40: rgba(250, 248, 244, 0.4);
+  --cream-muted: rgba(250, 248, 244, 0.6);
+  --cream-12: rgba(250, 248, 244, 0.12);
+  --cream-05: rgba(250, 248, 244, 0.05);
   --edge: 3px;
+  /* kb.css set 1.4 on .kb-root; the body components were authored against it.
+     The .v3 base sets its own leading, so restate the one this stack expects. */
+  line-height: 1.4;
   /* clip, not hidden: hidden makes this a scroll container and kills the
      sticky broker sidebar (the same defect kb-root already paid for). */
   overflow-x: clip;
@@ -26,6 +37,43 @@
 
 .listing-detail * {
   box-sizing: border-box;
+}
+
+/* UA reset in @layer base so Tailwind utilities keep winning (same shape as
+   kb.css's .kb-root reset — the body components were authored against it, and
+   without it every bare p/h2/dl/ul regains UA margins and the stack jumps). */
+@layer base {
+  .listing-detail * {
+    margin: 0;
+    padding: 0;
+  }
+  .listing-detail a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+.listing-detail ::selection {
+  background: var(--navy);
+  color: var(--cream);
+}
+
+.listing-detail img {
+  display: block;
+  max-width: 100%;
+}
+
+/* Anchor arrivals clear the sticky site chrome (60px header + breathing):
+   #listing-like-alerts-style jumps park the target heading under the mast
+   without this. scroll-margin only acts on anchor/scrollIntoView landings. */
+.listing-detail [id] {
+  scroll-margin-top: 76px;
+}
+
+.listing-detail .mono-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: -0.02em;
 }
 
 .listing-detail .display {
@@ -336,4 +384,403 @@
 }
 .listing-detail .kb-tool-skin table {
   font-variant-numeric: tabular-nums;
+}
+
+/* ===== Live market context (.mkt) — the navy market surface. Ported from
+   kb.css verbatim (values unchanged) when the page dropped kb-root: the
+   NeighborhoodMarketContext section and PublicProductTypes rows render these
+   classes and previously painted only under .kb-root. ===== */
+.listing-detail .mkt {
+  background: var(--navy);
+  color: var(--cream);
+  position: relative;
+  overflow: hidden;
+}
+.listing-detail .mkt .sec-head {
+  border-color: rgba(250, 248, 244, 0.28);
+}
+.listing-detail .mkt .wrap {
+  position: relative;
+  z-index: 1;
+}
+/* Shared cream label ink on the navy surface... */
+.listing-detail .mkt .mono-lab {
+  color: rgba(250, 248, 244, 0.62);
+}
+/* ...re-inked navy on the cream pricing ledger (HouseMeReport), where the
+   cream ink was invisible and every row label disappeared (375px QA
+   2026-08-26). Same label, navy. */
+.listing-detail .houseme-rows .mono-lab {
+  color: rgba(16, 39, 66, 0.62);
+}
+/* flex-wrap, not a fixed-column grid: only tiles with live values render, and
+   a grid reserves a ghost cell for every unfilled track. */
+.listing-detail .mkt-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  border: 1px solid rgba(250, 248, 244, 0.22);
+  margin: 30px 0 26px;
+}
+.listing-detail .mkt-kpi {
+  background: var(--navy);
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1 1 150px;
+}
+.listing-detail .mkt-kpi-val {
+  font-family: var(--font-amboqia-safe), serif;
+  font-weight: 400;
+  font-size: clamp(1.7rem, 4.4vw, 2.3rem);
+  line-height: 0.92;
+  color: var(--cream);
+  font-variant-numeric: tabular-nums;
+}
+.listing-detail .mkt-kpi-lbl {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-70);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+@layer base {
+  .listing-detail .mkt-fine a {
+    color: var(--cream);
+    text-underline-offset: 3px;
+  }
+}
+.listing-detail .mkt-fine {
+  margin-top: 20px;
+  font-size: 0.68rem;
+  color: var(--cream-70);
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  max-width: 60ch;
+}
+.listing-detail .mkt-panel {
+  border: 1px solid rgba(250, 248, 244, 0.22);
+  padding: 22px 22px 18px;
+  margin-bottom: 16px;
+  position: relative;
+}
+.listing-detail .mkt-phead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.listing-detail .mkt-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.listing-detail .mkt-bar .bhd {
+  display: flex;
+  justify-content: space-between;
+  gap: 0 16px;
+  font-size: 0.82rem;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+.listing-detail .mkt-bar .bhd b {
+  font-variant-numeric: tabular-nums;
+}
+/* Small screens: the two-column row collapses — the label column wrapped
+   mid-word against the stats column with zero gap ("154$119,750",
+   "manufactured·homes"). Stack: count+label line, then the stats line(s). */
+@media (max-width: 640px) {
+  .listing-detail .mkt-bar .bhd {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+}
+.listing-detail .mkt-bar .btrack {
+  height: 9px;
+  background: rgba(250, 248, 244, 0.16);
+  position: relative;
+  overflow: hidden;
+}
+.listing-detail .mkt-bar .bfill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  background: var(--cream);
+}
+.listing-detail .mkt-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.listing-detail .mkt-live .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cream);
+  box-shadow: 0 0 9px rgba(250, 248, 244, 0.9);
+  animation: ldMktBlink 1.4s ease-in-out infinite;
+}
+.listing-detail .mkt-live .txt {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+@keyframes ldMktBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* ===== Featured homes rail (.listings / .lst-*) — the asymmetric poster grid
+   under the listing body ("homes for sale in this area"). Ported from kb.css
+   verbatim for ListingFeaturedHomes.client.tsx. ===== */
+.listing-detail .listings {
+  background: var(--cream);
+  color: var(--navy);
+  padding-bottom: 54px;
+}
+.listing-detail .listings .sec-head {
+  border-color: var(--navy);
+}
+.listing-detail .lst-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding-top: 30px;
+}
+@media (min-width: 760px) {
+  .listing-detail .lst-grid {
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: minmax(0, auto);
+    gap: 18px;
+  }
+  /* repeating poster module: hero (full) · a pair (halves) · uniform thirds.
+     Items 4+ ALL span 2 so a row of thirds is never an orphan 1-col tile. */
+  .listing-detail .lst-grid .lst-card:nth-child(1) {
+    grid-column: span 6;
+  }
+  .listing-detail .lst-grid .lst-card:nth-child(2) {
+    grid-column: span 3;
+  }
+  .listing-detail .lst-grid .lst-card:nth-child(3) {
+    grid-column: span 3;
+  }
+  .listing-detail .lst-grid .lst-card:nth-child(n + 4) {
+    grid-column: span 2;
+  }
+}
+.listing-detail .lst-card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: var(--edge) solid var(--navy);
+  background: #0b1c30;
+  color: var(--cream);
+}
+/* navy base so a slow/failed photo or a buffering tour never flashes a black
+   rectangle — the brand-navy shows through instead (design-audit STA-3). */
+.listing-detail .lst-media {
+  position: relative;
+  overflow: hidden;
+  background: var(--navy);
+  aspect-ratio: 4/3;
+}
+.listing-detail .lst-grid .lst-card:nth-child(1) .lst-media {
+  aspect-ratio: 16/9;
+}
+.listing-detail .lst-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+.listing-detail .lst-card:hover .lst-img {
+  transform: scale(1.05);
+}
+.listing-detail .lst-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 30%, rgba(11, 28, 48, 0.86));
+  z-index: 2;
+}
+.listing-detail .lst-info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+.listing-detail .lst-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.55s ease;
+}
+.listing-detail .lst-card.playing .lst-video {
+  opacity: 1;
+}
+.listing-detail .lst-tour {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 4;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: var(--cream);
+  padding: 5px 9px;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(11, 28, 48, 0.28);
+}
+.listing-detail .lst-card:hover .lst-tour {
+  background: var(--navy);
+  color: var(--cream);
+}
+.listing-detail .lst-price {
+  font-family: var(--font-amboqia-safe), serif;
+  font-size: clamp(1.7rem, 6vw, 2.9rem);
+  line-height: 0.9;
+}
+.listing-detail .lst-addr {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-top: 7px;
+  letter-spacing: 0.01em;
+}
+.listing-detail .lst-addr .sub {
+  display: block;
+  font-weight: 500;
+  color: var(--cream-70);
+  font-size: 0.74rem;
+  margin-top: 3px;
+  letter-spacing: 0.04em;
+}
+.listing-detail .lst-specs {
+  text-align: right;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cream-70);
+  flex-shrink: 0;
+}
+.listing-detail .lst-specs span {
+  display: block;
+}
+.listing-detail .lst-foot {
+  display: flex;
+  justify-content: center;
+  padding-top: 34px;
+}
+
+/* ===== Section transitions — each section RISES into view as it enters, so
+   the cream/navy cuts read as intentional arrivals instead of an abrupt snap.
+   Pure CSS scroll-driven, gated on view-timeline support; the fallback is the
+   static (visible) section. Honors reduced-motion. NAVY .mkt sections rise
+   WITHOUT the opacity ramp: a navy surface fading in over cream reads as a
+   broken slate-gray block while it enters — on a 2000px+ market section that
+   gray wash held the screen for a whole viewport (mobile QA 2026-08-26). */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .listing-detail .section {
+      animation: ldSectionRise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 32%;
+    }
+    @keyframes ldSectionRise {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    .listing-detail .section.mkt {
+      animation-name: ldSectionRiseSolid;
+    }
+    @keyframes ldSectionRiseSolid {
+      from {
+        transform: translateY(30px);
+      }
+      to {
+        transform: none;
+      }
+    }
+  }
+}
+
+/* ===== Mobile ramp (≤760px) — kb.css's phone overrides that reached this
+   page's body. Same values, so 375px renders exactly as reviewed. ===== */
+@media (max-width: 760px) {
+  .listing-detail .wrap {
+    padding: 0 20px;
+  }
+  .listing-detail .sec-title {
+    font-size: 7.5vw !important;
+    line-height: 0.95;
+    overflow-wrap: anywhere;
+  }
+  .listing-detail .lst-price {
+    font-size: 8vw !important;
+  }
+}
+
+/* ===== Desktop density pass (≥1024px) — kb.css's 2026-07-30 measurement pass,
+   the slice that reached this page's body. Same values. ===== */
+@media (min-width: 1024px) {
+  .listing-detail .sec-head {
+    padding-top: 36px;
+    padding-bottom: 18px;
+  }
+  .listing-detail .sec-title {
+    font-size: clamp(1.9rem, 3.2vw, 2.875rem);
+  }
+  .listing-detail .listings {
+    padding-bottom: 40px;
+  }
+  .listing-detail .lst-grid {
+    padding-top: 22px;
+  }
+  /* Lead card 16/9 on a wide grid is a 739px tile; 2.7/1 holds it at 486px.
+     The half-width pair drops from 4/3 to 16/10 for the same reason. */
+  .listing-detail .lst-grid .lst-card:nth-child(1) .lst-media {
+    aspect-ratio: 2.7/1;
+  }
+  .listing-detail .lst-grid .lst-card:nth-child(2) .lst-media,
+  .listing-detail .lst-grid .lst-card:nth-child(3) .lst-media {
+    aspect-ratio: 16/10;
+  }
 }

@@ -73,7 +73,7 @@ const DEAD_FILES = [
   {
     path: 'components/site/listing-detail/PhotoGallery.tsx',
     reason:
-      'Superseded by components/site/PhotoGalleryLightbox.tsx (used by ListingHero). ' +
+      'Superseded by components/site/listing-detail/PhotoGalleryLightbox.tsx (used by ListingHero). ' +
       'Zero importers confirmed — no import statement references this path. ' +
       'Same hand-rolled overlay pattern identified in P1.25.',
   },

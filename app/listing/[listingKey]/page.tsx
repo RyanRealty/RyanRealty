@@ -13,9 +13,9 @@ import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
 import { getListingsByBuilder } from '@/lib/data/listings/getListingsByBuilder'
 import { findTrailsNear, findGolfNear } from '@/lib/explore/lifestyle-near'
-import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
-import { PlaceParentsSection } from '@/components/site/explore/PlaceParentsSection'
-import { BuilderExploreSection } from '@/components/site/explore/BuilderExploreSection'
+import { LifestyleNearSection } from '@/components/site/listing-detail/LifestyleNearSection'
+import { PlaceParentsSection } from '@/components/site/listing-detail/PlaceParentsSection'
+import { BuilderExploreSection } from '@/components/site/listing-detail/BuilderExploreSection'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -29,7 +29,6 @@ import { getListingPricingRead } from '@/lib/data/pricing/reads'
 import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { LivePricingRead } from '@/components/site/listing-detail/LivePricingRead'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import {
@@ -53,14 +52,14 @@ import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentityLine'
-import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
+import { ListingFeaturedHomes } from '@/components/site/listing-detail/ListingFeaturedHomes.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { leftoverListingGrains, resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
 import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
-import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
+import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/listing-detail/PhotoGalleryLightbox'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
 // Parity marker: rendered transitively via ListingBrokerCTA.client (the mobile
 // sticky broker bar), imported here under its real name so the mockup-parity
@@ -70,17 +69,24 @@ import ListingTracker from '@/components/listing/ListingTracker'
 import { ListingAttribution } from '@/components/listing/ListingAttribution'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { buildListingJsonLd } from './listing-json-ld'
-// KB (kinetic-brutalist) shell — Phase 9 page-class migration. Wraps the
-// existing listing-detail composition (ListingDetailShell + its parity-
-// required sections) in the same chrome the homepage/city/community pages
-// use: KbNav on top, KbFooter at the bottom, the cream `.kb-root` surface,
-// inertial smooth-scroll, and section/scroll tracking. The listing body is
-// RESTYLED IN PLACE — every data fetch, section, form, gallery, map,
-// calculator, JSON-LD, and the sticky broker sidebar are preserved exactly.
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
+// v3 chrome — the P9 roll's last page (B ratchet zero, 2026-08-27). The page
+// mounts V3_ROOT_CLASS + `.listing-detail` on one <main>: the v3 token layer
+// carries color/type, and listing-detail.css carries the listing body's own
+// register (the kb-era carriers were ported there, values unchanged). Chrome
+// is V3Breadcrumb + V3SectionTracker inside main and ONE V3Footer outside it;
+// app/layout.tsx owns the header (V3Chrome). The listing body is RESTYLED IN
+// PLACE — every data fetch, section, form, gallery, map, calculator, JSON-LD,
+// and the sticky broker sidebar are preserved exactly. Anchor jumps clear the
+// fixed mast via scroll-margin-top in listing-detail.css (the Lenis smooth
+// scroller did not survive: no other v3 page runs one, and native hash
+// scrolling honors the same scroll margin).
+import {
+  V3_ROOT_CLASS,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3SectionTracker,
+} from '@/components/site/v3'
 
 // Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
 void _PhotoGalleryLightboxImport
@@ -102,7 +108,7 @@ void ListingMobileContactBar
  *               · PropertyHistory · MortgageCalculator · RentalAnalysis
  *               · ListingAttribution (ODS §5-3)
  *   sidebar     ListingBrokerCTA (TextMattCTA + ListingMobileContactBar)
- *   full-width  KbFeatured - homes for sale in this area
+ *   full-width  ListingFeaturedHomes - homes for sale in this area
  *
  * Two sections were retired here 2026-07-30: VacationRentalPotential (no
  * nightly-rate, occupancy, or City of Bend STR-permit source exists) and
@@ -631,27 +637,27 @@ export default async function ListingDetailPage({ params }: PageProps) {
   })
 
   return (
-    <main className="kb-root">
-      <MetadataBlock schemas={listingJsonLdSchemas} />
-      <ListingTracker
-        listingKey={listing.listingKey}
-        listingId={contactKey}
-        price={listing.listPrice ?? undefined}
-        community={listing.communityName ?? listing.subdivisionName ?? undefined}
-        city={listing.city ?? undefined}
-        beds={listing.beds ?? undefined}
-        baths={listing.baths ?? undefined}
-      />
-      <KbSectionTracker />
-      <SmoothScrollProvider>
-        <KbBreadcrumb trail={breadcrumbs} />
+    <>
+      <main className={`${V3_ROOT_CLASS} listing-detail`}>
+        <MetadataBlock schemas={listingJsonLdSchemas} />
+        <ListingTracker
+          listingKey={listing.listingKey}
+          listingId={contactKey}
+          price={listing.listPrice ?? undefined}
+          community={listing.communityName ?? listing.subdivisionName ?? undefined}
+          city={listing.city ?? undefined}
+          beds={listing.beds ?? undefined}
+          baths={listing.baths ?? undefined}
+        />
+        <V3SectionTracker />
+        <V3Breadcrumb trail={breadcrumbs} />
         <ListingDetailShell
           hero={hero}
           main={main}
           sidebar={sidebar}
         />
         {featuredItems.length > 0 ? (
-          <KbFeatured
+          <ListingFeaturedHomes
             items={featuredItems}
             eyebrow={`${featuredGeoName} · For sale`}
             viewAllHref={featuredViewAllHref}
@@ -667,8 +673,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
         {listing.builderName && builderTiles.length > 0 ? (
           <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
         ) : null}
-        <KbFooter towns={[]} listingKey={contactKey} />
-      </SmoothScrollProvider>
-    </main>
+      </main>
+      {/* The tour and ask that KbFooter's listing band carried live on
+          PriceCtaStrip, the broker sidebar, and the mobile bar; V3Footer
+          carries the ODS attribution slot and no button. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

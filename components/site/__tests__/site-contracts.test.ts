@@ -85,7 +85,7 @@ describe('design directive contracts', () => {
   })
 
   it('D75 — PhotoGalleryLightbox primitive exists with the four nav features', () => {
-    const src = readSrc('components/site/PhotoGalleryLightbox.tsx')
+    const src = readSrc('components/site/listing-detail/PhotoGalleryLightbox.tsx')
     expect(src).toMatch(/thumbnail/i)
     expect(src).toMatch(/onTouchStart/)
     expect(src).toMatch(/ArrowRight/)
@@ -137,9 +137,12 @@ describe('design directive contracts', () => {
 
   it('listing-detail chrome: one main, JSON-LD and capture stay', () => {
     const src = readSrc('app/listing/[listingKey]/page.tsx')
-    expect(src).toMatch(/className="kb-root"/)
-    expect(src).toMatch(/<KbFooter\b/)
-    expect(src).toMatch(/<KbBreadcrumb\b/)
+    // v3 chrome (P9 roll, 2026-08-27): one main mounting the v3 token scope
+    // plus the listing register, one V3Footer outside it, no kb chrome left.
+    expect(src).toMatch(/V3_ROOT_CLASS\}? listing-detail/)
+    expect(src).toMatch(/<V3Footer\b/)
+    expect(src).toMatch(/<V3Breadcrumb\b/)
+    expect(src).not.toMatch(/kb-root|<KbFooter\b|<KbBreadcrumb\b|<KbSectionTracker\b|SmoothScrollProvider/)
     expect(src).toMatch(/<MetadataBlock\b/)
     // The schema array moved to the sibling builder when the page hit its
     // file-size budget (2026-08-19). Same two payloads, same MetadataBlock.
@@ -147,10 +150,11 @@ describe('design directive contracts', () => {
     const ld = readSrc('app/listing/[listingKey]/listing-json-ld.ts')
     expect(ld).toMatch(/type:\s*'realEstateListing'/)
     expect(ld).toMatch(/type:\s*'breadcrumb'/)
-    expect(src).toMatch(/<KbSectionTracker[\s/>]/)
+    expect(src).toMatch(/<V3SectionTracker[\s/>]/)
     expect(src).toMatch(/<ListingLikeThisAlerts\b/)
     expect(src).toMatch(/<PriceCtaStrip\b/)
     expect(src).toMatch(/<LivePricingRead\b/)
+    // The header stays layout-owned (app/layout.tsx mounts V3Chrome once).
     expect(src).not.toMatch(/<V3Chrome\b/)
   })
 

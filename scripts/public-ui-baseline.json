@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 81,
-    "legacyPages": 1,
-    "mixedPages": 53
+    "nonV3ImportSites": 71,
+    "legacyPages": 0,
+    "mixedPages": 54
   },
   "frozenNoindexLps": [
     "app/lp/tetherow/heath/page.tsx"
@@ -292,9 +292,8 @@
       "v3": 1
     },
     "app/listing/[listingKey]/page.tsx": {
-      "explore": 3,
-      "kb": 6,
-      "legacy": 2
+      "legacy": 1,
+      "v3": 1
     },
     "app/lp/tetherow/heath/page.tsx": {
       "legacy": 1,

@@ -55,7 +55,7 @@
     "components/site/ListingCard.tsx": 1,
     "components/site/MarketSnapshot.tsx": 1,
     "components/site/MobileNav.tsx": 2,
-    "components/site/PhotoGalleryLightbox.tsx": 2,
+    "components/site/listing-detail/PhotoGalleryLightbox.tsx": 2,
     "components/site/SiteFooter.tsx": 2,
     "components/site/SiteHeader.tsx": 2,
     "components/site/SmsConsentDisclosure.tsx": 1,

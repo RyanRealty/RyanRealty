@@ -6,7 +6,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import type { ListingPhoto } from '@/lib/data/types/listing'
 import type { VideoEmbed } from '@/lib/data/types/video'
-import { PhotoGalleryLightbox } from '@/components/site/PhotoGalleryLightbox'
+import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
 import { Button } from '@/components/ui/button'
 import { buildListingHeroStaticMapUrl } from '@/lib/listing-hero-static-map'
 import {
