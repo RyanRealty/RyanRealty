@@ -37,6 +37,13 @@ example_outputs:
     path: app/lp/bend/page.tsx
 ---
 
+> **Design system, corrected 2026-08-27.** The public site runs ONE register:
+> `components/site/v3`, whose look lives entirely in `components/site/v3/tokens.css`.
+> Brand color is applied as `bg-navy` / `text-cream`, never a literal hex, and never
+> `bg-background`, which resolves to pure WHITE. The pattern set is OPEN: build a new
+> barrel primitive if a section needs one. Enforced by `ci:one-design-system`.
+
+
 # STOP - UNUSED / DO NOT DISPATCH
 
 Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
@@ -282,7 +289,7 @@ Page structure (rich, similar to community page):
 18. **Footer** with the resort + community pages list (linking to all 14+)
 19. **JSON-LD** City + RealEstateAgent
 
-Design system: Web register, shadcn/ui only. Hero is the canonical 4K aerial.
+Design system: the v3 barrel (components/site/v3). shadcn/ui is for admin surfaces, not public pages. Hero is the canonical 4K aerial.
 
 **Step 9.** TypeScript compile, sitemap update (priority 0.9), branch + commit + PR.
 

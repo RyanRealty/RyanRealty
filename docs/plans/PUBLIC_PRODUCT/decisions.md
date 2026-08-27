@@ -714,26 +714,6 @@ voice, §0, PRODUCT.md. Public look is Matt keep/kill on real pages.
 
 Do not invent a replacement rubric in the same delivery.
 
-## 2026-08-15 — Ban new UI components (Matt) — SUPERSEDED 2026-08-27
-
-**Superseded by the entry of 2026-08-27 below ("the pattern set is OPEN").** The
-half of this rule that was right — no page-local one-off that draws its own look —
-survives and is now gated by `ci:one-design-system`. The half that was wrong —
-"six patterns, no seventh" — is dead. Read the 2026-08-27 entry, not this one.
-
-The original text, kept because it is what was acted on for twelve days:
-
-> The public shop does not grow a new component for a new job. Six patterns.
-> No seventh. No arrival island, no sentence widget, no comms card as a new
-> surface. Wire the job into Field / Instrument / Ledger / Stage / Sheet /
-> Quiet, or into the search and auth that already exist. A new
-> `components/**/*.tsx` that draws its own chrome is a lock break.
-
-Leftover files that already shipped against this (`SentenceSearch.tsx`,
-`GoogleCommsCard.tsx`) do not license a next one. ArrivalIntent.client.tsx
-was deleted 2026-08-17 (Matt CHANGE / R-218) — do not recreate it.
-Do not migrate orphan charts onto V3Chart just to keep a component alive.
-
 ## 2026-08-14 — Visual lock amendment: one shop, five place rhythms (Matt)
 
 Matt asked to move the lock, the rubric, and the page-grade skill in that order.

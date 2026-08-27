@@ -37,6 +37,13 @@ example_outputs:
     path: public/lp/tetherow/index.html
 ---
 
+> **Design system, corrected 2026-08-27.** The public site runs ONE register:
+> `components/site/v3`, whose look lives entirely in `components/site/v3/tokens.css`.
+> Brand color is applied as `bg-navy` / `text-cream`, never a literal hex, and never
+> `bg-background`, which resolves to pure WHITE. The pattern set is OPEN: build a new
+> barrel primitive if a section needs one. Enforced by `ci:one-design-system`.
+
+
 # STOP - UNUSED / DO NOT DISPATCH
 
 Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
@@ -194,7 +201,7 @@ In order:
 1. `CLAUDE.md` §0 --EMDASH-- Data Accuracy mandate (every figure traces to live Supabase)
 2. `CLAUDE.md` §0.5 --EMDASH-- Draft-First, Commit-Last (open PR, never push to main directly)
 3. `CLAUDE.md` "Design System Rules: MANDATORY" --EMDASH-- shadcn/ui only
-4. `CLAUDE.md` "Design System v2: Heritage + Web Registers" --EMDASH-- Web register
+4. `CLAUDE.md` section 3. PUBLIC PAGES ARE THE v3 BARREL (components/site/v3), not the shadcn web register
 5. `design_system/ryan-realty/SKILL.md` --EMDASH-- color tokens, type families, shadow ladder, radii
 6. `design_system/ryan-realty/colors_and_type.css` --EMDASH-- CSS variable definitions
 7. `marketing_brain_skills/brand-voice/VOICE.md` --EMDASH-- voice enforcement (the hard fail list)
@@ -516,15 +523,15 @@ Critical sections of the page:
     sticky CTA, listing-showing click handlers, dynamic-date injection
     fallback (server-render handles primary).
 
-Design system rules (Web register):
+Design system rules (the v3 barrel):
 
-- `bg-background` for page background (cream `#faf8f4`)
-- `bg-primary text-primary-foreground` for CTAs (navy `#102742`)
+- `bg-cream` for page background (reads the token, never a literal hex)
+- `bg-navy text-cream` for CTAs (reads the tokens, never a literal hex)
 - All containers use `<Card>` from `@/components/ui/card` --EMDASH-- no raw divs
 - `font-display` class (Playfair Display) for hero H1, section H2s --EMDASH-- sentence case body, Title Case only the hero
 - Geist for everything else
 - Radii: `rounded-xl` (14px) for cards, `rounded-lg` (10px) for buttons
-- No gold. No off-brand hex. No custom CSS classes outside shadcn/ui token system.
+- No gold. No off-brand hex. A section that fits no existing pattern BUILDS a new barrel primitive in components/site/v3 that reads tokens.css. There is no cap on how many patterns a page uses; the only rhythm rule is that no two adjacent sections share one..
 - Shadows: `shadow-sm` resting, `shadow-md` hover.
 
 Hero asset: from `resort-communities.json` row's `hero_image` field, mirrored

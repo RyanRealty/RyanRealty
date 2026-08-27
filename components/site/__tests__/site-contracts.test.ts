@@ -41,7 +41,7 @@ function walkTs(dir: string, out: string[] = []): string[] {
  *
  * A design directive binds the ROUTE, not one file inside it. ci:file-size-budget
  * refuses any file under app/ or lib/ at 600 lines and its instruction is to split
- * into `app/<route>/_v3/` rather than re-baseline (migration-recipe.md section 5.1),
+ * into `app/<route>/_v3/` rather than re-baseline (PUBLIC_UI.md §3),
  * so a directive asserted against `page.tsx` alone goes red on a sanctioned split —
  * and, the moment someone "fixes" it by narrowing the path, stops asserting the
  * directive at all. app/cities/[slug] moved the designated-Bend-district derivation
@@ -63,10 +63,15 @@ function readRouteSrc(routeDir: string): string {
 
 describe('design directive contracts', () => {
   it('D74 — primary nav renders at 15px', () => {
-    // Nav triggers moved from SiteHeader into the MegaMenu client component
-    // (editorial mega-menu redesign, 2026-06-03). The 15px directive is unchanged.
-    const src = readSrc('components/site/nav/MegaMenu.tsx')
-    expect(src).toMatch(/text-\[15px\]/)
+    // RE-POINTED 2026-08-27. This asserted `text-[15px]` on MegaMenu.tsx, which was
+    // mounted by the deleted SiteHeader — so it read a component no page rendered
+    // and passed while the LIVE nav (V3Chrome) ran 0.9rem = 14.4px. The directive
+    // had been silently violated since the chrome moved to the barrel. It is a
+    // named token now, so it moves with a style template.
+    const tokens = readSrc('components/site/v3/tokens.css')
+    expect(tokens).toMatch(/--v3-size-nav:\s*0\.9375rem/)   // 15px at a 16px root
+    const chrome = readSrc('components/site/v3/V3Chrome.css')
+    expect(chrome).toMatch(/\.v3-chrome__group-link[\s\S]{0,400}?font-size: var\(--v3-size-nav\)/)
   })
 
   it('D74 — design-system mockup CSS sets nav font to 15px', () => {

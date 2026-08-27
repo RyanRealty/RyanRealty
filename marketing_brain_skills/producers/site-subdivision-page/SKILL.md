@@ -36,6 +36,13 @@ example_outputs:
     path: app/lp/tetherow/heath/page.tsx
 ---
 
+> **Design system, corrected 2026-08-27.** The public site runs ONE register:
+> `components/site/v3`, whose look lives entirely in `components/site/v3/tokens.css`.
+> Brand color is applied as `bg-navy` / `text-cream`, never a literal hex, and never
+> `bg-background`, which resolves to pure WHITE. The pattern set is OPEN: build a new
+> barrel primitive if a section needs one. Enforced by `ci:one-design-system`.
+
+
 # STOP - UNUSED / DO NOT DISPATCH
 
 Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
@@ -306,7 +313,7 @@ Page structure (lighter than the parent community page):
 15. **Methodology** footer
 16. **JSON-LD** Place (containedInPlace = parent community) + RealEstateAgent
 
-Design system: identical to parent community page (Web register, shadcn/ui only).
+Design system: identical to the parent community page (the v3 barrel, components/site/v3).
 
 **Step 10.** Update sitemap with `priority: 0.7`, `changeFrequency: 'daily'`.
 

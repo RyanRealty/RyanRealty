@@ -7,7 +7,7 @@
  * office photo) then Ledger then Sheet then Quiet. Chrome: layout mounts
  * V3Chrome. V3Footer outside <main>.
  *
- * Dual objectives in page-inventory.json. Capture is
+ * Dual objectives in the IA lock. Capture is
  * submitInboundAgentReferral. No outbound to the client or the sending agent.
  */
 

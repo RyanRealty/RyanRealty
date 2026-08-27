@@ -1672,17 +1672,4 @@
   .v6-sell-grid { grid-template-columns: 1fr; gap: 28px; }
 }
 
-/* Dual-chrome kill (2026-08-10): root layout mounts PublicNav → KbNav only;
-   SiteHeader is NOT in layout. [data-default-chrome] still marks SiteHeader /
-   SiteFooter components if they appear on a route (e.g. SiteFooter on login).
-   This CSS keeps any default-chrome node off pages that own a .kb-root shell
-   (KbFooter + body; nav is global).
 
-   SCOPING (fix 2026-07-11): the selector must match ONLY a .kb-root inside the
-   CURRENT page's #main-content. React streaming leaves a stale duplicate
-   .kb-root under an out-of-tree Suspense boundary (#S:0) after a soft-nav from
-   the homepage; a bare `body:has(.kb-root)` matched that stale node and hid the
-   header on the DESTINATION page (e.g. search → 0 headers). Every page renders
-   its content inside #main-content, so `#main-content .kb-root` tracks the live
-   route and ignores the orphaned streaming copy. */
-body:has(#main-content .kb-root) [data-default-chrome] { display: none !important; }

@@ -40,6 +40,13 @@ example_outputs:
     surface: website
 ---
 
+> **Design system, corrected 2026-08-27.** The public site runs ONE register:
+> `components/site/v3`, whose look lives entirely in `components/site/v3/tokens.css`.
+> Brand color is applied as `bg-navy` / `text-cream`, never a literal hex, and never
+> `bg-background`, which resolves to pure WHITE. The pattern set is OPEN: build a new
+> barrel primitive if a section needs one. Enforced by `ci:one-design-system`.
+
+
 # STOP - UNUSED / DO NOT DISPATCH
 
 Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
@@ -262,7 +269,7 @@ Page structure:
 14. **Methodology footer** --EMDASH-- data sources, refresh cadence ("ISR 1h"), MLS attribution
 15. **JSON-LD** `RealEstateListing` schema with full property facts; `RealEstateAgent` for the listing agent (our agent OR the OPM listing agent per IDX rules)
 
-Design system: Web register (shadcn/ui only). Navy on cream. Photo gallery uses shadcn `<Dialog>` for the lightbox.
+Design system: the v3 barrel (components/site/v3). Navy on cream, via bg-navy / text-cream. Photo gallery uses shadcn `<Dialog>` for the lightbox.
 
 For status='Closed' listings: render an "ARCHIVED" banner at top: "This home sold for $X on <date>. Currently archived. See current Tetherow listings →"
 

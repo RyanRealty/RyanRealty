@@ -22,6 +22,13 @@ example_outputs: []
     surface: "agentfire_blog"
 ---
 
+> **Design system, corrected 2026-08-27.** The public site runs ONE register:
+> `components/site/v3`, whose look lives entirely in `components/site/v3/tokens.css`.
+> Brand color is applied as `bg-navy` / `text-cream`, never a literal hex, and never
+> `bg-background`, which resolves to pure WHITE. The pattern set is OPEN: build a new
+> barrel primitive if a section needs one. Enforced by `ci:one-design-system`.
+
+
 # Site Page Create Producer
 
 **Scope:** Creates brand-new Next.js route files that do not yet exist in the
@@ -240,12 +247,12 @@ export default async function <PageName>Page() {
 }
 ```
 
-**Design system rules for new pages (Web register):**
-- Background: `bg-background` (maps to cream `#faf8f4` via CSS var)
+**Design system rules for new public pages (the v3 barrel):**
+- Background: `bg-cream` (reads --v3-cream from components/site/v3/tokens.css)
 - Primary action buttons: `<Button>` with `variant="default"` (`bg-primary text-primary-foreground`)
 - Card containers: `<Card>` from `@/components/ui/card`.  never raw `<div className="rounded...">`
 - H1 / hero headline: Amboqia Boriango.  apply via `font-display` class or inline style using the CSS var
-  `--font-display` from `design_system/ryan-realty/colors_and_type.css`. Only the hero H1 uses Amboqia.
+  `--v3-font-display` from `components/site/v3/tokens.css`. Only the hero H1 uses Amboqia.
 - All other text: Geist (default font-sans.  already loaded via `next/font/geist` in `app/layout.tsx`)
 - Navy primary: `text-primary` or `bg-primary`.  never `text-[#102742]` or `bg-[#102742]`
 - No gold anywhere. Gold is removed from v2 system.

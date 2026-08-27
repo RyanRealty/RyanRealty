@@ -3,7 +3,7 @@
  *
  * WHY IT IS HERE AND NOT IN THE ROUTE FILE. ci:file-size-budget refuses any file under
  * app/ or lib/ at 600 lines and its instruction is to split rather than re-baseline
- * (migration-recipe.md section 5.1). The resort wiring stays in page.tsx on purpose:
+ * (PUBLIC_UI.md §3). The resort wiring stays in page.tsx on purpose:
  * ci:resort-definitions reads that one file for `resortActiveSfrCounts(slug,
  * resortTiles)`, `fetchAllCityActiveSfr`, `cityResorts(slug)` and `RESORT_IMG[`, and a
  * gate that stops finding its tokens stops protecting without saying so. Nothing below

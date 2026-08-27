@@ -101,7 +101,7 @@
   min-height: var(--v3-tap);
   padding: 0 var(--v3-space-3xs) 0 var(--v3-space-xs);
   color: var(--v3-ink);
-  font-size: var(--v3-size-body-sm);
+  font-size: var(--v3-size-nav);
   font-weight: var(--v3-weight-medium);
   text-decoration: underline;
   text-decoration-color: transparent;
@@ -205,7 +205,7 @@
   padding: 0 var(--v3-space-sm);
   border-radius: var(--v3-radius-sm);
   color: var(--v3-ink);
-  font-size: var(--v3-size-body-sm);
+  font-size: var(--v3-size-nav);
   line-height: var(--v3-leading-control);
   text-decoration: none;
   transition: background var(--v3-dur-state) var(--v3-ease-out);

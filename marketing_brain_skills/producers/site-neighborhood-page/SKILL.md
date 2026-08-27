@@ -22,6 +22,13 @@ example_outputs: []
 
 ---
 
+> **Design system, corrected 2026-08-27.** The public site runs ONE register:
+> `components/site/v3`, whose look lives entirely in `components/site/v3/tokens.css`.
+> Brand color is applied as `bg-navy` / `text-cream`, never a literal hex, and never
+> `bg-background`, which resolves to pure WHITE. The pattern set is OPEN: build a new
+> barrel primitive if a section needs one. Enforced by `ci:one-design-system`.
+
+
 # STOP - UNUSED / DO NOT DISPATCH
 
 Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
@@ -274,8 +281,8 @@ Page section order:
 7. Lead-capture form: `<Card>` wrapper, shadcn/ui `<Input>`, `<Textarea>`, `<Label>`, `<Button>` wired to `lead-capture.ts`.
 8. Adjacent neighborhoods: 2-3 links to sibling neighborhood pages.
 
-Design system rules (Web register):
-- `bg-background` for page background (cream `#faf8f4`)
+Design system rules (the v3 barrel):
+- `bg-cream` for page background (reads the token, never a literal hex)
 - `bg-primary text-primary-foreground` for CTAs (navy)
 - `<Card>`, `<CardContent>` for all containers. No raw divs.
 - `font-display` class for hero H1 (Amboqia Boriango). All other text Geist.

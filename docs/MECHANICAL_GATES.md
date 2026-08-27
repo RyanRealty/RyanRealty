@@ -109,7 +109,6 @@ keeps being violated, the answer is a new gate, not more prose.
 | **G-broker-own-book** | **Own-book fail-closed + day-one** — `scopeBroker` never returns null for a non-superuser (unmapped → `UNMAPPED_OWN_BOOK`). `getCrmAccess` resolves slug from `brokers.crm_slug` (not only `CRM_BROKER_BY_EMAIL`). Today / People / Messages use `scopeBroker`. `content.marketing` includes broker. Day-one checklist is the closed six-item set. Founding case: D17 fail-open + empty marketing arrays left CAP-022 at Skeleton. | `scripts/check-broker-own-book.mjs` (`ci:broker-own-book`, in `ci:gates`) | THE LOOP G5 / R-198 / CAP-022 |
 | **G-westside-backlog** | **Westside backlog dispositions + luxury money links + review-ask drafts** — every `WESTSIDE_BACKLOG.md` ranked row carries SHIPPED/CLOSED/DONE/GATED/RE-RANKED/DEFERRED. `/luxury-homes-bend` is linked from nav, city rail, Bend `/cities` row, and `/communities`. Deal close stages a `crm_message_drafts` review-ask with `GBP_REVIEW_URL` and never sends. | `scripts/check-westside-backlog.mjs` (`ci:westside-backlog`, in `ci:gates`) | THE LOOP G7 / CAP-030 / R-124 / R-125 / R-150 |
 | **G-skyslope-mirror** | **SkySlope recon mirror stays inbound and scheduled** — `/api/cron/skyslope-mirror-refresh` is registered, calls `refreshSkySlopeMirrorInbound`, and the Files client allowlists GET + login POST only (no PUT/PATCH/DELETE). Closings + the packet read `getSkySlopeMirrorFreshness`. Heartbeat `evalSkySlopeMirror` fails red after 36h. Founding case: mirror `synced_at` sat at 2026-06-10 because refresh was a Mac-only script. | `scripts/check-skyslope-mirror.mjs` (`ci:skyslope-mirror`, in `ci:gates`) | THE LOOP G8 / INT-017 |
-| **G-look-walk** | **Look-walk baselines stay recorded** — `docs/plans/ENTERPRISE_MAP/look-walk-baseline.json` has the PAGE-GRADE `beat_on` public set at 390+1280 (HTTP 200 + a job noun) and a graded CMA (slug, verdict, page count). Scoreboard `collectCompanyScoreboardSignals` reads that file for CMA look + public-ux walk. Packet §1b cannot say those are UNKNOWN. Founding case: packet wrote UNKNOWN because the probe only counted `cmas` rows. | `scripts/check-look-walk.mjs` (`ci:look-walk`, in `ci:gates`) | THE LOOP G9 / R-092 / packet §1b |
 | **G-meta-audience-hold** | **Meta audience hold is a named DAL** — `readMetaAudienceHold` / `computeAudienceHold` count consecutive UTC `meta_audience_log.ran_at` days. KEEP is off until 7 consecutive days end on or after 2026-08-22. Daily freshness is 36h (both crons are daily). Packet, `/admin/audiences`, `/admin/analytics/meta-health`, and `evalMetaAudienceHold` read that DAL. Founding case: INTEGRATIONS still said last LIVE 2026-06-23 while the log had weeks of daily rows, and the westside probe used an 8-day weekly hide. | `scripts/check-meta-audience-hold.mjs` (`ci:meta-audience-hold`, in `ci:gates`) | THE LOOP G11 / INT-007 |
 | **G-join-conversion** | **/join convert stays a named figure** — `getJoinConversionStats` reads `visitor_events` (path `/join` visits + `event_type=join_convert`). Contact form `Join the team` writes the convert and tags `recruit:join` without buyer enroll. Scoreboard `join` + `/admin/today` + the packet cite that DAL. Packet cannot write `/join` UNKNOWN. Founding case: recruit-retain had broker count only. | `scripts/check-join-conversion.mjs` (`ci:join-conversion`, in `ci:gates`) | THE LOOP G10 / R-201 / packet recruit-retain |
 | **G-video-docket** | **CAP-017 park-or-rebuild docket stays costed** — `readVideoDecisionDocket` reads `docs/plans/ENTERPRISE_MAP/video-decision-docket.json`. Park incremental vendor is $0. Rebuild cites ElevenLabs Turbo $0.05/1k and the $5/row $15/run producer cap. Packet + `/admin/loop` + scoreboard `video` read that DAL. Decision stays pending until M3. Founding case: CAP-017 sat at maturity 2 with no costed choice for Matt. | `scripts/check-video-docket.mjs` (`ci:video-docket`, in `ci:gates`) | THE LOOP G12 / CAP-017 / R-045 / M3 |
@@ -262,12 +261,9 @@ Done. No prose update to CLAUDE.md needed — the gate is the rule.
 ### Known G-number drift (do not copy the pattern)
 
 The table above is authoritative, but several gate scripts' header comments claim a G-number
-the table assigns to a different gate: `check-kb-page-contract.mjs` claims **G52**, which the
 table has no row for at all, and the same collision runs through `check-hydration-safety.mjs`
 (G37), `check-csp.mjs` (G38), `check-db-timeout-guard.mjs` (G39), `check-shadcn-burndown.mjs`
 (G47), `check-tracking-policy.mjs` (G48), `check-crm-lead-integrity.mjs` (G49),
-`check-kb-single-source.mjs` (G50), `check-kb-overlay-hidden.mjs` (G51),
-`check-kb-shared-shell.mjs` + `check-resort-definitions.mjs` (both G53). The table itself also
 carries **two G16 rows** (`check-valuation-engine.mjs` and `check-data-access.mjs`). Numbers
 were handed out from script headers instead of from this table, twice, in parallel sessions.
 `check-private-key-parity.mjs` shows the fix: it was renumbered to G60 with the note
@@ -300,3 +296,14 @@ The same intent is now carried, more strictly, by three gates that ARE on the ch
 | the look lives in one place | `ci:admin-v2-tokens` — every colour through `var(--a-*)`, no hex, no Tailwind palette, no brand leak; plus `ci:admin-responsive` |
 
 `ci:gates-wired` counts 211 gate files with 0 running nowhere after the deletion.
+
+## One design system (added 2026-08-27)
+
+| Gate | npm | What it fails on |
+|---|---|---|
+| `check-one-design-system.mjs` | `ci:one-design-system` | a new component family under `components/site/`; a stylesheet declaring brand color or an elevation shadow in raw values; a brand hex or `rgba(16,39,66,…)` typed into a public component; any elevation shadow. It does NOT count patterns — the pattern set is open, and a new pattern built as a barrel primitive passes. |
+| `check-chrome-single-source.mjs` | `ci:chrome-single-source` | a public surface mounting any site footer other than `V3Footer`; a public surface mounting a site nav at all; `app/layout.tsx` not mounting `V3Chrome` exactly once; a NEW component under `components/site/**` that renders a `<footer>` landmark. |
+
+These replace the six deleted `check-kb-*.mjs` gates, which policed a register that no
+longer exists, and `check-look-walk.mjs`, which was the scoreboard for the killed
+page-grade program.

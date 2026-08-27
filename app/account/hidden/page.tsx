@@ -3,7 +3,7 @@
  *
  * Saved is an affordance, not a sixth marketing destination. No Stage, no
  * Instrument, no capture Sheet, no invented homepage. Dual objectives
- * (page-inventory.json): visitor: review hidden homes and un-hide any.
+ *: visitor: review hidden homes and un-hide any.
  * machine: keep search results honest to expressed taste. Exits: listing
  * detail, /homes-for-sale.
  *

@@ -17,15 +17,10 @@
   --cream: var(--v3-cream);
   --navy-70: var(--v3-navy-70);
   --navy-12: var(--v3-edge);
-  --navy-90: var(--v3-pressed);
   /* Cream alpha stops for the navy market surface (.mkt). Same values kb.css
      declared on .kb-root; the market section's ink contract is unchanged.
      cream-40 is a divider value, never a text color (AA note in kb.css). */
   --cream-70: color-mix(in srgb, var(--v3-cream) 70%, transparent);
-  --cream-40: color-mix(in srgb, var(--v3-cream) 40%, transparent);
-  --cream-muted: color-mix(in srgb, var(--v3-cream) 60%, transparent);
-  --cream-12: color-mix(in srgb, var(--v3-cream) 12%, transparent);
-  --cream-05: color-mix(in srgb, var(--v3-cream) 5%, transparent);
   --edge: 3px;
   /* kb.css set 1.4 on .kb-root; the body components were authored against it.
      The .v3 base sets its own leading, so restate the one this stack expects. */

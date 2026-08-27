@@ -180,20 +180,28 @@ never hand-maintained.
 
 ---
 
-# §3. Design System (v2, locked 2026-05-12)
+# §3. Design System
+
+**THE PUBLIC SITE HAS ONE DESIGN SYSTEM (2026-08-27).** `components/site/v3` is the only
+register, and its look lives entirely in
+[`components/site/v3/tokens.css`](components/site/v3/tokens.css) on `:root`. One file, 118
+pages: change a value there and every public page moves, charts and scrims included. Brand
+color is applied as `bg-navy` / `text-cream` (Tailwind theme colors reading those tokens),
+never a literal hex. The spec is
+[`design_system/public/PUBLIC_UI.md`](design_system/public/PUBLIC_UI.md); the pattern set is
+OPEN (build a new barrel primitive when a section needs one) and the only rhythm rule is that
+no two adjacent sections share a pattern. Held by `ci:one-design-system` and
+`ci:chrome-single-source`. The KB register, the legacy chrome, and the per-surface mockups
+were deleted 2026-08-27.
+
+**Everything below governs PRINT, SOCIAL and EMAIL artifacts, plus admin/product surfaces.**
+It is not the public site's look.
 
 **Canonical source: [`design_system/ryan-realty/`](design_system/ryan-realty/).** Read order:
 [`MANIFEST.md`](design_system/ryan-realty/MANIFEST.md) →
 [`SKILL.md`](design_system/ryan-realty/SKILL.md) →
 [`colors_and_type.css`](design_system/ryan-realty/colors_and_type.css). Never invent colors,
 fonts, or asset paths from memory — open the source.
-
-**The codebase is the source of truth, not the Claude Design project** (flipped 2026-05-14).
-The design project at `b87a4e11-1017-4fb5-bc82-ed8fec1ec568` is a previewer + prototyping
-surface. Codebase → project: Matt asks the design agent to "sync from codebase". Project →
-codebase: the design agent writes to `codebase-patches/design_system/ryan-realty/<exact-path>`,
-then Matt asks the codebase agent to "apply design patches" (rsync, commit, push). Neither side
-depends on the other being available.
 
 ## Two registers — pick one per surface, never mix
 
@@ -237,29 +245,22 @@ fade-up · 2s loops · 20s Ken Burns; ease-out entrances, ≤16px travel, always
 and "the design system" are the same thing here, not a choice. Build every UI element from
 `@/components/ui/`. Do NOT hand-roll raw HTML controls on product surfaces.
 
-**The per-surface visual target is the mockup at
-`design_system/ryan-realty/ui_kits/<surface>/index.html`.** Display headings (page H1s +
-section H2s) use the Amboqia face via the `H1`/`H2`/`DisplayHeading` primitives in
-`components/site/primitives` (which carry `font-display`), never plain Geist.
+**There is no per-surface mockup any more.** The eleven `ui_kits/<surface>/index.html` files
+were KB-era targets, retired 2026-08-26 and deleted 2026-08-27; the visual target for a public
+page is the pattern set in `design_system/public/PUBLIC_UI.md`, built from `components/site/v3`.
+The surviving `parity.json` beside each still binds — its `requiredComponents` list is what
+stops a page silently losing a section, and `ci:mockup-parity` reads it with or without a
+mockup.
 
-| Need | Use | NOT |
-|---|---|---|
-| Button | `<Button>` | `<button>`, `<a className="btn-...">` |
-| Card | `<Card>` | `<div className="rounded-... border...">` |
-| Select · Input · Checkbox · Textarea · Label · Switch | the matching `@/components/ui/*` | the raw HTML element |
-| Badge | `<Badge>` | `<span className="rounded-full...">` |
-| Dialog · DropdownMenu · Tabs · Tooltip · Accordion · Sheet | the matching `@/components/ui/*` | custom divs, `title` attribute |
-| Separator | `<Separator>` | `<hr>`, `<div className="border-t...">` |
-| Avatar | `<Avatar>` | `<img className="rounded-full...">` |
-| Table · Alert · Progress · Skeleton | the matching `@/components/ui/*` | hand-rolled equivalents |
+**The table below is for ADMIN and PRODUCT surfaces.** On the public site the equivalent
+rule is: build from the v3 barrel, and a section that fits no existing pattern gets a NEW
+barrel primitive rather than hand-rolled markup.
 
-| Need | Use | NOT |
-|---|---|---|
-| Primary action | `bg-primary text-primary-foreground` | `bg-blue-600`, a raw navy hex |
-| Secondary · Accent · Destructive · Success · Warning | `bg-<token> text-<token>-foreground` | `bg-gray-100`, `bg-red-500 text-white`, … |
-| Muted text | `text-muted-foreground` | `text-gray-500` |
-| Borders | `border-border` | `border-gray-200` |
-| Card / page background | `bg-card` / `bg-background` | `bg-white`, `bg-gray-50` |
+**The primitive-per-need table lives in the canonical source**, not here:
+[`design_system/ryan-realty/SKILL.md`](design_system/ryan-realty/SKILL.md). The rule it
+encodes is one line: on admin and product surfaces build from `@/components/ui/*` and use
+the semantic token classes (`bg-primary`, `text-muted-foreground`, `border-border`), never a
+raw HTML control and never a raw color. On the PUBLIC site build from `components/site/v3`.
 
 Always use `cn()` from `@/lib/utils` for conditional/merged classes; never string-concatenate
 class names. Do NOT use `card-base`, `btn-cta`, or any custom class from globals.css. The

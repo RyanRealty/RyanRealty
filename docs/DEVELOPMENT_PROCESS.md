@@ -116,7 +116,7 @@ THE LOOP is the meta-process. It runs as **five domain loops over one shared spi
 | 2 | **Demand** (paid + organic acquisition) | `/facebook-seller-growth` | Weekly + producer crons | Meta ads, audiences, LP conversion, organic social, experiments | `LEARNINGS.md`, `.auto-memory/fb-ads-loop-state.json` |
 | 3 | **Nurture** (CRM, comms, follow-up intelligence) | `/loop /crm-e2e` | Self-paced guardian | FUB mirror, Gmail/Twilio ingest, sequences, auto-enroll, suppressions, smart follow-ups | `tmp/crm-e2e-latest.json`, `docs/CRM_REPLACEMENT_BLUEPRINT.md` |
 | 4 | **Transaction** (TC + Oregon law) | `/loop /tc-builder` | Self-paced ladder | Deals, documents, signing, compliance engine, the Oregon law/forms knowledge base | `docs/TC_SYSTEM.md`, `docs/TC_OREGON_COMPLIANCE.md` |
-| 5 | **Experience** (UX archetype migration) | `/loop /experience-rollout` | One family per iteration | Page-family visual/UX rebuilds to the v3 archetype language | `docs/EXPERIENCE_SYSTEM.md` §Rollout status |
+| 5 | **Experience** (UX archetype migration) | RETIRED 2026-08-27 | — | Folded into the public product. There is one design system (`components/site/v3`) and one spec (`design_system/public/PUBLIC_UI.md`); there is no separate archetype language to migrate families onto, and the `experience-rollout` skill and `EXPERIENCE_SYSTEM.md` ledger are both deleted. | — |
 | — | **Substrate** (deterministic machinery) | Vercel crons (`vercel.json`) | 10 min – weekly | Spark→Supabase sync, market stats cache, CRM crons, producer dispatch/runtime/publish, measurement, digests | Supabase tables |
 | — | **Immune system** | `/deep-audit` | On demand / monthly | Cross-cutting health: stuck rows, dead crons, expired tokens, drifted skills | `out/audits/` |
 
@@ -175,7 +175,6 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `ADMIN_REBUILD/` | **live** — the admin/CRM rebuild package (specs, audit reports). The second sanctioned plan home; every file within it is covered by this row. |
 | `ADMIN_PRODUCT/` | **live** — Admin Product OS memory root **and** the Broker OS plan of record (`BROKER-OPERATING-SYSTEM-PLAN.md`). Live board (where we are): `EXECUTION.md`. Every file within is covered by this row. |
 | `PUBLIC_PRODUCT/` | **quarry** (2026-08-12) — Public Product OS folded into Broker OS Loop E. Process/IA/visual locks in `decisions.md` still bind. Constitution, recipe, gate contracts, process specs are tools. `state.json` / `work-queue.json` are not authority. Tracker: `docs/plans/ADMIN_PRODUCT/EXECUTION.md`. Every file within is covered by this row. |
-| `PUBLIC_SITE_UX_OVERHAUL/` | **evidence only** (2026-08-11) — prior public reimagine program, superseded by `PUBLIC_PRODUCT/`. Its Matt-granted product decisions are absorbed into `PUBLIC_PRODUCT/decisions.md`; its ledgers are route/section inventory only (scores void); its queue/state statuses void (audit found "done" claims with no disk evidence). Every file within is covered by this row. |
 | `MARKET_TRUTH/` | **live** (2026-08-22) — one computation path for every market figure: `place_membership`, the metric registry, the single read function, and the gates that keep them. Opened on Matt's directive that all chart/report data come through the same process. Plan of record: `PLAN.md`. Every file within is covered by this row. |
 | `tms/` | **live** (2026-08-22) — transaction-management system walks: SkySlope and Forms inventories, admin-match maps, vault walk. Working records for the TC plane. Every file within is covered by this row. |
 | `FORMS_REVIEW_ADMIN_MATCH_2026-08-22.md` | **live** (2026-08-22) — forms-review walk record for the TC plane. |
@@ -194,9 +193,6 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `VOICE-CANON-2026-08-05.md` | **live** — the end-to-end voice migration prompt (Matt 2026-08-05). Buffett-anchored canon at `marketing_brain_skills/brand-voice/VOICE.md` becomes the single voice document; every competing doc, banned-word list, and in-code style prompt is deleted and rebuilt from it, all public-facing copy is rewritten, and two gates (banned constructions, canon singularity) stop it recurring. |
 | `cma-accuracy-pipeline-2026-07-11.md` | record — CMA/BPO accuracy pipeline progress log |
 | `COMING_SOON_SQL_FOLLOWUP.md` | open input — SQL-layer residue from the 2026-07-21 Coming Soon public-exposure fix |
-| `../EXPERIENCE_SYSTEM.md` | **evidence only** (2026-08-11) — six page archetypes + route map; **not** the public UX destination. Destination: `PUBLIC_SITE_UX_OVERHAUL/` |
-| `KB_SITE_CONVERSION_GOAL.md` | **evidence only** (2026-08-11) — prior whole-site KB conversion; **not** the public UX destination. Destination: `PUBLIC_SITE_UX_OVERHAUL/` |
-| `PAGE_REVIEW_REDESIGN_RUNBOOK.md` | **live method input** — render-truth + anti-regression law; feeds PUBLIC_SITE_UX_OVERHAUL audits (not a competing destination) |
 | `PAID_ADS_PLAN.md`, `ADS_CREATIVE_DIRECTION.md`, `ADS_BRIEFS.md`, `ADS_BUYER_SCRIPT.md`, `ADS_FOOTAGE_PLAN.md`, `ADS_PRO_EXAMPLES.md`, `ADS_GO_LIVE.md` | **live** — paid-ads program |
 | `TC_ARCHITECTURE_REVIEW.md` | **live** — Vault TC architecture backlog |
 | `AGENTIC_GRAPH_ENGINEERING_2026-07-30.md` | **live** — agentic-graph-engineering research + incorporation backlog: saved workflow library (`.claude/workflows/`), graph escape hatch in the loop skills, consumer-driven KG evaluation |
@@ -212,7 +208,6 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `CMA_PIPELINE_TO_PRODUCTION_2026-07-30.md` | **live** — end-to-end goal for taking the CMA/BPO pipeline to production grade (registered here by a sibling session's request; owner is that session) |
 | `CMA_PRICE_OPINION_SPINE.md`, `CMA_SUNSTONE_CONTRACT.md` | **live** — seller CMA spine + Sunstone 16-chapter client contract (path-lane `ci:cma-opinion-spine` / `ci:cma-exemplar`) |
 | `WESTSIDE_BACKLOG.md` | **live** — west-side dominance ranked backlog, generated 2026-07-28 from live competitor/market data |
-| `MOBILE_GRIND/` | **live** — mobile-audit defect-CLASS remediation package (state machine, per-class census tables, ledger). Matt's 2026-08-06 iPhone pass produced ~19 reported defects; each is treated as a sample of a class, so every step is census-first (enumerate every instance repo-wide) → fix all → gate the class. Every file within is covered by this row. |
 | `COMPANY_IMPROVEMENT.md` | **live** — THE LOOP company addendum: company domains, named surfaces, blast-radius, diagnose rules, accept-against-goal, cadence. Not a new OS. |
 | `COMPANY_SCOREBOARD.md` | **live** — weekly company packet (overwrite, do not date-stamp a novel). Start ritual with SESSION_HANDOFF. |
 | `CROSS_AGENT_HANDOFF.md` | session-continuity (required agent handoff protocol) |

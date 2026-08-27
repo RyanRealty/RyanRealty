@@ -32,7 +32,7 @@ import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/class
 
 /**
  * The closing block: the verified questions, then every destination this node
- * owes the graph (page-inventory.json records them as its exits). A door is
+ * owes the graph (the IA lock records them as its exits). A door is
  * offered only when the thing behind it exists.
  *
  * TWO LABELS CARRY A CLAIM, SO BOTH ARE WRITTEN TO WHAT IS ACTUALLY BEHIND THEM.
@@ -57,7 +57,7 @@ import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/class
  * source attribution, so the lead still arrives and just stops saying which
  * community page produced it, invisible in QA, and completed valuations per page
  * is this program's KPI. lib/site/valuation-href.ts is the one way to build it
- * (migration-recipe.md addendum 2026-08-11), and `pagePath` is what it carries.
+ * (PUBLIC_UI.md §3), and `pagePath` is what it carries.
  */
 export function buildExploreEdges(input: {
   communityName: string

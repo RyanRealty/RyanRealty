@@ -44,6 +44,13 @@ example_outputs: []
     surface: "agentfire_blog"
 ---
 
+> **Design system, corrected 2026-08-27.** The public site runs ONE register:
+> `components/site/v3`, whose look lives entirely in `components/site/v3/tokens.css`.
+> Brand color is applied as `bg-navy` / `text-cream`, never a literal hex, and never
+> `bg-background`, which resolves to pure WHITE. The pattern set is OPEN: build a new
+> barrel primitive if a section needs one. Enforced by `ci:one-design-system`.
+
+
 # Site Property Landing Producer
 
 **Status:** Canonical  
@@ -423,7 +430,7 @@ export const metadata: Metadata = {
 
 **Design system constraints (shadcn/ui only.  CLAUDE.md):**
 
-- Background: `bg-background` (cream `#faf8f4` via CSS var)
+- Background: `bg-cream` (reads --v3-cream from components/site/v3/tokens.css)
 - Hero H1: Amboqia Boriango.  apply via `font-display` utility or the `--font-display` CSS var
 - All other text: Geist (default `font-sans`.  loaded via `next/font/geist` in `app/layout.tsx`)
 - Primary CTA: `<Button variant="default">`.  `bg-primary text-primary-foreground`
@@ -432,7 +439,7 @@ export const metadata: Metadata = {
 - Lightbox: `<Dialog>` from `@/components/ui/dialog`.  never custom modal divs
 - Mobile drawer: `<Sheet>` from `@/components/ui/sheet`
 - Numbers: every `<span>` containing a price/count/day/pct gets `font-variant-numeric: tabular-nums`
-- Navy `#102742`: `text-primary` / `bg-primary`.  never `text-[#102742]` or `bg-[#102742]`
+- Navy: `text-navy` / `bg-navy` (both read --v3-navy).  never `text-[#102742]` or `bg-[#102742]`
 - No gold (`#D4AF37`, `#C8A864`) anywhere.  retired in v2 brand
 - Radii: `rounded-lg` (10px), `rounded-xl` (14px), `rounded-2xl` (18px)
 - Shadows: `shadow-sm`, `shadow-md` (navy-tinted via CSS var)

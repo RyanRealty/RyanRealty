@@ -32,7 +32,7 @@ export const REGION_LABEL = 'Central Oregon'
  * routes dropped the parameter at once.
  *
  * SELL_SPINE_HREF is the intake spine's own form, built by the ONE canonical
- * builder, lib/site/valuation-href.ts (migration-recipe.md addendum 2026-08-11).
+ * builder, lib/site/valuation-href.ts (PUBLIC_UI.md §3).
  * It resolves VALUATION_FORM from lib/site-nav, appends `from`, and keeps the
  * anchor last, which hand-built strings got wrong.
  *

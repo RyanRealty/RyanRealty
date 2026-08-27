@@ -11,7 +11,7 @@
  * submitSearchAlertSignup (email + propertyType A + company honeypot), exits
  * to /homes-for-sale, /buy/[intent], /open-houses, /price-drops, /contact.
  *
- * Dual objectives (page-inventory.json): understand how buying works here, then
+ * Dual objectives: understand how buying works here, then
  * leave a named alert or a broker inquiry. Machine objective is served through
  * that, never instead of it.
  *

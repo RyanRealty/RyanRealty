@@ -3,7 +3,7 @@
  *
  * Saved is an affordance, not a sixth marketing destination. No Stage, no
  * Instrument, no capture Sheet, no invented homepage. Dual objectives
- * (page-inventory.json): visitor: work a specific shortlist and step into any
+ *: visitor: work a specific shortlist and step into any
  * home. machine: turn curated shortlist state into listing-detail re-entries.
  * Exits: listing detail, /compare, /account/collections.
  *

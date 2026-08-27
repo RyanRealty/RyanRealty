@@ -40,7 +40,7 @@ export function CityArchiveSection({ archive }: { archive: CityArchive }) {
     return (
       <section className="section" id="archive" aria-label="Market archive">
         <div className="wrap">
-          <p style={{ color: 'var(--navy-70)', fontSize: '1.05rem', maxWidth: '42rem' }}>
+          <p style={{ color: 'var(--v3-ink-muted)', fontSize: '1.05rem', maxWidth: '42rem' }}>
             No closed single-family sales are on record for {archive.label} in the archive window.
           </p>
         </div>
@@ -63,19 +63,19 @@ export function CityArchiveSection({ archive }: { archive: CityArchive }) {
   return (
     <section className="section" id="archive" aria-label="Market archive">
       <div className="wrap">
-        <div className="sec-head" style={{ borderColor: 'var(--navy)' }}>
+        <div className="sec-head" style={{ borderColor: 'var(--v3-navy)' }}>
           <span className="sec-index">{archive.label} {'·'} Market archive</span>
           <h2 className="sec-title display">Sales by year</h2>
         </div>
 
-        <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '42rem', margin: '0 0 1.5rem' }}>
+        <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--v3-ink-muted)', maxWidth: '42rem', margin: '0 0 1.5rem' }}>
           {archive.totalSold.toLocaleString('en-US')} single-family {archive.totalSold === 1 ? 'home has' : 'homes have'} closed in {archive.label} from {span}. The price column shows the range of monthly median sale prices within each year.
         </p>
 
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', maxWidth: '44rem', borderCollapse: 'collapse', fontSize: '.95rem' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid var(--navy)' }}>
+              <tr style={{ borderBottom: '2px solid var(--v3-navy)' }}>
                 <th scope="col" style={{ padding: cellPad, textAlign: 'left', fontWeight: 600 }}>Year</th>
                 <th scope="col" style={{ padding: cellPad, textAlign: 'right', fontWeight: 600 }}>Homes sold</th>
                 <th scope="col" style={{ padding: cellPad, textAlign: 'right', fontWeight: 600 }}>Median sale price</th>
@@ -84,7 +84,7 @@ export function CityArchiveSection({ archive }: { archive: CityArchive }) {
             <tbody>
               {yearsWithSales.map((y) => {
                 const partial = y.complete ? null : (
-                  <span style={{ color: 'var(--navy-70)', fontSize: '.78rem', marginLeft: '.5rem' }}>
+                  <span style={{ color: 'var(--v3-ink-muted)', fontSize: '.78rem', marginLeft: '.5rem' }}>
                     (through {y.monthsPresent} {y.monthsPresent === 1 ? 'month' : 'months'})
                   </span>
                 )
@@ -104,7 +104,7 @@ export function CityArchiveSection({ archive }: { archive: CityArchive }) {
           </table>
         </div>
 
-        <p style={{ fontSize: '.8rem', color: 'var(--navy-70)', margin: '1.25rem 0 0', maxWidth: '44rem' }}>
+        <p style={{ fontSize: '.8rem', color: 'var(--v3-ink-muted)', margin: '1.25rem 0 0', maxWidth: '44rem' }}>
           Single-family homes. Homes sold is the count of closed sales each year. The price range shows the lowest and highest monthly median sale price within the year, over months with enough closings to report a reliable median. Prices rounded to the nearest thousand. Source: Oregon Data Share via Ryan Realty.
         </p>
       </div>

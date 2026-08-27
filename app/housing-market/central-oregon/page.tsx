@@ -81,7 +81,7 @@
  *     `?from=/housing-market/central-oregon` and keeps the spine's anchor last. The KB
  *     pages assembled that query string inline, one page at a time, and the first v3
  *     wave dropped it on four routes at once for exactly that reason (2026-07-15
- *     conversion audit, migration-recipe.md addendum 2026-08-11). This page previously
+ *     conversion audit, PUBLIC_UI.md addendum 2026-08-11). This page previously
  *     built its own string against /sell/valuation, which ia-lock.md schedules for a
  *     301 into the single intake spine at /sell#get-value, and a 301 drops the query
  *     string with it. Carrying the parameter is this page's half of the contract.
@@ -162,7 +162,7 @@ export const revalidate = 300
  * The valuation door's href, both places this page opens one (invariant 6).
  *
  * Built by lib/site/valuation-href.ts, which is the ONE builder for a valuation link
- * on a content surface (migration-recipe.md addendum, 2026-08-11). This page used to
+ * on a content surface (PUBLIC_UI.md §3). This page used to
  * assemble the string inline as `${valuationPath()}?from=…`, which is the convention
  * that four routes silently dropped in one wave: an inline query string is invisible
  * to whoever rewrites the section next. It also pointed at /sell/valuation, which

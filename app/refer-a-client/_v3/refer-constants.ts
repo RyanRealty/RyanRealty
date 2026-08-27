@@ -1,5 +1,5 @@
 /**
- * /refer-a-client copy. Dual objectives live in page-inventory.json.
+ * /refer-a-client copy. Dual objectives live in the IA lock.
  * Fee figure is the product default in lib/crm/inbound-referral.ts
  * (same 25 as recordReferralReceivable), not a market stat.
  */

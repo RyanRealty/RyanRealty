@@ -1,7 +1,6 @@
 {
   "route": "app/team/page.tsx",
-  "mockup": "design_system/ryan-realty/ui_kits/team/index.html",
-  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic brokerage team pages: real broker names, Oregon licenses, transparent-PNG headshots, verbatim Google reviews, and a door to each /team/[slug] profile.",
   "note": "Look 2026-08-14: Team = faces. Order is Breadcrumb, AboutFaces (live broker cutouts reused from about/_v3, compact H1, name door, Call and Text on the face row from the live broker phone), Ledger (licenses, Matt-Rebecca-Paul rank), Quiet (verbatim reviews + FAQ + edges), Footer. PUBLIC_UI.md opens About-family on Quiet + Sheet. Faces first. The family's Sheet lives on /contact and /team/[slug]. Seller lives on Sell. The next tap is the name or the number. Reviews: getReviews(24) sorted so non-Matt-named reviews surface first (design-audit #156), TESTIMONIALS fallback when the live pool is empty. No invented quotes. KB-era deletions: KbHero, KbAbout, KbTeam, KbTestimonials, KbSell, FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
   "requiredComponents": [
@@ -86,15 +85,51 @@
     "route": "app/team/[slug]/page.tsx",
     "note": "Per-broker profile on the v3 barrel. Invariants: (1) reviewBelongsOnPage filters every review. (2) getBrokerSales provides per-broker closings (both sides); fallback is getBrokerageListingTiles. (3) JSON-LD RealEstateAgent + BreadcrumbList preserved. (4) 977 zip filter on closings. (5) photo-only ledger tiles. (6) BrokerValuationSheet posts the same submitBrokerSellerLead object (variant seller, fields address / name / email / phone / timeline / notes). (7) SmsConsentDisclosure renders because the sheet collects a phone; the action does not read smsConsent. (8) Direct call/text/email from live phone/email only. (9) First viewport is AboutFaces, same cutout as /about and /team.",
     "requiredComponents": [
-      { "name": "KbNav", "section": "layout-owned public header", "blocking": true },
-      { "name": "KbSectionTracker", "section": "tracking, pageType=broker", "blocking": true },
-      { "name": "MetadataBlock", "section": "BreadcrumbList JSON-LD", "blocking": true },
-      { "name": "V3Breadcrumb", "section": "Home / Team / Name", "blocking": true },
-      { "name": "AboutFaces", "section": "First viewport. Canonical PNG cutout, Call and Text on the face row. Bio Quiet sits below.", "blocking": true },
-      { "name": "V3Quiet", "section": "bio + facts below the face, then filtered reviews, then call/text/email", "blocking": true },
-      { "name": "V3Ledger", "section": "closings with recorded ClosePrice via formatPriceExact", "blocking": true },
-      { "name": "BrokerValuationSheet", "section": "Pattern 5, same capture contract as LeadCaptureBlock seller", "blocking": true },
-      { "name": "V3Footer", "section": "outside main", "blocking": true }
+      {
+        "name": "KbNav",
+        "section": "layout-owned public header",
+        "blocking": true
+      },
+      {
+        "name": "KbSectionTracker",
+        "section": "tracking, pageType=broker",
+        "blocking": true
+      },
+      {
+        "name": "MetadataBlock",
+        "section": "BreadcrumbList JSON-LD",
+        "blocking": true
+      },
+      {
+        "name": "V3Breadcrumb",
+        "section": "Home / Team / Name",
+        "blocking": true
+      },
+      {
+        "name": "AboutFaces",
+        "section": "First viewport. Canonical PNG cutout, Call and Text on the face row. Bio Quiet sits below.",
+        "blocking": true
+      },
+      {
+        "name": "V3Quiet",
+        "section": "bio + facts below the face, then filtered reviews, then call/text/email",
+        "blocking": true
+      },
+      {
+        "name": "V3Ledger",
+        "section": "closings with recorded ClosePrice via formatPriceExact",
+        "blocking": true
+      },
+      {
+        "name": "BrokerValuationSheet",
+        "section": "Pattern 5, same capture contract as LeadCaptureBlock seller",
+        "blocking": true
+      },
+      {
+        "name": "V3Footer",
+        "section": "outside main",
+        "blocking": true
+      }
     ]
   }
 }

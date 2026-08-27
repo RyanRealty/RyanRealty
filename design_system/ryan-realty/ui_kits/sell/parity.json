@@ -1,9 +1,8 @@
 {
   "route": "app/sell/page.tsx",
-  "mockup": "design_system/ryan-realty/ui_kits/sell/index.html",
-  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3. Sell opens Stage then Sheet.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic list-with-us pages: the ask in the first working surface (SellValueForm, Places autocomplete, pagePath=/sell), live Bend figures with a source trace, one 3% plan with the full Enhanced inclusion list, and every valuation CTA anchored to #get-value. Zero invented results. D11: Value my home on the field submit, never What's my home worth on a control.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: four of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, poster only, 3% listing plan as quiet eyebrow), Sheet-equivalent SellCapture wrapping SellValueForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. Page-grade v2.4 sell-three-asks: Stage ghost hidden (primitive still requires action), address field empty with visible label, no card title restating the button. Capture is not a deletion: SellValueForm still posts the same payload with pagePath=/sell and formId get-value.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, poster only, 3% listing plan as quiet eyebrow), Sheet-equivalent SellCapture wrapping SellValueForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. Page-grade v2.4 sell-three-asks: Stage ghost hidden (primitive still requires action), address field empty with visible label, no card title restating the button. Capture is not a deletion: SellValueForm still posts the same payload with pagePath=/sell and formId get-value.",
   "requiredComponents": [
     {
       "name": "KbNav",
@@ -70,7 +69,7 @@
     },
     {
       "name": "V3Ledger",
-      "reason": "Sold-story cards used to be a third proof rail. Rhythm allows four patterns. Proof now lives as Instrument figures plus Quiet prose. A Ledger of sold homes would be a fifth pattern."
+      "reason": "Sold-story cards used to be a third proof rail. Rhythm allows as many patterns as the content needs; only the no-two-adjacent rule binds (the cap was killed 2026-08-27). Proof now lives as Instrument figures plus Quiet prose. A Ledger of sold homes would be a fifth pattern."
     }
   ],
   "removedComponents": [
@@ -93,7 +92,10 @@
   ],
   "jsonLd": {
     "required": [
-      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry)" },
+      {
+        "type": "BreadcrumbList",
+        "emittedBy": "MetadataBlock schemas array (breadcrumb entry)"
+      },
       {
         "type": "FAQPage",
         "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same FAQ_ITEMS array V3Quiet renders"

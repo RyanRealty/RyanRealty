@@ -1,7 +1,0 @@
-[
-  {
-    "id": "FOLDED-IN-SEE-BOARD",
-    "phase": "P9",
-    "note": "This queue is stale and is not authority. Plan of record: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md. Where we are: docs/plans/ADMIN_PRODUCT/EXECUTION.md. First land: E-CHROME (app/layout.tsx PublicNav → V3Chrome). Do not run p9-market-family-v2 — that family already has mixed v3 bodies; chrome is the unlock; remaining Market routes are lease E-MARKET-REST / E-MARKET-REFINE."
-  }
-]

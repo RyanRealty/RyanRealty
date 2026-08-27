@@ -13,7 +13,7 @@
  * JSON-LD, V3SectionTracker pageType="compare". Shared /compare?ids= links keep
  * resolving.
  *
- * Dual objectives (page-inventory.json): put the shortlist side by side, then
+ * Dual objectives: put the shortlist side by side, then
  * inspect the winner. Capture does not live on this route.
  *
  * Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount

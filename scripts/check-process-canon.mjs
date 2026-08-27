@@ -197,18 +197,21 @@ if (fleetCasesSrc.includes('END this run now')) {
   fails.push('lib/data/loop/fleet-cases.ts: pack header must not tell every bot to END on token match (R-217)')
 }
 
-// Page-grade is KILLED (Matt 2026-08-16). Both skill copies must stay refuse stubs.
+// Page-grade is KILLED (Matt 2026-08-16), and DELETED (Matt 2026-08-27).
+//
+// It used to be required to exist as a refuse stub, on the reasoning that a stub
+// stops an agent that goes looking. Matt's correction: "I don't want some agent
+// to find it and use it." A file that exists is a file an agent reads, and a
+// stub still carries the vocabulary of the dead process. Absence is the stronger
+// stop, so the rule inverted — these paths must NOT exist.
 for (const skill of [
   '.claude/skills/page-grade/SKILL.md',
   '.cursor/skills/page-grade/SKILL.md',
+  '.claude/skills/experience-rollout/SKILL.md',
+  '.cursor/skills/experience-rollout/SKILL.md',
 ]) {
-  if (!existsSync(skill)) {
-    fails.push(`${skill}: missing — restore the KILLED refuse stub, do not delete the stop`)
-    continue
-  }
-  const src = readFileSync(skill, 'utf8')
-  if (!src.includes('KILLED 2026-08-16') || !src.includes('Do not grade')) {
-    fails.push(`${skill}: page-grade must stay a KILLED refuse stub (Matt 2026-08-16)`)
+  if (existsSync(skill)) {
+    fails.push(`${skill}: this skill is KILLED and must not exist. Delete the file — a refuse stub is still something an agent can find and read.`)
   }
 }
 

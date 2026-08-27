@@ -1,5 +1,5 @@
 /**
- * /buy copy and exits. Dual objectives live in page-inventory.json:
+ * /buy copy and exits. Dual objectives live in the IA lock:
  * visitor = understand how buying works here well enough to take the next step.
  * machine = named buyer lead or listing alert. Capture contract is
  * submitSearchAlertSignup (email + filters.propertyType A + company honeypot).

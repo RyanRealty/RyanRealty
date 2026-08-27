@@ -646,59 +646,11 @@
       "lib/data/loop/signals.ts",
       "app/lp/**"
     ],
-    "ci:kb-a11y-static": [
-      "components/site/kb/**",
-      "lib/kb/**",
-      "app/cities/**",
-      "app/communities/**",
-      "app/housing-market/**"
-    ],
-    "ci:kb-breadcrumb-overlay": [
-      "components/site/kb/**",
-      "lib/kb/**",
-      "app/cities/**",
-      "app/communities/**",
-      "app/housing-market/**"
-    ],
-    "ci:kb-overlay-hidden": [
-      "components/site/kb/**",
-      "lib/kb/**",
-      "app/cities/**",
-      "app/communities/**",
-      "app/housing-market/**"
-    ],
-    "ci:kb-page-contract": [
-      "components/site/kb/**",
-      "lib/kb/**",
-      "app/cities/**",
-      "app/communities/**",
-      "app/housing-market/**"
-    ],
-    "ci:kb-shared-shell": [
-      "components/site/kb/**",
-      "lib/kb/**",
-      "app/cities/**",
-      "app/communities/**",
-      "app/housing-market/**"
-    ],
-    "ci:kb-single-source": [
-      "components/site/kb/**",
-      "lib/kb/**",
-      "app/cities/**",
-      "app/communities/**",
-      "app/housing-market/**"
-    ],
     "ci:legacy-redirects": [
       "next.config.*",
       "app/**",
       "middleware.ts",
       "lib/redirects*"
-    ],
-    "ci:look-walk": [
-      "docs/plans/ENTERPRISE_MAP/look-walk-baseline.json",
-      "lib/data/loop/look-walk.ts",
-      "lib/data/loop/signals.ts",
-      "docs/plans/COMPANY_SCOREBOARD.md"
     ],
     "ci:loop-skills-canon": [
       ".claude/skills/**",
@@ -982,7 +934,6 @@
     ],
     "ci:place-hero-grain": [
       "lib/kb/place-hero-lead.ts",
-      "components/site/kb/**",
       "lib/kb/**",
       "app/cities/**",
       "app/communities/**",

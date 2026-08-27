@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-public-ui.mjs - the PUBLIC UI RATCHET (P9, PUBLIC-PRODUCT-OS.md).
+ * check-public-ui.mjs - the PUBLIC UI RATCHET (P9, PUBLIC_UI.md).
  *
  * WHY THIS EXISTS
  * Five design languages coexist on the public site today. Nothing stopped a

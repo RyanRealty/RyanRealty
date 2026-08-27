@@ -168,12 +168,17 @@
   --v3-size-body-lg: 1.05rem;
   --v3-size-body: 1rem;
   --v3-size-body-sm: 0.9rem;
+  /* D74 (Matt 2026-05-28): menu/nav text is 15px, matching the CTA size.
+     The nav had been reading --v3-size-body-sm (0.9rem = 14.4px), so the
+     directive was silently violated after the chrome moved to the barrel and
+     its contract test still pointed at the deleted SiteHeader. A named token,
+     so a style template can move it and the test can read it. */
+  --v3-size-nav: 0.9375rem;
   --v3-size-source: 0.78rem;
   --v3-size-label: 0.74rem;
   --v3-size-eyebrow: 0.72rem;
 
   --v3-track-display: -0.01em;
-  --v3-track-signage: 0.08em;
   /* THE LOOK (Broadside): small-caps labels track at .14em. */
   --v3-track-label: 0.14em;
   --v3-track-eyebrow: 0.16em;

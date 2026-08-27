@@ -284,29 +284,11 @@ the full Ledger treatment when they roll onto the barrel.
 
 ---
 
-# Appendix — provenance and changelog
+---
 
-Everything above is the rule. Everything below is how it got here.
+# Changelog
 
-## Amnesia test (recorded 2026-08-11)
-
-- Blacklist opened as design input: **NONE** — no `components/site/kb`, no legacy flat
-  components, no `design_system/public-v2` screens, no prior program's `V2*` names, no
-  screenshots of the current site.
-- Every foundation in §2 cites an external standard or product; the pattern set derives
-  from the six locked destinations' jobs, not from sections that exist today.
-- Could this exist if the current public site did not? **Yes** — nothing above references it.
-- Deliberate non-inheritances: the equal-weight section stack, the card-grid-per-section
-  habit, horizontal scroll rails, the "hero + 11 sections" homepage shape.
-
-## How the first version was granted
-
-Matt judged the MOVING prototype live in production at `/dev/public-v3` (real Bend data,
-390 and 1280, reduced-motion path) and granted the visual lock on 2026-08-11. The barrel
-that implements these patterns is `components/site/v3`, enforced by `ci:public-v3`, and
-the rollout onto it is ratcheted by `ci:public-ui`.
-
-## Changelog
+Why each rule is the way it is, so a dead one is not reintroduced as a new idea.
 
 - **2026-08-11** — written greenfield after the IA lock, under design amnesia (see
   above), and granted by Matt on the moving prototype. Six patterns, declared
