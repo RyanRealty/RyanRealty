@@ -415,7 +415,8 @@ describe('public place pages', () => {
     expect(citiesIndex).toMatch(/getPublicPlaceSegments/)
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
     expect(home).toMatch(/getPublicPlaceSegments/)
-    expect(home).toMatch(/PublicProductTypes/)
+    // v3 homepage (2026-08-27): the enumeration is the shared barrel section.
+    expect(home).toMatch(/V3PlacePropertyTypes/)
     const community = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
     const neighborhood = readFileSync(
       resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'),

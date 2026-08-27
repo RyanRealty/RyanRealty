@@ -2,24 +2,28 @@
  * Tile -> V3FieldItem for the homepage inventory Field.
  *
  * Same honesty as app/cities/[slug]/_v3/city-field-items.ts: a tile earns a row
- * when it carries a price, an address, and a live MLS photograph. formatPrice(null)
- * is a placeholder, not a figure, so those tiles are dropped. The Field's count
- * still states the region total from its own pulse query.
+ * when it carries a price, an address, and a live MLS photograph (the curated
+ * homepage set is photography-first, and the count line above the frame states
+ * the region total from its own leftover row, so dropping a photoless tile
+ * never moves a published figure). The ask goes through formatPublishedAsk and
+ * a fractional ask never prints unlabeled: publishListingShareKind rides the
+ * meta line (the Camp Sherman quarter-share rule). The meta line also names the
+ * town, because this list spans the whole region.
  */
 
 import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
-import { livePrice } from './live-format'
 
 export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3FieldItem[] {
   const items: V3FieldItem[] = []
 
   for (const tile of tiles) {
     if (items.length >= limit) break
-    const priceLabel = livePrice(tile.listPrice)
-    if (!priceLabel) continue
+    if (tile.listPrice == null || !Number.isFinite(tile.listPrice) || tile.listPrice <= 0) continue
 
     const street = publishStreetLine({
       streetNumber: tile.streetNumber,
@@ -29,12 +33,20 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3
     if (!street) continue
     if (!tile.photoUrl || tile.photoUrl.trim().length === 0) continue
 
+    const shareKind = publishListingShareKind({
+      propertySubType: tile.propertySubType,
+      subdivisionName: tile.subdivisionName,
+      city: tile.city,
+      listNumber: tile.listNumber,
+    })
     const meta = [
+      tile.city?.trim() || null,
       tile.beds != null ? `${tile.beds} bd` : null,
       tile.baths != null ? `${tile.baths} ba` : null,
       tile.sqft != null ? `${tile.sqft.toLocaleString('en-US')} sqft` : null,
+      shareKind,
     ]
-      .filter((part): part is string => part !== null)
+      .filter((part): part is string => Boolean(part))
       .join(' · ')
 
     items.push({
@@ -45,7 +57,7 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3
         { city: tile.city, subdivision: tile.subdivisionName },
         { mlsNumber: tile.listNumber },
       ),
-      priceLabel,
+      priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price on request',
       title: street,
       photoSrc: tile.photoUrl,
       ...(meta ? { meta } : {}),

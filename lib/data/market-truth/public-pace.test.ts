@@ -55,7 +55,6 @@ describe('getPublicDetachedPace', () => {
 describe('public pace surfaces', () => {
   it('city and housing-market pages read getPublicDetachedPace', () => {
     const city = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
-    const strip = readFileSync(resolve('app/cities/[slug]/PublicPaceStats.tsx'), 'utf8')
     const market = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
     const hub = readFileSync(resolve('app/housing-market/page.tsx'), 'utf8')
     const zip = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
@@ -64,7 +63,6 @@ describe('public pace surfaces', () => {
     // v3 city page (2026-08-26): the pace items print as Instrument figures
     // through publicPaceItems, the same builder PublicPaceStats renders from.
     expect(city).toMatch(/publicPaceItems/)
-    expect(strip).toMatch(/publicPaceItems/)
     expect(market).toMatch(/getPublicDetachedPace/)
     expect(hub).toMatch(/getPublicDetachedPace/)
     expect(zip).toMatch(/getPublicDetachedPace/)
@@ -99,7 +97,10 @@ describe('public pace surfaces', () => {
     expect(citiesIndex).toMatch(/Pending · now/)
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
     expect(home).toMatch(/getPublicDetachedPace/)
-    expect(home).toMatch(/PublicPaceStats/)
+    // v3 homepage (2026-08-27): the pace items print as Instrument figures
+    // through publicPaceItems, the builder the deleted PublicPaceStats strip
+    // rendered from.
+    expect(home).toMatch(/publicPaceItems/)
     expect(searchTail).toMatch(/publicPaceItems/)
     const community = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
     const neighborhood = readFileSync(

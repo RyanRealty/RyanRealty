@@ -4,11 +4,19 @@ import { describe, expect, it } from 'vitest'
 
 const SRC = readFileSync(resolve('app/page.tsx'), 'utf8')
 
-describe('homepage HUD leftover sale-to-list', () => {
-  it('reads region leftover saleToOriginal for saleToList', () => {
+/**
+ * v3 spelling (2026-08-27 Broadside rebuild). The KB test pinned the
+ * KbMarketData object literal (`closed30: hud.closed30`, ...); on the barrel
+ * the KPI row is built by leftoverMarketFigures(hud, ...), whose own source
+ * encodes the same rule — every figure off the ONE leftover pile, a missing
+ * cell omitted, pulse never filling a tile. The data-source pins and every
+ * negative pin survive unchanged.
+ */
+describe('homepage market figures stay on the leftover pile', () => {
+  it('reads region leftover pace and hands the hud to leftoverMarketFigures', () => {
     expect(SRC).toMatch(/getPublicDetachedPace\(\{\s*geoType:\s*'region',\s*geoSlug:\s*'central-oregon'\s*\}\)/)
     expect(SRC).toMatch(/leftoverHudKpis/)
-    expect(SRC).toMatch(/saleToList:\s*hud\.saleToList/)
+    expect(SRC).toMatch(/leftoverMarketFigures\(hud/)
   })
 
   it('does not assign saleToList from cache avg_sale_to_list_ratio', () => {
@@ -21,15 +29,18 @@ describe('homepage HUD leftover sale-to-list', () => {
     expect(SRC).toMatch(/regionActive:\s*hud\.active/)
   })
 
-  it('HUD KPI row is leftover only: miss omits, pulse does not fill', () => {
-    expect(SRC).toMatch(/closed30:\s*hud\.closed30/)
-    expect(SRC).toMatch(/pending:\s*hud\.pending/)
-    expect(SRC).toMatch(/daysToPending:\s*hud\.daysToPending/)
-    expect(SRC).toMatch(/new30:\s*hud\.new30/)
+  it('KPI row is leftover only: miss omits, pulse does not fill', () => {
+    // The pace figures the HUD already prints are skipped, not re-labeled.
+    expect(SRC).toMatch(/CITY_PACE_KEYS_ON_THE_HUD\.has\(item\.key\)/)
     expect(SRC).not.toMatch(/closedCount30d\s*\?\?\s*pulse/)
     expect(SRC).not.toMatch(/daysToPending90d\s*\?\?\s*pulse/)
     expect(SRC).not.toMatch(/new30:\s*pulse/)
     expect(SRC).not.toMatch(/closed30:\s*publicPace\.closedCount\s*\?\?/)
     expect(SRC).not.toMatch(/daysToPending:\s*publicPace\.daysToContract/)
+  })
+
+  it('the one verdict derivation classifies the raw leftover value', () => {
+    expect(SRC).toMatch(/marketVerdict\(mosRaw\)/)
+    expect(SRC).toMatch(/formatMonthsOfSupply\(mosRaw\)/)
   })
 })

@@ -59,6 +59,22 @@ describe('homeFieldItems', () => {
     expect(items[0]?.photoSrc).toContain('sparkplatform.com')
     expect(items[0]?.href).toContain('220111111')
     expect(items[0]?.href).toMatch(/^\//)
-    expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
+    expect(items[0]?.meta).toBe('Bend · 3 bd · 2 ba · 1,800 sqft')
+  })
+
+  it('labels a fractional-interest ask on the meta line (Camp Sherman rule)', () => {
+    const items = homeFieldItems(
+      [
+        tile({
+          propertySubType: 'Tenancy in Common',
+          subdivisionName: 'Metolius Meadows',
+          city: 'Camp Sherman',
+        }),
+      ],
+      9,
+    )
+    expect(items).toHaveLength(1)
+    // publishListingShareKind's own label for the feed sub-type, on the meta line.
+    expect(items[0]?.meta ?? '').toMatch(/tenancy in common|share/i)
   })
 })

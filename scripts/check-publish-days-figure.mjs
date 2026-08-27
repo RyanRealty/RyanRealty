@@ -27,13 +27,14 @@ checks.push({
 })
 
 const surfaces = [
+  // KbMarketHud and KbHero were deleted with their last consumer
+  // (app/page.tsx, 2026-08-27 v3 rebuild). Their publishDaysLabel wiring died
+  // with them; the homepage's days figure now arrives through
+  // leftoverMarketFigures (city-sections), whose publishDaysFigure wiring the
+  // city-sections surface below already pins.
   {
-    path: 'components/site/kb/KbMarketHud.client.tsx',
-    label: 'KbMarketHud gates KPI days through publishDaysLabel',
-  },
-  {
-    path: 'components/site/kb/KbHero.client.tsx',
-    label: 'KbHero gates Pending-in days through publishDaysLabel',
+    path: 'app/cities/[slug]/_v3/city-sections.ts',
+    label: 'leftoverMarketFigures gates the days figure through publishDaysFigure',
   },
   {
     path: 'lib/site/market-faq.ts',

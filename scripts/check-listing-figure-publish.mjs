@@ -582,10 +582,13 @@ const SHARE_LABEL_SURFACES = [
   'app/cities/[slug]/_v3/city-field-items.ts',
   'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts',
   'app/communities/[slug]/_v3/community-opening.ts',
-  // The price tape between sections on the homepage, cities, neighborhoods and
-  // communities. It runs a share ask between whole-home asks.
+  // The price tape between sections on cities, neighborhoods and communities.
+  // It runs a share ask between whole-home asks.
   'lib/kb/place-sections.ts',
-  'app/page.tsx',
+  // The homepage's v3 Field row builder (2026-08-27): replaced the KB ticker +
+  // featured grid, so the share label resolves beside the price here — the
+  // rule moved with the rows, out of app/page.tsx.
+  'app/_v3/home-field-items.ts',
 ]
 for (const file of SHARE_LABEL_SURFACES) {
   const text = readFileSync(file, 'utf8')

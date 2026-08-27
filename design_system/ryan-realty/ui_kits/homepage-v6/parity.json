@@ -1,52 +1,31 @@
 {
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
-  "status": "restored-kb-2026-08-15",
-  "note": "Working homepage restored: KbHero, towns, communities, featured homes, region map, ticker, sell, reviews, team, market HUD. ArrivalIntent quiz unmounted 2026-08-16 (Matt CHANGE / R-218). FOOTER UNIFIED 2026-08-27 (Matt: \"menus and footers must be consistent\"): this page was the last public surface on a second footer -- 86 pages carried V3Footer and the homepage carried KbFooter. It now mounts V3Footer, outside <main>, with the identical columns (V3_FOOTER_COLUMNS IS KB_FOOTER_COLUMNS relabeled by the IA lock) and the per-town fine print carried verbatim as the note prop. The one thing that does not survive is KbFooter's \"A broker writes back\" band, which V3Footer drops deliberately on all 87 surfaces: it was a second primary action in a viewport whose sticky header already carries one. Held by ci:chrome-single-source.",
+  "status": "v3-broadside-2026-08-27",
+  "note": "Homepage on the components/site/v3 barrel, Broadside register (Matt approved the full rebuild 2026-08-27; the hero stays). index.html is the retired KB mockup, kept as history, not the visual target. FOUR patterns — the homepage is NOT in the place-family fifth-pattern exception: Stage (the Bend flyover hero over the Old Mill still; 0af80821 keeps the drone footage, not the rejected 3D-tiles render) · Field (the curated listed set, map plotting the same set, count = the leftover region row) · Ledger twice, non-adjacent (towns with the D21 remainder note; featured communities printing the index count) · Instrument (the market question + leftover KPI row + median-close year overlay, then the property-type run as the enumerated tail of the same grouping, the ZIP/plat form). The absence branch swaps the Instrument for a Quiet stating the miss.",
+  "removedComponents": [
+    { "name": "KbHero", "where": "the hero itself survives as V3Stage with the same clip, poster, D11 H1 and See-homes primary. Deleted from it: the GSAP masked line-reveal (Stage handles reduced motion natively), the plain-language property search and the voice-search button — the reason V3Chrome records for itself: search reaches components/search and drags a second token layer; it returns to the chrome as a v3 primitive or not at all. The live count + median + pending sub-line moved to the Field count and Instrument figures." },
+    { "name": "KbExploreTowns", "where": "the towns Ledger (#towns): same six doors, counts, medians, photos, and the pulse-city-remainder note" },
+    { "name": "KbCommunities", "where": "the communities Ledger (#communities): same four doors, index counts, photos. The hover autoplay area-guide clips are not played here; each clip plays on its community's own Stage" },
+    { "name": "KbFeatured", "where": "the Field rows: photographed homes from the same curated mix. Tile hover-videos dropped; the tour lives on the listing page" },
+    { "name": "KbListingMap", "where": "the Field mapSlot (PlaceFieldMap): plots exactly the listed set instead of 3,000 unlabelled pins; the honest region total stays in the count line" },
+    { "name": "KbTicker", "where": "deleted; its six rows were the head of the same tile population the Field lists, each row still a door there" },
+    { "name": "KbSell", "where": "the market Instrument's ghost action: same destination + ?from= attribution via valuationHref('/'). Its three figures were the Instrument's own median/days/closed under that section's trace, so no figure left the page (the ZIP no-median precedent, ci:publish-median-caption)" },
+    { "name": "KbCommunityAlerts", "where": "removed with the section: Sheet is not among the page's four patterns. Email alert capture lives one door deep on every city/community/neighborhood/ZIP alert sheet and on saved search; app/_v3/HomeAlertSheet.client.tsx stays on disk as the compliant scaffold should Matt want the Sheet back" },
+    { "name": "KbTestimonials", "where": "removed: Quiet is not among the four patterns; proof lives at /reviews behind the chrome footer's About column" },
+    { "name": "KbTeam", "where": "removed: the brokers live at /team behind the chrome footer's About column" },
+    { "name": "KbMarketHud", "where": "the market Instrument: the same leftover HUD figures (leftoverMarketFigures), pace + mix figures, the market question headline, verdict, and the median-close year overlay replacing the trend + year-series pair. The by-town median list renders as the towns Ledger's median column. The report door lives in the chrome footer's Market column" },
+    { "name": "KbFooter", "where": "V3Footer outside <main>, with the per-town fine print carried on the note slot" },
+    { "name": "SmoothScrollProvider", "where": "deleted; motion is the barrel's ladder" }
+  ],
   "requiredComponents": [
-    {
-      "name": "KbHero",
-      "section": "drone/photo hero + live count"
-    },
-    {
-      "name": "KbExploreTowns",
-      "section": "towns ledger"
-    },
-    {
-      "name": "KbCommunities",
-      "section": "resort and planned communities rail"
-    },
-    {
-      "name": "KbFeatured",
-      "section": "photographed homes for sale"
-    },
-    {
-      "name": "KbListingMap",
-      "section": "region listing map"
-    },
-    {
-      "name": "KbTicker",
-      "section": "live listing tape"
-    },
-    {
-      "name": "KbSell",
-      "section": "seller address ask"
-    },
-    {
-      "name": "KbTestimonials",
-      "section": "Google reviews"
-    },
-    {
-      "name": "KbTeam",
-      "section": "the three brokers"
-    },
-    {
-      "name": "KbMarketHud",
-      "section": "live market figures"
-    },
-    {
-      "name": "V3Footer",
-      "section": "the ONE site footer (was KbFooter until 2026-08-27)"
-    }
+    { "name": "V3SectionTracker", "section": "analytics island" },
+    { "name": "V3Stage", "section": "the Bend flyover hero, D11 H1, one primary" },
+    { "name": "HomeHomesField", "section": "Field: count line, town filters, curated homes + map" },
+    { "name": "PlaceFieldMap", "section": "the Google map in the Field frame" },
+    { "name": "V3Ledger", "section": "towns (with remainder note), then communities" },
+    { "name": "V3Instrument", "section": "the market question, leftover KPI row, year overlay" },
+    { "name": "V3PlacePropertyTypes", "section": "the property-type run (enumerated Instrument tail)" },
+    { "name": "V3Footer", "section": "footer outside main, per-town fine print" }
   ]
 }

@@ -58,29 +58,24 @@ describe('how-we-get-our-numbers copy', () => {
 })
 
 describe('HUD and leftover panels jump to the dictionary', () => {
-  it('KbMarketHud maps every printed KPI label through HUD_KPI_HOW', () => {
-    const hud = readFileSync(resolve('components/site/kb/KbMarketHud.client.tsx'), 'utf8')
-    expect(hud).toMatch(/HUD_KPI_HOW/)
-    expect(hud).toMatch(/MetricHowLink/)
-    const labels = [...hud.matchAll(/lbl:\s*'([^']+)'/g)].map((match) => match[1])
-    expect(labels.length).toBeGreaterThan(5)
-    for (const label of labels) {
-      expect(HUD_KPI_HOW[label as keyof typeof HUD_KPI_HOW], label).toBeDefined()
-    }
-  })
-
-  it('leftover, mix, and extra-type headers carry a how-link', () => {
-    const pace = readFileSync(resolve('app/cities/[slug]/PublicPaceStats.tsx'), 'utf8')
-    const mix = readFileSync(resolve('app/cities/[slug]/PublicMixStats.tsx'), 'utf8')
+  // The KB market HUD (KbMarketHud + the three Public*Stats panels +
+  // MetricHowLink) was deleted with its last consumer, app/page.tsx, in the
+  // 2026-08-27 v3 rebuild. The v3 Instrument carries its methodology in the
+  // section source line instead of per-KPI how-links, and the dictionary page
+  // itself survives behind the chrome footer's Market column. HUD_KPI_HOW's
+  // label coverage is asserted above against the dictionary's own entries.
+  // PublicProductTypes survives on its one remaining mount (the listing page's
+  // NeighborhoodMarketContext) and keeps its how-link.
+  it('the surviving product-types strip carries a how-link', () => {
     const types = readFileSync(resolve('app/cities/[slug]/PublicProductTypes.tsx'), 'utf8')
-    expect(pace).toMatch(/MetricHowLink/)
-    expect(pace).toMatch(/PANEL_HOW\.pace/)
-    expect(mix).toMatch(/MetricHowLink/)
-    expect(mix).toMatch(/PANEL_HOW\.mix/)
     expect(types).toMatch(/MetricHowLink/)
     expect(types).toMatch(/PANEL_HOW\.products/)
+    const listing = readFileSync(
+      resolve('components/site/listing-detail/NeighborhoodMarketContext.tsx'),
+      'utf8',
+    )
+    expect(listing).toMatch(/PublicProductTypes/)
   })
-
   it('the dictionary page renders every entry id', () => {
     const page = readFileSync(resolve('app/how-we-get-our-numbers/page.tsx'), 'utf8')
     expect(page).toMatch(/HOW_NUMBER_ENTRIES/)

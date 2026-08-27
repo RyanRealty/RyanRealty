@@ -26,21 +26,11 @@ checks.push({
     /export function isRegionalSearchHref/.test(helper),
 })
 
-const hero = src('components/site/kb/KbHero.client.tsx')
-checks.push({
-  label: 'KbHero default See homes uses the regional href',
-  ok:
-    /from ['"]@\/lib\/search\/publish-regional-search-href['"]/.test(hero) &&
-    /publishRegionalSearchHref\(/.test(hero),
-})
-
-const towns = src('components/site/kb/KbExploreTowns.client.tsx')
-checks.push({
-  label: 'KbExploreTowns default See homes for sale uses the regional href',
-  ok:
-    /from ['"]@\/lib\/search\/publish-regional-search-href['"]/.test(towns) &&
-    /publishRegionalSearchHref\(/.test(towns),
-})
+// KbHero and KbExploreTowns were deleted with their last consumer
+// (app/page.tsx, 2026-08-27 v3 rebuild). Their default-prop checks died with
+// the components; the rule they enforced — every regional See-homes door goes
+// through publishRegionalSearchHref — lives on in the homepage arm below,
+// which pins the v3 page's own doors (Stage action + Instrument browse link).
 
 const map = src('components/site/kb/KbListingMapImpl.tsx')
 checks.push({
@@ -51,11 +41,18 @@ checks.push({
 })
 
 const home = src('app/page.tsx')
+// Register-aware (2026-08-27 v3 rebuild): the KB spelling was KbFeatured's
+// viewAllHref prop; on the barrel the regional doors are the Stage action and
+// leftoverMarketFigures' browse link, both built by publishRegionalSearchHref.
+// Either spelling must be present — a page on neither fails loudly.
 checks.push({
   label: 'homepage does not hardcode the Bend-injecting /homes-for-sale door on regional CTAs',
   ok:
     !/cta=\{\{\s*href:\s*['"]\/homes-for-sale['"]/.test(home) &&
-    /viewAllHref=\{publishRegionalSearchHref\(\)\}/.test(home),
+    !/href:\s*['"]\/homes-for-sale['"]/.test(home) &&
+    (/viewAllHref=\{publishRegionalSearchHref\(\)\}/.test(home) ||
+      (/href:\s*publishRegionalSearchHref\(\)/.test(home) &&
+        /browse:\s*publishRegionalSearchHref\(\)/.test(home))),
 })
 
 const footer = src('components/site/kb/KbFooter.client.tsx')

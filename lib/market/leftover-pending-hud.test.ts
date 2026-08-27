@@ -3,7 +3,9 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const files = {
-  hud: readFileSync(resolve('components/site/kb/KbMarketHud.client.tsx'), 'utf8'),
+  // KbMarketHud was deleted with its last consumer (app/page.tsx, 2026-08-27
+  // v3 rebuild); the KPI-order pin it carried lives on the shared v3 builder
+  // (leftoverMarketFigures in city-sections) asserted below.
   types: readFileSync(resolve('components/site/kb/types.ts'), 'utf8'),
   home: readFileSync(resolve('app/page.tsx'), 'utf8'),
   city: readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8'),
@@ -21,21 +23,23 @@ const files = {
 }
 
 describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', () => {
-  it('HUD KPI row prints leftover pending after Active homes', () => {
-    expect(files.hud).toMatch(/lbl: 'Active homes'/)
-    expect(files.hud).toMatch(/lbl: 'Pending · now'/)
-    expect(files.hud.indexOf("lbl: 'Pending · now'")).toBeGreaterThan(files.hud.indexOf("lbl: 'Active homes'"))
+  it('v3 KPI builder prints leftover pending after the active count', () => {
+    const citySections = readFileSync(resolve('app/cities/[slug]/_v3/city-sections.ts'), 'utf8')
+    expect(citySections).toMatch(/label: v3Text\('detached homes for sale'\)/)
+    expect(citySections).toMatch(/label: v3Text\('pending · now'\)/)
+    expect(citySections.indexOf("label: v3Text('pending · now')")).toBeGreaterThan(
+      citySections.indexOf("label: v3Text('detached homes for sale')"),
+    )
     expect(files.types).toMatch(/pending: number \| null/)
   })
 
   it('place HUDs pass leftover pending, not pulse fill', () => {
-    // The KB spelling: `pending: hud.pending` inside the KbMarketData literal.
-    for (const [name, src] of Object.entries({
-      home: files.home,
-    })) {
-      expect(src, name).toMatch(/pending:\s*hud\.pending/)
-      expect(src, name).not.toMatch(/pending:\s*pulse/)
-    }
+    // The v3 spelling for the homepage (2026-08-27): its figures come from the
+    // same shared builder as the place pages. getMarketPulseAllCitySnapshots
+    // stays for the D21 remainder note only — no pulse value reaches a figure.
+    expect(files.home).toMatch(/leftoverMarketFigures\(hud/)
+    expect(files.home).not.toMatch(/pending:\s*pulse/)
+    expect(files.home).not.toMatch(/getRegionPulse/)
     // The v3 spelling for the city page, MOVED not dropped (2026-08-26): the
     // market Instrument's figures are built in _v3/city-sections.ts off the
     // same leftover pile, so the rule is asserted where the figure is built.

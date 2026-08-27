@@ -13,9 +13,17 @@ import './about-faces.css'
 export function AboutFaces({
   people,
   heading,
+  headingLevel = 1,
 }: {
   people: readonly AboutFace[]
   heading: string
+  /**
+   * 1 on /about and /team, where the faces ARE the page and the heading is the
+   * H1. 2 on the homepage, whose H1 is the Stage — a second H1 on one document
+   * is an outline defect, not a style choice. Default keeps both existing
+   * callers byte-identical.
+   */
+  headingLevel?: 1 | 2
 }) {
   const [first, ...rest] = people
   if (!first) return null
@@ -28,7 +36,7 @@ export function AboutFaces({
       aria-labelledby="faces-heading"
     >
       <div className="about-faces__head">
-        <V3Heading level={1} id="faces-heading" className="about-faces__heading">
+        <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
           {heading}
         </V3Heading>
       </div>

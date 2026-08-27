@@ -383,7 +383,18 @@ for (const req of REQUIRED) {
   }
 }
 
-// (3) KbHero defaults must not reintroduce poetry when a caller omits props
+// (3) The hero's Layer A lock, wherever the hero lives.
+//
+// KB era: KbHero carried default titleTop/titleBottom props, so the defaults
+// themselves were the poetry footgun and this section pinned them. The 2026-08-27
+// v3 rebuild deleted KbHero with its last consumer (app/page.tsx); the hero is
+// now the V3Stage mounted IN app/page.tsx, whose headline is a literal this
+// gate's REQUIRED block pins (the D11 arm) and whose text the banned-poetry
+// scan above already reads (extractLayerAShell's `headline=` arm). V3Stage has
+// no default headline, so there is no defaults footgun to pin. This branch
+// keeps the lock from evaporating: if KbHero ever returns it is re-pinned, and
+// while it is gone the v3 hero literal MUST be present in app/page.tsx —
+// a homepage with neither spelling fails here as well as in REQUIRED.
 const HERO = join(ROOT, 'components/site/kb/KbHero.client.tsx')
 if (existsSync(HERO)) {
   const heroSrc = readFileSync(HERO, 'utf8')
@@ -413,12 +424,15 @@ if (existsSync(HERO)) {
     })
   }
 } else {
-  violations.push({
-    file: 'components/site/kb/KbHero.client.tsx',
-    kind: 'missing',
-    id: 'hero-missing',
-    msg: 'KbHero component missing — cannot lock Layer A defaults',
-  })
+  const homeSrc = readFileSync(join(ROOT, 'app/page.tsx'), 'utf8')
+  if (!/headline=\{v3Text\('Homes for Sale in Central Oregon'\)\}/.test(homeSrc)) {
+    violations.push({
+      file: 'app/page.tsx',
+      kind: 'hero-default',
+      id: 'v3-hero-lock',
+      msg: 'KbHero is deleted, so the v3 hero must carry the D11 literal headline={v3Text(\'Homes for Sale in Central Oregon\')} in app/page.tsx',
+    })
+  }
 }
 
 // ── Report ──────────────────────────────────────────────────────────────────

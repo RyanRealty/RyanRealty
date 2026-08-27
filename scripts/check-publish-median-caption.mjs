@@ -18,23 +18,13 @@ function src(path) {
   return readFileSync(path, 'utf8')
 }
 
-const helper = src('lib/market/publish-median-caption.ts')
-checks.push({
-  label: 'publishSellMedian pairs a place number with a place caption',
-  ok:
-    /export function publishSellMedian/.test(helper) &&
-    /export function medianCaptionForGrain/.test(helper) &&
-    helper.includes("caption: 'Regional median'") &&
-    helper.includes('medianCaptionForGrain(input.grain, input.placeName)'),
-})
-
-const sell = src('components/site/kb/KbSell.client.tsx')
-checks.push({
-  label: 'KbSell withholds a median that has no geography caption',
-  ok:
-    /medianCaption \? kbMoneyFull/.test(sell) &&
-    !sell.includes('Regional median'),
-})
+// publishSellMedian, medianCaptionForGrain, and KbSell were deleted with
+// their last consumer (app/page.tsx, 2026-08-27 v3 rebuild): every sell
+// surface on the barrel publishes NO median at all, which the per-surface
+// arms below assert directly. The founding rule — a published list median
+// carries the geography of the number — survives as those arms. If a sell
+// surface that prints a median returns, it must bring the publisher back
+// with it, and this pin returns too.
 
 const surfaces = [
   {
@@ -71,7 +61,16 @@ const surfaces = [
   },
   {
     path: 'app/page.tsx',
-    label: 'homepage gates KbSell median through publishSellMedian',
+    label: 'homepage sell ask publishes no uncaptioned median',
+    // MOVED, NOT DROPPED (2026-08-27). The homepage left the KB register and
+    // KbSell left with it. The seller ask is the market Instrument's ghost
+    // action — valuationHref keeps the ?from= attribution — and it publishes
+    // no median at all: the medians the page prints sit in the Instrument
+    // figures and the place ledgers, each under a section that names its
+    // geography and its trace. Put a money value into the ask label, or drop
+    // the valuation ask entirely, and this fires. A page that puts KbSell
+    // back satisfies the first arm instead.
+    noMedianAsk: true,
   },
   {
     path: 'app/zip/[zip]/page.tsx',
@@ -123,6 +122,11 @@ for (const surface of surfaces) {
       /from ['"]@\/lib\/market\/publish-plat-figures['"]/.test(text) &&
       /publishPlatFigures\(/.test(text) &&
       !/cityPulse|communityPulse/.test(stripComments(text))
+  }
+  if (!ok && surface.noMedianAsk) {
+    // The valuation ask exists and its visible label carries no figure.
+    const ask = /action=\{\{\s*label:\s*v3Text\('([^']*)'\),\s*href:\s*valuationHref\(/.exec(text)
+    ok = Boolean(ask) && !PUBLISHES_A_MEDIAN.test(ask[1]) && !/[$\d]/.test(ask[1])
   }
   if (!ok && surface.noMedianSurface) {
     const sheet = src(surface.noMedianSurface)

@@ -1304,7 +1304,6 @@
       "app/communities/**",
       "app/zip/**",
       "app/housing-market/**",
-      "components/site/kb/KbMarketHud.client.tsx",
       "lib/site/market-faq.ts",
       "scripts/check-market-question-heading.mjs"
     ]

@@ -46,8 +46,25 @@ const JSON_OUT = process.argv.includes('--json')
 // ---------------------------------------------------------------------------
 
 const DEAD_FILES = [
-  // KbSell.client.tsx is live again on the restored KB public site (home, city,
-  // community, zip, neighborhood, subdivision tail). Do not re-add it here.
+  // ----- The KB homepage register (deleted 2026-08-27 with its last consumer) -----
+  // The v3 Broadside homepage rebuild (Matt approved 2026-08-27) removed
+  // app/page.tsx's kb imports; these nine components then had zero importers
+  // (verified via grep + ci:reachable-exports) and were deleted per the orphan
+  // cascade. Their jobs live on the barrel: the hero is V3Stage, towns and
+  // communities are V3Ledger rows, featured homes are the V3Field, the market
+  // HUD is the V3Instrument. Do not recreate them; the pattern set is closed.
+  { path: 'components/site/kb/KbHero.client.tsx', reason: 'hero → V3Stage in app/page.tsx' },
+  { path: 'components/site/kb/KbExploreTowns.client.tsx', reason: 'towns → V3Ledger #towns' },
+  { path: 'components/site/kb/KbCommunities.client.tsx', reason: 'communities → V3Ledger #communities' },
+  { path: 'components/site/kb/KbTicker.client.tsx', reason: 'tape rows → the Field list' },
+  { path: 'components/site/kb/KbSell.client.tsx', reason: 'seller ask → the market Instrument ghost action' },
+  { path: 'components/site/kb/KbTestimonials.client.tsx', reason: 'proof lives at /reviews' },
+  { path: 'components/site/kb/KbTeam.client.tsx', reason: 'brokers live at /team' },
+  { path: 'components/site/kb/KbMarketHud.client.tsx', reason: 'market HUD → V3Instrument #market' },
+  { path: 'components/site/kb/KbCommunityAlerts.client.tsx', reason: 'alert capture lives on place-page sheets' },
+  { path: 'lib/market/publish-median-caption.ts', reason: 'no sell surface publishes a median; ci:publish-median-caption asserts that per surface' },
+  { path: 'app/cities/[slug]/PublicPaceStats.tsx', reason: 'pace figures fold into leftoverMarketFigures via publicPaceItems' },
+  { path: 'app/cities/[slug]/PublicMixStats.tsx', reason: 'mix figures fold into leftoverMarketFigures via buildPublicMixFigures' },
   // ----- Deprecated breadcrumb impls -----
   // The sole breadcrumb is components/site/BreadcrumbNav.tsx. The following
   // are old implementations that have been superseded. They have zero import

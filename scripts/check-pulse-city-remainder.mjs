@@ -76,27 +76,57 @@ for (const surface of surfaces) {
  */
 {
   const text = src('app/page.tsx')
-  const heroMatch = /<KbHero\b[\s\S]*?\/>/.exec(text)
-  const hero = heroMatch ? heroMatch[0] : ''
-  const leadMatch = /\blead=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(hero)
-  const lead = (leadMatch?.[1] ?? leadMatch?.[2] ?? '').toLowerCase()
   const townOrder = /const TOWN_ORDER = \[([^\]]*)\]/.exec(text)?.[1] ?? ''
   const towns = [...townOrder.matchAll(/'([^']+)'/g)].map((m) => m[1].replace(/-/g, ' '))
-  const named = towns.filter((town) => lead.includes(town))
-  checks.push({
-    label: 'homepage hero passes the leftover region HUD count',
-    ok: /activeCount:\s*hud\.active/.test(hero),
-  })
-  checks.push({
-    label: 'homepage hero lead names the region, not the town doors',
-    ok:
-      towns.length > 0 &&
-      lead.length > 0 &&
-      named.length === 0 &&
-      /central oregon/.test(lead),
-  })
-  if (named.length > 0) {
-    console.log(`      hero lead names town door(s): ${named.join(', ')}`)
+
+  const heroMatch = /<KbHero\b[\s\S]*?\/>/.exec(text)
+  if (heroMatch) {
+    // KB register: the hero tag carries the count and the lead.
+    const hero = heroMatch[0]
+    const leadMatch = /\blead=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(hero)
+    const lead = (leadMatch?.[1] ?? leadMatch?.[2] ?? '').toLowerCase()
+    const named = towns.filter((town) => lead.includes(town))
+    checks.push({
+      label: 'homepage hero passes the leftover region HUD count',
+      ok: /activeCount:\s*hud\.active/.test(hero),
+    })
+    checks.push({
+      label: 'homepage hero lead names the region, not the town doors',
+      ok:
+        towns.length > 0 &&
+        lead.length > 0 &&
+        named.length === 0 &&
+        /central oregon/.test(lead),
+    })
+    if (named.length > 0) {
+      console.log(`      hero lead names town door(s): ${named.join(', ')}`)
+    }
+  } else {
+    // v3 register (2026-08-27 rebuild): the count line is the Field's `count`
+    // slot. The value expression must be the leftover HUD row, the sentence it
+    // sits in is the HERO_COUNT_LEAD literal, and that literal must name the
+    // region and never a TOWN_ORDER door. Written register-aware so a page on
+    // NEITHER spelling fails loudly instead of passing vacuously.
+    const leadMatch = /const HERO_COUNT_LEAD = '([^']*)'/.exec(text)
+    const lead = (leadMatch?.[1] ?? '').toLowerCase()
+    const named = towns.filter((town) => lead.includes(town))
+    checks.push({
+      label: 'homepage v3 count is the leftover region HUD row (value: hud.active + label: HERO_COUNT_LEAD)',
+      ok:
+        /value:\s*hud\.active\.toLocaleString\('en-US'\)/.test(text) &&
+        /label:\s*HERO_COUNT_LEAD/.test(text),
+    })
+    checks.push({
+      label: 'homepage v3 count sentence names the region, not the town doors',
+      ok:
+        towns.length > 0 &&
+        lead.length > 0 &&
+        named.length === 0 &&
+        /central oregon/.test(lead),
+    })
+    if (named.length > 0) {
+      console.log(`      HERO_COUNT_LEAD names town door(s): ${named.join(', ')}`)
+    }
   }
 }
 

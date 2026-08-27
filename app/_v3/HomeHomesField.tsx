@@ -1,19 +1,22 @@
 /**
- * Homepage inventory Field. Houses open the page. The D11 H1 is Amboqia at
- * field size so photographs fill the fold. Towns are filters into the browse
- * Field, not a number poster. The region count is a caption, never a V3Figure
- * hero. The first photographed house is the fold.
+ * Homepage inventory Field. The Stage above carries the D11 H1, so this
+ * section names itself through V3Field's ariaLabel and renders no heading of
+ * its own. The count line is the leftover region row with the D19 sentence
+ * (label arrives from app/page.tsx so ci:pulse-city-remainder can read it),
+ * towns are ghost filters into the browse surface, and the map in the frame
+ * plots exactly the homes the list shows.
  */
-import { V3Button, V3Field, V3Heading, V3SourceLine, type V3FieldItem } from '@/components/site/v3'
+import { V3Button, V3Field, type V3FieldItem, type V3FieldMapSlot } from '@/components/site/v3'
 import './home-homes-field.css'
 
 export function HomeHomesField({
-  heading,
   fieldItems,
   towns,
   count,
+  mapSlot,
+  mapNote,
+  emptyMessage,
 }: {
-  heading: string
   fieldItems: V3FieldItem[]
   towns: readonly { label: string; href: string }[]
   count?: {
@@ -22,23 +25,17 @@ export function HomeHomesField({
     source: string
     updatedAt: string | null
   }
+  mapSlot?: V3FieldMapSlot
+  mapNote?: string
+  emptyMessage: string
 }) {
   const [firstTown, ...restTowns] = towns
 
   return (
-    <div className="home-homes-field">
+    <div className="home-homes-field" id="homes">
+      {/* The count renders once, through V3Field's own count line, so the
+          figure and its trace stay welded (V3Field renders them together). */}
       <header className="home-homes-field__head">
-        <V3Heading level={1} size="field">
-          {heading}
-        </V3Heading>
-        {count ? (
-          <p className="home-homes-field__count">
-            <span className="home-homes-field__count-value tabular-nums text-foreground">
-              {count.value}
-            </span>
-            {` ${count.label}`}
-          </p>
-        ) : null}
         {firstTown ? (
           <nav aria-label="Towns" className="home-homes-field__towns">
             <V3Button href={firstTown.href} variant="ghost">
@@ -55,11 +52,13 @@ export function HomeHomesField({
 
       <V3Field
         id="listed"
-        ariaLabel="Homes for sale in Central Oregon"
+        ariaLabel="Homes for sale across Central Oregon"
         items={fieldItems}
-        emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
+        mapSlot={mapSlot}
+        mapNote={mapNote}
+        count={count ? { value: count.value, label: count.label, source: count.source, updatedAt: count.updatedAt } : undefined}
+        emptyMessage={emptyMessage}
       />
-      {count ? <V3SourceLine source={count.source} updatedAt={count.updatedAt} /> : null}
     </div>
   )
 }

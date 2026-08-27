@@ -611,17 +611,25 @@ describe('design directive contracts', () => {
   // D103/D103b (home-d section objects) retired with the home-d revert
   // (Matt, 2026-08-21): / is back on the homepage-v6 template.
 
-  it('D99 — homepage market HUD is live pulse, not a second sale-series caption (§0)', () => {
+  // D99/D101 v3 spelling (2026-08-27 Broadside rebuild — Matt approved; the
+  // 2026-08-21 home-d revert pinned <KbMarketHud>, and this rebuild supersedes
+  // that pin). The FACTS survive re-expressed: the homepage market section
+  // reads the LIVE leftover pile (leftoverHudKpis -> leftoverMarketFigures),
+  // never the stats cache; it mounts ONE chart derivation (the place-family
+  // placeMedianChart year overlay), not the market hub's atom; and the hub's
+  // own chart keeps its honest caption.
+  it('D99 — homepage market section is the live leftover pile, not a cache read (§0)', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/from ['"]@\/components\/site\/kb\/KbMarketHud/)
-    expect(page).toMatch(/<KbMarketHud/)
+    expect(page).toMatch(/leftoverMarketFigures\(hud/)
+    expect(page).not.toMatch(/getMarketStatsCacheRowForGeo/)
+    expect(page).not.toMatch(/<KbMarketHud/)
     const charts = readSrc('app/housing-market/_v3/market-charts.ts')
     expect(charts).toMatch(/Median sale price by month, recent years/)
   })
 
-  it('D101 — homepage market HUD stays on the live pulse, not a second chart atom', () => {
+  it('D101 — homepage mounts one chart derivation, not the market hub atom', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/<KbMarketHud/)
+    expect(page).toMatch(/placeMedianChart\(/)
     expect(page).not.toMatch(/buildRegionMedianChart/)
   })
 

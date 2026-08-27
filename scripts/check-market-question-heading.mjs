@@ -58,11 +58,11 @@ function routeLocalSources(dir) {
 }
 
 // ── The templates themselves, pinned where the idioms point ────────────────
-const hud = stripComments(src('components/site/kb/KbMarketHud.client.tsx'))
-checks.push({
-  label: 'KbMarketHud templates the question heading from geoName + a live verdict',
-  ok: hud.includes("`Is ${geoName} a buyer's or seller's market?`"),
-})
+// KbMarketHud was deleted with its last consumer (app/page.tsx, 2026-08-27 v3
+// rebuild), so the KB template pin died with it. Every grain now renders the
+// question through the v3 idiom (the Instrument headline) or the FAQ idiom,
+// both templated by buildMarketFaq — pinned below. If KbMarketHud returns, its
+// kbIdiom arm still works and this pin must return with it.
 
 const faq = stripComments(src('lib/site/market-faq.ts'))
 checks.push({
