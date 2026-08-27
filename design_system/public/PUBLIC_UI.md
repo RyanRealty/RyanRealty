@@ -8,10 +8,17 @@ body, voice canon) — everything about shape, rhythm, and motion is derived her
 prototype (docs/plans/PUBLIC_PRODUCT/decisions.md). The pattern set is closed: a section
 that fits none of the six changes this file, it never earns a page exemption.**
 
-**Amendments to the lock.** One so far. **2026-08-26 (Matt):** §3's rhythm rule now says
+**Amendments to the lock.** Two so far. **2026-08-26 (Matt):** §3's rhythm rule now says
 what an enumeration is, so a run of one section rendered once per member of a set the
 place determines counts once. The pattern set itself is unchanged — still six, still
-closed.
+closed. **2026-08-26 (Matt, THE LOOK):** the visual language now carries exactly two
+registers — Broadside on content surfaces, Ledger on search/data surfaces — defined in §9.
+A register varies structure, density, rule weight, and motion only; the pattern set, the
+palette, and the brand faces are untouched. §9 also records the two register-scoped
+amendments to §2: the Ledger register's working UI text runs a 13px base (the ≥16px floor
+governs reading prose, which Ledger surfaces do not carry), and Ledger rows run 32px
+(the row is a full-width target, clearing WCAG 2.5.8's 24px floor; the 44px thumb floor
+stays on every discrete control).
 
 ## 1. Thesis
 
@@ -168,3 +175,78 @@ Matt judged the MOVING prototype live in production at `/dev/public-v3` (real Be
 390 and 1280, reduced-motion path) and granted the visual lock on 2026-08-11. The barrel
 that implements these patterns is `components/site/v3`, enforced by `ci:public-v3`, and
 the rollout onto it is ratcheted by `ci:public-ui`.
+
+## 9. THE LOOK (Matt 2026-08-26, LOCKED)
+
+Matt judged four candidate skins on one shared specimen (the Skin Room: identical markup,
+every visual difference carried in one token block per skin) and locked two:
+
+- **Broadside** — the DEFAULT register. Every content surface wears it by mounting
+  `V3_ROOT_CLASS` and nothing else. The site reads like the broker's own broadsheet:
+  radius 0, no elevation shadows, rule weight as the hierarchy, photography full-bleed
+  and unframed.
+- **Ledger** — the register for search/data surfaces. A surface takes it by mounting
+  `V3_LEDGER_CLASS` (exported from the barrel) beside `V3_ROOT_CLASS` on its page root.
+  A working instrument: 13px base, Geist Mono numerals, 32px rows, near-full-viewport
+  width, sunken panels, 120ms linear motion. The data is the spectacle.
+- **Vellum** — REJECTED, explicitly: soft depth, radius 16, layered navy shadows is the
+  Bend competitor default, the register this brand would be choosing to blend into.
+- **Stamp** — not adopted for the web product.
+
+A register varies structure, density, rule weight, and motion ONLY. Both registers keep
+the locked brand (navy `#102742` / cream `#faf8f4`, Amboqia + Geist), both keep the six
+patterns, and NEITHER register draws an elevation shadow anywhere. The implementation is
+`components/site/v3/tokens.css`: Broadside is the base `.v3` token block, Ledger is the
+section 2b re-declaration. A component never branches on register — it reads tokens.
+
+### The token translation (specimen value → v3 token)
+
+| Skin Room value | v3 token | Broadside | Ledger |
+|---|---|---|---|
+| radius 0 everywhere | `--v3-radius-sm/control/card/pill` | 0 | 0 |
+| circular map pins / chart points | `--v3-radius-mark` | 999px (a data mark is not a box; no register overrides it) | same |
+| 1px hairline rules | `--v3-hairline` / `--v3-rule-hairline` | `rgba(16,39,66,.08)` | `rgba(16,39,66,.06)` |
+| navy section rules | `--v3-rule-section` | 2px navy | 3px navy |
+| mast rule (header bottom, nothing else) | `--v3-rule-mast` | 4px navy | 3px navy |
+| section rhythm | `--v3-section-pad` | `clamp(3.5rem, 9vw, 7.5rem)` | 1.625rem |
+| small-caps label tracking | `--v3-track-label` | .14em | .12em |
+| display tracking | `--v3-track-display` | −0.01em | 0 |
+| display face + weight | `--v3-font-display` / `--v3-weight-display` | Amboqia · 400 | Geist · 600 |
+| numeral face (figures) | `--v3-font-num` | Amboqia (the number is the spectacle) | Geist Mono |
+| base body size | `--v3-size-body` (+ the ramp) | 1rem | 0.8125rem (13px, working UI text — see the §2 amendment above) |
+| page measure | `--v3-measure` | 72rem | `min(96vw, 97.5rem)` |
+| row height / row padding | `--v3-row-min` / `--v3-row-pad-block` | 44px / `--v3-space-sm` | 32px / `--v3-space-2xs` |
+| panels | `--v3-panel-bg` / `--v3-panel-border` | raised white, 1px `--v3-edge` | sunken `rgba(16,39,66,.03)`, 1px `--v3-edge` |
+| photography | `--v3-photo-thumb/tile-min/lead-min` | 7.5 / 12 / 24rem, unframed | 4.5 / 9 / 16rem — small, data-first |
+| motion | `--v3-dur-*` / `--v3-ease-out` | the locked §5 ladder (200/300/400ms, ease-out) — the ladder supersedes the specimen's single 300ms | 120ms, linear |
+| shadows | — | none. The only shadows in the barrel are functional: the inset selection ring on a Field row/photo and the on-media text shadow for type over photography. Neither is elevation, and neither register adds one. | same |
+
+Rule placement: a pattern section that FOLLOWS content opens on `--v3-rule-section`
+(`* + .v3.v3-<pattern>` in each pattern stylesheet); the section that opens the page
+carries none, because the mast rule above it already closed the chrome. Sheet draws no
+section rule — at its 40rem working measure a 72rem-language rule would misstate its
+width. `--v3-edge` (12%) remains the box edge of a control or panel (an input, the map
+frame); it is not a rule and does not thin to the hairline.
+
+### Which register each v3 surface wears
+
+| Surface family | Routes (v3 today) | Register |
+|---|---|---|
+| Search | `/homes-for-sale` (app/search/page.tsx), `/homes-for-sale/[...]` (app/search/[...slug]), the map split view | **Ledger** |
+| Homes browse | `/open-houses`, `/price-drops`, `/our-homes`, `/luxury-homes-bend`, `/compare` | Broadside |
+| Places | `/cities`, `/oregon/[city]`, `/zip/[zip]`, `/neighborhoods`, `/communities`, `/subdivisions`, `/subdivisions/[slug]` | Broadside |
+| Market | `/housing-market` and every leaf, `/months-of-supply`, `/reports/sales/[city]/[period]`, `/how-we-get-our-numbers` | Broadside |
+| Guides | `/central-oregon/*` (golf, trails, events, venues), `/parks`, `/schools` | Broadside |
+| Sell | `/sell`, `/sell/valuation`, `/cma-drafts/[id]` | Broadside |
+| About / proof | `/about`, `/team`, `/reviews`, `/videos`, `/join`, `/refer-a-client`, `/blog` | Broadside |
+| Tools | `/tools/mortgage-calculator`, `/tools/rental-property-calculator`, `/tools/appreciation` | Broadside |
+| Account + utility | `/account`, `/activity`, `/book`, `/contact`, `/faq`, `/newsletter`, legal/system pages, auth pages, `/site-index`, `/not-found` | Broadside |
+
+The line: a surface whose JOB is scanning and filtering many live rows is a data surface
+and wears Ledger; a surface that answers, shows, or asks — even with figures on it — is a
+content surface and wears Broadside. `/compare`, `/account` saved ledgers, and the two
+calculators are the watch list: each is Broadside today and becomes a Ledger candidate
+for Matt's call the next time its family is touched. Interior components on the search
+surfaces that still import the legacy register (ListingCard, the filter chrome — held by
+the `ci:public-ui` baseline) inherit the register's inherited properties only; they take
+the full Ledger treatment when they roll onto the barrel.
