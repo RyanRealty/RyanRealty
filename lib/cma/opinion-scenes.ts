@@ -19,6 +19,7 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
 import { formatDate } from '@/lib/format/date'
+import { subjectPossessive } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 
@@ -103,7 +104,7 @@ function salesScene(a: OpinionSceneArgs): string {
       <p class="lede r">Subject in the first column. Each kept sale is a column.</p>
       <div class="r">${renderCompMatrixHtml(a.subject, a.comps)}</div>
       ${pinMap ? `<div class="pin-map-wrap r">${pinMap}</div>` : ''}
-      <div class="r">${renderCompStripHtml(a.comps)}</div>
+      <div class="r">${renderCompStripHtml(a.comps, subjectPossessive(a.subject))}</div>
     </div>
   </section>`
 }

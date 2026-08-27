@@ -19,6 +19,7 @@ import type {
 } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
+import { subjectPossessive } from '@/lib/cma/land-pricing'
 
 const usd = formatPriceExact
 
@@ -195,27 +196,28 @@ export function whyThisListPrice(input: {
   expiredAudit?: ExpiredAuditData | null
 }): WhyThisListPrice {
   const failedAsk = failedAskOnRow(input)
+  const noun = subjectPossessive(input.subject)
   const { ceiling, floor, best } = pickComps(input.comps)
   const bullets: WhyBullet[] = []
   if (ceiling && floor && ceiling !== floor) {
     bullets.push({
       label: ceiling.address,
-      text: `Sold at ${usd(ceiling.closePrice)}. As your house, ${usd(ceiling.adjustedPrice)}. That is the top of this set.`,
+      text: `Sold at ${usd(ceiling.closePrice)}. As your ${noun}, ${usd(ceiling.adjustedPrice)}. That is the top of this set.`,
     })
     if (best && best !== ceiling && best !== floor) {
       bullets.push({
         label: best.address,
-        text: `The closest match. As your house, ${usd(best.adjustedPrice)}.`,
+        text: `The closest match. As your ${noun}, ${usd(best.adjustedPrice)}.`,
       })
     }
     bullets.push({
       label: floor.address,
-      text: `Sold at ${usd(floor.closePrice)}. As your house, ${usd(floor.adjustedPrice)}. That is the floor of this set.`,
+      text: `Sold at ${usd(floor.closePrice)}. As your ${noun}, ${usd(floor.adjustedPrice)}. That is the floor of this set.`,
     })
   } else if (best) {
     bullets.push({
       label: best.address,
-      text: `Sold at ${usd(best.closePrice)}. As your house, ${usd(best.adjustedPrice)}.`,
+      text: `Sold at ${usd(best.closePrice)}. As your ${noun}, ${usd(best.adjustedPrice)}.`,
     })
   }
 

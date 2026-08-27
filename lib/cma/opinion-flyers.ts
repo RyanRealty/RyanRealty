@@ -29,6 +29,7 @@ export function compFlyerPage(
   comps: readonly CmaAdjustedComp[],
   comp: CmaAdjustedComp,
   index: number,
+  noun: string = 'house',
 ): CmaPageDef {
   const hero = sparkPhotoAt(comp.photoUrl, '1024x768')
   const remarks = trimRemarks(comp.publicRemarks, 800)
@@ -63,12 +64,12 @@ export function compFlyerPage(
     <div class="f"><div class="fl">Days on Market</div><div class="fv">${comp.daysToOffer != null ? `${int(comp.daysToOffer)} to offer` : '-'}${comp.domTotal != null ? ` · DOM ${int(comp.domTotal)}` : ''}</div></div>
     <div class="f"><div class="fl">Distance from Subject</div><div class="fv">${comp.proximity ? esc(comp.proximity) : '-'}</div></div>
     ${formatClientMlsField(comp.viewDescription) ? `<div class="f"><div class="fl">View</div><div class="fv">${esc(formatClientMlsField(comp.viewDescription)!)}</div></div>` : ''}
-    <div class="f"><div class="fl">This sale as your house</div><div class="fv">${usd(comp.adjustedPrice)}</div></div>
+    <div class="f"><div class="fl">This sale as your ${noun}</div><div class="fv">${usd(comp.adjustedPrice)}</div></div>
   </div>
   ${remarks ? '<p class="small">Description quoted from the MLS listing record.</p>' : ''}`,
   }
 }
 
-export function assembleCompFlyerPages(comps: readonly CmaAdjustedComp[]): CmaPageDef[] {
-  return comps.map((row, index) => compFlyerPage(comps, row, index))
+export function assembleCompFlyerPages(comps: readonly CmaAdjustedComp[], noun: string = 'house'): CmaPageDef[] {
+  return comps.map((row, index) => compFlyerPage(comps, row, index, noun))
 }

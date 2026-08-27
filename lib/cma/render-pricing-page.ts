@@ -9,7 +9,7 @@ import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
-import { subjectNoun } from '@/lib/cma/land-pricing'
+import { subjectNoun, subjectPossessive } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 
@@ -38,7 +38,7 @@ function adjustmentRows(comps: CmaAdjustedComp[], noun: string, sizeNoun: string
   <h3 class="subhead">What each sale becomes on your house</h3>
   <p>Close $ is the contract price. Time brings the sale to today. Size brings it to your ${sizeNoun}. As your ${noun} is that sale as if it were your ${noun}. It is not a second list price.</p>
   <table class="kv is-wide comps-adjust">
-    <thead><tr><th>Sale</th><th class="v">Sold</th><th class="v">Close $</th><th class="v">Time</th><th class="v">Size</th><th class="v">As your house</th></tr></thead>
+    <thead><tr><th>Sale</th><th class="v">Sold</th><th class="v">Close $</th><th class="v">Time</th><th class="v">Size</th><th class="v">As your ${noun}</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`
 }
@@ -86,6 +86,9 @@ export function pricingPage(input: {
   const notes = clientFacingNotes(p.notes, p)
   const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
   const noun = subjectNoun(s)
+  // Two different words: the TITLE reads "How this home is priced", the
+  // possessive reads "as your house". subjectNoun gives 'home', never 'house'.
+  const possessive = subjectPossessive(s)
   // Land is adjusted to ACREAGE, not to living area. Telling the owner of a
   // vacant parcel that comps were brought "to your living area" describes an
   // adjustment the engine did not make.
@@ -106,7 +109,7 @@ export function pricingPage(input: {
   </div>
   <h3 class="subhead">How we priced this</h3>
   ${howWePriced(input.comps.length, input.market, search.body, sizeNoun)}
-  ${adjustmentRows(input.comps, noun, sizeNoun)}
+  ${adjustmentRows(input.comps, possessive, sizeNoun)}
   ${sellerNetBlock(p)}
   ${notes.length > 0 ? `<ul class="note-list">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
 `,

@@ -168,6 +168,32 @@ describe('land columns', () => {
     expect(html).toMatch(/31,363/)
   })
 
+  it('labels the adjusted-price row for the product', () => {
+    expect(renderCompMatrixHtml(landSubject, [landComp])).toMatch(/This sale as your lot/)
+    expect(renderCompMatrixHtml(landSubject, [landComp])).not.toMatch(/as your house/)
+    expect(renderCompMatrixHtml(subject, [comp])).toMatch(/This sale as your house/)
+  })
+
+  it('keeps the per-square-foot sentence on an improved report', () => {
+    // Regression: subjectPossessive returns 'house', never 'home'. Comparing
+    // against 'home' silently dropped this sentence from EVERY home report,
+    // and only the clean-tree typecheck caught it.
+    expect(renderCompMatrixHtml(subject, [comp])).toMatch(
+      /Sale price per square foot is close price over living area/,
+    )
+  })
+
+  it('drops that sentence on land, where there is no living area', () => {
+    expect(renderCompMatrixHtml(landSubject, [landComp])).not.toMatch(
+      /Sale price per square foot/,
+    )
+  })
+
+  it('never says "as your home" — the document idiom is "as your house"', () => {
+    expect(renderCompMatrixHtml(subject, [comp])).not.toMatch(/as your home/i)
+    expect(renderCompMatrixHtml(landSubject, [landComp])).not.toMatch(/as your home/i)
+  })
+
   it('still prints living area for an improved comp', () => {
     const html = renderCompMatrixHtml(subject, [comp])
     expect(html).toMatch(/1,036/)

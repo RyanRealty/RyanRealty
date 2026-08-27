@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   ACREAGE_THRESHOLD_ACRES,
+  subjectNoun,
+  subjectPossessive,
+  subjectSectionTitle,
   adjustLandComps,
   infrastructureSchedule,
   landProduct,
@@ -56,6 +59,35 @@ describe('landProduct — which subjects are land', () => {
   it('returns null for an unmapped subtype rather than guessing', () => {
     expect(landProduct({ propertySubType: 'Acreage', lotAcres: 20 })).toBeNull()
     expect(landProduct({ propertySubType: null, lotAcres: 20 })).toBeNull()
+  })
+})
+
+describe('what the document calls the subject', () => {
+  const lot = { propertySubType: 'Residential Lots', lotAcres: 0.23, sqft: null }
+  const acreage = { propertySubType: 'Recreational', lotAcres: 40, sqft: null }
+  const home = { propertySubType: 'Single Family Residence', lotAcres: 0.2, sqft: 2000 }
+
+  it('names a lot a lot, acreage land, and a house a house', () => {
+    expect(subjectNoun(lot)).toBe('lot')
+    expect(subjectNoun(acreage)).toBe('land')
+    expect(subjectNoun(home)).toBe('home')
+  })
+
+  it('uses the possessive the narrative reads with', () => {
+    expect(subjectPossessive(lot)).toBe('lot')
+    expect(subjectPossessive(acreage)).toBe('land')
+    // Never "home" — the document says "as your house".
+    expect(subjectPossessive(home)).toBe('house')
+  })
+
+  it('titles the subject section per product', () => {
+    expect(subjectSectionTitle(lot)).toBe('The lot')
+    expect(subjectSectionTitle(acreage)).toBe('The land')
+    expect(subjectSectionTitle(home)).toBe('The house')
+  })
+
+  it('calls a farm with a dwelling a house, not land', () => {
+    expect(subjectSectionTitle({ propertySubType: 'Agriculture', lotAcres: 38, sqft: 2400 })).toBe('The house')
   })
 })
 

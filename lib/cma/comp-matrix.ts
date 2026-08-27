@@ -14,7 +14,7 @@
 
 import { cleanText, dateLong, dec, escapeHtml, int, usd, usdSigned } from '@/lib/cma/render-blocks'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
-import { subjectNoun } from '@/lib/cma/land-pricing'
+import { subjectNoun, subjectPossessive } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 const ACRES_TO_SQFT = 43560
@@ -138,7 +138,7 @@ const ROWS: ReadonlyArray<{ label: string; figure: boolean }> = [
   { label: 'Subdivision', figure: false },
   { label: 'Brought to today', figure: true },
   { label: 'Brought to your size', figure: true },
-  { label: 'This sale as your house', figure: true },
+  { label: 'This sale as your house', figure: true }, // label rewritten per product in matrixTable
 ]
 
 /**
@@ -168,7 +168,7 @@ function groupHeading(startIndex: number, size: number): string {
   return size === 1 ? `Sale ${first}` : `Sales ${first} through ${last}`
 }
 
-function matrixTable(cols: Col[]): string {
+function matrixTable(cols: Col[], noun: string): string {
   // Fixed layout reads its widths from the colgroup, so the table is exactly
   // 100% of the content box no matter what any cell holds.
   const valueWidth = Math.floor(((100 - LABEL_COL_PCT) / cols.length) * 100) / 100
@@ -190,7 +190,8 @@ function matrixTable(cols: Col[]): string {
         return `<td class="v${row.figure ? ' n' : ''}${diff ? ' is-diff' : ''}">${esc(val)}</td>`
       })
       .join('')
-    return `<tr><th>${esc(row.label)}</th>${tds}</tr>`
+    const label = row.label === 'This sale as your house' ? `This sale as your ${noun}` : row.label
+    return `<tr><th>${esc(label)}</th>${tds}</tr>`
   }).join('')
   return `
   <div class="comp-matrix-wrap">
@@ -204,6 +205,7 @@ function matrixTable(cols: Col[]): string {
 
 export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdjustedComp[]): string {
   if (comps.length === 0) return ''
+  const noun = subjectPossessive(subject)
   const subj = subjectCol(subject)
   const compCols = comps.map((c, i) => compCol(c, i))
   const groups = splitEvenly(compCols)
@@ -213,17 +215,18 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
       const heading =
         groups.length > 1 ? `<h4 class="subhead">${esc(groupHeading(seen, group.length))}</h4>` : ''
       seen += group.length
-      return `${heading}${matrixTable([subj, ...group])}`
+      return `${heading}${matrixTable([subj, ...group], noun)}`
     })
     .join('')
-  const noun = subjectNoun(subject)
-  const sizeNoun = noun === 'home' ? 'living area' : 'acreage'
+  const sizeNoun = subjectNoun(subject) === 'home' ? 'living area' : 'acreage'
   const split =
     groups.length > 1
       ? ` The sales run across ${groups.length} tables so every column stays readable. Your ${noun} repeats at the head of each one.`
       : ''
+  // subjectPossessive returns 'house', never 'home' — comparing against 'home'
+  // here silently dropped this sentence from every improved report.
   const perFoot =
-    noun === 'home'
+    noun === 'house'
       ? ' Sale price per square foot is close price over living area.'
       : ''
   return `

@@ -97,6 +97,19 @@ export function subjectNoun(subject: {
   return product === 'lots' ? 'lot' : 'land'
 }
 
+/**
+ * The possessive the document uses for the subject: "as your house" / "as your
+ * lot" / "as your land". Land reports said "house" 37 times before this.
+ */
+export function subjectPossessive(subject: {
+  propertySubType: string | null
+  lotAcres: number | null
+  sqft?: number | null
+}): 'house' | 'lot' | 'land' {
+  const noun = subjectNoun(subject)
+  return noun === 'home' ? 'house' : noun
+}
+
 /** Section title for the subject page: "The house" / "The lot" / "The land". */
 export function subjectSectionTitle(subject: {
   propertySubType: string | null

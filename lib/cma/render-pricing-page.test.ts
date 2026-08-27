@@ -86,3 +86,25 @@ describe('pricingPage', () => {
     expect(html.replace(/&[a-zA-Z]+;/g, '')).not.toMatch(/[—;]/)
   })
 })
+
+describe('pricingPage — the two nouns are not the same word', () => {
+  const land = { streetAddress: '1 Elkwood', city: 'Chiloquin', subdivision: null, sqft: null, lotAcres: 0.69, propertySubType: 'Residential Lots' } as unknown as CmaSubject
+  const page = (s: CmaSubject) => pricingPage({ subject: s, comps, market, pricing, tiersUsed: ['subdivision-3mo'] })
+
+  it('titles a house report "home" but writes the possessive as "house"', () => {
+    const html = page(subject).body
+    expect(html).toContain('How this home is priced')
+    expect(html).toMatch(/As your house/)
+    // The bug this guards: subjectNoun gives 'home', and "as your home" is not
+    // the document's idiom.
+    expect(html).not.toMatch(/as your home/i)
+  })
+
+  it('says lot in both places on a land report', () => {
+    const html = page(land).body
+    expect(html).toContain('How this lot is priced')
+    expect(html).toMatch(/As your lot/)
+    expect(html).not.toMatch(/as your house/i)
+    expect(html).toMatch(/to your acreage/)
+  })
+})

@@ -39,7 +39,7 @@ import { assembleCompFlyerPages } from '@/lib/cma/opinion-flyers'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaMarketArea, CmaSoldBand } from '@/lib/cma/market-status'
-import { subjectSectionTitle } from '@/lib/cma/land-pricing'
+import { subjectPossessive, subjectSectionTitle } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 
@@ -427,7 +427,7 @@ export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
 export function salesAndMapPage(a: OpinionPageArgs): CmaPageDef {
   const pinMap = renderCompPinMapHtml(a.subject, a.comps, a.mapDataUri)
   const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
-  const strip = renderCompStripHtml(a.comps)
+  const strip = renderCompStripHtml(a.comps, subjectPossessive(a.subject))
   return {
     meta: `${esc(a.subject.streetAddress)} · The sales that set the number`,
     toc: 'The sales that set the number',
@@ -535,7 +535,7 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const competition = competitionPage(a)
   if (competition) rest.push(competition)
   rest.push(salesAndMapPage(a))
-  rest.push(...assembleCompFlyerPages(a.comps))
+  rest.push(...assembleCompFlyerPages(a.comps, subjectPossessive(a.subject)))
   const subdivision = subdivisionChapterPage(a)
   if (subdivision) rest.push(subdivision)
   const permits = permitsPage(a)
