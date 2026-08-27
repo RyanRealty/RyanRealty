@@ -258,6 +258,12 @@ const eslintConfig = defineConfig([
     // another session's leftover scratch (13 such errors on 2026-07-17).
     "tmp/**",
     "scratchpad/**",
+    // Same class, found 2026-08-27: scratch/ is gitignored, so CI's clone
+    // never lints it, but the local pre-push lint did — a pre-rebase backup
+    // another session left there failed a push with a DAL-boundary error
+    // against code that is not in the tree. Ignoring it restores the
+    // local/CI parity this block exists to keep.
+    "scratch/**",
     // OUT OF SCOPE per /goal — video production pipeline + marketing
     // flyer generators live in their own Remotion + node-script worlds
     // and use legacy CommonJS require(). Linting them gates the
