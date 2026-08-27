@@ -964,3 +964,74 @@ check migration-recipe §3.5 asks for and the only one that catches this class:
 Both defects predate the migration — the KB page carried the same split — and
 both are now pinned in `app/zip/[zip]/page.test.ts`. Verified on the rendered
 page: visible 59.5 / 67, Dataset 59.5 / 67.
+
+## 2026-08-26 — where the v3 roll stands, and what the last four pages actually need
+
+**A 192 → 165 · B 3 → 2 · C 51 → 52.** Four commits: `/zip/[zip]`,
+`/subdivisions/[slug]`, the `/videos` type import, and a §0 reconciliation on the ZIP
+Dataset. `ci:gates` green on every one.
+
+**The method that worked, and it is not the one the brief assumed.** The 2026-08-15
+revert (`d2208216`, "restore the photographed public site the grade pass flattened")
+put the KB `page.tsx` files back but LEFT every route-local `_v3/` module on disk,
+tested and orphaned. So the remaining migrations are not rebuilds — they are a rewire
+plus a reconciliation. Recover the reverted page with
+`git show d2208216^:<path>`, wire it to the `_v3/` modules that are still there, and
+then merge in everything that landed on the KB page AFTER 2026-08-15. That last step is
+where the real work is: the Market Truth layer (mt-v1 overlay, leftover HUD, pace, mix,
+segments, monthly), and it also contains rules that make parts of the reverted draft
+WRONG. Two examples this unit hit and fixed rather than restored: the plat page's
+parent-market band (forbidden by `ci:publish-plat-figures` since 2026-08-16) and the
+plat-grain closed median (withheld by REGISTRY §4). **Assume the reverted draft is out
+of date on §0, not just on data.**
+
+**THE THREE REMAINING PLACE PAGES ARE ONE UNIT, NOT THREE.** `/communities/[slug]` (24
+sections rendered, 1,018 lines), `/cities/[slug]/[neighborhoodSlug]` (18 sections, 729
+lines) and `/cities/[slug]` (16 sections, 625 lines) share roughly twenty KB section
+components with each other and with the homepage: KbHero, KbMarketHud, KbFeatured,
+KbListingMap, KbExploreTowns, KbSell, KbCommunityAlerts, KbTicker, KbTestimonials,
+KbTeam, KbCommunities, KbAbout, KbActivity, KbOpenHouses, KbArticles, KbAreaGuideVideo,
+KbResortOverview, KbBreadcrumb, KbFooter, SmoothScrollProvider, plus FAQBlock,
+MarketSources and the three Public*Stats panels. Migrating one of them means building
+v3 equivalents for most of that set; the second and third are then cheap. Migrating one
+in isolation and stopping is the expensive order.
+
+**The rhythm rule is the live product question on that unit, and it needs Matt.**
+PUBLIC_UI §3 caps a page at four of the six patterns. The city page's own reverted v3
+header records the collision in full: deleting the ledgers to hold the cap deleted six
+Matt-issued directives with them (D83 designated neighbourhoods, D85 the separate golf
+and master-planned section, D80 city guides, D84 the other-cities exit, D88 the full
+communities rail, D93 the live activity feed), each of which is a contract test in
+`components/site/__tests__/site-contracts.test.ts`. That draft spent a fifth pattern and
+declared the conflict in parity.json. The same collision is waiting on the community and
+neighbourhood pages. **Decide the cap-versus-directives question once, for the family,
+before the first of the three is written.**
+
+**Open for Matt, unchanged from the ZIP entry:** the market question heading. KbMarketHud
+templates `Is {place} a buyer's or seller's market?` on all five place grains from geoName
+plus a live verdict. ZIP now keeps the answer and not the question. The other four still
+render it, so the site currently disagrees with itself, and the fix is one decision
+across five templates.
+
+**`/listing/[listingKey]` is its own problem** and the brief was right to isolate it: 24
+blocking components in its parity contract, ~32 files under
+`components/site/listing-detail/`, `ci:ods-compliance` hard-failing without
+`<ListingAttribution listContact={…}>`, and PUBLIC_UI §3 requiring it open on Stage with
+price and specs ON the media. It is B's last row: migrating it takes legacyPages to 1
+(only the frozen Tetherow LP remains).
+
+**The homepage was not reached.** `app/page.tsx` is `className="kb-root"`, and
+`ci:pulse-city-remainder` regexes `<KbHero … />` out of that exact file and asserts
+`activeCount: hud.active` inside it — with no V3Stage arm, so a v3 homepage makes that
+gate vacuous rather than failing, which is the silent-loss class. Eight parity contracts
+name `app/page.tsx`; only `homepage-v6` has a non-empty requiredComponents list, and it
+names eleven Kb components. `check-seo-shell.mjs` pins four exact literals on it,
+including the D11 H1 and the town-list sentence. Its hero-poetry lock is wrapped in
+`existsSync(components/site/kb/KbHero.client.tsx)` and evaporates silently if that file
+ever goes. None of that is a reason not to migrate it; all of it is work that must land
+in the same commit as the page.
+
+**One environment note for whoever verifies next.** The Google map stops painting in the
+local dev server after a while — `/parks/shevlin-park`, untouched, reproduces it, and the
+same code rendered a map earlier in the same session. Restart `next dev` before trusting
+a "the map is missing" observation.
