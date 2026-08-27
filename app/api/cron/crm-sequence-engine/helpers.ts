@@ -76,7 +76,7 @@ export function renderMerge(
   // AND the recipient's identity — so a click identifies them, cookies the
   // browser to the contact, and backfills their anonymous sessions.
   //
-  // BOTH ids are passed on purpose. `_fuid` is the legacy Follow Up Boss id and
+  // BOTH ids are passed on purpose. `_fuid` is the retired vendor CRM's id and
   // only 18,188 of 23,078 contacts have one; `_pid` is the native crm_people id
   // and every contact has one. Passing only _fuid left 4,890 people — everyone
   // created since the CRM cutover, and the only segment still growing —

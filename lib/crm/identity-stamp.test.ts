@@ -4,7 +4,7 @@ import { attributeSiteLinks } from './merge'
 const LINK = 'Read it here: https://ryan-realty.com/housing-market/bend'
 
 describe('attributeSiteLinks — a link we send must identify who we sent it to', () => {
-  // THE DEFECT. `_fuid` is the legacy Follow Up Boss id; `_pid` is the native
+  // THE DEFECT. `_fuid` is the retired vendor CRM's id; `_pid` is the native
   // crm_people id. Only 18,188 of 23,078 contacts have a fub_legacy_id, so the
   // newsletter, the CRM composer and the sequence engine — all of which passed
   // only _fuid — left 4,890 people permanently unidentifiable no matter how many

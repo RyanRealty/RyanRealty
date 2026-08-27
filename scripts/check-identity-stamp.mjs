@@ -10,7 +10,7 @@
  *
  * The 4th argument is optional in TypeScript, and three of the four send paths —
  * the newsletter, the CRM composer, and the sequence engine — omitted it. They
- * passed only `_fuid`, the legacy Follow Up Boss id. Measured 2026-08-26: only
+ * passed only `_fuid`, the retired vendor CRM's id. Measured 2026-08-26: only
  * 18,188 of 23,078 contacts have one, so 4,890 people were permanently
  * unidentifiable no matter how many links they clicked. That is everyone created
  * since the CRM cutover — the only segment still growing. Against 79,000 sessions
