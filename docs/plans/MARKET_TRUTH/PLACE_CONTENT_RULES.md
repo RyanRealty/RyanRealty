@@ -224,6 +224,34 @@ forward one page at a time. Measured over 1,159 book-page documents: 0 fires in 
 (document, synthetic reference) pairs; 7 in 1,289,967 (document, every other real reference)
 pairs, every one of them a stamp the document physically carries.
 
+**Reading deeper is not a fourth signal — it is the same one, over pages nothing had
+read.** `ocr.mjs` stores two pages, because two pages is what classification needs; a
+stamp run needs a stamp on two consecutive pages, so one pair is all a stored read can
+test, and a document whose first page is a cover sheet or an unreadable scan had its
+run out of reach. `deep-stamp-publish.mjs` reads twelve pages from the hosted PDF and
+applies the rule unchanged — it evaluates `stampRun` and the phase guard out of
+`book-page-stamp-publish.mjs` rather than copying them, so there is no second
+definition that can drift laxer. Twelve is the measured plateau: 40 of the 195 held
+documents show the run at 2 pages, 66 at 4, 79 at 12, and 79 at 40. It clears 86 links
+across 72 plats. Adversarially, over all 1,159 book-page documents: 10 fires in
+1,288,808 real pairs against 7 for the stored read, and 1 in 3,477,000 synthetic pairs
+against 0 — every one of the eleven a stamp the document physically carries, from a
+re-recording, a scan starting a page early, or a malformed index reference. In the one
+synthetic case the transposed digit is in the index and the document's own reference
+does not fire, so it stays in review.
+
+**Rejected, and why the queue is what it is.** Extending the instrument-number check
+over the deeper text gains nothing (both apparent gains are page-1 stamps the stored
+read misread) and an instrument number is a string declarations recite. Relaxing the
+page anchor recovers one document and admits five that are a different instrument in
+the same volume. Storing the deeper text in `ocr_text` would silently change what
+`name_confirmed` and `doc_kind` mean, because `classify.mjs` reads the whole column.
+The clerk's receipt and serial digits, and the recording date and declarant name,
+cannot be cross-checked at all: **the index publishes a subdivision name, a recording
+reference and a PDF link, and nothing else.** An identifier with nothing to compare it
+against is not a confirmation. What remains in the queue is what the documents
+themselves cannot settle, and a human with the PDF open is the mechanism.
+
 ### Identity is not governance — what promotes a parent match across phases
 
 **Settled 2026-08-26, per chain, by reading the documents.** Both signals above prove the

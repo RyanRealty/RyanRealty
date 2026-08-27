@@ -46,6 +46,7 @@ node --env-file=.env.local scripts/place-documents/foreign-association.mjs --app
 node --env-file=.env.local scripts/place-documents/regate.mjs
 node --env-file=.env.local scripts/place-documents/two-signal-publish.mjs --apply
 node --env-file=.env.local scripts/place-documents/book-page-stamp-publish.mjs --apply
+node --env-file=.env.local scripts/place-documents/deep-stamp-publish.mjs --apply
 node --env-file=.env.local scripts/place-documents/phase-governance.mjs --apply
 node --env-file=.env.local scripts/place-documents/foreign-plat.mjs --apply
 node --env-file=.env.local scripts/place-documents/backfill-geo-label.mjs
@@ -64,8 +65,9 @@ npm run ci:place-documents
 | `regate` | Applies the publish policy both ways: demotes anything that now fails, promotes exact matches whose document names the plat |
 | `two-signal-publish` | Clears parent matches carrying two independent confirmations |
 | `book-page-stamp-publish` | The same bar for the book-page era, where no instrument number exists: the recorder's volume-and-page stamp running across consecutive pages of the document itself |
-| `phase-governance` | The per-chain ruling on parent matches whose document names a different phase than the plat. Both stamp signals prove identity, not governance. **Must run after both publish scripts** — they select on `pending_review` + `parent` and would re-publish what this demotes |
-| `foreign-plat` | The per-document ruling on a published instrument that is a genuine governing document for a DIFFERENT subdivision. Runs last, for the same reason `phase-governance` runs late: `regate` re-promotes exact matches and the two publish scripts re-promote parent matches |
+| `deep-stamp-publish` | The same bar again, read deeper. `ocr.mjs` stores two pages; a stamp run needs a stamp on two consecutive ones, so a document whose first page is a cover sheet or an unreadable scan had its run out of reach. Reads twelve pages from the hosted PDF and applies the rule `book-page-stamp-publish` owns — literally, by evaluating it out of that file |
+| `phase-governance` | The per-chain ruling on parent matches whose document names a different phase than the plat. Every stamp signal proves identity, not governance. **Must run after all three publish scripts** — they select on `pending_review` + `parent` and would re-publish what this demotes |
+| `foreign-plat` | The per-document ruling on a published instrument that is a genuine governing document for a DIFFERENT subdivision. Runs last, for the same reason `phase-governance` runs late: `regate` re-promotes exact matches and the publish scripts re-promote parent matches |
 | `backfill-geo-label` | Stamps each link with its plat's `boundaries.geo_label`, so a listing page can match the label its own row carries instead of re-deriving the slug — see below |
 | `verify` | `ci:place-documents`. Asserts no published link is a non-governing instrument, unconfirmed-and-unreviewed, or unreachable from a listing page |
 
@@ -155,6 +157,94 @@ whose document names a different phase than the plat: a declaration titled
 ROCKWOOD ESTATES PHASE IV does not publish onto `rockwood-estates-phase-ii`.
 `two-signal-publish.mjs` does not make that check, and 99 links it published sat
 on a plat whose phase their own document contradicts.
+
+## Two pages was the limit, not the rule
+
+`ocr.mjs` reads two pages, because two pages is what `classify.mjs` needs — title,
+recording stamp, subdivision name. But a stamp RUN needs a stamp on page k and on
+page k+1, and two OCR'd pages offer exactly one pair to test. A document whose
+first page is a return-address cover, an exhibit or an unreadable scan had its run
+one page out of reach. `deep-stamp-publish.mjs` reads twelve pages from the hosted
+PDF and applies the same rule, unchanged.
+
+**Twelve is measured.** Over the 195 held book-page documents:
+
+| OCR depth | documents whose stamp run is found |
+|---:|---:|
+| 2 (what is stored) | 40 |
+| 3 | 59 |
+| 4 | 66 |
+| 6 | 75 |
+| 12 | **79** |
+| 20, 40 | 79 |
+
+Recall plateaus at twelve, and every extra page is extra surface for a
+coincidence, so the depth is not set higher "to be safe".
+
+**It clears 86 links across 72 plats and 35 documents** — 39 documents gain the
+run and the phase guard holds every link on four of them. Isolated against the
+same database state, the queue drops from 200 groups carrying a governing
+instrument to 194, and from 282 groups to 279.
+
+**Adversarially tested exactly as the book-page signal was**, over all 1,159
+book-page documents, at the shipped depth:
+
+| | stored 2-page read | 12-page read |
+|---|---:|---:|
+| A — against every OTHER real reference (1,288,808 pairs) | 7 fires | 10 fires |
+| of those, filed under a different published name | 1 | 1 |
+| B — against 3,000 synthetic references (3,477,000 pairs) | 0 fires | 1 fire |
+
+The stored-read column reproduces the number this README already documents, which
+is what says the harness is measuring the shipped bar. Every one of the 10 real
+fires is a stamp the document physically carries: five re-recordings bearing two
+stamp sequences (Tollgate 184-253 also carries 183-557/558; Providence 299-2860
+also carries 268-2081/2082; Justin Glen, Indian Ford Meadows and Tyrion Sky the
+same), three whose scan starts a page before the index reference, and two whose
+index reference is malformed — `436-00010000`, `187-7130000` — so their real stamp
+answers to the reference the index should have carried. The single synthetic fire
+is Woodriver Village, filed at 339-477, whose pages are stamped 330-0478 and
+330-0479: the transposed digit is in the INDEX, and the document's own reference
+does not fire, so it stays in review. **Not one fire is a stamp the matcher
+invented.**
+
+All 39 clearances were read against their OCR by hand.
+
+**What was rejected, with the measurement.**
+
+- **Extending the year-instrument check over the deeper text.** Two documents gain
+  it and neither is a depth gain — both stamps are on page 1 and the stored read
+  misread them (2001-34487 reads "2001-3487"). An instrument number is a string a
+  declaration RECITES: measured against every other real instrument number, the
+  check answers to a number that is not its own 35 times on the stored text and 34
+  on twelve pages. Depth buys nothing and the recital exposure is real.
+- **Relaxing the anchor** to accept a run in the right book at any page, for scans
+  that start late. Of the 155 held documents with no strict run, 6 carry a
+  same-book run elsewhere; the offsets are -2 and five beyond ±5. They are other
+  instruments in the same volume. One recovered, five wrong ones admitted.
+- **Storing the deeper text in `ocr_text`.** It would silently change what
+  `name_confirmed` and `doc_kind` MEAN, because `classify.mjs` scans the whole
+  column for the plat name and falls back to testing every governing pattern over
+  the whole column. Measured on the 290 held documents, `doc_kind` changes on 4
+  from depth alone — and those are documents already confirmed, so the exposure on
+  the 408 pending links that are NOT name-confirmed is larger and untested. The
+  deeper read stays inside the one script that uses it.
+- **The clerk's type code and receipt/serial digits.** `D-CCR` is already the
+  authority `classify.mjs` uses. The long digit run —
+  `00233576200400005840840043` — decodes as an 8-digit clerk serial, the year, the
+  7-digit instrument number, a trailing counter. The instrument number inside it is
+  the stamp already checked; nothing else in it can be cross-checked, because the
+  index publishes name, recording reference and a PDF link and **nothing else**. A
+  serial with nothing to compare it against is not a confirmation. The same kills
+  **recording date plus declarant name**: the index carries neither field.
+- **Chain adjacency** — a held document whose index reference is one page after a
+  confirmed document's last page. That is a statement about two INDEX rows. Identity
+  is a claim about the PDF in front of you.
+
+**There is one definition of the rule.** `deep-stamp-publish.mjs` does not copy
+`stampRun` or the phase guard; it evaluates them out of `book-page-stamp-publish.mjs`
+and refuses to run if it cannot find them. There is no second copy to drift, and no
+way for the deeper read to be applying a laxer bar than the one that shipped.
 
 ## Identity is not governance
 
