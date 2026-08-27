@@ -286,7 +286,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         const tier = tierByKey.get(c.listingKey)
         return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
       })
-      const p = priceCmaSet({ subject, adjusted: adj, market, input, selection, marketIndex, asOf, computePricing })
+      const p = priceCmaSet({ subject, adjusted: adj, market, input, site, selection, marketIndex, asOf, computePricing })
       attachSellerNet(p, selection.pricingSales ?? set, p?.predictedClose ?? p?.recommended ?? null)
       if (p && usePath) {
         p.notes.unshift(

@@ -11,6 +11,7 @@
  */
 
 import { computePricing } from '@/lib/cma/pricing'
+import type { CmaSiteData } from '@/lib/cma/county'
 import { attachSellerNet, resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
@@ -369,6 +370,8 @@ export function priceCmaSet(args: {
   adjusted: CmaAdjustedComp[]
   market: CmaMarketContext | null
   input: { sellerImprovementsTotal?: number | null; priceOverride?: number | null }
+  /** Parcel record. Land uses it for the infrastructure schedule; homes ignore it. */
+  site?: CmaSiteData | null
   selection: {
     pricingSales?: Array<{ closePrice: number; originalAsk: number | null; selectionTier?: string }>
     tiersUsed: string[]
@@ -382,6 +385,7 @@ export function priceCmaSet(args: {
   const pricing = priceFn(args.subject, args.adjusted, args.market, {
     sellerImprovementsTotal: args.input.sellerImprovementsTotal ?? null,
     priceOverride: args.input.priceOverride ?? null,
+    site: args.site ?? null,
   })
   if (!pricing) return null
   return applyEngineCoverToCmaPricing(pricing, {

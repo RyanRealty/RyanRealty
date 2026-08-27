@@ -21,6 +21,8 @@
 
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { landProduct, priceLandSubject } from '@/lib/cma/land-pricing'
+import type { CmaSiteData } from '@/lib/cma/county'
 
 const MS_PER_MONTH = 30.44 * 86_400_000
 const SIZE_ADJ_FACTOR = 0.5
@@ -84,7 +86,10 @@ export function adjustComps(
     const timeAdjustment = Math.max(-timeAdjCap, Math.min(timeAdjCap, rawTimeAdjustment))
     const timeAdjustmentCapped = timeAdjustment !== rawTimeAdjustment
     const timeAdjustedPrice = comp.closePrice + timeAdjustment
-    const ppsfTimeAdjusted = timeAdjustedPrice / comp.sqft
+    // Land comps have no living area. Dividing by it yielded Infinity, which
+    // then flowed into the citations blob. Land prices per ACRE, in
+    // lib/cma/land-pricing.ts; here the rate is simply not defined.
+    const ppsfTimeAdjusted = comp.sqft > 0 ? timeAdjustedPrice / comp.sqft : 0
     const sizeAdjustment =
       subjectSqft > 0 ? Math.round((subjectSqft - comp.sqft) * ppsfTimeAdjusted * SIZE_ADJ_FACTOR) : 0
     const adjustedPrice = timeAdjustedPrice + sizeAdjustment
@@ -109,9 +114,25 @@ export function computePricing(
   subject: CmaSubject,
   adjusted: CmaAdjustedComp[],
   market: CmaMarketContext | null,
-  opts: { sellerImprovementsTotal?: number | null; priceOverride?: number | null } = {},
+  opts: { sellerImprovementsTotal?: number | null; priceOverride?: number | null; site?: CmaSiteData | null } = {},
 ): CmaPricing | null {
   const subjectSqft = subject.sqft ?? 0
+
+  // Land has no living area, so the $/sqft ladder below cannot price it. It used
+  // to fall out of this guard as null — safe, but it meant a lot or an acreage
+  // parcel could not be valued at all. Land prices per acre; the dispatch lives
+  // in the shared engine so CMA, expired-audit and BPO all get it at once.
+  if (landProduct(subject)) {
+    return priceLandSubject({
+      subject,
+      comps: adjusted,
+      market,
+      site: opts.site ?? null,
+      minComps: PRICING_MIN_COMPS,
+      priceOverride: opts.priceOverride ?? null,
+    })
+  }
+
   if (adjusted.length < PRICING_MIN_COMPS || subjectSqft <= 0) return null
   const notes: string[] = []
 
