@@ -59,14 +59,18 @@ describe('ZIP page Market Truth overlay', () => {
     expect(PAGE).toMatch(/label: v3Text\('new · 30 days'\)/)
     expect(PAGE).not.toMatch(/mtNewVal/)
     expect(PAGE).not.toMatch(/publishedNew30/)
-    // The tile-derived 30-day count is a Dataset variable under its own name
-    // and never the visible "new · 30 days" figure.
+    // ONE ANSWER PER QUESTION. The KB page counted its Dataset's 30-day new
+    // listings from the tiles while its HUD showed the leftover 30-day cell, so
+    // one page published two different numbers under one name — one visible,
+    // one machine-readable. The leftover cell is the one on screen, so it is the
+    // one in the payload, and the tile derivation is gone.
     expect(PAGE).toMatch(/New listings last 30 days/)
-    const new30Figure = PAGE.slice(
-      PAGE.indexOf("label: v3Text('new · 30 days')") - 200,
-      PAGE.indexOf("label: v3Text('new · 30 days')"),
+    expect(PAGE).not.toMatch(/tileNew30/)
+    const datasetNew30 = PAGE.slice(
+      PAGE.indexOf("name: 'New listings last 30 days'") - 120,
+      PAGE.indexOf("name: 'New listings last 30 days'") + 120,
     )
-    expect(new30Figure).not.toMatch(/tileNew30/)
+    expect(datasetNew30).toMatch(/hud\.new30/)
     expect(PAGE).toMatch(/getPublicDetachedPace/)
     expect(PAGE).toMatch(/getPublicPlaceSegments/)
     expect(PAGE).toMatch(/getPublicDetachedMix/)
@@ -116,6 +120,9 @@ describe('ZIP page is on the v3 barrel', () => {
     ]) {
       expect(PAGE).toContain(variable)
     }
+    // The days figure reaches the payload at the grain the page prints it,
+    // not integer-rounded past the visible 59.5 (migration recipe §3.5).
+    expect(PAGE).toMatch(/Math\.round\(medianDom \* 10\) \/ 10/)
   })
 
   it('keeps both capture contracts byte for byte', () => {

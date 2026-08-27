@@ -293,16 +293,6 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // interest is real inventory and its time on market is its own.
   const medianDom = tilesRead.ok ? median(numeric(tiles.map((t) => t.dom))) : null
 
-  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
-  const now = Date.now()
-  const tileNew30: number | null = tilesRead.ok
-    ? tiles.filter((t) => {
-        if (!t.onMarketDate) return false
-        const d = Date.parse(t.onMarketDate)
-        return Number.isFinite(d) && now - d >= 0 && now - d <= THIRTY_DAYS_MS
-      }).length
-    : null
-
   // Headline HIT: publishable active_count + median_list_active. A publishable
   // 0 that contradicts visible pins is a disagree — keep tiles, never print 0.
   const mtActiveVal = zipMetricValue(mtActiveCell)
@@ -546,10 +536,24 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     datasetStats.push({ name: 'Median price per sq ft', value: Math.round(medianPricePerSqft), unitText: 'USD' })
   }
   if (medianDom != null) {
-    datasetStats.push({ name: 'Median days on market', value: Math.round(medianDom), unitText: 'days' })
+    // THE SAME GRAIN THE PAGE PRINTS. publishDaysFigure renders tenths, so
+    // Math.round here published 60 into the payload beside a visible 59.5 — the
+    // one defect the migration recipe's §3.5 names: a crawler reading a number
+    // the page does not show is two derivations, whatever the code looks like.
+    datasetStats.push({
+      name: 'Median days on market',
+      value: Math.round(medianDom * 10) / 10,
+      unitText: 'days',
+    })
   }
-  if (tileNew30 != null) {
-    datasetStats.push({ name: 'New listings last 30 days', value: tileNew30, unitText: 'listings' })
+  if (hud.new30 != null && hud.new30 > 0) {
+    // THE SAME POPULATION THE PAGE PRINTS. The KB page counted this from the
+    // tiles (59 on 97701) while its HUD showed the leftover 30-day cell (67),
+    // so one page published two different answers to "new in the last 30 days",
+    // one visible and one machine-readable. The leftover cell is the one on
+    // screen, so it is the one in the payload, and the tile derivation is gone
+    // rather than left computing a number nothing renders.
+    datasetStats.push({ name: 'New listings last 30 days', value: hud.new30, unitText: 'listings' })
   }
 
   const datasetLede =

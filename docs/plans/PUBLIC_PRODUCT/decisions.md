@@ -946,3 +946,21 @@ this dev server after a while — `/parks/shevlin-park`, which nothing here touc
 shows the same empty `.v3-field__map-frame`. The same ZIP page's map rendered earlier
 in the same session on identical code. Dev-environment flake, not a code defect, but it
 means the map itself was not visually confirmed on this pass.
+
+## 2026-08-26 — one page was publishing two answers to one question (/zip)
+
+Found while reading the rendered JSON-LD against the rendered page, which is the
+check migration-recipe §3.5 asks for and the only one that catches this class:
+
+- **Median days on market** was `Math.round(medianDom)` in the Dataset and
+  `publishDaysFigure(medianDom)` on screen — 60 in the payload beside a visible
+  59.5. Both now print tenths.
+- **New listings last 30 days** was the TILE-derived count in the Dataset (59 on
+  97701) and the leftover Market Truth 30-day cell on screen (67). Two different
+  populations under one name, one visible and one machine-readable. The leftover
+  cell is what the page shows, so it is what the payload carries, and the tile
+  derivation is deleted rather than left computing a number nothing renders.
+
+Both defects predate the migration — the KB page carried the same split — and
+both are now pinned in `app/zip/[zip]/page.test.ts`. Verified on the rendered
+page: visible 59.5 / 67, Dataset 59.5 / 67.
