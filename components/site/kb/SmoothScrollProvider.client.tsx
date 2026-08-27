@@ -49,6 +49,16 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
     // In-page hash anchors (hero CTA → #valuation-form, #get-value, etc.).
     // Lenis can swallow native hash scroll; route same-document hashes through
     // lenis.scrollTo so conversion CTAs land on the form every time.
+    //
+    // This Lenis already subtracts the target's CSS scroll-margin-top inside
+    // scrollTo, so a target that declares one (kb.css gives every [id] 76px to
+    // clear the 60px sticky mast) needs NO extra offset — passing the margin
+    // again double-counted it. The -16 breathing offset survives only for a
+    // target with no scroll margin of its own.
+    const anchorOffset = (el: Element): number => {
+      const margin = Number.parseFloat(getComputedStyle(el).scrollMarginTop) || 0
+      return margin > 0 ? 0 : -16
+    }
     const onHashClick = (e: MouseEvent) => {
       const a = (e.target as Element | null)?.closest?.('a[href^="#"]') as HTMLAnchorElement | null
       if (!a) return
@@ -62,7 +72,7 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
       }
       if (!el) return
       e.preventDefault()
-      lenis.scrollTo(el as HTMLElement, { offset: -16 })
+      lenis.scrollTo(el as HTMLElement, { offset: anchorOffset(el) })
       if (history.replaceState) {
         history.replaceState(null, '', href)
       }
@@ -75,7 +85,9 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
       try {
         const target = document.querySelector(hash)
         if (target) {
-          requestAnimationFrame(() => lenis.scrollTo(target as HTMLElement, { offset: -16 }))
+          requestAnimationFrame(() =>
+            lenis.scrollTo(target as HTMLElement, { offset: anchorOffset(target) }),
+          )
         }
       } catch {
         /* invalid hash selector */

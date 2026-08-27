@@ -64,6 +64,12 @@ html.lenis, html.lenis body{height:auto;}
   line-height:1.4;
 }
 .kb-root img{display:block;max-width:100%;}
+/* Anchor arrivals clear the sticky site chrome (60px header + breathing):
+   without this, #listing-like-alerts-style jumps parked the target heading
+   underneath the mast. scroll-margin only acts on anchor/scrollIntoView
+   landings, never on free scrolling. SmoothScrollProvider reads the same
+   computed value for Lenis-driven hash scrolls. */
+.kb-root [id]{scroll-margin-top:76px;}
 /* In @layer base so Tailwind color utilities (.text-white etc.) win — un-layered,
    this rule beats the entire utilities layer regardless of specificity (Tailwind v4
    cascade layers), which rendered navy-on-navy/white-on-white text on every filled
@@ -1804,6 +1810,15 @@ html.lenis, html.lenis body{height:auto;}
     @keyframes kbSectionRise {
       from { opacity: 0; transform: translateY(30px); }
       to { opacity: 1; transform: none; }
+    }
+    /* NAVY sections rise WITHOUT the opacity ramp: a navy surface fading in
+       over cream reads as a broken slate-gray block while it enters — on a
+       2000px+ market section the entry range keeps that gray wash on screen
+       for a whole viewport of scrolling (mobile QA 2026-08-26). */
+    .kb-root .section.mkt { animation-name: kbSectionRiseSolid; }
+    @keyframes kbSectionRiseSolid {
+      from { transform: translateY(30px); }
+      to { transform: none; }
     }
   }
 }
