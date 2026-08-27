@@ -207,7 +207,7 @@ section 2b re-declaration. A component never branches on register — it reads t
 | circular map pins / chart points | `--v3-radius-mark` | 999px (a data mark is not a box; no register overrides it) | same |
 | 1px hairline rules | `--v3-hairline` / `--v3-rule-hairline` | `rgba(16,39,66,.08)` | `rgba(16,39,66,.06)` |
 | navy section rules | `--v3-rule-section` | 2px navy | 3px navy |
-| mast rule (header bottom, nothing else) | `--v3-rule-mast` | 4px navy | 3px navy |
+| mast rule (header bottom, nothing else) | `--v3-rule-mast` | 4px navy | 3px navy in-scope; the ONE site chrome mounts in app/layout.tsx outside every page scope, so every page — search included — shows the Broadside mast today |
 | section rhythm | `--v3-section-pad` | `clamp(3.5rem, 9vw, 7.5rem)` | 1.625rem |
 | small-caps label tracking | `--v3-track-label` | .14em | .12em |
 | display tracking | `--v3-track-display` | −0.01em | 0 |
