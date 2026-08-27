@@ -25,6 +25,7 @@ import { v3Text, type V3FieldItem, type V3QuietItem } from '@/components/site/v3
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { listingDetailPath } from '@/lib/slug'
 
 /** The Field lists at most this many rows — the same preview discipline the
@@ -42,6 +43,7 @@ export type FieldTile = {
   streetNumber: string | null | undefined
   streetName: string | null | undefined
   streetSuffix?: string | null | undefined
+  propertySubType?: string | null | undefined
   city: string | null | undefined
   subdivisionName: string | null | undefined
   photoUrl: string | null | undefined
@@ -69,12 +71,20 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
       streetSuffix: t.streetSuffix,
     })
     if (!street) continue
+    // A fractional ask never prints unlabeled (the Camp Sherman rule).
+    const shareKind = publishListingShareKind({
+      propertySubType: t.propertySubType,
+      subdivisionName: t.subdivisionName,
+      city: t.city,
+      listNumber: t.listNumber,
+    })
     const meta = [
       t.beds != null ? `${t.beds} bd` : null,
       t.baths != null ? `${t.baths} ba` : null,
       t.sqft != null && t.sqft > 0 ? `${t.sqft.toLocaleString('en-US')} sqft` : null,
+      shareKind,
     ]
-      .filter((part): part is string => part !== null)
+      .filter((part): part is string => Boolean(part))
       .join(' · ')
     const photo = t.photoUrl?.trim()
     items.push({
@@ -107,7 +117,7 @@ const FEED = 'live MLS through Oregon Data Share'
  * figure, never the membership count, never pin length — and when the row cap
  * trimmed the set the caption says which slice survived. Names the
  * neighborhood, never the parent city (ci:place-hero-grain binds on the
- * literal `in ${input.placeName}` here).
+ * caption's own place interpolation here).
  */
 export function neighborhoodFieldCaption(input: {
   placeName: string

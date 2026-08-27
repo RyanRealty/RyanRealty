@@ -57,6 +57,7 @@ import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { resolveNeighborhoodMetricSlug } from '@/lib/data/market-truth/neighborhood-metric-slug'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import {
+  getAreaGuideVideo,
   getPriceHistory,
   getListingTiles,
   getGeoBoundaryMapData,
@@ -128,6 +129,7 @@ import {
 } from './_v3/neighborhood-sections'
 import {
   activityRows,
+  areaGuideRow,
   articleRows,
   leftoverMarketFigures,
   CITY_PACE_KEYS_ON_THE_HUD,
@@ -443,8 +445,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const activityEyebrow = useActScoped ? `Live · ${neighborhood.name}` : `Live · ${cityName}`
   const [firstAct, ...restAct] = activityRows(activityItems)
 
+  // Per-neighborhood area-guide clip (EXACT geo match; null for most).
+  const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(neighborhoodSlug), null, 3000, 'area-guide-video')
   const articlePosts = buildArticlePosts(blogPosts)
-  const [firstGuide, ...restGuide] = articleRows(articlePosts)
+  const [firstGuide, ...restGuide] = [
+    ...areaGuideRow(neighborhood.name, areaGuideVideo),
+    ...articleRows(articlePosts),
+  ]
 
   const peerItems: CityPlaceItem[] = peerNeighborhoods.map((p) => ({
     name: p.name,

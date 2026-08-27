@@ -209,6 +209,35 @@ export function activityRows(items: readonly CityActivityItem[]): V3LedgerFigure
   })
 }
 
+/**
+ * The approved area-guide clip as a guides-Ledger row (2026-08-26). The KB
+ * register played it inline (KbAreaGuideVideo); the six closed patterns hold
+ * no mid-page media slot on a Field-opening node, so the owned clip keeps a
+ * named door here — the "Watch {place}" affordance the deploy smoke gate
+ * (scripts/check-video-sections.mjs) asserts — and plays full-bleed on the
+ * community Stage where the pattern for owned media exists. Absent video,
+ * absent row.
+ */
+export function areaGuideRow(
+  placeName: string,
+  video: { url: string } | null | undefined,
+  posterSrc?: string,
+): V3LedgerPlainRow[] {
+  const url = video?.url?.trim()
+  if (!url) return []
+  return [
+    {
+      id: 'area-guide',
+      href: url,
+      newTab: true,
+      when: v3Text('Area guide'),
+      what: v3Text(`Watch ${placeName}`),
+      detail: v3Text('The approved silent flyover, straight from the file.'),
+      ...(posterSrc?.trim() ? { media: { src: posterSrc.trim() } } : {}),
+    },
+  ]
+}
+
 /** Published guides as rows. No figures, so no trace is owed. */
 export function articleRows(items: readonly CityArticleItem[]): V3LedgerPlainRow[] {
   return items.flatMap((item) => {

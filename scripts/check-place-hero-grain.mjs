@@ -52,8 +52,16 @@ const pages = [
   },
   {
     path: 'app/communities/[slug]/page.tsx',
-    label: 'community page uses placeHeroLead (not in ${cityName} when counted)',
+    label: 'community page opening count names the community, not the city',
     forbid: /in \$\{cityName\}\. Live inventory/,
+    // The v3 Field replaced KbHero here (2026-08-26). The count beside the
+    // frame is communityFieldCaption's, and that builder interpolates the
+    // community's public name itself.
+    v3: {
+      module: 'app/communities/[slug]/_v3/community-opening.ts',
+      builder: 'communityFieldCaption',
+      names: 'in ${input.placeName}',
+    },
   },
   {
     path: 'app/cities/[slug]/page.tsx',

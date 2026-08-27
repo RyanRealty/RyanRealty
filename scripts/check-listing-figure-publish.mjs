@@ -576,9 +576,12 @@ const SHARE_LABEL_SURFACES = [
   // The same card with the tour playing inline. It takes ListingCardData, so it
   // holds the subject already and has no excuse for a bare share ask.
   'components/site/VideoListingCard.tsx',
-  // The dual-pane inventory list on every city, neighborhood and subdivision
-  // page. This is the module that printed the Camp Sherman quarter shares.
-  'components/site/explore/PlaceMapListSplit.client.tsx',
+  // The v3 Field row builders on the place pages (2026-08-26): these replaced
+  // the dual-pane inventory list — the module that printed the Camp Sherman
+  // quarter shares — so each must resolve the share label beside its price.
+  'app/cities/[slug]/_v3/city-field-items.ts',
+  'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts',
+  'app/communities/[slug]/_v3/community-opening.ts',
   // The price tape between sections on the homepage, cities, neighborhoods and
   // communities. It runs a share ask between whole-home asks.
   'lib/kb/place-sections.ts',
@@ -656,7 +659,7 @@ for (const file of SHARE_LABEL_SURFACES) {
 // page families is the drift §8 forbids. So the population is named and frozen:
 // a new surface may not join it, and the number comes down as each is converted.
 // A gate that lets a known class grow is not a gate.
-const UNLABELLED_ASK_SURFACES_MAX = 10
+const UNLABELLED_ASK_SURFACES_MAX = 7
 {
   const unlabelled = []
   for (const f of [...walkFiles('app'), ...walkFiles('components'), ...walkFiles('lib')]) {

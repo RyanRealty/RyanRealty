@@ -62,13 +62,15 @@ checks.push({
     !/listPrice: listing\.listPrice/.test(ld),
 })
 
-const split = src('components/site/explore/PlaceMapListSplit.client.tsx')
+// PlaceMapListSplit left with the KB register (2026-08-26). The place-page
+// list rows are the v3 Field builders now, and each is armed below
+// (neighborhood-sections, city-field-items, community-opening).
+const commField = src('app/communities/[slug]/_v3/community-opening.ts')
 checks.push({
-  label: 'place list cards publish formatPublishedAsk, not formatPrice',
+  label: 'community list priceLabel uses formatPublishedAsk',
   ok:
-    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(split) &&
-    /formatPublishedAsk\(row\.price\)/.test(split) &&
-    !/formatPrice\(row\.price\)/.test(split),
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(commField) &&
+    /formatPublishedAsk\(tile\.listPrice\)/.test(commField),
 })
 
 const map = src('components/site/kb/KbListingMapImpl.tsx')

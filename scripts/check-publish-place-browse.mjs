@@ -27,30 +27,25 @@ checks.push({
     helper.includes('70b9cdad41fa4d875ca6b5997a1bab5a'),
 })
 
-const split = src('components/site/explore/PlaceMapListSplit.client.tsx')
-checks.push({
-  label: 'PlaceMapListSplit gates map Browse homes through publishPlaceBrowseHref',
-  ok:
-    /from ['"]@\/lib\/search\/publish-place-browse-href['"]/.test(split) &&
-    /publishPlaceBrowseHref\(browseHref \?\? viewAllHref\)/.test(split) &&
-    /browseHref=\{mapBrowseHref\}/.test(split),
-})
-
-const inventory = src('components/site/explore/PlaceInventoryMap.tsx')
-checks.push({
-  label: 'PlaceInventoryMap passes a place-filtered browseHref to both map shapes',
-  ok:
-    /from ['"]@\/lib\/search\/publish-place-browse-href['"]/.test(inventory) &&
-    /browseHref=\{browseHref\}/.test(inventory) &&
-    /publishPlaceBrowseHref\(browseHref \?\? viewAllHref\)/.test(inventory),
-})
+// PlaceMapListSplit and PlaceInventoryMap left with the KB register
+// (2026-08-26): the place pages moved onto the v3 barrel, where the map is
+// PlaceFieldMap in the Field's map slot and every browse door is built from a
+// place-filtered source. The rule those two arms carried — a map's Browse
+// door keeps the place filter — is asserted on the surfaces that hold it now.
 
 const community = src('app/communities/[slug]/page.tsx')
 checks.push({
-  label: 'community PlaceInventoryMap opens the community listings path',
+  label: 'community browse doors keep the place filter (getPlaceLinks)',
+  // Every inventory door on the v3 community page is placeLinks.browseUrl,
+  // built by getPlaceLinks for THIS community — stricter than the old
+  // homesForSalePath(cityName, subdivision) CTA, which the alias-aware set
+  // exists to correct. A bare /homes-for-sale or /search door fails.
   ok:
-    /viewAllHref=\{homesForSalePath\(cityName, community.subdivision\)\}/.test(community) &&
-    /<PlaceInventoryMap/.test(community),
+    /getPlaceLinks\(\{\s*\n?\s*type: 'community',/.test(community) &&
+    /const browseHref = placeLinks\.browseUrl/.test(community) &&
+    /href: browseHref,/.test(community) &&
+    !/href:\s*['"]\/homes-for-sale['"]/.test(community) &&
+    !/href:\s*['"]\/search['"]/.test(community),
 })
 
 const map = src('components/site/kb/KbListingMapImpl.tsx')

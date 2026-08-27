@@ -8,6 +8,7 @@ import { v3Text, type V3FieldItem, type V3InstrumentFigure } from '@/components/
 import { communityImage } from '@/lib/geo-images'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { listingTileHref } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { ListingTile } from '@/lib/data/types/listing'
@@ -80,10 +81,18 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
         streetName: tile.streetName,
         streetSuffix: tile.streetSuffix,
       })
+      // A fractional ask never prints unlabeled (the Camp Sherman rule).
+      const shareKind = publishListingShareKind({
+        propertySubType: tile.propertySubType,
+        subdivisionName: tile.subdivisionName,
+        city: tile.city,
+        listNumber: tile.listNumber,
+      })
       const meta = [
         tile.beds != null ? `${tile.beds} bd` : null,
         tile.baths != null ? `${tile.baths} ba` : null,
         tile.sqft != null ? `${tile.sqft.toLocaleString('en-US')} sqft` : null,
+        shareKind,
       ]
         .filter(Boolean)
         .join(' · ')
@@ -102,3 +111,49 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
     })
   return cap == null ? items : items.slice(0, cap)
 }
+
+/* -------------------------------------------------------------------------- */
+/* The Field's caption + trace                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Caption beside the Field. The count is the LISTED set — the same homes the
+ * list and the map render — and it names the community, never the parent city
+ * (ci:place-hero-grain binds on the caption's own place interpolation here). The
+ * membership count the market Instrument prints is a different population
+ * (Market Truth leftover) and carries its own label there.
+ */
+export function communityFieldCaption(input: {
+  placeName: string
+  count: number
+}): string | null {
+  if (input.count <= 0) return null
+  return `${input.count.toLocaleString('en-US')} single-family ${
+    input.count === 1 ? 'home' : 'homes'
+  } for sale in ${input.placeName}`
+}
+
+/** Which resolution path produced the Field's listed set. */
+export type CommunityFieldBranch = 'alias' | 'boundary' | 'subdivision-name'
+
+/** Trace over the Field's listed set, naming the path that produced it. */
+export function communityFieldTrace(placeName: string, branch: CommunityFieldBranch): string {
+  const FEED = 'live MLS through Oregon Data Share'
+  if (branch === 'alias') {
+    return (
+      `${FEED}, active single-family homes matched to ${placeName} through the registry's ` +
+      `subdivision aliases, the same set the alias-aware counts use. The map plots this same set`
+    )
+  }
+  if (branch === 'boundary') {
+    return (
+      `${FEED}, active single-family homes inside the recorded ${placeName} boundary. ` +
+      `The map plots this same set`
+    )
+  }
+  return (
+    `${FEED}, active single-family homes recorded under the ${placeName} subdivision name. ` +
+    `The map plots this same set`
+  )
+}
+

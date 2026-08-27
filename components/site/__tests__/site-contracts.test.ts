@@ -406,14 +406,22 @@ describe('design directive contracts', () => {
   })
 
   // ── Phase 9 wave 2: community page (golf/resort/master-planned) ──────────────
-  it('D95 — community page carries the PAGE CONTRACT', () => {
+  it('D95 — community page carries the PAGE CONTRACT on the v3 barrel', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
-    expect(src).toMatch(/className="kb-root"/)
+    // The register moved (P9, re-landed 2026-08-26): the body is
+    // components/site/v3, so the token scope is V3_ROOT_CLASS instead of
+    // kb-root. Every element of the page contract itself is unchanged.
+    expect(src).toMatch(/className=\{V3_ROOT_CLASS\}/)
+    expect(src).not.toMatch(/className="kb-root"/)
     expect(src).toMatch(/<CommunityPageTracker/)
-    expect(src).toMatch(/<KbSectionTracker/)
-    expect(src).toMatch(/<MetadataBlock/)
-    expect(src).toMatch(/<KbResortOverview/)
+    expect(src).toMatch(/<V3SectionTracker/)
+    expect(src).toMatch(/<MetadataBlock schemas=\{communitySchemas\}/)
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
+    // FAQPage JSON-LD used to come out of FAQBlock's includeJsonLd. FAQBlock is
+    // gone from this route, so the payload must be emitted from the schemas
+    // array instead, built from the SAME faqs array the Quiet block renders.
+    const schemaBuilder = readSrc('app/communities/[slug]/_v3/community-metadata.ts')
+    expect(schemaBuilder).toMatch(/type: 'faqPage', items: input\.faqs/)
   })
 
   it('D96 — community resort count + listings are ALIAS-AWARE (Widgi shows ~48, not 0) (§0)', () => {
@@ -584,11 +592,16 @@ describe('design directive contracts', () => {
 
   it('D114 — community Homes and Market doors keep the place filter', () => {
     const page = readSrc('app/communities/[slug]/page.tsx')
-    // Counted-set door is this page's list (#homes). The literal-name browse
-    // undercounts alias-aware resorts, so "See every" must not leave the set.
-    expect(page).toMatch(/viewAllHref="#homes"/)
+    const figures = readSrc('app/communities/[slug]/_v3/community-figures.ts')
+    // v3 spelling (2026-08-26): every inventory door is placeLinks.browseUrl
+    // from getPlaceLinks for THIS community, the counted-set door is the
+    // on-page Field (#homes), and the closing edges carry the place-filtered
+    // Homes and Market doors by parameter.
+    expect(page).toMatch(/getPlaceLinks\(\{\s*\n?\s*type: 'community',/)
+    expect(page).toMatch(/const browseHref = placeLinks\.browseUrl/)
     expect(page).toMatch(/href: '#homes'/)
-    expect(page).toMatch(/homesForSalePath\(cityName, community\.subdivision\)/)
+    expect(figures).toMatch(/communityMarketHref/)
+    expect(figures).toMatch(/resortItems/)
   })
 
   // D103/D103b (home-d section objects) retired with the home-d revert
@@ -615,11 +628,17 @@ describe('design directive contracts', () => {
   })
 
   it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {
+    // v3 spelling (2026-08-26): the SAME config renders through
+    // buildPlaceKnowledge — overview prose, at-a-glance, drive times,
+    // amenities by category, the course, membership, builders — into the
+    // belonging Quiet. A page that fetches the config and renders nothing
+    // still fails ci:resort-definitions' renders-resort-content arm.
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
-    expect(src).toMatch(/<KbResortOverview/)
-    const overview = readSrc('components/site/kb/KbResortOverview.tsx')
-    expect(overview).toMatch(/amenities|At a glance|Membership|Builders/)
+    expect(src).toMatch(/buildPlaceKnowledge\(\{/)
+    expect(src).toMatch(/knowledgeItems/)
+    const knowledge = readSrc('app/communities/[slug]/_v3/place-knowledge.ts')
+    expect(knowledge).toMatch(/amenities|At a glance|Membership|Builders/i)
   })
 
   it('D98 — resort/golf definitions are locked by a gate (registry + alias-aware wiring)', () => {

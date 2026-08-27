@@ -8,6 +8,8 @@ type StageProps = {
   eyebrow?: string
   headline: string
   posterSrc: string
+  /** Owned area-guide clip - V3Stage plays it muted, looping, motion-respecting. */
+  videoSrc?: string
   action: { label: string; href: string }
 }
 
@@ -18,6 +20,7 @@ export function CommunityStage(props: {
   cityName: string
   headline: string
   posterSrc: string
+  videoSrc?: string
   action: { label: string; href: string }
 }) {
   const Stage = props.Stage
@@ -31,6 +34,7 @@ export function CommunityStage(props: {
         eyebrow={`${props.name} · ${props.cityName}`}
         headline={props.headline}
         posterSrc={props.posterSrc}
+        videoSrc={props.videoSrc}
         action={props.action}
       />
     </>

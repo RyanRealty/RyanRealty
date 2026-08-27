@@ -9,7 +9,11 @@ describe('community page leftover 12-month sold overlay', () => {
   it('assigns HUD sold12mo and FAQ soldCount12mo from leftover closedCount', () => {
     expect(SRC).toMatch(/getPublicDetachedPace/)
     expect(SRC).toMatch(/leftoverHudKpis/)
-    expect(SRC).toMatch(/sold12mo:\s*hud\.sold12mo/)
+    // v3 spelling (2026-08-26): the HUD figures print through the shared
+    // leftoverMarketFigures builder (app/cities/[slug]/_v3/city-sections.ts),
+    // which prints hud.sold12mo under 'sold · 12 months'. The FAQ input stays
+    // page-local and stays leftover.
+    expect(SRC).toMatch(/leftoverMarketFigures/)
     expect(SRC).toMatch(/soldCount12mo:\s*publicPace\.closedCount/)
   })
 
@@ -20,9 +24,13 @@ describe('community page leftover 12-month sold overlay', () => {
   })
 
   it('keeps leftover median sold and sale-to-list', () => {
-    expect(SRC).toMatch(/publicPace\.medianClose/)
+    // v3 spelling (2026-08-26): median close rides publicPaceItems (the
+    // 'median close · 12 months' item) and sale-to-list rides
+    // leftoverMarketFigures — both fed from the same leftover pace row this
+    // page reads. No cache fill exists to reach either.
+    expect(SRC).toMatch(/publicPaceItems\(publicPace\)/)
     expect(SRC).toMatch(/leftoverHudKpis/)
-    expect(SRC).toMatch(/saleToList:\s*hud\.saleToList/)
+    expect(SRC).toMatch(/leftoverMarketFigures/)
   })
 
   it('does not map leftover daysToContract onto median DOM', () => {

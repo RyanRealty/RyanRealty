@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getPlaceLinks } from '@/lib/place-links'
 import { resortQuietItems } from '../../_v3/resort-doors'
-import { buildClosedFigures, buildExploreEdges } from './community-figures'
+import { buildExploreEdges, communityDocumentItems } from './community-figures'
 
 describe('master-plan place follows', () => {
   it('Homes and Market doors keep the community filter', () => {
@@ -15,6 +15,7 @@ describe('master-plan place follows', () => {
       cityReportHref: '/housing-market/bend',
       pagePath: '/communities/tetherow',
       faqs: [],
+      documentItems: [],
       golfCourses: [],
       resortItems: resortQuietItems(),
     })
@@ -25,14 +26,28 @@ describe('master-plan place follows', () => {
     expect(byLabel.get('Search Tetherow homes')).not.toBe('/search')
   })
 
-  it('closed-sale figures open this place market, not a generic search', () => {
-    const [figure] = buildClosedFigures({
-      medianSalePrice: 1_200_000,
-      soldCount: 40,
-      medianDaysOnMarket: 21,
-      marketHref: '/housing-market/sunriver/caldera-springs',
-    })
-    expect(figure?.href).toBe('/housing-market/sunriver/caldera-springs')
+  it('recorded documents render as legal doors with per-item provenance', () => {
+    // buildClosedFigures left with the pulse-world builders (2026-08-26): the
+    // stats-cache closed figures were the alias-join under-count at this grain.
+    const items = communityDocumentItems('Vandevert Ranch', [
+      {
+        id: 'doc-1',
+        url: 'https://docs.example/ccr.pdf',
+        kind: 'ccr',
+        county: 'Deschutes',
+        recordingType: 'instrument',
+        pageCount: 42,
+        fileBytes: 1024,
+      } as never,
+    ])
+    expect(items).toHaveLength(2)
+    const link = items[0]
+    expect(link && 'href' in link ? link.href : null).toBe('https://docs.example/ccr.pdf')
+    expect(link && 'label' in link ? link.label : '').toMatch(/Vandevert Ranch/)
+    expect(link && 'label' in link ? link.label : '').toMatch(/Deschutes County/)
+    const caveat = items[1]
+    expect(caveat && 'body' in caveat ? caveat.body : '').toMatch(/amendments may exist/)
+    expect(communityDocumentItems('Vandevert Ranch', [])).toEqual([])
   })
 
   it('closing Quiet carries the registry resort list', () => {
@@ -45,6 +60,7 @@ describe('master-plan place follows', () => {
       cityReportHref: '/housing-market/sunriver',
       pagePath: '/communities/sunriver',
       faqs: [],
+      documentItems: [],
       golfCourses: [],
       resortItems: resortQuietItems(),
     })

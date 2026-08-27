@@ -422,7 +422,8 @@ describe('public place pages', () => {
       'utf8',
     )
     expect(community).toMatch(/getPublicPlaceSegments/)
-    expect(community).toMatch(/PublicProductTypes/)
+    // v3 community page (2026-08-26): the enumeration is the barrel section.
+    expect(community).toMatch(/V3PlacePropertyTypes/)
     expect(neighborhood).toMatch(/getPublicPlaceSegments/)
     // v3 neighborhood page (2026-08-26): the enumeration is the barrel section.
     expect(neighborhood).toMatch(/V3PlacePropertyTypes/)

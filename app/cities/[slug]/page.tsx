@@ -72,6 +72,7 @@ import {
   getPriceHistory,
   getCityDetachedMarket,
   getCityDetachedInventory,
+  getAreaGuideVideo,
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
@@ -131,6 +132,7 @@ import { cityFieldItems } from './_v3/city-field-items'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
 import {
   activityRows,
+  areaGuideRow,
   articleRows,
   cityAboutItems,
   cityActivityTrace,
@@ -276,6 +278,11 @@ export default async function CityDetailPage({ params }: Props) {
     getCoMarketAnnualCity({ year: PLACE_MART_YEAR, citySlug: slug, typeScope: 'all' }),
     getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
   ])
+
+  // The approved area-guide clip - a guides-Ledger door on this node (the
+  // pattern set holds no mid-page media slot here); it plays full-bleed on the
+  // community Stage. Null when the geo has none, and the row is then absent.
+  const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video')
 
   const resortTiles = resortRead.value
 
@@ -495,7 +502,10 @@ export default async function CityDetailPage({ params }: Props) {
   const [firstGolf, ...restGolf] = placeFigureRows(golfLedgerItems, 'Golf and master-planned')
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
   const [firstAct, ...restAct] = activityRows(activityItems)
-  const [firstGuide, ...restGuide] = articleRows(articlePosts)
+  const [firstGuide, ...restGuide] = [
+    ...areaGuideRow(cityName, areaGuideVideo),
+    ...articleRows(articlePosts),
+  ]
 
   // About - the hand-written city description where one exists. NO GENERATED
   // PARAGRAPHS AND NO FIGURES (invariant 1): buildDataDrivenCityAbout stays out

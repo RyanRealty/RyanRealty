@@ -1,156 +1,152 @@
 /**
- * Community page — KB (kinetic-brutalist) design, Phase 9 wave 2 of the
- * NorthWest Crossing, Awbrey Glen) AND plain subdivisions live here. Reuses the
- * SAME section library as the homepage + city page (components/site/kb/*), fed
- * COMMUNITY-scoped DAL data, never forked (ci:kb-single-source G50). KbNav +
- * KbFooter carry the chrome.
+ * /communities/[slug] - the master-plan grain, on the components/site/v3
+ * barrel. Tetherow is the exemplar, not a one-off. Opens Stage (owned place
+ * photo) then one Field. No owned asset -> Instrument of belonging, then
+ * Field. Amenities, membership, STR, and child plats are doors. Not a
+ * neighborhood. Not a city stamp twin. Parity:
+ * design_system/ryan-realty/ui_kits/community/parity.json.
  *
- * THE PAGE CONTRACT (docs/KB_CONVERGENCE_ROADMAP.md): KB design + SEO for Google
- * & LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/Place/Dataset/FAQPage)
- * + tracking (CommunityPageTracker + KbSectionTracker section/interaction
- * events). Every figure live (§0).
+ * FIVE PATTERNS - Stage, Field, Instrument, Quiet, Sheet - under the
+ * 2026-08-26 place-family exception (PUBLIC_UI.md §3, Matt), declared in
+ * parity.json. A sixth stays a lock break, which is why the recorded
+ * governing documents render as Quiet legal doors here (communityDocumentItems)
+ * while the plat and neighborhood nodes mount the V3PlaceDocuments Ledger.
  *
- * Two data invariants carried over from the prior community page and preserved
- * here:
- *   1. RESORT COUNT is ALIAS-AWARE. A resort's homes are MLS-tagged under many
- *      subdivision names, so the literal-name count undercounts every resort.
- *      When this community IS a resort, its active count = the city's
- *      alias-aware count (resortActiveSfrCounts) so the hero figure MATCHES the
- *      city ledger, not the literal-name undercount.
- *   2. BOUNDARY RELIABILITY. Several community boundaries are oversized /
- *      un-corrected (Broken Top is 11,496 acres vs ~450 real). An unreliable
- *      boundary must NOT draw a polygon on the map and must NOT drive the count;
- *      we fall back to getCommunityListings (MLS subdivision-name) for both the
- *      pins and the total.
+ * THE PUBLIC NAME IS THE REGISTRY LABEL (Juniper Preserve, 2026-08-25):
+ * `publicName = registryEntry?.label ?? community.name`. The slug stays
+ * 'pronghorn' - a durable cache key (geo_snapshot_mv 'bend:pronghorn',
+ * market_stats_cache geo_slug) - so the two disagree by design and every
+ * visitor-facing string takes the label.
  *
- * Section stack: breadcrumb · hero · about · featured · map · ticker · market ·
- * neighborhoods (resort only) · communities (other resorts) · open houses ·
- * activity · explore-cities · guides(blog) · testimonials · team · sell · FAQ ·
- * footer.
+ * NO IN-PAGE REDIRECT (2026-08-19): a redirect thrown after loading.tsx
+ * flushed serves 200 with no Location header. Compound and wrong-city slugs
+ * canonicalize in middleware via resolveCanonicalCommunityPath
+ * (lib/routing/pre-render-hops.ts) BEFORE anything streams.
  *
- * Data ONLY through @/lib/data and @/app/actions/communities. No raw .from() calls.
+ * THE MARKET SECTION IS THE LEFTOVER HUD (MARKET_TRUTH): leftoverHudKpis with
+ * grain 'neighborhood' (market_pulse_live has no neighborhood rows; the
+ * stats-cache closed figures are the alias-join under-count
+ * lib/market/geo-grain-trust.ts documents), keyed by the bare community slug.
+ * The hero count is hud.active; a missing cell is omitted; buildMarketFaq runs
+ * UNCONDITIONALLY with source 'market-truth' so the Dataset/FAQPage JSON-LD
+ * survives a miss at the cost of one figure, never the markup. The reverted
+ * draft's resolveLivePair pulse/snapshot tiers and its stats-cache closed
+ * Instrument predate that ruling and were corrected, not restored.
+ *
+ * THE MARKET QUESTION STAYS (Matt 2026-08-26, all five place grains): the
+ * market Instrument's level-2 headline asks it whenever the verdict answers
+ * it, with the answer as the note beneath - the Stage carries the H1.
+ *
+ * THE DATA INVARIANTS, preserved from both registers:
+ *  1. ALIAS-AWARE RESORT LISTINGS. A resort's homes are MLS-tagged under many
+ *     subdivision names (Widgi Creek 0 literal against a true 48), so the
+ *     Field's set is resortTilesForSlug over the uncapped multi-city SFR pull,
+ *     gated on the read's own .ok so a timeout cannot publish an empty resort.
+ *  2. BOUNDARY RELIABILITY. Oversized stored hulls (Broken Top 11,496 acres
+ *     against ~450 real) may not draw and may not drive a count; the county
+ *     plat union, when one exists, always draws.
+ *  3. ABSENT IS NOT ZERO. Every read is guarded; when all are silent the page
+ *     says it has no live figures rather than publishing 0.
+ *  4. ONE POPULATION PER FIGURE, NAMED. The Field caption counts ITS OWN
+ *     listed set; the Instrument's "detached homes for sale" is the leftover
+ *     membership count. Two counts, two labels, each under its own trace.
+ *
+ * Data ONLY through @/lib/data, @/app/actions/communities, and the in-repo
+ * registries. No raw .from() calls.
  */
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
-import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import {
-  getPublicDetachedMonthly,
-  leftoverNeighborhoodOrCityMonthly,
-} from '@/lib/data/market-truth/public-monthly'
-import { zonedDateKey } from '@/lib/format/date'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
-import { PublicMixStats } from '@/app/cities/[slug]/PublicMixStats'
-import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
-import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
-import {
-  getMarketPulse,
-  getMarketStats,
-  getRegionPulse,
-  getPriceHistory,
   getListingTiles,
   getGeoSnapshot,
   getGeoBoundaryMapData,
   getResortBoundaryGeoJSON,
-  getAllCitySnapshots,
-  getRecentBlogPosts,
   getResortCommunityBySlug,
   getBlogPostsBySlugs,
-  getAreaGuideVideo,
+  getPriceHistory,
   getDetachedOverlays,
+  getAreaGuideVideo,
   cityDetachedSlug,
 } from '@/lib/data'
-import { allCommunities } from '@/lib/data'; import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
-import { getCommunitiesForIndex } from '@/app/actions/communities'
-import { getOpenHousesWithListings } from '@/app/actions/open-houses'
-import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
-import { communityImage, cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-images'
-import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
-import { buildYearSeries } from '@/lib/kb/year-series'
-import { resortActiveSfrCounts, cityResorts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
+import { GOLF_COURSES } from '@/data/golf/courses'
+import { cityResorts, resortActiveSfrCounts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
-// Row-to-prop shaping shared with the city + neighborhood place pages — one
-// copy, so a fix cannot land on one of the three and drift on the others.
-import {
-  buildActivityItems,
-  buildArticlePosts,
-  buildMapPointFeatures,
-  buildMonthlyTrend,
-  buildOpenHouseItems,
-  buildOtherCityItems,
-  buildTickerItems,
-  isTrendSeriesTooSparse,
-} from '@/lib/kb/place-sections'
-import { placeHeroLead } from '@/lib/kb/place-hero-lead'
-import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { formatPlaceHoaAnnual, placeHoaGlanceLabel, publishPlaceHoa } from '@/lib/market/publish-place-hoa'
-import { publishDaysLabel } from '@/lib/market/publish-days-figure'
-import { publishSellMedian } from '@/lib/market/publish-median-caption'
-import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
-
 import { getDistrictForCity } from '@/data/co-schools'
-import { homesForSalePath } from '@/lib/slug'
+import { getPlaceLinks } from '@/lib/place-links'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { childAliasesOf } from '@/lib/communities/community-own-names'
-import { pageMetadata } from '@/lib/site/page-metadata'
-import { CONTACT } from '@/lib/brand/contact'
-import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
-import { buildTimeRails, skippableRail } from '@/lib/build-phase'
-import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import type { SchemaInput } from '@/lib/site/json-ld'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbAbout } from '@/components/site/kb/KbAbout'
-import { KbResortOverview } from '@/components/site/kb/KbResortOverview'
-import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
-// KbListingMap remains in the parity contract; PlaceInventoryMap composes dual-pane.
-import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
-import { PlaceInventoryMap } from '@/components/site/explore/PlaceInventoryMap'
-import { KbTicker } from '@/components/site/kb/KbTicker.client'
-import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
-import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
-import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
-import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
-import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
-import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
-import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
-import { KbActivity } from '@/components/site/kb/KbActivity.client'
-import { KbArticles } from '@/components/site/kb/KbArticles'
-import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
-import { KbTeam } from '@/components/site/kb/KbTeam.client'
-import { KbBuyCta } from '@/components/site/kb/KbBuyCta.client'
-import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
-import { CommunityGolfLinks } from '@/components/site/explore/CommunityGolfLinks'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbSchools } from '@/components/site/kb/KbSchools'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { MarketSources } from '@/components/site/MarketSources'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import {
-  V3PlaceCharacter,
-  V3PlaceDocuments,
-  V3PlacePropertyTypes,
-} from '@/components/site/v3'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import {
+  getPublicDetachedMonthly,
+  leftoverNeighborhoodOrCityMonthly,
+} from '@/lib/data/market-truth/public-monthly'
+import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
+import { isTrendSeriesTooSparse } from '@/lib/kb/place-sections'
+import { buildYearSeries } from '@/lib/kb/year-series'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { valuationHref } from '@/lib/site/valuation-href'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { skippableRail } from '@/lib/build-phase'
+import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
+import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { zonedDateKey, formatDate } from '@/lib/format/date'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Field,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3PlaceCharacter,
+  V3PlacePropertyTypes,
+  V3Quiet,
+  V3SourceLine,
+  V3Stage,
+  V3SectionTracker,
+  type V3ChartCardProps,
+  type V3InstrumentFigure,
+} from '@/components/site/v3'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { kbMoneyFull } from '@/components/site/kb/types'
-import type {
-  KbTownItem,
-  KbCommunityItem,
-  KbFeaturedItem,
-  KbMarketData,
-} from '@/components/site/kb/types'
-import { TESTIMONIALS } from '@/lib/testimonials'
-import '@/components/site/kb/kb.css'
+import { coreChartsCard } from '@/components/market/core-charts'
+import { CommunityAlertSheet } from './_v3/CommunityAlertSheet.client'
+import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
+import { buildExploreEdges, communityDocumentItems } from './_v3/community-figures'
+import { buildPlaceKnowledge } from './_v3/place-knowledge'
+import {
+  belongingFigures,
+  belongingHeadline,
+  belongingTrace,
+  communityFieldCaption,
+  communityFieldItems,
+  communityFieldTrace,
+  stagePoster,
+  type CommunityFieldBranch,
+} from './_v3/community-opening'
+import { CommunityStage } from './_v3/CommunityStage'
+import { resortQuietItems } from '../_v3/resort-doors'
+import {
+  leftoverMarketFigures,
+  CITY_PACE_KEYS_ON_THE_HUD,
+  placeMedianChart,
+} from '@/app/cities/[slug]/_v3/city-sections'
+import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   // Seed the curated resort-community set (finite, in-repo registry) so the
@@ -163,29 +159,13 @@ export const revalidate = 60
 
 type Props = { params: Promise<{ slug: string }> }
 
-// Hover photo for each resort/golf community card. The literal-name image
-// lookups miss for resorts (banner rows are tagged under alias subdivisions),
-// so communityImage(slug) is the curated primary source. Every path is verified.
-const RESORT_IMG: Record<string, string> = {
-  // KB hero imagery (non-golf-lp slugs) stays as KB literals.
-  tetherow: '/images/kb/tetherow-golf-aerial.jpg',
-  'broken-top': '/images/kb/broken-top.jpg',
-  'northwest-crossing': '/images/kb/northwest-crossing.jpg',
-  'caldera-springs': '/images/kb/caldera-springs.jpg',
-  // Golf/master-community tile imagery from the canonical source (D86 / G30).
-  pronghorn: GOLF_COMMUNITY_IMAGES.pronghorn,
-  'awbrey-glen': GOLF_COMMUNITY_IMAGES['awbrey-glen'],
-  'widgi-creek': GOLF_COMMUNITY_IMAGES['widgi-creek'],
-  crosswater: GOLF_COMMUNITY_IMAGES.crosswater,
-  'eagle-crest': GOLF_COMMUNITY_IMAGES['eagle-crest'],
-  'brasada-ranch': GOLF_COMMUNITY_IMAGES['brasada-ranch'],
-}
+/** The most rows the in-boundary queries return. Named so the trace can say it. */
+const BOUNDARY_ROW_CAP = 200
 
-// Boundaries listed in the sanity baseline are oversized / un-corrected
-// (broken-top is 11,496 acres vs ~450 real), so anything keyed off the polygon
-// — the in-boundary listings, the count, the drawn shape — is wrong (it swallows
-// Tetherow and west Bend). For those, fall back to the MLS subdivision-name
-// listings and draw only the real homes' pins. (preserved from prior page)
+// Boundaries listed in the sanity baseline are oversized or un-corrected
+// (broken-top is 11,496 acres against ~450 real), so anything keyed off the
+// polygon - the in-boundary listings, the count, the drawn shape - is wrong:
+// it swallows Tetherow and west Bend.
 const UNRELIABLE_BOUNDARY_SLUGS = new Set(boundarySanityBaseline.allowed as string[])
 function isBoundaryReliable(slug: string): boolean {
   return !UNRELIABLE_BOUNDARY_SLUGS.has(slug)
@@ -195,56 +175,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
-  // THE REGISTRY LABEL IS THE PUBLIC NAME. `community.name` is rebuilt from the
-  // SLUG by parseCommunitySlug, so it can only ever say what the slug says —
-  // and a slug is a durable key, not a display name. Juniper Preserve is the
-  // case that proved it: the body read "Juniper Preserve" (from the content
-  // file) while this <title> still read "Pronghorn Homes for Sale", because the
-  // slug stays 'pronghorn' to keep geo_snapshot_mv's geo_key 'bend:pronghorn'
-  // and the market_stats_cache rows valid. One name, one source. (§0)
+  // Same rule as the page body: the registry label is the public name.
   const publicName = getResortCommunityBySlug(slug)?.label ?? community.name
-  // §0 NO COUNT HERE: `activeCount` fell through to the parent CITY's, so
-  // three-rivers read "1000 homes for sale" (Bend's, row-capped) and sunriver 121
-  // vs a body showing 102. Re-deriving it here is out (the SEO-58 incident).
-  const desc = `Active single-family homes in ${publicName}, ${community.city}, Oregon. Live inventory, open houses, and market stats from the regional MLS.`
-
-  // OG image: use the community's curated KB hero photo when one exists, else the
-  // generic branded card. Both paths are absolute at render time via pageMetadata.
-  // KB hero paths verified to exist in public/images/kb/ — see RESORT_IMG above. (§0)
-  const KB_HERO: Record<string, string> = {
-    tetherow: '/images/kb/tetherow-golf-aerial.jpg',
-    'broken-top': '/images/kb/broken-top.jpg',
-    'northwest-crossing': '/images/kb/northwest-crossing.jpg',
-    'caldera-springs': '/images/kb/caldera-springs.jpg',
-    'three-rivers': '/images/kb/three-rivers.jpg',
-    'vandevert-ranch': '/images/kb/vandevert-ranch.jpg',
-  }
-  const COMMUNITY_HERO: Record<string, string> = {
-    'broken-top': '/images/communities/broken-top.jpg',
-    'caldera-springs': '/images/communities/caldera-springs.jpg',
-    'northwest-crossing': '/images/communities/northwest-crossing.jpg',
-    'three-rivers': '/images/communities/three-rivers.jpg',
-    'vandevert-ranch': '/images/communities/vandevert-ranch.jpg',
-  }
-  // Fix 7: every community gets a community-specific OG image.
-  // Priority: curated KB hero photo > curated community folder photo >
-  // generated card via /api/og?type=community&name=...&city=... (covers all others).
-  // The generated card renders the community name + city on the brand background so
-  // no community falls through to the generic /api/og?type=default card. (§0)
-  const ogImage =
-    KB_HERO[slug] ??
-    COMMUNITY_HERO[slug] ??
-    `/api/og?type=community&name=${encodeURIComponent(publicName)}&city=${encodeURIComponent(community.city)}`
-
-  return pageMetadata({
-    // Fix 2: Title ≤60 chars — community override (not the global template).
-    // Format: "[Community] Homes for Sale | [City], OR"
-    // cleanTitle in page-metadata.ts strips any trailing brand suffix + caps at 60.
-    title: `${publicName} Homes for Sale | ${community.city}, OR`,
-    description: desc,
-    path: `/communities/${slug}`,
-    ogImage,
-  })
+  return pageMetadata(communityMetadataInput({ slug, name: publicName, city: community.city }))
 }
 
 export default async function CommunityDetailPage({ params }: Props) {
@@ -256,23 +189,9 @@ export default async function CommunityDetailPage({ params }: Props) {
   const cityName = community.city
   const citySlug = community.citySlug
 
-  // CANONICALIZATION MOVED TO THE EDGE (2026-08-19). Two redirect()s lived here:
-  // a compound slug (/communities/bend-tetherow, and every subdivision_aliases
-  // member — GSC 2026-07 had "broken top homes for sale" split across
-  // bend-parks-at-broken-top and bend-the-highlands-at-broken-top while the one
-  // real page sat unranked) onto the resort's bare slug, and a wrong-city slug
-  // (design-audit #131 — hundreds of Crosswater listings say "Bend") onto the
-  // registry's verified city. Neither could emit a Location header: this segment
-  // has a loading.tsx and app/loading.tsx wraps every route, so React had
-  // flushed HTTP 200 before either threw. Measured on ryan-realty.com
-  // 2026-08-19 (browser UA, redirect:manual): of the 104 registry-derived
-  // compound slugs, 91 served 200 with Location: null and ZERO <h1>, all 91
-  // robots "index, follow" over a "<Community> Homes for Sale | <City>, OR"
-  // <title>, 0 emitting a 3xx. Both hops now resolve in ONE 308 in middleware.ts
-  // via lib/routing/pre-render-hops.ts -> resolveCanonicalCommunitySlug, off the
-  // same registry fields (label + subdivision_aliases, entry city) and the slug
-  // alone. Enforced by scripts/check-streamed-redirect.mjs; parity over the full
-  // slug space is unit-tested in lib/communities/canonical-community-slug.test.ts.
+  // Compound and wrong-city slugs canonicalize in middleware
+  // (resolveCanonicalCommunityPath), so a slug that reaches this body is the
+  // canonical one. resortMatch still resolves the registry entry for aliases.
   const subdivisionLc = community.subdivision.toLowerCase().trim()
   const resortMatch = cityResorts(citySlug).find(
     (r) =>
@@ -280,64 +199,57 @@ export default async function CommunityDetailPage({ params }: Props) {
       r.label.toLowerCase().trim() === subdivisionLc ||
       (r.subdivision_aliases ?? []).some((a) => a.toLowerCase().trim() === subdivisionLc),
   )
-
-  // The resort registry entry is the source of truth for is_resort +
-  // sub_neighborhoods + subdivision_aliases. Pure/synchronous (registry JSON).
   const resortSlug = resortMatch?.slug ?? slug
   const registryEntry = getResortCommunityBySlug(resortSlug)
   const isResort = registryEntry?.is_resort === true || community.isResort
-  // The aliases that name a subdivision INSIDE this community — the only ones a
-  // membership claim may list. Drops the community's own current and former
-  // names; the FULL `subdivision_aliases` list stays the key for counts, market
-  // scope and the CMA resort guard, where a former label must still match.
+  const isResortInCity = Boolean(resortMatch)
+
+  // CHILD aliases only, for the FAQ membership answer: the community's own
+  // current and former names must not be in it, or the page answers that
+  // Sunriver includes Sunriver and that Juniper Preserve includes Pronghorn.
   const childAliases = registryEntry
     ? childAliasesOf(registryEntry, registryEntry.subdivision_aliases)
     : []
-  // Same rule as generateMetadata: the registry label is the public name, and
-  // `community.name` is only ever the slug read back through parseCommunitySlug.
-  // Juniper Preserve keeps slug 'pronghorn' (a durable cache key — geo_snapshot_mv
-  // geo_key 'bend:pronghorn', market_stats_cache geo_slug), so the two disagree
-  // by design and every visitor-facing string below takes the label. (§0)
+  // The registry label is the public name; `community.name` is only the slug
+  // read back through parseCommunitySlug. Juniper Preserve keeps slug
+  // 'pronghorn' (a durable cache key), so the two disagree by design and every
+  // visitor-facing string below takes the label. (§0)
   const publicName = registryEntry?.label ?? community.name
-  const isResortInCity = Boolean(resortMatch)
 
-  // community geo snapshot keys are stored as "city:subdivision" lowercase.
+  // Community geo snapshot keys are stored as "city:subdivision" lowercase.
+  // market_stats_cache + Market Truth neighborhood rows key the bare slug.
   const communityGeoKey = `${cityName.toLowerCase().trim()}:${community.subdivision.toLowerCase().trim()}`
-  // market_stats_cache + market_pulse_live neighborhood rows are keyed by the
-  // bare community slug.
   const neighborhoodSlug = slug
 
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [
-    snapshot, _pulse, stats, _regionPulse, priceHist,
-    boundaryRead, resortBoundary, allCitySnapshots, communities,
-    blogPosts, openHouses, activity, featuredTiles, citySfrRead, richContent,
-    cityPriceHist, areaGuideVideo, commCoreCharts, cityCoreCharts,
-    publicPace, publicSegments, leftoverCityMonthly, leftoverNeighborhoodMonthly, publicMix,
+    snapshot,
+    priceHist,
+    boundaryRead,
+    resortBoundary,
+    citySfrRead,
+    richContent,
+    cityPriceHist,
+    commCoreCharts,
+    cityCoreCharts,
+    publicPace,
+    publicSegments,
+    leftoverCityMonthly,
+    leftoverNeighborhoodMonthly,
+    publicMix,
     commOverlays,
     placeDocuments,
     placeCharacter,
   ] = await Promise.all([
-    // Always-present community snapshot — the JSON-LD/Place fallback source. (§0)
+    // Always-present community snapshot - the JSON-LD fallback stamp. (§0)
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
-    withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 3500, 'comm:pulse'),
-    // Neighborhood cache still supplies 12-month DOM fallbacks.
-    // Closed median, sale-to-list, and 12-month sold come from leftover
-    // membership, not this row. Miss omits — never cache soldCount.
-    withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: neighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'comm:stats'),
-    withTimeoutFallback(getRegionPulse(), null, 3000, 'comm:regionPulse'),
     withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
     withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),
     withTimeoutFallback(getResortBoundaryGeoJSON(slug), null, 4500, 'comm:resortBoundary'),
-    withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'comm:cities'),
-    withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'comm:communities'),
-    skippableRail(() => getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'comm:blog'),
-    skippableRail(() => getOpenHousesWithListings({ city: cityName }), [], 3500, 'comm:openHouses'),
-    skippableRail(() => getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'comm:activity'),
-    withTimeoutFallback(getCommunityListings(cityName, community.subdivision, 14), [], 4500, 'comm:featured'),
     // Uncapped active SFR tiles for EVERY MLS city this community lists under
-    // (registry mls_cities): Caldera lists under Bend, BBR under its own name —
-    // the registry-city-only pull rendered 0 of 31 real homes (2026-07-29). (§0)
+    // (registry mls_cities): Caldera lists under Bend, BBR under its own name -
+    // the registry-city-only pull rendered 0 of 31 real homes (2026-07-29).
+    // Result-shaped: a timed-out fetch must not read as an empty resort. (§0)
     isResortInCity
       ? withTimeoutFallbackResult(
           Promise.all(
@@ -346,30 +258,15 @@ export default async function CommunityDetailPage({ params }: Props) {
           [], 9000, 'comm:citySfr',
         )
       : Promise.resolve({ value: [] as Awaited<ReturnType<typeof getListingTiles>>, ok: true }),
-    // Curated amenity/golf/HOA JSON, or the data-driven About when missing. (§0)
+    // Curated amenity/golf/HOA JSON; null with no config, and the page then
+    // shows fewer rows rather than inventing them. (§0)
     withTimeoutFallback(getResortCommunityContent(resortSlug), null, 2500, 'comm:content'),
     // Parent-city trend when this community's series is too thin. Relabeled. (§0)
     withTimeoutFallback(getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
-    // Approved per-location AREA GUIDE video for THIS community's geo slug (EXACT
-    // match, null when the location has no guide video). The slot self-hides when
-    // null, so it is always safe to render. (§0)
-    withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuideVideo'),
-    // Tabbed core-chart module series — this community's own scope, plus the
-    // parent city's as the sparse-community fallback (same decision rule as the
-    // HUD trend chart below, relabeled honestly when used). (§0)
-    withTimeoutFallback(
-      getCoreChartSeries({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
-      null,
-      4500,
-      'comm:coreCharts',
-    ),
-    withTimeoutFallback(
-      // City cache rows key multi-word cities space-separated ("la pine").
-      getCoreChartSeries({ geoType: 'city', geoSlug: canonicalCityCacheSlug(citySlug) }),
-      null,
-      4500,
-      'comm:cityCoreCharts',
-    ),
+    // Tabbed core-chart series - this community's own scope, plus the parent
+    // city's as the sparse-community fallback, relabeled honestly when used. (§0)
+    withTimeoutFallback(getCoreChartSeries({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 4500, 'comm:coreCharts'),
+    withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug: canonicalCityCacheSlug(citySlug) }), null, 4500, 'comm:cityCoreCharts'),
     withTimeoutFallback(
       getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
       EMPTY_PUBLIC_PACE,
@@ -383,11 +280,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       'comm:publicSegments',
     ),
     withTimeoutFallback(
-      getPublicDetachedMonthly({
-        geoType: 'city',
-        geoSlug: citySlug,
-        currentMonthKey,
-      }),
+      getPublicDetachedMonthly({ geoType: 'city', geoSlug: citySlug, currentMonthKey }),
       [],
       4500,
       'comm:leftoverCityMonthly',
@@ -414,13 +307,12 @@ export default async function CommunityDetailPage({ params }: Props) {
       3000,
       'comm:detachedOverlay',
     ),
-      withTimeoutFallback(getPlaceDocuments('community', slug), [], 4000, 'comm:documents'),
+    withTimeoutFallback(getPlaceDocuments('community', slug), [], 4000, 'comm:documents'),
     // Build years + HOA, measured from member listings (PLACE_CONTENT_RULES
     // R1/R2/R3). geo_type 'neighborhood', like every other market read on this
     // page: boundaries holds no community polygons, so a resort community's
-    // membership lives under its neighborhood boundary. Measured 2026-08-26,
-    // community/sunriver has 0 member listings and neighborhood/sunriver has
-    // 10,228.
+    // membership lives under its neighborhood boundary. Measured 2026-08-26:
+    // community/sunriver has 0 member listings, neighborhood/sunriver 10,228.
     withTimeoutFallback(
       getPlaceCharacter('neighborhood', neighborhoodSlug),
       null,
@@ -436,9 +328,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     pace: publicPace,
   })
 
-  // Amenity → blog-post link cards (topic-cluster SEO): resolve the published posts
-  // for any amenity carrying a blog_slug, so those amenity cards render with a hero
-  // image + "Read more". Only fetched when the content actually references posts.
+  // Amenity -> blog-post link cards (topic-cluster SEO): resolve the published
+  // posts for any amenity carrying a blog_slug. Only published posts come back,
+  // so an amenity pointing at a draft produces no dead door.
   const amenityBlogSlugs = (richContent?.amenities ?? [])
     .map((a) => a.blog_slug)
     .filter((s): s is string => Boolean(s))
@@ -447,33 +339,27 @@ export default async function CommunityDetailPage({ params }: Props) {
       ? await skippableRail(() => getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'comm:amenityPosts')
       : {}
 
-  // ── BOUNDARY RELIABILITY (preserved) ──────────────────────────────────────
-  // Reliable boundary -> the in-polygon homes are correct (drive count + pins).
-  // Oversized/un-corrected boundary -> the polygon over-matches, so use the MLS
-  // subdivision-name listings instead, and draw only those pins. Never draw the
-  // oversized polygon (broken-top drew Tetherow). (preserved from prior page)
+  /* ── Boundary reliability + the alias-aware listing set ─────────────────── */
+
   const boundaryReliable = isBoundaryReliable(slug)
   const boundaryMapData = boundaryRead.value
   const citySfrTiles = citySfrRead.ok ? citySfrRead.value : []
   const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
 
-  // ALIAS-AWARE LISTINGS for a resort. A resort's homes are MLS-tagged under many
-  // subdivision names, so the literal-name query misses almost all of them (Widgi
-  // Creek: ~0 tagged "Widgi Creek", ~48 across its aliases). When this community is
-  // a resort, its real listing set = the city's active SFR tiles matching this
-  // resort's aliases — the SAME set that drives the alias-aware count, so the map /
-  // featured / ticker / count all agree and are non-empty. (§0)
+  // ALIAS-AWARE LISTINGS for a resort: the city's active SFR tiles matching
+  // this resort's aliases - the SAME set the alias-aware counts use, so the
+  // map, the list, and the count agree. (§0)
   const resortTiles = isResortInCity ? resortTilesForSlug(citySlug, resortSlug, citySfrTiles) : []
   const useResortTiles = resortTiles.length > 0
 
-  // The community's own listing tiles (lat/lng/photo for the map + featured + ticker).
-  // Resort -> alias-matched; reliable boundary -> in-polygon; oversized -> MLS sub name.
-  // propertyType:'A': the map subtitle claims SFR, listings_in_boundary filters status only (§0).
+  // The community's own tiles. Resort -> alias-matched; reliable boundary ->
+  // in-polygon; oversized -> the city pull narrowed by MLS subdivision name.
+  // propertyType 'A' throughout: every label here says single-family (§0).
   let communityTiles: Awaited<ReturnType<typeof getListingTiles>> = useResortTiles
     ? resortTiles
     : boundaryReliable && boundaryListingKeys.length > 0
       ? await withTimeoutFallbackResult(
-          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 200 }),
+          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: BOUNDARY_ROW_CAP }),
           [],
           4500,
           'comm:tiles',
@@ -484,11 +370,10 @@ export default async function CommunityDetailPage({ params }: Props) {
           4500,
           'comm:tiles-fallback',
         ).then((r) => (r.ok ? r.value : []))
-  // For the oversized-boundary fallback (non-resort), narrow the city pull to the
-  // real community by MLS subdivision name (the authoritative source for those slugs).
-  if (!useResortTiles && (!boundaryReliable || boundaryListingKeys.length === 0)) {
+  const usedSubdivisionNarrowing = !useResortTiles && (!boundaryReliable || boundaryListingKeys.length === 0)
+  if (usedSubdivisionNarrowing) {
     const subListingsRead = await withTimeoutFallbackResult(
-      getCommunityListings(cityName, community.subdivision, 200),
+      getCommunityListings(cityName, community.subdivision, BOUNDARY_ROW_CAP),
       [],
       4500,
       'comm:sub-listings',
@@ -498,522 +383,368 @@ export default async function CommunityDetailPage({ params }: Props) {
     communityTiles = communityTiles.filter((t) => subKeys.has(t.listingKey))
   }
 
-  // Published hero count is leftover HUD. Tiles still feed the map and featured rail.
+  // Alias-aware count map, gated on the read's own .ok (§0): a timed-out city
+  // SFR fetch must not publish an alias count of 0.
+  const haveCityTiles = citySfrRead.ok && isResortInCity && citySfrTiles.length > 0
+  const resortSfrCounts = haveCityTiles ? resortActiveSfrCounts(citySlug, citySfrTiles) : new Map<string, number>()
+  const aliasAwareCount = haveCityTiles ? resortSfrCounts.get(resortSlug) ?? null : null
+
+  /* ── The market, off the ONE leftover pile ─────────────────────────────── */
+
+  // §0 UNKNOWN IS NOT ZERO. The published count is leftover HUD.
   const activeCount: number | null = hud.active
-  const medianListPrice = hud.medianList
-  const medianDays = hud.daysToPending
 
-  // ── HERO ──────────────────────────────────────────────────────────────────
-  // Verified community photo: curated communityImage(slug) first (the resort
-  // banner), then the DB hero image. No verified photo -> labeled regional
-  // fallback (never a wrong-place photo). (§D86)
-  const curatedHero = communityImage(slug)
-  const heroPhoto = curatedHero ?? community.heroImageUrl ?? cityHero(citySlug).src
-  const heroVerified = Boolean(curatedHero || community.heroImageUrl)
-  const mediaCaption = heroVerified ? undefined : 'Regional view · Cascade Range'
+  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
+  const verdict = marketVerdict(mosRaw)
+  const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
+  const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
+  const marketHeadline = hasVerdict
+    ? `Is ${publicName} a buyer's or seller's market?`
+    : `The ${publicName} market`
+  const verdictSentence = hasVerdict
+    ? `${publicName} has ${mosLabel} months of supply, which is a ${verdict.label}.`
+    : null
 
-  // ── ABOUT ───────────────────────────────────────────────────────────────
-  // Verified facts only — em-dash when a figure is unavailable (§0). No invented
-  // numbers. The registry/description prose drives the paragraphs; the facts
-  // strip pulls only DAL-sourced values.
-  // Deep, sourced About prose for the top-SEO-opportunity resort communities
-  // (lib/community-seo-content.ts) overrides the thin default description so these
-  // pages climb for "[community] homes for sale". Falls back to the registry desc.
-  const seoAbout = getCommunitySeoAbout(slug)
-  const aboutParagraphs: string[] = seoAbout ?? [
-    community.description ?? registryEntry?.description ?? '',
-  ].filter((p): p is string => Boolean(p && p.trim().length > 0))
-  // When a richContent config exists (KbResortOverview carries the overview and
-  // suppresses the data-driven About), feed the deep sourced prose into its overview
-  // in place so it shows on those pages too. richContent is a fresh per-request object,
-  // so mutating aboutProse is safe and keeps the content={richContent} contract (D100).
-  if (richContent && seoAbout) {
-    richContent.aboutProse = seoAbout
+  const leftoverStamp =
+    commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? snapshot?.refreshedAt ?? null
+
+  const schoolDistrictInfo = getDistrictForCity(cityName)
+
+  const marketFaqInput: MarketFaqInput = {
+    grain: 'neighborhood',
+    source: 'market-truth',
+    // Same leftover HUD the page prints. Miss omits. Pulse DTP and cache DOM
+    // do not fill.
+    activeCount: hud.active,
+    pulseActiveCount: hud.active,
+    medianListPrice: hud.medianList,
+    monthsOfSupply: mosRaw,
+    medianDaysToPending: hud.daysToPending,
+    medianDaysOnMarket: null,
+    refreshedAt: leftoverStamp,
+    soldCount12mo: publicPace.closedCount ?? null,
+    subdivisionAliases: childAliases.length > 0 ? childAliases : null,
+    hoaMasterAnnual: richContent?.hoaMasterAnnual ?? null,
+    hoaAnnualEstimate: registryEntry?.hoa_annual_estimate ?? null,
+    hoaSubEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate) ?? null,
+    schoolDistrictName: schoolDistrictInfo?.district ?? null,
+    schoolDistrictSlug: schoolDistrictInfo?.districtSlug ?? null,
   }
-  // One published annual HOA for glance + FAQ. Master assessment wins over a
-  // sub-neighborhood "start around" estimate (Tetherow $1,464 vs Heath $2,244).
-  const publishedHoa = publishPlaceHoa({
-    masterAnnual: richContent?.hoaMasterAnnual,
-    estimateAnnual: registryEntry?.hoa_annual_estimate,
-    subEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate),
+  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(publicName, marketFaqInput)
+
+  const placeLinks = getPlaceLinks({
+    type: 'community',
+    slug: resortSlug,
+    citySlug: citySlug || undefined,
   })
-  const daysFact = publishDaysLabel(medianDays)
-  // Cache neighborhood medianSalePrice is an alias join. Leftover medianClose is
-  // membership. Miss omits — never an em-dash, never a cache fill.
-  const leftoverMedianSold = kbMoneyFull(publicPace.medianClose)
-  const aboutFacts: { label: string; value: string }[] = [
-    ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
-    ...(medianListPrice != null ? [{ label: 'Median list', value: kbMoneyFull(medianListPrice) ?? '—' }] : []),
-    ...(daysFact ? [{ label: 'Median to pending', value: daysFact }] : []),
-    ...(leftoverMedianSold ? [{ label: 'Median sold, 12 months', value: leftoverMedianSold }] : []),
-    ...(publishedHoa ? [{ label: placeHoaGlanceLabel(publishedHoa.kind), value: formatPlaceHoaAnnual(publishedHoa.annual) }] : []),
-    { label: 'City', value: cityName },
-  ]
+  const browseHref = placeLinks.browseUrl
+  const communityMarketHref = placeLinks.marketUrl
+  const cityReportHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
 
-  // ── FEATURED + MAP + TICKER ───────────────────────────────────────────────
-  // Featured rail uses the community's own listings (subdivision-name pull).
-  const featuredCommunityTiles = featuredTiles
-    .map((r) => ({
-      listingKey: r.ListingKey ?? '',
-      listNumber: r.ListNumber ?? null,
-      listPrice: r.ListPrice,
-      beds: r.BedroomsTotal,
-      baths: r.BathroomsTotal,
-      sqft: r.TotalLivingAreaSqFt ?? null,
-      streetNumber: r.StreetNumber,
-      streetName: r.StreetName,
-      city: r.City,
-      postalCode: r.PostalCode,
-      subdivisionName: r.SubdivisionName,
-      lat: r.Latitude,
-      lng: r.Longitude,
-      photoUrl: r.PhotoURL,
-      status: r.StandardStatus ?? null,
-    }))
-    .filter((t) => t.listingKey)
-  // A resort's featured rail comes from its alias-matched tiles (top by price),
-  // so Widgi Creek shows its real homes, not the empty literal-name set. (§0)
-  const featuredItems: KbFeaturedItem[] = useResortTiles
-    ? await resolveFeaturedItems(
-        [...resortTiles].sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0)).slice(0, 14),
-      )
-    : await resolveFeaturedItems(featuredCommunityTiles as unknown as Parameters<typeof resolveFeaturedItems>[0])
+  const figures: V3InstrumentFigure[] = leftoverMarketFigures(hud, {
+    browse: browseHref,
+    monthsOfSupply: '/months-of-supply',
+  })
+  for (const item of publicPaceItems(publicPace)) {
+    if (CITY_PACE_KEYS_ON_THE_HUD.has(item.key)) continue
+    figures.push({ value: v3Text(item.value), label: v3Text(item.label) })
+  }
+  for (const figure of buildPublicMixFigures(publicMix)) figures.push(figure)
+  const [firstMarketFigure, ...restMarketFigures] = figures
 
-  // Map: only the REAL community pins. Reliable boundary -> all in-polygon homes;
-  // oversized boundary -> only the subdivision homes we resolved (already
-  // narrowed into communityTiles above). Build Point features for KbListingMap.
-  const mapFeatures = buildMapPointFeatures(communityTiles)
-  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
-
-  // Polygon: the county plat union (TRUE footprint) ALWAYS draws when present;
-  // the unreliable-hull baseline gates ONLY the stored polygon. The old order
-  // nulled both for baseline slugs — mapless caldera/crosswater/BBR (2026-07-29).
-  const polygonGeometry = resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null) ?? null
-  const mapPolygons = polygonGeometry
-    ? {
-        type: 'FeatureCollection' as const,
-        features: [{ type: 'Feature' as const, geometry: polygonGeometry as unknown, properties: { name: publicName } }],
-      }
-    : undefined
-
-  const tickerItems = buildTickerItems(communityTiles, cityName)
-
-  // Sub-neighborhood ledger intentionally omitted: the registry has no per-sub
-  // active count or median, so a ledger would publish a fabricated 0 / a mislabeled
-  // parent median, and the rows would self-link (sub-neighborhoods have no own page).
-  // Resort phase/HOA context lives in the About facts instead. (review fix)
-
-  // ── OTHER RESORTS IN THE SAME CITY (KbCommunities rail) ────────────────────
-  // 3-6 OTHER resorts in this city, with their alias-aware counts so each card
-  // matches the city ledger. Filtered by citySlug, excluding this community.
-  const cityComms = communities.filter((c) => c.city?.toLowerCase().trim() === cityName.toLowerCase().trim())
-  const commImgBySlug = new Map(cityComms.map((c) => [c.slug, c.heroImageUrl]))
-  // C-20: ORDER by relevance, never FILTER by it. Three stacked filters
-  // (same-city, slice(0,6), silent no-image drop) showed 6 of 19. Home city first.
-  const otherResorts = allCommunities()
-    .filter((r) => r.slug !== resortSlug)
-    .sort((a, b) => (a.city_slug === citySlug ? 0 : 1) - (b.city_slug === citySlug ? 0 : 1)
-      || a.label.localeCompare(b.label))
-  const otherResortCounts = otherResorts.length > 0 && citySfrTiles.length > 0
-    ? resortActiveSfrCounts(citySlug, citySfrTiles)
-    : new Map<string, number>()
-  const communityItems: KbCommunityItem[] = otherResorts.map((r): KbCommunityItem => ({
-    name: r.label,
-    activeCount: otherResortCounts.get(r.slug) ?? 0,
-    town: r.city,
-    href: `/communities/${r.slug}`,
-    // Labeled cityHero fallback (/communities pattern): never drop a community
-    // from a discovery rail because an asset is missing (C-10).
-    img: RESORT_IMG[r.slug] ?? commImgBySlug.get(r.slug) ?? communityImage(r.slug) ?? cityHero(r.city_slug),
-    video: null,
-  }))
-
-  // ── EXPLORE OTHER CITIES ──────────────────────────────────────────────────
-  // No excludeSlug: a community page links its own parent city on purpose.
-  const otherCityItems: KbTownItem[] = buildOtherCityItems(allCitySnapshots)
-
-  // ── OPEN HOUSES ───────────────────────────────────────────────────────────
-  const openHouseItems = buildOpenHouseItems(openHouses)
-
-  // ── LIVE ACTIVITY (per-row thumbnails, like the city page) ────────────────
-  // 21-day stale-"New" relabel per design-audit TRU-2.
-  const activityItems = buildActivityItems(activity, { staleNewAfterDays: 21 })
-
-  // ── GUIDES / BLOG ──────────────────────────────────────────────────────────
-  const articlePosts = buildArticlePosts(blogPosts)
-
-  // ── MARKET HUD ──────────────────────────────────────────────────────────────
-  // Trend chart series: prefer this community's OWN neighborhood close-sale history.
-  // But subdivision sales are sparse (often only the last month or two are cached),
-  // which renders a degenerate single-line stub with a flat axis. When the community's
-  // series can't support a real multi-year trend (<8 monthly points OR <2 calendar
-  // years), fall back to the parent CITY's trend — relabeled as city-level so no city
-  // figure is ever passed off as the community's. (§0)
-  const neighborhoodCacheSparse = isTrendSeriesTooSparse(priceHist)
+  // City-fallback for a too-sparse community series; the caption names the
+  // scope so a city trend can never read as this community's (§0).
+  const communityCacheSparse = isTrendSeriesTooSparse(priceHist)
   const chartMonths = leftoverNeighborhoodOrCityMonthly({
     leftoverNeighborhood: leftoverNeighborhoodMonthly,
     leftoverCity: leftoverCityMonthly,
     neighborhoodCache: priceHist,
     cityCache: cityPriceHist,
     currentMonthKey,
-    neighborhoodCacheSparse,
+    neighborhoodCacheSparse: communityCacheSparse,
   })
   const chartIsCityLevel = chartMonths.cityFallback
-  const chartPriceHist = chartMonths.months
+  const chartScope = chartIsCityLevel ? `${cityName} at city scope, not ${publicName}` : publicName
+  const medianChart = placeMedianChart(
+    buildYearSeries(chartMonths.months, 5),
+    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${chartScope}`,
+  )
 
-  // Core-chart module scope mirrors the SAME sparse-community decision: the
-  // community's own series when dense enough, else the parent city's — always
-  // labeled, so a city figure is never read as the community's. (§0)
+  // Core-chart module scope mirrors the SAME sparse-community decision, and
+  // toPublicCoreChartSeries strips table names from every series source.
   const coreChartsRaw = chartIsCityLevel ? cityCoreCharts : commCoreCharts
-  const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : coreChartsRaw
-  const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
-  const hudActive = hud.active
-  const monthsOfSupply = hud.monthsSupply
-  const sellMedian = publishSellMedian({ placeMedian: hud.medianList ?? medianListPrice, regionMedian: null, grain: 'community', placeName: publicName })
-  const marketData: KbMarketData = {
-    active: hud.active,
-    pending: hud.pending,
-    closed30: hud.closed30,
-    new30: hud.new30,
-    medianList: hud.medianList,
-    saleToList: hud.saleToList,
-    daysToPending: hud.daysToPending,
-    monthsSupply: hud.monthsSupply,
-    sold12mo: hud.sold12mo,
-    trend: buildMonthlyTrend(chartPriceHist),
-    byTown: [],
-    countyMedian: null,
-    yearSeries: buildYearSeries(chartPriceHist, 5),
-    chartLeftover: chartMonths.leftoverUsed,
-  }
+  const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : null
+  const trendsCard = coreChartsCard(
+    coreCharts,
+    publicName,
+    chartIsCityLevel && cityName ? `${cityName} (city)` : undefined,
+  )
+  const marketCards: V3ChartCardProps[] = trendsCard ? [trendsCard] : []
 
-  // ── PAGE CONTRACT: AI-citable verified Q&A + structured data ───────────────
-  // The Dataset/FAQPage JSON-LD must not vanish when getMarketPulse times out or
-  // has no row. Fall back to the always-present community snapshot (active SFR +
-  // median list), then to the community detail values, so the schema survives a
-  // timeout. Every figure stays verified (§0).
-  //
-  // FIX (NWX count): always use `activeCount` (alias-aware, de-duped, matches the
-  // hero and the city ledger) rather than `pulse.activeCount` which is the raw
-  // neighborhood row count and undercounts resorts with many MLS alias names.
-  // The alias-aware count is the single authoritative figure for this page. (§0)
-  //
-  // School district — resolved from the verified city→district registry in
-  // data/co-schools.ts. This is the ONLY source allowed (§0). getDistrictForCity()
-  // returns undefined for cities outside the Central Oregon service area, in which
-  // case the schools section + FAQ are silently omitted rather than fabricated.
-  const schoolDistrictInfo = getDistrictForCity(cityName)
+  /* ── The Field ─────────────────────────────────────────────────────────── */
 
-  const marketFaqInput: MarketFaqInput = { grain: 'neighborhood',
-    source: 'market-truth',
-    // Same leftover HUD the page prints. Miss omits. Pulse DTP and cache DOM do not fill.
-    activeCount: hudActive,
-    pulseActiveCount: hudActive,
-    medianListPrice: hud.medianList,
-    monthsOfSupply,
-    medianDaysToPending: hud.daysToPending,
-    medianDaysOnMarket: null,
-    refreshedAt: commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? snapshot?.refreshedAt ?? null,
-    // Extended fields — leftover 12-month closed count. Miss omits.
-    soldCount12mo: publicPace.closedCount ?? null,
-    // CHILD aliases only. This feeds market-faq's "What neighborhoods and
-    // subdivisions are in X?" answer, which prints the list as a membership
-    // claim — so the community's own names must not be in it, or the page
-    // answers that Sunriver includes Sunriver, and that Juniper Preserve
-    // includes Pronghorn (its own former name, still the live MLS key).
-    subdivisionAliases: childAliases.length > 0 ? childAliases : null,
-    hoaMasterAnnual: richContent?.hoaMasterAnnual ?? null,
-    hoaAnnualEstimate: registryEntry?.hoa_annual_estimate ?? null,
-    hoaSubEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate) ?? null,
-    // Schools district from verified registry — null when city is not in service area. (§0)
+  const fieldBranch: CommunityFieldBranch = useResortTiles
+    ? 'alias'
+    : boundaryReliable && boundaryListingKeys.length > 0
+      ? 'boundary'
+      : 'subdivision-name'
+  const fieldTiles = aliasAwareCount != null ? resortTiles : communityTiles
+  const fieldItems = communityFieldItems(fieldTiles)
+  const fieldCaption = communityFieldCaption({ placeName: publicName, count: fieldItems.length })
+  const mapPins = fieldMapPins(fieldItems)
+  // The county plat union, when one exists, always draws; an unreliable stored
+  // hull never does (invariant 2).
+  const mapPolygon = resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null)
+  const hasMap = mapPins.length > 0 || Boolean(mapPolygon)
+
+  /* ── The opening ───────────────────────────────────────────────────────── */
+
+  const posterSrc = stagePoster(slug)
+  // The approved area-guide clip plays ON the Stage - the one pattern for
+  // owned full-bleed media (PUBLIC_UI §3). Muted, looping, motion-respecting
+  // inside V3Stage. Null when the community has no approved clip.
+  const areaGuideVideo = posterSrc
+    ? await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuideVideo')
+    : null
+  const belongFigures = belongingFigures(richContent)
+  const [firstBelong, ...restBelong] = belongFigures
+
+  /* ── The authored knowledge + the outbound edges ───────────────────────── */
+
+  const seoAbout = getCommunitySeoAbout(slug)
+  const aboutParagraphs: string[] =
+    seoAbout ??
+    (richContent?.aboutProse.length
+      ? richContent.aboutProse
+      : [community.description ?? registryEntry?.description ?? ''].filter((p): p is string => Boolean(p && p.trim())))
+
+  const knowledgeItems = buildPlaceKnowledge({
+    name: publicName,
+    city: cityName,
+    aboutParagraphs,
+    content: richContent,
+    registry: registryEntry ?? null,
     schoolDistrictName: schoolDistrictInfo?.district ?? null,
     schoolDistrictSlug: schoolDistrictInfo?.districtSlug ?? null,
-  }
-  // G52 page-contract: pulse ?? snapshot already incorporated in every
-  // marketFaqInput field above (pulse?.x ?? snapshot?.x ?? community.x).
-  // The inline marker satisfies the gate's resilience check.
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
-    publicName,
-    /* pulse ?? snapshot */ marketFaqInput,
-  )
-  // Fix 4: hasMap is true whenever we have listing pins, a polygon, OR registry
-  // coordinates (even a centered-marker map is a real map). Guarantees the
-  // JSON-LD hasMap URL is emitted and the map section renders for every community.
-  const hasMap = mapFeatures.length > 0 || Boolean(mapPolygons) || Boolean(registryEntry?.center_lon_lat)
+    isResort,
+    // Only the alias-aware branch builds the published listed set out of these
+    // names, and the knowledge row must not claim otherwise.
+    countIsAliasAware: aliasAwareCount != null,
+    contactHref: `/contact?inquiryType=Buying&message=${encodeURIComponent(
+      `I have questions about short-term rental rules in ${publicName}.`,
+    )}`,
+    amenityPosts,
+  })
 
-  // Fix 1: geo coordinates from the registry entry's center_lon_lat (lng, lat order).
-  // Only emit when the registry has this community (all 18 resort/community entries do).
-  // Never hardcode — sourced from registryEntry.center_lon_lat at page render time. (§0)
-  const placeGeo =
-    registryEntry?.center_lon_lat
-      ? { lat: registryEntry.center_lon_lat[1], lng: registryEntry.center_lon_lat[0] }
-      : undefined
+  const exploreItems = buildExploreEdges({
+    communityName: publicName,
+    cityName,
+    citySlug,
+    browseHref,
+    communityMarketHref,
+    cityReportHref,
+    pagePath: `/communities/${slug}`,
+    faqs,
+    documentItems: communityDocumentItems(publicName, placeDocuments),
+    golfCourses: GOLF_COURSES.filter((c) => c.communitySlug === slug),
+    resortItems: resortQuietItems(),
+  })
+  // The valuation door carries ?from=/communities/<slug> - the seller lead's
+  // stored source_url.
+  exploreItems.push({ label: 'Value my home', href: valuationHref(`/communities/${slug}`) })
 
-  // Fix 1: containedInPlace — use the city, not the community itself (avoids
-  // circular "Sunriver contained in Sunriver"). A community is contained in
-  // its city; the city name is always present from community.city. (§0)
-  const placeContainedIn = cityName !== publicName ? cityName : 'Deschutes County'
+  const communitySchemas = buildCommunitySchemas({
+    slug,
+    name: publicName,
+    cityName,
+    citySlug,
+    hasMap,
+    centerLonLat: registryEntry?.center_lon_lat ?? null,
+    datasetVariables,
+    asOfIso,
+    asOfLabel,
+    faqs,
+  })
 
-  const communitySchemas: SchemaInput[] = [
-    {
-      type: 'breadcrumb',
-      items: [
-        { name: 'Home', url: '/' },
-        { name: 'Communities', url: '/communities' },
-        ...(cityName ? [{ name: cityName, url: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
-        { name: publicName, url: `/communities/${slug}` },
-      ],
-    },
-    {
-      type: 'place',
-      placeType: 'Place',
-      name: publicName,
-      description: `${publicName}, a community in ${cityName}, Oregon. Homes for sale and live single-family market data.`,
-      url: `/communities/${slug}`,
-      // Fix 1: GeoCoordinates from registry center_lon_lat — never hardcoded. (§0)
-      geo: placeGeo,
-      address: { city: cityName, state: 'OR', country: 'US' },
-      // Fix 1: contain in city (not the community itself — avoids circular ref). (§0)
-      containedInPlace: placeContainedIn,
-      hasMap: hasMap ? `/communities/${slug}` : undefined,
-      additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
-    },
+  const trail = [
+    { label: 'Home', href: '/' },
+    { label: 'Communities', href: '/communities' },
+    ...(cityName ? [{ label: cityName, href: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
+    { label: publicName },
   ]
-  if (datasetVariables.length > 0) {
-    communitySchemas.push({
-      type: 'dataset',
-      name: `${publicName} real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
-      description: `Live single-family home market data for ${publicName} in ${cityName}, Oregon. Median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
-      url: `/communities/${slug}`,
-      dateModified: asOfIso ?? undefined,
-      spatialCoverageName: `${publicName}, ${cityName}, OR`,
-      variableMeasured: datasetVariables,
-    })
-  }
-
-  const communityLabel = `${publicName} · ${cityName}`
 
   return (
-    <main className="kb-root">
-      <CommunityPageTracker
-        slug={slug}
-        communityName={publicName}
-        city={cityName}
-        activeCount={activeCount}
-        medianPrice={medianListPrice}
-      />
-      <KbSectionTracker />
-      <MetadataBlock schemas={communitySchemas} />
-      <KbBreadcrumb
-        overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Communities', href: '/communities' },
-          ...(cityName ? [{ label: cityName, href: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
-          { label: publicName },
-        ]}
-      />
-      <SmoothScrollProvider>
-        <KbHero
-          data={{
-            activeCount,
-            medianListPrice,
-            medianDaysToPending: hud.daysToPending,
-          }}
-          eyebrow={communityLabel}
-          titleTop={publicName}
-          titleBottom="Homes for Sale"
-          lead={placeHeroLead({
-            placeName: publicName, parentName: cityName, activeCount,
-            knownSuffix: 'Live inventory from the regional MLS.',
-          })}
-          videoSrc={null}
-          posterSrc={heroPhoto}
-          // Fix 6: descriptive alt text for the hero image. (§0)
-          posterAlt={`${publicName} in ${cityName}, Oregon`}
-          mediaCaption={mediaCaption}
-          cta={{ href: '#homes', label: `See ${publicName} homes` }}
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <CommunityPageTracker
+          slug={slug}
+          communityName={publicName}
+          city={cityName}
+          activeCount={activeCount}
+          medianPrice={hud.medianList}
         />
-        {/* Overview directly after the hero (Matt 2026-07-29, supersedes the
-            inventory-first order): hero → overview → homes → map → market. */}
-        <KbResortOverview
-          content={richContent}
-          name={publicName}
-          postsBySlug={amenityPosts}
-          aliases={childAliases}
-          publishedHoa={publishedHoa}
+        <V3SectionTracker />
+        <MetadataBlock schemas={communitySchemas} />
+
+        {/* Pattern 4, Stage - the owned place photo, when one exists
+            (PUBLIC_UI §3 Master-plan). The Stage action is the first house. */}
+        {posterSrc ? (
+          <CommunityStage
+            Stage={V3Stage}
+            trail={trail}
+            name={publicName}
+            cityName={cityName}
+            headline={belongingHeadline(publicName, richContent)}
+            posterSrc={posterSrc}
+            videoSrc={areaGuideVideo?.url ?? undefined}
+            action={{
+              label: fieldItems[0]?.title || `See ${publicName} houses`,
+              href: fieldItems[0]?.href || '#homes',
+            }}
+          />
+        ) : firstBelong ? (
+          <>
+            <V3Breadcrumb trail={trail} />
+            <V3Instrument
+              id="place"
+              level={1}
+              eyebrow={v3Text(`${publicName} · ${cityName}`)}
+              headline={v3Text(belongingHeadline(publicName, richContent))}
+              figures={[firstBelong, ...restBelong]}
+              source={v3Text(belongingTrace(publicName))}
+              action={{
+                label: v3Text(`See ${publicName} houses`),
+                href: '#homes',
+                variant: 'ghost',
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <V3Breadcrumb trail={trail} />
+            <V3Quiet
+              id="place"
+              heading={belongingHeadline(publicName, richContent)}
+              headingLevel={1}
+              items={[{ label: `See ${publicName} houses`, href: '#homes' }]}
+            />
+          </>
+        )}
+
+        {/* Pattern 2, Field - the homes as a spatial surface: the alias-matched
+            (or in-boundary) set, list and map one set, count as caption. */}
+        <V3Field
+          id="homes"
+          ariaLabel={`Homes for sale in ${publicName}`}
+          items={fieldItems}
+          mapSlot={
+            hasMap ? (
+              <PlaceFieldMap
+                pins={mapPins}
+                boundary={mapPolygon ?? undefined}
+                placeName={publicName}
+                centerLonLat={registryEntry?.center_lon_lat ?? undefined}
+              />
+            ) : undefined
+          }
+          mapNote={fieldCaption ?? undefined}
+          emptyMessage={
+            citySfrRead.ok || !isResortInCity
+              ? `No single-family home is listed for sale in ${publicName} right now.`
+              : 'The listing feed did not answer on this refresh, so this frame is not claiming an inventory.'
+          }
+          footNote={
+            fieldItems.length > 0
+              ? `Listed here: ${publicName} homes. Map and list are the same set.`
+              : undefined
+          }
         />
-        {aboutParagraphs.length > 0 ? (
-          <KbAbout
-            eyebrow={communityLabel}
+        {fieldItems.length > 0 ? (
+          <V3SourceLine source={communityFieldTrace(publicName, fieldBranch)} />
+        ) : null}
+
+        {/* Pattern 1, Instrument - the market question and the leftover pile. */}
+        {firstMarketFigure ? (
+          <V3Instrument
+            id="market"
+            level={2}
+            eyebrow={v3Text(`${publicName} · The market`)}
+            headline={v3Text(marketHeadline)}
+            note={verdictSentence ? v3Text(verdictSentence) : undefined}
+            figures={[firstMarketFigure, ...restMarketFigures]}
+            source={v3Text(
+              `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
+                `detached single-family houses assigned to ${publicName} by boundary membership. ` +
+                `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
+                (mosLabel != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''),
+            )}
+            chart={medianChart}
+            cards={marketCards}
+            updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
+            action={{
+              label: v3Text(`Search ${publicName} homes`),
+              href: browseHref,
+              variant: 'primary',
+            }}
+          />
+        ) : (
+          <V3Quiet
+            id="market"
+            heading={`The ${publicName} market`}
+            items={[
+              {
+                kind: 'prose',
+                term: 'No live market figures right now',
+                body: `The Market Truth metric layer published no figure for ${publicName} on this refresh, so this page is not printing a median, a supply figure, or a verdict.${fieldItems.length > 0 ? ' The homes above carry their own live list prices.' : ''}`,
+              },
+            ]}
+          />
+        )}
+
+        {/* Pattern 6, Quiet - the authored knowledge: overview prose,
+            at-a-glance, drive times, amenities, the course, membership,
+            builders, schools, STR (D100 on the barrel). */}
+        {knowledgeItems.length > 0 ? (
+          <V3Quiet
+            id="belonging"
+            eyebrow={`${publicName} · Belonging`}
             heading={`Living in ${publicName}`}
-            // Resort overview already carries the long seoAbout. Keep one
-            // existing hero line here so leftover medianClose can print in
-            // the facts ledger without duplicating the overview.
-            paragraphs={
-              richContent ? ['Live inventory from the regional MLS.'] : aboutParagraphs
-            }
-            facts={aboutFacts}
+            items={knowledgeItems}
           />
         ) : null}
-        <KbFeatured
-          items={featuredItems}
-          eyebrow={`${publicName} · For sale`}
-          viewAllHref="#homes"
-          viewAllLabel={`See every ${publicName} home for sale`} viewAllPlace={publicName}
-          totalCount={activeCount || null}
-        />
-        <KbTicker items={tickerItems} />
-        {/* Fix 3: freshness signal near the stats, crawled by search engines.
-            asOfLabel is the real refreshedAt timestamp, never invented. (§0) */}
-        {asOfLabel ? (
-          <p className="community-freshness-signal" aria-label={`Market data freshness: ${asOfLabel}`}>
-            Market data updated {asOfLabel}
-          </p>
-        ) : null}
-        {/* Fix 5: Brand phone — visible on every community page, above the fold in
-            the content flow. Uses CONTACT.phoneDirect (the canonical Twilio line,
-            the public brokerage number — same as the footer). Sourced from
-            lib/brand/contact.ts (never hardcoded). (§0) */}
-        <p className="community-contact-line">
-          Questions about {publicName}?{' '}
-          <a href={`tel:${CONTACT.phoneDirectTel}`} className="community-contact-phone">
-            {CONTACT.phoneDirect}
-          </a>
-        </p>
-        <PlaceInventoryMap
-          tiles={communityTiles}
-          mapGeo={mapGeo}
-          polygons={mapPolygons}
-          placeName={publicName}
-          totalActive={activeCount ?? mapFeatures.length}
-          centerLonLat={registryEntry?.center_lon_lat ?? undefined}
-          viewAllHref={homesForSalePath(cityName, community.subdivision)}
-        />
-        {/* ONE market section (Matt 2026-07-29): core charts render INSIDE the
-            HUD section, not a second stacked headed section. */}
-        <KbMarketHud
-          data={marketData}
-          eyebrow={`${publicName} · The market`} geoName={publicName} asOf={commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? null}
-          chartScopeLabel={chartIsCityLevel && cityName ? `${cityName} (city)` : undefined}
-        >
-          <PublicProductTypes cityName={publicName} citySlug={citySlug ?? ''} rows={publicSegments} />
-          <PublicPaceStats cityName={publicName} row={publicPace} />
-          <PublicMixStats cityName={publicName} row={publicMix} />
-          {coreCharts ? (
-            <div className="pt-10" aria-label={`${publicName} market trend charts`}>
-              <MarketCoreCharts
-                data={coreCharts}
-                heading={`${publicName} market trends`}
-                scopeLabel={coreChartsScopeLabel}
-              />
-            </div>
-          ) : null}
-        </KbMarketHud>
-        <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
-        {/* Per-location area guide video — self-hides when this community has no
-            approved guide video. Sits after the communities rail, before the
-            this-week / activity / FAQ / sell blocks. */}
-        <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={publicName} posterSrc={heroPhoto} />
-        {buildTimeRails(true) || openHouseItems.length > 0 ? (
-        <KbOpenHouses
-          items={openHouseItems}
-          eyebrow={`${cityName} · This week`}
-          heading="Open houses"
-          viewAllHref={`/open-houses/${citySlug}`}
-        />
-        ) : null}
-        <KbActivity
-          items={activityItems}
-          // design-audit TRU-1: the feed is fetched city-wide (cities:[cityName]),
-          // so a "Live · Tetherow" label over Bend/Petrosa listings was untrue.
-          // Label the real scope — the city — not the community.
-          eyebrow={`Live · ${cityName}`}
-          heading="Latest market activity"
-          viewAllHref="/housing-market"
-          viewAllLabel="Full market pulse"
-        />
-        {/* Schools district — sourced exclusively from data/co-schools.ts
-            getDistrictForCity(). Specific school names/attendance zones are NOT
-            shown because per-address boundary data is not in the system. (§0) */}
-        <KbSchools communityName={publicName} districtName={schoolDistrictInfo?.district ?? null} districtSlug={schoolDistrictInfo?.districtSlug ?? null} />
-        <V3PlacePropertyTypes
-          placeName={publicName}
-          citySlug={citySlug ?? ''}
-          rows={publicSegments}
-        />
+
+        {/* Pattern 1 again, as ONE enumeration: one section per other property
+            type this community holds. */}
+        <V3PlacePropertyTypes placeName={publicName} citySlug={citySlug} rows={publicSegments} />
+
+        {/* Pattern 6 - build years + HOA, measured (renders null when nothing
+            is publishable). */}
         <V3PlaceCharacter placeName={publicName} character={placeCharacter} />
-        <V3PlaceDocuments displayName={publicName} documents={placeDocuments} />
-        <CommunityGolfLinks communitySlug={slug} communityName={publicName} />        <KbArticles
-          posts={articlePosts}
-          eyebrow="Guides and news"
-          heading={`${publicName} real estate guides`}
-          subtitle={`Housing news, market data, and buyer and seller advice for ${publicName} and ${cityName}.`}
-        />
-        <KbExploreTowns
-          towns={otherCityItems}
-          eyebrow="Central Oregon"
-          title="Other cities"
-          sectionId="nearby"
-          cta={{ href: '/cities', label: 'Every city' }}
-        />
-        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
-        <KbTeam />
-        {/* Buyer CTA — surfaces a direct "See all homes" path and contact link so
-            buyers get equal weight alongside the seller valuation block below.
-            listingsHref: homesForSalePath builds the canonical /homes-for-sale/[city]
-            URL. community.subdivision is the MLS name; for resorts, the registry
-            aliases make the search inclusive of all tagged sub-neighborhoods. (§0) */}
-        <KbBuyCta
-          communityName={publicName}
-          listingsHref={homesForSalePath(cityName, community.subdivision)}
-          contactHref={`/contact?inquiryType=Buying&message=${encodeURIComponent(`Interested in ${publicName}. Please get in touch.`)}`}
-        />
-        {/* Listing-alert email capture — reuses submitSearchAlertSignup + the
-            canonical listing_alerts table (same path as SearchAlertCapture on
-            /search). City + subdivision prefilled from community data so the
-            alert matches what the visitor is looking at. No new backend. (§0) */}
-        <KbCommunityAlerts
+
+        {/* Pattern 5, Sheet. Same server action, same payload, same honeypot. */}
+        <CommunityAlertSheet
           communityName={publicName}
           city={cityName}
           subdivision={community.subdivision}
         />
-        {/* Seller conversion — address capture hands off to /sell/valuation. */}
-        <KbSell
-          data={{
-            medianListPrice: sellMedian?.value ?? null,
-            medianCaption: sellMedian?.caption ?? null,
-            medianDaysToPending: hud.daysToPending,
-            soldCount30d: hud.closed30,
-          }}
-          eyebrow={`Sell in ${publicName}`}
+
+        {/* Pattern 6 - the FAQ answers, the recorded documents as legal doors,
+            and every outbound edge. The freshness sentence carries the same
+            clock the Dataset's dateModified publishes. */}
+        <V3Quiet
+          id="faq"
+          eyebrow="Common questions"
+          heading={`${publicName} real estate questions`}
+          items={exploreItems}
+          note={`Market figures on this page come from the regional MLS through Oregon Data Share.${
+            asOfLabel ? ` Market data updated ${asOfLabel}.` : ''
+          }`}
         />
-        {/* Second-home / investment note — resort pages only. Generic framing:
-            confirms the community is a popular second-home / vacation destination
-            and that STR potential exists and varies by HOA. No specific STR rules,
-            permit caps, occupancy limits, or income figures (§0 hard rule). (§0) */}
-        {isResort ? (
-          <div className="comm-str-note" aria-label={`${publicName} second home information`}>
-            <div className="comm-str-note-inner">
-              <span className="comm-str-label">Second homes</span>
-              <p className="comm-str-text">
-                Short-term rental potential in {publicName} varies by HOA rules, community covenants, and Oregon regulations.{' '}
-                <a href={`/contact?inquiryType=Buying&message=${encodeURIComponent(`I have questions about short-term rental rules in ${publicName}.`)}`}>
-                  Reach out for current rental guidelines
-                </a>
-                {' '}before you assume what is permitted or what it could earn.
-              </p>
-            </div>
-          </div>
-        ) : null}
-        {faqs.length > 0 ? (
-          <section id="faq" aria-label={`${publicName} real estate questions`}>
-            <FAQBlock items={faqs} eyebrow="Common questions" title={`${publicName} real estate questions`} />
-          </section>
-        ) : null}
-        <MarketSources sources={['ods']} /><KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo
+          only when it is NOT nested in sectioning content. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
-

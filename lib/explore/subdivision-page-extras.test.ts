@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { placeListShowingLabel } from './place-list-showing'
 import {
   CITY_PLACE_LIST_CAP,
   peerPlatsForResort,
@@ -88,22 +87,11 @@ describe('peerPlatsForResort', () => {
   })
 })
 
-describe('placeListShowingLabel', () => {
-  it('is silent when the list is the counted set', () => {
-    expect(placeListShowingLabel(35, 35)).toBeNull()
-  })
-
-  it('names the slice when the city preview is shorter than the count', () => {
-    expect(placeListShowingLabel(24, 1840)).toBe('Showing 24 of 1,840 homes')
-  })
-})
-
 describe('place list wiring', () => {
-  it('does not silently slice the dual-pane list in the client', () => {
-    const src = readFileSync('components/site/explore/PlaceMapListSplit.client.tsx', 'utf8')
-    expect(src).not.toMatch(/rows\.slice\(0,\s*24\)/)
-    expect(src).toContain("from '@/lib/explore/place-list-showing'")
-  })
+  // PlaceMapListSplit and lib/explore/place-list-showing left with the KB
+  // register (2026-08-26): the three place pages moved onto the v3 barrel,
+  // whose Field caption states its own cap (cityFieldCaption /
+  // neighborhoodFieldCaption), asserted by ci:place-hero-grain's v3 arms.
 
   it('keeps the city page on an explicit preview cap', () => {
     const src = readFileSync('app/cities/[slug]/page.tsx', 'utf8')
@@ -111,8 +99,11 @@ describe('place list wiring', () => {
   })
 
   it('sends the community counted-set door to the on-page list', () => {
+    // v3 spelling (2026-08-26): the Stage's fallback action and the opening
+    // Instrument door both land on the on-page Field (#homes), which lists the
+    // counted set.
     const src = readFileSync('app/communities/[slug]/page.tsx', 'utf8')
-    expect(src).toContain('viewAllHref="#homes"')
+    expect(src).toContain("href: fieldItems[0]?.href || '#homes'")
     expect(src).toContain("href: '#homes'")
   })
 })

@@ -41,7 +41,12 @@ const surfaces = [
   },
   {
     path: 'app/communities/[slug]/page.tsx',
-    label: 'community about-facts gate days through publishDaysLabel',
+    label: 'community page prints no hand-rounded days figure',
+    // MOVED, NOT DROPPED (2026-08-26). The v3 community page dropped the KB
+    // about-facts row; its days figures flow through the shared
+    // leftoverMarketFigures builder in app/cities/[slug]/_v3/city-sections.ts,
+    // which still hard-requires the publisher.
+    negativeOnly: true,
   },
   {
     path: 'app/cities/[slug]/page.tsx',

@@ -193,13 +193,42 @@ if (commPageSrc) {
     { token: 'resortTilesForSlug(', why: 'alias-matched listings for the map/featured/ticker' },
     { token: 'cityResorts(', why: 'resort membership (is_resort filter)' },
     { token: 'isBoundaryReliable(', why: 'oversized-boundary guard (no bloated polygon/count)' },
-    { token: 'redirect(', why: 'compound resort slug → canonical bare slug (no duplicate undercounted page)' },
+    // The canonical-slug hop is NOT an in-page redirect any more: a redirect
+    // thrown after loading.tsx flushed serves 200 with no Location header
+    // (measured 2026-08-19, 91 of 104 compound slugs), so the hop moved to
+    // middleware. The wiring is asserted below on the files that own it now.
     { token: 'getResortCommunityContent(', why: 'rich resort content (amenities/golf/membership/builders) fetch' },
   ]
   for (const { token, why } of required) {
     if (!commPageSrc.includes(token)) {
       fails.push(`${COMMUNITY_PAGE}: missing "${token}" (§0 ${why}) — the resort community wiring is incomplete`)
     }
+  }
+
+  // Compound resort slug → canonical bare slug, as a PRE-RENDER hop: the
+  // resolver must exist and middleware must consult it before anything
+  // streams. An in-page redirect() here is the regression D96 forbids.
+  let hopsSrc = ''
+  try {
+    hopsSrc = readFileSync('lib/routing/pre-render-hops.ts', 'utf8')
+  } catch (e) {
+    fails.push(`lib/routing/pre-render-hops.ts: cannot read (${e.message})`)
+  }
+  let middlewareSrc = ''
+  try {
+    middlewareSrc = readFileSync('middleware.ts', 'utf8')
+  } catch (e) {
+    fails.push(`middleware.ts: cannot read (${e.message})`)
+  }
+  if (hopsSrc && !/resolveCanonicalCommunityPath/.test(hopsSrc)) {
+    fails.push(
+      `lib/routing/pre-render-hops.ts: missing resolveCanonicalCommunityPath — a compound resort slug would render a duplicate undercounted page`,
+    )
+  }
+  if (middlewareSrc && !/resolvePreRenderHop\(/.test(middlewareSrc)) {
+    fails.push(
+      `middleware.ts: does not consult resolvePreRenderHop — the community canonical hop never runs`,
+    )
   }
 
   // The page must RENDER the rich resort content, not merely hold it — owner

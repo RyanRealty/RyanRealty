@@ -107,7 +107,9 @@ describe('public pace surfaces', () => {
       'utf8',
     )
     expect(community).toMatch(/getPublicDetachedPace/)
-    expect(community).toMatch(/PublicPaceStats/)
+    // v3 community page (2026-08-26): the pace items print as Instrument
+    // figures through publicPaceItems.
+    expect(community).toMatch(/publicPaceItems/)
     expect(neighborhood).toMatch(/getPublicDetachedPace/)
     // v3 neighborhood page (2026-08-26): the pace items print as Instrument
     // figures through publicPaceItems, the builder PublicPaceStats renders from.

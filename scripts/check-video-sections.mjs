@@ -26,9 +26,14 @@ const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36'
 const LATENCY_BUDGET_MS = 10000
 
-// "Tour the homes" heads the /videos video-tour card grid; "Watch <City>" is
-// the KbAreaGuideVideo heading, present only when the geo's guide video
-// resolved. All markers verified against live 2026-07-17.
+// "Tour the homes" heads the /videos video-tour card grid. "Watch <City>" is
+// the area-guide affordance on the city page: the KB register rendered it as
+// the KbAreaGuideVideo inline player; the v3 register (2026-08-26) renders it
+// as the guides-Ledger's area-guide row (areaGuideRow in
+// app/cities/[slug]/_v3/city-sections.ts — the six closed patterns hold no
+// mid-page media slot on a Field-opening node, and the clip plays full-bleed
+// on the community Stage instead). The marker asserts the affordance is
+// present either way; a build where the row silently disappears still fails.
 const CASES = [
   { path: '/videos', label: 'videos hub (tour grid)', marker: /Tour the homes/i },
   { path: '/cities/bend', label: 'city: Bend', marker: /Watch\s*Bend/i },

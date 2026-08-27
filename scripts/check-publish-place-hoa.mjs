@@ -28,14 +28,10 @@ checks.push({
 })
 
 const surfaces = [
-  {
-    path: 'app/communities/[slug]/page.tsx',
-    label: 'community page gates glance + FAQ HOA through publishPlaceHoa',
-  },
-  {
-    path: 'components/site/kb/KbResortOverview.tsx',
-    label: 'KB resort glance gates Master HOA through publishPlaceHoa',
-  },
+  // The KB page-level HOA glance strip and KbResortOverview left with the KB
+  // register (2026-08-26). The surfaces that print HOA now are the knowledge
+  // Quiet (place-knowledge.ts), the belonging headline (community-opening.ts),
+  // and the FAQ builder (market-faq.ts) — all armed below.
   {
     path: 'app/communities/[slug]/_v3/place-knowledge.ts',
     label: 'place-knowledge Quiet gates HOA through publishPlaceHoa',

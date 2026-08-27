@@ -39,7 +39,13 @@ checks.push({
 const surfaces = [
   {
     path: 'app/communities/[slug]/page.tsx',
-    label: 'community page gates KbSell median through publishSellMedian',
+    label: 'community sell surface publishes no uncaptioned median',
+    // MOVED, NOT DROPPED (2026-08-26). The community page left the KB register
+    // and KbSell left with it; the page's one capture sheet publishes no
+    // median at all, and every median it prints sits in a section that names
+    // its geography and its trace. Put a money formatter or a median prop into
+    // the sheet and this fires.
+    noMedianSurface: 'app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx',
   },
   {
     path: 'app/cities/[slug]/page.tsx',
@@ -131,23 +137,12 @@ for (const surface of surfaces) {
   checks.push({ label: surface.label, ok })
 }
 
-const fact = src('lib/market/publish-fact-value.ts')
-checks.push({
-  label: 'publishFactValue withholds em-dash and blank facts',
-  ok: /export function publishFactValue/.test(fact) && fact.includes('EMPTY_FACT'),
-})
-
-for (const surface of [
-  { path: 'components/site/kb/KbResortOverview.tsx', label: 'KB resort membership facts gate through publishFactValue' },
-]) {
-  const text = src(surface.path)
-  checks.push({
-    label: surface.label,
-    ok:
-      /from ['"]@\/lib\/market\/publish-fact-value['"]/.test(text) &&
-      /publishFactValue\(/.test(text),
-  })
-}
+// publishFactValue and its one consumer (KbResortOverview's at-a-glance strip)
+// left with the KB register (2026-08-26). The surviving surface for those
+// facts — buildPlaceKnowledge in app/communities/[slug]/_v3/place-knowledge.ts
+// — takes TYPED config values and composes its own sentences, so the
+// em-dash-string class the helper guarded cannot reach it. If a string-fact
+// strip returns, it must bring the publisher back with it.
 
 const publicSrc = src('lib/market/publish-public-chart-source.ts')
 checks.push({

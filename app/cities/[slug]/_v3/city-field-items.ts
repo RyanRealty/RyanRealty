@@ -14,6 +14,7 @@
 import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 
@@ -46,12 +47,22 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
     })
     if (!street) continue
 
+    // A fractional ask never prints unlabeled: the share label rides the meta
+    // line beside the price (the Camp Sherman quarter-share rule, carried from
+    // the retired dual-pane list).
+    const shareKind = publishListingShareKind({
+      propertySubType: tile.propertySubType,
+      subdivisionName: tile.subdivisionName,
+      city: tile.city,
+      listNumber: tile.listNumber,
+    })
     const meta = [
       tile.beds != null ? `${tile.beds} bd` : null,
       tile.baths != null ? `${tile.baths} ba` : null,
       tile.sqft != null ? `${tile.sqft.toLocaleString('en-US')} sqft` : null,
+      shareKind,
     ]
-      .filter((part): part is string => part !== null)
+      .filter((part): part is string => Boolean(part))
       .join(' · ')
 
     const photo = tile.photoUrl?.trim()
