@@ -22,7 +22,7 @@
  *
  * Barrel law honored here:
  *  - Imports only ./atoms, ./V3Chart, next/link, and @/lib/utils. Nothing from
- *    components/site/kb, components/site (flat), components/site/primitives,
+ *    the deleted KB register, components/site (flat), components/site/primitives,
  *    components/site/explore, or components/ui.
  *  - Every name-bearing string is `V3Text`, not `string`. `string` accepts `''`, and an
  *    empty headline renders a region whose aria-labelledby points at an empty h1, which

@@ -42,8 +42,8 @@
  *
  * WHY IT MOVED HERE. It used to live at components/site/PlacePropertyTypes.tsx
  * on `section`/`wrap`/`sec-head`/`sec-title`, none of which has an unscoped
- * definition in this repo: `.sec-title` exists only under `.kb-root` and under
- * `.listing-detail`, and the other three only under `.kb-root`. Each pattern
+ * definition in this repo: `.sec-title` exists only under `the deleted KB root class` and under
+ * `.listing-detail`, and the other three only under `the deleted KB root class`. Each pattern
  * here mounts V3_ROOT_CLASS on its own outermost element, so a section carries
  * its own token scope and depends on no ancestor.
  *

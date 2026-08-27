@@ -19,11 +19,11 @@
  * WHY IT MOVED HERE. It used to live at components/site/PlaceDocuments.tsx and
  * render `className="section"`, `wrap`, `sec-head`, `sec-title` — four class
  * names with NO unscoped definition anywhere in the repo. `.sec-title` is
- * declared twice, once under `.kb-root` (components/site/kb/kb.css) and once
+ * declared twice, once under `the deleted KB root class` (the deleted KB stylesheet) and once
  * under `.listing-detail` (components/site/listing-detail/listing-detail.css),
- * and `.section`, `.wrap`, `.sec-head` and `.sec-index` only under `.kb-root`.
+ * and `.section`, `.wrap`, `.sec-head` and `.sec-index` only under `the deleted KB root class`.
  * A component documented as shared by three grains therefore rendered styled
- * only while every one of its callers happened to sit inside `main.kb-root`,
+ * only while every one of its callers happened to sit inside `mainthe deleted KB root class`,
  * and would have rendered unstyled the first time one did not. V3Ledger puts
  * V3_ROOT_CLASS on its own outermost element, so this section now carries its
  * own token scope and depends on no ancestor at all.

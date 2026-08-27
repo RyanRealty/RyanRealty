@@ -3,7 +3,7 @@
  *
  * THIS FILE IS THE PRESSURE VALVE. A migration that needs a control this set
  * does not have ADDS A PRIMITIVE HERE. It does not reach back into
- * components/site/kb, the flat legacy files at components/site/*.tsx,
+ * the deleted KB register, the flat legacy files at components/site/*.tsx,
  * components/site/primitives, components/site/explore, or components/ui. Those
  * registers are a different visual language with a different token layer, and
  * one import from any of them puts two languages on one page, which is the
@@ -279,7 +279,7 @@ export type { V3BreadcrumbProps, V3Crumb } from './V3Breadcrumb'
 /**
  * Section + scroll tracking. Chrome surrounds a page; this island records it.
  * Same contract as the retired kb tracker: observe `.v3 section[id]` and
- * `.kb-root section[id]`, fire `section_view` at 55% and scroll-depth
+ * `the deleted KB root class section[id]`, fire `section_view` at 55% and scroll-depth
  * 25/50/75/100, dual-sink `trackEvent` + `/api/visitors/track` with full
  * `location.href`. Tracking must never break the page. Not a visual pattern.
  * Growing the closed set of six is a change to the locked visual language.
@@ -293,14 +293,17 @@ export type { V3SectionTrackerProps } from './V3SectionTracker.client'
 /* -------------------------------------------------------------------------- */
 
 /**
- * ./V3InstrumentCount.client.tsx (V3CountingFigure, parseFigureValue,
- * renderFigureAt) is retired and stays out of the public surface.
- * V3Instrument.tsx explains why in its header: PUBLIC_UI.md section 5 allows a
- * 600ms-plus sequence only when the visitor controls it by scrolling, and a
- * mount-triggered requestAnimationFrame is not that. When the Market
- * instrument's settle is built it enters as a scroll-bound client child, not as
- * a boolean prop that fires on arrival. Nothing imports the file today. It also
- * hardcodes SWEEP_MS = 900 to mirror --v3-dur-sequence, which is one duration
- * with two definitions and would drift the moment the token moved: whoever
- * revives it repoints that constant first.
+ * THE COUNTING FIGURE IS GONE, not merely unexported. V3InstrumentCount.client.tsx
+ * (V3CountingFigure, parseFigureValue, renderFigureAt) was deleted; this block used
+ * to describe it as a file sitting on disk awaiting revival, which is the kind of
+ * note that gets a dead thing rebuilt.
+ *
+ * The rule it existed for still stands and is why it should not come back as it
+ * was: PUBLIC_UI.md section 5 allows a 600ms-plus sequence only when the visitor
+ * controls it by scrolling, and a mount-triggered requestAnimationFrame is not
+ * that. When the Market instrument's settle is built it enters as a scroll-bound
+ * client child, never as a boolean prop that fires on arrival. It must also read
+ * its duration from the token rather than hardcoding one: the deleted file carried
+ * SWEEP_MS = 900 mirroring --v3-dur-sequence, one duration with two definitions,
+ * which drifts the moment the token moves.
  */

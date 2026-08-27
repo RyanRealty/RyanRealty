@@ -19,7 +19,7 @@
  * fetched. Server render and first client render agree, so hydration is safe.
  *
  * Barrel law honored here:
- *  - Nothing is imported from components/site/kb, components/site (flat),
+ *  - Nothing is imported from the deleted KB register, components/site (flat),
  *    components/site/primitives, components/site/explore, or components/ui.
  *  - The accessible name is IN THE TYPE, and the type is backed by a runtime
  *    invariant because a type alone cannot finish the job. `headline` renders as

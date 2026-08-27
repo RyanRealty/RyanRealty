@@ -21,14 +21,14 @@
 }
 
 /* CLEARING THE FIXED PUBLIC HEADER.
-   app/layout.tsx mounts <PublicNav /> -> KbNav, whose bar is
-   `position: fixed; top: 0; z-index: 100` (components/site/kb/kb.css:102). A
+   app/layout.tsx mounts <V3Chrome /> -> KbNav, whose bar is
+   `position: fixed; top: 0; z-index: 100` (the deleted KB stylesheet). A
    fixed bar is out of flow, so the first flow element of <main> renders
    underneath it. On /housing-market that was the entire trail: 52px of a 52px
    strip occluded at both 390 and 1280, with elementFromPoint over the "Home"
    crumb returning the wordmark image rather than the link.
    KbBreadcrumb fixed the identical regression on the other register with its
-   `belowNav` prop (kb.css:1003, "2026-07-15 audit"), and kb.css:1220 records
+   `belowNav` prop (the deleted KB stylesheet, "2026-07-15 audit"), and the deleted KB stylesheet records
    the bar's measured height: 66px at 375/768 and 67.9px at 1280, with 76px
    chosen so the overlay variant keeps air at every width. The same 76px is used
    here, on top of the strip's own leading space. */

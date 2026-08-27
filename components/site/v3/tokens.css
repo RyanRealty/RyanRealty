@@ -171,7 +171,7 @@
   /* D74 (Matt 2026-05-28): menu/nav text is 15px, matching the CTA size.
      The nav had been reading --v3-size-body-sm (0.9rem = 14.4px), so the
      directive was silently violated after the chrome moved to the barrel and
-     its contract test still pointed at the deleted SiteHeader. A named token,
+     its contract test still pointed at the deleted V3Chrome. A named token,
      so a style template can move it and the test can read it. */
   --v3-size-nav: 0.9375rem;
   --v3-size-source: 0.78rem;

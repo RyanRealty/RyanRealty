@@ -1,7 +1,7 @@
 /**
  * V3 BREADCRUMB. Where the visitor is standing in the graph.
  *
- * Replaces components/site/kb/KbBreadcrumb.tsx. Visual language:
+ * Replaces a deleted KB component Visual language:
  * design_system/public/PUBLIC_UI.md (locked 2026-08-11). Tokens: ./tokens.css.
  *
  * The trail is REQUIRED. A breadcrumb with no trail is a strip that says
@@ -61,14 +61,14 @@ export type V3BreadcrumbProps = {
    */
   tone?: 'surface' | 'on-media'
   /**
-   * Clears the fixed public header (app/layout.tsx mounts PublicNav, whose bar
+   * Clears the fixed public header (app/layout.tsx mounts V3Chrome, whose bar
    * is `position: fixed; top: 0`). DEFAULTS TO TRUE on the surface tone, which
    * is the only honest default: a surface-tone trail is the first flow element
    * of <main>, a fixed bar is out of flow, and the trail therefore renders
    * behind the wordmark unless something pushes it down. Making the caller
    * opt IN is how the other register shipped this defect twice — KbBreadcrumb's
    * `belowNav` prop fixed it for no-hero pages on 2026-07-15 and its ten
-   * `overlay` callers never got it (components/site/kb/kb.css:1219, C-14).
+   * `overlay` callers never got it (the deleted KB stylesheet, C-14).
    *
    * The 'on-media' tone defaults to false: that trail sits inside a Stage, over
    * the Stage's media, and the Stage owns its own top space.

@@ -38,7 +38,7 @@
  *
  * Barrel law honored here:
  *  - Imports only ./atoms, ./tokens.css, next/link, and @/lib/utils. Nothing
- *    from components/site/kb, components/site (flat), components/site/primitives,
+ *    from the deleted KB register, components/site (flat), components/site/primitives,
  *    components/site/explore, or components/ui.
  *  - The region's name is required in the type AND it can only be given once:
  *    the props are a union of `heading` (a visible title, which becomes the

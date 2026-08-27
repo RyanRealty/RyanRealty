@@ -15,7 +15,7 @@
 /**
  * V3 CHROME. The public site's persistent header.
  *
- * Replaces components/site/kb/KbNav.client.tsx. Visual language:
+ * Replaces a deleted KB component Visual language:
  * design_system/public/PUBLIC_UI.md (locked 2026-08-11). Tokens: ./tokens.css.
  *
  * DESTINATIONS COME FROM lib/site-nav.ts, NEVER FROM THIS FILE.

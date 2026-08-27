@@ -12,7 +12,7 @@
  * 44px minimum row height so a thumb hits one row and not two.
  *
  * Barrel law honored here:
- *  - No import from components/site/kb, components/site (flat), components/site/primitives,
+ *  - No import from the deleted KB register, components/site (flat), components/site/primitives,
  *    components/site/explore, or components/ui. Only ./atoms and lib helpers.
  *  - The accessible name is in the type, and the type is `V3Text`, not `string`. A bare
  *    `string` accepts `''`, which renders `<section aria-label="">` (no landmark), an

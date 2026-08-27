@@ -32,7 +32,7 @@
  * own line through `mapNote`; a caller cannot ship the pins without the label.
  *
  * Barrel law honored here:
- *  - No import from components/site/kb, components/site (flat legacy),
+ *  - No import from the deleted KB register, components/site (flat legacy),
  *    components/site/primitives, components/site/explore, or components/ui.
  *  - `ariaLabel` is required in the type, so a nameless section cannot compile.
  *  - Every color comes from ./tokens.css through ./V3Field.css. No raw hex.

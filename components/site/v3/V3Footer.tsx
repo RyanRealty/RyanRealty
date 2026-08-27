@@ -1,7 +1,7 @@
 /**
  * V3 FOOTER. The public site's closing chrome.
  *
- * Replaces components/site/kb/KbFooter.client.tsx. Visual language:
+ * Replaces a deleted KB component Visual language:
  * design_system/public/PUBLIC_UI.md (locked 2026-08-11). Tokens: ./tokens.css.
  *
  * DESTINATIONS COME FROM lib/site-nav.ts. Not one href is typed in this file.

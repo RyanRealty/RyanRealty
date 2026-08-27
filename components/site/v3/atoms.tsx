@@ -8,7 +8,7 @@
  * trace beside the number that came from it.
  *
  * Barrel law honored here:
- *  - Nothing is imported from components/site/kb, components/site (flat),
+ *  - Nothing is imported from the deleted KB register, components/site (flat),
  *    components/site/primitives, components/site/explore, or components/ui.
  *  - Every control REQUIRES its accessible name in the type. V3Button takes a
  *    non-nullable child, so a nameless button does not compile.

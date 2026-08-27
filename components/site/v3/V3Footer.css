@@ -60,7 +60,7 @@
 
 /* `color` on a bare `a` lives in @layer base so Tailwind's utilities layer keeps
    winning: un-layered author CSS beats EVERY layered rule regardless of
-   specificity, which is how `.kb-root a{color:inherit}` rendered navy-on-navy
+   specificity, which is how `the deleted KB root class a{color:inherit}` rendered navy-on-navy
    CTA text on the seller money path (the invisible-CTA-text P0, 2026-07-08).
    Enforced by ci:css-layers. Source order inside the layer still decides ties,
    so the muted override below must stay after the base rule. */

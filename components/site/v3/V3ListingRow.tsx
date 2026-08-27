@@ -11,7 +11,7 @@
  * their own list/rail chrome, the way V3PlaceDocuments composes Ledger.
  *
  * Barrel law honored here:
- *  - No import from components/site/kb, components/site (flat),
+ *  - No import from the deleted KB register, components/site (flat),
  *    components/site/primitives, components/site/explore, or components/ui.
  *    Only ./atoms, ./tokens.css, and lib helpers.
  *  - No raw color: every visual value reaches this row through var(--v3-*).

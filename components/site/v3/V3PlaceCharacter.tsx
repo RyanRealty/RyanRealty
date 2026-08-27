@@ -46,10 +46,10 @@
  *
  * WHY IT MOVED HERE. It used to live at components/site/PlaceCharacter.tsx on
  * `section`/`wrap`/`sec-head`/`sec-title`, none of which has an unscoped
- * definition in this repo: `.sec-title` exists only under `.kb-root` and under
- * `.listing-detail`, and the other three only under `.kb-root`. A component
+ * definition in this repo: `.sec-title` exists only under `the deleted KB root class` and under
+ * `.listing-detail`, and the other three only under `the deleted KB root class`. A component
  * documented as shared by three grains rendered styled only while every caller
- * sat inside `main.kb-root`. V3Quiet mounts V3_ROOT_CLASS on its own outermost
+ * sat inside `mainthe deleted KB root class`. V3Quiet mounts V3_ROOT_CLASS on its own outermost
  * element, so the section now carries its own token scope.
  *
  * Section 0: nothing is computed here. Every number arrives measured, and every

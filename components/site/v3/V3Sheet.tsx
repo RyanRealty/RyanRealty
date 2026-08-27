@@ -87,7 +87,7 @@
  * an honest one.
  *
  * Barrel law honored here:
- *  - Nothing imported from components/site/kb, components/site (flat),
+ *  - Nothing imported from the deleted KB register, components/site (flat),
  *    components/site/primitives, components/site/explore, or components/ui.
  *  - Color, size, radius, ring, and duration come from ./tokens.css. No raw color here.
  *  - It formats nothing. Values arrive as strings the caller already formatted, so the
