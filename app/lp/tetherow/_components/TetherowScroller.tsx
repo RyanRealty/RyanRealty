@@ -94,7 +94,7 @@ export function TetherowScroller({ cards }: { cards: ScrollerCard[] }) {
         aria-label="Tetherow sub-neighborhoods"
         tabIndex={0}
         onKeyDown={handleKey}
-        className="flex gap-4 overflow-x-auto overflow-y-visible scroll-smooth pb-6 pt-2 -mx-6 px-6 [scroll-snap-type:x_mandatory] [scrollbar-color:rgba(16,39,66,0.12)_transparent] [-webkit-overflow-scrolling:touch]"
+        className="flex gap-4 overflow-x-auto overflow-y-visible scroll-smooth pb-6 pt-2 -mx-6 px-6 [scroll-snap-type:x_mandatory] [scrollbar-color:color-mix(in srgb, var(--v3-navy) 12%, transparent)_transparent] [-webkit-overflow-scrolling:touch]"
         style={{ scrollbarWidth: 'thin' }}
       >
         {cards.map((c) => {
@@ -113,7 +113,7 @@ export function TetherowScroller({ cards }: { cards: ScrollerCard[] }) {
             </div>
           )
           const baseClass =
-            "relative aspect-[4/5] w-[280px] shrink-0 overflow-hidden rounded-[14px] bg-[color:var(--rr-navy)] bg-cover bg-center shadow-[0_1px_2px_rgba(16,39,66,0.04),0_4px_12px_rgba(16,39,66,0.06)] transition-transform duration-300 hover:-translate-y-[3px] hover:shadow-[0_1px_2px_rgba(16,39,66,0.06),0_8px_24px_rgba(16,39,66,0.1)] [scroll-snap-align:start] [scroll-snap-stop:always] before:absolute before:inset-0 before:bg-[linear-gradient(to_top,rgba(16,39,66,0.94)_0%,rgba(16,39,66,0.55)_50%,rgba(16,39,66,0.1)_100%)]"
+            "relative aspect-[4/5] w-[280px] shrink-0 overflow-hidden rounded-[14px] bg-[color:var(--rr-navy)] bg-cover bg-center shadow-[0_1px_2px_color-mix(in srgb, var(--v3-navy) 4%, transparent),0_4px_12px_color-mix(in srgb, var(--v3-navy) 6%, transparent)] transition-transform duration-300 hover:-translate-y-[3px] hover:shadow-[0_1px_2px_color-mix(in srgb, var(--v3-navy) 6%, transparent),0_8px_24px_color-mix(in srgb, var(--v3-navy) 10%, transparent)] [scroll-snap-align:start] [scroll-snap-stop:always] before:absolute before:inset-0 before:bg-[linear-gradient(to_top,color-mix(in srgb, var(--v3-navy) 94%, transparent)_0%,color-mix(in srgb, var(--v3-navy) 55%, transparent)_50%,color-mix(in srgb, var(--v3-navy) 10%, transparent)_100%)]"
           const style = { backgroundImage: `url('${c.imageUrl}')` }
           if (c.hasInnerPage) {
             return (
@@ -160,7 +160,7 @@ export function TetherowScroller({ cards }: { cards: ScrollerCard[] }) {
           aria-label="Scroll left"
           onClick={() => handleScroll('prev')}
           disabled={!canScrollLeft}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(16,39,66,0.08)] bg-white text-lg text-[color:var(--rr-navy)] shadow-[0_1px_2px_rgba(16,39,66,0.04),0_4px_12px_rgba(16,39,66,0.06)] transition hover:border-[color:var(--rr-navy)] hover:bg-[color:var(--rr-navy)] hover:text-[color:var(--rr-cream)] active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-35"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white text-lg text-[color:var(--rr-navy)] shadow-[0_1px_2px_color-mix(in srgb, var(--v3-navy) 4%, transparent),0_4px_12px_color-mix(in srgb, var(--v3-navy) 6%, transparent)] transition hover:border-[color:var(--rr-navy)] hover:bg-[color:var(--rr-navy)] hover:text-[color:var(--rr-cream)] active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-35"
         >
           ‹
         </button>
@@ -169,13 +169,13 @@ export function TetherowScroller({ cards }: { cards: ScrollerCard[] }) {
           aria-label="Scroll right"
           onClick={() => handleScroll('next')}
           disabled={!canScrollRight}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(16,39,66,0.08)] bg-white text-lg text-[color:var(--rr-navy)] shadow-[0_1px_2px_rgba(16,39,66,0.04),0_4px_12px_rgba(16,39,66,0.06)] transition hover:border-[color:var(--rr-navy)] hover:bg-[color:var(--rr-navy)] hover:text-[color:var(--rr-cream)] active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-35"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white text-lg text-[color:var(--rr-navy)] shadow-[0_1px_2px_color-mix(in srgb, var(--v3-navy) 4%, transparent),0_4px_12px_color-mix(in srgb, var(--v3-navy) 6%, transparent)] transition hover:border-[color:var(--rr-navy)] hover:bg-[color:var(--rr-navy)] hover:text-[color:var(--rr-cream)] active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-35"
         >
           ›
         </button>
         <div
           aria-hidden
-          className="h-[3px] flex-1 overflow-hidden rounded-[4px] bg-[rgba(16,39,66,0.08)]"
+          className="h-[3px] flex-1 overflow-hidden rounded-[4px] bg-[color-mix(in srgb, var(--v3-navy) 8%, transparent)]"
         >
           <div
             className="h-full bg-[color:var(--rr-navy)] transition-[width] duration-200 ease-out"

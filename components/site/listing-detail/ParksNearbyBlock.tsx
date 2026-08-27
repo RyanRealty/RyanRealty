@@ -50,7 +50,7 @@ export function ParksNearbyBlock({ listing, className }: Props) {
           display: 'flex',
           flexWrap: 'wrap',
           gap: '3px',
-          border: '1px solid rgba(16,39,66,0.12)',
+          border: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
           marginTop: 'clamp(22px,3vw,36px)',
         }}
       >
@@ -66,7 +66,7 @@ export function ParksNearbyBlock({ listing, className }: Props) {
               textDecoration: 'none',
               color: 'var(--v3-navy)',
             }}
-            className="hover:bg-[rgba(16,39,66,0.04)] transition-colors"
+            className="hover:bg-[color-mix(in srgb, var(--v3-navy) 4%, transparent)] transition-colors"
           >
             <div
               style={{
@@ -89,7 +89,7 @@ export function ParksNearbyBlock({ listing, className }: Props) {
                 fontWeight: 600,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                color: 'rgba(16,39,66,0.72)',
+                color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
               }}
             >
               <span>{TYPE_LABEL[park.type]}</span>

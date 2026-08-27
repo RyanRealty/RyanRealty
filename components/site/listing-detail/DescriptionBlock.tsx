@@ -45,7 +45,7 @@ export function DescriptionBlock({ publicRemarks, className }: Props) {
             style={{
               fontSize: 'clamp(0.95rem,1.8vw,1.08rem)',
               lineHeight: 1.65,
-              color: 'rgba(16,39,66,0.78)',
+              color: 'color-mix(in srgb, var(--v3-navy) 78%, transparent)',
               fontWeight: 400,
             }}
           >

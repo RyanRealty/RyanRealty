@@ -150,9 +150,9 @@ export async function NeighborhoodMarketContext({
     <section className={cn('section mkt', className)} style={{ padding: 0 }}>
       <div className="wrap" style={{ paddingTop: 0, paddingBottom: 0 }}>
         {/* KB navy sec-head inside the mkt surface */}
-        <div className="sec-head" style={{ borderBottomColor: 'rgba(250,248,244,0.28)' }}>
+        <div className="sec-head" style={{ borderBottomColor: 'color-mix(in srgb, var(--v3-cream) 28%, transparent)' }}>
           <div>
-            <div className="eyebrow sec-index" style={{ color: 'rgba(250,248,244,0.55)' }}>
+            <div className="eyebrow sec-index" style={{ color: 'color-mix(in srgb, var(--v3-cream) 55%, transparent)' }}>
               Live market context
             </div>
             <h2 className="sec-title display" style={{ color: 'var(--v3-cream)' }}>
@@ -235,13 +235,13 @@ export async function NeighborhoodMarketContext({
                 <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow}
               </span>{' '}
               the {geoName} median.{' '}
-              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'rgba(250,248,244,0.7)' }}>
+              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'color-mix(in srgb, var(--v3-cream) 70%, transparent)' }}>
                 See full {geoName} market →
               </TextLink>
             </p>
           ) : (
             <p className="mkt-fine" style={{ marginTop: 0 }}>
-              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'rgba(250,248,244,0.7)' }}>
+              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'color-mix(in srgb, var(--v3-cream) 70%, transparent)' }}>
                 See full {geoName} market →
               </TextLink>
             </p>

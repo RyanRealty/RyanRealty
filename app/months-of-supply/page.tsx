@@ -134,7 +134,7 @@
  * So the opening Instrument's action is PRIMARY, and it is the page's own. Measured in
  * the same pass, the first viewport at 390 contains exactly one visible filled control
  * from the page: a.v3-btn--primary "Central Oregon market report", 245x44 at y=674,
- * background rgb(16,39,66). Nothing else on the route is filled - the city Ledger's
+ * background var(--v3-navy). Nothing else on the route is filled - the city Ledger's
  * action takes V3Ledger's ghost default, V3Quiet renders no button, and V3Footer's rows
  * are plain anchors. (The cookie-consent overlay paints its own filled "Accept all" at
  * y=804. That is transient site chrome behind a dismissal, not one of this page's asks.)

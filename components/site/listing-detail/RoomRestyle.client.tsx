@@ -227,7 +227,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
       >
         Imagine this room
       </h2>
-      <p className="mt-1.5 max-w-prose text-sm leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
+      <p className="mt-1.5 max-w-prose text-sm leading-relaxed" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
         See how an interior could feel in a different finish. Architecture stays the same.
         This is a visualization, not the listed condition, and not a renovation quote.
       </p>
@@ -237,7 +237,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         <div className="mt-4">
           <p
             className="mb-2 text-xs font-semibold uppercase tracking-wide"
-            style={{ color: 'rgba(16,39,66,0.72)', letterSpacing: '0.1em' }}
+            style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)', letterSpacing: '0.1em' }}
           >
             1 · Choose an interior photo
           </p>
@@ -256,7 +256,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
                     width: 80,
                     flexShrink: 0,
                     overflow: 'hidden',
-                    border: selected ? '3px solid var(--navy)' : '2px solid rgba(16,39,66,0.28)',
+                    border: selected ? '3px solid var(--navy)' : '2px solid color-mix(in srgb, var(--v3-navy) 28%, transparent)',
                     opacity: exterior ? 0.55 : selected ? 1 : 0.82,
                     background: 'transparent',
                     padding: 0,
@@ -276,7 +276,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
             })}
           </div>
           {selectedCaption ? (
-            <p className="mt-1.5 text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
+            <p className="mt-1.5 text-xs" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
               {selectedCaption}
             </p>
           ) : null}
@@ -292,7 +292,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
       <div className="mt-4">
         <p
           className="mb-2 text-xs font-semibold uppercase tracking-wide"
-          style={{ color: 'rgba(16,39,66,0.72)', letterSpacing: '0.1em' }}
+          style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)', letterSpacing: '0.1em' }}
         >
           {pickerPhotos.length > 1 ? '2 · Style' : '1 · Style'}
         </p>
@@ -348,7 +348,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
       <div className="mt-4">
         <p
           className="mb-2 text-xs font-semibold uppercase tracking-wide"
-          style={{ color: 'rgba(16,39,66,0.72)', letterSpacing: '0.1em' }}
+          style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)', letterSpacing: '0.1em' }}
         >
           {pickerPhotos.length > 1 ? '3 · Generate' : '2 · Generate'}
         </p>
@@ -365,7 +365,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         >
           {loading ? 'Generating…' : `Restyle photo · ${styleMeta.label}`}
         </button>
-        <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
+        <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
           {loading
             ? 'Keeping the room shape. Applying the finish. Usually under a minute.'
             : 'One style at a time. Capped per visitor so costs stay honest.'}
@@ -463,7 +463,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
           )}
 
           {disclaimer ? (
-            <p className="text-xs leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
+            <p className="text-xs leading-relaxed" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
               {disclaimer}
             </p>
           ) : null}
@@ -478,7 +478,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
             <p className="text-sm font-semibold" style={{ color: 'var(--navy)' }}>
               What do you want next?
             </p>
-            <p className="mt-1 text-xs leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
               {city
                 ? `Tour this home, ask a broker how a finish like this would play in ${city}, or get email when a similar home lists.`
                 : 'Tour this home, ask a broker about finishes, or set a search alert lower on the page.'}
@@ -522,7 +522,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  color: 'rgba(16,39,66,0.72)',
+                  color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
                   minHeight: 44,
                   fontSize: '0.875rem',
                   fontWeight: 500,
@@ -601,7 +601,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
                   <a
                     href="#listing-like-alerts"
                     className="text-xs underline-offset-2 hover:underline"
-                    style={{ color: 'rgba(16,39,66,0.72)' }}
+                    style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}
                   >
                     Full alert options
                   </a>
@@ -616,8 +616,8 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
           style={{
             aspectRatio: '4 / 3',
             border: exteriorSelected
-              ? '2px dashed rgba(16,39,66,0.4)'
-              : '2px solid rgba(16,39,66,0.28)',
+              ? '2px dashed color-mix(in srgb, var(--v3-navy) 40%, transparent)'
+              : '2px solid color-mix(in srgb, var(--v3-navy) 28%, transparent)',
           }}
         >
           <Image
@@ -631,7 +631,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
           {loading ? (
             <div
               className="absolute inset-0 flex items-end p-3"
-              style={{ background: 'linear-gradient(transparent 40%, rgba(16,39,66,0.72))' }}
+              style={{ background: 'linear-gradient(transparent 40%, color-mix(in srgb, var(--v3-navy) 72%, transparent))' }}
             >
               <p className="text-sm font-semibold" style={{ color: 'var(--cream)' }}>
                 Restyling as {styleMeta.label}…

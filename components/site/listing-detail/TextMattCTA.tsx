@@ -144,7 +144,7 @@ export function TextMattCTA({
         {showProof ? (
           <div
             className="hidden lg:block"
-            style={{ borderTop: '1px solid rgba(16,39,66,0.14)', paddingTop: 14, marginTop: 2 }}
+            style={{ borderTop: '1px solid color-mix(in srgb, var(--v3-navy) 14%, transparent)', paddingTop: 14, marginTop: 2 }}
           >
             <div className="flex items-center gap-2">
               <span aria-hidden style={{ color: 'var(--navy)', letterSpacing: '0.04em', fontSize: '0.95rem' }}>
@@ -160,7 +160,7 @@ export function TextMattCTA({
             {quote ? (
               <blockquote
                 className="mt-2 text-xs leading-normal"
-                style={{ color: 'rgba(16,39,66,0.78)' }}
+                style={{ color: 'color-mix(in srgb, var(--v3-navy) 78%, transparent)' }}
               >
                 {truncate(quote.text, 150)}
                 {quote.reviewerName ? (

@@ -29,13 +29,13 @@ export function PlaceParentsSection({
             listStyle: 'none',
             margin: '1.5rem 0 0',
             padding: 0,
-            borderTop: '1px solid rgba(16,39,66,0.12)',
+            borderTop: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
           }}
         >
           {parents.map((p) => (
             <li
               key={`${p.type}-${p.slug}`}
-              style={{ borderBottom: '1px solid rgba(16,39,66,0.12)' }}
+              style={{ borderBottom: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)' }}
             >
               <Link
                 href={p.href}

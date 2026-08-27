@@ -117,7 +117,7 @@ export function TetherowMultiStepForm() {
 
   if (success) {
     return (
-      <div className="rounded-2xl border border-[rgba(250,248,244,0.16)] bg-[rgba(250,248,244,0.06)] p-9 text-center">
+      <div className="rounded-2xl border border-[color-mix(in srgb, var(--v3-cream) 16%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 6%, transparent)] p-9 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(111,207,122,0.18)] text-2xl text-[#6fcf7a]">
           ✓
         </div>
@@ -127,11 +127,11 @@ export function TetherowMultiStepForm() {
         >
           Got it. Your value report is on the way.
         </h3>
-        <p className="mb-2 text-[15px] leading-[1.6] text-[rgba(250,248,244,0.85)]">
+        <p className="mb-2 text-[15px] leading-[1.6] text-[color-mix(in srgb, var(--v3-cream) 85%, transparent)]">
           We&apos;ll have a 12-page PDF in your inbox within one business day, signed by a Bend
           principal broker.
         </p>
-        <p className="text-[15px] leading-[1.6] text-[rgba(250,248,244,0.85)]">
+        <p className="text-[15px] leading-[1.6] text-[color-mix(in srgb, var(--v3-cream) 85%, transparent)]">
           No phone follow-up unless you ask for one.
         </p>
       </div>
@@ -139,8 +139,8 @@ export function TetherowMultiStepForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-[rgba(250,248,244,0.16)] bg-[rgba(250,248,244,0.06)] p-9">
-      <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-[rgba(250,248,244,0.7)]">
+    <div className="rounded-2xl border border-[color-mix(in srgb, var(--v3-cream) 16%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 6%, transparent)] p-9">
+      <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-[color-mix(in srgb, var(--v3-cream) 70%, transparent)]">
         Your Tetherow home value
       </div>
       <div
@@ -160,13 +160,13 @@ export function TetherowMultiStepForm() {
               s === step
                 ? 'bg-[color:var(--rr-cream)]'
                 : s < step
-                  ? 'bg-[rgba(250,248,244,0.55)]'
-                  : 'bg-[rgba(250,248,244,0.16)]'
+                  ? 'bg-[color-mix(in srgb, var(--v3-cream) 55%, transparent)]'
+                  : 'bg-[color-mix(in srgb, var(--v3-cream) 16%, transparent)]'
             )}
           />
         ))}
       </div>
-      <div className="mb-5 text-[12px] font-semibold tracking-[0.06em] text-[rgba(250,248,244,0.7)]">
+      <div className="mb-5 text-[12px] font-semibold tracking-[0.06em] text-[color-mix(in srgb, var(--v3-cream) 70%, transparent)]">
         Step {step} of 3 ·{' '}
         {step === 1 ? 'Your home' : step === 2 ? 'Timing + size' : 'Your contact'}
       </div>
@@ -185,7 +185,7 @@ export function TetherowMultiStepForm() {
               autoComplete="street-address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="rounded-[10px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.55)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+              className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 55%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
               required
             />
             <Label htmlFor="tetherow-sub" className="sr-only">
@@ -197,7 +197,7 @@ export function TetherowMultiStepForm() {
               value={subdivision}
               onChange={(e) => setSubdivision(e.target.value)}
               required
-              className="rounded-[10px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] focus:border-[rgba(250,248,244,0.6)] focus:bg-[rgba(250,248,244,0.15)] focus:outline-none"
+              className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] focus:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus:outline-none"
             >
               <option value="" disabled className="bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)]">
                 Which sub-neighborhood?
@@ -234,7 +234,7 @@ export function TetherowMultiStepForm() {
               value={timing}
               onChange={(e) => setTiming(e.target.value)}
               required
-              className="rounded-[10px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] focus:border-[rgba(250,248,244,0.6)] focus:bg-[rgba(250,248,244,0.15)] focus:outline-none"
+              className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] focus:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus:outline-none"
             >
               <option value="" disabled className="bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)]">
                 When are you thinking about selling?
@@ -251,7 +251,7 @@ export function TetherowMultiStepForm() {
                 value={bedrooms}
                 onChange={(e) => setBedrooms(e.target.value)}
                 required
-                className="rounded-[10px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] focus:border-[rgba(250,248,244,0.6)] focus:bg-[rgba(250,248,244,0.15)] focus:outline-none"
+                className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] focus:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus:outline-none"
               >
                 <option value="" disabled className="bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)]">
                   Bedrooms
@@ -267,7 +267,7 @@ export function TetherowMultiStepForm() {
                 value={bathrooms}
                 onChange={(e) => setBathrooms(e.target.value)}
                 required
-                className="rounded-[10px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] focus:border-[rgba(250,248,244,0.6)] focus:bg-[rgba(250,248,244,0.15)] focus:outline-none"
+                className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] focus:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus:outline-none"
               >
                 <option value="" disabled className="bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)]">
                   Bathrooms
@@ -290,7 +290,7 @@ export function TetherowMultiStepForm() {
               <Button
                 type="button"
                 onClick={() => setStep(1)}
-                className="flex-none rounded-[10px] border border-[rgba(250,248,244,0.35)] bg-transparent px-[22px] py-4 text-[15px] font-semibold text-[color:var(--rr-cream)] hover:bg-[rgba(250,248,244,0.08)]"
+                className="flex-none rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 35%, transparent)] bg-transparent px-[22px] py-4 text-[15px] font-semibold text-[color:var(--rr-cream)] hover:bg-[color-mix(in srgb, var(--v3-cream) 8%, transparent)]"
                 variant="outline"
               >
                 ← Back
@@ -315,7 +315,7 @@ export function TetherowMultiStepForm() {
               autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="rounded-[10px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.55)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+              className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 55%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
               required
             />
             <Input
@@ -325,7 +325,7 @@ export function TetherowMultiStepForm() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-[10px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.55)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+              className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 55%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
               required
             />
             <Input
@@ -335,7 +335,7 @@ export function TetherowMultiStepForm() {
               autoComplete="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="rounded-[10px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.55)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+              className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-[18px] py-4 text-[15px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 55%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
               required
             />
             {errors.length > 0 && (
@@ -350,7 +350,7 @@ export function TetherowMultiStepForm() {
                 type="button"
                 onClick={() => setStep(2)}
                 variant="outline"
-                className="flex-none rounded-[10px] border border-[rgba(250,248,244,0.35)] bg-transparent px-[22px] py-4 text-[15px] font-semibold text-[color:var(--rr-cream)] hover:bg-[rgba(250,248,244,0.08)]"
+                className="flex-none rounded-[10px] border border-[color-mix(in srgb, var(--v3-cream) 35%, transparent)] bg-transparent px-[22px] py-4 text-[15px] font-semibold text-[color:var(--rr-cream)] hover:bg-[color-mix(in srgb, var(--v3-cream) 8%, transparent)]"
               >
                 ← Back
               </Button>

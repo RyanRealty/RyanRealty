@@ -244,15 +244,15 @@ export function PriceCtaStrip({
         </div>
       ) : null}
       {cityWithCommunity ? (
-        <div className="mt-0.5 text-sm" style={{ color: 'rgba(16,39,66,0.72)' }}>
+        <div className="mt-0.5 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
           {cityWithCommunity}
         </div>
       ) : null}
 
       {publishedDrop ? (
-        <div className="mt-2 text-sm" style={{ color: 'rgba(16,39,66,0.72)' }}>
+        <div className="mt-2 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
           Down <Price value={publishedDrop.drop} exact /> from original list price{' '}
-          <span style={{ color: 'rgba(16,39,66,0.72)' }}>
+          <span style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
             <Price value={publishedDrop.original} exact className="line-through" />
           </span>
           {listing.priceDropCount && listing.priceDropCount > 1 ? (
@@ -334,7 +334,7 @@ export function PriceCtaStrip({
       >
         Get free alerts for homes like this <span className="arr">→</span>
       </a>
-      <p className="mt-2 text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
+      <p className="mt-2 text-xs" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
         {alertBandIsPublished
           ? 'Free email when a new home lists in this city near this price. Unsubscribe any time.'
           : 'Free email when a new home lists in this city. Unsubscribe any time.'}

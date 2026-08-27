@@ -249,11 +249,11 @@ export default async function TetherowLandingPage() {
           className="absolute inset-0 z-[1]"
           style={{
             background:
-              'linear-gradient(to bottom, rgba(16,39,66,0.15) 0%, rgba(16,39,66,0.55) 55%, rgba(16,39,66,0.94) 100%)',
+              'linear-gradient(to bottom, color-mix(in srgb, var(--v3-navy) 15%, transparent) 0%, color-mix(in srgb, var(--v3-navy) 55%, transparent) 55%, color-mix(in srgb, var(--v3-navy) 94%, transparent) 100%)',
           }}
         />
         <div className="relative z-[2] mx-auto w-full max-w-[1200px] px-6 pt-24 text-[color:var(--rr-cream)]">
-          <div className="mb-[14px] text-[12px] font-bold uppercase tracking-[0.16em] text-[rgba(250,248,244,0.72)]">
+          <div className="mb-[14px] text-[12px] font-bold uppercase tracking-[0.16em] text-[color-mix(in srgb, var(--v3-cream) 72%, transparent)]">
             {cfg.hero.eyebrow}
           </div>
           <h1
@@ -262,7 +262,7 @@ export default async function TetherowLandingPage() {
           >
             {cfg.hero.h1_lead} <span>{dynMonthYear}</span>.
           </h1>
-          <p className="mb-9 max-w-[720px] text-[19px] leading-[1.55] text-[rgba(250,248,244,0.92)]">
+          <p className="mb-9 max-w-[720px] text-[19px] leading-[1.55] text-[color-mix(in srgb, var(--v3-cream) 92%, transparent)]">
             {soldCount != null
               ? `${soldCount} homes sold last year${medianClose != null ? ` at a median ${formatPriceFull(medianClose)}` : ''}. `
               : medianClose != null
@@ -272,7 +272,7 @@ export default async function TetherowLandingPage() {
             {medianDom != null ? `${medianDom}-day median market velocity. ` : ''}
             McLay Kidd country, west Bend, inside the {cfg.acres}-acre master plan.
           </p>
-          <div className="grid max-w-[940px] grid-cols-2 overflow-hidden rounded-t-xl border-t border-[rgba(250,248,244,0.15)] bg-[rgba(16,39,66,0.7)] backdrop-blur md:grid-cols-4">
+          <div className="grid max-w-[940px] grid-cols-2 overflow-hidden rounded-t-xl border-t border-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] bg-[color-mix(in srgb, var(--v3-navy) 70%, transparent)] backdrop-blur md:grid-cols-4">
             <HeroStat value={soldCountLabel} label="Sold past 12 months" />
             <HeroStat value={formatPriceKpi(medianClose)} label="Median close (12mo)" />
             <HeroStat value={String(medianDom ?? '—')} label="Median days on market" />
@@ -313,14 +313,14 @@ export default async function TetherowLandingPage() {
                 <a
                   key={href}
                   href={href}
-                  className="rounded-full bg-[rgba(16,39,66,0.04)] px-3 py-1.5 text-[12px] font-semibold tracking-[0.02em] text-[color:var(--rr-navy)] transition hover:bg-[color:var(--rr-navy)] hover:text-[color:var(--rr-cream)]"
+                  className="rounded-full bg-[color-mix(in srgb, var(--v3-navy) 4%, transparent)] px-3 py-1.5 text-[12px] font-semibold tracking-[0.02em] text-[color:var(--rr-navy)] transition hover:bg-[color:var(--rr-navy)] hover:text-[color:var(--rr-cream)]"
                 >
                   {label}
                 </a>
               ))}
             </div>
           </div>
-          <Card className="sticky top-6 rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white p-7 shadow-[var(--rr-card-shadow)]">
+          <Card className="sticky top-6 rounded-2xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white p-7 shadow-[var(--rr-card-shadow)]">
             <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.12em] text-[color:var(--rr-muted)]">
               Tetherow at a glance
             </div>
@@ -400,7 +400,7 @@ export default async function TetherowLandingPage() {
             {cfg.drive_times.map((d) => (
               <div
                 key={`${d.minutes}-${d.destination}`}
-                className="flex items-center gap-4 border-b border-[rgba(16,39,66,0.08)] py-[14px] last:border-b-0"
+                className="flex items-center gap-4 border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] py-[14px] last:border-b-0"
               >
                 <div
                   className="min-w-[78px] font-display text-[28px] font-semibold leading-[1] text-[color:var(--rr-navy)]"
@@ -459,7 +459,7 @@ export default async function TetherowLandingPage() {
           body="Every Tetherow homeowner pays a master assessment to the Tetherow Owners Association. Each sub-neighborhood then layers on its own dues, billed by a different management company depending on where the home sits. Verified May 2026 against tetherowowners.com."
           onDark
         />
-        <div className="overflow-hidden rounded-2xl border border-[rgba(250,248,244,0.12)] bg-[rgba(250,248,244,0.06)]">
+        <div className="overflow-hidden rounded-2xl border border-[color-mix(in srgb, var(--v3-cream) 12%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 6%, transparent)]">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[rgba(0,0,0,0.15)]">
@@ -467,7 +467,7 @@ export default async function TetherowLandingPage() {
                   (h) => (
                     <th
                       key={h}
-                      className="border-b border-[rgba(250,248,244,0.08)] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[rgba(250,248,244,0.55)]"
+                      className="border-b border-[color-mix(in srgb, var(--v3-cream) 8%, transparent)] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[color-mix(in srgb, var(--v3-cream) 55%, transparent)]"
                     >
                       {h}
                     </th>
@@ -479,7 +479,7 @@ export default async function TetherowLandingPage() {
               {cfg.sub_neighborhoods.map((sn) => (
                 <tr
                   key={sn.slug}
-                  className="border-b border-[rgba(250,248,244,0.08)] transition hover:bg-[rgba(250,248,244,0.04)] last:border-b-0"
+                  className="border-b border-[color-mix(in srgb, var(--v3-cream) 8%, transparent)] transition hover:bg-[color-mix(in srgb, var(--v3-cream) 4%, transparent)] last:border-b-0"
                 >
                   <td className="px-5 py-4 text-[14px] text-[color:var(--rr-cream)]">{sn.name}</td>
                   <td className="px-5 py-4 text-[14px] font-semibold tabular-nums text-[color:var(--rr-cream)]">
@@ -490,7 +490,7 @@ export default async function TetherowLandingPage() {
                     {sn.hoa_sub_assessment.startsWith('Master')
                       ? `Master ${formatPriceFull(cfg.hoa_master_assessment_annual)} + sub`
                       : `~${formatAnnualDuesShort(sn.hoa_annual_estimate)} `}
-                    <span className="text-[12.5px] text-[rgba(250,248,244,0.55)]">/ yr</span>
+                    <span className="text-[12.5px] text-[color-mix(in srgb, var(--v3-cream) 55%, transparent)]">/ yr</span>
                   </td>
                   <td className="px-5 py-4 text-[14px] text-[color:var(--rr-cream)]">{sn.hoa_manager}</td>
                 </tr>
@@ -524,8 +524,8 @@ export default async function TetherowLandingPage() {
           />
         </div>
 
-        <div className="mt-4 rounded-xl border border-[rgba(250,248,244,0.12)] bg-[rgba(250,248,244,0.06)] px-7 py-6">
-          <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-[rgba(250,248,244,0.55)]">
+        <div className="mt-4 rounded-xl border border-[color-mix(in srgb, var(--v3-cream) 12%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 6%, transparent)] px-7 py-6">
+          <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-[color-mix(in srgb, var(--v3-cream) 55%, transparent)]">
             Current TOA board of directors
           </div>
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -537,7 +537,7 @@ export default async function TetherowLandingPage() {
                 >
                   {b.name}
                 </strong>
-                <span className="text-[12.5px] text-[rgba(250,248,244,0.65)]">{b.role}</span>
+                <span className="text-[12.5px] text-[color-mix(in srgb, var(--v3-cream) 65%, transparent)]">{b.role}</span>
               </li>
             ))}
           </ul>
@@ -577,7 +577,7 @@ export default async function TetherowLandingPage() {
           body="Tetherow opened in 2008 on fire-scarred land west of Bend. Kidd's design borrowed from Scotland: firm-and-fast turf, ball roll, links bunkering. The course made its largest competitive jump in the 2023-24 Golf Digest 100 Greatest Public ranking, up 25 spots, a leap larger than any other course on the list."
         />
         <div className="grid gap-8 lg:grid-cols-2">
-          <Card className="rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white p-9 shadow-[var(--rr-card-shadow)]">
+          <Card className="rounded-2xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white p-9 shadow-[var(--rr-card-shadow)]">
             <h3
               className="mb-[18px] font-display text-[28px] font-semibold tracking-[-0.01em] text-[color:var(--rr-navy)]"
               style={{ fontFamily: 'var(--rr-font-display)' }}
@@ -606,7 +606,7 @@ export default async function TetherowLandingPage() {
               ))}
             </div>
           </Card>
-          <Card className="rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white p-9 shadow-[var(--rr-card-shadow)]">
+          <Card className="rounded-2xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white p-9 shadow-[var(--rr-card-shadow)]">
             <h3
               className="mb-[18px] font-display text-[28px] font-semibold tracking-[-0.01em] text-[color:var(--rr-navy)]"
               style={{ fontFamily: 'var(--rr-font-display)' }}
@@ -617,7 +617,7 @@ export default async function TetherowLandingPage() {
               {cfg.course_rankings.map((r) => (
                 <div
                   key={`${r.rank}-${r.publication}`}
-                  className="flex items-center gap-4 border-b border-[rgba(16,39,66,0.08)] py-[14px] last:border-b-0"
+                  className="flex items-center gap-4 border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] py-[14px] last:border-b-0"
                 >
                   <div
                     className="min-w-[70px] font-display text-[32px] font-semibold leading-[1] text-[color:var(--rr-navy)]"
@@ -698,7 +698,7 @@ export default async function TetherowLandingPage() {
               ].map((s) => (
                 <div
                   key={s.label}
-                  className="rounded-[10px] border border-[rgba(16,39,66,0.08)] bg-white px-4 py-[14px] text-center"
+                  className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white px-4 py-[14px] text-center"
                 >
                   <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[color:var(--rr-muted)]">
                     {s.label}
@@ -727,7 +727,7 @@ export default async function TetherowLandingPage() {
           {cfg.amenities.map((a) => (
             <Card
               key={a.name}
-              className="rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white p-7 shadow-[var(--rr-card-shadow)] transition hover:-translate-y-0.5 hover:shadow-[var(--rr-card-shadow-hover)]"
+              className="rounded-2xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white p-7 shadow-[var(--rr-card-shadow)] transition hover:-translate-y-0.5 hover:shadow-[var(--rr-card-shadow-hover)]"
             >
               <div className="mb-[10px] text-[11px] font-bold uppercase tracking-[0.1em] text-[color:var(--rr-muted)]">
                 {a.category}
@@ -743,7 +743,7 @@ export default async function TetherowLandingPage() {
                 {'url' in a && a.url ? (
                   <a
                     href={a.url as string}
-                    className="underline decoration-[rgba(16,39,66,0.12)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
+                    className="underline decoration-[color-mix(in srgb, var(--v3-navy) 12%, transparent)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
                   >
                     {a.access}
                   </a>
@@ -771,11 +771,11 @@ export default async function TetherowLandingPage() {
               className={
                 'flex flex-col rounded-2xl p-7 ' +
                 (t.featured
-                  ? 'border border-[rgba(250,248,244,0.3)] bg-[rgba(250,248,244,0.1)]'
-                  : 'border border-[rgba(250,248,244,0.14)] bg-[rgba(250,248,244,0.06)]')
+                  ? 'border border-[color-mix(in srgb, var(--v3-cream) 30%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)]'
+                  : 'border border-[color-mix(in srgb, var(--v3-cream) 14%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 6%, transparent)]')
               }
             >
-              <div className="mb-[10px] text-[11px] font-bold uppercase tracking-[0.1em] text-[rgba(250,248,244,0.7)]">
+              <div className="mb-[10px] text-[11px] font-bold uppercase tracking-[0.1em] text-[color-mix(in srgb, var(--v3-cream) 70%, transparent)]">
                 {t.eyebrow}
               </div>
               <h4
@@ -791,7 +791,7 @@ export default async function TetherowLandingPage() {
                 {t.details.map((d) => (
                   <li
                     key={d.label}
-                    className="flex justify-between gap-3 border-b border-[rgba(250,248,244,0.1)] py-1.5 text-[13px] last:border-b-0 text-[color:var(--rr-cream)]"
+                    className="flex justify-between gap-3 border-b border-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] py-1.5 text-[13px] last:border-b-0 text-[color:var(--rr-cream)]"
                   >
                     <span className="opacity-80">{d.label}</span>
                     <span className="whitespace-nowrap font-display font-semibold opacity-95" style={{ fontFamily: 'var(--rr-font-display)' }}>
@@ -800,13 +800,13 @@ export default async function TetherowLandingPage() {
                   </li>
                 ))}
               </ul>
-              <span className="inline-block w-fit rounded-md border border-[rgba(250,248,244,0.16)] bg-[rgba(250,248,244,0.08)] px-[14px] py-2 text-[12px] font-semibold tracking-[0.04em] text-[color:var(--rr-cream)]">
+              <span className="inline-block w-fit rounded-md border border-[color-mix(in srgb, var(--v3-cream) 16%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 8%, transparent)] px-[14px] py-2 text-[12px] font-semibold tracking-[0.04em] text-[color:var(--rr-cream)]">
                 {t.waitlist_status}
               </span>
             </Card>
           ))}
         </div>
-        <p className="mt-6 max-w-[720px] text-[12.5px] leading-[1.6] text-[rgba(250,248,244,0.6)]">
+        <p className="mt-6 max-w-[720px] text-[12.5px] leading-[1.6] text-[color-mix(in srgb, var(--v3-cream) 60%, transparent)]">
           Club initiation and dues schedules change annually and are not published on the Tetherow
           public site. The Tetherow membership office ({cfg.membership_office_phone}) confirms
           today&apos;s rate sheet, current waitlist, and the resale-transfer process when a home
@@ -827,7 +827,7 @@ export default async function TetherowLandingPage() {
           {cfg.happenings.map((h) => (
             <Card
               key={h.headline}
-              className="rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white p-7 shadow-[var(--rr-card-shadow)]"
+              className="rounded-2xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white p-7 shadow-[var(--rr-card-shadow)]"
             >
               <div className="mb-[14px] text-[11px] font-bold uppercase tracking-[0.12em] text-[color:var(--rr-muted)]">
                 {h.date}
@@ -848,7 +848,7 @@ export default async function TetherowLandingPage() {
                       href={s.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="underline decoration-[rgba(16,39,66,0.12)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
+                      className="underline decoration-[color-mix(in srgb, var(--v3-navy) 12%, transparent)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
                     >
                       {s.label}
                     </a>
@@ -903,11 +903,11 @@ export default async function TetherowLandingPage() {
           body="Schedule a showing on a specific home, get on the list for new Tetherow matches, or request the buyer's guide."
           onDark
         />
-        <p className="-mt-4 mb-7 text-[14.5px] text-[rgba(250,248,244,0.92)]">
+        <p className="-mt-4 mb-7 text-[14.5px] text-[color-mix(in srgb, var(--v3-cream) 92%, transparent)]">
           Prefer to talk first? Call Matt direct at{' '}
           <a
             href={`tel:${CONTACT.phoneDirectTel}`}
-            className="font-semibold text-[color:var(--rr-cream)] underline decoration-[rgba(250,248,244,0.35)] underline-offset-4"
+            className="font-semibold text-[color:var(--rr-cream)] underline decoration-[color-mix(in srgb, var(--v3-cream) 35%, transparent)] underline-offset-4"
           >
             {CONTACT.phoneDirect}
           </a>
@@ -923,15 +923,15 @@ export default async function TetherowLandingPage() {
           headline="What actually sold. Last 90 days at Tetherow."
           body="Anonymized at the street level. Every number traces to a verified Oregon RMLS close-of-record. Price-per-square-foot and sale-to-list ratio computed against close price and original list. Sub-neighborhood = SubdivisionName on the public MLS record."
         />
-        <div className="overflow-hidden rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white shadow-[var(--rr-card-shadow)]">
+        <div className="overflow-hidden rounded-2xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white shadow-[var(--rr-card-shadow)]">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-[rgba(16,39,66,0.04)]">
+              <tr className="bg-[color-mix(in srgb, var(--v3-navy) 4%, transparent)]">
                 {['Closed', 'Sub-neighborhood', 'Beds / baths', 'Sqft', 'Close', '$/sqft', 'Sale-to-list'].map(
                   (h) => (
                     <th
                       key={h}
-                      className="border-b border-[rgba(16,39,66,0.08)] px-[18px] py-[14px] text-left text-[10.5px] font-bold uppercase tracking-[0.1em] text-[color:var(--rr-muted)]"
+                      className="border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] px-[18px] py-[14px] text-left text-[10.5px] font-bold uppercase tracking-[0.1em] text-[color:var(--rr-muted)]"
                     >
                       {h}
                     </th>
@@ -954,8 +954,8 @@ export default async function TetherowLandingPage() {
                   <tr
                     key={`${c.closeDate}-${i}`}
                     className={
-                      'transition hover:bg-[rgba(16,39,66,0.04)] ' +
-                      (isLastRow ? '' : 'border-b border-[rgba(16,39,66,0.08)]')
+                      'transition hover:bg-[color-mix(in srgb, var(--v3-navy) 4%, transparent)] ' +
+                      (isLastRow ? '' : 'border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)]')
                     }
                   >
                     <td className="px-[18px] py-[14px] text-[13.5px]">{formatCloseDate(c.closeDate)}</td>
@@ -1015,7 +1015,7 @@ export default async function TetherowLandingPage() {
           {cfg.builders.map((b) => (
             <Card
               key={b.name}
-              className="rounded-xl border border-[rgba(16,39,66,0.08)] bg-white p-6 shadow-[var(--rr-card-shadow)] transition hover:-translate-y-0.5 hover:shadow-[var(--rr-card-shadow-hover)]"
+              className="rounded-xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white p-6 shadow-[var(--rr-card-shadow)] transition hover:-translate-y-0.5 hover:shadow-[var(--rr-card-shadow-hover)]"
             >
               <h4
                 className="mb-1.5 font-display text-[20px] font-semibold tracking-[-0.01em] text-[color:var(--rr-navy)]"
@@ -1031,7 +1031,7 @@ export default async function TetherowLandingPage() {
                 <div className="text-[12px] text-[color:var(--rr-muted)]">
                   <a
                     href={b.website}
-                    className="underline decoration-[rgba(16,39,66,0.12)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
+                    className="underline decoration-[color-mix(in srgb, var(--v3-navy) 12%, transparent)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
                   >
                     {(b.website ?? '').replace(/^https?:\/\//, '')}
                   </a>
@@ -1055,7 +1055,7 @@ export default async function TetherowLandingPage() {
               key={p.headline}
               className={
                 'grid items-start gap-[18px] py-[18px] sm:grid-cols-[auto_1fr] ' +
-                (i < cfg.pipeline.length - 1 ? 'border-b border-[rgba(16,39,66,0.08)]' : '')
+                (i < cfg.pipeline.length - 1 ? 'border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)]' : '')
               }
             >
               <Badge
@@ -1084,7 +1084,7 @@ export default async function TetherowLandingPage() {
                     Source:{' '}
                     <a
                       href={p.source_url}
-                      className="underline decoration-[rgba(16,39,66,0.12)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
+                      className="underline decoration-[color-mix(in srgb, var(--v3-navy) 12%, transparent)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
                     >
                       {p.source_label}
                     </a>
@@ -1103,27 +1103,27 @@ export default async function TetherowLandingPage() {
           headline="How Tetherow prices against the rest of the Central Oregon resort set."
           body={`Rolling-365-day median figures, methodology ${methodologyVersion}, pulled ${methodologyDate} from the Oregon RMLS feed. Single-family residential only. Resort communities are not interchangeable. The numbers below explain why.`}
         />
-        <div className="overflow-x-auto rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white shadow-[var(--rr-card-shadow)]">
+        <div className="overflow-x-auto rounded-2xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white shadow-[var(--rr-card-shadow)]">
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="border-b border-[rgba(16,39,66,0.08)] bg-[rgba(16,39,66,0.04)] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[color:var(--rr-muted)]"></th>
+                <th className="border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-[color-mix(in srgb, var(--v3-navy) 4%, transparent)] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[color:var(--rr-muted)]"></th>
                 {peerRows.length > 0 ? (
                   peerRows.map((r) => (
                     <th
                       key={r.geoSlug}
                       className={
-                        'border-b border-[rgba(16,39,66,0.08)] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.1em] ' +
+                        'border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.1em] ' +
                         (r.geoSlug === cfg.geo_slug
-                          ? 'bg-[color:var(--rr-navy)] text-[rgba(250,248,244,0.85)]'
-                          : 'bg-[rgba(16,39,66,0.04)] text-[color:var(--rr-muted)]')
+                          ? 'bg-[color:var(--rr-navy)] text-[color-mix(in srgb, var(--v3-cream) 85%, transparent)]'
+                          : 'bg-[color-mix(in srgb, var(--v3-navy) 4%, transparent)] text-[color:var(--rr-muted)]')
                       }
                     >
                       {r.geoLabel}
                     </th>
                   ))
                 ) : (
-                  <th className="border-b border-[rgba(16,39,66,0.08)] bg-[rgba(16,39,66,0.04)] px-5 py-4 text-left text-[11px] text-[color:var(--rr-muted)]">
+                  <th className="border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-[color-mix(in srgb, var(--v3-navy) 4%, transparent)] px-5 py-4 text-left text-[11px] text-[color:var(--rr-muted)]">
                     Tetherow
                   </th>
                 )}
@@ -1179,7 +1179,7 @@ export default async function TetherowLandingPage() {
           <Card className="rounded-2xl border-none bg-[#f0ece3] p-9 shadow-none">
             <div className="flex items-center gap-6">
               <div
-                className="h-[180px] w-[140px] shrink-0 rounded-xl bg-white bg-contain bg-bottom bg-no-repeat shadow-[0_1px_2px_rgba(16,39,66,0.06)]"
+                className="h-[180px] w-[140px] shrink-0 rounded-xl bg-white bg-contain bg-bottom bg-no-repeat shadow-[0_1px_2px_color-mix(in srgb, var(--v3-navy) 6%, transparent)]"
                 style={{ backgroundImage: `url('${cfg.broker_block.headshot}')` }}
                 role="img"
                 aria-label="Matt Ryan headshot"
@@ -1216,7 +1216,7 @@ export default async function TetherowLandingPage() {
             >
               What would your Tetherow home sell for today?
             </h2>
-            <p className="mb-4 text-[17px] leading-[1.65] text-[rgba(250,248,244,0.85)]">
+            <p className="mb-4 text-[17px] leading-[1.65] text-[color-mix(in srgb, var(--v3-cream) 85%, transparent)]">
               Free value report. No follow-up unless you ask. Built against your sub-neighborhood,
               floor plan range, view category, and HOA tier.{' '}
               {soldCount != null
@@ -1241,7 +1241,7 @@ export default async function TetherowLandingPage() {
             </ul>
           </div>
           <div>
-            <div className="mb-6 grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-[rgba(250,248,244,0.16)] sm:grid-cols-3">
+            <div className="mb-6 grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-[color-mix(in srgb, var(--v3-cream) 16%, transparent)] sm:grid-cols-3">
               <TrustStripItem value="#201206613" label="OR Principal Broker" />
               <TrustStripItem value={soldCountLabel} label="Tetherow homes sold, 12mo" />
               <TrustStripItem value={formatRatioPct(saleToList)} label="Avg sale-to-list price" />
@@ -1254,7 +1254,7 @@ export default async function TetherowLandingPage() {
       {/* METHODOLOGY */}
       <Section tight>
         <SectionHead eyebrow="Methodology" headline="Where every number on this page came from." />
-        <div className="rounded-2xl bg-[rgba(16,39,66,0.04)] p-9 text-[13px] leading-[1.75] text-[color:var(--rr-muted)]">
+        <div className="rounded-2xl bg-[color-mix(in srgb, var(--v3-navy) 4%, transparent)] p-9 text-[13px] leading-[1.75] text-[color:var(--rr-muted)]">
           <strong className="font-semibold text-[color:var(--rr-text)]">
             Every figure on this page traces to a verified row in our database or a public source URL.
           </strong>
@@ -1367,9 +1367,9 @@ function TetherowGlobalStyle() {
           --rr-navy: var(--v3-navy);
           --rr-cream: var(--v3-cream);
           --rr-text: var(--v3-navy);
-          --rr-muted: rgba(16, 39, 66, 0.62);
-          --rr-card-shadow: 0 1px 2px rgba(16, 39, 66, 0.04), 0 4px 12px rgba(16, 39, 66, 0.06);
-          --rr-card-shadow-hover: 0 1px 2px rgba(16, 39, 66, 0.06), 0 8px 24px rgba(16, 39, 66, 0.1);
+          --rr-muted: color-mix(in srgb, var(--v3-navy) 62%, transparent);
+          --rr-card-shadow: 0 1px 2px color-mix(in srgb, var(--v3-navy) 4%, transparent), 0 4px 12px color-mix(in srgb, var(--v3-navy) 6%, transparent);
+          --rr-card-shadow-hover: 0 1px 2px color-mix(in srgb, var(--v3-navy) 6%, transparent), 0 8px 24px color-mix(in srgb, var(--v3-navy) 10%, transparent);
           --rr-font-display: 'Playfair Display', Georgia, serif;
           --rr-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
         }
@@ -1388,7 +1388,7 @@ function HeroStat({ value, label, last }: { value: string; label: string; last?:
   return (
     <div
       className={
-        'border-r border-[rgba(250,248,244,0.12)] px-6 py-[22px] text-[color:var(--rr-cream)] last:border-r-0 ' +
+        'border-r border-[color-mix(in srgb, var(--v3-cream) 12%, transparent)] px-6 py-[22px] text-[color:var(--rr-cream)] last:border-r-0 ' +
         (last ? 'border-r-0' : '')
       }
     >
@@ -1429,7 +1429,7 @@ function Section({
     <section
       id={id}
       className={
-        'tetherow-section border-b border-[rgba(16,39,66,0.08)] ' +
+        'tetherow-section border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] ' +
         padding +
         ' ' +
         bg +
@@ -1458,7 +1458,7 @@ function SectionHead({
       <div
         className={
           'mb-3 text-[12px] font-bold uppercase tracking-[0.14em] ' +
-          (onDark ? 'text-[rgba(250,248,244,0.55)]' : 'text-[color:var(--rr-muted)]')
+          (onDark ? 'text-[color-mix(in srgb, var(--v3-cream) 55%, transparent)]' : 'text-[color:var(--rr-muted)]')
         }
       >
         {eyebrow}
@@ -1476,7 +1476,7 @@ function SectionHead({
         <p
           className={
             'max-w-[740px] text-[17px] leading-[1.55] ' +
-            (onDark ? 'text-[rgba(250,248,244,0.7)]' : 'text-[color:var(--rr-muted)]')
+            (onDark ? 'text-[color-mix(in srgb, var(--v3-cream) 70%, transparent)]' : 'text-[color:var(--rr-muted)]')
           }
         >
           {body}
@@ -1488,7 +1488,7 @@ function SectionHead({
 
 function KpiCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <Card className="rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white p-6 shadow-[var(--rr-card-shadow)] transition hover:-translate-y-0.5 hover:shadow-[var(--rr-card-shadow-hover)]">
+    <Card className="rounded-2xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white p-6 shadow-[var(--rr-card-shadow)] transition hover:-translate-y-0.5 hover:shadow-[var(--rr-card-shadow-hover)]">
       <div className="mb-2.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-[color:var(--rr-muted)]">
         {label}
       </div>
@@ -1524,8 +1524,8 @@ function FactRow({ term, value, sub }: { term: string; value: string; sub: strin
 
 function HoaMetaCard({ eyebrow, value, detail }: { eyebrow: string; value: string; detail: string }) {
   return (
-    <div className="rounded-xl border border-[rgba(250,248,244,0.12)] bg-[rgba(250,248,244,0.06)] p-5">
-      <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[rgba(250,248,244,0.55)]">
+    <div className="rounded-xl border border-[color-mix(in srgb, var(--v3-cream) 12%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 6%, transparent)] p-5">
+      <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[color-mix(in srgb, var(--v3-cream) 55%, transparent)]">
         {eyebrow}
       </div>
       <div
@@ -1534,7 +1534,7 @@ function HoaMetaCard({ eyebrow, value, detail }: { eyebrow: string; value: strin
       >
         {value}
       </div>
-      <div className="text-[13px] leading-[1.5] text-[rgba(250,248,244,0.7)]">{detail}</div>
+      <div className="text-[13px] leading-[1.5] text-[color-mix(in srgb, var(--v3-cream) 70%, transparent)]">{detail}</div>
     </div>
   )
 }
@@ -1557,9 +1557,9 @@ function ListingCard({
         : 'bg-[color:var(--rr-navy)]'
 
   return (
-    <Card className="flex flex-col overflow-hidden rounded-2xl border border-[rgba(16,39,66,0.08)] bg-white shadow-[var(--rr-card-shadow)] transition hover:-translate-y-0.5 hover:shadow-[var(--rr-card-shadow-hover)]">
+    <Card className="flex flex-col overflow-hidden rounded-2xl border border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-white shadow-[var(--rr-card-shadow)] transition hover:-translate-y-0.5 hover:shadow-[var(--rr-card-shadow-hover)]">
       <div
-        className="relative aspect-[4/3] bg-[rgba(16,39,66,0.08)] bg-cover bg-center"
+        className="relative aspect-[4/3] bg-[color-mix(in srgb, var(--v3-navy) 8%, transparent)] bg-cover bg-center"
         style={listing.photoUrl ? { backgroundImage: `url('${listing.photoUrl}')` } : undefined}
       >
         <span
@@ -1568,7 +1568,7 @@ function ListingCard({
           {listing.statusLabel}
         </span>
         {listing.cumulativeDaysOnMarket != null && (
-          <span className="absolute right-3 top-3 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[color:var(--rr-navy)] shadow-[0_2px_4px_rgba(16,39,66,0.15)]">
+          <span className="absolute right-3 top-3 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[color:var(--rr-navy)] shadow-[0_2px_4px_color-mix(in srgb, var(--v3-navy) 15%, transparent)]">
             {listing.cumulativeDaysOnMarket} days
           </span>
         )}
@@ -1607,14 +1607,14 @@ function ListingCard({
 
 function TrustStripItem({ value, label }: { value: string; label: string }) {
   return (
-    <div className="bg-[rgba(250,248,244,0.06)] px-5 py-4 text-center">
+    <div className="bg-[color-mix(in srgb, var(--v3-cream) 6%, transparent)] px-5 py-4 text-center">
       <div
         className="mb-1 font-display text-[22px] font-semibold leading-[1.1] text-[color:var(--rr-cream)]"
         style={{ fontFamily: 'var(--rr-font-display)' }}
       >
         {value}
       </div>
-      <div className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[rgba(250,248,244,0.7)]">
+      <div className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[color-mix(in srgb, var(--v3-cream) 70%, transparent)]">
         {label}
       </div>
     </div>
@@ -1635,7 +1635,7 @@ function CompareRow({
   isLast?: boolean
 }) {
   return (
-    <tr className={isLast ? '' : 'border-b border-[rgba(16,39,66,0.08)]'}>
+    <tr className={isLast ? '' : 'border-b border-[color-mix(in srgb, var(--v3-navy) 8%, transparent)]'}>
       <td className="px-5 py-4 text-[14px] font-semibold text-[color:var(--rr-navy)]">{label}</td>
       {rows.map((r) => (
         <td
@@ -1658,7 +1658,7 @@ function MethodologyLink({ href, children }: { href: string; children: React.Rea
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="text-[color:var(--rr-navy)] underline decoration-[rgba(16,39,66,0.12)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
+      className="text-[color:var(--rr-navy)] underline decoration-[color-mix(in srgb, var(--v3-navy) 12%, transparent)] underline-offset-2 hover:decoration-[color:var(--rr-navy)]"
     >
       {children}
     </a>

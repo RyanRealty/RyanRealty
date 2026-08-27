@@ -81,7 +81,7 @@ const KB_LABEL_STYLE: CSSProperties = {
   fontWeight: 600,
   letterSpacing: '0.14em',
   textTransform: 'uppercase',
-  color: 'rgba(16,39,66,0.72)',
+  color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
   fontFamily: 'var(--font-sans, sans-serif)',
 }
 

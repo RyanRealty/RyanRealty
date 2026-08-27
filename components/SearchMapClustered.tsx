@@ -169,7 +169,7 @@ function buildPricePillElement(
     'transition:transform 120ms ease,box-shadow 120ms ease',
     'transform-origin:50% 100%',
     hover || active ? 'transform:scale(1.18)' : 'transform:scale(1)',
-    'filter:drop-shadow(0 2px 6px rgba(16,39,66,0.32))',
+    'filter:drop-shadow(0 2px 6px color-mix(in srgb, var(--v3-navy) 32%, transparent))',
   ].join(';')
   el.setAttribute('data-price-pill', '1')
 
@@ -186,11 +186,11 @@ function buildPricePillElement(
     'white-space:nowrap',
     'letter-spacing:-0.02em',
     'font-variant-numeric:tabular-nums',
-    `border:1.5px solid ${active ? MAP_NAVY : 'rgba(250,248,244,0.92)'}`,
+    `border:1.5px solid ${active ? MAP_NAVY : 'color-mix(in srgb, var(--v3-cream) 92%, transparent)'}`,
     active
-      ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 4px 12px rgba(16,39,66,0.28)`
-      : 'box-shadow:0 2px 8px rgba(16,39,66,0.28)',
-    saved && !active ? `box-shadow:0 0 0 2px #dc2626,0 2px 8px rgba(16,39,66,0.28)` : '',
+      ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 4px 12px color-mix(in srgb, var(--v3-navy) 28%, transparent)`
+      : 'box-shadow:0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)',
+    saved && !active ? `box-shadow:0 0 0 2px #dc2626,0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)` : '',
     'line-height:1.25',
   ].join(';')
   pill.textContent = label + (saved ? ' ♥' : '')
@@ -237,7 +237,7 @@ function buildClusterElement(count: number): HTMLDivElement {
     `font-weight:700`,
     `font-variant-numeric:tabular-nums`,
     `cursor:pointer`,
-    `box-shadow:0 2px 8px rgba(16,39,66,0.4)`,
+    `box-shadow:0 2px 8px color-mix(in srgb, var(--v3-navy) 40%, transparent)`,
     `transition:transform 120ms ease`,
   ].join(';')
   el.textContent = String(count)
@@ -261,7 +261,7 @@ function buildPhotoStampElement(
     'cursor:pointer',
     'transform-origin:50% 100%',
     active ? 'transform:scale(1.12)' : 'transform:scale(1)',
-    'filter:drop-shadow(0 3px 10px rgba(16,39,66,0.35))',
+    'filter:drop-shadow(0 3px 10px color-mix(in srgb, var(--v3-navy) 35%, transparent))',
     'transition:transform 120ms ease',
   ].join(';')
 
@@ -1025,7 +1025,7 @@ export default function SearchMapClustered({
         minHeight: 360,
         borderRadius: '12px',
         overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(16,39,66,0.14), 0 1px 4px rgba(16,39,66,0.10)',
+        boxShadow: '0 4px 20px color-mix(in srgb, var(--v3-navy) 14%, transparent), 0 1px 4px color-mix(in srgb, var(--v3-navy) 10%, transparent)',
       }}
     >
       {/* Map container — we own map creation via the imperative useEffect above.

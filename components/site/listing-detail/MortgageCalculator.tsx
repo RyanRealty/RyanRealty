@@ -176,7 +176,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
           <KpiRow label="Homeowners insurance" value={<Price value={Math.round(result.insuranceMonthly)} exact />} />
           <div
             style={{
-              borderTop: '1px solid rgba(250,248,244,0.28)',
+              borderTop: '1px solid color-mix(in srgb, var(--v3-cream) 28%, transparent)',
               marginTop: 6,
               paddingTop: 12,
               display: 'flex',
@@ -190,7 +190,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
                 fontWeight: 700,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                color: 'rgba(250,248,244,0.7)',
+                color: 'color-mix(in srgb, var(--v3-cream) 70%, transparent)',
               }}
             >
               Total monthly (PITI)
@@ -211,7 +211,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
           <p
             style={{
               fontSize: '0.68rem',
-              color: 'rgba(250,248,244,0.5)',
+              color: 'color-mix(in srgb, var(--v3-cream) 50%, transparent)',
               letterSpacing: '0.02em',
               lineHeight: 1.5,
               marginTop: 4,
@@ -250,7 +250,7 @@ function KbField({ label, id, children }: { label: string; id: string; children:
           fontWeight: 600,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: 'rgba(16,39,66,0.72)',
+          color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
           fontFamily: 'var(--font-sans, sans-serif)',
         }}
       >
@@ -267,7 +267,7 @@ function KpiRow({ label, value }: { label: string; value: React.ReactNode }) {
       <span
         style={{
           fontSize: '0.78rem',
-          color: 'rgba(250,248,244,0.62)',
+          color: 'color-mix(in srgb, var(--v3-cream) 62%, transparent)',
           letterSpacing: '0.04em',
         }}
       >

@@ -38,11 +38,24 @@
    (`.v3.v3--ledger, .v3--ledger .v3`, specificity 0,2,0) still outranks :root
    (0,1,0), so the register switch is unchanged.
 
+   THE BLOCK IS ON :root ALONE, NOT `:root, .v3` (corrected 2026-08-27). With
+   `.v3` in the selector, every page root RE-DECLARED the base palette, so a
+   template applied at the document root was shadowed by the nearest `.v3`
+   ancestor and nothing below it moved. That is exactly what was happening to the
+   market charts. `.v3` is a descendant of `:root`, so it inherits these with no
+   need to redeclare them, and the Ledger re-declaration further down
+   (`.v3.v3--ledger, .v3--ledger .v3`) still overrides what it needs to.
+
    This is what makes a style change instantaneous and site-wide: ONE file,
-   118 pages. */
-:root,
-.v3 {
-  /* -- Brand color. The only two-color palette; white is a legibility layer. -- */
+   118 pages, and a template set at the root reaches all of them. */
+:root {
+  /* -- Brand color. The only two-color palette; white is a legibility layer.
+     EVERY SHADE BELOW IS DERIVED (Matt 2026-08-27). The alpha ramp used to be
+     twelve literal rgba() values, so changing --v3-navy moved the solid navy and
+     left the whole ramp behind: the market charts kept drawing
+     rgba(16,39,66,.7) after a template swap, because --v3-navy-70 was a literal,
+     not a derivative. Every shade is now color-mix() off the two base colors, so
+     ONE change moves the whole system -- charts, scrims, hairlines and all. -- */
   --v3-navy: #102742;
   --v3-cream: #faf8f4;
   --v3-white: #ffffff;
@@ -50,14 +63,14 @@
   /* Muted stops. PUBLIC_UI.md section 4 computed these: navy-70 on cream is
      8.2:1 (AAA) and cream-60 on navy is 5.99:1 (AA, body >= 16px only).
      navy-50 and cream-40 failed AA and are deliberately absent. */
-  --v3-navy-70: rgba(16, 39, 66, 0.7);
-  --v3-cream-60: rgba(250, 248, 244, 0.6);
+  --v3-navy-70: color-mix(in srgb, var(--v3-navy) 70%, transparent);
+  --v3-cream-60: color-mix(in srgb, var(--v3-cream) 60%, transparent);
 
   /* Structural navy: hairlines, washes, pressed states. Replaces the retired
      --rr-sand and --rr-navy-deep tokens with alpha on the one navy. */
-  --v3-edge: rgba(16, 39, 66, 0.12);
-  --v3-wash: rgba(16, 39, 66, 0.06);
-  --v3-pressed: rgba(16, 39, 66, 0.85);
+  --v3-edge: color-mix(in srgb, var(--v3-navy) 12%, transparent);
+  --v3-wash: color-mix(in srgb, var(--v3-navy) 6%, transparent);
+  --v3-pressed: color-mix(in srgb, var(--v3-navy) 85%, transparent);
   --v3-ground: #eee9e0;
 
   /* THE LOOK: rule weight IS the hierarchy (Broadside). A structural RULE is
@@ -66,7 +79,7 @@
        hairline  1px navy-08  rows and in-section separators
        section   2px navy     a section opening on content above it
        mast      4px navy     the site header's bottom rule, nothing else */
-  --v3-hairline: rgba(16, 39, 66, 0.08);
+  --v3-hairline: color-mix(in srgb, var(--v3-navy) 8%, transparent);
   /* The three rule WIDTHS are their own tokens (2026-08-27). The shorthands
      below compose them. A consumer that can only set a border-width -- kb.css's
      `--edge`, which is always paired with full-strength navy or cream -- reads
@@ -87,10 +100,10 @@
 
   /* Media legibility. Navy scrim under type on photo or video, never a
      decorative gradient. */
-  --v3-scrim-strong: rgba(16, 39, 66, 0.78);
-  --v3-scrim-mid: rgba(16, 39, 66, 0.42);
-  --v3-scrim-soft: rgba(16, 39, 66, 0.16);
-  --v3-media-shadow: 0 2px 24px rgba(16, 39, 66, 0.55);
+  --v3-scrim-strong: color-mix(in srgb, var(--v3-navy) 78%, transparent);
+  --v3-scrim-mid: color-mix(in srgb, var(--v3-navy) 42%, transparent);
+  --v3-scrim-soft: color-mix(in srgb, var(--v3-navy) 16%, transparent);
+  --v3-media-shadow: 0 2px 24px color-mix(in srgb, var(--v3-navy) 55%, transparent);
 
   /* Focus. Warm stone, never navy on navy (WCAG 2.2 section 2.4.11). */
   --v3-focus: #b9ab97;
@@ -378,14 +391,14 @@
   --v3-section-pad: 1.625rem;
 
   /* Rules: 3px navy sections and mast; hairlines drop to 6% alpha. */
-  --v3-hairline: rgba(16, 39, 66, 0.06);
+  --v3-hairline: color-mix(in srgb, var(--v3-navy) 6%, transparent);
   --v3-rule-weight-section: 3px;
   --v3-rule-weight-mast: 3px;
   --v3-rule-section: var(--v3-rule-weight-section) solid var(--v3-navy);
   --v3-rule-mast: var(--v3-rule-weight-mast) solid var(--v3-navy);
 
   /* Sunken panels: 3% navy wash inside a 12% edge. Still no shadow. */
-  --v3-panel-bg: rgba(16, 39, 66, 0.03);
+  --v3-panel-bg: color-mix(in srgb, var(--v3-navy) 3%, transparent);
   --v3-panel-border: 1px solid var(--v3-edge);
 
   /* Dense rows; photography runs small — the data is the spectacle. */

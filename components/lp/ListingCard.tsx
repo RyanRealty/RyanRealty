@@ -92,12 +92,12 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
     <article
       style={{
         background: 'var(--card)',
-        border: '1px solid rgba(16,39,66,0.08)',
+        border: '1px solid color-mix(in srgb, var(--v3-navy) 8%, transparent)',
         borderRadius: 16,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 1px 2px rgba(16,39,66,0.04), 0 6px 18px rgba(16,39,66,0.06)',
+        boxShadow: '0 1px 2px color-mix(in srgb, var(--v3-navy) 4%, transparent), 0 6px 18px color-mix(in srgb, var(--v3-navy) 6%, transparent)',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         fontFamily: 'Geist, system-ui, sans-serif',
         color: 'var(--primary)',
@@ -112,7 +112,7 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
           aspectRatio: '4 / 3',
           background: listing.photoUrl
             ? `var(--primary) url('${listing.photoUrl}') center/cover no-repeat`
-            : 'rgba(16,39,66,0.08)',
+            : 'color-mix(in srgb, var(--v3-navy) 8%, transparent)',
           textDecoration: 'none',
         }}
         aria-label={`View ${listing.address}`}
@@ -147,7 +147,7 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
               borderRadius: 999,
               fontSize: 11,
               fontWeight: 600,
-              boxShadow: '0 2px 4px rgba(16,39,66,0.12)',
+              boxShadow: '0 2px 4px color-mix(in srgb, var(--v3-navy) 12%, transparent)',
               fontVariantNumeric: 'tabular-nums',
             }}
           >
@@ -195,7 +195,7 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
           <div
             style={{
               fontSize: 13,
-              color: 'rgba(16,39,66,0.62)',
+              color: 'color-mix(in srgb, var(--v3-navy) 62%, transparent)',
               fontVariantNumeric: 'tabular-nums',
               display: 'flex',
               flexWrap: 'wrap',
@@ -211,7 +211,7 @@ export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {
           </div>
         ) : (
           listing.subdivision && (
-            <div style={{ fontSize: 13, color: 'rgba(16,39,66,0.62)' }}>
+            <div style={{ fontSize: 13, color: 'color-mix(in srgb, var(--v3-navy) 62%, transparent)' }}>
               {listing.subdivision}
             </div>
           )

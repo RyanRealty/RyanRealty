@@ -21,13 +21,13 @@
   letter-spacing: var(--v3-track-label, 0.12em);
   text-transform: uppercase;
   line-height: var(--v3-leading-control, 1.2);
-  color: var(--v3-ink-muted, rgba(16, 39, 66, 0.7));
+  color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
 }
 
 /* Sunken in-flow panel: 3% navy wash inside a 12% edge. Still no shadow. */
 .srch-panel {
-  background: var(--v3-panel-bg, rgba(16, 39, 66, 0.03));
-  border: var(--v3-panel-border, 1px solid rgba(16, 39, 66, 0.12));
+  background: var(--v3-panel-bg, color-mix(in srgb, var(--v3-navy) 3%, transparent));
+  border: var(--v3-panel-border, 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent));
   border-radius: 0;
   box-shadow: none;
 }
@@ -37,8 +37,8 @@
    an elevation shadow. */
 .srch-pop {
   background: var(--v3-surface-raised, rgba(255, 255, 255, 1));
-  border: 1px solid var(--v3-edge, rgba(16, 39, 66, 0.12));
-  border-top: 2px solid var(--v3-navy, rgba(16, 39, 66, 1));
+  border: 1px solid var(--v3-edge, color-mix(in srgb, var(--v3-navy) 12%, transparent));
+  border-top: 2px solid var(--v3-navy, color-mix(in srgb, var(--v3-navy) 100%, transparent));
   border-radius: 0;
   box-shadow: none;
 }

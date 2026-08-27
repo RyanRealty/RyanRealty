@@ -127,6 +127,15 @@ function cssFiles(dir, out = []) {
 
 const stripCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '')
 const BRAND_HEX = /#(?:102742|faf8f4)\b/i
+/**
+ * The SAME two colors written as rgba(). This form is why the market charts did
+ * not follow a style template on 2026-08-27: --v3-navy-70 was the literal
+ * rgba(16,39,66,.7) rather than a shade derived from --v3-navy, so swapping the
+ * base color moved the solid navy and left the entire alpha ramp behind. Every
+ * shade is now color-mix() off the base, and this pattern stops the literal
+ * coming back one component at a time.
+ */
+const BRAND_RGBA = /rgba?\(\s*(?:16\s*,\s*39\s*,\s*66|250\s*,\s*248\s*,\s*244)\s*[,)]/
 const ELEVATION = /box-shadow\s*:\s*(?!none)(?![^;]*inset)[^;]*\b\d+px\s+\d+px/i
 
 for (const rel of [...cssFiles('components'), ...cssFiles('app')]) {
@@ -134,10 +143,11 @@ for (const rel of [...cssFiles('components'), ...cssFiles('app')]) {
   if (CSS_EXCLUDED.some((d) => rel.startsWith(d))) continue
   const css = stripCss(readFileSync(join(ROOT, rel), 'utf8'))
 
-  if (BRAND_HEX.test(css)) {
+  if (BRAND_HEX.test(css) || BRAND_RGBA.test(css)) {
     failures.push(
-      `${rel}: declares a brand color as a raw hex. The look comes from ${TOKEN_FILE}; ` +
-      `use var(--v3-navy) / var(--v3-cream) so a template swap reaches this file too.`
+      `${rel}: declares a brand color as a raw value. The look comes from ${TOKEN_FILE}; ` +
+      `use var(--v3-navy) / var(--v3-cream), or color-mix() off them for a shade, ` +
+      `so a template swap reaches this file too.`
     )
   }
   const elev = css.match(ELEVATION)
@@ -209,7 +219,7 @@ const hexOffenders = new Map()
 
 for (const rel of [...tsxFiles('app'), ...tsxFiles('components')].filter(inScope)) {
   for (const { text, line } of literals(rel)) {
-    if (!BRAND_HEX.test(text)) continue
+    if (!BRAND_HEX.test(text) && !BRAND_RGBA.test(text)) continue
     if (!hexOffenders.has(rel)) hexOffenders.set(rel, [])
     hexOffenders.get(rel).push(line)
   }
@@ -217,7 +227,7 @@ for (const rel of [...tsxFiles('app'), ...tsxFiles('components')].filter(inScope
 
 for (const [rel, lines] of hexOffenders) {
   failures.push(
-    `${rel}: ${lines.length} brand hex literal(s) (first at line ${lines[0]}). A value ` +
+    `${rel}: ${lines.length} raw brand color literal(s) (first at line ${lines[0]}). A value ` +
     `typed into a component does not move when the style template changes, which is ` +
     `exactly the inconsistency this gate exists to end. Use the token.`
   )

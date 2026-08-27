@@ -135,7 +135,7 @@ export function PublishedCmaSection({ cma, extraHighlights, className }: Props) 
                   style={{
                     flex: '1 1 240px',
                     minWidth: 220,
-                    border: '1px solid rgba(16,39,66,0.08)',
+                    border: '1px solid color-mix(in srgb, var(--v3-navy) 8%, transparent)',
                     borderRadius: 14,
                     padding: '14px 16px',
                   }}
@@ -178,7 +178,7 @@ export function PublishedCmaSection({ cma, extraHighlights, className }: Props) 
 
         <div
           style={{
-            borderTop: '1px solid rgba(16,39,66,0.08)',
+            borderTop: '1px solid color-mix(in srgb, var(--v3-navy) 8%, transparent)',
             paddingTop: 16,
             display: 'flex',
             flexDirection: 'column',

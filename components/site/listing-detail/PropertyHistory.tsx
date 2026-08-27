@@ -136,7 +136,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                 justifyContent: 'space-between',
                 gap: 16,
                 padding: '14px 0',
-                borderTop: i === 0 ? 'none' : '1px solid rgba(16,39,66,0.12)',
+                borderTop: i === 0 ? 'none' : '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
               }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -155,7 +155,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                   className="mono-num"
                   style={{
                     fontSize: '0.72rem',
-                    color: 'rgba(16,39,66,0.72)',
+                    color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
@@ -167,7 +167,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                       marginTop: 4,
                       fontSize: '0.82rem',
                       lineHeight: 1.5,
-                      color: 'rgba(16,39,66,0.65)',
+                      color: 'color-mix(in srgb, var(--v3-navy) 65%, transparent)',
                       maxWidth: '60ch',
                     }}
                   >
@@ -191,7 +191,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                   </div>
                 ) : null}
                 {dropLabel ? (
-                  <div style={{ fontSize: '0.72rem', color: 'rgba(16,39,66,0.72)', fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)', fontVariantNumeric: 'tabular-nums' }}>
                     {dropLabel}
                   </div>
                 ) : null}

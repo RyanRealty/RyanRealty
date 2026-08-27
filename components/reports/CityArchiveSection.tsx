@@ -89,7 +89,7 @@ export function CityArchiveSection({ archive }: { archive: CityArchive }) {
                   </span>
                 )
                 return (
-                  <tr key={y.year} style={{ borderBottom: '1px solid rgba(16,39,66,0.08)' }}>
+                  <tr key={y.year} style={{ borderBottom: '1px solid color-mix(in srgb, var(--v3-navy) 8%, transparent)' }}>
                     <td style={{ padding: cellPad, fontVariantNumeric: 'tabular-nums' }}>
                       {y.year}
                       {partial}

@@ -94,9 +94,9 @@ function ShowingCard({
   return (
     <div
       id="showing-card"
-      className="flex flex-col rounded-2xl border border-[rgba(250,248,244,0.3)] bg-[rgba(250,248,244,0.1)] p-7"
+      className="flex flex-col rounded-2xl border border-[color-mix(in srgb, var(--v3-cream) 30%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] p-7"
     >
-      <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[rgba(250,248,244,0.7)]">
+      <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[color-mix(in srgb, var(--v3-cream) 70%, transparent)]">
         Highest intent
       </div>
       <h3
@@ -105,7 +105,7 @@ function ShowingCard({
       >
         Schedule a showing
       </h3>
-      <p className="mb-5 flex-1 text-[14px] leading-[1.55] text-[rgba(250,248,244,0.82)]">
+      <p className="mb-5 flex-1 text-[14px] leading-[1.55] text-[color-mix(in srgb, var(--v3-cream) 82%, transparent)]">
         Pick a home from the active inventory above. We&apos;ll confirm a tour window inside the
         next 48 hours. Members-only homes are accessible via our broker relationships at Tetherow.
       </p>
@@ -125,7 +125,7 @@ function ShowingCard({
             value={property}
             onChange={(e) => setProperty(e.target.value)}
             required
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[rgba(250,248,244,0.6)] focus:bg-[rgba(250,248,244,0.15)] focus:outline-none"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus:outline-none"
           >
             <option value="" disabled className="bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)]">
               Which home?
@@ -153,7 +153,7 @@ function ShowingCard({
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.5)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 50%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
           />
           <Input
             type="email"
@@ -162,7 +162,7 @@ function ShowingCard({
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.5)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 50%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
           />
           <Input
             type="tel"
@@ -171,7 +171,7 @@ function ShowingCard({
             required
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.5)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 50%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
           />
           <Button
             type="submit"
@@ -222,8 +222,8 @@ function AlertsCard() {
   }
 
   return (
-    <div className="flex flex-col rounded-2xl border border-[rgba(250,248,244,0.16)] bg-[rgba(250,248,244,0.06)] p-7">
-      <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[rgba(250,248,244,0.7)]">
+    <div className="flex flex-col rounded-2xl border border-[color-mix(in srgb, var(--v3-cream) 16%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 6%, transparent)] p-7">
+      <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[color-mix(in srgb, var(--v3-cream) 70%, transparent)]">
         Set + forget
       </div>
       <h3
@@ -232,7 +232,7 @@ function AlertsCard() {
       >
         Custom Tetherow alerts
       </h3>
-      <p className="mb-5 flex-1 text-[14px] leading-[1.55] text-[rgba(250,248,244,0.82)]">
+      <p className="mb-5 flex-1 text-[14px] leading-[1.55] text-[color-mix(in srgb, var(--v3-cream) 82%, transparent)]">
         Tell us what you want. We&apos;ll email when new Tetherow homes match your criteria. No
         drip sequence, no spam, just the homes.
       </p>
@@ -249,7 +249,7 @@ function AlertsCard() {
               required
               value={priceMin}
               onChange={(e) => setPriceMin(e.target.value)}
-              className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[rgba(250,248,244,0.6)] focus:bg-[rgba(250,248,244,0.15)] focus:outline-none"
+              className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus:outline-none"
             >
               <option value="" disabled className="bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)]">
                 Min price
@@ -264,7 +264,7 @@ function AlertsCard() {
               required
               value={priceMax}
               onChange={(e) => setPriceMax(e.target.value)}
-              className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[rgba(250,248,244,0.6)] focus:bg-[rgba(250,248,244,0.15)] focus:outline-none"
+              className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus:outline-none"
             >
               <option value="" disabled className="bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)]">
                 Max price
@@ -281,7 +281,7 @@ function AlertsCard() {
             required
             value={bedsMin}
             onChange={(e) => setBedsMin(e.target.value)}
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[rgba(250,248,244,0.6)] focus:bg-[rgba(250,248,244,0.15)] focus:outline-none"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus:outline-none"
           >
             <option value="" disabled className="bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)]">
               Minimum bedrooms
@@ -295,7 +295,7 @@ function AlertsCard() {
           <select
             value={sub}
             onChange={(e) => setSub(e.target.value)}
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[rgba(250,248,244,0.6)] focus:bg-[rgba(250,248,244,0.15)] focus:outline-none"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] focus:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus:outline-none"
           >
             <option value="any" className="bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)]">
               Any Tetherow sub-neighborhood
@@ -313,7 +313,7 @@ function AlertsCard() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.5)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 50%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
           />
           <Input
             type="text"
@@ -322,7 +322,7 @@ function AlertsCard() {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.5)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 50%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
           />
           <Button
             type="submit"
@@ -331,7 +331,7 @@ function AlertsCard() {
           >
             {submitting ? 'Sending...' : 'Send me matches'}
           </Button>
-          <div className="mt-1 text-[11px] leading-[1.4] text-[rgba(250,248,244,0.5)]">
+          <div className="mt-1 text-[11px] leading-[1.4] text-[color-mix(in srgb, var(--v3-cream) 50%, transparent)]">
             One daily digest if a match shows up. Unsubscribe one click.
           </div>
         </form>
@@ -367,8 +367,8 @@ function GuideCard() {
   }
 
   return (
-    <div className="flex flex-col rounded-2xl border border-[rgba(250,248,244,0.16)] bg-[rgba(250,248,244,0.06)] p-7">
-      <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[rgba(250,248,244,0.7)]">
+    <div className="flex flex-col rounded-2xl border border-[color-mix(in srgb, var(--v3-cream) 16%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 6%, transparent)] p-7">
+      <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[color-mix(in srgb, var(--v3-cream) 70%, transparent)]">
         Soft start
       </div>
       <h3
@@ -377,7 +377,7 @@ function GuideCard() {
       >
         The Tetherow buyer&apos;s guide
       </h3>
-      <p className="mb-5 flex-1 text-[14px] leading-[1.55] text-[rgba(250,248,244,0.82)]">
+      <p className="mb-5 flex-1 text-[14px] leading-[1.55] text-[color-mix(in srgb, var(--v3-cream) 82%, transparent)]">
         Request the in-depth Tetherow buyer&apos;s guide: HOA tiers, club membership, what each
         sub-neighborhood actually feels like, the builder roster, and how the resort handed
         Tetherow homes 27 closings in the last year. Delivered in your inbox.
@@ -397,7 +397,7 @@ function GuideCard() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.5)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 50%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
           />
           <Input
             type="text"
@@ -405,7 +405,7 @@ function GuideCard() {
             autoComplete="given-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded-[9px] border border-[rgba(250,248,244,0.25)] bg-[rgba(250,248,244,0.1)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[rgba(250,248,244,0.5)] focus-visible:border-[rgba(250,248,244,0.6)] focus-visible:bg-[rgba(250,248,244,0.15)] focus-visible:ring-0"
+            className="rounded-[9px] border border-[color-mix(in srgb, var(--v3-cream) 25%, transparent)] bg-[color-mix(in srgb, var(--v3-cream) 10%, transparent)] px-4 py-[13px] text-[14px] text-[color:var(--rr-cream)] placeholder:text-[color-mix(in srgb, var(--v3-cream) 50%, transparent)] focus-visible:border-[color-mix(in srgb, var(--v3-cream) 60%, transparent)] focus-visible:bg-[color-mix(in srgb, var(--v3-cream) 15%, transparent)] focus-visible:ring-0"
           />
           <Button
             type="submit"
@@ -414,7 +414,7 @@ function GuideCard() {
           >
             {submitting ? 'Sending...' : 'Send the guide'}
           </Button>
-          <div className="mt-1 text-[11px] leading-[1.4] text-[rgba(250,248,244,0.5)]">
+          <div className="mt-1 text-[11px] leading-[1.4] text-[color-mix(in srgb, var(--v3-cream) 50%, transparent)]">
             One email. No phone follow-up unless you reply.
           </div>
         </form>

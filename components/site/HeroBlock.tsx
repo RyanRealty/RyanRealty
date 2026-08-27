@@ -107,7 +107,12 @@ export function HeroBlock({
     router.push(searchAction(q))
   }
 
-  const overlayBg = `linear-gradient(to top, rgba(16,39,66,${overlayBottomOpacity}) 0%, rgba(16,39,66,${Math.max(overlayBottomOpacity * 0.5, 0.2)}) 45%, rgba(16,39,66,0.05) 100%)`
+  // The scrim is a computed alpha, so it derives from the base token rather than
+  // naming the navy: a style template that changes --v3-navy changes this
+  // gradient too. color-mix takes a percentage, hence the *100.
+  const navyAt = (a: number) =>
+    `color-mix(in srgb, var(--v3-navy) ${Math.round(a * 100)}%, transparent)`
+  const overlayBg = `linear-gradient(to top, ${navyAt(overlayBottomOpacity)} 0%, ${navyAt(Math.max(overlayBottomOpacity * 0.5, 0.2))} 45%, ${navyAt(0.05)} 100%)`
 
   return (
     <section

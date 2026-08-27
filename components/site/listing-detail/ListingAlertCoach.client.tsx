@@ -128,7 +128,7 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
           background: 'var(--cream)',
           color: 'var(--navy)',
           padding: '10px 12px',
-          boxShadow: '0 -6px 20px rgba(16,39,66,0.12)',
+          boxShadow: '0 -6px 20px color-mix(in srgb, var(--v3-navy) 12%, transparent)',
         }}
       >
         <p className="min-w-0 flex-1 text-sm leading-snug">
@@ -140,7 +140,7 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
           >
             get alerts for homes like this
           </a>
-          <span style={{ color: 'rgba(16,39,66,0.72)' }}>. Free, no account required.</span>
+          <span style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>. Free, no account required.</span>
         </p>
         <button
           type="button"
@@ -154,7 +154,7 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
             fontWeight: 700,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            color: 'rgba(16,39,66,0.72)',
+            color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',

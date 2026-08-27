@@ -209,7 +209,7 @@ export default function LeadLandingPage({ config }: Props) {
         .v3.lead-landing .lp-hero{position:relative;min-height:62vh;display:flex;align-items:flex-end;background:var(--v3-navy);overflow:hidden;}
         .v3.lead-landing .lp-hero-media{position:absolute;inset:0;}
         .v3.lead-landing .lp-hero-img{object-fit:cover;object-position:center;}
-        .v3.lead-landing .lp-hero-scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(16,39,66,.92) 0%,rgba(16,39,66,.62) 46%,rgba(16,39,66,.34) 100%);}
+        .v3.lead-landing .lp-hero-scrim{position:absolute;inset:0;background:linear-gradient(to top,color-mix(in srgb, var(--v3-navy) 92%, transparent) 0%,color-mix(in srgb, var(--v3-navy) 62%, transparent) 46%,color-mix(in srgb, var(--v3-navy) 34%, transparent) 100%);}
         .v3.lead-landing .lp-hero-inner{position:relative;z-index:2;padding:120px 18px 48px;color:var(--v3-cream);}
         .v3.lead-landing .lp-hero .hero-tag{color:var(--v3-ink-on-navy-muted);}
         .v3.lead-landing .lp-hero .hero-h{font-size:clamp(2.3rem,6vw,5rem);line-height:.98;max-width:18ch;color:var(--v3-cream);}

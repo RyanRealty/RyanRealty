@@ -21,11 +21,11 @@
   /* Cream alpha stops for the navy market surface (.mkt). Same values kb.css
      declared on .kb-root; the market section's ink contract is unchanged.
      cream-40 is a divider value, never a text color (AA note in kb.css). */
-  --cream-70: rgba(250, 248, 244, 0.7);
-  --cream-40: rgba(250, 248, 244, 0.4);
-  --cream-muted: rgba(250, 248, 244, 0.6);
-  --cream-12: rgba(250, 248, 244, 0.12);
-  --cream-05: rgba(250, 248, 244, 0.05);
+  --cream-70: color-mix(in srgb, var(--v3-cream) 70%, transparent);
+  --cream-40: color-mix(in srgb, var(--v3-cream) 40%, transparent);
+  --cream-muted: color-mix(in srgb, var(--v3-cream) 60%, transparent);
+  --cream-12: color-mix(in srgb, var(--v3-cream) 12%, transparent);
+  --cream-05: color-mix(in srgb, var(--v3-cream) 5%, transparent);
   --edge: 3px;
   /* kb.css set 1.4 on .kb-root; the body components were authored against it.
      The .v3 base sets its own leading, so restate the one this stack expects. */
@@ -399,7 +399,7 @@
   overflow: hidden;
 }
 .listing-detail .mkt .sec-head {
-  border-color: rgba(250, 248, 244, 0.28);
+  border-color: color-mix(in srgb, var(--v3-cream) 28%, transparent);
 }
 .listing-detail .mkt .wrap {
   position: relative;
@@ -407,13 +407,13 @@
 }
 /* Shared cream label ink on the navy surface... */
 .listing-detail .mkt .mono-lab {
-  color: rgba(250, 248, 244, 0.62);
+  color: color-mix(in srgb, var(--v3-cream) 62%, transparent);
 }
 /* ...re-inked navy on the cream pricing ledger (HouseMeReport), where the
    cream ink was invisible and every row label disappeared (375px QA
    2026-08-26). Same label, navy. */
 .listing-detail .houseme-rows .mono-lab {
-  color: rgba(16, 39, 66, 0.62);
+  color: color-mix(in srgb, var(--v3-navy) 62%, transparent);
 }
 /* flex-wrap, not a fixed-column grid: only tiles with live values render, and
    a grid reserves a ghost cell for every unfilled track. */
@@ -421,7 +421,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1px;
-  border: 1px solid rgba(250, 248, 244, 0.22);
+  border: 1px solid color-mix(in srgb, var(--v3-cream) 22%, transparent);
   margin: 30px 0 26px;
 }
 .listing-detail .mkt-kpi {
@@ -465,7 +465,7 @@
   max-width: 60ch;
 }
 .listing-detail .mkt-panel {
-  border: 1px solid rgba(250, 248, 244, 0.22);
+  border: 1px solid color-mix(in srgb, var(--v3-cream) 22%, transparent);
   padding: 22px 22px 18px;
   margin-bottom: 16px;
   position: relative;
@@ -506,7 +506,7 @@
 }
 .listing-detail .mkt-bar .btrack {
   height: 9px;
-  background: rgba(250, 248, 244, 0.16);
+  background: color-mix(in srgb, var(--v3-cream) 16%, transparent);
   position: relative;
   overflow: hidden;
 }
@@ -528,7 +528,7 @@
   height: 7px;
   border-radius: 50%;
   background: var(--cream);
-  box-shadow: 0 0 9px rgba(250, 248, 244, 0.9);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--v3-cream) 90%, transparent);
   animation: ldMktBlink 1.4s ease-in-out infinite;
 }
 .listing-detail .mkt-live .txt {

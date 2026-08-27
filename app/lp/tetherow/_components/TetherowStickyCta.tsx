@@ -35,7 +35,7 @@ export function TetherowStickyCta() {
   return (
     <div
       className={cn(
-        'fixed inset-x-0 bottom-0 z-[100] border-t border-[rgba(250,248,244,0.18)] bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)] shadow-[0_-4px_20px_rgba(16,39,66,0.18)] transition-transform duration-[350ms] ease-out',
+        'fixed inset-x-0 bottom-0 z-[100] border-t border-[color-mix(in srgb, var(--v3-cream) 18%, transparent)] bg-[color:var(--rr-navy)] text-[color:var(--rr-cream)] shadow-[0_-4px_20px_color-mix(in srgb, var(--v3-navy) 18%, transparent)] transition-transform duration-[350ms] ease-out',
         visible ? 'translate-y-0' : 'translate-y-full'
       )}
     >

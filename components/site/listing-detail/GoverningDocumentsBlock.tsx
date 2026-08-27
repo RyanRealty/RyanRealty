@@ -71,7 +71,7 @@ export function GoverningDocumentsBlock({ platName, platHref, documents, classNa
                   alignItems: 'baseline',
                   gap: '.5rem 1rem',
                   padding: '.85rem 1rem',
-                  border: '1px solid rgba(16,39,66,0.12)',
+                  border: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
                   borderRadius: '10px',
                   color: 'var(--navy)',
                   textDecoration: 'none',

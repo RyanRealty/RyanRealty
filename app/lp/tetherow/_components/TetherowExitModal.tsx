@@ -83,7 +83,7 @@ export function TetherowExitModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-[540px] gap-4 rounded-[18px] border-none bg-[color:var(--rr-cream)] p-9 shadow-[0_24px_80px_rgba(16,39,66,0.4)]">
+      <DialogContent className="max-w-[540px] gap-4 rounded-[18px] border-none bg-[color:var(--rr-cream)] p-9 shadow-[0_24px_80px_color-mix(in srgb, var(--v3-navy) 40%, transparent)]">
         <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-[color:var(--rr-muted)]">
           Before you go
         </div>
@@ -118,7 +118,7 @@ export function TetherowExitModal() {
               placeholder="Your email"
               required
               autoComplete="email"
-              className="rounded-[10px] border border-[rgba(16,39,66,0.12)] bg-white px-4 py-3 text-[15px]"
+              className="rounded-[10px] border border-[color-mix(in srgb, var(--v3-navy) 12%, transparent)] bg-white px-4 py-3 text-[15px]"
             />
             <Button
               type="submit"

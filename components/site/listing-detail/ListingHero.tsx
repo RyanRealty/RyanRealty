@@ -252,7 +252,7 @@ export function ListingHero({
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(180deg,rgba(16,39,66,.30) 0%,rgba(16,39,66,.08) 18%,rgba(16,39,66,.02) 42%,rgba(16,39,66,.58) 74%,rgba(16,39,66,.92) 100%)',
+            background: 'linear-gradient(180deg,color-mix(in srgb, var(--v3-navy) 30%, transparent) 0%,color-mix(in srgb, var(--v3-navy) 8%, transparent) 18%,color-mix(in srgb, var(--v3-navy) 2%, transparent) 42%,color-mix(in srgb, var(--v3-navy) 58%, transparent) 74%,color-mix(in srgb, var(--v3-navy) 92%, transparent) 100%)',
             zIndex: 2,
             pointerEvents: 'none',
           }}
@@ -305,7 +305,7 @@ export function ListingHero({
               flexWrap: 'wrap',
               alignItems: 'center',
               gap: '14px',
-              borderTop: '3px solid rgba(250,248,244,0.55)',
+              borderTop: '3px solid color-mix(in srgb, var(--v3-cream) 55%, transparent)',
               paddingTop: '12px',
             }}
           >
@@ -331,7 +331,7 @@ export function ListingHero({
                   fontWeight: 600,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: 'rgba(250,248,244,0.78)',
+                  color: 'color-mix(in srgb, var(--v3-cream) 78%, transparent)',
                 }}
               >
                 {shareKind}
@@ -344,7 +344,7 @@ export function ListingHero({
                   fontWeight: 600,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: 'rgba(250,248,244,0.78)',
+                  color: 'color-mix(in srgb, var(--v3-cream) 78%, transparent)',
                 }}
               >
                 {keyStats.join(' · ')}
@@ -749,7 +749,7 @@ function PhotoStrip({
               fontWeight: 700,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: 'rgba(250,248,244,0.78)',
+              color: 'color-mix(in srgb, var(--v3-cream) 78%, transparent)',
             }}
           >
             +{remaining} more

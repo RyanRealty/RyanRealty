@@ -37,14 +37,14 @@ export function LifestyleNearSection({
             listStyle: 'none',
             margin: '1.5rem 0 0',
             padding: 0,
-            borderTop: '1px solid rgba(16,39,66,0.12)',
+            borderTop: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
           }}
         >
           {items.map((item) => (
             <li
               key={`${item.kind}-${item.href}`}
               style={{
-                borderBottom: '1px solid rgba(16,39,66,0.12)',
+                borderBottom: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
               }}
             >
               <Link

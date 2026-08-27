@@ -47,8 +47,8 @@ export function SchoolsBlock({ listing, className }: Props) {
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
           gap: '3px',
-          background: 'rgba(16,39,66,0.12)',
-          border: '1px solid rgba(16,39,66,0.12)',
+          background: 'color-mix(in srgb, var(--v3-navy) 12%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
           marginTop: 'clamp(22px,3vw,36px)',
         }}
       >
@@ -88,7 +88,7 @@ function SchoolCard({
     >
       <div
         className="eyebrow"
-        style={{ color: 'rgba(16,39,66,0.72)', fontSize: '0.62rem', letterSpacing: '0.18em' }}
+        style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)', fontSize: '0.62rem', letterSpacing: '0.18em' }}
       >
         {level}
       </div>
@@ -97,7 +97,7 @@ function SchoolCard({
           fontFamily: 'var(--font-amboqia-safe, serif)',
           fontSize: 'clamp(1.1rem,2.2vw,1.55rem)',
           lineHeight: 0.92,
-          color: name ? 'var(--v3-navy)' : 'rgba(16,39,66,0.35)',
+          color: name ? 'var(--v3-navy)' : 'color-mix(in srgb, var(--v3-navy) 35%, transparent)',
           overflow: 'visible',
         }}
       >
@@ -122,7 +122,7 @@ function SchoolCard({
           style={{
             fontSize: '0.72rem',
             fontWeight: 500,
-            color: 'rgba(16,39,66,0.72)',
+            color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
             letterSpacing: '0.02em',
           }}
         >
