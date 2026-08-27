@@ -200,6 +200,21 @@ export async function POST(request: Request) {
     // triage queue (Wave 7). Idempotent; never sends a message.
     await markConversationUnreadOnInbound(match.personId)
 
+    // A human replied: advance the stage, stop any running automation, task the
+    // broker and tell them. Non-blocking by construction — the inbound message
+    // is already recorded above and must never be lost to a failure in here.
+    try {
+      const { handleInboundReply } = await import('@/lib/crm/on-reply')
+      await handleInboundReply({
+        personId: match.personId,
+        broker: match.broker,
+        channel: 'sms',
+        preview: displayBody,
+      })
+    } catch (e) {
+      console.warn('[twilio/inbound-sms] reply handler failed', e)
+    }
+
     try {
       const { pdfMmsParts } = await import('@/lib/tc/file-comms')
       const { fileCommsToVault } = await import('@/lib/tc/file-comms-write')

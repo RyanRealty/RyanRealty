@@ -300,8 +300,15 @@ async function FirstPartyAcquisition({ range }: { range: { startDate: string; en
         <SectionHead>Whether the book is moving</SectionHead>
         <Figures
           figures={[
-            { label: 'People in the book', value: formatInt(book.totalPeople), caption: 'all stages' },
-            { label: 'Active clients', value: formatInt(activeClients), caption: 'right now' },
+            {
+              // The headline (Matt 2026-08-26): the number he steers by. Distinct
+              // people who answered — not inbound messages, or one chatty contact
+              // would look like a good month.
+              label: 'Conversations started',
+              value: formatInt(book.touches.conversationsStarted),
+              caption: `${formatPct(book.touches.replyRate)} of touches got a reply`,
+            },
+            { label: 'Active clients', value: formatInt(activeClients), caption: `of ${formatInt(book.totalPeople)} in the book` },
             { label: 'Touches sent', value: formatInt(sends), caption: 'email + text + calls, this range' },
             {
               label: 'Stage moves',

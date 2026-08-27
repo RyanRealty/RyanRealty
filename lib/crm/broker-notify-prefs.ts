@@ -28,6 +28,7 @@
 /** The alert families that actually fire in production, plus the ungated ops rail. */
 export type BrokerAlertCategory =
   | 'new_lead'
+  | 'reply'
   | 'return_visit'
   | 'cma_ready'
   | 'task_due'
@@ -50,6 +51,10 @@ export function categoryForAlertKind(kind: string): BrokerAlertCategory {
   const k = String(kind ?? '').trim().toLowerCase()
   if (!k) return 'other'
   if (k === 'new-lead' || k.startsWith('new-lead:')) return 'new_lead'
+  // A human answered. Given a category on purpose rather than left in 'other',
+  // per the rule above — but it maps to the new_lead switch because a contact
+  // who replies is the same urgency as a new lead, and Matt asked to be told.
+  if (k.startsWith('reply:')) return 'reply'
   if (k.startsWith('return-visit:') || k.startsWith('looking-at:')) return 'return_visit'
   if (k.startsWith('cma-ready:')) return 'cma_ready'
   if (k.startsWith('task-reminder:') || k.startsWith('task-due:')) return 'task_due'
@@ -91,6 +96,9 @@ export const DEFAULT_BROKER_NOTIFY_PREFS: BrokerNotifyPrefs = {
 export function categoryEnabled(category: BrokerAlertCategory, prefs: BrokerNotifyPrefs): boolean {
   switch (category) {
     case 'new_lead': return prefs.newLeads
+    // A contact who answers is the same urgency as a new lead, so it rides the
+    // same switch rather than adding one more thing to keep turned on.
+    case 'reply': return prefs.newLeads
     case 'deal_activity': return prefs.dealActivity
     case 'task_due': return prefs.taskDue
     case 'return_visit': return prefs.returnVisit

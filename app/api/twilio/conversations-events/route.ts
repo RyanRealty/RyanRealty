@@ -176,6 +176,20 @@ export async function POST(request: Request) {
   // Surface the author's thread in the triage queue.
   await markConversationUnreadOnInbound(match.personId)
 
+  // Same reply handling as the 1:1 path — the AUTHOR is the one who replied, so
+  // only they advance. Silent members of a group thread have not engaged.
+  try {
+    const { handleInboundReply } = await import('@/lib/crm/on-reply')
+    await handleInboundReply({
+      personId: match.personId,
+      broker: match.broker ?? alertBroker,
+      channel: 'sms',
+      preview: displayBody,
+    })
+  } catch (e) {
+    console.warn('[twilio/conversations-events] reply handler failed', e)
+  }
+
   // STOP/START keywords from the author — same suppression chokepoint as 1:1.
   const firstToken = body.toLowerCase().split(/\s+/)[0] ?? ''
   if (STOP_WORDS.has(firstToken)) {

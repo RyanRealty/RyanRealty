@@ -51,6 +51,13 @@ export type TouchMix = {
   smsIn: number
   /** Replies over sends — the only engagement number that cannot be faked. */
   replyRate: number
+  /**
+   * DISTINCT people who answered in this window — the headline number
+   * (Matt 2026-08-26). Not the count of inbound messages: ten texts from one
+   * person is one conversation, and counting messages would let a single chatty
+   * contact look like a good month.
+   */
+  conversationsStarted: number
 }
 
 export type BookConversionReport = {
@@ -144,11 +151,11 @@ export async function getBookConversion(startIso: string, endIso: string): Promi
     })
 
   // 2. Movement and touches inside the window, from one timeline pass.
-  const events: Array<{ kind: string; title: string | null; payload: Record<string, unknown> | null }> = []
+  const events: Array<{ kind: string; title: string | null; payload: Record<string, unknown> | null; person_id: number | null }> = []
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await sb
       .from('crm_timeline')
-      .select('id,kind,title,payload')
+      .select('id,kind,title,payload,person_id')
       .gte('ts', startIso)
       .lte('ts', endIso)
       .order('id', { ascending: true })
@@ -160,14 +167,21 @@ export async function getBookConversion(startIso: string, endIso: string): Promi
   }
 
   const moveMap = new Map<string, StageMove>()
-  const touches: TouchMix = { emailOut: 0, smsOut: 0, calls: 0, emailIn: 0, smsIn: 0, replyRate: 0 }
+  const touches: TouchMix = { emailOut: 0, smsOut: 0, calls: 0, emailIn: 0, smsIn: 0, replyRate: 0, conversationsStarted: 0 }
+  const repliedPeople = new Set<number>()
   for (const e of events) {
     switch (e.kind) {
       case 'email_out': touches.emailOut += 1; break
       case 'sms_out': touches.smsOut += 1; break
       case 'call': touches.calls += 1; break
-      case 'email_in': touches.emailIn += 1; break
-      case 'sms_in': touches.smsIn += 1; break
+      case 'email_in':
+        touches.emailIn += 1
+        if (e.person_id) repliedPeople.add(e.person_id)
+        break
+      case 'sms_in':
+        touches.smsIn += 1
+        if (e.person_id) repliedPeople.add(e.person_id)
+        break
       case 'stage_change': {
         const { from, to } = parseStageChange(e.title, e.payload)
         const key = `${from ?? '?'}→${to ?? '?'}`
@@ -180,6 +194,7 @@ export async function getBookConversion(startIso: string, endIso: string): Promi
   }
   const sends = touches.emailOut + touches.smsOut
   touches.replyRate = sends > 0 ? (touches.emailIn + touches.smsIn) / sends : 0
+  touches.conversationsStarted = repliedPeople.size
   const moves = [...moveMap.values()].sort((a, b) => b.count - a.count)
   const movesTotal = moves.reduce((n, m) => n + m.count, 0)
 
