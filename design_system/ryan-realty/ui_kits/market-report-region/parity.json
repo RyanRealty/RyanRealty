@@ -99,7 +99,7 @@
   },
   "sectionOrder": [
     "MetadataBlock",
-    "KbSectionTracker",
+    "V3SectionTracker",
     "V3Breadcrumb",
     "V3Instrument (level 1, id='market', live inventory) - or V3Quiet level 1 when the region pulse row is absent",
     "V3Ledger (cities and towns) - empty form when no city returns a live row",

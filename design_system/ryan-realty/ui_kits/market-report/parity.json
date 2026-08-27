@@ -97,7 +97,7 @@
   },
   "sectionOrder": [
     "MetadataBlock",
-    "KbSectionTracker",
+    "V3SectionTracker",
     "V3Breadcrumb",
     "V3Instrument (level 1, region answer)",
     "V3Ledger (market by city)",

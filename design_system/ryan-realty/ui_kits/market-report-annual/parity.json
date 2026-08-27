@@ -155,7 +155,7 @@
   },
   "sectionOrder": [
     "MetadataBlock",
-    "KbSectionTracker",
+    "V3SectionTracker",
     "V3Breadcrumb",
     "V3Instrument (level 1, region now) — or V3Quiet level 1 when the pulse row is absent",
     "V3Ledger (active inventory by city)",

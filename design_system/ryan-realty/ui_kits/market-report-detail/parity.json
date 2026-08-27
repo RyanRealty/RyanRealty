@@ -92,13 +92,10 @@
   },
   "sectionOrder": [
     "MetadataBlock",
-    "KbSectionTracker",
+    "V3SectionTracker",
     "V3Breadcrumb",
-    "V3Instrument (level 1, geo answer + chart) via CityMarketView or CommunityMarketView",
-    "V3Ledger (sibling / comparison cities)",
-    "V3Quiet (FAQ from buildMarketFaq)",
-    "GeoInquirySheet (V3Sheet, broker inquiry)",
-    "V3Quiet (outbound edges + Oregon Data Share)",
+    "CityMarketView -- renders the level-1 geo Instrument (answer + chart), the sibling-cities Ledger, the market FAQ Quiet, and the outbound-edges Quiet; the CommunityMarketView arm does the same for community slugs",
+    "the broker-inquiry ask (GeoInquirySheet, a V3Sheet) -- assigned to a const and rendered inside the view wrapper, so its source position is not its DOM position",
     "V3Footer"
   ],
   "generateStaticParams": {

@@ -118,7 +118,7 @@
   },
   "sectionOrder": [
     "MetadataBlock",
-    "KbSectionTracker",
+    "V3SectionTracker",
     "V3Breadcrumb",
     "V3Instrument (level 1, id=top, the place answer)",
     "V3Quiet (id=about, the honest block + home-market edges)",

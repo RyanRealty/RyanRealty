@@ -137,7 +137,7 @@
     "V3Ledger #towns -- each town's active count and median list price",
     "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
     "V3Ledger #communities -- resorts and master-planned communities",
-    "HomeAlertSheet #alerts -- THE ASK, where the browsing ends (was last on the page until 2026-08-27)",
+    "HomeAlertSheet -- renders id=alerts internally; THE ASK, where the browsing ends (was last on the page until 2026-08-27)",
     "V3Quiet #reviews -- Google reviews, as proof after the ask",
     "AboutFaces -- the three brokers, as proof",
     "section #sell -- the seller ask, last on purpose: a different audience, and /sell is its page",

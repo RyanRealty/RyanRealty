@@ -43,6 +43,7 @@
     "ci:public-ui",
     "ci:chrome-single-source",
     "ci:one-design-system",
+    "ci:page-purpose",
     "ci:public-v3",
     "ci:publish-blog-index-list",
     "ci:publish-blog-mos-verdicts",
