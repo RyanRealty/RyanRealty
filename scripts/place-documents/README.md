@@ -47,6 +47,7 @@ node --env-file=.env.local scripts/place-documents/regate.mjs
 node --env-file=.env.local scripts/place-documents/two-signal-publish.mjs --apply
 node --env-file=.env.local scripts/place-documents/book-page-stamp-publish.mjs --apply
 node --env-file=.env.local scripts/place-documents/phase-governance.mjs --apply
+node --env-file=.env.local scripts/place-documents/foreign-plat.mjs --apply
 node --env-file=.env.local scripts/place-documents/backfill-geo-label.mjs
 npm run ci:place-documents
 ```
@@ -64,6 +65,7 @@ npm run ci:place-documents
 | `two-signal-publish` | Clears parent matches carrying two independent confirmations |
 | `book-page-stamp-publish` | The same bar for the book-page era, where no instrument number exists: the recorder's volume-and-page stamp running across consecutive pages of the document itself |
 | `phase-governance` | The per-chain ruling on parent matches whose document names a different phase than the plat. Both stamp signals prove identity, not governance. **Must run after both publish scripts** — they select on `pending_review` + `parent` and would re-publish what this demotes |
+| `foreign-plat` | The per-document ruling on a published instrument that is a genuine governing document for a DIFFERENT subdivision. Runs last, for the same reason `phase-governance` runs late: `regate` re-promotes exact matches and the two publish scripts re-promote parent matches |
 | `backfill-geo-label` | Stamps each link with its plat's `boundaries.geo_label`, so a listing page can match the label its own row carries instead of re-deriving the slug — see below |
 | `verify` | `ci:place-documents`. Asserts no published link is a non-governing instrument, unconfirmed-and-unreviewed, or unreachable from a listing page |
 
@@ -174,6 +176,56 @@ The RULINGS table in that file is the evidence ledger: per document, the plats i
 binds, the line that says so, and the instrument the line comes from. The rule it
 implements is R7 in
 [`PLACE_CONTENT_RULES.md`](../../docs/plans/MARKET_TRUTH/PLACE_CONTENT_RULES.md).
+
+## A real CC&R for the wrong subdivision
+
+`foreign-association.mjs` reads the front matter and flags a document whose named
+associations are all foreign to the plat. `foreign-plat.mjs` is the wider version
+of the same failure, and it is the one the bucket produces most: not a lookalike,
+not a misfiled deed, but somebody else's real declaration published as this
+plat's governing document. Six Holliday Park, Third Addition instruments sat on
+all five `hillside-park` phases. A declaration titled GLACIER RIDGE sat on
+`gemstone-estates`. The Sunset View Estates Phase II annexation sat on
+`sunset-west` six times over, because the source served the same PDF for six
+different index rows.
+
+**No pattern finds these without destroying more than it saves.** The obvious
+check — flag a document whose title names a different subdivision — was written
+and measured, and three of its first four flags were CORRECT documents: a plat's
+PRIOR RECORDED NAME (`Southwest Pines` under QUAIL PINE ESTATES PHASE XI), a
+MASTER (`Northside Terrace` under RIVER BEND), and a SHARED WELL regulating named
+lots (`Tres Jolie` under ANDERSON ACRES). Recorded instruments name other
+subdivisions constantly and legitimately, and every false flag takes a real CC&R
+off a buyer's page.
+
+So the method is reading. Three differently-shaped screens over all 4,376
+published links and the 1,550 distinct documents behind them — does the plat's
+name occur at all; whose name sits in the TITLE position; what type did the clerk
+stamp — produced 132 documents, and all 132 were OCR'd end to end from the hosted
+PDF (1,836 pages, about eight minutes on-device) rather than from the two pages
+`ocr_text` holds. 31 demote, off 130 links across 95 plats. The rest are in that
+file's CLEARED table with the reason, which is the more useful half: `Ponderosa
+Pines` reads "Ponderous Pines" in the microfilm, `Blakley South` is spelled
+"BLAKELY SOUTH" by its own drafter, the WHISPER RIDGE declaration on Golf
+Townhomes at Broken Top carries an exhibit headed "Golf Tracts at Broken Top,
+Phase 3", and the SKYSTONE ESTATES bylaws on North Mountain View Estates certify
+adoption "by the owners of Lots in NMV Estates Subdivision".
+
+**Its asymmetry is the mirror of `phase-governance`'s.** That script publishes, so
+its publishes carry the burden of proof. This one only demotes, so its DEMOTIONS
+do: a plat comes off only on a line verbatim in the cited instrument's text, and
+the check re-runs on every invocation against text re-derived from the hosted PDF
+— never from the ledger file. One ruling quotes a sibling instrument, because
+118-455's own title is illegible even rendered at 7x and its amendment names it
+by book and page. A keep needs nothing.
+
+Where it stops: a neighbourhood's documents inside a master-planned community
+(Lewis and Clark Townhomes and Fremont Place across 21 NorthWest Crossing plats,
+six "ANNEXING PHASE N OF <NEIGHBOURHOOD>" declarations across 57 Ridge plats, five
+Quail Pine Estates phase supplementals across every Quail Pine phase) are
+`phase-governance`'s class, ruled one chain at a time. The line held here: the
+document never names the place at any depth, and its own subject is a different
+association or a different plat.
 
 ## OCR text is never page copy
 
