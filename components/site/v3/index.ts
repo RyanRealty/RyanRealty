@@ -9,11 +9,14 @@
  * one import from any of them puts two languages on one page, which is the
  * defect this rebuild exists to end. If a page needs something missing, the
  * work is a new primitive or a new prop on an existing one, reviewed against
- * design_system/public/PUBLIC_UI.md (locked 2026-08-11) and exported below.
+ * design_system/public/PUBLIC_UI.md and exported below.
  *
- * The six patterns are closed. The atoms are not: an atom is a small piece the
- * patterns share, so growing that set is ordinary. Growing the pattern set is a
- * change to the locked visual language and needs Matt.
+ * THE PATTERN SET IS OPEN (Matt 2026-08-27). Six today; a seventh is allowed and
+ * expected when a section's job is not one of them. Adding one is BUILDING one:
+ * a component here, its own stylesheet reading ./tokens.css, exported below.
+ * What is forbidden is the one-off — a page hand-rolling section markup with its
+ * own look, which is a second design system arriving one page at a time.
+ * Atoms grow the same way and always did.
  *
  * WHAT A CONSUMER GETS, AND WHAT IT STILL OWES:
  *  - Mounting: every pattern puts V3_ROOT_CLASS on its own outermost element,

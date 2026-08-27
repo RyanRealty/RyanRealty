@@ -49,11 +49,19 @@ describe('V3Chart atom', () => {
     expect(src).toMatch(/<svg/)
   })
 
-  it('is exported from the barrel as an atom, not a seventh pattern', () => {
+  // RE-EXPRESSED 2026-08-27. This asserted the index still says "The six patterns
+  // are closed" — the rule Matt killed that morning — so it would have blocked the
+  // very thing the new rule allows. The distinction it was REALLY guarding
+  // survives and still matters: a chart is an ATOM that rides inside a section,
+  // not a section type of its own. A page mounts it through V3Instrument's chart
+  // slot; it never stands alone as a section.
+  it('is exported as an atom that rides inside a section, not as a section itself', () => {
     const index = readFileSync(INDEX_SRC, 'utf8')
     expect(index).toMatch(/export \{ V3Chart \} from '\.\/V3Chart'/)
-    expect(index).toMatch(/The six patterns are closed/)
+    expect(index).toMatch(/The series atom/)
     expect(index).toMatch(/Not a seventh/)
+    // and it is reached through the Instrument's slot, never mounted bare
+    expect(index).toMatch(/V3Instrument\.chart/)
   })
 
   it('draws straight segments from the series, never a spline', () => {
