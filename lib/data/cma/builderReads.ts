@@ -153,8 +153,13 @@ export async function selectCmaCompsPool(opts: {
   subdivisionIlike?: string | null
   postalCode?: string | null
   closeDateGte: string
-  sqftMin: number
-  sqftMax: number
+  /**
+   * Living-area band. OMIT BOTH for a land pull: land rows carry a null
+   * TotalLivingAreaSqFt, and a null fails every bound, so passing 0..0 returns
+   * nothing rather than everything.
+   */
+  sqftMin?: number | null
+  sqftMax?: number | null
   lotMin?: number | null
   lotMax?: number | null
   /**
@@ -171,6 +176,12 @@ export async function selectCmaCompsPool(opts: {
    * Omit rather than defaulting to SFR — a missing type must not force detached.
    */
   propertySubType?: string | null
+  /**
+   * MLS segment letter. 'A' Residential (the default, and every improved
+   * caller), 'D' Land, 'E' Farm — docs/plans/MARKET_TRUTH/REGISTRY.md §1.
+   * A land subject pulled against 'A' returns zero rows, silently.
+   */
+  propertyType?: string | null
 }): Promise<CmaListingRow[]> {
   const sb = client()
   if (!sb) return []
@@ -180,10 +191,10 @@ export async function selectCmaCompsPool(opts: {
     .ilike('StandardStatus', '%Closed%')
     .not('CloseDate', 'is', null)
     .gte('CloseDate', opts.closeDateGte)
-    .eq('PropertyType', 'A')
+    .eq('PropertyType', opts.propertyType?.trim() || 'A')
     .gt('ClosePrice', 0)
-    .gte('TotalLivingAreaSqFt', opts.sqftMin)
-    .lte('TotalLivingAreaSqFt', opts.sqftMax)
+  if (opts.sqftMin != null) q = q.gte('TotalLivingAreaSqFt', opts.sqftMin)
+  if (opts.sqftMax != null) q = q.lte('TotalLivingAreaSqFt', opts.sqftMax)
   const subType = opts.propertySubType?.trim() || null
   if (subType) q = q.eq('property_sub_type', subType)
   if (opts.cityIlike?.trim()) q = q.ilike('City', opts.cityIlike.trim())

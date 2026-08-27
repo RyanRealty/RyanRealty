@@ -67,4 +67,44 @@ describe('selectCmaCompsPool — SQL property_sub_type follows the subject', () 
     expect(eqCalls.some(([col]) => col === 'property_sub_type')).toBe(false)
     expect(eqCalls).toContainEqual(['PropertyType', 'A'])
   })
+
+  it('pulls land from segment D, not the residential bucket', async () => {
+    // docs/plans/MARKET_TRUTH/REGISTRY.md §1: land is PropertyType='D'. Pulled
+    // against 'A' it returns zero rows, which reads as "no comparable sales".
+    const { builder, eqCalls } = makeQueryBuilder({ data: [], error: null })
+    mockFrom.mockReturnValue(builder)
+    await selectCmaCompsPool({
+      cityIlike: 'Bend',
+      closeDateGte: '2025-08-01',
+      propertyType: 'D',
+      propertySubType: 'Residential Lots',
+    })
+    expect(eqCalls).toContainEqual(['PropertyType', 'D'])
+    expect(eqCalls).toContainEqual(['property_sub_type', 'Residential Lots'])
+    expect(eqCalls.some(([col, val]) => col === 'PropertyType' && val === 'A')).toBe(false)
+  })
+
+  it('applies NO living-area bound when the sqft band is omitted', async () => {
+    // Land rows carry a null TotalLivingAreaSqFt, and a null fails every bound,
+    // so a 0..0 band would return nothing rather than everything.
+    const { builder } = makeQueryBuilder({ data: [], error: null })
+    mockFrom.mockReturnValue(builder)
+    await selectCmaCompsPool({ cityIlike: 'Bend', closeDateGte: '2025-08-01', propertyType: 'D' })
+    const bounded = [
+      ...(builder.gte as { mock: { calls: unknown[][] } }).mock.calls,
+      ...(builder.lte as { mock: { calls: unknown[][] } }).mock.calls,
+    ]
+    expect(bounded.some((c) => c[0] === 'TotalLivingAreaSqFt')).toBe(false)
+  })
+
+  it('still bounds living area for an improved subject', async () => {
+    const { builder } = makeQueryBuilder({ data: [], error: null })
+    mockFrom.mockReturnValue(builder)
+    await selectCmaCompsPool({ ...BASE, propertySubType: 'Single Family Residence' })
+    const bounded = [
+      ...(builder.gte as { mock: { calls: unknown[][] } }).mock.calls,
+      ...(builder.lte as { mock: { calls: unknown[][] } }).mock.calls,
+    ]
+    expect(bounded.filter((c) => c[0] === 'TotalLivingAreaSqFt')).toHaveLength(2)
+  })
 })

@@ -31,6 +31,7 @@ import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net
 import type { CmaListingRow } from '@/lib/data'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 import { saneYearBuilt } from '@/lib/cma/subject'
+import { ACREAGE_THRESHOLD_ACRES, landProduct } from '@/lib/cma/land-pricing'
 import {
   distanceMiles,
   lotCharacterCompatible,
@@ -203,7 +204,12 @@ function emptyDiagnostics(subject: CmaSubject, note: string | null): CompSelecti
  */
 export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   const sqft = subject.sqft ?? 0
-  if (!sqft || !subject.city) {
+  // Land is priced per ACRE, not per square foot, so a land subject legitimately
+  // has no living area and must not fall into the bail below. Selection used to
+  // refuse it here, which meant the land pricing engine could never receive a
+  // single comp. See lib/cma/land-pricing.ts.
+  const land = landProduct(subject)
+  if ((!sqft && !land) || !subject.city) {
     // A subject with no living area is not a house the MLS has a record of —
     // most often the address resolves to a LAND listing (property_sub_type
     // 'Residential Lots'), which no closed-SFR comp set can price.
@@ -226,6 +232,13 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   // acreage so the 50-row cap is not spent on incomparable stock.
   const lotMin = subject.lotAcres != null && subject.lotAcres >= 1 ? +(subject.lotAcres * 0.4).toFixed(2) : null
   const lotMax = subject.lotAcres != null && subject.lotAcres >= 1 ? +(subject.lotAcres * 2.5).toFixed(2) : null
+  // A platted lot pulled with no upper bound spends the row cap on acreage that
+  // lotCharacterCompatible will reject in memory anyway. Cap the pull at the
+  // same 1-acre line the exclusion uses.
+  const landLotMax = land === 'lots' && lotMax == null ? ACREAGE_THRESHOLD_ACRES : lotMax
+  // Land is MLS segment 'D' (REGISTRY §1). Pulling it against 'A' returns zero
+  // rows and reads as "no comparable sales" rather than as a wrong query.
+  const segment = land ? 'D' : 'A'
 
   // Null when the MLS holds a placeholder rather than a real subdivision.
   const subdivisionIlike = realSubdivision(subject.subdivision)
@@ -303,13 +316,14 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       subdivisionIlike: tier.subdivisionIlike ?? null,
       postalCode: null,
       closeDateGte,
-      sqftMin,
-      sqftMax,
+      sqftMin: land ? null : sqftMin,
+      sqftMax: land ? null : sqftMax,
       lotMin,
-      lotMax,
+      lotMax: landLotMax,
       bounds: tierBounds,
       limit: tierBounds ? 500 : 100,
       propertySubType: sqlSubType,
+      propertyType: segment,
     })
     rung.rows_returned = rows.length
     let added = 0
@@ -389,7 +403,7 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
     addExclusions(excludedTotals, rung.excluded)
     ladder.push(rung)
     trace.push(
-      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='A'${subTypeSql} AND ClosePrice>0 AND CloseDate>='${closeDateGte}'${tier.ignoreCity ? '' : ` AND City ILIKE '${subject.city}'`}${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''} AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${lotMax}` : ''}` +
+      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='${segment}'${subTypeSql} AND ClosePrice>0 AND CloseDate>='${closeDateGte}'${tier.ignoreCity ? '' : ` AND City ILIKE '${subject.city}'`}${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''}${land ? '' : ` AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}`}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${landLotMax}` : landLotMax != null ? ` AND lot_size_acres <= ${landLotMax}` : ''}` +
         `${tier.sameArea ? ` AND market area = ${subjectAreaName}` : ''}${tier.maxMiles != null ? ` AND distance <= ${tier.maxMiles} miles` : ''}. Returned ${rows.length} rows, ${added} new comps.`,
     )
     if (added > 0) tiersUsed.push(tier.name)

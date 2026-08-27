@@ -224,11 +224,14 @@ describe('assembleCmaMarketContext neighborhood MOS', () => {
 })
 
 describe('CMA market readers', () => {
-  it('comp pool SQL still PropertyType A then keepSameProductType', () => {
+  it('comp pool SQL still defaults to PropertyType A then keepSameProductType', () => {
     const comps = readFileSync(resolve('lib/cma/comps.ts'), 'utf8')
     const pool = readFileSync(resolve('lib/data/cma/builderReads.ts'), 'utf8')
-    expect(pool).toMatch(/\.eq\('PropertyType', 'A'\)/)
-    expect(comps).toMatch(/PropertyType='A'/)
+    // 'A' is now the DEFAULT rather than a literal, so a land subject can pull
+    // segment 'D' (REGISTRY §1) instead of silently matching nothing. Every
+    // improved caller omits the field and still gets 'A'.
+    expect(pool).toMatch(/\.eq\('PropertyType', opts\.propertyType\?\.trim\(\) \|\| 'A'\)/)
+    expect(comps).toMatch(/const segment = land \? 'D' : 'A'/)
     expect(comps).toMatch(/keepSameProductType/)
     expect(comps).toMatch(/selectCmaCompsPool/)
   })
