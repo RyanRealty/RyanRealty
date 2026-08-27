@@ -124,6 +124,38 @@ DB-free.
 subdivision half is a real plat lands on that plat's page; and a gate stops a new
 indexable community URL appearing without a registry or `boundaries` row behind it.
 
+### W2 — progress 2026-08-27: the subdivision half is done
+
+All seven had no page: /subdivisions/<slug> answered "No subdivision at this address".
+Five are Deschutes and have recorded, phased plats, so they took the same union
+treatment as W1 and now render index,follow with a real city, boundary, homes, market,
+sales history and schools:
+
+| Community | City | Plats unioned | Acres |
+|---|---|---|---|
+| Petrosa | Bend | 8 (Phases 1-6b, TRS 171223) | 109.4 |
+| Easton | Bend | 4 (Phases I/2/3 + Commercial, TRS 181215) | 76.8 |
+| Stone Creek | Bend | 11 (Phases 1-11 + South Village) | 63.2 |
+| Stevens Ranch | Bend | 4 (Rs-1/Rs-2/Rm-1/Rm-2, TRS 181211) | 52.1 |
+| Sisters Woodlands | Sisters | 4 (Phases 1-3 + Habitat, TRS 151005) | 31.6 |
+
+Unusually clean: every sampled parcel landed inside a plat bearing its own community's
+name, with no foreign plat drawn in — unlike the 2026-08-26 batch. Stevens Ranch and
+Sisters Woodlands are still building out (3 of 6 and 1 of 4 sampled parcels sit in no
+recorded plat yet), so their unions are the RECORDED footprint and need re-running as
+phases record. Smaller than the community, never larger — nothing unrecorded is claimed.
+
+**Ironhorse and Ochoco Pointe are NOT done.** Both are Prineville, i.e. CROOK county,
+and `boundaries` carries Deschutes plats — a label scan returns zero for each, the same
+shape as Brasada Ranch. They need Crook County GIS ingested before they can have a
+boundary. Nothing about them is broken; they simply have no source yet.
+
+**STILL OPEN for all seven: the /communities entries.** A registry entry additionally
+requires a researched, cited content file (ci:community-content REQUIRES one for every
+registry slug, and ci:community-depth holds a 400-word floor against a 708-word median).
+That is a research-and-editorial job per community, not a data job, and it is the
+remaining half of W2.
+
 ## W4 — Boundary polygons
 
 - `three-rivers` covers 2,503 of the CDP's 4,819 acres (51.9%). Widen it, then re-test
@@ -162,6 +194,14 @@ be traced to a named source. Partial progress is not done.
 
 ## Log
 
+- 2026-08-27 — W2 HALF-SHIPPED: 5 union boundaries (Petrosa, Easton, Stone Creek,
+  Stevens Ranch, Sisters Woodlands). The /communities entries + editorial remain.
+- 2026-08-27 — W3 SHIPPED (95672822): compound /communities slugs go noindex.
+  The junk-slug GUARD itself is still unsatisfiable and is left for its own change —
+  fixing it by ignoring the city-fallback count 404-ed real communities on a cold
+  cache, caught in the browser and reverted.
+- 2026-08-27 — Campbell Road + Cline Falls Mob Park folded into their containing
+  plats (fdbf4a02), closing the last two of the seven soft-404 names.
 - 2026-08-26 — W1 SHIPPED (5 of 7): union boundaries for sunrise-village,
   westbrook-meadows, cline-falls-oasis, 1st-on-the-hillsites, pace-estate. Verified
   rendered: the first four are now index,follow with a real city, a boundary, a map
