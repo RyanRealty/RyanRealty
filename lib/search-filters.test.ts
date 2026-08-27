@@ -132,3 +132,47 @@ describe('hasNarrowingFilter (attack 2026-07-11)', () => {
     expect(hasNarrowingFilter({ poly: 'x', city: 'Bend' })).toBe(true)
   })
 })
+
+describe('normalizeSavedSearchFilters — an inverted range cannot persist', () => {
+  it("drops both bounds on the real defect that silenced a subscriber", () => {
+    // Saved 2026-08-15: "Sunriver homes, min 650, max 1". He meant $650K to
+    // $1M; the field wanted whole dollars. The engine checked it daily and
+    // correctly found nothing, so he heard silence for eleven days.
+    const out = normalizeSavedSearchFilters({
+      neighborhoodSlug: 'sunriver',
+      minPrice: 650,
+      maxPrice: 1,
+    })
+    expect(out.minPrice).toBeUndefined()
+    expect(out.maxPrice).toBeUndefined()
+    // The rest of the search survives, so the row still means what its name says.
+    expect(out.neighborhoodSlug).toBe('sunriver')
+  })
+
+  it('drops a transposed pair too, rather than guessing a swap', () => {
+    const out = normalizeSavedSearchFilters({ city: 'Bend', minPrice: 900000, maxPrice: 500000 })
+    expect(out.minPrice).toBeUndefined()
+    expect(out.maxPrice).toBeUndefined()
+    expect(out.city).toBe('Bend')
+  })
+
+  it('leaves a valid range alone, including equal bounds', () => {
+    const ok = normalizeSavedSearchFilters({ minPrice: 400000, maxPrice: 600000 })
+    expect(ok.minPrice).toBe(400000)
+    expect(ok.maxPrice).toBe(600000)
+    const equal = normalizeSavedSearchFilters({ minPrice: 500000, maxPrice: 500000 })
+    expect(equal.minPrice).toBe(500000)
+    expect(equal.maxPrice).toBe(500000)
+  })
+
+  it('leaves a one-sided bound alone', () => {
+    expect(normalizeSavedSearchFilters({ minPrice: 650000 }).minPrice).toBe(650000)
+    expect(normalizeSavedSearchFilters({ maxPrice: 800000 }).maxPrice).toBe(800000)
+  })
+
+  it('applies the same rule to square footage', () => {
+    const out = normalizeSavedSearchFilters({ minSqFt: 2000, maxSqFt: 1200 })
+    expect(out.minSqFt).toBeUndefined()
+    expect(out.maxSqFt).toBeUndefined()
+  })
+})

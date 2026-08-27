@@ -152,7 +152,36 @@ export function normalizeSavedSearchFilters(input: SavedSearchFilters): SavedSea
     if (parsed !== undefined) out[key] = parsed
   }
 
+  // AN INVERTED RANGE CANNOT MATCH ANYTHING, SO IT MUST NOT PERSIST.
+  //
+  // A real subscriber saved "Sunriver homes, min 650, max 1" on 2026-08-15 —
+  // he meant $650K to $1M and the field wanted whole dollars. The engine then
+  // checked that search faithfully every day and correctly found nothing, so he
+  // heard silence for eleven days while looking like an active lead.
+  //
+  // Both bounds are dropped rather than repaired. Swapping fixes a transposed
+  // pair but not a units mistake (his would become $1 to $650, still empty);
+  // dropping only the ceiling fixes his but turns a transposed 900k/500k into
+  // "over $900k". Neither guess is safe, and the search's other criteria still
+  // narrow it — the name on the row ("Sunriver homes") stays true.
+  dropInvertedRange(out, 'minPrice', 'maxPrice')
+  dropInvertedRange(out, 'minSqFt', 'maxSqFt')
+
   return out
+}
+
+/** Remove both bounds when the ceiling sits below the floor. */
+function dropInvertedRange(
+  filters: SavedSearchFilters,
+  minKey: 'minPrice' | 'minSqFt',
+  maxKey: 'maxPrice' | 'maxSqFt',
+): void {
+  const min = filters[minKey]
+  const max = filters[maxKey]
+  if (typeof min !== 'number' || typeof max !== 'number') return
+  if (max >= min) return
+  delete filters[minKey]
+  delete filters[maxKey]
 }
 
 function stableSerialize(value: unknown): string {
