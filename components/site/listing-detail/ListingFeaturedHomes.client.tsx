@@ -5,6 +5,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { useInViewAutoplay } from './use-in-view-autoplay'
 
 /**
@@ -46,6 +47,12 @@ export type ListingFeaturedItem = {
   video?: { url: string; embedType: 'iframe' | 'video-tag' } | null
   /** Tour exists but cannot autoplay chrome-less; tile shows a "Tour" badge. */
   tour?: boolean
+  /** Raw MLS share-subject fields: the rail resolves publishListingShareKind
+   *  from these so a fractional ask never prints unlabeled (the Camp Sherman
+   *  quarter-share rule). */
+  propertySubType?: string | null
+  subdivisionName?: string | null
+  listNumber?: string | null
 }
 
 export function ListingFeaturedHomes({
@@ -125,13 +132,21 @@ export function ListingFeaturedHomes({
         <div className="lst-grid">
           {shown.map((it) => {
             const playing = activeHref === it.href && !!it.video
+            // A fractional ask never prints unlabeled: the share label rides
+            // beside the price (the Camp Sherman quarter-share rule).
+            const shareKind = publishListingShareKind({
+              propertySubType: it.propertySubType ?? null,
+              subdivisionName: it.subdivisionName ?? null,
+              city: it.city,
+              listNumber: it.listNumber ?? null,
+            })
             return (
               <a
                 key={it.href}
                 ref={register(it.href)}
                 className={`lst-card${playing ? ' playing' : ''}`}
                 href={it.href}
-                aria-label={`${it.address}, ${it.city}${it.price ? `, ${formatPublishedAsk(it.price) ?? ''}` : ''}${it.beds != null ? `, ${it.beds} bed` : ''}${it.baths != null ? `, ${it.baths} bath` : ''}. View listing.`}
+                aria-label={`${it.address}, ${it.city}${it.price ? `, ${formatPublishedAsk(it.price) ?? ''}${shareKind ? ` (${shareKind})` : ''}` : ''}${it.beds != null ? `, ${it.beds} bed` : ''}${it.baths != null ? `, ${it.baths} bath` : ''}. View listing.`}
                 onMouseEnter={() => enter(it.href)}
                 onMouseLeave={() => leave(it.href)}
                 onFocus={() => enter(it.href)}
@@ -187,6 +202,7 @@ export function ListingFeaturedHomes({
                     <div className="lst-addr">
                       {it.address}
                       <span className="sub">
+                        {shareKind ? shareKind + ' · ' : ''}
                         {it.sub ? it.sub + ' · ' : ''}
                         {it.city}
                       </span>

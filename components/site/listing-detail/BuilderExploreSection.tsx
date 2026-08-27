@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { listingDetailPath } from '@/lib/slug'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 
 type Props = {
   builderName: string
@@ -39,6 +40,14 @@ export function BuilderExploreSection({ builderName, tiles }: Props) {
               .filter(Boolean)
               .join(' ')
               .trim()
+            // A fractional ask never prints unlabeled (the Camp Sherman
+            // quarter-share rule): the share label rides beside the price.
+            const shareKind = publishListingShareKind({
+              propertySubType: t.propertySubType,
+              subdivisionName: t.subdivisionName,
+              city: t.city,
+              listNumber: t.listNumber,
+            })
             const href = listingDetailPath(
               t.listingKey,
               {
@@ -77,6 +86,9 @@ export function BuilderExploreSection({ builderName, tiles }: Props) {
                   </span>
                   <span className="mono-num" style={{ color: 'var(--navy-70)', flexShrink: 0 }}>
                     {formatPublishedAsk(t.listPrice) ?? '—'}
+                    {shareKind ? (
+                      <span style={{ fontWeight: 500, marginLeft: 6 }}>· {shareKind}</span>
+                    ) : null}
                   </span>
                 </Link>
               </li>

@@ -89,5 +89,10 @@ export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Pro
       ),
       video: m.bg,
       tour: !m.bg && m.hasMedia,
+      // Share-subject passthrough: the rail resolves publishListingShareKind
+      // from these so a fractional ask never prints unlabeled.
+      propertySubType: t.propertySubType,
+      subdivisionName: t.subdivisionName,
+      listNumber: t.listNumber,
     }))
 }

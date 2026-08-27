@@ -96,6 +96,13 @@ export interface KbFeaturedItem {
    *  (Aryeo watch page, Zillow 3D, Matterport, iGuide). The tile stays photo but
    *  shows a "Tour" badge that opens the listing where the tour plays. */
   tour?: boolean
+  /** Raw MLS share-subject fields (FractionalInterestSubject) so a rail can
+   *  resolve publishListingShareKind and never print a share ask unlabeled
+   *  (the Camp Sherman quarter-share rule). Optional: the resolver supplies
+   *  them; hand-built items without them simply render no label. */
+  propertySubType?: string | null
+  subdivisionName?: string | null
+  listNumber?: string | null
 }
 
 // Market HUD — every figure traces to a cached DAL source (§0):
