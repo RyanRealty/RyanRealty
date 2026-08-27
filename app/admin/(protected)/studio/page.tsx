@@ -11,7 +11,7 @@
  */
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import { listStudioDrafts } from '@/lib/data/studio/drafts'
+import { listStudioDrafts, countStudioDraftsByStatus } from '@/lib/data/studio/drafts'
 import { studioPlaceOptions } from '@/lib/data/studio/subjects'
 import { STUDIO_FORMAT_LIST, getStudioFormat } from '@/lib/studio/formats'
 import { StudioProducer } from './StudioProducer'
@@ -22,7 +22,11 @@ export const dynamic = 'force-dynamic'
 export default async function StudioPage() {
   await requireAdminPage('content.view')
 
-  const [drafts, places] = await Promise.all([listStudioDrafts({ limit: 40 }), studioPlaceOptions()])
+  const [drafts, places, readyCount] = await Promise.all([
+    listStudioDrafts({ limit: 40 }),
+    studioPlaceOptions(),
+    countStudioDraftsByStatus('ready'),
+  ])
   const waiting = drafts.filter((d) => d.status === 'ready')
   // Killed drafts are noise on a console whose job is "decide the ones that
   // survived". They stay counted, and their reasons stay on the row, but they
@@ -54,13 +58,16 @@ export default async function StudioPage() {
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 16px' }}>
-        <VerdictLine tone={waiting.length > 0 ? 'attention' : 'ok'}>
-          {waiting.length > 0 ? (
+        <VerdictLine tone={readyCount > 0 ? 'attention' : 'ok'}>
+          {readyCount > 0 ? (
             <>
+              {/* The COUNT is the real one, not the length of the 40-row page
+                  below it. Reading "12 waiting" off a truncated list while 477
+                  sat unreviewed is how the backlog stayed invisible. */}
               <b>
-                {waiting.length} draft{waiting.length === 1 ? '' : 's'} waiting on you.
+                {readyCount} draft{readyCount === 1 ? '' : 's'} waiting on you.
               </b>{' '}
-              Approve sends it to the publisher. Kill ends it.
+              <a href="/admin/studio/review">Work through them</a> — one at a time, approve or kill.
             </>
           ) : (
             <>

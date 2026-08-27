@@ -285,7 +285,12 @@ else
   git -C "$VERIFY_DIR" checkout -f --detach "$SHA"
   # Deterministic tree: drop everything the checkout didn't put there, keeping
   # the expensive persistent state (deps, build cache, env).
-  git -C "$VERIFY_DIR" clean -fdx -e node_modules -e .next -e .env.local -e .eslintcache >/dev/null
+  # `.husky` is excluded for the same reason as node_modules: it is GENERATED,
+  # not checked out. Without it the clean deleted `.husky/_` on every run and
+  # then ci:hooks-installed failed inside this very tree, reporting a missing
+  # pre-push hook that the clean had just removed — a gate failing on a
+  # condition the harness created one line earlier.
+  git -C "$VERIFY_DIR" clean -fdx -e node_modules -e .next -e .env.local -e .eslintcache -e .husky >/dev/null
 fi
 
 # Build-time env (untracked config, not code state — same values Vercel holds).

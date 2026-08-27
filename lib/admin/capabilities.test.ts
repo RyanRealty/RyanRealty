@@ -121,11 +121,17 @@ describe('shell projection (one nav source for every surface)', () => {
   // 40/28: 38/27 plus "Recorded documents" (bdc84f7d, superuser-only via
   // content.communities, which is why the broker count moved by one fewer)
   // and "Studio" (the Grok content console, content.view so brokers see it).
-  it('renders the nav budget: 40 superuser items, 28 broker items (Production + Signing + Sign-off on Closings)', () => {
+  // "Review queue" (content.view) joins the list: the studio approval queue got
+  // its own door because 477 drafts reached `ready` and none was ever approved —
+  // the console showed 40 of them and read as a gallery, so nobody worked it.
+  //
+  // This budget is a ratchet against nav sprawl. Moving it is allowed; moving it
+  // silently is not, so a new number here comes with the reason.
+  it('renders the nav budget: 41 superuser items, 29 broker items (Production + Signing + Sign-off on Closings)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(40)
-    expect(count('broker')).toBe(28)
+    expect(count('superuser')).toBe(41)
+    expect(count('broker')).toBe(29)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {

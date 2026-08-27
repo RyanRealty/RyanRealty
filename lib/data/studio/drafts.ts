@@ -273,15 +273,25 @@ export async function approveStudioDraft(input: {
 }
 
 /** Everything the console shows: recent studio rows, newest first. */
-export async function listStudioDrafts(options: { limit?: number } = {}): Promise<StudioDraftRow[]> {
+export async function listStudioDrafts(
+  options: { limit?: number; status?: string; offset?: number } = {},
+): Promise<StudioDraftRow[]> {
   try {
     const sb = createServiceClient()
-    const { data, error } = await sb
+    // The cap used to be a hard 60. With 477 drafts sitting at `ready` that made
+    // the queue unreviewable — you could never see more than an eighth of it, and
+    // the ones you could see were mixed in with killed rows. The review surface
+    // pages through with an explicit status filter instead.
+    const limit = Math.min(200, Math.max(1, options.limit ?? 24))
+    const offset = Math.max(0, options.offset ?? 0)
+    let q = sb
       .from('marketing_brain_actions')
       .select('id, action_type, target, topic, status, payload, executor_response, created_at, approved_at')
       .eq('generated_by', GENERATOR)
+    if (options.status) q = q.eq('status', options.status)
+    const { data, error } = await q
       .order('created_at', { ascending: false })
-      .limit(Math.min(60, Math.max(1, options.limit ?? 24)))
+      .range(offset, offset + limit - 1)
     if (error || !data) return []
     return data.map((row) => shapeDraft(row as Record<string, unknown>))
   } catch {
@@ -290,6 +300,22 @@ export async function listStudioDrafts(options: { limit?: number } = {}): Promis
 }
 
 /** How many drafts the slate already made today, so the cron cannot double up. */
+/** How many drafts sit at a given status. Drives the "N left" counter on the review queue. */
+export async function countStudioDraftsByStatus(status: string): Promise<number> {
+  try {
+    const sb = createServiceClient()
+    const { count, error } = await sb
+      .from('marketing_brain_actions')
+      .select('*', { count: 'exact', head: true })
+      .eq('generated_by', GENERATOR)
+      .eq('status', status)
+    if (error) return 0
+    return count ?? 0
+  } catch {
+    return 0
+  }
+}
+
 export async function countStudioDraftsSince(isoTimestamp: string): Promise<number> {
   try {
     const sb = createServiceClient()
