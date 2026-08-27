@@ -51,17 +51,20 @@ Admin-only: judge, audit, GIS traces, methods.
 
 ---
 
-## Matcher cuts still required (not yet all in the facts path)
+## Matcher cuts — RECONCILED 2026-08-27 (see `CMA_STATE_OF_THE_WORLD.md`)
 
-Do not rebuild a letter until these are in `lib/pricing/match.ts` **and** the listings fallback:
+This list was written 2026-08-19 and went stale: most items were then built without this file
+being updated, and later sessions kept re-planning finished work. Verified state:
 
-1. Delete `PRICING_QUALITY_STOP`. Floor 3, target 5–8, max ~10. Do not quit because three same-subdivision sales exist.
-2. Townhouse ≠ condo ≠ SFR on the **facts** path (`productTypeCompatible`, not collapsed `attached`).
-3. Never cross US-97 / Bend Parkway / Deschutes. Neighbor-pair table specified 2026-07-28 in `docs/plans/PROSPECT_TO_CMA_AND_SITE_IA_2026-07-28.md` §A5 — **never built**. GIS same-polygon is not enough.
-4. Zoning of record is a hard cut when both sides have a zone.
-5. GLA bracketing when the pool allows (one smaller, one larger).
-6. Whole baths already match. Keep it. 648 SE Douglas is 3 bed / 1 bath, not 2–4 bed.
-7. Keep rural/urban 1-acre split, resort symmetry, water/sewer when known.
+1. `PRICING_QUALITY_STOP` — DELETED from the code. Floor 3, target 8, max 10 (`lib/pricing/ladder.ts`).
+2. Townhouse ≠ condo ≠ SFR on the facts path — BUILT (`productCompatible`, unknown fails closed).
+3. Never cross US-97 / Bend Parkway / Deschutes — the rule BINDS and is BUILT (`lib/pricing/divides.ts`, applied in `applesOk` on every rung).
+4. Zoning hard cut — code exists, **INERT**: `sale.zoning` is never populated. Open as defect D4.
+5. GLA bracketing — BUILT (post-ladder bracket swap, `lib/pricing/match.ts`).
+6. Whole baths — BUILT, holds on every rung.
+7. Rural/urban 1-acre split, resort symmetry, water/sewer — BUILT, hard on every rung.
+
+The remaining real defects, ranked with evidence, live in `CMA_STATE_OF_THE_WORLD.md` (D1–D8).
 
 ---
 
