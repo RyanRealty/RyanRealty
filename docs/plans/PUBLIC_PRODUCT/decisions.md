@@ -1071,3 +1071,79 @@ patterns per page (verified against check-public-ui.mjs, check-public-v3.mjs,
 check-mockup-parity.mjs, and site-contracts.test.ts on 2026-08-26) — the cap's
 enforcement mechanism is unchanged: the per-route parity.json declaration plus
 review. This unblocks the v3 rebuild of the place-page family as one unit.
+
+## 2026-08-26 — the place-page family is on the barrel (city, neighborhood, community)
+
+**A 165 → 81 · B 2 → 1 · C 52 → 53.** Five commits on a local worktree
+(RyanRealty-p-family): the fifth-pattern amendment, then /cities/[slug],
+/cities/[slug]/[neighborhoodSlug], /communities/[slug], and a rail-dedupe fix
+found in the rendered page. ci:gates 168/168 on the final tree; tsc clean; the
+unit suite green except the two pre-existing live-DB reconciliation tests
+(bend 2026 archive 1153 vs cache sum 1029 — reproduced unchanged at origin/main).
+B's last row is /listing/[listingKey], as the previous entry predicted.
+
+**The method held: rewire plus reconciliation, and the drafts were wrong on §0
+exactly where predicted.** The reverted drafts' pulse-driven market cores are
+gone on all three: the city draft's marketFigures(pulse) became the shared
+leftoverMarketFigures off leftoverHudKpis (D78), the neighborhood draft's
+liveFigures/soldFigures (raw pulse + stats-cache at an untrusted grain) were
+deleted with neighborhood-claims and the pulse read itself, and the community
+draft's resolveLivePair tiers and closed-sales Instrument (the alias-join
+under-count) went the same way. buildMarketFaq runs unconditionally with
+source 'market-truth' on all three, the metricNeighborhoodSlug convention is
+kept (documents on the metric slug, character on the boundary slug), and every
+rendered JSON-LD Dataset was read against the visible figures (Bend
+934500/754/4.4/20/2105, River West 1099000/25/3.9/18/86, Tetherow
+2372500/18/51/22 — machine and visible agree, and Tetherow's withheld MoS is
+absent from both).
+
+**The market question stays, per grain.** City and community ask it as the
+market Instrument's level-2 headline with the verdict sentence as the note
+(the H1 stays the money head term on the Field / the Stage line); the
+neighborhood page's opening Instrument IS the H1, so the question renders as
+the FAQ section's heading. No verdict, no question, on all three.
+
+**The fifth slot, declared per route in parity.json:** city and neighborhood
+spend it on Ledger (the D80/D83/D84/D85/D88/D93 sections); community spends it
+on Sheet and keeps Ledger OUT — its recorded documents render as Quiet legal
+doors (communityDocumentItems, R7 provenance carried) because a sixth pattern
+stays a lock break.
+
+**Owned media survived, upgraded where the pattern for it exists.** The
+community Stage plays the approved area-guide clip (V3Stage videoSrc —
+verified live on /communities/tetherow); city and neighborhood keep the
+Watch-{place} affordance as a guides-Ledger door, and
+scripts/check-video-sections.mjs documents that form. Photography is in the
+Field rows, the ledger row media, the resort hover registry; the real Google
+map mounts in every Field slot (verified painting on bend and river-west;
+the community map carries the plat-union boundary).
+
+**A latent §0 gap closed in passing:** the v3 Field builders on all three
+routes label fractional-interest asks (publishListingShareKind on the meta
+line — the Camp Sherman rule the deleted dual-pane list carried), and
+ci:listing-figure-publish's unlabelled-ask ratchet dropped 10 → 7.
+
+**Every gate and test that pinned a KB spelling was re-expressed and
+break-tested both ways, none deleted:** place-hero-grain (v3 caption arms on
+all three plus the plat arm the subdivision migration had left red at
+origin/main; one break test caught a comment self-match), publish-median-caption
+(no-median-surface arms on the three alert sheets; the publishFactValue arms
+left with KbResortOverview), publish-days-figure (negative arms; the publisher
+stays hard-required in city-sections), publish-place-index-truth (city caption
+arm, neighborhood no-unvetted-hero arm, hero-module deletion tolerated),
+publish-listing-ask / publish-place-browse / westside-backlog /
+resort-definitions (whose redirect( token had been a false pass on a comment
+since 2026-08-19 and now asserts the pre-render-hop wiring itself), D25/D26,
+D78-D114's flipped spellings, and the pace/mix/segments/metric-slug module pins.
+
+**Orphan cascade, all with their last consumers:** KbPopularSearches,
+KbResortOverview, KbAbout, KbSchools, KbAreaGuideVideo, KbBuyCta,
+MarketSources, CommunityGolfLinks, PlaceInventoryMap, PlaceMapListSplit,
+LifestyleNearSection stays (other mounts), place-list-showing,
+publish-place-hero, publish-fact-value, neighborhood-claims,
+NeighborhoodActivityLedger (+ their tests).
+
+**Not this unit's, reproduced untouched:** the two live-DB int reconciliation
+tests above, and the dev-pane screenshot raster that blanks at deep scroll
+(content verified via DOM + computed styles; the top-of-page and mobile
+captures render).
