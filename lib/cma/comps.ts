@@ -124,6 +124,7 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
   return {
     listingKey,
     mlsNumber: str(row['ListNumber']),
+    unitNumber: str(row['unit_number']),
     address: `${str(row['StreetNumber']) ?? ''} ${str(row['StreetName']) ?? ''}`.trim(),
     city: str(row['City']) ?? '',
     subdivision: str(row['SubdivisionName']),
@@ -361,9 +362,24 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
         rung.excluded.self++
         continue
       }
+      // Same street address is the subject ONLY when the unit matches too.
+      // A condo building shares one address across every unit: 363 Bluff (the
+      // Plaza) had 20 of its own building's sales — the best comp set a condo
+      // has — dropped as "self" by the bare address equality, starving the
+      // build to one comp. Unit vs unit decides; two absent units on an
+      // ATTACHED subject are ambiguous and admit (the subject's true self is
+      // already caught by ListingKey above), while on a detached subject the
+      // bare address match stays self, which is what it always meant there.
       if (subject.streetAddress && comp.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
-        rung.excluded.self++
-        continue
+        const su = (subject.unitNumber ?? '').trim().toLowerCase()
+        const cu = (comp.unitNumber ?? '').trim().toLowerCase()
+        const attached = !keepSameProductType('Single Family Residence', subject.propertySubType)
+        const unitsDiffer = su !== cu
+        const bothAbsentOnAttached = !su && !cu && attached
+        if (!unitsDiffer && !bothAbsentOnAttached) {
+          rung.excluded.self++
+          continue
+        }
       }
       if (byKey.has(comp.listingKey)) {
         rung.excluded.duplicate++

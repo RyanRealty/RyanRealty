@@ -22,6 +22,11 @@ function client() {
 const LISTING_CMA_COLUMNS = [
   'ListingKey',
   'ListNumber',
+  // Unit, extracted from the RETS payload. There is no top-level column; a
+  // condo building shares one street address across every unit, and without
+  // the unit the self-exclusion read the whole building as "the subject's own
+  // listing" (363 Bluff: 20 of its own best comps dropped as self).
+  'unit_number:details->>UnitNumber',
   'StreetNumber',
   'StreetName',
   'City',

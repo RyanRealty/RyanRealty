@@ -13,6 +13,8 @@ export interface CmaSubject {
   listingKey: string | null
   mlsNumber: string | null
   streetAddress: string
+  /** Unit within a shared-address building, when the MLS row carries one. */
+  unitNumber?: string | null
   city: string
   state: string
   postalCode: string | null
@@ -54,6 +56,8 @@ export interface CmaSubject {
 }
 
 export interface CmaComp {
+  /** Unit within a shared-address building, when the MLS row carries one. */
+  unitNumber?: string | null
   listingKey: string
   mlsNumber: string | null
   address: string

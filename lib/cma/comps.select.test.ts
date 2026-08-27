@@ -218,3 +218,55 @@ describe('selectComps — the fallback ladder carries the divide cut (D5)', () =
     expect(sel.comps.length).toBeGreaterThan(0)
   })
 })
+
+describe('selectComps — a condo building is not "self" (the 363 Bluff starvation)', () => {
+  // The bare address equality dropped 20 of the Plaza's own building sales as
+  // "the subject's own listing" — the best comp set a condo has — and starved
+  // the build to one comp. Same address is self only when the UNIT matches.
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    divideSpy.mockReset()
+    divideSpy.mockReturnValue(false)
+  })
+
+  const condoSubject = () =>
+    subject({
+      streetAddress: '363 Bluff',
+      propertySubType: 'Condominium',
+      unitNumber: '204',
+    })
+
+  it('admits a different unit at the same address', async () => {
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({ StreetNumber: '363', StreetName: 'Bluff', unit_number: '103', property_sub_type: 'Condominium' }),
+    ])
+    const sel = await selectComps(condoSubject())
+    expect(sel.comps).toHaveLength(1)
+  })
+
+  it('still drops the subject unit itself', async () => {
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({ StreetNumber: '363', StreetName: 'Bluff', unit_number: '204', property_sub_type: 'Condominium', ListingKey: 'other-key' }),
+    ])
+    const sel = await selectComps(condoSubject())
+    expect(sel.comps).toHaveLength(0)
+    expect(sel.diagnostics.excluded_totals.self).toBeGreaterThan(0)
+  })
+
+  it('an attached subject with NO unit on either side admits — ListingKey already catches the true self', async () => {
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({ StreetNumber: '363', StreetName: 'Bluff', property_sub_type: 'Condominium' }),
+    ])
+    const sel = await selectComps(subject({ streetAddress: '363 Bluff', propertySubType: 'Condominium' }))
+    expect(sel.comps).toHaveLength(1)
+  })
+
+  it('a DETACHED subject at the same bare address stays self — that is what the check always meant there', async () => {
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({ StreetNumber: '1', StreetName: 'Main', ListingKey: 'prior-sale-of-subject' }),
+    ])
+    const sel = await selectComps(subject({ streetAddress: '1 Main' }))
+    expect(sel.comps).toHaveLength(0)
+    expect(sel.diagnostics.excluded_totals.self).toBeGreaterThan(0)
+  })
+})

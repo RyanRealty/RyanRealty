@@ -180,6 +180,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     listingKey: str(row['ListingKey']),
     mlsNumber: str(row['ListNumber']),
     streetAddress,
+    unitNumber: str(row['unit_number']),
     city: str(row['City']) ?? '',
     state: str(row['State']) ?? 'OR',
     postalCode: str(row['PostalCode']),
