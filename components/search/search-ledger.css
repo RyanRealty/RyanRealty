@@ -1,5 +1,5 @@
 /* ===========================================================================
-   SEARCH CHROME — Ledger register treatment (THE LOOK, PUBLIC_UI.md §9).
+   SEARCH CHROME — Ledger register treatment (THE LOOK, PUBLIC_UI.md §6).
 
    The search surfaces mount `.v3 .v3--ledger` on their page root, so these
    classes read the register's tokens where they can. Two of them (the

@@ -714,13 +714,20 @@ voice, §0, PRODUCT.md. Public look is Matt keep/kill on real pages.
 
 Do not invent a replacement rubric in the same delivery.
 
-## 2026-08-15 — Ban new UI components (Matt)
+## 2026-08-15 — Ban new UI components (Matt) — SUPERSEDED 2026-08-27
 
-The public shop does not grow a new component for a new job. Six patterns.
-No seventh. No arrival island, no sentence widget, no comms card as a new
-surface. Wire the job into Field / Instrument / Ledger / Stage / Sheet /
-Quiet, or into the search and auth that already exist. A new
-`components/**/*.tsx` that draws its own chrome is a lock break.
+**Superseded by the entry of 2026-08-27 below ("the pattern set is OPEN").** The
+half of this rule that was right — no page-local one-off that draws its own look —
+survives and is now gated by `ci:one-design-system`. The half that was wrong —
+"six patterns, no seventh" — is dead. Read the 2026-08-27 entry, not this one.
+
+The original text, kept because it is what was acted on for twelve days:
+
+> The public shop does not grow a new component for a new job. Six patterns.
+> No seventh. No arrival island, no sentence widget, no comms card as a new
+> surface. Wire the job into Field / Instrument / Ledger / Stage / Sheet /
+> Quiet, or into the search and auth that already exist. A new
+> `components/**/*.tsx` that draws its own chrome is a lock break.
 
 Leftover files that already shipped against this (`SentenceSearch.tsx`,
 `GoogleCommsCard.tsx`) do not license a next one. ArrivalIntent.client.tsx
@@ -1200,3 +1207,46 @@ footer. The ticker is gone for good and `KbTicker` goes with it.
 **Still open, not this unit's:** `/communities/[slug]`, `/cities/[slug]` and the
 neighborhood page each shipped with cap-driven deletions still in place. Now that the cap
 is gone, each is a restore pass. Flagged to Matt 2026-08-27; not yet scheduled.
+
+
+## 2026-08-27 — DECIDED: the pattern set is OPEN (Matt)
+
+Matt, on being told the six patterns were "still closed": "6 and closed, that is
+such a stupid rule and I have no idea how we got it but nuke it from existence."
+
+**The rule now.** The six are the vocabulary, not a ceiling. A seventh pattern is
+allowed and expected when the work calls for it. It is added by BUILDING it.
+
+**The one condition:** a new pattern is a PRIMITIVE — a component in
+`components/site/v3` with its own stylesheet reading `tokens.css`, exported from
+the barrel, available to every page. The forbidden thing is the ONE-OFF: a page
+hand-rolling its own section markup with its own look. That is a second design
+system arriving one page at a time.
+
+**How we got the bad rule, since Matt asked.** It was written into PUBLIC_UI §3
+on 2026-08-11 as part of the P6 visual lock, aimed at a real failure mode: the
+shop growing a bespoke component per page (the arrival island, the sentence
+widget, the comms card — all real, all shipped, all one-offs). The 2026-08-15
+"Ban new UI components" entry made it an absolute. But "the set is closed" does
+not say "do not fork a one-off" — it says a section that fits none of the six may
+not exist, and THAT is what got acted on:
+
+- `/communities/[slug]` deleted both market chart modules with the reason "the
+  barrel has no chart primitive and the pattern set is closed" — written three
+  weeks AFTER `V3Chart` was built. The correct move was to use it.
+- paired with the four-pattern cap (killed earlier the same day) it took seven
+  sections off the homepage draft and five off the community page.
+- it made "build the primitive this section needs" read as a lock break, so
+  every migration that hit a gap deleted instead.
+
+**What replaces it, and why it is stronger.** `ci:one-design-system` does not
+count patterns. It fails a new component FAMILY under `components/site/`, a
+stylesheet declaring a look in raw values, a brand color typed into a page, and
+any elevation shadow. That catches the one-off without ever blocking a real
+primitive — which is what the 2026-08-11 rule was trying to do and could not
+express.
+
+**Still binding, unchanged:** no two adjacent sections share a pattern; the
+per-destination opening table (what each grain opens on); an enumeration counts
+once; and every pattern, new ones included, reads the token file so a style
+template still reaches all of them.

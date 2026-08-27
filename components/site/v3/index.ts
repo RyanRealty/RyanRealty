@@ -40,7 +40,7 @@ export {
   /**
    * THE LOOK (Matt 2026-08-26): the Ledger register for search/data surfaces.
    * Mounted beside V3_ROOT_CLASS on a page root; content surfaces mount
-   * nothing and wear the Broadside default. PUBLIC_UI.md section 9 records
+   * nothing and wear the Broadside default. PUBLIC_UI.md section 6 records
    * which register each surface wears.
    */
   V3_LEDGER_CLASS,

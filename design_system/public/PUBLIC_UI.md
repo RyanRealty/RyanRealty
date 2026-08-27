@@ -1,27 +1,29 @@
-# Public UI — the visual language (P6, LOCKED 2026-08-11)
+# Public UI — the visual language
 
-Greenfield. Written 2026-08-11 after the IA lock, under design amnesia: no current public
-page, prior mockup, or retired program's section library was opened as design input. Brand
-is the one inherited constraint (navy `#102742` / cream `#faf8f4`, Amboqia display + Geist
-body, voice canon) — everything about shape, rhythm, and motion is derived here from the
-28 locked processes and their destinations. **LOCKED by Matt 2026-08-11 on the moving
-prototype (docs/plans/PUBLIC_PRODUCT/decisions.md). The pattern set is closed: a section
-that fits none of the six changes this file, it never earns a page exemption.**
+The rules that decide how a public page LOOKS. It is a living spec, not a lock:
+it changes when Matt decides something better, and the changelog at the bottom
+records every change with the reason.
 
-**Amendments to the lock.** Two so far. **2026-08-26 (Matt):** §3's rhythm rule now says
-what an enumeration is, so a run of one section rendered once per member of a set the
-place determines counts once. The pattern set itself is unchanged — still six, still
-closed. **2026-08-26 (Matt, THE LOOK):** the visual language now carries exactly two
-registers — Broadside on content surfaces, Ledger on search/data surfaces — defined in §9.
-A register varies structure, density, rule weight, and motion only; the pattern set, the
-palette, and the brand faces are untouched. §9 also records the two register-scoped
-amendments to §2: the Ledger register's working UI text runs a 13px base (the ≥16px floor
-governs reading prose, which Ledger surfaces do not carry), and Ledger rows run 32px
-(the row is a full-width target, clearing WCAG 2.5.8's 24px floor; the 44px thumb floor
-stays on every discrete control).
-closed. **2026-08-26 (Matt, second):** the three big place pages may spend a FIFTH
-pattern — the scoped exception §3 states in full. The cap stays four everywhere else,
-and the pattern set is still six and still closed.
+**What governs, in one place:**
+
+| | Where |
+|---|---|
+| The look — every color, radius, rule weight, size, motion value | `components/site/v3/tokens.css`, on `:root`. ONE file, 118 pages. |
+| The patterns a section can be | §3. Six today, and the set is OPEN. |
+| Which register a surface wears (Broadside / Ledger) | §6 |
+| Contrast floors | §4 |
+| Motion | §5 |
+
+**What is mechanically enforced, so nobody has to remember it:**
+`ci:one-design-system` (one register, one token file, no raw brand values, no
+elevation shadows) · `ci:chrome-single-source` (one header, one footer) ·
+`ci:design-tokens` · `ci:public-ui` (the migration ratchet) · `ci:public-v3`.
+Everything else in this file is prose, and prose is advisory — if a rule here
+keeps getting broken, the answer is a gate, not more paragraphs.
+
+**Brand is the one thing this file does not decide.** Navy `#102742`, cream
+`#faf8f4`, Amboqia display, Geist body, and the voice canon are inherited and
+locked elsewhere (`CLAUDE.md` §2 and §3).
 
 ## 1. Thesis
 
@@ -53,10 +55,30 @@ spectacle.** Three commitments:
 | Data honesty | Every figure renders with its source trace available; empty states state the reason | Our World in Data / FT chart discipline |
 | Density | Large quiet margins, hairline rules over heavy cards | Stripe / Linear |
 
-## 3. The pattern set — SIX, closed (Matt's floor: ≥3)
+## 3. The pattern set — SIX TODAY, OPEN (Matt 2026-08-27)
 
-Every section on every public page is exactly one of these. A section that fits none does
-not get an exception — the pattern set changes here, by editing this file.
+These six are the vocabulary the site is built from, and almost every section a page needs
+is already one of them. **The set is not closed.** A seventh pattern is allowed, expected
+when the work calls for it, and is added by building it — not by asking permission here
+first.
+
+**The one condition, and it is the whole point:** a new pattern is a PRIMITIVE. It lands in
+`components/site/v3` as a real component with its own stylesheet reading
+`components/site/v3/tokens.css`, exported from the barrel, available to every page. What is
+forbidden is the ONE-OFF: a page that hand-rolls its own section markup with its own look,
+because that is a second design system arriving one page at a time, which is exactly what
+the site spent 2026-08-27 removing. Enforced mechanically by `ci:one-design-system`, which
+does not care how many patterns exist and does care that every one of them reads the tokens.
+
+**Why "closed" is gone.** It was written 2026-08-11 to stop the shop growing a bespoke
+component per page, which is a real failure mode. But "closed" does not say that — it says
+a section that fits none of the six may not exist, and that is what got acted on. Paired
+with the four-pattern cap it deleted seven sections off the homepage draft and five off
+`/communities/[slug]`, and it justified deleting the community market charts with "the
+barrel has no chart primitive and the pattern set is closed" three weeks after `V3Chart` was
+built. Matt, seeing the rule restated: "6 and closed, that is such a stupid rule ... nuke it
+from existence." The failure mode it was aiming at is real and is now gated properly; the
+absolute it stated was not, and is gone.
 
 1. **Instrument** — the answer, big. One verdict/number/range in Amboqia with its
    supporting figures and source line beneath. Opens Market. Opens Neighborhood. Fallback
@@ -94,10 +116,10 @@ superseded rather than revoked.
 **What replaces it.** The section set of a page is a PRODUCT decision and belongs to Matt
 and to the standing directives (the contract tests in
 `components/site/__tests__/site-contracts.test.ts`). The pattern set decides how a section
-LOOKS, never whether it exists. A migration that cannot express a section in one of the six
-patterns reports the missing primitive here as a gap in the barrel — it does not delete the
-section. The pattern set is still SIX and still closed: a seventh pattern remains a lock
-break, and so does a section that is none of the six.
+LOOKS, never whether it exists. A migration that cannot express a section in one of the
+patterns BUILDS the primitive it needs, into `components/site/v3`, reading the tokens — it
+does not delete the section, and it no longer has to stop and ask whether a seventh pattern
+is permitted. It is.
 
 **What still binds, and why it is enough.** "No two adjacent share a pattern" is what stops
 a page reading as mush, and it does that work without touching content: a run of Ledgers
@@ -139,7 +161,8 @@ screen are a lock break. A listing that looks like another product is a lock bre
 Master-plan is not a neighborhood with a nicer name. Tetherow is an exemplar of the
 master-plan template, not a one-off product.
 
-**Per-destination openings** (six patterns only — no seventh):
+**Per-destination openings.** What each grain OPENS on. This is what keeps five
+place types from reading as one page, and it binds whatever the pattern set holds:
 
 | Grain | Route | Opening | Differentiator |
 |---|---|---|---|
@@ -162,13 +185,15 @@ The old line "Places → Instrument then Field" is retired. It made four grains 
 |---|---|---|
 | navy `#102742` on cream `#faf8f4` | 14.8:1 | AAA |
 | cream `#faf8f4` on navy `#102742` | 14.8:1 | AAA |
-| navy-70 `rgba(16,39,66,.70)` on cream | 8.2:1 | AAA |
+| navy-70 (`--v3-navy-70`, navy at 70%) on cream | 8.2:1 | AAA |
 | cream-60 on navy | 5.99:1 | AA (muted text only, ≥16px) |
 | navy on white `#ffffff` | 16.1:1 | AAA |
 | white on navy | 16.1:1 | AAA |
 
-Rejected during this pass: navy-50 on cream (3.9:1 — fails AA for body) and cream-40 on
-navy (3.4:1). Muted text stops at navy-70 / cream-60.
+Rejected: navy-50 on cream (3.9:1 — fails AA for body) and cream-40 on navy (3.4:1).
+**Muted text stops at navy-70 / cream-60.** Every shade is `color-mix()` off the two base
+colors, so these ratios hold only while the base colors do — a style template that changes
+navy or cream must be re-checked against this table before it ships.
 
 ## 5. Motion spec
 
@@ -182,30 +207,7 @@ navy (3.4:1). Muted text stops at navy-70 / cream-60.
 - **Banned:** parallax for its own sake, carousels as a default, entrance animations on
   every section, motion over live numbers while they load.
 
-## 6. Amnesia test (recorded)
-
-- Blacklist opened as design input: **NONE** — no `components/site/kb`, no legacy flat
-  components, no `design_system/public-v2` screens, no prior program's `V2*` names, no
-  screenshots of the current site.
-- Every foundation in §2 cites an external standard or product; the pattern set derives
-  from the six locked destinations' jobs, not from sections that exist today.
-- Could this exist if the current public site did not? **Yes** — nothing above references it.
-- Deliberate non-inheritances: the equal-weight section stack, the card-grid-per-section
-  habit, horizontal scroll rails, the "hero + 11 sections" homepage shape.
-
-## 7. Craft scorecard (self-assessed, floor 8)
-
-Clarity 9 · Hierarchy 9 · Data honesty 9 · Motion discipline 8 · Mobile-first 9 ·
-Accessibility 9 · Distinctiveness 8 — average **8.7**, floor met.
-
-## 8. How the lock was granted
-
-Matt judged the MOVING prototype live in production at `/dev/public-v3` (real Bend data,
-390 and 1280, reduced-motion path) and granted the visual lock on 2026-08-11. The barrel
-that implements these patterns is `components/site/v3`, enforced by `ci:public-v3`, and
-the rollout onto it is ratcheted by `ci:public-ui`.
-
-## 9. THE LOOK (Matt 2026-08-26, LOCKED)
+## 6. THE LOOK — the two registers (Matt 2026-08-26)
 
 Matt judged four candidate skins on one shared specimen (the Skin Room: identical markup,
 every visual difference carried in one token block per skin) and locked two:
@@ -279,3 +281,54 @@ for Matt's call the next time its family is touched. Interior components on the 
 surfaces that still import the legacy register (ListingCard, the filter chrome — held by
 the `ci:public-ui` baseline) inherit the register's inherited properties only; they take
 the full Ledger treatment when they roll onto the barrel.
+
+---
+
+# Appendix — provenance and changelog
+
+Everything above is the rule. Everything below is how it got here.
+
+## Amnesia test (recorded 2026-08-11)
+
+- Blacklist opened as design input: **NONE** — no `components/site/kb`, no legacy flat
+  components, no `design_system/public-v2` screens, no prior program's `V2*` names, no
+  screenshots of the current site.
+- Every foundation in §2 cites an external standard or product; the pattern set derives
+  from the six locked destinations' jobs, not from sections that exist today.
+- Could this exist if the current public site did not? **Yes** — nothing above references it.
+- Deliberate non-inheritances: the equal-weight section stack, the card-grid-per-section
+  habit, horizontal scroll rails, the "hero + 11 sections" homepage shape.
+
+## How the first version was granted
+
+Matt judged the MOVING prototype live in production at `/dev/public-v3` (real Bend data,
+390 and 1280, reduced-motion path) and granted the visual lock on 2026-08-11. The barrel
+that implements these patterns is `components/site/v3`, enforced by `ci:public-v3`, and
+the rollout onto it is ratcheted by `ci:public-ui`.
+
+## Changelog
+
+- **2026-08-11** — written greenfield after the IA lock, under design amnesia (see
+  above), and granted by Matt on the moving prototype. Six patterns, declared
+  closed; a four-of-six cap per page.
+- **2026-08-26** — an enumeration counts once for the rhythm rule (a run of one
+  section rendered per member of a set the place determines is one section).
+- **2026-08-26** — THE LOOK: two registers, Broadside and Ledger, §6. A register
+  varies structure, density, rule weight and motion only.
+- **2026-08-26** — the three big place pages allowed a fifth pattern. *Retired
+  2026-08-27: superseded when the cap died.*
+- **2026-08-27** — **the four-pattern cap is DEAD.** It never split a page; it cut
+  content — seven sections off the homepage draft, five off `/communities/[slug]`.
+  A visual-language rule may not decide what content a page carries.
+- **2026-08-27** — **the pattern set is OPEN.** "Closed at six" was aimed at
+  page-local one-offs but stated as "a section that fits none may not exist", and
+  that is what got acted on: the community market charts were deleted for want of
+  a chart primitive three weeks after `V3Chart` was built. A new pattern is now
+  built as a barrel primitive; the one-off is what `ci:one-design-system` blocks.
+- **2026-08-27** — the token block moved to `:root` alone and every shade became
+  `color-mix()` off the two base colors, so a style template reaches the charts,
+  the scrims and the hairlines instead of only the solid colors.
+- **2026-08-27** — this file restructured: rules first, provenance last. The
+  self-graded craft scorecard was deleted (a number a document gives itself
+  measures nothing), and the corrupted amendment paragraph it carried since
+  2026-08-26 went with it.

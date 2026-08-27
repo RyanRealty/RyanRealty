@@ -12,7 +12,7 @@
    navy #102742, cream #faf8f4, Amboqia display, Geist body, 3px warm stone
    focus ring, tabular numerals on every figure, 200/300/400ms motion ladder.
 
-   THE LOOK (Matt 2026-08-26, PUBLIC_UI.md section 9): the DEFAULT register
+   THE LOOK (Matt 2026-08-26, PUBLIC_UI.md section 6): the DEFAULT register
    below is BROADSIDE — radius 0 on every box, zero elevation shadows, rule
    weight as the hierarchy (1px hairline / 2px navy section / 4px navy mast),
    generous section rhythm, tracked small-caps labels, Amboqia numerals,
@@ -365,7 +365,7 @@
 .v3--ledger .v3 {
   /* Working-instrument type: 13px base. The reading-prose 16px floor
      (PUBLIC_UI.md section 2) governs the content register; a data instrument
-     is working UI text, recorded as such in PUBLIC_UI.md section 9. */
+     is working UI text, recorded as such in PUBLIC_UI.md section 6. */
   --v3-size-display-1: 1.5rem;
   --v3-size-display-2: 1.1875rem;
   --v3-size-num-lead: 2.5rem;

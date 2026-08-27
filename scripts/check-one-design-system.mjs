@@ -36,7 +36,7 @@
  *      casing, and as the Tailwind arbitrary forms) on a public surface. The
  *      token is the only spelling. This is the one that had 672 instances.
  *
- *   4. AN ELEVATION SHADOW. Neither register draws one (PUBLIC_UI section 9).
+ *   4. AN ELEVATION SHADOW. Neither register draws one (PUBLIC_UI section 6).
  *      A shadow that is not a focus ring or a data-mark ring is a third look
  *      arriving one component at a time.
  *
@@ -154,7 +154,7 @@ for (const rel of [...cssFiles('components'), ...cssFiles('app')]) {
   if (elev) {
     failures.push(
       `${rel}: draws an elevation shadow (${elev[0].trim().slice(0, 48)}...). Neither ` +
-      `register draws one (PUBLIC_UI section 9). Only a focus ring or a data-mark ` +
+      `register draws one (PUBLIC_UI section 6). Only a focus ring or a data-mark ` +
       `ring may cast, and both are inset or zero-offset.`
     )
   }

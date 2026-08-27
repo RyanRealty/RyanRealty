@@ -299,7 +299,7 @@ export async function renderMapSplitView(props: {
   // shell to remaining viewport and flex-fills nested .map-search-shell.
   // No footer on the app-frame. Search is the Homes Field, not header chrome.
   // V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
-  // (THE LOOK, PUBLIC_UI.md section 9).
+  // (THE LOOK, PUBLIC_UI.md section 6).
   return (
     <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'search-app-frame w-full bg-muted')}>
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-2 sm:px-6">

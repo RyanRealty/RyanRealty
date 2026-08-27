@@ -392,7 +392,7 @@ export default async function SearchPage({
   return (
     <>
       {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
-          (THE LOOK, PUBLIC_UI.md section 9). */}
+          (THE LOOK, PUBLIC_UI.md section 6). */}
       <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'min-h-screen bg-background')}>
       {searchBreadcrumbItems.length > 1 && (
         <V3Breadcrumb belowNav={false} trail={searchBreadcrumbItems} />
