@@ -105,6 +105,7 @@ export default async function ListYourHomePage() {
   }
 
   return (
+    <>
     <main className="bg-cream text-navy">
       <LandingPageTracker lpVariant="sell-your-home" />
       <script
@@ -507,13 +508,6 @@ export default async function ListYourHomePage() {
         </div>
       </section>
 
-      {/* SECTION 7: FOOTER - minimal */}
-      {/* THE ONE SITE FOOTER (Matt 2026-08-27, "no exceptions"). This page
-        hand-rolled its own footer in raw var(--v3-navy)/var(--v3-cream) with a 3px slab edge,
-        which is how nine landing pages came to carry a footer the other 87
-        public pages do not have. Held by ci:chrome-single-source. */}
-      <V3Footer columns={V3_FOOTER_COLUMNS} />
-
       {/* Sticky mobile CTA bar — pinned to viewport bottom on mobile only. */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-navy bg-cream px-3 py-3 sm:hidden">
         <div className="flex items-center gap-2">
@@ -533,6 +527,14 @@ export default async function ListYourHomePage() {
         </div>
       </div>
     </main>
+
+    {/* THE ONE SITE FOOTER (Matt 2026-08-27). Outside <main> on purpose:
+        HTML-AAM maps <footer> to role=contentinfo ONLY when it is not nested in
+        sectioning content. Dropped in place of this page's hand-rolled footer it
+        landed INSIDE <main>, so the page rendered zero contentinfo landmarks
+        while every other public page had one. Held by ci:chrome-single-source. */}
+    <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
 

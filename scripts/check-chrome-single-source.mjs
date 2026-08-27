@@ -100,20 +100,37 @@ function parse(rel) {
   return ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 }
 
-/** Every JSX element mounted in a file, with its line. Comments cannot appear. */
+/**
+ * Every JSX element mounted in a file, with its line and whether it sits inside a
+ * <main> element. Comments cannot appear.
+ *
+ * `insideMain` exists because of a defect this gate MISSED (2026-08-27): seven
+ * landing pages mounted the correct footer in the wrong place. HTML-AAM maps
+ * <footer> to role=contentinfo ONLY when it is not nested in sectioning content,
+ * so a footer inside <main> is not a landmark at all. Those pages rendered ZERO
+ * contentinfo landmarks while every other public page had one, and this gate
+ * reported "one header, one footer, everywhere public" the whole time, because it
+ * counted mounts and never asked where they were.
+ */
 function mountedElements(rel) {
   const src = parse(rel)
   const found = []
-  const visit = (node) => {
+  const visit = (node, mainDepth) => {
+    let depth = mainDepth
+    if (ts.isJsxElement(node)) {
+      const tag = node.openingElement.tagName.getText(src)
+      if (tag === 'main') depth += 1
+    }
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       found.push({
         name: node.tagName.getText(src).replace(/^.*\./, ''),
         line: src.getLineAndCharacterOfPosition(node.getStart(src)).line + 1,
+        insideMain: mainDepth > 0,
       })
     }
-    ts.forEachChild(node, visit)
+    ts.forEachChild(node, (child) => visit(child, depth))
   }
-  visit(src)
+  visit(src, 0)
   return found
 }
 
@@ -146,8 +163,20 @@ const pages = tsxFiles('app').filter(inScope).sort()
 
 let footerMounts = 0
 for (const rel of pages) {
-  for (const { name, line } of mountedElements(rel)) {
-    if (name === ALLOWED_FOOTER) { footerMounts++; continue }
+  for (const mount of mountedElements(rel)) {
+    const { name, line } = mount
+    if (name === ALLOWED_FOOTER) {
+      footerMounts++
+      if (mount.insideMain) {
+        failures.push(
+          `${rel}:${line}  mounts <${ALLOWED_FOOTER}> INSIDE <main>. HTML-AAM maps <footer> to ` +
+          `role=contentinfo only when it is NOT nested in sectioning content, so this page has ` +
+          `the right footer and no contentinfo landmark. Move it after </main> (wrap the return ` +
+          `in a fragment if it is a bare <main>).`
+        )
+      }
+      continue
+    }
     if (KNOWN_FOOTERS.has(name)) {
       failures.push(
         `${rel}:${line}  mounts <${name}> — the ONE site footer is <${ALLOWED_FOOTER}>. ` +

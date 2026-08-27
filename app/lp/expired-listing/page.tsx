@@ -115,6 +115,7 @@ export default async function ExpiredListingPage() {
   )
 
   return (
+    <>
     <main className="min-h-screen bg-cream text-navy">
       <LandingPageTracker lpVariant="expired-listing" />
       {/* ─── Sticky minimal header — wordmark + phone (KB navy bar) ───────── */}
@@ -465,11 +466,6 @@ export default async function ExpiredListingPage() {
         </div>
       </section>
 
-      {/* THE ONE SITE FOOTER (Matt 2026-08-27, "no exceptions"). This page
-        hand-rolled its own footer in raw var(--v3-navy)/var(--v3-cream) with a 3px slab edge,
-        which is how nine landing pages came to carry a footer the other 87
-        public pages do not have. Held by ci:chrome-single-source. */}
-      <V3Footer columns={V3_FOOTER_COLUMNS} />
 
       {/* Exit-intent prompt — desktop-only, once per session. */}
       <ExitIntentPrompt
@@ -499,6 +495,13 @@ export default async function ExpiredListingPage() {
         </div>
       </div>
     </main>
+      {/* THE ONE SITE FOOTER (Matt 2026-08-27). Outside <main> on purpose:
+          HTML-AAM maps <footer> to role=contentinfo ONLY when it is not nested in
+          sectioning content. Dropped in place of this page's hand-rolled footer it
+          landed INSIDE <main>, so the page rendered zero contentinfo landmarks
+          while every other public page had one. Held by ci:chrome-single-source. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
 

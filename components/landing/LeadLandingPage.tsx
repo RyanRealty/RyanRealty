@@ -51,6 +51,7 @@ export default function LeadLandingPage({ config }: Props) {
   const audienceLabel = config.audience === 'seller' ? 'Seller' : 'Buyer'
 
   return (
+    <>
     <main className={`${V3_ROOT_CLASS} lead-landing`}>
       <V3SectionTracker />
       {/* A plain surface trail, as on every other v3 page. KbBreadcrumb's
@@ -200,7 +201,6 @@ export default function LeadLandingPage({ config }: Props) {
           </div>
         </section>
 
-        <V3Footer columns={V3_FOOTER_COLUMNS} />
 
       {/* Scoped KB-token styles for the lead-landing surfaces. Navy/cream tokens
           and the Amboqia display come from kb.css; this only lays out the
@@ -258,5 +258,13 @@ export default function LeadLandingPage({ config }: Props) {
         .v3.lead-landing .lp-faq-link .arr{transition:transform .18s ease;}
       `}</style>
     </main>
+
+    {/* THE ONE SITE FOOTER. Outside <main> on purpose: HTML-AAM maps <footer> to
+        role=contentinfo ONLY when it is not nested in sectioning content. It sat
+        inside <main> here, so /buy/[intent] and /sell/[intent] rendered zero
+        contentinfo landmarks while every other public page had one.
+        Held by ci:chrome-single-source. */}
+    <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

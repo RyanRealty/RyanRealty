@@ -95,6 +95,7 @@ export default async function BookPage({
   }
 
   return (
+    <>
     <main className={V3_ROOT_CLASS}>
       <V3SectionTracker />
 
@@ -123,9 +124,14 @@ export default async function BookPage({
         />
       </section>
 
-      {/* This surface shows the site header, so it owes the site footer too:
-          the footer is route-owned here, not rendered by the layout. */}
-      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </main>
+
+    {/* This surface shows the site header, so it owes the site footer too: the
+        footer is route-owned here, not rendered by the layout. Outside <main> on
+        purpose -- HTML-AAM maps <footer> to role=contentinfo only when it is not
+        nested in sectioning content, and it sat inside until 2026-08-27, so this
+        page had the right footer and no contentinfo landmark. */}
+    <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
