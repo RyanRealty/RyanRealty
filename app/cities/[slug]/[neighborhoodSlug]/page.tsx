@@ -45,6 +45,7 @@
  */
 
 import { notFound } from 'next/navigation'
+import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import type { Metadata } from 'next'
 import { getNeighborhoodBySlug, getCommunitiesInNeighborhood } from '@/app/actions/cities'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
@@ -193,6 +194,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   if (!neighborhood) notFound()
 
   const cityName = neighborhood.cityName
+
+  // D94 restored 2026-08-27. Open houses are recorded per listing and scoped by
+  // CITY -- there is no neighbourhood feed -- so the eyebrow names the parent
+  // city rather than this neighbourhood. That mislabel (a city feed under a
+  // smaller place's name) is the D93 defect, and naming the scope is the fix.
+  const openHouses = await readCityOpenHouses(neighborhood.cityName)
+  const [firstOh, ...restOh] = openHouseRows(openHouses)
   // market_stats_cache / price history store city geo_slug SPACE-separated.
   const cityGeoSlug = canonicalCityCacheSlug(citySlug)
 
@@ -639,6 +647,17 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
               `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings on ${useActScoped ? neighborhood.name : cityName} homes`,
             )}
             action={{ label: v3Text('Full market pulse'), href: '/housing-market' }}
+          />
+        ) : null}
+
+        {firstOh ? (
+          <V3Ledger
+            id="open-houses"
+            eyebrow={v3Text(`This week · ${cityName}`)}
+            heading={v3Text('Open houses you can walk through')}
+            rows={[firstOh, ...restOh]}
+            source={v3Text(OPEN_HOUSE_TRACE)}
+            action={{ label: v3Text(`Every open house in ${cityName}`), href: `/open-houses/${citySlug}` }}
           />
         ) : null}
 

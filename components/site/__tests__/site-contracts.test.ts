@@ -389,36 +389,51 @@ describe('design directive contracts', () => {
     expect(readSrc('app/cities/[slug]/page.tsx')).toMatch(/activityItems/)
   })
 
-  // D94 IS NOT IMPLEMENTED, AND THIS TEST SAYS SO IN ITS NAME RATHER THAN GOING
-  // GREEN ON SOMETHING ELSE.
+  // D94 RESTORED 2026-08-27, with the four-pattern cap that deleted it.
   //
-  // The interactive open-houses rail was a Matt directive. It rendered through
-  // KbOpenHouses.client.tsx, which was deleted in the 2026-08-26 place-family
-  // migration as part of the "orphan cascade" — a cap-driven deletion, made when
-  // PUBLIC_UI section 3 still capped a page at four patterns. No v3 place page
-  // renders an open-houses section today, so there is nothing to assert the
-  // directive against.
+  // It came back as a LEDGER, not as the old horizontal rail. KbOpenHouses was a
+  // strip where clicking a card promoted it into a lead panel; that interaction
+  // was the rail's answer to having no room. On the barrel the pattern for "a
+  // scannable list of real rows, each row a door" is Ledger, and an open-house
+  // list is exactly that — a date, an address, a price, one action — so the
+  // promote-into-lead behaviour has nothing left to do.
   //
-  // What this test guards instead is the RESTORE PATH: buildOpenHouseItems and
-  // its row shape survived the deletion, so restoring D94 is a render, not a
-  // rebuild. If someone deletes the builder too, the directive becomes
-  // unrecoverable silently — that is what this bites on.
-  //
-  // Raised to Matt 2026-08-27 with the cap kill. Restore is a sections-pass item.
-  it('D94 — open-houses rail DELETED in the v3 place migration; restore path intact', () => {
-    const shared = readSrc('lib/kb/place-sections.ts')
-    expect(shared).toMatch(/export function buildOpenHouseItems/)
-    expect(shared).toMatch(/whenLabel: formatOpenHouseWhen/)
-    expect(readSrc('lib/kb/section-shapes.ts')).toMatch(/KbOpenHouseItem/)
-    // and no place page renders it, which is the fact this name reports
-    const places = [
+  // The feed is CITY-scoped (open houses are recorded per listing; no
+  // neighbourhood or community feed exists), so every eyebrow names the CITY.
+  // That is the D93 mislabel fixed rather than repeated: the KB community page
+  // put a Bend-wide feed under Tetherow's name.
+  it('D94 — the open-houses section renders on all three place grains', () => {
+    const shared = readSrc('lib/kb/place-open-houses.ts')
+    expect(shared).toMatch(/export async function readCityOpenHouses/)
+    expect(shared).toMatch(/export function openHouseRows/)
+    // the ask is published, never raw-formatted (section 0)
+    expect(shared).toMatch(/formatPublishedAsk/)
+    // and the MLS's literal 'N/A' subdivision never reaches a page
+    expect(shared).toContain('unknown|tbd')
+
+    for (const page of [
       'app/cities/[slug]/page.tsx',
       'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
       'app/communities/[slug]/page.tsx',
-    ]
-    for (const p of places) expect(readSrc(p)).not.toMatch(/buildOpenHouseItems\(/)
+    ]) {
+      const src = readSrc(page)
+      expect(src).toMatch(/readCityOpenHouses\(/)
+      expect(src).toMatch(/id="open-houses"/)
+      // the eyebrow names the city the feed is actually scoped to
+      expect(src).toMatch(/This week · \$\{cityName\}/)
+    }
   })
 
+  // The community page also lost its activity feed and its blog rail to the same
+  // cap; both are back, on the same city-scoped honesty.
+  it('the community page carries the activity feed and the guides rail again', () => {
+    const src = readSrc('app/communities/[slug]/page.tsx')
+    expect(src).toMatch(/id="activity"/)
+    expect(src).toMatch(/id="guides"/)
+    expect(src).toMatch(/buildActivityItems\(/)
+    expect(src).toMatch(/buildArticlePosts\(/)
+    expect(src).toMatch(/Live · \$\{cityName\}/)
+  })
   it('D91 — market structured data cannot vanish (MARKET_TRUTH D26)', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     // This used to pin the spelling `pulse ?? { snapshot.activeSfrCount }`. D26

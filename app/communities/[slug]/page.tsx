@@ -56,6 +56,11 @@
  */
 
 import { notFound } from 'next/navigation'
+import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
+import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
+import { getRecentBlogPosts } from '@/lib/data'
+import { buildActivityItems, buildArticlePosts } from '@/lib/kb/place-sections'
+import { activityRows, articleRows } from '@/app/cities/[slug]/_v3/city-sections'
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
 import {
@@ -111,6 +116,7 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
+  V3Ledger,
   V3PlaceCharacter,
   V3PlacePropertyTypes,
   V3Quiet,
@@ -187,6 +193,21 @@ export default async function CommunityDetailPage({ params }: Props) {
   if (!community) notFound()
 
   const cityName = community.city
+
+  // RESTORED 2026-08-27, with the cap. The 2026-08-26 migration deleted this
+  // page's activity feed, blog rail and open-house list and left a door to each
+  // in the closing Quiet -- a door is not the section. All three are CITY-scoped
+  // (a community has no feed of its own), which is exactly the D93 mislabel the
+  // old KB page shipped: a city feed under the community's name. Each eyebrow
+  // now names the city the data is actually scoped to.
+  const [openHouses, communityActivity, communityBlog] = await Promise.all([
+    readCityOpenHouses(cityName),
+    getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }).catch(() => []),
+    getRecentBlogPosts({ cityName, limit: 3 }).catch(() => []),
+  ])
+  const [firstOh, ...restOh] = openHouseRows(openHouses)
+  const [firstAct, ...restAct] = activityRows(buildActivityItems(communityActivity, { staleNewAfterDays: 21 }))
+  const [firstPost, ...restPost] = articleRows(buildArticlePosts(communityBlog))
   const citySlug = community.citySlug
 
   // Compound and wrong-city slugs canonicalize in middleware
@@ -728,6 +749,30 @@ export default async function CommunityDetailPage({ params }: Props) {
           subdivision={community.subdivision}
         />
 
+        {firstOh ? (
+          <V3Ledger
+            id="open-houses"
+            eyebrow={v3Text(`This week · ${cityName}`)}
+            heading={v3Text('Open houses you can walk through')}
+            rows={[firstOh, ...restOh]}
+            source={v3Text(OPEN_HOUSE_TRACE)}
+            action={{ label: v3Text(`Every open house in ${cityName}`), href: `/open-houses/${citySlug}` }}
+          />
+        ) : null}
+
+        {firstAct ? (
+          <V3Ledger
+            id="activity"
+            eyebrow={v3Text(`Live · ${cityName}`)}
+            heading={v3Text('Latest market activity')}
+            rows={[firstAct, ...restAct]}
+            source={v3Text(
+              `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings on ${cityName} homes`,
+            )}
+            action={{ label: v3Text('Full market pulse'), href: '/housing-market' }}
+          />
+        ) : null}
+
         {/* Pattern 6 - the FAQ answers, the recorded documents as legal doors,
             and every outbound edge. The freshness sentence carries the same
             clock the Dataset's dateModified publishes. */}
@@ -740,6 +785,16 @@ export default async function CommunityDetailPage({ params }: Props) {
             asOfLabel ? ` Market data updated ${asOfLabel}.` : ''
           }`}
         />
+
+        {firstPost ? (
+          <V3Ledger
+            id="guides"
+            eyebrow={v3Text(`Reading · ${cityName}`)}
+            heading={v3Text('Guides and market notes')}
+            rows={[firstPost, ...restPost]}
+            action={{ label: v3Text('Every guide'), href: '/blog' }}
+          />
+        ) : null}
       </main>
 
       {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo

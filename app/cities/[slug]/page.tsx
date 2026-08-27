@@ -61,6 +61,7 @@
  */
 
 import { notFound } from 'next/navigation'
+import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import type { Metadata } from 'next'
 import {
   getGeoSnapshot,
@@ -506,6 +507,10 @@ export default async function CityDetailPage({ params }: Props) {
   const [firstRail, ...restRail] = communityRows(communityItems)
   const [firstGolf, ...restGolf] = placeFigureRows(golfLedgerItems, 'Golf and master-planned')
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
+  // D94 restored 2026-08-27. The feed is CITY-scoped, which is what this page is,
+  // so the eyebrow and the door both name the city honestly.
+  const openHouses = await readCityOpenHouses(cityName)
+  const [firstOh, ...restOh] = openHouseRows(openHouses)
   const [firstAct, ...restAct] = activityRows(activityItems)
   const [firstGuide, ...restGuide] = [
     ...areaGuideRow(cityName, areaGuideVideo),
@@ -660,6 +665,17 @@ export default async function CityDetailPage({ params }: Props) {
             rows={[firstAct, ...restAct]}
             source={v3Text(cityActivityTrace(cityName))}
             action={{ label: v3Text('Full market pulse'), href: '/housing-market' }}
+          />
+        ) : null}
+
+        {firstOh ? (
+          <V3Ledger
+            id="open-houses"
+            eyebrow={v3Text(`This week · ${cityName}`)}
+            heading={v3Text('Open houses you can walk through')}
+            rows={[firstOh, ...restOh]}
+            source={v3Text(OPEN_HOUSE_TRACE)}
+            action={{ label: v3Text(`Every open house in ${cityName}`), href: `/open-houses/${slug}` }}
           />
         ) : null}
 
