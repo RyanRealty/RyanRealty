@@ -67,14 +67,18 @@ describe('public mix / feature floors', () => {
     const zip = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
     const comm = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
     const nbh = readFileSync(resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'), 'utf8')
-    expect(home).toMatch(/getPublicDetachedMix/)
+    // The HOMEPAGE dropped the mix read 2026-08-27 ("the answer, not the
+    // report"): its market section prints five figures and a door to
+    // /housing-market, which owns the full set. It must not read mix only to
+    // discard it.
+    expect(home).not.toMatch(/getPublicDetachedMix/)
     expect(cities).toMatch(/getPublicDetachedMix/)
     expect(zip).toMatch(/getPublicDetachedMix/)
     expect(comm).toMatch(/getPublicDetachedMix/)
     expect(nbh).toMatch(/getPublicDetachedMix/)
     // v3 homepage (2026-08-27): the mix cells print as Instrument figures
     // through the same shared builder the ZIP and city pages use.
-    expect(home).toMatch(/buildPublicMixFigures/)
+    expect(home).not.toMatch(/buildPublicMixFigures/)
     // v3 city page (2026-08-26): the mix cells print as Instrument figures
     // through the same shared builder the ZIP page uses.
     expect(cities).toMatch(/buildPublicMixFigures/)

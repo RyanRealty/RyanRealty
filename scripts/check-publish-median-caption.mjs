@@ -62,15 +62,16 @@ const surfaces = [
   {
     path: 'app/page.tsx',
     label: 'homepage sell ask publishes no uncaptioned median',
-    // MOVED, NOT DROPPED (2026-08-27). The homepage left the KB register and
-    // KbSell left with it. The seller ask is the market Instrument's ghost
-    // action — valuationHref keeps the ?from= attribution — and it publishes
-    // no median at all: the medians the page prints sit in the Instrument
-    // figures and the place ledgers, each under a section that names its
-    // geography and its trace. Put a money value into the ask label, or drop
-    // the valuation ask entirely, and this fires. A page that puts KbSell
-    // back satisfies the first arm instead.
-    noMedianAsk: true,
+    // RE-EXPRESSED AGAIN (2026-08-27, second move). The seller ask stopped
+    // being the market Instrument's ghost action when the page was ordered for
+    // conversion: the Instrument's action is now the door to the full market
+    // report, and the seller ask is its own SellValueForm section (pagePath '/'
+    // keeps the ?from= attribution the ghost action carried). The rule is
+    // unchanged: the ask surface publishes no median of its own — the medians
+    // this page prints sit in the Instrument figures and the towns ledger, each
+    // under a section naming its geography and trace. The form file is checked
+    // for a median it might mint, and the page for a median it might feed in.
+    noMedianSurface: 'app/sell/_v3/SellValueForm.tsx',
   },
   {
     path: 'app/zip/[zip]/page.tsx',

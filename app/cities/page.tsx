@@ -422,19 +422,28 @@ export default async function CitiesPage() {
           />
         ) : null}
 
+        {/* ONE LEDGER OF EVERY CITY (2026-08-27). This page's own target says
+            "a ledger of Central Oregon cities, NOT a link farm", and it rendered
+            THREE overlapping city lists -- a featured ledger, a per-city filter
+            Quiet, and a "rest of" ledger -- which is the link farm it names.
+            The two city LEDGERS are one now: every city, one list, featured
+            first (they carry the richer leftover rows), each row a door. The
+            filter-doors Quiet survives below as genuinely different content
+            (deep search links, and ci:westside-backlog pins the Bend luxury
+            door inside it). */}
         {firstFeatured ? (
           <V3Ledger
             id="featured-cities"
             eyebrow={v3Text('Central Oregon')}
-            heading={v3Text('Pick a city. See what is listed.')}
-            rows={[firstFeatured, ...restFeatured]}
-            source={v3Text(FEATURED_TRACE)}
+            heading={v3Text('Every city, and what is listed there')}
+            rows={[firstFeatured, ...restFeatured, ...(firstOther ? [firstOther, ...restOthers] : [])]}
+            source={v3Text(FEATURED_TRACE + '. Remaining cities: ' + OTHERS_TRACE)}
           />
         ) : (
           <V3Ledger
             id="featured-cities"
             eyebrow={v3Text('Central Oregon')}
-            heading={v3Text('Pick a city. See what is listed.')}
+            heading={v3Text('Every city, and what is listed there')}
             rows={[]}
             emptyMessage={v3Text('The city index returned no city on this refresh.')}
           />
@@ -446,16 +455,6 @@ export default async function CitiesPage() {
             eyebrow="Straight to the listings"
             heading="Every city, every door"
             items={cityDoors}
-          />
-        ) : null}
-
-        {firstOther ? (
-          <V3Ledger
-            id="other-cities"
-            eyebrow={v3Text('More areas')}
-            heading={v3Text('The rest of Central Oregon')}
-            rows={[firstOther, ...restOthers]}
-            source={v3Text(OTHERS_TRACE)}
           />
         ) : null}
 

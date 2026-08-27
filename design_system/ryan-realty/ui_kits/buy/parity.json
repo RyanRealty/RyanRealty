@@ -51,7 +51,7 @@
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Stage #top -- the opening",
     "V3Breadcrumb",
-    "MISSING: live inventory. See openDefects -- this page's own target opens with 'live MLS search as the next step' and the page carries no listings, no count and no market figure.",
+    "HomeHomesField -- the live inventory: the curated SFR set, the leftover region count, towns as ghost filters, the map plotting the listed set (added 2026-08-27, closing this contract's own openDefect)",
     "V3Ledger #buyer-guides -- first-time, relocation, investment",
     "V3Quiet #how-it-works -- how a purchase works here",
     "BuyAlertsSheet -- the listing-alerts ask",
@@ -59,10 +59,7 @@
     "V3Footer"
   ],
   "openDefects": {
-    "_": "Drafted 2026-08-27 against this page's own competitiveTarget.",
-    "items": [
-      "NO LIVE INVENTORY ANYWHERE ON THE PAGE. The competitive target's first clause is 'live MLS search as the next step'. The page renders no listing tiles, no active count, and no market figure -- verified: it calls none of getListingTiles, leftoverHudKpis, getMarketPulse. A buyer-intent page with no houses on it loses to Zillow on the only thing Zillow is good at.",
-      "The opening is a Stage with no figure, so the first screen states nothing a buyer can act on."
-    ]
+    "_": "Closed 2026-08-27.",
+    "items": []
   }
 }

@@ -30,8 +30,13 @@ describe('homepage market figures stay on the leftover pile', () => {
   })
 
   it('KPI row is leftover only: miss omits, pulse does not fill', () => {
-    // The pace figures the HUD already prints are skipped, not re-labeled.
-    expect(SRC).toMatch(/CITY_PACE_KEYS_ON_THE_HUD\.has\(item\.key\)/)
+    // 2026-08-27 second form: the pace-item append (and its skip-set) went with
+    // "the answer, not the report" -- the homepage prints five allowlisted
+    // figures off leftoverMarketFigures and a door to /housing-market. The rule
+    // this test guards is unchanged: figures come from the leftover pile, and a
+    // missing cell OMITS rather than being filled from the pulse row.
+    expect(SRC).toMatch(/HOME_FIGURE_LABELS/)
+    expect(SRC).toMatch(/leftoverMarketFigures\(hud/)
     expect(SRC).not.toMatch(/closedCount30d\s*\?\?\s*pulse/)
     expect(SRC).not.toMatch(/daysToPending90d\s*\?\?\s*pulse/)
     expect(SRC).not.toMatch(/new30:\s*pulse/)

@@ -125,7 +125,6 @@
   "openDefects": {
     "_": "Open against this page's purpose as of 2026-08-27.",
     "items": [
-      "SIXTEEN market figures in one row. The page owes an ANSWER ('a balanced market, 5.6 months of supply') plus a door to the full report. Sixteen KPIs is the market report inlined, and the answer is lost inside it. NOT YET FIXED -- several of those figures are pinned by publish gates and cutting them needs a pass through each.",
       "The hero states no inventory figure while the count line sits below it, so the first screen carries no number on a page whose head term is inventory."
     ]
   },

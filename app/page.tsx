@@ -19,10 +19,8 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
 import { homesForSalePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
-import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
-import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
-import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
 import {
   placeFigureRows,
   communityRows,
@@ -148,7 +146,7 @@ const COMM_FEATURED = [
 
 export default async function Home() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [cities, communities, tiles, priceHist, cityPulse, publicPace, leftoverMonthly, publicMix, regionOverlays, brokers] = await Promise.all([
+  const [cities, communities, tiles, priceHist, cityPulse, publicPace, leftoverMonthly, regionOverlays, brokers] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     // SFR sub-type since C-02: the sibling geo Fields all pull Single Family
@@ -162,7 +160,6 @@ export default async function Home() {
       geoSlug: 'central-oregon',
       currentMonthKey,
     }).catch(() => []),
-    getPublicDetachedMix({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_MIX),
     getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]).catch(() => new Map()),
     getBrokers().catch(() => []),
 
@@ -256,15 +253,23 @@ export default async function Home() {
   const verdictSentence = hasVerdict
     ? `Central Oregon has ${mosLabel} months of supply, which is a ${verdict.label}.`
     : null
+  // THE ANSWER, NOT THE REPORT (2026-08-27, closing this page's recorded
+  // defect: "SIXTEEN market figures in one row... the answer is lost inside
+  // it"). The homepage owes the verdict plus the handful of figures a buyer
+  // actually reads; /housing-market owns the full set and is the door below.
+  // Every figure still arrives through leftoverMarketFigures off the ONE
+  // leftover hud row, which is the mechanism the publish gates pin.
+  const HOME_FIGURE_LABELS = new Set([
+    'median list price',
+    'detached homes for sale',
+    'months of supply',
+    'median to pending · 90 days',
+    'sale to list',
+  ])
   const figures = leftoverMarketFigures(hud, {
     browse: publishRegionalSearchHref(),
     monthsOfSupply: '/months-of-supply',
-  })
-  for (const item of publicPaceItems(publicPace)) {
-    if (CITY_PACE_KEYS_ON_THE_HUD.has(item.key)) continue
-    figures.push({ value: v3Text(item.value), label: v3Text(item.label) })
-  }
-  for (const figure of buildPublicMixFigures(publicMix)) figures.push(figure)
+  }).filter((f) => HOME_FIGURE_LABELS.has(String(f.label)))
   const [firstMarketFigure, ...restMarketFigures] = figures
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),
@@ -366,7 +371,7 @@ export default async function Home() {
             source={v3Text(marketSource)}
             chart={medianChart}
             updated={liveStamp(leftoverStamp)}
-            action={{ label: v3Text('Value my home'), href: valuationHref('/'), variant: 'ghost' }}
+            action={{ label: v3Text('Full market report'), href: '/housing-market', variant: 'ghost' }}
           />
         ) : (
           <V3Quiet
