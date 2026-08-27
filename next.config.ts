@@ -57,7 +57,15 @@ const nextConfig: NextConfig = {
   },
   // pdfjs-dist breaks when Turbopack bundles it into a server action (TC
   // document upload page-count). Load it from node_modules at runtime instead.
-  serverExternalPackages: ['pdfjs-dist', '@napi-rs/canvas'],
+  serverExternalPackages: [
+    'pdfjs-dist',
+    '@napi-rs/canvas',
+    // Ships a 35MB native binary per platform. Bundling it makes Turbopack
+    // try to resolve the platform sub-package at build time and fail; kept
+    // external it is required from node_modules at runtime, where the right
+    // platform build actually exists.
+    '@ffmpeg-installer/ffmpeg',
+  ],
   // Emit production source maps so Lighthouse Best Practices audit
   // valid-source-maps passes. /team route dropped to BP=0 without this
   // because every chunked vendor JS bundle counted as a missing-map fail.

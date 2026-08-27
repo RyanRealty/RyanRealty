@@ -81,7 +81,10 @@ describe('vision verdict normalisation', () => {
   })
 
   it('fails a clean frame that scores under the bar', () => {
+    // The bar is 85 (Matt 2026-08-26), set just above what the generator was
+    // already producing unaided, so a marginal frame regenerates.
     expect(normalizeVerdict({ pass: true, score: 60, defects: [], describes: 'x', fixHint: '' }).pass).toBe(false)
+    expect(normalizeVerdict({ pass: true, score: 84, defects: [], describes: 'x', fixHint: '' }).pass).toBe(false)
     expect(normalizeVerdict({ pass: true, score: 88, defects: [], describes: 'x', fixHint: '' }).pass).toBe(true)
   })
 
@@ -209,7 +212,7 @@ describe('slate', () => {
 
   it('leads with the perishable thing: a listing that just came on', () => {
     const slate = planSlate({ pulse, triggers, max: 3, today: new Date('2026-08-26T12:00:00Z') })
-    expect(slate[0].formatId).toBe('listing_motion')
+    expect(slate[0].formatId).toBe('listing_film')
     expect(slate[0].subjectQuery).toBe('220189422')
   })
 
@@ -227,10 +230,18 @@ describe('slate', () => {
     expect(pick(a)).not.toEqual(pick(b))
   })
 
-  it('answers the room when nothing of ours moved', () => {
+  it('says nothing when nothing of ours moved', () => {
+    // No fallback post. answer-the-room is on demand only, so a quiet day
+    // produces an empty slate rather than a manufactured reason to post.
     const slate = planSlate({ pulse: null, triggers: [], max: 3, today: new Date('2026-08-26T12:00:00Z') })
-    expect(slate).toHaveLength(1)
-    expect(slate[0].formatId).toBe('trend_reactive')
+    expect(slate).toEqual([])
+  })
+
+  it('never auto-schedules answer-the-room', () => {
+    for (const day of ['2026-08-24', '2026-08-25', '2026-08-26', '2026-08-29']) {
+      const slate = planSlate({ pulse, triggers, max: 5, today: new Date(`${day}T12:00:00Z`) })
+      expect(slate.some((i) => i.formatId === 'trend_reactive')).toBe(false)
+    }
   })
 
   it('never exceeds the requested size', () => {
@@ -242,6 +253,15 @@ describe('slate', () => {
 describe('produce pipeline', () => {
   function adapters(overrides: Partial<StudioAdapters> = {}): StudioAdapters {
     return {
+      getPhotos: vi.fn().mockResolvedValue([]),
+      gradePhoto: vi.fn().mockResolvedValue({
+        subject: 'exterior_front',
+        quality: 90,
+        animatable: true,
+        hasOverlay: false,
+        describes: 'front of the house',
+      }),
+      concat: vi.fn().mockResolvedValue({ ok: true, body: Buffer.from('film'), method: 'encode', clips: 4 }),
       resolveSubject: vi.fn().mockResolvedValue({
         label: 'Bend, Oregon',
         figures: { 'active listings': '412' },
@@ -328,6 +348,15 @@ describe('produce pipeline', () => {
 
   it('refuses a figures format that produced no citations', async () => {
     const a = adapters({
+      getPhotos: vi.fn().mockResolvedValue([]),
+      gradePhoto: vi.fn().mockResolvedValue({
+        subject: 'exterior_front',
+        quality: 90,
+        animatable: true,
+        hasOverlay: false,
+        describes: 'front of the house',
+      }),
+      concat: vi.fn().mockResolvedValue({ ok: true, body: Buffer.from('film'), method: 'encode', clips: 4 }),
       resolveSubject: vi.fn().mockResolvedValue({ label: 'Bend', figures: {}, citations: [] }),
     })
     const result = await produceStudioDraft(input, a)
@@ -350,6 +379,15 @@ describe('produce pipeline', () => {
 
   it('does not generate or inspect a frame for a real MLS photograph', async () => {
     const a = adapters({
+      getPhotos: vi.fn().mockResolvedValue([]),
+      gradePhoto: vi.fn().mockResolvedValue({
+        subject: 'exterior_front',
+        quality: 90,
+        animatable: true,
+        hasOverlay: false,
+        describes: 'front of the house',
+      }),
+      concat: vi.fn().mockResolvedValue({ ok: true, body: Buffer.from('film'), method: 'encode', clips: 4 }),
       resolveSubject: vi.fn().mockResolvedValue({
         label: '1844 NW Awbrey Rd, Bend',
         figures: { 'list price': '$895,000' },

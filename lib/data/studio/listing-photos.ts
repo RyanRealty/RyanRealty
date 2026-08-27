@@ -15,6 +15,7 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 
 export type ListingPhoto = {
   /** Largest URI available. This is the plate we animate. */
@@ -80,11 +81,16 @@ export async function getListingPhotos(
   const limit = Math.max(1, Math.min(60, options.limit ?? 24))
 
   try {
+    // The caller may hand us an MLS ListNumber rather than a ListingKey, and the
+    // two collide across listings — resolve before filtering (ci:listing-key-lookup).
+    const canonicalKey = await resolveCanonicalListingKey(key)
+    if (!canonicalKey) return []
+
     const sb = createServiceClient()
     const { data, error } = await sb
       .from('listings')
       .select('details, media_suppressed')
-      .eq('ListingKey', key)
+      .eq('ListingKey', canonicalKey)
       .maybeSingle()
 
     if (error) {

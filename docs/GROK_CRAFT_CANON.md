@@ -77,7 +77,36 @@ Also never: readable signage, phone UI, or brand marks in-camera. Generated
 letterforms hold for two frames and collapse into glyph soup, and a mark that
 almost matches ours is worse than no mark. Type is composited afterward.
 
-## 4. The reject list
+## 4. The sequence
+
+One shot is a post. A film is a small number of beats, cut, and the order is
+not decoration. Encoded in [`lib/studio/shotlist.ts`](../lib/studio/shotlist.ts):
+
+> establish outside → step into the main room → the room that sells the house
+> → one specific thing you would remember → back outside
+
+Three rules, each of which fixed a real fault in a real cut:
+
+- **Never the same subject twice in one film.** The first film we cut opened
+  and closed on the same front porch. Non-adjacent is not far enough apart.
+- **Never the same camera move twice.** Four beats built from two moves still
+  reads as a template. Prefer a move the film has not used.
+- **Fewer beats beats padding.** A two-beat film of good frames beats a
+  five-beat film carrying two bad ones. When nothing qualifies, make nothing.
+
+The frames come from the listing's own photographs, which is the half nobody
+else has; the grammar is the half the best people on the platform worked out.
+
+**Choose what to grade by striding across the set, not by taking the head.**
+MLS order front-loads the exterior and the main living space: grading photos
+0-7 of a 41-photo set returned three exteriors, five living rooms, and no
+kitchen, so the film had nothing for its third beat.
+
+**Always re-encode the cut.** Grok returns 1080p at roughly 32 Mbps, so four
+stream-copied beats is ~96MB. The storage bucket rejected it outright. One
+pass at CRF 21 puts the same film at ~22MB with no visible loss.
+
+## 5. The reject list
 
 `FRAME_DEFECTS` in `lib/grok/vision.ts` is a closed enum on purpose: a
 free-text critique cannot be counted, trended, or gated. Any defect is a hard
@@ -94,14 +123,14 @@ sage, ponderosa, basalt rimrock, the Cascades to the west. A generator reaching
 for "beautiful landscape" returns palms, saguaro, or eastern hardwoods, and a
 Bend audience spots it instantly.
 
-## 5. What the Studio does NOT own
+## 6. What the Studio does NOT own
 
 The live site's own video is separate and stays: the city and community hero
 clips resolved through `data/city-hero-videos.resolved.json`, and the MLS
 embeds in `lib/video-embed.ts`. Neither is generated, and neither goes through
 this pipeline. §0 still applies to any number on screen in them.
 
-## 6. Real-estate specific limits
+## 7. Real-estate specific limits
 
 - **An MLS photo is not ours to edit.** `editGrokImage` is for brand and
   background plates. Altering how a listed home looks misrepresents a real
@@ -114,7 +143,7 @@ this pipeline. §0 still applies to any number on screen in them.
 - **Every number still traces** (§0). Search citations are context, never a
   source for a figure.
 
-## 7. Provenance of these rules
+## 8. Provenance of these rules
 
 The craft rules in §3 and §4 were pulled from working practitioners via
 `x_search` and `web_search` on 2026-08-26, then reconciled against the API

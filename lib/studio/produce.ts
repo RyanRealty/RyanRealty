@@ -26,6 +26,7 @@ import { assertCraftClean, buildMotionPrompt, buildStillPrompt, type ShotSpec } 
 import {
   addSpend,
   assertBudget,
+  capForFormat,
   imageCost,
   newLedger,
   videoCost,
@@ -35,6 +36,8 @@ import {
   type SpendLedger,
 } from './spend'
 import { writeCaption, type CaptionRequest } from './caption'
+import { GRADE_BUDGET, planListingFilm, renderListingFilm, type FilmAdapters, type FilmPlan } from './film'
+import type { PlannedShot } from './shotlist'
 import type { VisionVerdict } from '@/lib/grok/vision'
 
 /** How many candidate stills we generate per attempt. */
@@ -53,6 +56,8 @@ export type StudioSubject = {
   place?: string
   /** Real photograph to animate, for listing formats. */
   sourcePhotoUrl?: string
+  /** Listing key, when the format builds a sequence from the whole photo set. */
+  photoSetKey?: string
   /** Live context for tone. Never a figure source. */
   context?: string
   /** Where a click should land. */
@@ -80,7 +85,7 @@ export type StudioProduceResult =
     }
   | { ok: false; error: string; draftId?: string }
 
-export type StudioAdapters = {
+export type StudioAdapters = FilmAdapters & {
   /** Resolve the subject and its verified figures. Null when nothing qualifies. */
   resolveSubject: (format: StudioFormat, query: string | undefined) => Promise<StudioSubject | null>
   generateStills: (input: {
@@ -93,14 +98,7 @@ export type StudioAdapters = {
     intent: string
     alsoReject: string[]
   }) => Promise<VisionVerdict>
-  animate: (input: {
-    prompt: string
-    imageUrl: string
-    aspectRatio: string
-    seconds: number
-  }) => Promise<{ url: string; model: string; durationSeconds: number; costTicks: number | null }>
   writeCaption: typeof writeCaption
-  downloadUrl: (url: string) => Promise<Buffer>
   storeMedia: (input: {
     draftId: string
     filename: string
@@ -193,7 +191,14 @@ export async function produceStudioDraft(
     return { ok: false, error: `${format.label} needs a ${format.subject}.` }
   }
 
-  const ledger = newLedger()
+  const shots = format.shots ?? 1
+  const ledger = newLedger(
+    capForFormat({
+      shots,
+      seconds: format.seconds,
+      gradedPhotos: shots > 1 ? GRADE_BUDGET : 0,
+    }),
+  )
   let draftId: string | undefined
 
   try {
@@ -229,7 +234,29 @@ export async function produceStudioDraft(
     let posterUrl: string
     let qa: VisionVerdict | null = null
 
-    if (format.frameSource === 'mls_photo') {
+    // A film plans its sequence here, in place of a single hero frame. The
+    // plan is cheap (grading only) and its description feeds the caption, so
+    // the expensive beats are not rendered until the words have passed.
+    let filmPlan: FilmPlan | null = null
+    const wantsFilm = (format.shots ?? 1) > 1 && Boolean(subject.photoSetKey)
+
+    if (wantsFilm) {
+      const planned = await planListingFilm(
+        {
+          listingKey: subject.photoSetKey as string,
+          maxShots: format.shots ?? 4,
+          secondsPerShot: format.seconds,
+        },
+        adapters,
+        ledger,
+      )
+      if (!planned.ok) {
+        await adapters.killDraft(draftId, planned.error)
+        return { ok: false, error: planned.error, draftId }
+      }
+      filmPlan = planned.plan
+      posterUrl = planned.plan.posterUrl
+    } else if (format.frameSource === 'mls_photo') {
       // A real photograph of a real property. Nothing to generate, nothing
       // to inspect, and nothing we are allowed to restyle.
       posterUrl = subject.sourcePhotoUrl as string
@@ -265,6 +292,7 @@ export async function produceStudioDraft(
       platforms: format.platforms,
       cta: subject.ctaUrl ? `Details at ${subject.ctaUrl}` : undefined,
       mediaDescription:
+        filmPlan?.describes ||
         qa?.describes ||
         (format.frameSource === 'mls_photo'
           ? `A photograph of the home at ${subject.label}, with a slow push in.`
@@ -282,8 +310,35 @@ export async function produceStudioDraft(
     // ── motion ─────────────────────────────────────────────────────────────
     let mediaUrl = posterUrl
     let mediaKind: 'image' | 'video' = 'image'
+    let filmShots: FilmPlan['shots'] | null = null
+    let degradedToSingleBeat = false
 
-    if (format.media === 'video') {
+    if (filmPlan) {
+      const film = await renderListingFilm(
+        filmPlan,
+        { aspectRatio: format.videoAspect },
+        adapters,
+        ledger,
+      )
+      if (!film.ok) {
+        await adapters.killDraft(draftId, film.error)
+        return { ok: false, error: film.error, draftId }
+      }
+      const storedFilm = await adapters.storeMedia({
+        draftId,
+        filename: 'film.mp4',
+        body: film.body,
+        contentType: 'video/mp4',
+      })
+      if (!storedFilm.ok) {
+        await adapters.killDraft(draftId, `Could not store film: ${storedFilm.error}`)
+        return { ok: false, error: storedFilm.error, draftId }
+      }
+      mediaUrl = storedFilm.url
+      mediaKind = 'video'
+      filmShots = film.shots
+      degradedToSingleBeat = film.degradedToSingleBeat
+    } else if (format.media === 'video') {
       const motionPrompt = buildMotionPrompt(spec)
       assertCraftClean(motionPrompt, `${format.id} motion prompt`)
       assertBudget(ledger, videoCost('grok-imagine-video-1.5', format.seconds), 'animation')
@@ -324,7 +379,25 @@ export async function produceStudioDraft(
         citations: subject.citations,
         qa: qa
           ? { score: qa.score, defects: qa.defects, describes: qa.describes, gate: 'grok-vision' }
-          : { gate: 'source-photograph', describes: 'Real MLS photograph, not generated.' },
+          : {
+              gate: 'source-photograph',
+              describes: filmPlan?.describes ?? 'Real MLS photograph, not generated.',
+            },
+        ...(filmShots
+          ? {
+              sequence: {
+                beats: filmShots.map((shot) => ({
+                  subject: shot.subject,
+                  move: shot.move,
+                  seconds: shot.seconds,
+                  quality: shot.quality,
+                  because: shot.because,
+                })),
+                // A film that quietly became one shot must say so on the row.
+                degradedToSingleBeat,
+              },
+            }
+          : {}),
         spend: ledger,
         media: { kind: mediaKind, url: mediaUrl, posterUrl },
         publish_payload: {

@@ -41,7 +41,12 @@ export type FrameDefect = (typeof FRAME_DEFECTS)[number]
 export type VisionVerdict = {
   /** False when any defect is present or the score is under the bar. */
   pass: boolean
-  /** 0 to 100: 100 reads as a paid photograph, 0 is obvious AI slop. */
+  /**
+   * 0 to 100: 100 reads as a paid photograph, 0 is obvious AI slop.
+   * The bar is 85 (Matt, 2026-08-26), set just above what the generator was
+   * already producing unaided (84 and 86 on the first two live frames), so a
+   * marginal frame regenerates instead of reaching the console.
+   */
   score: number
   defects: string[]
   /** One plain sentence on what the frame literally shows. */
@@ -58,7 +63,7 @@ export type VisionQaInput = {
   intent: string
   /** Extra hard-fail conditions for this format. */
   alsoReject?: string[]
-  /** Minimum passing score. Default 72. */
+  /** Minimum passing score. Default 85. */
   minScore?: number
   model?: string
 }
@@ -93,7 +98,7 @@ const SCHEMA: Record<string, unknown> = {
 export async function inspectFrame(input: VisionQaInput): Promise<VisionVerdict> {
   if (!input.image?.length) throw new GrokError('inspectFrame needs image bytes', 0, '')
   const model = input.model ?? GROK_MODELS.vision
-  const minScore = input.minScore ?? 72
+  const minScore = input.minScore ?? 85
   const dataUrl = `data:image/jpeg;base64,${input.image.toString('base64')}`
 
   const question = [
@@ -152,7 +157,7 @@ export async function inspectFrame(input: VisionQaInput): Promise<VisionVerdict>
  */
 export function normalizeVerdict(
   raw: Partial<VisionVerdict>,
-  minScore = 72,
+  minScore = 85,
   costUsd: number | null = null,
 ): VisionVerdict {
   const defects = Array.isArray(raw.defects)

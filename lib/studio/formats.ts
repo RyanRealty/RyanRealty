@@ -14,7 +14,12 @@ import { STILL_ASPECT, VIDEO_ASPECT } from './craft'
 import type { GrokAspect } from '@/lib/grok/image'
 import type { GrokVideoAspect } from '@/lib/grok/video'
 
-export type StudioFormatId = 'listing_motion' | 'market_pulse' | 'place_video' | 'trend_reactive'
+export type StudioFormatId =
+  | 'listing_film'
+  | 'listing_motion'
+  | 'market_pulse'
+  | 'place_video'
+  | 'trend_reactive'
 
 export type StudioMediaKind = 'video' | 'image'
 
@@ -45,9 +50,32 @@ export type StudioFormat = {
   carriesFigures: boolean
   /** Extra hard-fail conditions handed to the vision gate. */
   alsoReject: string[]
+  /**
+   * Beats. 1 is a single animated frame. More than 1 builds a cut sequence
+   * from the listing's own photo set (lib/studio/film.ts).
+   */
+  shots?: number
 }
 
 export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
+  listing_film: {
+    id: 'listing_film',
+    label: 'Listing film',
+    what: 'Four beats cut from the listing\u2019s own photos: outside, in, the room that sells it, back out.',
+    media: 'video',
+    subject: 'listing',
+    frameSource: 'mls_photo',
+    stillAspect: STILL_ASPECT.story,
+    videoAspect: VIDEO_ASPECT.story,
+    seconds: 6,
+    shots: 4,
+    platforms: ['instagram', 'facebook'],
+    carriesFigures: true,
+    alsoReject: [
+      'the house has been altered from the source photograph',
+      'furniture, landscaping, or structures that were not in the source photograph',
+    ],
+  },
   listing_motion: {
     id: 'listing_motion',
     label: 'Listing motion',

@@ -26,10 +26,34 @@ export type SpendLine = {
 export type SpendLedger = {
   lines: SpendLine[]
   totalUsd: number
+  /** What this ONE draft is allowed to spend. Set from the format. */
+  capUsd: number
 }
 
-export function newLedger(): SpendLedger {
-  return { lines: [], totalUsd: 0 }
+/**
+ * A cap belongs to the draft, not to the module. A single-beat post and a
+ * four-beat film are both correct and cost four times apart, so a global
+ * constant either strangles the film or licenses a runaway on the post.
+ */
+export function newLedger(capUsd: number = MAX_DRAFT_USD): SpendLedger {
+  return { lines: [], totalUsd: 0, capUsd }
+}
+
+/**
+ * What a format may spend: its beats, plus room for ONE retried beat, plus
+ * small change for grading, vision, and the caption.
+ */
+export function capForFormat(input: {
+  shots: number
+  seconds: number
+  videoModel?: string
+  /** Frames a multi-beat format will grade before choosing its sequence. */
+  gradedPhotos?: number
+}): number {
+  const beats = Math.max(1, input.shots)
+  const perBeat = videoCost(input.videoModel ?? 'grok-imagine-video-1.5', input.seconds)
+  const grading = (input.gradedPhotos ?? 0) * VISION_CALL_USD
+  return Number((0.3 + (beats + 1) * perBeat + grading).toFixed(2))
 }
 
 export function addSpend(ledger: SpendLedger, line: SpendLine): SpendLedger {
@@ -58,9 +82,16 @@ export function videoCost(model: string, seconds: number): number {
  * at a flat estimate rather than ignored.
  */
 export const TEXT_CALL_USD = 0.003
-export const VISION_CALL_USD = 0.004
+/**
+ * Measured, not guessed, and the measurement corrected a wrong assumption.
+ * Vision cost here is REASONING tokens, not pixels: grading came in at $0.05
+ * to $0.10 a frame at 800px and at 2048px alike, and only dropped to about
+ * $0.03 when the call was pinned to low reasoning effort. Budget accordingly:
+ * grading a photo set is a real line item, not rounding error.
+ */
+export const VISION_CALL_USD = 0.035
 
-/** Ceiling for one draft. A single draft that exceeds this has gone wrong. */
+/** Default ceiling when a caller does not set one. */
 export const MAX_DRAFT_USD = 1.5
 
 export class SpendCapError extends Error {
@@ -73,8 +104,13 @@ export class SpendCapError extends Error {
   }
 }
 
-/** Throws before an expensive step when the ledger is already at the cap. */
-export function assertBudget(ledger: SpendLedger, nextStepUsd: number, step: string, cap = MAX_DRAFT_USD): void {
+/** Throws before an expensive step when the ledger is already at its cap. */
+export function assertBudget(
+  ledger: SpendLedger,
+  nextStepUsd: number,
+  step: string,
+  cap = ledger.capUsd ?? MAX_DRAFT_USD,
+): void {
   if (ledger.totalUsd + nextStepUsd > cap) {
     throw new SpendCapError(ledger.totalUsd + nextStepUsd, cap, step)
   }

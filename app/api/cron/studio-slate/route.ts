@@ -5,10 +5,11 @@
  * in /admin/studio. It never posts and never approves: publishing needs a
  * human stamp (CLAUDE.md §1), and this route cannot supply one.
  *
- * Deliberately small. Three drafts a day that are worth looking at beat a
- * firehose nobody clears, and the spend cap is what keeps a bad day from
- * being an expensive day: the slate refuses to start if today's drafts are
- * already at the ceiling.
+ * Deliberately small: ONE draft a day (Matt, 2026-08-26). One good thing
+ * daily clears in a minute and never piles up unapproved; a firehose nobody
+ * clears is worth less than nothing. The spend cap keeps a bad day from being
+ * an expensive day: the slate refuses to start if today's drafts are already
+ * at the ceiling.
  *
  * Schedule: 13:10 UTC daily (see vercel.json), which is early morning local.
  * Auth: Authorization: Bearer $CRON_SECRET
@@ -35,9 +36,13 @@ import { getRecentStudioTriggers } from '@/lib/data/studio/triggers'
 /** A slate of three can run several minutes: two stills, QA, and video each. */
 export const maxDuration = 800
 
-const DEFAULT_MAX = 3
-/** A day's slate should never cost more than this. */
-const DAILY_CAP_USD = 6
+const DEFAULT_MAX = 1
+/**
+ * A day's slate should never cost more than this. One listing film is the
+ * most expensive thing the studio makes: eight graded frames plus four
+ * animated beats lands near $2.30, so $4 leaves room without licensing two.
+ */
+const DAILY_CAP_USD = 4
 
 export async function GET(request: NextRequest) {
   const denied = requireCronAuth(request)

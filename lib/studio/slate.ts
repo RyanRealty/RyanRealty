@@ -47,11 +47,13 @@ function dayIndex(date: Date): number {
  * Build today's slate.
  *
  * Order of preference:
- *   1. A listing that just came on. It is the most perishable thing we have.
+ *   1. A listing that just came on, cut as a film from its own photographs.
+ *      It is the most perishable thing we have and the most differentiated.
  *   2. A community whose inventory actually moved.
  *   3. The regional pulse, once a week, on the same day each week so it reads
  *      as a habit rather than noise.
- *   4. Answer the room, when there is nothing of our own to say.
+ *
+ * There is no fallback. When nothing happened, the slate is empty.
  */
 export function planSlate(input: SlateInput): SlateItem[] {
   const today = input.today ?? new Date()
@@ -63,8 +65,12 @@ export function planSlate(input: SlateInput): SlateItem[] {
 
   const newListing = sorted.find((t) => t.kind === 'new_listing')
   if (newListing) {
+    // A film, not a single beat: the listing's own photo set is the one
+    // asset nobody else has, and a four-beat cut is what the best people on
+    // the platform would make out of it. If no frame in the set can carry a
+    // move, produce kills the draft and the day is silent, which is correct.
     slate.push({
-      formatId: 'listing_motion',
+      formatId: 'listing_film',
       subjectQuery: newListing.query,
       because: `${newListing.label} came on the market.`,
     })
@@ -90,12 +96,10 @@ export function planSlate(input: SlateInput): SlateItem[] {
     })
   }
 
-  if (slate.length === 0) {
-    slate.push({
-      formatId: 'trend_reactive',
-      because: 'Nothing of ours moved today, so answer what the market is asking.',
-    })
-  }
+  // No fallback post. answer-the-room takes its subject from outside our own
+  // data, which makes it the one format that could attach the brokerage to
+  // something we did not choose, so it runs on demand only (Matt 2026-08-26).
+  // A silent day is a correct outcome: we say nothing when nothing happened.
 
   return slate.slice(0, max)
 }

@@ -238,6 +238,8 @@ export async function resolveStudioSubject(
       figures: shaped.figures,
       citations: shaped.citations,
       sourcePhotoUrl: shaped.photoUrl,
+      // The whole photo set, for formats that cut a sequence out of it.
+      photoSetKey: String(row.ListingKey ?? '').trim(),
       // The actual property, not the browse page. /listing/<key> redirects to
       // the canonical SEO URL, so the link keeps working if the slug changes.
       ctaUrl: `${SITE}/listing/${String(row.ListingKey ?? '').trim()}`,

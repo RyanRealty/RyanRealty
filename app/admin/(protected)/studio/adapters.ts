@@ -10,6 +10,9 @@ import 'server-only'
 import { generateGrokImages } from '@/lib/grok/image'
 import { generateGrokVideo } from '@/lib/grok/video'
 import { inspectFrame } from '@/lib/grok/vision'
+import { gradePhoto } from '@/lib/grok/classify'
+import { concatMp4 } from '@/lib/video/concat'
+import { getListingPhotos } from '@/lib/data/studio/listing-photos'
 import { GROK_MODELS } from '@/lib/grok/client'
 import type { GrokAspect } from '@/lib/grok/image'
 import type { GrokVideoAspect } from '@/lib/grok/video'
@@ -34,6 +37,9 @@ async function downloadUrl(url: string): Promise<Buffer> {
 export function studioAdapters(): StudioAdapters {
   return {
     resolveSubject: resolveStudioSubject,
+    getPhotos: (listingKey) => getListingPhotos(listingKey, { limit: 24 }),
+    gradePhoto: ({ imageUrl }) => gradePhoto({ imageUrl }),
+    concat: concatMp4,
     generateStills: async ({ prompt, aspectRatio, n }) => {
       const result = await generateGrokImages({
         prompt,
