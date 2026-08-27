@@ -3,6 +3,8 @@
  * matcher rules and the sales brought to this house.
  */
 
+import { PRICING_TARGET_COMPS, PRICING_MAX_COMPS } from '@/lib/pricing/ladder'
+import { TARGET_COMPS, MAX_COMPS } from '@/lib/cma/comps'
 import { dateLong, dec, escapeHtml, usd, usdSigned } from '@/lib/cma/render-blocks'
 import { clientFacingNotes, listPriceLead } from '@/lib/cma/client-facing'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
@@ -21,6 +23,8 @@ function saleToListPct(ratio: number | null | undefined): string | null {
 
 function adjustmentRows(comps: CmaAdjustedComp[], noun: string, sizeNoun: string): string {
   if (comps.length === 0) return ''
+  // The Style column appears only when it moved a number on this document.
+  const anyStory = comps.some((c) => (c.storyAdjustment ?? 0) !== 0)
   const rows = comps
     .map((c) => {
       const close = c.closePrice != null ? usd(c.closePrice) : ''
@@ -29,16 +33,17 @@ function adjustmentRows(comps: CmaAdjustedComp[], noun: string, sizeNoun: string
       <td>${esc(c.closeDate ? dateLong(c.closeDate) : '-')}</td>
       <td class="num">${close}</td>
       <td class="num">${usdSigned(c.timeAdjustment)}</td>
-      <td class="num">${usdSigned(c.sizeAdjustment)}</td>
+      <td class="num">${usdSigned(c.sizeAdjustment)}</td>${anyStory ? `
+      <td class="num">${usdSigned(c.storyAdjustment ?? 0)}</td>` : ''}
       <td class="num">${usd(c.adjustedPrice)}</td>
     </tr>`
     })
     .join('')
   return `
   <h3 class="subhead">What each sale becomes on your house</h3>
-  <p>Close $ is the contract price. Time brings the sale to today. Size brings it to your ${sizeNoun}. As your ${noun} is that sale as if it were your ${noun}. It is not a second list price.</p>
+  <p>Close $ is the contract price. Time brings the sale to today. Size brings it to your ${sizeNoun}.${anyStory ? ' Style adjusts a one-story sale against a two-story home, or the reverse.' : ''} As your ${noun} is that sale as if it were your ${noun}. It is not a second list price.</p>
   <table class="kv is-wide comps-adjust">
-    <thead><tr><th>Sale</th><th class="v">Sold</th><th class="v">Close $</th><th class="v">Time</th><th class="v">Size</th><th class="v">As your ${noun}</th></tr></thead>
+    <thead><tr><th>Sale</th><th class="v">Sold</th><th class="v">Close $</th><th class="v">Time</th><th class="v">Size</th>${anyStory ? '<th class="v">Style</th>' : ''}<th class="v">As your ${noun}</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`
 }
@@ -58,7 +63,11 @@ function howWePriced(n: number, market: CmaMarketContext | null, searchBody: str
     `${n} closed ${n === 1 ? 'sale' : 'sales'}, each brought to today and to your ${sizeNoun}.`,
     'Closed MLS sales only. Automated estimates are not used.',
     'The close is the contract price. Concessions come off after that.',
-    'The search keeps going until eight closed sales when the pool allows, and never prices on more than ten.',
+    // Derived from the ladders' own constants, not prose: the facts ladder
+    // targets 8, the listings fallback targets 5, and hardcoding "eight" put a
+    // claim on three documents their own build record contradicted (adversarial
+    // verify 2026-08-27). The floor-of-both phrasing is true on every path.
+    `The search keeps going until at least ${Math.min(PRICING_TARGET_COMPS, TARGET_COMPS)} closed sales when the pool allows, and never prices on more than ${Math.max(PRICING_MAX_COMPS, MAX_COMPS)}.`,
     'In the same neighborhood we drop a subdivision whose typical dollar per foot is more than 15 percent off yours. Across the city that cut is 30 percent.',
   ]
   if (market?.geoLabel) {

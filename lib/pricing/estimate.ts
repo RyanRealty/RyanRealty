@@ -219,6 +219,7 @@ export function adjustCompAlongMarket(opts: {
     timeAdjustedPrice,
     ppsfTimeAdjusted: +ppsfTimeAdjusted.toFixed(2),
     sizeAdjustment,
+    storyAdjustment: storyAdj,
     adjustedPrice,
     weight: +(sizeProximity * recency).toFixed(4),
   }
@@ -336,10 +337,12 @@ export function applyEngineRecommendedList(
       predictedClose: close,
       currentAsk: ask,
       askDerivedList: list,
-      notes: [
-        `Subject is on the market. Recommendation is the comp-band midpoint; the current ask ($${(ask ?? 0).toLocaleString('en-US')}) is shown beside it, never blended (Matt 2026-08-27).`,
-        ...pricing.notes,
-      ],
+      // No note: pricing.notes RENDERS on the seller pricing page, and the
+      // first run of this branch printed the internal directive — rule name,
+      // Matt's date stamp and all — into client copy on three documents
+      // (caught by adversarial verify 2026-08-27). The ask line on the cover
+      // and build_summary.pricing carry everything this note said.
+      notes: pricing.notes,
     }
   }
 
@@ -351,10 +354,9 @@ export function applyEngineRecommendedList(
     valueLow: conservative,
     valueHigh: highEnd,
     predictedClose: close,
-    notes: [
-      `List price is the pricing engine list ($${list.toLocaleString('en-US')}), not Method 3.`,
-      ...pricing.notes,
-    ],
+    // Same rule as the ask branch: notes render to the seller, and "not
+    // Method 3" is engine language. build_summary records the engine's role.
+    notes: pricing.notes,
   }
 }
 

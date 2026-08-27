@@ -105,6 +105,15 @@ export interface CmaAdjustedComp extends CmaComp {
   timeAdjustedPrice: number
   ppsfTimeAdjusted: number
   sizeAdjustment: number
+  /**
+   * One-story vs two-story premium (±13.5% of the time-adjusted price,
+   * measured — lib/pricing/classes.ts). It was folded into adjustedPrice but
+   * never printed, so on two Tumalo comps the itemized Time + Size failed to
+   * reproduce the printed total by exactly 13.50% and the document read as
+   * broken arithmetic (adversarial verify 2026-08-27). Every adjustment that
+   * moves the number gets its own printed line.
+   */
+  storyAdjustment?: number
   adjustedPrice: number
   weight: number
   /** Display-only judge tier. Does not change pricing math. */

@@ -160,3 +160,67 @@ and the stated interval.
 - The recommended list ships with a supported interval derived from the comp band, stated in
   seller language, on the cover.
 - Per-comp rows always show DOM and price-cut history (we already store listing_history).
+
+---
+
+## Adversarial verification of the four rebuilt documents (2026-08-27, six skeptics, all findings evidenced)
+
+Four documents built through the production pipeline (listed rural, listed condo, listed SFR,
+off-market gold house) and torn apart by six independent reviewers. Everything below is quoted
+from the documents or their build records. FIXED = shipped same day.
+
+**The root cause above them all — BILLING.** 100% of current builds skip the LLM judge AND the
+adversarial audit. The stored note said "no key or call failed"; the Vercel env HAS the key; the
+call reproduced with that key returns *"Your credit balance is too low to access the Anthropic
+API."* The quality engine locked 2026-07-11 has been running on its deterministic backstop
+alone. Fail-open held (everything forced to needs_review) — but nothing is vetted. **Topping up
+the Anthropic account is Matt's action.** The stored note now carries the real reason (FIXED).
+
+**FIXED same day:**
+- D9 — the ±13.5% story adjustment was folded into every adjusted price but never itemized, so
+  two Tumalo comps read as broken arithmetic ($72,768 / $172,955 unexplained — exactly 13.50%).
+  Now a printed Style line on the adjustment table and the matrix, shown only when it applied.
+- The internal show-both directive (rule name, Matt's date stamp) rendered as seller copy on all
+  three listed documents — engine notes no longer join client-facing notes, pinned by test.
+- The matrix printed the Active subject's LIST date under "Sale date" on all four documents.
+- The methodology sentence claimed "until eight closed sales" while the fallback targets five —
+  now derived from the ladders' own constants.
+
+**OPEN, ranked (the next quality queue):**
+- **D10 — the cover band is not derivable from the document's own evidence.** Tumalo: band
+  $1,241,000–$1,297,000 while the 10 printed adjusted values have median $1,099,810 and all
+  three methods sit below the floor; the cover then told a live seller their $1,095,000 ask was
+  "12% below the supported range" when it sits within 0.5% of the adjusted-comp median. Florida:
+  high end $831,000 above every adjusted comp. Cause: the engine band is p25/p75 of time-adjusted
+  $/sqft × subject sqft ÷ sale-to-list — it ignores the 50% marginal size discount and the story
+  adjustment the evidence board applies, so on heterogeneous sets the two systems diverge. The
+  band the seller sees must derive from the same adjusted values the document prints.
+- **D11 — the divide cut has no coverage outside the Bend GIS mesh.** Tumalo kept 9 of 10 comps
+  4.6–13.5 miles EAST across US-97 with `crossed_divide: 0` — both sides unmapped → fail-open.
+  Florida kept 62946 Florence (East Villa, across the Parkway). The neighbor-pair table the
+  contract specified 2026-07-28 is genuinely still unbuilt for unmapped ground; the cut works
+  only where the mesh + divide-sides data reach.
+- **D12 — a null SubdivisionName bypasses the subdivision price-tier guard.** 291 Bluff (the
+  Atrium, $695/sf) entered the Plaza's set solely because its SubdivisionName is 'N/A', lifted
+  the set mean ~$72K, and the guard that excluded 11 other candidates could not see it. (The
+  verifier also KILLED the earlier red flag: the Plaza's $475–487K closes are 2020-era; the
+  same-building 2025–26 closes support ~$745K without the Atrium — $790,000 needs the bypass
+  fixed, not the building.)
+- **D13 — unmapped subjects publish junk geography:** literal 'N/A' as a section header, "2,000
+  closed sales in N/A", "built out 1902 to 9999", a $19,000,000 'record' at an address not on
+  the subject's street. Every market block needs the same suppress-when-unresolved rule the
+  cover already follows.
+- **D14 — seller-net prints two concession figures** ($750 vs "median $7,500 when given") with
+  no stated basis; gold house nets at $0 concessions while its own set reports a given median.
+- **D15 — "Days on market" is list-to-close** (the CLAUDE.md-banned DOM read) and contradicts
+  the same document's days-to-offer figures; the market page uses a third definition.
+- **D16 — gold-house hero is the comp pin map captioned "Aerial view"** (three byte-identical
+  images), and a 2021 photo is labeled "Current listing" on an off-market subject.
+- **D17 — chapter gaps vs the Sunstone contract:** ch.14 (permits/ownership) absent; ch.4 thin
+  (no owner/vesting/time-owned); ch.9 has 2 of 5 trend charts; ch.15 net sheet is list-minus-$0.
+- **D18 — condo site data is wrong:** 363 Bluff (downtown condo) recorded as well water,
+  non-municipal, with a COID water right — the parcel resolver needs a condo path.
+- **D19 — the dispersion caveat lives only in the summary:** Florida ships a $234,000-wide band
+  with no confidence language on the document.
+- **D20 — "Who you are competing with" exhibits may cross the divide** (unverified geometry:
+  3rd St corridor addresses); same fix as D11 covers it.

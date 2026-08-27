@@ -352,7 +352,11 @@ describe('listPriceFromEngine is the only cover number', () => {
     expect(cover.currentAsk).toBe(505_100)
     expect(cover.askDerivedList).toBe(505_000)
     expect(cover.predictedClose).toBe(495_000)
-    expect(cover.notes[0]).toMatch(/never blended/i)
+    // The directive must NOT ride in notes — pricing.notes renders on the
+    // seller page, and the first cut of this branch printed the internal rule,
+    // Matt's date stamp and all, into client copy on three documents.
+    expect(cover.notes.join(' ')).not.toMatch(/never blended|Matt 2026/i)
+    expect(cover.notes.join(' ')).not.toMatch(/pricing engine list/i)
     expect(cover.method3).toBe(out.pricing!.method3)
 
     const overridden = computePricing(

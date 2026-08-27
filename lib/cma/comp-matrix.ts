@@ -63,7 +63,11 @@ function subjectCol(subject: CmaSubject): Col {
       '-',
       list != null ? usd(list) : '-',
       listSf != null ? `${usd(listSf)}/sf` : '-',
-      subject.lastListDate ? dateLong(subject.lastListDate) : '-',
+      // The subject has not SOLD — its list date under a "Sale date" label told
+      // an Active seller their home closed in March (caught on all four
+      // documents by adversarial verify 2026-08-27). A dash is the truth here;
+      // the listing history section carries the dates with their real names.
+      '-',
       subject.beds != null ? int(subject.beds) : '-',
       subject.baths != null ? dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0) : '-',
       living != null && living > 0 ? int(living) : '-',
@@ -74,6 +78,7 @@ function subjectCol(subject: CmaSubject): Col {
       '-',
       'Subject',
       dash(subject.subdivision),
+      '-',
       '-',
       '-',
       '-',
@@ -108,6 +113,9 @@ function compCol(comp: CmaAdjustedComp, index: number): Col {
       dash(comp.proximity),
       dash(comp.subdivision),
       usdSigned(comp.timeAdjustment),
+      // Dash when the style premium did not apply, so the shared all-dash rule
+      // (line ~189) drops the whole row on documents where no comp carries it.
+      (comp.storyAdjustment ?? 0) !== 0 ? usdSigned(comp.storyAdjustment as number) : '-',
       usdSigned(comp.sizeAdjustment),
       usd(comp.adjustedPrice),
     ],
@@ -137,6 +145,7 @@ const ROWS: ReadonlyArray<{ label: string; figure: boolean }> = [
   { label: 'Distance', figure: false },
   { label: 'Subdivision', figure: false },
   { label: 'Brought to today', figure: true },
+  { label: 'Style (one story vs two)', figure: true },
   { label: 'Brought to your size', figure: true },
   { label: 'This sale as your house', figure: true }, // label rewritten per product in matrixTable
 ]
