@@ -231,7 +231,9 @@ if [ "$IN_PLACE" = "1" ]; then
     echo "push: working tree clean — verifying in place (isolate is for dirty sibling files)."
   fi
   run_chain_and_build "$REPO_ROOT"
-  node scripts/stamp-gates-marker.mjs || die 1 \
+  # --verified: run_chain_and_build just returned green, so the bare form's own
+  # ci:gates run would be a second identical chain for no new information.
+  node scripts/stamp-gates-marker.mjs --verified || die 1 \
     "✗ could not stamp the pre-push gates marker — push aborted." \
     "  NOTHING landed on the remote."
   do_push "$@"
