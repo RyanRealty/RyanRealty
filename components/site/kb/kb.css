@@ -703,6 +703,10 @@ html.lenis, html.lenis body{height:auto;}
   background-size:46px 46px;}
 .kb-root .mkt .wrap{position:relative;z-index:1;}
 .kb-root .mono-lab{font-family:var(--font-sans),sans-serif;font-size:.66rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(250,248,244,.62);}
+/* The listing pricing ledger (HouseMeReport) sits on CREAM: the shared cream
+   mono-lab above is invisible ink there, which left every row label unreadable
+   and the rows scanning as disconnected fragments at 375px. Same label, navy. */
+.kb-root .houseme-rows .mono-lab{color:rgba(16,39,66,.62);}
 /* flex-wrap, not a fixed-column grid: a grid reserves an empty cell for
    every unfilled track (only tiles with live values render — see the
    comment above .mkt-kpis in KbMarketHud.client.tsx), and the container's
@@ -751,8 +755,14 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .mkt-xlabels{display:flex;justify-content:space-between;margin-top:10px;}
 .kb-root .mkt-xlabels span{font-family:var(--font-sans),sans-serif;font-size:.58rem;letter-spacing:.04em;color:rgba(250,248,244,.55);}
 .kb-root .mkt-bars{display:flex;flex-direction:column;gap:13px;}
-.kb-root .mkt-bar .bhd{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:6px;letter-spacing:.02em;}
+.kb-root .mkt-bar .bhd{display:flex;justify-content:space-between;gap:0 16px;font-size:.82rem;margin-bottom:6px;letter-spacing:.02em;}
 .kb-root .mkt-bar .bhd b{font-variant-numeric:tabular-nums;}
+/* Small screens: the two-column row collapses — the label column wrapped
+   mid-word against the stats column with zero gap ("154$119,750",
+   "manufactured·homes"). Stack: count+label line, then the stats line(s). */
+@media(max-width:640px){
+  .kb-root .mkt-bar .bhd{flex-direction:column;align-items:flex-start;gap:3px;}
+}
 .kb-root .mkt-bar .btrack{height:9px;background:rgba(250,248,244,.16);position:relative;overflow:hidden;}
 .kb-root .mkt-bar .bfill{position:absolute;top:0;bottom:0;left:0;width:0;background:var(--cream);}
 /* Lifestyle-collection links row on geo pages (conversion-audit 2026-07-15

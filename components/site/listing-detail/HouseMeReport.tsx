@@ -247,11 +247,14 @@ export function HouseMeReport({
           <h2 className="sec-title display">{title}</h2>
         </div>
       </div>
-      <dl className="mt-6 border-t border-border">
+      {/* houseme-rows: kb.css re-inks .mono-lab for this cream ledger — the
+          shared kb class paints labels cream-on-navy, which left every row
+          label invisible (cream on cream) on the listing surface. */}
+      <dl className="houseme-rows mt-6 border-t border-border">
         {rows.map((row) => (
           <div
             key={row.id}
-            className="flex flex-col gap-1 border-b border-border py-4 md:flex-row md:items-baseline md:justify-between md:gap-8"
+            className="flex flex-col gap-1 border-b border-border py-3 md:flex-row md:items-baseline md:justify-between md:gap-8 md:py-4"
             data-houseme-row={row.id}
             data-houseme-source={row.source}
           >

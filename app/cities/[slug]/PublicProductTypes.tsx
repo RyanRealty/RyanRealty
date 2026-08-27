@@ -41,7 +41,18 @@ export function PublicProductTypes({
                 <span>
                   <b>{row.activeCount?.toLocaleString('en-US')}</b> {noun}
                 </span>
-                <b>{bits.join(' · ')}</b>
+                {/* Each stat fragment carries its trailing separator inside one
+                    inline-block, so a wrap breaks BETWEEN fragments and never
+                    strands a bare "·" at a line edge (375px mobile QA
+                    2026-08-26). Text content is byte-identical to the old
+                    bits.join(' · '). */}
+                <b>
+                  {bits.map((bit, i) => (
+                    <span key={i} className="inline-block">
+                      {i < bits.length - 1 ? `${bit} ·` : bit}
+                    </span>
+                  )).flatMap((node, i) => (i > 0 ? [' ', node] : [node]))}
+                </b>
               </a>
             </li>
           )
