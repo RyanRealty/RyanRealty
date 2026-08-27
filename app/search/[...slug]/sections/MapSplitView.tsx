@@ -19,7 +19,7 @@ import { ALL_SEARCH_URL_PARAMS } from '@/lib/search/field-registry'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import MapSearchView from '@/components/search/MapSearchView'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Breadcrumb } from '@/components/site/v3'
+import { V3_ROOT_CLASS, V3_LEDGER_CLASS, V3Breadcrumb } from '@/components/site/v3'
 import SearchFilterBar from '../../../../components/SearchFilterBar'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import { withTimeout, withTimeoutSettled } from '../fetch-guards'
@@ -298,8 +298,10 @@ export async function renderMapSplitView(props: {
   // V3Chrome is sticky in flow. search-app-frame (search-frame.css) sizes the
   // shell to remaining viewport and flex-fills nested .map-search-shell.
   // No footer on the app-frame. Search is the Homes Field, not header chrome.
+  // V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
+  // (THE LOOK, PUBLIC_UI.md section 9).
   return (
-    <main className={cn(V3_ROOT_CLASS, 'search-app-frame w-full bg-muted')}>
+    <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'search-app-frame w-full bg-muted')}>
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-2 sm:px-6">
         {searchBreadcrumbItems.length > 1 ? (
           <V3Breadcrumb belowNav={false} trail={searchBreadcrumbItems} />

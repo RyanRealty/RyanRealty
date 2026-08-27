@@ -27,6 +27,7 @@ import SearchFilterBar from '../../../components/SearchFilterBar'
 import ShareButton from '../../../components/ShareButton'
 import {
   V3_ROOT_CLASS,
+  V3_LEDGER_CLASS,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
@@ -391,7 +392,9 @@ export default async function SearchPage({
 
   return (
     <>
-      <main className={cn(V3_ROOT_CLASS, 'min-h-screen bg-background')}>
+      {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
+          (THE LOOK, PUBLIC_UI.md section 9). */}
+      <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'min-h-screen bg-background')}>
       {searchBreadcrumbItems.length > 1 && (
         <V3Breadcrumb belowNav={false} trail={searchBreadcrumbItems} />
       )}

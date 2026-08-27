@@ -23,6 +23,7 @@ import { slugify } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 import {
   V3_ROOT_CLASS,
+  V3_LEDGER_CLASS,
   V3Footer,
   V3_FOOTER_COLUMNS,
 } from '@/components/site/v3'
@@ -397,7 +398,9 @@ export default async function SearchPage({
 
   return (
     <>
-    <main className={cn(V3_ROOT_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>
+    {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
+        (THE LOOK, PUBLIC_UI.md section 9). */}
+    <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>
       {/* V3Chrome is sticky in flow on app/layout.tsx. Do not remount it.
           Search is the Homes Field (MapSearchView), not header chrome. */}
       <SplitViewBodyLock active={isAppFrame} />
