@@ -52,7 +52,7 @@ const DEAD_FILES = [
   // (verified via grep + ci:reachable-exports) and were deleted per the orphan
   // cascade. Their jobs live on the barrel: the hero is V3Stage, towns and
   // communities are V3Ledger rows, featured homes are the V3Field, the market
-  // HUD is the V3Instrument. Do not recreate them; the pattern set is closed.
+  // HUD is the V3Instrument. Do not recreate them. The pattern set is OPEN, but a section that needs a new pattern BUILDS a barrel primitive in components/site/v3 rather than reviving one of these.
   { path: 'components/site/kb/KbHero.client.tsx', reason: 'hero → V3Stage in app/page.tsx' },
   { path: 'components/site/kb/KbExploreTowns.client.tsx', reason: 'towns → V3Ledger #towns' },
   { path: 'components/site/kb/KbCommunities.client.tsx', reason: 'communities → V3Ledger #communities' },

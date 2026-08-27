@@ -10,16 +10,6 @@
       "blocking": true
     },
     {
-      "name": "KbNav",
-      "section": "The public header, mounted by app/layout.tsx through PublicNav. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header. The chrome has not migrated yet, so this route is a mixed page in the ci:public-ui ledger by design.",
-      "blocking": true
-    },
-    {
-      "name": "KbSectionTracker",
-      "section": "Page-level analytics, pageType='out-of-area-city'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent. It observes '.kb-root section[id], .v3 section[id]', which is why <main> carries V3_ROOT_CLASS.",
-      "blocking": true
-    },
-    {
       "name": "V3Breadcrumb",
       "section": "Chrome. Home > Cities > <city>, the same trail and the same labels the KB page rendered, current page never a link. Surface tone: this page opens on an Instrument, not a dark Stage, so the KB `overlay` prop has no counterpart and none is needed. The surface tone clears the fixed public header by default, which is what the KB page needed `overlay` for.",
       "blocking": true
@@ -103,8 +93,14 @@
   ],
   "jsonLd": {
     "required": [
-      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry): Home, Oregon -> /cities, <city> -> /oregon/<slug>" },
-      { "type": "Place", "emittedBy": "MetadataBlock schemas array (place entry), address {state: OR, country: US}" },
+      {
+        "type": "BreadcrumbList",
+        "emittedBy": "MetadataBlock schemas array (breadcrumb entry): Home, Oregon -> /cities, <city> -> /oregon/<slug>"
+      },
+      {
+        "type": "Place",
+        "emittedBy": "MetadataBlock schemas array (place entry), address {state: OR, country: US}"
+      },
       {
         "type": "Dataset",
         "emittedBy": "MetadataBlock schemas array (dataset entry). variableMeasured is active listings (all property types) in listings, active single-family listings in listings, and the median active single-family list price in USD, the last one emitted only when the snapshot published a median."

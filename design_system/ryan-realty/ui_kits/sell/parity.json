@@ -5,16 +5,6 @@
   "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, poster only, 3% listing plan as quiet eyebrow), Sheet-equivalent SellCapture wrapping SellValueForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. Page-grade v2.4 sell-three-asks: Stage ghost hidden (primitive still requires action), address field empty with visible label, no card title restating the button. Capture is not a deletion: SellValueForm still posts the same payload with pagePath=/sell and formId get-value.",
   "requiredComponents": [
     {
-      "name": "KbNav",
-      "section": "The public header, mounted by app/layout.tsx through V3Chrome. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header. Chrome already landed (E-CHROME).",
-      "blocking": true
-    },
-    {
-      "name": "KbSectionTracker",
-      "section": "Page-level analytics, pageType='sell'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent.",
-      "blocking": true
-    },
-    {
       "name": "MetadataBlock",
       "section": "JSON-LD BreadcrumbList + FAQPage. V3Breadcrumb and V3Quiet carry no structured data of their own. FAQPage items are the same FAQ_ITEMS array the Quiet block renders.",
       "blocking": true

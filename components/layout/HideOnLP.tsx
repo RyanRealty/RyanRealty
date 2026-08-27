@@ -3,8 +3,8 @@
 /**
  * HideOnLP — client-side route gate that hides public chrome on /lp/* and
  * /admin routes. Admin carries its own header + nav (AdminHeader,
- * AdminSidebar/AdminMobileNav). PublicNav (root layout → KbNav) also
- * self-hides on those paths; HideOnLP still gates JSON-LD / skip-link /
+ * AdminSidebar/AdminMobileNav). The one public header (V3Chrome, mounted in
+ * app/layout.tsx) also self-hides on those paths; HideOnLP still gates JSON-LD / skip-link /
  * client islands so LP and admin stay distraction-free
  * (fixed 2026-06-10, Matt report).
  *
@@ -39,11 +39,11 @@ export default function HideOnLP({ children }: { children: React.ReactNode }) {
 /**
  * HideChrome — legacy CSS visibility gate (display: contents vs none).
  *
- * Dual-chrome kill (Matt 2026-08-10): app/layout.tsx no longer mounts
- * SiteHeader. The single public header is PublicNav → KbNav from
- * lib/site-nav.ts (Buy · Areas · Market · Sell · About). Pages must NOT
- * re-mount KbNav; do not "fix double chrome" by adding HideChrome around a
- * second header — remove the second mount instead.
+ * Dual-chrome kill (Matt 2026-08-10, corrected 2026-08-27): the single public
+ * header is V3Chrome, mounted once in app/layout.tsx. SiteHeader and KbNav are
+ * deleted. Pages must NOT mount a header at all; do not "fix double chrome" by
+ * adding HideChrome around a second header — remove the second mount instead.
+ * Held by ci:chrome-single-source.
  *
  * Still exported because app/not-found.tsx wraps V3Footer here (404s can
  * land on any pathname; the gate keeps the public footer off LP/admin

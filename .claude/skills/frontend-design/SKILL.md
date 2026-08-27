@@ -74,13 +74,13 @@ These move design quality more than any single rule. Adopted from designers on X
 
 ## 4. Deeper toolkit: Hallmark (vendored at `../hallmark/`)
 
-The full Hallmark skill is installed alongside this one at `.cursor/skills/hallmark/` (MIT, by @nutlope). It is a larger, opinionated anti-slop system with three verbs that are directly useful on this repo:
+The full Hallmark skill is installed alongside this one at `.claude/skills/hallmark/` (MIT, by @nutlope). It is a larger, opinionated anti-slop system with three verbs that are directly useful on this repo:
 
 - **`hallmark audit <target>`** — score an existing page against the anti-pattern list, return a ranked punch list (read-only). Good first move on `/lp/sell-your-home`.
 - **`hallmark study <screenshot | URL>`** — extract the design DNA (structure, type pairing, color anchor) from a reference you admire and produce a diagnosis, without copying pixels.
 - **`hallmark redesign <target>`** — rework the visual structure inside the existing implementation boundaries.
 
-When running any Hallmark verb on Ryan Realty work, **pin the theme to the Ryan Realty brand** (navy/cream, Amboqia + Geist) instead of letting it rotate its 20 themes or generate a custom palette. See `.cursor/skills/hallmark/RYAN-REALTY-NOTES.md`. To pull upstream updates: `npx skills add nutlope/hallmark`.
+When running any Hallmark verb on Ryan Realty work, **pin the theme to the Ryan Realty brand** (navy/cream, Amboqia + Geist) instead of letting it rotate its 20 themes or generate a custom palette. See `.claude/skills/hallmark/RYAN-REALTY-NOTES.md`. To pull upstream updates: `npx skills add nutlope/hallmark`.
 
 ## 5. Pre-ship checklist
 

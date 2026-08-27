@@ -25,16 +25,6 @@
       "blocking": true
     },
     {
-      "name": "KbNav",
-      "section": "The public header, mounted by app/layout.tsx. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header.",
-      "blocking": true
-    },
-    {
-      "name": "KbSectionTracker",
-      "section": "Page-level analytics, pageType='price-drops'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language.",
-      "blocking": true
-    },
-    {
       "name": "V3Breadcrumb",
       "section": "Chrome. Home > Price drops.",
       "blocking": true
@@ -62,12 +52,18 @@
   ],
   "jsonLd": {
     "required": [
-      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry): Home, Price drops" },
+      {
+        "type": "BreadcrumbList",
+        "emittedBy": "MetadataBlock schemas array (breadcrumb entry): Home, Price drops"
+      },
       {
         "type": "Dataset",
         "emittedBy": "MetadataBlock schemas array (dataset entry) ONLY when total > 0. Variables: Price reductions (7-day window), Total asking-price cuts when > 0, Median drop when not null. dateModified is the pull's fetchedAt, never a now() fallback."
       },
-      { "type": "webPage", "emittedBy": "MetadataBlock schemas array, only when total > 0, description carries the live count." }
+      {
+        "type": "webPage",
+        "emittedBy": "MetadataBlock schemas array, only when total > 0, description carries the live count."
+      }
     ]
   },
   "dataLayer": {

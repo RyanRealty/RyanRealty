@@ -64,7 +64,7 @@ export default function ValuationForm() {
 
   if (step === 'address') {
     return (
-      <form onSubmit={advanceFromAddress} className="kb-tool-skin space-y-4" id="home_valuation" noValidate>
+      <form onSubmit={advanceFromAddress} className="tool-skin space-y-4" id="home_valuation" noValidate>
         <div>
           <Label htmlFor="val-address" className="block text-sm font-medium text-foreground">
             Property address
@@ -97,7 +97,7 @@ export default function ValuationForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="kb-tool-skin space-y-4" id="home_valuation">
+    <form onSubmit={handleSubmit} className="tool-skin space-y-4" id="home_valuation">
       <Button
         type="button"
         variant="link"

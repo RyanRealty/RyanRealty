@@ -5,11 +5,6 @@
   "note": "E-HOMES-SEARCH 2026-08-13. Migrated /compare chrome onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb belowNav=false. V3Footer outside <main>. Page contract carried unchanged: robots noindex,follow, revalidate 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList JSON-LD, KbSectionTracker pageType=compare. Shared /compare?ids= links keep resolving. Dual objectives unchanged. Capture does not live on this route. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, navy header band. AICompare deleted 2026-08-18 (never wired). MetadataBlock and KbSectionTracker stay on non-v3 registers.",
   "requiredComponents": [
     {
-      "name": "KbSectionTracker",
-      "section": "Tracking — section_view + scroll_depth events (page contract G52), pageType=compare. Analytics wiring, not visual language.",
-      "blocking": true
-    },
-    {
       "name": "MetadataBlock",
       "section": "JSON-LD — BreadcrumbList structured data (Home > Compare). No WebPage JSON-LD on a noindex utility route.",
       "blocking": true

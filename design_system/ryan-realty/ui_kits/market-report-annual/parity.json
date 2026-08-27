@@ -61,16 +61,6 @@
       "blocking": true
     },
     {
-      "name": "KbNav",
-      "section": "The public header, mounted by app/layout.tsx through PublicNav. Not a page-level import, and ci:mockup-parity auto-satisfies this entry while the layout owns the header. The chrome has not migrated yet, so this route is a mixed page in the ci:public-ui ledger by design. ITS FILLED VALUATION CTA IS WIDTH-BOUND, AND THE PAGE NO LONGER LEANS ON IT: .topbar a.nav-cta in components/site/kb/kb.css is display:none until 880px and below that is reachable only inside the closed Menu+ overlay, so the sentence 'the sticky header carries a filled CTA at every scroll position' is false and is struck wherever it appeared. The page carries its own visible primary instead, the opening Instrument's action. MEASURED ON THE REPAIRED PAGE, first viewport at scrollY 0: 390 gives exactly one visible filled control, the page's own opening primary at y 758, with the header showing only the wordmark, SEARCH and MENU+. 1280 gives two, the page's primary plus this header's cream nav-cta at y 18, which is chrome debt this route cannot fix from the page file and which resolves when the header migrates to V3Chrome (one primary in the chrome, by its own contract).",
-      "blocking": true
-    },
-    {
-      "name": "KbSectionTracker",
-      "section": "Page-level analytics, pageType='market-report-annual', unchanged from the KB page. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent. It observes '.kb-root section[id], .v3 section[id]', so every v3 section id on this page still emits section_view.",
-      "blocking": true
-    },
-    {
       "name": "V3Breadcrumb",
       "section": "Chrome. Home > Housing market > Annual review, current page never a link. Surface tone, because this page opens on an Instrument and not a dark Stage.",
       "blocking": true

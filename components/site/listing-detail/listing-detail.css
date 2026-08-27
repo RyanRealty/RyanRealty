@@ -344,44 +344,9 @@
   opacity: 0.9;
 }
 
-/* Rental calculator skin. Was .kb-root .kb-tool-skin. */
-.listing-detail .kb-tool-skin {
-  font-variant-numeric: tabular-nums;
-}
-.listing-detail .kb-tool-skin .text-destructive {
-  color: var(--navy) !important;
-}
-.listing-detail .kb-tool-skin [data-slot='card'] {
-  border: var(--edge) solid var(--navy);
-  border-radius: 0;
-  box-shadow: none;
-  background: var(--cream);
-}
-.listing-detail .kb-tool-skin [data-slot='card-title'] {
-  color: var(--navy);
-}
-.listing-detail .kb-tool-skin [data-slot='input'],
-.listing-detail .kb-tool-skin [data-slot='textarea'],
-.listing-detail .kb-tool-skin [data-slot='select-trigger'] {
-  border: 2px solid var(--navy);
-  border-radius: 0;
-  background: var(--cream);
-  color: var(--navy);
-  font-variant-numeric: tabular-nums;
-}
-.listing-detail .kb-tool-skin [data-slot='label'] {
-  color: var(--navy);
-  font-weight: 600;
-}
-.listing-detail .kb-tool-skin [data-slot='button'] {
-  border-radius: 0;
-}
-.listing-detail .kb-tool-skin [data-slot='separator'] {
-  background: var(--navy-12);
-}
-.listing-detail .kb-tool-skin table {
-  font-variant-numeric: tabular-nums;
-}
+/* The form/calculator skin moved to components/site/tool-skin.css and is
+   scoped to the class alone. It was scoped to .listing-detail here, so the
+   five other surfaces that render it got no skin at all. */
 
 /* ===== Live market context (.mkt) — the navy market surface. Ported from
    kb.css verbatim (values unchanged) when the page dropped kb-root: the

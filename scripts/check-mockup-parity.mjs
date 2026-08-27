@@ -87,20 +87,19 @@ function loadParityContracts() {
 }
 
 /**
- * Global public chrome (Matt 2026-08-10 dual-chrome kill):
- * app/layout.tsx mounts <PublicNav /> → KbNav. Pages must NOT re-import KbNav.
- * Treat layout-owned PublicNav as satisfying a parity contract that still lists KbNav.
+ * The ONE public header is layout-owned (app/layout.tsx mounts <V3Chrome />), so a
+ * contract listing V3Chrome is satisfied by the layout rather than by a page-level
+ * import. Nothing else is waived: the KbNav / PublicNav / KbSectionTracker waivers
+ * that used to live here became UNCONDITIONAL PASSES when those components were
+ * deleted 2026-08-27 -- a contract could be "satisfied" by a component that does
+ * not exist. The contracts were stripped of those names in the same change.
  */
-function layoutOwnsPublicNav() {
+function layoutOwnsChrome() {
   const layoutPath = join(ROOT, 'app/layout.tsx')
   if (!existsSync(layoutPath)) return false
-  const src = readFileSync(layoutPath, 'utf8')
-  return (
-    /<PublicNav\b/.test(src) ||
-    /from\s+['"][^'"]*PublicNav/.test(src) ||
-    /<V3Chrome\b/.test(src)
-  )
+  return /<V3Chrome\b/.test(readFileSync(layoutPath, 'utf8'))
 }
+
 
 function importsComponent(src, name) {
   // Match either:  import { ComponentName }   or  import ComponentName
@@ -120,16 +119,11 @@ function checkPage(contract) {
     }
   }
   const src = readFileSync(pagePath, 'utf8')
-  const publicNavGlobal = layoutOwnsPublicNav()
+  const chromeGlobal = layoutOwnsChrome()
   const missing = []
   for (const comp of contract.requiredComponents) {
     if (importsComponent(src, comp.name)) continue
-    // KbNav lives in layout via PublicNav — do not require page-level import.
-    if ((comp.name === 'KbNav' || comp.name === 'PublicNav') && publicNavGlobal) continue
-    if (comp.name === 'V3Chrome' && publicNavGlobal) continue
-    // Section tracking is analytics wiring. Either register's tracker satisfies
-    // a contract that still lists KbSectionTracker (same rule as ci:kb-page-contract).
-    if (comp.name === 'KbSectionTracker' && importsComponent(src, 'V3SectionTracker')) continue
+    if (comp.name === 'V3Chrome' && chromeGlobal) continue
     missing.push(comp)
   }
   return { ok: missing.length === 0, missing }

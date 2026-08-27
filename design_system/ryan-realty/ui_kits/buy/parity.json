@@ -10,11 +10,6 @@
       "blocking": true
     },
     {
-      "name": "KbSectionTracker",
-      "section": "Page-level analytics, pageType='buy'. Kept on the KB register: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent.",
-      "blocking": true
-    },
-    {
       "name": "V3Breadcrumb",
       "section": "Home > Buy, tone=on-media, belowNav=false, over the Stage photo. Chrome is sticky in flow so the trail does not need the fixed-header offset.",
       "blocking": true

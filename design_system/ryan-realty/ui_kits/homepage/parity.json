@@ -1,8 +1,0 @@
-{
-  "route": "app/page.tsx",
-  "mockup": "design_system/ryan-realty/ui_kits/homepage-v3/index.html",
-  "competitiveTarget": "Lead with live local market data, Amboqia stat numerals, interactive neighborhood map, and editorial editorial editorial broker presence. Beat Cascade Hasson / Stellar Realty / Zillow Central Oregon by showing the real numbers first and keeping every stat traceable to the Supabase DAL.",
-  "note": "SUPERSEDED 2026-06-12: binding contract for app/page.tsx is ui_kits/homepage-v7-cinematic/parity.json (cinematic + live 3D). Kept for history.",
-  "requiredComponents": [],
-  "status": "superseded-by-homepage-v7-cinematic"
-}

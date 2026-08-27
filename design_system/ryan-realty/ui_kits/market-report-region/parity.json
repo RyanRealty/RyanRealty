@@ -10,16 +10,6 @@
       "blocking": true
     },
     {
-      "name": "KbNav",
-      "section": "The public header, mounted by app/layout.tsx through PublicNav. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header. The chrome has not migrated yet, so this route is a mixed page in the ci:public-ui ledger by design.",
-      "blocking": true
-    },
-    {
-      "name": "KbSectionTracker",
-      "section": "Page-level analytics, pageType='market-report'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent. ci:kb-page-contract accepts either register's tracker, and KbSectionTracker observes '.kb-root section[id], .v3 section[id]', so every v3 section id on this page still emits section_view.",
-      "blocking": true
-    },
-    {
       "name": "V3Breadcrumb",
       "section": "Chrome. Home > Housing market > Central Oregon, current page never a link. Surface tone, because this page opens on an Instrument and not a dark Stage. The surface tone also clears the fixed public header by default: the trail is the first flow element of <main>, the header is position:fixed, and without the offset the whole strip renders behind the wordmark.",
       "blocking": true

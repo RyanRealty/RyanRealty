@@ -1,6 +1,6 @@
 ---
 name: ryan-realty
-description: Ryan Realty brand system — Bend, Oregon real estate. Two registers — heritage Americana (blue lab mascot "Jax", navy engraving-style illustrations, "It's About Relationships" tagline, yard signs/postcards) and modern web (shadcn/ui radix-nova + Geist + navy #102742 primary on warm stone). Amboqia Boriango is the primary display face. Plainspoken local voice, tabular numerals, Heroicons 2px stroke, Central Oregon place imagery (camera, license, or reference-conditioned generation), no emoji. Three brokers — Matt Ryan (Principal), Paul Stevenson, Rebecca Peterson.
+description: Ryan Realty brand system — Bend, Oregon real estate. Two registers — heritage Americana (blue lab mascot "Jax", navy engraving-style illustrations, "It's About Relationships" tagline, yard signs/postcards) and modern web (the v3 barrel for the public site (components/site/v3 + tokens.css); shadcn/ui radix-nova for admin). Amboqia Boriango is the primary display face. Plainspoken local voice, tabular numerals, Heroicons 2px stroke, Central Oregon place imagery (camera, license, or reference-conditioned generation), no emoji. Three brokers — Matt Ryan (Principal), Paul Stevenson, Rebecca Peterson.
 ---
 
 # Ryan Realty — Brand Skill

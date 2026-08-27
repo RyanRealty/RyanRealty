@@ -198,7 +198,7 @@ export function LeadCaptureBlock({
           <form
             onSubmit={handleSubmit}
             className={cn(
-              'kb-tool-skin rounded-[14px] p-6 shadow-sm border',
+              'tool-skin rounded-[14px] p-6 shadow-sm border',
               onNavy ? 'bg-white border-transparent' : 'bg-card border-border',
             )}
           >

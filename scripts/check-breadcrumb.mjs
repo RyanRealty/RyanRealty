@@ -146,7 +146,7 @@ function classify(pagePath) {
   // docs/plans/PUBLIC_PRODUCT/decisions.md. The label canon and the on-navy scoping
   // below are register-independent and apply to it unchanged.
   const hasBreadcrumb =
-    isReExportOnly || /BreadcrumbNav|PageBreadcrumb|KbBreadcrumb|V3Breadcrumb/.test(src)
+    isReExportOnly || /BreadcrumbNav|BreadcrumbNav|V3Breadcrumb|V3Breadcrumb/.test(src)
   const usesDeprecated = DEPRECATED_IMPORT.test(src)
   const directRender = DIRECT_RENDER.test(src)
   const navyTone = /tone="on-navy"/.test(src) && !NAVY_TONE_ALLOWED.has(rel)

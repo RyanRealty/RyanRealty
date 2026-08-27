@@ -1672,4 +1672,54 @@
   .v6-sell-grid { grid-template-columns: 1fr; gap: 28px; }
 }
 
-
+/* tool-skin — the form/calculator skin, on the class alone.
+ *
+ * WAS `.listing-detail .kb-tool-skin`, and before that `.kb-root .kb-tool-skin`.
+ * Six files render the class but only ONE of them (RentalAnalysis) sits inside
+ * `.listing-detail`, so on /home-valuation, the lead-landing form, the
+ * newsletter signup and LeadCaptureBlock the class matched nothing and those
+ * forms fell back to default shadcn — rounded corners, white cards, a red
+ * destructive colour — while the same form on a listing page was square and
+ * navy-on-cream. Same component, two looks, which is the defect this whole
+ * consolidation exists to end.
+ *
+ * Scoped to the class, not to an ancestor, because a form skin is not a place.
+ * Reads components/site/v3/tokens.css, so a style template moves it.
+ */
+.tool-skin {
+  font-variant-numeric: tabular-nums;
+}
+.tool-skin .text-destructive {
+  color: var(--v3-navy) !important;
+}
+.tool-skin [data-slot='card'] {
+  border: var(--v3-rule-weight-section) solid var(--v3-navy);
+  border-radius: var(--v3-radius-card);
+  box-shadow: none;
+  background: var(--v3-cream);
+}
+.tool-skin [data-slot='card-title'] {
+  color: var(--v3-navy);
+}
+.tool-skin [data-slot='input'],
+.tool-skin [data-slot='textarea'],
+.tool-skin [data-slot='select-trigger'] {
+  border: var(--v3-rule-weight-section) solid var(--v3-navy);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-variant-numeric: tabular-nums;
+}
+.tool-skin [data-slot='label'] {
+  color: var(--v3-navy);
+  font-weight: 600;
+}
+.tool-skin [data-slot='button'] {
+  border-radius: var(--v3-radius-control);
+}
+.tool-skin [data-slot='separator'] {
+  background: var(--v3-edge);
+}
+.tool-skin table {
+  font-variant-numeric: tabular-nums;
+}

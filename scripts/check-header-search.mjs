@@ -19,10 +19,7 @@ import ts from 'typescript'
 
 const ENGINE = '@/components/search/SearchSuggest'
 const LAYOUT = 'app/layout.tsx'
-const KB_NAV = 'components/site/kb/KbNav.client.tsx'
 const SITE_NAV = 'lib/site-nav.ts'
-const SITE_HEADER = 'components/site/SiteHeader.tsx'
-const SITE_HEADER_SEARCH = 'components/site/SiteHeaderSearch.client.tsx'
 
 const problems = []
 
@@ -65,24 +62,20 @@ function rendersJsx(sf, tag) {
   return found
 }
 
+// RE-EXPRESSED 2026-08-27. This gate had three arms and TWO OF THEM COULD NEVER
+// FIRE: one was gated on the layout mounting KbNav or PublicNav (both deleted,
+// and the guard `layoutHasLegacy && !layoutHasV3` is unreachable while the
+// layout mounts V3Chrome), the other on any layout containing the string
+// SiteHeader (deleted, so the flag was permanently false). Both read files that
+// no longer exist. A gate whose arms cannot fire reads as protection and is not.
+// One arm survives, and it is the only one that was ever doing work here.
 const layout = parse(LAYOUT)
 const layoutHasV3 = layout && rendersJsx(layout, 'V3Chrome')
-const layoutHasLegacy =
-  layout && (rendersJsx(layout, 'PublicNav') || rendersJsx(layout, 'KbNav'))
 
-if (layout && !layoutHasV3 && !layoutHasLegacy) {
+if (layout && !layoutHasV3) {
   problems.push(
-    `${LAYOUT}: does not mount <V3Chrome />, <PublicNav />, or <KbNav /> — public pages would have no header.`,
+    `${LAYOUT}: does not mount <V3Chrome /> — public pages would have no header.`,
   )
-}
-
-if (layoutHasLegacy && !layoutHasV3) {
-  const kb = parse(KB_NAV)
-  if (kb && !importsFrom(kb, ENGINE)) {
-    problems.push(
-      `${KB_NAV}: no longer imports the shared suggestions engine from ${ENGINE} — public chrome lost search.`,
-    )
-  }
 }
 
 if (layoutHasV3) {
@@ -93,26 +86,6 @@ if (layoutHasV3) {
     problems.push(
       `${SITE_NAV}: V3Chrome is the header; Homes door /homes-for-sale must stay in site-nav (search lives there, not in chrome).`,
     )
-  }
-}
-
-const layoutFiles = ['app/layout.tsx', 'app/account/layout.tsx', 'app/dashboard/layout.tsx']
-let siteHeaderMounted = false
-for (const rel of layoutFiles) {
-  const p = join(process.cwd(), rel)
-  if (!existsSync(p)) continue
-  if (readFileSync(p, 'utf8').includes('SiteHeader')) siteHeaderMounted = true
-}
-if (siteHeaderMounted) {
-  const header = parse(SITE_HEADER)
-  if (header && !rendersJsx(header, 'SiteHeaderSearch')) {
-    problems.push(
-      `${SITE_HEADER}: still mounted but missing <SiteHeaderSearch/> — restore search on that chrome.`,
-    )
-  }
-  const widget = parse(SITE_HEADER_SEARCH)
-  if (widget && !importsFrom(widget, ENGINE)) {
-    problems.push(`${SITE_HEADER_SEARCH}: must import shared engine ${ENGINE}.`)
   }
 }
 

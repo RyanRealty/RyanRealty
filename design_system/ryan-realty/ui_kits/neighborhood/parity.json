@@ -10,11 +10,6 @@
       "blocking": true
     },
     {
-      "name": "KbNav",
-      "section": "The public header, mounted by app/layout.tsx through PublicNav. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header. The chrome has not migrated yet, so this route is a mixed page in the ci:public-ui ledger by design.",
-      "blocking": true
-    },
-    {
       "name": "V3SectionTracker",
       "section": "Analytics island: section_view + scroll_depth on the one taxonomy (page_type derives from the path). Not a seventh pattern.",
       "blocking": true

@@ -1,95 +1,66 @@
 #!/usr/bin/env node
 /**
- * check-mockup-coverage.mjs — every mockup directory must have a parity.json.
+ * check-mockup-coverage.mjs — every parity.json must name a ROUTE THAT EXISTS.
  *
- * Closes the loophole in check-mockup-parity.mjs: that gate only runs
- * on directories that already have a parity.json. If someone adds a
- * new mockup without the contract file, the parity gate is silently
- * skipped. This gate enforces the precondition.
+ * RE-POINTED 2026-08-27. It used to assert "every directory holding an
+ * index.html also holds a parity.json". That precondition died with the
+ * mockups: the eleven KB-era index.html files were deleted, so the gate's scope
+ * emptied out and it could only ever report 0 violations. Worse, the city
+ * contract recorded the gate BY NAME as the reason a dead file survived --
+ * "kept only because ci:mockup-coverage required a parity.json beside any
+ * index.html, which is a gate keeping a dead file alive."
  *
- * Allowlist: directories that intentionally have no parity.json (e.g.
- * the top-level ui_kits/index.html or _shared assets) live in
- * scripts/mockup-coverage-allowlist.json.
+ * The real precondition now runs the other way. ci:mockup-parity reads each
+ * parity.json's `route` and asserts that file imports the components the
+ * contract lists. A contract naming a route that no longer exists is silently
+ * skipped there, so a page can lose its whole contract by being renamed and
+ * nothing says so. That is what this gate catches.
  */
-
 import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
 
-const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
-const UI_KITS = join(ROOT, 'design_system/ryan-realty/ui_kits')
-const ALLOWLIST_PATH = join(ROOT, 'scripts/mockup-coverage-allowlist.json')
+const ROOT = resolve(process.cwd())
+const KITS = 'design_system/ryan-realty/ui_kits'
 
-const args = new Set(process.argv.slice(2))
-const REPORT = args.has('--report')
-const JSON_OUT = args.has('--json')
-const WRITE_ALLOWLIST = args.has('--write-allowlist')
-
-function listMockupDirs() {
-  if (!existsSync(UI_KITS)) return []
-  return readdirSync(UI_KITS)
-    .map((name) => ({ name, full: join(UI_KITS, name) }))
-    .filter((e) => statSync(e.full).isDirectory())
-    .filter((e) => existsSync(join(e.full, 'index.html')))
+const contracts = []
+for (const entry of readdirSync(join(ROOT, KITS), { withFileTypes: true })) {
+  if (!entry.isDirectory()) continue
+  const rel = `${KITS}/${entry.name}/parity.json`
+  if (existsSync(join(ROOT, rel))) contracts.push(rel)
 }
 
-function loadAllowlist() {
-  if (!existsSync(ALLOWLIST_PATH)) return new Set()
-  const raw = JSON.parse(readFileSync(ALLOWLIST_PATH, 'utf8'))
-  return new Set(raw.allowed ?? [])
+const failures = []
+for (const rel of contracts) {
+  let parsed
+  try {
+    parsed = JSON.parse(readFileSync(join(ROOT, rel), 'utf8'))
+  } catch (err) {
+    failures.push(`${rel}: is not valid JSON (${err.message}). ci:mockup-parity cannot read it, so its contract is not enforced.`)
+    continue
+  }
+  const route = typeof parsed.route === 'string' ? parsed.route.trim() : ''
+  if (!route) {
+    failures.push(`${rel}: names no "route". ci:mockup-parity keys on that field, so this contract enforces nothing.`)
+    continue
+  }
+  if (!existsSync(join(ROOT, route))) {
+    failures.push(`${rel}: names route "${route}", which does not exist. The page was renamed or deleted and took its contract's coverage with it, silently.`)
+    continue
+  }
+  const required = Array.isArray(parsed.requiredComponents) ? parsed.requiredComponents : []
+  if (required.length === 0) {
+    failures.push(`${rel}: has an empty requiredComponents list, so it asserts nothing. Give it the components the route may not lose, or delete the contract.`)
+  }
 }
 
-function main() {
-  const dirs = listMockupDirs()
-  const missing = dirs.filter((d) => !existsSync(join(d.full, 'parity.json')))
+console.log('mockup contract coverage (ci:mockup-coverage)')
+console.log('=============================================')
+console.log(`  parity contracts : ${contracts.length}`)
+console.log(`  each must name a route that exists and at least one required component.`)
 
-  if (WRITE_ALLOWLIST) {
-    const payload = {
-      generatedAt: new Date().toISOString(),
-      reason:
-        'Mockup directories that intentionally lack a parity.json (e.g. legacy mockups not yet ported to the contract format). Each entry should disappear once the parity contract is authored.',
-      allowed: missing.map((d) => d.name).sort(),
-    }
-    writeFileSync(ALLOWLIST_PATH, JSON.stringify(payload, null, 2) + '\n')
-    console.log(`Wrote allowlist: ${missing.length} dirs at ${relative(ROOT, ALLOWLIST_PATH)}`)
-    process.exit(0)
-  }
-
-  const allowed = loadAllowlist()
-  const violators = missing.filter((d) => !allowed.has(d.name))
-
-  if (JSON_OUT) {
-    console.log(JSON.stringify({
-      totalMockupDirs: dirs.length,
-      missingParity: missing.length,
-      allowed: allowed.size,
-      violators: violators.map((d) => d.name),
-    }, null, 2))
-    process.exit(violators.length === 0 ? 0 : 1)
-  }
-
-  console.log('Mockup coverage check')
-  console.log('=====================')
-  console.log()
-  console.log(`Total mockup directories: ${dirs.length}`)
-  console.log(`  With parity.json:       ${dirs.length - missing.length}`)
-  console.log(`  Without parity.json:    ${missing.length}`)
-  console.log(`  Allowlisted:            ${allowed.size}`)
-  console.log(`  VIOLATING:              ${violators.length}`)
-  console.log()
-  if (violators.length > 0) {
-    console.log('Violating mockup directories (need a parity.json):')
-    for (const d of violators) {
-      console.log(`  design_system/ryan-realty/ui_kits/${d.name}/`)
-    }
-    console.log()
-    console.log('Fix: create design_system/ryan-realty/ui_kits/<name>/parity.json')
-    console.log('declaring { route, requiredComponents } for that mockup.')
-    console.log('Or run `node scripts/check-mockup-coverage.mjs --write-allowlist`')
-    console.log('to accept the gap (only when intentional).')
-  }
-
-  if (REPORT) process.exit(0)
-  process.exit(violators.length === 0 ? 0 : 1)
+if (failures.length) {
+  console.error(`\nFAIL - ${failures.length} contract problem(s):\n`)
+  for (const f of failures) console.error('  ' + f)
+  process.exit(1)
 }
-
-main()
+console.log('\nOK - every contract names a live route and asserts at least one component.')

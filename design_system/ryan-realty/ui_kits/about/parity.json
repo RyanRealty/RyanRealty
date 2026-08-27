@@ -10,16 +10,6 @@
       "blocking": true
     },
     {
-      "name": "KbNav",
-      "section": "The public header, mounted by app/layout.tsx through PublicNav / V3Chrome. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header.",
-      "blocking": true
-    },
-    {
-      "name": "KbSectionTracker",
-      "section": "Page-level analytics, pageType='about'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent.",
-      "blocking": true
-    },
-    {
       "name": "V3Breadcrumb",
       "section": "Chrome. Home > About. Surface tone (this page opens on cream faces, not a dark Stage). Current page never a link.",
       "blocking": true

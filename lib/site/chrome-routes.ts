@@ -1,23 +1,31 @@
 /**
- * chrome-routes — the single source of truth for which routes suppress the
- * default site chrome. The client gate (HideChrome) applies this to SiteHeader
- * only; SiteFooter is rendered server-side by exactly the routes where this
- * predicate is false (enforced by scripts/check-default-chrome-footer.mjs), so
- * hidden footer HTML never ships. Pure functions of the pathname,
- * with NO client/next dependencies, so they can be unit-tested and reused by both
- * the client gate (components/layout/HideOnLP.tsx → HideChrome) and any future
- * server-side check.
+ * chrome-routes — which routes suppress the default site chrome.
  *
- * A route "hides default chrome" when it carries its OWN chrome (the KB nav +
- * footer) or none at all (LP, admin, sign, concept). Rendering the default
- * SiteHeader on top of a KB nav double-renders chrome — the "double nav" class of
- * bug (Matt reports 2026-06-18, 2026-07-11).
+ * CORRECTED 2026-08-27. This file still described a world where pages carried
+ * "their OWN KbNav + KbFooter" and the default `SiteHeader` had to be kept off
+ * them. None of that exists any more: `SiteHeader` and `KbNav` are deleted, the
+ * ONE public header is `V3Chrome` mounted in `app/layout.tsx`, and every public
+ * page owns its footer (`V3Footer`, held by ci:chrome-single-source). The list
+ * below is no longer "KB routes"; it is simply the set of paths that must not
+ * receive a default-chrome node.
+ *
+ * Its ONE consumer is `HideChrome` in components/layout/HideOnLP.tsx, which
+ * `app/not-found.tsx` uses so a 404 landing on an LP or admin path does not
+ * paint a public footer. Pure functions of the pathname, no client/next
+ * dependency, unit-tested in ./chrome-routes.test.ts.
+ *
+ * OPEN QUESTION, recorded rather than silently changed: the list still names
+ * ordinary public routes (/about, /cities, …). Under the old model those pages
+ * rendered their own chrome, so suppressing the default was right. Today they
+ * are all route-owned anyway, so those entries are inert for the footer case and
+ * only matter to a 404 on such a path. Narrowing the list is a behaviour change
+ * and belongs in its own commit with its own verification.
  */
 
-// KB design-system routes that render their OWN KbNav + KbFooter. The default
-// SiteHeader/SiteFooter must be suppressed for these. Derived from the exact set
-// of app/**/page.tsx that contain `kb-root` (Phase 9 site-wide KB migration).
-// NOT-yet-KB siblings are deliberately ABSENT so they keep the default chrome:
+// Routes that must not receive a default-chrome node. The name KB_ROUTES is kept
+// because the exported symbol is asserted by ./chrome-routes.test.ts; the set is
+// what it always was, derived from the pages that owned their own chrome. Absent
+// siblings deliberately keep the default:
 //   /homes-for-sale(+/<city>/<filters>) search, /housing-market/<city>/<sub>,
 //   /listing/by-address|by-key, /reports/<slug>/<geoName>, /team/<slug>/edit,
 //   and the internal/legal/auth surfaces.
