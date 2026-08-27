@@ -95,7 +95,10 @@ function compCol(comp: CmaAdjustedComp, index: number): Col {
       dateLong(comp.closeDate),
       comp.beds != null ? int(comp.beds) : '-',
       comp.baths != null ? dec(comp.baths, comp.baths % 1 !== 0 ? 1 : 0) : '-',
-      int(comp.sqft),
+      // Guarded the same way the subject column is: a land comp carries no
+      // living area, and printing 0 claims a measured zero rather than a field
+      // that does not apply. Safe before only because rowToComp guaranteed >=300.
+      comp.sqft > 0 ? int(comp.sqft) : '-',
       lotSqft(comp.lotAcres) != null ? int(lotSqft(comp.lotAcres)!) : '-',
       comp.yearBuilt != null ? String(comp.yearBuilt) : '-',
       comp.garageSpaces != null ? int(comp.garageSpaces) : '-',

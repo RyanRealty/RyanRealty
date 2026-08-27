@@ -131,3 +131,45 @@ describe('renderCompMatrixHtml', () => {
     expect(html).not.toMatch(/>None</)
   })
 })
+
+describe('land columns', () => {
+  const landSubject = {
+    streetAddress: '1 Elkwood', city: 'Chiloquin', subdivision: null,
+    propertySubType: 'Residential Lots', beds: null, baths: null, sqft: null,
+    lotAcres: 0.69, yearBuilt: null, garageSpaces: null,
+    lastListPrice: null, lastListDate: null,
+  } as unknown as CmaSubject
+
+  const landComp = {
+    address: '2 Elkwood', propertySubType: 'Residential Lots',
+    closePrice: 210_000, listPrice: 219_000, closeDate: '2026-06-25',
+    beds: null, baths: null,
+    // rowToComp sets a land comp's living area to 0 — CmaComp.sqft is not nullable.
+    sqft: 0,
+    lotAcres: 0.72, yearBuilt: null, garageSpaces: null,
+    domTotal: 40, daysToOffer: null, proximity: '0.2 miles S', subdivision: null,
+    timeAdjustment: 0, sizeAdjustment: 0, adjustedPrice: 210_000,
+  } as unknown as CmaAdjustedComp
+
+  it('never prints a living area of 0 for a land comp', () => {
+    const html = renderCompMatrixHtml(landSubject, [landComp])
+    expect(html).not.toMatch(/>0</)
+  })
+
+  it('leaves the per-sqft rows blank rather than dividing by zero', () => {
+    const html = renderCompMatrixHtml(landSubject, [landComp])
+    expect(html).not.toMatch(/Infinity/)
+    expect(html).not.toMatch(/NaN/)
+  })
+
+  it('still carries the lot size, which is the size that matters for land', () => {
+    const html = renderCompMatrixHtml(landSubject, [landComp])
+    // 0.72 acres -> 31,363 sqft
+    expect(html).toMatch(/31,363/)
+  })
+
+  it('still prints living area for an improved comp', () => {
+    const html = renderCompMatrixHtml(subject, [comp])
+    expect(html).toMatch(/1,036/)
+  })
+})
