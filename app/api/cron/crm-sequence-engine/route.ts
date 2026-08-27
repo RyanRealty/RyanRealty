@@ -495,6 +495,7 @@ export async function GET(request: Request) {
           person_id: person.id, kind: 'stage_change',
           title: `Stage updated by workflow "${seq.name}": ${stage}`,
           source: 'sequence-change-stage',
+          payload: { from: person.stage ?? null, to: stage, workflow: seq.name },
         })
 
       } else if (step.channel === 'add_note') {

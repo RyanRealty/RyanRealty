@@ -26,8 +26,12 @@ function genCode(len = 7): string {
 }
 
 /** Never wrap our own tracker, compliance/unsubscribe links, or opt-out rails. */
-function isUntrackableLink(url: string): boolean {
-  return /\/r\/[A-Za-z0-9]|\/api\/track\/|unsubscribe|opt[-_]?out|email-preferences|agency-disclosure/i.test(url)
+export function isUntrackableLink(url: string): boolean {
+  // The tracker test is anchored to OUR host. It used to be a bare `/r/`, which
+  // matched any URL with an `r` path segment anywhere — a third-party link, or a
+  // future route of ours, would have been silently left untracked.
+  const isOwnTracker = /^https?:\/\/(?:www\.)?ryan-realty\.com\/r\/[A-Za-z0-9]/i.test(url)
+  return isOwnTracker || /\/api\/track\/|unsubscribe|opt[-_]?out|email-preferences|agency-disclosure/i.test(url)
 }
 
 /** Trailing sentence punctuation the URL regex greedily captures ("…/sell." → "."). */

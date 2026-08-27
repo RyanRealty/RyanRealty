@@ -39,6 +39,8 @@ import { RangeControl } from './_components/v2/RangeControl'
 import { SalesFunnelTab } from './_components/SalesFunnelTab'
 import { HorizontalBarChart, TimeSeriesChart, BrokerPieChart, StackedBarMix } from './_components/charts'
 import ReportCatalog from './_components/ReportCatalog'
+import { getLeadSources } from '@/lib/data/analytics/leadSources'
+import { getBookConversion } from '@/lib/data/analytics/bookConversion'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -208,6 +210,122 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
 // Acquisition
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Where visits actually came from, and whether the book is moving.
+ *
+ * This sits ABOVE the GA4 blocks on purpose. GA4 cannot answer the acquisition
+ * question here: 99.5% of visitors never answer the cookie banner, so Consent
+ * Mode sends a cookieless ping carrying no traffic source, and GA4 reported
+ * `(not set)` for 15,188 of ~15,600 sessions (measured 2026-08-26). That is not
+ * a setting to fix — a denied-consent ping is not allowed to carry it.
+ *
+ * `visitor_sessions` does have it, because a referrer and a campaign tag
+ * describe the LINK, not the person, and are kept at every consent tier.
+ */
+async function FirstPartyAcquisition({ range }: { range: { startDate: string; endDate: string } }) {
+  const startIso = new Date(`${range.startDate}T00:00:00Z`).toISOString()
+  const endIso = new Date(`${range.endDate}T23:59:59Z`).toISOString()
+  const [sources, book] = await Promise.all([
+    getLeadSources(startIso, endIso),
+    getBookConversion(startIso, endIso),
+  ])
+
+  const sends = book.touches.emailOut + book.touches.smsOut + book.touches.calls
+  const activeClients = book.standing.find((s) => s.stage === 'Active Client')?.people ?? 0
+
+  return (
+    <>
+      <section aria-label="Where visits came from">
+        <SectionHead>Where visits came from — measured first-party</SectionHead>
+        <Figures
+          figures={[
+            { label: 'Sessions', value: formatInt(sources.totals.sessions), caption: 'in this range' },
+            {
+              label: 'Tied to a person',
+              value: formatInt(sources.totals.identifiedSessions),
+              caption:
+                sources.totals.sessions > 0
+                  ? formatPct(sources.totals.identifiedSessions / sources.totals.sessions)
+                  : null,
+            },
+            {
+              label: 'No source at all',
+              value: formatInt(sources.totals.directSessions),
+              caption:
+                sources.totals.sessions > 0
+                  ? `${formatPct(sources.totals.directSessions / sources.totals.sessions)} — the ceiling`
+                  : null,
+            },
+          ]}
+        />
+        <DataList
+          label="Channels"
+          rows={sources.rows}
+          cap={12}
+          empty="No sessions in this range."
+          rowKey={(r) => r.channel}
+          columns={[
+            { key: 'channel', header: 'Channel', lead: true, cell: (r) => r.channel },
+            { key: 'sessions', header: 'Sessions', num: true, cell: (r) => formatInt(r.sessions) },
+            { key: 'ident', header: 'Identified', num: true, cell: (r) => formatInt(r.identifiedSessions) },
+            { key: 'people', header: 'People', num: true, cell: (r) => formatInt(r.people) },
+            {
+              key: 'origins',
+              header: 'Top origins',
+              cell: (r) => r.topOrigins.slice(0, 3).map((o) => `${o.origin} (${formatInt(o.sessions)})`).join(', ') || '—',
+            },
+          ]}
+        />
+        {sources.warnings.map((w) => (
+          <p key={w} className="av2-note">{w}</p>
+        ))}
+      </section>
+
+      <section aria-label="Whether the book is moving">
+        <SectionHead>Whether the book is moving</SectionHead>
+        <Figures
+          figures={[
+            { label: 'People in the book', value: formatInt(book.totalPeople), caption: 'all stages' },
+            { label: 'Active clients', value: formatInt(activeClients), caption: 'right now' },
+            { label: 'Touches sent', value: formatInt(sends), caption: 'email + text + calls, this range' },
+            {
+              label: 'Stage moves',
+              value: formatInt(book.movesTotal),
+              caption: book.movesTotal > 0 && sends > 0 ? `${formatInt(Math.round(sends / book.movesTotal))} touches each` : 'none recorded',
+            },
+          ]}
+        />
+        <DataList
+          label="Stage movement"
+          rows={book.moves}
+          cap={10}
+          empty="Nobody changed stage in this range."
+          rowKey={(m) => `${m.from ?? '?'}-${m.to ?? '?'}`}
+          columns={[
+            { key: 'from', header: 'From', lead: true, cell: (m) => m.from ?? '(unknown)' },
+            { key: 'to', header: 'To', cell: (m) => m.to ?? '(unknown)' },
+            { key: 'count', header: 'People', num: true, cell: (m) => formatInt(m.count) },
+          ]}
+        />
+        <DataList
+          label="Standing"
+          rows={book.standing}
+          cap={12}
+          empty="The book is empty."
+          rowKey={(r) => String(r.stage)}
+          columns={[
+            { key: 'stage', header: 'Stage', lead: true, cell: (r) => String(r.stage) },
+            { key: 'people', header: 'People', num: true, cell: (r) => formatInt(r.people) },
+          ]}
+        />
+        {book.warnings.map((w) => (
+          <p key={w} className="av2-note">{w}</p>
+        ))}
+      </section>
+    </>
+  )
+}
+
 async function AcquisitionTab({ range }: { range: { startDate: string; endDate: string } }) {
   const d = await fetchAcquisition(range)
   const totalAttributed = d.paidVsOrganic.paidSessions + d.paidVsOrganic.organicSessions + d.paidVsOrganic.otherSessions
@@ -220,6 +338,14 @@ async function AcquisitionTab({ range }: { range: { startDate: string; endDate: 
 
   return (
     <>
+      <FirstPartyAcquisition range={range} />
+
+      <SectionHead>Google Analytics — behaviour only</SectionHead>
+      <p className="av2-note">
+        GA4 reports no traffic source for visitors who never answered the cookie banner, which is
+        almost all of them. Read the section above for where visits came from; these blocks are
+        useful for what people did once they arrived.
+      </p>
       <Figures
         figures={[
           {

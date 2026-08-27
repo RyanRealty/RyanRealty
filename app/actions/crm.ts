@@ -1079,6 +1079,10 @@ export async function updateCrmStageAction(formData: FormData): Promise<CrmActio
   await sb.from('crm_timeline').insert({
     person_id: personId, kind: 'stage_change',
     title: `Stage: ${person.stage} → ${stage}`, source: 'broker-set-stage',
+    // Structured too, not only in the title. The funnel report had to parse
+    // the sentence to name a single transition; a reader should not depend on
+    // prose it does not control.
+    payload: { from: person.stage ?? null, to: stage },
   })
   // Automation trigger dispatch: fire stage_changed so any crm_automation_rules
   // rows or sequence-level triggers that match this stage can enroll the person.

@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
   // This is the sender half of the north-star attribution path. Idempotent.
   function stampAttributionUtm(value: unknown, actionId: string, actionType: string): unknown {
     if (typeof value === 'string') {
-      return value.replace(/https?:\/\/(?:www\.)?ryan-realty\.com\/[^\s"')]*/gi, (urlStr) => {
+      return value.replace(/https?:\/\/(?:www\.)?ryan-realty\.com(?:\/[^\s"')]*)?/gi, (urlStr) => {
         try {
           const u = new URL(urlStr)
           if (!u.searchParams.has('utm_content')) u.searchParams.set('utm_content', actionId)

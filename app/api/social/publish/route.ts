@@ -175,7 +175,7 @@ const PLATFORM_UTM_SOURCE: Record<Platform, string> = {
  * Social ('organic_post' lands in Unassigned).
  */
 function stampPlatformUtm(caption: string, platform: Platform): string {
-  return caption.replace(/https?:\/\/(?:www\.)?ryan-realty\.com\/[^\s"')]*/gi, (urlStr) => {
+  return caption.replace(/https?:\/\/(?:www\.)?ryan-realty\.com(?:\/[^\s"')]*)?/gi, (urlStr) => {
     try {
       const u = new URL(urlStr)
       const source = u.searchParams.get('utm_source')
