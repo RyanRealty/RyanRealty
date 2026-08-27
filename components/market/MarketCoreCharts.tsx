@@ -67,7 +67,10 @@ function CoreChartTabStrip({
             onClick={() => onSelect(t.metric)}
             onKeyDown={(e) => onKeyDown(e, i)}
             className={cn(
-              'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+              // Broadside register (PUBLIC_UI §9): radius 0 — a toggle is a
+              // stamped label, not a pill — with the tracked small-caps label
+              // treatment (--v3-track-label = .14em).
+              'rounded-none px-3 py-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] transition-colors',
               'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
               selected
                 ? 'bg-primary text-primary-foreground'
@@ -92,7 +95,9 @@ export function MarketCoreCharts({ data, heading, scopeLabel, className }: Marke
   const chart = coreChartForTab(tab)
 
   return (
-    <div className={cn('rounded-2xl border border-border bg-card p-4 text-card-foreground sm:p-6', className)}>
+    // Broadside register (PUBLIC_UI §9): the panel is raised white with a 1px
+    // edge, radius 0, no elevation shadow — never a rounded card.
+    <div className={cn('rounded-none border border-border bg-card p-4 text-card-foreground sm:p-6', className)}>
       {heading ? (
         <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <h3 className="text-base font-semibold text-primary">{heading}</h3>
@@ -119,6 +124,7 @@ export function MarketCoreCharts({ data, heading, scopeLabel, className }: Marke
           id={`${idBase}-${tab.metric}`}
           caption={chart.caption}
           kind={chart.kind}
+          run={chart.run}
           series={chart.series}
         />
         <p className="mt-2 text-[11px] leading-snug text-muted-foreground">

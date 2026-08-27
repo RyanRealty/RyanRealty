@@ -165,6 +165,11 @@ export function coreChartForTab(tab: CoreChartTab): V3ChartProps {
   return {
     caption: v3Text(`${tab.tabLabel}, ${tab.period}`),
     kind: tab.kind === 'bar' ? ('bars' as const) : ('line' as const),
+    // Every bar tab here charts consecutive months of ONE population (closed
+    // sales per month), never categories: `run` keeps the primary tone on all
+    // bars and drops the per-bar key legend — without it V3Chart printed one
+    // legend entry PER MONTH (24 swatch rows above the chart at 375px).
+    run: tab.kind === 'bar',
     series: [
       {
         name: v3Text(tab.tabLabel),
