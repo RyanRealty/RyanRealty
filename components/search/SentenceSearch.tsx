@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { mergeSentenceParams, sentenceToParams } from '@/lib/search/sentence-to-params'
+import './search-ledger.css'
 
 /**
  * Apply a typed or spoken sentence to the current /search URL.
@@ -69,9 +70,9 @@ export function SentenceSearch({ className, transcript }: SentenceSearchProps) {
         placeholder="3 bed under 800 in Tetherow"
         autoComplete="off"
         enterKeyHint="search"
-        className="h-11 min-w-0 flex-1"
+        className="srch-square h-9 min-w-0 flex-1"
       />
-      <Button type="submit" size="lg" className="h-11">
+      <Button type="submit" size="sm" className="srch-chip h-9">
         Search
       </Button>
     </form>

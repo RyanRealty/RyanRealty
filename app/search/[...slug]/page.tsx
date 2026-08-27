@@ -35,7 +35,6 @@ import {
 } from '@/components/site/v3'
 import SearchPageJsonLd from './SearchPageJsonLd'
 import ResortCommunityJsonLd from './ResortCommunityJsonLd'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { isResortCommunity } from '../../../lib/resort-communities'
 import { getResortEntityKeys } from '../../actions/subdivision-flags'
 import { getSubdivisionTabContent } from '../../actions/subdivision-descriptions'
@@ -442,6 +441,19 @@ export default async function SearchPage({
               // the generic Place so two nodes do not declare the same entity.
               Boolean(city && subdivision && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys))
             }
+            datasetSchema={
+              cityMarketFaq && cityMarketFaq.datasetVariables.length > 0
+                ? {
+                    type: 'dataset',
+                    name: `${city}, Oregon real estate market statistics${cityMarketFaq.asOfLabel ? `, ${cityMarketFaq.asOfLabel}` : ''}`,
+                    description: `Live single-family home market data for ${city}, Oregon. Includes median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
+                    url: searchPagePath,
+                    dateModified: cityMarketFaq.asOfIso ?? undefined,
+                    spatialCoverageName: `${city}, OR`,
+                    variableMeasured: cityMarketFaq.datasetVariables,
+                  }
+                : undefined
+            }
           />
           {city && subdivision && decodedSubdivision && isResortCommunity(city, decodedSubdivision, resortEntityKeys) && (
             <ResortCommunityJsonLd
@@ -477,19 +489,8 @@ export default async function SearchPage({
                 .filter(Boolean)}
             />
           )}
-          {cityMarketFaq && cityMarketFaq.datasetVariables.length > 0 && (
-            <MetadataBlock
-              schema={{
-                type: 'dataset',
-                name: `${city}, Oregon real estate market statistics${cityMarketFaq.asOfLabel ? `, ${cityMarketFaq.asOfLabel}` : ''}`,
-                description: `Live single-family home market data for ${city}, Oregon. Includes median list price, active inventory, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
-                url: searchPagePath,
-                dateModified: cityMarketFaq.asOfIso ?? undefined,
-                spatialCoverageName: `${city}, OR`,
-                variableMeasured: cityMarketFaq.datasetVariables,
-              }}
-            />
-          )}
+          {/* City market Dataset JSON-LD rides SearchPageJsonLd (datasetSchema)
+              so this page file owes no legacy-register import for a script tag. */}
         </>
       )}
 

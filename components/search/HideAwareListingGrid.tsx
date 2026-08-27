@@ -1,11 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { V3ListingRow, type V3ListingRowData } from '@/components/site/v3'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { buildHiddenKeySet, isHiddenListing } from '@/components/search/hidden-exclusion'
-import { Grid } from '@/components/site/primitives'
+import './search-ledger.css'
 
 /**
  * One item = the design-system card plus BOTH raw RETS identifiers, because the
@@ -14,7 +14,7 @@ import { Grid } from '@/components/site/primitives'
  * whether the store recorded its ListingKey or its MLS ListNumber.
  */
 export type HideAwareItem = {
-  card: ListingCardData
+  card: V3ListingRowData
   ListingKey: string | null
   ListNumber: string | null
 }
@@ -33,14 +33,15 @@ export type HideAwareItem = {
  */
 export default function HideAwareListingGrid({
   items,
-  cols = 4,
   gridClassName,
 }: {
   items: HideAwareItem[]
+  /** Call-site stability only: the Ledger register renders one dense column,
+   *  so column fan-out no longer applies (THE LOOK §9). */
   cols?: 2 | 3 | 4
-  /** When set, wrap the cards in a plain div with these classes instead of the
-   *  design-system Grid — lets a surface keep its own grid styling (e.g. the KB
-   *  price-drops grid) while still getting the exclusion + hide control. */
+  /** When set, wrap the rows in a plain div with these classes instead of the
+   *  default ledger stack — lets a surface keep its own wrapper while still
+   *  getting the exclusion + hide control. */
   gridClassName?: string
 }) {
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
@@ -69,21 +70,23 @@ export default function HideAwareListingGrid({
 
   const cards = visible.map(({ card }) => (
     // Named group `group/hide` reveals the control on hover, without
-    // entangling ListingCard's own internal `group` styles.
+    // entangling the row's own internal styles. The control sits over the
+    // thumb so the figure column stays clean.
     <div key={card.listingKey} data-listing-key={card.listingKey} className="relative group/hide">
       <ListingCardHideControl
         listingKey={card.listingKey}
         addressLine={card.addressLine}
         onVisibilityChange={onHiddenChange}
+        className="left-1 top-1 right-auto size-7"
       />
-      <ListingCard listing={card} />
+      <V3ListingRow listing={card} />
     </div>
   ))
 
+  // Ledger register (THE LOOK §9): one dense hairline-separated column, never
+  // a card grid. `cols` stays in the public props for call-site stability but
+  // no longer fans rows out horizontally; `gridClassName` still lets a caller
+  // keep its own wrapper.
   if (gridClassName) return <div className={gridClassName}>{cards}</div>
-  return (
-    <Grid cols={cols} gap="loose" className="mt-2">
-      {cards}
-    </Grid>
-  )
+  return <div className="v3-lrow-list mt-2">{cards}</div>
 }

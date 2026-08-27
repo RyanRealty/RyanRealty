@@ -188,22 +188,28 @@ const CHECKS = [
   },
   {
     file: 'app/search/[...slug]/SearchPageJsonLd.tsx',
-    label: 'search: suppressPlace prop + totalCount for ItemList',
-    all: ['suppressPlace', 'totalCount'],
+    label: 'search: suppressPlace prop + totalCount for ItemList + Dataset render',
+    all: ['suppressPlace', 'totalCount', 'datasetSchema', 'buildJsonLd'],
     why:
       'SearchPageJsonLd MUST accept suppressPlace (to avoid duplicate Place nodes\n' +
-      '  when ResortCommunityJsonLd is also rendered) and totalCount (so\n' +
-      '  ItemList.numberOfItems reflects the real result total, not the page slice).',
+      '  when ResortCommunityJsonLd is also rendered), totalCount (so\n' +
+      '  ItemList.numberOfItems reflects the real result total, not the page slice),\n' +
+      '  and datasetSchema rendered through buildJsonLd — the city market Dataset\n' +
+      '  moved here from a page-level MetadataBlock in the v3 Ledger roll, so this\n' +
+      '  component is now where that node is emitted.',
   },
   {
     file: 'app/search/[...slug]/page.tsx',
     label: 'search presets: SearchPageJsonLd + Dataset + preset FAQPage depth (P1.13)',
-    all: ['SearchPageJsonLd', 'MetadataBlock', 'buildPresetFaq'],
+    all: ['SearchPageJsonLd', 'datasetSchema', 'buildPresetFaq'],
     why:
       'The search route MUST render SearchPageJsonLd (ItemList + Place + Breadcrumb),\n' +
-      '  the city market Dataset via MetadataBlock, and the preset-page FAQ depth via\n' +
-      '  buildPresetFaq (whose FAQBlock emits FAQPage JSON-LD). The ~320 indexable\n' +
-      '  preset pages are destination pages; stripping their structured data fails CI.',
+      '  the city market Dataset via its datasetSchema prop (the Dataset node moved\n' +
+      '  off a page-level MetadataBlock in the v3 Ledger roll — the companion entry\n' +
+      '  above pins its render inside SearchPageJsonLd), and the preset-page FAQ\n' +
+      '  depth via buildPresetFaq (whose FAQBlock emits FAQPage JSON-LD). The ~320\n' +
+      '  indexable preset pages are destination pages; stripping their structured\n' +
+      '  data fails CI.',
   },
 
   // ── Price Drop Radar (2026-06-09) ──────────────────────────────────────

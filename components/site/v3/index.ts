@@ -159,6 +159,17 @@ export type {
   V3LedgerRows,
 } from './V3Ledger'
 
+/**
+ * The listing unit for Ledger-register search surfaces: one live listing as a
+ * dense ledger row (small thumb, address block, mono tabular figures). Not a
+ * seventh pattern — a composition unit the search list/rail chrome stacks,
+ * data-shape-compatible with the flat register's ListingCard so a consumer
+ * swaps an import, not a mapper.
+ */
+export { V3ListingRow } from './V3ListingRow'
+
+export type { V3ListingRowData, V3ListingRowBadge } from './V3ListingRow'
+
 /* -------------------------------------------------------------------------- */
 /* Pattern 4 — STAGE: full-bleed owned media, one line, one action             */
 /* -------------------------------------------------------------------------- */

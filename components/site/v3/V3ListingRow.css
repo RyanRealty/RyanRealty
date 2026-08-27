@@ -1,0 +1,205 @@
+/* ===========================================================================
+   v3 LISTING ROW
+   One live listing as a dense ledger row: small thumb, address block, and a
+   mono tabular figure column. The row is the whole target — a real anchor,
+   hairline-separated, square, and shadow-free in both registers.
+
+   Built for the Ledger register (search/data surfaces, THE LOOK section 9):
+   under `.v3--ledger` the tokens make the figures Geist Mono, the row dense,
+   and the motion 120ms linear. Every color, size, and duration is a custom
+   property from ./tokens.css — no raw color in this file.
+
+   The block selector is doubled (`.v3.v3-lrow-list`, and the row carries
+   V3_ROOT_CLASS itself) for the same reason V3Ledger.css documents: the
+   prototype route declares plain global `.v3-*` classes, and (0,2,0) wins in
+   either load order.
+   =========================================================================== */
+
+/* Container: brackets the stack with a closing hairline; rows draw the top
+   ones. One column always — a ledger is scanned down, not across. It is also
+   the size container the row queries: the split view mounts this list in a
+   ~420px rail beside the map, where a viewport query would lie about the
+   room a row actually has. */
+.v3.v3-lrow-list,
+.v3 .v3-lrow-list {
+  display: flex;
+  flex-direction: column;
+  border-bottom: var(--v3-rule-hairline);
+  container-type: inline-size;
+}
+
+.v3.v3-lrow,
+.v3 .v3-lrow {
+  display: grid;
+  grid-template-columns: var(--v3-photo-thumb) minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--v3-space-sm);
+  min-height: calc(var(--v3-photo-thumb) + 2 * var(--v3-row-pad-block));
+  padding: var(--v3-row-pad-block) var(--v3-space-2xs);
+  border-top: var(--v3-rule-hairline);
+  border-radius: var(--v3-radius-sm);
+  color: var(--v3-ink);
+  text-decoration: none;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* The wash is the only motion; it encodes which row will open. */
+.v3.v3-lrow:hover,
+.v3 .v3-lrow:hover,
+.v3.v3-lrow:focus-visible,
+.v3 .v3-lrow:focus-visible {
+  background: var(--v3-wash);
+}
+
+/* Map sync states (split view): the inset selection ring is functional, not
+   elevation — the same device V3Field uses for its active row. */
+.v3.v3-lrow.is-hot,
+.v3 .v3-lrow.is-hot {
+  background: var(--v3-wash);
+  box-shadow: inset 0 0 0 1px var(--v3-edge);
+}
+
+.v3.v3-lrow.is-active,
+.v3 .v3-lrow.is-active {
+  background: var(--v3-wash);
+  box-shadow: inset 0 0 0 2px var(--v3-ink);
+}
+
+/* Photography small, data-first: the thumb is a square at --v3-photo-thumb
+   (4.5rem in the Ledger register). No photo = plain wash, never a stand-in. */
+.v3-lrow__media {
+  position: relative;
+  width: var(--v3-photo-thumb);
+  height: var(--v3-photo-thumb);
+  overflow: hidden;
+  border-radius: var(--v3-radius-sm);
+  background: var(--v3-wash);
+}
+
+.v3-lrow__media img {
+  object-fit: cover;
+}
+
+/* Address block ------------------------------------------------------------ */
+.v3-lrow__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+}
+
+.v3-lrow__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-3xs);
+}
+
+.v3-lrow__tag {
+  display: inline-block;
+  padding: 0 var(--v3-space-3xs);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-pill);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-body);
+  text-transform: uppercase;
+  color: var(--v3-ink);
+  background: var(--v3-surface);
+}
+
+.v3-lrow__tag--solid {
+  border-color: var(--v3-surface-inverse);
+  background: var(--v3-surface-inverse);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3-lrow__addr {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  overflow-wrap: anywhere;
+}
+
+.v3-lrow__city {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  color: var(--v3-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Figure column: the ask and the working meta, right-aligned and tabular so a
+   column of rows lines up on the digits. --v3-font-num is Geist Mono in the
+   Ledger register — the register decides, the component only reads. */
+.v3-lrow__figures {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--v3-space-3xs);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.v3-lrow__price {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-num);
+  line-height: var(--v3-leading-control);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: 0;
+}
+
+.v3-lrow__meta {
+  font-family: var(--v3-font-mono);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* In a narrow list — a phone, or the split view's ~420px desktop rail — the
+   nowrap figure column would crowd the address into a sliver, so the figures
+   drop under the address block and the row keeps two columns. The container
+   query reads the LIST's width (the rail lies about nothing); the viewport
+   query is the fallback for engines without container queries, where only
+   true small screens stack. */
+@media (max-width: 26rem) {
+  .v3.v3-lrow,
+  .v3 .v3-lrow {
+    grid-template-columns: var(--v3-photo-thumb) minmax(0, 1fr);
+  }
+
+  .v3-lrow__figures {
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: flex-start;
+    column-gap: var(--v3-space-sm);
+    text-align: left;
+    white-space: normal;
+    margin-top: var(--v3-space-3xs);
+  }
+}
+
+@container (max-width: 30rem) {
+  .v3.v3-lrow,
+  .v3 .v3-lrow {
+    grid-template-columns: var(--v3-photo-thumb) minmax(0, 1fr);
+  }
+
+  .v3-lrow__figures {
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: flex-start;
+    column-gap: var(--v3-space-sm);
+    text-align: left;
+    white-space: normal;
+    margin-top: var(--v3-space-3xs);
+  }
+}

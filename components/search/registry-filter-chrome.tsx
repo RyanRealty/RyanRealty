@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon } from '@hugeicons/core-free-icons'
+import './search-ledger.css'
 
 type ParamReader = { get(name: string): string | null }
 
@@ -101,7 +102,7 @@ export function activeRegistryFilters(source: ParamReader | null | undefined): A
 /** Removable active-filter chip, shared by both filter bars. */
 export function RegistryFilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <Badge variant="default" className="inline-flex h-auto items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium tabular-nums">
+    <Badge variant="default" className="srch-chip inline-flex h-auto items-center gap-1 rounded-none px-2 py-1">
       {label}
       {/* size-6 (24px) hit target per WCAG 2.5.8; negative margin keeps the
           chip's visual height unchanged (W-UI a11y finding 2026-07-30). */}
@@ -111,7 +112,7 @@ export function RegistryFilterChip({ label, onRemove }: { label: string; onRemov
         size="icon"
         aria-label={`Remove filter: ${label}`}
         onClick={onRemove}
-        className="-my-1.5 -mr-1 ml-0.5 size-6 rounded-full p-0 text-primary-foreground/70 hover:bg-transparent hover:text-primary-foreground"
+        className="-my-1.5 -mr-1 ml-0.5 size-6 rounded-none p-0 text-primary-foreground/70 hover:bg-transparent hover:text-primary-foreground"
       >
         <HugeiconsIcon icon={Cancel01Icon} className="size-3" aria-hidden />
       </Button>
@@ -142,10 +143,10 @@ export function ParsedSearchNotice({ chips, className }: { chips: string[] | nul
   return (
     <div aria-live="polite" className={className}>
       {chips && chips.length > 0 && (
-        <Card className="max-w-full flex-row flex-wrap items-center gap-1 border border-border px-2.5 py-1.5 shadow-lg ring-0">
+        <Card className="srch-pop max-w-full flex-row flex-wrap items-center gap-1 rounded-none px-2.5 py-1.5 shadow-none ring-0">
           <span className="text-xs text-muted-foreground">Searching</span>
           {chips.map((chip) => (
-            <Badge key={chip} variant="secondary" className="text-xs font-normal">
+            <Badge key={chip} variant="secondary" className="rounded-none text-xs font-normal">
               {chip}
             </Badge>
           ))}

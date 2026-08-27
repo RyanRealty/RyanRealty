@@ -14,6 +14,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import './search-ledger.css'
 import { publishSearchCount } from '@/lib/search/publish-search-count'
 import {
   ALL_SEARCH_URL_PARAMS,
@@ -695,7 +696,7 @@ export default function AllFiltersSheet({
             aria-label="Find a filter by name or value"
           />
           {findQuery.trim().length >= 2 && (
-            <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-border">
+            <div className="mt-2 max-h-56 overflow-y-auto rounded-none border border-border">
               {findHits.length === 0 ? (
                 <p className="px-3 py-2 text-xs text-muted-foreground">
                   No filter or value matches that.
@@ -768,7 +769,7 @@ export default function AllFiltersSheet({
                 <Fragment key={id}>
                   {index > 0 && <Separator />}
                   <section className="flex flex-col gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p className="srch-label">
                       {label}
                     </p>
                     {ranges.map((def) => (

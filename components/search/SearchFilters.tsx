@@ -23,6 +23,7 @@ import {
   useParsedSearchConfirm,
 } from '@/components/search/registry-filter-chrome'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
+import './search-ledger.css'
 
 /** P6: load the ~1k-LOC registry sheet only after first open (not on cold search). */
 const AllFiltersSheet = dynamic(() => import('@/components/search/AllFiltersSheet'), {
@@ -207,7 +208,9 @@ function FilterDropdown({
           size="sm"
           aria-haspopup="dialog"
           className={cn(
-            'min-h-11 min-w-11 shrink-0 gap-1 whitespace-nowrap rounded-full px-3.5 tabular-nums',
+            // Dense 32px Ledger control on fine pointers; the W-UI audit's
+            // 44px tap floor holds on touch (ci:publish-search-count).
+            'srch-chip h-8 min-h-8 min-w-11 shrink-0 gap-1 whitespace-nowrap px-3 [@media(pointer:coarse)]:min-h-11',
             open && !active && 'ring-2 ring-primary/30',
           )}
         >
@@ -218,7 +221,7 @@ function FilterDropdown({
       <PopoverContent
         align={align}
         sideOffset={8}
-        className="w-screen max-w-sm p-0"
+        className="srch-pop w-screen max-w-sm p-0"
       >
         {children}
       </PopoverContent>
@@ -456,7 +459,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         {/* Location + Save share one 390 row so the first house address
             reaches the fold. Voice is sm+ only. */}
         <div className="relative min-w-0 flex-1 sm:max-w-md">
-          <div className="flex min-w-0 items-center gap-2 rounded-lg bg-muted px-3.5 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
+          <div className="srch-panel flex min-w-0 items-center gap-2 px-3.5 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
               ref={locationInputRef}
@@ -512,7 +515,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
               highlight={highlight}
               idPrefix="search-filters-suggest"
               onPick={handleSuggestPick}
-              className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-xl border border-border bg-card pb-1 shadow-lg"
+              className="srch-pop absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto pb-1"
             />
           )}
         </div>
@@ -538,13 +541,13 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           }}
           variant="outline"
           size="sm"
-          className="ml-auto hidden h-8 overflow-hidden rounded-md border border-border/60 bg-muted/40 lg:flex"
+          className="ml-auto hidden h-8 overflow-hidden rounded-none border border-border/60 bg-muted/40 lg:flex"
         >
           {(['split', 'list', 'map'] as const).map((v) => (
             <ToggleGroupItem
               key={v}
               value={v}
-              className="h-8 rounded-none border-0 px-2.5 text-xs font-medium capitalize text-muted-foreground data-[state=on]:text-foreground"
+              className="srch-chip h-8 rounded-none border-0 px-2.5 text-muted-foreground data-[state=on]:text-foreground"
               aria-label={`${v} view`}
             >
               {v}
@@ -567,7 +570,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           onOpenChange={panelOpenHandler('status')}
         >
           <div className="p-3">
-            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
+            <p className="srch-label mb-2.5">Status</p>
             <div className="flex flex-col gap-1">
               {STATUS_OPTIONS.map(({ value, label }) => (
                 <Button
@@ -593,7 +596,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           onOpenChange={panelOpenHandler('price')}
         >
           <div className="p-3">
-            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Price range</p>
+            <p className="srch-label mb-2.5">Price range</p>
             <div className="mb-3 grid grid-cols-2 gap-2">
               <Label className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground">Min price</span>
@@ -655,7 +658,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
                       })
                       setOpenPanel(null)
                     }}
-                    className="rounded-full px-2.5 py-1 h-auto text-xs"
+                    className="rounded-none px-2.5 py-1 h-auto text-xs"
                   >
                     {label}
                   </Button>
@@ -674,7 +677,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         >
           <div className="space-y-3 p-3">
             <div>
-              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Min bedrooms</p>
+              <p className="srch-label mb-2.5">Min bedrooms</p>
               <div className="flex flex-wrap gap-1.5">
                 {BEDS_MIN_OPTIONS.map(({ value, label }) => (
                   <Button
@@ -690,7 +693,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
               </div>
             </div>
             <div>
-              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Max bedrooms</p>
+              <p className="srch-label mb-2.5">Max bedrooms</p>
               <div className="flex flex-wrap gap-1.5">
                 {BEDS_MAX_OPTIONS.map(({ value, label }) => (
                   <Button
@@ -717,7 +720,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         >
           <div className="space-y-3 p-3">
             <div>
-              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Min bathrooms</p>
+              <p className="srch-label mb-2.5">Min bathrooms</p>
               <div className="flex flex-wrap gap-1.5">
                 {BATHS_MIN_OPTIONS.map(({ value, label }) => (
                   <Button
@@ -733,7 +736,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
               </div>
             </div>
             <div>
-              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Max bathrooms</p>
+              <p className="srch-label mb-2.5">Max bathrooms</p>
               <div className="flex flex-wrap gap-1.5">
                 {BATHS_MAX_OPTIONS.map(({ value, label }) => (
                   <Button
@@ -785,7 +788,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             setMoreSheetMounted(true)
             setMoreSheetOpen(true)
           }}
-          className="shrink-0 gap-1 rounded-full px-3.5 tabular-nums"
+          className="srch-chip h-8 shrink-0 gap-1 px-3 [@media(pointer:coarse)]:min-h-11"
           aria-label="Open all filters"
         >
           <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />

@@ -25,7 +25,6 @@ import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
@@ -37,9 +36,10 @@ import {
 } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import AreaPicker from '@/components/search/AreaPicker'
-import ListingCard, { type ListingBadge } from '@/components/site/ListingCard'
+import { V3ListingRow, type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
 import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
+import './search-ledger.css'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
   ssr: false,
@@ -746,12 +746,12 @@ export default function MapSearchView({
     <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
       {/* Mockup G2: "N homes · filters · Sort" sticky count/sort row. */}
       <div className="sticky top-0 z-10 hidden flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-2 sm:py-3 lg:flex">
-        <p className="min-w-0 flex-1 text-sm text-muted-foreground tabular-nums" aria-live="polite">
+        <p className="srch-count min-w-0 flex-1 text-muted-foreground" aria-live="polite">
           {resultsDegraded ? (
             <span className="font-semibold text-foreground">Search delayed</span>
           ) : (
             <>
-              <span className="font-semibold text-foreground">{listCountPhrase}</span>
+              <span className="srch-figure font-semibold text-foreground">{listCountPhrase}</span>
               {publishedCounts.viewport ? (
                 <span className="ml-2">{publishedCounts.viewport.phrase}</span>
               ) : null}
@@ -765,9 +765,9 @@ export default function MapSearchView({
           ) : null}
         </p>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="hidden text-xs text-muted-foreground sm:inline">Sort</span>
+          <span className="srch-label hidden sm:inline">Sort</span>
           <Select value={sortValue} onValueChange={handleSortChange}>
-            <SelectTrigger className="h-9 w-[10.5rem]" aria-label="Sort results" size="sm">
+            <SelectTrigger className="srch-square h-9 w-[10.5rem]" aria-label="Sort results" size="sm">
               <SelectValue placeholder="Newest" />
             </SelectTrigger>
             <SelectContent>
@@ -781,20 +781,21 @@ export default function MapSearchView({
         </div>
       </div>
       {resultsDegraded ? (
-        <div className="p-8 text-center">
-          <Eyebrow>Try again</Eyebrow>
-          <H3 className="mt-2">Search took too long</H3>
-          <Body className="mt-2 text-muted-foreground">
+        <div className="srch-panel m-4 p-8 text-center">
+          <p className="srch-label">Try again</p>
+          <h3 className="mt-2 text-base font-semibold text-foreground">Search took too long</h3>
+          <p className="mt-2 text-muted-foreground">
             We could not load homes for this view. Try again, or reload the page.
-          </Body>
+          </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Button type="button" size="sm" onClick={retryViewportSearch} disabled={loading}>
+            <Button type="button" size="sm" className="srch-chip" onClick={retryViewportSearch} disabled={loading}>
               Try again
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="srch-chip"
               onClick={() => {
                 if (typeof window !== 'undefined') window.location.reload()
               }}
@@ -804,47 +805,47 @@ export default function MapSearchView({
           </div>
         </div>
       ) : !matchCountReady && listings.length === 0 ? (
-        <div className="p-8 text-center">
-          <Eyebrow>Updating</Eyebrow>
-          <H3 className="mt-2">Checking homes for this view</H3>
-          <Body className="mt-2 text-muted-foreground">
+        <div className="srch-panel m-4 p-8 text-center">
+          <p className="srch-label">Updating</p>
+          <h3 className="mt-2 text-base font-semibold text-foreground">Checking homes for this view</h3>
+          <p className="mt-2 text-muted-foreground">
             The filter-match count is still loading. This is not an empty market.
-          </Body>
+          </p>
         </div>
       ) : listings.length === 0 ? (
         hasNarrowingFilters ? (
-          <div className="p-8 text-center">
-            <Eyebrow>{beyondViewportCount != null ? 'Outside this view' : 'No matches'}</Eyebrow>
-            <H3 className="mt-2">
+          <div className="srch-panel m-4 p-8 text-center">
+            <p className="srch-label">{beyondViewportCount != null ? 'Outside this view' : 'No matches'}</p>
+            <h3 className="mt-2 text-base font-semibold text-foreground">
               {beyondViewportCount != null
                 ? `${beyondViewportCount.toLocaleString('en-US')} matching home${beyondViewportCount === 1 ? ' is' : 's are'} outside this map view`
                 : 'No homes match these filters here'}
-            </H3>
-            <Body className="mt-2 text-muted-foreground">
+            </h3>
+            <p className="mt-2 text-muted-foreground">
               {beyondViewportCount != null
                 ? 'Zoom out to see them, or loosen a filter.'
                 : 'Loosen a filter, or zoom out to widen the search area.'}
-            </Body>
+            </p>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="mt-4"
+              className="srch-chip mt-4"
               onClick={() => router.push(`${pathname ?? '/homes-for-sale'}?view=${filters.view ?? 'split'}`, { scroll: false })}
             >
               Clear all filters
             </Button>
           </div>
         ) : (
-          <div className="p-8 text-center">
-            <Eyebrow>Empty view</Eyebrow>
-            <H3 className="mt-2">No homes in this part of the map</H3>
-            <Body className="mt-2 text-muted-foreground">Zoom out or pan to a different area to see listings.</Body>
+          <div className="srch-panel m-4 p-8 text-center">
+            <p className="srch-label">Empty view</p>
+            <h3 className="mt-2 text-base font-semibold text-foreground">No homes in this part of the map</h3>
+            <p className="mt-2 text-muted-foreground">Zoom out or pan to a different area to see listings.</p>
           </div>
         )
       ) : (
         <>
-        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <div className="v3-lrow-list px-4 py-2">
           {visibleListings.slice(0, visibleCount).map((l, cardIndex) => {
             const key = rowKey(l)
             const href = listingDetailPath(
@@ -857,21 +858,15 @@ export default function MapSearchView({
             const isSelected = selectedKey === key
             const addressLine = cardStreet(l)
             const badge = nowMs != null ? cardBadge(l, nowMs) : undefined
-            // Canonical site ListingCard (same as SearchResults). Wrapper owns
-            // data-listing-key + hide control + map hover/select ring.
+            // V3ListingRow — the Ledger-register listing unit (same as
+            // SearchResults). Wrapper owns data-listing-key + hide control;
+            // the map hover/select state rides the row's own functional
+            // inset ring (`is-hot` / `is-active`), never an elevation shadow.
             return (
               <div
                 key={key}
                 data-listing-key={key}
-                className={cn(
-                  // `group group/hide relative` — contract + hide-control hover reveal.
-                  'group group/hide relative rounded-xl transition',
-                  isSelected
-                    ? 'ring-2 ring-primary shadow-lg ring-offset-2 ring-offset-muted'
-                    : isHovered
-                      ? 'ring-2 ring-primary/60 shadow-md'
-                      : undefined,
-                )}
+                className="group group/hide relative"
                 onMouseEnter={() => onListHover(key)}
                 onMouseLeave={() => onListHover(null)}
                 onClick={() => setSelectedKey(key)}
@@ -880,10 +875,12 @@ export default function MapSearchView({
                   listingKey={key}
                   addressLine={addressLine}
                   onVisibilityChange={onHiddenChange}
+                  className="left-1 top-1 right-auto size-7"
                 />
-                <ListingCard
+                <V3ListingRow
                   showPricePerSqft
                   priority={cardIndex < 4}
+                  className={cn(isSelected && 'is-active', !isSelected && isHovered && 'is-hot')}
                   listing={{
                     listingKey: key,
                     href,
@@ -917,7 +914,7 @@ export default function MapSearchView({
               type="button"
               variant="outline"
               onClick={() => setVisibleCount((c) => c + CARD_PAGE)}
-              className="w-full"
+              className="srch-chip w-full"
             >
               Show more homes
             </Button>
@@ -949,7 +946,7 @@ export default function MapSearchView({
           contract and is shareable + alert-savable like any drawn area. */}
       <AreaPicker shapes={drawnShapes} onApply={handleAreaShapes} />
       {/* Search-as-you-move toggle (Redfin/Zillow pattern). */}
-      <Label className="absolute left-1/2 top-3 z-[100] flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md">
+      <Label className="absolute left-1/2 top-3 z-[100] flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-none border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-none">
         <Checkbox
           checked={searchAsMove}
           onCheckedChange={() => toggleSearchAsMove()}
@@ -964,14 +961,14 @@ export default function MapSearchView({
           variant="outline"
           onClick={clearGeoScope}
           aria-label={`Showing ${scopeLabel} only. Clear to search the whole map area.`}
-          className="absolute left-1/2 top-[3.6rem] z-[100] flex h-auto -translate-x-1/2 items-center gap-2 rounded-full border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-md transition hover:bg-muted"
+          className="absolute left-1/2 top-[3.6rem] z-[100] flex h-auto -translate-x-1/2 items-center gap-2 rounded-none border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-none transition hover:bg-muted"
         >
           <span>
             Showing <span className="font-semibold">{scopeLabel}</span> only
           </span>
           <span
             aria-hidden
-            className="flex h-4 w-4 items-center justify-center rounded-full bg-foreground/10 text-xs leading-none"
+            className="flex h-4 w-4 items-center justify-center rounded-none bg-foreground/10 text-xs leading-none"
           >
             ✕
           </span>
@@ -990,7 +987,7 @@ export default function MapSearchView({
           loading ? 'opacity-100' : 'opacity-0'
         )}
       >
-        <span className="flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-md">
+        <span className="flex items-center gap-2 rounded-none border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-none">
           <span
             aria-hidden
             className="h-3 w-3 animate-spin rounded-full border-2 border-foreground/30 border-t-foreground"
@@ -1003,7 +1000,7 @@ export default function MapSearchView({
           Never claim "0 homes" when the fetch was degraded (P9). */}
       <p
         className={cn(
-          'pointer-events-none absolute bottom-4 left-1/2 z-[100] -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md tabular-nums lg:hidden',
+          'srch-count pointer-events-none absolute bottom-4 left-1/2 z-[100] -translate-x-1/2 rounded-none border border-border bg-card px-4 py-2 font-medium text-foreground shadow-none lg:hidden',
           mobileView === 'list' ? 'invisible' : 'visible'
         )}
         aria-live="polite"
@@ -1012,7 +1009,7 @@ export default function MapSearchView({
           'Search delayed'
         ) : (
           <>
-            <span className="font-semibold">{mapCountPhrase}</span>
+            <span className="srch-figure font-semibold">{mapCountPhrase}</span>
             {loading ? <span className="ml-1.5 text-xs text-muted-foreground">Updating…</span> : null}
           </>
         )}
@@ -1043,11 +1040,11 @@ export default function MapSearchView({
             Map
           </ToggleGroupItem>
         </ToggleGroup>
-        <p className="min-w-0 shrink truncate text-xs font-semibold tabular-nums text-foreground" aria-live="polite">
+        <p className="srch-figure min-w-0 shrink truncate text-xs font-semibold text-foreground" aria-live="polite">
           {resultsDegraded ? 'Search delayed' : listCountPhrase}
         </p>
         <Select value={sortValue} onValueChange={handleSortChange}>
-          <SelectTrigger className="h-9 w-[7.5rem] shrink-0" aria-label="Sort results" size="sm">
+          <SelectTrigger className="srch-square h-9 w-[7.5rem] shrink-0" aria-label="Sort results" size="sm">
             <SelectValue placeholder="Newest" />
           </SelectTrigger>
           <SelectContent>

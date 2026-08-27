@@ -1,7 +1,7 @@
-import { type ListingCardData } from '@/components/site/ListingCard'
+import { type V3ListingRowData } from '@/components/site/v3'
 import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
 import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
-import { Body, CTAButton, Eyebrow, H3 } from '@/components/site/primitives'
+import { CTAButton } from '@/components/site/primitives'
 import SearchListingsToolbar from '../../../../components/SearchListingsToolbar'
 import { listingTileHref } from '../../../../lib/slug'
 import { type getListingsWithAdvanced } from '../../../actions/listings'
@@ -52,11 +52,13 @@ export function ListingsResults({
   if (kind === 'degraded') {
     return (
       <div className="mt-10 text-center">
-        <Eyebrow>Search delayed</Eyebrow>
-        <H3 className="mt-2">We could not load listings in time</H3>
-        <Body className="mx-auto mt-2 max-w-md text-muted-foreground">
+        <p className="srch-label">Search delayed</p>
+        <h3 className="mt-2 text-base font-semibold text-foreground">
+          We could not load listings in time
+        </h3>
+        <p className="mx-auto mt-2 max-w-md text-muted-foreground">
           This is a connection or timeout problem, not an empty market. Try again.
-        </Body>
+        </p>
         <form>
           <CTAButton type="submit" tone="outline" className="mt-6">
             Reload page
@@ -100,7 +102,7 @@ export function ListingsResults({
           const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
           const street = [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim()
           const cityLine = [[listing.City ?? city, 'OR'].filter(Boolean).join(', '), listing.PostalCode].filter(Boolean).join(' ').trim()
-          const card: ListingCardData = {
+          const card: V3ListingRowData = {
             listingKey: key,
             href: listingTileHref({
               listingKey: listing.ListingKey,

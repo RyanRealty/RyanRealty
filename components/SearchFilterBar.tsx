@@ -15,6 +15,7 @@ import {
   useParsedSearchConfirm,
 } from '@/components/search/registry-filter-chrome'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
+import '@/components/search/search-ledger.css'
 
 /** P6: load the ~1k-LOC registry sheet only after first open (not on cold SEO browse). */
 const AllFiltersSheet = dynamic(() => import('@/components/search/AllFiltersSheet'), {
@@ -266,7 +267,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
   }
 
   const dropdownAnchor = 'absolute left-0 top-full z-50 mt-1.5'
-  const dropdownSurface = 'rounded-lg border border-border bg-card shadow-lg'
+  const dropdownSurface = 'srch-pop'
 
   return (
     <div ref={barRef} className="flex w-full min-w-0 flex-col gap-3">
@@ -274,7 +275,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         <div className="flex min-w-0 items-center gap-2">
           <Link
             href={props.locationHref ?? pathname}
-            className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm sm:max-w-md sm:px-4 sm:py-2.5"
+            className="srch-panel inline-flex min-w-0 max-w-full items-center gap-2 px-3 py-2 text-sm font-medium text-foreground sm:max-w-md sm:px-4 sm:py-2.5"
             aria-label={`Search area: ${props.locationLabel}. Click to change.`}
           >
             <HugeiconsIcon icon={Location01Icon} className="size-4 shrink-0 text-primary" aria-hidden />
@@ -306,7 +307,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           variant={open === 'status' || hasStatusActive(props) ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => setOpen(open === 'status' ? null : 'status')}
-          className="gap-1"
+          className="srch-chip h-8 gap-1"
           aria-expanded={open === 'status'}
           aria-haspopup="true"
         >
@@ -315,7 +316,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         </Button>
         {open === 'status' && (
           <div className={cn(dropdownAnchor, dropdownSurface, 'w-[min(calc(100vw-2rem),20rem)] p-4')}>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            <p className="srch-label mb-3">
               Property status
             </p>
             <form
@@ -369,7 +370,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           variant={open === 'price' || hasPriceActive(props) ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => setOpen(open === 'price' ? null : 'price')}
-          className="gap-1"
+          className="srch-chip h-8 gap-1"
           aria-expanded={open === 'price'}
         >
           Price
@@ -377,7 +378,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         </Button>
         {open === 'price' && (
           <div className={cn(dropdownAnchor, dropdownSurface, 'w-[min(calc(100vw-2rem),20rem)] p-4')}>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            <p className="srch-label mb-3">
               Price range
             </p>
             <form
@@ -451,7 +452,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           variant={open === 'bedsbaths' || hasBedsBathsActive(props) ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => setOpen(open === 'bedsbaths' ? null : 'bedsbaths')}
-          className="gap-1"
+          className="srch-chip h-8 gap-1"
           aria-expanded={open === 'bedsbaths'}
         >
           Beds & Baths
@@ -471,7 +472,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
               className="space-y-4"
             >
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <p className="srch-label mb-2">
                   Bedrooms
                 </p>
                 <div className="flex flex-nowrap gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -487,7 +488,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                           defaultChecked={(props.beds ?? '') === value}
                           className="peer sr-only"
                         />
-                        <span className="block rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium text-foreground peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-primary hover:border-primary/30">
+                        <span className="block rounded-none border border-border px-2.5 py-1.5 text-sm font-medium text-foreground peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-primary hover:border-primary/30">
                           {label}
                         </span>
                       </Label>
@@ -496,7 +497,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                 </div>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <p className="srch-label mb-2">
                   Bathrooms
                 </p>
                 <div className="flex flex-nowrap gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -512,7 +513,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
                           defaultChecked={(props.baths ?? '') === value}
                           className="peer sr-only"
                         />
-                        <span className="block rounded-lg border border-border px-2.5 py-1.5 text-sm font-medium text-foreground peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-primary hover:border-primary/30">
+                        <span className="block rounded-none border border-border px-2.5 py-1.5 text-sm font-medium text-foreground peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-primary hover:border-primary/30">
                           {label}
                         </span>
                       </Label>
@@ -535,7 +536,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           variant={open === 'hometype' || hasHomeTypeActive(props, selectedSubTypes) ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => setOpen(open === 'hometype' ? null : 'hometype')}
-          className="gap-1"
+          className="srch-chip h-8 gap-1"
           aria-expanded={open === 'hometype'}
         >
           {homeTypeLabel}
@@ -573,7 +574,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
             setMoreSheetMounted(true)
             setMoreSheetOpen(true)
           }}
-          className="gap-1"
+          className="srch-chip h-8 gap-1"
           aria-expanded={moreSheetOpen}
           aria-haspopup="dialog"
         >
@@ -591,7 +592,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
             apply(buildParams({ sort: sort || undefined }))
           }}
         >
-          <SelectTrigger className="h-8 w-[min(11rem,46vw)]" aria-label="Sort results">
+          <SelectTrigger className="srch-square h-8 w-[min(11rem,46vw)]" aria-label="Sort results">
             <SelectValue placeholder="Newest first" />
           </SelectTrigger>
           <SelectContent>

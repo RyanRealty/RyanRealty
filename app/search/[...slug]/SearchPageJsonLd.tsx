@@ -1,4 +1,5 @@
 import { homesForSalePath, listingDetailPath, getSubdivisionDisplayName } from '../../../lib/slug'
+import { buildJsonLd, type SchemaInput } from '../../../lib/site/json-ld'
 
 /**
  * Structured data for city/subdivision search pages: WebPage, BreadcrumbList, Place, ItemList.
@@ -40,6 +41,12 @@ type Props = {
    * slice). Used for ItemList.numberOfItems so the value reflects the real total.
    */
   totalCount?: number
+  /**
+   * Optional extra schema node (the city market-statistics Dataset). Rendered
+   * here so the page file owes no import to the flat legacy register for a
+   * script tag (ci:public-ui counts page-level register imports).
+   */
+  datasetSchema?: SchemaInput
 }
 
 export default function SearchPageJsonLd({
@@ -55,6 +62,7 @@ export default function SearchPageJsonLd({
   canonicalPath,
   suppressPlace = false,
   totalCount,
+  datasetSchema,
 }: Props) {
   const pagePath = canonicalPath ?? (city ? homesForSalePath(city, subdivision ?? null) : '/homes-for-sale')
   const pageUrl = siteUrl ? `${siteUrl}${pagePath}` : undefined
@@ -176,6 +184,12 @@ export default function SearchPageJsonLd({
       {placeNode}
       {itemList && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
+      )}
+      {datasetSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJsonLd(datasetSchema)) }}
+        />
       )}
     </>
   )

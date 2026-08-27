@@ -1,0 +1,80 @@
+/* ===========================================================================
+   SEARCH CHROME — Ledger register treatment (THE LOOK, PUBLIC_UI.md §9).
+
+   The search surfaces mount `.v3 .v3--ledger` on their page root, so these
+   classes read the register's tokens where they can. Two of them (the
+   floating panels and the chip type) also render inside Radix PORTALS, which
+   land on document.body OUTSIDE the token scope — every var() here therefore
+   carries the Ledger register's literal value as its fallback, and the only
+   raw colors in this file are the brand navy at the register's alphas
+   (rgba(16,39,66,…)), because a portal cannot inherit them.
+
+   Square, sunken, shadow-free: radius 0 everywhere, panels are a 3% navy wash
+   inside a 12% edge, and NOTHING here draws an elevation shadow — the locked
+   register forbids them in both registers.
+   =========================================================================== */
+
+/* Tracked small-caps section/working label. */
+.srch-label {
+  font-size: var(--v3-size-label, 0.65625rem);
+  font-weight: var(--v3-weight-medium, 500);
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  line-height: var(--v3-leading-control, 1.2);
+  color: var(--v3-ink-muted, rgba(16, 39, 66, 0.7));
+}
+
+/* Sunken in-flow panel: 3% navy wash inside a 12% edge. Still no shadow. */
+.srch-panel {
+  background: var(--v3-panel-bg, rgba(16, 39, 66, 0.03));
+  border: var(--v3-panel-border, 1px solid rgba(16, 39, 66, 0.12));
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Floating panel (dropdown/popover/suggest list — often portaled). Opaque so
+   it reads over the map, separated by its edge and a navy top rule, never by
+   an elevation shadow. */
+.srch-pop {
+  background: var(--v3-surface-raised, rgba(255, 255, 255, 1));
+  border: 1px solid var(--v3-edge, rgba(16, 39, 66, 0.12));
+  border-top: 2px solid var(--v3-navy, rgba(16, 39, 66, 1));
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Filter chip / trigger / control shape+type: square, tracked small caps,
+   tabular figures. Color and spacing stay with the shadcn Button variants the
+   design system requires — this class only imposes the register's shape and
+   type so active/inactive variants keep their contrast pairs. */
+.srch-chip {
+  border-radius: 0;
+  font-size: var(--v3-size-label, 0.65625rem);
+  font-weight: var(--v3-weight-medium, 500);
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+
+/* Square any remaining control corner (inputs, selects, toggles) without
+   touching its color, border, or focus treatment. */
+.srch-square {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Count/summary line: working figures — Geist Mono digits via the register's
+   numeral face, at the working text size. */
+.srch-count {
+  font-size: var(--v3-size-body, 0.8125rem);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.srch-count .srch-figure,
+.srch-figure {
+  font-family: var(--v3-font-mono, ui-monospace, 'SF Mono', Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}

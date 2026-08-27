@@ -344,7 +344,9 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
   it('mobile map view shows the result count from the SAME query that renders the pins (§0)', () => {
     // Viewport pins stay on getViewportSearch totalCount. The list phrase is
     // the filter-match number; a different viewport count prints labeled.
-    expect(src).toMatch(/tabular-nums lg:hidden/)
+    // The pill is Ledger-register chrome now (`srch-count` carries the
+    // tabular numerals via components/search/search-ledger.css).
+    expect(src).toMatch(/srch-count[^'"]*lg:hidden/)
     expect(src).toMatch(/publishSearchCountPair\(/)
     expect(src).toMatch(/countSearchListings\(/)
   })
@@ -607,7 +609,10 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     const view = readSrc('components/search/MapSearchView.tsx')
     expect(view).toMatch(/selectedKey/)
     expect(view).toMatch(/onMarkerClick/)
-    expect(view).toMatch(/ring-offset-2/)
+    // Selection is the Ledger row's functional inset ring (`is-active`,
+    // 2px ink) — stronger than the hover wash (`is-hot`, 1px edge).
+    expect(view).toMatch(/is-active/)
+    expect(view).toMatch(/is-hot/)
     expect(view).toMatch(/in this map view/)
     expect(view).toMatch(/listCountPhrase/)
     expect(view).toMatch(/lg:hidden/)

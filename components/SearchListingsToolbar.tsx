@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import '@/components/search/search-ledger.css'
 
 const COLUMN_OPTIONS = [1, 2, 3, 4] as const
 const PER_PAGE_OPTIONS = [6, 12, 24, 48] as const
@@ -58,16 +59,16 @@ export default function SearchListingsToolbar({
   }
 
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card p-4">
+    <div className="srch-panel mb-6 flex flex-wrap items-center justify-between gap-4 p-4">
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">Per page</span>
-          <div className="flex rounded-lg border border-border p-0.5">
+          <span className="srch-label">Per page</span>
+          <div className="flex rounded-none border border-border p-0.5">
             {PER_PAGE_OPTIONS.map((n) => (
               <Link
                 key={n}
                 href={path + buildQuery(searchParams, { perPage: String(n), page: '1' })}
-                className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${perPageParam === String(n) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`rounded-none px-2.5 py-1.5 text-sm font-medium transition ${perPageParam === String(n) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
                 title={`${n} per page`}
               >
                 {n}
@@ -76,13 +77,13 @@ export default function SearchListingsToolbar({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">Columns</span>
-          <div className="flex rounded-lg border border-border p-0.5">
+          <span className="srch-label">Columns</span>
+          <div className="flex rounded-none border border-border p-0.5">
             {COLUMN_OPTIONS.map((col) => (
               <Link
                 key={col}
                 href={path + buildQuery(searchParams, { view: String(col), page: '1' })}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${viewParam === String(col) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`rounded-none px-3 py-1.5 text-sm font-medium transition ${viewParam === String(col) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
                 title={`${col} column${col === 1 ? '' : 's'}`}
               >
                 {col}
@@ -92,14 +93,14 @@ export default function SearchListingsToolbar({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="srch-count srch-figure text-muted-foreground">
           {totalCount === 0 ? 'No listings' : `${start}–${end} of ${totalCount.toLocaleString()}`}
         </p>
         {totalPages > 1 && (
           <nav className="flex flex-wrap items-center gap-2" aria-label="Pagination">
             <Link
               href={page <= 1 ? path : path + buildQuery(searchParams, { page: String(page - 1) })}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${page <= 1 ? 'pointer-events-none text-muted-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`rounded-none px-3 py-1.5 text-sm font-medium ${page <= 1 ? 'pointer-events-none text-muted-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               aria-disabled={page <= 1}
             >
               Previous
@@ -109,7 +110,7 @@ export default function SearchListingsToolbar({
             </span>
             <Link
               href={page >= totalPages ? path : path + buildQuery(searchParams, { page: String(page + 1) })}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${page >= totalPages ? 'pointer-events-none text-muted-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`rounded-none px-3 py-1.5 text-sm font-medium ${page >= totalPages ? 'pointer-events-none text-muted-foreground' : 'text-muted-foreground hover:bg-muted'}`}
               aria-disabled={page >= totalPages}
             >
               Next
@@ -126,12 +127,12 @@ export default function SearchListingsToolbar({
                   max={totalPages}
                   value={jumpPage}
                   onChange={(e) => setJumpPage(e.target.value)}
-                  className="w-14 rounded-lg border border-border px-2 py-1.5 text-center text-sm"
+                  className="srch-square w-14 border border-border px-2 py-1.5 text-center text-sm"
                   aria-label="Page number"
                 />
                 <Button
                   type="submit"
-                  className="rounded-lg bg-primary px-2.5 py-1.5 text-sm font-medium text-primary-foreground hover:bg-accent/90"
+                  className="srch-chip bg-primary px-2.5 py-1.5 text-primary-foreground hover:bg-accent/90"
                 >
                   Go
                 </Button>

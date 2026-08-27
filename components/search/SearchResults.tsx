@@ -8,12 +8,12 @@ import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
-import ListingCard from '@/components/site/ListingCard'
+import { V3ListingRow } from '@/components/site/v3'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import { Button } from '@/components/ui/button'
-import { Eyebrow, H3, Body } from '@/components/site/primitives'
+import './search-ledger.css'
 
 /**
  * Convert the page's URL filter object into getSearchListings' SearchFilters.
@@ -191,16 +191,18 @@ export default function SearchResults({
   return (
     <div className="w-full p-4 space-y-4">
       {showDegradedState ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center">
-          <Eyebrow>Search delayed</Eyebrow>
-          <H3 className="mt-2">We could not load listings in time</H3>
-          <Body className="mx-auto mt-2 max-w-md text-muted-foreground">
+        <div className="srch-panel p-8 text-center">
+          <p className="srch-label">Search delayed</p>
+          <h3 className="mt-2 text-base font-semibold text-foreground">
+            We could not load listings in time
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-muted-foreground">
             This is a connection or timeout problem, not an empty market. Try again.
-          </Body>
+          </p>
           <Button
             type="button"
             variant="outline"
-            className="mt-6"
+            className="srch-chip mt-6"
             onClick={() => {
               if (typeof window !== 'undefined') window.location.reload()
             }}
@@ -209,22 +211,25 @@ export default function SearchResults({
           </Button>
         </div>
       ) : showEmptyState ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center">
-          <Eyebrow>No matches</Eyebrow>
-          <H3 className="mt-2">No homes match these filters</H3>
-          <Body className="mx-auto mt-2 max-w-md text-muted-foreground">
+        <div className="srch-panel p-8 text-center">
+          <p className="srch-label">No matches</p>
+          <h3 className="mt-2 text-base font-semibold text-foreground">
+            No homes match these filters
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-muted-foreground">
             Loosen a filter, or view every Central Oregon listing.
-          </Body>
-          <Button asChild variant="outline" className="mt-6">
+          </p>
+          <Button asChild variant="outline" className="srch-chip mt-6">
             <Link href="/homes-for-sale">View all listings</Link>
           </Button>
         </div>
       ) : (
         <>
-          <p className="text-muted-foreground">
-            {total.toLocaleString()} home{total !== 1 ? 's' : ''} found
+          <p className="srch-count text-muted-foreground">
+            <span className="srch-figure">{total.toLocaleString()}</span> home
+            {total !== 1 ? 's' : ''} found
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="v3-lrow-list">
         {visibleListings.map((listing, cardIndex) => {
           const key = String(listingKey(listing)).trim()
           const href = listingDetailPath(key, {
@@ -245,18 +250,19 @@ export default function SearchResults({
               streetSuffix: listing.StreetSuffix,
             }) || cityParts || 'Listing'
           // Wrapper carries data-listing-key for the map<->list hover sync
-          // (consumed by MapSearchView). ListingCard is the
-          // canonical site card — one look across the whole site. The hide
-          // control overlays at THIS layer (named group `group/hide`) so the
-          // canonical card itself stays lean.
+          // (consumed by MapSearchView). V3ListingRow is the Ledger-register
+          // listing unit (THE LOOK §9). The hide control overlays at THIS
+          // layer (named group `group/hide`, positioned over the thumb) so
+          // the row itself stays lean.
           return (
             <div key={key} data-listing-key={key} className="relative group/hide">
               <ListingCardHideControl
                 listingKey={key}
                 addressLine={addressLine}
                 onVisibilityChange={onHiddenChange}
+                className="left-1 top-1 right-auto size-7"
               />
-              <ListingCard
+              <V3ListingRow
                 showPricePerSqft
                 priority={cardIndex < 4}
                 listing={{
