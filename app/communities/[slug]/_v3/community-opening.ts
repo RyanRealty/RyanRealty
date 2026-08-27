@@ -18,18 +18,18 @@ export function stagePoster(slug: string): string | null {
   return communityImage(slug)
 }
 
-export function belongingHeadline(name: string, content: ResortCommunityContent | null): string {
-  const hasMembership = (content?.membershipTiers ?? []).some((tier) =>
-    String(tier.name ?? tier.tier ?? tier.label ?? '').trim(),
-  )
-  if (hasMembership) return 'Membership is separate from the home.'
-  const hoa = publishPlaceHoa({ masterAnnual: content?.hoaMasterAnnual })
-  if (hoa?.kind === 'master') {
-    return `Master HOA is $${hoa.annual.toLocaleString('en-US')} a year.`
-  }
-  const amenity = content?.amenities?.[0]?.name?.trim()
-  if (amenity) return amenity
-  return name
+/**
+ * The page's H1. It names the PLACE — the same shape every other place grain
+ * uses ("Bend homes for sale", "River West homes for sale").
+ *
+ * It used to pick a "belonging fact" instead, so /communities/caldera-springs
+ * headlined "Master HOA is $4,380 a year." and Tetherow "Membership is
+ * separate from the home." Those facts belong in the figures beside the
+ * heading, which is where belongingFigures already publishes them — never as
+ * the name of a premier community. (Matt 2026-08-27.)
+ */
+export function belongingHeadline(name: string, _content: ResortCommunityContent | null): string {
+  return `${name} homes for sale`
 }
 
 export function belongingFigures(content: ResortCommunityContent | null): V3InstrumentFigure[] {
