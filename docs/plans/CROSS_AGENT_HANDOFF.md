@@ -3,6 +3,47 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
+# CMA/BPO IS CLAIMED — one tree, 2026-08-27 (Claude Code)
+
+**Matt 2026-08-27: "roll up the entire CMA process... a number of sessions touching CMA work
+right now, consolidate into one tree."** All CMA and BPO work now belongs to
+`RyanRealty-wt-cma-20260827` (branch `wt/cma-20260827`). If you are not that tree, do not
+edit `lib/cma/**`, `lib/data/cma/**`, `app/admin/(protected)/cmas/**`,
+`app/admin/(protected)/bpo/**`, `app/actions/cma-*`, `app/actions/bpo-*`, or
+`app/api/cron/cma-build-worker/**`. Hand the request over instead.
+
+**The consolidation found nothing to merge, which is the good news.** Two sessions held CMA
+commits (`0dfe5fd4` market-area product classes, `d2b07bab` band inventory); both had already
+pushed by the time the tree was cut, and every file was byte-identical to `origin/main`. The
+tree is simply current main: 646 CMA tests pass, tsc clean, 238 code files and 84 test files
+across the surface.
+
+**The open work, measured 2026-08-27, is delivery — not the builder.**
+`public.cmas` holds 359 rows: **340 still `draft`, 9 ever `delivered`.** 288 carry a real
+client email and were never sent. The build worker's own docblock says why:
+*"BUILD ONLY — never sends anything. Drafts surface at /admin/cmas."* Meanwhile
+`app/lp/seller-home-value` publicly promises the report "lands in your inbox within one
+business day". The build is automatic, the send is a human step nobody takes.
+
+Split by origin, because it decides what is owed: **18 asked** through the valuation form
+(6 built and unsent, 12 never built); **270 nobody asked for** (112 expired-listing
+auto-builds, 156 bulk) — those are cold outreach and stay behind §1 approval.
+
+**Two distinct build failures, and only one is a bug.** 16 fail on comps ("Only 2 qualifying
+closed comps found (minimum 3)" — La Pine, Sisters, rural; the builder is RIGHT to refuse).
+7 fail on address matching, and at least one of those is a genuine defect: **1617 NW 8th St,
+Bend is in `listings` right now as Active** and the builder still reported it unmatched.
+
+**What Matt asked for next (2026-08-27), in order:** fix the address matcher first, then an
+SMS alert when a CMA is prepared carrying a review link, opening a surface where he can
+approve / rebuild-with-notes / send to recipient — "super intuitive" — plus auto-send as an
+option he can switch on. Two things still to settle with him: whether "rebuild with notes"
+adjusts the valuation inputs or just annotates for whoever prepares it, and whether auto-send
+covers only form requests or everything.
+
+Full triage list (18 named, with why each failed):
+https://claude.ai/code/artifact/59cad4eb-0a80-4b04-afaf-cabf5cb8c0ac
+
 # Current — 2026-08-26 (Claude Code) — resort membership audit: 23 false children removed, now gated
 
 **Surface:** `origin/main` `238c2f31`.
