@@ -93,12 +93,22 @@ function mlsText(v: unknown): string | null {
   return null
 }
 
-function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
+function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | null {
   const closePrice = num(row['ClosePrice'])
-  const sqft = num(row['TotalLivingAreaSqFt'])
+  const rowSqft = num(row['TotalLivingAreaSqFt'])
   const closeDate = str(row['CloseDate'])
   const listingKey = str(row['ListingKey'])
-  if (!closePrice || closePrice <= 0 || !sqft || sqft < 300 || !closeDate || !listingKey) return null
+  const lotAcres = num(row['lot_size_acres'])
+  if (!closePrice || closePrice <= 0 || !closeDate || !listingKey) return null
+  // A land sale has no living area by definition, so the >=300 sqft floor
+  // rejected every one of them — the last silent wall between the land engine
+  // and a comp. Acreage is the size of record for land; require that instead.
+  if (land) {
+    if (lotAcres == null || !(lotAcres > 0)) return null
+  } else if (!rowSqft || rowSqft < 300) {
+    return null
+  }
+  const sqft = land ? 0 : (rowSqft as number)
   const pendingTs = str(row['pending_timestamp'])
   const onMarket = str(row['OnMarketDate']) ?? str(row['ListDate'])
   let daysToOffer = num(row['days_to_pending'])
@@ -121,7 +131,7 @@ function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
     beds: num(row['BedroomsTotal']),
     baths: num(row['BathroomsTotal']),
     sqft,
-    lotAcres: num(row['lot_size_acres']),
+    lotAcres,
     propertySubType: str(row['property_sub_type']),
     yearBuilt: saneYearBuilt(num(row['year_built'])),
     garageSpaces: num(row['garage_spaces']),
@@ -148,8 +158,21 @@ function isoMonthsAgo(months: number): string {
 }
 
 
-function similarityScore(subjectSqft: number, comp: CmaComp): number {
-  const sizeProximity = 1 / (1 + Math.abs(subjectSqft - comp.sqft) / subjectSqft)
+/**
+ * Size proximity x recency. Land has no living area, so its size is acreage —
+ * ranking land on sqft scores every comp identically and makes the cap
+ * arbitrary.
+ */
+/** Price per unit of the size that exists for this product: acre for land, sqft otherwise. */
+function unitRate(comp: CmaComp, land: boolean): number {
+  const size = land ? (comp.lotAcres ?? 0) : comp.sqft
+  return size > 0 ? comp.closePrice / size : 0
+}
+
+function similarityScore(subjectSize: number, comp: CmaComp, land = false): number {
+  const compSize = land ? (comp.lotAcres ?? 0) : comp.sqft
+  const sizeProximity =
+    subjectSize > 0 ? 1 / (1 + Math.abs(subjectSize - compSize) / subjectSize) : 1
   const months = Math.max(0, (Date.now() - new Date(comp.closeDate).getTime()) / (30.44 * 86_400_000))
   const recency = 1 / (1 + months / 12)
   return sizeProximity * recency
@@ -328,7 +351,7 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
     rung.rows_returned = rows.length
     let added = 0
     for (const row of rows) {
-      const comp = rowToComp(row, tier.name)
+      const comp = rowToComp(row, tier.name, Boolean(land))
       if (!comp) {
         rung.excluded.unusable_row++
         continue
@@ -458,19 +481,19 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
   // set stays at or above MIN_COMPS afterward.
   const excludedOutliers: CompSelection['excludedOutliers'] = []
   if (comps.length >= TARGET_COMPS) {
-    const ppsfs = comps.map((c) => c.closePrice / c.sqft)
+    const ppsfs = comps.map((c) => unitRate(c, Boolean(land)))
     const mean = ppsfs.reduce((a, b) => a + b, 0) / ppsfs.length
     const sd = Math.sqrt(ppsfs.reduce((a, b) => a + (b - mean) ** 2, 0) / ppsfs.length)
     if (sd > 0) {
       const kept: CmaComp[] = []
       for (const c of comps) {
-        const ppsf = c.closePrice / c.sqft
+        const ppsf = unitRate(c, Boolean(land))
         if (Math.abs(ppsf - mean) > 2 * sd && comps.length - excludedOutliers.length > MIN_COMPS) {
           excludedOutliers.push({
             address: c.address,
             closePrice: c.closePrice,
             ppsf: Math.round(ppsf),
-            reason: `$${Math.round(ppsf)}/sqft is more than 2 standard deviations from the set mean of $${Math.round(mean)}/sqft`,
+            reason: `$${Math.round(ppsf)}/${land ? 'acre' : 'sqft'} is more than 2 standard deviations from the set mean of $${Math.round(mean)}/${land ? 'acre' : 'sqft'}`,
           })
         } else {
           kept.push(c)
@@ -478,13 +501,16 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       }
       comps = kept
       if (excludedOutliers.length > 0) {
-        trace.push(`Excluded ${excludedOutliers.length} $/sqft outlier(s) beyond 2 standard deviations of the set mean.`)
+        trace.push(
+          `Excluded ${excludedOutliers.length} $/${land ? 'acre' : 'sqft'} outlier(s) beyond 2 standard deviations of the set mean.`,
+        )
       }
     }
   }
 
   // Rank by similarity (size proximity x recency) and cap.
-  comps.sort((a, b) => similarityScore(sqft, b) - similarityScore(sqft, a))
+  const rankBy = land ? (subject.lotAcres ?? 0) : sqft
+  comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
   comps = comps.slice(0, MAX_COMPS)
   // Present most recent first (matches the exemplar ordering).
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))

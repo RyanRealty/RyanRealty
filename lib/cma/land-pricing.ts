@@ -311,10 +311,33 @@ export function priceLandSubject(args: {
     )
   }
 
-  const recommended = args.priceOverride ?? method3
+  // Band convention mirrors the home engine exactly (lib/cma/pricing.ts): the
+  // floor is the comp evidence, the ceiling is CAPPED at +8% of the
+  // recommendation, and valueLow/valueHigh ARE conservative/highEnd rather than
+  // a second pair of numbers. A land document that reported the range a
+  // different way from every other document would read as a different product.
+  let recommended = args.priceOverride ?? method3
+  const cMin = Math.min(...candidates)
+  const cMax = Math.max(...candidates)
+  let conservative = round1000(Math.min(method1Low, cMin))
+  let highEnd = round1000(Math.min(Math.max(method1High, cMax), recommended * 1.08))
+
+  // Same collapse guard: when the floor would land above the recommendation,
+  // move the recommendation to the band midpoint instead of pinning it to the
+  // floor. Never touches a broker's explicit override.
+  if (conservative > recommended && args.priceOverride == null) {
+    const bandMid = round1000((conservative + highEnd) / 2)
+    recommended = Math.min(Math.max(bandMid, conservative), highEnd)
+    notes.push(
+      'The recommendation sits at the midpoint of the comp-supported range rather than its floor.',
+    )
+  }
+  if (conservative > recommended) conservative = recommended
+  if (highEnd < recommended) highEnd = recommended
+
   const cv = pricePerAcreCv(rows)
-  const valueLow = round1000(Math.min(method1Low, recommended * 0.92))
-  const valueHigh = round1000(Math.max(method1High, recommended * 1.08))
+  const valueLow = conservative
+  const valueHigh = highEnd
 
   const isAcreage = product === 'acreage'
   const schedule = isAcreage ? infrastructureSchedule(args.site ?? null) : []
@@ -356,9 +379,9 @@ export function priceLandSubject(args: {
     method3,
     convergenceSpreadPct: spreadPct,
     converged,
-    conservative: round1000(Math.min(method1Low, recommended * 0.95)),
+    conservative,
     recommended,
-    highEnd: round1000(Math.max(method1High, recommended * 1.05)),
+    highEnd,
     valueLow,
     valueHigh,
     confidence,

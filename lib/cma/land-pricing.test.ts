@@ -149,6 +149,33 @@ describe('priceLandSubject — acreage', () => {
   })
 })
 
+describe('the published band follows the same convention as a home', () => {
+  const subject = { streetAddress: 'Lot 12', sqft: null, lotAcres: 0.23, propertySubType: 'Residential Lots' } as never
+  const wide = [
+    comp({ closePrice: 90_000, lotAcres: 0.25 }),
+    comp({ closePrice: 240_000, lotAcres: 0.24 }),
+    comp({ closePrice: 610_000, lotAcres: 0.23 }),
+    comp({ closePrice: 180_000, lotAcres: 0.22 }),
+  ] as never
+
+  it('reports one band, not two pairs of numbers', () => {
+    const p = priceLandSubject({ subject, comps: wide, market: null, minComps: 3, asOfMs: AS_OF })!
+    expect(p.valueLow).toBe(p.conservative)
+    expect(p.valueHigh).toBe(p.highEnd)
+  })
+
+  it('keeps the band ordered around the recommendation', () => {
+    const p = priceLandSubject({ subject, comps: wide, market: null, minComps: 3, asOfMs: AS_OF })!
+    expect(p.conservative).toBeLessThanOrEqual(p.recommended)
+    expect(p.recommended).toBeLessThanOrEqual(p.highEnd)
+  })
+
+  it('caps the ceiling at 8% over the recommendation', () => {
+    const p = priceLandSubject({ subject, comps: wide, market: null, minComps: 3, asOfMs: AS_OF })!
+    expect(p.highEnd).toBeLessThanOrEqual(Math.ceil(p.recommended * 1.08) + 1000)
+  })
+})
+
 describe('infrastructureSchedule', () => {
   it('never pairs a permit with "no record found"', () => {
     const lines = infrastructureSchedule({ ...(BARE_SITE as never as Record<string, unknown>), septic: { status: 'unknown', permit: '247-19-000988' } } as never)

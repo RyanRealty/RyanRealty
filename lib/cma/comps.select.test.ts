@@ -3,8 +3,10 @@ import type { CmaListingRow } from '@/lib/data'
 import type { CmaSubject } from '@/lib/cma/types'
 
 const { selectCmaCompsPool, selectCmaCompsByKeys } = vi.hoisted(() => ({
-  selectCmaCompsPool: vi.fn(async () => [] as CmaListingRow[]),
-  selectCmaCompsByKeys: vi.fn(async () => [] as CmaListingRow[]),
+  // Typed with its options bag so a test can assert what the selector asked the
+  // pool for (segment, sqft band), not merely that it was called.
+  selectCmaCompsPool: vi.fn(async (_opts: Record<string, unknown>) => [] as CmaListingRow[]),
+  selectCmaCompsByKeys: vi.fn(async (_keys?: unknown) => [] as CmaListingRow[]),
 }))
 
 vi.mock('@/lib/data', () => ({
@@ -112,5 +114,75 @@ describe('selectCompsByKeys — JS product-type filter still applies', () => {
     ])
     const result = await selectCompsByKeys(subject({ propertySubType: 'Single Family Residence' }), ['sfr', 'th'])
     expect(result.comps.map((c) => c.listingKey)).toEqual(['sfr'])
+  })
+})
+
+describe('land selection — the four walls that silently returned zero comps', () => {
+  const lot = (over: Record<string, unknown> = {}) =>
+    closedRow({
+      property_sub_type: 'Residential Lots',
+      TotalLivingAreaSqFt: null,
+      BedroomsTotal: null,
+      BathroomsTotal: null,
+      lot_size_acres: 0.24,
+      ClosePrice: 210_000,
+      ...over,
+    })
+
+  const landSubject = subject({
+    sqft: null,
+    lotAcres: 0.23,
+    beds: null,
+    baths: null,
+    propertySubType: 'Residential Lots',
+  } as Partial<CmaSubject>)
+
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    selectCmaCompsPool.mockResolvedValue([])
+  })
+
+  it('does not bail on a subject with no living area', async () => {
+    selectCmaCompsPool.mockResolvedValue([
+      lot({ ListingKey: 'a', ClosePrice: 210_000 }),
+      lot({ ListingKey: 'b', ClosePrice: 235_000, lot_size_acres: 0.22 }),
+      lot({ ListingKey: 'c', ClosePrice: 199_000, lot_size_acres: 0.25 }),
+    ])
+    const sel = await selectComps(landSubject)
+    expect(sel.comps.length).toBeGreaterThan(0)
+    expect(sel.trace.join(' ')).not.toMatch(/prices a dwelling/)
+  })
+
+  it('queries MLS segment D with no living-area band', async () => {
+    selectCmaCompsPool.mockResolvedValue([lot()])
+    await selectComps(landSubject)
+    const call = selectCmaCompsPool.mock.calls[0]![0]
+    expect(call.propertyType).toBe('D')
+    expect(call.sqftMin).toBeNull()
+    expect(call.sqftMax).toBeNull()
+  })
+
+  it('keeps a land row that carries acreage but no square footage', async () => {
+    // rowToComp's >=300 sqft floor rejected every land sale, which is what made
+    // the pool return rows and the selector still produce nothing.
+    selectCmaCompsPool.mockResolvedValue([lot(), lot({ ListingKey: 'b' }), lot({ ListingKey: 'c' })])
+    const sel = await selectComps(landSubject)
+    expect(sel.comps).not.toHaveLength(0)
+    for (const c of sel.comps) expect(c.lotAcres).toBeGreaterThan(0)
+  })
+
+  it('still drops a land row with no acreage — that one has no size at all', async () => {
+    selectCmaCompsPool.mockResolvedValue([lot({ lot_size_acres: null })])
+    const sel = await selectComps(landSubject)
+    expect(sel.comps).toHaveLength(0)
+  })
+
+  it('leaves an improved subject on segment A with its sqft band', async () => {
+    selectCmaCompsPool.mockResolvedValue([closedRow()])
+    await selectComps(subject())
+    const call = selectCmaCompsPool.mock.calls[0]![0]
+    expect(call.propertyType).toBe('A')
+    expect(call.sqftMin).toBeGreaterThan(0)
+    expect(call.sqftMax).toBeGreaterThan(0)
   })
 })
