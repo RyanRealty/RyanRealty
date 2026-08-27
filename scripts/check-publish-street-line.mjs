@@ -129,13 +129,30 @@ checks.push({
     !mapCards.includes('[l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join'),
 })
 
-const platMap = src('app/subdivisions/[slug]/page.tsx')
+/**
+ * THE RULE FOLLOWS THE BUILDER (2026-08-26). The plat page used to assemble its
+ * own map-pin properties, so this arm read the page. On the v3 barrel the rows
+ * and the pins are ONE mapper — _v3/subdivision-rows.ts, deliberately, so a row
+ * and its pin cannot disagree about the address they print — and the page hands
+ * it tiles. The assertion follows: whichever of the two builds the address must
+ * build it through publishStreetLine, and neither may hand-join the three parts,
+ * which is what puts a placeholder 0 street number on a public page.
+ */
+const platMapFiles = [
+  src('app/subdivisions/[slug]/page.tsx'),
+  src('app/subdivisions/[slug]/_v3/subdivision-rows.ts'),
+]
 checks.push({
   label: 'plat map pin addresses withhold placeholder 0 via publishStreetLine',
   ok:
-    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(platMap) &&
-    /publishStreetLine\(/.test(platMap) &&
-    !platMap.includes('[t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join'),
+    platMapFiles.some(
+      (text) =>
+        /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(text) &&
+        /publishStreetLine\(/.test(text),
+    ) &&
+    platMapFiles.every(
+      (text) => !text.includes('[t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join'),
+    ),
 })
 
 const failed = checks.filter((c) => !c.ok)

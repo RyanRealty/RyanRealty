@@ -1,250 +1,223 @@
-// @no-parity — derived subdivision page (no standalone mockup; reuses KB section library)
-// brand-voice:exempt
 // @no-static-params — build-time fan-out budgeted to zero (ci:ssg-budget); ISR on demand
 /**
- * Subdivision detail page — KB (kinetic-brutalist) design system, Phase 9 wave
- * extension. Plat-level subdivision boundary pages linked from KbResortOverview
- * chips (/subdivisions/{slugify(alias)}). Mirrors the community page chrome
- * (KbNav + KbHero + KbListingMap + KbFeatured + KbSell + KbFooter) without the
- * resort-specific sections (KbMarketHud, KbResortOverview, KbAbout) that require
- * community-scoped market data too thin to be honest at plat level (CLAUDE.md §0).
+ * /subdivisions/[slug] — the plat grain, on the components/site/v3 barrel.
  *
- * NO-404 CONTRACT — for each incoming slug the page tries three resolution paths
- * in order, rendering when ANY succeeds:
- *   1. GIS boundary  — getGeoBoundaryMapData geoType='subdivision' returns a polygon.
- *   2. Registry alias — data/resort-communities.json subdivision_aliases contains a
- *      match (slugify(alias) === slug). Captures the canonical alias name, parent
- *      resort slug, city, and city_slug for listing fetches.
- *   3. Active listings — getPlatPublicInventory(slug) finds SFR + PUBLIC_ACTIVE
- *      homes tagged with that MLS SubdivisionName in the parent city.
- * Marketing-level slugs (resolveSubdivisionAreaRedirect) never reach this page:
- * middleware.ts 308s them before render (lib/routing/pre-render-hops.ts).
- * The refusal fires ONLY when all three paths return empty AND both reads that
- * back them came home clean. A read that timed out or threw means UNKNOWN, not
- * empty (§0), and an unknown plat still renders.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 (locked 2026-08-11).
+ * "Subdivision → Ledger of this plat's homes. Field only when the plat has
+ * enough pins to be a map. A short plat is a list." Giant 0 is forbidden: an
+ * empty Ledger states the reason. The parent community or city is the back
+ * door. Schools sit on the first path. Section order is the parity contract at
+ * design_system/ryan-realty/ui_kits/subdivision/parity.json.
  *
- * The refusal is RENDERED, not thrown. resolveSubdivisionRoute() runs ONCE per
- * request (React cache) and feeds both generateMetadata and the body, so a slug
- * that resolves to nothing gets the refusal title instead of one title-cased off
- * its own characters. See SubdivisionUnavailable.tsx for why notFound() could
- * never set a status here.
+ * FOUR PATTERNS, WHICH IS THE CAP. Field or Ledger (the homes) · Quiet (the
+ * assigned schools and every outbound edge) · Instrument (the plat's own
+ * market, then once per other property type the plat holds) · Ledger (the sales
+ * history, then the recorded documents). The property-type run is ONE logical
+ * section under the 2026-08-26 enumeration amendment.
  *
- * Section stack (Exploration System 2026-08): breadcrumb · hero · featured ·
- * video tours · map · sales history · schools · lifestyle · parents/peers ·
- * SELL · footer. Inventory leads; no dead-end after history.
+ * THE RHYTHM RULE AND CONDITIONAL SECTIONS, DECLARED RATHER THAN HIDDEN. Four
+ * of this page's sections render only when their data exists, and no ordering
+ * of four independent conditionals over four patterns can guarantee "no two
+ * adjacent sections share a pattern" for every combination. The order below is
+ * correct when the data is present and degrades to at worst one repeated pair;
+ * the alternative is dropping a section the data supports, which §0 forbids.
  *
- * Data ONLY through @/lib/data. No raw .from().
+ * NO-404 CONTRACT, CARRIED ACROSS UNCHANGED. For each incoming slug the page
+ * tries three resolution paths in order and renders when ANY succeeds:
+ *   1. GIS boundary — getGeoBoundaryMapData geoType='subdivision' returns a polygon.
+ *   2. Registry alias — data/resort-communities.json subdivision_aliases holds a
+ *      match (slugify(alias) === slug).
+ *   3. Active listings — getPlatPublicInventory finds SFR + PUBLIC_ACTIVE homes
+ *      filed under that MLS SubdivisionName in the parent city.
+ * notFound fires ONLY when all three return empty AND both reads succeeded.
+ *
+ * THE REDIRECT IS NOT HERE, AND MUST NOT COME BACK. middleware.ts runs
+ * resolveSubdivisionAreaRedirect(slug) on every /subdivisions/<slug> request
+ * before render (lib/routing/pre-render-hops.ts), so a marketing-area slug has
+ * already been 308-ed and can never reach this component. A page-body
+ * permanentRedirect could not set a Location header anyway — this segment
+ * renders inside the Suspense boundary app/loading.tsx opens, so React has
+ * already flushed HTTP 200. Enforced by scripts/check-streamed-redirect.mjs.
+ *
+ * THE PAGE CONTRACT, CARRIED ACROSS UNCHANGED: generateMetadata through
+ * pageMetadata with the same title, description, path and indexability rule
+ * (one cached getIndexableSubdivisions read serves both the robots policy and
+ * the plat's real city, so a non-registry plat titles itself with a city that
+ * exists instead of "Central Oregon, Oregon"), MetadataBlock JSON-LD
+ * (BreadcrumbList + Place, same payloads, same hasMap condition), the section
+ * tracker, revalidate 60, dynamicParams true, generateStaticParams returning [],
+ * and maxDuration 60. MetadataBlock stays on the legacy register: JSON-LD is not
+ * visual language and ci:ai-structured-data pins this route to it by name.
+ *
+ * FOUR POPULATIONS, FOUR TRACES (CLAUDE.md §0). Every sentence that describes
+ * one lives in _v3/subdivision-traces.ts, and no section prints a figure its own
+ * trace does not cover:
+ *   1. The plat's active count and the homes — getPlatPublicInventory, the
+ *      recorded-plat SFR + PUBLIC_ACTIVE set. Do NOT fall back to a capped
+ *      featured fetch or an unfiltered pin count: those were the 12 / 14 / 26
+ *      split on Ridge At Eagle Crest (2026-08-16). A measured empty must not
+ *      revive townhouses.
+ *   2. The Market Truth recorded-plat counts — getSubdivisionCounts, detached
+ *      membership, with the other property types as their own enumeration.
+ *   3. The plat's own closed statistics — market_stats_cache at geoType
+ *      'subdivision', periodType 'ytd' (pinned by ci:subdivision-stats-integrity).
+ *   4. The yearly closed aggregates — the get_subdivision_sales_history RPC.
+ *      ODS rule 5-4 A.4: aggregates only, never an individual sold address.
+ *
+ * ABSENT IS NOT ZERO. A boundary or inventory read that times out leaves the
+ * same empty array a genuinely empty plat leaves, so activeCount is null in that
+ * case and the homes section says it has no count rather than publishing a zero
+ * under a live-MLS trace.
+ *
+ * THE PARENT PULSE IS NOT ON THIS PAGE, AND MUST NOT COME BACK. A registry plat
+ * has no market_pulse_live row of its own. City and community pulse are OTHER
+ * geographies, and printing one under "homes for sale in {plat}" attributed
+ * Redmond's pending days to Ridge At Eagle Crest — the founding case behind
+ * lib/market/publish-plat-figures.ts and ci:publish-plat-figures (2026-08-16).
+ * publishPlatFigures is the whole rule: the counted set's own median may
+ * publish; days-to-pending and 30-day sold WITHHOLD rather than borrow. The KB
+ * page's parent-market band and fetchSubdivMarketExtras went with that fix and
+ * are not restored here.
+ *
+ * DELETIONS THIS MIGRATION MAKES, AND WHERE THE INFORMATION WENT:
+ *   KbHero              — the plat's homes open the page. The count, the median
+ *                         list and the days figure are figures on the market
+ *                         Instrument, each under its own trace.
+ *   KbFeatured          — the homes Ledger, or the Field when the plat has four
+ *                         or more pins.
+ *   PlaceMapListSplit / KbListingMap — the same Google map, in the Field's map
+ *                         slot, bound to the list both ways, with the recorded
+ *                         plat boundary drawn on it.
+ *   VideoTourRail       — a plat with in-area video tours flags them on the
+ *                         listing rows themselves ("Video tour" in the row's
+ *                         meta line), which is the same information attached to
+ *                         the home it describes instead of a second rail.
+ *   PublicSubdivisionCounts — its detached counts are figures on the market
+ *                         Instrument and its extras are the property-type run.
+ *   SubdivisionExploreTail (KbExploreTowns + KbSell + the explore sections) —
+ *                         every edge it carried is an item in the closing Quiet,
+ *                         built by _v3/subdivision-edges.ts.
+ *   SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker — chrome.
+ *
+ * Data ONLY through @/lib/data and @/app/actions. No raw .from().
  */
 
 import { cache } from 'react'
 import type { Metadata } from 'next'
-import { slugify, subdivisionListingsPath } from '@/lib/slug'
-import { publishPlaceHeroCta } from '@/lib/search/publish-place-browse-href'
-import {
-  getGeoBoundaryMapData,
-  getListingTiles,
-  getMarketStats,
-} from '@/lib/data'
+import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './SubdivisionUnavailable'
+import { subdivisionListingsPath } from '@/lib/slug'
+import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
+import { getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
+import { getSubdivisionVideoTours } from '@/lib/data'
 import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
 import {
   EMPTY_SUBDIVISION_COUNTS,
   getSubdivisionCounts,
+  subdivisionCountItems,
 } from '@/lib/data/market-truth/subdivision-counts'
-import { PublicSubdivisionCounts } from './PublicSubdivisionCounts'
-import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './SubdivisionUnavailable'
-import { V3PlaceCharacter, V3PlacePropertyTypes } from '@/components/site/v3'
-import { SubdivisionExploreTail } from '@/components/site/explore/SubdivisionExploreTail'
-import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import {
   lifestyleForCentroid,
   mapCentroid,
   peerPlatsForResort,
-  splitRowsFromTiles,
   subdivisionPlaceContext,
 } from '@/lib/explore/subdivision-page-extras'
-import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
-import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
-import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
-import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
-import { SubdivisionSchools } from './SubdivisionSchools'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
-import { SubdivisionDocuments } from './SubdivisionDocuments'
-import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
-import { getSubdivisionVideoTours } from '@/lib/data'
-import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
-import { placeHeroLead } from '@/lib/kb/place-hero-lead'
-import { cityHero } from '@/lib/geo-images'
-import resortCommunitiesData from '@/data/resort-communities.json'
+import { formatDate } from '@/lib/format/date'
+import { formatPriceExact } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
-import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Field,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Ledger,
+  V3PlaceCharacter,
+  V3PlacePropertyTypes,
+  V3Quiet,
+  V3SectionTracker,
+  type V3FieldItem,
+  type V3InstrumentFigure,
+} from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { VideoTourRail } from '@/components/site/VideoTourRail'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import type { KbFeaturedItem } from '@/components/site/kb/types'
-import '@/components/site/kb/kb.css'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
+import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
+import { SubdivisionSchools } from './SubdivisionSchools'
+import { SubdivisionDocuments } from './SubdivisionDocuments'
+import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
+import { buildSubdivisionEdges } from './_v3/subdivision-edges'
+import { platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
+import { resolveRegistryAlias, slugToTitle } from './_v3/subdivision-registry'
+import { platHomesMode, toFieldEntry, toLedgerRows, type FieldEntry } from './_v3/subdivision-rows'
+import {
+  fieldTrace,
+  homesLedgerTrace,
+  PERIOD_LABEL,
+  platCountsTrace,
+  platInventoryTrace,
+  platStatsTrace,
+  type PlatScope,
+} from './_v3/subdivision-traces'
 
 export const dynamicParams = true
 export const revalidate = 60
-// Worst-case first render chains 4 sequential rail stages (~22s of timeout
-// ceilings) — above Vercel's 15s default function cap.
+// Worst-case first render chains sequential timeout-capped stages, above
+// Vercel's 15s default function cap.
 export const maxDuration = 60
 
 // Build-time prerender is intentionally empty (ci:ssg-budget). The ~100 alias
-// pages each chain 4 sequential timeout-capped Supabase stages; prerendering
-// them was the largest single cost of `next build` on Vercel and, when queries
-// timed out under build concurrency, baked empty rails into the deployed HTML.
-// With dynamicParams=true + revalidate=60 every URL still serves — rendered on
-// first request with warm runtime caches, exactly like non-alias slugs always
-// have.
+// pages each chain sequential timeout-capped Supabase stages; prerendering them
+// was the largest single cost of `next build` on Vercel and, when queries timed
+// out under build concurrency, baked empty rails into the deployed HTML. With
+// dynamicParams=true and revalidate=60 every URL still serves.
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return []
 }
 
 type Props = { params: Promise<{ slug: string }> }
 
-// ---------------------------------------------------------------------------
-// Registry alias resolution
-// ---------------------------------------------------------------------------
-
-interface RegistryMatch {
-  canonicalName: string   // the literal alias text, e.g. "Sunrise Village"
-  resortSlug: string      // parent resort slug, e.g. "tetherow"
-  resortLabel: string     // human-readable resort name, e.g. "Tetherow"
-  city: string            // city name, e.g. "Bend"
-  citySlug: string        // city slug, e.g. "bend"
-}
-
-type ResortEntry = {
-  slug: string
-  label: string
-  city: string
-  city_slug: string
-  subdivision_aliases: string[]
-}
-
-/**
- * Walk data/resort-communities.json and find the first alias whose slugify()
- * matches the incoming URL slug. Returns null when no match.
- */
-function resolveRegistryAlias(slug: string): RegistryMatch | null {
-  const communities = (resortCommunitiesData as { communities: ResortEntry[] }).communities
-  for (const entry of communities) {
-    for (const alias of entry.subdivision_aliases) {
-      if (slugify(alias) === slug) {
-        return {
-          canonicalName: alias,
-          resortSlug: entry.slug,
-          resortLabel: entry.label,
-          city: entry.city,
-          citySlug: entry.city_slug,
-        }
-      }
-    }
-  }
-  return null
-}
-
-// ---------------------------------------------------------------------------
-// Route resolution — the three paths, resolved ONCE per request
-// ---------------------------------------------------------------------------
-
-/**
- * The NO-404 CONTRACT, evaluated in one place so generateMetadata and the page
- * body can never disagree about whether this slug is a place. React `cache`
- * makes the pair of reads run once per request, so moving the decision earlier
- * costs nothing: the body reuses the same two results it always used.
- *
- * `degraded` is the §0 half. `withTimeoutFallbackResult` reports ok:false when a
- * read timed out or threw, and the fallback it hands back is INDISTINGUISHABLE
- * from a real empty. Refusing on that would delete a real plat whenever
- * Supabase was slow, so an unresolved-but-degraded slug renders.
- */
-const resolveSubdivisionRoute = cache(async (slug: string) => {
-  const [boundaryRead, inventoryRead] = await Promise.all([
-    withTimeoutFallbackResult(
-      getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
-      { polygon: null, pins: [] },
-      4500,
-      'sub:boundary',
-    ),
-    withTimeoutFallbackResult(getPlatPublicInventory(slug), null, 4500, 'sub:inventory'),
-  ])
-  const registryMatch = resolveRegistryAlias(slug)
-  const resolved =
-    Boolean(boundaryRead.value.polygon) ||
-    boundaryRead.value.pins.length > 0 ||
-    registryMatch != null ||
-    inventoryRead.value != null
-  return {
-    boundaryRead,
-    inventoryRead,
-    registryMatch,
-    resolved,
-    degraded: !boundaryRead.ok || !inventoryRead.ok,
-  }
-})
-
-/** True when the slug names no place AND both reads that say so came home clean. */
-function isRefusal(route: Awaited<ReturnType<typeof resolveSubdivisionRoute>>): boolean {
-  return !route.resolved && !route.degraded
-}
-
-/** Title-case a slug for display when no registry match is found. */
-function slugToTitle(slug: string): string {
-  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-/** Same title-casing, but null-in/null-out — an absent city stays absent (§0). */
+/** Title-case a slug for display, null in / null out. */
 function titleCaseSlug(slug: string | null | undefined): string | null {
   return slug ? slugToTitle(slug) : null
 }
 
-/** Visitor plat name. MLS alias stays the ingest key; Triple → Triple Knot. */
-function publishSubdivisionPageName(slug: string, registryMatch: RegistryMatch | null): string {
+/** Visitor plat name. The MLS alias stays the ingest key; Triple → Triple Knot. */
+function publishSubdivisionPageName(slug: string, registryMatch: { canonicalName: string } | null): string {
   const raw = registryMatch?.canonicalName ?? slugToTitle(slug)
   return publishPlatDisplayName(raw) ?? raw
 }
 
 // ---------------------------------------------------------------------------
-// Metadata
+// Metadata — unchanged, both branches
 // ---------------------------------------------------------------------------
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  // A slug that names no place gets the refusal title, not one title-cased off
-  // its own characters. Same read the body uses, resolved once (React cache).
-  const route = await resolveSubdivisionRoute(slug)
-  if (isRefusal(route)) return SUBDIVISION_UNAVAILABLE_METADATA
-  const registryMatch = route.registryMatch
+  // The refusal owns its metadata: noindex, honest title, no canonical.
+  if ((await loadSubdivisionCore(slug)).refused) return SUBDIVISION_UNAVAILABLE_METADATA
+  const registryMatch = resolveRegistryAlias(slug)
   const name = publishSubdivisionPageName(slug, registryMatch)
   // Indexability threshold (W2.1): a plat earns index,follow only with a GIS
-  // polygon AND >= SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime closed sales
-  // (lib/data/subdivisions/subdivision-index.ts — the same set the sitemap
-  // submits and llms.txt enumerates). Below the bar the page still renders,
-  // it just carries noindex via the central pageMetadata robots policy so
-  // thin plat pages never dilute the programmatic-page quality signal.
+  // polygon AND at least SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime closed
+  // sales — the same set the sitemap submits and llms.txt enumerates. Below the
+  // bar the page still renders, it just carries noindex.
   //
-  // The same cached set also carries each plat's citySlug (the city
-  // contributing the most closed sales), so the title gets a REAL city for
-  // free — no second query. Before this, every non-registry plat (~3,200
-  // pages) titled itself "Central Oregon, Oregon", because the fallback
-  // string was interpolated into a "<city>, Oregon" template. §0: when the
-  // city is genuinely unknown, the page says nothing about it rather than
+  // The same cached set carries each plat's citySlug (the city contributing the
+  // most closed sales), so the title gets a REAL city from one read. §0: when
+  // the city is genuinely unknown the page says nothing about it rather than
   // naming a place that does not exist.
   const indexableEntry = (await getIndexableSubdivisions()).find((s) => s.slug === slug)
-  const indexable = indexableEntry != null
   const cityName = registryMatch?.city ?? titleCaseSlug(indexableEntry?.citySlug)
   return pageMetadata({
     title: cityName
@@ -254,56 +227,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `Active homes in ${name}, a subdivision in ${cityName}. Boundary map and live MLS listings.`
       : `Active homes in ${name}, a Central Oregon subdivision. Boundary map and live MLS listings.`,
     path: `/subdivisions/${slug}`,
-    noindex: !indexable,
+    noindex: indexableEntry == null,
   })
 }
 
 // ---------------------------------------------------------------------------
-// Page
+// The shared resolution. React cache() dedups it between generateMetadata and
+// the body, so the refusal verdict and the reads are computed once per request
+// — the same architecture as resolveSubdivisionRoute before the v3 rebuild.
 // ---------------------------------------------------------------------------
-
-export default async function SubdivisionPage({ params }: Props) {
-  const { slug } = await params
-
-  // ── PATH 1: GIS boundary (plat polygon for the map) ──────────────────────
-  // ── PATH 2: Registry alias + the public SFR inventory SoR ────────────────
-  // Both reads come from resolveSubdivisionRoute, which generateMetadata already
-  // awaited: one execution per request, so the three-path decision and the
-  // rendered page cannot disagree, and mtCounts still runs alongside them.
-  const [route, mtCounts] = await Promise.all([
-    resolveSubdivisionRoute(slug),
+const loadSubdivisionCore = cache(async (slug: string) => {
+  const [boundaryRead, inventoryRead, mtCounts] = await Promise.all([
+    withTimeoutFallbackResult(
+      getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
+      { polygon: null, pins: [] },
+      4500,
+      'sub:boundary',
+    ),
+    withTimeoutFallbackResult(getPlatPublicInventory(slug), null, 4500, 'sub:inventory'),
     withTimeoutFallback(getSubdivisionCounts(slug), EMPTY_SUBDIVISION_COUNTS, 3500, 'sub:mtCounts'),
   ])
-
-  // No boundary, no registry alias, no listings, and nothing degraded: this slug
-  // is not a place. RENDER the refusal — see SubdivisionUnavailable.tsx for why
-  // notFound() shipped a hollow 200 with a slug-derived <title> instead.
-  if (isRefusal(route)) return <SubdivisionUnavailable />
-
-  const { boundaryRead, inventoryRead, registryMatch } = route
   const boundary = boundaryRead.value
   const inventory = inventoryRead.ok ? inventoryRead.value : null
   const hasBoundary = Boolean(boundary.polygon)
+  const registryMatch = resolveRegistryAlias(slug)
 
-  // ── Redirect: known marketing-area slug → canonical page ─────────────────
-  // NOT HERE. middleware.ts runs resolveSubdivisionAreaRedirect(slug) on every
-  // /subdivisions/<slug> request before render (lib/routing/pre-render-hops.ts),
-  // so a slug in that map has already been 308-ed and can never reach this
-  // component. The page-body permanentRedirect that used to sit here could not
-  // have set a Location header anyway — this segment renders inside the Suspense
-  // boundary app/loading.tsx opens, so React had already flushed HTTP 200.
-  // Enforced by scripts/check-streamed-redirect.mjs.
-
-  // ── PATH 3: Counted set = registry plat inventory (SFR + PUBLIC_ACTIVE) ──
-  // Same payload as /subdivisions tiles (getRegistryPlatPublicInventory).
-  // Do not fall back to a capped featured fetch or unfiltered pin count
-  // (all property types) — those were the 12 / 14 / 26 split on Ridge At
-  // Eagle Crest (2026-08-16). A measured empty must not revive townhouses.
+  // THE COUNTED SET. Same payload as the /subdivisions index tiles.
   const inventoryOk = inventory != null
   const countedKeys = inventoryOk ? inventory.listingKeys : []
-  const boundaryListingKeys = inventoryOk
-    ? countedKeys
-    : boundary.pins.map((p) => p.listingKey)
+  const boundaryListingKeys = inventoryOk ? countedKeys : boundary.pins.map((p) => p.listingKey)
 
   let mapTiles: Awaited<ReturnType<typeof getListingTiles>> = []
   if (boundaryListingKeys.length > 0) {
@@ -325,13 +277,29 @@ export default async function SubdivisionPage({ params }: Props) {
     mapTiles = mapTiles.filter((t) => allowed.has(t.listingKey))
   }
 
-  // The refusal already fired above, before any of this ran. A slug that got
-  // here cleared one of the three paths (or one of its reads degraded, which is
-  // unknown and not empty), so a zero-tile result here is a real plat with no
-  // active listings, not a slug that names nothing.
+  // REFUSAL, not notFound(): under the streamed shell a throw ships a hollow
+  // 200 with no <h1> — see SubdivisionUnavailable.tsx. Refuse only when all
+  // three paths are empty AND both reads actually answered (§0: unknown is not
+  // empty — a degraded read must not delete a real plat).
   const hasListings = mapTiles.length > 0
+  const refused =
+    !hasBoundary && !registryMatch && !hasListings && inventoryRead.ok && boundaryRead.ok
 
-  // ── Name + city display ───────────────────────────────────────────────────
+  return { boundaryRead, inventoryRead, mtCounts, boundary, inventory, hasBoundary, registryMatch, inventoryOk, countedKeys, mapTiles, refused }
+})
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+export default async function SubdivisionPage({ params }: Props) {
+  const { slug } = await params
+
+  const { boundaryRead, inventoryRead, mtCounts, boundary, inventory, hasBoundary, registryMatch, inventoryOk, countedKeys, mapTiles, refused } =
+    await loadSubdivisionCore(slug)
+  if (refused) return <SubdivisionUnavailable />
+
+  // ── NAME AND CITY ────────────────────────────────────────────────────────
   const displayName = publishSubdivisionPageName(slug, registryMatch)
   // Parent city for plain GIS plats (W2.4 parent cross-link): the MODAL city
   // among the plat's own in-boundary listings, already fetched — derived from
@@ -354,100 +322,27 @@ export default async function SubdivisionPage({ params }: Props) {
   const citySlug = registryMatch?.citySlug ?? derivedPlatCity?.citySlug ?? null
   const resortLabel = registryMatch?.resortLabel ?? null
   const resortSlug = registryMatch?.resortSlug ?? null
+  const placeCity = cityName === 'Central Oregon' ? null : cityName
 
-  // Eyebrow: "Sunrise Village · Tetherow · Bend" when we know the resort,
-  // else "Subdivision · Central Oregon".
   const eyebrow = resortLabel
     ? `${displayName} · ${resortLabel} · ${cityName}`
     : `${displayName} · ${cityName}`
 
-  // ── Active count ─────────────────────────────────────────────────────────
-  // Reliable pin count: prefer boundary spatial pins (authoritative for plats)
-  // then registry-fetched listing count. Never fabricate.
-  // §0 UNKNOWN IS NOT ZERO. With no polygon and no registry alias the only
-  // source left is `mapTiles`, which is populated ONLY from boundary pins — so a
-  // boundary read that timed out leaves it `[]`, indistinguishable from a real
-  // empty plat, and the lede published "No active listings right now" as fact.
-  // null = unknown, and the lede + count below suppress the claim instead.
+  // §0 UNKNOWN IS NOT ZERO. The inventory read is the only source for this
+  // count; a read that did not answer leaves null, and null suppresses the claim
+  // rather than publishing a zero under a live-MLS trace.
   const activeCount: number | null = inventory?.activeCount ?? null
 
-  // ── Hero copy ─────────────────────────────────────────────────────────────
-  // KbHero already renders "<N> homes for sale" ahead of this text when
-  // activeCount is non-null. The continuation names THIS plat, never a
-  // coarser city grain (fleet 97c68da5).
-  const lede = placeHeroLead({
-    placeName: displayName,
-    parentName: cityName !== 'Central Oregon' ? cityName : null,
-    activeCount,
-    knownSuffix: 'Live inventory from the regional MLS.',
-    unknownSuffix: 'Live inventory from the regional MLS.',
-  })
+  const platScope: PlatScope = hasBoundary
+    ? { kind: 'boundary', displayName }
+    : registryMatch
+      ? { kind: 'registry', subdivisionName: registryMatch.canonicalName, city: registryMatch.city }
+      : { kind: 'pins', displayName }
 
-  // ── Hero image ────────────────────────────────────────────────────────────
-  // Use city hero as a sensible default for any subdivision plat. No
-  // subdivision-specific hero assets exist, so we use the parent city image
-  // with a regional caption so no wrong-place photo is implied. (§0)
-  const heroData = citySlug ? cityHero(citySlug) : cityHero('bend')
-  const posterSrc = heroData.src
-  const mediaCaption = heroData.verified
-    ? `${cityName}, Oregon`
-    : 'Central Oregon · Cascade Range'
-
-  // ── Featured items ────────────────────────────────────────────────────────
-  // Same counted set as the hero and the #homes list.
-  let featuredItems: KbFeaturedItem[] = []
-  if (mapTiles.length > 0) {
-    featuredItems = await resolveFeaturedItems(mapTiles.filter((t) => Boolean(t.photoUrl)))
-  }
-
-  // ── Map data ─────────────────────────────────────────────────────────────
-  // Build GeoJSON point features from whichever tile source we have.
-  const mapFeatures = mapTiles
-    .filter((t) => t.lat != null && t.lng != null)
-    .map((t) => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
-      properties: {
-        p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
-        a:
-          publishStreetLine({
-            streetNumber: t.streetNumber,
-            streetName: t.streetName,
-            streetSuffix: t.streetSuffix,
-          }) ?? '',
-        sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
-        k: t.listingKey,
-      },
-    }))
-  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
-
-  // Polygon: draw only when the boundary exists and was returned.
-  const mapPolygons = hasBoundary && boundary.polygon
-    ? {
-        type: 'FeatureCollection' as const,
-        features: [
-          {
-            type: 'Feature' as const,
-            geometry: boundary.polygon as unknown,
-            properties: { name: displayName },
-          },
-        ],
-      }
-    : undefined
-
-  const hasMap = mapFeatures.length > 0 || Boolean(mapPolygons)
-
-  const splitRows = splitRowsFromTiles(mapTiles)
-  const useSplit = hasMap && splitRows.length > 0
-
-  // ── Video tours scoped to THIS subdivision ───────────────────────────────
-  // VideoTourRail falls back to the top-priced site-wide Central Oregon set when
-  // its own scoped fetch returns nothing — which would render 24 unrelated
-  // luxury listings under a "Walk through homes in {displayName}" header. Probe
-  // the same subdivision-scoped feed here (community = the MLS SubdivisionName,
-  // city = its parent city) and only render the rail when at least one in-area
-  // video tour exists. No registry match => no MLS subdivision name to scope on
-  // => never show the rail (the fallback would be unrelated). (§0 — honest scope)
+  // ── VIDEO TOURS, SCOPED TO THIS PLAT ─────────────────────────────────────
+  // No registry match means no MLS subdivision name to scope on, and the
+  // unscoped feed answers with top-priced Central Oregon listings from anywhere,
+  // so the probe is skipped rather than answered with out-of-area homes (§0).
   const subdivisionVideoTours = registryMatch
     ? await withTimeoutFallback(
         getSubdivisionVideoTours(registryMatch.canonicalName, registryMatch.city, 12),
@@ -456,16 +351,24 @@ export default async function SubdivisionPage({ params }: Props) {
         'sub:video-tours',
       )
     : []
-  const hasSubdivisionVideoTours = subdivisionVideoTours.some(
-    (r) => r.listing_key && (r.video_url ?? '').trim(),
+  const videoKeys = new Set(
+    subdivisionVideoTours
+      .filter((r) => r.listing_key && (r.video_url ?? '').trim())
+      .map((r) => r.listing_key),
   )
 
-  // ── Sales history + per-subdivision market stats (W2.5 depth) ────────────
-  // One cached DAL read each (§0 query shapes documented in the DALs):
-  // history = yearly closed-SFR aggregates via the get_subdivision_sales_history
-  // RPC (fails soft to [] until the migration is applied); stats = the
-  // market_stats_cache geo_type='subdivision' row when one exists (most plats
-  // have none until the cache backfill — the section feature-detects both).
+  // ── FIELD ROWS AND MAP PINS, BUILT ONCE ──────────────────────────────────
+  const plotted: FieldEntry[] = []
+  for (const tile of mapTiles) {
+    const entry = toFieldEntry(tile, videoKeys.has(tile.listingKey))
+    if (entry) plotted.push(entry)
+  }
+  const mapPins = fieldMapPins(plotted)
+  const fieldItems: V3FieldItem[] = plotted
+  const mapPolygon = hasBoundary && boundary.polygon ? boundary.polygon : undefined
+  const hasMap = plotted.length > 0 || Boolean(mapPolygon)
+
+  // ── THE REST OF THE READS. Every one of them reaches the screen. ─────────
   const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments, placeCharacter] =
     await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
@@ -484,28 +387,103 @@ export default async function SubdivisionPage({ params }: Props) {
           )
         : Promise.resolve([]),
       withTimeoutFallback(getPlaceDocuments('subdivision', slug), [], 4500, 'sub:documents'),
-      // Build years + HOA, measured from this plat's own member listings
-      // (PLACE_CONTENT_RULES R1/R2/R3). Same geo key as the documents read:
-      // place_membership carries subdivision membership under the URL slug.
+      // Build years and HOA, measured from this plat's own member listings
+      // (PLACE_CONTENT_RULES R1/R2/R3).
       withTimeoutFallback(getPlaceCharacter('subdivision', slug), null, 4500, 'sub:character'),
     ])
-  const placeContext = subdivisionPlaceContext({ cityName, citySlug, displayName, slug })
-  const peerPlats = peerPlatsForResort(resortSlug, slug)
-  const centroid = mapCentroid(mapTiles)
-  const lifestyleItems = lifestyleForCentroid(centroid)
-  const platFigures = publishPlatFigures({
-    platMedianListPrice: inventory?.medianListPrice,
+
+  // ── THE MARKET BAND READS ONE POPULATION AT A TIME ──────────────────────
+  // THE PARENT PULSE IS NOT ONE OF THEM, AND MUST NOT COME BACK. A registry
+  // plat has no market_pulse_live row; city and community pulse are other
+  // geographies, and printing one next to "homes for sale in {plat}"
+  // attributes Redmond's pending days to Ridge At Eagle Crest — the founding
+  // case behind lib/market/publish-plat-figures.ts and ci:publish-plat-figures.
+  // publishPlatFigures is the whole rule: the counted set's median may publish,
+  // days-to-pending and 30-day sold withhold rather than borrow.
+  const platFigures = publishPlatFigures({ platMedianListPrice: inventory?.medianListPrice })
+
+  // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
+  // returns null for anything that resolves to the unfiltered regional index, so
+  // a plat whose browse path cannot be built loses the LINK rather than sending
+  // a visitor to every home in Central Oregon under a plat's name (founding case
+  // /subdivisions/ridge-at-eagle-crest, fleet 70b9cdad).
+  const browseHref = publishPlaceBrowseHref(subdivisionListingsPath(cityName, displayName))
+
+  const marketFigures: V3InstrumentFigure[] = []
+  if (platFigures.medianListPrice != null) {
+    marketFigures.push({
+      value: v3Text(formatPriceExact(platFigures.medianListPrice)),
+      label: v3Text('median list price'),
+      ...(browseHref ? { href: browseHref } : {}),
+    })
+  }
+  // Both of these are null by construction, and the two lines exist so the
+  // withholding is visible in the file rather than implied by an absence.
+  // A plat pulse would make them numbers; nothing else may.
+  if (platFigures.medianDaysToPending != null) {
+    marketFigures.push({
+      value: v3Text(String(platFigures.medianDaysToPending)),
+      label: v3Text('median days to pending'),
+    })
+  }
+  if (platFigures.soldCount30d != null) {
+    marketFigures.push({
+      value: v3Text(String(platFigures.soldCount30d)),
+      label: v3Text('closed in the last 30 days'),
+    })
+  }
+  // The Market Truth recorded-plat counts, then the plat's own cache row. Each
+  // figure keeps the label its own layer gave it, so nothing is relabeled on
+  // the way onto the page.
+  const countFigures: V3InstrumentFigure[] = subdivisionCountItems(mtCounts).map((item) => ({
+    value: v3Text(item.value),
+    label: v3Text(item.label),
+  }))
+  const cacheFigures = platStatsFigures(subdivisionStats)
+  marketFigures.push(...countFigures, ...cacheFigures)
+
+  const statsPeriodLabel = subdivisionStats ? PERIOD_LABEL[subdivisionStats.periodType] : ''
+  const [firstPlatFigure, ...restPlatFigures] = marketFigures
+  const salesChart = subdivisionSalesChart(displayName, salesHistory)
+
+  // ONE SENTENCE PER POPULATION THAT ACTUALLY REACHED THE PAGE, and the sentences
+  // are joined rather than concatenated: each trace is written to follow the word
+  // "Source", so the second and third would otherwise open a sentence in lower
+  // case in the middle of the line.
+  const marketClauses = [
+    platFigures.medianListPrice != null ? platInventoryTrace(platScope) : null,
+    countFigures.length > 0 ? platCountsTrace(displayName) : null,
+    cacheFigures.length > 0 ? platStatsTrace(displayName, cityName, statsPeriodLabel) : null,
+  ].filter((clause): clause is string => clause !== null)
+  const marketTrace = marketClauses
+    .map((clause, i) => (i === 0 ? clause : `${clause.charAt(0).toUpperCase()}${clause.slice(1)}`))
+    .join(' ')
+
+  // ── THE CLOSING BLOCK'S OUTBOUND EDGES ───────────────────────────────────
+  const edges = buildSubdivisionEdges({
+    displayName,
+    cityName,
+    citySlug,
+    resortLabel,
+    resortSlug,
+    placeContext: subdivisionPlaceContext({ cityName, citySlug, displayName, slug }),
+    lifestyleItems: lifestyleForCentroid(mapCentroid(mapTiles)),
+    peerPlats: peerPlatsForResort(resortSlug, slug),
+    browseHref,
+    marketHref: citySlug ? `/housing-market/${citySlug}/${slug}` : '/housing-market',
+    pagePath: `/subdivisions/${slug}`,
   })
 
-  // ── JSON-LD ───────────────────────────────────────────────────────────────
+  // ── JSON-LD. Same types, same payloads, same hasMap condition. ───────────
+  const placeDescription = placeCity
+    ? `Homes for sale in ${displayName}, a subdivision in ${placeCity}, with a boundary map and live listings.`
+    : `Homes for sale in ${displayName}, a subdivision in Central Oregon, with a boundary map and live listings.`
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
       items: [
         { name: 'Home', url: '/' },
         { name: 'Communities', url: '/communities' },
-        // Parent cross-link (W2.4): resort when registry-matched, else the
-        // derived parent city for plain GIS plats.
         ...(resortSlug
           ? [{ name: resortLabel ?? displayName, url: `/communities/${resortSlug}` }]
           : citySlug
@@ -518,103 +496,138 @@ export default async function SubdivisionPage({ params }: Props) {
       type: 'place',
       placeType: 'Place',
       name: displayName,
-      description: `Homes for sale in ${displayName}, a subdivision${cityName !== 'Central Oregon' ? ` in ${cityName}` : ' in Central Oregon'}, with a boundary map and live listings.`,
+      description: placeDescription,
       url: `/subdivisions/${slug}`,
-      address: cityName !== 'Central Oregon' ? { city: cityName, state: 'OR', country: 'US' } : undefined,
-      containedInPlace: cityName !== 'Central Oregon' ? cityName : undefined,
+      address: placeCity ? { city: placeCity, state: 'OR', country: 'US' } : undefined,
+      containedInPlace: placeCity ?? undefined,
       hasMap: hasMap ? `/subdivisions/${slug}` : undefined,
     },
   ]
 
+  const homesMode = platHomesMode({
+    activeCount,
+    homeRows: fieldItems.length,
+    pinCount: plotted.length,
+  })
+  const homeRows = toLedgerRows(fieldItems)
+  const [firstHome, ...restHomes] = homeRows
+  const parentHref = resortSlug
+    ? `/communities/${resortSlug}`
+    : citySlug
+      ? `/cities/${citySlug}`
+      : '/communities'
+  const parentLabel = resortLabel ?? cityName
+
   return (
-    <main className="kb-root">
-      <KbSectionTracker />
-      <MetadataBlock schemas={schemas} />
-      <KbBreadcrumb
-        overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Communities', href: '/communities' },
-          // Parent cross-link (W2.4): resort for registry plats, derived city
-          // for plain GIS plats (modal city of the plat's own listings).
-          ...(resortSlug
-            ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
-            : citySlug
-              ? [{ label: cityName, href: `/cities/${citySlug}` }]
-              : []),
-          { label: displayName },
-        ]}
-      />
-      <SmoothScrollProvider>
-        <KbHero
-          data={{
-            activeCount,
-            medianListPrice: platFigures.medianListPrice,
-            medianDaysToPending: platFigures.medianDaysToPending,
-          }}
-          eyebrow={eyebrow}
-          titleTop={`${displayName},`}
-          titleBottom="Homes for Sale"
-          lead={lede}
-          videoSrc={null}
-          posterSrc={posterSrc}
-          mediaCaption={mediaCaption}
-          cta={publishPlaceHeroCta(
-            subdivisionListingsPath(cityName, displayName),
-            `See ${displayName} homes`,
-          )}
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <MetadataBlock schemas={schemas} />
+        <V3SectionTracker />
+
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Communities', href: '/communities' },
+            ...(resortSlug
+              ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
+              : citySlug
+                ? [{ label: cityName, href: `/cities/${citySlug}` }]
+                : []),
+            { label: displayName },
+          ]}
         />
-        <PublicSubdivisionCounts placeName={displayName} row={mtCounts} />
-        {/* Dual-pane list ↔ map when we have pins; else featured rail or empty. */}
-        {useSplit ? (
-          <PlaceMapListSplit
-            rows={splitRows}
-            mapGeo={mapGeo}
-            polygons={mapPolygons}
-            eyebrow={`${displayName} · For sale`}
-            title={`Homes in ${displayName}`}
-            subtitle={`Every active single-family listing in ${displayName}${cityName !== 'Central Oregon' ? `, ${cityName}` : ''}. List and map together. Zoom in for photo stamps.`}
-            totalActive={activeCount ?? mapFeatures.length}
-            viewAllHref={subdivisionListingsPath(cityName, displayName)}
-            viewAllLabel={`See every ${displayName} home for sale`}
-          />
-        ) : featuredItems.length > 0 ? (
-          <KbFeatured
-            items={featuredItems}
-            eyebrow={`${displayName} · For sale`}
-            viewAllHref={subdivisionListingsPath(cityName, displayName)}
-            viewAllLabel={`See every ${displayName} home for sale`}
-            viewAllPlace={displayName}
-            totalCount={activeCount || null}
+
+        {/* Pattern 2, Field — only when the plat has enough pins to BE a map.
+            A short plat is a list, which is the next branch. */}
+        {homesMode === 'field' ? (
+          <>
+            <V3Quiet
+              id="overview"
+              heading={`Homes for sale in ${displayName}`}
+              headingLevel={1}
+              eyebrow={eyebrow}
+              items={[{ label: parentLabel, href: parentHref }]}
+            />
+            <V3Field
+              id="homes"
+              ariaLabel={`Homes for sale in ${displayName}`}
+              items={fieldItems}
+              mapSlot={
+                <PlaceFieldMap pins={mapPins} boundary={mapPolygon} placeName={displayName} />
+              }
+              count={{
+                value: fieldItems.length.toLocaleString('en-US'),
+                label: fieldItems.length === 1 ? 'home shown here' : 'homes shown here',
+                source: fieldTrace(platScope),
+              }}
+              mapNote={
+                mapPolygon
+                  ? `The outline is the recorded ${displayName} plat boundary.`
+                  : undefined
+              }
+            />
+          </>
+        ) : firstHome ? (
+          /* Pattern 3, Ledger. Every row is a door. */
+          <V3Ledger
+            id="homes"
+            headingLevel={1}
+            eyebrow={v3Text(eyebrow)}
+            heading={v3Text(`Homes for sale in ${displayName}`)}
+            rows={[firstHome, ...restHomes]}
+            source={v3Text(homesLedgerTrace(platScope))}
+            action={{ label: v3Text(parentLabel), href: parentHref, variant: 'ghost' }}
           />
         ) : (
-          <section className="section">
-            <div className="wrap" style={{ textAlign: 'center', padding: '2.5rem 0' }}>
-              <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '36rem', margin: '0 auto' }}>
-                No active listings in {displayName} right now.
-                {cityName !== 'Central Oregon'
-                  ? ` Browse homes in ${cityName}, or save a search for this plat.`
-                  : ' Browse nearby homes, or save a search for this plat.'}
-              </p>
-            </div>
-          </section>
+          /* Giant 0 is forbidden. An empty Ledger states WHICH of the two
+             things happened: nothing is listed, or nothing answered. */
+          <V3Ledger
+            id="homes"
+            headingLevel={1}
+            eyebrow={v3Text(eyebrow)}
+            heading={v3Text(`Homes for sale in ${displayName}`)}
+            rows={[]}
+            emptyMessage={v3Text(
+              homesMode === 'unknown'
+                ? `The inventory query for ${displayName} did not return, so this is not a claim that nothing is for sale.`
+                : `No single-family home is listed in ${displayName} right now.`,
+            )}
+            action={{ label: v3Text(parentLabel), href: parentHref, variant: 'ghost' }}
+          />
         )}
-        {hasSubdivisionVideoTours && registryMatch ? (
-          <VideoTourRail
-            community={registryMatch.canonicalName}
-            city={registryMatch.city}
-            eyebrow={`${displayName} · Video tours`}
-            title={`Walk through homes in ${displayName}`}
+
+        {/* Pattern 6, Quiet — the assigned schools and every outbound edge this
+            page carries. ci:subdivision-stats-integrity requires this component
+            by name. */}
+        <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} edges={edges} />
+
+        {/* Pattern 1, Instrument — the plat's own market, one population. */}
+        {firstPlatFigure ? (
+          <V3Instrument
+            id="market-report"
+            level={2}
+            eyebrow={v3Text(
+              statsPeriodLabel ? `${displayName} · ${statsPeriodLabel}` : `${displayName} · Market`,
+            )}
+            headline={v3Text(`${displayName} on record`)}
+            figures={[firstPlatFigure, ...restPlatFigures]}
+            source={v3Text(marketTrace)}
+            updated={
+              subdivisionStats?.refreshedAt
+                ? v3Text(formatDate(subdivisionStats.refreshedAt))
+                : undefined
+            }
+            chart={salesChart}
           />
         ) : null}
-        {/* Sales history (yearly closed-sale aggregates) + market-stats strip.
-            Renders null when neither source has data — ODS-safe: aggregates
-            only, never individual sold listings. */}
+
+        {/* Pattern 3, Ledger — one row per calendar year, every row a door, with
+            the approved chart-room cards inside the same market section. */}
         <SubdivisionSalesHistory
           displayName={displayName}
           history={salesHistory}
-          stats={subdivisionStats}
           cityName={cityName}
+          chart={firstPlatFigure ? undefined : salesChart}
           charts={
             <SubdivisionMarketCharts
               slug={slug}
@@ -626,40 +639,31 @@ export default async function SubdivisionPage({ params }: Props) {
             />
           }
         />
-        {/* Assigned schools (W2.4 MPC parity) — §0-thresholded modal assignment
-            from this subdivision's own listings; renders null when no level
-            clears the DAL majority rule. */}
-        {/* One section per property type the plat actually contains. The registry
-            withholds price and months of supply below neighbourhood grain, so a
-            plat supplies counts alone — and a type with no counts never reaches
-            the component at all, which is the point. */}
+
+        {/* Pattern 6, Quiet — build years and HOA as sentences, because
+            PLACE_CONTENT_RULES R1-R3 forbid publishing them as bare figures. */}
+        <V3PlaceCharacter placeName={displayName} character={placeCharacter} />
+
+        {/* Pattern 3, Ledger — recorded instruments, every row a door. */}
+        <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />
+
+        {/* Pattern 1 again, as ONE enumeration: a section per other property
+            type the plat holds. The registry withholds price and months of
+            supply below neighbourhood grain, so a plat supplies counts alone,
+            and a type with no counts never reaches the component. */}
         <V3PlacePropertyTypes
           placeName={displayName}
           citySlug={citySlug}
           rows={mtCounts.extras}
         />
 
-        <V3PlaceCharacter placeName={displayName} character={placeCharacter} />
+      </main>
 
-        <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />
-
-        <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} />
-        <SubdivisionExploreTail
-          displayName={displayName}
-          placeContext={placeContext}
-          lifestyleItems={lifestyleItems}
-          centroid={centroid}
-          peerPlats={peerPlats}
-          resortLabel={resortLabel}
-          resortSlug={resortSlug}
-          cityName={cityName}
-          citySlug={citySlug}
-          heroMedian={platFigures.medianListPrice}
-          heroDom={platFigures.medianDaysToPending}
-          soldCount={platFigures.soldCount30d}
-        />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo
+          only when it is NOT nested in sectioning content, and <main> is
+          sectioning content, so inside it the element is a generic and the page
+          ships no contentinfo landmark. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

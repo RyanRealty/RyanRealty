@@ -67,8 +67,16 @@ const surfaces = [
     noMedianSurface: 'app/zip/[zip]/_v3/ZipSellSheet.client.tsx',
   },
   {
-    path: 'components/site/explore/SubdivisionExploreTail.tsx',
-    label: 'subdivision tail gates KbSell median through publishSellMedian',
+    path: 'app/subdivisions/[slug]/page.tsx',
+    label: 'plat page publishes no uncaptioned median',
+    // MOVED, NOT DROPPED (2026-08-26). SubdivisionExploreTail carried the plat's
+    // KbSell and was deleted with the v3 migration. The rule — a published list
+    // median carries the geography of the number — is satisfied here the
+    // strongest way: publishPlatFigures is the ONLY source a plat median may
+    // come from, and it reads the plat's own counted set. A parent-city or
+    // community median under a plat heading is what ci:publish-plat-figures
+    // forbids outright.
+    platFiguresSurface: true,
   },
 ]
 
@@ -90,6 +98,12 @@ for (const surface of surfaces) {
     /from ['"]@\/lib\/market\/publish-median-caption['"]/.test(text) &&
     /publishSellMedian\(/.test(text)
   let ok = gatedThroughHelper
+  if (!ok && surface.platFiguresSurface) {
+    ok =
+      /from ['"]@\/lib\/market\/publish-plat-figures['"]/.test(text) &&
+      /publishPlatFigures\(/.test(text) &&
+      !/cityPulse|communityPulse/.test(stripComments(text))
+  }
   if (!ok && surface.noMedianSurface) {
     const sheet = src(surface.noMedianSurface)
     // The page may not hand a median to the sheet, and the sheet may not make

@@ -29,7 +29,18 @@ checks.push({
     helper.includes('asPositiveMedian(input.platMedianListPrice)'),
 })
 
-const place = src('app/subdivisions/[slug]/page.tsx')
+/**
+ * Line comments BEFORE block comments (migration recipe §5.3: a `/*` inside a
+ * `//` opens a phantom block that swallows the file). The negative checks below
+ * read CODE. The plat page's header paragraph names fetchSubdivMarketExtras and
+ * the parent pulse on purpose — that paragraph is the documentation that stops
+ * someone restoring them — and a gate that fired on its own explanation would
+ * force the warning to be deleted to stay green.
+ */
+const stripComments = (text) =>
+  text.replace(/(^|[^:])\/\/.*$/gm, '$1').replace(/\/\*[\s\S]*?\*\//g, '')
+
+const place = stripComments(src('app/subdivisions/[slug]/page.tsx'))
 checks.push({
   label: 'plat page gates hero/sell figures through publishPlatFigures',
   ok:

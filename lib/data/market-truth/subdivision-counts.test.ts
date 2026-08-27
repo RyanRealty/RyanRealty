@@ -60,7 +60,13 @@ describe('subdivision counts-only grain', () => {
   it('plat page overlays membership counts beside MLS-name inventory', () => {
     const page = readFileSync(resolve('app/subdivisions/[slug]/page.tsx'), 'utf8')
     expect(page).toMatch(/getSubdivisionCounts/)
-    expect(page).toMatch(/PublicSubdivisionCounts/)
+    // MOVED, NOT DROPPED (2026-08-26). PublicSubdivisionCounts rendered the KB
+    // panel; on the v3 barrel the detached counts are figures on the market
+    // Instrument (subdivisionCountItems) and the extras are the barrel's
+    // property-type enumeration. Same two reads, same two surfaces.
+    expect(page).toMatch(/subdivisionCountItems/)
+    expect(page).toMatch(/V3PlacePropertyTypes/)
+    expect(page).toMatch(/mtCounts\.extras/)
     expect(page).not.toMatch(/getDetachedMarket/)
   })
 
@@ -83,9 +89,15 @@ describe('subdivision counts-only grain', () => {
     expect(src).toMatch(/closed_count/)
     expect(src).not.toMatch(/months_of_supply/)
     expect(src).not.toMatch(/median_list/)
-    const ui = readFileSync(resolve('app/subdivisions/[slug]/PublicSubdivisionCounts.tsx'), 'utf8')
-    expect(ui).toMatch(/Other product types/)
-    expect(ui).toMatch(/item\.bits/)
+    // The surface that renders the extras is now the barrel's enumeration. The
+    // rule it has to hold is the same one: counts only at plat grain. The plat
+    // rows carry no median and no months of supply, so the component's own
+    // optional figures never fire, and the component must not invent them.
+    const ui = readFileSync(resolve('components/site/v3/V3PlacePropertyTypes.tsx'), 'utf8')
+    expect(ui).toMatch(/pendingCount/)
+    expect(ui).toMatch(/closedCount/)
     expect(ui).not.toMatch(/publicSegmentDisplayBits/)
+    // A type the layer withheld is absent, never an empty section and never a 0.
+    expect(ui).toMatch(/rows\.length === 0/)
   })
 })

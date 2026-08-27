@@ -12,7 +12,6 @@
  * point. That matches what the KB dual-pane listed and keeps the map honest.
  */
 
-import type { ListingRow } from '@/app/actions/communities'
 import type { ListingTile } from '@/lib/data'
 import { v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
@@ -64,42 +63,6 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
     lat: tile.lat,
     lng: tile.lng,
   }
-}
-
-/**
- * The registry-name rows, used only when the listing-tile query returned
- * nothing. A different query, so the page hands the Field a different trace.
- */
-export function fallbackFieldRows(
-  rows: readonly ListingRow[],
-  videoKeys: ReadonlySet<string>,
-): V3FieldItem[] {
-  const out: V3FieldItem[] = []
-  for (const row of rows) {
-    const key = row.ListingKey
-    if (!key) continue
-    const street = publishStreetLine({
-      streetNumber: row.StreetNumber,
-      streetName: row.StreetName,
-      streetSuffix: row.StreetSuffix,
-    })
-    out.push({
-      id: key,
-      href: listingDetailPath(
-        key,
-        { streetNumber: row.StreetNumber, streetName: row.StreetName, city: row.City },
-        { city: row.City, subdivision: row.SubdivisionName },
-        { mlsNumber: row.ListNumber },
-      ),
-      priceLabel: formatPublishedAsk(row.ListPrice) ?? NO_PRICE,
-      title: street || 'Listing',
-      meta: metaLine(row.BedroomsTotal, row.BathroomsTotal, videoKeys.has(key)),
-      photoSrc: row.PhotoURL?.trim() || undefined,
-      lat: row.Latitude,
-      lng: row.Longitude,
-    })
-  }
-  return out
 }
 
 export function toLedgerRows(items: readonly V3FieldItem[]): V3LedgerFigureRow[] {

@@ -61,13 +61,27 @@ checks.push({
     /\{mapBrowseHref \? \(/.test(map),
 })
 
+/**
+ * THE SUBDIVISION ARM, RE-EXPRESSED FOR v3 (2026-08-26). The KB page's one
+ * inventory door was KbHero's CTA, built by publishPlaceHeroCta. That page left
+ * the KB register and has no hero, so the assertion names what carries the rule
+ * now: the plat's browse path still goes through publishPlaceBrowseHref, which
+ * returns null for anything resolving to the unfiltered regional index, and the
+ * page drops the LINK rather than the filter when it does. A page that puts
+ * KbHero back satisfies the first arm instead, with no edit here.
+ */
 const subdivision = src('app/subdivisions/[slug]/page.tsx')
+const subdivisionKbArm =
+  /cta=\{publishPlaceHeroCta\(/.test(subdivision) &&
+  /subdivisionListingsPath\(cityName, displayName\)/.test(subdivision)
+const subdivisionV3Arm =
+  /publishPlaceBrowseHref\(subdivisionListingsPath\(cityName, displayName\)\)/.test(subdivision) &&
+  /browseHref \? \{ href: browseHref \}/.test(subdivision)
 checks.push({
-  label: 'subdivision hero See homes keeps the plat listings path',
+  label: 'subdivision inventory doors keep the plat listings path',
   ok:
     /from ['"]@\/lib\/search\/publish-place-browse-href['"]/.test(subdivision) &&
-    /cta=\{publishPlaceHeroCta\(/.test(subdivision) &&
-    /subdivisionListingsPath\(cityName, displayName\)/.test(subdivision),
+    (subdivisionKbArm || subdivisionV3Arm),
 })
 
 /**

@@ -267,7 +267,22 @@ if (!existsSync(DOOR) || !existsSync(EXPLORER) || !existsSync(LEDGER)) {
   }
 }
 
-// ── 6. The parent closings figure is guarded (NULL sold_count_30d arrives as 0) ──
+// ── 6. The plat market band never borrows a parent geography's figures ────────
+//
+//    THE RULE MOVED, IT DID NOT LAPSE (2026-08-26). This arm was written when
+//    the band fell back to the parent city or community pulse row, and it
+//    guarded the one figure that fallback could publish as a zero it could not
+//    verify: getMarketPulse maps a NULL sold_count_30d to 0. On 2026-08-16
+//    `fix: withhold parent pulse on registry plat pages` (3f34bf65) made the
+//    whole fallback a defect — Redmond's pending days under "homes for sale in
+//    Ridge At Eagle Crest" — and lib/market/publish-plat-figures.ts plus
+//    ci:publish-plat-figures replaced it. The plat band now reads the plat's own
+//    counted set, the Market Truth recorded-plat counts, and the plat's own
+//    cache row, and nothing else.
+//
+//    So this arm asserts the STRONGER thing: the figures module holds no parent
+//    pulse figure at all. A closedLast30Days push reappearing here means the
+//    fallback came back, which is now the defect rather than the thing to guard.
 if (!existsSync(FIGURES)) {
   problems.push(`market-band figures missing: ${FIGURES}`)
 } else {
@@ -292,14 +307,20 @@ if (!existsSync(FIGURES)) {
       walk(c, nextGuards)
     })
   })(sf, 0)
-  if (unguardedPushes > 0) {
+  if (guardedPushes > 0 || unguardedPushes > 0) {
     problems.push(
-      'parentPulseFigures pushes closedLast30Days without an enclosing guard — getMarketPulse maps a NULL ' +
-        'sold_count_30d to 0, so that figure publishes a zero the page cannot verify (§0 ABSENT IS NOT ZERO)',
+      '_v3/subdivision-figures.ts publishes closedLast30Days — that figure can only come from a parent ' +
+        'city or community pulse row, which is another geography. A plat band reads the plat: ' +
+        'lib/market/publish-plat-figures.ts and ci:publish-plat-figures (founding case ' +
+        '/subdivisions/ridge-at-eagle-crest printing Redmond pending days, 2026-08-16).',
     )
   }
-  if (guardedPushes === 0 && unguardedPushes === 0) {
-    problems.push('no closedLast30Days figure found in _v3/subdivision-figures.ts — re-verify the market band')
+  const figuresSrc = readFileSync(FIGURES, 'utf8')
+  if (/getMarketPulse|MarketPulse\b/.test(figuresSrc)) {
+    problems.push(
+      '_v3/subdivision-figures.ts references a market pulse row — the plat band must read the plat, ' +
+        'not its parent city or community.',
+    )
   }
 }
 

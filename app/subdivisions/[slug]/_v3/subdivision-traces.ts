@@ -29,7 +29,6 @@
  * Which parent-market figures rendered, built beside them in ./subdivision-figures
  * so the trace and the figure set cannot disagree. Type-only: nothing here runs.
  */
-import type { ParentPulseCoverage as ParentMarketCoverage } from './subdivision-figures'
 
 /** Every figure on this page traces to the same feed. This is how it is named. */
 const FEED = 'live MLS through Oregon Data Share'
@@ -49,9 +48,9 @@ export type PlatScope =
 export function activeCountTrace(scope: PlatScope): string {
   if (scope.kind === 'registry') {
     return (
-      `${FEED}, active listings recorded under the ${scope.subdivisionName} subdivision name in ` +
-      `${scope.city}. No plat boundary is recorded for this page, so the count is the set that ` +
-      `query returned and it stops at fourteen.`
+      `${FEED}, active single-family listings recorded under the ${scope.subdivisionName} ` +
+      `subdivision name in ${scope.city}. No plat boundary is recorded for this page, so the ` +
+      `count is the recorded-plat inventory set, not a boundary query.`
     )
   }
   const where =
@@ -83,58 +82,56 @@ export function fieldTrace(scope: PlatScope): string {
 }
 
 /**
- * Trace for the Field when the tile query returned nothing and the rows come
- * from the registry-name fetch instead. Same fourteen-row ceiling as (1).
+ * Trace for the Market Truth recorded-plat counts (population 2). A different
+ * membership from the listing set above it: detached homes whose recorded plat
+ * IS this one, over the metric layer's own windows.
  */
-export function fieldFallbackTrace(subdivisionName: string, city: string): string {
+export function platCountsTrace(displayName: string): string {
   return (
-    `${FEED}, active listings recorded under the ${subdivisionName} subdivision name in ${city}. ` +
-    `The listing-tile query returned nothing on this refresh, so these are the rows that fetch ` +
-    `returned and it stops at fourteen.`
+    `regional MLS through the Market Truth metric layer, detached homes on the recorded ` +
+    `${displayName} plat. Each figure names its own window; a figure the layer withheld is ` +
+    `absent, not estimated.`
   )
 }
 
 /** Trace for the plat's own closed statistics (population 3). */
 export function platStatsTrace(displayName: string, cityName: string, periodLabel: string): string {
   const where = cityName === 'Central Oregon' ? displayName : `${displayName}, ${cityName}`
+  // NO MEDIAN CLAUSE. The cache row carries a closed median and a YoY of it, and
+  // publishSubdivisionClosedPrice withholds BOTH at plat grain (REGISTRY §4), so
+  // the only figure that reaches the page from this row is days on market. A
+  // sentence about rounding medians would describe a number the page suppressed.
   return (
     `${FEED} through the subdivision statistics cache, closed single-family sales in ${where}, ` +
-    `${periodLabel.toLowerCase()}. Medians round to the nearest thousand.`
+    `${periodLabel.toLowerCase()}. Days on market only: a closed-price statistic at plat grain is ` +
+    `withheld.`
   )
 }
 
 /**
- * Trace for the parent market band (population 4).
- *
- * The sentence is composed from the figures that actually rendered, not from the
- * three the pulse row can carry. A guard in _v3/subdivision-figures.ts drops any
- * figure the row did not answer ,  including a closings count of 0, which the DAL
- * cannot distinguish from a NULL column ,  and a trace that named a figure the
- * page then suppressed would be a source line describing a number nobody can see.
+ * Trace for the plat's own live inventory median (population 1's price side).
+ * The counted set is the only plat-grain live inventory there is: a registry
+ * plat has no market_pulse_live row, so a parent-city or community pulse under
+ * this heading would attribute another geography's figure to this plat.
  */
-export function parentMarketTrace(scopeLabel: string, covers: ParentMarketCoverage): string {
-  const active =
-    covers.listPrice && covers.daysToPending
-      ? 'List price and days to pending come from active inventory.'
-      : covers.listPrice
-        ? 'List price comes from active inventory.'
-        : covers.daysToPending
-          ? 'Days to pending comes from active inventory.'
-          : ''
-  const closed = covers.closed ? 'Closings are the last thirty days.' : ''
-  const basis = [active, closed].filter(Boolean).join(' ')
-  return (
-    `${FEED}, single-family homes in ${scopeLabel}. ${basis}${basis ? ' ' : ''}These are ` +
-    `${scopeLabel} figures, not plat-level ones.`
-  )
+export function platInventoryTrace(scope: PlatScope): string {
+  const where =
+    scope.kind === 'registry'
+      ? `recorded under the ${scope.subdivisionName} subdivision name in ${scope.city}`
+      : `inside the recorded ${scope.displayName} plat`
+  return `${FEED}, the list prices of the active single-family listings ${where}.`
 }
 
 /** Trace for the yearly closed-sale table. Aggregates only, per ODS rule 5-4 A.4. */
-export function salesHistoryTrace(displayName: string): string {
-  return (
-    `${FEED}, closed single-family sales in ${displayName}, grouped by calendar year. Counts and ` +
-    `medians only, never an individual sale. Medians round to the nearest thousand.`
-  )
+export function salesHistoryTrace(displayName: string, priceMayPublish = false): string {
+  const base =
+    `${FEED}, closed single-family sales recorded under the MLS plat name ${displayName}, a ` +
+    `single-family name join and not recorded-plat membership, grouped by calendar year. ` +
+    `Never an individual sale.`
+  return priceMayPublish
+    ? base
+    : `${base} Counts only: a closed-price statistic at this grain is withheld, because most ` +
+        `plats never reach ten detached sales in 36 months and a median of that is not a fact.`
 }
 
 /** The window label the stats cache row carries, spelled for a reader. */

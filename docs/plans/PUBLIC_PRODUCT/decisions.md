@@ -881,3 +881,68 @@ route. Matt's call before the city page migrates.
 by name). Nothing else. The page imports nothing from `components/site/kb`,
 `components/site/explore`, or `components/site/primitives`, and its contract test
 asserts that.
+
+## 2026-08-26 — /subdivisions/[slug] is on the barrel, and two §0 fixes came with it
+
+**A 178 → 166 · B 2 · C 52.** The plat page was already mixed (it rendered
+`V3PlacePropertyTypes` and `V3PlaceCharacter` under KB chrome); it is now the barrel
+plus `MetadataBlock`.
+
+**Four patterns.** Field or Ledger (the homes) · Quiet (the assigned schools and every
+outbound edge) · Instrument (the plat's own market, then once per other property type)
+· Ledger (the sales history, then the recorded documents). The Field mounts only at
+`FIELD_MAP_MIN` pins or more, because a short plat is a list and a three-pin map is not
+a map. **The rhythm conflict is declared, not hidden:** four of the sections are
+conditional, and no ordering of four independent conditionals over four patterns can
+guarantee "no two adjacent" for every combination. The order is right when the data is
+present; the alternative is dropping a section the data supports.
+
+**Two §0 defects the reverted v3 draft carried, both fixed rather than restored.** The
+2026-08-15 revert left this route's `_v3/` modules on disk and they were the base for
+this work, but two things in them predate rules that landed afterwards:
+
+1. **The parent-market band.** The draft fell back to the parent community's or city's
+   `market_pulse_live` row when the plat had no figures of its own. On 2026-08-16
+   `fix: withhold parent pulse on registry plat pages` (3f34bf65) made that a defect,
+   not a fallback — `/subdivisions/ridge-at-eagle-crest` printed the plat's own
+   $910,000 median beside Redmond's 19.5 pending days under one heading. The band,
+   `parentPulseFigures`, `parentMarketTrace` and `fetchSubdivMarketExtras` are gone.
+   `publishPlatFigures` is the whole rule now: the counted set's median may publish,
+   days-to-pending and 30-day sold withhold.
+2. **The closed median in the yearly rows.** The draft printed
+   `formatPrice(year.medianClosePrice)` as the Ledger's value column.
+   `publishSubdivisionClosedPrice` withholds at plat grain (REGISTRY §4: 515 of 680
+   Bend plats never reach ten detached sales in 36 months, and the series is an MLS
+   `SubdivisionName` join rather than `place_membership`). The value column is the
+   closed COUNT, the component CALLS the publisher rather than assuming it, and the
+   trace no longer promises a rounding rule for a number it suppresses.
+
+**Four contracts re-expressed, each break-tested.** `ci:subdivision-stats-integrity`'s
+arm 6 guarded the parent-pulse closings figure; it now FAILS on that figure appearing
+at all, which is the only way the parent row could come back.
+`ci:publish-place-browse` and `ci:publish-street-line` followed the rule to where it
+lives (the browse door still goes through `publishPlaceBrowseHref`, and a null door is
+DROPPED rather than defaulted to regional inventory; the address still goes through
+`publishStreetLine`, now in the one row-and-pin mapper). `ci:publish-median-caption`'s
+subdivision arm moved from the deleted `SubdivisionExploreTail` to the plat page.
+`lib/data/market-truth/subdivision-counts.test.ts` moved from
+`PublicSubdivisionCounts` to `subdivisionCountItems` + `V3PlacePropertyTypes`.
+
+**Three modules deleted, following the orphan cascade:** `PublicSubdivisionCounts`,
+`components/site/VideoTourRail`, `components/site/explore/SubdivisionExploreTail`, and
+then `components/site/VideoSlider.client` which the second one had been holding alive.
+`ci:reachable-exports` is green with the backlog unchanged at 1.
+
+**Verified on the rendered page.** `ridge-at-eagle-crest`: $895,000 median list and 26
+days match the KB page, the six closed-count years sum to the 114 in the note, one
+`<main>`, one `<footer>`, one `<h1>`, no horizontal overflow. `kitty-hawk`: the empty
+plat says "No single-family home is listed in Kitty Hawk right now" instead of a zero,
+and the sales-history Instrument takes the chart when the market band has no figures.
+The two parent doors now read "Sunriver city" and "Sunriver community" instead of two
+adjacent links both reading "Sunriver".
+
+**Not this unit's, reproduced on an untouched page:** the Google map does not paint in
+this dev server after a while — `/parks/shevlin-park`, which nothing here touches,
+shows the same empty `.v3-field__map-frame`. The same ZIP page's map rendered earlier
+in the same session on identical code. Dev-environment flake, not a code defect, but it
+means the map itself was not visually confirmed on this pass.

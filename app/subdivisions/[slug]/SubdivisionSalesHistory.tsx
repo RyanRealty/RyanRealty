@@ -1,206 +1,201 @@
 /**
- * SubdivisionSalesHistory — yearly closed COUNT on /subdivisions/[slug].
+ * SubdivisionSalesHistory — the closed-sales depth section on /subdivisions/[slug]
+ * (W2.5), rebuilt on the v3 barrel as PATTERN 3, LEDGER
+ * (design_system/public/PUBLIC_UI.md section 3). One row per calendar year, every
+ * row a door.
  *
- * Two populations live on this route and they are not the same:
- *   - This table: get_subdivision_sales_history. MLS SubdivisionName slug-join,
- *     PropertyType A (single-family). Calendar-year closed counts.
- *   - PublicSubdivisionCounts: recorded-plat membership (place_membership
- *     is_primary). 12-month closed_count stays on that strip.
+ * SOURCE (one read, one trace, one population): getSubdivisionSalesHistory ->
+ * the get_subdivision_sales_history RPC, a server-side GROUP BY year over closed
+ * single-family sales for this plat slug. It fails soft to [] before the
+ * migration is applied, which is why this component renders NOTHING rather than
+ * an empty Ledger saying no sales exist. An empty result here is the absence of
+ * an answer, not the answer zero (CLAUDE.md section 0).
  *
- * market_stats_cache soldCount is the same MLS-name family as this table, YTD,
- * not membership closed_count. Omit it here so it cannot be read as the
- * recorded-plat 12-month closed count. Median days on market from that cache
- * row may still open the band. Closed-sale prices stay behind
- * publishSubdivisionClosedPrice (REGISTRY §4).
+ * D9: the yearly series is a chart, not a seventh figure. When the plat-stats
+ * Instrument already holds that chart, this file is Ledger only. When that
+ * Instrument is absent, the series mounts here as Instrument.chart, then the
+ * year rows. Flattening the years into a single figure is the defect D9 names.
  *
- * ODS §5-4 A.4: counts only, never individual sold addresses or prices.
- * Renders null when there is no history AND no remaining stats cell.
+ * ODS rule 5-4 A.4: aggregates only. Year, count, median. Never an individual
+ * sold address or price, which is VOW-only data. Rule 7-3: the section carries
+ * the ODS trace, which lives in _v3/subdivision-traces.ts with the page's other
+ * three so no two populations can drift onto one sentence.
+ *
+ * THE DOOR, AND THE YEARS IT DOES NOT OPEN. A closed year has no page of its own,
+ * so each row opens the Central Oregon closed-sales explorer at that year (and at
+ * this plat's city when the page knows it). The explorer clamps its `year`
+ * parameter to a fixed range, so a row for a year outside that range would open a
+ * different year's aggregates while claiming to open its own. Those years are
+ * split out in _v3/history-door.ts and stated as a count in the note instead:
+ * every figure the RPC returned is still on the page, and no link on it lands on
+ * a year other than the one its row names. The note says which years have rows
+ * and why, because a row whose figures are plat-level and whose destination is
+ * city-level must not let a reader assume otherwise.
+ *
+ * The per-plat market_stats_cache figures the KB version printed in a strip
+ * above this table now render as the page's market Instrument, with their own
+ * trace and their own stamp. They were a different population from these yearly
+ * aggregates and shared this section's source line.
  */
 
-import type { CSSProperties, ReactNode } from 'react'
-import Link from 'next/link'
-import type { MarketStats } from '@/lib/data'
-import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
+import type { ReactNode } from 'react'
+import {
+  v3Text,
+  V3Instrument,
+  V3Ledger,
+  type V3ChartProps,
+  type V3InstrumentFigure,
+  type V3LedgerFigureRow,
+} from '@/components/site/v3'
 import { publishSubdivisionClosedPrice } from '@/lib/market/publish-subdivision-closed-price'
+import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
+import { MAX_YEAR_ROWS, salesHistoryTrace } from './_v3/subdivision-traces'
 import {
   HISTORY_MAX_YEAR,
   HISTORY_MIN_YEAR,
+  HISTORY_PATH,
   historyYearHref,
   splitByExplorerRange,
 } from './_v3/history-door'
 
-const MAX_YEAR_ROWS = 40
-
-const PERIOD_LABEL: Record<MarketStats['periodType'], string> = {
-  rolling_30d: 'Last 30 days',
-  rolling_90d: 'Last 90 days',
-  rolling_365d: 'Last 12 months',
-  monthly: 'This month',
-  ytd: 'Year to date',
-}
-
-/** Public grain line for the yearly table. Not recorded-plat membership. */
-export const SUBDIVISION_YEARLY_HISTORY_NOTE =
-  'MLS plat-name closed counts. Single-family name join. This grain does not publish a median price.'
-
-export type SubdivisionStatCell = { label: string; value: string }
-
-/**
- * Cache-row cells that may print next to the yearly MLS table.
- * soldCount stays off: it is MLS-name YTD, not recorded-plat 12-month closed.
- */
-export function subdivisionCacheStatCells(stats: MarketStats | null): SubdivisionStatCell[] {
-  if (!stats) return []
-  const cells: SubdivisionStatCell[] = []
-  const publishedMedian = publishSubdivisionClosedPrice(stats.medianSalePrice)
-  if (publishedMedian != null) {
-    cells.push({
-      label: 'Closed median',
-      value: `$${Math.round(publishedMedian).toLocaleString('en-US')}`,
-    })
-  }
-  if (stats.medianDaysOnMarket != null) {
-    cells.push({
-      label: 'Median days on market',
-      value: `${Math.round(stats.medianDaysOnMarket)} days`,
-    })
-  }
-  const publishedYoy = publishSubdivisionClosedPrice(stats.yoyChangePct)
-  if (publishedYoy != null) {
-    const arrow = publishedYoy > 0 ? '↑' : publishedYoy < 0 ? '↓' : '→'
-    cells.push({
-      label: 'Closed median YoY',
-      value: `${arrow} ${Math.abs(publishedYoy).toFixed(1)}% YoY`,
-    })
-  }
-  return cells
-}
-
 interface Props {
   displayName: string
   history: SubdivisionSalesYear[]
-  stats: MarketStats | null
+  /** The plat's city, when the page resolved one. Narrows the year door. */
   cityName: string
   /**
-   * The chart-room cards for this plat (SubdivisionMarketCharts), mounted
-   * inside this section so the page keeps ONE market section. Passed as a
-   * node because this component is synchronous and the charts read the DAL.
+   * Yearly closed-count series. Present only when the plat-stats Instrument did
+   * not already take it. Two Instruments in a row would break the rhythm rule,
+   * which is why the page moves the parent-market band below this section when
+   * this chart mounts here.
+   */
+  chart?: V3ChartProps
+  /**
+   * The approved chart-room cards for this plat, ALREADY RENDERED. They are a
+   * node rather than card props because this component is synchronous and the
+   * cards read the DAL. They mount inside this section for the reason their own
+   * header states: a plat page carries ONE market section, and a second headed
+   * block of charts would be a second one.
    */
   charts?: ReactNode
 }
 
-export function SubdivisionSalesHistory({ displayName, history, stats, cityName, charts }: Props) {
-  const hasHistory = history.length > 0
-  const statCells = subdivisionCacheStatCells(stats)
-  if (!hasHistory && statCells.length === 0) return null
+export function SubdivisionSalesHistory({ displayName, history, cityName, chart, charts }: Props) {
+  if (history.length === 0) return null
+
+  // COUNTS ONLY, STRUCTURALLY. Every year's median goes through the registry
+  // publisher, which withholds at plat grain: 515 of 680 Bend plats never reach
+  // ten detached sales in 36 months, and this series is an MLS SubdivisionName
+  // join rather than place_membership, so a median of it is not a fact. The
+  // publisher is CALLED rather than assumed, so the day the registry lets a plat
+  // publish a price this is where it arrives instead of a line someone has to
+  // remember to change.
+  const priceMayPublish = history.some(
+    (row) => publishSubdivisionClosedPrice(row.medianClosePrice) != null,
+  )
 
   const { openable, outsideClosed, outsideYears } = splitByExplorerRange(history)
-  const totalClosed = history.reduce((sum, r) => sum + r.closedCount, 0)
-  const firstYear = hasHistory ? history[history.length - 1].year : null
-  const rows = openable.slice(0, MAX_YEAR_ROWS)
+
+  const rows: V3LedgerFigureRow[] = []
+  for (const year of openable.slice(0, MAX_YEAR_ROWS)) {
+    rows.push({
+      href: historyYearHref(year.year, cityName),
+      when: v3Text(String(year.year)),
+      what: v3Text('Single-family closings'),
+      value: v3Text(year.closedCount.toLocaleString('en-US')),
+      id: String(year.year),
+    })
+  }
+
+  // The totals cover EVERY year the RPC returned, including the years with no row.
+  const totalClosed = history.reduce((sum, row) => sum + row.closedCount, 0)
+  const firstYear = history[history.length - 1]?.year ?? null
+  const sinceBit = firstYear != null ? ` since ${firstYear}` : ''
+  const homesBit =
+    totalClosed === 1
+      ? '1 single-family home has closed'
+      : `${totalClosed.toLocaleString('en-US')} single-family homes have closed`
+  const totalsSentence = `${homesBit} in ${displayName}${sinceBit}.`
+
+  // The years with no row, named with their count. The explorer's range is the
+  // reason, and it is read from the same constants the door is built from.
   const outsideBit =
     outsideClosed === 1 ? '1 closing' : `${outsideClosed.toLocaleString('en-US')} closings`
   const outsideYearBit = outsideYears === 1 ? 'one year' : `${outsideYears} years`
+  const rangeBit = `The explorer runs from ${HISTORY_MIN_YEAR} to ${HISTORY_MAX_YEAR}`
 
-  const cellPad = '12px 16px'
-  const numCell: CSSProperties = {
-    padding: cellPad,
-    textAlign: 'right',
-    fontVariantNumeric: 'tabular-nums',
-    whiteSpace: 'nowrap',
+  const [first, ...rest] = rows
+  const explorerAction = {
+    label: v3Text('Closed sales explorer'),
+    href: HISTORY_PATH,
+    variant: 'ghost' as const,
+  }
+
+  const note =
+    outsideClosed > 0
+      ? `${totalsSentence} Each row opens the Central Oregon closed-sales explorer at that year, ` +
+        `which covers a wider area than this plat. ${rangeBit}, so the ${outsideBit} recorded here ` +
+        `outside those years are in the total above and have no row.`
+      : `${totalsSentence} Each row opens the Central Oregon closed-sales explorer at that year, ` +
+        `which covers a wider area than this plat.`
+
+  const ledger = !first ? (
+    <V3Ledger
+      id="sales-history"
+      eyebrow={v3Text(`${displayName} · Sales history`)}
+      heading={v3Text(chart ? 'Sales by year' : `Closed sales in ${displayName}`)}
+      note={v3Text(`${totalsSentence} They fall in ${outsideYearBit} of closings.`)}
+      rows={[]}
+      emptyMessage={v3Text(
+        `${rangeBit}, and every closing recorded in ${displayName} is outside those years, so no ` +
+          `row here has a year to open.`,
+      )}
+      source={v3Text(salesHistoryTrace(displayName, priceMayPublish))}
+      action={chart ? undefined : explorerAction}
+    />
+  ) : (
+    <V3Ledger
+      id="sales-history"
+      eyebrow={v3Text(`${displayName} · Sales history`)}
+      heading={v3Text(chart ? 'Sales by year' : `Closed sales in ${displayName}`)}
+      note={v3Text(note)}
+      rows={[first, ...rest]}
+      source={v3Text(salesHistoryTrace(displayName, priceMayPublish))}
+      action={chart ? undefined : explorerAction}
+    />
+  )
+
+  if (!chart) {
+    return charts ? (
+      <>
+        {ledger}
+        {charts}
+      </>
+    ) : (
+      ledger
+    )
+  }
+
+  const closedFigure: V3InstrumentFigure = {
+    value: v3Text(totalClosed.toLocaleString('en-US')),
+    label: v3Text(totalClosed === 1 ? 'closed sale on record' : 'closed sales on record'),
+    href: HISTORY_PATH,
   }
 
   return (
-    <section className="section" id="sales-history" aria-label="Sales history">
-      <div className="wrap">
-        <div className="sec-head" style={{ borderColor: 'var(--navy)' }}>
-          <span className="sec-index">{displayName} {'·'} Sales history</span>
-          <h2 className="sec-title display">Sales history</h2>
-        </div>
-
-        {hasHistory ? (
-          <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '42rem', margin: '0 0 1.5rem' }}>
-            {totalClosed.toLocaleString('en-US')} single-family {totalClosed === 1 ? 'home has' : 'homes have'} closed under the MLS plat name {displayName}
-            {firstYear != null ? ` since ${firstYear}` : ''}.
-          </p>
-        ) : null}
-
-        {stats && statCells.length > 0 ? (
-          <div style={{ margin: '0 0 2rem' }}>
-            <p className="eyebrow" style={{ margin: '0 0 .75rem' }}>
-              {PERIOD_LABEL[stats.periodType]}
-            </p>
-            <dl
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '2rem',
-                margin: 0,
-              }}
-            >
-              {statCells.map((cell) => (
-                <div key={cell.label}>
-                  <dt style={{ fontSize: '.72rem', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--navy-70)' }}>
-                    {cell.label}
-                  </dt>
-                  <dd style={{ margin: '.25rem 0 0', fontSize: '1.4rem', fontVariantNumeric: 'tabular-nums' }}>
-                    {cell.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        ) : null}
-
-        {charts}
-
-        {hasHistory ? (
-          <div style={{ overflowX: 'auto', marginTop: '2rem' }}>
-            <table
-              style={{
-                width: '100%',
-                maxWidth: '42rem',
-                borderCollapse: 'collapse',
-                fontSize: '.95rem',
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--navy)' }}>
-                  <th scope="col" style={{ padding: cellPad, textAlign: 'left', fontWeight: 600 }}>
-                    Year
-                  </th>
-                  <th scope="col" style={{ padding: cellPad, textAlign: 'right', fontWeight: 600 }}>
-                    Closed sales
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.year} style={{ borderBottom: '1px solid rgba(16,39,66,0.08)' }}>
-                    <td style={{ padding: cellPad, fontVariantNumeric: 'tabular-nums' }}>
-                      <Link
-                        href={historyYearHref(r.year, cityName)}
-                        style={{ color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px' }}
-                      >
-                        {r.year}
-                      </Link>
-                    </td>
-                    <td style={numCell}>{r.closedCount.toLocaleString('en-US')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-
-        <p style={{ fontSize: '.8rem', color: 'var(--navy-70)', margin: '1.25rem 0 0', maxWidth: '42rem' }}>
-          {SUBDIVISION_YEARLY_HISTORY_NOTE}
-          {outsideYears > 0
-            ? ` ${outsideBit} across ${outsideYearBit} sit outside the closed-sales explorer (from ${HISTORY_MIN_YEAR} to ${HISTORY_MAX_YEAR}) and are counted above, not linked.`
-            : ''}{' '}
-          Source: Oregon Data Share via Ryan Realty.
-        </p>
-      </div>
-    </section>
+    <>
+      <V3Instrument
+        id="sales-history-chart"
+        level={2}
+        eyebrow={v3Text(`${displayName} · Sales history`)}
+        headline={v3Text(`Closed sales in ${displayName}`)}
+        figures={[closedFigure]}
+        source={v3Text(salesHistoryTrace(displayName, priceMayPublish))}
+        chart={chart}
+        action={explorerAction}
+      />
+      {ledger}
+      {charts}
+    </>
   )
 }

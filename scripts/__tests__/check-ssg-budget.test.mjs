@@ -84,7 +84,17 @@ describe('check-ssg-budget', () => {
     reset()
     const file = join(SANDBOX, SUB_PAGE)
     const src = readFileSync(file, 'utf8')
-    writeFileSync(file, src.replace('generateStaticParams', 'generateStaticParamsRetired'))
+    // Target the EXPORT, not the first mention. A route's header paragraph
+    // names generateStaticParams in prose (the plat page's does, describing the
+    // contract it carries across), and a bare first-occurrence replace renamed
+    // that sentence while leaving the real export in place — so the gate
+    // correctly passed and this test read the pass as a miss.
+    const retired = src.replace(
+      /export async function generateStaticParams/,
+      'export async function generateStaticParamsRetired',
+    )
+    expect(retired).not.toBe(src)
+    writeFileSync(file, retired)
     const r = run()
     expect(r.code).toBe(1)
     expect(r.out).toContain('no generateStaticParams')

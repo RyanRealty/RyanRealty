@@ -15,7 +15,7 @@
  */
 
 import type { V3QuietItem } from '@/components/site/v3'
-import type { PlaceContext } from '@/lib/data/geo/resolvePlaceContext'
+import type { PlaceContext, PlaceNode } from '@/lib/data/geo/resolvePlaceContext'
 import type { LifestyleNearItem } from '@/lib/explore/lifestyle-near'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { resortQuietItems } from '@/app/communities/_v3/resort-doors'
@@ -29,8 +29,14 @@ export type EdgeInput = {
   placeContext: PlaceContext
   lifestyleItems: readonly LifestyleNearItem[]
   peerPlats: ReadonlyArray<{ name: string, href: string }>
-  /** Place-filtered Homes URL for this plat (city + subdivision slug). */
-  browseHref: string
+  /**
+   * Place-filtered Homes URL for this plat (city + subdivision slug), as
+   * publishPlaceBrowseHref returned it. NULL when that publisher refused the
+   * path, and a null browse edge is DROPPED rather than defaulted to the
+   * regional index: a door labelled with a plat name that opens every home in
+   * Central Oregon is the defect ci:publish-place-browse exists for.
+   */
+  browseHref: string | null
   /** Place-filtered Market URL for this plat. */
   marketHref: string
   /** This plat's own path. The valuation origin. */
@@ -60,9 +66,11 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
 
   const seen = new Set<string>()
   const edges: V3QuietItem[] = []
-  const push = (label: string, href: string) => {
+  const push = (label: string, href: string | null | undefined) => {
     if (label.trim().length === 0) return
-    if (href.trim().length === 0) return
+    // A null href is a door the publisher refused. Dropping the edge is the
+    // point: the alternative is a plat-named link into regional inventory.
+    if (href == null || href.trim().length === 0) return
     if (seen.has(href)) return
     seen.add(href)
     edges.push({ label, href })
@@ -79,7 +87,20 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
     for (const item of lifestyleItems) push(`${item.name} · ${milesLabel(item.distanceMiles)}`, item.href)
   }
 
-  for (const parent of placeContext.parents) push(parent.label, parent.href)
+  // EVERY DOOR SAYS WHAT IT OPENS. A plat inside Sunriver has a Sunriver
+  // COMMUNITY parent and a Sunriver CITY parent, two real and different pages,
+  // and pushing both under the bare label rendered two adjacent links reading
+  // "Sunriver". The node already carries its own type, so each label names the
+  // grain it opens and a reader can tell the two apart.
+  const PARENT_NOUN: Record<PlaceNode['type'], string> = {
+    city: 'city',
+    neighborhood: 'neighborhood',
+    community: 'community',
+    subdivision: 'plat',
+  }
+  for (const parent of placeContext.parents) {
+    push(`${parent.label} ${PARENT_NOUN[parent.type]}`, parent.href)
+  }
   if (resortSlug && resortLabel) push(`${resortLabel} community`, `/communities/${resortSlug}`)
   if (citySlug && cityName !== 'Central Oregon') push(`${cityName} homes`, `/cities/${citySlug}`)
 
