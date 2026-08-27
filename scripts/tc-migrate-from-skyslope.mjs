@@ -81,7 +81,9 @@ async function verify() {
     const { count, error } = await supabase.from(t).select('*', { count: 'exact', head: true })
     console.log(`${t.padEnd(28)} ${error ? 'ERR ' + error.message : count}`)
   }
+  // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
   const { data: missing } = await supabase.from('tc_documents').select('id', { count: 'exact', head: false }).is('storage_path', null).limit(5)
+  // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
   const { count: missingCount } = await supabase.from('tc_documents').select('*', { count: 'exact', head: true }).is('storage_path', null)
   console.log(`docs without binary: ${missingCount}${missing?.length ? ' (sample ids: ' + missing.map((m) => m.id).join(', ') + ')' : ''}`)
 }

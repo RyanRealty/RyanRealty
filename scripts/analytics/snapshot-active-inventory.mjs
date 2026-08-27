@@ -67,6 +67,7 @@ const computedAt = new Date().toISOString()
 const byCity = []
 
 for (const city of cities) {
+  // stat-source-ok: writes analytics_inventory_snapshot, which no surface reads today. If anything ever renders this table, this count must move to lib/data/ first.
   const { count, error } = await sb
     .from('listings')
     .select('*', { count: 'exact', head: true })

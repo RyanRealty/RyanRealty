@@ -61,13 +61,16 @@ async function main() {
     process.exit(1)
   }
 
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: paulPeople } = await sb
     .from('crm_people')
     .select('id', { count: 'exact', head: true })
     .eq('assigned_broker', 'paul')
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: allPeople } = await sb
     .from('crm_people')
     .select('id', { count: 'exact', head: true })
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: unmappedPeople } = await sb
     .from('crm_people')
     .select('id', { count: 'exact', head: true })

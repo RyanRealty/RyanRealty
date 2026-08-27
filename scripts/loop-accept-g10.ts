@@ -42,6 +42,7 @@ async function main() {
     error: eventErr?.message ?? sessionErr?.message ?? null,
   }
   const after = await readJoinConversionStats(sb)
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: convertRows } = await sb
     .from('visitor_events')
     .select('id', { count: 'exact', head: true })

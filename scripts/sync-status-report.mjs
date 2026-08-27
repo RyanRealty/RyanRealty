@@ -99,7 +99,9 @@ async function countListingHistoryForReport(supabaseClient) {
     }
   }
   return countWithFallback(
+    // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
     () => supabaseClient.from('listing_history').select('listing_key', { count: 'exact', head: true }),
+    // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
     () => supabaseClient.from('listing_history').select('listing_key', { count: 'planned', head: true }),
     'count listing_history'
   )
@@ -118,12 +120,14 @@ async function countListingsMissingBothDatesForReport(supabaseClient) {
   }
   return countWithFallback(
     () =>
+      // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
       supabaseClient
         .from('listings')
         .select('ListingKey', { count: 'exact', head: true })
         .is('ListDate', null)
         .is('OnMarketDate', null),
     () =>
+      // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
       supabaseClient
         .from('listings')
         .select('ListingKey', { count: 'planned', head: true })
@@ -231,6 +235,7 @@ function summarizeStrictVerifyRuns(runs, terminalStrictBacklog) {
 
 async function byStatus(pattern) {
   const base = () =>
+    // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
     supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).ilike('StandardStatus', pattern)
   const [totalRes, finalizedRes, verifiedRes] = await Promise.all([
     countMaybe(() => base(), `count total status ilike ${pattern}`),
@@ -274,16 +279,20 @@ async function main() {
     activityEventsRes,
   ] = await Promise.all([
     countWithFallback(
+      // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
       () => supabase.from('listings').select('ListingKey', { count: 'exact', head: true }),
+      // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
       () => supabase.from('listings').select('ListingKey', { count: 'planned', head: true }),
       'count total listings'
     ),
     countListingHistoryForReport(supabase),
     countMaybe(
+      // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
       () => supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_finalized', true),
       'count history_finalized'
     ),
     countMaybe(
+      // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
       () => supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('history_verified_full', true),
       'count history_verified_full'
     ),
@@ -318,6 +327,7 @@ async function main() {
     supabase.from('sync_state').select('last_delta_sync_at, updated_at').eq('id', 'default').maybeSingle(),
     countMaybe(
       () =>
+        // stat-source-ok: sync ops report, read by us to see whether the feed is healthy. Never rendered to a person outside the shop.
         supabase.from('listings').select('ListingKey', { count: 'exact', head: true }).eq('is_finalized', false),
       'count listings is_finalized false'
     ),

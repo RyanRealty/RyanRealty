@@ -110,6 +110,7 @@ async function main() {
     return Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n)
   }
 
+  // stat-source-ok: the HTML this builds shows an example SQL query as documentation for a human to run by hand. Nothing here executes it, and no figure in the report comes from it.
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>

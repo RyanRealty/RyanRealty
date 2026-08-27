@@ -74,6 +74,7 @@ async function main() {
     }
   }
 
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: closedDeals } = await sb
     .from('tc_deals')
     .select('id', { count: 'exact', head: true })

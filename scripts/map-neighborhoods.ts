@@ -223,6 +223,7 @@ async function main() {
   // Let me do it the JS way for now — pull all Bend properties with lat/lng, check containment in PostGIS via RPC.
 
   // We'll create the RPC function inline if it doesn't exist
+  // stat-source-ok: prints SQL for a human to paste into the SQL editor; this script does not execute it or publish a figure.
   const rpcSQL = `
 CREATE OR REPLACE FUNCTION map_properties_to_neighborhood(
   p_neighborhood_id uuid,
@@ -261,6 +262,7 @@ $$;
   `.trim()
 
   // Also create a function to map communities based on which neighborhood has the most listings
+  // stat-source-ok: prints SQL for a human to paste into the SQL editor; this script does not execute it or publish a figure.
   const communityRpcSQL = `
 CREATE OR REPLACE FUNCTION map_communities_to_neighborhoods(
   p_city_id uuid,
@@ -450,6 +452,7 @@ async function runSpatialMapping(
 function outputManualSQL(neighborhoodMap: Map<string, string>) {
   console.log(`── Manual SQL (run in Supabase SQL Editor if RPCs aren't deployed) ──\n`)
   console.log(`-- After applying the migration, run this to map all properties:`)
+  // stat-source-ok: prints SQL for a human to paste into the SQL editor; this script does not execute it or publish a figure.
   console.log(`
 -- Map properties to neighborhoods using PostGIS
 UPDATE properties p

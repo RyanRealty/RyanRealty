@@ -215,6 +215,7 @@ async function printStatusCounts(): Promise<void> {
   const statuses = ['Active', 'Pending', 'Closed', 'Expired', 'Withdrawn', 'Canceled']
   const counts: Record<string, number | string> = {}
   for (const s of statuses) {
+    // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
     const { count, error } = await sb
       .from('listings')
       .select('ListNumber', { count: 'exact', head: true })

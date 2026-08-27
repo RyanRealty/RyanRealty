@@ -243,6 +243,7 @@ async function writeSnapshot() {
       'lives in the gate script, so refreshing this file can never loosen the policy. ' +
       'Refresh with: node scripts/gis/import-ode-school-districts.mjs --snapshot',
     query:
+      // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
       "select geo_type, source, count(*) from public.boundaries group by 1,2 -- read here via PostgREST select=geo_type,source (paged 1000); publisher = source split on ' — ' / ' (' / ';'",
     generatedAt: new Date().toISOString(),
     totalRows: rows.length,

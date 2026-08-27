@@ -21,6 +21,7 @@ async function main() {
     process.exit(2)
   }
   const sb = createClient(url, key)
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count, error: countErr } = await sb
     .from('meta_audience_log')
     .select('id', { count: 'exact', head: true })

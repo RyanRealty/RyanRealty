@@ -344,6 +344,7 @@ async function main() {
     console.log('G7 now depends on G1')
   }
 
+  // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
   const { count } = await sb.from('loop_work_nodes').select('id', { count: 'exact', head: true })
   console.log(`work graph total nodes: ${count}`)
 }

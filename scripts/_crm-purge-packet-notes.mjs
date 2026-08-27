@@ -66,5 +66,6 @@ for (let i = 0; i < ids.length; i += 500) {
 }
 
 // verify none remain
+// stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
 const { count } = await sb.from('crm_timeline').select('id', { count: 'exact', head: true }).eq('kind', 'note').like('body', MATCH)
 console.log(`\ndeleted ${deleted}. remaining packet-log notes: ${count ?? 0}. restore: node scripts/_crm-purge-packet-notes.mjs --restore ${backupPath}`)

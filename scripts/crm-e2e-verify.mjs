@@ -43,18 +43,22 @@ const minutesAgo = (iso) => (Date.now() - new Date(iso).getTime()) / 60000;
 
 // ── 1. DATA LAYER ──────────────────────────────────────────────────────────
 await tryCheck('data.people-count', async () => {
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count } = await sb.from('crm_people').select('id', { count: 'exact', head: true });
   check('data.people-count', count >= 18000 ? 'PASS' : 'FAIL', `${count} contacts`);
 });
 await tryCheck('data.contact-points', async () => {
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count } = await sb.from('crm_contact_points').select('id', { count: 'exact', head: true });
   check('data.contact-points', count >= 35000 ? 'PASS' : 'FAIL', `${count} points (SMS/email routing surface)`);
 });
 await tryCheck('data.timeline', async () => {
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count } = await sb.from('crm_timeline').select('id', { count: 'exact', head: true });
   check('data.timeline', count >= 60000 ? 'PASS' : 'FAIL', `${count} timeline entries`);
 });
 await tryCheck('data.suppressions', async () => {
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count } = await sb.from('crm_suppressions').select('id', { count: 'exact', head: true });
   check('data.suppressions', count >= 5000 ? 'PASS' : 'FAIL', `${count} suppression rows`);
 });
@@ -109,6 +113,7 @@ await tryCheck('coverage.auto-enroll', async () => {
   let uncovered = 0;
   for (const p of people ?? []) {
     if ((p.tags ?? []).includes('compliance:hard-stop')) continue;
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     const { count } = await sb.from('crm_sequence_enrollments').select('id', { count: 'exact', head: true }).eq('person_id', p.id).in('sequence_id', seqIds);
     if ((count ?? 0) === 0) uncovered++;
   }
@@ -137,6 +142,7 @@ await tryCheck('data.community-list-undercount', async () => {
     bad.length === 0 ? `${(data.signals?.geoSmartLists ?? []).length} geo lists checked` : bad.map((a) => a.message).join(' | ').slice(0, 160));
 });
 await tryCheck('coverage.engine-stalls', async () => {
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count } = await sb
     .from('crm_sequence_enrollments')
     .select('id', { count: 'exact', head: true })
@@ -145,6 +151,7 @@ await tryCheck('coverage.engine-stalls', async () => {
   check('coverage.engine-stalls', (count ?? 0) === 0 ? 'PASS' : 'FAIL', `${count} enrollments overdue >3h`);
 });
 await tryCheck('coverage.owner-resolution', async () => {
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count } = await sb
     .from('crm_people')
     .select('id', { count: 'exact', head: true })
@@ -303,7 +310,9 @@ await tryCheck('wiring.static', async () => {
 await tryCheck('alerts.relay', async () => {
   const tenMinAgo = new Date(Date.now() - 10 * 60000).toISOString();
   const [{ count: stuck }, { count: failedDay }] = await Promise.all([
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     sb.from('crm_broker_alerts').select('id', { count: 'exact', head: true }).eq('status', 'pending').lt('created_at', tenMinAgo),
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     sb.from('crm_broker_alerts').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('created_at', new Date(Date.now() - 86400e3).toISOString()),
   ]);
   check('alerts.relay', (stuck ?? 0) > 0 ? 'FAIL' : (failedDay ?? 0) > 0 ? 'WARN' : 'PASS', `${stuck ?? 0} stuck >10m (relay dead?), ${failedDay ?? 0} failed in 24h`);

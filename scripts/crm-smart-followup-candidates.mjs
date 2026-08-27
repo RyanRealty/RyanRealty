@@ -45,11 +45,13 @@ for (const p of candidates ?? []) {
 
   const quietDays = QUIET_DAYS[tierOf(tags)];
   const since = new Date(Date.now() - quietDays * 86400e3).toISOString();
+  // stat-source-ok: operational gate on who is eligible for a follow-up, not a figure anybody reads.
   const { count: recentOutbound } = await sb
     .from('crm_timeline').select('id', { count: 'exact', head: true })
     .eq('person_id', p.id).in('kind', ['email_out', 'sms_out', 'note', 'call']).gte('ts', since);
   if ((recentOutbound ?? 0) > 0) { skip('recent-outbound'); continue; }
 
+  // stat-source-ok: operational gate on who is eligible for a follow-up, not a figure anybody reads.
   const { count: suppressed } = await sb
     .from('crm_suppressions').select('id', { count: 'exact', head: true })
     .eq('person_id', p.id).eq('channel', 'all');

@@ -44,6 +44,7 @@ if (!url?.trim() || !key?.trim()) {
 const supabase = createClient(url, key)
 
 async function countClosedMissingClose() {
+  // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
   const { count, error } = await supabase
     .from('listings')
     .select('ListingKey', { count: 'exact', head: true })
@@ -54,6 +55,7 @@ async function countClosedMissingClose() {
 }
 
 async function countMissingOlp() {
+  // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
   const { count, error } = await supabase
     .from('listings')
     .select('ListingKey', { count: 'exact', head: true })

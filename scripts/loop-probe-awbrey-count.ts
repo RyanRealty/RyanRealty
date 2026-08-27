@@ -44,6 +44,7 @@ async function main() {
       .eq('geo_slug', GEO)
       .eq('property_type', 'A')
       .maybeSingle(),
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     sb
       .from('listing_tile_mv')
       .select('listing_key, standard_status, property_type, property_sub_type, list_price', { count: 'exact', head: true })
@@ -51,6 +52,7 @@ async function main() {
       .eq('property_type', 'A')
       .eq('property_sub_type', 'Single Family Residence')
       .eq('boundary_neighborhood', LABEL),
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     sb
       .from('listing_boundary_xref_mv')
       .select('listing_key, standard_status, property_sub_type', { count: 'exact' })
@@ -59,6 +61,7 @@ async function main() {
       .in('standard_status', PUBLIC_ACTIVE_STATUSES)
       .eq('property_type', 'A')
       .eq('property_sub_type', 'Single Family Residence'),
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     sb
       .from('listing_boundary_xref_mv')
       .select('listing_key, standard_status, property_type', { count: 'exact' })
@@ -66,6 +69,7 @@ async function main() {
       .eq('geo_slug', GEO)
       .eq('standard_status', 'Active')
       .in('property_type', ['A', 'B', 'C']),
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     sb
       .from('listing_boundary_xref_mv')
       .select('listing_key, standard_status', { count: 'exact' })

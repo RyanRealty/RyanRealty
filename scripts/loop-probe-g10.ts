@@ -19,16 +19,19 @@ async function main() {
   const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   const [joinLike, joinConvert, recruitTagged, ledgerOpen] = await Promise.all([
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     sb
       .from('visitor_events')
       .select('id,session_id,event_type,event_at,page_url', { count: 'exact' })
       .ilike('page_url', '%/join%')
       .order('event_at', { ascending: false })
       .limit(20),
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     sb
       .from('visitor_events')
       .select('id', { count: 'exact', head: true })
       .eq('event_type', 'join_convert'),
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     sb
       .from('crm_people')
       .select('id', { count: 'exact', head: true })

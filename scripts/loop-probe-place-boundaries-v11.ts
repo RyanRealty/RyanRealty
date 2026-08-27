@@ -30,6 +30,7 @@ async function main() {
     .select('geo_type,geo_slug,geo_label')
     .in('geo_slug', SLUGS)
 
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: subdivisionCount, error: countErr } = await sb
     .from('boundaries')
     .select('geo_slug', { count: 'exact', head: true })

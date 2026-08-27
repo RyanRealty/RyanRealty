@@ -92,5 +92,6 @@ for (const deal of deals ?? []) {
   }
 }
 
+// stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
 const { count } = await supabase.from('tc_deal_contacts').select('*', { count: 'exact', head: true })
 console.log(`backfill processed ${inserted} contact rows across ${dealsTouched} deals; tc_deal_contacts now holds ${count}`)

@@ -69,6 +69,7 @@ if (idxErr) {
   process.exit(1)
 }
 
+// stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
 const { count } = await sb.from('sale_pricing_facts').select('listing_key', { count: 'exact', head: true })
 console.log(JSON.stringify({ ok: true, done, facts: count, indexes: idx, upserted: total, concessionsUpdated }))
 if (!done) process.exit(2)

@@ -142,6 +142,7 @@ async function main() {
 
   const supabase = createClient(supabaseUrl, serviceKey)
 
+  // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
   const { count: cohortCount, error: countErr } = await supabase
     .from('listings')
     .select('ListNumber', { count: 'exact', head: true })

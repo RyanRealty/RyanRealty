@@ -52,18 +52,21 @@ async function main() {
       check(`person ${id} suppressed all-channels`, suppressed.has(id), `suppression rows: ${JSON.stringify(sup)}`)
     }
 
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     const { count: tasks } = await sb
       .from('crm_tasks')
       .select('id', { count: 'exact', head: true })
       .in('person_id', ids)
     check('zero wake tasks', (tasks ?? 0) === 0, `crm_tasks rows: ${tasks}`)
 
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     const { count: enrollments } = await sb
       .from('crm_sequence_enrollments')
       .select('id', { count: 'exact', head: true })
       .in('person_id', ids)
     check('zero sequence enrollments', (enrollments ?? 0) === 0, `enrollment rows: ${enrollments}`)
 
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     const { count: visible } = await sb
       .from('crm_people')
       .select('id', { count: 'exact', head: true })
@@ -75,10 +78,12 @@ async function main() {
 
   // Flow artifacts (present only after Flow Prover actually ran a submit —
   // reported as observations, not failures, when absent).
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: newsletterRows } = await sb
     .from('newsletter_subscribers')
     .select('id', { count: 'exact', head: true })
     .ilike('email', '%fleet-test%')
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: alertRows } = await sb
     .from('listing_alerts')
     .select('id', { count: 'exact', head: true })

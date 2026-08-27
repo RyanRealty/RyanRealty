@@ -48,6 +48,7 @@ async function main() {
   const listings = await Promise.all(
     slugs.map(async (slug) => {
       const name = slug.replace(/-/g, ' ')
+      // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
       const { count, error } = await sb
         .from('listings')
         .select('ListingKey', { count: 'exact', head: true })

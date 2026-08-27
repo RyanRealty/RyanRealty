@@ -519,6 +519,7 @@ async function printTotals() {
   console.log('\n=== legal_corpus totals (all corpus_versions) ===')
   let total = 0
   for (const s of ['ors', 'oar', 'matrix']) {
+    // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
     const { count, error } = await supabase.from('legal_corpus').select('id', { count: 'exact', head: true }).eq('source', s)
     if (error) {
       console.warn(`  ${s}: count error — ${error.message}`)

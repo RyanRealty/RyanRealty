@@ -104,6 +104,7 @@ async function main() {
   // Layer 3: brain emissions
   const counts = {}
   for (const status of ['pending', 'in_production', 'ready', 'needs_changes', 'approved', 'executed', 'killed']) {
+    // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
     const { count } = await supabase
       .from('marketing_brain_actions')
       .select('id', { count: 'exact', head: true })

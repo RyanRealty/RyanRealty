@@ -78,6 +78,7 @@ for (const row of rows.filter(r => r.text).slice(0, 8)) console.log(`  ${row.rat
 
 if (APPLY) {
   const REPLACE = process.argv.includes('--replace')
+  // stat-source-ok: backfill/ingest progress count, used to size or verify the run. Never published.
   const { count } = await sb.from('reviews').select('id', { count: 'exact', head: true }).eq('source', 'google')
   if ((count ?? 0) > 0 && !REPLACE) {
     console.log(`\n${count} google reviews already present — skipping (pass --replace to refresh).`)

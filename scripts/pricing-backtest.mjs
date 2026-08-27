@@ -25,6 +25,7 @@ const SAMPLE = Number(process.env.PRICING_BACKTEST_N || 200)
 const FACT_SELECT =
   'listing_key, list_number, street_number, street_name, city, city_slug, subdivision, subdivision_norm, latitude, longitude, product_class, beds, baths, sqft, year_built, lot_acres, lot_class, story_class, water_class, sewer_class, hoa_class, close_price, close_date, concessions_amount, concessions_yn, original_ask, last_ask, days_to_offer, cdom, drop_count, close_ppsf, photo_url, public_remarks, new_construction_yn, flag_new_construction'
 
+// stat-source-ok: internal calibration metric for the pricing backtest, never published.
 const { count: factsN } = await sb.from('sale_pricing_facts').select('listing_key', { count: 'exact', head: true })
 if (!factsN || factsN < 500) {
   console.error('sale_pricing_facts has', factsN, 'rows — backfill first')

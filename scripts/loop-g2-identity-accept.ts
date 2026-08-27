@@ -24,13 +24,16 @@ async function main() {
   }
   const sb = createClient(url, key)
 
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: beforeTotal } = await sb
     .from('visitor_identity_map')
     .select('rr_vid', { count: 'exact', head: true })
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: beforeMapped } = await sb
     .from('visitor_identity_map')
     .select('rr_vid', { count: 'exact', head: true })
     .not('crm_person_id', 'is', null)
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: fubOnly } = await sb
     .from('visitor_identity_map')
     .select('rr_vid', { count: 'exact', head: true })
@@ -139,9 +142,11 @@ async function main() {
     ),
   )
 
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: afterTotal } = await sb
     .from('visitor_identity_map')
     .select('rr_vid', { count: 'exact', head: true })
+  // stat-source-ok: verification harness assertion, compared against an expectation in this script. Never published.
   const { count: afterMapped } = await sb
     .from('visitor_identity_map')
     .select('rr_vid', { count: 'exact', head: true })
