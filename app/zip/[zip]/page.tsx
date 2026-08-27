@@ -453,6 +453,20 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
         ? `${activeCount.toLocaleString('en-US')} active ${listingNoun} ${activeCount === 1 ? 'listing' : 'listings'} in ${zip}.`
         : null
 
+  // THE QUESTION HEADING STAYS ON EVERY PLACE GRAIN (Matt, 2026-08-26). The
+  // KB HUD templated `Is ${geoName} a buyer's or seller's market?` here with
+  // geoName `ZIP ${zip}`, and the v3 migration kept only the answer — which
+  // made this the one grain whose market section no longer led with the
+  // question a reader actually types. In v3 idiom the question IS the market
+  // Instrument's headline, and the verdict sentence directly beneath it is
+  // the answer. A question with no answer under it is worse than a label
+  // (§0), so when no verdict is publishable the headline falls back to the
+  // homes-for-sale form. Family consistency is gated: ci:market-question.
+  const marketHeadline =
+    verdict && mosText != null
+      ? `Is ZIP ${zip} a buyer's or seller's market?`
+      : `Homes for sale in ${zip}`
+
   // ── THE FIELD ────────────────────────────────────────────────────────────
   const fieldItems = zipFieldItems(tiles, zip)
   const fieldCaption = zipFieldCaption(zip, fieldItems.length)
@@ -624,7 +638,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
             id="market-report"
             level={1}
             eyebrow={v3Text(`${zip} · ${area} · Oregon`)}
-            headline={v3Text(`Homes for sale in ${zip}`)}
+            headline={v3Text(marketHeadline)}
             note={verdictSentence ? v3Text(verdictSentence) : undefined}
             figures={[firstMarketFigure, ...restMarketFigures]}
             chart={scopedChart}

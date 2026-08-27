@@ -75,7 +75,7 @@
     "SmoothScrollProvider (Lenis wrapper; no v3 section is scroll-bound)",
     "KbFooter (replaced by V3Footer)",
     "KbBreadcrumb (replaced by V3Breadcrumb)",
-    "The KB market HUD's question heading, 'Is ZIP {zip} a buyer's or seller's market?' — KbMarketHud templated it from geoName plus a live verdict. The ANSWER survives as the Instrument's caption sentence and as the months-of-supply figure with its methodology and threshold clauses. The question form is templated the same way on all five place grains, so restoring it is a family decision, recorded as open in docs/plans/PUBLIC_PRODUCT/decisions.md, not a per-route one."
+    "The KB market HUD's question heading, 'Is ZIP {zip} a buyer's or seller's market?' — dropped by the 2026-08-26 migration pending a family decision, RESTORED the same day: Matt ruled the question stays on all five place grains. In v3 idiom it is the market Instrument's headline whenever a live verdict exists (the verdict sentence beneath it is the answer), falling back to 'Homes for sale in {zip}' when no verdict is publishable, because a question with no answer under it is worse than a label (§0). Family consistency is gated by ci:market-question (scripts/check-market-question-heading.mjs); the route's exact template is pinned in app/zip/[zip]/page.test.ts."
   ],
   "sectionOrder": [
     "MetadataBlock",

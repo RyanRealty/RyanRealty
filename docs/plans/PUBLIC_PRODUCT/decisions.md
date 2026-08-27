@@ -1035,3 +1035,18 @@ in the same commit as the page.
 local dev server after a while — `/parks/shevlin-park`, untouched, reproduces it, and the
 same code rendered a map earlier in the same session. Restart `next dev` before trusting
 a "the map is missing" observation.
+
+## 2026-08-26 — DECIDED: the market question heading stays, on all five grains
+
+Matt ruled the same day the ZIP entry above flagged it: `Is {place} a buyer's or
+seller's market?` stays on ALL FIVE place grains. The ZIP page is fixed — in v3
+idiom the question is the market Instrument's headline whenever a live verdict
+exists, the verdict sentence beneath it is the answer, and no verdict falls back
+to `Homes for sale in {zip}` (a question with no answer under it is worse than a
+label, §0). The family consistency is now a gate, not prose: `ci:market-question`
+(`scripts/check-market-question-heading.mjs`, in `ci:gates` and the lanes file)
+asserts every grain that renders the market HUD renders the question — via
+KbMarketHud geoName, a v3 question headline, or the visible market FAQ — and pins
+the template inside KbMarketHud and buildMarketFaq. Falsified both ways on the
+ZIP page before shipping. The sibling rebuild of the city, neighborhood, and
+community pages keeps the question under the same ruling and inherits the gate.
