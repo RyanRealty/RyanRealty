@@ -81,9 +81,22 @@ function buildRedirectMap(): Map<string, string> {
   //                     so no single /subdivisions page is the honest canonical;
   //                     the browse pair carries the whole MLS subdivision.
   // Never overwrite a registry- or GIS-derived key: those are canonical.
+  //   campbell-road  -> the county records it as "Campbell Road Subdivision"
+  //                     (CSNUM 16724), a plat NESTED inside First On The Hill
+  //                     Sites — every sampled Campbell Road parcel sits in both.
+  //                     Minting a "Campbell Road" polygon would draw a second
+  //                     shape over ground two recorded plats already own, so the
+  //                     MLS name yields to the plat instead (Matt 2026-08-27,
+  //                     "fold into their parent plats").
+  //   cline-falls-mob-park -> a mobile-home park with 3 unique coordinates, all
+  //                     inside the recorded City Of Cline Falls plat (CSNUM
+  //                     11058). Too thin to be its own boundary; the containing
+  //                     plat is the honest home.
   for (const [alias, dest] of [
     ['the-farm', '/subdivisions/farm-the'],
     ['shevlin-bluffs', '/homes-for-sale/bend/shevlin-bluffs'],
+    ['campbell-road', '/subdivisions/campbell-road-subdivision'],
+    ['cline-falls-mob-park', '/subdivisions/city-of-cline-falls'],
   ] as const) {
     if (!map.has(alias)) map.set(alias, dest)
   }
