@@ -95,10 +95,21 @@
  * and refuses to run if it cannot find them. There is no second copy to drift, and
  * no way for this script to be reading a laxer rule than the one that shipped.
  *
- * IT NEVER OVERTURNS A HUMAN READING. `phase-governance.mjs` demotes links whose
- * document names a phase the plat contradicts, and it runs AFTER the publish
- * scripts precisely because they would re-publish what it demoted. This one skips
- * any link already carrying a phase-governance note, on top of running before it.
+ * IT NEVER OVERTURNS A RULING. A demotion script writes its reason onto the link
+ * and moves it back to review — `phase-governance.mjs` when a document names a
+ * phase the plat contradicts, `foreign-plat` when the instrument turns out to be
+ * about somebody else's association. Both run AFTER the publish scripts precisely
+ * because those scripts select on `pending_review` + `parent` and would re-publish
+ * what was just demoted. Rather than enumerate the demoters — the enumeration is
+ * always one script out of date, and it was: the first run of this script
+ * re-published Mountain View 327-2533 onto `mountain-view-addition`, which is the
+ * bylaws of Mountain View Park Homeowners Association and belongs to neither — this
+ * one publishes ONLY a link whose `review_note` is empty. A note of any kind means
+ * something already ruled on this row, and a stamp is not an argument against a
+ * ruling: the stamp proves the document is the instrument the index filed, and
+ * says nothing about whose plat it governs. Measured: all 86 links this script
+ * cleared on 2026-08-26 had an empty note, so the rule costs nothing and closes
+ * the hazard against every demoter, present and future.
  *
  * A SEPARATE FINDING, not fixed here: seven `place_document` rows for "Sunset
  * West" — and nine rows in all, adding "Forum" and "Sterling Pointe (Phase 2)" —
@@ -224,7 +235,7 @@ const reasons = {
   nameUnconfirmed: 0,
   notBookPage: 0,
   alreadyReadable: 0,
-  phaseGovernanceRuled: 0,
+  alreadyRuled: 0,
 }
 const considered = []
 for (const l of links) {
@@ -237,8 +248,10 @@ for (const l of links) {
   // deliberately, and re-publishing it here would be the ordering bug the
   // pipeline README warns about.
   if (stampRun(d.ocr_text, d.book, d.page)) { reasons.alreadyReadable++; continue }
-  // A human-read chain ruling is never overturned by a machine re-read.
-  if (String(l.review_note || '').startsWith('phase-governance:')) { reasons.phaseGovernanceRuled++; continue }
+  // A ruling already written onto this row is never overturned by a re-read. Any
+  // note at all — phase-governance, foreign-plat, a reviewer's own words — means
+  // something decided this link on evidence a stamp cannot answer.
+  if (String(l.review_note || '').trim()) { reasons.alreadyRuled++; continue }
   considered.push(l)
 }
 const docs = new Map()
@@ -250,7 +263,7 @@ links this script may rule on:  ${considered.length}  (${docs.size} documents)
     text does not name it:              ${reasons.nameUnconfirmed}
     not a book-page record:             ${reasons.notBookPage}
     stored OCR already shows the run:   ${reasons.alreadyReadable}  (book-page-stamp-publish's job)
-    phase-governance has ruled:         ${reasons.phaseGovernanceRuled}`)
+    a ruling is already on the row:     ${reasons.alreadyRuled}`)
 if (!considered.length) process.exit(0)
 
 // --- read the whole document -----------------------------------------------

@@ -246,6 +246,18 @@ All 39 clearances were read against their OCR by hand.
 and refuses to run if it cannot find them. There is no second copy to drift, and no
 way for the deeper read to be applying a laxer bar than the one that shipped.
 
+**A note on the row is a ruling, and a stamp is not an argument against it.** The
+publish scripts select on `pending_review` + `parent`, so a re-run re-publishes
+whatever a demoter just sent back — the ordering hazard this README already
+documents for `phase-governance`. The first run of `deep-stamp-publish` proved the
+hazard is not confined to that one script: it re-published Mountain View 327-2533
+onto `mountain-view-addition`, which is the bylaws of Mountain View Park Homeowners
+Association and belongs to neither plat, and a concurrent `foreign-plat` sweep had
+to demote it again. So this script publishes ONLY a link whose `review_note` is
+empty. Enumerating the demoters would always be one script out of date; a note of
+any kind means something already decided this row on evidence a stamp cannot
+answer. All 86 links it cleared had an empty note, so the rule costs nothing.
+
 ## Identity is not governance
 
 `phase-governance.mjs` rules on those 263 links — 99 published, 164 held here —
