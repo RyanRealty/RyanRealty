@@ -1,128 +1,165 @@
 /**
- * City page — KB (kinetic-brutalist) design, Phase 9 wave 1 of the convergence
- * program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME section library as the
- * homepage (components/site/kb/*), fed CITY-scoped DAL data, never forked
- * (ci:kb-single-source G50). CHROME: Global PublicNav in app/layout.tsx owns the
- * top bar (KbNav from lib/site-nav.ts). This page owns KbFooter only — do not
- * re-mount KbNav. HideChrome is only for the not-found footer edge case / CSS
- * hide if still used. Bend reuses the homepage hero video; other cities use
- * their VERIFIED cityHero photo with a labeled regional fallback.
+ * /cities/[slug] - the city node, on the components/site/v3 barrel.
  *
- * THE PAGE CONTRACT (docs/KB_CONVERGENCE_ROADMAP.md): KB design + SEO for Google &
- * LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/City/Dataset/FAQPage) +
- * tracking (CityPageTracker + section/interaction events). Every figure live (§0).
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 City. First screen is
+ * the Field of this city's houses. Verdict is a caption, never a number hero.
+ * Child neighborhoods and master-plans are doors below the fold. Section order
+ * is the parity contract: design_system/ryan-realty/ui_kits/city/parity.json.
  *
- * Section stack (E3 craft 2026-08-10): breadcrumb · hero (Layer A + city CTAs) ·
- * featured · ticker · map · buyer alerts (mid) · about · market · neighborhoods ·
- * popular · communities · golf · area guide · open houses · activity · SELL ·
- * guides · testimonials · team · other-cities · FAQ · footer.
- * Funnel: inventory first, capture mid-page, convert before exit links.
+ * LEDGER IS THE PATTERN THIS ROUTE SPENDS ITS FIFTH SLOT ON, under the
+ * 2026-08-26 place-family exception (PUBLIC_UI.md §3, Matt). The 2026-08-12
+ * migration deferred V3Ledger to hold the four-of-six cap and deleting the
+ * ledgers deleted six Matt-issued product directives with them: the
+ * designated-neighborhood set (D83), the separate golf and master-planned
+ * section (D85), the city guides (D80), the other-cities exit (D84), the full
+ * communities rail (D88), and the live activity feed (D93). Matt ruled
+ * 2026-08-26 that those directives outrank the rhythm preference on exactly
+ * this family, so the ledgers are back - on the barrel's own Ledger primitive.
+ * The fifth slot is declared in parity.json. No two adjacent sections share a
+ * pattern when every section renders; the residual conditional collisions are
+ * declared there too, the way the plat page declares its own.
  *
- * Parity contract: design_system/ryan-realty/ui_kits/city/parity.json (KB set).
+ * THE MARKET SECTION IS THE LEFTOVER HUD, NOT PULSE (MARKET_TRUTH D19/D26/D78,
+ * all post-2026-08-15 - the reverted draft predates them and was corrected, not
+ * restored). leftoverHudKpis is the one pile: the hero count is hud.active, a
+ * missing cell is omitted, pulse and the stats cache never fill a tile, and
+ * buildMarketFaq is called UNCONDITIONALLY with source 'market-truth' so the
+ * Dataset/FAQPage JSON-LD survives a leftover miss at the cost of one figure,
+ * never the markup (D91). The one verdict derivation: hud.monthsSupply is the
+ * PUBLISHED raw value (publishMonthsOfSupply ran inside leftoverHudKpis),
+ * marketVerdict classifies it, formatMonthsOfSupply displays it, and
+ * buildMarketFaq repeats the same two steps on the same raw value.
+ *
+ * THE MARKET QUESTION STAYS (Matt 2026-08-26, all five place grains): the
+ * market Instrument's level-2 headline is "Is {city} a buyer's or seller's
+ * market?" whenever a verdict exists, with the answer as the section note
+ * directly beneath - the same question KbMarketHud carried, now on the barrel.
+ * With no verdict there is no question (a question with no answer under it is
+ * worse than a label), and the H1 stays the money head term on the Field.
+ *
+ * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
+ * pageMetadata, generateStaticParams over PRIMARY_CITIES with dynamicParams,
+ * revalidate 60, MetadataBlock JSON-LD, a rendered CityPageTracker, and a
+ * rendered V3SectionTracker (page_type derives from the path taxonomy). MetadataBlock stays on the
+ * legacy register (JSON-LD, pinned by ci:ai-structured-data). V3SectionTracker
+ * is a v3 island, not a seventh pattern.
+ *
+ * Invariants, each enforced at its own site:
+ *  1. ABSENT IS NOT ZERO, AND UNTRACED IS NOT PUBLISHED (CLAUDE.md §0). No
+ *     leftover cell means no figure and a stated reason, never a synthesized 0
+ *     under a live-MLS source line. Every ledger publishes a value column only
+ *     when the read behind it succeeded, and drops the column - not the rows -
+ *     when it did not.
+ *  2. ONE POPULATION PER FIGURE, NAMED. The Field caption counts ITS OWN
+ *     listed set (active single-family with a price and a street); the
+ *     Instrument's "detached homes for sale" is the leftover membership count.
+ *     Two counts, two labels, each under its own trace.
+ *  3. ONE PRIMARY PER VIEWPORT, COUNTING VISIBLE FILLED CONTROLS (PUBLIC_UI.md
+ *     §1). The first viewport is the Field; the next tap is a house. The
+ *     Instrument ask sits below the fold. Every Ledger action stays a ghost
+ *     and V3Footer carries no button.
  */
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import {
   getGeoSnapshot,
-  getMarketPulse,
-  getRegionPulse,
-  getPriceHistory,
   getCityListings,
-  getListingTiles,
   getBendNeighborhoodLedger,
-  getCityCommunitySnapshots,
   getAllCitySnapshots,
+  getCityCommunitySnapshots,
   getRecentBlogPosts,
-  getAreaGuideVideo,
+  getPriceHistory,
   getCityDetachedMarket,
   getCityDetachedInventory,
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
-import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
-import { zonedDateKey } from '@/lib/format/date'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import {
+  getPublicDetachedMonthly,
+  leftoverOrCacheMonthly,
+  dropCurrentMonth,
+} from '@/lib/data/market-truth/public-monthly'
+import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { publishSellMedian } from '@/lib/market/publish-median-caption'
-import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { CITY_TILE_FETCH_LIMIT } from '@/lib/market/publish-city-inventory'
-import { isStockPlaceHeroUrl } from '@/lib/market/publish-place-hero'
+import { CITY_PLACE_LIST_CAP } from '@/lib/explore/subdivision-page-extras'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
-import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
-import { getCityMetadataByName } from '@/lib/data/cities/getCityMetadata'
-import { getCityContent, buildDataDrivenCityAbout } from '@/lib/city-content'
+import { getCityContent } from '@/lib/city-content'
 import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
-import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
-import { cityHero } from '@/lib/geo-images'
-import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
-import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
-import { placeHeroLead } from '@/lib/kb/place-hero-lead'
-import { buildYearSeries } from '@/lib/kb/year-series'
-import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
-import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
+import { cityResorts, resortActiveSfrCounts, resortLabelToSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
-import { CITY_HERO_VIDEO, CITY_MARQUEE_COMMUNITIES, CITY_RESORT_LEDGER_IMG, communityVideoUrl } from '@/lib/kb/city-page-config'
-// Row-to-prop shaping shared with the neighborhood + community place pages —
-// one copy, so a fix cannot land on one of the three and drift on the others.
-import {
-  buildActivityItems,
-  buildArticlePosts,
-  buildMapPointFeatures,
-  buildMonthlyTrend,
-  buildOpenHouseItems,
-  buildOtherCityItems,
-  buildTickerItems,
-} from '@/lib/kb/place-sections'
-import { homesForSalePath, slugify } from '@/lib/slug'
+import { CITY_MARQUEE_COMMUNITIES, CITY_RESORT_LEDGER_IMG, communityVideoUrl } from '@/lib/kb/city-page-config'
+// Row shaping shared with the neighborhood + community place pages - one copy, so a
+// fix cannot land on one of the three and drift on the others.
+import { buildActivityItems, buildArticlePosts, buildOtherCityItems } from '@/lib/kb/place-sections'
+import { buildYearSeries } from '@/lib/kb/year-series'
 import { getPlaceLinks } from '@/lib/place-links'
+import { homesForSalePath, slugify } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
-import { buildTimeRails, skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import type { SchemaInput } from '@/lib/site/json-ld'
-import { buildCitySchemas } from './city-schemas'
-import { CityMarketCharts } from './_v3/city-market-charts'
-import { PublicProductTypes } from './PublicProductTypes'
-import { PublicPaceStats } from './PublicPaceStats'
-import { PublicMixStats } from './PublicMixStats'
-import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbAbout } from '@/components/site/kb/KbAbout'
-import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
-// KbListingMap remains in the parity contract; PlaceMapListSplit composes it for dual-pane.
-import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
-import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
-import { CITY_PLACE_LIST_CAP, splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
-import { KbTicker } from '@/components/site/kb/KbTicker.client'
-import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
-import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
-import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
-import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
-import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
-import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
-import { KbActivity } from '@/components/site/kb/KbActivity.client'
-import { KbArticles } from '@/components/site/kb/KbArticles'
-import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
-import { KbTeam } from '@/components/site/kb/KbTeam.client'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
-import { KbPopularSearches } from '@/components/site/kb/KbPopularSearches'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { marketVerdict } from '@/lib/market/classify'
+import { zonedDateKey, formatDate } from '@/lib/format/date'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { skippableRail } from '@/lib/build-phase'
+import {
+  v3Text,
+  V3_ROOT_CLASS,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Ledger,
+  V3PlacePropertyTypes,
+  V3Quiet,
+  V3SectionTracker,
+  type V3ChartCardProps,
+  type V3InstrumentFigure,
+} from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { MarketSources, type MarketSourceKey } from '@/components/site/MarketSources'
-import { FAQBlock } from '@/components/site/FAQBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { kbMoneyFull } from '@/components/site/kb/types'
-import type { KbTownItem, KbCommunityItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
-import { TESTIMONIALS } from '@/lib/testimonials'
-import '@/components/site/kb/kb.css'
+import { coreChartsCard } from '@/components/market/core-charts'
+import { CityAlertSheet } from './_v3/CityAlertSheet.client'
+import { CityHomesField } from './_v3/CityHomesField'
+import { cityFieldItems } from './_v3/city-field-items'
+import { bendNeighborhoodPlaces } from './_v3/city-places'
+import {
+  activityRows,
+  articleRows,
+  cityAboutItems,
+  cityActivityTrace,
+  cityExploreItems,
+  cityFieldCaption,
+  cityFieldTrace,
+  cityMarketTrace,
+  communityRows,
+  leftoverMarketFigures,
+  CITY_PACE_KEYS_ON_THE_HUD,
+  PLACE_COUNT_TRACE,
+  marketAbsenceItems,
+  placeFigureRows,
+  placeMedianChart,
+  type CityCommunityItem,
+  type CityPlaceItem,
+} from './_v3/city-sections'
+import {
+  PLACE_MART_YEAR,
+  cityInstrumentSource,
+  pickPlaceMart,
+  placeMartCompositionChart,
+  placeMartFigures,
+} from './_v3/city-mart'
+import { cityMarketChartCards } from './_v3/city-market-charts'
+import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
+import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
+import { getCoMarketAnnualCity } from '@/lib/data/analytics/getCoMarketAnnualCity'
+import { buildCitySchemas } from './_v3/city-metadata'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   // Seed the primary Central Oregon cities (finite, in-repo). Long-tail city
@@ -134,6 +171,7 @@ export const revalidate = 60
 
 type Props = { params: Promise<{ slug: string }> }
 
+// Metadata - unchanged from the KB page.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
@@ -153,71 +191,96 @@ export default async function CityDetailPage({ params }: Props) {
   if (!snapshot) notFound()
   const cityName = snapshot.geoLabel
   // market_pulse_live + market_stats_cache store city geo_slug SPACE-separated
-  // ("la pine", "powell butte") — normalize for those reads, or multi-word cities
-  // come back stat-dead. Keep the hyphenated `slug` for URLs / cityHero / config.
+  // ("la pine") - normalize for those reads. Market Truth reads take the
+  // hyphenated route slug. Keep `slug` for URLs.
   const geoSlug = canonicalCityCacheSlug(slug)
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
 
+  const isBend = slug === 'bend'
+  const hasResorts = cityResorts(slug).length > 0
+
+  // Data, all through the DAL (G8). The reads the page's own answer depends on
+  // are resilient-cached with documented fallbacks; the LEDGER reads are
+  // wrapped so a slow community index cannot hold the fold, and a ledger whose
+  // count read degraded keeps its rows and drops its value column (invariant 1).
   const [
-    _pulseRead, detached, detachedInv, _regionPulse, priceHist, communities, neighborhoodStats,
-    communitySnapshots, allCitySnapshots, blogPosts, openHouses, activity,
-    cityMeta, mapTilesRead, featuredTiles, resortTiles, areaGuideVideo, coreCharts,
-    publicSegments, publicPace, leftoverMonthly, publicMix,
+    detached,
+    detachedInv,
+    publicPace,
+    publicSegments,
+    publicMix,
+    leftoverMonthly,
+    priceHist,
+    coreCharts,
+    tiles,
+    bendNeighborhoods,
+    communities,
+    allCitySnapshots,
+    communitySnapshots,
+    blogPosts,
+    activity,
+    resortRead,
+    cityMartRow,
+    regionMartRow,
   ] = await Promise.all([
-    withTimeoutFallbackResult(getMarketPulse({ geoType: 'city', geoSlug }), null, 3500, 'city:pulse'),
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city:detachedInv'),
-    withTimeoutFallback(getRegionPulse(), null, 3000, 'city:regionPulse'),
-    withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
-    withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
-    // getBendNeighborhoodLedger → getBendNeighborhoodPublicInventory
-    // (listing_boundary_xref_mv SFR + PUBLIC_ACTIVE). Same population as the
-    // place-page hero/FAQ. Not pulse.active_count (includes Coming Soon).
-    slug === 'bend'
-      ? withTimeoutFallback(getBendNeighborhoodLedger(), [], 5000, 'city:nbhStats')
-      : Promise.resolve([] as Awaited<ReturnType<typeof getBendNeighborhoodLedger>>),
-    withTimeoutFallback(getCityCommunitySnapshots(slug), [], 3000, 'city:commSnaps'),
-    withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'city:allCities'),
-    skippableRail(() => getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'city:blog'),
-    skippableRail(() => getOpenHousesWithListings({ city: cityName }), [], 3500, 'city:openHouses'),
-    skippableRail(() => getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }), [], 3500, 'city:activity'),
-    withTimeoutFallback(getCityMetadataByName(cityName), null, 3000, 'city:meta'),
-    // propertyType:'A' (§0, C-02): every sibling geo map — community, neighborhood,
-    // subdivision, zip, homepage — is SFR, and the hero count beside this map is
-    // market_pulse_live's SFR activeCount. All-types tiles here made the badge read
-    // 1,000 against a hero of 491 on /cities/bend. The 1500 cap also stops binding
-    // once the pull is SFR-only.
-    withTimeoutFallbackResult(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', propertySubType: 'Single Family Residence', limit: CITY_TILE_FETCH_LIMIT }), [], 4500, 'city:mapTiles'),
-    // Wide SFR pool for curateFeaturedTiles below — the old price-desc top-14
-    // pull had ONLY luxury outliers in it, so curation ran but had nothing
-    // mid-market to pick from (design-audit P2).
-    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', propertySubType: 'Single Family Residence', limit: 300 }), [], 4500, 'city:featured'),
-    // Uncapped active SFR tiles for the city — the source for alias-aware resort
-    // counts. mapTiles is capped at 1500 + all-types, which UNDERcounts resorts
-    // (Widgi 28 vs true 48). This SFR-only, high-limit pull is exact. (§0)
-    cityResorts(slug).length > 0
-      ? withTimeoutFallback(fetchAllCityActiveSfr(cityName), [], 6000, 'city:resortTiles')
-      : Promise.resolve([] as Awaited<ReturnType<typeof getListingTiles>>),
-    withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video'),
-    // Tabbed core-chart module series (24-month cache-fed trends). Null on a
-    // blip → the module renders nothing under the HUD. (§0)
-    withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
-    withTimeoutFallback(getPublicPlaceSegments({ geoType: 'city', geoSlug: slug }), [], 3000, 'city:publicSegments'),
     withTimeoutFallback(getPublicDetachedPace({ geoType: 'city', geoSlug: slug }), EMPTY_PUBLIC_PACE, 3000, 'city:publicPace'),
+    withTimeoutFallback(getPublicPlaceSegments({ geoType: 'city', geoSlug: slug }), [], 3000, 'city:publicSegments'),
+    withTimeoutFallback(getPublicDetachedMix({ geoType: 'city', geoSlug: slug }), EMPTY_PUBLIC_MIX, 3000, 'city:publicMix'),
     withTimeoutFallback(
       getPublicDetachedMonthly({ geoType: 'city', geoSlug: slug, currentMonthKey }),
       [],
       4500,
       'city:leftoverMonthly',
     ),
+    withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
+    withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
+    // THE FIELD'S SET - SFR only (C-02): every sibling geo map is the Single
+    // Family Residence sub-type, and the caption beside this map counts THIS
+    // set. An all-types pool put a 1,000-home badge beside a 491 hero on Bend.
     withTimeoutFallback(
-      getPublicDetachedMix({ geoType: 'city', geoSlug: slug }),
-      EMPTY_PUBLIC_MIX,
-      3000,
-      'city:publicMix',
+      getCityListings(cityName, {
+        status: 'active',
+        sort: 'newest',
+        propertyType: 'A',
+        propertySubType: 'Single Family Residence',
+        limit: CITY_TILE_FETCH_LIMIT,
+      }),
+      [],
+      4500,
+      'city:mapTiles',
     ),
+    isBend
+      ? withTimeoutFallback(getBendNeighborhoodLedger(), [], 5000, 'city:nbhStats')
+      : Promise.resolve([] as Awaited<ReturnType<typeof getBendNeighborhoodLedger>>),
+    withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
+    withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'city:allCities'),
+    withTimeoutFallback(getCityCommunitySnapshots(slug), [], 3000, 'city:commSnaps'),
+    skippableRail(() => getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'city:blog'),
+    skippableRail(
+      () => getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }),
+      [],
+      3500,
+      'city:activity',
+    ),
+    // UNCAPPED active SFR, paginated past PostgREST's 1000-row cap (Bend has
+    // ~1044): the alias-aware counts must see the COMPLETE active set or they
+    // undercount every resort whose older listings fall past page one. The
+    // Result variant is load-bearing - an empty array from a TIMEOUT reads as a
+    // city with no inventory, and that all-zero map would put "0 active" under
+    // a live-MLS trace (§0).
+    hasResorts
+      ? withTimeoutFallbackResult(fetchAllCityActiveSfr(cityName), [], 6000, 'city:resortTiles')
+      : Promise.resolve({ value: [] as Awaited<ReturnType<typeof fetchAllCityActiveSfr>>, ok: true }),
+    getCoMarketAnnualCity({ year: PLACE_MART_YEAR, citySlug: slug, typeScope: 'all' }),
+    getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
   ])
-  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
+
+  const resortTiles = resortRead.value
+
+  /* ── The market, off the ONE leftover pile ─────────────────────────────── */
+
   const hud = leftoverHudKpis({
     grain: 'city',
     headlines: detached,
@@ -225,123 +288,125 @@ export default async function CityDetailPage({ params }: Props) {
     pace: publicPace,
   })
 
-  // Hero — leftover HUD inventory. Pulse, tiles, and cache do not fill.
-  const mapTiles = mapTilesRead.value
+  // §0 UNKNOWN IS NOT ZERO (D78): the hero count is leftover HUD - never tiles,
+  // never a snapshot all-count, never a `?? 0`.
   const activeCount: number | null = hud.active
-  const publishedMedian = hud.medianList
-  const sellMedian = publishSellMedian({ placeMedian: publishedMedian, grain: 'city', placeName: cityName })
-  const curatedHero = cityHero(slug)
-  const heroImageUrl = cityMeta?.hero_image_url ?? null
-  const heroPhoto =
-    heroImageUrl && !isStockPlaceHeroUrl(heroImageUrl)
-      ? { src: heroImageUrl, verified: true }
-      : curatedHero
-  const heroVideoCfg = CITY_HERO_VIDEO[slug]
-  const heroVideoSrc = heroVideoCfg?.videoSrc ?? null
-  const heroPosterSrc = heroVideoCfg?.posterSrc ?? heroPhoto.src
-  const mediaCaption = heroVideoSrc || heroPhoto.verified ? undefined : 'Regional view · Cascade Range'
 
-  // About — hand-written city content where it exists, else data-driven paragraphs.
-  const cityContent = getCityContent(cityName)
-  const quickFacts = CITY_QUICK_FACTS[cityName] ?? null
-  const aboutParagraphs: string[] = cityContent?.description
-    ? [cityContent.description]
-    : buildDataDrivenCityAbout({
-        cityName,
-        population: quickFacts?.population ?? null,
-        elevation: quickFacts?.elevation ?? null,
-        county: quickFacts?.county ?? null,
-        schoolDistrict: quickFacts?.schoolDistrict ?? null,
-        nearestAirport: quickFacts?.nearestAirport ?? null,
-        activeCount: activeCount ?? 0,
-        medianPrice: publishedMedian ?? snapshot.medianListPrice,
-        communityCount: communitySnapshots.length,
-      }).slice(0, 2)
-  const daysFact = publishDaysLabel(publicPace.daysToPending90d)
-  const aboutFacts: { label: string; value: string }[] = [
-    ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
-    ...(publishedMedian ? [{ label: 'Median list', value: kbMoneyFull(publishedMedian) ?? '—' }] : []),
-    ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
-    ...(daysFact ? [{ label: 'Median to pending', value: daysFact }] : []),
-    ...(quickFacts?.elevation ? [{ label: 'Elevation', value: quickFacts.elevation }] : []),
-    ...(quickFacts?.county ? [{ label: 'County', value: `${quickFacts.county} County` }] : []),
-  ]
+  // THE ONE VERDICT DERIVATION. hud.monthsSupply is the published raw value;
+  // classify raw, format only for display.
+  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
+  const verdict = marketVerdict(mosRaw)
+  const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
 
-  // Featured + map + ticker. Curated like the homepage rail (Phase D) so
-  // price-desc doesn't lead with pure luxury outliers (design-audit P2).
-  const cityMedians = publishedMedian != null ? Array(4).fill({ name: cityName, medianPrice: publishedMedian }) : []
-  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(curateFeaturedTiles(featuredTiles, cityMedians, 14))
-  const mapFeatures = buildMapPointFeatures(mapTiles)
-  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
-  // Neighborhood boundary polygons drawn on the city map (Bend has them).
-  const neighborhoodPolygons =
-    slug === 'bend'
-      ? {
-          type: 'FeatureCollection' as const,
-          features: (bendNeighborhoodPolygons.communities as Array<{ name: string; geometry: unknown }>).map((c) => ({
-            type: 'Feature' as const,
-            geometry: c.geometry,
-            properties: { name: c.name },
-          })),
-        }
-      : undefined
-  // The tape spans one city here, so a tile with no City renders a blank town.
-  const tickerItems = buildTickerItems(mapTiles, '')
+  // The as-of stamp is leftover membership's own computed_at, so it names the
+  // population the figures came from (§0).
+  const leftoverStamp = detached?.computedAt ?? detachedInv?.computedAt ?? null
 
-  // Communities in this city (with banner images) — reused for the rail AND as
-  // neighborhood hover imagery where a neighborhood matches a community by name.
+  // buildMarketFaq - the single source for the visible FAQ, the FAQPage
+  // JSON-LD, and the Dataset variableMeasured. Called unconditionally with an
+  // all-nullable leftover input: a miss omits one figure, never the markup.
+  const marketFaqInput: MarketFaqInput = {
+    grain: 'city',
+    source: 'market-truth',
+    activeCount: hud.active,
+    pulseActiveCount: hud.active,
+    medianListPrice: hud.medianList,
+    monthsOfSupply: mosRaw,
+    medianDaysToPending: hud.daysToPending,
+    soldCount12mo: hud.sold12mo,
+    refreshedAt: leftoverStamp,
+  }
+  const marketFaq = buildMarketFaq(cityName, marketFaqInput)
+  const { faqs } = marketFaq
+
+  const mart = pickPlaceMart(cityMartRow, regionMartRow)
+  const figures: V3InstrumentFigure[] = leftoverMarketFigures(hud, {
+    browse: homesForSalePath(cityName),
+    monthsOfSupply: '/months-of-supply',
+  })
+  // The 12-month leftover pace and the detached mix, each item carrying its own
+  // window on its label. The three pace keys the HUD figures above already
+  // print are skipped: one figure under two labels reads as two findings.
+  for (const item of publicPaceItems(publicPace)) {
+    if (CITY_PACE_KEYS_ON_THE_HUD.has(item.key)) continue
+    figures.push({ value: v3Text(item.value), label: v3Text(item.label) })
+  }
+  for (const figure of buildPublicMixFigures(publicMix)) figures.push(figure)
+  figures.push(...placeMartFigures(mart, `/housing-market/history?year=${PLACE_MART_YEAR}`))
+  const [firstMarketFigure, ...restMarketFigures] = figures
+
+  // THE MARKET QUESTION (Matt 2026-08-26: it stays on all five place grains).
+  // Question only when the verdict answers it; the answer is the note beneath.
+  const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
+  const marketHeadline = hasVerdict
+    ? `Is ${cityName} a buyer's or seller's market?`
+    : `The ${cityName} market`
+  const verdictSentence = hasVerdict
+    ? `${cityName} has ${mosLabel} months of supply, which is a ${verdict.label}.`
+    : null
+
+  // Median-close year overlay - leftover months first, cache months otherwise,
+  // in-progress month dropped so a partial month never plots as a decline.
+  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
+  const medianChart = placeMedianChart(
+    buildYearSeries(chartMonths.months, 5),
+    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${cityName}`,
+  )
+
+  // The chart room: the tabbed core trends plus the approved town-comparison
+  // cards, all inside the ONE market section (Matt 2026-07-29) as Instrument
+  // cards. toPublicCoreChartSeries strips table names from every series source.
+  const townCards = await cityMarketChartCards({
+    citySlug: slug,
+    geoSlug,
+    cityName,
+    publishedMos: hud.monthsSupply,
+    publishedDtp: hud.daysToPending,
+    displayedActiveCount: hud.active,
+  })
+  const trendsCard = coreChartsCard(coreCharts ? toPublicCoreChartSeries(coreCharts) : null, cityName)
+  const marketCards: V3ChartCardProps[] = [...(trendsCard ? [trendsCard] : []), ...townCards]
+
+  /* ── The Field ─────────────────────────────────────────────────────────── */
+
+  // Explicit preview cap: the Field lists (and plots) the newest
+  // CITY_PLACE_LIST_CAP qualifying homes, the same cap the KB dual-pane list
+  // carried, so a 1,000-listing city does not ship a 1,000-row DOM. The full
+  // count is the Instrument's figure; its action is the view-all door.
+  const fieldItems = cityFieldItems(tiles, CITY_PLACE_LIST_CAP)
+  const fieldCaption = cityFieldCaption({
+    cityName,
+    count: fieldItems.length,
+    mosLabel,
+    verdictKind: verdict.kind,
+    verdictLabel: verdict.label,
+  })
+
+  /* ── The place ledgers ──────────────────────────────────────────────────── */
+
+  // Communities in this city. Reused for the rail AND as neighborhood hover
+  // imagery where a neighborhood shares a community's name.
   const cityComms = communities.filter((c) => c.city?.toLowerCase().trim() === cityName.toLowerCase().trim())
   const commImgByName = new Map(cityComms.map((c) => [c.subdivision.toLowerCase(), c.heroImageUrl]))
   const commImgBySlug = new Map(cityComms.map((c) => [c.slug, c.heroImageUrl]))
-  // One active count per community across the page — a resort like Tetherow that
-  // appears in BOTH the visual rail and the golf/master-planned ledger must not
-  // show two different numbers. The rail's index count is canonical. The resort
-  // registry slugs differ from the index slugs, so the ledger matches the rail by
-  // slug first, then by NAME, before falling back to its own SFR snapshot count.
-  const commActiveBySlug = new Map(cityComms.map((c) => [c.slug, c.activeCount]))
-  const commActiveByName = new Map(cityComms.map((c) => [c.subdivision.toLowerCase().trim(), c.activeCount]))
-  // Alias-aware active SFR per resort. A resort's homes are MLS-tagged under many
-  // subdivision names (Widgi Creek -> "Inn Of The 7th", "Elkai Woods", ...), so the
-  // literal-name count undercounts every resort (Widgi 0 vs true 48). Counted from
-  // the city's active tiles via the registry aliases — the canonical number used by
-  // BOTH the golf ledger and the rail so a community never shows two figures. (§0)
-  const resortSfrCounts = resortActiveSfrCounts(slug, resortTiles)
+
+  // ALIAS-AWARE ACTIVE SFR PER RESORT (§0). A resort's homes are MLS-tagged
+  // under many subdivision names (Widgi Creek -> "Inn Of The 7th", "Elkai
+  // Woods", ...), so a literal-name count undercounts every resort (Widgi 0 vs
+  // true 48, Tetherow 14 vs 43). Counted from the UNCAPPED active tiles through
+  // the registry aliases - the canonical number used by BOTH the golf ledger
+  // and the rail, so no community shows two figures. The map is EMPTY when the
+  // uncapped read degraded, not zero-filled: every consumer below then falls
+  // through to its next source and finally to null, so a timeout withholds the
+  // figure instead of publishing "0 active" under a live-MLS trace (§0).
+  const resortSfrCounts = resortRead.ok
+    ? resortActiveSfrCounts(slug, resortTiles)
+    : new Map<string, number>()
   const resortSlugByLabel = resortLabelToSlug(slug)
 
-  // Neighborhoods ledger — designated Bend polygons + live westside stats. (§D83)
-  // Hover photo: a curated community banner when the neighborhood name matches a
-  // community, else a real home INSIDE the neighborhood boundary (highest-priced
-  // active listing). No match leaves it blank — never a wrong-place photo. (§D86)
-  const neighborhoodPhotos =
-    slug === 'bend'
-      ? assignNeighborhoodPhotos(
-          (bendNeighborhoodPolygons.communities as Array<{ slug: string; name?: string; geometry: { type: string; coordinates: unknown } }>).filter(
-            (c) => c.slug.startsWith('bend-'),
-          ),
-          mapTiles,
-        )
-      : new Map<string, string>()
-  const liveStatsByHref = new Map(neighborhoodStats.map((r) => [r.href, r]))
-  const bendNeighborhoodItems: KbTownItem[] =
-    slug === 'bend'
-      ? (bendNeighborhoodPolygons.communities as Array<{ slug: string; name?: string }>)
-          .filter((c) => c.slug.startsWith('bend-'))
-          .map((c) => {
-            const nslug = c.slug.replace(/^bend-/, '')
-            const href = `/cities/bend/${nslug}`
-            const live = liveStatsByHref.get(href)
-            const name = live?.label ?? c.name ?? nslug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-            return {
-              name,
-              href,
-              activeCount: live?.activeCount ?? (neighborhoodStats.length > 0 ? 0 : null),
-              medianPrice: live?.medianListPrice ?? null,
-              img: commImgByName.get(name.toLowerCase()) ?? neighborhoodPhotos.get(c.slug) ?? '',
-            }
-          })
-      : []
-
-  // Golf & master-planned communities — a SEPARATE ledger from neighborhoods. (§D85)
+  // The community snapshot's own SFR count, the golf ledger's second source.
+  // geo_key arrives SPACE-separated for a multi-word community, so it is
+  // slugified before the lookup or every multi-word community silently misses (D87).
   const communitySfrBySlug = new Map<string, number>()
   for (const s of communitySnapshots) {
     const rawSlug = s.geoKey.includes(':') ? s.geoKey.split(':')[1]! : s.geoKey
@@ -349,277 +414,278 @@ export default async function CityDetailPage({ params }: Props) {
       communitySfrBySlug.set(rawSlug.replace(/\s+/g, '-').toLowerCase(), s.activeSfrCount)
     }
   }
-  const golfCommunityItems: KbTownItem[] = cityResorts(slug)
-    .map((c) => ({
-      name: c.label,
-      href: getPlaceLinks({ type: 'community', slug: c.slug, citySlug: slug }).placeUrl,
-      activeCount: resortSfrCounts.get(c.slug) ?? communitySfrBySlug.get(c.slug) ?? 0,
-      medianPrice: null,
-      img: CITY_RESORT_LEDGER_IMG[c.slug] ?? commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()) ?? '',
-    }))
 
-  // Communities rail — EVERY community in the city that has a banner photo, with
-  // the curated marquee set (hand-picked still + silent Area Guide video) floated
-  // to the front, then the rest by active count. (Matt: "all in the slider".)
+  // NEIGHBORHOODS - the DESIGNATED Bend polygons only, never sibling cities and
+  // never raw subdivision-plat noise (D83). Every designated district is
+  // listed, with a boundary-verified hover photo (D89). The count is withheld
+  // rather than zero-filled when the ledger read did not answer - see
+  // ./_v3/city-places.ts for that rule.
+  const bendNeighborhoodItems: CityPlaceItem[] = bendNeighborhoodPlaces({
+    isBend,
+    ledgerRows: bendNeighborhoods,
+    mapTiles: tiles,
+    communityImageByName: commImgByName,
+  })
+
+  // GOLF AND MASTER-PLANNED COMMUNITIES - a SEPARATE ledger from neighborhoods
+  // (D85). Membership comes from the registry (is_resort), which drops Three
+  // Rivers, and the count is the alias-aware one so the ledger and the rail agree.
+  const golfCommunityItems: CityPlaceItem[] = cityResorts(slug).map((c) => ({
+    name: c.label,
+    href: getPlaceLinks({ type: 'community', slug: c.slug, citySlug: slug }).placeUrl,
+    activeCount: resortSfrCounts.get(c.slug) ?? communitySfrBySlug.get(c.slug) ?? null,
+    medianPrice: null,
+    img:
+      CITY_RESORT_LEDGER_IMG[c.slug] ??
+      commImgBySlug.get(c.slug) ??
+      commImgByName.get(c.label.toLowerCase().trim()) ??
+      '',
+  }))
+
+  // THE COMMUNITIES RAIL - every community in this city that has a photo, with
+  // the curated marquee set (hand-picked still + silent Area Guide clip)
+  // floated to the front and the rest by active count (D88). Built from
+  // cityComms, never from a curated three.
   const curatedComms = CITY_MARQUEE_COMMUNITIES[slug] ?? []
-  const communityItems: KbCommunityItem[] = cityComms
-    .map((c): KbCommunityItem | null => {
+  const communityItems: CityCommunityItem[] = cityComms
+    .map((c): CityCommunityItem | null => {
       const curated = curatedComms.find((f) => c.subdivision.toLowerCase().includes(f.match))
       const cvUrl = communityVideoUrl(curated?.videoSlug)
       const img = curated?.img ?? c.heroImageUrl ?? null
       if (!img) return null
-      // When this community is a resort, show its alias-aware count (so the rail
-      // card matches the golf ledger and the real MLS total, not the literal-name
-      // undercount). (§0)
+      // When this community is a resort, show its ALIAS-AWARE count, so the
+      // rail card matches the golf ledger and the real MLS total rather than
+      // the literal-name undercount (§0).
       const resortSlug = resortSlugByLabel.get(c.subdivision.toLowerCase().trim())
       const activeCount = resortSlug ? resortSfrCounts.get(resortSlug) ?? c.activeCount : c.activeCount
       return {
         name: c.subdivision,
         activeCount,
+        medianPrice: null,
         town: cityName,
-        href: getPlaceLinks({
-          type: 'community',
-          slug: resortSlug ?? c.slug,
-          citySlug: slug,
-        }).placeUrl,
+        href: getPlaceLinks({ type: 'community', slug: resortSlug ?? c.slug, citySlug: slug }).placeUrl,
         img,
         video: cvUrl ? { url: cvUrl, embedType: 'video-tag' as const } : null,
       }
     })
-    .filter((x): x is KbCommunityItem => x !== null)
-    .sort((a, b) => (a.video ? 0 : 1) - (b.video ? 0 : 1) || b.activeCount - a.activeCount)
+    .filter((x): x is CityCommunityItem => x !== null)
+    .sort((a, b) => (a.video ? 0 : 1) - (b.video ? 0 : 1) || (b.activeCount ?? 0) - (a.activeCount ?? 0))
 
-  // Dedupe by NAME, not href: the carousel's hrefs are city-prefixed slugs
-  // from the general community index (/communities/bend-tetherow) while the
-  // ledger's are plain registry slugs (/communities/tetherow) for the SAME
-  // physical place, so an href-based Set never matched (design-audit P2).
-  const carouselNames = new Set(communityItems.map((c) => c.name.toLowerCase().trim()))
-  const golfCommunityItemsDeduped = golfCommunityItems.filter(
-    (t) => carouselNames.has(t.name.toLowerCase().trim()) === false,
-  )
+  // Dedupe the ledger against the rail by NAME, not href: the rail's hrefs are
+  // city-prefixed index slugs while the ledger's are plain registry slugs for
+  // the SAME physical place.
+  const railNames = new Set(communityItems.map((c) => c.name.toLowerCase().trim()))
+  const golfLedgerItems = golfCommunityItems.filter((t) => !railNames.has(t.name.toLowerCase().trim()))
 
-  // Explore other cities — editorial index with VERIFIED thumbnails, minus the
-  // city the reader is already on. (§D84, §D87)
-  const otherCityItems: KbTownItem[] = buildOtherCityItems(allCitySnapshots, { excludeSlug: slug })
+  // EXPLORE OTHER CITIES - its own section, distinct from every within-city
+  // ledger (D84). buildOtherCityItems owns the geo_key slugify, the
+  // service-area allowlist, and the verified-cityHero-only imagery rule
+  // (D86/D87), shared with the neighborhood and community nodes so one fix
+  // lands on all three.
+  const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots, { excludeSlug: slug })
 
-  // Open houses (next, in this city) → KB cards.
-  const openHouseItems = buildOpenHouseItems(openHouses)
-
-  // Live activity → KB rows. 21-day stale-"New" relabel per design-audit TRU-2.
+  // Live activity and city guides.
   const activityItems = buildActivityItems(activity, { staleNewAfterDays: 21 })
-
-  // Guides / blog. (§D80 — getRecentBlogPosts)
   const articlePosts = buildArticlePosts(blogPosts)
 
-  const marketActive = hud.active
-  const monthsOfSupply = hud.monthsSupply
-  const marketMedian = hud.medianList
-  const marketData: KbMarketData = {
-    active: hud.active,
-    pending: hud.pending,
-    closed30: hud.closed30,
-    new30: hud.new30,
-    medianList: hud.medianList,
-    saleToList: hud.saleToList,
-    daysToPending: hud.daysToPending,
-    monthsSupply: hud.monthsSupply,
-    sold12mo: hud.sold12mo,
-    trend: buildMonthlyTrend(chartMonths.months),
-    byTown: bendNeighborhoodItems.filter((n) => n.medianPrice != null).map((n) => ({ name: n.name, median: n.medianPrice as number })),
-    countyMedian: null,
-    yearSeries: buildYearSeries(chartMonths.months, 5),
-    chartLeftover: chartMonths.leftoverUsed,
-  }
+  // V3Ledger's rows prop is a non-empty tuple, so each section destructures a
+  // head and renders nothing when there is none.
+  const [firstNbh, ...restNbh] = placeFigureRows(bendNeighborhoodItems, `${cityName} neighborhood`)
+  const [firstRail, ...restRail] = communityRows(communityItems)
+  const [firstGolf, ...restGolf] = placeFigureRows(golfLedgerItems, 'Golf and master-planned')
+  const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
+  const [firstAct, ...restAct] = activityRows(activityItems)
+  const [firstGuide, ...restGuide] = articleRows(articlePosts)
 
-  // AI-citability: verified market Q&A + structured data. The PAGE CONTRACT
-  // requires SEO/LLM-citable data on EVERY render, so the Dataset/FAQPage JSON-LD
-  // must not vanish. It no longer can: D26 dropped the market-pulse read and its
-  // snapshot fallback, and buildMarketFaq is now called unconditionally with an
-  // all-nullable leftover input — a leftover miss omits that one figure and the
-  // JSON-LD still emits. The as-of stamp is leftover membership's own
-  // computed_at, so it names the population the figures came from (§0).
-  const leftoverStamp = detached?.computedAt ?? detachedInv?.computedAt ?? null
-  const marketFaqInput: MarketFaqInput = {
-    grain: 'city',
-    source: 'market-truth',
-    activeCount: marketActive,
-    pulseActiveCount: marketActive,
-    medianListPrice: marketMedian,
-    monthsOfSupply,
-    medianDaysToPending: hud.daysToPending,
-    soldCount12mo: hud.sold12mo,
-    refreshedAt: leftoverStamp,
-  }
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, marketFaqInput)
-  const hasMap = mapFeatures.length > 0
-  // JSON-LD (breadcrumb + City Place + Dataset) — extracted verbatim to
-  // ./city-schemas.ts for the ci:file-size-budget floor.
-  const citySchemas: SchemaInput[] = buildCitySchemas({
+  // About - the hand-written city description where one exists. NO GENERATED
+  // PARAGRAPHS AND NO FIGURES (invariant 1): buildDataDrivenCityAbout stays out
+  // because its market sentence restated the count and the median, untraced,
+  // inside a V3Quiet.
+  const cityContent = getCityContent(cityName)
+  const quickFacts = CITY_QUICK_FACTS[cityName] ?? null
+  const description = cityContent?.description?.trim()
+  const aboutItems = cityAboutItems(description, quickFacts)
+
+  const exploreItems = cityExploreItems(
     cityName,
     slug,
-    hasMap,
-    datasetVariables,
-    asOfIso,
-    asOfLabel,
+    // valuationHref, never a bare path: the closing valuation edge carries
+    // ?from=/cities/<slug>, which is the seller lead's stored source_url.
+    { browse: homesForSalePath(cityName), valuation: valuationHref(`/cities/${slug}`) },
+    Boolean(quickFacts?.population),
+  )
+
+  const citySchemas = buildCitySchemas({
+    cityName,
+    slug,
+    faq: marketFaq,
+    hasMap: fieldItems.some((item) => item.lat != null && item.lng != null),
   })
 
   return (
-    <main className="kb-root">
-      <CityPageTracker
-        cityName={cityName}
-        slug={slug}
-        listingCount={activeCount}
-        medianPrice={publishedMedian}
-        communityCount={communitySnapshots.length}
-      />
-      <KbSectionTracker />
-      <MetadataBlock schemas={citySchemas} />
-      <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
-      <SmoothScrollProvider>
-        <KbHero
-          data={{
-            activeCount,
-            medianListPrice: publishedMedian,
-            medianDaysToPending: hud.daysToPending,
-          }}
-          eyebrow={`${cityName} · Oregon`}
-          titleTop={cityName}
-          titleBottom="Homes for Sale"
-          lead={placeHeroLead({ placeName: cityName, activeCount })}
-          videoSrc={heroVideoSrc}
-          posterSrc={heroPosterSrc}
-          posterAlt={`${cityName}, Oregon`}
-          mediaCaption={mediaCaption}
-          // City-scoped CTAs (E3): default /homes-for-sale is region-wide and
-          // steers off this inventory page. Primary stays on city inventory;
-          // ghost keeps the valuation path for owners reading a buyer page.
-          cta={{ href: homesForSalePath(cityName), label: `See ${cityName} homes` }}
-          ctaSecondary={{ href: '/sell/valuation', label: 'Value my home' }}
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <CityPageTracker
+          cityName={cityName}
+          slug={slug}
+          listingCount={activeCount}
+          medianPrice={hud.medianList}
+          communityCount={communitySnapshots.length}
         />
-        {hasMap && mapTiles.length > 0 ? (
-          <PlaceMapListSplit
-            rows={splitRowsFromTiles(mapTiles, { cap: CITY_PLACE_LIST_CAP })}
-            mapGeo={mapGeo}
-            polygons={neighborhoodPolygons}
-            eyebrow={`${cityName} · For sale`}
-            title={`Homes in ${cityName}`}
-            subtitle={`Active single-family listings with a ${cityName} address. Hover the list to lift a pin.`}
-            totalActive={activeCount ?? mapFeatures.length}
-            viewAllHref={homesForSalePath(cityName)}
-            viewAllLabel={`See every ${cityName} home for sale`}
+        <V3SectionTracker />
+        <MetadataBlock schemas={citySchemas} />
+
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
+
+        {/* Pattern 2, Field. Houses fill the fold; the count is a caption and
+            the H1 is the money head term. */}
+        <CityHomesField
+          cityName={cityName}
+          headline={v3Text(`${cityName} homes for sale`)}
+          fieldItems={fieldItems}
+          tilesLength={tiles.length}
+          caption={fieldCaption}
+          source={cityFieldTrace(cityName)}
+        />
+
+        {/* Pattern 1, Instrument. The market question is the section headline,
+            the verdict sentence is the answer beneath it, the KPI row is the
+            leftover pile, and the chart room rides as cards. */}
+        {firstMarketFigure ? (
+          <V3Instrument
+            id="market"
+            level={2}
+            eyebrow={v3Text(`${cityName} · The market`)}
+            headline={v3Text(marketHeadline)}
+            note={verdictSentence ? v3Text(verdictSentence) : undefined}
+            figures={[firstMarketFigure, ...restMarketFigures]}
+            source={v3Text(cityInstrumentSource(cityMarketTrace(cityName, mosLabel != null), mart, cityName))}
+            chart={medianChart}
+            chartSecondary={placeMartCompositionChart(mart)}
+            cards={marketCards}
+            updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
+            action={{
+              label: v3Text(`See every ${cityName} home for sale`),
+              href: homesForSalePath(cityName),
+              variant: 'primary',
+            }}
           />
         ) : (
-          <KbFeatured
-            items={featuredItems}
-            eyebrow={`${cityName} · For sale`}
-            viewAllHref={homesForSalePath(cityName)}
-            viewAllLabel={`See every ${cityName} home for sale`}
-            viewAllPlace={cityName}
-            totalCount={activeCount || null}
+          <V3Quiet
+            id="market"
+            heading={`The ${cityName} market`}
+            items={marketAbsenceItems(cityName, Boolean(fieldItems.length))}
           />
         )}
-        <KbTicker items={tickerItems} />
-        {/* Mid-page buyer capture (E3): after map inventory, city + SFR only.
-            propertyType A matches hero activeCount (§0). Empty subdivision. */}
-        <KbCommunityAlerts
-          communityName={cityName}
-          city={cityName}
-          subdivision=""
-          extraFilters={{ propertyType: 'A' }}
-          headline={cityName}
-          body={`Enter your email. When a single-family home hits the market in ${cityName}, you hear first.`}
-        />
-        {aboutParagraphs.length > 0 ? (
-          <KbAbout eyebrow={`${cityName} · Oregon`} heading={`${cityName}, in plain words`} paragraphs={aboutParagraphs} facts={aboutFacts} />
-        ) : null}
-        {/* ONE market section (Matt 2026-07-29): the core charts render INSIDE the HUD
-            section, not as a second stacked, separately-headed section. The communities
-            page adopted this the day it was asked for; the city page was the last
-            stacker (C-17). */}
-        <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={leftoverStamp} byTownKind="neighborhood">
-          <PublicProductTypes cityName={cityName} citySlug={slug} rows={publicSegments} />
-          <PublicPaceStats cityName={cityName} row={publicPace} />
-          <PublicMixStats cityName={cityName} row={publicMix} />
-          {coreCharts ? (
-            <div className="pt-10" aria-label={`${cityName} market trend charts`}>
-              <MarketCoreCharts data={toPublicCoreChartSeries(coreCharts)} heading={`${cityName} market trends`} />
-            </div>
-          ) : null}
-          <CityMarketCharts
-            citySlug={slug}
-            geoSlug={geoSlug}
-            cityName={cityName}
-            publishedMos={hud.monthsSupply}
-            publishedDtp={hud.daysToPending}
-            displayedActiveCount={hud.active}
-          />
-        </KbMarketHud>
-        <KbExploreTowns
-          towns={bendNeighborhoodItems}
-          eyebrow={`${cityName} · Neighborhoods`}
-          title="Neighborhoods"
-          sectionId="neighborhoods"
-          cta={{ href: `/homes-for-sale/${slug}`, label: `All ${cityName} homes` }}
-        />
-        <KbPopularSearches citySlug={slug} cityName={cityName} />
-        <KbCommunities communities={communityItems} eyebrow={`${cityName} · Communities`} />
-        {/* Ledger dedupes against the carousel above it (design-audit P2: the
-            same 3-4 resorts rendered twice, once as a photo carousel and again
-            as a text ledger). Only communities without a carousel card (no
-            curated photo) land here. */}
-        {golfCommunityItemsDeduped.length > 0 ? (
-          <KbExploreTowns
-            towns={golfCommunityItemsDeduped}
-            eyebrow={`${cityName} · Communities`}
-            title="Golf and master-planned communities"
-            sectionId="communities-ledger"
-            cta={{ href: '/communities', label: 'Every community' }}
+
+        {/* D83: the DESIGNATED Bend polygons, and only those. */}
+        {firstNbh ? (
+          <V3Ledger
+            id="neighborhoods"
+            eyebrow={v3Text(`${cityName} · Neighborhoods`)}
+            heading={v3Text('Neighborhoods')}
+            rows={[firstNbh, ...restNbh]}
+            source={v3Text(PLACE_COUNT_TRACE)}
+            action={{
+              label: v3Text(`All ${cityName} homes`),
+              href: homesForSalePath(cityName),
+            }}
           />
         ) : null}
-        <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={cityName} posterSrc={heroPosterSrc} />
-        {/* Urgency cluster (this week + live feed) before convert. */}
-        {buildTimeRails(true) || openHouseItems.length > 0 ? (
-          <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
+
+        {aboutItems.length > 0 ? (
+          <V3Quiet
+            id="about"
+            eyebrow={`${cityName}, Oregon`}
+            heading={`${cityName}, in plain words`}
+            items={aboutItems}
+          />
         ) : null}
-        <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
-        {/* Convert before trust + exit links (E3 CTA clarity). City eyebrow. */}
-        <KbSell
-          data={{
-            medianListPrice: sellMedian?.value ?? null,
-            medianCaption: sellMedian?.caption ?? null,
-            medianDaysToPending: hud.daysToPending,
-            soldCount30d: hud.closed30,
-          }}
-          eyebrow={`Sell in ${cityName}`}
-        />
-        <KbArticles
-          posts={articlePosts}
-          eyebrow="Guides and news"
-          heading={`${cityName} guides`}
-          subtitle={`Housing news, neighborhood guides, and buyer and seller notes for ${cityName}.`}
-        />
-        <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
-        <KbTeam />
-        {/* Exit links last: every row leaves this city page. */}
-        <KbExploreTowns
-          towns={otherCityItems}
-          eyebrow="Central Oregon"
-          title="Other cities on the list"
-          sectionId="nearby"
-          cta={{ href: '/cities', label: 'Every city' }}
-        />
-        {faqs.length > 0 ? (
-          <section id="faq" aria-label={`${cityName} real estate questions`}>
-            <FAQBlock items={faqs} eyebrow="Common questions" title={`Questions about ${cityName}`} />
-          </section>
+
+        {/* D88: every community in the city that has a photo, marquee first. */}
+        {firstRail ? (
+          <V3Ledger
+            id="communities"
+            eyebrow={v3Text(`${cityName} · Communities`)}
+            heading={v3Text('Communities and subdivisions')}
+            rows={[firstRail, ...restRail]}
+            source={v3Text(PLACE_COUNT_TRACE)}
+            action={{ label: v3Text('Every community'), href: '/communities' }}
+          />
         ) : null}
-        {/* Census only when the page actually renders a population figure
-            (quickFacts.population, from CITY_QUICK_FACTS). Never link padding. */}
-        <MarketSources
-          sources={(quickFacts?.population ? ['ods', 'census'] : ['ods']) as MarketSourceKey[]}
+
+        {/* Pattern 1 again, as ONE enumeration: one section per other property
+            type this city holds. A type with nothing publishable is absent,
+            never an empty section and never a zero. */}
+        <V3PlacePropertyTypes placeName={cityName} citySlug={slug} rows={publicSegments} />
+
+        {/* D85: golf and master-planned communities are their OWN section,
+            never folded into the neighborhoods list. The value column publishes
+            only when the alias-aware read returned (invariant 1). */}
+        {firstGolf ? (
+          <V3Ledger
+            id="communities-ledger"
+            eyebrow={v3Text(`${cityName} · Communities`)}
+            heading={v3Text('Golf and master-planned communities')}
+            rows={[firstGolf, ...restGolf]}
+            source={v3Text(PLACE_COUNT_TRACE)}
+            action={{ label: v3Text('Every community'), href: '/communities' }}
+          />
+        ) : null}
+
+        {/* Pattern 5, Sheet. Same server action, same payload, same honeypot. */}
+        <CityAlertSheet cityName={cityName} />
+
+        {/* D93: the live feed, every row carrying its listing's own photo. */}
+        {firstAct ? (
+          <V3Ledger
+            id="activity"
+            eyebrow={v3Text(`Live · ${cityName}`)}
+            heading={v3Text('Latest market activity')}
+            rows={[firstAct, ...restAct]}
+            source={v3Text(cityActivityTrace(cityName))}
+            action={{ label: v3Text('Full market pulse'), href: '/housing-market' }}
+          />
+        ) : null}
+
+        <V3Quiet
+          id="faq"
+          eyebrow="Common questions"
+          heading={`Questions about ${cityName}`}
+          items={faqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer }))}
         />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+
+        {/* D80: real published guides for this city, never generated filler. */}
+        {firstGuide ? (
+          <V3Ledger
+            id="guides"
+            eyebrow={v3Text('Guides and news')}
+            heading={v3Text(`${cityName} guides`)}
+            rows={[firstGuide, ...restGuide]}
+            action={{ label: v3Text('Every guide'), href: '/blog' }}
+          />
+        ) : null}
+
+        <V3Quiet id="explore" eyebrow={`${cityName} · Explore`} heading="Where to next" items={exploreItems} />
+
+        {/* D84: Explore other cities - its own section, not a within-city list. */}
+        {firstOther ? (
+          <V3Ledger
+            id="nearby"
+            eyebrow={v3Text('Central Oregon')}
+            heading={v3Text('Explore other cities')}
+            rows={[firstOther, ...restOther]}
+            source={v3Text(PLACE_COUNT_TRACE)}
+            action={{ label: v3Text('Every city'), href: '/cities' }}
+          />
+        ) : null}
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo
+          only when it is NOT nested in sectioning content, and <main> is
+          sectioning content, so inside it the element is a generic and the page
+          ships no contentinfo landmark. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

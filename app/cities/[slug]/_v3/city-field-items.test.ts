@@ -61,7 +61,7 @@ describe('cityFieldCaption', () => {
         verdictKind: 'sellers',
         verdictLabel: "seller's market",
       }),
-    ).toBe('248 homes in Bend · 3.6 months of supply · a seller\'s market')
+    ).toBe('The 248 newest single-family listings in Bend · 3.6 months of supply · a seller\'s market')
   })
 
   it('omits a verdict when MoS is absent', () => {
@@ -73,7 +73,7 @@ describe('cityFieldCaption', () => {
         verdictKind: 'unknown',
         verdictLabel: 'unknown',
       }),
-    ).toBe('12 homes in Bend')
+    ).toBe('The 12 newest single-family listings in Bend')
   })
 
   it('prints nothing for an empty set', () => {

@@ -10,7 +10,7 @@ import { useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { V3Chart, v3Text } from '@/components/site/v3'
 import type { CoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
-import { buildCoreChartTabs, type CoreChartTab } from './core-charts'
+import { buildCoreChartTabs, coreChartForTab, type CoreChartTab } from './core-charts'
 
 export type MarketCoreChartsProps = {
   data: CoreChartSeries | null
@@ -21,34 +21,6 @@ export type MarketCoreChartsProps = {
    */
   scopeLabel?: string
   className?: string
-}
-
-function chartForTab(tab: CoreChartTab) {
-  return {
-    caption: v3Text(`${tab.tabLabel}, ${tab.period}`),
-    kind: tab.kind === 'bar' ? ('bars' as const) : ('line' as const),
-    series: [
-      {
-        name: v3Text(tab.tabLabel),
-        points: tab.rows.map((row) => ({
-          value: row.value,
-          tick: v3Text(row.label),
-          label: v3Text(formatReading(tab, row.value)),
-        })),
-      },
-    ],
-  }
-}
-
-function formatReading(tab: CoreChartTab, value: number): string {
-  if (tab.metric === 'medianClosePrice') {
-    return `$${(Math.round(value / 1000) * 1000).toLocaleString('en-US')}`
-  }
-  if (tab.metric === 'priceCutShare') return `${value.toFixed(1)}%`
-  if (tab.metric === 'monthsOfSupply') return tab.latestValue
-  if (tab.metric === 'medianDom') return `${Math.round(value)} days`
-  if (tab.metric === 'closedVolume') return `${Math.round(value).toLocaleString('en-US')} sold`
-  return `${Math.round(value).toLocaleString('en-US')} active`
 }
 
 function CoreChartTabStrip({
@@ -117,7 +89,7 @@ export function MarketCoreCharts({ data, heading, scopeLabel, className }: Marke
   const active = tabs.find((t) => t.metric === activeMetric)?.metric ?? tabs[0]!.metric
   const tab = tabs.find((t) => t.metric === active)!
   const idBase = 'core-charts'
-  const chart = chartForTab(tab)
+  const chart = coreChartForTab(tab)
 
   return (
     <div className={cn('rounded-2xl border border-border bg-card p-4 text-card-foreground sm:p-6', className)}>

@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 165,
-    "legacyPages": 2,
-    "mixedPages": 52
+    "nonV3ImportSites": 138,
+    "legacyPages": 1,
+    "mixedPages": 53
   },
   "frozenNoindexLps": [
     "app/lp/tetherow/heath/page.tsx"
@@ -46,6 +46,7 @@
     "app/central-oregon/events/[slug]/page.tsx",
     "app/central-oregon/events/page.tsx",
     "app/central-oregon/golf/[slug]/page.tsx",
+    "app/central-oregon/golf/page.tsx",
     "app/central-oregon/trails/[slug]/page.tsx",
     "app/central-oregon/trails/page.tsx",
     "app/central-oregon/venues/[slug]/page.tsx",
@@ -182,6 +183,9 @@
       "legacy": 1,
       "v3": 1
     },
+    "app/central-oregon/golf/page.tsx": {
+      "v3": 1
+    },
     "app/central-oregon/trails/[slug]/page.tsx": {
       "legacy": 1,
       "v3": 1
@@ -205,9 +209,8 @@
       "v3": 1
     },
     "app/cities/[slug]/page.tsx": {
-      "kb": 24,
-      "explore": 1,
-      "legacy": 3
+      "v3": 1,
+      "legacy": 1
     },
     "app/cities/page.tsx": {
       "legacy": 1,

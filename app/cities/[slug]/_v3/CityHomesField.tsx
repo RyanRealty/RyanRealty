@@ -3,19 +3,26 @@
  * the 600-line floor. PUBLIC_UI.md §3: Field of this city's houses. Verdict is
  * a caption, never a number hero. Map and list are the same set.
  */
-import { V3Field, V3SourceLine, type V3FieldItem } from '@/components/site/v3'
+import { V3Field, V3Heading, V3SourceLine, type V3FieldItem, type V3Text } from '@/components/site/v3'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { cityFieldEmptyMessage } from './city-sections'
 
 export function CityHomesField({
   cityName,
+  headline,
   fieldItems,
   tilesLength,
   caption,
   source,
 }: {
   cityName: string
+  /**
+   * THE PAGE H1, passed from the route file so ci:seo-shell can read the
+   * money-route head term (`${cityName} homes for sale`) off page.tsx itself.
+   * The market Instrument below is level 2 and carries the market question.
+   */
+  headline: V3Text
   fieldItems: V3FieldItem[]
   tilesLength: number
   caption: string | null
@@ -26,7 +33,9 @@ export function CityHomesField({
   const posterSrc = fieldItems.find((item) => item.photoSrc)?.photoSrc
   return (
     <>
-      <p className="v3-heading v3-heading--field v3-field-place-name">{cityName}</p>
+      <V3Heading level={1} size="field" className="v3-field-place-name">
+        {headline}
+      </V3Heading>
       <V3Field
         id="homes"
         ariaLabel={`Homes for sale in ${cityName}`}

@@ -43,7 +43,15 @@ const surfaces = [
   },
   {
     path: 'app/cities/[slug]/page.tsx',
-    label: 'city page gates KbSell median through publishSellMedian',
+    label: 'city sell surface publishes no uncaptioned median',
+    // MOVED, NOT DROPPED (2026-08-26). The city page left the KB register and
+    // KbSell left with it. The rule is "a published list median carries the
+    // geography of the number", and this surface satisfies it the strongest way
+    // available: the page's one capture sheet publishes no median at all — the
+    // medians the page prints all sit in the market Instrument and the place
+    // ledgers, each under a section that names its geography and its trace.
+    // Put a money formatter or a median prop into the sheet and this fires.
+    noMedianSurface: 'app/cities/[slug]/_v3/CityAlertSheet.client.tsx',
   },
   {
     path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',

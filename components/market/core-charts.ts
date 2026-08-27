@@ -11,6 +11,11 @@
 
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
+import {
+  v3Text,
+  type V3ChartCardProps,
+  type V3ChartProps,
+} from '@/components/site/v3'
 import type {
   CoreChartMetric,
   CoreChartSeries,
@@ -149,4 +154,67 @@ export function buildCoreChartTabs(data: CoreChartSeries | null | undefined): Co
     })
   }
   return tabs
+}
+
+/* -------------------------------------------------------------------------- */
+/* v3 card form — the same tabs as one V3ChartCard switcher                    */
+/* -------------------------------------------------------------------------- */
+
+/** One tab as a V3Chart panel — the exact conversion MarketCoreCharts renders. */
+export function coreChartForTab(tab: CoreChartTab): V3ChartProps {
+  return {
+    caption: v3Text(`${tab.tabLabel}, ${tab.period}`),
+    kind: tab.kind === 'bar' ? ('bars' as const) : ('line' as const),
+    series: [
+      {
+        name: v3Text(tab.tabLabel),
+        points: tab.rows.map((row) => ({
+          value: row.value,
+          tick: v3Text(row.label),
+          label: v3Text(formatCoreChartReading(tab, row.value)),
+        })),
+      },
+    ],
+  }
+}
+
+/** Per-metric reading format — one copy, shared with the client module. */
+export function formatCoreChartReading(tab: CoreChartTab, value: number): string {
+  if (tab.metric === 'medianClosePrice') {
+    return `$${(Math.round(value / 1000) * 1000).toLocaleString('en-US')}`
+  }
+  if (tab.metric === 'priceCutShare') return `${value.toFixed(1)}%`
+  if (tab.metric === 'monthsOfSupply') return tab.latestValue
+  if (tab.metric === 'medianDom') return `${Math.round(value)} days`
+  if (tab.metric === 'closedVolume') return `${Math.round(value).toLocaleString('en-US')} sold`
+  return `${Math.round(value).toLocaleString('en-US')} active`
+}
+
+/**
+ * The whole tabbed module as ONE V3ChartCard with a switcher, for a place
+ * Instrument's `cards` slot — the v3 form of MarketCoreCharts, so the market
+ * section stays one section (Matt 2026-07-29) on the barrel too. The caller
+ * hands data already passed through toPublicCoreChartSeries, so no per-tab
+ * source can leak a table name. Null when no tab has two plottable points.
+ */
+export function coreChartsCard(
+  data: CoreChartSeries | null | undefined,
+  placeName: string,
+  scopeLabel?: string,
+): V3ChartCardProps | null {
+  const tabs = buildCoreChartTabs(data)
+  if (tabs.length === 0) return null
+  const sources = [...new Set(tabs.map((t) => t.source))].join(' · ')
+  return {
+    id: 'core-trends',
+    title: v3Text(`${placeName} market trends`),
+    line: scopeLabel ? v3Text(scopeLabel) : undefined,
+    source: v3Text(sources),
+    wide: true,
+    switcher: {
+      label: v3Text('Metric'),
+      items: tabs.map((t) => ({ key: t.metric, label: v3Text(t.tabLabel) })),
+      panels: tabs.map((t) => coreChartForTab(t)),
+    },
+  }
 }

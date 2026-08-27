@@ -46,10 +46,16 @@ checks.push({
     /KB_TOP_NAV[\s\S]*luxury-homes-bend/.test(nav),
 })
 
-const popular = src('components/site/kb/KbPopularSearches.tsx')
+// The city page moved onto components/site/v3 (2026-08-26) and its
+// KbPopularSearches rail left with the register. The RULE — Bend's city page
+// links /luxury-homes-bend — moved into the closing Quiet's edge list, built
+// by cityExploreItems, so the check follows it there.
+const cityEdges = src('app/cities/[slug]/_v3/city-sections.ts')
 checks.push({
-  label: 'city popular-searches rail links /luxury-homes-bend',
-  ok: popular.includes('href="/luxury-homes-bend"'),
+  label: 'city closing edges link /luxury-homes-bend for Bend',
+  ok:
+    /href:\s*'\/luxury-homes-bend'/.test(cityEdges) &&
+    cityEdges.includes("slug === 'bend'"),
 })
 
 // Both index pages moved onto components/site/v3 (2026-08-26), where an

@@ -73,7 +73,9 @@ describe('public mix / feature floors', () => {
     expect(comm).toMatch(/getPublicDetachedMix/)
     expect(nbh).toMatch(/getPublicDetachedMix/)
     expect(home).toMatch(/PublicMixStats/)
-    expect(cities).toMatch(/PublicMixStats/)
+    // v3 city page (2026-08-26): the mix cells print as Instrument figures
+    // through the same shared builder the ZIP page uses.
+    expect(cities).toMatch(/buildPublicMixFigures/)
   })
 
   it('publishes garage as a true share and other flags as at-least floors', async () => {

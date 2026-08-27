@@ -45,7 +45,14 @@ const surfaces = [
   },
   {
     path: 'app/cities/[slug]/page.tsx',
-    label: 'city about-facts gate days through publishDaysLabel',
+    label: 'city page prints no hand-rounded days figure',
+    // MOVED, NOT DROPPED (2026-08-26). The v3 city page dropped the KB
+    // about-facts row, so every days figure it prints flows through the
+    // route's _v3/city-sections.ts builders — the surface two entries down,
+    // which still hard-requires the publisher. What the page file itself
+    // still owes is the negative half: no raw Math.round on a days value,
+    // which is the founding 40-vs-39.5 defect.
+    negativeOnly: true,
   },
   {
     path: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
@@ -70,7 +77,7 @@ for (const surface of surfaces) {
     /Math\.round\([^)]*(?:[Dd]ays|medianDays|daysToPending|medianDom)/.test(text)
   checks.push({
     label: surface.label,
-    ok: usesFigure && !stillRounds,
+    ok: surface.negativeOnly ? !stillRounds : usesFigure && !stillRounds,
   })
 }
 

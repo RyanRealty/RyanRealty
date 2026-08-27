@@ -49,11 +49,28 @@ const pages = [
   },
   {
     path: 'app/cities/[slug]/page.tsx',
-    label: 'city page uses placeHeroLead',
+    label: 'city page opening count names the city, not a coarser parent',
+    // The v3 Field replaced KbHero here (2026-08-26). The count that opens the
+    // page is cityFieldCaption's, and that builder interpolates the city name
+    // itself, so the caption cannot hang the count on a coarser parent.
+    v3: {
+      module: 'app/cities/[slug]/_v3/city-sections.ts',
+      builder: 'cityFieldCaption',
+      names: 'in ${input.cityName}',
+    },
   },
   {
     path: 'app/subdivisions/[slug]/page.tsx',
-    label: 'subdivision page uses placeHeroLead',
+    label: 'plat page opening names the plat, not the parent city alone',
+    // The v3 Ledger/Field replaced KbHero here (2026-08-26). The heading is
+    // `Homes for sale in ${displayName}` and the count's own trace names the
+    // plat: homesLedgerTrace interpolates the subdivision name, so the counted
+    // set cannot read as the parent city's inventory.
+    v3: {
+      module: 'app/subdivisions/[slug]/_v3/subdivision-traces.ts',
+      builder: 'homesLedgerTrace',
+      names: '${scope.subdivisionName} name in ${scope.city}',
+    },
   },
   {
     path: 'app/zip/[zip]/page.tsx',

@@ -242,8 +242,14 @@ describe('design directive contracts', () => {
     // place imagery in its ledgers, and that imagery resolves through
     // buildOtherCityItems, which calls cityHero() and renders NO thumbnail for an
     // unverified city — the rule this directive exists for, one level down.
-    expect(src).toMatch(/cityHero\s*\(/)
-    expect(src).toMatch(/const curatedHero = cityHero\(slug\)/)
+    // THE CITY PAGE NO LONGER OWNS A FULL-BLEED HERO (P9, re-landed 2026-08-26):
+    // PUBLIC_UI.md's locked City opening is the Field of the city's houses, so
+    // there is no hero photo on this route for cityHero() to source. What the
+    // route DOES have is place imagery in its ledgers, and that imagery resolves
+    // through buildOtherCityItems, which calls cityHero() and renders NO
+    // thumbnail for an unverified city — the rule this directive exists for,
+    // one level down.
+    expect(src).toMatch(/buildOtherCityItems\(/)
     const shared = readSrc('lib/kb/place-sections.ts')
     expect(shared).toMatch(/cityHero\s*\(/)
     expect(shared).toMatch(/hero\.verified \? hero\.src : ''/)
@@ -269,8 +275,8 @@ describe('design directive contracts', () => {
     // that city — fetching them and rendering nothing still fails here, which is the
     // defect this contract exists to catch.
     expect(src).toMatch(/buildArticlePosts\(blogPosts\)/)
-    expect(src).toMatch(/<KbArticles/)
-    expect(src).toMatch(/articlePosts/)
+    expect(src).toMatch(/articleRows\(articlePosts\)/)
+    expect(src).toMatch(/heading=\{v3Text\(`\$\{cityName\} guides`\)\}/)
   })
 
   it('D84 — city page has a separate "Explore other cities" section', () => {
@@ -302,7 +308,7 @@ describe('design directive contracts', () => {
     // on this exact page. CityCommunityItem in app/cities/[slug]/_v3/city-sections.ts
     // carries the same fields. The source of the list — `= cityComms` — is the part
     // this directive is about and it is unchanged.
-    expect(src).toMatch(/const communityItems: KbCommunityItem\[\] = cityComms/)
+    expect(src).toMatch(/const communityItems: CityCommunityItem\[\] = cityComms/)
     // marquee/video cards float to the front, then by active count
     expect(src).toMatch(/\.sort\(\(a, b\) => \(a\.video \? 0 : 1\)/)
   })
@@ -333,8 +339,16 @@ describe('design directive contracts', () => {
     // shape, but importing it re-adds KB register debt to a page the P9 roll just took
     // off that register. CityPlaceItem carries the same fields. `= cityResorts(slug)`
     // — the is_resort registry membership that drops Three Rivers — is unchanged.
-    expect(src).toMatch(/golfCommunityItems: KbTownItem\[\] = cityResorts\(slug\)/)
-    expect(src).toMatch(/resortSfrCounts = resortActiveSfrCounts\(slug, resortTiles\)/)
+    expect(src).toMatch(/golfCommunityItems: CityPlaceItem\[\] = cityResorts\(slug\)/)
+    // AND THE COUNT MAP IS EMPTY, NOT ZERO-FILLED, WHEN THE UNCAPPED READ DEGRADED
+    // (§0, added 2026-08-12). resortActiveSfrCounts seeds every registered resort at
+    // 0, so handing it the empty array a TIMEOUT returns produced a full map of
+    // zeroes, and `.get(slug) ?? fallback` never reached its fallback: every resort
+    // in the city published "0 active" under a live-MLS trace. Gating the map on the
+    // read's own `.ok` is what makes the `??` chain below it reachable.
+    expect(src).toMatch(/resortRead\.ok\s*\n?\s*\?\s*resortActiveSfrCounts/)
+    // the rail card for a resort shows the SAME alias-aware count (no two-number mismatch)
+    expect(src).toMatch(/resortSlug \? resortSfrCounts\.get\(resortSlug\)/)
     // golf/master-planned hover photos resolve from the curated resort image map
     expect(src).toMatch(/CITY_RESORT_LEDGER_IMG\[c\.slug\]/)
   })
@@ -345,7 +359,7 @@ describe('design directive contracts', () => {
     // `heading` as the branded V3Text, so `heading="Latest market activity"` is a
     // compile error on the v3 register and the only spelling that exists is the
     // v3Text() constructor (P9, 2026-08-12). The section name is unchanged.
-    expect(src).toMatch(/heading="Latest market activity"/)
+    expect(src).toMatch(/heading=\{v3Text\('Latest market activity'\)\}/)
     // The row shaping moved into the shared place-section module, so all three
     // place pages (city / neighborhood / community) inherit the thumbnail.
     const shared = readSrc('lib/kb/place-sections.ts')

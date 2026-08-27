@@ -32,13 +32,23 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
     // The KB spelling: `pending: hud.pending` inside the KbMarketData literal.
     for (const [name, src] of Object.entries({
       home: files.home,
-      city: files.city,
       nbh: files.nbh,
       community: files.community,
     })) {
       expect(src, name).toMatch(/pending:\s*hud\.pending/)
       expect(src, name).not.toMatch(/pending:\s*pulse/)
     }
+    // The v3 spelling for the city page, MOVED not dropped (2026-08-26): the
+    // market Instrument's figures are built in _v3/city-sections.ts off the
+    // same leftover pile, so the rule is asserted where the figure is built.
+    const citySections = readFileSync(
+      resolve('app/cities/[slug]/_v3/city-sections.ts'),
+      'utf8',
+    )
+    expect(citySections).toMatch(/hud\.pending/)
+    expect(citySections).toMatch(/label: v3Text\('pending · now'\)/)
+    expect(files.city, 'city').not.toMatch(/pending:\s*pulse/)
+    expect(files.city, 'city').not.toMatch(/getMarketPulse/)
     // The v3 spelling, MOVED not dropped (2026-08-26). /zip/[zip] left the KB
     // register: there is no KbMarketData literal to key, so the same rule is
     // asserted on the figure the market Instrument actually prints — the value
@@ -95,7 +105,11 @@ describe('D26 leftover housing instrument and leftover as-of', () => {
 
   it('city HUD as-of is leftover stamp, not pulse fill', () => {
     const city = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
-    expect(city).toMatch(/asOf=\{leftoverStamp\}/)
+    // v3 spelling (2026-08-26): the Instrument's `updated` stamp is the
+    // leftover membership computed_at, formatted once. Pulse cannot fill it.
+    expect(city).toMatch(/updated=\{leftoverStamp \? v3Text\(formatDate\(leftoverStamp\)\)/)
+    expect(city).toMatch(/detached\?\.computedAt \?\? detachedInv\?\.computedAt/)
     expect(city).not.toMatch(/asOf=\{pulse\?\.refreshedAt/)
+    expect(city).not.toMatch(/updated=\{pulse/)
   })
 })

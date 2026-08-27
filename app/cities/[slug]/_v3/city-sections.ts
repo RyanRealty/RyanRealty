@@ -25,15 +25,22 @@
 
 import {
   v3Text,
+  V3_CHART_CATEGORY_SLOTS,
+  type V3ChartPoint,
+  type V3ChartProps,
+  type V3ChartSeries,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { formatPriceExact } from '@/lib/format/money'
+import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import type { KbYearSeries } from '@/lib/kb/year-series'
 
 /**
  * A place that has its own node: a neighborhood, a golf or master-planned
@@ -223,55 +230,126 @@ export function articleRows(items: readonly CityArticleItem[]): V3LedgerPlainRow
 }
 
 /**
- * The Instrument's three figures, every one off the SAME market_pulse_live row, so
- * the one trace and the one stamp the caller prints under them cover all three, and
- * every one a door. Homes for sale is NOT among them: that is the Field's count, so
- * the page states inventory once.
+ * The Instrument's KPI figures, all off the ONE leftover pile (D19 / MARKET_TRUTH):
+ * leftoverHudKpis is the sole source, a missing cell is omitted, and pulse and the
+ * stats cache never fill a tile. This replaced the pulse-driven three-figure set the
+ * reverted draft carried — the leftover HUD became the city SoR after 2026-08-15
+ * (D78: the hero count is hud.active), so restoring the pulse figures would publish
+ * a second population under the same labels.
  *
- * `monthsOfSupplyLabel` arrives already rendered by lib/format/months-of-supply from
- * the RAW stored value the caller also handed marketVerdict, which is what keeps the
- * printed digits from crossing a threshold the raw value does not cross.
+ * Months of supply: leftoverHudKpis already ran publishMonthsOfSupply with
+ * source 'market-truth', so `hud.monthsSupply` is the PUBLISHED raw value. The
+ * caller classifies THAT value (marketVerdict) and this builder formats it with
+ * formatMonthsOfSupply, so the printed digits cannot cross a threshold the raw
+ * value did not cross.
  */
-export function marketFigures(
-  pulse: {
-    medianListPrice: number | null
-    medianDaysToPending: number | null
-  } | null,
-  monthsOfSupplyLabel: string | null,
-  links: { marketReport: string; monthsOfSupply: string },
+export function leftoverMarketFigures(
+  hud: LeftoverHudKpis,
+  links: { browse: string; monthsOfSupply: string },
 ): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
-  if (pulse?.medianListPrice != null && pulse.medianListPrice > 0) {
+  if (hud.medianList != null && hud.medianList > 0) {
     figures.push({
-      value: v3Text(formatPriceExact(pulse.medianListPrice)),
-      label: v3Text('median list price, single-family'),
-      href: links.marketReport,
+      value: v3Text(formatPriceExact(hud.medianList)),
+      label: v3Text('median list price'),
+      href: links.browse,
     })
   }
-  if (monthsOfSupplyLabel != null) {
+  if (hud.active != null && hud.active > 0) {
     figures.push({
-      value: v3Text(monthsOfSupplyLabel),
-      label: v3Text('months of supply, single-family'),
-      href: links.monthsOfSupply,
+      value: v3Text(hud.active.toLocaleString('en-US')),
+      label: v3Text('detached homes for sale'),
+      href: links.browse,
     })
   }
-  // THE DIGITS THE FAQ PUBLISHES, NOT A SECOND ROUNDING OF THEM. buildMarketFaq
-  // interpolates this field raw ("took a median of 20.5 days to go pending") into the
-  // visible answer, the FAQPage JSON-LD, and the Median Days to Pending dataset
-  // variable. Math.round here printed 21 in the Instrument beside all three — verified
-  // live on /cities/redmond 2026-08-12, stored median_days_to_pending 20.50. One
-  // statistic, two numbers, one page. The guard is `> 0` for the same reason the other
-  // two figures carry it: it is buildMarketFaq's own condition, so the Instrument
-  // cannot print a figure the shared builder declined to answer (invariant 2).
-  const daysToPending = publishDaysFigure(pulse?.medianDaysToPending)
+  if (hud.pending != null && hud.pending > 0) {
+    figures.push({
+      value: v3Text(hud.pending.toLocaleString('en-US')),
+      label: v3Text('pending · now'),
+    })
+  }
+  if (hud.closed30 != null && hud.closed30 > 0) {
+    figures.push({
+      value: v3Text(hud.closed30.toLocaleString('en-US')),
+      label: v3Text('closed · 30 days'),
+    })
+  }
+  if (hud.new30 != null && hud.new30 > 0) {
+    figures.push({
+      value: v3Text(hud.new30.toLocaleString('en-US')),
+      label: v3Text('new · 30 days'),
+    })
+  }
+  if (hud.saleToList != null) {
+    figures.push({
+      value: v3Text(`${hud.saleToList.toFixed(1)}%`),
+      label: v3Text('sale to list'),
+    })
+  }
+  // Tenths, through publishDaysFigure — the medians land on half-days, and
+  // integer-rounding one published days figure beside another page's tenths is
+  // the Black Butte 40-vs-39.5 defect. Same digits buildMarketFaq interpolates.
+  const daysToPending = publishDaysFigure(hud.daysToPending)
   if (daysToPending) {
     figures.push({
       value: v3Text(daysToPending),
-      label: v3Text('median days to pending, single-family'),
-      href: links.marketReport,
+      label: v3Text('median to pending · 90 days'),
+    })
+  }
+  if (hud.monthsSupply != null && hud.monthsSupply > 0) {
+    figures.push({
+      value: v3Text(formatMonthsOfSupply(hud.monthsSupply)),
+      label: v3Text('months of supply'),
+      href: links.monthsOfSupply,
+    })
+  }
+  if (hud.sold12mo != null && hud.sold12mo > 0) {
+    figures.push({
+      value: v3Text(hud.sold12mo.toLocaleString('en-US')),
+      label: v3Text('sold · 12 months'),
     })
   }
   return figures
+}
+
+/**
+ * The leftover pace keys the HUD figures above already print. publicPaceItems
+ * repeats these three under its own labels, and printing 97.6% twice under two
+ * labels reads as two findings (the ZIP page's rule, shared).
+ */
+export const CITY_PACE_KEYS_ON_THE_HUD = new Set(['pending', 'sto', 'closed'])
+
+const MONTH_TICK = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+] as const
+
+/**
+ * The median-close year overlay for a place Instrument — the same construction
+ * the ZIP node ships (zipMedianChart), one copy for the place family. Absent
+ * months are dropped, a year with fewer than two plottable points is dropped,
+ * and an empty overlay returns undefined so the caller mounts no chart.
+ */
+export function placeMedianChart(
+  years: readonly KbYearSeries[],
+  caption: string,
+): V3ChartProps | undefined {
+  const overlay: V3ChartSeries[] = []
+  for (const year of years.slice(-V3_CHART_CATEGORY_SLOTS)) {
+    const points: V3ChartPoint[] = []
+    for (const row of year.points) {
+      const tick = MONTH_TICK[row.m - 1]
+      if (!tick) continue
+      if (!Number.isFinite(row.value) || row.value <= 0) continue
+      const label = formatPriceCompact(row.value)
+      if (!label || label === '—') continue
+      points.push({ value: row.value, tick: v3Text(tick), label: v3Text(label), at: row.m })
+    }
+    if (points.length < 2) continue
+    overlay.push({ name: v3Text(String(year.year)), points })
+  }
+  if (overlay.length === 0) return undefined
+  return { caption: v3Text(caption), series: overlay, overlay: 'yoy' }
 }
 
 /**
@@ -319,11 +397,17 @@ export function cityAboutItems(
  */
 const FEED = 'live MLS through Oregon Data Share'
 
-/** The trace over the Instrument's market_pulse_live figures. */
-export function cityMarketTrace(cityName: string): string {
+/**
+ * The trace over the Instrument's leftover-HUD figures. Every figure names its
+ * own window on its label; a cell the metric layer withheld is absent, never
+ * estimated (§0). The MoS clauses ride along only when a supply figure prints.
+ */
+export function cityMarketTrace(cityName: string, hasMos: boolean): string {
   return (
-    `${FEED}, single-family homes inside the ${cityName} city boundary. ` +
-    `${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`
+    `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
+    `detached single-family houses inside the ${cityName} city boundary. ` +
+    `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
+    (hasMos ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
   )
 }
 
@@ -336,59 +420,22 @@ export function cityActivityTrace(cityName: string): string {
 }
 
 /**
- * THE INVENTORY COUNT, with whichever row supplied it and that row's own stamp. The
- * fallback branch cannot claim more than it proves: getGeoSnapshot overlays the live
- * city market row onto the MV row for every city, so the count and the stamp printed
- * there may already be the market row's. The only negative claim available is about
- * THIS PAGE'S OWN market read, which is the read that is null in that branch.
- */
-export function cityInventory(
-  cityName: string,
-  pulse: { activeCount: number; refreshedAt: string | null } | null,
-  snapshot: { activeSfrCount: number; refreshedAt: string | null },
-): { count: number; source: string; updatedAt: string | null } {
-  return pulse
-    ? {
-        count: pulse.activeCount,
-        source: `${FEED}, the 15-minute market row for ${cityName}: active and coming-soon single-family homes inside the city boundary`,
-        updatedAt: pulse.refreshedAt,
-      }
-    : {
-        count: snapshot.activeSfrCount,
-        source: `${FEED}, single-family homes in the ${cityName} geo snapshot, with the live city market row applied over it wherever the data layer matched one. This page's own market read did not return on this refresh, so no median, supply figure, or verdict is printed above`,
-        updatedAt: snapshot.refreshedAt,
-      }
-}
-
-/**
  * THE STATED ABSENCE, for the render where the Instrument has no figure to print.
  *
- * The sentence is derived from THIS PAGE'S OWN MARKET READ, never from the figure
- * array. Keying it on the figures published a false negative: market_pulse_live holds
- * live city rows that RETURN carrying nulls (verified 2026-08-12 — geo_type 'city',
- * geo_slug 'warm springs', property_type 'A': active_count 0 with median_list_price,
- * months_of_supply and median_days_to_pending all null), and on that render the page
- * said "the market row did not return" directly above a Field printing its count under
- * "the 15-minute market row for Warm Springs". One page, two contradictory claims about
- * one read.
- *
- * It also states no count of its own. The inventory figure is printed once, in the
- * Field, under the Field's trace; restating it here would put a number in a Quiet with
- * nothing to sit under it (invariant 4). The block points at that source line instead.
- *
- * The closing clause about the rows is conditional for the same reason: with no row
- * below, "the homes below carry their own live list prices" describes homes that are
- * not there.
+ * The sentence is derived from THIS PAGE'S OWN MARKET READS — the leftover
+ * membership headline/inventory cells and the 12-month pace row — never from the
+ * figure array, and it states no count of its own. The inventory listed on this
+ * page is counted once, in the Field, under the Field's trace; restating it here
+ * would put a number in a Quiet with nothing to sit under it (invariant 4). The
+ * closing clause about the rows is conditional for the same reason: with no row
+ * above, "the homes above carry their own live list prices" describes homes that
+ * are not there.
  */
-export function marketAbsenceItems(
-  cityName: string,
-  pulseReturned: boolean,
-  hasRows: boolean,
-): V3QuietItem[] {
+export function marketAbsenceItems(cityName: string, hasRows: boolean): V3QuietItem[] {
   const tail = hasRows ? ' The homes above carry their own live list prices.' : ''
-  const body = pulseReturned
-    ? `The ${cityName} market row returned on this refresh carrying no median list price, no months-of-supply figure, and no days-to-pending figure, so this page prints no verdict.${tail}`
-    : `The ${cityName} market row did not return on this refresh, so this page is not printing a median, a supply figure, or a verdict.${tail}`
+  const body =
+    `The Market Truth metric layer published no figure for ${cityName} on this refresh, ` +
+    `so this page is not printing a median, a supply figure, or a verdict.${tail}`
   return [{ kind: 'prose', term: 'No live market figures right now', body }]
 }
 
@@ -405,22 +452,32 @@ export function cityFieldCaption(input: {
   verdictLabel: string
 }): string | null {
   if (input.count <= 0) return null
-  const homes = `${input.count.toLocaleString('en-US')} ${input.count === 1 ? 'home' : 'homes'} in ${input.cityName}`
+  // The listed set is an EXPLICIT PREVIEW CAP (CITY_PLACE_LIST_CAP, the same
+  // cap the KB dual-pane list carried): the newest qualifying listings, list
+  // and pins one set. The full inventory figure lives in the Instrument under
+  // its own trace, and the Instrument's action is the view-all door.
+  const homes = `The ${input.count.toLocaleString('en-US')} newest single-family listings in ${input.cityName}`
   if (input.verdictKind === 'unknown' || input.mosLabel == null) return homes
   return `${homes} · ${input.mosLabel} months of supply · a ${input.verdictLabel}`
 }
 
-/** Trace over the Field's listed set. No borrowed pulse stamp. */
+/**
+ * Trace over the Field's listed set. No borrowed pulse stamp. SFR-only since
+ * C-02: every sibling geo map (community, neighborhood, subdivision, ZIP,
+ * homepage) pulls the Single Family Residence sub-type, and an all-types pool
+ * here put a 1,000-home badge beside a 491 hero on /cities/bend.
+ */
 export function cityFieldTrace(cityName: string): string {
   return (
-    `${FEED}, every active home in the residential bucket (single family, townhome, and condominium) ` +
-    `with a ${cityName} address, a list price, and a street on this page. The count is this set`
+    `${FEED}, the newest active single-family homes ` +
+    `with a ${cityName} address, a list price, and a street. The map plots this same set; ` +
+    `the Instrument below carries the full inventory count under its own trace`
   )
 }
 
 export function cityFieldEmptyMessage(cityName: string, tilesReturned: number): string {
   return tilesReturned === 0
-    ? `The active listing feed returned no ${cityName} home in the residential bucket (single family, townhome, and condominium) on this refresh.`
+    ? `No single-family home in ${cityName} is listed in the active feed on this refresh.`
     : `Every active ${cityName} listing this refresh returned was missing a list price or a street address, so none of them is shown as a row.`
 }
 
@@ -448,6 +505,12 @@ export function cityExploreItems(
     { label: 'Value my home', href: links.valuation },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
+  // The westside-luxury door (ci:westside-backlog): Bend keeps its edge to the
+  // luxury page. KbPopularSearches carried it on the KB register; the closing
+  // Quiet is where the graph's outbound edges live on the barrel.
+  if (slug === 'bend') {
+    items.splice(1, 0, { label: 'Luxury homes in Bend', href: '/luxury-homes-bend' })
+  }
   if (hasPopulation) items.push({ label: 'U.S. Census Bureau', href: 'https://www.census.gov' })
   return items
 }
