@@ -9,7 +9,7 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 166,
+    "nonV3ImportSites": 165,
     "legacyPages": 2,
     "mixedPages": 52
   },
@@ -433,7 +433,7 @@
       "legacy": 1
     },
     "app/videos/page.tsx": {
-      "legacy": 3,
+      "legacy": 2,
       "v3": 1
     },
     "app/zip/[zip]/page.tsx": {

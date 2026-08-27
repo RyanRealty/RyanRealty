@@ -8,7 +8,10 @@
  * revalidate 300, V3SectionTracker pageType="media".
  *
  * LEFTOVERS, not v3 atoms: HideAwareVideoGrid (inline play) and VideoFeedClient
- * (vertical feed at ?view=feed). No video-grid atom exists.
+ * (vertical feed at ?view=feed). No video-grid atom exists. Those two are the
+ * page's ENTIRE remaining non-v3 count; the third, a type-only import of
+ * ListingCardData, went on 2026-08-26 because the value it annotated already
+ * carried that type.
  *
  * KB-era deletions: KbHero ("Walk the house / before you go."), SmoothScrollProvider,
  * KbFooter, naked-verb H2 "Pick a city". H1 is search-first: "Video tours of
@@ -27,7 +30,6 @@ import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import HideAwareVideoGrid, { type HideAwareVideoItem } from '@/components/site/HideAwareVideoGrid'
 import { VideoFeedClient } from '@/components/site/VideoFeedClient'
-import type { ListingCardData } from '@/components/site/ListingCard'
 import {
   V3_ROOT_CLASS,
   V3Breadcrumb,
@@ -108,7 +110,11 @@ export default async function VideosPage({
       return card ? { card, ListingKey: t.listingKey, ListNumber: t.listNumber } : null
     })
     .filter((x): x is HideAwareVideoItem => x !== null)
-  const cards: ListingCardData[] = videoItems.map((v) => v.card)
+  // Inferred, not annotated. HideAwareVideoItem['card'] IS ListingCardData, so
+  // the annotation bought nothing and cost this page an import from the flat
+  // legacy register — one more non-v3 import site on the ci:public-ui ledger for
+  // a type the value already carries.
+  const cards = videoItems.map((v) => v.card)
   const feedItems = tilesToFeedItems(tiles)
 
   const heading = city ? `Video tours of ${city} homes for sale` : 'Video tours of homes for sale'
