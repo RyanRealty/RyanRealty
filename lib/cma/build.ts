@@ -67,7 +67,7 @@ import { renderCmaHtml } from '@/lib/cma/render'
 import { checkBrandVoice } from '@/lib/voice/check'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { reviewProse } from '@/lib/voice/reviewer'
-import type { CmaBroker, CmaBuildInput, CmaBuildResult } from '@/lib/cma/types'
+import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
 const DEFAULT_BROKER_SLUG = (process.env.CMA_DEFAULT_BROKER_SLUG ?? 'matthew-ryan').trim().toLowerCase()
@@ -113,22 +113,54 @@ async function resolveBroker(input: CmaBuildInput): Promise<CmaBroker> {
 async function recordBuildFailure(
   slug: string,
   error: string,
-  meta?: { stage: 'subject' | 'comps' | 'pricing' | 'contract'; docType: 'cma' | 'expired-audit'; compSelection?: CompSelectionDiagnostics | null },
+  meta?: {
+    stage: 'subject' | 'comps' | 'pricing' | 'contract'
+    docType: 'cma' | 'expired-audit'
+    compSelection?: CompSelectionDiagnostics | null
+    /**
+     * D8 (Matt 2026-08-27): a failed build used to leave an EMPTY row — no
+     * comps, no pricing, nothing for the review/rebuild flow to work from.
+     * Every figure the build reached before dying is persisted so a broker can
+     * see WHY it refused and rebuild with notes instead of starting cold.
+     */
+    pricing?: CmaPricing | null
+    contractChecks?: Array<{ id: string; severity: string; pass: boolean; detail: string }> | null
+  },
 ): Promise<void> {
+  const failureSummary = meta
+    ? {
+        ...composeFailureSummary({
+          builder: CMA_BUILDER_VERSION,
+          docType: meta.docType,
+          stage: meta.stage,
+          error,
+          compSelection: meta.compSelection ?? null,
+        }),
+        ...(meta.pricing
+          ? {
+              pricing_at_failure: {
+                recommended: meta.pricing.recommended,
+                conservative: meta.pricing.conservative,
+                highEnd: meta.pricing.highEnd,
+                valueLow: meta.pricing.valueLow,
+                valueHigh: meta.pricing.valueHigh,
+                predictedClose: meta.pricing.predictedClose ?? null,
+                currentAsk: meta.pricing.currentAsk ?? null,
+                method1Mid: meta.pricing.method1Mid,
+                method2: meta.pricing.method2,
+                method3: meta.pricing.method3,
+                confidence: meta.pricing.confidence,
+                compPpsfCv: meta.pricing.compPpsfCv,
+              },
+            }
+          : {}),
+        ...(meta.contractChecks ? { contract_at_failure: meta.contractChecks } : {}),
+      }
+    : null
   await updateCmaRowFieldsBySlug(slug, {
     build_error: error.slice(0, 2000),
     built_at: new Date().toISOString(),
-    ...(meta
-      ? {
-          build_summary: composeFailureSummary({
-            builder: CMA_BUILDER_VERSION,
-            docType: meta.docType,
-            stage: meta.stage,
-            error,
-            compSelection: meta.compSelection ?? null,
-          }),
-        }
-      : {}),
+    ...(failureSummary ? { build_summary: failureSummary } : {}),
   }).catch(() => {})
 }
 
@@ -492,7 +524,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         .map((c) => `${c.id}: ${c.detail}`)
         .join(' | ')
       const err = `Accuracy contract failed: ${failed}`
-      await recordBuildFailure(slug, err, { stage: 'contract', docType, compSelection: selection.diagnostics })
+      await recordBuildFailure(slug, err, {
+        stage: 'contract',
+        docType,
+        compSelection: selection.diagnostics,
+        pricing,
+        contractChecks: contract.checks,
+      })
       return { ok: false, error: err, slug }
     }
     if (contract.forceReview && !pricing.needsReview) {

@@ -55,6 +55,7 @@ import {
 } from '@/lib/cma/comp-trace'
 import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
+import { crossesMajorDivide } from '@/lib/pricing/divides'
 
 export { realSubdivision }
 
@@ -382,6 +383,23 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
       // prices a resort subject. Registry-driven, symmetric.
       if (!resortCommunityCompatible(subject.subdivision, comp.subdivision)) {
         rung.excluded.resort_premium++
+        continue
+      }
+
+      // HARD EXCLUSION at every tier (Never cross US-97 / Bend Parkway /
+      // Deschutes — CMA_SUNSTONE_CONTRACT). The facts ladder has carried this
+      // cut since divides.ts shipped; this FALLBACK ladder silently dropped it,
+      // which is defect D5: 828 Florida (west of the Parkway) was priced from
+      // Archie Briggs / Star Ridge / Rimrock sales across it, $481/sqft against
+      // an Old Bend subject. Both sides must resolve to a mapped bank; an
+      // unmapped point fails open, same as Path A.
+      if (
+        crossesMajorDivide(
+          subjectArea,
+          resolveMarketArea(comp.latitude, comp.longitude),
+        )
+      ) {
+        rung.excluded.crossed_divide++
         continue
       }
 

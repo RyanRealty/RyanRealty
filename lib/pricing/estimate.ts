@@ -288,8 +288,11 @@ export function listPriceFromEngine(opts: {
 /** Write the engine list onto the CMA cover. A broker override still wins. */
 export function applyEngineRecommendedList(
   pricing: CmaPricing,
-  engine: Pick<EngineListResult, 'recommendedList' | 'predictedClose' | 'conservativeList' | 'highEndList'>,
-  opts: { priceOverride?: number | null } = {},
+  engine: Pick<
+    EngineListResult,
+    'recommendedList' | 'predictedClose' | 'conservativeList' | 'highEndList' | 'source'
+  >,
+  opts: { priceOverride?: number | null; lastAsk?: number | null } = {},
 ): CmaPricing {
   const close =
     engine.predictedClose != null && engine.predictedClose > 0 ? engine.predictedClose : (pricing.predictedClose ?? null)
@@ -303,6 +306,43 @@ export function applyEngineRecommendedList(
   const conservative =
     engine.conservativeList != null && engine.conservativeList > 0 ? engine.conservativeList : list
   const highEnd = engine.highEndList != null && engine.highEndList > 0 ? engine.highEndList : list
+
+  // SHOW BOTH, NEVER BLEND (Matt 2026-08-27). On a live-listed subject the
+  // engine's list is ask×0.98÷sale-to-list — the subject's own asking price
+  // wearing a ratio. Printing that as OUR recommendation restates the seller's
+  // number back at them, and because the band stays comp-only it also landed
+  // outside its own band on all three 2026-08-27 test builds (range-consistency
+  // hard failures: Tumalo, Bluff, Florida). The recommendation on the ask path
+  // is therefore the midpoint of the comp-supported band — the same "mid-range,
+  // stay within support" placement the 2026-08-25 rule uses — and the ask ships
+  // beside it as currentAsk, stated on the document, never averaged in.
+  //
+  // predictedClose keeps the moat's ask-derived close (measured: within 10% on
+  // 98.31% of 8,648 listed closes) — that is a CLOSE estimate for admin, not
+  // the seller-facing list recommendation. Listing stamps and public reads call
+  // listPriceFromEngine directly and are untouched by this branch.
+  if (engine.source === 'ask') {
+    const bandLow = Math.min(conservative, highEnd)
+    const bandHigh = Math.max(conservative, highEnd)
+    const recommended = round1000((bandLow + bandHigh) / 2)
+    const ask = opts.lastAsk != null && opts.lastAsk > 0 ? opts.lastAsk : null
+    return {
+      ...pricing,
+      recommended,
+      conservative: bandLow,
+      highEnd: bandHigh,
+      valueLow: bandLow,
+      valueHigh: bandHigh,
+      predictedClose: close,
+      currentAsk: ask,
+      askDerivedList: list,
+      notes: [
+        `Subject is on the market. Recommendation is the comp-band midpoint; the current ask ($${(ask ?? 0).toLocaleString('en-US')}) is shown beside it, never blended (Matt 2026-08-27).`,
+        ...pricing.notes,
+      ],
+    }
+  }
+
   return {
     ...pricing,
     recommended: list,
@@ -361,7 +401,7 @@ export function applyEngineCoverToCmaPricing(
     qualitySet,
     methodFallback: pricing.method3 ?? pricing.method1Mid,
   })
-  return applyEngineRecommendedList(pricing, engine, { priceOverride: input.priceOverride })
+  return applyEngineRecommendedList(pricing, engine, { priceOverride: input.priceOverride, lastAsk: input.lastAsk })
 }
 
 /** computePricing + engine cover. Keeps lib/cma/build.ts from growing. */

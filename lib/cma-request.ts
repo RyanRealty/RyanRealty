@@ -229,7 +229,12 @@ export async function createCmaRequest(
       }${slot.priorStatus ? ` · new version — the earlier ${slot.priorStatus} CMA for this address is preserved` : ''}`
 
       if (slot.existing) {
-        const patch: Record<string, unknown> = { generation_reason: generationReason }
+        // request_source travels with every write so delivery can route on a
+        // column, never on the generation_reason prose (D7, Matt 2026-08-27).
+        const patch: Record<string, unknown> = {
+          generation_reason: generationReason,
+          request_source: requestSource,
+        }
         if (leadName) patch.client_name = leadName
         if (leadEmail) patch.client_email = leadEmail
         if (leadPhoneTrimmed) patch.client_phone = leadPhoneTrimmed
@@ -262,6 +267,7 @@ export async function createCmaRequest(
           // stamps html_path 'db:cmas.html_content:<slug>' (lib/cma/build.ts).
           html_path: `pending:${slug}`,
           generation_reason: generationReason,
+          request_source: requestSource,
           ...(linkedPersonId ? { person_id: linkedPersonId } : {}),
         })
         if (inserted.error || !inserted.id) {

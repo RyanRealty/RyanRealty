@@ -164,6 +164,17 @@ export interface CmaPricing {
   valueHigh: number
   /** Moat close. Live listing = current ask × 0.98. Off-market = comps $/sf × GLA. */
   predictedClose?: number | null
+  /**
+   * SHOW BOTH, NEVER BLEND (Matt 2026-08-27). When the subject is live-listed,
+   * the recommendation stays comp-derived (band midpoint, per the 2026-08-25
+   * mid-range rule) and the current ask ships BESIDE it with the gap stated,
+   * never averaged in. The gap IS the finding: 828 Florida's comps supported
+   * $623–657K against a $1,049,000 ask, and smoothing that away is exactly the
+   * failure the rule exists to stop.
+   */
+  currentAsk?: number | null
+  /** What ask×0.98÷sale-to-list implies (the moat's close pick). Admin context. */
+  askDerivedList?: number | null
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
   /** True when the comp set is too heterogeneous to trust without broker review. */

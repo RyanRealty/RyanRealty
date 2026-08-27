@@ -95,6 +95,25 @@ export function evaluateAccuracyContract(args: {
     pass: pricing.conservative <= pricing.recommended && pricing.recommended <= pricing.highEnd,
     detail: `Conservative $${pricing.conservative.toLocaleString()} ≤ recommended $${pricing.recommended.toLocaleString()} ≤ high end $${pricing.highEnd.toLocaleString()}.`,
   })
+  if (pricing.currentAsk != null && pricing.currentAsk > 0) {
+    // INFO, never gates: on a live-listed subject the ask ships BESIDE the
+    // comp evidence (Matt 2026-08-27, show both never blend). The gap is a
+    // finding for the broker, not a defect in the build.
+    const high = Math.max(pricing.valueLow, pricing.valueHigh)
+    const low = Math.min(pricing.valueLow, pricing.valueHigh)
+    const gapPct =
+      pricing.currentAsk > high
+        ? Math.round(((pricing.currentAsk - high) / high) * 100)
+        : pricing.currentAsk < low
+          ? -Math.round(((low - pricing.currentAsk) / low) * 100)
+          : 0
+    checks.push({
+      id: 'ask-vs-support',
+      severity: 'info',
+      pass: true,
+      detail: `Subject is on the market at $${pricing.currentAsk.toLocaleString()}; comp support $${low.toLocaleString()}–$${high.toLocaleString()} (gap ${gapPct}%). Shown side by side on the document.`,
+    })
+  }
   const crossType = comps.find((c) => !productTypeCompatible(subjectSubType ?? null, c.propertySubType))
   checks.push({
     id: 'product-type-match',

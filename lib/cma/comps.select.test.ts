@@ -14,6 +14,11 @@ vi.mock('@/lib/data', () => ({
   selectCmaCompsByKeys,
 }))
 
+const divideSpy = vi.hoisted(() => vi.fn(() => false))
+vi.mock('@/lib/pricing/divides', () => ({
+  crossesMajorDivide: divideSpy,
+}))
+
 import { selectComps, selectCompsByKeys } from '@/lib/cma/comps'
 
 const subject = (over: Partial<CmaSubject> = {}): CmaSubject =>
@@ -184,5 +189,32 @@ describe('land selection — the four walls that silently returned zero comps', 
     expect(call.propertyType).toBe('A')
     expect(call.sqftMin).toBeGreaterThan(0)
     expect(call.sqftMax).toBeGreaterThan(0)
+  })
+})
+
+describe('selectComps — the fallback ladder carries the divide cut (D5)', () => {
+  // The facts ladder has refused to cross US-97 / Bend Parkway / the Deschutes
+  // since divides.ts shipped. This FALLBACK ladder silently dropped the cut,
+  // which is how 828 Florida (west of the Parkway) was priced from Archie
+  // Briggs / Star Ridge / Rimrock sales across it. The wiring is what this
+  // pins; the bank logic itself is tested in lib/pricing/divides.test.ts.
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    divideSpy.mockReset()
+  })
+
+  it('excludes a comp on the other side of the divide and counts it', async () => {
+    divideSpy.mockReturnValue(true)
+    selectCmaCompsPool.mockResolvedValue([closedRow()])
+    const sel = await selectComps(subject())
+    expect(sel.comps).toHaveLength(0)
+    expect(sel.diagnostics.excluded_totals.crossed_divide).toBeGreaterThan(0)
+  })
+
+  it('admits the same comp when no divide is crossed', async () => {
+    divideSpy.mockReturnValue(false)
+    selectCmaCompsPool.mockResolvedValue([closedRow()])
+    const sel = await selectComps(subject())
+    expect(sel.comps.length).toBeGreaterThan(0)
   })
 })

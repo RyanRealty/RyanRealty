@@ -40,6 +40,8 @@ export interface CompExclusionCounts {
   resort_premium: number
   /** Outside the subject's GIS market-area polygon on a polygon-restricted tier. */
   market_area: number
+  /** Comp sits on the other side of US-97 / Bend Parkway or the Deschutes. */
+  crossed_divide: number
   /** Inside the tier's bounding box but outside its true mileage radius. */
   distance: number
   /** Already selected by an earlier (tighter) tier. */
@@ -51,7 +53,7 @@ export interface CompExclusionCounts {
 }
 
 export function emptyExclusions(): CompExclusionCounts {
-  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0 }
+  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0 }
 }
 
 export function addExclusions(into: CompExclusionCounts, from: CompExclusionCounts): void {
@@ -127,6 +129,7 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   lot_character: 'their lot character does not match (acreage against an in-town lot, or far outside the acreage band)',
   resort_premium: 'they sit in a resort community the subject is not in (premium contamination, or the reverse)',
   market_area: "they sit outside the subject's neighborhood boundary",
+  crossed_divide: 'they sit on the other side of US-97, the Bend Parkway, or the Deschutes River — a different buyer pool at any distance',
   distance: "they sit beyond the tier's distance bound",
   duplicate: 'a tighter tier had already selected them',
   self: "they are the subject's own listing",

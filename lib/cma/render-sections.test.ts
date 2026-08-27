@@ -176,6 +176,33 @@ describe('capability blocks return nothing when their data is absent', () => {
     }
   })
 
+
+  it('a live-listed subject prints the current ask beside the comp evidence, never blended', () => {
+    // Matt 2026-08-27: show both, never blend. The gap IS the finding.
+    const { html } = renderCmaHtml({
+      ...bareArgs,
+      pricing: {
+        ...pricing,
+        valueLow: 532_000,
+        valueHigh: 656_000,
+        conservative: 532_000,
+        recommended: 594_000,
+        highEnd: 656_000,
+        currentAsk: 765_000,
+        askDerivedList: 774_000,
+      },
+    })
+    expect(html).toContain('On the market today at $765,000')
+    expect(html).toContain('above the top of the supported range')
+    // The recommendation printed is the comp-derived number, not the ask.
+    expect(html).toContain('class="vb-price">$594,000')
+  })
+
+  it('an off-market subject prints no ask line', () => {
+    const { html } = renderCmaHtml(bareArgs)
+    expect(html).not.toContain('On the market today at')
+  })
+
   it('skips a contents sheet and prints the recommended list on the cover', () => {
     const { html } = renderCmaHtml(bareArgs)
     expect(html).not.toContain('>Contents<')

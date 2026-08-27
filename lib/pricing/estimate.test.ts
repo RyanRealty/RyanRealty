@@ -337,10 +337,22 @@ describe('listPriceFromEngine is the only cover number', () => {
     })
     expect(engine.recommendedList).toBe(505_000)
 
-    const cover = applyEngineRecommendedList(out.pricing!, engine, { priceOverride: null })
-    expect(cover.recommended).toBe(505_000)
+    // SHOW BOTH, NEVER BLEND (Matt 2026-08-27): the subject is live-listed
+    // (lastAsk 505,100), so the cover recommendation is the comp-band MIDPOINT,
+    // not the ask restated through a ratio. The ask ships beside it.
+    const cover = applyEngineRecommendedList(out.pricing!, engine, {
+      priceOverride: null,
+      lastAsk: 505_100,
+    })
+    expect(cover.recommended).toBe(
+      Math.round((cover.conservative + cover.highEnd) / 2 / 1000) * 1000,
+    )
+    expect(cover.conservative).toBeLessThanOrEqual(cover.recommended)
+    expect(cover.recommended).toBeLessThanOrEqual(cover.highEnd)
+    expect(cover.currentAsk).toBe(505_100)
+    expect(cover.askDerivedList).toBe(505_000)
     expect(cover.predictedClose).toBe(495_000)
-    expect(cover.notes[0]).toMatch(/pricing engine/i)
+    expect(cover.notes[0]).toMatch(/never blended/i)
     expect(cover.method3).toBe(out.pricing!.method3)
 
     const overridden = computePricing(
@@ -411,9 +423,80 @@ describe('listPriceFromEngine is the only cover number', () => {
       marketIndex: points,
       asOf: '2026-01-15',
     })
-    expect(built?.recommended).toBe(505_000)
+    // Same rule through priceCmaSet: live-listed → comp-band midpoint + the ask
+    // carried for the document; predictedClose stays the moat's ask-derived close.
+    expect(built?.recommended).toBe(
+      Math.round(((built!.conservative + built!.highEnd) / 2) / 1000) * 1000,
+    )
+    expect(built?.conservative).toBeLessThanOrEqual(built!.recommended)
+    expect(built?.recommended).toBeLessThanOrEqual(built!.highEnd)
+    expect(built?.currentAsk).toBe(505_100)
     expect(built?.predictedClose).toBe(495_000)
     expect(built?.method3).not.toBe(505_000)
+  })
+
+
+  it('a listed subject whose ask sits far above comp support ships BOTH numbers and passes ordering (the 363 Bluff failure)', () => {
+    // Real production failure 2026-08-27: band $532,000–$656,000 from comps,
+    // ask $765,000, ratio 0.969 → the old code recommended $774,000 (the ask
+    // through the ratio), OUTSIDE its own band, and range-consistency killed
+    // the build. Under show-both-never-blend the recommendation is the band
+    // midpoint and the ask is carried for the document.
+    const pricing = {
+      method1Low: 500_000, method1Mid: 590_000, method1High: 660_000,
+      method2: 600_000, method3: 594_000,
+      convergenceSpreadPct: 3, converged: true,
+      conservative: 540_000, recommended: 595_000, highEnd: 650_000,
+      valueLow: 540_000, valueHigh: 650_000,
+      confidence: 'Moderate' as const, confidenceReason: 'fixture',
+      needsReview: false, reviewReason: null, compPpsfCv: 0.1,
+      priceOverride: null, improvementsValueAdd: null, notes: [],
+    }
+    const cover = applyEngineRecommendedList(
+      pricing,
+      {
+        recommendedList: 774_000,
+        predictedClose: 750_000,
+        conservativeList: 532_000,
+        highEndList: 656_000,
+        source: 'ask',
+      },
+      { lastAsk: 765_000 },
+    )
+    expect(cover.recommended).toBe(594_000)
+    expect(cover.conservative).toBe(532_000)
+    expect(cover.highEnd).toBe(656_000)
+    expect(cover.currentAsk).toBe(765_000)
+    expect(cover.askDerivedList).toBe(774_000)
+    // The hard contract check that killed the three builds now holds.
+    expect(cover.conservative <= cover.recommended && cover.recommended <= cover.highEnd).toBe(true)
+  })
+
+  it('an off-market subject is untouched by the show-both rule', () => {
+    const pricing = {
+      method1Low: 500_000, method1Mid: 590_000, method1High: 660_000,
+      method2: 600_000, method3: 594_000,
+      convergenceSpreadPct: 3, converged: true,
+      conservative: 540_000, recommended: 595_000, highEnd: 650_000,
+      valueLow: 540_000, valueHigh: 650_000,
+      confidence: 'Moderate' as const, confidenceReason: 'fixture',
+      needsReview: false, reviewReason: null, compPpsfCv: 0.1,
+      priceOverride: null, improvementsValueAdd: null, notes: [],
+    }
+    const cover = applyEngineRecommendedList(
+      pricing,
+      {
+        recommendedList: 600_000,
+        predictedClose: 585_000,
+        conservativeList: 560_000,
+        highEndList: 640_000,
+        source: 'comps',
+      },
+      {},
+    )
+    expect(cover.recommended).toBe(600_000)
+    expect(cover.currentAsk).toBeUndefined()
+    expect(cover.askDerivedList).toBeUndefined()
   })
 
   it('off-market cover is sale ÷ sale-to-list, not Method 3, and the list band stays a band', () => {
