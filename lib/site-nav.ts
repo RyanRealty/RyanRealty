@@ -143,7 +143,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/central-oregon/trails', label: 'Trails' },
       { href: '/central-oregon/events', label: 'Events' },
       { href: '/central-oregon/venues', label: 'Live music and shows' },
-      { href: '/lp/central-oregon-golf', label: 'Golf' },
+      { href: '/central-oregon/golf', label: 'Golf' },
     ],
   },
   {
@@ -234,7 +234,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: '/central-oregon/trails', label: 'Trails' },
       { href: '/central-oregon/events', label: 'Events' },
       { href: '/central-oregon/venues', label: 'Live music and shows' },
-      { href: '/lp/central-oregon-golf', label: 'Golf' },
+      { href: '/central-oregon/golf', label: 'Golf' },
     ],
   },
   {

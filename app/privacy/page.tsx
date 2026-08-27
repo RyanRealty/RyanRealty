@@ -15,8 +15,10 @@
  * EXITS: /cookies, /terms, /data-deletion, /
  *
  * THE PAGE CONTRACT, carried across: export const metadata (title, robots
- * noindex follow, canonical), SMS section copy the A2P gate reads in this
- * file, id="sms" and id="donotsell" in the HTML.
+ * index follow, canonical), SMS section copy the A2P gate reads in this
+ * file, id="sms" and id="donotsell" in the HTML. Robots flipped from noindex
+ * on 2026-08-26: the page was noindex AND sitemapped, which is a contradictory
+ * instruction, and this URL is pinned by OAuth consent and A2P review.
  *
  * D11: no virtue names. No invented quote. Fact, then stop.
  */
@@ -53,7 +55,14 @@ export const metadata: Metadata = {
     images: [{ url: ogImage, width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image', images: [ogImage] },
-  robots: 'noindex, follow',
+  // Indexable, and in the sitemap. These are substantive pages a visitor
+  // searches for by name and a compliance reviewer expects to find (the OAuth
+  // consent screen and A2P carrier review both pin /privacy). noindex beside a
+  // sitemap entry was a contradictory instruction that earned the Search
+  // Console "submitted but noindex" warning and hid the accessibility and fair
+  // housing statements of a licensed brokerage. Canonical is set above, so
+  // indexing carries no duplicate risk.
+  robots: 'index, follow',
 }
 
 const ITEMS: V3QuietItem[] = [

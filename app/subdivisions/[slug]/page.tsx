@@ -19,7 +19,15 @@
  *      homes tagged with that MLS SubdivisionName in the parent city.
  * Marketing-level slugs (resolveSubdivisionAreaRedirect) never reach this page:
  * middleware.ts 308s them before render (lib/routing/pre-render-hops.ts).
- * notFound fires ONLY when all three paths return empty.
+ * The refusal fires ONLY when all three paths return empty AND both reads that
+ * back them came home clean. A read that timed out or threw means UNKNOWN, not
+ * empty (§0), and an unknown plat still renders.
+ *
+ * The refusal is RENDERED, not thrown. resolveSubdivisionRoute() runs ONCE per
+ * request (React cache) and feeds both generateMetadata and the body, so a slug
+ * that resolves to nothing gets the refusal title instead of one title-cased off
+ * its own characters. See SubdivisionUnavailable.tsx for why notFound() could
+ * never set a status here.
  *
  * Section stack (Exploration System 2026-08): breadcrumb · hero · featured ·
  * video tours · map · sales history · schools · lifestyle · parents/peers ·
@@ -28,7 +36,7 @@
  * Data ONLY through @/lib/data. No raw .from().
  */
 
-import { notFound } from 'next/navigation'
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceHeroCta } from '@/lib/search/publish-place-browse-href'
@@ -43,6 +51,7 @@ import {
   getSubdivisionCounts,
 } from '@/lib/data/market-truth/subdivision-counts'
 import { PublicSubdivisionCounts } from './PublicSubdivisionCounts'
+import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './SubdivisionUnavailable'
 import { V3PlaceCharacter, V3PlacePropertyTypes } from '@/components/site/v3'
 import { SubdivisionExploreTail } from '@/components/site/explore/SubdivisionExploreTail'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
@@ -147,6 +156,51 @@ function resolveRegistryAlias(slug: string): RegistryMatch | null {
   return null
 }
 
+// ---------------------------------------------------------------------------
+// Route resolution — the three paths, resolved ONCE per request
+// ---------------------------------------------------------------------------
+
+/**
+ * The NO-404 CONTRACT, evaluated in one place so generateMetadata and the page
+ * body can never disagree about whether this slug is a place. React `cache`
+ * makes the pair of reads run once per request, so moving the decision earlier
+ * costs nothing: the body reuses the same two results it always used.
+ *
+ * `degraded` is the §0 half. `withTimeoutFallbackResult` reports ok:false when a
+ * read timed out or threw, and the fallback it hands back is INDISTINGUISHABLE
+ * from a real empty. Refusing on that would delete a real plat whenever
+ * Supabase was slow, so an unresolved-but-degraded slug renders.
+ */
+const resolveSubdivisionRoute = cache(async (slug: string) => {
+  const [boundaryRead, inventoryRead] = await Promise.all([
+    withTimeoutFallbackResult(
+      getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
+      { polygon: null, pins: [] },
+      4500,
+      'sub:boundary',
+    ),
+    withTimeoutFallbackResult(getPlatPublicInventory(slug), null, 4500, 'sub:inventory'),
+  ])
+  const registryMatch = resolveRegistryAlias(slug)
+  const resolved =
+    Boolean(boundaryRead.value.polygon) ||
+    boundaryRead.value.pins.length > 0 ||
+    registryMatch != null ||
+    inventoryRead.value != null
+  return {
+    boundaryRead,
+    inventoryRead,
+    registryMatch,
+    resolved,
+    degraded: !boundaryRead.ok || !inventoryRead.ok,
+  }
+})
+
+/** True when the slug names no place AND both reads that say so came home clean. */
+function isRefusal(route: Awaited<ReturnType<typeof resolveSubdivisionRoute>>): boolean {
+  return !route.resolved && !route.degraded
+}
+
 /** Title-case a slug for display when no registry match is found. */
 function slugToTitle(slug: string): string {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -169,7 +223,11 @@ function publishSubdivisionPageName(slug: string, registryMatch: RegistryMatch |
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const registryMatch = resolveRegistryAlias(slug)
+  // A slug that names no place gets the refusal title, not one title-cased off
+  // its own characters. Same read the body uses, resolved once (React cache).
+  const route = await resolveSubdivisionRoute(slug)
+  if (isRefusal(route)) return SUBDIVISION_UNAVAILABLE_METADATA
+  const registryMatch = route.registryMatch
   const name = publishSubdivisionPageName(slug, registryMatch)
   // Indexability threshold (W2.1): a plat earns index,follow only with a GIS
   // polygon AND >= SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime closed sales
@@ -209,21 +267,23 @@ export default async function SubdivisionPage({ params }: Props) {
 
   // ── PATH 1: GIS boundary (plat polygon for the map) ──────────────────────
   // ── PATH 2: Registry alias + the public SFR inventory SoR ────────────────
-  const [boundaryRead, inventoryRead, mtCounts] = await Promise.all([
-    withTimeoutFallbackResult(
-      getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
-      { polygon: null, pins: [] },
-      4500,
-      'sub:boundary',
-    ),
-    withTimeoutFallbackResult(getPlatPublicInventory(slug), null, 4500, 'sub:inventory'),
+  // Both reads come from resolveSubdivisionRoute, which generateMetadata already
+  // awaited: one execution per request, so the three-path decision and the
+  // rendered page cannot disagree, and mtCounts still runs alongside them.
+  const [route, mtCounts] = await Promise.all([
+    resolveSubdivisionRoute(slug),
     withTimeoutFallback(getSubdivisionCounts(slug), EMPTY_SUBDIVISION_COUNTS, 3500, 'sub:mtCounts'),
   ])
+
+  // No boundary, no registry alias, no listings, and nothing degraded: this slug
+  // is not a place. RENDER the refusal — see SubdivisionUnavailable.tsx for why
+  // notFound() shipped a hollow 200 with a slug-derived <title> instead.
+  if (isRefusal(route)) return <SubdivisionUnavailable />
+
+  const { boundaryRead, inventoryRead, registryMatch } = route
   const boundary = boundaryRead.value
   const inventory = inventoryRead.ok ? inventoryRead.value : null
   const hasBoundary = Boolean(boundary.polygon)
-
-  const registryMatch = resolveRegistryAlias(slug)
 
   // ── Redirect: known marketing-area slug → canonical page ─────────────────
   // NOT HERE. middleware.ts runs resolveSubdivisionAreaRedirect(slug) on every
@@ -265,11 +325,11 @@ export default async function SubdivisionPage({ params }: Props) {
     mapTiles = mapTiles.filter((t) => allowed.has(t.listingKey))
   }
 
-  // notFound: no boundary, no registry alias, no listings anywhere.
+  // The refusal already fired above, before any of this ran. A slug that got
+  // here cleared one of the three paths (or one of its reads degraded, which is
+  // unknown and not empty), so a zero-tile result here is a real plat with no
+  // active listings, not a slug that names nothing.
   const hasListings = mapTiles.length > 0
-  if (!hasBoundary && !registryMatch && !hasListings) {
-    if (inventoryRead.ok && boundaryRead.ok) notFound()
-  }
 
   // ── Name + city display ───────────────────────────────────────────────────
   const displayName = publishSubdivisionPageName(slug, registryMatch)

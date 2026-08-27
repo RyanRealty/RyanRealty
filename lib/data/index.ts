@@ -697,6 +697,9 @@ export type {
 export { getGolfDetail } from '@/lib/data/golf/getGolfDetail'
 export type { GolfDetail, GolfHomeTile, GolfStats } from '@/lib/data/golf/getGolfDetail'
 
+// The golf hub (/central-oregon/golf) — same registry, ordered for the Ledger.
+export { getGolfCoursesForIndex, getGolfCourseCount } from '@/lib/data/golf/getGolfIndex'
+
 // Central Oregon trails — the region's marquee hiking + mountain-bike trails
 // (data/co-trails.ts, verified + cited per CLAUDE.md §0). getTrailDetail joins
 // the trailhead to the live active single-family listings within ~1.5 miles +

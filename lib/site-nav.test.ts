@@ -45,10 +45,14 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/central-oregon/trails',
       '/central-oregon/events',
       '/central-oregon/venues',
-      '/lp/central-oregon-golf',
+      // The golf destination is the INDEXABLE hub, not the noindex,nofollow LP
+      // it used to point at. 26 course pages hung off a page Google is told to
+      // ignore; /central-oregon/golf is their parent.
+      '/central-oregon/golf',
     ]) {
       expect(hrefs).toContain(h)
     }
+    expect(hrefs).not.toContain('/lp/central-oregon-golf')
   })
 
   it('puts tools under Market including rental calculator', () => {

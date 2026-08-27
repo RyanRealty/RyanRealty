@@ -138,6 +138,11 @@ const expanded = []
 const families = new Map() // family pattern → expanded route list
 
 for (const route of pattern) {
+  // /dev/* is a development-only prototype surface: middleware.ts refuses it
+  // with a real 404 outside NODE_ENV=development. It is not a public route, and
+  // leaving it in the inventory pointed check-route-smoke.mjs at seven URLs that
+  // answer 404 by design.
+  if (route === '/dev' || route.startsWith('/dev/')) continue
   if (!route.includes('[')) {
     expanded.push({ family: route, route })
     continue

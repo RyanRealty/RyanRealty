@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import legacyRedirects from '@/data/legacy-redirects.json'
 import { resolvePreRenderHop } from '@/lib/routing/pre-render-hops'
+import { shouldRefuseDevRoute, DEV_NOT_FOUND_HTML } from '@/lib/routing/dev-only'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 import resortCommunitiesRegistry from '@/data/resort-communities.json'
 
@@ -473,6 +474,20 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       redirectUrl.search = ''
       return NextResponse.redirect(redirectUrl, 308)
     }
+  }
+
+  // ─── (0b2) /dev/* is a prototype surface, development only ─────────────
+  // Seven routes answered 200 on ryan-realty.com. The why, the mechanism, and
+  // why the gate cannot live in the pages: lib/routing/dev-only.ts.
+  if (shouldRefuseDevRoute(pathname, process.env.NODE_ENV)) {
+    return new NextResponse(DEV_NOT_FOUND_HTML, {
+      status: 404,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-robots-tag': 'noindex, nofollow',
+      },
+    })
   }
 
   // ─── (0c) Invalid geo slug → REAL 404 (kills soft-404 sprawl) ──────────
