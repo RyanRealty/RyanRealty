@@ -103,7 +103,18 @@ const LEDGER = {
 }
 
 const files = [...walkFiles('app'), ...walkFiles('components')].filter(
-  (f) => f !== SELF && !f.startsWith('app/dev/') && !f.includes('__tests__') && !f.endsWith('.test.tsx'),
+  // A TEST FILE IS NOT A CAPTURE SURFACE. This gate finds surfaces by the
+  // action name, so any file that merely NAMES submitSearchAlertSignup gets
+  // swept in — including a route contract test that asserts the payload did
+  // not change. `.test.tsx` was excluded from the start; a colocated `.test.ts`
+  // was not, and the first one written (app/zip/[zip]/page.test.ts, 2026-08-26)
+  // failed all three disclosure rules for the obvious reason that a test file
+  // renders no form. Both extensions, and the .mjs script tests, are out.
+  (f) =>
+    f !== SELF &&
+    !f.startsWith('app/dev/') &&
+    !f.includes('__tests__') &&
+    !/\.test\.(tsx?|mjs)$/.test(f),
 )
 
 const failures = []

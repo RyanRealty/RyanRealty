@@ -1,11 +1,21 @@
 #!/usr/bin/env node
 /**
- * Place-page hero count grain lock.
+ * Place-page opening count grain lock.
  *
- * KbHero prefixes "{N} homes for sale " + `lead`. A sub-city page that
- * continues with `in ${cityName}` attributes a finer-grain count to the city.
- * Founding case: /cities/bend/awbrey-butte → "63 homes for sale in Bend"
- * (fleet 97c68da5, 2026-08-16).
+ * THE RULE IS ABOUT THE GRAIN OF THE COUNT IN THE OPENING, not about which
+ * component prints it. KbHero prefixes "{N} homes for sale " + `lead`, and a
+ * sub-city page that continues with `in ${cityName}` attributes a finer-grain
+ * count to the city. Founding case: /cities/bend/awbrey-butte → "63 homes for
+ * sale in Bend" (fleet 97c68da5, 2026-08-16).
+ *
+ * TWO REGISTERS, ONE RULE (2026-08-26). A page that leaves KB stops importing
+ * placeHeroLead, and a gate that only knew the KB spelling would have gone
+ * quiet on it — the silent-loss class the migration recipe §5.2 names. So each
+ * page carries either the KB descriptor (imports placeHeroLead and calls it) or
+ * a `v3` descriptor naming the caption builder that decides the opening count's
+ * grain, plus the same forbidden pattern. The v3 arm asserts the page uses that
+ * builder AND that the builder itself names the place it counts rather than a
+ * parent. app/zip/[zip] moved first, on 2026-08-26.
  *
  *   node scripts/check-place-hero-grain.mjs
  */
@@ -47,17 +57,35 @@ const pages = [
   },
   {
     path: 'app/zip/[zip]/page.tsx',
-    label: 'zip page uses placeHeroLead',
+    label: 'zip page opening names the ZIP, not the parent city',
+    // The v3 Field replaced KbHero here. The count that opens the page is
+    // zipFieldCaption's, and that builder interpolates the ZIP itself.
+    v3: {
+      module: 'app/zip/[zip]/_v3/zip-constants.ts',
+      builder: 'zipFieldCaption',
+      // The caption must name the place it counted. `in ${zip}` is the whole
+      // rule at this grain: a caption that read `in ${cityName}` would hang a
+      // ZIP count on the city, which is the founding defect one grain up.
+      names: 'in ${zip}',
+    },
   },
 ]
 
 for (const page of pages) {
   const text = src(page.path)
-  const importsHelper = /from ['"]@\/lib\/kb\/place-hero-lead['"]/.test(text) && /placeHeroLead\(/.test(text)
   const forbidden = page.forbid ? page.forbid.test(text) : false
+  let usesGrainedOpening =
+    /from ['"]@\/lib\/kb\/place-hero-lead['"]/.test(text) && /placeHeroLead\(/.test(text)
+  if (!usesGrainedOpening && page.v3) {
+    const builderModule = src(page.v3.module)
+    usesGrainedOpening =
+      new RegExp(`\\b${page.v3.builder}\\b`).test(text) &&
+      new RegExp(`export function ${page.v3.builder}\\b`).test(builderModule) &&
+      builderModule.includes(page.v3.names)
+  }
   checks.push({
     label: page.label,
-    ok: importsHelper && !forbidden,
+    ok: usesGrainedOpening && !forbidden,
   })
 }
 

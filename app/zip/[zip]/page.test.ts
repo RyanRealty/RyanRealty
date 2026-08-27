@@ -3,8 +3,17 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const PAGE = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'page.tsx'), 'utf8')
+const HERE = dirname(fileURLToPath(import.meta.url))
+const PAGE = readFileSync(join(HERE, 'page.tsx'), 'utf8')
+const SELL_SHEET = readFileSync(join(HERE, '_v3/ZipSellSheet.client.tsx'), 'utf8')
+const ALERTS_SHEET = readFileSync(join(HERE, '_v3/ZipAlertsSheet.client.tsx'), 'utf8')
 
+/**
+ * The ZIP route moved to the components/site/v3 barrel on 2026-08-26. Every
+ * assertion below that used to name a KB component now names what carries the
+ * same contract, so nothing this file protected stopped being protected: the
+ * rule is MOVED, not dropped.
+ */
 describe('ZIP page Market Truth overlay', () => {
   it('imports getMetric and reads zip detached cells', () => {
     expect(PAGE).toContain('getMetric')
@@ -30,7 +39,12 @@ describe('ZIP page Market Truth overlay', () => {
       /const activeCount: number \| null = mtHit \? mtActiveRounded : tileActiveCount/,
     )
     const overlayStart = PAGE.indexOf('Headline HIT')
-    const overlayEnd = PAGE.indexOf('const sellMedian')
+    // The overlay block ends where the market section starts. Both markers are
+    // asserted to exist so a rename cannot silently widen the slice to the
+    // whole file, which is how this check would pass while reading nothing.
+    const overlayEnd = PAGE.indexOf('── THE MARKET SECTION')
+    expect(overlayStart).toBeGreaterThan(-1)
+    expect(overlayEnd).toBeGreaterThan(overlayStart)
     const overlay = PAGE.slice(overlayStart, overlayEnd)
     expect(overlay).not.toMatch(/activeCount\s*=\s*0/)
     expect(overlay).not.toMatch(/\?\?\s*0/)
@@ -40,15 +54,79 @@ describe('ZIP page Market Truth overlay', () => {
 
   it('does not print 12-month new_listings as New · 30 days', () => {
     expect(PAGE).toMatch(/leftoverHudKpis/)
-    expect(PAGE).toMatch(/new30: hud\.new30/)
+    // The 30-day figure comes from the leftover HUD's own 30-day cell.
+    expect(PAGE).toMatch(/hud\.new30/)
+    expect(PAGE).toMatch(/label: v3Text\('new · 30 days'\)/)
     expect(PAGE).not.toMatch(/mtNewVal/)
     expect(PAGE).not.toMatch(/publishedNew30/)
-    expect(PAGE).not.toMatch(/new30: tileNew30/)
+    // The tile-derived 30-day count is a Dataset variable under its own name
+    // and never the visible "new · 30 days" figure.
     expect(PAGE).toMatch(/New listings last 30 days/)
+    const new30Figure = PAGE.slice(
+      PAGE.indexOf("label: v3Text('new · 30 days')") - 200,
+      PAGE.indexOf("label: v3Text('new · 30 days')"),
+    )
+    expect(new30Figure).not.toMatch(/tileNew30/)
     expect(PAGE).toMatch(/getPublicDetachedPace/)
     expect(PAGE).toMatch(/getPublicPlaceSegments/)
-    expect(PAGE).toMatch(/PublicPaceStats/)
-    expect(PAGE).toMatch(/PublicProductTypes/)
+    expect(PAGE).toMatch(/getPublicDetachedMix/)
+    // The leftover pace items and the detached mix reach the page as figures.
+    expect(PAGE).toMatch(/publicPaceItems/)
+    expect(PAGE).toMatch(/buildPublicMixFigures/)
+    // The property-type run is the barrel's enumeration, scoped by postalCode
+    // so each door carries this page's population.
+    expect(PAGE).toMatch(/V3PlacePropertyTypes/)
+    expect(PAGE).toMatch(/postalCode=\{zip\}/)
     expect(PAGE).toMatch(/geoType: 'zip'/)
+  })
+})
+
+describe('ZIP page is on the v3 barrel', () => {
+  it('renders the barrel and reaches into no other design register', () => {
+    expect(PAGE).toMatch(/from '@\/components\/site\/v3'/)
+    expect(PAGE).toMatch(/V3_ROOT_CLASS/)
+    expect(PAGE).toMatch(/<V3Footer/)
+    expect(PAGE).toMatch(/<V3SectionTracker/)
+    expect(PAGE).toMatch(/<V3Breadcrumb/)
+    expect(PAGE).not.toMatch(/components\/site\/kb/)
+    expect(PAGE).not.toMatch(/components\/site\/explore/)
+    expect(PAGE).not.toMatch(/components\/site\/primitives/)
+    expect(PAGE).not.toMatch(/kb-root/)
+    // MetadataBlock is the one legacy import that stays. It is JSON-LD wiring,
+    // not visual language, and ci:ai-structured-data pins this route to it.
+    expect(PAGE).toMatch(/from '@\/components\/site\/MetadataBlock'/)
+  })
+
+  it('carries the page contract across unchanged', () => {
+    expect(PAGE).toMatch(/export const dynamicParams = false/)
+    expect(PAGE).toMatch(/export const revalidate = 60/)
+    expect(PAGE).toMatch(/export async function generateStaticParams/)
+    expect(PAGE).toMatch(/CANONICAL_ZIPS/)
+    expect(PAGE).toMatch(/title: 'ZIP not found · Ryan Realty'/)
+    expect(PAGE).toMatch(/Homes for sale in \$\{zip\} · \$\{area\}, Oregon/)
+    // The same three JSON-LD payloads.
+    expect(PAGE).toMatch(/type: 'breadcrumb'/)
+    expect(PAGE).toMatch(/type: 'place'/)
+    expect(PAGE).toMatch(/type: 'dataset'/)
+    for (const variable of [
+      'Median list price',
+      'Median price per sq ft',
+      'Median days on market',
+      'New listings last 30 days',
+    ]) {
+      expect(PAGE).toContain(variable)
+    }
+  })
+
+  it('keeps both capture contracts byte for byte', () => {
+    // Alerts: same server action, same filter map, same honeypot key.
+    expect(ALERTS_SHEET).toMatch(/submitSearchAlertSignup/)
+    expect(ALERTS_SHEET).toMatch(/propertyType: 'A', postalCode: zip/)
+    expect(ALERTS_SHEET).toMatch(/trap=\{\{ name: 'company'/)
+    // Sell: same valuation navigation, and `from` still names the surface that
+    // converted (2026-07-15 conversion audit).
+    expect(SELL_SHEET).toMatch(/valuationPath\(\)/)
+    expect(SELL_SHEET).toMatch(/params\.set\('address', typed\)/)
+    expect(SELL_SHEET).toMatch(/params\.set\('from', pathname\)/)
   })
 })

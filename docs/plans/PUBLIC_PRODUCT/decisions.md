@@ -810,3 +810,74 @@ admin Amboqia/navy.
 Classic search is not a sunset. AI answers are not a side bet. Lead both.
 Sentence search writes the same filter params. No chat widget.
 
+
+## 2026-08-26 — /zip/[zip] is on the barrel, and three gates were re-expressed
+
+**A 192 → 178 · B 3 → 2 · C 51 → 52.** C rising is the migration front doing what
+the ratchet's own docblock says it does: the route holds v3 sections beside
+`MetadataBlock`, which stays because `ci:ai-structured-data` pins this route to it
+by name and JSON-LD is not visual language.
+
+**Four patterns, which is the cap.** Field (the ZIP's houses and the real Google map
+in the frame's slot) · Instrument (the market, then once per other property type the
+ZIP holds) · Ledger (the neighborhoods here, then the rest of the service area) ·
+Sheet (listing alerts, then the seller door). No two adjacent sections share a
+pattern. The property-type run is ONE logical section under the 2026-08-26
+enumeration amendment.
+
+**Nothing was reached back for.** The route-local `_v3/` modules the 2026-08-15
+revert left orphaned (`zip-constants.ts`, `ZipHomesField`, `ZipAlertsSheet`) were
+already written and tested; this unit wired them up, added `ZipSellSheet`, and
+reconciled the page with the eleven days of Market Truth work that landed on the KB
+page after that revert — the mt-v1 overlay, the leftover HUD tiles, the pace and mix
+figures, the property-type enumeration, and the leftover monthly overlay.
+
+**Both capture contracts are byte-for-byte.** Alerts still call
+`submitSearchAlertSignup` with `{ email, filters: { city, propertyType: 'A',
+postalCode: zip }, company }` and the same honeypot key. The seller door still
+navigates to `${valuationPath()}?address=<typed>&from=<pathname>` — verified live:
+clicking through from `/zip/97701` landed on
+`/sell/valuation?address=123+NW+Test+St&from=%2Fzip%2F97701`.
+
+**Three gates were re-expressed rather than allowed to go quiet** (recipe §5.2), each
+break-tested — defect introduced, gate seen to fire, defect removed, gate seen to pass:
+
+- `ci:place-hero-grain` — the ZIP arm demanded `placeHeroLead`, a KB helper the v3
+  page does not import. It now accepts a `v3` descriptor naming the caption builder
+  that decides the opening count's grain, and asserts that builder names the place it
+  counted. Break-test: `zipFieldCaption` rewritten to say "nearby" instead of
+  `in ${zip}` → FAIL.
+- `ci:publish-median-caption` — the ZIP arm demanded `publishSellMedian`. The v3 sell
+  Sheet satisfies the underlying rule the strongest way available: it publishes no
+  median at all, because the two KbSell printed are the same figures the market
+  Instrument prints above it under that section's own trace. The gate now checks that
+  claim on the sheet's source, comments stripped line-before-block (recipe §5.3).
+  Break-test: a formatted median added to the advance label → FAIL.
+- `ci:publish-place-browse` — the ZIP arm pinned KbHero's CTA. Every inventory door on
+  the v3 page is built by `zipSearchHref`, which is stricter than the old CTA: it
+  carries this ZIP rather than only the parent city. Break-test: one door replaced
+  with a bare `/homes-for-sale` → FAIL.
+
+**One gate had a scoping hole this exposed, and it is fixed, not worked around.**
+`ci:alert-capture-disclosure` finds capture surfaces by the action name, so the new
+colocated `app/zip/[zip]/page.test.ts` — which asserts the payload did not change —
+was scanned as a capture surface and failed all three disclosure rules. `.test.tsx`
+was excluded from the start; `.test.ts` and `.test.mjs` were not. They are now.
+Break-tested by stripping the honeypot and the frequency line out of the real sheet
+and watching it fire.
+
+**OPEN, and deliberately not decided here: the market question heading.**
+`KbMarketHud` templates `Is {place} a buyer's or seller's market?` from `geoName` plus
+a live verdict, on ALL FIVE place grains. The v3 Instrument keeps the ANSWER — the
+verdict sentence as the section's caption, and months of supply as a figure with its
+methodology and threshold clauses — but not the question form, which is an AEO asset
+`buildMarketFaq` also produces on the city, neighborhood and community pages and
+nothing produces on ZIP. Restoring it is one decision across five templates (a second
+Instrument would break the rhythm rule; a note field would put a rhetorical question
+in prose the voice canon is hostile to), so it belongs to the family, not to this
+route. Matt's call before the city page migrates.
+
+**Left on a non-v3 register, deliberately:** `MetadataBlock` (JSON-LD wiring, pinned
+by name). Nothing else. The page imports nothing from `components/site/kb`,
+`components/site/explore`, or `components/site/primitives`, and its contract test
+asserts that.

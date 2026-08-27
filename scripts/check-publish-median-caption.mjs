@@ -55,7 +55,16 @@ const surfaces = [
   },
   {
     path: 'app/zip/[zip]/page.tsx',
-    label: 'ZIP page gates KbSell median through publishSellMedian',
+    label: 'ZIP sell surface publishes no uncaptioned median',
+    // MOVED, NOT DROPPED (2026-08-26). The ZIP page left the KB register and
+    // its sell surface is now a v3 Sheet. The rule is "a published list median
+    // carries the geography of the number", and this surface satisfies it the
+    // strongest way available: it publishes no median at all, because the two
+    // KbSell printed are the same figures the market Instrument above it
+    // prints under that section's own trace. Asserting that is a real check —
+    // put a money formatter or a median prop back into the sheet and this
+    // fires. A page that puts KbSell back satisfies the first arm instead.
+    noMedianSurface: 'app/zip/[zip]/_v3/ZipSellSheet.client.tsx',
   },
   {
     path: 'components/site/explore/SubdivisionExploreTail.tsx',
@@ -63,14 +72,35 @@ const surfaces = [
   },
 ]
 
+/** A money formatter or a median identifier reaching a sell surface. */
+const PUBLISHES_A_MEDIAN =
+  /formatPrice|formatPriceExact|formatPriceCompact|kbMoneyFull|toLocaleString|\bmedian/i
+
+/**
+ * Line comments BEFORE block comments. A `/*` inside a `//` line opens a
+ * phantom block comment that swallows the rest of the file, which is exactly
+ * how four public pages went invisible to G52 and G53 (migration recipe §5.3).
+ */
+const stripComments = (text) =>
+  text.replace(/(^|[^:])\/\/.*$/gm, '$1').replace(/\/\*[\s\S]*?\*\//g, '')
+
 for (const surface of surfaces) {
   const text = src(surface.path)
-  checks.push({
-    label: surface.label,
-    ok:
-      /from ['"]@\/lib\/market\/publish-median-caption['"]/.test(text) &&
-      /publishSellMedian\(/.test(text),
-  })
+  const gatedThroughHelper =
+    /from ['"]@\/lib\/market\/publish-median-caption['"]/.test(text) &&
+    /publishSellMedian\(/.test(text)
+  let ok = gatedThroughHelper
+  if (!ok && surface.noMedianSurface) {
+    const sheet = src(surface.noMedianSurface)
+    // The page may not hand a median to the sheet, and the sheet may not make
+    // one of its own.
+    const pageFeedsMedian = new RegExp(
+      `<${surface.noMedianSurface.split('/').pop().replace(/\..*$/, '')}[^>]*median`,
+      'i',
+    ).test(text)
+    ok = !PUBLISHES_A_MEDIAN.test(stripComments(sheet)) && !pageFeedsMedian
+  }
+  checks.push({ label: surface.label, ok })
 }
 
 const fact = src('lib/market/publish-fact-value.ts')

@@ -1,73 +1,106 @@
 {
   "route": "app/zip/[zip]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/zip/index.html",
-  "competitiveTarget": "Long-tail SEO: 'homes for sale in {zip}'. ZIPs carry no cached market row, so every stat is derived live from listing_tile_mv tiles (CLAUDE.md \u00a70). KB design mirrors the city page pattern (Phase 9, docs/KB_CONVERGENCE_ROADMAP.md).",
-  "note": "KB (kinetic-brutalist) rebuild 2026-06-18. ONE getZipListings(zip, {propertyType:'A', limit:5000}) call feeds the hero lede (active count, median list, median DOM), KbMarketHud (live tile stats + parent-city price history as trend source), KbFeatured (top 14 by price), KbListingMap, and two KbExploreTowns sections (subdivisions + other ZIPs). NO getMarketPulse/getMarketStats \u2014 there are no ZIP-keyed rows, nothing is fabricated. KbNav + KbFooter are the chrome (layout.tsx HideChrome does NOT fire for this route). Canonical 10 ZIPs, dynamicParams=false.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11, amended 2026-08-26). The index.html in this directory is the RETIRED KB-era mockup, kept because ci:mockup-coverage requires a contract beside it. It is evidence of what this route used to be, not the target. The target is the six closed patterns, built from components/site/v3.",
+  "competitiveTarget": "Long-tail SEO: 'homes for sale in {zip}'. A ZIP is the CITY grain in PUBLIC_UI.md §3: the Field of this ZIP's houses opens the page, the verdict is a caption inside the market section, and child neighborhoods are doors below the fold.",
+  "note": "MIGRATED TO THE v3 BARREL 2026-08-26. Four patterns, which is the rhythm cap: Field (the houses and their map) · Instrument (the market, and once per other property type the ZIP holds) · Ledger (the neighborhoods here, then the rest of the service area) · Sheet (listing alerts, then the seller door). No two adjacent sections share a pattern. The property-type run is ONE logical section under the 2026-08-26 enumeration amendment. THE PAGE CONTRACT is unchanged: same generateMetadata strings on both branches, same ten canonical ZIPs in the same order, dynamicParams=false, revalidate 60, the same three JSON-LD payloads with the same five Dataset variables, the section tracker, and the listing-alert capture payload. THE READS ARE UNCHANGED: one getZipListings call feeds the Field, its map and the neighborhood Ledger; getMetric (geoType 'zip', segment 'detached') overlays Market Truth on a hit; getPublicPlaceSegments / getPublicDetachedPace / getPublicDetachedMix / getPublicDetachedMonthly carry the leftover figures and the median-close overlay. MetadataBlock stays on the legacy register because ci:ai-structured-data pins this route to it by name and JSON-LD is not visual language.",
   "requiredComponents": [
     {
-      "name": "KbNav",
-      "section": "KB chrome \u2014 top navigation bar",
+      "name": "V3Chrome",
+      "section": "chrome — the public header, mounted by app/layout.tsx. Not a page-level import; ci:mockup-parity auto-satisfies this entry because the layout owns the header.",
       "blocking": true
     },
     {
-      "name": "KbSectionTracker",
-      "section": "KB page contract \u2014 section view + scroll depth tracking (pageType='zip')",
+      "name": "V3SectionTracker",
+      "section": "tracking — section view + scroll depth. It derives pageType from the path, and lib/analytics/page-type.ts maps /zip/ to 'zip', so the emitted pageType is the same string the KB tracker sent.",
       "blocking": true
     },
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD structured data: Breadcrumb + Place + Dataset",
+      "section": "AI-citability — BreadcrumbList + Place + Dataset JSON-LD, the same three payloads the KB page emitted. ci:ai-structured-data pins this route to MetadataBlock by name.",
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
-      "section": "Home > Search > {zip}",
+      "name": "V3Breadcrumb",
+      "section": "breadcrumb — Home > Homes for sale > {zip}. Surface tone, below-nav offset on.",
       "blocking": true
     },
     {
-      "name": "SmoothScrollProvider",
-      "section": "Lenis smooth scroll wrapper for all KB sections",
+      "name": "ZipHomesField",
+      "section": "Pattern 2, Field, route-local. Every active single-family listing that reports a list price, as a list of photographed rows bound both ways to the real Google map in the frame's map slot (PlaceFieldMap). The count is a caption naming the ZIP, never a number hero. Replaces KbHero, KbFeatured and KbListingMap: the ZIP's houses open the page instead of a stock regional photograph, and the list is the whole set rather than the top 14.",
       "blocking": true
     },
     {
-      "name": "KbHero",
-      "section": "hero \u2014 'Homes for sale in {zip}' + active count + median list + median DOM",
+      "name": "V3Instrument",
+      "section": "Pattern 1, Instrument, level 1 — the market. The verdict is the caption sentence under the headline, the KPI row is the figure set (leftover HUD tiles, then the 12-month pace items the HUD does not already print, then the detached mix), and the median-close year overlay is the chart. Replaces KbMarketHud, PublicPaceStats and PublicMixStats.",
       "blocking": true
     },
     {
-      "name": "KbMarketHud",
-      "section": "market HUD \u2014 live stats from listing_tile_mv + parent-city price history trend",
+      "name": "V3Ledger",
+      "section": "Pattern 3, Ledger, twice: the neighborhoods inside this ZIP with their count and median list, then the rest of the service area. Every row is a door and every door carries this page's exact population through zipSearchHref. Replaces the two KbExploreTowns grids, and drops the hardcoded '0 Active' the KB page printed beside the other nine ZIPs.",
       "blocking": true
     },
     {
-      "name": "KbFeatured",
-      "section": "featured listings \u2014 top 14 by price via resolveFeaturedItems",
+      "name": "V3PlacePropertyTypes",
+      "section": "Pattern 1 again, as ONE enumeration: one section per other property type this ZIP holds, from getPublicPlaceSegments, with each door carrying postalCode. A type with nothing publishable is absent, never an empty section and never a zero. Replaces PublicProductTypes.",
       "blocking": true
     },
     {
-      "name": "KbListingMap",
-      "section": "map \u2014 all active SFR as GeoJSON points, fit to features",
+      "name": "ZipAlertsSheet",
+      "section": "Pattern 5, Sheet, route-local — free listing alerts. THE CAPTURE CONTRACT IS UNCHANGED from KbCommunityAlerts: submitSearchAlertSignup with { email, filters: { city, propertyType: 'A', postalCode: zip }, company }, the same honeypot key, the same guest-watch residual and the same alert_create search event.",
       "blocking": true
     },
     {
-      "name": "KbExploreTowns",
-      "section": "'What's in this ZIP' subdivision grid + 'Looking elsewhere' other-ZIP grid (two instances)",
+      "name": "ZipSellSheet",
+      "section": "Pattern 5, Sheet, route-local — the seller door. THE NAVIGATION CONTRACT IS UNCHANGED from KbSell: `${valuationPath()}?address=<typed>&from=<pathname>`, so the prefill survives and the lead still records which page converted. It publishes no median: the two figures KbSell printed above its form are the same numbers the market Instrument already prints under that section's own trace.",
       "blocking": true
     },
     {
-      "name": "KbCommunityAlerts",
-      "section": "F3 residual \u2014 free listing_alerts (ZIP + SFR postalCode filter) after map",
-      "blocking": true
-    },
-    {
-      "name": "KbSell",
-      "section": "seller conversion CTA \u2014 eyebrow 'Sell in {area}'",
-      "blocking": true
-    },
-    {
-      "name": "KbFooter",
-      "section": "KB chrome \u2014 sitemap footer",
+      "name": "V3Footer",
+      "section": "footer — rendered outside <main> so the page ships a contentinfo landmark.",
       "blocking": true
     }
+  ],
+  "removedComponents": [
+    "KbHero (replaced by ZipHomesField; the count, median list and days figure are figures on the market Instrument)",
+    "KbMarketHud (replaced by V3Instrument: verdict caption, figure set, chart)",
+    "KbFeatured (replaced by ZipHomesField, which lists every active home rather than the top 14)",
+    "KbListingMap (the same Google map, in the Field's map slot, bound to the list both ways)",
+    "KbExploreTowns ×2 (replaced by the two V3Ledgers)",
+    "KbCommunityAlerts (replaced by ZipAlertsSheet, same server action and payload)",
+    "KbSell (replaced by ZipSellSheet, same ?address=&from= navigation)",
+    "PublicProductTypes (replaced by V3PlacePropertyTypes)",
+    "PublicPaceStats + PublicMixStats (their items are figures on the market Instrument, each carrying its own window on its label)",
+    "MarketSources (the Oregon Data Share citation is named in words inside every trace on the page)",
+    "SmoothScrollProvider (Lenis wrapper; no v3 section is scroll-bound)",
+    "KbFooter (replaced by V3Footer)",
+    "KbBreadcrumb (replaced by V3Breadcrumb)",
+    "The KB market HUD's question heading, 'Is ZIP {zip} a buyer's or seller's market?' — KbMarketHud templated it from geoName plus a live verdict. The ANSWER survives as the Instrument's caption sentence and as the months-of-supply figure with its methodology and threshold clauses. The question form is templated the same way on all five place grains, so restoring it is a family decision, recorded as open in docs/plans/PUBLIC_PRODUCT/decisions.md, not a per-route one."
+  ],
+  "sectionOrder": [
+    "MetadataBlock",
+    "V3SectionTracker",
+    "V3Breadcrumb",
+    "ZipHomesField (Field)",
+    "V3Instrument (market, level 1) or V3Quiet when no figure is live",
+    "V3Ledger (neighborhoods in this ZIP)",
+    "V3PlacePropertyTypes (Instrument, one per property type)",
+    "ZipAlertsSheet (Sheet)",
+    "V3Ledger (other ZIP codes)",
+    "ZipSellSheet (Sheet)",
+    "V3Footer, outside <main>"
+  ],
+  "jsonLd": [
+    "BreadcrumbList, from the same trail V3Breadcrumb renders.",
+    "Place, with the ZIP's postal address.",
+    "Dataset, with the same five variables in the same order and the same unitText: active listings, median list price, median price per sq ft, median days on market, new listings last 30 days. A degraded read publishes no variable rather than a zero."
+  ],
+  "dataLayer": [
+    "getZipListings(zip, { status: 'active', propertyType: 'A', limit: 5000 }) — the Field, its map, the neighborhood Ledger, and the tile-derived Dataset variables. The 5000 cap is never reported as inventory.",
+    "getMetric({ stat, geoType: 'zip', geoSlug: zip, segment: 'detached' }) ×4 — active_count, median_list_active, months_of_supply, market_verdict. A publishable 0 that contradicts visible pins is a disagreement, not an inventory.",
+    "getPublicPlaceSegments({ geoType: 'zip' }) — the property-type enumeration.",
+    "getPublicDetachedPace({ geoType: 'zip' }) — the leftover HUD tiles and the 12-month pace figures.",
+    "getPublicDetachedMix({ geoType: 'zip' }) — the detached mix figures.",
+    "getPublicDetachedMonthly({ geoType: 'zip' }) with the parent city's own leftover months and getPriceHistory('city', …) as the documented fallback — the median-close year overlay. When the series is the city's, the chart caption says so."
   ]
 }

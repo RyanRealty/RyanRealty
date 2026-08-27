@@ -11,10 +11,14 @@
  *    order the KB page listed them, so neither the prerendered param set nor
  *    the on-page order moved.
  *  - ZIP_AREA and ZIP_CITY_NAME are verified geography facts, carried verbatim.
- *  - ZIP_CITY_SLUG was DELETED. It existed only to name the parent city's row in
- *    market_pulse_live for the price-history chart, and that chart is gone with
- *    the KB market HUD (the series was city-scoped, not ZIP-scoped). Deleting
- *    the read means deleting the key that addressed it.
+ *  - ZIP_CITY_SLUG came BACK on 2026-08-26. The v3 migration's first cut deleted
+ *    it, because the only reader was the KB HUD's parent-city price-history
+ *    chart and that chart was a city series relabeled at ZIP scope. What reads
+ *    it now is a different thing: getPublicDetachedMonthly at geoType 'zip',
+ *    with the parent city's own leftover months as the documented fallback when
+ *    the ZIP series is sparse. The fallback is LABELED as the city's on screen
+ *    (chartScopeLabel), so the key addresses a series this page is allowed to
+ *    print, not one it has to disclaim.
  *
  * ZIP_CITY_NAME is not decoration: it is the `city` value in the listing-alert
  * capture payload, which is part of that form's contract.
@@ -30,10 +34,24 @@
  */
 
 import type { ListingTile } from '@/lib/data'
-import type { V3FieldItem } from '@/components/site/v3'
-import { formatPrice } from '@/lib/format/money'
+import type { KbYearSeries } from '@/lib/kb/year-series'
+import {
+  v3Text,
+  V3_CHART_CATEGORY_SLOTS,
+  type V3ChartPoint,
+  type V3ChartProps,
+  type V3ChartSeries,
+  type V3FieldItem,
+} from '@/components/site/v3'
+import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+
+/** Month ticks for the year overlay, in the order a calendar year runs. */
+const MONTH_TICK = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+] as const
 
 /**
  * The canonical ZIP codes Ryan Realty serves. `dynamicParams = false` on the
@@ -83,6 +101,25 @@ export const ZIP_CITY_NAME: Record<string, string> = {
   '97756': 'Redmond',
   '97759': 'Sisters',
   '97760': 'Terrebonne',
+}
+
+/**
+ * Parent city SLUG for each ZIP, in the hyphen-free form the market cache and
+ * the Market Truth monthly reads are keyed by. Separate from ZIP_CITY_NAME
+ * because that one is a display string AND a capture-payload field value; this
+ * one is a query key and nothing else.
+ */
+export const ZIP_CITY_SLUG: Record<string, string> = {
+  '97701': 'bend',
+  '97702': 'bend',
+  '97703': 'bend',
+  '97707': 'sunriver',
+  '97739': 'la pine',
+  '97741': 'madras',
+  '97754': 'prineville',
+  '97756': 'redmond',
+  '97759': 'sisters',
+  '97760': 'terrebonne',
 }
 
 /**
@@ -257,3 +294,59 @@ export function zipFieldItems(tiles: readonly ListingTile[], zip: string): V3Fie
       }
     })
 }
+
+/* -------------------------------------------------------------------------- */
+/* The median-close overlay                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The year overlay under the market Instrument's figures (D9: a trend lives
+ * under the big answer, never as a seventh pattern).
+ *
+ * WHY THIS IS NOT buildCityMedianChart. The Market family's shared builder
+ * slices to the newest THREE calendar years, which was written when the atom
+ * kept three categorical hues apart. V3_CHART_CATEGORY_SLOTS is 5, and the KB
+ * chart this replaces drew FOUR years on every ZIP page ("4 years shown"), so
+ * borrowing the three-year slice would have dropped a whole year of published
+ * medians on the way across. The cap here is the atom's own constant, so the
+ * two cannot drift: whatever the atom can keep apart is what this draws.
+ *
+ * A year needs two or more finite months to be a line — one point is not a
+ * trend, and drawing it as one would invent a direction the data never had.
+ */
+export function zipMedianChart(
+  years: readonly KbYearSeries[],
+  caption: string,
+): V3ChartProps | undefined {
+  const overlay: V3ChartSeries[] = []
+  for (const year of years.slice(-V3_CHART_CATEGORY_SLOTS)) {
+    const points: V3ChartPoint[] = []
+    for (const row of year.points) {
+      const tick = MONTH_TICK[row.m - 1]
+      if (!tick) continue
+      if (!Number.isFinite(row.value) || row.value <= 0) continue
+      const label = formatPriceCompact(row.value)
+      if (!label || label === '—') continue
+      points.push({ value: row.value, tick: v3Text(tick), label: v3Text(label), at: row.m })
+    }
+    if (points.length < 2) continue
+    overlay.push({ name: v3Text(String(year.year)), points })
+  }
+  if (overlay.length === 0) return undefined
+  return { caption: v3Text(caption), series: overlay, overlay: 'yoy' }
+}
+
+/**
+ * The leftover pace items this page prints, minus the three that would render
+ * a second copy of a figure the market Instrument already carries above them:
+ *
+ *   pending  is the Instrument's "pending · now"          (hud.pending)
+ *   sto      is the Instrument's "sale to list"           (hud.saleToList)
+ *   closed   is the Instrument's "sold · 12 months"       (hud.sold12mo)
+ *
+ * Every other item stays, including `medClose` and the year-over-year line,
+ * which nothing else on this page publishes. Dropping a duplicate is not the
+ * same as dropping a figure: each of the three is still on the page once, with
+ * the label the KB HUD gave it.
+ */
+export const ZIP_PACE_KEYS_ON_THE_HUD = new Set(['pending', 'sto', 'closed'])

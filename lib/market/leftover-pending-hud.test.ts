@@ -29,16 +29,25 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
   })
 
   it('place HUDs pass leftover pending, not pulse fill', () => {
+    // The KB spelling: `pending: hud.pending` inside the KbMarketData literal.
     for (const [name, src] of Object.entries({
       home: files.home,
       city: files.city,
       nbh: files.nbh,
       community: files.community,
-      zip: files.zip,
     })) {
       expect(src, name).toMatch(/pending:\s*hud\.pending/)
       expect(src, name).not.toMatch(/pending:\s*pulse/)
     }
+    // The v3 spelling, MOVED not dropped (2026-08-26). /zip/[zip] left the KB
+    // register: there is no KbMarketData literal to key, so the same rule is
+    // asserted on the figure the market Instrument actually prints — the value
+    // is the leftover HUD's pending count and it carries the same label the KB
+    // KPI row used. A pulse fill reaching this figure still fails.
+    expect(files.zip, 'zip').toMatch(/hud\.pending/)
+    expect(files.zip, 'zip').toMatch(/label: v3Text\('pending · now'\)/)
+    expect(files.zip, 'zip').not.toMatch(/pending:\s*pulse/)
+    expect(files.zip, 'zip').not.toMatch(/getMarketPulse/)
   })
 
   it('search snapshot and listing KPI print leftover pending', () => {
