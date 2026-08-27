@@ -16,6 +16,7 @@
  */
 
 import type { pageMetadata } from '@/lib/site/page-metadata'
+import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import type { SchemaInput, StatValue } from '@/lib/site/json-ld'
 
 /**
@@ -99,6 +100,29 @@ export function communityMetadataInput(input: {
   // hero photo, then curated community folder photo, then the generated card,
   // which renders the name and city on the brand background so no community
   // falls through to the generic /api/og?type=default card.
+  // A COMPOUND SLUG IS NEVER CANONICAL, so it must not compete in the index.
+  // Communities live at their bare registry slug (/communities/tetherow);
+  // `<city>-<name>` is a legacy shape that middleware canonicalises when the
+  // name IS a registered community (resolveCanonicalCommunitySlug). What
+  // survives to render is a compound slug whose name is NOT one — either a real
+  // plat like bend-parks-at-broken-top, which duplicates
+  // /subdivisions/parks-at-broken-top, or a slug naming nothing at all. Both
+  // used to answer with index,follow and a self-referential canonical, so
+  // /communities/<city>-<anything> minted an unbounded supply of thin indexable
+  // pages. Proved 2026-08-26 with the never-registered control
+  // /communities/bend-some-ordinary-plat.
+  //
+  // The hop cannot be a redirect. The edge resolver is synchronous and DB-free
+  // by contract (a page-body redirect cannot emit a 3xx under Next 16 streaming
+  // — scripts/check-streamed-redirect.mjs), so it cannot tell a real plat from a
+  // typo, and 308-ing a typo to a 404 is worse than answering it. A 404 is worse
+  // still: an earlier attempt to make the junk-slug guard reject these instead
+  // read a degraded cache as absence and 404-ed /communities/tetherow itself.
+  //
+  // So the page still answers, it just stops competing: noindex, and nothing
+  // else. (§0 — a degraded read is not evidence, in either direction.)
+  const compoundNonCommunity = !isCanonicalCommunitySlug(slug)
+
   const ogImage =
     KB_HERO[slug] ??
     COMMUNITY_HERO[slug] ??
@@ -122,7 +146,13 @@ export function communityMetadataInput(input: {
     // and this sentence cannot see which one it is describing. It is also capped
     // at 155 by shareDescription, and the longest registry name lands at 121.
     description: `Active single-family homes in ${name}, ${city}, Oregon. Live inventory and market data from the regional MLS.`,
+    // Self-canonical even when noindex. A cross-canonical was the first shape
+    // of this fix and it is a footgun: noindex plus rel=canonical pointing
+    // elsewhere is a conflicting pair, and the canonical TARGET can inherit the
+    // noindex. The noindex alone does the job, and it is the half that cannot
+    // hurt /subdivisions/<plat>.
     path: `/communities/${slug}`,
+    noindex: compoundNonCommunity,
     ogImage,
   }
 }

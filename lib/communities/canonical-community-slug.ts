@@ -219,6 +219,19 @@ export function resolveCanonicalCommunityPath(rawSlug: string): string | null {
 }
 
 /**
+ * True when `slug` is a community's own canonical URL — a bare registry slug.
+ *
+ * Everything else reaching /communities/[slug] is a compound `<city>-<name>`
+ * shape. When the name IS a registered community the edge canonicalises it
+ * before render; what survives to render names something that is NOT a
+ * community, usually a real plat (bend-parks-at-broken-top). Those pages may
+ * answer, but they are not canonical and must not compete in the index.
+ */
+export function isCanonicalCommunitySlug(rawSlug: string): boolean {
+  return CANONICAL_SLUGS.has(rawSlug.trim().toLowerCase())
+}
+
+/**
  * Nested `/cities/{city}/{slug}` for a registered community is a hollow
  * notFound (the neighborhoods table is Bend districts). Send the visitor to
  * `/communities/{slug}`. Bend district pages (larkspur, awbrey-butte) are
