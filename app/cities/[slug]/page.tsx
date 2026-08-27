@@ -477,6 +477,11 @@ export default async function CityDetailPage({ params }: Props) {
     })
     .filter((x): x is CityCommunityItem => x !== null)
     .sort((a, b) => (a.video ? 0 : 1) - (b.video ? 0 : 1) || (b.activeCount ?? 0) - (a.activeCount ?? 0))
+    // ONE ROW PER RESOLVED DOOR: two index rows (a resort and one of its member
+    // subdivisions) can both resolve to the same registry slug, and two rows
+    // with one href are one place listed twice — and a duplicated React key.
+    // The sort above has already put the marquee/high-count row first.
+    .filter((item, i, arr) => arr.findIndex((x) => x.href === item.href) === i)
 
   // Dedupe the ledger against the rail by NAME, not href: the rail's hrefs are
   // city-prefixed index slugs while the ledger's are plain registry slugs for
