@@ -146,7 +146,7 @@ function val(v: unknown): string | null {
 }
 
 /** Primary entry from a crm_people jsonb contact list ([{value,isPrimary}]). */
-function primaryValue(list: unknown): string | null {
+export function primaryValue(list: unknown): string | null {
   if (!Array.isArray(list)) return null
   const sorted = [...(list as Array<{ value?: unknown; isPrimary?: unknown }>)].sort(
     (a, b) => Number(!!b?.isPrimary) - Number(!!a?.isPrimary),
