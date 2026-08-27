@@ -372,7 +372,8 @@
 .v3 .v3-chart__rangebase {
   position: absolute;
   top: 50%;
-  border-radius: var(--v3-radius-pill);
+  /* A chart point is a circular data mark, not a box — exempt from radius 0. */
+  border-radius: var(--v3-radius-mark);
   transform: translate(-50%, -50%);
 }
 
@@ -460,7 +461,8 @@
   display: inline-block;
   width: var(--v3-chart-mark);
   height: var(--v3-chart-mark);
-  border-radius: var(--v3-radius-pill);
+  /* The legend swatch mirrors the mark it names, so it stays circular too. */
+  border-radius: var(--v3-radius-mark);
   background: var(--v3-ink);
 }
 

@@ -11,6 +11,16 @@
    values proven in the moving prototype at app/dev/public-v3/. Brand law:
    navy #102742, cream #faf8f4, Amboqia display, Geist body, 3px warm stone
    focus ring, tabular numerals on every figure, 200/300/400ms motion ladder.
+
+   THE LOOK (Matt 2026-08-26, PUBLIC_UI.md section 9): the DEFAULT register
+   below is BROADSIDE — radius 0 on every box, zero elevation shadows, rule
+   weight as the hierarchy (1px hairline / 2px navy section / 4px navy mast),
+   generous section rhythm, tracked small-caps labels, Amboqia numerals,
+   photography unframed. Search/data surfaces mount V3_LEDGER_CLASS beside
+   V3_ROOT_CLASS and take the LEDGER register in section 2b: 13px base, sans
+   display, mono numerals, dense rows, sunken panels, 120ms linear motion.
+   Registers vary structure, density, rule weight, and motion ONLY — never the
+   brand palette, and never a shadow.
    =========================================================================== */
 
 /* ---------------------------------------------------------------------------
@@ -35,6 +45,23 @@
   --v3-wash: rgba(16, 39, 66, 0.06);
   --v3-pressed: rgba(16, 39, 66, 0.85);
   --v3-ground: #eee9e0;
+
+  /* THE LOOK: rule weight IS the hierarchy (Broadside). A structural RULE is
+     drawn with one of these three; --v3-edge stays the border of a control or
+     panel (an input, a map frame), which is a box edge, not a rule.
+       hairline  1px navy-08  rows and in-section separators
+       section   2px navy     a section opening on content above it
+       mast      4px navy     the site header's bottom rule, nothing else */
+  --v3-hairline: rgba(16, 39, 66, 0.08);
+  --v3-rule-hairline: 1px solid var(--v3-hairline);
+  --v3-rule-section: 2px solid var(--v3-navy);
+  --v3-rule-mast: 4px solid var(--v3-navy);
+
+  /* Sunken panel (a chart card, a fact block). Broadside panels sit flush on
+     the raised surface with a box edge; the Ledger register sinks them into a
+     3% wash instead. Never a shadow in either register. */
+  --v3-panel-bg: var(--v3-surface-raised);
+  --v3-panel-border: 1px solid var(--v3-edge);
 
   /* Media legibility. Navy scrim under type on photo or video, never a
      decorative gradient. */
@@ -89,6 +116,15 @@
   --v3-font-display: var(--font-amboqia-safe), Georgia, serif;
   --v3-font-body: var(--font-sans), ui-sans-serif, sans-serif;
 
+  /* THE LOOK: the register decides which face a figure and a heading wear.
+     Broadside numerals are Amboqia (the number is the spectacle); the Ledger
+     register flips --v3-font-num to Geist Mono and --v3-font-display to the
+     sans, at working weight. --font-geist-mono is declared on <html> by
+     app/layout.tsx (next/font/geist), the same route every v3 surface loads. */
+  --v3-font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', Menlo, monospace;
+  --v3-font-num: var(--v3-font-display);
+  --v3-weight-display: var(--v3-weight-body);
+
   /* Fluid ramp. Body never drops below 16px (PUBLIC_UI.md section 2). */
   --v3-size-display-1: clamp(2.2rem, 7vw, 4.2rem);
   --v3-size-display-2: clamp(1.5rem, 4vw, 2.2rem);
@@ -103,7 +139,8 @@
 
   --v3-track-display: -0.01em;
   --v3-track-signage: 0.08em;
-  --v3-track-label: 0.1em;
+  /* THE LOOK (Broadside): small-caps labels track at .14em. */
+  --v3-track-label: 0.14em;
   --v3-track-eyebrow: 0.16em;
 
   --v3-leading-display: 1.02;
@@ -137,19 +174,38 @@
   --v3-measure-sheet: 40rem;
   --v3-measure-text: 44rem;
 
+  /* THE LOOK (Broadside): the section rhythm. Every pattern root pads its
+     block axis with this one value, so the whole register's rhythm is one
+     token. 56px at 390, 120px on a wide window — the broadsheet's generous
+     air. The Ledger register collapses it to a working 26px. */
+  --v3-section-pad: clamp(3.5rem, 9vw, 7.5rem);
+
   /* Minimum touch target, thumb reachable at 390 (Apple HIG / Material). */
   --v3-tap: 44px;
+
+  /* Row density. Broadside rows keep the 44px thumb floor; the Ledger
+     register runs 32px rows (the row is a full-width target, so the WCAG
+     2.5.8 24px floor still clears with room). */
+  --v3-row-min: var(--v3-tap);
+  --v3-row-pad-block: var(--v3-space-sm);
 
   /* Photographed Field. Thumbs in a map+list row, and the fold-filling lead. */
   --v3-photo-thumb: 7.5rem;
   --v3-photo-tile-min: 12rem;
   --v3-photo-lead-min: 24rem;
 
-  /* -- Radii. 10px control, 14px card, pill for chips. -- */
-  --v3-radius-sm: 6px;
-  --v3-radius-control: 10px;
-  --v3-radius-card: 14px;
-  --v3-radius-pill: 999px;
+  /* -- Radii. THE LOOK (Matt 2026-08-26): RADIUS 0 ON EVERY BOX, in both
+     registers. The tokens keep their names because component CSS reads them
+     by role; their value is the register's, and both registers say 0. The one
+     survivor is --v3-radius-mark: a map pin and a chart point are circular
+     DATA MARKS (cartographic and chart convention), not boxes — squaring a
+     9px dot reads as a rendering defect, not a design. No register overrides
+     it. -- */
+  --v3-radius-sm: 0;
+  --v3-radius-control: 0;
+  --v3-radius-card: 0;
+  --v3-radius-pill: 0;
+  --v3-radius-mark: 999px;
 
   /* -- Focus ring. 3px warm stone, always visible, 2px offset. -- */
   --v3-focus-width: 3px;
@@ -250,11 +306,93 @@
   outline-offset: var(--v3-focus-offset);
 }
 
+/* ---------------------------------------------------------------------------
+   2b. THE LEDGER REGISTER (THE LOOK, Matt 2026-08-26)
+   The working instrument for search/data surfaces: 13px base, sans display at
+   working weight, Geist Mono numerals, 32px rows, near-full-viewport measure,
+   sunken panels, 3px navy section rules, 120ms linear motion, photography
+   small and data-first. Same brand, same palette, zero shadows — a register
+   varies structure, density, rule weight, and motion only.
+
+   A surface takes the register by mounting V3_LEDGER_CLASS beside
+   V3_ROOT_CLASS on its root. Both selectors are needed: every pattern also
+   renders V3_ROOT_CLASS on its own element, and the plain `.v3` token block
+   above re-declares every token at (0,1,0) on that nested element, so the
+   register must out-rank it from the page root down — `.v3--ledger .v3`
+   reaches (0,2,0) and wins on every nested scope in either load order.
+
+   This block sits BEFORE the reduced-motion block on purpose: that block
+   names these same selectors, so at equal specificity, source order lets
+   reduced motion collapse the register's durations too.
+   --------------------------------------------------------------------------- */
+
+.v3.v3--ledger,
+.v3--ledger .v3 {
+  /* Working-instrument type: 13px base. The reading-prose 16px floor
+     (PUBLIC_UI.md section 2) governs the content register; a data instrument
+     is working UI text, recorded as such in PUBLIC_UI.md section 9. */
+  --v3-size-display-1: 1.5rem;
+  --v3-size-display-2: 1.1875rem;
+  --v3-size-num-lead: 2.5rem;
+  --v3-size-num: 1.0625rem;
+  --v3-size-body-lg: 0.875rem;
+  --v3-size-body: 0.8125rem;
+  --v3-size-body-sm: 0.75rem;
+  --v3-size-source: 0.71875rem;
+  --v3-size-label: 0.65625rem;
+  --v3-size-eyebrow: 0.625rem;
+
+  /* Sans display at working weight; the numerals go mono. */
+  --v3-font-display: var(--v3-font-body);
+  --v3-weight-display: var(--v3-weight-strong);
+  --v3-font-num: var(--v3-font-mono);
+  --v3-track-display: 0;
+  --v3-track-label: 0.12em;
+  --v3-track-eyebrow: 0.12em;
+  --v3-leading-display: 1.15;
+
+  /* Near-full-viewport working width; the section rhythm collapses. */
+  --v3-measure: min(96vw, 97.5rem);
+  --v3-section-pad: 1.625rem;
+
+  /* Rules: 3px navy sections and mast; hairlines drop to 6% alpha. */
+  --v3-hairline: rgba(16, 39, 66, 0.06);
+  --v3-rule-section: 3px solid var(--v3-navy);
+  --v3-rule-mast: 3px solid var(--v3-navy);
+
+  /* Sunken panels: 3% navy wash inside a 12% edge. Still no shadow. */
+  --v3-panel-bg: rgba(16, 39, 66, 0.03);
+  --v3-panel-border: 1px solid var(--v3-edge);
+
+  /* Dense rows; photography runs small — the data is the spectacle. */
+  --v3-row-min: 2rem;
+  --v3-row-pad-block: var(--v3-space-2xs);
+  --v3-photo-thumb: 4.5rem;
+  --v3-photo-tile-min: 9rem;
+  --v3-photo-lead-min: 16rem;
+
+  /* 120ms linear: the instrument snaps, it does not glide. */
+  --v3-dur-state: 120ms;
+  --v3-dur-enter: 120ms;
+  --v3-dur-rise: 120ms;
+  --v3-ease-out: linear;
+
+  /* Inherited, so every figure on a data surface aligns — including text
+     rendered by components that have not yet rolled onto the barrel. */
+  font-variant-numeric: tabular-nums;
+}
+
 /* Reduced motion resolves every sequence instantly to its finished state. The
    duration tokens collapse first, so any component reading them lands without
    needing its own media query; the blanket rule below catches hardcoded ones. */
 @media (prefers-reduced-motion: reduce) {
-  .v3 {
+  /* The register selectors are listed too: the Ledger block above re-declares
+     the duration tokens at (0,2,0), which would out-rank a plain `.v3` here.
+     Equal specificity plus later source order keeps reduced motion winning in
+     both registers. */
+  .v3,
+  .v3.v3--ledger,
+  .v3--ledger .v3 {
     --v3-dur-state: 0.01ms;
     --v3-dur-enter: 0.01ms;
     --v3-dur-rise: 0.01ms;
@@ -382,7 +520,8 @@
 }
 
 .v3 .v3-figure__value {
-  font-family: var(--v3-font-display);
+  /* The register's numeral face: Amboqia in Broadside, Geist Mono in Ledger. */
+  font-family: var(--v3-font-num);
   font-size: var(--v3-size-num);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
@@ -480,7 +619,9 @@
 .v3 .v3-heading {
   margin: 0;
   font-family: var(--v3-font-display);
-  font-weight: var(--v3-weight-body);
+  /* 400 in Broadside (Amboqia carries its own weight); 600 in Ledger, where
+     the display face is the sans and needs the working weight. */
+  font-weight: var(--v3-weight-display);
   letter-spacing: var(--v3-track-display);
   line-height: var(--v3-leading-display);
   text-wrap: balance;

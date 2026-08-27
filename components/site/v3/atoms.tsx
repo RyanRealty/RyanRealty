@@ -27,6 +27,17 @@ import './tokens.css'
  */
 export const V3_ROOT_CLASS = 'v3'
 
+/**
+ * THE LOOK (Matt 2026-08-26, PUBLIC_UI.md section 9): the Ledger register for
+ * search/data surfaces. Mount it BESIDE V3_ROOT_CLASS on the page root —
+ * `cn(V3_ROOT_CLASS, V3_LEDGER_CLASS)` — and every v3 token scope beneath it
+ * re-resolves to the working-instrument values in tokens.css section 2b:
+ * 13px base, sans display, Geist Mono numerals, dense rows, sunken panels,
+ * 3px navy rules, 120ms linear motion. Content surfaces mount nothing and
+ * wear the Broadside default. The class does nothing without V3_ROOT_CLASS.
+ */
+export const V3_LEDGER_CLASS = 'v3--ledger'
+
 /* -------------------------------------------------------------------------- */
 /* The accessible name, in the type                                            */
 /* -------------------------------------------------------------------------- */

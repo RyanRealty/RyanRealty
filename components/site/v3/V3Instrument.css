@@ -40,7 +40,16 @@
 .v3.v3-instrument {
   max-width: var(--v3-measure);
   margin: 0 auto;
-  padding: var(--v3-space-2xl) var(--v3-gutter) var(--v3-space-xl);
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* THE LOOK (Broadside): a section that opens on content above it opens on the
+   2px navy section rule — rule weight is the hierarchy, not cards or shadows.
+   The `* +` guard keeps the rule off a section that opens the page (nothing
+   before it means nothing to rule against; the mast rule above already
+   closed the chrome). */
+* + .v3.v3-instrument {
+  border-top: var(--v3-rule-section);
 }
 
 .v3.v3-instrument .v3-instrument__eyebrow {
@@ -76,7 +85,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--v3-space-lg) var(--v3-space-md);
-  border-top: 1px solid var(--v3-edge);
+  border-top: var(--v3-rule-hairline);
   padding-top: var(--v3-space-lg);
 }
 
@@ -126,7 +135,7 @@
 .v3.v3-instrument .v3-instrument__chart {
   margin-top: var(--v3-space-lg);
   padding-top: var(--v3-space-lg);
-  border-top: 1px solid var(--v3-edge);
+  border-top: var(--v3-rule-hairline);
 }
 
 .v3.v3-instrument .v3-instrument__source {

@@ -25,7 +25,9 @@
   top: 0;
   z-index: 100;
   background: var(--v3-surface);
-  border-bottom: 1px solid var(--v3-edge);
+  /* THE LOOK (Broadside): the mast rule — 4px navy, the heaviest rule on the
+     page, worn only here. The Ledger register runs it at 3px. */
+  border-bottom: var(--v3-rule-mast);
 }
 
 /* The bar -------------------------------------------------------------------

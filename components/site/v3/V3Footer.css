@@ -16,7 +16,8 @@
 
 .v3.v3-footer {
   background: var(--v3-ground);
-  border-top: 1px solid var(--v3-edge);
+  /* THE LOOK (Broadside): the footer closes the page on the section rule. */
+  border-top: var(--v3-rule-section);
 }
 
 .v3-footer__inner {
@@ -152,11 +153,11 @@
 }
 
 .v3-footer__column-list li {
-  border-top: 1px solid var(--v3-edge);
+  border-top: var(--v3-rule-hairline);
 }
 
 .v3-footer__column-list li:last-child {
-  border-bottom: 1px solid var(--v3-edge);
+  border-bottom: var(--v3-rule-hairline);
 }
 
 /* Thumb minimum on the widths a thumb is used at. Above the wide stop the
@@ -196,7 +197,7 @@
   display: grid;
   gap: var(--v3-space-sm);
   padding-top: var(--v3-space-lg);
-  border-top: 1px solid var(--v3-edge);
+  border-top: var(--v3-rule-hairline);
 }
 
 .v3-footer__legal ul {

@@ -22,15 +22,15 @@
 
 .v3.v3-chartcard {
   min-width: 0;
-  border: 1px solid var(--v3-edge);
+  border: var(--v3-panel-border);
   border-radius: var(--v3-radius-card);
-  background: var(--v3-surface-raised);
+  background: var(--v3-panel-bg);
   padding: var(--v3-space-md) var(--v3-space-md) var(--v3-space-sm);
 }
 
 .v3 .v3-chartcard__title {
   font-family: var(--v3-font-display);
-  font-weight: 400;
+  font-weight: var(--v3-weight-display);
   font-size: clamp(1.15rem, 2.4vw, 1.45rem);
   line-height: var(--v3-leading-heading);
   letter-spacing: var(--v3-track-display);

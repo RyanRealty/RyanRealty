@@ -37,6 +37,13 @@
 export {
   /** The class that opens the token scope. Every pattern renders it itself. */
   V3_ROOT_CLASS,
+  /**
+   * THE LOOK (Matt 2026-08-26): the Ledger register for search/data surfaces.
+   * Mounted beside V3_ROOT_CLASS on a page root; content surfaces mount
+   * nothing and wear the Broadside default. PUBLIC_UI.md section 9 records
+   * which register each surface wears.
+   */
+  V3_LEDGER_CLASS,
   /** Builds a V3Text. Throws on a blank string; `v3Text('')` does not compile. */
   v3Text,
 } from './atoms'

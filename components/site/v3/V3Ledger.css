@@ -22,7 +22,13 @@
 .v3.v3-ledger {
   max-width: var(--v3-measure);
   margin: 0 auto;
-  padding: var(--v3-space-2xl) var(--v3-gutter);
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* THE LOOK (Broadside): rule weight is the hierarchy — a section following
+   content opens on the 2px navy section rule. See V3Instrument.css. */
+* + .v3.v3-ledger {
+  border-top: var(--v3-rule-section);
 }
 
 /* Head ---------------------------------------------------------------------
@@ -50,7 +56,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  border-bottom: 1px solid var(--v3-edge);
+  border-bottom: var(--v3-rule-hairline);
 }
 
 .v3-ledger__item {
@@ -65,9 +71,9 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: var(--v3-space-3xs) var(--v3-space-md);
-  min-height: var(--v3-tap);
-  padding: var(--v3-space-sm) 0;
-  border-top: 1px solid var(--v3-edge);
+  min-height: var(--v3-row-min);
+  padding: var(--v3-row-pad-block) 0;
+  border-top: var(--v3-rule-hairline);
   color: var(--v3-ink);
   text-decoration: none;
   border-radius: var(--v3-radius-sm);
@@ -168,8 +174,8 @@
 .v3-ledger__empty {
   margin: 0;
   padding: var(--v3-space-md) 0;
-  border-top: 1px solid var(--v3-edge);
-  border-bottom: 1px solid var(--v3-edge);
+  border-top: var(--v3-rule-hairline);
+  border-bottom: var(--v3-rule-hairline);
   font-size: var(--v3-size-body);
   line-height: var(--v3-leading-body);
   color: var(--v3-ink-muted);
