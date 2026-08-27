@@ -2,18 +2,51 @@
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
   "status": "restored-kb-2026-08-15",
-  "note": "Working homepage restored: KbHero, towns, communities, featured homes, region map, ticker, sell, reviews, team, market HUD. ArrivalIntent quiz unmounted 2026-08-16 (Matt CHANGE / R-218).",
+  "note": "Working homepage restored: KbHero, towns, communities, featured homes, region map, ticker, sell, reviews, team, market HUD. ArrivalIntent quiz unmounted 2026-08-16 (Matt CHANGE / R-218). FOOTER UNIFIED 2026-08-27 (Matt: \"menus and footers must be consistent\"): this page was the last public surface on a second footer -- 86 pages carried V3Footer and the homepage carried KbFooter. It now mounts V3Footer, outside <main>, with the identical columns (V3_FOOTER_COLUMNS IS KB_FOOTER_COLUMNS relabeled by the IA lock) and the per-town fine print carried verbatim as the note prop. The one thing that does not survive is KbFooter's \"A broker writes back\" band, which V3Footer drops deliberately on all 87 surfaces: it was a second primary action in a viewport whose sticky header already carries one. Held by ci:chrome-single-source.",
   "requiredComponents": [
-    { "name": "KbHero", "section": "drone/photo hero + live count" },
-    { "name": "KbExploreTowns", "section": "towns ledger" },
-    { "name": "KbCommunities", "section": "resort and planned communities rail" },
-    { "name": "KbFeatured", "section": "photographed homes for sale" },
-    { "name": "KbListingMap", "section": "region listing map" },
-    { "name": "KbTicker", "section": "live listing tape" },
-    { "name": "KbSell", "section": "seller address ask" },
-    { "name": "KbTestimonials", "section": "Google reviews" },
-    { "name": "KbTeam", "section": "the three brokers" },
-    { "name": "KbMarketHud", "section": "live market figures" },
-    { "name": "KbFooter", "section": "footer" }
+    {
+      "name": "KbHero",
+      "section": "drone/photo hero + live count"
+    },
+    {
+      "name": "KbExploreTowns",
+      "section": "towns ledger"
+    },
+    {
+      "name": "KbCommunities",
+      "section": "resort and planned communities rail"
+    },
+    {
+      "name": "KbFeatured",
+      "section": "photographed homes for sale"
+    },
+    {
+      "name": "KbListingMap",
+      "section": "region listing map"
+    },
+    {
+      "name": "KbTicker",
+      "section": "live listing tape"
+    },
+    {
+      "name": "KbSell",
+      "section": "seller address ask"
+    },
+    {
+      "name": "KbTestimonials",
+      "section": "Google reviews"
+    },
+    {
+      "name": "KbTeam",
+      "section": "the three brokers"
+    },
+    {
+      "name": "KbMarketHud",
+      "section": "live market figures"
+    },
+    {
+      "name": "V3Footer",
+      "section": "the ONE site footer (was KbFooter until 2026-08-27)"
+    }
   ]
 }

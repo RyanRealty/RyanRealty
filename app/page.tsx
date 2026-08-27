@@ -32,7 +32,7 @@ import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
@@ -41,6 +41,7 @@ import { PublicPaceStats } from '@/app/cities/[slug]/PublicPaceStats'
 import { PublicMixStats } from '@/app/cities/[slug]/PublicMixStats'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
+import { kbMoneyFull } from '@/components/site/kb/types'
 import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { TESTIMONIALS } from '@/lib/testimonials'
@@ -57,7 +58,8 @@ const D11_HOMEPAGE_LEAD =
 /**
  * Homepage — the kinetic-brutalist design (navy + cream, Amboqia + Geist, GSAP +
  * Lenis motion). CHROME: Global PublicNav in app/layout.tsx owns the top bar
- * (KbNav from lib/site-nav.ts). This page owns KbFooter only — do not re-mount
+ * (KbNav from lib/site-nav.ts). The footer is the ONE site footer, V3Footer,
+ * mounted outside <main> like every other public page — do not re-mount
  * KbNav. Do not remount a second intent bar. HideChrome is only for the
  * not-found footer edge case / CSS hide if still used. Global JSON-LD,
  * VisitTracker, and auth bridges still run. Every
@@ -152,6 +154,11 @@ export default async function Home() {
     if (!c) return null
     return { name: c.name, activeCount: c.activeCount, medianPrice: c.medianPrice, href: `/cities/${slug}`, img: TOWN_IMG[slug] }
   }).filter((t): t is KbTownItem => t !== null)
+  // The per-town inventory fine print, built exactly as KbFooter built it so
+  // the footer line does not change when the footer component does.
+  const footerFine = towns
+    .map((t) => `${t.name} ${t.activeCount != null ? t.activeCount.toLocaleString('en-US') : '—'} / ${kbMoneyFull(t.medianPrice) ?? '—'}`)
+    .join(' · ')
   const townRemainder = formatPulseCityRemainderPublic(
     namePulseCityRemainder({
       regionActive: hud.active,
@@ -241,7 +248,8 @@ export default async function Home() {
   }
 
   return (
-    <main className="kb-root">
+    <>
+      <main className="kb-root">
       <V3SectionTracker />
       <SmoothScrollProvider>
         {/* Hero Layer A (Matt 2026-08-10 exact-match discovery home):
@@ -315,8 +323,21 @@ export default async function Home() {
           <PublicPaceStats cityName="Central Oregon" row={publicPace} />
           <PublicMixStats cityName="Central Oregon" row={publicMix} />
         </KbMarketHud>
-        <KbFooter towns={towns} />
       </SmoothScrollProvider>
-    </main>
+      </main>
+
+      {/* THE ONE SITE FOOTER (Matt 2026-08-27). This page was the last public
+          surface mounting a second footer: 86 pages carried V3Footer and the
+          homepage carried KbFooter, so the page a visitor lands on first was
+          the one page that did not match. The columns are identical
+          (V3_FOOTER_COLUMNS IS KB_FOOTER_COLUMNS, relabeled by the IA lock) and
+          the per-town fine print is carried verbatim as the note. Outside
+          <main> on purpose: HTML-AAM maps <footer> to contentinfo only when it
+          is not nested in sectioning content. Enforced by ci:chrome-single-source. */}
+      <V3Footer
+        columns={V3_FOOTER_COLUMNS}
+        note={footerFine ? `Active single-family by town: ${footerFine}. Figures from the MLS.` : undefined}
+      />
+    </>
   )
 }

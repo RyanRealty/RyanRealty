@@ -41,6 +41,7 @@
     "ci:private-phone",
     "ci:public-listing-status",
     "ci:public-ui",
+    "ci:chrome-single-source",
     "ci:public-v3",
     "ci:publish-blog-index-list",
     "ci:publish-blog-mos-verdicts",
