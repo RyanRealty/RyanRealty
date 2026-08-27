@@ -163,6 +163,30 @@ function heroForSubject(
   return { src: null, caption: 'No MLS photo on file for the subject.' }
 }
 
+/**
+ * The ORS 696 / OAR 863-015-0190 disclosure description. Every field is
+ * omitted when the record does not carry it: land has no bedrooms, bathrooms
+ * or living area, and printing "— bedrooms · — bathrooms · — sqft" on a vacant
+ * lot describes nothing. Omitting an absent fact is the accurate form.
+ */
+export function propertyDescription(subject: CmaSubject): string {
+  const head = [
+    esc(subject.streetAddress),
+    esc(subject.city),
+    `Oregon ${esc(subject.postalCode ?? '')}`.trim(),
+  ]
+    .filter(Boolean)
+    .join(', ')
+  const facts = [
+    subject.beds != null ? `${int(subject.beds)} bedrooms` : null,
+    subject.baths != null ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} bathrooms` : null,
+    subject.sqft != null ? `${int(subject.sqft)} sqft` : null,
+    subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} acres` : null,
+    subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,
+  ].filter(Boolean)
+  return `${head}${facts.length > 0 ? ` · ${facts.join(' · ')}` : ''}.`
+}
+
 function coverSpecsLine(subject: CmaSubject): string {
   const baths =
     subject.baths == null
@@ -293,7 +317,7 @@ function disclosurePage(a: RenderCmaArgs): PageDef {
     body: `
   <h2 class="section">Disclosure</h2>
   <p><strong>Purpose and intent.</strong> This document is a competitive market analysis prepared by a licensed Oregon real estate broker to assist the owner of ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon in evaluating a potential listing price. It is provided in accordance with ORS chapter 696 and OAR 863-015-0190.</p>
-  <p><strong>Property description.</strong> ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')} · ${int(a.subject.beds)} bedrooms · ${dec(a.subject.baths, 0)} bathrooms · ${int(a.subject.sqft)} sqft${a.subject.lotAcres != null ? ` · ${dec(a.subject.lotAcres, 2)} acres` : ''}${a.subject.yearBuilt ? ` · built ${a.subject.yearBuilt}` : ''}.</p>
+  <p><strong>Property description.</strong> ${propertyDescription(a.subject)}</p>
   <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
   ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
   <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date on this report and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be independently confirmed.</p>
