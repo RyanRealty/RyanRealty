@@ -4,28 +4,135 @@
   "status": "v3-broadside-2026-08-27",
   "note": "Homepage on the components/site/v3 barrel, Broadside register (Matt approved the full rebuild 2026-08-27; the hero stays). index.html is the retired KB mockup, kept as history, not the visual target. FOUR patterns — the homepage is NOT in the place-family fifth-pattern exception: Stage (the Bend flyover hero over the Old Mill still; 0af80821 keeps the drone footage, not the rejected 3D-tiles render) · Field (the curated listed set, map plotting the same set, count = the leftover region row) · Ledger twice, non-adjacent (towns with the D21 remainder note; featured communities printing the index count) · Instrument (the market question + leftover KPI row + median-close year overlay, then the property-type run as the enumerated tail of the same grouping, the ZIP/plat form). The absence branch swaps the Instrument for a Quiet stating the miss.",
   "removedComponents": [
-    { "name": "KbHero", "where": "the hero itself survives as V3Stage with the same clip, poster, D11 H1 and See-homes primary. Deleted from it: the GSAP masked line-reveal (Stage handles reduced motion natively), the plain-language property search and the voice-search button — the reason V3Chrome records for itself: search reaches components/search and drags a second token layer; it returns to the chrome as a v3 primitive or not at all. The live count + median + pending sub-line moved to the Field count and Instrument figures." },
-    { "name": "KbExploreTowns", "where": "the towns Ledger (#towns): same six doors, counts, medians, photos, and the pulse-city-remainder note" },
-    { "name": "KbCommunities", "where": "the communities Ledger (#communities): same four doors, index counts, photos. The hover autoplay area-guide clips are not played here; each clip plays on its community's own Stage" },
-    { "name": "KbFeatured", "where": "the Field rows: photographed homes from the same curated mix. Tile hover-videos dropped; the tour lives on the listing page" },
-    { "name": "KbListingMap", "where": "the Field mapSlot (PlaceFieldMap): plots exactly the listed set instead of 3,000 unlabelled pins; the honest region total stays in the count line" },
-    { "name": "KbTicker", "where": "deleted; its six rows were the head of the same tile population the Field lists, each row still a door there" },
-    { "name": "KbSell", "where": "the market Instrument's ghost action: same destination + ?from= attribution via valuationHref('/'). Its three figures were the Instrument's own median/days/closed under that section's trace, so no figure left the page (the ZIP no-median precedent, ci:publish-median-caption)" },
-    { "name": "KbCommunityAlerts", "where": "removed with the section: Sheet is not among the page's four patterns. Email alert capture lives one door deep on every city/community/neighborhood/ZIP alert sheet and on saved search; app/_v3/HomeAlertSheet.client.tsx stays on disk as the compliant scaffold should Matt want the Sheet back" },
-    { "name": "KbTestimonials", "where": "removed: Quiet is not among the four patterns; proof lives at /reviews behind the chrome footer's About column" },
-    { "name": "KbTeam", "where": "removed: the brokers live at /team behind the chrome footer's About column" },
-    { "name": "KbMarketHud", "where": "the market Instrument: the same leftover HUD figures (leftoverMarketFigures), pace + mix figures, the market question headline, verdict, and the median-close year overlay replacing the trend + year-series pair. The by-town median list renders as the towns Ledger's median column. The report door lives in the chrome footer's Market column" },
-    { "name": "KbFooter", "where": "V3Footer outside <main>, with the per-town fine print carried on the note slot" },
-    { "name": "SmoothScrollProvider", "where": "deleted; motion is the barrel's ladder" }
+    {
+      "name": "KbHero",
+      "where": "the hero itself survives as V3Stage with the same clip, poster, D11 H1 and See-homes primary. Deleted from it: the GSAP masked line-reveal (Stage handles reduced motion natively), the plain-language property search and the voice-search button — the reason V3Chrome records for itself: search reaches components/search and drags a second token layer; it returns to the chrome as a v3 primitive or not at all. The live count + median + pending sub-line moved to the Field count and Instrument figures."
+    },
+    {
+      "name": "KbExploreTowns",
+      "where": "the towns Ledger (#towns): same six doors, counts, medians, photos, and the pulse-city-remainder note"
+    },
+    {
+      "name": "KbCommunities",
+      "where": "the communities Ledger (#communities): same four doors, index counts, photos. The hover autoplay area-guide clips are not played here; each clip plays on its community's own Stage"
+    },
+    {
+      "name": "KbFeatured",
+      "where": "the Field rows: photographed homes from the same curated mix. Tile hover-videos dropped; the tour lives on the listing page"
+    },
+    {
+      "name": "KbListingMap",
+      "where": "the Field mapSlot (PlaceFieldMap): plots exactly the listed set instead of 3,000 unlabelled pins; the honest region total stays in the count line"
+    },
+    {
+      "name": "KbTicker",
+      "where": "deleted; its six rows were the head of the same tile population the Field lists, each row still a door there"
+    },
+    {
+      "name": "KbSell",
+      "where": "the market Instrument's ghost action: same destination + ?from= attribution via valuationHref('/'). Its three figures were the Instrument's own median/days/closed under that section's trace, so no figure left the page (the ZIP no-median precedent, ci:publish-median-caption)"
+    },
+    {
+      "name": "KbCommunityAlerts",
+      "where": "removed with the section: Sheet is not among the page's four patterns. Email alert capture lives one door deep on every city/community/neighborhood/ZIP alert sheet and on saved search; app/_v3/HomeAlertSheet.client.tsx stays on disk as the compliant scaffold should Matt want the Sheet back"
+    },
+    {
+      "name": "KbTestimonials",
+      "where": "removed: Quiet is not among the four patterns; proof lives at /reviews behind the chrome footer's About column"
+    },
+    {
+      "name": "KbTeam",
+      "where": "removed: the brokers live at /team behind the chrome footer's About column"
+    },
+    {
+      "name": "KbMarketHud",
+      "where": "the market Instrument: the same leftover HUD figures (leftoverMarketFigures), pace + mix figures, the market question headline, verdict, and the median-close year overlay replacing the trend + year-series pair. The by-town median list renders as the towns Ledger's median column. The report door lives in the chrome footer's Market column"
+    },
+    {
+      "name": "KbFooter",
+      "where": "V3Footer outside <main>, with the per-town fine print carried on the note slot"
+    },
+    {
+      "name": "SmoothScrollProvider",
+      "where": "deleted; motion is the barrel's ladder"
+    }
   ],
   "requiredComponents": [
-    { "name": "V3SectionTracker", "section": "analytics island" },
-    { "name": "V3Stage", "section": "the Bend flyover hero, D11 H1, one primary" },
-    { "name": "HomeHomesField", "section": "Field: count line, town filters, curated homes + map" },
-    { "name": "PlaceFieldMap", "section": "the Google map in the Field frame" },
-    { "name": "V3Ledger", "section": "towns (with remainder note), then communities" },
-    { "name": "V3Instrument", "section": "the market question, leftover KPI row, year overlay" },
-    { "name": "V3PlacePropertyTypes", "section": "the property-type run (enumerated Instrument tail)" },
-    { "name": "V3Footer", "section": "footer outside main, per-town fine print" }
-  ]
+    {
+      "name": "V3SectionTracker",
+      "section": "analytics island"
+    },
+    {
+      "name": "V3Stage",
+      "section": "the Bend flyover hero, D11 H1, one primary"
+    },
+    {
+      "name": "HomeHomesField",
+      "section": "Field: count line, town filters, curated homes + map"
+    },
+    {
+      "name": "PlaceFieldMap",
+      "section": "the Google map in the Field frame"
+    },
+    {
+      "name": "V3Ledger",
+      "section": "towns (with remainder note), then communities"
+    },
+    {
+      "name": "V3Instrument",
+      "section": "the market question, leftover KPI row, year overlay"
+    },
+    {
+      "name": "V3PlacePropertyTypes",
+      "section": "the property-type run (enumerated Instrument tail)"
+    },
+    {
+      "name": "V3Footer",
+      "section": "footer outside main, per-town fine print"
+    }
+  ],
+  "purpose": {
+    "_": "DRAFT for Matt to edit 2026-08-27. The six questions, answered for this page. Everything else in this file describes HOW the page is built; this describes WHAT IT IS FOR, and it is the thing to argue with. Build and review both read this.",
+    "job": "Turn someone who typed a money query into a search they can act on. This is a discovery shell, not a brochure: the visitor arrived wanting to look at houses, and the page's whole job is to get them looking within one screen.",
+    "primaryAction": "See homes -> the regional search. ONE primary. Every other ask on the page is secondary and must look it.",
+    "audience": "A buyer or looker at the top of the funnel who does not yet know the towns. NOT a seller (they arrive on /sell), NOT a repeat visitor (they arrive on a saved search).",
+    "questionsItMustAnswer": [
+      "What is for sale here right now, and what does it cost?",
+      "Where is 'here' -- what are the towns and what do they cost?",
+      "Is this a good time to buy or sell?",
+      "Who are you and can I trust you?"
+    ],
+    "searchIntent": {
+      "headTerm": "homes for sale central oregon",
+      "alsoWins": [
+        "bend oregon homes for sale",
+        "central oregon real estate",
+        "homes for sale bend redmond sisters sunriver"
+      ],
+      "whyThisPageCanWin": "It publishes live inventory, per-town medians and a traced market verdict on one crawlable page. Aggregators publish inventory without the local verdict; the other Bend brokerages publish the verdict without live inventory.",
+      "whatItOwesSEO": "One H1 carrying the head term; the town names as real links with real figures; the market answer in text, not only in a chart; JSON-LD that matches the visible figures."
+    },
+    "dataAvailable": [
+      "live active listings with photo, price, address, beds/baths/sqft, lat/lng",
+      "per-town active count and median list price",
+      "the leftover market row: median list, pending, closed 30d, sale-to-list, months of supply, days to contract, median close, price cuts",
+      "resort and master-planned community counts",
+      "Google reviews; the three brokers; the approved Bend flyover clip"
+    ],
+    "notThisPagesJob": [
+      "Refining by property type. Condo / townhome / land / farm / commercial / business belong to search, which exists to filter. Eight enumerated type sections is a filter UI rendered as page content.",
+      "Being the market report. /housing-market owns the full figure set; the homepage owes the ANSWER and a door.",
+      "Being the about page. /about and /team own the brokerage story."
+    ]
+  },
+  "openDefects": {
+    "_": "What the page does today that the purpose above says it should not. Drafted 2026-08-27 from the rendered page.",
+    "items": [
+      "SIXTEEN market figures in one row. The purpose owes an ANSWER ('a balanced market, 5.6 months of supply') plus a door to the full report. Sixteen KPIs is the market report, inlined, and the answer is lost inside it.",
+      "EIGHT property-type sections (condo, townhome, manufactured-on-land, manufactured-in-park, multifamily 2-4, land, farm, commercial, business) are roughly half the page's sections and are a search filter rendered as content. They push the trust and capture sections below any realistic scroll.",
+      "'Where the sales are happening' is labelled as SALES and shows ACTIVE INVENTORY -- count and median LIST price per town. The label and the data disagree. This is the labelled-vs-behaves class Matt named.",
+      "Four asks stack at the bottom -- seller form, reviews, brokers, alert capture -- so the page ends in a run of pitches after the visitor has already scrolled past the houses.",
+      "The hero carries no figure at all while the count line sits below it, so the first screen states no inventory number on a page whose head term is inventory."
+    ]
+  }
 }

@@ -327,11 +327,17 @@ export default async function Home() {
 
         {/* Pattern 3, Ledger — the towns, with the leftover remainder named so
             the region total and the town table cannot silently disagree (D21). */}
+        {/* The heading names ACTIVE INVENTORY, because that is what the rows are:
+            each town's active single-family count and its median LIST price, under
+            PLACE_COUNT_TRACE ("active single-family listings, counted per place").
+            It read "Where the sales are happening" until 2026-08-27 -- a sales
+            claim over listing data, which is the label-versus-behaviour defect
+            Matt named. Nothing about the data changed; the label stopped lying. */}
         {firstTownRow ? (
           <V3Ledger
             id="towns"
             eyebrow={v3Text('Central Oregon · By town')}
-            heading={v3Text('Where the sales are happening')}
+            heading={v3Text('Where the homes are, and what they cost')}
             rows={[firstTownRow, ...restTownRows]}
             note={townRemainder ? v3Text(townRemainder) : undefined}
             source={v3Text(PLACE_COUNT_TRACE)}
@@ -341,7 +347,7 @@ export default async function Home() {
           <V3Ledger
             id="towns"
             eyebrow={v3Text('Central Oregon · By town')}
-            heading={v3Text('Where the sales are happening')}
+            heading={v3Text('Where the homes are, and what they cost')}
             rows={[]}
             emptyMessage={v3Text('No town returned a live market row on this refresh.')}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
