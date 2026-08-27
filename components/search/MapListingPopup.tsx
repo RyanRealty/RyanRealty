@@ -273,11 +273,23 @@ export default function MapListingPopup({ map, position, listing, onClose }: Pro
 
         let placement: Placement = 'above'
         let shiftX = 0
+        let shiftY = 0
         if (anchor && canvasW > 0 && canvasH > 0) {
           if (cardH > 0) {
             const roomAbove = anchor.y - PIN_GAP
             const roomBelow = canvasH - anchor.y - PIN_GAP
             if (roomAbove < cardH && roomBelow > roomAbove) placement = 'below'
+            // Vertical clamp: on a short canvas (the mobile listing-detail
+            // map, pin centered) NEITHER side has room for the full card, so
+            // the flip alone still leaves the card's top clipped away by the
+            // map frame's overflow:hidden. Slide the card just far enough to
+            // sit fully inside the canvas — covering the pin is the lesser
+            // evil than an amputated photo strip.
+            const top =
+              placement === 'above' ? anchor.y - PIN_GAP - cardH : anchor.y + PIN_GAP
+            const bottom = top + cardH
+            if (top < EDGE_PAD) shiftY = EDGE_PAD - top
+            else if (bottom > canvasH - EDGE_PAD) shiftY = canvasH - EDGE_PAD - bottom
           }
           const left = anchor.x - CARD_W / 2
           const right = anchor.x + CARD_W / 2
@@ -289,8 +301,8 @@ export default function MapListingPopup({ map, position, listing, onClose }: Pro
         host.style.top = `${point.y}px`
         host.style.transform =
           placement === 'above'
-            ? `translate(calc(-50% + ${shiftX}px), calc(-100% - ${PIN_GAP}px))`
-            : `translate(calc(-50% + ${shiftX}px), ${PIN_GAP}px)`
+            ? `translate(calc(-50% + ${shiftX}px), calc(-100% - ${PIN_GAP - shiftY}px))`
+            : `translate(calc(-50% + ${shiftX}px), ${PIN_GAP + shiftY}px)`
 
         if (placement !== placementRef.current) {
           placementRef.current = placement

@@ -37,7 +37,11 @@ function geojsonToPaths(geo: GeoJSON.Geometry): google.maps.LatLngLiteral[][] {
   return []
 }
 
-export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 15, popup }: Props) {
+// Default zoom 13, not 15: this is the "where it sits" context map — at 15 a
+// rural listing (Prineville, La Pine outskirts) framed almost nothing but two
+// street labels on an empty basemap. 13 keeps the surrounding road grid and
+// town context in frame; the hero photos carry the street-level view.
+export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 13, popup }: Props) {
   const { ready, error } = useGoogleMapsReady()
   const [map, setMap] = useState<google.maps.Map | null>(null)
   const [popupOpen, setPopupOpen] = useState(true)
@@ -51,16 +55,25 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 15
 
   // preferMapId false: single-pin listing map must always show tiles even if
   // Cloud Map ID is misconfigured; editorial MAP_SEARCH_STYLES still apply.
-  const mapOptions = useMemo(
-    () => ({
+  const mapOptions = useMemo(() => {
+    // Touch devices pinch to zoom: the stacked control chrome (camera
+    // joystick, pegman, zoom buttons) rendered as bare white squares over a
+    // 375px map. The pegman renders as a blank white box at every width on
+    // this map, so Street View entry is off entirely; zoom buttons stay for
+    // mouse users only.
+    const coarse =
+      typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
+    return {
       ...getExploreMapOptions({ preferMapId: false }),
-      streetViewControl: true,
+      streetViewControl: false,
       fullscreenControl: true,
-      zoomControl: true,
+      zoomControl: !coarse,
+      // The v3.60+ camera joystick control; redundant next to zoom + drag on
+      // every pointer type, and one more floating box over a small map.
+      cameraControl: false,
       gestureHandling: 'cooperative' as const,
-    }),
-    [],
-  )
+    }
+  }, [])
 
   // Static map fallback when JS maps fail (key, network, bootstrap).
   const staticFallback = useMemo(() => {
