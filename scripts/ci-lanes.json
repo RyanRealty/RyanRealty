@@ -42,6 +42,7 @@
     "ci:public-listing-status",
     "ci:public-ui",
     "ci:chrome-single-source",
+    "ci:one-design-system",
     "ci:public-v3",
     "ci:publish-blog-index-list",
     "ci:publish-blog-mos-verdicts",

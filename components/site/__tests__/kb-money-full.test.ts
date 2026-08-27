@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { kbMoneyFull } from '@/components/site/kb/types'
+import { kbMoneyFull } from '@/lib/kb/types'
 
 describe('kbMoneyFull', () => {
   it('keeps Southern Crossing and NorthWest Crossing list medians exact', () => {

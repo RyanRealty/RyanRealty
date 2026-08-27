@@ -111,10 +111,10 @@ const leftoverHudSurfaces = [
     path: 'app/lp/seller-home-value/data.ts',
     label: 'seller LP snapshot gates MOS through leftoverHudKpis',
   },
-  {
-    path: 'components/site/SiteHeader.tsx',
-    label: 'SiteHeader leftover region MOS through leftoverHudKpis',
-  },
+  // SiteHeader was deleted 2026-08-27 with the legacy chrome (V3Chrome is the one
+  // public header, and it publishes no MOS figure of its own). Its arm's rule --
+  // a months-of-supply figure in the CHROME comes through leftoverHudKpis --
+  // survives on getMegaMenuData below, which is the only chrome-level read left.
   {
     path: 'lib/data/nav/getMegaMenuData.ts',
     label: 'mega menu leftover MOS through leftoverHudKpis',

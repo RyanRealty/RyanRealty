@@ -48,13 +48,14 @@ checks.push({
     !/href:\s*['"]\/search['"]/.test(community),
 })
 
-const map = src('components/site/kb/KbListingMapImpl.tsx')
-checks.push({
-  label: 'KbListingMap withholds Browse homes when browseHref is null',
-  ok:
-    /browseHref === undefined \? publishRegionalSearchHref\(\) : browseHref/.test(map) &&
-    /\{mapBrowseHref \? \(/.test(map),
-})
+// KbListingMap left with the KB register (2026-08-27), the same way
+// PlaceMapListSplit and PlaceInventoryMap did. Its arm asserted that a MAP's
+// Browse door falls back to the regional search rather than to a place door it
+// cannot build. The v3 map (PlaceFieldMap, in the Field's map slot) carries NO
+// browse door at all — it plots the set the Field already lists, and the Field's
+// own door is the place-filtered one asserted on each surface below. A rule with
+// no surface left to break is retired here rather than left reading a deleted
+// file, which is what made this gate crash instead of fail.
 
 /**
  * THE SUBDIVISION ARM, RE-EXPRESSED FOR v3 (2026-08-26). The KB page's one

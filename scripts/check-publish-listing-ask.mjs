@@ -73,12 +73,32 @@ checks.push({
     /formatPublishedAsk\(tile\.listPrice\)/.test(commField),
 })
 
-const map = src('components/site/kb/KbListingMapImpl.tsx')
+// RE-EXPRESSED 2026-08-27, when the KB register was deleted. KbListingMapImpl
+// formatted the pin label ITSELF, so the rule was asserted on the map. The v3
+// map (PlaceFieldMapImpl) takes a PREFORMATTED priceLabel and says so in its own
+// header -- no formatting happens there. So the rule moved to the two places
+// that now build the label, and the map is asserted to keep NOT formatting: a
+// map that starts formatting again is how the rule gets bypassed silently.
+const mapImpl = src('app/central-oregon/_v3/PlaceFieldMapImpl.tsx')
 checks.push({
-  label: 'place map pins publish formatPublishedAsk',
+  label: 'the v3 map still formats no price of its own',
   ok:
-    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(map) &&
-    /formatPublishedAsk\(n\)/.test(map),
+    /priceLabel: string/.test(mapImpl) &&
+    !/toLocaleString|Intl\.NumberFormat|\$\$\{/.test(mapImpl),
+})
+const homePins = src('app/_v3/home-field-items.ts')
+checks.push({
+  label: 'homepage map pin labels publish formatPublishedAsk',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(homePins) &&
+    /priceLabel: formatPublishedAsk\(/.test(homePins),
+})
+const commPins = src('app/communities/[slug]/_v3/community-opening.ts')
+checks.push({
+  label: 'community map pin labels publish formatPublishedAsk',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(commPins) &&
+    /priceLabel: formatPublishedAsk\(/.test(commPins),
 })
 
 const nbh = src('app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts')
@@ -113,16 +133,11 @@ checks.push({
     /formatPublishedAsk\(tile\.listPrice\)/.test(platField),
 })
 
-const featured = src('components/site/kb/KbFeatured.client.tsx')
-checks.push({
-  label: 'featured rail publishes formatPublishedAsk',
-  ok:
-    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(featured) &&
-    /formatPublishedAsk\(it\.price\)/.test(featured) &&
-    !/kbMoneyFull\(it\.price\)/.test(featured),
-})
+// KbFeatured left with the KB register (2026-08-27). The featured rail is now
+// the homepage Field, whose rows are built by app/_v3/home-field-items.ts --
+// asserted above, on the same rule, in that file's own terms.
 
-const kbMoney = src('components/site/kb/types.ts')
+const kbMoney = src('lib/kb/types.ts')
 checks.push({
   label: 'kbMoneyFull prints exact whole dollars, not nearest thousand',
   ok:
@@ -164,14 +179,17 @@ checks.push({
     !/formatPublishedAsk\(listing\.price\)/.test(videoCard),
 })
 
-const activity = src('components/site/kb/KbActivity.client.tsx')
-checks.push({
-  label: 'activity ledger publishes formatPublishedAsk',
-  ok:
-    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(activity) &&
-    /formatPublishedAsk\(it\.price\)/.test(activity) &&
-    !/kbMoneyFull\(it\.price\)/.test(activity),
-})
+// KbActivity left with the KB register (2026-08-27). /activity is on the barrel
+// and its rows are built by app/activity/_v3/activity-rows.ts, which is asserted
+// here on the same rule so the ledger's asks stay labelled.
+// NOT RE-ASSERTED, AND SAID SO PLAINLY. The v3 activity ledger formats its ask
+// through livePrice() in app/_v3/live-format.ts, which wraps formatPrice, NOT
+// formatPublishedAsk. So a fractional-interest ask on /activity is published
+// with no share label -- the same defect this gate exists to prevent, on a
+// surface the KB arm used to cover. Asserting formatPublishedAsk here today
+// would fail the build on a real defect that is out of this commit's scope
+// (the KB register deletion), and asserting formatPrice would legalise it.
+// Raised to Matt 2026-08-27, unfixed, deliberately not gated green.
 
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {

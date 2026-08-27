@@ -1,0 +1,68 @@
+/* lead-landing.css — the lead-landing shell's own styles.
+ *
+ * These rules were the LP's, living in components/site/kb/kb.css under the
+ * .kb-root scope. They came here on 2026-08-27 so kb.css could be DELETED:
+ * the LP shell was its last consumer. Nothing was redesigned in the move --
+ * the selectors are the same rules, re-scoped from .kb-root to .v3 and reading
+ * the ONE token set (components/site/v3/tokens.css) instead of the KB token
+ * names, so a style change here follows the same tokens as every other page.
+ */
+.v3.lead-landing .display { font-family:var(--v3-font-display);
+  font-weight:400;
+  line-height:.86;
+  letter-spacing:-.01em;
+  text-transform:uppercase; }
+.v3.lead-landing .mono-num { font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+  letter-spacing:-.02em; }
+.v3.lead-landing .wrap { width:100%;max-width:1500px;margin:0 auto;padding:0 18px; }
+.v3.lead-landing .hero-cta-row { display:flex;gap:10px;flex-shrink:0; }
+.v3.lead-landing .btn { display:inline-flex;align-items:center;gap:8px;
+  font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:13px 20px;border:var(--v3-rule-weight-section) solid var(--v3-cream);
+  background:var(--v3-cream);color:var(--v3-navy);
+  cursor:pointer;font-family:inherit;
+  transition:background var(--v3-dur-state) ease,color var(--v3-dur-state) ease,transform var(--v3-dur-state) ease; }
+.v3.lead-landing .btn:hover { background:transparent;color:var(--v3-cream);transform:translateY(-2px); }
+.v3.lead-landing .btn.alt { background:var(--v3-navy);color:var(--v3-cream);border-color:var(--v3-navy); }
+.v3.lead-landing .btn.alt:hover { background:transparent;color:var(--v3-navy); }
+.v3.lead-landing .btn.ghost { background:transparent;color:var(--v3-cream); }
+.v3.lead-landing .btn.ghost:hover { background:var(--v3-cream);color:var(--v3-navy); }
+.v3.lead-landing .section { position:relative; }
+.v3.lead-landing .sec-head { display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding:46px 0 22px;border-bottom:var(--v3-rule-weight-section) solid currentColor;
+  margin-bottom:0; }
+.v3.lead-landing .section { animation: kbSectionRise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 32%; }
+@media(min-width:760px) {
+  .v3.lead-landing .wrap { padding:0 40px; }
+}
+@media(min-width:1200px) {
+  .v3.lead-landing .wrap { padding:0 56px; }
+}
+@media(max-width:760px) {
+  .v3.lead-landing .wrap { padding:0 20px; }
+}
+
+/* The stragglers, same rules, same values. */
+.v3.lead-landing .sec-index { font-size:.72rem;font-weight:700;letter-spacing:.2em;opacity:.68; }
+.v3.lead-landing .sec-title { font-size:clamp(1.9rem,5.4vw,3.6rem);line-height:.92;text-wrap:balance; }
+@media(max-width:760px) {
+  .v3.lead-landing .sec-title { font-size:7.5vw !important;line-height:.95;overflow-wrap:anywhere; }
+}
+.v3.lead-landing .lp-col-main { min-width:0; }
+.v3.lead-landing .chip { display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--v3-ink-muted);border:1px solid var(--v3-edge);
+  border-radius:var(--v3-radius-pill);padding:6px 14px; }
+.v3.lead-landing .dot { width:7px;height:7px;border-radius:var(--v3-radius-mark);background:currentColor; }
+
+/* The section entrance, moved with its rule. Scroll-driven, so it never runs
+   before the visitor scrolls, and reduced motion switches it off. */
+@keyframes kbSectionRise {
+  from { opacity:0; transform:translateY(30px); }
+  to   { opacity:1; transform:none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3.lead-landing .section { animation:none; }
+}

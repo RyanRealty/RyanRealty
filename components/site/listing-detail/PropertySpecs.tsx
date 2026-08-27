@@ -297,15 +297,15 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
         display: 'grid',
         gridTemplateColumns: 'repeat(2, 1fr)',
         gap: '1px',
-        background: '#102742',
-        border: '1px solid #102742',
+        background: 'var(--v3-navy)',
+        border: '1px solid var(--v3-navy)',
       }}
     >
       {specs.map((spec, i) => (
         <div
           key={spec.label}
           style={{
-            background: 'var(--cream, #faf8f4)',
+            background: 'var(--v3-cream)',
             padding: '14px 18px',
             display: 'flex',
             flexDirection: 'column',
@@ -329,7 +329,7 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
             style={{
               fontSize: 'clamp(1rem,1.8vw,1.15rem)',
               fontWeight: 600,
-              color: 'var(--navy, #102742)',
+              color: 'var(--v3-navy)',
               fontVariantNumeric: 'tabular-nums',
             }}
           >
@@ -371,10 +371,10 @@ export function PropertySpecs({ listing, className }: Props) {
                 fontWeight: 700,
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase',
-                color: 'var(--navy, #102742)',
+                color: 'var(--v3-navy)',
                 paddingBottom: 10,
                 marginBottom: 12,
-                borderBottom: '1px solid #102742',
+                borderBottom: '1px solid var(--v3-navy)',
               }}
             >
               {group.label}

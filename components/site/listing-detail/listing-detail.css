@@ -263,7 +263,9 @@
   background: var(--cream);
   border-top: 2px solid var(--navy);
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -8px 24px rgba(16, 39, 66, 0.14);
+  /* No elevation. The 2px navy top rule is what separates this bar from the
+     page (PUBLIC_UI section 9: rule weight IS the hierarchy, and neither
+     register casts an elevation shadow). Removed 2026-08-27. */
   transform: translateY(110%);
   transition: transform 0.28s ease;
   will-change: transform;
@@ -661,7 +663,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 2px 10px rgba(11, 28, 48, 0.28);
+  /* No elevation (PUBLIC_UI section 9). A badge over media reads on its own
+     cream ground; it does not need to float. Removed 2026-08-27. */
 }
 .listing-detail .lst-card:hover .lst-tour {
   background: var(--navy);

@@ -10,8 +10,7 @@ export type V3SectionTrackerProps = Record<string, never>
 /**
  * V3 section + scroll tracking. An island, not a seventh pattern: chrome
  * surrounds a page, this records it. Observes every `.v3 section[id]` and
- * `.kb-root section[id]` (dual-scope so a leftover kb shell still reports)
- * and fires a `section_view` the first time each crosses 55% visibility, plus
+ * fires a `section_view` the first time each crosses 55% visibility, plus
  * 25/50/75/100% scroll-depth milestones. Dual-sinks to GA4/Pixel (trackEvent)
  * AND our internal /api/visitors/track with full `location.href`. Tracking
  * must never break the page.
@@ -48,12 +47,13 @@ export function V3SectionTracker(_props?: V3SectionTrackerProps) {
       }
     }
 
-    // Both registers: '.v3' is the public v3 root (V3_ROOT_CLASS). '.kb-root'
-    // is leftover KB shell. Scoping to one register silently drops section_view
-    // on the other, and analytics that stops reporting looks like a page nobody
-    // scrolls.
+    // ONE register: '.v3' is the public root (V3_ROOT_CLASS), and since
+    // 2026-08-27 it is the only one: the old register's root scope went with
+    // the KB register. If a second root ever appears, section_view goes dark on
+    // it silently, and analytics that stops reporting looks like a page nobody
+    // scrolls. ci:one-design-system is what stops a second root existing.
     const sections = Array.from(
-      document.querySelectorAll<HTMLElement>('.kb-root section[id], .v3 section[id]'),
+      document.querySelectorAll<HTMLElement>('.v3 section[id]'),
     )
     const seen = new Set<string>()
     const io = new IntersectionObserver(

@@ -155,7 +155,7 @@ export async function NeighborhoodMarketContext({
             <div className="eyebrow sec-index" style={{ color: 'rgba(250,248,244,0.55)' }}>
               Live market context
             </div>
-            <h2 className="sec-title display" style={{ color: 'var(--cream, #faf8f4)' }}>
+            <h2 className="sec-title display" style={{ color: 'var(--v3-cream)' }}>
               {geoName} market
             </h2>
           </div>
@@ -227,11 +227,11 @@ export async function NeighborhoodMarketContext({
           {thisListPrice != null && medianList != null && diffPct != null && aboveOrBelow ? (
             <p className="mkt-fine" style={{ marginTop: 0 }}>
               This home is listed at{' '}
-              <b style={{ color: 'var(--cream, #faf8f4)' }}>
+              <b style={{ color: 'var(--v3-cream)' }}>
                 <Price value={thisListPrice} />
               </b>
               {', '}
-              <span style={{ color: 'var(--cream, #faf8f4)', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ color: 'var(--v3-cream)', fontVariantNumeric: 'tabular-nums' }}>
                 <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow}
               </span>{' '}
               the {geoName} median.{' '}

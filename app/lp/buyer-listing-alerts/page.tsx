@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
 import Image from 'next/image'
 import Link from 'next/link'
 import LandingPageTracker from '@/components/LandingPageTracker'
@@ -195,11 +196,11 @@ export default async function BuyerLPPage() {
     : null
 
   return (
-    <main className="bg-[#faf8f4] text-[#102742]">
+    <main className="bg-cream text-navy">
       <LandingPageTracker lpVariant="buyer-listing-alerts" />
 
       {/* ─── Sticky minimal header — wordmark + phone (KB navy bar) ───────── */}
-      <header className="sticky top-0 z-40 border-b-[3px] border-[#102742] bg-[#102742]">
+      <header className="sticky top-0 z-40 border-b-[3px] border-navy bg-navy">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="flex items-center" aria-label="Ryan Realty · Bend, Oregon">
             <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
@@ -215,7 +216,7 @@ export default async function BuyerLPPage() {
           </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
-            className="inline-flex items-center gap-1.5 border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-2 text-sm font-bold uppercase tracking-[0.1em] text-[#102742] transition-colors hover:bg-transparent hover:text-[#faf8f4] sm:px-4"
+            className="inline-flex items-center gap-1.5 border-[3px] border-cream bg-cream px-3 py-2 text-sm font-bold uppercase tracking-[0.1em] text-navy transition-colors hover:bg-transparent hover:text-cream sm:px-4"
             aria-label={`Call Ryan Realty at ${BROKER_PHONE}`}
           >
             <PhoneIcon className="h-4 w-4" />
@@ -225,7 +226,7 @@ export default async function BuyerLPPage() {
       </header>
 
       {/* ─── HERO — canonical Old Mill photo, navy scrim, 3-field form card ── */}
-      <section id="alerts" className="relative isolate border-b-[3px] border-[#102742] scroll-mt-16">
+      <section id="alerts" className="relative isolate border-b-[3px] border-navy scroll-mt-16">
         <Image
           src="/images/kb/three-sisters-sunrise.jpg"
           alt=""
@@ -235,22 +236,22 @@ export default async function BuyerLPPage() {
           className="absolute inset-0 -z-20 object-cover object-center"
         />
         <div
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-[#102742]/80 via-[#102742]/70 to-[#102742]/85"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-navy/80 via-navy/70 to-navy/85"
           aria-hidden="true"
         />
 
         <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-2 lg:gap-12 lg:py-20">
           {/* Copy + trust column */}
-          <div className="text-[#faf8f4]">
+          <div className="text-cream">
             {/* Eyebrow — mono label */}
-            <p className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/85 drop-shadow-sm">
-              <span className="h-[7px] w-[7px] rounded-full bg-[#faf8f4]" aria-hidden="true" />
+            <p className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.28em] text-cream/85 drop-shadow-sm">
+              <span className="h-[7px] w-[7px] rounded-full bg-cream" aria-hidden="true" />
               Bend · Central Oregon buyers
             </p>
 
             {/* Broker trust chip — hard-edge square frame */}
-            <div className="mt-5 inline-flex items-center gap-3 border-[3px] border-[#faf8f4]/40 px-3 py-2">
-              <div className="relative h-10 w-10 shrink-0 overflow-hidden border border-[#faf8f4]/40 bg-[#faf8f4]/10 sm:h-12 sm:w-12">
+            <div className="mt-5 inline-flex items-center gap-3 border-[3px] border-cream/40 px-3 py-2">
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden border border-cream/40 bg-cream/10 sm:h-12 sm:w-12">
                 <Image
                   src="/images/brokers/ryan-matt.png"
                   alt="Matt Ryan, Principal Broker at Ryan Realty"
@@ -261,34 +262,34 @@ export default async function BuyerLPPage() {
                 />
               </div>
               <div className="text-left">
-                <p className="text-sm font-semibold leading-tight text-[#faf8f4]">Matt Ryan</p>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] leading-tight text-[#faf8f4]/70">
+                <p className="text-sm font-semibold leading-tight text-cream">Matt Ryan</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] leading-tight text-cream/70">
                   Principal broker · Bend, Oregon
                 </p>
               </div>
             </div>
 
             {/* H1 — Amboqia display, Title Case (hero only) */}
-            <h1 className="mt-6 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#faf8f4] drop-shadow-sm sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-cream drop-shadow-sm sm:text-5xl lg:text-6xl">
               First Matches in 30 Minutes
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#faf8f4] drop-shadow-sm">
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-cream drop-shadow-sm">
               Tell us what you are looking for. A Bend broker pulls listings that match, usually
               within 30 minutes. Your first batch goes out as soon as you submit this.
             </p>
 
             {/* Live inventory pill — only renders when the count is available */}
             {activeCount != null && activeCount > 0 ? (
-              <p className="mt-6 inline-flex items-center gap-2 border-[3px] border-[#faf8f4]/40 px-4 py-2 text-sm font-semibold text-[#faf8f4] drop-shadow-sm">
+              <p className="mt-6 inline-flex items-center gap-2 border-[3px] border-cream/40 px-4 py-2 text-sm font-semibold text-cream drop-shadow-sm">
                 <span className="tabular-nums font-display text-base">
                   {activeCount.toLocaleString('en-US')}
                 </span>
-                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#faf8f4]/80">
+                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-cream/80">
                   active Bend listings right now
                 </span>
               </p>
             ) : (
-              <p className="mt-6 hidden text-sm text-[#faf8f4]/85 drop-shadow-sm sm:block">
+              <p className="mt-6 hidden text-sm text-cream/85 drop-shadow-sm sm:block">
                 Matched by a licensed Bend broker from local MLS listings. Matches only. Unsubscribe anytime.
               </p>
             )}
@@ -297,7 +298,7 @@ export default async function BuyerLPPage() {
           {/* Form column — above the fold on mobile and desktop. Consent
               disclosure renders inside BuyerLPForm (first-paint HTML). */}
           <div className="lg:pl-2" id="buyer-lp-form">
-            <div className="border-[3px] border-[#102742] bg-[#faf8f4] p-5 sm:p-7">
+            <div className="border-[3px] border-navy bg-cream p-5 sm:p-7">
               <BuyerLPForm />
             </div>
           </div>
@@ -306,16 +307,16 @@ export default async function BuyerLPPage() {
 
       {/* ─── S1b · Live in Bend right now — prove the inventory before the ask ── */}
       {liveBendCards.length > 0 ? (
-        <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+        <section className="border-b-[3px] border-navy bg-cream">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <ScrollReveal>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
                 Active in Bend right now
               </p>
-              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
                 Live in Bend today
               </h2>
-              <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
+              <p className="mt-4 max-w-2xl text-base text-navy/70">
                 Pulled from the MLS. When a home that matches your criteria lists, it reaches your
                 inbox within the hour.
               </p>
@@ -325,7 +326,7 @@ export default async function BuyerLPPage() {
                 <ScrollReveal key={c.key} delayMs={(i % 3) * 75}>
                   <a
                     href={c.href}
-                    className="group block overflow-hidden border-[3px] border-[#102742] bg-[#102742] text-[#faf8f4] transition-transform duration-300 hover:-translate-y-1"
+                    className="group block overflow-hidden border-[3px] border-navy bg-navy text-cream transition-transform duration-300 hover:-translate-y-1"
                   >
                     <div className="relative aspect-[4/3] w-full overflow-hidden">
                       <Image
@@ -338,10 +339,10 @@ export default async function BuyerLPPage() {
                     </div>
                     <div className="p-4">
                       <p className="font-display text-2xl leading-none">{c.price}</p>
-                      <p className="mt-2 text-sm text-[#faf8f4]/90">{c.address}</p>
-                      <p className="text-xs text-[#faf8f4]/70">{c.cityLine}</p>
+                      <p className="mt-2 text-sm text-cream/90">{c.address}</p>
+                      <p className="text-xs text-cream/70">{c.cityLine}</p>
                       {c.meta ? (
-                        <p className="mt-3 text-[0.7rem] uppercase tracking-widest text-[#faf8f4]/70">{c.meta}</p>
+                        <p className="mt-3 text-[0.7rem] uppercase tracking-widest text-cream/70">{c.meta}</p>
                       ) : null}
                     </div>
                   </a>
@@ -351,13 +352,13 @@ export default async function BuyerLPPage() {
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <a
                 href="#alerts"
-                className="inline-flex items-center gap-2 border-[3px] border-[#102742] bg-[#102742] px-6 py-3 text-sm font-semibold uppercase tracking-widest text-[#faf8f4] transition-colors hover:bg-[#102742]/85"
+                className="inline-flex items-center gap-2 border-[3px] border-navy bg-navy px-6 py-3 text-sm font-semibold uppercase tracking-widest text-cream transition-colors hover:bg-navy/85"
               >
                 Start your alerts
               </a>
               <a
                 href="/homes-for-sale/bend"
-                className="text-sm font-semibold uppercase tracking-widest text-[#102742] underline-offset-4 hover:underline"
+                className="text-sm font-semibold uppercase tracking-widest text-navy underline-offset-4 hover:underline"
               >
                 See all active Bend homes
               </a>
@@ -367,7 +368,7 @@ export default async function BuyerLPPage() {
       ) : null}
 
       {/* ─── S2 · Trust strip band (cream) ─────────────────────────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
           <TrustStrip />
         </div>
@@ -376,16 +377,16 @@ export default async function BuyerLPPage() {
       <SiteCaptureAlignment />
 
       {/* ─── S3 · Resort and ranch communities we watch ────────────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
               Where we watch
             </p>
-            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
               Resort and ranch communities we watch
             </h2>
-            <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
+            <p className="mt-4 max-w-2xl text-base text-navy/70">
               Inventory in these communities moves in small numbers. When something lists, your
               alert goes out the same morning.
             </p>
@@ -393,7 +394,7 @@ export default async function BuyerLPPage() {
           <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {communityTiles.map((tile, i) => (
               <ScrollReveal key={tile.slug} delayMs={(i % 3) * 75}>
-                <div className="overflow-hidden border-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
+                <div className="overflow-hidden border-[3px] border-navy bg-navy text-cream">
                   {tile.photoSrc ? (
                     <div className="relative aspect-[4/3] w-full">
                       <Image
@@ -405,27 +406,27 @@ export default async function BuyerLPPage() {
                       />
                     </div>
                   ) : (
-                    <div className="flex aspect-[4/3] w-full items-center justify-center bg-[#102742]">
-                      <p className="px-6 text-center font-display text-2xl uppercase tracking-[-0.01em] text-[#faf8f4]">
+                    <div className="flex aspect-[4/3] w-full items-center justify-center bg-navy">
+                      <p className="px-6 text-center font-display text-2xl uppercase tracking-[-0.01em] text-cream">
                         {tile.label}
                       </p>
                     </div>
                   )}
-                  <div className="border-t-[3px] border-[#faf8f4]/20 p-5">
+                  <div className="border-t-[3px] border-cream/20 p-5">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="font-display text-lg uppercase leading-none tracking-[-0.01em] text-[#faf8f4]">
+                      <p className="font-display text-lg uppercase leading-none tracking-[-0.01em] text-cream">
                         {tile.label}
                       </p>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-cream/65">
                         {tile.city} · OR
                       </p>
                     </div>
-                    <p className="mt-2 text-sm leading-relaxed text-[#faf8f4]/75">
+                    <p className="mt-2 text-sm leading-relaxed text-cream/75">
                       {tile.note}
                     </p>
-                    <p className="mt-4 text-sm font-semibold tabular-nums text-[#faf8f4]/90">
+                    <p className="mt-4 text-sm font-semibold tabular-nums text-cream/90">
                       {tile.active != null ? tile.active.toLocaleString('en-US') : MDASH} active
-                      <span className="mx-1.5 text-[#faf8f4]/45">·</span>
+                      <span className="mx-1.5 text-cream/45">·</span>
                       {tile.pending != null ? tile.pending.toLocaleString('en-US') : MDASH} pending
                     </p>
                   </div>
@@ -433,7 +434,7 @@ export default async function BuyerLPPage() {
               </ScrollReveal>
             ))}
           </div>
-          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/70">
+          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-navy/70">
             Live counts · single-family listings by MLS subdivision · refreshed with the market
             snapshot
           </p>
@@ -441,22 +442,22 @@ export default async function BuyerLPPage() {
       </section>
 
       {/* ─── S4 · How matching works — 3 steps (E7: left-led, not centered dump) ── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
             <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
                 Three steps
               </p>
-              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
                 How matching works
               </h2>
-              <p className="mt-4 text-base text-[#102742]/70">
+              <p className="mt-4 text-base text-navy/70">
                 Criteria in, broker-reviewed matches out. No mass blast of every new listing.
               </p>
             </div>
           </ScrollReveal>
-          <div className="mt-10 grid grid-cols-1 gap-10 border-t-[3px] border-[#102742]/15 pt-10 sm:grid-cols-3 sm:gap-8">
+          <div className="mt-10 grid grid-cols-1 gap-10 border-t-[3px] border-navy/15 pt-10 sm:grid-cols-3 sm:gap-8">
             <ScrollReveal delayMs={0}>
               <ProcessStep
                 num="1"
@@ -483,27 +484,27 @@ export default async function BuyerLPPage() {
       </section>
 
       {/* ─── S5 · Virtual tour panel — split panel ─────────────────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
               Buy from anywhere
             </p>
-            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
               Walk it from anywhere
             </h2>
-            <p className="mt-5 text-lg leading-relaxed text-[#102742]/80">
+            <p className="mt-5 text-lg leading-relaxed text-navy/80">
               We shoot full video walk-throughs on request. Buying from out of state, or out of
               town that week? You see the whole home, room by room, before you decide whether
               to fly in.
             </p>
           </ScrollReveal>
           <ScrollReveal delayMs={100}>
-            <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden border-[3px] border-[#102742] bg-[#102742]">
-              <span className="flex h-16 w-16 items-center justify-center border-[3px] border-[#faf8f4] bg-[#faf8f4]/10">
-                <PlayIcon className="ml-1 h-7 w-7 text-[#faf8f4]" />
+            <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden border-[3px] border-navy bg-navy">
+              <span className="flex h-16 w-16 items-center justify-center border-[3px] border-cream bg-cream/10">
+                <PlayIcon className="ml-1 h-7 w-7 text-cream" />
               </span>
-              <p className="absolute bottom-4 left-5 text-xs font-semibold uppercase tracking-[0.14em] text-[#faf8f4]/85">
+              <p className="absolute bottom-4 left-5 text-xs font-semibold uppercase tracking-[0.14em] text-cream/85">
                 Full walk-through video · shot on request
               </p>
             </div>
@@ -512,36 +513,36 @@ export default async function BuyerLPPage() {
       </section>
 
       {/* ─── S6 · Market authority band (navy) ─────────────────────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-navy text-cream">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/55">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cream/55">
               Bend · The market
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
               Bend single-family, current figures
             </h2>
-            <p className="mt-4 max-w-2xl text-base text-[#faf8f4]/80">
+            <p className="mt-4 max-w-2xl text-base text-cream/80">
               From the same MLS data behind our monthly Central Oregon market report.
             </p>
           </ScrollReveal>
           {/* Brutalist KPI grid — hard cream hairlines, no rounded cards. */}
-          <div className="mt-10 grid grid-cols-1 gap-px border border-[#faf8f4]/30 bg-[#faf8f4]/30 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid grid-cols-1 gap-px border border-cream/30 bg-cream/30 sm:grid-cols-2 lg:grid-cols-3">
             {authorityStats.map((card, i) => (
               <ScrollReveal key={card.label} delayMs={i * 75}>
-                <div className="flex h-full flex-col bg-[#102742] p-5 sm:p-6">
+                <div className="flex h-full flex-col bg-navy p-5 sm:p-6">
                   <p className="font-display text-4xl tabular-nums leading-[0.9] sm:text-5xl">
                     {card.value}
                   </p>
-                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-[#faf8f4]/90">
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-cream/90">
                     {card.label}
                   </p>
-                  <p className="mt-1 text-xs text-[#faf8f4]/60">{card.sub}</p>
+                  <p className="mt-1 text-xs text-cream/60">{card.sub}</p>
                 </div>
               </ScrollReveal>
             ))}
           </div>
-          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#faf8f4]/55">
+          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-cream/55">
             {refreshedLabel ? `Live data · updated ${refreshedLabel} · ` : 'Live data · '}
             Bend single-family · MLS via Ryan Realty
           </p>
@@ -550,10 +551,10 @@ export default async function BuyerLPPage() {
 
       {/* ─── S7 · Reviews ──────────────────────────────────────────────────── */}
       {BUYER_LP_REVIEWS.length > 0 ? (
-        <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+        <section className="border-b-[3px] border-navy bg-cream">
           <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-16">
             <ScrollReveal>
-              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
                 What past buyers say
               </p>
               <ReviewStrip reviews={BUYER_LP_REVIEWS} tone="light" />
@@ -563,20 +564,20 @@ export default async function BuyerLPPage() {
       ) : null}
 
       {/* ─── S8 · FAQ ─────────────────────────────────────────────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
               Common questions
             </p>
-            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
               Quick answers
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-[#102742]/75">
+            <p className="mt-4 text-base leading-relaxed text-navy/75">
               Talk to a broker now.{' '}
               <a
                 href={`tel:${BROKER_PHONE_TEL}`}
-                className="inline-flex items-center gap-1.5 font-semibold text-[#102742] underline-offset-4 hover:underline"
+                className="inline-flex items-center gap-1.5 font-semibold text-navy underline-offset-4 hover:underline"
               >
                 <PhoneIcon className="h-4 w-4" />
                 <span className="tabular-nums">{BROKER_PHONE}</span>
@@ -609,16 +610,16 @@ export default async function BuyerLPPage() {
       </section>
 
       {/* ─── S9 · Closing navy band ───────────────────────────────────────── */}
-      <section className="bg-[#102742] text-[#faf8f4]">
+      <section className="bg-navy text-cream">
         <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/55">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cream/55">
               Three fields
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
               Start your listing alerts
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-lg text-[#faf8f4]/85">
+            <p className="mx-auto mt-4 max-w-xl text-lg text-cream/85">
               Three fields. A broker sends the first matches, usually within 30 minutes.
             </p>
           </ScrollReveal>
@@ -626,13 +627,13 @@ export default async function BuyerLPPage() {
             <Link
               href="#buyer-lp-form"
               scroll
-              className="inline-flex h-14 items-center justify-center border-[3px] border-[#faf8f4] bg-[#faf8f4] px-7 text-sm font-bold uppercase tracking-[0.1em] text-[#102742] transition-colors hover:bg-transparent hover:text-[#faf8f4]"
+              className="inline-flex h-14 items-center justify-center border-[3px] border-cream bg-cream px-7 text-sm font-bold uppercase tracking-[0.1em] text-navy transition-colors hover:bg-transparent hover:text-cream"
             >
               Start my listing alerts
             </Link>
             <a
               href={`tel:${BROKER_PHONE_TEL}`}
-              className="inline-flex h-14 items-center justify-center border-[3px] border-[#faf8f4]/40 px-7 text-sm font-bold uppercase tracking-[0.1em] text-[#faf8f4] transition-colors hover:border-[#faf8f4]"
+              className="inline-flex h-14 items-center justify-center border-[3px] border-cream/40 px-7 text-sm font-bold uppercase tracking-[0.1em] text-cream transition-colors hover:border-cream"
             >
               <span className="tabular-nums">Call {BROKER_PHONE}</span>
             </a>
@@ -641,19 +642,11 @@ export default async function BuyerLPPage() {
       </section>
 
       {/* ─── Mini fine print ─────────────────────────────────────────────── */}
-      <footer className="border-t-[3px] border-[#102742] bg-[#102742] pb-24 sm:pb-8">
-        <div className="mx-auto max-w-7xl px-4 py-8 text-center text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65 sm:px-6">
-          <p>
-            Ryan Realty LLC · Bend · Oregon ·{' '}
-            <a href={`tel:${BROKER_PHONE_TEL}`} className="underline underline-offset-2 tabular-nums hover:text-[#faf8f4]">
-              {BROKER_PHONE}
-            </a>
-          </p>
-          <p className="mt-2 normal-case tracking-normal">
-            Equal Housing Opportunity · © {new Date().getFullYear()} Ryan Realty LLC
-          </p>
-        </div>
-      </footer>
+      {/* THE ONE SITE FOOTER (Matt 2026-08-27, "no exceptions"). This page
+        hand-rolled its own footer in raw var(--v3-navy)/var(--v3-cream) with a 3px slab edge,
+        which is how nine landing pages came to carry a footer the other 87
+        public pages do not have. Held by ci:chrome-single-source. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
 
       {/* Exit-intent prompt — desktop-only, once per session. */}
       <ExitIntentPrompt
@@ -664,19 +657,19 @@ export default async function BuyerLPPage() {
       />
 
       {/* ─── Sticky mobile CTA bar — pinned to viewport bottom on mobile only. */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-[#102742] bg-[#faf8f4] px-3 py-3 sm:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-navy bg-cream px-3 py-3 sm:hidden">
         <div className="flex items-center gap-2">
           <Link
             href="#buyer-lp-form"
             scroll
-            className="flex-1 border-[3px] border-[#102742] bg-[#102742] px-4 py-3 text-center text-sm font-bold uppercase tracking-[0.1em] text-[#faf8f4]"
+            className="flex-1 border-[3px] border-navy bg-navy px-4 py-3 text-center text-sm font-bold uppercase tracking-[0.1em] text-cream"
           >
             Start my listing alerts
           </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
             aria-label={`Call Ryan Realty at ${BROKER_PHONE}`}
-            className="flex h-12 w-12 items-center justify-center border-[3px] border-[#102742] text-[#102742]"
+            className="flex h-12 w-12 items-center justify-center border-[3px] border-navy text-navy"
           >
             <PhoneIcon className="h-5 w-5" />
           </a>

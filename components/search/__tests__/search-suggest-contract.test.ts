@@ -130,10 +130,20 @@ describe('merge lock — one search component', () => {
     expect(src).toContain('<SearchSuggestPanel')
   })
 
-  it('KbNav global header search renders the shared panel', () => {
-    const src = readFileSync(join(root, 'components/site/kb/KbNav.client.tsx'), 'utf8')
-    expect(src).toContain("from '@/components/search/SearchSuggest'")
-    expect(src).toContain('<SearchSuggestPanel')
+  // RE-EXPRESSED 2026-08-27. The chrome has NO search field, deliberately, and
+  // V3Chrome says why in its own header: the suggest field reached into
+  // components/search, which dragged a second token layer onto every public page
+  // through the chrome. So the rule is no longer "the header search uses the
+  // shared panel" — it is that the CHROME DOES NOT FORK A SEARCH AT ALL. A
+  // header that grows its own suggest dropdown is how the second token layer
+  // gets back in, so that is what this bites on.
+  it('the chrome does not fork its own search', () => {
+    const chrome = readFileSync(join(root, 'components/site/v3/V3Chrome.tsx'), 'utf8')
+    expect(chrome).not.toContain('<SearchSuggestPanel')
+    expect(chrome).not.toContain("from '@/components/search/SearchSuggest'")
+    // and the legacy header that DID fork one is gone, not dormant
+    expect(() => readFileSync(join(root, 'components/site/SiteHeader.tsx'))).toThrow()
+    expect(() => readFileSync(join(root, 'components/site/SiteHeaderSearch.client.tsx'))).toThrow()
   })
 
   it('the orphaned SmartSearch component stays deleted', () => {

@@ -12,13 +12,13 @@ import {
 export function ProcessStep({ num, title, body }: { num: string; title: string; body: string }) {
   return (
     <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
-      <span className="flex h-12 w-12 items-center justify-center border-[3px] border-[#102742] bg-[#102742] font-display text-lg tabular-nums text-[#faf8f4]">
+      <span className="flex h-12 w-12 items-center justify-center border-[3px] border-navy bg-navy font-display text-lg tabular-nums text-cream">
         {num}
       </span>
-      <p className="mt-4 font-display text-lg uppercase leading-none tracking-[-0.01em] text-[#102742]">
+      <p className="mt-4 font-display text-lg uppercase leading-none tracking-[-0.01em] text-navy">
         {title}
       </p>
-      <p className="mt-2 max-w-xs text-sm leading-relaxed text-[#102742]/70">{body}</p>
+      <p className="mt-2 max-w-xs text-sm leading-relaxed text-navy/70">{body}</p>
     </div>
   )
 }
@@ -57,11 +57,11 @@ export function PhoneIcon({ className }: { className?: string }) {
 
 export function FAQ({ value, q, a }: { value: string; q: string; a: string }) {
   return (
-    <AccordionItem value={value} className="border-[3px] border-[#102742] bg-[#faf8f4] px-5">
-      <AccordionTrigger className="py-4 font-display text-lg uppercase leading-snug tracking-[-0.01em] text-[#102742] hover:no-underline">
+    <AccordionItem value={value} className="border-[3px] border-navy bg-cream px-5">
+      <AccordionTrigger className="py-4 font-display text-lg uppercase leading-snug tracking-[-0.01em] text-navy hover:no-underline">
         {q}
       </AccordionTrigger>
-      <AccordionContent className="pb-4 text-base leading-relaxed text-[#102742]/85">
+      <AccordionContent className="pb-4 text-base leading-relaxed text-navy/85">
         {a}
       </AccordionContent>
     </AccordionItem>

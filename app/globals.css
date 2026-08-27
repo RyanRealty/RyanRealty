@@ -2,6 +2,26 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* THE TWO BRAND COLORS, AS FIRST-CLASS TAILWIND COLORS (Matt 2026-08-27).
+   `bg-navy`, `text-cream` and their opacity modifiers now exist, so a page
+   wanting the exact brand values never has to type bg-[#102742] again -- 430 of
+   those had accumulated across the landing pages and the listing node, and not
+   one of them moved when a token moved. `--primary` already resolved to this
+   navy; cream had NO theme color at all (`--background` is pure white), which is
+   why cream in particular is the one that got hardcoded everywhere.
+
+   PLAIN @theme, NOT @theme inline. `inline` resolves the value at build time,
+   where components/site/v3/tokens.css is not in scope: the utilities generated
+   with an unresolvable var and every `text-cream` rendered near-black. A plain
+   block emits real custom properties that resolve at RUNTIME, where the token
+   file is loaded, so the single source of truth stays the token file and a
+   style-template swap still reaches every one of these utilities. */
+@theme {
+  --color-navy: var(--v3-navy);
+  --color-cream: var(--v3-cream);
+}
+
+
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));

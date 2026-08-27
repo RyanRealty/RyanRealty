@@ -219,7 +219,7 @@ export function TetherowMultiStepForm() {
               <Button
                 type="button"
                 onClick={goNext}
-                className="flex-1 rounded-[10px] bg-[#faf8f4] py-4 text-base font-bold tracking-[0.02em] text-[#102742] hover:opacity-90"
+                className="flex-1 rounded-[10px] bg-cream py-4 text-base font-bold tracking-[0.02em] text-navy hover:opacity-90"
               >
                 Continue →
               </Button>
@@ -298,7 +298,7 @@ export function TetherowMultiStepForm() {
               <Button
                 type="button"
                 onClick={goNext}
-                className="flex-1 rounded-[10px] bg-[#faf8f4] py-4 text-base font-bold tracking-[0.02em] text-[#102742] hover:opacity-90"
+                className="flex-1 rounded-[10px] bg-cream py-4 text-base font-bold tracking-[0.02em] text-navy hover:opacity-90"
               >
                 Continue →
               </Button>
@@ -357,7 +357,7 @@ export function TetherowMultiStepForm() {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 rounded-[10px] bg-[#faf8f4] py-4 text-base font-bold tracking-[0.02em] text-[#102742] hover:opacity-90"
+                className="flex-1 rounded-[10px] bg-cream py-4 text-base font-bold tracking-[0.02em] text-navy hover:opacity-90"
               >
                 {submitting ? 'Sending...' : 'Send my value report'}
               </Button>

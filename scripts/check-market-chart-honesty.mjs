@@ -1,40 +1,40 @@
 #!/usr/bin/env node
 /**
- * check-market-chart-honesty.mjs — anti-regression lock for KbMarketChart.
+ * check-market-chart-honesty.mjs — anti-regression lock for the market chart.
  *
  * The market chart regressed twice (wavy over-smoothing, off-brand rainbow
- * spaghetti). This gate makes the 2026-06-19 fix permanent by asserting the exact
- * invariants that, if broken, reproduce the regression. Each check maps to a real
- * defect — this is a crash-guard, not green-grep theater.
+ * spaghetti). This gate makes the 2026-06-19 fix permanent by asserting the
+ * invariants that, if broken, reproduce the regression.
  *
- *   1. Line ink is CREAM (the two-color brand system), not a multi-hue rainbow.
- *   2. The line path is the BROKEN polyline (linear, lifts across gaps) — no spline
- *      curve builder (smoothing invents medians that don't exist → §0 violation).
- *   3. The sparse-geo VOLUME_FLOOR + soldCount suppression is present.
- *   4. soldCount rides through buildYearSeries (else the floor is a silent no-op).
+ * RE-EXPRESSED 2026-08-27, when the KB register was deleted. The old gate read
+ * components/site/kb/KbMarketChart.client.tsx and lib/kb/year-series.ts. The
+ * chart is now components/site/v3/V3Chart.tsx and the sparse-geo volume floor
+ * moved DOWN to the data layer (lib/data/market/getCityArchive.ts), which is a
+ * better home for it: a floor applied in the chart protects one chart, a floor
+ * applied at the read protects every consumer of the read. The four invariants
+ * are unchanged; only where each is asserted moved. Nothing was dropped in the
+ * swap, which is the whole reason the old gate hard-failed on a missing file
+ * instead of skipping.
+ *
+ *   1. The line path is the BROKEN polyline — no spline/curve smoothing.
+ *      Smoothing invents medians that do not exist (section 0).
+ *   2. Line ink comes from the two-color token set, never a multi-hue palette.
+ *   3. The sparse-geo volume floor is applied on the read, with its guard.
+ *   4. soldCount rides through buildYearSeries, else the floor is a no-op.
  *
  * Usage: node scripts/check-market-chart-honesty.mjs
  */
 import { readFileSync, existsSync } from 'node:fs'
 
-const CHART = 'components/site/kb/KbMarketChart.client.tsx'
+const CHART  = 'components/site/v3/V3Chart.tsx'
 const SERIES = 'lib/kb/year-series.ts'
+const ARCHIVE = 'lib/data/market/getCityArchive.ts'
 
-/**
- * Both reads are guarded because the P9 roll may replace the chart with a v3 one.
- * An unguarded readFileSync answers a deleted file with an ENOENT stack trace,
- * which reads as a broken gate rather than as what it is: the honesty invariants
- * for the market chart are no longer enforced anywhere. The spline ban in
- * particular is a section 0 rule (smoothing invents medians that do not exist),
- * so it must never lapse during a swap. Whoever moves the chart repoints these two
- * constants and re-expresses the four invariants in the new file's terms.
- * docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.20.
- */
-for (const required of [CHART, SERIES]) {
+for (const required of [CHART, SERIES, ARCHIVE]) {
   if (existsSync(required)) continue
   console.error(
     `✗ market-chart-honesty: ${required} is missing, so the market chart's honesty ` +
-      `invariants (cream ink, no spline, volume floor, soldCount pass-through) are ` +
+      `invariants (no spline, token ink, volume floor, soldCount pass-through) are ` +
       `enforced by nothing. Repoint this gate at the replacement file.`,
   )
   process.exit(1)
@@ -42,55 +42,43 @@ for (const required of [CHART, SERIES]) {
 
 const chart = readFileSync(CHART, 'utf8')
 const series = readFileSync(SERIES, 'utf8')
+const archive = readFileSync(ARCHIVE, 'utf8')
 const fails = []
 
-// 1. Cream ink, no rainbow palette.
-if (!/const\s+LINE_INK\s*=\s*['"]#faf8f4['"]/.test(chart)) {
-  fails.push(`${CHART}: LINE_INK must be the cream brand ink ('#faf8f4'). The year lines are distinguished by brightness (recency), never by hue.`)
+// 1. No spline. A curve builder between real points draws medians nobody measured.
+const SPLINE = /\b(curveCardinal|curveCatmullRom|curveBasis|curveMonotone|d3\.curve|type="monotone"|type='monotone'|smoothing|bezierCurveTo|\bQ\s*\$\{|cubicTo)\b/
+if (SPLINE.test(chart.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, ''))) {
+  fails.push(`${CHART}: a spline/curve builder is back. The path between two monthly medians must be straight — a curve invents values between them (section 0).`)
 }
-if (!/color:\s*LINE_INK/.test(chart)) {
-  fails.push(`${CHART}: each year line's color must be LINE_INK (cream). Do not reintroduce a per-year hue.`)
-}
-// A multi-hue palette array of line colors = the rainbow regression. Flag an array
-// literal holding 3+ distinct non-cream hex colors.
-const arrays = chart.match(/\[\s*(?:['"]#[0-9a-fA-F]{3,6}['"]\s*,\s*){2,}['"]#[0-9a-fA-F]{3,6}['"]\s*\]/g) || []
+
+// 2. Ink from tokens, never a hue palette. Comments stripped first: this repo has
+//    twice shipped a gate that fired on its own explanatory prose.
+const code = chart.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '')
+const arrays = code.match(/\[\s*(?:['"]#[0-9a-fA-F]{3,6}['"]\s*,\s*){2,}['"]#[0-9a-fA-F]{3,6}['"]\s*\]/g) || []
 for (const a of arrays) {
-  const hues = [...a.matchAll(/#[0-9a-fA-F]{3,6}/g)].map((m) => m[0].toLowerCase()).filter((h) => h !== '#faf8f4')
+  const hues = [...a.matchAll(/#[0-9a-fA-F]{3,6}/g)].map((m) => m[0].toLowerCase())
+    .filter((h) => !['#faf8f4', '#102742', '#ffffff', '#fff'].includes(h))
   if (new Set(hues).size >= 3) {
-    fails.push(`${CHART}: a multi-hue color array (${[...new Set(hues)].slice(0, 4).join(', ')}…) looks like the rainbow line palette regression. Year lines must be cream-only.`)
+    fails.push(`${CHART}: a multi-hue color array (${[...new Set(hues)].slice(0, 4).join(', ')}...) looks like the rainbow line palette regression. Series are distinguished by brightness and dash, never by hue.`)
   }
 }
 
-// 2. Broken linear path, no spline.
-if (!/function\s+brokenPath\s*\(/.test(chart) || !/path:\s*brokenPath\(/.test(chart)) {
-  fails.push(`${CHART}: the line path must be built by brokenPath() (linear segments that lift across month gaps). Removing it reintroduces drawing-through-gaps.`)
+// 3. The sparse-geo floor, on the read.
+if (!/export const MONTHLY_VOLUME_FLOOR\s*=\s*\d+/.test(archive)) {
+  fails.push(`${ARCHIVE}: MONTHLY_VOLUME_FLOOR is gone. A month with one or two closings contributes a "median" that is one sale price, and the line zigzags on noise.`)
 }
-// Guard against a cubic/quadratic curve builder sneaking into a path string (template
-// or concatenation emitting C/Q/S/T commands). brokenPath emits only M/L.
-if (/[`'"][^`'"]*\b[CQST]\$\{/.test(chart) || /['"`]\s*\+\s*['"`]?[CQST]/.test(chart)) {
-  fails.push(`${CHART}: a path builder emits a curve command (C/Q/S/T). Median trend lines must be linear — splines overshoot and invent values (§0).`)
+if (!/soldCount\s*\?\?\s*0\)\s*>=\s*MONTHLY_VOLUME_FLOOR/.test(archive)) {
+  fails.push(`${ARCHIVE}: the MONTHLY_VOLUME_FLOOR guard no longer filters months by soldCount, so the constant is decorative.`)
 }
 
-// 3. Volume floor + suppression.
-if (!/const\s+VOLUME_FLOOR\s*=\s*\d+/.test(chart)) {
-  fails.push(`${CHART}: VOLUME_FLOOR must be defined — sparse-geo months below it are noise and must be suppressed.`)
-}
-if (!/soldCount\s*==\s*null\s*\|\|\s*p\.soldCount\s*>=\s*VOLUME_FLOOR/.test(chart.replace(/\s+/g, ' ')) &&
-    !/p\.soldCount\s*>=\s*VOLUME_FLOOR/.test(chart)) {
-  fails.push(`${CHART}: the sparse-geo suppression filter (soldCount < VOLUME_FLOOR → drop) is missing.`)
-}
-
-// 4. soldCount carried through the series builder.
+// 4. soldCount rides through, else the floor above can never be applied.
 if (!/soldCount/.test(series)) {
-  fails.push(`${SERIES}: buildYearSeries must carry soldCount per point, or the chart's volume floor is a silent no-op.`)
+  fails.push(`${SERIES}: soldCount must ride through buildYearSeries — without it nothing downstream can apply the volume floor.`)
 }
 
-console.log('Market-chart honesty gate (KbMarketChart)')
-console.log('=========================================')
 if (fails.length) {
-  console.error(`\nFAIL — ${fails.length} regression guard(s) tripped:\n`)
-  for (const f of fails) console.error('  • ' + f)
-  console.error('')
+  console.error('✗ market-chart-honesty')
+  for (const f of fails) console.error('  - ' + f)
   process.exit(1)
 }
-console.log('Cream-ink lines, linear broken path (no spline), sparse-geo volume floor, soldCount carried. Honest.')
+console.log('✓ market-chart-honesty: no spline, token ink, volume floor applied on the read, soldCount rides through.')

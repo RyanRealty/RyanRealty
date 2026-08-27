@@ -25,7 +25,7 @@ import { useInViewAutoplay } from './use-in-view-autoplay'
  */
 
 /**
- * Structurally identical to KbFeaturedItem (components/site/kb/types.ts), which
+ * Structurally identical to KbFeaturedItem (lib/kb/types.ts), which
  * lib/kb/resolve-featured-items.ts still returns. Declared here so the listing
  * family has no runtime OR type dependency on the kb register; when the kb
  * register is deleted the resolver's type moves to lib/kb and both stay

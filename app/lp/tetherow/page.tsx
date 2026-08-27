@@ -20,6 +20,7 @@
  * future layout-level token changes.
  */
 import type { Metadata } from 'next'
+import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -1332,56 +1333,11 @@ export default async function TetherowLandingPage() {
       </Section>
 
       {/* FOOTER */}
-      <footer className="bg-[color:var(--rr-navy)] px-0 pt-12 pb-7 text-[color:var(--rr-cream)]">
-        <div className="mx-auto grid max-w-[1200px] gap-12 px-6 lg:grid-cols-[1.5fr_1fr_1fr]">
-          <div>
-            <div
-              className="mb-2.5 font-display text-[26px] font-semibold"
-              style={{ fontFamily: 'var(--rr-font-display)' }}
-            >
-              Ryan Realty
-            </div>
-            <div className="max-w-[320px] text-[13px] leading-[1.7] opacity-75">
-              A Bend, Oregon brokerage operating under Matt Ryan&apos;s Principal Broker license.
-            </div>
-          </div>
-          <div>
-            <h4 className="mb-4 text-[12px] font-bold uppercase tracking-[0.12em] opacity-70">
-              Reach us
-            </h4>
-            <ul className="list-none space-y-2">
-              <li className="text-[14px] opacity-85">{cfg.broker_block.phone}</li>
-              <li className="text-[14px] opacity-85">{cfg.broker_block.email}</li>
-              <li className="text-[14px] opacity-85">
-                115 NW Oregon Avenue
-                <br />
-                Bend, OR 97703
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="mb-4 text-[12px] font-bold uppercase tracking-[0.12em] opacity-70">
-              Resort + community pages
-            </h4>
-            <ul className="list-none space-y-2">
-              {cfg.footer_resort_pages.map((p) => (
-                <li key={p.name} className="text-[14px] opacity-85">
-                  {p.name}
-                  {p.current ? ' (you are here)' : ''}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="col-span-full mt-7 border-t border-[rgba(250,248,244,0.12)] pt-6 text-[12px] leading-[1.65] opacity-60">
-            Ryan Realty LLC · Oregon Principal Broker #201206613 · Equal Housing Opportunity · Listing
-            data courtesy of Oregon Datashare RMLS · Tetherow Resort and Golf Club is a registered
-            trademark of its respective owner. This page is independent market analysis, not a
-            Tetherow Resort, Tetherow Owners Association, or Troon publication. No affiliation
-            implied. Course photography © Tetherow Resort, used editorially with attribution. Active
-            listing photos used under the IDX broker license.
-          </div>
-        </div>
-      </footer>
+      {/* THE ONE SITE FOOTER (Matt 2026-08-27, "no exceptions"). This page
+        hand-rolled its own footer in raw var(--v3-navy)/var(--v3-cream) with a 3px slab edge,
+        which is how nine landing pages came to carry a footer the other 87
+        public pages do not have. Held by ci:chrome-single-source. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
 
       <TetherowExitModal />
     </main>
@@ -1408,9 +1364,9 @@ function TetherowGlobalStyle() {
       dangerouslySetInnerHTML={{
         __html: `
         :root {
-          --rr-navy: #102742;
-          --rr-cream: #faf8f4;
-          --rr-text: #102742;
+          --rr-navy: var(--v3-navy);
+          --rr-cream: var(--v3-cream);
+          --rr-text: var(--v3-navy);
           --rr-muted: rgba(16, 39, 66, 0.62);
           --rr-card-shadow: 0 1px 2px rgba(16, 39, 66, 0.04), 0 4px 12px rgba(16, 39, 66, 0.06);
           --rr-card-shadow-hover: 0 1px 2px rgba(16, 39, 66, 0.06), 0 8px 24px rgba(16, 39, 66, 0.1);

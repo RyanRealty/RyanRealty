@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
  *
  * Spec (matches the .rr-eyebrow utility in app/globals.css):
  *   - 11px / 600 weight / 0.12em letter spacing / uppercase
- *   - color: var(--primary) (navy #102742)
+ *   - color: var(--primary) (navy var(--v3-navy))
  *   - display: inline-block
  *
  * Renders as <span> by default; pass `as="div"` or any HTML tag if a

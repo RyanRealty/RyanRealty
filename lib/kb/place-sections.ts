@@ -41,11 +41,8 @@ import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 import { cityHero } from '@/lib/geo-images'
 import { publishStreetLine, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
 import { listingTileHref } from '@/lib/slug'
-import type { KbActivityItem } from '@/components/site/kb/KbActivity.client'
-import type { KbArticlePost } from '@/components/site/kb/KbArticles'
-import type { KbMapFeature } from '@/components/site/kb/KbListingMap.client'
-import type { KbOpenHouseItem } from '@/components/site/kb/KbOpenHouses.client'
-import type { KbTickerItem, KbTownItem } from '@/components/site/kb/types'
+import type { KbTickerItem, KbTownItem } from '@/lib/kb/types'
+import type { KbActivityItem, KbArticlePost, KbMapFeature, KbOpenHouseItem } from '@/lib/kb/section-shapes'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 
 /**

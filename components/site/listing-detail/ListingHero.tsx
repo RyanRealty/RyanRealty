@@ -205,7 +205,7 @@ export function ListingHero({
           position: 'relative',
           width: '100%',
           minHeight: 'clamp(360px, 66vh, 780px)',
-          background: 'var(--navy, #102742)',
+          background: 'var(--v3-navy)',
           overflow: 'hidden',
         }}
       >
@@ -276,7 +276,7 @@ export function ListingHero({
             paddingLeft: canShowMap
               ? 'clamp(108px, 14vw, 140px)'
               : 'clamp(18px,3.5vw,56px)',
-            color: 'var(--cream, #faf8f4)',
+            color: 'var(--v3-cream)',
           }}
         >
           {addressLine ? (
@@ -316,7 +316,7 @@ export function ListingHero({
                   fontSize: 'clamp(1.4rem,3.2vw,2.4rem)',
                   lineHeight: 1,
                   fontWeight: 400,
-                  color: 'var(--cream, #faf8f4)',
+                  color: 'var(--v3-cream)',
                   fontVariantNumeric: 'tabular-nums',
                   overflow: 'visible',
                 }}
@@ -364,8 +364,8 @@ export function ListingHero({
                   fontWeight: 700,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  color: 'var(--navy, #102742)',
-                  background: 'var(--cream, #faf8f4)',
+                  color: 'var(--v3-navy)',
+                  background: 'var(--v3-cream)',
                   border: 0,
                   padding: '10px 16px',
                   cursor: 'pointer',
@@ -405,8 +405,8 @@ export function ListingHero({
                   fontWeight: 700,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  color: 'var(--navy, #102742)',
-                  background: 'var(--cream, #faf8f4)',
+                  color: 'var(--v3-navy)',
+                  background: 'var(--v3-cream)',
                   border: 0,
                   padding: '9px 14px',
                   cursor: 'pointer',
@@ -429,8 +429,8 @@ export function ListingHero({
                 fontWeight: 700,
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                color: 'var(--navy, #102742)',
-                background: 'var(--cream, #faf8f4)',
+                color: 'var(--v3-navy)',
+                background: 'var(--v3-cream)',
                 border: 0,
                 padding: '9px 14px',
                 cursor: 'pointer',
@@ -685,8 +685,8 @@ function PhotoStrip({
         display: 'grid',
         gridTemplateColumns: `repeat(${visible.length + (remaining > 0 ? 1 : 0)}, 1fr)`,
         gap: 3,
-        background: 'var(--navy, #102742)',
-        borderTop: '3px solid var(--navy, #102742)',
+        background: 'var(--v3-navy)',
+        borderTop: '3px solid var(--v3-navy)',
       }}
     >
       {visible.map((p, i) => (
@@ -701,7 +701,7 @@ function PhotoStrip({
             overflow: 'hidden',
             border: 0,
             padding: 0,
-            background: 'var(--navy, #102742)',
+            background: 'var(--v3-navy)',
             cursor: 'zoom-in',
           }}
         >
@@ -730,7 +730,7 @@ function PhotoStrip({
           style={{
             position: 'relative',
             aspectRatio: '4/3',
-            background: 'var(--navy, #102742)',
+            background: 'var(--v3-navy)',
             border: 0,
             padding: 0,
             cursor: 'pointer',
@@ -739,7 +739,7 @@ function PhotoStrip({
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
-            color: 'var(--cream, #faf8f4)',
+            color: 'var(--v3-cream)',
           }}
         >
           <ViewAllIcon size={22} />

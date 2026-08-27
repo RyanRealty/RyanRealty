@@ -6,7 +6,7 @@ const files = {
   // KbMarketHud was deleted with its last consumer (app/page.tsx, 2026-08-27
   // v3 rebuild); the KPI-order pin it carried lives on the shared v3 builder
   // (leftoverMarketFigures in city-sections) asserted below.
-  types: readFileSync(resolve('components/site/kb/types.ts'), 'utf8'),
+  types: readFileSync(resolve('lib/kb/types.ts'), 'utf8'),
   home: readFileSync(resolve('app/page.tsx'), 'utf8'),
   city: readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8'),
   nbh: readFileSync(resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'), 'utf8'),

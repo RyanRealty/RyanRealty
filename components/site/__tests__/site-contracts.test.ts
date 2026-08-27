@@ -381,18 +381,42 @@ describe('design directive contracts', () => {
     ]) {
       expect(readSrc(page)).toMatch(/buildActivityItems\(/)
     }
-    const act = readSrc('components/site/kb/KbActivity.client.tsx')
-    expect(act).toMatch(/act-thumb/)
-    expect(act).toMatch(/imageUrl\?: string \| null/)
+    // KbActivity left with the KB register (2026-08-27). The thumbnail is now the
+    // V3Ledger row's own media slot, fed by the same imageUrl the shared builder
+    // sets (asserted above), and the row shape still declares it.
+    const shapes = readSrc('lib/kb/section-shapes.ts')
+    expect(shapes).toMatch(/imageUrl\?: string \| null/)
+    expect(readSrc('app/cities/[slug]/page.tsx')).toMatch(/activityItems/)
   })
 
-  it('D94 — open houses rail is interactive (click/hover swaps the lead) and scrollable', () => {
-    const oh = readSrc('components/site/kb/KbOpenHouses.client.tsx')
-    expect(oh).toMatch(/useState/)
-    expect(oh).toMatch(/setActiveIndex/)
-    // rail items are buttons that promote into the lead
-    expect(oh).toMatch(/<button[\s\S]*?className="oh-rail-card"/)
-    expect(oh).toMatch(/onClick=\{\(\) => setActiveIndex\(i\)\}/)
+  // D94 IS NOT IMPLEMENTED, AND THIS TEST SAYS SO IN ITS NAME RATHER THAN GOING
+  // GREEN ON SOMETHING ELSE.
+  //
+  // The interactive open-houses rail was a Matt directive. It rendered through
+  // KbOpenHouses.client.tsx, which was deleted in the 2026-08-26 place-family
+  // migration as part of the "orphan cascade" — a cap-driven deletion, made when
+  // PUBLIC_UI section 3 still capped a page at four patterns. No v3 place page
+  // renders an open-houses section today, so there is nothing to assert the
+  // directive against.
+  //
+  // What this test guards instead is the RESTORE PATH: buildOpenHouseItems and
+  // its row shape survived the deletion, so restoring D94 is a render, not a
+  // rebuild. If someone deletes the builder too, the directive becomes
+  // unrecoverable silently — that is what this bites on.
+  //
+  // Raised to Matt 2026-08-27 with the cap kill. Restore is a sections-pass item.
+  it('D94 — open-houses rail DELETED in the v3 place migration; restore path intact', () => {
+    const shared = readSrc('lib/kb/place-sections.ts')
+    expect(shared).toMatch(/export function buildOpenHouseItems/)
+    expect(shared).toMatch(/whenLabel: formatOpenHouseWhen/)
+    expect(readSrc('lib/kb/section-shapes.ts')).toMatch(/KbOpenHouseItem/)
+    // and no place page renders it, which is the fact this name reports
+    const places = [
+      'app/cities/[slug]/page.tsx',
+      'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+      'app/communities/[slug]/page.tsx',
+    ]
+    for (const p of places) expect(readSrc(p)).not.toMatch(/buildOpenHouseItems\(/)
   })
 
   it('D91 — market structured data cannot vanish (MARKET_TRUTH D26)', () => {
@@ -668,7 +692,11 @@ describe('design directive contracts', () => {
     const barrel = readSrc('components/site/v3/index.ts')
     expect(barrel).toMatch(/export \{ V3SectionTracker \} from '\.\/V3SectionTracker\.client'/)
     expect(barrel).toMatch(/not a seventh pattern/)
-    expect(src).toMatch(/\.kb-root section\[id\], \.v3 section\[id\]/)
+    expect(src).toMatch(/\.v3 section\[id\]/)
+    // The second register's root scope went with it (2026-08-27). Asserted on
+    // COMMENT-STRIPPED source: a gate that reads prose fires on its own
+    // explanation, which this repo has now shipped three times.
+    expect(stripTsComments(src)).not.toMatch(/kb-root/)
     expect(src).toMatch(/intersectionRatio >= 0\.55/)
     expect(src).toMatch(/location\.href/)
     expect(src).toMatch(/trackEvent\('section_view'/)

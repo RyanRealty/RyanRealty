@@ -32,13 +32,11 @@ checks.push({
 // through publishRegionalSearchHref — lives on in the homepage arm below,
 // which pins the v3 page's own doors (Stage action + Instrument browse link).
 
-const map = src('components/site/kb/KbListingMapImpl.tsx')
-checks.push({
-  label: 'homepage map Browse homes uses the regional href',
-  ok:
-    /from ['"]@\/lib\/search\/publish-regional-search-href['"]/.test(map) &&
-    /publishRegionalSearchHref\(/.test(map),
-})
+// KbListingMapImpl left with the KB register (2026-08-27). Its arm asserted the
+// map's own Browse door went through publishRegionalSearchHref; the v3 map
+// carries no browse door at all, so there is no door left to mis-build. The
+// rule survives on the homepage arm directly below, which pins the two doors
+// the v3 page actually publishes.
 
 const home = src('app/page.tsx')
 // Register-aware (2026-08-27 v3 rebuild): the KB spelling was KbFeatured's
@@ -55,21 +53,12 @@ checks.push({
         /browse:\s*publishRegionalSearchHref\(\)/.test(home))),
 })
 
-const footer = src('components/site/kb/KbFooter.client.tsx')
-checks.push({
-  label: 'homepage footer See homes for sale uses the regional href',
-  ok:
-    /from ['"]@\/lib\/search\/publish-regional-search-href['"]/.test(footer) &&
-    /publishRegionalSearchHref\(/.test(footer),
-})
-
-const featured = src('components/site/kb/KbFeatured.client.tsx')
-checks.push({
-  label: 'unscoped featured See homes for sale uses the regional href',
-  ok:
-    /from ['"]@\/lib\/search\/publish-regional-search-href['"]/.test(featured) &&
-    /viewAllHref = publishRegionalSearchHref\(\)/.test(featured),
-})
+// KbFooter and KbFeatured left with the KB register (2026-08-27). Both arms
+// asserted that an UNSCOPED "See homes for sale" door goes through
+// publishRegionalSearchHref rather than being typed as a bare /homes-for-sale.
+// The one site footer (V3Footer) builds its doors from V3_FOOTER_COLUMNS, whose
+// links are the IA lock's, and the featured rail is now the homepage Field. The
+// homepage arm below pins both of the regional doors the v3 page publishes.
 
 const search = src('app/search/page.tsx')
 checks.push({

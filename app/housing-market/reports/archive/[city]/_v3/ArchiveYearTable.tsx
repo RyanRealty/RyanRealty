@@ -7,12 +7,12 @@
  */
 
 import { CityArchiveSection } from '@/components/reports/CityArchiveSection'
+import { V3_ROOT_CLASS } from '@/components/site/v3'
 import type { CityArchive } from '@/lib/data/market/getCityArchive'
-import '@/components/site/kb/kb.css'
 
 export function ArchiveYearTable({ archive }: { archive: CityArchive }) {
   return (
-    <div className="kb-root">
+    <div className={V3_ROOT_CLASS}>
       <CityArchiveSection archive={archive} />
     </div>
   )

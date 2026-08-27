@@ -79,7 +79,7 @@ function SchoolCard({
   return (
     <div
       style={{
-        background: 'var(--cream, #faf8f4)',
+        background: 'var(--v3-cream)',
         padding: '18px 20px',
         display: 'flex',
         flexDirection: 'column',
@@ -97,7 +97,7 @@ function SchoolCard({
           fontFamily: 'var(--font-amboqia-safe, serif)',
           fontSize: 'clamp(1.1rem,2.2vw,1.55rem)',
           lineHeight: 0.92,
-          color: name ? 'var(--navy, #102742)' : 'rgba(16,39,66,0.35)',
+          color: name ? 'var(--v3-navy)' : 'rgba(16,39,66,0.35)',
           overflow: 'visible',
         }}
       >
@@ -105,7 +105,7 @@ function SchoolCard({
           registered ? (
             <Link
               href={`/schools/${registered.slug}`}
-              style={{ color: 'var(--navy, #102742)', textDecoration: 'none' }}
+              style={{ color: 'var(--v3-navy)', textDecoration: 'none' }}
               className="hover:underline"
             >
               {name}

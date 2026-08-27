@@ -146,7 +146,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                     fontWeight: 700,
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
-                    color: 'var(--navy, #102742)',
+                    color: 'var(--v3-navy)',
                   }}
                 >
                   {label}
@@ -182,7 +182,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                       fontFamily: 'var(--font-amboqia-safe, serif)',
                       fontSize: 'clamp(1rem,2vw,1.3rem)',
                       lineHeight: 1,
-                      color: 'var(--navy, #102742)',
+                      color: 'var(--v3-navy)',
                       fontVariantNumeric: 'tabular-nums',
                       overflow: 'visible',
                     }}
@@ -196,7 +196,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
                   </div>
                 ) : null}
                 {increaseLabel ? (
-                  <div style={{ fontSize: '0.72rem', color: 'var(--navy, #102742)', fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--v3-navy)', fontVariantNumeric: 'tabular-nums' }}>
                     {increaseLabel}
                   </div>
                 ) : null}

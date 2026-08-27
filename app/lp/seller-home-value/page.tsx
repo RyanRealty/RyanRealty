@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
 import Image from 'next/image'
 import Link from 'next/link'
 import ExitIntentPrompt from '@/components/landing/ExitIntentPrompt'
@@ -211,7 +212,7 @@ export default async function SellerHomeValuePage({
   }
 
   return (
-    <main className="bg-[#faf8f4] text-[#102742]">
+    <main className="bg-cream text-navy">
       <LandingPageTracker
         lpVariant={variantKey ? `seller-home-value:${variantKey}` : 'seller-home-value'}
       />
@@ -222,7 +223,7 @@ export default async function SellerHomeValuePage({
       />
 
       {/* ─── Sticky minimal header — wordmark + phone (KB navy bar) ───────── */}
-      <header className="sticky top-0 z-40 border-b-[3px] border-[#102742] bg-[#102742]">
+      <header className="sticky top-0 z-40 border-b-[3px] border-navy bg-navy">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="flex items-center" aria-label="Ryan Realty · Bend, Oregon">
             <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
@@ -238,7 +239,7 @@ export default async function SellerHomeValuePage({
           </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
-            className="inline-flex items-center gap-1.5 border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-2 text-sm font-bold uppercase tracking-[0.1em] text-[#102742] transition-colors hover:bg-transparent hover:text-[#faf8f4] sm:px-4"
+            className="inline-flex items-center gap-1.5 border-[3px] border-cream bg-cream px-3 py-2 text-sm font-bold uppercase tracking-[0.1em] text-navy transition-colors hover:bg-transparent hover:text-cream sm:px-4"
             aria-label={`Call Ryan Realty at ${BROKER_PHONE}`}
           >
             <PhoneIcon className="h-4 w-4" />
@@ -248,7 +249,7 @@ export default async function SellerHomeValuePage({
       </header>
 
       {/* ─── HERO — full-bleed photo, navy scrim, centered capture ───────── */}
-      <section className="relative isolate border-b-[3px] border-[#102742]">
+      <section className="relative isolate border-b-[3px] border-navy">
         <Image
           src={hero.img}
           alt={hero.alt}
@@ -260,28 +261,28 @@ export default async function SellerHomeValuePage({
         {/* Navy scrim — lighter through the middle so the photo reads, denser
             at top and bottom where the eyebrow + form sit. */}
         <div
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-[#102742]/70 via-[#102742]/60 to-[#102742]/80"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-navy/70 via-navy/60 to-navy/80"
           aria-hidden="true"
         />
 
         <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-12 text-center sm:px-6 sm:py-16 lg:py-20">
           {/* Eyebrow — mono label */}
-          <p className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/85 drop-shadow-sm">
-            <span className="h-[7px] w-[7px] rounded-full bg-[#faf8f4]" aria-hidden="true" />
+          <p className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.28em] text-cream/85 drop-shadow-sm">
+            <span className="h-[7px] w-[7px] rounded-full bg-cream" aria-hidden="true" />
             Bend · Oregon homeowners
           </p>
 
           {/* H1 — Amboqia display, Title Case (hero only), message-matched */}
-          <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#faf8f4] drop-shadow-sm sm:text-5xl lg:text-6xl">
+          <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-cream drop-shadow-sm sm:text-5xl lg:text-6xl">
             {hero.h1}
           </h1>
 
           {/* Subhead */}
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#faf8f4] drop-shadow-sm">{hero.sub}</p>
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-cream drop-shadow-sm">{hero.sub}</p>
 
           {/* Broker trust chip — hard-edge square frame */}
-          <div className="mt-6 flex items-center gap-3 border-[3px] border-[#faf8f4]/40 px-3 py-2">
-            <div className="relative h-10 w-10 shrink-0 overflow-hidden border border-[#faf8f4]/40 bg-[#faf8f4]/10">
+          <div className="mt-6 flex items-center gap-3 border-[3px] border-cream/40 px-3 py-2">
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden border border-cream/40 bg-cream/10">
               <Image
                 src="/images/brokers/ryan-matt.png"
                 alt="Matt Ryan, Principal Broker"
@@ -292,8 +293,8 @@ export default async function SellerHomeValuePage({
               />
             </div>
             <div className="text-left">
-              <p className="text-sm font-semibold leading-tight text-[#faf8f4]">Matt Ryan</p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] leading-tight text-[#faf8f4]/70">
+              <p className="text-sm font-semibold leading-tight text-cream">Matt Ryan</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] leading-tight text-cream/70">
                 Principal broker · Ryan Realty
               </p>
             </div>
@@ -301,35 +302,35 @@ export default async function SellerHomeValuePage({
 
           {/* Address capture — the hero centerpiece. SmsConsentDisclosure is
               rendered inside the form (first-paint HTML, A2P-verified text). */}
-          <div className="mt-6 w-full rounded-2xl bg-[#102742]/80 p-4 shadow-xl backdrop-blur-sm sm:p-5">
+          <div className="mt-6 w-full rounded-2xl bg-navy/80 p-4 shadow-xl backdrop-blur-sm sm:p-5">
             <SellerLPForm knownVisitor={knownVisitor} heroVariant />
           </div>
 
           {/* Micro-assurance */}
-          <p className="mt-4 text-sm text-[#faf8f4]/75 drop-shadow-sm">
+          <p className="mt-4 text-sm text-cream/75 drop-shadow-sm">
             No listing agreement. Plenty of owners check their number a year before they sell.
           </p>
         </div>
       </section>
 
       {/* ─── S2 · Trust strip band (cream) ─────────────────────────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
           <TrustStrip />
         </div>
       </section>
 
       {/* ─── S3 · The brokers behind your sale ─────────────────────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto max-w-4xl px-4 py-14 text-center sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
               Who builds your number
             </p>
-            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
               The brokers behind your sale
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-base text-[#102742]/70">
+            <p className="mx-auto mt-4 max-w-xl text-base text-navy/70">
               A licensed Oregon broker pulls the comps and answers your questions. Not a call center.
             </p>
           </ScrollReveal>
@@ -345,7 +346,7 @@ export default async function SellerHomeValuePage({
             </ScrollReveal>
           </div>
           {SELLER_LP_REVIEWS.length > 0 ? (
-            <ScrollReveal className="mt-12 border-t-[3px] border-[#102742] pt-10 text-left">
+            <ScrollReveal className="mt-12 border-t-[3px] border-navy pt-10 text-left">
               <ReviewStrip reviews={SELLER_LP_REVIEWS} tone="light" />
             </ScrollReveal>
           ) : null}
@@ -353,37 +354,37 @@ export default async function SellerHomeValuePage({
       </section>
 
       {/* ─── S4 · Stat band (navy) — live market_pulse_live data ──────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-navy text-cream">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/55">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cream/55">
               Bend · The market
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
               What Bend homes are doing right now
             </h2>
-            <p className="mt-4 max-w-2xl text-base text-[#faf8f4]/80">
+            <p className="mt-4 max-w-2xl text-base text-cream/80">
               Live single-family figures for Bend. 90-day and 30-day pulse stay. Trailing
               12-month figures are labeled.
             </p>
           </ScrollReveal>
           {/* Brutalist KPI grid — hard cream hairlines, no rounded cards. */}
-          <div className="mt-10 grid grid-cols-2 gap-px border border-[#faf8f4]/30 bg-[#faf8f4]/30 lg:grid-cols-4">
+          <div className="mt-10 grid grid-cols-2 gap-px border border-cream/30 bg-cream/30 lg:grid-cols-4">
             {statCards.map((card, i) => (
               <ScrollReveal key={card.label} delayMs={i * 75}>
-                <div className="flex h-full flex-col bg-[#102742] p-5 sm:p-6">
+                <div className="flex h-full flex-col bg-navy p-5 sm:p-6">
                   <p className="font-display text-4xl tabular-nums leading-[0.9] sm:text-5xl">
                     {card.value}
                   </p>
-                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-[#faf8f4]/90">
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-cream/90">
                     {card.label}
                   </p>
-                  <p className="mt-1 text-xs text-[#faf8f4]/60">{card.sub}</p>
+                  <p className="mt-1 text-xs text-cream/60">{card.sub}</p>
                 </div>
               </ScrollReveal>
             ))}
           </div>
-          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#faf8f4]/55">
+          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-cream/55">
             {updatedLabel ? `Live data · updated ${updatedLabel} · ` : 'Live data · '}
             Bend single-family · MLS via Ryan Realty
             {leftoverCards.length > 0 ? ' · trailing 12-month figures labeled' : ''}
@@ -392,20 +393,20 @@ export default async function SellerHomeValuePage({
       </section>
 
       {/* ─── S5 · Algorithms guess. Comps don't. — split panel ────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
               How the number is built
             </p>
-            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
               {'Algorithms guess. Comps don’t.'}
             </h2>
-            <p className="mt-5 text-lg leading-relaxed text-[#102742]/80">
+            <p className="mt-5 text-lg leading-relaxed text-navy/80">
               Your online estimate is built from tax records. Your report is built from the
               homes that actually sold around you, adjusted by a broker who walks these streets.
             </p>
-            <p className="mt-4 text-base leading-relaxed text-[#102742]/70">
+            <p className="mt-4 text-base leading-relaxed text-navy/70">
               An automated model never steps inside your home. A broker accounts for your
               finishes, your lot, and your layout, and shows the math.
             </p>
@@ -413,33 +414,33 @@ export default async function SellerHomeValuePage({
           {/* Report mock — typographic mini CMA page. Data slots are honest
               placeholders that bind to live data in the real report. */}
           <ScrollReveal delayMs={100}>
-            <div className="mx-auto w-full max-w-sm border-[3px] border-[#102742] bg-[#faf8f4] p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#102742]/70">
+            <div className="mx-auto w-full max-w-sm border-[3px] border-navy bg-cream p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-navy/70">
                 Comparative market analysis
               </p>
-              <p className="mt-1 font-display text-xl uppercase leading-[0.95] tracking-[-0.01em] text-[#102742]">
+              <p className="mt-1 font-display text-xl uppercase leading-[0.95] tracking-[-0.01em] text-navy">
                 Your street, your comps
               </p>
-              <div className="mt-5 space-y-px border border-[#102742]/20 bg-[#102742]/20">
+              <div className="mt-5 space-y-px border border-navy/20 bg-navy/20">
                 {['Comparable sale 1', 'Comparable sale 2', 'Comparable sale 3'].map((row) => (
                   <div
                     key={row}
-                    className="flex items-center justify-between bg-[#faf8f4] px-3 py-2.5"
+                    className="flex items-center justify-between bg-cream px-3 py-2.5"
                   >
-                    <span className="text-sm text-[#102742]/75">{row}</span>
-                    <span className="text-sm font-semibold tabular-nums text-[#102742]">{`$${MDASH}`}</span>
+                    <span className="text-sm text-navy/75">{row}</span>
+                    <span className="text-sm font-semibold tabular-nums text-navy">{`$${MDASH}`}</span>
                   </div>
                 ))}
-                <div className="flex items-center justify-between bg-[#102742] px-3 py-3">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#faf8f4]">
+                <div className="flex items-center justify-between bg-navy px-3 py-3">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-cream">
                     Your adjusted value
                   </span>
-                  <span className="font-display text-lg tabular-nums text-[#faf8f4]">
+                  <span className="font-display text-lg tabular-nums text-cream">
                     {`$${MDASH}`}
                   </span>
                 </div>
               </div>
-              <p className="mt-3 text-right text-[11px] text-[#102742]/70">
+              <p className="mt-3 text-right text-[11px] text-navy/70">
                 Sample layout · your report carries the live figures
               </p>
             </div>
@@ -448,13 +449,13 @@ export default async function SellerHomeValuePage({
       </section>
 
       {/* ─── S6 · How it works — 3 steps ───────────────────────────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+            <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
               Three steps
             </p>
-            <h2 className="mt-3 text-center font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+            <h2 className="mt-3 text-center font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
               How it works
             </h2>
           </ScrollReveal>
@@ -474,16 +475,16 @@ export default async function SellerHomeValuePage({
 
       {/* ─── S7 · Recently sold nearby — real DAL sold listings ───────────── */}
       {proofStripListings.length > 0 ? (
-        <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+        <section className="border-b-[3px] border-navy bg-cream">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <ScrollReveal>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
                 Closed · Verified
               </p>
-              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
                 Recently sold nearby
               </h2>
-              <p className="mt-3 text-base text-[#102742]/70">
+              <p className="mt-3 text-base text-navy/70">
                 Closed sales from our clients, verified against MLS records.
               </p>
             </ScrollReveal>
@@ -495,7 +496,7 @@ export default async function SellerHomeValuePage({
                     : listing.displayPrice
                 return (
                   <ScrollReveal key={listing.key} delayMs={i * 75}>
-                    <div className="overflow-hidden border-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
+                    <div className="overflow-hidden border-[3px] border-navy bg-navy text-cream">
                       {listing.photoUrl ? (
                         <div className="relative aspect-[4/3] w-full">
                           <Image
@@ -508,13 +509,13 @@ export default async function SellerHomeValuePage({
                         </div>
                       ) : null}
                       <div className="p-5">
-                        <p className="text-sm font-semibold tracking-[0.01em] text-[#faf8f4]">{listing.addressLine}</p>
+                        <p className="text-sm font-semibold tracking-[0.01em] text-cream">{listing.addressLine}</p>
                         {listing.neighborhood ? (
-                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65">
+                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-cream/65">
                             {listing.neighborhood}
                           </p>
                         ) : null}
-                        <p className="mt-4 inline-flex border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-1 font-display text-sm tabular-nums text-[#102742]">
+                        <p className="mt-4 inline-flex border-[3px] border-cream bg-cream px-3 py-1 font-display text-sm tabular-nums text-navy">
                           Sold {price}
                         </p>
                       </div>
@@ -528,20 +529,20 @@ export default async function SellerHomeValuePage({
       ) : null}
 
       {/* ─── S8 · FAQ ──────────────────────────────────────────────────────── */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
+      <section className="border-b-[3px] border-navy bg-cream">
         <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
               Common questions
             </p>
-            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
               {'What you’re probably wondering'}
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-[#102742]/75">
+            <p className="mt-4 text-base leading-relaxed text-navy/75">
               Still have a question? Talk to a broker directly.{' '}
               <a
                 href={`tel:${BROKER_PHONE_TEL}`}
-                className="inline-flex items-center gap-1.5 font-semibold text-[#102742] underline-offset-4 hover:underline"
+                className="inline-flex items-center gap-1.5 font-semibold text-navy underline-offset-4 hover:underline"
               >
                 <PhoneIcon className="h-4 w-4" />
                 <span className="tabular-nums">{BROKER_PHONE}</span>
@@ -574,23 +575,23 @@ export default async function SellerHomeValuePage({
       </section>
 
       {/* ─── S9 · Closing navy band — second address capture ──────────────── */}
-      <section className="bg-[#102742] text-[#faf8f4]">
+      <section className="bg-navy text-cream">
         <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/55">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cream/55">
               One field
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
               Enter the address for your number
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-lg text-[#faf8f4]/85">
+            <p className="mx-auto mt-4 max-w-xl text-lg text-cream/85">
               A broker builds the report from closed sales near you and sends it within one business day.
             </p>
           </ScrollReveal>
           <div className="mt-8 text-left">
             <SellerLPForm knownVisitor={knownVisitor} formId="get-value-closing" />
           </div>
-          <p className="mt-6 text-sm text-[#faf8f4]/75">
+          <p className="mt-6 text-sm text-cream/75">
             Prefer to talk?{' '}
             <a href={`tel:${BROKER_PHONE_TEL}`} className="font-semibold underline underline-offset-2 tabular-nums">
               Call {BROKER_PHONE}
@@ -600,17 +601,11 @@ export default async function SellerHomeValuePage({
       </section>
 
       {/* ─── Mini fine print ─────────────────────────────────────────────── */}
-      <footer className="border-t-[3px] border-[#102742] bg-[#102742] pb-24 sm:pb-8">
-        <div className="mx-auto max-w-7xl px-4 py-8 text-center text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65 sm:px-6">
-          <p>Ryan Realty LLC · Equal Housing Opportunity · Bend · Oregon</p>
-          <p className="mt-2 normal-case tracking-normal">
-            <Link href="/privacy" className="underline underline-offset-2 hover:text-[#faf8f4]">
-              Privacy
-            </Link>
-            <span className="mx-2">·</span>© {new Date().getFullYear()} Ryan Realty LLC
-          </p>
-        </div>
-      </footer>
+      {/* THE ONE SITE FOOTER (Matt 2026-08-27, "no exceptions"). This page
+        hand-rolled its own footer in raw var(--v3-navy)/var(--v3-cream) with a 3px slab edge,
+        which is how nine landing pages came to carry a footer the other 87
+        public pages do not have. Held by ci:chrome-single-source. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
 
       {/* Exit-intent prompt — desktop-only, once per session. */}
       <ExitIntentPrompt
@@ -621,19 +616,19 @@ export default async function SellerHomeValuePage({
       />
 
       {/* Sticky mobile CTA bar — pinned to viewport bottom on mobile only. */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-[#102742] bg-[#faf8f4] px-3 py-3 sm:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-navy bg-cream px-3 py-3 sm:hidden">
         <div className="flex items-center gap-2">
           <Link
             href="#get-value"
             scroll
-            className="flex-1 border-[3px] border-[#102742] bg-[#102742] px-4 py-3 text-center text-sm font-bold uppercase tracking-[0.1em] text-[#faf8f4]"
+            className="flex-1 border-[3px] border-navy bg-navy px-4 py-3 text-center text-sm font-bold uppercase tracking-[0.1em] text-cream"
           >
             Get my home’s value
           </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
             aria-label={`Call Matt at ${BROKER_PHONE}`}
-            className="flex h-12 w-12 items-center justify-center border-[3px] border-[#102742] text-[#102742]"
+            className="flex h-12 w-12 items-center justify-center border-[3px] border-navy text-navy"
           >
             <PhoneIcon className="h-5 w-5" />
           </a>
@@ -648,7 +643,7 @@ export default async function SellerHomeValuePage({
 function Broker({ src, name, role }: { src: string; name: string; role: string }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="relative h-24 w-24 overflow-hidden border-[3px] border-[#102742] bg-[#102742]/5 sm:h-32 sm:w-32">
+      <span className="relative h-24 w-24 overflow-hidden border-[3px] border-navy bg-navy/5 sm:h-32 sm:w-32">
         <Image
           src={src}
           alt={name}
@@ -657,8 +652,8 @@ function Broker({ src, name, role }: { src: string; name: string; role: string }
           className="object-cover object-top"
         />
       </span>
-      <p className="mt-4 font-display text-base uppercase leading-none tracking-[-0.01em] text-[#102742] sm:text-xl">{name}</p>
-      <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65 sm:text-xs">{role}</p>
+      <p className="mt-4 font-display text-base uppercase leading-none tracking-[-0.01em] text-navy sm:text-xl">{name}</p>
+      <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-navy/65 sm:text-xs">{role}</p>
     </div>
   )
 }
@@ -666,11 +661,11 @@ function Broker({ src, name, role }: { src: string; name: string; role: string }
 function ProcessStep({ num, title, body }: { num: string; title: string; body: string }) {
   return (
     <div className="flex flex-col items-center text-center">
-      <span className="flex h-12 w-12 items-center justify-center border-[3px] border-[#102742] bg-[#102742] font-display text-lg tabular-nums text-[#faf8f4]">
+      <span className="flex h-12 w-12 items-center justify-center border-[3px] border-navy bg-navy font-display text-lg tabular-nums text-cream">
         {num}
       </span>
-      <p className="mt-4 font-display text-lg uppercase leading-none tracking-[-0.01em] text-[#102742]">{title}</p>
-      <p className="mt-2 text-sm leading-relaxed text-[#102742]/70">{body}</p>
+      <p className="mt-4 font-display text-lg uppercase leading-none tracking-[-0.01em] text-navy">{title}</p>
+      <p className="mt-2 text-sm leading-relaxed text-navy/70">{body}</p>
     </div>
   )
 }
@@ -697,12 +692,12 @@ function FAQ({ value, q, a }: { value: string; q: string; a: string }) {
   return (
     <AccordionItem
       value={value}
-      className="border-[3px] border-[#102742] bg-[#faf8f4] px-5"
+      className="border-[3px] border-navy bg-cream px-5"
     >
-      <AccordionTrigger className="py-4 font-display text-lg uppercase leading-snug tracking-[-0.01em] text-[#102742] hover:no-underline">
+      <AccordionTrigger className="py-4 font-display text-lg uppercase leading-snug tracking-[-0.01em] text-navy hover:no-underline">
         {q}
       </AccordionTrigger>
-      <AccordionContent className="pb-4 text-base leading-relaxed text-[#102742]/85">
+      <AccordionContent className="pb-4 text-base leading-relaxed text-navy/85">
         {a}
       </AccordionContent>
     </AccordionItem>

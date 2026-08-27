@@ -61,10 +61,10 @@ export function ParksNearbyBlock({ listing, className }: Props) {
             style={{
               display: 'block',
               flex: '1 1 200px',
-              background: 'var(--cream, #faf8f4)',
+              background: 'var(--v3-cream)',
               padding: '18px 20px',
               textDecoration: 'none',
-              color: 'var(--navy, #102742)',
+              color: 'var(--v3-navy)',
             }}
             className="hover:bg-[rgba(16,39,66,0.04)] transition-colors"
           >
@@ -73,7 +73,7 @@ export function ParksNearbyBlock({ listing, className }: Props) {
                 fontFamily: 'var(--font-amboqia-safe, serif)',
                 fontSize: 'clamp(1.1rem,2.2vw,1.45rem)',
                 lineHeight: 0.94,
-                color: 'var(--navy, #102742)',
+                color: 'var(--v3-navy)',
                 overflow: 'visible',
                 marginBottom: 8,
               }}

@@ -11,7 +11,7 @@ import resortCommunitiesData from '@/data/resort-communities.json'
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import { lifestyleNearLatLng, type LifestyleNearItem } from '@/lib/explore/lifestyle-near'
 import type { PlaceContext } from '@/lib/data/geo/resolvePlaceContext'
-import type { KbTownItem } from '@/components/site/kb/types'
+import type { KbTownItem } from '@/lib/kb/types'
 
 type ResortEntry = {
   slug: string

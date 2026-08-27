@@ -16,7 +16,10 @@ const files = {
   listing: readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8'),
   searchOg: readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8'),
   housingOg: readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8'),
-  header: readFileSync(resolve('components/site/SiteHeader.tsx'), 'utf8'),
+  // SiteHeader was deleted 2026-08-27 with the legacy chrome. V3Chrome is the
+  // one public header and publishes no MOS figure of its own; the chrome-level
+  // read that remains is getMegaMenuData, on the next line, which carries this
+  // rule forward unchanged.
   mega: readFileSync(resolve('lib/data/nav/getMegaMenuData.ts'), 'utf8'),
   search: readFileSync(resolve('lib/market/search-city-sfr-publish.ts'), 'utf8'),
 }
@@ -44,9 +47,12 @@ describe('D21 leftover MOS destinations and leftover remainder', () => {
     expect(files.listing).not.toMatch(/getMarketPulse\(/)
   })
 
-  it('header and mega menu leftover MOS, not pulse fill', () => {
-    expect(files.header).toMatch(/leftoverHudKpis/)
-    expect(files.header).not.toMatch(/getMarketPulseCitySnapshots/)
+  it('the chrome takes MOS from leftoverHudKpis, not a pulse fill', () => {
+    // The SiteHeader arm went with the legacy chrome (2026-08-27). V3Chrome is
+    // the one public header and publishes no figure of its own, which is asserted
+    // here so a figure appearing in the chrome again cannot skip this rule.
+    const chrome = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
+    expect(chrome).not.toMatch(/leftoverHudKpis|getMarketPulseCitySnapshots|monthsOfSupply/)
     expect(files.mega).toMatch(/leftoverHudKpis/)
     expect(files.mega).not.toMatch(/getMarketPulse\(/)
   })

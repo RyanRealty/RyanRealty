@@ -1,3 +1,4 @@
+import { V3_ROOT_CLASS } from '@/components/site/v3'
 /**
  * KB-styled loading skeleton for the community detail page.
  *
@@ -12,7 +13,7 @@
  */
 export default function CommunityDetailLoading() {
   return (
-    <div className="kb-root min-h-screen bg-primary text-primary-foreground">
+    <div className={`${V3_ROOT_CLASS} min-h-screen bg-primary text-primary-foreground`}>
       {/* Hero band */}
       <div className="relative h-[70vh] min-h-[480px] w-full overflow-hidden bg-primary">
         <div className="absolute inset-0 animate-pulse bg-primary-foreground/5" />

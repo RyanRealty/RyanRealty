@@ -1,5 +1,6 @@
 // @no-parity - proof-led editorial conviction LP, no Wave 3 mockup contract
 import type { Metadata } from 'next'
+import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
 import Image from 'next/image'
 import Link from 'next/link'
 import ScrollReveal from '@/components/landing/ScrollReveal'
@@ -104,7 +105,7 @@ export default async function ListYourHomePage() {
   }
 
   return (
-    <main className="bg-[#faf8f4] text-[#102742]">
+    <main className="bg-cream text-navy">
       <LandingPageTracker lpVariant="sell-your-home" />
       <script
         type="application/ld+json"
@@ -112,7 +113,7 @@ export default async function ListYourHomePage() {
       />
 
       {/* ─── Sticky minimal header — wordmark + phone (KB navy bar) ───────── */}
-      <header className="sticky top-0 z-40 border-b-[3px] border-[#102742] bg-[#102742]">
+      <header className="sticky top-0 z-40 border-b-[3px] border-navy bg-navy">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="flex items-center" aria-label="Ryan Realty · Bend, Oregon">
             <span className="relative block h-7 w-[140px] shrink-0 sm:h-9 sm:w-[180px]">
@@ -128,7 +129,7 @@ export default async function ListYourHomePage() {
           </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
-            className="inline-flex items-center gap-1.5 border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-2 text-sm font-bold uppercase tracking-[0.1em] text-[#102742] transition-colors hover:bg-transparent hover:text-[#faf8f4] sm:px-4"
+            className="inline-flex items-center gap-1.5 border-[3px] border-cream bg-cream px-3 py-2 text-sm font-bold uppercase tracking-[0.1em] text-navy transition-colors hover:bg-transparent hover:text-cream sm:px-4"
             aria-label={`Call Ryan Realty at ${BROKER_PHONE}`}
           >
             <PhoneIcon className="h-4 w-4" />
@@ -141,31 +142,31 @@ export default async function ListYourHomePage() {
           Proof-led, left-anchored, typographic.
           The total volume is an oversized design element, not a card.
           No centered stack. No eyebrow/headline/subhead/CTA template. */}
-      <section className="overflow-x-clip border-b-[3px] border-[#102742] bg-[#faf8f4] pt-16 pb-14 sm:pt-24 sm:pb-20">
+      <section className="overflow-x-clip border-b-[3px] border-navy bg-cream pt-16 pb-14 sm:pt-24 sm:pb-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           {/* Asymmetric two-column: claim left, stat anchor right */}
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-16">
             {/* Left: confident claim line */}
             <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
                 Bend · Oregon · List your home
               </p>
-              <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-5xl lg:text-6xl">
+              <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-5xl lg:text-6xl">
                 List your Bend home with us.
               </h1>
-              <p className="mt-5 text-lg leading-relaxed text-[#102742]/75">
+              <p className="mt-5 text-lg leading-relaxed text-navy/75">
                 Pricing from closed sales near your home. The broker who sets the list price is the one who runs the listing. Book a free consultation and we walk the comps with you.
               </p>
               {aggregate.count > 0 && (
-                <p className="mt-4 text-sm tabular-nums text-[#102742]/70">
-                  <span className="text-[#102742]" aria-label="Five stars">{'★★★★★'}</span>
+                <p className="mt-4 text-sm tabular-nums text-navy/70">
+                  <span className="text-navy" aria-label="Five stars">{'★★★★★'}</span>
                   {'  '}{aggregate.rating} · {aggregate.count} Google reviews
                 </p>
               )}
               <div className="mt-8">
                 <a
                   href="#consult"
-                  className="inline-flex items-center justify-center border-[3px] border-[#102742] bg-[#102742] px-8 py-4 text-sm font-bold uppercase tracking-[0.1em] text-[#faf8f4] transition-colors hover:bg-transparent hover:text-[#102742] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102742] focus-visible:ring-offset-2"
+                  className="inline-flex items-center justify-center border-[3px] border-navy bg-navy px-8 py-4 text-sm font-bold uppercase tracking-[0.1em] text-cream transition-colors hover:bg-transparent hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
                 >
                   Book a free consultation
                 </a>
@@ -177,18 +178,18 @@ export default async function ListYourHomePage() {
                 three figures come from the same getBrokerageTrackRecord pull
                 (closed Ryan Realty listings; the brokerage opened in 2023). */}
             {trackRecord !== null && (
-              <div className="shrink-0 border-[3px] border-[#102742] bg-[#102742] p-6 text-[#faf8f4] sm:p-8">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#faf8f4]/60">
+              <div className="shrink-0 border-[3px] border-navy bg-navy p-6 text-cream sm:p-8">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cream/60">
                   In Bend-area homes sold since 2023
                 </p>
                 <p
-                  className="mt-3 font-display tabular-nums leading-none text-[#faf8f4]"
+                  className="mt-3 font-display tabular-nums leading-none text-cream"
                   style={{ fontSize: 'clamp(4rem, 8vw, 7rem)' }}
                   aria-label={`${fmtCompact(trackRecord.totalVolume)} in Bend-area homes sold since 2023`}
                 >
                   {fmtCompact(trackRecord.totalVolume)}
                 </p>
-                <p className="mt-4 text-sm tabular-nums text-[#faf8f4]/70">
+                <p className="mt-4 text-sm tabular-nums text-cream/70">
                   {trackRecord.homesSold} sales · avg {fmtCompact(trackRecord.avgSalePrice)} per sale
                 </p>
               </div>
@@ -200,18 +201,18 @@ export default async function ListYourHomePage() {
       {/* SECTION 2: WHY LIST WITH US
           Typographic stacked sequence. NOT three equal cards. NOT tiles.
           No uppercase eyebrow per point. Asymmetric column rhythm. */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
+      <section className="border-b-[3px] border-navy bg-cream py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
               What you get
             </p>
-            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
               How a listing with us works
             </h2>
           </ScrollReveal>
 
-          <div className="mt-12 border-t-[3px] border-[#102742]">
+          <div className="mt-12 border-t-[3px] border-navy">
             <WhyPoint
               title="One broker, listing to close"
               body="The person who prices your home is the person on the phone when a buyer's agent calls. No handoffs."
@@ -233,16 +234,16 @@ export default async function ListYourHomePage() {
           rendered height and one text baseline (design-audit P3).
           Transparent PNGs floating on cream. No rectangular card frames.
           No drop-shadow boxes. */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
+      <section className="border-b-[3px] border-navy bg-cream py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <ScrollReveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
               Who lists your home
             </p>
-            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+            <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
               Your broker is based in Bend
             </h2>
-            <p className="mt-4 max-w-lg text-base leading-relaxed text-[#102742]/65">
+            <p className="mt-4 max-w-lg text-base leading-relaxed text-navy/65">
               Based in Bend. The broker you meet is your broker from listing to close.
             </p>
           </ScrollReveal>
@@ -263,9 +264,9 @@ export default async function ListYourHomePage() {
                 />
               </span>
               <div className="mt-3">
-                <p className="font-display text-xl uppercase leading-none tracking-[-0.01em] text-[#102742]">Matt Ryan</p>
-                <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65">Principal Broker · Founder</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-[#102742]/70">Founded Ryan Realty in 2023. Licensed in Oregon since 2021.</p>
+                <p className="font-display text-xl uppercase leading-none tracking-[-0.01em] text-navy">Matt Ryan</p>
+                <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-navy/65">Principal Broker · Founder</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-navy/70">Founded Ryan Realty in 2023. Licensed in Oregon since 2021.</p>
               </div>
             </ScrollReveal>
 
@@ -282,9 +283,9 @@ export default async function ListYourHomePage() {
                   />
                 </span>
                 <div className="mt-3">
-                  <p className="font-display text-base uppercase leading-none tracking-[-0.01em] text-[#102742]">Paul Stevenson</p>
-                  <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65">Broker</p>
-                  <p className="mt-1 text-xs leading-relaxed text-[#102742]/70">Buyers and sellers across Bend.</p>
+                  <p className="font-display text-base uppercase leading-none tracking-[-0.01em] text-navy">Paul Stevenson</p>
+                  <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-navy/65">Broker</p>
+                  <p className="mt-1 text-xs leading-relaxed text-navy/70">Buyers and sellers across Bend.</p>
                 </div>
               </ScrollReveal>
 
@@ -299,9 +300,9 @@ export default async function ListYourHomePage() {
                   />
                 </span>
                 <div className="mt-3">
-                  <p className="font-display text-base uppercase leading-none tracking-[-0.01em] text-[#102742]">Rebecca Peterson</p>
-                  <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#102742]/65">Broker</p>
-                  <p className="mt-1 text-xs leading-relaxed text-[#102742]/70">NW Crossing and Westside Bend.</p>
+                  <p className="font-display text-base uppercase leading-none tracking-[-0.01em] text-navy">Rebecca Peterson</p>
+                  <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-navy/65">Broker</p>
+                  <p className="mt-1 text-xs leading-relaxed text-navy/70">NW Crossing and Westside Bend.</p>
                 </div>
               </ScrollReveal>
             </div>
@@ -314,18 +315,18 @@ export default async function ListYourHomePage() {
           NOT three equal cards. Real address, neighborhood, close price.
           Only verified Bend list-side sales with photos. */}
       {soldListings.length > 0 && (
-        <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
+        <section className="border-b-[3px] border-navy bg-cream py-16 sm:py-20">
           <div className="mx-auto max-w-5xl px-4 sm:px-6">
             <ScrollReveal className="mb-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
                 Closed · Verified
               </p>
               {/* "Bend area", not "Bend" — the set includes a Tumalo sale, and a
                   'verified' section cannot contradict its own cards (design-audit P3). */}
-              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
                 Recently sold in the Bend area
               </h2>
-              <p className="mt-3 text-base text-[#102742]/70">
+              <p className="mt-3 text-base text-navy/70">
                 Verified against MLS records. Homes we listed.
               </p>
             </ScrollReveal>
@@ -343,7 +344,7 @@ export default async function ListYourHomePage() {
                     : null
                 return (
                   <ScrollReveal key={story.key}>
-                    <div className="overflow-hidden border-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
+                    <div className="overflow-hidden border-[3px] border-navy bg-navy text-cream">
                       <div className="relative h-72 w-full overflow-hidden sm:h-80">
                         <Image
                           src={story.listing.photoUrl}
@@ -354,14 +355,14 @@ export default async function ListYourHomePage() {
                         />
                       </div>
                       <div className="p-5">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cream/65">
                           {story.listing.neighborhood !== null ? story.listing.neighborhood : 'Bend, OR'}
                         </p>
-                        <p className="mt-1 text-sm font-semibold tracking-[0.01em] text-[#faf8f4]">
+                        <p className="mt-1 text-sm font-semibold tracking-[0.01em] text-cream">
                           {story.listing.addressLine}
                         </p>
                         {cp !== null && (
-                          <p className="mt-4 inline-flex border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-1 font-display text-sm tabular-nums text-[#102742]">
+                          <p className="mt-4 inline-flex border-[3px] border-cream bg-cream px-3 py-1 font-display text-sm tabular-nums text-navy">
                             Sold {fmtFull(cp)}
                           </p>
                         )}
@@ -382,7 +383,7 @@ export default async function ListYourHomePage() {
                       : null
                   return (
                     <ScrollReveal key={story.key} delayMs={i * 75}>
-                      <div className="overflow-hidden border-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
+                      <div className="overflow-hidden border-[3px] border-navy bg-navy text-cream">
                         <div className="relative h-52 w-full overflow-hidden">
                           <Image
                             src={story.listing.photoUrl}
@@ -393,14 +394,14 @@ export default async function ListYourHomePage() {
                           />
                         </div>
                         <div className="p-5">
-                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65">
+                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cream/65">
                             {story.listing.neighborhood !== null ? story.listing.neighborhood : 'Bend, OR'}
                           </p>
-                          <p className="mt-1 text-sm font-semibold tracking-[0.01em] text-[#faf8f4]">
+                          <p className="mt-1 text-sm font-semibold tracking-[0.01em] text-cream">
                             {story.listing.addressLine}
                           </p>
                           {cp !== null && (
-                            <p className="mt-4 inline-flex border-[3px] border-[#faf8f4] bg-[#faf8f4] px-3 py-1 font-display text-sm tabular-nums text-[#102742]">
+                            <p className="mt-4 inline-flex border-[3px] border-cream bg-cream px-3 py-1 font-display text-sm tabular-nums text-navy">
                               Sold {fmtFull(cp)}
                             </p>
                           )}
@@ -418,15 +419,15 @@ export default async function ListYourHomePage() {
       {/* SECTION 5: REVIEWS
           Oversized pull-quotes on cream. NOT a wall. NOT a 3-col grid.
           Aggregate from live data. */}
-      <section className="border-b-[3px] border-[#102742] bg-[#faf8f4] py-16 sm:py-20">
+      <section className="border-b-[3px] border-navy bg-cream py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <ScrollReveal>
             <div className="flex items-baseline justify-between gap-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-navy/70">
                   In their words
                 </p>
-                <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+                <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-navy sm:text-4xl">
                   What sellers say
                 </h2>
               </div>
@@ -435,7 +436,7 @@ export default async function ListYourHomePage() {
                   href={GOOGLE_REVIEWS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 text-sm font-semibold text-[#102742] underline-offset-4 hover:underline"
+                  className="shrink-0 text-sm font-semibold text-navy underline-offset-4 hover:underline"
                 >
                   {aggregate.rating} ★ · {aggregate.count} reviews
                 </a>
@@ -444,31 +445,31 @@ export default async function ListYourHomePage() {
           </ScrollReveal>
 
           {/* Oversized pull-quotes, single column, generous spacing */}
-          <div className="mt-10 space-y-px border border-[#102742]/20 bg-[#102742]/20">
+          <div className="mt-10 space-y-px border border-navy/20 bg-navy/20">
             {featuredReviews.map((t) => (
-              <figure key={t.author} className="bg-[#faf8f4] p-6 sm:p-8">
-                <span className="text-lg leading-none text-[#102742]" aria-label="Five star rating">
+              <figure key={t.author} className="bg-cream p-6 sm:p-8">
+                <span className="text-lg leading-none text-navy" aria-label="Five star rating">
                   {'★★★★★'}
                 </span>
                 {/* Review bodies read in the body face at paragraph length —
                     Amboqia is reserved for the heading + reviewer names
                     (design-audit P2, display-vs-body rule). */}
-                <blockquote className="mt-3 max-w-3xl text-lg leading-relaxed text-[#102742]/75">
+                <blockquote className="mt-3 max-w-3xl text-lg leading-relaxed text-navy/75">
                   {'"'}{t.quote}{'"'}
                 </blockquote>
-                <figcaption className="mt-4 font-display text-base uppercase leading-none tracking-[-0.01em] text-[#102742]">
+                <figcaption className="mt-4 font-display text-base uppercase leading-none tracking-[-0.01em] text-navy">
                   {t.author}
                 </figcaption>
               </figure>
             ))}
           </div>
 
-          <div className="mt-10 border-t-[3px] border-[#102742] pt-8">
+          <div className="mt-10 border-t-[3px] border-navy pt-8">
             <a
               href={GOOGLE_REVIEWS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#102742] underline-offset-4 hover:underline"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-navy underline-offset-4 hover:underline"
             >
               <GoogleMark className="h-4 w-4 opacity-60" />
               Read all {aggregate.count} reviews on Google
@@ -480,25 +481,25 @@ export default async function ListYourHomePage() {
       {/* SECTION 6: CONSULTATION FORM
           The full-bleed navy moment. id="consult".
           The conversion goal. SellerLPForm island + props preserved exactly. */}
-      <section id="consult" className="bg-[#102742] py-16 text-[#faf8f4] sm:py-20">
+      <section id="consult" className="bg-navy py-16 text-cream sm:py-20">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/55">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cream/55">
             One conversation
           </p>
           <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
             Book a listing conversation.
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-[#faf8f4]/80">
+          <p className="mt-4 text-base leading-relaxed text-cream/80">
             Enter the address and a few details. A broker reaches out to walk pricing and a plan. No listing agreement attached to the call.
           </p>
           <div className="mt-8">
             <SellerLPForm knownVisitor={knownVisitor} variant="list-now" />
           </div>
-          <p className="mt-6 text-sm text-[#faf8f4]/75">
+          <p className="mt-6 text-sm text-cream/75">
             Or call us directly.{' '}
             <a
               href={`tel:${BROKER_PHONE_TEL}`}
-              className="font-semibold tabular-nums text-[#faf8f4] underline underline-offset-2 hover:no-underline"
+              className="font-semibold tabular-nums text-cream underline underline-offset-2 hover:no-underline"
             >
               {BROKER_PHONE}
             </a>
@@ -507,32 +508,25 @@ export default async function ListYourHomePage() {
       </section>
 
       {/* SECTION 7: FOOTER - minimal */}
-      <footer className="border-t-[3px] border-[#102742] bg-[#102742] pb-24 sm:pb-8">
-        <div className="mx-auto max-w-5xl px-4 py-8 text-center text-xs font-semibold uppercase tracking-[0.12em] text-[#faf8f4]/65 sm:px-6">
-          <p>Ryan Realty LLC · Equal Housing Opportunity · Bend · Oregon</p>
-          <p className="mt-2 normal-case tracking-normal">
-            <Link href="/privacy" className="underline underline-offset-2 hover:text-[#faf8f4]">
-              Privacy
-            </Link>
-            <span className="mx-2">·</span>
-            {'© '}{new Date().getFullYear()} Ryan Realty LLC
-          </p>
-        </div>
-      </footer>
+      {/* THE ONE SITE FOOTER (Matt 2026-08-27, "no exceptions"). This page
+        hand-rolled its own footer in raw var(--v3-navy)/var(--v3-cream) with a 3px slab edge,
+        which is how nine landing pages came to carry a footer the other 87
+        public pages do not have. Held by ci:chrome-single-source. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
 
       {/* Sticky mobile CTA bar — pinned to viewport bottom on mobile only. */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-[#102742] bg-[#faf8f4] px-3 py-3 sm:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t-[3px] border-navy bg-cream px-3 py-3 sm:hidden">
         <div className="flex items-center gap-2">
           <a
             href="#consult"
-            className="flex-1 border-[3px] border-[#102742] bg-[#102742] px-4 py-3 text-center text-sm font-bold uppercase tracking-[0.1em] text-[#faf8f4]"
+            className="flex-1 border-[3px] border-navy bg-navy px-4 py-3 text-center text-sm font-bold uppercase tracking-[0.1em] text-cream"
           >
             Book a free consultation
           </a>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}
             aria-label={`Call Ryan Realty at ${BROKER_PHONE}`}
-            className="flex h-12 w-12 items-center justify-center border-[3px] border-[#102742] text-[#102742]"
+            className="flex h-12 w-12 items-center justify-center border-[3px] border-navy text-navy"
           >
             <PhoneIcon className="h-5 w-5" />
           </a>
@@ -546,11 +540,11 @@ export default async function ListYourHomePage() {
 
 function WhyPoint({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-b-[3px] border-[#102742] py-8 sm:grid sm:grid-cols-[2fr_3fr] sm:items-start sm:gap-12">
-      <p className="font-display text-lg uppercase leading-snug tracking-[-0.01em] text-[#102742] sm:text-xl">
+    <div className="border-b-[3px] border-navy py-8 sm:grid sm:grid-cols-[2fr_3fr] sm:items-start sm:gap-12">
+      <p className="font-display text-lg uppercase leading-snug tracking-[-0.01em] text-navy sm:text-xl">
         {title}
       </p>
-      <p className="mt-2 text-base leading-relaxed text-[#102742]/70 sm:mt-0">
+      <p className="mt-2 text-base leading-relaxed text-navy/70 sm:mt-0">
         {body}
       </p>
     </div>

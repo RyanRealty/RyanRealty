@@ -56,7 +56,7 @@
  *  3. NOTHING IS FETCHED THAT IS NOT RENDERED. Two reads, both rendered.
  *  4. ONE ROUNDING PER FIGURE. Prices render through lib/format/money's formatPrice,
  *     which rounds to the nearest $1,000 and reproduces, character for character, the
- *     strings the KB register printed through kbMoneyFull (components/site/kb/types.ts:120).
+ *     strings the KB register printed through kbMoneyFull (lib/kb/types.ts:120).
  *     No figure on this page moved. The Dataset payload keeps publishing the UNROUNDED
  *     median, exactly as the KB page did, so the screen can read $489,000 while the
  *     markup carries 489,450. That split is carried across deliberately rather than

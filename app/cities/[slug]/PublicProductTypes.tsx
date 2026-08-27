@@ -4,7 +4,7 @@ import {
   publicSegmentNoun,
   type PublicSegmentRow,
 } from '@/lib/data/market-truth/public-segments'
-import { MetricHowLink } from '@/components/site/kb/MetricHowLink.client'
+import { MetricHowLink } from './MetricHowLink.client'
 import { PANEL_HOW } from '@/lib/market/how-we-get-our-numbers'
 
 export function PublicProductTypes({

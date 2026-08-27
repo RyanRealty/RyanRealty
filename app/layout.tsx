@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { validateEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
-import "@/components/site/kb/kb.css";
 import { V3Chrome } from "@/components/site/v3/V3Chrome";
 import { RootProvider } from "../components/site/providers";
 import HideOnLP from "../components/layout/HideOnLP";
@@ -75,7 +74,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#102742",
+  themeColor: "var(--v3-navy)",
 };
 
 /* Public chrome is fully static — no brokerage fetch, no server-side cookie

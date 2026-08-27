@@ -24,16 +24,18 @@
  */
 
 import Image from 'next/image'
+import './lead-landing.css'
+import {
+  V3_ROOT_CLASS,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3SectionTracker,
+} from '@/components/site/v3'
 import LeadLandingForm from '@/components/landing/LeadLandingForm'
 import type { LeadLandingConfig } from '@/lib/lead-landing-content'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import { generateFAQSchema } from '@/lib/structured-data'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
 
 type Props = {
   config: LeadLandingConfig
@@ -49,17 +51,19 @@ export default function LeadLandingPage({ config }: Props) {
   const audienceLabel = config.audience === 'seller' ? 'Seller' : 'Buyer'
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker />
-      <KbBreadcrumb
-        overlay
+    <main className={`${V3_ROOT_CLASS} lead-landing`}>
+      <V3SectionTracker />
+      {/* A plain surface trail, as on every other v3 page. KbBreadcrumb's
+          `overlay` prop positioned the trail ON the hero photo; the barrel
+          expresses that as tone="on-media", which only reads correctly INSIDE a
+          Stage. This page's hero is not a Stage, so the trail sits above it. */}
+      <V3Breadcrumb
         trail={[
           { label: 'Home', href: '/' },
           audienceCrumb,
           { label: config.title },
         ]}
       />
-      <SmoothScrollProvider>
         {/* HERO — re-expressed inline against KB tokens with the SAME config data
             (title / subtitle / heroImageUrl) and the SAME two CTAs that used to
             feed ContentPageHero. ContentPageHero is shared by non-LP pages, so it
@@ -196,63 +200,62 @@ export default function LeadLandingPage({ config }: Props) {
           </div>
         </section>
 
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
+        <V3Footer columns={V3_FOOTER_COLUMNS} />
 
       {/* Scoped KB-token styles for the lead-landing surfaces. Navy/cream tokens
           and the Amboqia display come from kb.css; this only lays out the
           LP-specific blocks (hero overlay, two-column body, review + FAQ grids). */}
       <style>{`
-        .kb-root .lp-hero{position:relative;min-height:62vh;display:flex;align-items:flex-end;background:var(--navy);overflow:hidden;}
-        .kb-root .lp-hero-media{position:absolute;inset:0;}
-        .kb-root .lp-hero-img{object-fit:cover;object-position:center;}
-        .kb-root .lp-hero-scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(16,39,66,.92) 0%,rgba(16,39,66,.62) 46%,rgba(16,39,66,.34) 100%);}
-        .kb-root .lp-hero-inner{position:relative;z-index:2;padding:120px 18px 48px;color:var(--cream);}
-        .kb-root .lp-hero .hero-tag{color:var(--cream-70);}
-        .kb-root .lp-hero .hero-h{font-size:clamp(2.3rem,6vw,5rem);line-height:.98;max-width:18ch;color:var(--cream);}
-        .kb-root .lp-hero-sub{margin-top:18px;max-width:60ch;font-size:clamp(1.02rem,1.7vw,1.32rem);line-height:1.5;font-weight:500;color:var(--cream-70);}
-        .kb-root .lp-hero-cta-row{margin-top:28px;flex-wrap:wrap;}
+        .v3.lead-landing .lp-hero{position:relative;min-height:62vh;display:flex;align-items:flex-end;background:var(--v3-navy);overflow:hidden;}
+        .v3.lead-landing .lp-hero-media{position:absolute;inset:0;}
+        .v3.lead-landing .lp-hero-img{object-fit:cover;object-position:center;}
+        .v3.lead-landing .lp-hero-scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(16,39,66,.92) 0%,rgba(16,39,66,.62) 46%,rgba(16,39,66,.34) 100%);}
+        .v3.lead-landing .lp-hero-inner{position:relative;z-index:2;padding:120px 18px 48px;color:var(--v3-cream);}
+        .v3.lead-landing .lp-hero .hero-tag{color:var(--v3-ink-on-navy-muted);}
+        .v3.lead-landing .lp-hero .hero-h{font-size:clamp(2.3rem,6vw,5rem);line-height:.98;max-width:18ch;color:var(--v3-cream);}
+        .v3.lead-landing .lp-hero-sub{margin-top:18px;max-width:60ch;font-size:clamp(1.02rem,1.7vw,1.32rem);line-height:1.5;font-weight:500;color:var(--v3-ink-on-navy-muted);}
+        .v3.lead-landing .lp-hero-cta-row{margin-top:28px;flex-wrap:wrap;}
 
-        .kb-root .lp-body{padding:clamp(48px,7vw,96px) 0;}
-        .kb-root .lp-grid{display:grid;grid-template-columns:1fr;gap:clamp(32px,5vw,56px);align-items:start;}
-        @media(min-width:1000px){.kb-root .lp-grid{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);}}
-        .kb-root .lp-chip{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--navy-70);border:1px solid var(--navy-12);border-radius:20px;padding:6px 14px;margin-bottom:22px;}
-        .kb-root .lp-sec-head{border-bottom:var(--edge,3px) solid var(--navy);padding-bottom:14px;}
-        .kb-root .lp-sec-head .sec-title{font-size:clamp(1.7rem,4.4vw,3rem);}
-        .kb-root .lp-list{list-style:none;margin:clamp(22px,3vw,32px) 0 0;border-top:1px solid var(--navy-12);}
-        .kb-root .lp-list-item{font-size:clamp(1rem,1.5vw,1.18rem);line-height:1.5;font-weight:500;color:var(--navy-70);padding:16px 0 16px 26px;border-bottom:1px solid var(--navy-12);position:relative;}
-        .kb-root .lp-list-item::before{content:"";position:absolute;left:0;top:25px;width:11px;height:2px;background:var(--navy);}
-        .kb-root .lp-card{margin-top:clamp(26px,3.5vw,40px);border:var(--edge,3px) solid var(--navy);padding:clamp(22px,3vw,34px);background:var(--cream);}
-        .kb-root .lp-card-title{font-size:clamp(1.4rem,3vw,2rem);line-height:1;color:var(--navy);}
-        .kb-root .lp-card .lp-list{margin-top:18px;}
-        .kb-root .lp-steps{list-style:none;margin-top:18px;border-top:1px solid var(--navy-12);}
-        .kb-root .lp-step{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline;padding:16px 0;border-bottom:1px solid var(--navy-12);}
-        .kb-root .lp-step:last-child{border-bottom:0;}
-        .kb-root .lp-step-num{font-family:var(--font-amboqia-safe),serif;font-size:clamp(1.6rem,3.4vw,2.2rem);line-height:.9;color:var(--navy);}
-        .kb-root .lp-step-text{font-size:clamp(1rem,1.5vw,1.14rem);line-height:1.45;font-weight:500;color:var(--navy-70);}
-        .kb-root .lp-col-form{position:sticky;top:96px;}
-        @media(max-width:999px){.kb-root .lp-col-form{position:static;}}
+        .v3.lead-landing .lp-body{padding:clamp(48px,7vw,96px) 0;}
+        .v3.lead-landing .lp-grid{display:grid;grid-template-columns:1fr;gap:clamp(32px,5vw,56px);align-items:start;}
+        @media(min-width:1000px){.v3.lead-landing .lp-grid{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);}}
+        .v3.lead-landing .lp-chip{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--v3-ink-muted);border:1px solid var(--v3-edge);border-radius:20px;padding:6px 14px;margin-bottom:22px;}
+        .v3.lead-landing .lp-sec-head{border-bottom:var(--v3-rule-weight-section) solid var(--v3-navy);padding-bottom:14px;}
+        .v3.lead-landing .lp-sec-head .sec-title{font-size:clamp(1.7rem,4.4vw,3rem);}
+        .v3.lead-landing .lp-list{list-style:none;margin:clamp(22px,3vw,32px) 0 0;border-top:1px solid var(--v3-edge);}
+        .v3.lead-landing .lp-list-item{font-size:clamp(1rem,1.5vw,1.18rem);line-height:1.5;font-weight:500;color:var(--v3-ink-muted);padding:16px 0 16px 26px;border-bottom:1px solid var(--v3-edge);position:relative;}
+        .v3.lead-landing .lp-list-item::before{content:"";position:absolute;left:0;top:25px;width:11px;height:2px;background:var(--v3-navy);}
+        .v3.lead-landing .lp-card{margin-top:clamp(26px,3.5vw,40px);border:var(--v3-rule-weight-section) solid var(--v3-navy);padding:clamp(22px,3vw,34px);background:var(--v3-cream);}
+        .v3.lead-landing .lp-card-title{font-size:clamp(1.4rem,3vw,2rem);line-height:1;color:var(--v3-navy);}
+        .v3.lead-landing .lp-card .lp-list{margin-top:18px;}
+        .v3.lead-landing .lp-steps{list-style:none;margin-top:18px;border-top:1px solid var(--v3-edge);}
+        .v3.lead-landing .lp-step{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:baseline;padding:16px 0;border-bottom:1px solid var(--v3-edge);}
+        .v3.lead-landing .lp-step:last-child{border-bottom:0;}
+        .v3.lead-landing .lp-step-num{font-family:var(--v3-font-display);font-size:clamp(1.6rem,3.4vw,2.2rem);line-height:.9;color:var(--v3-navy);}
+        .v3.lead-landing .lp-step-text{font-size:clamp(1rem,1.5vw,1.14rem);line-height:1.45;font-weight:500;color:var(--v3-ink-muted);}
+        .v3.lead-landing .lp-col-form{position:sticky;top:96px;}
+        @media(max-width:999px){.v3.lead-landing .lp-col-form{position:static;}}
 
-        .kb-root .lp-reviews{background:var(--navy);color:var(--cream);padding:clamp(48px,7vw,96px) 0;}
-        .kb-root .lp-sec-head-reviews{border-bottom:var(--edge,3px) solid var(--cream-40);padding-bottom:14px;}
-        .kb-root .lp-reviews .sec-index{color:var(--cream-70);}
-        .kb-root .lp-reviews .sec-title{font-size:clamp(1.7rem,4.4vw,3rem);color:var(--cream);}
-        .kb-root .lp-review-grid{display:grid;grid-template-columns:1fr;gap:clamp(18px,2.5vw,28px);margin-top:clamp(28px,4vw,44px);}
-        @media(min-width:760px){.kb-root .lp-review-grid{grid-template-columns:repeat(3,1fr);}}
-        .kb-root .lp-review{border:1px solid var(--cream-40);padding:clamp(20px,2.5vw,28px);display:flex;flex-direction:column;gap:16px;}
-        .kb-root .lp-review-quote{font-size:clamp(.98rem,1.4vw,1.1rem);line-height:1.5;color:var(--cream-70);}
-        .kb-root .lp-review-by{font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--cream);}
+        .v3.lead-landing .lp-reviews{background:var(--v3-navy);color:var(--v3-cream);padding:clamp(48px,7vw,96px) 0;}
+        .v3.lead-landing .lp-sec-head-reviews{border-bottom:var(--v3-rule-weight-section) solid color-mix(in srgb, var(--v3-cream) 40%, transparent);padding-bottom:14px;}
+        .v3.lead-landing .lp-reviews .sec-index{color:var(--v3-ink-on-navy-muted);}
+        .v3.lead-landing .lp-reviews .sec-title{font-size:clamp(1.7rem,4.4vw,3rem);color:var(--v3-cream);}
+        .v3.lead-landing .lp-review-grid{display:grid;grid-template-columns:1fr;gap:clamp(18px,2.5vw,28px);margin-top:clamp(28px,4vw,44px);}
+        @media(min-width:760px){.v3.lead-landing .lp-review-grid{grid-template-columns:repeat(3,1fr);}}
+        .v3.lead-landing .lp-review{border:1px solid color-mix(in srgb, var(--v3-cream) 40%, transparent);padding:clamp(20px,2.5vw,28px);display:flex;flex-direction:column;gap:16px;}
+        .v3.lead-landing .lp-review-quote{font-size:clamp(.98rem,1.4vw,1.1rem);line-height:1.5;color:var(--v3-ink-on-navy-muted);}
+        .v3.lead-landing .lp-review-by{font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--v3-cream);}
 
-        .kb-root .lp-faq{padding:clamp(48px,7vw,96px) 0;}
-        .kb-root .lp-faq-grid{display:grid;grid-template-columns:1fr;gap:0;margin-top:clamp(28px,4vw,44px);border-top:1px solid var(--navy-12);}
-        @media(min-width:820px){.kb-root .lp-faq-grid{grid-template-columns:1fr 1fr;column-gap:clamp(40px,5vw,72px);}}
-        .kb-root .lp-faq-item{padding:22px 0;border-bottom:1px solid var(--navy-12);}
-        .kb-root .lp-faq-q{font-size:clamp(1.04rem,1.6vw,1.24rem);font-weight:700;color:var(--navy);line-height:1.3;}
-        .kb-root .lp-faq-a{margin-top:10px;font-size:clamp(.96rem,1.4vw,1.08rem);line-height:1.5;font-weight:500;color:var(--navy-70);}
-        .kb-root .lp-faq-cta{margin-top:clamp(28px,3.5vw,40px);}
-        .kb-root .lp-faq-link{display:inline-flex;align-items:center;gap:8px;font-size:.92rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--navy);}
-        .kb-root .lp-faq-link:hover .arr{transform:translateX(4px);}
-        .kb-root .lp-faq-link .arr{transition:transform .18s ease;}
+        .v3.lead-landing .lp-faq{padding:clamp(48px,7vw,96px) 0;}
+        .v3.lead-landing .lp-faq-grid{display:grid;grid-template-columns:1fr;gap:0;margin-top:clamp(28px,4vw,44px);border-top:1px solid var(--v3-edge);}
+        @media(min-width:820px){.v3.lead-landing .lp-faq-grid{grid-template-columns:1fr 1fr;column-gap:clamp(40px,5vw,72px);}}
+        .v3.lead-landing .lp-faq-item{padding:22px 0;border-bottom:1px solid var(--v3-edge);}
+        .v3.lead-landing .lp-faq-q{font-size:clamp(1.04rem,1.6vw,1.24rem);font-weight:700;color:var(--v3-navy);line-height:1.3;}
+        .v3.lead-landing .lp-faq-a{margin-top:10px;font-size:clamp(.96rem,1.4vw,1.08rem);line-height:1.5;font-weight:500;color:var(--v3-ink-muted);}
+        .v3.lead-landing .lp-faq-cta{margin-top:clamp(28px,3.5vw,40px);}
+        .v3.lead-landing .lp-faq-link{display:inline-flex;align-items:center;gap:8px;font-size:.92rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--v3-navy);}
+        .v3.lead-landing .lp-faq-link:hover .arr{transform:translateX(4px);}
+        .v3.lead-landing .lp-faq-link .arr{transition:transform .18s ease;}
       `}</style>
     </main>
   )

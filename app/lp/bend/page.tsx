@@ -381,8 +381,8 @@ export default async function BendCityPage() {
     <main className="bend-lp">
       <LandingPageTracker lpVariant="bend-city-landing-v2" />
       <style>{`
-        :root { --tw-cream: #faf8f4; --tw-navy: #102742; --tw-muted: #5d6470; }
-        .bend-lp { background-color: #faf8f4; color: #102742; font-family: 'Geist', system-ui, sans-serif; font-feature-settings: "tnum" on, "lnum" on; }
+        :root { --tw-cream: var(--v3-cream); --tw-navy: var(--v3-navy); --tw-muted: #5d6470; }
+        .bend-lp { background-color: var(--v3-cream); color: var(--v3-navy); font-family: 'Geist', system-ui, sans-serif; font-feature-settings: "tnum" on, "lnum" on; }
         .bend-shell { max-width: 1160px; margin: 0 auto; padding: 32px 28px; }
         .bend-section { padding: 64px 0; }
         .bend-section + .bend-section { border-top: 1px solid rgba(16,39,66,0.07); }
@@ -399,14 +399,14 @@ export default async function BendCityPage() {
         .hero { position: relative; min-height: 620px; overflow: hidden; }
         .hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center 35%; transform: scale(1.05); }
         .hero-overlay { position: absolute; inset: 0; background: linear-gradient(165deg, rgba(16,39,66,0.30) 0%, rgba(16,39,66,0.45) 55%, rgba(16,39,66,0.85) 100%); }
-        .hero .bend-shell { position: relative; padding-top: 120px; padding-bottom: 56px; color: #faf8f4; max-width: 1160px; }
+        .hero .bend-shell { position: relative; padding-top: 120px; padding-bottom: 56px; color: var(--v3-cream); max-width: 1160px; }
         .hero .bend-eyebrow { color: rgba(250,248,244,0.78); }
-        .hero .bend-h1 { color: #faf8f4; max-width: 880px; }
+        .hero .bend-h1 { color: var(--v3-cream); max-width: 880px; }
         .hero p { color: rgba(250,248,244,0.92); max-width: 640px; font-size: 19px; line-height: 1.6; }
         .hero-cta-row { display: flex; gap: 14px; margin-top: 32px; flex-wrap: wrap; }
-        .btn-primary { display: inline-flex; align-items: center; gap: 8px; background: #faf8f4; color: #102742; padding: 14px 26px; border-radius: 10px; font-size: 14.5px; font-weight: 700; text-decoration: none; transition: transform 0.15s, box-shadow 0.15s; letter-spacing: 0.01em; }
+        .btn-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--v3-cream); color: var(--v3-navy); padding: 14px 26px; border-radius: 10px; font-size: 14.5px; font-weight: 700; text-decoration: none; transition: transform 0.15s, box-shadow 0.15s; letter-spacing: 0.01em; }
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,0.18); }
-        .btn-ghost-light { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: #faf8f4; border: 1.5px solid rgba(250,248,244,0.6); padding: 13px 24px; border-radius: 10px; font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background 0.15s, border-color 0.15s; }
+        .btn-ghost-light { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--v3-cream); border: 1.5px solid rgba(250,248,244,0.6); padding: 13px 24px; border-radius: 10px; font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background 0.15s, border-color 0.15s; }
         .btn-ghost-light:hover { background: rgba(250,248,244,0.08); border-color: rgba(250,248,244,0.9); }
 
         /* INTRO + SIDEBAR */
@@ -428,7 +428,7 @@ export default async function BendCityPage() {
         @media (max-width: 980px) { .map-list ul { columns: 2; } }
         @media (max-width: 540px) { .map-list ul { columns: 1; } }
         .map-list li { padding: 6px 0; font-size: 14.5px; break-inside: avoid; }
-        .map-list a { color: #102742; text-decoration: none; font-weight: 500; transition: color 0.15s; }
+        .map-list a { color: var(--v3-navy); text-decoration: none; font-weight: 500; transition: color 0.15s; }
         .map-list a:hover { color: rgba(16,39,66,0.6); text-decoration: underline; text-underline-offset: 3px; }
 
         /* COMMUNITY TILES — fixed 3-col / 2-col / 1-col, no orphan rows */
@@ -437,11 +437,11 @@ export default async function BendCityPage() {
         @media (max-width: 560px) { .community-grid { grid-template-columns: 1fr; } }
         .community-card { background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; }
         .community-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 14px 32px rgba(16,39,66,0.12); }
-        .community-photo { aspect-ratio: 16/10; background: linear-gradient(150deg, #102742 0%, rgba(16,39,66,0.82) 100%); background-size: cover; background-position: center; }
+        .community-photo { aspect-ratio: 16/10; background: linear-gradient(150deg, var(--v3-navy) 0%, rgba(16,39,66,0.82) 100%); background-size: cover; background-position: center; }
         .community-body { padding: 18px 22px 22px; }
         .community-name { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 22px; margin: 0 0 6px; font-weight: 500; }
         .community-stats { display: flex; gap: 14px; font-size: 12.5px; color: rgba(16,39,66,0.62); flex-wrap: wrap; }
-        .community-stats strong { color: #102742; font-weight: 600; }
+        .community-stats strong { color: var(--v3-navy); font-weight: 600; }
 
         /* LISTINGS — fixed 4-col / 3-col / 2-col / 1-col, 8 items render as clean 2 rows.
            Card markup lives in components/lp/ListingCard.tsx — one canonical tile shape
@@ -452,9 +452,9 @@ export default async function BendCityPage() {
         @media (max-width: 500px) { .listings-grid { grid-template-columns: 1fr; } }
         .rr-listing-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 14px 32px rgba(16,39,66,0.12) !important; }
         .featured-cta-row { display: flex; gap: 14px; justify-content: center; align-items: center; margin-top: 36px; flex-wrap: wrap; }
-        .featured-cta-primary { display: inline-flex; align-items: center; gap: 8px; background: #102742; color: #faf8f4; padding: 14px 32px; border-radius: 10px; font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
-        .featured-cta-primary:hover { background: rgba(16,39,66,0.88); color: #faf8f4; }
-        .featured-cta-secondary { display: inline-flex; align-items: center; gap: 8px; color: #102742; padding: 14px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; border: 1.5px solid rgba(16,39,66,0.18); transition: border-color 0.15s, background 0.15s; }
+        .featured-cta-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--v3-navy); color: var(--v3-cream); padding: 14px 32px; border-radius: 10px; font-size: 14.5px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
+        .featured-cta-primary:hover { background: rgba(16,39,66,0.88); color: var(--v3-cream); }
+        .featured-cta-secondary { display: inline-flex; align-items: center; gap: 8px; color: var(--v3-navy); padding: 14px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; border: 1.5px solid rgba(16,39,66,0.18); transition: border-color 0.15s, background 0.15s; }
         .featured-cta-secondary:hover { border-color: rgba(16,39,66,0.45); background: rgba(16,39,66,0.04); }
 
         /* LIFESTYLE — editorial: 1 wide hero + 3-card row + 3 quick-stat rows */
@@ -465,7 +465,7 @@ export default async function BendCityPage() {
         .lifestyle-hero-body { padding: 38px 42px; display: flex; flex-direction: column; justify-content: center; }
         @media (max-width: 880px) { .lifestyle-hero-body { padding: 28px 26px; } }
         .lifestyle-hero-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-bottom: 12px; }
-        .lifestyle-hero-title { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 14px; font-weight: 500; color: #102742; letter-spacing: -0.01em; }
+        .lifestyle-hero-title { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 14px; font-weight: 500; color: var(--v3-navy); letter-spacing: -0.01em; }
         .lifestyle-hero-text { font-size: 15.5px; line-height: 1.62; color: rgba(16,39,66,0.82); margin: 0; }
 
         .lifestyle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; }
@@ -473,16 +473,16 @@ export default async function BendCityPage() {
         .lifestyle-card { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; background-color: rgba(16,39,66,0.1); background-size: cover; background-position: center; box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 8px 24px rgba(16,39,66,0.1); display: flex; flex-direction: column; justify-content: flex-end; transition: transform 0.25s, box-shadow 0.25s; }
         .lifestyle-card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(16,39,66,0.04), 0 16px 36px rgba(16,39,66,0.18); }
         .lifestyle-card::before { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to bottom, rgba(16,39,66,0) 0%, rgba(16,39,66,0) 35%, rgba(16,39,66,0.65) 70%, rgba(16,39,66,0.95) 100%); pointer-events: none; }
-        .lifestyle-card-body { position: relative; z-index: 2; padding: 22px 24px 24px; color: #faf8f4; }
+        .lifestyle-card-body { position: relative; z-index: 2; padding: 22px 24px 24px; color: var(--v3-cream); }
         .lifestyle-card-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(250,248,244,0.78); margin-bottom: 6px; }
-        .lifestyle-card h3 { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 22px; line-height: 1.15; margin: 0 0 8px; font-weight: 500; color: #faf8f4; letter-spacing: -0.005em; }
+        .lifestyle-card h3 { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 22px; line-height: 1.15; margin: 0 0 8px; font-weight: 500; color: var(--v3-cream); letter-spacing: -0.005em; }
         .lifestyle-card p { font-size: 13.5px; line-height: 1.5; color: rgba(250,248,244,0.92); margin: 0; }
 
         .lifestyle-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 24px; }
         @media (max-width: 920px) { .lifestyle-stats { grid-template-columns: 1fr; } }
         .lifestyle-stat { display: flex; align-items: flex-start; gap: 14px; padding: 22px 24px; background: white; border: 1px solid rgba(16,39,66,0.08); border-radius: 14px; box-shadow: 0 1px 2px rgba(16,39,66,0.03); }
         .lifestyle-stat-icon { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; background: rgba(16,39,66,0.06); display: flex; align-items: center; justify-content: center; }
-        .lifestyle-stat-title { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 18px; line-height: 1.2; font-weight: 500; color: #102742; margin: 0 0 6px; }
+        .lifestyle-stat-title { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 18px; line-height: 1.2; font-weight: 500; color: var(--v3-navy); margin: 0 0 6px; }
         .lifestyle-stat-text { font-size: 13px; line-height: 1.55; color: rgba(16,39,66,0.78); margin: 0; }
 
         /* BROKER BIO — "Meet a local" personal block, builds trust before the final CTA */
@@ -490,13 +490,13 @@ export default async function BendCityPage() {
         @media (max-width: 760px) { .broker-bio { grid-template-columns: 1fr; padding: 28px 26px; gap: 22px; } }
         .broker-photo { aspect-ratio: 3/4; background: rgba(16,39,66,0.06); background-size: cover; background-position: center top; border-radius: 14px; max-width: 280px; }
         @media (max-width: 760px) { .broker-photo { max-width: 200px; margin: 0 auto; } }
-        .broker-name { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 4px; font-weight: 500; color: #102742; }
+        .broker-name { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 30px; line-height: 1.15; margin: 0 0 4px; font-weight: 500; color: var(--v3-navy); }
         .broker-title { font-size: 12.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(16,39,66,0.6); margin-bottom: 16px; }
         .broker-text { font-size: 15px; line-height: 1.6; color: rgba(16,39,66,0.82); margin: 0 0 18px; }
         .broker-cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
-        .broker-cta-primary { display: inline-flex; align-items: center; gap: 8px; background: #102742; color: #faf8f4; padding: 12px 24px; border-radius: 10px; font-size: 13.5px; font-weight: 700; text-decoration: none; letter-spacing: 0.01em; }
-        .broker-cta-primary:hover { background: rgba(16,39,66,0.88); color: #faf8f4; }
-        .broker-cta-secondary { display: inline-flex; align-items: center; gap: 8px; color: #102742; padding: 12px 20px; border-radius: 10px; font-size: 13.5px; font-weight: 600; text-decoration: none; border: 1.5px solid rgba(16,39,66,0.18); }
+        .broker-cta-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--v3-navy); color: var(--v3-cream); padding: 12px 24px; border-radius: 10px; font-size: 13.5px; font-weight: 700; text-decoration: none; letter-spacing: 0.01em; }
+        .broker-cta-primary:hover { background: rgba(16,39,66,0.88); color: var(--v3-cream); }
+        .broker-cta-secondary { display: inline-flex; align-items: center; gap: 8px; color: var(--v3-navy); padding: 12px 20px; border-radius: 10px; font-size: 13.5px; font-weight: 600; text-decoration: none; border: 1.5px solid rgba(16,39,66,0.18); }
         .broker-cta-secondary:hover { border-color: rgba(16,39,66,0.45); background: rgba(16,39,66,0.04); }
 
         /* KPI GRID — fixed 3-col / 2-col / 1-col, 6 items render as clean 2 rows */
@@ -518,12 +518,12 @@ export default async function BendCityPage() {
         /* CTA CARDS */
         .cta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 26px; }
         @media (max-width: 720px) { .cta-row { grid-template-columns: 1fr; } }
-        .cta-card { background: #102742; color: #faf8f4; padding: 36px 34px; border-radius: 18px; }
-        .cta-card.alt { background: white; color: #102742; border: 1px solid rgba(16,39,66,0.1); box-shadow: 0 1px 2px rgba(16,39,66,0.03), 0 8px 24px rgba(16,39,66,0.06); }
+        .cta-card { background: var(--v3-navy); color: var(--v3-cream); padding: 36px 34px; border-radius: 18px; }
+        .cta-card.alt { background: white; color: var(--v3-navy); border: 1px solid rgba(16,39,66,0.1); box-shadow: 0 1px 2px rgba(16,39,66,0.03), 0 8px 24px rgba(16,39,66,0.06); }
         .cta-card h3 { font-family: var(--font-amboqia-safe), ui-serif, Georgia, serif; font-size: 28px; margin: 0 0 12px; color: inherit; font-weight: 500; }
         .cta-card p { font-size: 15px; line-height: 1.6; color: inherit; opacity: 0.92; margin: 0 0 20px; }
-        .cta-card .btn { display: inline-flex; align-items: center; gap: 8px; background: #faf8f4; color: #102742; padding: 13px 26px; border-radius: 10px; font-size: 14.5px; font-weight: 700; text-decoration: none; }
-        .cta-card.alt .btn { background: #102742; color: #faf8f4; }
+        .cta-card .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--v3-cream); color: var(--v3-navy); padding: 13px 26px; border-radius: 10px; font-size: 14.5px; font-weight: 700; text-decoration: none; }
+        .cta-card.alt .btn { background: var(--v3-navy); color: var(--v3-cream); }
 
         /* METHODOLOGY FOOTER */
         .methodology { font-size: 12.5px; color: rgba(16,39,66,0.6); line-height: 1.7; }
@@ -830,7 +830,7 @@ export default async function BendCityPage() {
           <div className="lifestyle-stats">
             <div className="lifestyle-stat">
               <div className="lifestyle-stat-icon" aria-hidden>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--v3-navy)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 10l10-6 10 6-10 6-10-6z" />
                   <path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5" />
                 </svg>
@@ -846,7 +846,7 @@ export default async function BendCityPage() {
             </div>
             <div className="lifestyle-stat">
               <div className="lifestyle-stat-icon" aria-hidden>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--v3-navy)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 21V8l8-5 8 5v13" />
                   <path d="M9 21V13h6v8" />
                 </svg>
@@ -863,7 +863,7 @@ export default async function BendCityPage() {
             </div>
             <div className="lifestyle-stat">
               <div className="lifestyle-stat-icon" aria-hidden>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#102742" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--v3-navy)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="4" />
                   <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
                 </svg>
@@ -1011,7 +1011,7 @@ export default async function BendCityPage() {
               <h3>Looking at Bend homes?</h3>
               <p>
                 Open any neighborhood above for HOA tiers and inventory, or call Matt at{' '}
-                <a href={`tel:${CONTACT.phoneFubTel}`} style={{ color: '#102742', textDecoration: 'underline' }}>
+                <a href={`tel:${CONTACT.phoneFubTel}`} style={{ color: 'var(--v3-navy)', textDecoration: 'underline' }}>
                   {CONTACT.phoneFub}
                 </a>{' '}
                 for a 30-minute relocation call.

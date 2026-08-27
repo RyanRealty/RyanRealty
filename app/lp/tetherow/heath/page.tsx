@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -1037,36 +1038,11 @@ export default async function HeathAtTetherowPage() {
       </section>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
-      <footer className="border-t border-border bg-card py-10">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-8 sm:grid-cols-3">
-            <div>
-              <div className="font-display text-lg text-primary">Ryan Realty LLC</div>
-              <div className="mt-1 text-xs text-muted-foreground">Bend · Oregon</div>
-              <div className="mt-3 text-sm text-foreground">115 NW Oregon Avenue, Bend, OR 97703</div>
-              <div className="mt-1 text-sm text-foreground">
-                <a href={`tel:${CONTACT.phoneDirectTel}`} className="hover:underline">{CONTACT.phoneDirect}</a>
-              </div>
-              <div className="mt-1 text-xs text-muted-foreground">Oregon Principal Broker · License #201206613</div>
-            </div>
-            <div>
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Tetherow pages</div>
-              <ul className="mt-3 space-y-2 text-sm">
-                <li><Link href="/lp/tetherow/" className="text-foreground hover:underline">Tetherow community overview</Link></li>
-                <li><Link href="/lp/tetherow/heath/" className="text-foreground hover:underline">Heath at Tetherow</Link></li>
-              </ul>
-            </div>
-            <div>
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Legal</div>
-              <ul className="mt-3 space-y-2 text-sm">
-                <li><Link href="/privacy" className="text-foreground hover:underline">Privacy</Link></li>
-                <li><Link href="/fair-housing" className="text-foreground hover:underline">Fair housing</Link></li>
-                <li><Link href="/terms" className="text-foreground hover:underline">Terms</Link></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* THE ONE SITE FOOTER (Matt 2026-08-27, "no exceptions"). This page
+        hand-rolled its own footer in raw var(--v3-navy)/var(--v3-cream) with a 3px slab edge,
+        which is how nine landing pages came to carry a footer the other 87
+        public pages do not have. Held by ci:chrome-single-source. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </div>
   )
 }

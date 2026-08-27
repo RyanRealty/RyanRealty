@@ -3,7 +3,7 @@
  */
 
 import { getBendNeighborhoodLedger } from '@/lib/data/geo/getBendNeighborhoodLedger'
-import type { KbTownItem } from '@/components/site/kb/types'
+import type { KbTownItem } from '@/lib/kb/types'
 import { cityHero } from '@/lib/geo-images'
 
 export async function peerNeighborhoodTowns(

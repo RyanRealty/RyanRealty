@@ -662,7 +662,7 @@ for (const file of SHARE_LABEL_SURFACES) {
 // page families is the drift §8 forbids. So the population is named and frozen:
 // a new surface may not join it, and the number comes down as each is converted.
 // A gate that lets a known class grow is not a gate.
-const UNLABELLED_ASK_SURFACES_MAX = 6
+const UNLABELLED_ASK_SURFACES_MAX = 3 // 6 -> 3 when the KB register was deleted 2026-08-27 (KbFeatured/KbListingMap/KbTicker went with it)
 {
   const unlabelled = []
   for (const f of [...walkFiles('app'), ...walkFiles('components'), ...walkFiles('lib')]) {

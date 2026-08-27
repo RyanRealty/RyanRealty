@@ -3,7 +3,7 @@ import { toTileBackgroundVideo } from '@/lib/video-embed'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { publishSaleAskAmount } from '@/lib/listing/publish-listing-figure'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
-import type { KbFeaturedItem } from '@/components/site/kb/types'
+import type { KbFeaturedItem } from '@/lib/kb/types'
 import type { ListingTile } from '@/lib/data'
 
 /**
