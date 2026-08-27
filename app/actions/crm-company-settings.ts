@@ -119,6 +119,33 @@ export async function updateOfficeHoursAction(blocks: OfficeHoursBlock[]): Promi
   await updateSettingsColumns({ office_hours: valid })
 }
 
+/**
+ * Bookable hours for the public /book page.
+ *
+ * Same SHAPE as office hours, opposite MEANING, and the difference matters:
+ * `office_hours` gates inbound CALL ROUTING where an empty list means ALWAYS
+ * OPEN, while `booking_hours` empty means NOTHING IS OFFERABLE. Failing open on
+ * a ringing phone is harmless; failing open on a calendar would publish
+ * bookable time nobody agreed to. Keep the two columns apart — see migration
+ * 20260825200000 and lib/booking/slots.generateDaySlots.
+ */
+export async function updateBookingHoursAction(blocks: OfficeHoursBlock[]): Promise<void> {
+  await requireOwner()
+  if (!Array.isArray(blocks) || blocks.length > 20) throw new Error('Invalid booking hours payload.')
+  const valid: OfficeHoursBlock[] = blocks.map((b) => {
+    const days = Array.isArray(b?.days)
+      ? b.days.filter((d): d is (typeof OFFICE_DAYS)[number] => (OFFICE_DAYS as readonly string[]).includes(d))
+      : []
+    const start = parseHm(b?.start_time)
+    const end = parseHm(b?.end_time)
+    if (days.length === 0) throw new Error('Each bookable-hours block needs at least one day.')
+    if (start == null || end == null) throw new Error('Times must be in HH:MM 24-hour format.')
+    if (start >= end) throw new Error('A bookable block must end after it starts.')
+    return { days, start_time: b.start_time.trim(), end_time: b.end_time.trim() }
+  })
+  await updateSettingsColumns({ booking_hours: valid })
+}
+
 /** §1.6 subdomain (Change) modal — the stored account identifier (AC-8). */
 export async function updateSubdomainAction(prefix: string): Promise<void> {
   await requireOwner()

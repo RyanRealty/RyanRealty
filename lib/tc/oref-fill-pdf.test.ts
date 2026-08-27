@@ -107,5 +107,11 @@ describe('buildFilledOrefPdf', () => {
       expect(text).toContain('Todd Chester')
       expect(text).toContain('$435,000')
     },
+    // This case decrypts a real OREF blank and fills it, which costs ~3.2s on an
+    // idle machine — almost no headroom under vitest's default 5s. With other
+    // work on the box it blows the budget and fails as a timeout, which reads
+    // like a broken assertion and has blocked unrelated commits more than once.
+    // The assertions are untouched; only the clock is realistic now.
+    20_000,
   )
 })
