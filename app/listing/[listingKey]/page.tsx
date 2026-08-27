@@ -631,9 +631,17 @@ export default async function ListingDetailPage({ params }: PageProps) {
     wholePropertyPrice,
     listing,
     photoUrls: photos.map((p) => p.url),
-    agent: ctaBroker
-      ? { fullName: ctaBroker.fullName, email: ctaBroker.email, phoneDirect: ctaBroker.phoneDirect }
-      : null,
+    // THE TRUE LISTING AGENT, never a substitute (2026-08-27 audit: this
+    // published Matt as the machine-readable listingAgent of another
+    // brokerage's listing — the visible attribution said Cascade Hasson while
+    // the JSON-LD said Matt Ryan). Our broker goes in only when they ARE the
+    // listing agent (the listingAgent match is by list-agent identity);
+    // otherwise the MLS's own agent name is published, or nothing.
+    agent: listingAgent
+      ? { fullName: listingAgent.fullName, email: listingAgent.email, phoneDirect: listingAgent.phoneDirect }
+      : listing.listAgentName
+        ? { fullName: listing.listAgentName, email: null, phoneDirect: listing.listAgentPhone ?? null }
+        : null,
   })
 
   return (

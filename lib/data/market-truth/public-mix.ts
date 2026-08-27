@@ -142,7 +142,7 @@ export function publicMixItems(row: PublicMixRow): PublicMixItem[] {
     items.push({
       key: `fin:${bit.key}`,
       value: formatPaceShare(bit.share),
-      label: `${name} closes · 12 months`,
+      label: `${name} closes · detached · 12 months`,
     })
   }
   for (const bit of row.bedrooms) {
@@ -150,7 +150,7 @@ export function publicMixItems(row: PublicMixRow): PublicMixItem[] {
     items.push({
       key: `bed:${bit.key}`,
       value: formatPaceShare(bit.share),
-      label: `${name} closes · 12 months`,
+      label: `${name} closes · detached · 12 months`,
     })
   }
   return items

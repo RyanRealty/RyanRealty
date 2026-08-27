@@ -195,7 +195,7 @@ export function publicPaceItems(row: PublicPaceRow): PublicPaceItem[] {
     items.push({
       key: 'cash',
       value: formatPaceShare(row.cashShare),
-      label: 'cash closes · 12 months',
+      label: 'cash closes · detached · 12 months',
     })
   }
   if (row.daysToClose != null) {

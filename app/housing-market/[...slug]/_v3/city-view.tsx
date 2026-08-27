@@ -81,7 +81,11 @@ export function CityMarketView({
   const segmentFigures = buildPublicSegmentFigures(publicSegments, citySlug)
   const paceFigures = buildPublicPaceFigures(publicPace)
   const mixFigures = buildPublicMixFigures(publicMix)
-  const figures = [...live.figures, ...segmentFigures, ...paceFigures, ...mixFigures, ...closedFigures]
+  // ONE FIGURE PER LABEL (2026-08-27 audit): pace and mix both read the
+  // finance cells, so "cash closes" printed twice in this run. First mount wins.
+  const figures = [...live.figures, ...segmentFigures, ...paceFigures, ...mixFigures, ...closedFigures].filter(
+    (f, i, arr) => arr.findIndex((g) => String(g.label) === String(f.label)) === i,
+  )
   const [firstFigure, ...restFigures] = figures
   const cityLedger = buildCityLedger(snapshots, citySlug)
   const [firstCityRow, ...restCityRows] = cityLedger.rows

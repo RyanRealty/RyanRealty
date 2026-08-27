@@ -37,6 +37,7 @@
  */
 
 import type { Metadata } from 'next'
+import { getFinancingMix } from '@/lib/data/analytics/getFinancingMix'
 import { notFound } from 'next/navigation'
 import {
   getPriceHistory,
@@ -66,6 +67,9 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
+  V3Instrument,
+  v3Text,
+  type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { COMPARISON_CITY_LABELS, CORE_CITY_SLUGS, resolveGeo } from './_v3/geo-constants'
 import {
@@ -190,6 +194,15 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     },
   )
 
+  // HOW HOMES HERE GET BOUGHT (2026-08-27). The full report is the ONE surface
+  // for the all-property-types financing mix: the six-brokerage sweep found no
+  // local competitor publishes it as data, and the place pages must not carry
+  // it beside the detached finance cells (two cash shares under near-identical
+  // labels was the defect that pulled it off /cities/bend the day it shipped).
+  // Here it gets its own section with the population NAMED in the heading.
+  const financingMix = isCity ? await getFinancingMix({ city: cityName, days: 365 }) : null
+
+
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -312,6 +325,33 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             sheet={sheet}
           />
         )}
+        {financingMix && financingMix.source === 'rpc' && financingMix.totalSales >= 50 ? (
+          <V3Instrument
+            id="financing"
+            level={2}
+            eyebrow={v3Text(`${cityName} · Every property type`)}
+            headline={v3Text(`How ${cityName} homes get bought`)}
+            note={v3Text(
+              `Across every property type the MLS closed here: houses, condos, land, commercial. The figures above cover detached homes only.`,
+            )}
+            figures={
+              financingMix.rows
+                .filter((r) => r.financing !== 'Other')
+                .map((r) => ({
+                  value: v3Text(`${r.pctOfSales.toFixed(1)}%`),
+                  label: v3Text(
+                    r.medianDaysToPending != null
+                      ? `${r.financing.toLowerCase()} · ${r.medianDaysToPending} days to pending · 12 months`
+                      : `${r.financing.toLowerCase()} · 12 months`,
+                  ),
+                })) as unknown as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]
+            }
+            source={v3Text(
+              `closed MLS sales through Oregon Data Share, every property type, ${cityName}, rolling 365 days, ${financingMix.totalSales.toLocaleString('en-US')} sales with a recorded financing method, normalised (a dual-format feed field; VA is word-boundary matched)`,
+            )}
+          />
+        ) : null}
+
       </main>
 
       {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only

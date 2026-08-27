@@ -77,13 +77,11 @@ checks.push({
     /children: \[\s*REGIONAL_SEARCH,/.test(nav),
 })
 
-const menu = src('lib/site-menu.ts')
-checks.push({
-  label: 'legacy MENU Buy door is the regional list href',
-  ok:
-    /label: 'Buy',\s*href: '\/homes-for-sale\?view=list'/.test(menu) &&
-    /label: 'All homes for sale', href: '\/homes-for-sale\?view=list'/.test(menu),
-})
+// lib/site-menu.ts was DELETED 2026-08-27: its only importers were the legacy
+// MobileNav and SiteHeader, both gone with the old chrome, so the menu data it
+// held fed nothing. The rule its arm carried — the Buy door is the regional
+// LIST href, never a silent Bend inject — survives on the nav arm above, which
+// pins the live menu source (lib/site-nav.ts).
 
 const frame = src('app/globals.css')
 checks.push({

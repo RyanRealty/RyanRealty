@@ -77,7 +77,18 @@ export function listingCanonicalPath(listing: ListingJsonLdInput['listing']): st
       postalCode: listing.postalCode,
     },
     {
-      city: listing.boundaryCity ?? listing.city,
+      // ONE URL, matching <link rel=canonical> (2026-08-27 audit: this builder
+      // published /homes-for-sale/outside-boundaries/... in the JSON-LD while
+      // the canonical said /homes-for-sale/bend/... on the same page).
+      // 'outside-boundaries' is the boundary classifier's SENTINEL for a home
+      // outside every polygon — it is not a place and never a URL segment.
+      // The sentinel arrives as the display form "Outside Boundaries" (verified
+      // against listing_tile_mv.boundary_city for 220225078), so the check is
+      // case-insensitive on the words, not on the slug it would produce.
+      city:
+        listing.boundaryCity && !/^outside[\s-]?boundaries$/i.test(listing.boundaryCity.trim())
+          ? listing.boundaryCity
+          : listing.city,
       neighborhood: listing.boundaryNeighborhood,
       subdivision,
     },
