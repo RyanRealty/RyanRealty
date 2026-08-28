@@ -211,12 +211,8 @@ export function housemeTitle(read: ListingPricingReadRow | null, rows: HouseMeRo
 }
 
 export function housemeSourceLine(rows: HouseMeRow[]): string {
-  const sources = new Set(rows.map((r) => r.source))
-  const parts: string[] = []
-  if (sources.has('listing_pricing_reads')) parts.push('Stamp from listing_pricing_reads')
-  if (sources.has('listing') || sources.has('listing+pulse')) parts.push('Listing fields from Spark')
-  if (sources.has('listing+pulse')) parts.push('Place median from the live pulse')
-  return parts.length > 0 ? `${parts.join('. ')}.` : PUBLIC_READ_DISCLAIMER
+  void rows
+  return PUBLIC_READ_DISCLAIMER
 }
 
 type Props = HouseMeReportFacts & {
@@ -288,7 +284,7 @@ export function HouseMeReport({
           />
         )}
         <Body size="small" tone="muted">
-          {source} {PUBLIC_READ_DISCLAIMER} See our <a href="/terms">terms</a>.
+          {source} See our <a href="/terms">terms</a>.
         </Body>
       </div>
     </section>

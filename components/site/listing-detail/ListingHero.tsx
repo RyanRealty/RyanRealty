@@ -255,17 +255,8 @@ export function ListingHero({
     // MAP chip + photo strip while either is still on screen (design-audit,
     // mobile 390px — the coach otherwise lands over both on a fresh page load).
     <div id="listing-hero-visual" className={cn('flex flex-col', className)}>
-      {/* ── FULL-BLEED HERO (62–72vh) ─────────────────────────────── */}
-      <div
-        className="listing-hero-band"
-        style={{
-          position: 'relative',
-          width: '100%',
-          minHeight: 'clamp(360px, 66vh, 780px)',
-          background: 'var(--v3-navy)',
-          overflow: 'hidden',
-        }}
-      >
+      {/* ── ONE 16:9 HERO (no stacked bands, no side bleed) ───────── */}
+      <div className="listing-hero-band">
         {/* Media layer — video or photo, full-bleed object-cover */}
         {!mapOpen && showVideo && heroVideo ? (
           <VideoLayer

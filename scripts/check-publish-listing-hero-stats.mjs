@@ -55,6 +55,14 @@ checks.push({
   ok: /acres=\{listing\.lotSizeAcres\}/.test(page),
 })
 
+const market = src('components/site/listing-detail/NeighborhoodMarketContext.tsx')
+checks.push({
+  label: 'listing market line prints exact list price, not thousand-round',
+  ok:
+    /<Price value=\{thisListPrice\} exact/.test(market) &&
+    !/<Price value=\{thisListPrice\} \/>/.test(market),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)

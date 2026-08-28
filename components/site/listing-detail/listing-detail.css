@@ -195,6 +195,15 @@
   width: 100%;
 }
 
+.listing-hero-band {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+  background: var(--v3-navy);
+  overflow: hidden;
+}
+
 .listing-hero-save {
   position: absolute;
   top: clamp(12px, 2vw, 20px);
@@ -243,7 +252,7 @@
 .listing-hero-count {
   position: absolute;
   right: clamp(18px, 3.5vw, 56px);
-  bottom: clamp(108px, 16vw, 168px);
+  bottom: clamp(72px, 12vw, 112px);
   z-index: 5;
   padding: 6px 10px;
   background: var(--v3-cream);
@@ -477,8 +486,8 @@
 
 /* ===== Live market context (.mkt) — the navy market surface. Ported from
    kb.css verbatim (values unchanged) when the page dropped kb-root: the
-   NeighborhoodMarketContext section and PublicProductTypes rows render these
-   classes and previously painted only under .kb-root. ===== */
+   NeighborhoodMarketContext section renders these classes and previously
+   painted only under .kb-root. ===== */
 .listing-detail .mkt {
   background: var(--navy);
   color: var(--cream);
