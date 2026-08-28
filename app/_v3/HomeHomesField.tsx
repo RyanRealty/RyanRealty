@@ -7,7 +7,7 @@
  */
 import { useMemo, useState } from 'react'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { V3Field } from '@/components/site/v3'
+import { V3Field, type V3FieldMapSlot } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
 import { filterHomeFieldByCity, type HomeFieldItem } from './home-field-items'
 import './home-homes-field.css'
@@ -16,16 +16,20 @@ export function HomeHomesField({
   fieldItems,
   towns,
   count,
+  mapSlot,
+  mapNote,
   emptyMessage,
 }: {
   fieldItems: HomeFieldItem[]
-  towns: readonly { label: string; city: string }[]
+  towns: readonly { label: string; href: string }[]
   count?: {
     value: string
     label: string
     source: string
     updatedAt: string | null
   }
+  mapSlot?: V3FieldMapSlot
+  mapNote?: string
   emptyMessage: string
 }) {
   const [town, setTown] = useState<string | null>(null)
@@ -55,11 +59,11 @@ export function HomeHomesField({
             </button>
             {towns.map((item) => (
               <button
-                key={item.city}
+                key={item.href}
                 type="button"
-                className={cn('home-homes-field__chip', town === item.city && 'is-active')}
-                aria-pressed={town === item.city}
-                onClick={() => setTown(item.city)}
+                className={cn('home-homes-field__chip', town === item.label && 'is-active')}
+                aria-pressed={town === item.label}
+                onClick={() => setTown(item.label)}
               >
                 {item.label}
               </button>
@@ -79,8 +83,9 @@ export function HomeHomesField({
               placeName="Central Oregon"
               posterSrc={visible[0]?.photoSrc}
             />
-          ) : undefined
+          ) : mapSlot
         }
+        mapNote={mapNote}
         count={
           count
             ? { value: count.value, label: count.label, source: count.source, updatedAt: count.updatedAt }

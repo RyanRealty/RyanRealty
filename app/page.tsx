@@ -212,7 +212,7 @@ export default async function Home() {
 
         <HomeHomesField
           fieldItems={fieldItems}
-          towns={townItems.map((t) => ({ label: t.name, city: t.name }))}
+          towns={townItems.map((t) => ({ label: t.name, href: t.href }))}
           count={
             hud.active != null
               ? {

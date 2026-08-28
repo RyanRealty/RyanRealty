@@ -46,8 +46,8 @@ describe('homepage towns stack photos on a phone', () => {
 describe('filterHomeFieldByCity', () => {
   it('returns the full set when no town is selected', () => {
     const items = [
-      { id: '1', href: '/a', priceLabel: '$1', title: 'A', city: 'Bend' },
-      { id: '2', href: '/b', priceLabel: '$2', title: 'B', city: 'Redmond' },
+      { id: '1', href: '/cities/bend', priceLabel: '$1', title: 'A', city: 'Bend' },
+      { id: '2', href: '/search', priceLabel: '$2', title: 'B', city: 'Redmond' },
     ]
     expect(filterHomeFieldByCity(items, null)).toHaveLength(2)
   })
