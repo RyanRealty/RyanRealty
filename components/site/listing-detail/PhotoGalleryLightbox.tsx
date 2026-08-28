@@ -150,7 +150,7 @@ export function PhotoGalleryLightbox({
               variant="ghost"
               size="icon"
               onClick={goPrev}
-              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 text-white/90 hover:bg-white/15 hover:text-white sm:left-6 text-3xl"
+              className="absolute left-2 top-1/2 z-10 size-11 min-h-11 min-w-11 -translate-y-1/2 rounded-full bg-white/10 text-white/90 hover:bg-white/15 hover:text-white sm:left-6 text-3xl"
               aria-label="Previous photo"
             >
               {'‹'}
@@ -174,7 +174,7 @@ export function PhotoGalleryLightbox({
               variant="ghost"
               size="icon"
               onClick={goNext}
-              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 text-white/90 hover:bg-white/15 hover:text-white sm:right-6 text-3xl"
+              className="absolute right-2 top-1/2 z-10 size-11 min-h-11 min-w-11 -translate-y-1/2 rounded-full bg-white/10 text-white/90 hover:bg-white/15 hover:text-white sm:right-6 text-3xl"
               aria-label="Next photo"
             >
               {'›'}

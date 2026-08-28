@@ -15,8 +15,6 @@ import {
 } from '@/lib/listing/publish-listing-hero-stats'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishListingHeroUnmute, publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
-import { redirectToLoginForSave } from '@/lib/pending-save'
-import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
 
@@ -74,9 +72,6 @@ type Props = {
   /** Listing coordinates — enables the bottom-left map thumb + expand toggle. */
   lat?: number | null
   lng?: number | null
-  listingKey?: string
-  onSave?: (listingKey: string) => Promise<{ saved: boolean; needsAuth?: boolean }>
-  initialSaved?: boolean
   className?: string
 }
 
@@ -128,9 +123,6 @@ export function ListingHero({
   listNumber,
   lat = null,
   lng = null,
-  listingKey,
-  onSave,
-  initialSaved = false,
   className,
 }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
@@ -139,17 +131,8 @@ export function ListingHero({
   const [mapOpen, setMapOpen] = useState(false)
   const [photoIndex, setPhotoIndex] = useState(0)
   const [preferPhoto, setPreferPhoto] = useState(false)
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>(
-    initialSaved ? 'saved' : 'idle',
-  )
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
-
-  useResumePendingSave({
-    listingKey: listingKey ?? '',
-    alreadySaved: saveState === 'saved',
-    onSaved: () => setSaveState('saved'),
-  })
 
   const hasCoords =
     lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
@@ -228,21 +211,6 @@ export function ListingHero({
     showPhoto(photoIndex + delta)
   }
 
-  async function handleSave() {
-    if (onSave == null || listingKey == null || saveState === 'saving') return
-    setSaveState('saving')
-    try {
-      const res = await onSave(listingKey)
-      if (res.needsAuth) {
-        redirectToLoginForSave(listingKey) // hydration-safe: click handler only
-        setSaveState('idle')
-        return
-      }
-      setSaveState(res.saved ? 'saved' : 'idle')
-    } catch {
-      setSaveState('idle')
-    }
-  }
   const shareKind = publishListingShareKind({
     propertySubType,
     subdivisionName,
@@ -425,19 +393,6 @@ export function ListingHero({
             ) : null}
           </div>
         </div>
-        ) : null}
-
-        {!mapOpen && onSave && listingKey ? (
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saveState === 'saving'}
-            aria-pressed={saveState === 'saved'}
-            aria-label={saveState === 'saved' ? `Remove ${addressLine || 'this home'} from your saved homes` : `Save ${addressLine || 'this home'} to your saved homes`}
-            className="listing-hero-save"
-          >
-            <HeartIcon filled={saveState === 'saved'} />
-          </button>
         ) : null}
 
         {!mapOpen && total > 1 ? (
@@ -864,15 +819,6 @@ function PauseIcon() {
     </svg>
   )
 }
-
-function HeartIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg width={20} height={20} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
-    </svg>
-  )
-}
-
 function ChevronIcon({ dir }: { dir: 'prev' | 'next' }) {
   const d = dir === 'prev' ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'
   return (

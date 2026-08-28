@@ -455,9 +455,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
       city={listing.city}
       listNumber={listing.listNumber}
       lat={listing.lat} lng={listing.lng}
-      listingKey={listing.listingKey}
-      onSave={saveListingFromStrip}
-      initialSaved={initialSaved}
     />
   )
 
