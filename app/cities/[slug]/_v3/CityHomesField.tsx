@@ -61,7 +61,6 @@ export function CityMap({
       </V3Heading>
       <V3Field
         id={id}
-        className="city-map-field"
         ariaLabel={`Map of homes for sale in ${cityName}`}
         items={fieldItems}
         mapSlot={<PlaceFieldMap pins={pins} placeName={cityName} posterSrc={posterSrc} />}

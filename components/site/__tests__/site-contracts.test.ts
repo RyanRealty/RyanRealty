@@ -279,7 +279,7 @@ describe('design directive contracts', () => {
     // defect this contract exists to catch.
     expect(src).toMatch(/buildArticlePosts\(blogPosts\)/)
     expect(src).toMatch(/articleRows\(articlePosts\)/)
-    expect(src).toMatch(/heading=\{v3Text\(`\$\{cityName\} guides`\)\}/)
+    expect(src).toMatch(/heading=\{v3Text\(`Read about \$\{cityName\}`\)\}/)
   })
 
   it('D84 — city page has a separate "Explore other cities" section', () => {
@@ -362,7 +362,7 @@ describe('design directive contracts', () => {
     // `heading` as the branded V3Text, so `heading="Latest market activity"` is a
     // compile error on the v3 register and the only spelling that exists is the
     // v3Text() constructor (P9, 2026-08-12). The section name is unchanged.
-    expect(src).toMatch(/heading=\{v3Text\('Latest market activity'\)\}/)
+    expect(src).toMatch(/heading=\{v3Text\('Just listed, pending, sold'\)\}/)
     // The row shaping moved into the shared place-section module, so all three
     // place pages (city / neighborhood / community) inherit the thumbnail.
     const shared = readSrc('lib/kb/place-sections.ts')

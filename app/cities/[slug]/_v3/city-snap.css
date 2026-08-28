@@ -1,0 +1,86 @@
+/* City photo rail. Tokens only. Arrows are the control. Track has no scrollbar. */
+.city-snap {
+  position: relative;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+* + .city-snap {
+  border-top: var(--v3-rule-section);
+}
+
+.city-snap__track {
+  display: flex;
+  gap: var(--v3-space-md);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding-block: var(--v3-space-xs);
+}
+
+.city-snap__card {
+  flex: 0 0 min(78vw, 20rem);
+  scroll-snap-align: start;
+  display: block;
+  position: relative;
+  color: inherit;
+  text-decoration: none;
+  min-height: var(--v3-tap);
+}
+
+.city-snap__card--lead {
+  flex-basis: min(88vw, 32rem);
+}
+
+.city-snap--sold .city-snap__card {
+  flex-basis: min(70vw, 16rem);
+}
+
+.city-snap__card img {
+  display: block;
+  width: 100%;
+  height: 14rem;
+  object-fit: cover;
+}
+
+.city-snap__card--lead img {
+  height: 18rem;
+}
+
+.city-snap--sold .city-snap__card img {
+  height: 11rem;
+}
+
+.city-snap__cap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+  padding: var(--v3-space-sm) 0;
+}
+
+.city-snap__price {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  color: var(--v3-ink);
+}
+
+.city-snap__meta,
+.city-snap__title {
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+.city-snap__arrow {
+  position: absolute;
+  top: 40%;
+  z-index: 2;
+}
+
+.city-snap__arrow--prev {
+  left: var(--v3-gutter);
+}
+
+.city-snap__arrow--next {
+  right: var(--v3-gutter);
+}

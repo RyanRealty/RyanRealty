@@ -1,9 +1,2 @@
-/* Map section: one spatial frame. The list of the same homes already sat in
-   the photo Field above. Tokens only. */
-.city-map-field .v3-field__frame {
-  grid-template-columns: 1fr;
-}
-
-.city-map-field .v3-field__list {
-  display: none;
-}
+/* Map + list stay the Field's two columns. This file exists so the map
+   section can opt into Field layout without extra chrome. */

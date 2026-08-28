@@ -35,9 +35,10 @@ describe('city restyle contract', () => {
     expect(PAGE).toMatch(/headline=\{v3Text\('Market'\)\}/)
     expect(PAGE).toMatch(/<CityMap/)
     expect(PAGE).toMatch(/Also on the list/)
-    expect(PAGE.indexOf('<CityHomesField')).toBeLessThan(PAGE.indexOf('id="sold"'))
-    expect(PAGE.indexOf('id="sold"')).toBeLessThan(PAGE.indexOf('id="map"'))
-    expect(PAGE.indexOf('id="map"')).toBeLessThan(PAGE.indexOf('id="market"'))
+    expect(PAGE).toMatch(/<CitySnapRail/)
+    expect(PAGE.indexOf('id="homes"')).toBeLessThan(PAGE.indexOf('id="map"'))
+    expect(PAGE.indexOf('id="map"')).toBeLessThan(PAGE.indexOf('id="sold"'))
+    expect(PAGE.indexOf('id="sold"')).toBeLessThan(PAGE.indexOf('id="market"'))
   })
 })
 

@@ -115,7 +115,8 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
 import { CityHeroSearch } from './_v3/CityHeroSearch.client'
-import { CityHomesField, CityMap, CityPhotoField } from './_v3/CityHomesField'
+import { CityHomesField, CityMap } from './_v3/CityHomesField'
+import { CitySnapRail } from './_v3/CitySnapRail.client'
 import { cityFieldItems, nearbyFieldItems, soldFieldItems } from './_v3/city-field-items'
 import { cityGroundItems, citySchoolItems } from './_v3/city-place-face'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
@@ -126,7 +127,6 @@ import {
   cityAboutItems,
   cityActivityTrace,
   cityBuyerFigures,
-  cityExploreItems,
   cityFieldCaption,
   cityFieldTrace,
   cityMarketTrace,
@@ -485,15 +485,6 @@ export default async function CityDetailPage({ params }: Props) {
     ...articleRows(articlePosts),
   ]
 
-  const exploreItems = cityExploreItems(
-    cityName,
-    slug,
-    // valuationHref, never a bare path: the closing valuation edge carries
-    // ?from=/cities/<slug>, which is the seller lead's stored source_url.
-    { browse: homesForSalePath(cityName), valuation: valuationHref(`/cities/${slug}`) },
-    Boolean(quickFacts?.population),
-  )
-
   const citySchemas = buildCitySchemas({
     cityName,
     slug,
@@ -516,7 +507,7 @@ export default async function CityDetailPage({ params }: Props) {
 
         <V3Breadcrumb
           tone="on-media"
-          trail={[{ label: 'Home', href: '/' }, { label: cityName }]}
+          trail={[{ label: 'Oregon', href: '/cities' }, { label: cityName }]}
         />
         <V3Stage
           id="hero"
@@ -529,33 +520,44 @@ export default async function CityDetailPage({ params }: Props) {
           <CityHeroSearch cityName={cityName} />
         </V3Stage>
 
-        <CityHomesField
-          cityName={cityName}
-          headline={v3Text(`Homes in ${cityName}`)}
-          fieldItems={fieldItems}
-          tilesLength={tiles.length}
-          caption={fieldCaption}
-          source={cityFieldTrace(cityName)}
-        />
-
-        <CityPhotoField
-          id="sold"
-          cityName={cityName}
-          headline={v3Text('Recently sold')}
-          ariaLabel={`Recently sold homes in ${cityName}`}
-          fieldItems={soldItems}
-          source={SOLD_TRACE}
-        />
+        {fieldItems.some((item) => item.photoSrc) ? (
+          <CitySnapRail
+            id="homes"
+            headline={v3Text(`Homes in ${cityName}`)}
+            ariaLabel={`Homes for sale in ${cityName}`}
+            items={fieldItems}
+            source={cityFieldTrace(cityName)}
+            variant="homes"
+          />
+        ) : (
+          <CityHomesField
+            cityName={cityName}
+            headline={v3Text(`Homes in ${cityName}`)}
+            fieldItems={fieldItems}
+            tilesLength={tiles.length}
+            caption={fieldCaption}
+            source={cityFieldTrace(cityName)}
+          />
+        )}
 
         <CityMap id="map" cityName={cityName} fieldItems={fieldItems} source={MAP_TRACE} />
 
-        <CityPhotoField
+        <CitySnapRail
+          id="sold"
+          headline={v3Text('Recently sold')}
+          ariaLabel={`Recently sold homes in ${cityName}`}
+          items={soldItems}
+          source={SOLD_TRACE}
+          variant="sold"
+        />
+
+        <CitySnapRail
           id="communities"
-          cityName={cityName}
           headline={v3Text('Also on the list')}
           ariaLabel={`Places in ${cityName}`}
-          fieldItems={nearbyItems}
+          items={nearbyItems}
           source={PLACE_COUNT_TRACE}
+          variant="places"
         />
 
         {groundItems.length > 0 ? (
@@ -566,7 +568,7 @@ export default async function CityDetailPage({ params }: Props) {
           <V3Quiet
             id="about"
             eyebrow={`${cityName}, Oregon`}
-            heading={`${cityName}, in plain words`}
+            heading={cityName}
             items={aboutItems}
           />
         ) : null}
@@ -636,7 +638,7 @@ export default async function CityDetailPage({ params }: Props) {
           <V3Ledger
             id="activity"
             eyebrow={v3Text(`Live · ${cityName}`)}
-            heading={v3Text('Latest market activity')}
+            heading={v3Text('Just listed, pending, sold')}
             rows={[firstAct, ...restAct]}
             source={v3Text(cityActivityTrace(cityName))}
             action={{ label: v3Text('Full market pulse'), href: '/housing-market' }}
@@ -647,7 +649,7 @@ export default async function CityDetailPage({ params }: Props) {
           <V3Ledger
             id="open-houses"
             eyebrow={v3Text(`This week · ${cityName}`)}
-            heading={v3Text('Open houses you can walk through')}
+            heading={v3Text('Open houses this week')}
             rows={[firstOh, ...restOh]}
             source={v3Text(OPEN_HOUSE_TRACE)}
             action={{ label: v3Text(`Every open house in ${cityName}`), href: `/open-houses/${slug}` }}
@@ -668,13 +670,22 @@ export default async function CityDetailPage({ params }: Props) {
           <V3Ledger
             id="guides"
             eyebrow={v3Text('Guides and news')}
-            heading={v3Text(`${cityName} guides`)}
+            heading={v3Text(`Read about ${cityName}`)}
             rows={[firstGuide, ...restGuide]}
             action={{ label: v3Text('Every guide'), href: '/blog' }}
           />
         ) : null}
 
-        <V3Quiet id="explore" eyebrow={`${cityName} · Explore`} heading="Where to next" items={exploreItems} />
+        <V3Quiet
+          id="explore"
+          heading="Selling here"
+          items={[
+            { label: 'Value my home', href: valuationHref(`/cities/${slug}`) },
+            ...(slug === 'bend'
+              ? [{ label: 'Luxury homes in Bend', href: '/luxury-homes-bend' }]
+              : []),
+          ]}
+        />
 
         {/* D84: Explore other cities - its own section, not a within-city list. */}
         {firstOther ? (
