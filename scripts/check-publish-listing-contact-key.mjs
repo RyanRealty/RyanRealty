@@ -26,21 +26,24 @@ checks.push({
 })
 
 const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
+const act = src('components/site/listing-detail/ListingActSheet.client.tsx')
 checks.push({
-  label: 'PriceCtaStrip tour/ask hrefs use publishListingContactKey',
+  label: 'listing tour/ask stay on #listing-act and send the published contact key',
   ok:
-    /from ['"]@\/lib\/listing\/publish-listing-contact-key['"]/.test(strip) &&
-    /publishListingContactKey\(/.test(strip) &&
-    /listingContactHref\(/.test(strip),
+    strip.includes('#listing-act') &&
+    !strip.includes('listingContactHref') &&
+    act.includes('id="listing-act"') &&
+    act.includes('listingKey'),
 })
 
 const page = src('app/listing/[listingKey]/page.tsx')
 checks.push({
-  label: 'listing page broker/footer share publishListingContactKey',
+  label: 'listing page broker and act sheet share publishListingContactKey',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-contact-key['"]/.test(page) &&
     /publishListingContactKey\(/.test(page) &&
-    /listingKey=\{contactKey\}/.test(page),
+    /<ListingActSheet listingKey=\{contactKey\}/.test(page) &&
+    /<ListingBrokerCTA[\s\S]*listingKey=\{contactKey\}/.test(page),
 })
 
 const contact = src('app/contact/page.tsx')
