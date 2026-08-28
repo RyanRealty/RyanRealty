@@ -71,11 +71,10 @@
   --v3-edge: color-mix(in srgb, var(--v3-navy) 12%, transparent);
   --v3-wash: color-mix(in srgb, var(--v3-navy) 6%, transparent);
   --v3-pressed: color-mix(in srgb, var(--v3-navy) 85%, transparent);
-  /* Ground: the settled surface a footer or an empty map frame sits on.
-     DERIVED, not a literal (Matt 2026-08-27: the old #eee9e0 warm literal read
-     brown on the full-width footer — a third color has no seat here). Navy
-     over cream keeps it in the two-color family and moving with a template. */
-  --v3-ground: color-mix(in srgb, var(--v3-navy) 5%, var(--v3-cream));
+  /* There is NO ground token (Matt 2026-08-27: "just use my brand colors").
+     The footer sits on cream under the navy section rule; an empty frame or a
+     pressed face uses --v3-wash, which is navy at alpha — the brand color,
+     not a third tone. #eee9e0 and every successor are gone. */
 
   /* THE LOOK: rule weight IS the hierarchy (Broadside). A structural RULE is
      drawn with one of these three; --v3-edge stays the border of a control or

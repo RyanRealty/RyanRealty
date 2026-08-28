@@ -109,7 +109,7 @@
   aspect-ratio: 4 / 3;
   border: 1px solid var(--v3-edge);
   border-radius: var(--v3-radius-card);
-  background: var(--v3-ground);
+  background: var(--v3-wash);
   overflow: hidden;
 }
 

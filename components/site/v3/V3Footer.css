@@ -15,7 +15,9 @@
    =========================================================================== */
 
 .v3.v3-footer {
-  background: var(--v3-ground);
+  /* Brand colors only (Matt 2026-08-27): the footer is cream like the page;
+     the navy section rule is what closes it, not a tinted surface. */
+  background: var(--v3-cream);
   /* THE LOOK (Broadside): the footer closes the page on the section rule. */
   border-top: var(--v3-rule-section);
 }

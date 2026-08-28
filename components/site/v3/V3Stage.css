@@ -210,7 +210,7 @@
 /* Hover darkens the face rather than the ink, so the label holds 12.5:1 and the
    control never restates itself as a different button. */
 .v3.v3-stage .v3-btn--on-media.v3-btn--primary:hover:not(:disabled) {
-  background: var(--v3-ground);
+  background: var(--v3-wash);
 }
 
 /* The focus ring is warm stone at a 2px offset (tokens.css), which places the
