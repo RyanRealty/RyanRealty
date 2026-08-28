@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
 import type { Broker } from '@/lib/data/types/broker'
 
 /**
@@ -9,8 +8,8 @@ import type { Broker } from '@/lib/data/types/broker'
  * replacing the retiring CRM floating widget. Fixed to the bottom of the
  * viewport, hidden on lg+ (the desktop sticky sidebar card carries it there).
  *
- * Slides up once the visitor scrolls past the hero so it never covers the first
- * paint, and routes the same as the desktop card: tel: / sms: the broker's
+ * Stays on the fold from first paint: Call / Text / Tour, not the alerts
+ * coach. Routes the same as the desktop card: tel: / sms: the broker's
  * recorded Twilio line, and "Tour" to the pre-tagged contact form.
  *
  * Lenis runs in native mode here (html.lenis, no transform wrapper — see
@@ -25,22 +24,13 @@ export default function ListingMobileContactBar({
   broker: Broker
   listingKey: string
 }) {
-  const [shown, setShown] = useState(false)
-
-  useEffect(() => {
-    const onScroll = () => setShown(window.scrollY > 360)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
   const tel = phone ? phone.replace(/[^\d]/g, '') : null
   const firstName = broker.fullName.split(/\s+/)[0]
   const tourHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
 
   return (
-    <div className="listing-mobile-cta" data-listing-broker={broker.slug} data-shown={shown ? 'true' : 'false'} aria-hidden={!shown}>
+    <div className="listing-mobile-cta" data-listing-broker={broker.slug} data-shown="true">
       <div className="listing-mobile-cta-inner">
         <Image
           src={broker.headshotPng}
