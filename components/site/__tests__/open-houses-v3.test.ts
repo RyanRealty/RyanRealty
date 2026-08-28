@@ -4,6 +4,9 @@ import type { ListingTile } from '@/lib/data/types/listing'
 import { assembleOpenHouses, medianPositive } from '@/app/open-houses/_v3/oh-listings'
 import { formatClock, openHouseWhen } from '@/app/open-houses/_v3/oh-when'
 import { openHouseFieldItems } from '@/app/open-houses/_v3/oh-field-items'
+import { addIsoDays, thisWeekendIso } from '@/app/open-houses/_v3/oh-constants'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { OpenHouseListing } from '@/app/open-houses/_v3/oh-listings'
 
 function row(over: Partial<UpcomingOpenHouseRow> = {}): UpcomingOpenHouseRow {
@@ -172,6 +175,11 @@ describe('openHouseFieldItems', () => {
     expect(JSON.stringify(items)).not.toContain('\u2013')
   })
 
+  it('puts day and time on the Field door badge', () => {
+    const items = openHouseFieldItems([house()])
+    expect(items[0].badge).toContain('2pm-4pm')
+  })
+
   it('passes a live listing photograph onto the Field row', () => {
     const items = openHouseFieldItems([house({ photoUrl: '/hero.jpg' })])
     expect(items).toHaveLength(1)
@@ -182,5 +190,36 @@ describe('openHouseFieldItems', () => {
     const items = openHouseFieldItems([house({ photoUrl: '   ' })])
     expect(items).toHaveLength(1)
     expect(items[0].photoSrc).toBeUndefined()
+  })
+})
+
+describe('thisWeekendIso', () => {
+  it('names Saturday and Sunday from a Wednesday', () => {
+    expect(thisWeekendIso('2026-08-26')).toEqual({
+      dateFrom: '2026-08-29',
+      dateTo: '2026-08-30',
+    })
+  })
+
+  it('keeps a Saturday as the start of this weekend', () => {
+    expect(thisWeekendIso('2026-08-29')).toEqual({
+      dateFrom: '2026-08-29',
+      dateTo: addIsoDays('2026-08-29', 1),
+    })
+  })
+})
+
+describe('open-houses page contract', () => {
+  it('puts the H1 on the Field above the photographs and keeps a buyer ask', () => {
+    const src = readFileSync(join(process.cwd(), 'app/open-houses/page.tsx'), 'utf8')
+    const board = readFileSync(join(process.cwd(), 'app/open-houses/_v3/OpenHousesBoard.tsx'), 'utf8')
+    expect(src.indexOf('<OpenHousesBoard')).toBeLessThan(src.indexOf('<V3Instrument'))
+    expect(src).toMatch(/See homes for sale/)
+    expect(src).not.toMatch(/Value my home/)
+    expect(src).toMatch(/heading="Open houses in Central Oregon"/)
+    expect(board).toMatch(/v3-field-place-name/)
+    expect(board).toMatch(/<V3Field/)
+    expect(board).not.toMatch(/oh-board/)
+    expect(board).not.toMatch(/open-houses-board\.css/)
   })
 })

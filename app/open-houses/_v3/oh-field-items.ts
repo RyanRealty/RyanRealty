@@ -41,7 +41,7 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHo
       href: oh.href,
       priceLabel,
       title,
-      ...(when ? { when } : {}),
+      ...(when ? { when, badge: when } : {}),
       ...(specs ? { meta: specs } : {}),
       ...(photoSrc ? { photoSrc } : {}),
       lat: oh.lat,

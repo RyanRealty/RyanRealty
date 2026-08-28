@@ -44,7 +44,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
+import { V3_ROOT_CLASS, V3Button, V3SourceLine } from './atoms'
 import './tokens.css'
 import './V3Field.css'
 
@@ -77,6 +77,11 @@ export type V3FieldItem = {
    * into the listing) instead of the relative plot.
    */
   photoSrc?: string
+  /**
+   * Preformatted day + hours on the door (open-house row). Absent means
+   * the row has no event time to name.
+   */
+  badge?: string
 }
 
 /**
@@ -138,6 +143,17 @@ export type V3FieldProps = {
   footNote?: string
   /** Shown when `items` is empty. Say the reason, not just the absence. */
   emptyMessage?: string
+  /**
+   * How many photographed doors the mosaic keeps. Default is the first-viewport
+   * set (one lead plus a two-column pair). Callers that paginate pass the page
+   * size so the count on screen matches the photographs.
+   */
+  photoMax?: number
+  /**
+   * Ghost control under the photographs when the caller is paging the set.
+   * Lives on Field so a page does not invent a second skin to tell the truth.
+   */
+  more?: { label: string; onClick: () => void }
   /** Controlled binding. Pass with `onActiveChange` when the map owns the state. */
   activeId?: string | null
   /** Fires on every change, controlled or not. */
@@ -276,6 +292,8 @@ export function V3Field({
   mapNote,
   footNote,
   emptyMessage = 'No listings in this view.',
+  photoMax = PHOTO_SURFACE_MAX,
+  more,
   activeId,
   onActiveChange,
   id,
@@ -308,7 +326,10 @@ export function V3Field({
   const photoItems = useMemo(() => items.filter(hasListingPhoto), [items])
   const usePhotoSurface =
     hasSlot === false && photoItems.length >= PHOTO_SURFACE_MIN
-  const mosaic = usePhotoSurface ? photoItems.slice(0, PHOTO_SURFACE_MAX) : []
+  const mosaicLimit = Number.isFinite(photoMax) && photoMax > 0 ? photoMax : PHOTO_SURFACE_MAX
+  const mosaic = usePhotoSurface ? photoItems.slice(0, mosaicLimit) : []
+  const mosaicIds = useMemo(() => new Set(mosaic.map((item) => item.id)), [mosaic])
+  const remainder = usePhotoSurface ? items.filter((item) => !mosaicIds.has(item.id)) : []
 
   const { pins, missing } = useMemo(
     () =>
@@ -373,9 +394,9 @@ export function V3Field({
                         active === item.id && 'is-active',
                       )}
                       aria-label={
-                        item.meta
-                          ? `${item.priceLabel}, ${item.meta}, ${item.title}`
-                          : `${item.priceLabel}, ${item.title}`
+                        [item.badge, item.priceLabel, item.meta, item.title]
+                          .filter(Boolean)
+                          .join(', ')
                       }
                       onMouseEnter={() => setActive(item.id)}
                       onFocus={() => setActive(item.id)}
@@ -389,6 +410,9 @@ export function V3Field({
                         loading={index < 3 ? 'eager' : 'lazy'}
                         fetchPriority={index < 3 ? 'high' : 'auto'}
                       />
+                      {item.badge ? (
+                        <span className="v3-field__badge">{item.badge}</span>
+                      ) : null}
                       <span
                         className={cn(
                           index === 0 ? 'v3-field__lead-cap' : 'v3-field__photo-cap',
@@ -439,7 +463,51 @@ export function V3Field({
           </div>
 
           {usePhotoSurface ? (
-            footNote ? <p className="v3-field__note">{footNote}</p> : null
+            <>
+              {footNote ? <p className="v3-field__note">{footNote}</p> : null}
+              {remainder.length > 0 ? (
+                <div className="v3-field__col">
+                  <ul className="v3-field__list" role="list">
+                    {remainder.map((item) => (
+                      <li key={item.id} className="v3-field__item">
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            'v3-field__row',
+                            hasListingPhoto(item) && 'v3-field__row--has-photo',
+                            active === item.id && 'is-active',
+                          )}
+                          onMouseEnter={() => setActive(item.id)}
+                          onFocus={() => setActive(item.id)}
+                          onBlur={() => setActive(null)}
+                        >
+                          {hasListingPhoto(item) ? (
+                            <img
+                              className="v3-field__thumb"
+                              src={item.photoSrc}
+                              alt=""
+                              width={120}
+                              height={120}
+                              loading="lazy"
+                            />
+                          ) : null}
+                          <span className="v3-field__copy">
+                            {item.badge ? (
+                              <span className="v3-field__row-badge">{item.badge}</span>
+                            ) : null}
+                            <span className="v3-field__price">{item.priceLabel}</span>
+                            <span className="v3-field__title">{item.title}</span>
+                            {item.meta ? (
+                              <span className="v3-field__meta">{item.meta}</span>
+                            ) : null}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </>
           ) : (
             <div className="v3-field__col">
               <ul className="v3-field__list" role="list">
@@ -467,6 +535,9 @@ export function V3Field({
                         />
                       ) : null}
                       <span className="v3-field__copy">
+                        {item.badge ? (
+                          <span className="v3-field__row-badge">{item.badge}</span>
+                        ) : null}
                         <span className="v3-field__price">{item.priceLabel}</span>
                         <span className="v3-field__title">{item.title}</span>
                         {item.meta ? (
@@ -484,6 +555,12 @@ export function V3Field({
             </div>
           )}
         </div>
+
+        {more ? (
+          <V3Button variant="ghost" onClick={more.onClick}>
+            {more.label}
+          </V3Button>
+        ) : null}
 
         {count ? (
           <V3SourceLine

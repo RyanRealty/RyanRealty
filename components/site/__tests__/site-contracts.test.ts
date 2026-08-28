@@ -506,6 +506,7 @@ describe('design directive contracts', () => {
     const src = readSrc('components/site/v3/V3Field.tsx')
     expect(src).toMatch(/v3-field__photo-meta/)
     expect(src).toMatch(/item\.meta/)
+    expect(src).toMatch(/v3-field__badge/)
     expect(src).not.toMatch(/from\('listings'\)/)
   })
 
