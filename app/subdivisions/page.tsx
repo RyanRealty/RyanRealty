@@ -63,9 +63,9 @@ export const revalidate = 1800
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Central Oregon subdivisions and recorded plats',
+  title: 'Central Oregon subdivisions',
   description:
-    'Recorded plats across Central Oregon with live single-family inventory from the regional MLS.',
+    'Subdivisions across Central Oregon with live single-family inventory from the regional MLS.',
   path: '/subdivisions',
 })
 
@@ -78,7 +78,7 @@ const LEDGER_TRACE =
   'live MLS through Oregon Data Share, active single-family listings filed under each plat name (Active and Active Under Contract, Coming Soon excluded). The median is the list price of those same listings'
 
 const PULSE_TRACE =
-  'live MLS through Oregon Data Share, single-family active inventory on recorded plats inside the known communities'
+  'live MLS through Oregon Data Share, single-family active inventory on subdivisions inside the known communities'
 
 function fmtPrice(n: number | null | undefined): string | null {
   return formatIndexMedianUsd(n)
@@ -173,12 +173,12 @@ export default async function SubdivisionsPage() {
   if (totalActive != null && totalActive > 0) {
     figures.push({
       value: v3Text(formatCount(totalActive)),
-      label: v3Text('Homes for sale across these plats'),
+      label: v3Text('Homes for sale across these subdivisions'),
     })
   }
   figures.push({
     value: v3Text(formatCount(platCount)),
-    label: v3Text('Community plats in this index'),
+    label: v3Text('Community subdivisions in this index'),
   })
   const [leadFigure, ...restFigures] = figures
 
@@ -208,7 +208,7 @@ export default async function SubdivisionsPage() {
               '@type': 'CollectionPage',
               name: 'Central Oregon subdivisions',
               description:
-                'Recorded plats across Central Oregon, with live MLS inventory.',
+                'Subdivisions across Central Oregon, with live MLS inventory.',
               url: `${siteUrl}/subdivisions`,
               publisher: { '@type': 'Organization', name: 'Ryan Realty' },
               mainEntity: {
@@ -231,9 +231,9 @@ export default async function SubdivisionsPage() {
             id="subdivisions-pulse"
             level={1}
             eyebrow={v3Text('Live market')}
-            headline={v3Text('Recorded plats across Central Oregon.')}
+            headline={v3Text('Subdivisions across Central Oregon.')}
             note={v3Text(
-              'County plats with live single-family inventory. Each name opens the listings and sales history for that plat.',
+              'County subdivisions with live single-family inventory. Each name opens the listings and sales history for that place.',
             )}
             figures={[leadFigure, ...restFigures]}
             source={v3Text(PULSE_TRACE)}
@@ -244,28 +244,28 @@ export default async function SubdivisionsPage() {
         {inventoryOk && firstFigureRow ? (
           <V3Ledger
             id="featured-plats"
-            eyebrow={v3Text('Recorded plats')}
-            heading={v3Text('Plats inside the known communities')}
+            eyebrow={v3Text('Subdivisions')}
+            heading={v3Text('Subdivisions inside the known communities')}
             rows={[firstFigureRow, ...restFigureRows]}
             source={v3Text(LEDGER_TRACE)}
           />
         ) : firstPlainRow ? (
           <V3Ledger
             id="featured-plats"
-            eyebrow={v3Text('Recorded plats')}
-            heading={v3Text('Plats inside the known communities')}
+            eyebrow={v3Text('Subdivisions')}
+            heading={v3Text('Subdivisions inside the known communities')}
             note={v3Text(
-              'The live inventory read did not return on this refresh, so these rows name the plats without a count.',
+              'The live inventory read did not return on this refresh, so these rows name the subdivisions without a count.',
             )}
             rows={[firstPlainRow, ...restPlainRows]}
           />
         ) : (
           <V3Ledger
             id="featured-plats"
-            eyebrow={v3Text('Recorded plats')}
-            heading={v3Text('Plats inside the known communities')}
+            eyebrow={v3Text('Subdivisions')}
+            heading={v3Text('Subdivisions inside the known communities')}
             rows={[]}
-            emptyMessage={v3Text('The community registry returned no child plat on this refresh.')}
+            emptyMessage={v3Text('The community registry returned no child subdivision on this refresh.')}
           />
         )}
 
@@ -277,17 +277,17 @@ export default async function SubdivisionsPage() {
           className="mx-auto w-full max-w-5xl px-5 pb-16"
         >
           <V3Heading level={2} id="all-plats-heading">
-            Community plats, A to Z
+            Community subdivisions, A to Z
           </V3Heading>
           <V3Lede>
-            {formatCount(platCount)} recorded plats inside the known communities. Search by name
+            {formatCount(platCount)} subdivisions inside the known communities. Search by name
             or city.
           </V3Lede>
           <CommunityIndexBrowser
             items={azSource}
-            searchLabel="Search plats by name or city"
-            searchPlaceholder="Search by plat or city name"
-            emptyLabel="No plats match your search."
+            searchLabel="Search subdivisions by name or city"
+            searchPlaceholder="Search by subdivision or city name"
+            emptyLabel="No subdivisions match your search."
             countNoun={{ singular: 'plat', plural: 'plats' }}
           />
         </section>

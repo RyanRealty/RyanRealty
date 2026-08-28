@@ -148,11 +148,11 @@ export default async function SellPage() {
 
   const leftoverTrace =
     publicPaceItems(publicPace).length > 0
-      ? ' Leftover pace stats are 12-month Market Truth cells except pending and inventory age, which are point-in-time.'
+      ? ' Pace stats are 12-month closed-sale figures except pending and inventory age, which are point-in-time.'
       : ''
   const extraTrace =
     publicSegmentItems(publicSegments, 'bend').length > 0
-      ? ' Extra product types are Market Truth, sample-gated.'
+      ? ' Extra product types from the regional MLS.'
       : ''
   const bendTrace =
     bend != null
@@ -220,7 +220,7 @@ export default async function SellPage() {
       type: 'dataset',
       name: 'Bend housing market snapshot',
       description:
-        'Detached single-family homes whose MLS City is Bend. Active count, months of supply, and market verdict from Market Truth. Not the city-limits polygon.',
+        'Detached single-family homes whose MLS City is Bend. Active count, months of supply, and market verdict from the regional MLS. Not the city-limits polygon.',
       url: ROUTE_PATH,
       dateModified: bend.computedAt,
       spatialCoverageName: 'Bend, Oregon',

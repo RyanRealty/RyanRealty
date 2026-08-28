@@ -477,7 +477,7 @@ export function buildAnnualCharts(
       buildMonthlyMedianChart(
         lastCompleteMonths(complete, 12),
         leftoverUsed
-          ? 'Median close, Market Truth leftover, last 12 completed months'
+          ? 'Median close, last 12 completed months'
           : 'Median sale price, last 12 completed months',
       ),
       'trailing-median',

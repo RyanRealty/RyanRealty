@@ -444,9 +444,9 @@ const FEED = 'live MLS through Oregon Data Share'
  */
 export function cityMarketTrace(cityName: string, hasMos: boolean): string {
   return (
-    `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
+    `regional MLS through Oregon Data Share: ` +
     `detached single-family houses inside the ${cityName} city boundary. ` +
-    `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
+    `Every figure names its own window. A withheld figure is absent, not estimated.` +
     (hasMos ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
   )
 }
@@ -474,7 +474,7 @@ export function cityActivityTrace(cityName: string): string {
 export function marketAbsenceItems(cityName: string, hasRows: boolean): V3QuietItem[] {
   const tail = hasRows ? ' The homes above carry their own live list prices.' : ''
   const body =
-    `The Market Truth metric layer published no figure for ${cityName} on this refresh, ` +
+    `No market figure published for ${cityName} on this refresh, ` +
     `so this page is not printing a median, a supply figure, or a verdict.${tail}`
   return [{ kind: 'prose', term: 'No live market figures right now', body }]
 }
@@ -510,8 +510,8 @@ export function cityFieldCaption(input: {
 export function cityFieldTrace(cityName: string): string {
   return (
     `${FEED}, the newest active single-family homes ` +
-    `with a ${cityName} address, a list price, and a street. The map plots this same set; ` +
-    `the Instrument below carries the full inventory count under its own trace`
+    `with a ${cityName} address, a list price, and a street. The map plots this same set. ` +
+    `The market figures carry the full inventory count`
   )
 }
 

@@ -495,7 +495,7 @@ export default async function CitiesPage() {
             { label: 'Value my home', href: '/sell/valuation' },
             { label: 'Communities', href: '/communities' },
             { label: 'Neighborhoods', href: '/neighborhoods' },
-            { label: 'Recorded plats', href: '/subdivisions' },
+            { label: 'Subdivisions', href: '/subdivisions' },
             { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
           ]}
           note="Filter by price, beds, and location across every city on the list. Oregon Data Share is the regional MLS cooperative behind the live listing and market data on this page."

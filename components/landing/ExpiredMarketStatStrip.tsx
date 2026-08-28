@@ -85,7 +85,7 @@ export function ExpiredMarketStatStrip({
       </div>
       {updatedLabel ? (
         <p className="mt-3 text-xs text-muted-foreground/70">
-          Updated {updatedLabel} · leftover membership
+          Updated {updatedLabel}
         </p>
       ) : null}
     </aside>

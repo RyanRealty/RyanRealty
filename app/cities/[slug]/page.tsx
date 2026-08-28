@@ -108,7 +108,7 @@ import { homesForSalePath, slugify } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import { marketVerdict } from '@/lib/market/classify'
+import { marketVerdict, publicSupplyVerdictLine } from '@/lib/market/classify'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -372,7 +372,7 @@ export default async function CityDetailPage({ params }: Props) {
   // Question only when the verdict answers it; the answer is the note beneath.
   const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
   const marketHeadline = hasVerdict
-    ? `Is ${cityName} a buyer's or seller's market?`
+    ? publicSupplyVerdictLine(cityName, verdict.label)
     : `The ${cityName} market`
   const verdictSentence = hasVerdict
     ? `${cityName} has ${mosLabel} months of supply, which is a ${verdict.label}.`
@@ -383,7 +383,7 @@ export default async function CityDetailPage({ params }: Props) {
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),
-    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${cityName}`,
+    `Median close by month, single-family, ${cityName}`,
   )
 
   // The chart room: the tabbed core trends plus the approved town-comparison

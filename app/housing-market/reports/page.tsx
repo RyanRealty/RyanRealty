@@ -110,7 +110,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
   }
   const extraTrace =
     publicSegments.length > 0 || publicPaceItems(publicPace).length > 0
-      ? ' Extra product-type months of supply and 12-month pace are leftover membership, sample-gated.'
+      ? ' Extra product-type months of supply and 12-month pace use the same read. A missing figure is omitted.'
       : ''
   const [firstFigure, ...restFigures] = regionFigures
   const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
@@ -153,7 +153,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
             )}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(
-              `Leftover membership, Central Oregon single-family houses. A miss omits. ${MOS_METHODOLOGY_CLAUSE}${
+              `Central Oregon single-family houses. A missing figure is omitted. ${MOS_METHODOLOGY_CLAUSE}${
                 mosText ? ` This refresh: ${mosText} months of supply.` : ''
               }${extraTrace}`,
             )}

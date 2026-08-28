@@ -29,7 +29,7 @@ describe('publishPublicChartSource', () => {
         metric: 'medianClosePrice',
         leftover: true,
       }),
-    ).toBe('Market Truth leftover, Bend city, monthly median close')
+    ).toBe('Oregon Data Share, Bend city, monthly median close')
     expect(
       publishPublicChartSource({
         geoType: 'neighborhood',
@@ -37,7 +37,7 @@ describe('publishPublicChartSource', () => {
         metric: 'closedVolume',
         leftover: true,
       }),
-    ).toBe('Market Truth leftover, Sunriver, monthly closed sales')
+    ).toBe('Oregon Data Share, Sunriver, monthly closed sales')
     expect(
       publishPublicChartSource({
         geoType: 'city',
@@ -45,7 +45,7 @@ describe('publishPublicChartSource', () => {
         metric: 'medianClosePrice',
         leftover: true,
       }),
-    ).not.toMatch(/market_stats_cache|geo_slug=/)
+    ).not.toMatch(/market_stats_cache|geo_slug=|Market Truth leftover|leftover/)
   })
 })
 
@@ -86,7 +86,7 @@ describe('toPublicCoreChartSeries', () => {
     }
     const pub = toPublicCoreChartSeries(raw)
     expect(pub.series[0]!.leftover).toBe(true)
-    expect(pub.series[0]!.source).toBe('Market Truth leftover, Bend city, monthly median close')
-    expect(JSON.stringify(pub)).not.toMatch(/market_stats_cache|geo_slug=/)
+    expect(pub.series[0]!.source).toBe('Oregon Data Share, Bend city, monthly median close')
+    expect(JSON.stringify(pub)).not.toMatch(/market_stats_cache|geo_slug=|Market Truth leftover/)
   })
 })

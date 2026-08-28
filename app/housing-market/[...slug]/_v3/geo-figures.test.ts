@@ -76,7 +76,7 @@ describe('buildLiveFigures — list median digits', () => {
     expect(labels).toContain('pending · now')
     expect(labels).toContain('closed in the last 30 days')
     expect(labels).toContain('median to pending · 90 days')
-    expect(live.trace).toMatch(/leftover membership/)
+    expect(live.trace).toMatch(/single-family houses/)
     expect(live.trace).not.toMatch(/live MLS/)
   })
 })

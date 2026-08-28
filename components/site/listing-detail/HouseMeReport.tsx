@@ -213,9 +213,9 @@ export function housemeTitle(read: ListingPricingReadRow | null, rows: HouseMeRo
 export function housemeSourceLine(rows: HouseMeRow[]): string {
   const sources = new Set(rows.map((r) => r.source))
   const parts: string[] = []
-  if (sources.has('listing_pricing_reads')) parts.push('Stamp from listing_pricing_reads')
-  if (sources.has('listing') || sources.has('listing+pulse')) parts.push('Listing fields from Spark')
-  if (sources.has('listing+pulse')) parts.push('Place median from the live pulse')
+  if (sources.has('listing_pricing_reads')) parts.push('Pricing stamp for this listing')
+  if (sources.has('listing') || sources.has('listing+pulse')) parts.push('Listing fields from the MLS')
+  if (sources.has('listing+pulse')) parts.push('Place median from the live market')
   return parts.length > 0 ? `${parts.join('. ')}.` : PUBLIC_READ_DISCLAIMER
 }
 

@@ -73,7 +73,7 @@ async function CityHeadlineLedger({ selectedCities }: { selectedCities: string[]
       heading={v3Text('Live figures by city')}
       rows={[first, ...rest]}
       source={v3Text(
-        'Leftover membership, active single-family houses, one leftover count per city. A miss omits.',
+        'Active single-family houses, one count per city. A missing figure is omitted.',
       )}
       updated={stamp ? v3Text(formatDate(stamp)) : undefined}
       action={{ label: v3Text('All Central Oregon cities'), href: '/cities' }}

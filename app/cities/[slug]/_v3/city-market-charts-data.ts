@@ -171,7 +171,7 @@ export function buildMosCard(input: CityRankInput): CityChartCard | null {
     key: 'mos',
     kind: 'range',
     title,
-    displayLine: 'Months of supply by town, leftover membership, single-family.',
+    displayLine: 'Months of supply by town, single-family.',
     // No sample size, and no count in the reading. The published ratio is
     // actives over closings-in-180-days-divided-by-six; the row publishes the
     // numerator and two closing windows that are not the denominator. Naming
@@ -192,7 +192,7 @@ export function buildMosCard(input: CityRankInput): CityChartCard | null {
     ],
     clampMax: MOS_SCALE_MAX,
     source:
-      `Leftover membership city rows, single-family (${methodologyStamp(rows.map((r) => r.town))}). ` +
+      `City rows, single-family (${methodologyStamp(rows.map((r) => r.town))}). ` +
       `${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` +
       ` No sample size is drawn: the ratio rests on two populations, the actives ` +
       `and the six months of closings under them, and the cache publishes only ` +
@@ -245,15 +245,15 @@ export function buildDtpCard(input: CityRankInput): CityChartCard | null {
     key: 'dtp',
     kind: 'range',
     title: `${input.subjectName} pends in ${publishDaysFigure(subject.value)} days`,
-    displayLine: 'Median days to pending by town, leftover 90-day list-to-pending.',
+    displayLine: 'Median days to pending by town, 90-day list-to-pending.',
     rows: rows.map((r) => ({
       tick: v3Text(r.town.geo_label),
       value: r.value,
       label: v3Text(publishDaysLabel(r.value) ?? `${r.value} days`),
     })),
     source:
-      `Leftover membership city rows, single-family (${methodologyStamp(rows.map((r) => r.town))}). ` +
-      `Median days from listing to an accepted offer, measured on leftover houses that closed in the ` +
+      `City rows, single-family (${methodologyStamp(rows.map((r) => r.town))}). ` +
+      `Median days from listing to an accepted offer, measured on houses that closed in the ` +
       `last ${PULSE_DTP_WINDOW_DAYS} days and carry a list-to-pending measurement. A town with ` +
       `fewer than ${PULSE_DTP_FLOOR} of those is withheld by the cache. No sample size is drawn ` +
       `beside these rows: the count of measured closings is not published, and the counts that ` +
