@@ -75,6 +75,14 @@ describe('HUD and leftover panels jump to the dictionary', () => {
       'utf8',
     )
     expect(listing).not.toMatch(/PublicProductTypes/)
+    expect(listing).not.toMatch(/OTHER PRODUCT TYPES|Market Truth leftover/)
+    const houseme = readFileSync(
+      resolve('components/site/listing-detail/HouseMeReport.tsx'),
+      'utf8',
+    )
+    expect(houseme).not.toMatch(/Stamp from listing_pricing_reads/)
+    expect(houseme).not.toMatch(/Listing fields from Spark/)
+    expect(houseme).not.toMatch(/Place median from the live pulse/)
   })
   it('the dictionary page renders every entry id', () => {
     const page = readFileSync(resolve('app/how-we-get-our-numbers/page.tsx'), 'utf8')

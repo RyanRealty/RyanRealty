@@ -2,7 +2,7 @@
   "route": "app/listing/[listingKey]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Zillow Showcase + Hilton & Hyland editorial register (per docs/research/top-brokerage-listing-content-audit.md)",
-  "note": "Rolled onto the v3 barrel 2026-08-27 (P9, the B ratchet's last page). Chrome: V3_ROOT_CLASS + .listing-detail on one main, V3Breadcrumb, V3SectionTracker, ONE V3Footer outside main; app/layout.tsx owns the header (V3Chrome). The listing body (hero, price, facts, remarks, Sheet alerts, restyle, map, market, schools, parks, lifestyle, history, money, attribution) is the listing-detail register, restyled in place: the kb.css carriers it used (.mkt market surface, .houseme-rows re-ink, .lst-* featured rail, section rise, scroll-margin anchors, mobile/desktop density ramps) were ported into listing-detail.css under .listing-detail, values unchanged, on v3 tokens. PUBLIC_UI.md section 1: the page primary at 390 is PriceCtaStrip filled Schedule a tour. V3Footer carries the ODS slot and no button. No kb-root, no page kb.css, no Lenis smooth scroll (anchors land via scroll-margin-top like every v3 page).",
+  "note": "Rolled onto the v3 barrel 2026-08-27 (P9, the B ratchet's last page). Chrome: V3_ROOT_CLASS + .listing-detail on one main, V3Breadcrumb, V3SectionTracker, ONE V3Footer outside main; app/layout.tsx owns the header (V3Chrome). The listing body (hero, price, facts, remarks, Sheet alerts, restyle, map, market, schools, parks, lifestyle, history, money, attribution) is the listing-detail register, restyled in place: the kb.css carriers it used (.mkt market surface, .houseme-rows re-ink, .lst-* featured rail, scroll-margin anchors, mobile/desktop density ramps) were ported into listing-detail.css under .listing-detail, values unchanged, on v3 tokens. Section-rise translateY is omitted so the sticky chrome does not leave a cream gap. Hero is one 16:9 frame. PUBLIC_UI.md section 1: the page primary at 390 is PriceCtaStrip filled Schedule a tour. V3Footer carries the ODS slot and no button. No kb-root, no page kb.css, no Lenis smooth scroll (anchors land via scroll-margin-top like every v3 page).",
   "dataChanges": {
     "unchanged": "Every listing figure, filter, window, and unit. getListingDetail, photos, videos, history, open houses, pulse, brokers, reviews, published CMA, related homes. Live pricing read is stamp-only (getListingPricingRead). JSON-LD RealEstateListing + BreadcrumbList still emit from the page MetadataBlock with listingDetailPath, listingShareSummary, gated photos slice 0-5, and ctaBroker as listingAgent. MLS publicRemarks are displayed, never rewritten. Capture still calls submitSearchAlertSignup with city, propertyType A, price band, beds when present, field email, trap company.",
     "similarHomes": "KbFeatured became ListingFeaturedHomes (components/site/listing-detail/ListingFeaturedHomes.client.tsx) - the same asymmetric poster grid, photos, prices, specs, viewport video autoplay, and scoped view-all CTA, byte-identical markup, styled by listing-detail.css instead of kb.css. resolveFeaturedItems still ranks the tiles.",
@@ -26,12 +26,12 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Home / Homes for sale / city / street. belowNav default clears the fixed V3Chrome mast.",
+      "section": "Home / Homes for sale / city / street. On-media overlay on the hero so sticky chrome sits on the photo, not a cream band.",
       "blocking": true
     },
     {
       "name": "ListingHero",
-      "section": "ld-photo-grid full-bleed hero (photo grid or autoplay listing video). Auto-plays muted listing video when getListingVideos returns one. Falls back to photo grid otherwise.",
+      "section": "One 16:9 hero (photo or autoplay listing video). Auto-plays muted listing video when getListingVideos returns one. Falls back to one photo, not stacked bands.",
       "blocking": true,
       "notes": "Supersedes both PhotoGallery and ListingVideoEmbed for marketing video. Virtual tours still mount ListingVideoEmbed in the main column."
     },
@@ -175,7 +175,7 @@
   ],
   "removedComponents": [
     "kb-root + page-level kb.css + SmoothScrollProvider + KbSectionTracker. The page opens V3_ROOT_CLASS + .listing-detail; V3SectionTracker records sections; native hash scrolling honors the scroll-margin-top that listing-detail.css sets on every [id], so anchor jumps still clear the fixed mast.",
-    "KbBreadcrumb -> V3Breadcrumb (same trail, belowNav default clears the fixed header).",
+    "KbBreadcrumb -> V3Breadcrumb (same trail, on-media overlay on the hero).",
     "KbFooter (with its listing-scoped Schedule/Ask band) -> V3Footer outside main. Schedule a tour and Ask already live on PriceCtaStrip, ListingBrokerCTA, and the mobile bar; V3Footer has no button and carries the ODS attribution slot.",
     "KbFeatured -> ListingFeaturedHomes (listing register, identical rail)."
   ],

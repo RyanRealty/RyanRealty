@@ -49,10 +49,38 @@ checks.push({
     !/function formatPrice\(/.test(hero),
 })
 
+const listingCss = src('components/site/listing-detail/listing-detail.css')
+checks.push({
+  label: 'listing hero is one 16:9 frame, not stacked bands or section-rise gaps',
+  ok:
+    listingCss.includes('aspect-ratio: 16 / 9') &&
+    listingCss.includes('max-height: 56.25vw') &&
+    listingCss.includes('flex-wrap: nowrap') &&
+    !listingCss.includes('ldSectionRise') &&
+    !listingCss.includes('translateY(30px)'),
+})
+
 const page = src('app/listing/[listingKey]/page.tsx')
 checks.push({
   label: 'listing detail passes lotSizeAcres into the hero',
   ok: /acres=\{listing\.lotSizeAcres\}/.test(page),
+})
+checks.push({
+  label: 'listing breadcrumb overlays the hero (no cream gap under sticky chrome)',
+  ok:
+    /<V3Breadcrumb trail=\{breadcrumbs\} tone="on-media" belowNav=\{false\} \/>/.test(page),
+})
+
+const houseme = src('components/site/listing-detail/HouseMeReport.tsx')
+const marketCtx = src('components/site/listing-detail/NeighborhoodMarketContext.tsx')
+checks.push({
+  label: 'listing market block strips stamp leftover and other-product-types row',
+  ok:
+    houseme.includes('return PUBLIC_READ_DISCLAIMER') &&
+    !houseme.includes('Stamp from listing_pricing_reads') &&
+    !houseme.includes('Listing fields from Spark') &&
+    !marketCtx.includes('PublicProductTypes') &&
+    !marketCtx.includes('OTHER PRODUCT TYPES'),
 })
 
 const market = src('components/site/listing-detail/NeighborhoodMarketContext.tsx')
