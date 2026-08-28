@@ -73,6 +73,40 @@
   margin: 0 0 var(--v3-space-sm);
 }
 
+/* Each nav in the lead is one chip row (types, then towns). */
+.v3-field__lead nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+  width: 100%;
+}
+
+.v3-field__lead .v3-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+}
+
+.v3-field__lead .v3-btn[aria-pressed='true'] {
+  background: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
+}
+
+/* Navy-alpha mark on a type chip. Same --v3-cat-N the pin reads. */
+.v3-field__mark {
+  width: var(--v3-space-xs);
+  height: var(--v3-space-xs);
+  flex: none;
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-ink);
+}
+
+.v3-field__mark--cat-0 { background: var(--v3-cat-0); }
+.v3-field__mark--cat-1 { background: var(--v3-cat-1); }
+.v3-field__mark--cat-2 { background: var(--v3-cat-2); }
+.v3-field__mark--cat-3 { background: var(--v3-cat-3); }
+.v3-field__mark--cat-4 { background: var(--v3-cat-4); }
+
 .v3-field__source {
   margin-top: var(--v3-space-md);
 }

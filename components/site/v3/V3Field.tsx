@@ -82,6 +82,10 @@ export type V3FieldItem = {
    * stays navy, just at different alphas. Omit it and the pin is full navy.
    */
   cat?: 0 | 1 | 2 | 3 | 4
+  /** Stable type id when the lead chips filter this set. */
+  typeKey?: string
+  /** Buyer-facing type label for a lead chip. */
+  typeLabel?: string
 }
 
 /**
@@ -140,9 +144,9 @@ export type V3FieldProps = {
    */
   mapNote?: string
   /**
-   * Optional lead above the frame (homepage town filters). Renders after the
-   * count so chips cannot sit on the caption. Tokens only — the caller supplies
-   * the controls.
+   * Optional lead above the frame. Type chips that exist in the set, and
+   * town doors, live here as V3Buttons. Tokens only — the caller supplies
+   * the controls. Renders after the count so chips cannot sit on a caption.
    */
   lead?: ReactNode
   /** One line under the list, for whatever the set does not show. */

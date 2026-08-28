@@ -8,6 +8,9 @@
  * a fractional ask never prints unlabeled: publishListingShareKind rides the
  * meta line (the Camp Sherman quarter-share rule). The meta line also names the
  * town, because this list spans the whole region.
+ *
+ * Type key/label/cat ride the Field item so lead chips and pins share one mark.
+ * Classification is MLS → those three fields. It is not a second Field.
  */
 
 import type { V3FieldItem } from '@/components/site/v3'
@@ -16,19 +19,81 @@ import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
-import {
-  classifyHomeFieldType,
-  takeHomeFieldByType,
-  type HomeFieldCat,
-  type HomeFieldTypeKey,
-} from './home-field-types'
 
 export type HomeFieldItem = V3FieldItem & {
-  /** MLS city, used by homepage town chips to filter the listed set. */
   city: string
-  typeKey: HomeFieldTypeKey
+  typeKey: string
   typeLabel: string
-  cat?: HomeFieldCat
+  cat: 0 | 1 | 2 | 3 | 4
+}
+
+const TYPE_ORDER = [
+  'house',
+  'condo',
+  'townhouse',
+  'manufactured',
+  'multi',
+  'land',
+  'commercial',
+  'other',
+] as const
+
+function classifyType(input: {
+  propertyType?: string | null
+  propertySubType?: string | null
+}): { typeKey: string; typeLabel: string } {
+  const sub = (input.propertySubType ?? '').trim()
+  const cls = (input.propertyType ?? '').trim().toUpperCase()
+
+  switch (sub) {
+    case 'Single Family Residence':
+    case 'Tenancy in Common':
+    case 'Residential Leased Land':
+    case 'Stock Cooperative':
+    case 'Timeshare':
+      return { typeKey: 'house', typeLabel: 'House' }
+    case 'Condominium':
+      return { typeKey: 'condo', typeLabel: 'Condo' }
+    case 'Townhouse':
+      return { typeKey: 'townhouse', typeLabel: 'Townhouse' }
+    case 'Manufactured On Land':
+    case 'In Park':
+    case 'On Leased Land':
+      return { typeKey: 'manufactured', typeLabel: 'Manufactured' }
+    case 'Duplex':
+    case 'Triplex':
+    case 'Quadruplex':
+    case 'Multi Family':
+      return { typeKey: 'multi', typeLabel: 'Multi-family' }
+    case 'Residential Lots':
+    case 'Recreational':
+    case 'Agriculture':
+    case 'Rangeland':
+    case 'Investment':
+    case 'Industrial':
+      return { typeKey: 'land', typeLabel: 'Land' }
+    default:
+      break
+  }
+
+  if (cls === 'D' || cls === 'E') return { typeKey: 'land', typeLabel: 'Land' }
+  if (cls === 'C') return { typeKey: 'multi', typeLabel: 'Multi-family' }
+  if (cls === 'B') return { typeKey: 'manufactured', typeLabel: 'Manufactured' }
+  if (cls === 'F' || cls === 'G' || cls === 'H') {
+    return { typeKey: 'commercial', typeLabel: 'Commercial' }
+  }
+  return { typeKey: 'house', typeLabel: 'House' }
+}
+
+function withCats(items: readonly Omit<HomeFieldItem, 'cat'>[]): HomeFieldItem[] {
+  const present = TYPE_ORDER.filter((key) => items.some((item) => item.typeKey === key))
+  const catByKey = new Map(
+    present.map((key, index) => [key, (index % 5) as HomeFieldItem['cat']]),
+  )
+  return items.map((item) => ({
+    ...item,
+    cat: catByKey.get(item.typeKey) ?? 0,
+  }))
 }
 
 export function filterHomeFieldByCity(
@@ -42,7 +107,7 @@ export function filterHomeFieldByCity(
 }
 
 export function homeFieldItems(tiles: readonly ListingTile[], limit: number): HomeFieldItem[] {
-  const items: HomeFieldItem[] = []
+  const items: Omit<HomeFieldItem, 'cat'>[] = []
 
   for (const tile of tiles) {
     if (items.length >= limit) break
@@ -62,8 +127,6 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): Ho
       city: tile.city,
       listNumber: tile.listNumber,
     })
-    // City moved from meta to the title (Matt 2026-08-27: a card address
-    // names its city) — publishCardAddress below carries it.
     const meta = [
       tile.beds != null ? `${tile.beds} bd` : null,
       tile.baths != null ? `${tile.baths} ba` : null,
@@ -73,7 +136,7 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): Ho
       .filter((part): part is string => Boolean(part))
       .join(' · ')
 
-    const type = classifyHomeFieldType({
+    const type = classifyType({
       propertyType: tile.propertyType,
       propertySubType: tile.propertySubType,
     })
@@ -98,15 +161,38 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): Ho
       lat: tile.lat,
       lng: tile.lng,
       city: tile.city?.trim() ?? '',
-      typeKey: type.key,
-      typeLabel: type.label,
+      typeKey: type.typeKey,
+      typeLabel: type.typeLabel,
     })
   }
 
-  return items
+  return withCats(items)
 }
 
-/** Mixed-type preview set. One of each type first, then fill. */
+/**
+ * One of each type first so a house-heavy feed cannot hide a lot. Types that
+ * do not exist never reach a chip.
+ */
 export function homeFieldPool(tiles: readonly ListingTile[], limit: number): HomeFieldItem[] {
-  return takeHomeFieldByType(homeFieldItems(tiles, Number.POSITIVE_INFINITY), limit)
+  const all = homeFieldItems(tiles, Number.POSITIVE_INFINITY)
+  const keys = TYPE_ORDER.filter((key) => all.some((item) => item.typeKey === key))
+  const buckets = new Map<string, HomeFieldItem[]>()
+  for (const key of keys) buckets.set(key, [])
+  for (const item of all) buckets.get(item.typeKey)?.push(item)
+
+  const out: HomeFieldItem[] = []
+  let depth = 0
+  while (out.length < limit) {
+    let added = false
+    for (const key of keys) {
+      const next = buckets.get(key)?.[depth]
+      if (!next) continue
+      out.push(next)
+      added = true
+      if (out.length >= limit) break
+    }
+    if (!added) break
+    depth += 1
+  }
+  return out
 }

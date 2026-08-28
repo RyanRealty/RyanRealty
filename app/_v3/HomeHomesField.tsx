@@ -1,22 +1,14 @@
 'use client'
 
 /**
- * Homepage inventory Field. The Stage above carries the D11 H1 and the
- * search action, so this section names itself through V3Field's ariaLabel.
- * Types that exist in the set are the toggle. Town chips stay as doors
- * into each city. Homes and the map share one barrel frame.
+ * Homepage inventory Field. Types that exist in the set are lead chips on
+ * V3Field (tokens only). Towns stay as doors. Map and list share one frame.
  */
 import { useMemo, useState } from 'react'
 import { V3Button, V3Field } from '@/components/site/v3'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import type { HomeFieldItem } from './home-field-items'
-import {
-  toggleHomeFieldType,
-  typesInHomeField,
-  visibleHomeField,
-} from './home-field-types'
 import { HOME_FIELD_LIMIT, homeFieldNote } from './home-constants'
-import './home-homes-field.css'
 
 export function HomeHomesField({
   fieldItems,
@@ -36,30 +28,23 @@ export function HomeHomesField({
   displayLimit?: number
 }) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
-  const types = useMemo(() => typesInHomeField(fieldItems), [fieldItems])
-  const visible = useMemo(
-    () => visibleHomeField(fieldItems, selectedTypes, displayLimit),
-    [fieldItems, selectedTypes, displayLimit],
-  )
-  const pins = useMemo(
-    () =>
-      visible.flatMap((item) =>
-        item.lat != null && item.lng != null
-          ? [
-              {
-                id: item.id,
-                href: item.href,
-                priceLabel: item.priceLabel,
-                title: item.title,
-                lat: item.lat,
-                lng: item.lng,
-                cat: item.cat,
-              },
-            ]
-          : [],
-      ),
-    [visible],
-  )
+  const types = useMemo(() => {
+    const seen = new Set<string>()
+    const next: { key: string; label: string; cat: 0 | 1 | 2 | 3 | 4 }[] = []
+    for (const item of fieldItems) {
+      if (seen.has(item.typeKey)) continue
+      seen.add(item.typeKey)
+      next.push({ key: item.typeKey, label: item.typeLabel, cat: item.cat })
+    }
+    return next
+  }, [fieldItems])
+  const visible = useMemo(() => {
+    const set =
+      selectedTypes.length === 0
+        ? fieldItems
+        : fieldItems.filter((item) => selectedTypes.includes(item.typeKey))
+    return set.slice(0, displayLimit)
+  }, [fieldItems, selectedTypes, displayLimit])
 
   const [firstTown, ...restTowns] = towns
   const typeLead =
@@ -73,10 +58,16 @@ export function HomeHomesField({
               type="button"
               variant="ghost"
               ariaPressed={on}
-              onClick={() => setSelectedTypes((prev) => toggleHomeFieldType(prev, type.key))}
+              onClick={() =>
+                setSelectedTypes((prev) =>
+                  prev.includes(type.key)
+                    ? prev.filter((key) => key !== type.key)
+                    : [...prev, type.key],
+                )
+              }
             >
               <span
-                className={`home-homes-field__swatch home-homes-field__swatch--cat-${type.cat}`}
+                className={`v3-field__mark v3-field__mark--cat-${type.cat}`}
                 aria-hidden="true"
               />
               {type.label}
@@ -101,19 +92,34 @@ export function HomeHomesField({
   return (
     <V3Field
       id="homes"
-      className="home-homes-field"
       ariaLabel="Homes for sale across Central Oregon"
       items={visible}
-      mapSlot={
-        pins.length > 0 ? (
+      mapSlot={(binding) => {
+        const pins = binding.items.flatMap((item) =>
+          item.lat != null && item.lng != null
+            ? [
+                {
+                  id: item.id,
+                  href: item.href,
+                  priceLabel: item.priceLabel,
+                  title: item.title,
+                  lat: item.lat,
+                  lng: item.lng,
+                  cat: item.cat,
+                },
+              ]
+            : [],
+        )
+        if (pins.length === 0) return null
+        return (
           <PlaceFieldMap
             pins={pins}
             placeName="Central Oregon"
             posterSrc={visible[0]?.photoSrc ?? fieldItems[0]?.photoSrc}
             boundary={boundary}
           />
-        ) : undefined
-      }
+        )
+      }}
       mapNote={visible.length > 0 ? homeFieldNote(visible.length) : undefined}
       lead={
         typeLead || townLead ? (

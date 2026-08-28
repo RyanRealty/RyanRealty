@@ -6,7 +6,6 @@ import { preferPlaceHero } from './home-constants'
 const PAGE = readFileSync(resolve('app/page.tsx'), 'utf8')
 const SEARCH = readFileSync(resolve('app/_v3/HomeHeroSearch.client.tsx'), 'utf8')
 const FIELD = readFileSync(resolve('app/_v3/HomeHomesField.tsx'), 'utf8')
-const FIELD_CSS = readFileSync(resolve('app/_v3/home-homes-field.css'), 'utf8')
 const V3_FIELD = readFileSync(resolve('components/site/v3/V3Field.tsx'), 'utf8')
 const V3_FIELD_CSS = readFileSync(resolve('components/site/v3/V3Field.css'), 'utf8')
 const FIELD_MAP = readFileSync(resolve('app/central-oregon/_v3/PlaceFieldMapImpl.tsx'), 'utf8')
@@ -60,13 +59,13 @@ describe('preferPlaceHero', () => {
 
 describe('homepage Field stays on the barrel', () => {
   it('does not restyle Field rows into a one-off card language', () => {
-    expect(FIELD_CSS).not.toContain('home-homes-field__chip')
-    expect(FIELD_CSS).not.toContain('.v3-field__row--has-photo')
-    expect(FIELD_CSS).not.toContain('aspect-ratio: 4 / 3')
-    expect(FIELD_CSS).not.toContain('order:')
+    expect(FIELD).not.toContain('home-homes-field')
+    expect(FIELD).not.toContain('home-field-types')
     expect(FIELD).toContain('V3Button')
     expect(FIELD).toContain('listFlow')
     expect(FIELD).not.toContain('count=')
+    expect(V3_FIELD_CSS).toContain('.v3-field__lead')
+    expect(V3_FIELD_CSS).toContain('.v3-field__mark--cat-0')
   })
 
   it('caps the preview set so the map sits with the list, not after a novel of cards', () => {
@@ -118,14 +117,14 @@ describe('homepage Field stays on the barrel', () => {
     expect(PAGE).toContain('boundary={regionBoundary ?? undefined}')
   })
 
-  it('toggles types that exist in the set, and keeps town chips as doors', () => {
+  it('toggles types that exist in the set as Field lead chips', () => {
     expect(FIELD).toContain('aria-label="Property types"')
     expect(FIELD).toContain('aria-label="Towns"')
-    expect(FIELD).toContain('toggleHomeFieldType')
-    expect(FIELD).toContain('visibleHomeField')
+    expect(FIELD).toContain('v3-field__mark')
     expect(FIELD).toContain('ariaPressed')
-    expect(FIELD_CSS).toContain('--v3-cat-0')
+    expect(FIELD).toContain('mapSlot={(binding)')
     expect(V3_FIELD_CSS).toContain('.v3-field__pin--cat-0')
+    expect(V3_FIELD_CSS).toContain('.v3-field__mark--cat-0')
     expect(V3_FIELD_CSS).toContain('background: var(--v3-cat-0)')
     expect(PAGE).toContain('homeFieldPool')
     expect(PAGE).not.toContain("propertySubType: 'Single Family Residence'")
