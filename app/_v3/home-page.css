@@ -71,3 +71,13 @@
     justify-self: end;
   }
 }
+
+/* From 768 the barrel puts `when` in its own column. The 40rem two-track
+   override above is more specific, so CITY / AREA GUIDE sat in a ~740px
+   empty first column and the town name was shoved to the right edge. */
+@media (min-width: 48rem) {
+  #towns .v3-ledger__row,
+  #communities .v3-ledger__row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+}

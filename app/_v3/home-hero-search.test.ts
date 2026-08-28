@@ -46,6 +46,13 @@ describe('homepage towns stack photos on a phone', () => {
     expect(css).toContain('overflow-wrap: break-word')
     expect(css).toContain('#towns .v3-ledger__source')
   })
+
+  it('restores a three-column town row from 768 so CITY is not an empty first track', () => {
+    const css = readFileSync(resolve('app/_v3/home-page.css'), 'utf8')
+    expect(css).toMatch(
+      /@media \(min-width: 48rem\)[\s\S]*#towns \.v3-ledger__row[\s\S]*grid-template-columns:\s*auto minmax\(0, 1fr\) auto/,
+    )
+  })
 })
 
 describe('filterHomeFieldByCity', () => {
