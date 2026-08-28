@@ -90,8 +90,14 @@
   font-weight: var(--v3-weight-medium);
 }
 
-/* Over Stage media the scrim behind the strip carries the contrast, so the
-   trail inverts and takes the same shadow the other on-media atoms use. */
+/* On-media inverts the trail. Callers sometimes mount that tone as a sibling
+   above Stage (community, sell) on cream ground, so the inverse surface has
+   to carry the contrast. White ink on cream is 1.06:1. Navy behind the strip
+   keeps WCAG AA whether the trail sits on media or not. */
+.v3.v3-breadcrumb--on-media {
+  background: var(--v3-surface-inverse);
+}
+
 .v3-breadcrumb--on-media .v3-breadcrumb__link,
 .v3-breadcrumb--on-media .v3-breadcrumb__text,
 .v3-breadcrumb--on-media .v3-breadcrumb__item + .v3-breadcrumb__item::before {
