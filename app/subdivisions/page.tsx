@@ -27,8 +27,8 @@ import type { Metadata } from 'next'
 import {
   getSurfaceImages,
   pickSurfaceImage,
+  getCommunityHeroUrlsBySlug,
 } from '@/lib/data'
-import { getCommunitiesForIndex } from '@/app/actions/communities'
 import {
   getRegistryPlatPublicInventory,
   registryChildPlats,
@@ -87,18 +87,11 @@ function fmtPrice(n: number | null | undefined): string | null {
 export default async function SubdivisionsPage() {
   const childPlats = registryChildPlats()
 
-  const [inventory, heroPhotoPool, communities] = await Promise.all([
+  const [inventory, heroPhotoPool, parentHeroBySlug] = await Promise.all([
     getRegistryPlatPublicInventory(),
     getSurfaceImages('hero'),
-    getCommunitiesForIndex(),
+    getCommunityHeroUrlsBySlug(),
   ])
-  const parentHeroBySlug = new Map<string, string>()
-  for (const c of communities) {
-    const url = c.heroImageUrl?.trim()
-    if (!url) continue
-    parentHeroBySlug.set(c.slug, url)
-    parentHeroBySlug.set(c.entityKey.includes(':') ? c.entityKey.split(':')[1]! : c.slug, url)
-  }
   const inventoryOk = inventory.length > 0
   const invByKey = new Map(inventory.map((row) => [row.key, row]))
   const countByKey = new Map(inventory.map((row) => [row.key, row.activeCount]))
@@ -109,7 +102,7 @@ export default async function SubdivisionsPage() {
 
   const featured = featuredSeeds.map((p) => {
     const inv = invByKey.get(`${p.citySlug}:${p.slug}`) ?? null
-    const live = parentHeroBySlug.get(p.parentSlug)
+    const live = parentHeroBySlug[p.parentSlug]
     const curated = communityImage(p.parentSlug)
     const fallbackHero = cityHero(p.citySlug)
     const pooled = pickSurfaceImage(heroPhotoPool, {

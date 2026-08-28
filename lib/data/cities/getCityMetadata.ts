@@ -122,6 +122,26 @@ export async function getAllCommunitiesForAdminUpload(): Promise<Array<{
  * cannot persist a Map. Keyed by stored slug and by slugified name so index
  * rows (`bend-tetherow`) and registry slugs (`tetherow`) both resolve.
  */
+/**
+ * Public slug → `cities.hero_image_url`. JSON-safe record for `unstable_cache`.
+ */
+export const getCityHeroUrlsBySlug = unstable_cache(
+  async (): Promise<Record<string, string>> => {
+    const sb = supabaseAnon()
+    if (!sb) return {}
+    const { data } = await sb.from('cities').select('slug, hero_image_url')
+    const out: Record<string, string> = {}
+    for (const row of (data ?? []) as Array<{ slug: string | null; hero_image_url: string | null }>) {
+      const url = row.hero_image_url?.trim()
+      const slug = row.slug?.trim()
+      if (url && slug) out[slug] = url
+    }
+    return out
+  },
+  ['city-hero-urls-v1'],
+  { revalidate: 1800, tags: ['cities'] },
+)
+
 export const getCommunityHeroUrlsBySlug = unstable_cache(
   async (): Promise<Record<string, string>> => {
     const sb = supabaseAnon()

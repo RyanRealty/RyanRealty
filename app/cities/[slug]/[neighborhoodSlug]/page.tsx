@@ -47,7 +47,7 @@
 import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import type { Metadata } from 'next'
-import { getNeighborhoodBySlug, getCommunitiesInNeighborhood, getCitiesForIndex } from '@/app/actions/cities'
+import { getNeighborhoodBySlug, getCommunitiesInNeighborhood } from '@/app/actions/cities'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import {
   getPublicDetachedMonthly,
@@ -66,6 +66,7 @@ import {
   getRecentBlogPosts,
   getDetachedOverlays,
   cityDetachedSlug,
+  getCityHeroUrlsBySlug,
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
@@ -316,7 +317,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       4000,
       'nbh:character',
     ),
-    withTimeoutFallback(getCitiesForIndex(), [], 3000, 'nbh:indexCities'),
+    withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'nbh:liveHeroes'),
   ])
   const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -501,13 +502,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const [firstPeer, ...restPeer] = placeFigureRows(peerItems, `${cityName} neighborhood`)
 
   // No excludeSlug: a neighborhood page links its own parent city on purpose.
-  const liveCityHero: Record<string, string> = {}
-  for (const c of indexCities) {
-    const url = c.heroImageUrl?.trim()
-    if (url) liveCityHero[c.slug] = url
-  }
   const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots, {
-    liveHeroBySlug: liveCityHero,
+    liveHeroBySlug: indexCities,
   })
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
 

@@ -75,6 +75,7 @@ import {
   getCityDetachedInventory,
   getAreaGuideVideo,
   getNeighborhoodDirectory,
+  getCityHeroUrlsBySlug,
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
@@ -91,7 +92,6 @@ import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-sourc
 import { CITY_TILE_FETCH_LIMIT } from '@/lib/market/publish-city-inventory'
 import { CITY_PLACE_LIST_CAP } from '@/lib/explore/subdivision-page-extras'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
-import { getCitiesForIndex } from '@/app/actions/cities'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { getCityContent } from '@/lib/city-content'
 import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
@@ -283,7 +283,7 @@ export default async function CityDetailPage({ params }: Props) {
       : Promise.resolve({ value: [] as Awaited<ReturnType<typeof fetchAllCityActiveSfr>>, ok: true }),
     getCoMarketAnnualCity({ year: PLACE_MART_YEAR, citySlug: slug, typeScope: 'all' }),
     getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
-    withTimeoutFallback(getCitiesForIndex(), [], 3000, 'city:indexCities'),
+    withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'city:liveHeroes'),
     withTimeoutFallback(getNeighborhoodDirectory(), [], 3000, 'city:nbhDir'),
   ])
 
@@ -525,14 +525,9 @@ export default async function CityDetailPage({ params }: Props) {
   // service-area allowlist, and the verified-cityHero-only imagery rule
   // (D86/D87), shared with the neighborhood and community nodes so one fix
   // lands on all three.
-  const liveCityHero: Record<string, string> = {}
-  for (const c of indexCities) {
-    const url = c.heroImageUrl?.trim()
-    if (url) liveCityHero[c.slug] = url
-  }
   const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots, {
     excludeSlug: slug,
-    liveHeroBySlug: liveCityHero,
+    liveHeroBySlug: indexCities,
   })
 
   // Live activity and city guides.
