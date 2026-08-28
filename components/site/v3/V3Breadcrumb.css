@@ -20,20 +20,15 @@
   padding: var(--v3-space-xs) var(--v3-gutter) 0;
 }
 
-/* CLEARING THE FIXED PUBLIC HEADER.
-   app/layout.tsx mounts <V3Chrome /> -> KbNav, whose bar is
-   `position: fixed; top: 0; z-index: 100` (the deleted KB stylesheet). A
-   fixed bar is out of flow, so the first flow element of <main> renders
-   underneath it. On /housing-market that was the entire trail: 52px of a 52px
-   strip occluded at both 390 and 1280, with elementFromPoint over the "Home"
-   crumb returning the wordmark image rather than the link.
-   KbBreadcrumb fixed the identical regression on the other register with its
-   `belowNav` prop (the deleted KB stylesheet, "2026-07-15 audit"), and the deleted KB stylesheet records
-   the bar's measured height: 66px at 375/768 and 67.9px at 1280, with 76px
-   chosen so the overlay variant keeps air at every width. The same 76px is used
-   here, on top of the strip's own leading space. */
+/* The below-nav variant is AIR, not clearance (2026-08-27 mobile audit).
+   The 76px it used to carry cleared the deleted KB bar, which was
+   position:fixed and out of flow. V3Chrome is position:sticky — in flow,
+   occupying its own height — so nothing needs clearing, and the old value
+   painted a dead cream band under the bar on every page that mounts this
+   variant (Matt saw it on a phone: a blank half-viewport above the crumb).
+   What remains is ordinary leading space. */
 .v3.v3-breadcrumb--below-nav {
-  padding-top: calc(76px + var(--v3-space-xs));
+  padding-top: var(--v3-space-md);
 }
 
 .v3-breadcrumb__list {

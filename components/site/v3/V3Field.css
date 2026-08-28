@@ -240,7 +240,14 @@
   height: 100%;
 }
 
-.v3-field__map-frame > .v3-field__map-poster {
+.v3-field__map-frame > .v3-field__map-poster,
+.v3-field__map-frame > .v3-field__map-pending {
+  /* BOTH placeholders lift out of flow (2026-08-27, the gray-map bug). Only
+     the poster was absolute; the pending div stayed IN FLOW at height:100%,
+     so the frame stacked pending + map vertically and the frame's
+     overflow:hidden clipped the map out of view. The map loaded, fired
+     tilesloaded, and rendered — one frame-height below its own window.
+     Every posterless map on the site showed the placeholder forever. */
   position: absolute;
   inset: 0;
   z-index: 0;
