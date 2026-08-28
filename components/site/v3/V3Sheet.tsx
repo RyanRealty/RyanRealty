@@ -842,6 +842,15 @@ function nameElement(props: NameElementProps): ReactElement {
   return createElement('label', props)
 }
 
+/**
+ * axe: `street-address` is a multiline token. A one-line input must use
+ * `address-line1`. Textareas keep the caller value.
+ */
+function lineInputAutoComplete(value: string | undefined): string | undefined {
+  if (value === 'street-address') return 'address-line1'
+  return value
+}
+
 function lineControl(props: ComponentPropsWithRef<'input'> & ControlIdentity): ReactElement {
   return createElement('input', props)
 }
@@ -1393,7 +1402,7 @@ export function V3Sheet({
                   ...typedBounds,
                   value: current,
                   placeholder: field.placeholder,
-                  autoComplete: field.autoComplete,
+                  autoComplete: lineInputAutoComplete(field.autoComplete),
                   onChange: (e) => writeValue(field, e.target.value),
                 })
               )}

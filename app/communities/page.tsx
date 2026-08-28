@@ -32,7 +32,7 @@ import { getRegistryResortPublicFigures } from '@/lib/kb/registry-resort-public-
 import { formatCount } from '@/lib/format/count'
 import { formatPriceExact } from '@/lib/format/money'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
-import { communityImage, cityHero } from '@/lib/geo-images'
+import { communityImage, cityHero, preferPlaceHero } from '@/lib/geo-images'
 import { getSurfaceImages, pickSurfaceImage } from '@/lib/data'
 import { subdivisionEntityKey } from '@/lib/slug'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
@@ -124,6 +124,7 @@ export default async function CommunitiesPage() {
       const idx = indexByEntityKey.get(subdivisionEntityKey(r.city, r.label)) ?? null
       const content = await getResortCommunityContent(r.slug)
       const sentence = content?.aboutProse?.[0] ? firstSentence(content.aboutProse[0]) : null
+      const live = idx?.heroImageUrl
       const curated = communityImage(r.slug)
       const fallbackHero = cityHero(r.city_slug)
       // Four consecutive rows with no curated photo of their own (Mt Bachelor
@@ -137,17 +138,19 @@ export default async function CommunitiesPage() {
         seed: r.slug,
         fallback: fallbackHero.src,
       })
+      const photoSrc = preferPlaceHero(live, curated ?? pooledFallback ?? fallbackHero.src)
+      const placeOwned = Boolean(live?.trim() || curated)
       return {
         slug: r.slug,
         name: r.label,
         city: r.city,
         citySlug: r.city_slug,
         sentence,
-        photoSrc: curated ?? pooledFallback ?? fallbackHero.src,
-        // Honest alt: a curated photo shows the community itself, the city
-        // fallback's alt describes what the photo actually shows.
-        photoAlt: curated ? `${r.label}, ${r.city} Oregon` : fallbackHero.alt,
-        photoIsCommunity: curated != null,
+        photoSrc,
+        // Honest alt: a curated or live place photo shows the community itself,
+        // the city fallback's alt describes what the photo actually shows.
+        photoAlt: placeOwned ? `${r.label}, ${r.city} Oregon` : fallbackHero.alt,
+        photoIsCommunity: placeOwned,
         // Registry resorts print the alias-aware pair (same set as
         // /communities/{slug}). Snapshot pending is a different set — withhold.
         activeCount: resortFigures.get(r.slug)?.activeCount ?? idx?.activeCount ?? 0,

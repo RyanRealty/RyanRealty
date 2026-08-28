@@ -56,8 +56,9 @@ export type V3BreadcrumbProps = {
    */
   trail: readonly V3Crumb[]
   /**
-   * 'on-media' inverts the strip for use over a Stage's photo or video, where
-   * the scrim behind it carries the contrast.
+   * 'on-media' inverts the strip for use over a Stage's photo or video. The
+   * inverse surface on the strip itself carries the contrast, so white current
+   * text stays readable even when a caller mounts the trail off the media.
    */
   tone?: 'surface' | 'on-media'
   /**

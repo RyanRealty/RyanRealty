@@ -17,6 +17,7 @@
 
 import type { pageMetadata } from '@/lib/site/page-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
+import { preferPlaceHero } from '@/lib/geo-images'
 import type { SchemaInput, StatValue } from '@/lib/site/json-ld'
 
 /**
@@ -93,6 +94,7 @@ export function communityMetadataInput(input: {
   slug: string
   name: string
   city: string
+  heroImageUrl?: string | null
 }): Parameters<typeof pageMetadata>[0] {
   const { slug, name, city } = input
 
@@ -123,10 +125,12 @@ export function communityMetadataInput(input: {
   // else. (§0 — a degraded read is not evidence, in either direction.)
   const compoundNonCommunity = !isCanonicalCommunitySlug(slug)
 
-  const ogImage =
+  const ogImage = preferPlaceHero(
+    input.heroImageUrl,
     KB_HERO[slug] ??
-    COMMUNITY_HERO[slug] ??
-    `/api/og?type=community&name=${encodeURIComponent(name)}&city=${encodeURIComponent(city)}`
+      COMMUNITY_HERO[slug] ??
+      `/api/og?type=community&name=${encodeURIComponent(name)}&city=${encodeURIComponent(city)}`,
+  )
 
   return {
     // Title <= 60 chars — community override, not the global template. Format:

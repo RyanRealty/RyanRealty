@@ -30,27 +30,25 @@ checks.push({
 // (app/page.tsx, 2026-08-27 v3 rebuild). Their default-prop checks died with
 // the components; the rule they enforced — every regional See-homes door goes
 // through publishRegionalSearchHref — lives on in the homepage arm below,
-// which pins the v3 page's own doors (Stage action + Instrument browse link).
+// which pins the one regional door the page still publishes (Stage See homes).
 
 // KbListingMapImpl left with the KB register (2026-08-27). Its arm asserted the
 // map's own Browse door went through publishRegionalSearchHref; the v3 map
 // carries no browse door at all, so there is no door left to mis-build. The
-// rule survives on the homepage arm directly below, which pins the two doors
-// the v3 page actually publishes.
+// rule survives on the homepage arm directly below, which pins the Stage
+// See homes door.
 
 const home = src('app/page.tsx')
-// Register-aware (2026-08-27 v3 rebuild): the KB spelling was KbFeatured's
-// viewAllHref prop; on the barrel the regional doors are the Stage action and
-// leftoverMarketFigures' browse link, both built by publishRegionalSearchHref.
-// Either spelling must be present — a page on neither fails loudly.
+// The homepage market Instrument is gone. The one regional inventory door is
+// the Stage See homes action. leftoverMarketFigures' browse link used to be
+// the second pin; requiring it kept a report on `/` just to satisfy this gate.
 checks.push({
   label: 'homepage does not hardcode the Bend-injecting /homes-for-sale door on regional CTAs',
   ok:
     !/cta=\{\{\s*href:\s*['"]\/homes-for-sale['"]/.test(home) &&
     !/href:\s*['"]\/homes-for-sale['"]/.test(home) &&
     (/viewAllHref=\{publishRegionalSearchHref\(\)\}/.test(home) ||
-      (/href:\s*publishRegionalSearchHref\(\)/.test(home) &&
-        /browse:\s*publishRegionalSearchHref\(\)/.test(home))),
+      /href:\s*publishRegionalSearchHref\(\)/.test(home)),
 })
 
 // KbFooter and KbFeatured left with the KB register (2026-08-27). Both arms
@@ -58,7 +56,7 @@ checks.push({
 // publishRegionalSearchHref rather than being typed as a bare /homes-for-sale.
 // The one site footer (V3Footer) builds its doors from V3_FOOTER_COLUMNS, whose
 // links are the IA lock's, and the featured rail is now the homepage Field. The
-// homepage arm below pins both of the regional doors the v3 page publishes.
+// homepage arm above pins the Stage See homes door the page still publishes.
 
 const search = src('app/search/page.tsx')
 checks.push({

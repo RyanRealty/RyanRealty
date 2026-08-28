@@ -15,7 +15,7 @@ import { entityKeyToSlug } from '@/lib/community-slug'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
 import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
 import { isCentralOregonCity } from '@/lib/central-oregon'
-import { getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
+import { getCommunityHeroUrlsBySlug, getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
 import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
@@ -130,9 +130,18 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
       description: undefined,
     })
   }
-  const bannerMap = await getBannersBatch('subdivision', entityKeys)
+  const [bannerMap, liveHeroes] = await Promise.all([
+    getBannersBatch('subdivision', entityKeys),
+    getCommunityHeroUrlsBySlug(),
+  ])
   for (const row of result) {
-    row.heroImageUrl = bannerMap.get(row.entityKey)?.url ?? null
+    const bare = row.entityKey.includes(':') ? row.entityKey.split(':')[1]! : row.slug
+    const live =
+      liveHeroes[row.slug] ??
+      liveHeroes[slugify(row.subdivision)] ??
+      liveHeroes[bare] ??
+      null
+    row.heroImageUrl = normalizeBannerLikeUrl(live) ?? bannerMap.get(row.entityKey)?.url ?? null
   }
   result.sort((a, b) => a.subdivision.localeCompare(b.subdivision))
   return result
@@ -148,7 +157,7 @@ const getCommunitiesForIndexRaw = unstable_cache(
   // listSubdivisionsWithFlags() now normalizes ALL THREE sources' output
   // through the canonical registry in one final pass — evicts v4, which is
   // cached with the still-duplicated result.
-  ['communities-index-v5'],
+  ['communities-index-v6-place-hero'],
   { revalidate: 1800, tags: ['communities-index'] }
 )
 

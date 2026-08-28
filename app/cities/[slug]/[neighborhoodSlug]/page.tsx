@@ -66,11 +66,12 @@ import {
   getRecentBlogPosts,
   getDetachedOverlays,
   cityDetachedSlug,
+  getCityHeroUrlsBySlug,
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
-import { communityImage } from '@/lib/geo-images'
+import { communityImage, preferPlaceHero } from '@/lib/geo-images'
 import { buildYearSeries } from '@/lib/kb/year-series'
 // Row-to-prop shaping shared with the city + community place pages - one copy,
 // so a fix cannot land on one of the three and drift on the others.
@@ -234,6 +235,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     nbhOverlays,
     placeDocuments,
     placeCharacter,
+    indexCities,
   ] = await Promise.all([
     withTimeoutFallback(getPriceHistory('neighborhood', boundaryNeighborhoodSlug, 'monthly', 60), [], 4500, 'nbh:priceHistory'),
     // Result variant: a timed-out boundary yields `{ pins: [] }`, which is
@@ -315,6 +317,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       4000,
       'nbh:character',
     ),
+    withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'nbh:liveHeroes'),
   ])
   const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -466,7 +469,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     href: `/subdivisions/${slugify(c.subdivision)}`,
     activeCount: c.activeCount ?? null,
     medianPrice: c.medianPrice ?? null,
-    img: c.heroImageUrl ?? communityImage(c.slug) ?? '',
+    img: preferPlaceHero(c.heroImageUrl, communityImage(c.slug) ?? ''),
   }))
   const [firstSub, ...restSub] = placeFigureRows(subdivisionItems, `${neighborhood.name} subdivision`)
 
@@ -499,7 +502,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const [firstPeer, ...restPeer] = placeFigureRows(peerItems, `${cityName} neighborhood`)
 
   // No excludeSlug: a neighborhood page links its own parent city on purpose.
-  const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots)
+  const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots, {
+    liveHeroBySlug: indexCities,
+  })
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
 
   /* ── Quiet content ─────────────────────────────────────────────────────── */

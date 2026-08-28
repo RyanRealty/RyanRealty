@@ -47,8 +47,9 @@ yarn-error.log*
 supabase/.temp
 
 # local MCP migration payload scratch (do not commit)
-/tmp/
-tmp/
+tmp/*
+!tmp/home-phone-shots/
+!tmp/home-phone-shots/**
 
 # Serwist (generated workers stay untracked...)
 public/sw*

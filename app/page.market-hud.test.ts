@@ -5,18 +5,14 @@ import { describe, expect, it } from 'vitest'
 const SRC = readFileSync(resolve('app/page.tsx'), 'utf8')
 
 /**
- * v3 spelling (2026-08-27 Broadside rebuild). The KB test pinned the
- * KbMarketData object literal (`closed30: hud.closed30`, ...); on the barrel
- * the KPI row is built by leftoverMarketFigures(hud, ...), whose own source
- * encodes the same rule — every figure off the ONE leftover pile, a missing
- * cell omitted, pulse never filling a tile. The data-source pins and every
- * negative pin survive unchanged.
+ * Homepage is not the market report. leftoverHudKpis still feeds the Field
+ * count and the town remainder. The report lives on /housing-market.
  */
-describe('homepage market figures stay on the leftover pile', () => {
-  it('reads region leftover pace and hands the hud to leftoverMarketFigures', () => {
+describe('homepage keeps leftover counts and does not host the report', () => {
+  it('reads region leftover pace and leftoverHudKpis for the count', () => {
     expect(SRC).toMatch(/getPublicDetachedPace\(\{\s*geoType:\s*'region',\s*geoSlug:\s*'central-oregon'\s*\}\)/)
     expect(SRC).toMatch(/leftoverHudKpis/)
-    expect(SRC).toMatch(/leftoverMarketFigures\(hud/)
+    expect(SRC).toMatch(/value:\s*hud\.active\.toLocaleString\('en-US'\)/)
   })
 
   it('does not assign saleToList from cache avg_sale_to_list_ratio', () => {
@@ -29,23 +25,18 @@ describe('homepage market figures stay on the leftover pile', () => {
     expect(SRC).toMatch(/regionActive:\s*hud\.active/)
   })
 
-  it('KPI row is leftover only: miss omits, pulse does not fill', () => {
-    // 2026-08-27 second form: the pace-item append (and its skip-set) went with
-    // "the answer, not the report" -- the homepage prints five allowlisted
-    // figures off leftoverMarketFigures and a door to /housing-market. The rule
-    // this test guards is unchanged: figures come from the leftover pile, and a
-    // missing cell OMITS rather than being filled from the pulse row.
-    expect(SRC).toMatch(/HOME_FIGURE_LABELS/)
-    expect(SRC).toMatch(/leftoverMarketFigures\(hud/)
+  it('does not mount the market instrument or leftover KPI row', () => {
+    expect(SRC).not.toMatch(/leftoverMarketFigures\(hud/)
+    expect(SRC).not.toMatch(/HOME_FIGURE_LABELS/)
+    expect(SRC).not.toMatch(/<V3Instrument/)
+    expect(SRC).not.toMatch(/placeMedianChart\(/)
+    expect(SRC).not.toMatch(/<KbMarketHud/)
     expect(SRC).not.toMatch(/closedCount30d\s*\?\?\s*pulse/)
     expect(SRC).not.toMatch(/daysToPending90d\s*\?\?\s*pulse/)
-    expect(SRC).not.toMatch(/new30:\s*pulse/)
-    expect(SRC).not.toMatch(/closed30:\s*publicPace\.closedCount\s*\?\?/)
-    expect(SRC).not.toMatch(/daysToPending:\s*publicPace\.daysToContract/)
   })
 
-  it('the one verdict derivation classifies the raw leftover value', () => {
-    expect(SRC).toMatch(/marketVerdict\(mosRaw\)/)
-    expect(SRC).toMatch(/formatMonthsOfSupply\(mosRaw\)/)
+  it('keeps one Quiet door to the market report', () => {
+    expect(SRC).toMatch(/id="market"/)
+    expect(SRC).toMatch(/\/housing-market/)
   })
 })

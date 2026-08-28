@@ -47,6 +47,7 @@
  * the duplicate class re-declares the same tokens with the same values.
  */
 import { useEffect, useId, useState } from 'react'
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import {
   V3_ROOT_CLASS,
@@ -119,6 +120,12 @@ export type V3StageProps = {
   headingLevel?: 1 | 2
   /** 'tall' when the next section should peek under the fold on 390. 'compact' when the next section (the ask) must fit in the first 390 viewport. */
   height?: 'standard' | 'tall' | 'compact'
+  /**
+   * Optional working control in the copy stack (homepage search). Renders
+   * after the headline and before the destination action so the typed query
+   * is the first thumb target. The Stage still requires `action`.
+   */
+  children?: ReactNode
   id?: string
   className?: string
 }
@@ -178,6 +185,7 @@ export function V3Stage<H extends string, L extends string>({
   eyebrow,
   headingLevel = 2,
   height = 'standard',
+  children,
   id,
   className,
 }: V3StageProps & {
@@ -199,6 +207,7 @@ export function V3Stage<H extends string, L extends string>({
         `v3-stage--${overlayStrength}`,
         height === 'tall' && 'v3-stage--tall',
         height === 'compact' && 'v3-stage--compact',
+        Boolean(children) && 'v3-stage--with-slot',
         className,
       )}
       aria-labelledby={headingId}
@@ -244,6 +253,7 @@ export function V3Stage<H extends string, L extends string>({
         >
           {headline}
         </V3Heading>
+        {children}
         {/* onMedia is not decoration here: it is what makes the control
             identifiable on footage at all (see the on-media primary in
             ./V3Stage.css). A Stage action is always on media by definition. */}

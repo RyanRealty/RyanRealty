@@ -26,7 +26,7 @@ import {
   pickSurfaceImage,
 } from '@/lib/data'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/getBendNeighborhoodLedger'
-import { cityHero } from '@/lib/geo-images'
+import { cityHero, preferPlaceHero } from '@/lib/geo-images'
 import { formatCount } from '@/lib/format/count'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -106,24 +106,27 @@ export default async function NeighborhoodsPage() {
           name: d.neighborhoodName,
           citySlug: d.citySlug,
           cityName: d.cityName,
+          heroImageUrl: d.heroImageUrl,
         }))
       : BEND_NEIGHBORHOOD_DISTRICTS.map((n) => ({
           slug: n.slug,
           name: n.label,
           citySlug: 'bend',
           cityName: 'Bend',
+          heroImageUrl: null as string | null,
         }))
 
   const featured = source.map((n) => {
     const href = `/cities/${n.citySlug}/${n.slug}`
     const stats = ledgerByHref.get(href)
     const hero = cityHero(n.citySlug)
-    const photoSrc =
+    const pooled =
       pickSurfaceImage(heroPhotoPool, {
         geoTags: [n.citySlug],
         seed: n.slug,
         fallback: hero.src,
       }) ?? hero.src
+    const photoSrc = preferPlaceHero(n.heroImageUrl, pooled)
     return {
       slug: n.slug,
       name: n.name,
@@ -133,7 +136,7 @@ export default async function NeighborhoodsPage() {
       sentence: NEIGHBORHOOD_SENTENCE[n.slug] ?? null,
       photoSrc,
       photoAlt: `${n.name}, ${n.cityName} Oregon`,
-      photoIsPlace: photoSrc !== hero.src,
+      photoIsPlace: Boolean(n.heroImageUrl?.trim()) || photoSrc !== hero.src,
       activeCount: stats?.activeCount ?? (ledger.length > 0 && n.citySlug === 'bend' ? 0 : null),
       medianListPrice: stats?.medianListPrice ?? null,
     }

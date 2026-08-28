@@ -260,11 +260,13 @@ describe('design directive contracts', () => {
     // one level down.
     expect(src).toMatch(/buildOtherCityItems\(/)
     const shared = readSrc('lib/kb/place-sections.ts')
+    expect(shared).toMatch(/preferPlaceHero/)
     expect(shared).toMatch(/cityHero\s*\(/)
     expect(shared).toMatch(/hero\.verified \? hero\.src : ''/)
     const index = readSrc('app/cities/page.tsx')
+    expect(index).toMatch(/preferPlaceHero/)
     expect(index).toMatch(/cityHero\s*\(/)
-    expect(index).toMatch(/hero: cityHero\(slug\)/)
+    expect(index).toMatch(/preferPlaceHero\(liveHero, fallbackHero\.src\)/)
     // the unverified seeded-pool resolvers must stay out of this page
     expect(src).not.toMatch(/getGeoTileImages|getSurfaceImage|pickGeoImage/)
     // never hardcode a landing-page image as city HERO/tile imagery. The curated
@@ -655,26 +657,24 @@ describe('design directive contracts', () => {
   // D103/D103b (home-d section objects) retired with the home-d revert
   // (Matt, 2026-08-21): / is back on the homepage-v6 template.
 
-  // D99/D101 v3 spelling (2026-08-27 Broadside rebuild — Matt approved; the
-  // 2026-08-21 home-d revert pinned <KbMarketHud>, and this rebuild supersedes
-  // that pin). The FACTS survive re-expressed: the homepage market section
-  // reads the LIVE leftover pile (leftoverHudKpis -> leftoverMarketFigures),
-  // never the stats cache; it mounts ONE chart derivation (the place-family
-  // placeMedianChart year overlay), not the market hub's atom; and the hub's
-  // own chart keeps its honest caption.
-  it('D99 — homepage market section is the live leftover pile, not a cache read (§0)', () => {
+  // D99/D101 (2026-08-28 phone-first homepage). The leftover HUD still feeds
+  // the Field count. The market report and chart live on /housing-market.
+  it('D99 — homepage leftover count is the live leftover pile, not a cache read (§0)', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/leftoverMarketFigures\(hud/)
+    expect(page).toMatch(/leftoverHudKpis/)
+    expect(page).not.toMatch(/leftoverMarketFigures\(hud/)
     expect(page).not.toMatch(/getMarketStatsCacheRowForGeo/)
     expect(page).not.toMatch(/<KbMarketHud/)
     const charts = readSrc('app/housing-market/_v3/market-charts.ts')
     expect(charts).toMatch(/Median sale price by month, recent years/)
   })
 
-  it('D101 — homepage mounts one chart derivation, not the market hub atom', () => {
+  it('D101 — homepage does not mount a market chart. /housing-market owns the report', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/placeMedianChart\(/)
+    expect(page).not.toMatch(/placeMedianChart\(/)
     expect(page).not.toMatch(/buildRegionMedianChart/)
+    expect(page).toMatch(/id="market"/)
+    expect(page).toMatch(/\/housing-market/)
   })
 
   it('D102 — KbFeatured has no remaining page mount (E-CUT retired /area-guides)', () => {

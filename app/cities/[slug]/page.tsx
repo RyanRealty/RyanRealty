@@ -74,6 +74,8 @@ import {
   getCityDetachedMarket,
   getCityDetachedInventory,
   getAreaGuideVideo,
+  getNeighborhoodDirectory,
+  getCityHeroUrlsBySlug,
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
@@ -96,6 +98,7 @@ import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
 import { cityResorts, resortActiveSfrCounts, resortLabelToSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { CITY_MARQUEE_COMMUNITIES, CITY_RESORT_LEDGER_IMG, communityVideoUrl } from '@/lib/kb/city-page-config'
+import { preferPlaceHero } from '@/lib/geo-images'
 // Row shaping shared with the neighborhood + community place pages - one copy, so a
 // fix cannot land on one of the three and drift on the others.
 import { buildActivityItems, buildArticlePosts, buildOtherCityItems } from '@/lib/kb/place-sections'
@@ -225,6 +228,8 @@ export default async function CityDetailPage({ params }: Props) {
     resortRead,
     cityMartRow,
     regionMartRow,
+    indexCities,
+    neighborhoodDirectory,
   ] = await Promise.all([
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city:detachedInv'),
@@ -278,6 +283,8 @@ export default async function CityDetailPage({ params }: Props) {
       : Promise.resolve({ value: [] as Awaited<ReturnType<typeof fetchAllCityActiveSfr>>, ok: true }),
     getCoMarketAnnualCity({ year: PLACE_MART_YEAR, citySlug: slug, typeScope: 'all' }),
     getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
+    withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'city:liveHeroes'),
+    withTimeoutFallback(getNeighborhoodDirectory(), [], 3000, 'city:nbhDir'),
   ])
 
   // The approved area-guide clip - a guides-Ledger door on this node (the
@@ -446,11 +453,17 @@ export default async function CityDetailPage({ params }: Props) {
   // listed, with a boundary-verified hover photo (D89). The count is withheld
   // rather than zero-filled when the ledger read did not answer - see
   // ./_v3/city-places.ts for that rule.
+  const neighborhoodHeroBySlug = new Map(
+    neighborhoodDirectory
+      .filter((d) => d.citySlug === slug)
+      .map((d) => [d.neighborhoodSlug, d.heroImageUrl]),
+  )
   const bendNeighborhoodItems: CityPlaceItem[] = bendNeighborhoodPlaces({
     isBend,
     ledgerRows: bendNeighborhoods,
     mapTiles: tiles,
     communityImageByName: commImgByName,
+    neighborhoodHeroBySlug,
   })
 
   // GOLF AND MASTER-PLANNED COMMUNITIES - a SEPARATE ledger from neighborhoods
@@ -461,11 +474,10 @@ export default async function CityDetailPage({ params }: Props) {
     href: getPlaceLinks({ type: 'community', slug: c.slug, citySlug: slug }).placeUrl,
     activeCount: resortSfrCounts.get(c.slug) ?? communitySfrBySlug.get(c.slug) ?? null,
     medianPrice: null,
-    img:
-      CITY_RESORT_LEDGER_IMG[c.slug] ??
-      commImgBySlug.get(c.slug) ??
-      commImgByName.get(c.label.toLowerCase().trim()) ??
-      '',
+    img: preferPlaceHero(
+      commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()),
+      CITY_RESORT_LEDGER_IMG[c.slug] ?? '',
+    ),
   }))
 
   // THE COMMUNITIES RAIL - every community in this city that has a photo, with
@@ -477,7 +489,7 @@ export default async function CityDetailPage({ params }: Props) {
     .map((c): CityCommunityItem | null => {
       const curated = curatedComms.find((f) => c.subdivision.toLowerCase().includes(f.match))
       const cvUrl = communityVideoUrl(curated?.videoSlug)
-      const img = curated?.img ?? c.heroImageUrl ?? null
+      const img = preferPlaceHero(c.heroImageUrl, curated?.img ?? '') || null
       if (!img) return null
       // When this community is a resort, show its ALIAS-AWARE count, so the
       // rail card matches the golf ledger and the real MLS total rather than
@@ -513,7 +525,10 @@ export default async function CityDetailPage({ params }: Props) {
   // service-area allowlist, and the verified-cityHero-only imagery rule
   // (D86/D87), shared with the neighborhood and community nodes so one fix
   // lands on all three.
-  const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots, { excludeSlug: slug })
+  const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots, {
+    excludeSlug: slug,
+    liveHeroBySlug: indexCities,
+  })
 
   // Live activity and city guides.
   const activityItems = buildActivityItems(activity, { staleNewAfterDays: 21 })

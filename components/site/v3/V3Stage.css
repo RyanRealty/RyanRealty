@@ -84,6 +84,18 @@
   padding-top: 5.5rem;
 }
 
+/* A slot (search) opens a dropdown that must escape the frame. Media and
+   scrim stay clipped so the poster never spills. */
+.v3.v3-stage--with-slot {
+  overflow: visible;
+}
+
+.v3.v3-stage--with-slot .v3-stage-media,
+.v3.v3-stage--with-slot .v3-stage-scrim {
+  overflow: hidden;
+  border-radius: inherit;
+}
+
 /* Layer 1: the media. Poster always present; video, when the visitor allows
    motion, covers it with the identical frame so the swap is invisible. */
 .v3 .v3-stage-media {

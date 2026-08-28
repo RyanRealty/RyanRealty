@@ -1,11 +1,12 @@
 /**
  * Master-plan opening helpers. Stage uses an owned community photo when
- * communityImage() has one. No owned asset → belonging figures from authored
+ * communityImage() has one. Live `hero_image_url` on the place row wins when
+ * the page passes it. No owned asset → belonging figures from authored
  * config only. Nothing here fetches or invents a picture.
  */
 
 import { v3Text, type V3FieldItem, type V3InstrumentFigure } from '@/components/site/v3'
-import { communityImage } from '@/lib/geo-images'
+import { communityImage, preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
@@ -16,8 +17,8 @@ import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { measuredPlaceHoaInput } from './place-hoa-measured'
 
-export function stagePoster(slug: string): string | null {
-  return communityImage(slug)
+export function stagePoster(slug: string, liveHero?: string | null): string | null {
+  return preferPlaceHeroOrNull(liveHero, communityImage(slug))
 }
 
 /**

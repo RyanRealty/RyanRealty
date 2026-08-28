@@ -1,0 +1,73 @@
+/* Homepage place lists: larger photos, no methodology captions. */
+#towns .v3-source,
+#communities .v3-source,
+#towns .v3-ledger__source,
+#communities .v3-ledger__source {
+  display: none;
+}
+
+/* 390: photo above the name so a 12rem thumb never crushes Sisters / Terrebonne. */
+#towns .v3-ledger__row,
+#communities .v3-ledger__row {
+  grid-template-columns: 1fr;
+  align-items: start;
+  padding-block: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+}
+
+#towns .v3-ledger__what,
+#communities .v3-ledger__what {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+#towns .v3-ledger__what--media,
+#communities .v3-ledger__what--media {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--v3-space-sm);
+}
+
+#towns .v3-ledger__thumb,
+#communities .v3-ledger__thumb {
+  width: 100%;
+  height: auto;
+  min-height: 10rem;
+  aspect-ratio: 16 / 9;
+}
+
+#towns .v3-ledger__value,
+#communities .v3-ledger__value {
+  justify-self: start;
+}
+
+#towns .v3-ledger__label,
+#communities .v3-ledger__label {
+  font-size: var(--v3-size-body-lg);
+}
+
+@media (min-width: 40rem) {
+  #towns .v3-ledger__row,
+  #communities .v3-ledger__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  #towns .v3-ledger__what--media,
+  #communities .v3-ledger__what--media {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  #towns .v3-ledger__thumb,
+  #communities .v3-ledger__thumb {
+    width: var(--v3-photo-tile-min);
+    height: calc(var(--v3-photo-tile-min) * 0.75);
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+
+  #towns .v3-ledger__value,
+  #communities .v3-ledger__value {
+    justify-self: end;
+  }
+}

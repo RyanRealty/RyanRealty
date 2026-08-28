@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { homeFieldItems } from '@/app/_v3/home-field-items'
+import { filterHomeFieldByCity, homeFieldItems } from '@/app/_v3/home-field-items'
 
 function tile(over: Partial<ListingTile> = {}): ListingTile {
   return {
@@ -61,6 +61,20 @@ describe('homeFieldItems', () => {
     expect(items[0]?.href).toMatch(/^\//)
     // Card titles carry the city; city left the meta line (Matt 2026-08-27).
     expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
+    expect(items[0]?.city).toBe('Bend')
+  })
+
+  it('filters the listed set by MLS city', () => {
+    const items = homeFieldItems(
+      [
+        tile(),
+        tile({ listingKey: 'K2', listNumber: '220111112', city: 'Redmond', streetName: 'Oak' }),
+      ],
+      9,
+    )
+    expect(filterHomeFieldByCity(items, null)).toHaveLength(2)
+    expect(filterHomeFieldByCity(items, 'Redmond').map((item) => item.city)).toEqual(['Redmond'])
+    expect(filterHomeFieldByCity(items, 'Sisters')).toEqual([])
   })
 
   it('labels a fractional-interest ask on the meta line (Camp Sherman rule)', () => {

@@ -36,9 +36,9 @@ vi.mock('@/lib/data', () => ({
     { slug: 'matt-ryan', display_name: 'Matt Ryan' },
   ]),
   getNeighborhoodDirectory: vi.fn(async () => [
-    { neighborhoodName: 'Mountain View', neighborhoodSlug: 'mountain-view', cityName: 'Bend', citySlug: 'bend' },
-    { neighborhoodName: 'River West', neighborhoodSlug: 'river-west', cityName: 'Bend', citySlug: 'bend' },
-    { neighborhoodName: 'Southeast Bend', neighborhoodSlug: 'southeast-bend', cityName: 'Bend', citySlug: 'bend' },
+    { neighborhoodName: 'Mountain View', neighborhoodSlug: 'mountain-view', cityName: 'Bend', citySlug: 'bend', heroImageUrl: null },
+    { neighborhoodName: 'River West', neighborhoodSlug: 'river-west', cityName: 'Bend', citySlug: 'bend', heroImageUrl: null },
+    { neighborhoodName: 'Southeast Bend', neighborhoodSlug: 'southeast-bend', cityName: 'Bend', citySlug: 'bend', heroImageUrl: null },
   ]),
   searchSiteContentTitles: vi.fn(async () => ({
     blog: [{ title: 'Bend market update', slug: 'bend-market-update' }],
