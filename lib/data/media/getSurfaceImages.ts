@@ -113,6 +113,17 @@ function hashSeed(seed: string): number {
  * same image, but different pages spread across the pool. Returns `fallback`
  * (or null) when the pool is empty.
  */
+const REGIONAL_GEO = new Set(['central-oregon'])
+
+function placeSpecificity(geoTags: string[], wanted: Set<string>): number {
+  const places = geoTags.map((g) => g.toLowerCase()).filter((g) => !REGIONAL_GEO.has(g))
+  if (!places.some((g) => wanted.has(g))) return 0
+  // Exact place: the requested slug is the only non-regional tag, so a city
+  // Stage cannot inherit a neighborhood still that also carries the city tag.
+  if (places.length === 1 && wanted.has(places[0]!)) return 2
+  return 1
+}
+
 export function pickSurfaceImage(
   pool: SurfaceImage[],
   opts: { geoTags?: string[]; seed: string; fallback?: string | null; geoOnly?: boolean },
@@ -124,8 +135,10 @@ export function pickSurfaceImage(
   const matches = wanted.size ? pool.filter((p) => p.geoTags.some((g) => wanted.has(g.toLowerCase()))) : []
   if (geoOnly) {
     if (!matches.length) return fallback
-    const idx = hashSeed(seed) % matches.length
-    return matches[idx]?.url ?? fallback
+    const exact = matches.filter((p) => placeSpecificity(p.geoTags, wanted) === 2)
+    const bucket = exact.length ? exact : matches
+    const idx = hashSeed(seed) % bucket.length
+    return bucket[idx]?.url ?? fallback
   }
   const regional = pool.filter((p) => p.geoTags.some((g) => g.toLowerCase() === 'central-oregon'))
 
