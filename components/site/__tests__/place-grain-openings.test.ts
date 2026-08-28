@@ -169,6 +169,12 @@ describe('master-plan opening', () => {
     expect(stagePoster('no-such-community', 'https://cdn.example/live.jpg')).toBe(
       'https://cdn.example/live.jpg',
     )
+    expect(stagePoster('tetherow', null, 'https://cdn.example/library.jpg')).toBe(
+      'https://cdn.example/library.jpg',
+    )
+    expect(stagePoster('tetherow', 'https://cdn.example/live.jpg', 'https://cdn.example/library.jpg')).toBe(
+      'https://cdn.example/live.jpg',
+    )
   })
 
   it('names the place in the heading and leaves belonging to the figures', () => {

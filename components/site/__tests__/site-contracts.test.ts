@@ -239,26 +239,19 @@ describe('design directive contracts', () => {
   it('D86 — city imagery sources from the VERIFIED cityHero registry (Family 4, 2026-06-10)', () => {
     // v3.2 supersedes the v3.1 tile-imagery contract: the seeded-pool
     // getGeoTileImages/golfCommunityImage path put wrong-city photos on city
-    // pages (Tumalo Falls as the Bend hero). Imagery now resolves ONLY
-    // through cityHero() — the visually-verified per-city registry — and a
-    // city without a verified photo renders the LABELED regional fallback.
+    // pages (Tumalo Falls as the Bend hero). Ledger imagery still resolves
+    // through buildOtherCityItems → cityHero() and renders NO thumbnail for
+    // an unverified city. The city first fold (2026-08-28) mounts existing
+    // V3Stage with a geo-strict library still via city-opening.ts — never
+    // getSurfaceImage / getGeoTileImages / pickGeoImage in page.tsx itself.
     const src = readSrc('app/cities/[slug]/page.tsx')
-    // THE CITY PAGE NO LONGER OWNS A FULL-BLEED HERO, so the three positive
-    // assertions moved to the two files that now hold the behavior (P9, 2026-08-12).
-    // PUBLIC_UI.md's locked Places opening is an Instrument and the same section
-    // forbids a Stage over a number, so there is no hero photo on this route for
-    // cityHero() to source or mediaCaption to caption. What the route DOES have is
-    // place imagery in its ledgers, and that imagery resolves through
-    // buildOtherCityItems, which calls cityHero() and renders NO thumbnail for an
-    // unverified city — the rule this directive exists for, one level down.
-    // THE CITY PAGE NO LONGER OWNS A FULL-BLEED HERO (P9, re-landed 2026-08-26):
-    // PUBLIC_UI.md's locked City opening is the Field of the city's houses, so
-    // there is no hero photo on this route for cityHero() to source. What the
-    // route DOES have is place imagery in its ledgers, and that imagery resolves
-    // through buildOtherCityItems, which calls cityHero() and renders NO
-    // thumbnail for an unverified city — the rule this directive exists for,
-    // one level down.
+    expect(src).toMatch(/V3Stage/)
+    expect(src).toMatch(/cityLibraryHero|cityStagePoster/)
     expect(src).toMatch(/buildOtherCityItems\(/)
+    const opening = readSrc('app/cities/[slug]/_v3/city-opening.ts')
+    expect(opening).toMatch(/geoOnly:\s*true/)
+    expect(opening).toMatch(/preferPlaceHeroOrNull/)
+    expect(opening).not.toMatch(/\bcityHero\s*\(/)
     const shared = readSrc('lib/kb/place-sections.ts')
     expect(shared).toMatch(/preferPlaceHero/)
     expect(shared).toMatch(/cityHero\s*\(/)

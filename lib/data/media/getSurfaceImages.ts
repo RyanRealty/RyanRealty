@@ -21,38 +21,78 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 export type SurfaceImage = { url: string; geoTags: string[]; subjectTags: string[] }
 export type Surface = 'hero' | 'card'
 
-async function _getSurfaceImagesUncached(surface: Surface): Promise<SurfaceImage[]> {
-  const sb = supabaseAnon()
-  if (!sb) return []
-  const { data, error } = await sb
-    .from('asset_library')
-    .select('file_url, geo_tags, subject_tags')
-    .eq('type', 'photo')
-    .eq('approval', 'approved')
-    // Machine-vision quality gate at the point of use (2026-06-10): hero/card
-    // slots only serve A/B-grade photography. C-grade and ungraded assets
-    // never reach a page surface — Matt does not taste-test photos.
-    .in('vision_grade', ['A', 'B'])
-    .contains('surface_tags', [surface])
-    .not('file_url', 'is', null)
-    .limit(600)
-  // THROW on a transient DB error so makeResilientCached never caches the empty
-  // result (poison-null: one pooler/timeout blip would otherwise blank every page
-  // hero/card for the whole assets window). A genuine empty success returns [].
-  if (error) throw new Error(`[getSurfaceImages] ${error.message ?? JSON.stringify(error)}`)
-  if (!data) return []
-  return (data as Array<{ file_url: string; geo_tags: string[] | null; subject_tags: string[] | null }>).map((r) => ({
+type AssetRow = { file_url: string; geo_tags: string[] | null; subject_tags: string[] | null }
+
+function toSurfaceImages(rows: AssetRow[] | null): SurfaceImage[] {
+  if (!rows) return []
+  return rows.map((r) => ({
     url: r.file_url,
     geoTags: r.geo_tags ?? [],
     subjectTags: r.subject_tags ?? [],
   }))
 }
 
+function mergeSurfaceImages(...pools: SurfaceImage[][]): SurfaceImage[] {
+  const seen = new Set<string>()
+  const out: SurfaceImage[] = []
+  for (const pool of pools) {
+    for (const image of pool) {
+      if (!image.url || seen.has(image.url)) continue
+      seen.add(image.url)
+      out.push(image)
+    }
+  }
+  return out
+}
+
+async function _getSurfaceImagesUncached(surface: Surface): Promise<SurfaceImage[]> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  // Machine-vision quality gate (2026-06-10): hero/card slots serve A/B-grade
+  // photography. Approved Grok Imagine place stills are the one exception —
+  // they ship with vision_grade null because Matt directed them into
+  // asset_library as owned place heroes (2026-08-22). C-grade and other
+  // ungraded assets still never reach a page surface.
+  const graded = sb
+    .from('asset_library')
+    .select('file_url, geo_tags, subject_tags')
+    .eq('type', 'photo')
+    .eq('approval', 'approved')
+    .in('vision_grade', ['A', 'B'])
+    .contains('surface_tags', [surface])
+    .not('file_url', 'is', null)
+    .limit(600)
+  const grokImagine = sb
+    .from('asset_library')
+    .select('file_url, geo_tags, subject_tags')
+    .eq('type', 'photo')
+    .eq('approval', 'approved')
+    .eq('source', 'grok-imagine')
+    .is('vision_grade', null)
+    .contains('surface_tags', [surface])
+    .not('file_url', 'is', null)
+    .limit(200)
+  const [gradedRes, grokRes] = await Promise.all([graded, grokImagine])
+  // THROW on a transient DB error so makeResilientCached never caches the empty
+  // result (poison-null: one pooler/timeout blip would otherwise blank every page
+  // hero/card for the whole assets window). A genuine empty success returns [].
+  if (gradedRes.error) {
+    throw new Error(`[getSurfaceImages] ${gradedRes.error.message ?? JSON.stringify(gradedRes.error)}`)
+  }
+  if (grokRes.error) {
+    throw new Error(`[getSurfaceImages] ${grokRes.error.message ?? JSON.stringify(grokRes.error)}`)
+  }
+  return mergeSurfaceImages(
+    toSurfaceImages((gradedRes.data ?? []) as AssetRow[]),
+    toSurfaceImages((grokRes.data ?? []) as AssetRow[]),
+  )
+}
+
 export const getSurfaceImages = makeResilientCached(
   _getSurfaceImagesUncached,
-  // v4 — bumped 2026-06-09 alongside the poison-null fix (was unstable_cache, which
-  // cached [] on a transient error). v3 entries may be poisoned; v4 evicts them.
-  ['surface-images-v4'],
+  // v5 — include approved grok-imagine place stills that have no vision_grade.
+  // v4 evicted poison-null []; those entries are stale for place Stage.
+  ['surface-images-v5'],
   { revalidate: CACHE_WINDOWS.assets, tags: [cacheTag.assets] },
   [],
 )
@@ -75,13 +115,18 @@ function hashSeed(seed: string): number {
  */
 export function pickSurfaceImage(
   pool: SurfaceImage[],
-  opts: { geoTags?: string[]; seed: string; fallback?: string | null },
+  opts: { geoTags?: string[]; seed: string; fallback?: string | null; geoOnly?: boolean },
 ): string | null {
-  const { geoTags = [], seed, fallback = null } = opts
+  const { geoTags = [], seed, fallback = null, geoOnly = false } = opts
   if (!pool.length) return fallback
 
   const wanted = new Set(geoTags.map((g) => g.toLowerCase()))
   const matches = wanted.size ? pool.filter((p) => p.geoTags.some((g) => wanted.has(g.toLowerCase()))) : []
+  if (geoOnly) {
+    if (!matches.length) return fallback
+    const idx = hashSeed(seed) % matches.length
+    return matches[idx]?.url ?? fallback
+  }
   const regional = pool.filter((p) => p.geoTags.some((g) => g.toLowerCase() === 'central-oregon'))
 
   const bucket = matches.length ? matches : regional.length ? regional : pool
@@ -95,7 +140,7 @@ export function pickSurfaceImage(
  */
 export async function getSurfaceImage(
   surface: Surface,
-  opts: { geoTags?: string[]; seed: string; fallback?: string | null },
+  opts: { geoTags?: string[]; seed: string; fallback?: string | null; geoOnly?: boolean },
 ): Promise<string | null> {
   const pool = await getSurfaceImages(surface)
   return pickSurfaceImage(pool, opts)

@@ -149,6 +149,7 @@ import {
   communityFieldCaption,
   communityFieldItems,
   communityFieldTrace,
+  communityLibraryHero,
   stagePoster,
   type CommunityFieldBranch,
 } from './_v3/community-opening'
@@ -591,7 +592,8 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   /* ── The opening ───────────────────────────────────────────────────────── */
 
-  const posterSrc = stagePoster(slug, community.heroImageUrl)
+  const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
+  const posterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
   // The approved area-guide clip plays ON the Stage - the one pattern for
   // owned full-bleed media (PUBLIC_UI §3). Muted, looping, motion-respecting
   // inside V3Stage. Null when the community has no approved clip.

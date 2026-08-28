@@ -2,7 +2,8 @@
  * /cities/[slug] - the city node, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 City. First screen is
- * the Field of this city's houses. Verdict is a caption, never a number hero.
+ * V3Stage when a place-owned library still exists, then the Field of this
+ * city's houses. Verdict is a caption, never a number hero.
  * Child neighborhoods and master-plans are doors below the fold. Section order
  * is the parity contract: design_system/ryan-realty/ui_kits/city/parity.json.
  *
@@ -55,9 +56,9 @@
  *     Instrument's "detached homes for sale" is the leftover membership count.
  *     Two counts, two labels, each under its own trace.
  *  3. ONE PRIMARY PER VIEWPORT, COUNTING VISIBLE FILLED CONTROLS (PUBLIC_UI.md
- *     §1). The first viewport is the Field; the next tap is a house. The
- *     Instrument ask sits below the fold. Every Ledger action stays a ghost
- *     and V3Footer carries no button.
+ *     §1). The first viewport is Stage (owned still) or the Field; the next
+ *     tap is a house. The Instrument ask sits below the fold. Every Ledger
+ *     action stays a ghost and V3Footer carries no button.
  */
 
 import { notFound } from 'next/navigation'
@@ -123,6 +124,7 @@ import {
   V3Ledger,
   V3PlacePropertyTypes,
   V3Quiet,
+  V3Stage,
   V3SectionTracker,
   type V3ChartCardProps,
   type V3InstrumentFigure,
@@ -132,6 +134,7 @@ import CityPageTracker from '@/components/city/CityPageTracker'
 import { coreChartsCard } from '@/components/market/core-charts'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
 import { CityHomesField } from './_v3/CityHomesField'
+import { cityLibraryHero, cityStagePoster } from './_v3/city-opening'
 import { cityFieldItems } from './_v3/city-field-items'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
 import {
@@ -230,6 +233,7 @@ export default async function CityDetailPage({ params }: Props) {
     regionMartRow,
     indexCities,
     neighborhoodDirectory,
+    libraryHero,
   ] = await Promise.all([
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city:detachedInv'),
@@ -285,6 +289,7 @@ export default async function CityDetailPage({ params }: Props) {
     getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
     withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'city:liveHeroes'),
     withTimeoutFallback(getNeighborhoodDirectory(), [], 3000, 'city:nbhDir'),
+    withTimeoutFallback(cityLibraryHero(slug), null, 3000, 'city:libraryHero'),
   ])
 
   // The approved area-guide clip - a guides-Ledger door on this node (the
@@ -407,6 +412,7 @@ export default async function CityDetailPage({ params }: Props) {
   // carried, so a 1,000-listing city does not ship a 1,000-row DOM. The full
   // count is the Instrument's figure; its action is the view-all door.
   const fieldItems = cityFieldItems(tiles, CITY_PLACE_LIST_CAP)
+  const stagePosterSrc = cityStagePoster(indexCities[slug], libraryHero)
   const fieldCaption = cityFieldCaption({
     cityName,
     count: fieldItems.length,
@@ -588,13 +594,37 @@ export default async function CityDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={citySchemas} />
 
-        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
+        {stagePosterSrc ? (
+          <>
+            <V3Breadcrumb
+              tone="on-media"
+              trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]}
+            />
+            <V3Stage
+              id="place"
+              headingLevel={1}
+              height="tall"
+              eyebrow={`${cityName} · Oregon`}
+              headline={`${cityName} homes for sale`}
+              posterSrc={stagePosterSrc}
+              action={{
+                label: fieldItems[0]?.title || `See ${cityName} homes`,
+                href: fieldItems[0]?.href || '#homes',
+              }}
+            />
+          </>
+        ) : (
+          <V3Breadcrumb
+            trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]}
+          />
+        )}
 
-        {/* Pattern 2, Field. Houses fill the fold; the count is a caption and
-            the H1 is the money head term. */}
+        {/* Pattern 2, Field. Houses fill the fold when Stage has no owned still;
+            otherwise the Field is the map tap-through under Stage. */}
         <CityHomesField
           cityName={cityName}
           headline={v3Text(`${cityName} homes for sale`)}
+          ownsHeading={!stagePosterSrc}
           fieldItems={fieldItems}
           tilesLength={tiles.length}
           caption={fieldCaption}

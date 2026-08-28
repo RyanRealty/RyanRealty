@@ -1,11 +1,12 @@
 /**
  * Master-plan opening helpers. Stage uses an owned community photo when
- * communityImage() has one. Live `hero_image_url` on the place row wins when
- * the page passes it. No owned asset → belonging figures from authored
- * config only. Nothing here fetches or invents a picture.
+ * one exists. Live `hero_image_url` on the place row wins, then a geo-strict
+ * library still, then communityImage(). No owned asset → belonging figures
+ * from authored config only. Nothing here invents a picture.
  */
 
 import { v3Text, type V3FieldItem, type V3InstrumentFigure } from '@/components/site/v3'
+import { getSurfaceImage } from '@/lib/data'
 import { communityImage, preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
@@ -17,8 +18,20 @@ import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { measuredPlaceHoaInput } from './place-hoa-measured'
 
-export function stagePoster(slug: string, liveHero?: string | null): string | null {
-  return preferPlaceHeroOrNull(liveHero, communityImage(slug))
+export async function communityLibraryHero(slug: string): Promise<string | null> {
+  return getSurfaceImage('hero', {
+    geoTags: [slug],
+    seed: `community:${slug}`,
+    geoOnly: true,
+  })
+}
+
+export function stagePoster(
+  slug: string,
+  liveHero?: string | null,
+  libraryHero?: string | null,
+): string | null {
+  return preferPlaceHeroOrNull(liveHero, preferPlaceHeroOrNull(libraryHero, communityImage(slug)))
 }
 
 /**

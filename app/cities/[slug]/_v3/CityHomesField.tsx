@@ -15,27 +15,31 @@ export function CityHomesField({
   tilesLength,
   caption,
   source,
+  ownsHeading = true,
 }: {
   cityName: string
   /**
-   * THE PAGE H1, passed from the route file so ci:seo-shell can read the
-   * money-route head term (`${cityName} homes for sale`) off page.tsx itself.
-   * The market Instrument below is level 2 and carries the market question.
+   * THE PAGE H1 when this Field opens the page. When V3Stage already carries
+   * `${cityName} homes for sale`, ownsHeading is false so the Field does not
+   * ship a second h1.
    */
   headline: V3Text
   fieldItems: V3FieldItem[]
   tilesLength: number
   caption: string | null
   source: string
+  ownsHeading?: boolean
 }) {
   const pins = fieldMapPins(fieldItems)
   const missing = fieldItems.length - pins.length
   const posterSrc = fieldItems.find((item) => item.photoSrc)?.photoSrc
   return (
     <>
-      <V3Heading level={1} size="field" className="v3-field-place-name">
-        {headline}
-      </V3Heading>
+      {ownsHeading ? (
+        <V3Heading level={1} size="field" className="v3-field-place-name">
+          {headline}
+        </V3Heading>
+      ) : null}
       <V3Field
         id="homes"
         ariaLabel={`Homes for sale in ${cityName}`}
