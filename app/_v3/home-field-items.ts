@@ -20,13 +20,6 @@ import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 
-export type HomeFieldItem = V3FieldItem & {
-  city: string
-  typeKey: string
-  typeLabel: string
-  cat: 0 | 1 | 2 | 3 | 4
-}
-
 const TYPE_ORDER = [
   'house',
   'condo',
@@ -38,10 +31,19 @@ const TYPE_ORDER = [
   'other',
 ] as const
 
+export type HomeFieldTypeKey = (typeof TYPE_ORDER)[number]
+
+export type HomeFieldItem = V3FieldItem & {
+  city: string
+  typeKey: HomeFieldTypeKey
+  typeLabel: string
+  cat: 0 | 1 | 2 | 3 | 4
+}
+
 function classifyType(input: {
   propertyType?: string | null
   propertySubType?: string | null
-}): { typeKey: string; typeLabel: string } {
+}): { typeKey: HomeFieldTypeKey; typeLabel: string } {
   const sub = (input.propertySubType ?? '').trim()
   const cls = (input.propertyType ?? '').trim().toUpperCase()
 

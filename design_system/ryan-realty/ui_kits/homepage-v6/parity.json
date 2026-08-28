@@ -22,7 +22,7 @@
     },
     {
       "name": "KbListingMap",
-      "where": "the Field mapSlot (PlaceFieldMap): plots exactly the listed set"
+      "where": "HomeHomesField mounts PlaceFieldMap in the Field map slot: plots exactly the listed set"
     },
     {
       "name": "KbTicker",
@@ -72,11 +72,7 @@
     },
     {
       "name": "HomeHomesField",
-      "section": "Field: town filters, curated homes + map in one frame, listFlow, See all"
-    },
-    {
-      "name": "PlaceFieldMap",
-      "section": "the Google map in the Field frame"
+      "section": "The route-local Field wrapper: V3Field with PlaceFieldMap in the map slot, type chips, town doors, listFlow, See all. V3Field and PlaceFieldMap are imported by THIS component, not the route file, so this entry is the one the import gate binds on. The Google map stays in the Field frame."
     },
     {
       "name": "V3Ledger",
@@ -140,8 +136,8 @@
   "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH: live Central Oregon inventory on a v3 Field, per-town medians, and the buyer-or-seller answer with its trace. Search is the Stage action over owned Old Mill media.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage #hero -- flyover, H1, HomeHeroSearch, See homes",
-    "HomeHomesField -- the houses and the map, live regional count, listFlow, See all",
+    "V3Stage #hero -- flyover, H1, HomeHeroSearch",
+    "HomeHomesField -- the houses and the map in one frame, listFlow, See all",
     "V3Ledger #towns -- each town's active count and median list price",
     "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
     "V3Ledger #communities -- resorts and master-planned communities",

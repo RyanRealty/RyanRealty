@@ -27,15 +27,12 @@
  */
 
 import { getSurfaceImage } from '@/lib/data'
-import { getListingTiles, getDetachedOverlays } from '@/lib/data'
+import { getListingTiles } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
-import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
-import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { homeFieldItems } from '@/app/_v3/home-field-items'
 import { HomeHomesField } from '@/app/_v3/HomeHomesField'
-import { HOME_TILE_FETCH, HOME_FIELD_LIMIT, HOME_COUNT_TRACE, homeFieldNote } from '@/app/_v3/home-constants'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { HOME_TILE_FETCH, HOME_FIELD_LIMIT } from '@/app/_v3/home-constants'
 import { homesForSalePath } from '@/lib/slug'
 import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -79,24 +76,14 @@ export const metadata = pageMetadata({
 
 export default async function BuyPage() {
   // LIVE INVENTORY (2026-08-27). This page's own competitiveTarget opens with
-  // "live MLS search as the next step" and it rendered no listings, no count and
-  // no market figure -- a buyer-intent page with no houses on it, recorded in
-  // openDefects and closed here. Same wiring as the homepage Field: the same
-  // curated SFR set, the same leftover region count over it, towns as ghost
-  // filters, the map plotting exactly the homes the list shows.
-  const [buyTiles, buyCities, buyOverlays] = await Promise.all([
+  // "live MLS search as the next step" and it rendered no listings -- a
+  // buyer-intent page with no houses on it, recorded in openDefects and closed
+  // here. Same Field as the homepage: HomeHomesField owns the map slot
+  // (PlaceFieldMap inside the frame). Towns stay as doors.
+  const [buyTiles, buyCities] = await Promise.all([
     getListingTiles({ status: 'active', propertySubType: 'Single Family Residence', limit: HOME_TILE_FETCH }).catch(() => []),
     getMarketPulseAllCitySnapshots().catch(() => []),
-    getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]).catch(() => new Map()),
   ])
-  const buyRegionMt = buyOverlays.get('region:central-oregon')
-  const buyHud = leftoverHudKpis({
-    grain: 'region',
-    headlines: buyRegionMt?.headlines ?? null,
-    inventory: buyRegionMt?.inventory ?? null,
-    pace: EMPTY_PUBLIC_PACE,
-  })
-  const buyStamp = buyRegionMt?.headlines?.computedAt ?? buyRegionMt?.inventory?.computedAt ?? null
   // The same six towns the homepage leads with, same order, off the pulse
   // snapshots (a lib/data read; ci:page-action-imports bans a new page->action
   // read, which is where the city index lives).
@@ -109,11 +96,6 @@ export default async function BuyPage() {
   const buyFieldItems = homeFieldItems(
     curateFeaturedTiles(buyTiles, buyTowns, HOME_FIELD_LIMIT),
     HOME_FIELD_LIMIT,
-  )
-  const buyPins = buyFieldItems.flatMap((i) =>
-    i.lat != null && i.lng != null
-      ? [{ id: i.id, href: i.href, priceLabel: i.priceLabel, title: i.title, lat: i.lat, lng: i.lng }]
-      : [],
   )
 
   const heroSrc = await getSurfaceImage('hero', {
@@ -174,22 +156,6 @@ export default async function BuyPage() {
         <HomeHomesField
           fieldItems={buyFieldItems}
           towns={buyTowns.map((t) => ({ label: t.name, href: homesForSalePath(t.name) }))}
-          count={
-            buyHud.active != null
-              ? {
-                  value: buyHud.active.toLocaleString('en-US'),
-                  label: 'homes for sale across Central Oregon. Live list prices and days on market.',
-                  source: HOME_COUNT_TRACE,
-                  updatedAt: buyStamp,
-                }
-              : undefined
-          }
-          mapSlot={
-            buyPins.length > 0
-              ? <PlaceFieldMap pins={buyPins} placeName="Central Oregon" posterSrc={buyFieldItems[0]?.photoSrc} />
-              : undefined
-          }
-          mapNote={buyFieldItems.length > 0 ? homeFieldNote(buyFieldItems.length) : undefined}
           emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
         />
 
