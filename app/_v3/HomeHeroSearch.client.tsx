@@ -15,6 +15,7 @@ import {
   type SuggestItem,
 } from '@/components/search/SearchSuggest'
 import { searchHrefForQuery } from '@/lib/parse-search-query'
+import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import './home-hero-search.css'
 
 export function HomeHeroSearch() {
@@ -44,7 +45,10 @@ export function HomeHeroSearch() {
 
   const onSubmit = useCallback(() => {
     const text = query.trim()
-    if (!text) return
+    if (!text) {
+      go(publishRegionalSearchHref())
+      return
+    }
     const picked = highlight >= 0 ? items[highlight] : undefined
     if (picked) {
       go(picked.href)

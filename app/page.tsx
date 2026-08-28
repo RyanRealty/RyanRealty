@@ -223,6 +223,13 @@ export default async function Home() {
                 }
               : undefined
           }
+          seeAll={{
+            href: publishRegionalSearchHref(),
+            label:
+              hud.active != null
+                ? `See all ${hud.active.toLocaleString('en-US')}`
+                : 'See all homes',
+          }}
           emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
         />
 

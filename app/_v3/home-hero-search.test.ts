@@ -21,6 +21,11 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).toContain('searchHrefForQuery')
     expect(SEARCH).toContain('City, community, or address')
   })
+
+  it('sends an empty Search to the regional list, not Bend-injecting /homes-for-sale', () => {
+    expect(SEARCH).toContain('publishRegionalSearchHref')
+    expect(SEARCH).toMatch(/if \(!text\) \{\s*go\(publishRegionalSearchHref\(\)\)/)
+  })
 })
 
 describe('preferPlaceHero', () => {
