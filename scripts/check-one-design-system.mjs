@@ -239,8 +239,9 @@ for (const rel of [...tsxFiles('app'), ...tsxFiles('components')].filter(inScope
 const V3_CSS_SANCTIONED_HEX = new Set([
   '102742', 'faf8f4', 'ffffff', 'fff', '000000', '000',
   'a8452b', // --v3-exception = --rr-exception (colors_and_type.css)
-  'b9ab97', // --v3-focus: the 3px warm-stone focus ring (brand law)
-  'eee9e0', // --v3-ground: the Ledger sunken-panel paper
+  'b9ab97', // --v3-focus: the 3px warm-stone focus ring (brand law names it)
+  // NOT sanctioned: #eee9e0 — the old ground literal read brown on the footer
+  // (Matt 2026-08-27). --v3-ground is now color-mix derived; a literal here fails.
 ])
 for (const rel of readdirSync('components/site/v3').filter((f) => f.endsWith('.css'))) {
   const cssPath = `components/site/v3/${rel}`
