@@ -96,3 +96,60 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
 
   return items
 }
+
+/** Closed sales as Field rows. Close price is the figure. Missing close is dropped. */
+export function soldFieldItems(tiles: readonly ListingTile[], limit?: number): V3FieldItem[] {
+  const items: V3FieldItem[] = []
+  const cap = limit ?? Number.POSITIVE_INFINITY
+  for (const tile of tiles) {
+    if (items.length >= cap) break
+    if (tile.closePrice == null || !Number.isFinite(tile.closePrice) || tile.closePrice <= 0) continue
+    const street = publishStreetLine({
+      streetNumber: tile.streetNumber,
+      streetName: tile.streetName,
+      streetSuffix: tile.streetSuffix,
+    })
+    if (!street) continue
+    const photo = tile.photoUrl?.trim()
+    items.push({
+      id: tile.listingKey,
+      href: listingDetailPath(
+        tile.listingKey,
+        { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
+        { city: tile.city, subdivision: tile.subdivisionName },
+        { mlsNumber: tile.listNumber },
+      ),
+      priceLabel: formatPublishedAsk(tile.closePrice) ?? 'Price on request',
+      title:
+        publishCardAddress({
+          streetNumber: tile.streetNumber,
+          streetName: tile.streetName,
+          streetSuffix: tile.streetSuffix,
+          city: tile.city,
+        }) || street,
+      ...(photo ? { photoSrc: photo } : {}),
+      lat: tile.lat,
+      lng: tile.lng,
+    })
+  }
+  return items
+}
+
+/** Community photo doors for the "Also on the list" Field. */
+export function nearbyFieldItems(
+  items: ReadonlyArray<{ name: string; href: string; img: string; activeCount: number | null }>,
+): V3FieldItem[] {
+  return items.flatMap((item) => {
+    const href = item.href?.trim()
+    const name = item.name?.trim()
+    const img = item.img?.trim()
+    if (!href || !name || !img) return []
+    const listed =
+      item.activeCount == null
+        ? 'See homes'
+        : item.activeCount === 0
+          ? 'None listed now'
+          : `${item.activeCount.toLocaleString('en-US')} listed`
+    return [{ id: href, href, priceLabel: listed, title: name, photoSrc: img }]
+  })
+}

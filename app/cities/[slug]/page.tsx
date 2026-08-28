@@ -31,12 +31,9 @@
  * marketVerdict classifies it, formatMonthsOfSupply displays it, and
  * buildMarketFaq repeats the same two steps on the same raw value.
  *
- * THE MARKET QUESTION STAYS (Matt 2026-08-26, all five place grains): the
- * market Instrument's level-2 headline is "Is {city} a buyer's or seller's
- * market?" whenever a verdict exists, with the answer as the section note
- * directly beneath - the same question KbMarketHud carried, now on the barrel.
- * With no verdict there is no question (a question with no answer under it is
- * worse than a label), and the H1 stays the money head term on the Stage.
+ * Buyer/seller is not a heading. Months of supply lives in Chart Room Rank
+ * as seller / balanced / buyer bands. The H1 stays the money head term on
+ * the Stage. Warehouse names stay in collapsed Source, not on the face.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, generateStaticParams over PRIMARY_CITIES with dynamicParams,
@@ -118,8 +115,9 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
 import { CityHeroSearch } from './_v3/CityHeroSearch.client'
-import { CityHomesField } from './_v3/CityHomesField'
-import { cityFieldItems } from './_v3/city-field-items'
+import { CityHomesField, CityMap, CityPhotoField } from './_v3/CityHomesField'
+import { cityFieldItems, nearbyFieldItems, soldFieldItems } from './_v3/city-field-items'
+import { cityGroundItems, citySchoolItems } from './_v3/city-place-face'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
 import {
   activityRows,
@@ -132,10 +130,9 @@ import {
   cityFieldCaption,
   cityFieldTrace,
   cityMarketTrace,
-  communityRows,
+  MAP_TRACE,
   marketAbsenceItems,
   placeFigureRows,
-  soldRows,
   PLACE_COUNT_TRACE,
   SOLD_TRACE,
   type CityCommunityItem,
@@ -305,22 +302,18 @@ export default async function CityDetailPage({ params }: Props) {
   }
   const marketFaq = buildMarketFaq(cityName, marketFaqInput)
   const { faqs } = marketFaq
+  const faceFaqs = faqs.filter(
+    (item) =>
+      !/leftover|methodology v|Market Truth|city_quarter|sale_pricing_facts|buyer's or seller's market/i.test(
+        `${item.question} ${item.answer}`,
+      ),
+  )
 
   const figures = cityBuyerFigures(hud, {
     browse: homesForSalePath(cityName),
     monthsOfSupply: '/months-of-supply',
-  })
-  const [firstMarketFigure, ...restMarketFigures] = figures
-
-  // THE MARKET QUESTION (Matt 2026-08-26: it stays on all five place grains).
-  // Question only when the verdict answers it; the answer is the note beneath.
-  const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
-  const marketHeadline = hasVerdict
-    ? `Is ${cityName} a buyer's or seller's market?`
-    : `The ${cityName} market`
-  const verdictSentence = hasVerdict
-    ? `${cityName} has ${mosLabel} months of supply, which is a ${verdict.label}.`
-    : null
+  }).slice(0, 1)
+  const [firstMarketFigure] = figures
 
   const townCards = await cityMarketChartCards({
     citySlug: slug,
@@ -343,9 +336,6 @@ export default async function CityDetailPage({ params }: Props) {
   const fieldCaption = cityFieldCaption({
     cityName,
     count: fieldItems.length,
-    mosLabel,
-    verdictKind: verdict.kind,
-    verdictLabel: verdict.label,
   })
 
   /* ── The place ledgers ──────────────────────────────────────────────────── */
@@ -470,10 +460,21 @@ export default async function CityDetailPage({ params }: Props) {
   // V3Ledger's rows prop is a non-empty tuple, so each section destructures a
   // head and renders nothing when there is none.
   const [firstNbh, ...restNbh] = placeFigureRows(bendNeighborhoodItems, `${cityName} neighborhood`)
-  const [firstRail, ...restRail] = communityRows(communityItems)
   const [firstGolf, ...restGolf] = placeFigureRows(golfLedgerItems, 'Golf and master-planned')
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
-  const [firstSold, ...restSold] = soldRows(soldTiles)
+  const soldItems = soldFieldItems(soldTiles)
+  const nearbyItems = nearbyFieldItems([
+    ...communityItems,
+    ...golfCommunityItems.filter(
+      (item) => !communityItems.some((c) => c.name.toLowerCase().trim() === item.name.toLowerCase().trim()),
+    ),
+  ])
+  const cityContent = getCityContent(cityName)
+  const quickFacts = CITY_QUICK_FACTS[cityName] ?? null
+  const groundItems = cityGroundItems(cityName, quickFacts)
+  const schoolItems = citySchoolItems(cityName)
+  const description = cityContent?.description?.trim()
+  const aboutItems = cityAboutItems(description, quickFacts)
   // D94 restored 2026-08-27. The feed is CITY-scoped, which is what this page is,
   // so the eyebrow and the door both name the city honestly.
   const openHouses = await readCityOpenHouses(cityName)
@@ -483,15 +484,6 @@ export default async function CityDetailPage({ params }: Props) {
     ...areaGuideRow(cityName, areaGuideVideo),
     ...articleRows(articlePosts),
   ]
-
-  // About - the hand-written city description where one exists. NO GENERATED
-  // PARAGRAPHS AND NO FIGURES (invariant 1): buildDataDrivenCityAbout stays out
-  // because its market sentence restated the count and the median, untraced,
-  // inside a V3Quiet.
-  const cityContent = getCityContent(cityName)
-  const quickFacts = CITY_QUICK_FACTS[cityName] ?? null
-  const description = cityContent?.description?.trim()
-  const aboutItems = cityAboutItems(description, quickFacts)
 
   const exploreItems = cityExploreItems(
     cityName,
@@ -546,18 +538,65 @@ export default async function CityDetailPage({ params }: Props) {
           source={cityFieldTrace(cityName)}
         />
 
-        {firstSold ? (
-          <V3Ledger
-            id="sold"
-            eyebrow={v3Text(`${cityName} · Sold`)}
-            heading={v3Text('Recently sold')}
-            rows={[firstSold, ...restSold]}
-            source={v3Text(SOLD_TRACE)}
+        <CityPhotoField
+          id="sold"
+          cityName={cityName}
+          headline={v3Text('Recently sold')}
+          ariaLabel={`Recently sold homes in ${cityName}`}
+          fieldItems={soldItems}
+          source={SOLD_TRACE}
+        />
+
+        <CityMap id="map" cityName={cityName} fieldItems={fieldItems} source={MAP_TRACE} />
+
+        <CityPhotoField
+          id="communities"
+          cityName={cityName}
+          headline={v3Text('Also on the list')}
+          ariaLabel={`Places in ${cityName}`}
+          fieldItems={nearbyItems}
+          source={PLACE_COUNT_TRACE}
+        />
+
+        {groundItems.length > 0 ? (
+          <V3Quiet id="ground" eyebrow={`${cityName} · On the ground`} heading="On the ground" items={groundItems} />
+        ) : null}
+
+        {aboutItems.length > 0 ? (
+          <V3Quiet
+            id="about"
+            eyebrow={`${cityName}, Oregon`}
+            heading={`${cityName}, in plain words`}
+            items={aboutItems}
+          />
+        ) : null}
+
+        {firstMarketFigure ? (
+          <V3Instrument
+            id="market"
+            level={2}
+            eyebrow={v3Text(`${cityName} · Chart Room`)}
+            headline={v3Text('Market')}
+            figures={[firstMarketFigure]}
+            source={v3Text(cityMarketTrace(cityName, mosLabel != null))}
+            cards={marketCards.length > 0 ? marketCards : undefined}
+            updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
             action={{
-              label: v3Text(`Every sold ${cityName} home`),
-              href: `${homesForSalePath(cityName)}?status=Sold`,
+              label: v3Text(`See every ${cityName} home for sale`),
+              href: homesForSalePath(cityName),
+              variant: 'ghost',
             }}
           />
+        ) : (
+          <V3Quiet
+            id="market"
+            heading="Market"
+            items={marketAbsenceItems(cityName, Boolean(fieldItems.length))}
+          />
+        )}
+
+        {schoolItems.length > 0 ? (
+          <V3Quiet id="schools" eyebrow={`${cityName} · Schools`} heading="Assigned schools" items={schoolItems} />
         ) : null}
 
         {/* D83: the DESIGNATED Bend polygons, and only those. */}
@@ -575,56 +614,10 @@ export default async function CityDetailPage({ params }: Props) {
           />
         ) : null}
 
-        {aboutItems.length > 0 ? (
-          <V3Quiet
-            id="about"
-            eyebrow={`${cityName}, Oregon`}
-            heading={`${cityName}, in plain words`}
-            items={aboutItems}
-          />
-        ) : null}
-
-        {/* D88: every community in the city that has a photo, marquee first. */}
-        {firstRail ? (
-          <V3Ledger
-            id="communities"
-            eyebrow={v3Text(`${cityName} · Communities`)}
-            heading={v3Text('Communities and subdivisions')}
-            rows={[firstRail, ...restRail]}
-            source={v3Text(PLACE_COUNT_TRACE)}
-            action={{ label: v3Text('Every community'), href: '/communities' }}
-          />
-        ) : null}
-
-        {firstMarketFigure ? (
-          <V3Instrument
-            id="market"
-            level={2}
-            eyebrow={v3Text(`${cityName} · Market`)}
-            headline={v3Text(marketHeadline)}
-            note={verdictSentence ? v3Text(verdictSentence) : undefined}
-            figures={[firstMarketFigure, ...restMarketFigures]}
-            source={v3Text(cityMarketTrace(cityName, mosLabel != null))}
-            cards={marketCards.length > 0 ? marketCards : undefined}
-            updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
-            action={{
-              label: v3Text(`See every ${cityName} home for sale`),
-              href: homesForSalePath(cityName),
-              variant: 'primary',
-            }}
-          />
-        ) : (
-          <V3Quiet
-            id="market"
-            heading={`The ${cityName} market`}
-            items={marketAbsenceItems(cityName, Boolean(fieldItems.length))}
-          />
-        )}
-
         {/* D85: golf and master-planned communities are their OWN section,
             never folded into the neighborhoods list. The value column publishes
             only when the alias-aware read returned (invariant 1). */}
-        {firstGolf ? (
+        {firstGolf && nearbyItems.length === 0 ? (
           <V3Ledger
             id="communities-ledger"
             eyebrow={v3Text(`${cityName} · Communities`)}
@@ -661,12 +654,14 @@ export default async function CityDetailPage({ params }: Props) {
           />
         ) : null}
 
-        <V3Quiet
-          id="faq"
-          eyebrow="Common questions"
-          heading={`Questions about ${cityName}`}
-          items={faqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer }))}
-        />
+        {faceFaqs.length > 0 ? (
+          <V3Quiet
+            id="faq"
+            eyebrow="Common questions"
+            heading={`Questions about ${cityName}`}
+            items={faceFaqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer }))}
+          />
+        ) : null}
 
         {/* D80: real published guides for this city, never generated filler. */}
         {firstGuide ? (

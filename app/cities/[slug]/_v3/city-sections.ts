@@ -535,18 +535,9 @@ export function marketAbsenceItems(cityName: string, hasRows: boolean): V3QuietI
 export function cityFieldCaption(input: {
   cityName: string
   count: number
-  mosLabel: string | null
-  verdictKind: 'sellers' | 'balanced' | 'buyers' | 'unknown'
-  verdictLabel: string
 }): string | null {
   if (input.count <= 0) return null
-  // The listed set is an EXPLICIT PREVIEW CAP (CITY_PLACE_LIST_CAP, the same
-  // cap the KB dual-pane list carried): the newest qualifying listings, list
-  // and pins one set. The full inventory figure lives in the Instrument under
-  // its own trace, and the Instrument's action is the view-all door.
-  const homes = `The ${input.count.toLocaleString('en-US')} newest single-family listings in ${input.cityName}`
-  if (input.verdictKind === 'unknown' || input.mosLabel == null) return homes
-  return `${homes} · ${input.mosLabel} months of supply · a ${input.verdictLabel}`
+  return `The ${input.count.toLocaleString('en-US')} newest single-family listings in ${input.cityName}`
 }
 
 /**
@@ -556,13 +547,12 @@ export function cityFieldCaption(input: {
  * here put a 1,000-home badge beside a 491 hero on /cities/bend.
  */
 export function cityFieldTrace(cityName: string): string {
-  return (
-    `Live MLS, the newest active single-family homes ` +
-    `with a ${cityName} address, a list price, and a street. The map plots this same set`
-  )
+  return `Live MLS, the newest active single-family homes with a ${cityName} address, a list price, and a street`
 }
 
 export const SOLD_TRACE = 'Live MLS, recently closed single-family sales in this city'
+
+export const MAP_TRACE = 'Live MLS pins for the photographed homes on this page'
 
 export function cityFieldEmptyMessage(cityName: string, tilesReturned: number): string {
   return tilesReturned === 0

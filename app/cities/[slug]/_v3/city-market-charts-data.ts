@@ -171,7 +171,7 @@ export function buildMosCard(input: CityRankInput): CityChartCard | null {
     key: 'mos',
     kind: 'range',
     title,
-    displayLine: 'Months of supply by town, leftover membership, single-family.',
+    displayLine: 'Months of supply by town. Seller\'s at 4 months or less, buyer\'s at 6 or more.',
     // No sample size, and no count in the reading. The published ratio is
     // actives over closings-in-180-days-divided-by-six; the row publishes the
     // numerator and two closing windows that are not the denominator. Naming
@@ -186,9 +186,9 @@ export function buildMosCard(input: CityRankInput): CityChartCard | null {
         : {}),
     })),
     bands: [
-      { from: 0, to: 4, label: v3Text("Seller's ≤4") },
-      { from: 4, to: 6, label: v3Text('4–6') },
-      { from: 6, to: 99, label: v3Text("Buyer's ≥6") },
+      { from: 0, to: 4, label: v3Text("Seller's") },
+      { from: 4, to: 6, label: v3Text('Balanced') },
+      { from: 6, to: 99, label: v3Text("Buyer's") },
     ],
     clampMax: MOS_SCALE_MAX,
     source:
@@ -245,7 +245,7 @@ export function buildDtpCard(input: CityRankInput): CityChartCard | null {
     key: 'dtp',
     kind: 'range',
     title: `${input.subjectName} pends in ${publishDaysFigure(subject.value)} days`,
-    displayLine: 'Median days to pending by town, leftover 90-day list-to-pending.',
+    displayLine: 'Median days to pending by town, last 90 days.',
     rows: rows.map((r) => ({
       tick: v3Text(r.town.geo_label),
       value: r.value,

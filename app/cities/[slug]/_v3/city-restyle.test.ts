@@ -20,18 +20,24 @@ describe('city restyle contract', () => {
     expect(SEARCH).toContain('Property type')
   })
 
-  it('does not print warehouse copy or nine type H2s on the face', () => {
+  it('does not print warehouse copy, the market-question H2, or nine type H2s', () => {
     expect(PAGE).not.toMatch(/V3PlacePropertyTypes/)
     expect(PAGE).not.toMatch(/Market Truth leftover/)
     expect(PAGE).not.toMatch(/city_quarter_sale_to_ask/)
     expect(PAGE).not.toMatch(/foldAfter=\{5\}/)
     expect(PAGE).not.toMatch(/buildPublicMixFigures/)
+    expect(PAGE).not.toMatch(/Is \$\{cityName\} a buyer's or seller's market\?/)
+    expect(PAGE).not.toMatch(/mapSlot=/)
   })
 
-  it('mounts Chart Room Time/Relate/Rank mid-page', () => {
+  it('mounts Chart Room Time/Relate/Rank mid-page after homes, sold, and map', () => {
     expect(PAGE).toMatch(/cityChartRoomCards/)
-    expect(PAGE).toMatch(/id="market"/)
-    expect(PAGE.indexOf('id="hero"')).toBeLessThan(PAGE.indexOf('id="market"'))
+    expect(PAGE).toMatch(/headline=\{v3Text\('Market'\)\}/)
+    expect(PAGE).toMatch(/<CityMap/)
+    expect(PAGE).toMatch(/Also on the list/)
+    expect(PAGE.indexOf('<CityHomesField')).toBeLessThan(PAGE.indexOf('id="sold"'))
+    expect(PAGE.indexOf('id="sold"')).toBeLessThan(PAGE.indexOf('id="map"'))
+    expect(PAGE.indexOf('id="map"')).toBeLessThan(PAGE.indexOf('id="market"'))
   })
 })
 
