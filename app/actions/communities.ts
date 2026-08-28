@@ -287,7 +287,7 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
 export const getCommunityBySlug = cache(
   unstable_cache(
     _getCommunityBySlugUncached,
-    ['community-by-slug-v1'],
+    ['community-by-slug-v2'],
     { revalidate: 300, tags: ['community-detail'] }
   )
 )

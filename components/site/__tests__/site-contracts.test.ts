@@ -647,6 +647,14 @@ describe('design directive contracts', () => {
     expect(figures).toMatch(/resortItems/)
   })
 
+  it('community Stage first fold is the owned still, not the area-guide loop', () => {
+    const src = readSrc('app/communities/[slug]/page.tsx')
+    expect(src).toMatch(/<CommunityStage/)
+    expect(src).toMatch(/posterSrc=\{posterSrc\}/)
+    expect(src).not.toMatch(/videoSrc=/)
+    expect(src).not.toMatch(/getAreaGuideVideo\(/)
+  })
+
   // D103/D103b (home-d section objects) retired with the home-d revert
   // (Matt, 2026-08-21): / is back on the homepage-v6 template.
 

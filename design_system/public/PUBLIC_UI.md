@@ -318,3 +318,6 @@ Why each rule is the way it is, so a dead one is not reintroduced as a new idea.
 - **2026-08-28** — City first fold is existing `V3Stage` when a place-owned
   library still exists (live `hero_image_url` or a geo-strict `asset_library`
   hero). The Field stays under it as the map tap-through. No new hero system.
+- **2026-08-28** — Place Stage prefers the registered Imagine still
+  (`imagine-place-*`) over a leftover live crop. Area-guide video stays off
+  Stage. Official city slugs pin `hero_image_url` to the matching file.

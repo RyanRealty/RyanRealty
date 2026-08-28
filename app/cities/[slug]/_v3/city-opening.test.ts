@@ -10,4 +10,16 @@ describe('cityStagePoster', () => {
     expect(cityStagePoster(null, null)).toBeNull()
     expect(cityStagePoster('  ', '')).toBeNull()
   })
+
+  it('uses the registered Imagine place still over a leftover live crop', () => {
+    expect(
+      cityStagePoster(
+        'https://cdn.example/monument-crop.jpg',
+        'https://cdn.example/imagine-place-city-redmond.png',
+      ),
+    ).toBe('https://cdn.example/imagine-place-city-redmond.png')
+    expect(
+      cityStagePoster('https://cdn.example/photos/grok-imagine/imagine-place-city-bend.png', null),
+    ).toBe('https://cdn.example/photos/grok-imagine/imagine-place-city-bend.png')
+  })
 })
