@@ -191,6 +191,11 @@ listing_video_v4/out/
 listing_video_v4/public/then-now/
 listing_video_v4/public/trend/
 scratch/
+# repo-root scratch classes an earlier `git add -A` swept into a commit:
+# fleet-brief fetch caches, boundary payload staging, one-off debug scripts
+.fleet-run/
+tmp-bound/
+scratch-*.mjs
 # session smoke scripts / probe outputs — excluded from tsconfig too (build breaks otherwise)
 scratchpad/
 
