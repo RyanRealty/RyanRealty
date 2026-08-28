@@ -77,6 +77,11 @@ export type V3FieldItem = {
    * into the listing) instead of the relative plot.
    */
   photoSrc?: string
+  /**
+   * Optional type mark, 0–4. Reads `--v3-cat-N` on the pin so a mixed set
+   * stays navy, just at different alphas. Omit it and the pin is full navy.
+   */
+  cat?: 0 | 1 | 2 | 3 | 4
 }
 
 /**
@@ -440,6 +445,7 @@ export function V3Field({
                       key={item.id}
                       className={cn(
                         'v3-field__pin',
+                        item.cat != null && `v3-field__pin--cat-${item.cat}`,
                         active === item.id && 'is-active',
                       )}
                       style={{ left: `${left}%`, top: `${top}%` }}
@@ -476,6 +482,7 @@ export function V3Field({
                       className={cn(
                         'v3-field__row',
                         hasListingPhoto(item) && 'v3-field__row--has-photo',
+                        item.cat != null && `v3-field__row--cat-${item.cat}`,
                         active === item.id && 'is-active',
                       )}
                       onMouseEnter={() => setActive(item.id)}

@@ -72,6 +72,8 @@ describe('homepage Field stays on the barrel', () => {
   it('caps the preview set so the map sits with the list, not after a novel of cards', () => {
     const constants = readFileSync(resolve('app/_v3/home-constants.ts'), 'utf8')
     expect(constants).toMatch(/export const HOME_FIELD_LIMIT = 4/)
+    expect(constants).toMatch(/export const HOME_FIELD_POOL = 24/)
+    expect(FIELD).toContain('displayLimit')
     expect(V3_FIELD_CSS).toContain('.v3-field__frame > .v3-field__col:first-of-type')
     expect(V3_FIELD_CSS).toContain('order: 0')
     expect(V3_FIELD_CSS).toContain('.v3-field__frame > .v3-field__col:last-of-type')
@@ -100,6 +102,8 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD_MAP).toContain('OverlayView')
     expect(FIELD_MAP).toContain('v3-field__pin')
     expect(FIELD_MAP).toContain('v3-field__pin-label')
+    expect(FIELD_MAP).toContain('v3-field__pin--cat-')
+    expect(FIELD_MAP).toContain('<Link')
     expect(FIELD_MAP).toContain('FRAME_INSET_PCT')
     expect(FIELD_MAP).toContain('for (const ring of polygons)')
     expect(FIELD_MAP).not.toContain('MarkerClusterer')
@@ -107,9 +111,24 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD_MAP).not.toContain('MAP_LABEL_LISTING')
     expect(FIELD_MAP).not.toContain('#0d9488')
     expect(FIELD_MAP).not.toContain('setZoom(9)')
+    expect(FIELD).toContain('PlaceFieldMap')
+    expect(FIELD).toContain('boundary={boundary}')
     expect(PAGE).toContain('getBoundaryGeoJSON')
     expect(PAGE).toContain('unionBoundaryGeometry')
     expect(PAGE).toContain('boundary={regionBoundary ?? undefined}')
+  })
+
+  it('toggles types that exist in the set, and keeps town chips as doors', () => {
+    expect(FIELD).toContain('aria-label="Property types"')
+    expect(FIELD).toContain('aria-label="Towns"')
+    expect(FIELD).toContain('toggleHomeFieldType')
+    expect(FIELD).toContain('visibleHomeField')
+    expect(FIELD).toContain('ariaPressed')
+    expect(FIELD_CSS).toContain('--v3-cat-0')
+    expect(V3_FIELD_CSS).toContain('.v3-field__pin--cat-0')
+    expect(V3_FIELD_CSS).toContain('background: var(--v3-cat-0)')
+    expect(PAGE).toContain('homeFieldPool')
+    expect(PAGE).not.toContain("propertySubType: 'Single Family Residence'")
   })
 
   it('does not print the leftover inventory caption', () => {

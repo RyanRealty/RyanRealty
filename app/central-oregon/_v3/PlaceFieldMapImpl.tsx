@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GoogleMap, Marker, OverlayView, Polygon, Polyline } from '@react-google-maps/api'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions, MAP_NAVY } from '@/lib/maps/markers'
@@ -70,6 +70,8 @@ export type PlaceFieldMapPin = {
   title: string
   lat: number
   lng: number
+  /** Same 0–4 mark the Field row carries. Omitting it keeps the pin full navy. */
+  cat?: 0 | 1 | 2 | 3 | 4
 }
 
 export function PlaceFieldMapImpl({
@@ -89,7 +91,6 @@ export function PlaceFieldMapImpl({
   /** Live listing photograph shown while the map script loads. */
   posterSrc?: string
 }) {
-  const router = useRouter()
   const { ready, error } = useGoogleMapsReady()
   const { activeId, setActiveId } = useV3FieldBinding()
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -235,21 +236,24 @@ export function PlaceFieldMapImpl({
             position={{ lat: pin.lat, lng: pin.lng }}
             mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
           >
-            <span
-              className={cn('v3-field__pin', activeId === pin.id && 'is-active')}
+            <Link
+              href={pin.href}
+              className={cn(
+                'v3-field__pin',
+                pin.cat != null && `v3-field__pin--cat-${pin.cat}`,
+                activeId === pin.id && 'is-active',
+              )}
               style={{ left: 0, top: 0 }}
+              tabIndex={-1}
+              aria-hidden="true"
               onMouseEnter={() => setActiveId(pin.id)}
               onClick={(event) => {
                 event.stopPropagation()
-                if (activeId === pin.id) {
-                  router.push(pin.href)
-                  return
-                }
                 setActiveId(pin.id)
               }}
             >
               <span className="v3-field__pin-label">{pin.priceLabel}</span>
-            </span>
+            </Link>
           </OverlayView>
         ))}
       </GoogleMap>

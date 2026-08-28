@@ -16,6 +16,10 @@ export const HERO_POSTER = '/images/hero/hero-old-mill-master-4k.jpg'
  *  dumped the map under a novel of cards. See all opens the rest. */
 export const HOME_FIELD_LIMIT = 4
 
+/** Mixed-type pool the type toggle filters. Larger than the visible cap so
+ *  a House / Land pick still has rows, without dumping 13 cards on 390. */
+export const HOME_FIELD_POOL = 24
+
 /** Tile fetch ceiling. The DAL's own note: 5000 covers the full active
  *  inventory (~2-3K rows); 3000 held on the KB page and holds here, so the
  *  curation's "two highest asks" claim is over the whole feed, not a sample. */
@@ -46,10 +50,8 @@ export const HOME_MARKET_TRACE =
   'Every figure names its own window. A figure the layer withheld is absent, not estimated.'
 
 /**
- * The honest description of the Field's listed subset. The two claims it makes
- * (highest asks, nearest each town's median) are curateFeaturedTiles' own
- * documented mix, computed over the full active feed (HOME_TILE_FETCH covers
- * the whole inventory).
+ * The honest description of the Field's listed subset. The map and the list
+ * are the same visible set.
  */
 export function homeFieldNote(shown: number): string {
   return `The map plots these ${shown}.`

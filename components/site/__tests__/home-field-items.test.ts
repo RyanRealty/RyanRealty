@@ -62,6 +62,7 @@ describe('homeFieldItems', () => {
     // Card titles carry the city; city left the meta line (Matt 2026-08-27).
     expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
     expect(items[0]?.city).toBe('Bend')
+    expect(items[0]?.typeKey).toBe('house')
   })
 
   it('filters the listed set by MLS city', () => {

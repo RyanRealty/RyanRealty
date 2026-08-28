@@ -4,7 +4,6 @@ import { getListingTiles, getDetachedOverlays, getBrokers, getBoundaryGeoJSON } 
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
-import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
@@ -39,19 +38,17 @@ import {
 } from '@/components/site/v3'
 import { HomeHomesField } from './_v3/HomeHomesField'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
-import { homeFieldItems } from './_v3/home-field-items'
+import { homeFieldPool } from './_v3/home-field-items'
 import { liveStamp } from './_v3/live-format'
 import {
   HERO_VIDEO,
   HERO_POSTER,
-  HOME_FIELD_LIMIT,
+  HOME_FIELD_POOL,
   HOME_TILE_FETCH,
   HOME_COMMUNITY_TRACE,
   HOME_MARKET_TRACE,
-  homeFieldNote,
   preferPlaceHero,
 } from './_v3/home-constants'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import { unionBoundaryGeometry } from '@/app/central-oregon/_v3/union-boundary'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
@@ -116,7 +113,7 @@ export default async function Home() {
   const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
-    getListingTiles({ status: 'active', propertySubType: 'Single Family Residence', limit: HOME_TILE_FETCH }).catch(() => []),
+    getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_PACE),
     getPublicDetachedMonthly({
@@ -188,17 +185,7 @@ export default async function Home() {
   })
   const [firstCommunityRow, ...restCommunityRows] = communityRows(communityItems)
 
-  const curated = curateFeaturedTiles(
-    tiles,
-    townItems.map((t) => ({ name: t.name, medianPrice: t.medianPrice })),
-    HOME_FIELD_LIMIT,
-  )
-  const fieldItems = homeFieldItems(curated, HOME_FIELD_LIMIT)
-  const pins = fieldItems.flatMap((i) =>
-    i.lat != null && i.lng != null
-      ? [{ id: i.id, href: i.href, priceLabel: i.priceLabel, title: i.title, lat: i.lat, lng: i.lng }]
-      : [],
-  )
+  const fieldItems = homeFieldPool(tiles, HOME_FIELD_POOL)
 
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const verdict = marketVerdict(mosRaw)
@@ -257,22 +244,10 @@ export default async function Home() {
         <HomeHomesField
           fieldItems={fieldItems}
           towns={townItems.map((t) => ({ label: t.name, href: homesForSalePath(t.name) }))}
-          mapSlot={
-            pins.length > 0
-              ? (
-                  <PlaceFieldMap
-                    pins={pins}
-                    placeName="Central Oregon"
-                    posterSrc={fieldItems[0]?.photoSrc}
-                    boundary={regionBoundary ?? undefined}
-                  />
-                )
-              : undefined
-          }
-          mapNote={fieldItems.length > 0 ? homeFieldNote(fieldItems.length) : undefined}
+          boundary={regionBoundary ?? undefined}
           listFlow
           seeAll={{ href: publishRegionalSearchHref(), label: seeAllLabel }}
-          emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
+          emptyMessage="No photographed active home with a list price and a street address returned on this refresh."
         />
 
         {firstTownRow ? (

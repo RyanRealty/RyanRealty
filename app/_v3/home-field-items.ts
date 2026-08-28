@@ -16,10 +16,19 @@ import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
+import {
+  classifyHomeFieldType,
+  takeHomeFieldByType,
+  type HomeFieldCat,
+  type HomeFieldTypeKey,
+} from './home-field-types'
 
 export type HomeFieldItem = V3FieldItem & {
   /** MLS city, used by homepage town chips to filter the listed set. */
   city: string
+  typeKey: HomeFieldTypeKey
+  typeLabel: string
+  cat?: HomeFieldCat
 }
 
 export function filterHomeFieldByCity(
@@ -64,6 +73,11 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): Ho
       .filter((part): part is string => Boolean(part))
       .join(' · ')
 
+    const type = classifyHomeFieldType({
+      propertyType: tile.propertyType,
+      propertySubType: tile.propertySubType,
+    })
+
     items.push({
       id: tile.listingKey,
       href: listingDetailPath(
@@ -84,8 +98,15 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): Ho
       lat: tile.lat,
       lng: tile.lng,
       city: tile.city?.trim() ?? '',
+      typeKey: type.key,
+      typeLabel: type.label,
     })
   }
 
   return items
+}
+
+/** Mixed-type preview set. One of each type first, then fill. */
+export function homeFieldPool(tiles: readonly ListingTile[], limit: number): HomeFieldItem[] {
+  return takeHomeFieldByType(homeFieldItems(tiles, Number.POSITIVE_INFINITY), limit)
 }
