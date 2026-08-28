@@ -21,7 +21,7 @@
  * set and says so when a cap trimmed it.
  */
 
-import { fieldPropertyType, v3Text, type V3FieldItem, type V3QuietItem } from '@/components/site/v3'
+import { v3Text, type V3FieldItem, type V3QuietItem } from '@/components/site/v3'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
@@ -88,10 +88,6 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
       .filter((part): part is string => Boolean(part))
       .join(' · ')
     const photo = t.photoUrl?.trim()
-    const typed = fieldPropertyType({
-      propertyType: t.propertyType,
-      propertySubType: t.propertySubType,
-    })
     items.push({
       id: key,
       href: listingDetailPath(
@@ -114,7 +110,6 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
         }) || street,
       ...(photo ? { photoSrc: photo } : {}),
       ...(meta ? { meta } : {}),
-      ...(typed ? { typeKey: typed.key, typeLabel: typed.label } : {}),
       lat: t.lat,
       lng: t.lng,
     })

@@ -32,7 +32,7 @@
     },
     {
       "name": "V3Field",
-      "section": "Pattern 2, Field \u2014 the plat's homes beside the real Google map (PlaceFieldMap in the map slot), with the recorded plat boundary drawn on it, ONLY when the plat carries FIELD_MAP_MIN pins or more. Types present in this plat filter the same set the map plots. Pins use --v3-cat-0..4. The recorded polygon hugs the zoom.",
+      "section": "Pattern 2, Field \u2014 the plat's homes beside PlaceFieldMap, with the recorded plat boundary, ONLY when the plat carries FIELD_MAP_MIN pins or more. The Field chassis is owned by homepage PR 156 \u2014 this route mounts it.",
       "blocking": true
     },
     {
@@ -122,6 +122,6 @@
     "SubdivisionExploreTail, and with it KbExploreTowns and KbSell (every edge it carried is an item in the closing Quiet, built by _v3/subdivision-edges.ts)",
     "The parent-market band and fetchSubdivMarketExtras (another geography under this plat's heading \u2014 3f34bf65, 2026-08-16)",
     "SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker (chrome)",
-    "V3PlacePropertyTypes (Instrument enumeration of other property types) - Field type chips own the filter. The type-stack H2s are cut."
+    "V3PlacePropertyTypes (Instrument enumeration of other property types) \u2014 type-stack H2s are cut. Do not invent a plat chip skin; the Field chassis lives in PR 156."
   ]
 }

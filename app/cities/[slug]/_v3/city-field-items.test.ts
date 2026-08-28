@@ -50,13 +50,6 @@ describe('cityFieldItems', () => {
     expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
   })
 
-  it('attaches a Field type from the MLS subtype', () => {
-    const items = cityFieldItems([
-      tile({ listingKey: 'condo', propertySubType: 'Condominium' }),
-    ])
-    expect(items[0]?.typeKey).toBe('condo')
-    expect(items[0]?.typeLabel).toBe('Condo')
-  })
 })
 
 describe('cityFieldCaption', () => {

@@ -40,16 +40,11 @@
  *    rounding and currency rules stay in lib/format and the figure a visitor
  *    reads is the figure its source trace covers.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
-import {
-  fieldPropertyTypeCat,
-  filterFieldItems,
-  presentFieldTypes,
-} from './field-property-type'
 import './tokens.css'
 import './V3Field.css'
 
@@ -82,13 +77,6 @@ export type V3FieldItem = {
    * into the listing) instead of the relative plot.
    */
   photoSrc?: string
-  /**
-   * Field type key from fieldPropertyType(). Chips and pin cats derive from
-   * the keys present in THIS set. Absent means listed, not typed.
-   */
-  typeKey?: string
-  /** Buyer-facing label that rides the chip. */
-  typeLabel?: string
 }
 
 /**
@@ -294,15 +282,8 @@ export function V3Field({
   className,
 }: V3FieldProps) {
   const [internalActive, setInternalActive] = useState<string | null>(null)
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const isControlled = activeId === undefined ? false : true
   const active = isControlled ? activeId ?? null : internalActive
-
-  const types = useMemo(() => presentFieldTypes(items), [items])
-  const visibleItems = useMemo(
-    () => filterFieldItems(items, selectedTypes),
-    [items, selectedTypes],
-  )
 
   const setActive = useCallback(
     (next: string | null) => {
@@ -312,22 +293,10 @@ export function V3Field({
     [isControlled, onActiveChange],
   )
 
-  useEffect(() => {
-    if (!active) return
-    const row = document.getElementById(`v3-field-row-${active}`)
-    row?.scrollIntoView({ block: 'nearest' })
-  }, [active])
-
   const binding = useMemo<V3FieldBinding>(
-    () => ({ activeId: active, setActiveId: setActive, items: visibleItems }),
-    [active, setActive, visibleItems],
+    () => ({ activeId: active, setActiveId: setActive, items }),
+    [active, setActive, items],
   )
-
-  const toggleType = useCallback((key: string) => {
-    setSelectedTypes((current) =>
-      current.includes(key) ? current.filter((k) => k !== key) : [...current, key],
-    )
-  }, [])
 
   const slot = mapSlot ?? children
   const mapContent = typeof slot === 'function' ? slot(binding) : slot
@@ -336,7 +305,7 @@ export function V3Field({
       ? false
       : true
 
-  const photoItems = useMemo(() => visibleItems.filter(hasListingPhoto), [visibleItems])
+  const photoItems = useMemo(() => items.filter(hasListingPhoto), [items])
   const usePhotoSurface =
     hasSlot === false && photoItems.length >= PHOTO_SURFACE_MIN
   const mosaic = usePhotoSurface ? photoItems.slice(0, PHOTO_SURFACE_MAX) : []
@@ -345,18 +314,9 @@ export function V3Field({
     () =>
       hasSlot || usePhotoSurface
         ? { pins: [] as PlottedPin[], missing: 0 }
-        : plotItems(visibleItems),
-    [hasSlot, usePhotoSurface, visibleItems],
+        : plotItems(items),
+    [hasSlot, usePhotoSurface, items],
   )
-  const countDisplay = count
-    ? {
-        ...count,
-        value:
-          selectedTypes.length > 0
-            ? visibleItems.length.toLocaleString('en-US')
-            : count.value,
-      }
-    : null
   // The disclosure is bound to the pins, not to the caller: if this frame drew
   // a pseudo-map, the line that says it is not a map renders with it. No pins
   // means nothing to mislabel, and the missing-coordinates note below covers
@@ -378,36 +338,11 @@ export function V3Field({
           className,
         )}
       >
-        {countDisplay ? (
+        {count ? (
           <p className="v3-field__count">
-            <span className="v3-field__count-value">{countDisplay.value}</span>
-            {` ${countDisplay.label}`}
+            <span className="v3-field__count-value">{count.value}</span>
+            {` ${count.label}`}
           </p>
-        ) : null}
-
-        {types.length > 1 ? (
-          <div className="v3-field__types" role="group" aria-label="Property type">
-            {types.map((type) => {
-              const cat = fieldPropertyTypeCat(type.key, types)
-              const on = selectedTypes.includes(type.key)
-              return (
-                <button
-                  key={type.key}
-                  type="button"
-                  className={cn(
-                    'v3-field__type',
-                    `v3-field__type--cat-${cat}`,
-                    on && 'is-on',
-                  )}
-                  aria-pressed={on}
-                  onClick={() => toggleType(type.key)}
-                >
-                  <span className="v3-field__type-mark" aria-hidden="true" />
-                  {type.label}
-                </button>
-              )
-            })}
-          </div>
         ) : null}
 
         <div
@@ -479,9 +414,6 @@ export function V3Field({
                       key={item.id}
                       className={cn(
                         'v3-field__pin',
-                        item.typeKey
-                          ? `v3-field__pin--cat-${fieldPropertyTypeCat(item.typeKey, types)}`
-                          : null,
                         active === item.id && 'is-active',
                       )}
                       style={{ left: `${left}%`, top: `${top}%` }}
@@ -511,10 +443,9 @@ export function V3Field({
           ) : (
             <div className="v3-field__col">
               <ul className="v3-field__list" role="list">
-                {visibleItems.map((item) => (
+                {items.map((item) => (
                   <li key={item.id} className="v3-field__item">
                     <Link
-                      id={`v3-field-row-${item.id}`}
                       href={item.href}
                       className={cn(
                         'v3-field__row',
@@ -545,7 +476,7 @@ export function V3Field({
                     </Link>
                   </li>
                 ))}
-                {visibleItems.length === 0 ? (
+                {items.length === 0 ? (
                   <li className="v3-field__empty">{emptyMessage}</li>
                 ) : null}
               </ul>
@@ -554,10 +485,10 @@ export function V3Field({
           )}
         </div>
 
-        {countDisplay ? (
+        {count ? (
           <V3SourceLine
-            source={countDisplay.source}
-            updatedAt={countDisplay.updatedAt}
+            source={count.source}
+            updatedAt={count.updatedAt}
             className="v3-field__source"
           />
         ) : null}

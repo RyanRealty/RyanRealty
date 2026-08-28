@@ -31,7 +31,7 @@
     },
     {
       "name": "V3Field",
-      "section": "Pattern 2, once. Homes inside the recorded boundary, highest price first, capped at 24. Map plus list in one frame. Types present in this neighborhood filter the same set the map plots. Pins use --v3-cat-0..4. The recorded polygon hugs the zoom. Count is a Field caption.",
+      "section": "Pattern 2, once. Homes inside the recorded boundary. Map plus list in one frame. Count is a Field caption. The Field chassis is owned by homepage PR 156 \u2014 this route mounts it.",
       "blocking": true
     },
     {
@@ -110,7 +110,7 @@
     "The post-submit 'Sign in to manage alerts' ANCHOR, from inside the Sheet \u2014 a terminal V3Sheet step carries prose, not links. The sentence naming the unsubscribe path survives in the terminal step, and the anchor itself survives on the page: same label, same href (/login?returnUrl=%2Faccount%2Fsaved-searches), in the closing Quiet block that carries this node's outbound edges. Nothing about this destination left the page.",
     "The hero's in-boundary count as the page's headline inventory figure \u2014 the KB page published the raw listings_in_boundary pin count, which the RPC returns for EVERY active property type, under a hero that said single-family, so land, duplexes and condos were inside that number. The headline count now comes from the market_pulse_live row, which is the polygon narrowed to PropertyType A AND the Single Family Residence subtype, under the pulse's own trace and stamp, labelled 'single-family homes for sale'. The Field keeps the wider PropertyType A set, because hiding ten townhouses and four condominiums that are genuinely for sale inside the boundary would be a worse page than showing them, and it labels that set as what it is.",
     "KbActivity - RESTORED 2026-08-12 as a V3Ledger, not deleted. The KB component stays off this route (the barrel law and the register ratchet both forbid re-importing it); getActivityFeedWithFallbackMulti, buildActivityItems and the in-boundary scoping are back in full.",
-    "KbMarketHud + PublicProductTypes + PublicPaceStats + PublicMixStats + NeighborhoodMarketCharts-as-markup - re-expressed, not dropped: the KPI row, pace items, and mix figures are the opening Instrument's figures off the same leftoverHudKpis pile; the property-type panel is the V3PlacePropertyTypes enumeration; the district chart room is neighborhoodMarketChartCards on the Instrument's cards slot. One market section per page (Matt 2026-07-29) holds because every chart rides inside the Instrument.",
+    "V3PlacePropertyTypes (Instrument enumeration of other property types) \u2014 type-stack H2s are cut. Do not invent a neighborhood chip skin; the Field chassis lives in PR 156.",
     "KbHero + publishNeighborhoodHero - the v3 opening is the Instrument (PUBLIC_UI \u00a73), so there is no hero photo position for a stock image to land on. ci:publish-place-index-truth's neighborhood arm moved to the no-unvetted-hero form (2026-08-26).",
     "PlaceMapListSplit's boundary polygon overlay - the Field's PlaceFieldMap plots the listed set's pins; the recorded polygon still drives the counted set and the schema centroid, but is not drawn. Reintroducing the overlay is a PlaceFieldMap prop, not a second map.",
     "KbSell + publishSellMedian - the page publishes no sell median; the valuation door is the 'Value my home' edge in the closing Quiet, built by valuationHref so ?from= attribution survives. ci:publish-median-caption's neighborhood arm moved to the no-median-surface form on NeighborhoodAlertsSheet.",
@@ -163,7 +163,7 @@
     "MetadataBlock",
     "V3Breadcrumb (on-media when Stage mounts)",
     "V3Stage (owned neighborhood photo, when one exists)",
-    "V3Field (list + PlaceFieldMap, one set, type chips, count is a Field caption)",
+    "V3Field (list + PlaceFieldMap, one set, count is a Field caption)",
     "V3Instrument (level 2 under Stage, else level 1 opening) or V3Quiet (stated absence)",
     "V3Ledger (daily life: schools + parks)",
     "V3Quiet (about, curated prose else the neighborhoods-table description)",

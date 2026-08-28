@@ -11,7 +11,7 @@
  * dual-pane list used, so a row still opens the listing at the same URL.
  */
 
-import { fieldPropertyType, type V3FieldItem } from '@/components/site/v3'
+import { type V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
@@ -66,10 +66,6 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
       .join(' · ')
 
     const photo = tile.photoUrl?.trim()
-    const typed = fieldPropertyType({
-      propertyType: tile.propertyType,
-      propertySubType: tile.propertySubType,
-    })
 
     items.push({
       id: tile.listingKey,
@@ -93,7 +89,6 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
         }) || street,
       ...(photo ? { photoSrc: photo } : {}),
       ...(meta ? { meta } : {}),
-      ...(typed ? { typeKey: typed.key, typeLabel: typed.label } : {}),
       lat: tile.lat,
       lng: tile.lng,
     })

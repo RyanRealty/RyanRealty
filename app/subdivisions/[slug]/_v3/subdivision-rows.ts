@@ -13,7 +13,7 @@
  */
 
 import type { ListingTile } from '@/lib/data'
-import { fieldPropertyType, v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
+import { v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
@@ -48,10 +48,6 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
     streetName: tile.streetName,
     streetSuffix: tile.streetSuffix,
   })
-  const typed = fieldPropertyType({
-    propertyType: tile.propertyType,
-    propertySubType: tile.propertySubType,
-  })
   return {
     id: tile.listingKey,
     href: listingDetailPath(
@@ -76,7 +72,6 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
       'Listing',
     meta: metaLine(tile.beds, tile.baths, hasVideo),
     photoSrc: tile.photoUrl?.trim() || undefined,
-    ...(typed ? { typeKey: typed.key, typeLabel: typed.label } : {}),
     lat: tile.lat,
     lng: tile.lng,
   }
