@@ -13,6 +13,10 @@
 
 import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
+import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
+import { listingDetailPath } from '@/lib/slug'
 
 export type HomeFieldItem = V3FieldItem & {
   /** MLS city, used by homepage town chips to filter the listed set. */
@@ -28,10 +32,6 @@ export function filterHomeFieldByCity(
   if (!needle) return [...items]
   return items.filter((item) => item.city.trim().toLowerCase() === needle)
 }
-import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
-import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
-import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
-import { listingDetailPath } from '@/lib/slug'
 
 export function homeFieldItems(tiles: readonly ListingTile[], limit: number): HomeFieldItem[] {
   const items: HomeFieldItem[] = []

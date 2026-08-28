@@ -33,6 +33,16 @@ describe('preferPlaceHero', () => {
   })
 })
 
+describe('homepage towns stack photos on a phone', () => {
+  it('does not share a 12rem thumb column with the name at 390', () => {
+    const css = readFileSync(resolve('app/_v3/home-page.css'), 'utf8')
+    expect(css).toContain('#towns .v3-ledger__what--media')
+    expect(css).toContain('flex-direction: column')
+    expect(css).toContain('overflow-wrap: break-word')
+    expect(css).toContain('#towns .v3-ledger__source')
+  })
+})
+
 describe('filterHomeFieldByCity', () => {
   it('returns the full set when no town is selected', () => {
     const items = [
