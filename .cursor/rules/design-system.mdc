@@ -6,6 +6,10 @@ alwaysApply: true
 
 # Ryan Realty Design System — ENFORCED
 
+## Public site (HARD LOCK — read first)
+
+The public visitor site is **not** this file. Before any edit to a public page, `components/site/**`, or `design_system/public/**`, follow `.cursor/rules/public-v3-barrel.mdc`: one barrel (`components/site/v3`), navy `#102742` / cream `#faf8f4`, Amboqia on price/H1/H2 only. This file governs **admin, product, print, social, and email** only. Do not put shadcn cards, `bg-primary` utilities, or a second hero/nav on a public route.
+
 ## When adding or changing UI
 Anytime you add or modify UI (new components, new pages, new sections, new forms, new buttons, etc.):
 - Use **only** shadcn/ui components from `@/components/ui/` (Button, Card, Input, Badge, Separator, Dialog, etc.) — no raw `<button>`, `<input>`, `<div className="rounded...">` for cards.

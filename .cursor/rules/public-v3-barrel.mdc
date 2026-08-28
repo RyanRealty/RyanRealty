@@ -1,0 +1,65 @@
+---
+description: HARD LOCK — every public-site UI edit must use the v3 barrel. Read before touching homepage, places, listings, chrome, or public CSS.
+globs:
+  - app/**
+  - components/site/**
+  - design_system/**
+alwaysApply: true
+---
+
+# Public site v3 barrel — HARD LOCK
+
+This rule governs the **public visitor site**. It outranks `.cursor/rules/design-system.mdc` on any public page. Admin, print, social, and email stay on that file and `design_system/ryan-realty/`.
+
+Do not restyle a page from memory. Do not invent a second look.
+
+## Before any public UI edit
+
+Read these, in this order, before changing markup, CSS, or chrome:
+
+1. `design_system/public/PUBLIC_UI.md` — patterns, openings, Broadside/Ledger, contrast, motion
+2. `components/site/v3/tokens.css` — the only token file (`:root`; navy `#102742`, cream `#faf8f4`)
+3. `components/site/v3/V3Stage.css` — Stage geometry (full-bleed media, navy scrim, one line + one action)
+4. `components/site/v3/V3Field.css` — Field geometry (map + list, 2px navy section rule, pin/row)
+
+Then import from `components/site/v3` (the barrel in `components/site/v3/index.ts`). A missing primitive is added **in the barrel**, reading `tokens.css`, and exported. A page-local skin is a second design system.
+
+Held by `ci:one-design-system`, `ci:chrome-single-source`, `ci:public-v3`, `ci:public-ui`, `ci:design-tokens`.
+
+## One barrel
+
+- **One register:** `components/site/v3`. Broadside is the default (`V3_ROOT_CLASS`). Search/data surfaces may also mount `V3_LEDGER_CLASS`. Registers vary structure, density, rule weight, and motion — never the palette, never a shadow.
+- **Palette:** navy `#102742` (`--v3-navy`), cream `#faf8f4` (`--v3-cream`). Consume tokens. Do not type the hex into a component.
+- **Type:** Amboqia on price / H1 / H2 only (`--v3-font-display`, Broadside `--v3-font-num`). Geist on UI (`--v3-font-body`).
+- **Chrome:** one header, one footer (`V3Footer`). Footer sits on cream under the 2px navy section rule (`--v3-rule-section`). No navy footer fill.
+
+## Page openings (do not invent another first screen)
+
+| Surface | Opening |
+|---|---|
+| Homepage, city, neighborhood, subdivision | `V3Stage` then `V3Field` |
+| Listing | `V3Stage` then **one** `V3Sheet` |
+
+A city, neighborhood, or subdivision that opens like another product is a lock break. A listing that looks like a place page is a lock break.
+
+## Field contract
+
+`V3Field` is map + inventory in one frame (`PUBLIC_UI.md` §3, `V3Field.tsx` / `V3Field.css`):
+
+- Multi-select property types on the Field.
+- Desktop: list **beside** the map. Phone: tiles **below** the map.
+- Pins use navy `--v3-cat-*` (the monochrome categorical ramp in `tokens.css`). Pin ↔ row binding both ways.
+- Zoom hugs the place polygon.
+- **No** teal Google house pins.
+- **No** leftover Market Truth captions on the Field.
+
+## Forbidden
+
+- Do not invent a second skin, `DESIGN.md`, palette, card, hero, or nav.
+- Do not reach into deleted KB, `components/site` flat leftovers, `components/site/primitives`, `components/site/explore`, or `@/components/ui` for public look.
+- Do not apply the shadcn / `bg-primary` / Geist-only rules in `design-system.mdc` to a public page.
+- If you already shipped a one-off look, **revert the look**. Wear the barrel. Do not migrate the one-off forward.
+
+## Not this rule
+
+This file does not grant a restyle. Token and pattern changes land in `components/site/v3` and `PUBLIC_UI.md` with Matt. A Cursor session that only needed a rule must not edit homepage, city pages, or CSS.
