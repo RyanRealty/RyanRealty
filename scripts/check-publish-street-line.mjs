@@ -95,10 +95,12 @@ checks.push({
 
 const teamLedger = src('app/team/[slug]/_v3/sale-rows.ts')
 checks.push({
-  label: 'team closing ledger addresses gate through publishStreetLine',
+  label: 'team closing ledger addresses gate through the street-line publisher',
   ok:
     /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(teamLedger) &&
-    /publishStreetLine\(/.test(teamLedger),
+    // publishCardAddress wraps publishStreetLine (street + ", City", Matt
+    // 2026-08-27) — either entry point keeps the placeholder-0 strip.
+    /publish(StreetLine|CardAddress)\(/.test(teamLedger),
 })
 
 const teamPage = src('app/team/[slug]/page.tsx')
