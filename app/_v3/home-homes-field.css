@@ -1,4 +1,11 @@
-/* Homepage Field: photo-led cards first on 390, map bound to the same set. */
+/* Homepage Field: photo-led cards first on 390, map bound to the same set.
+   The block is a stacking context so a tall list cannot paint over Towns. */
+.home-homes-field {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+
 .home-homes-field__head {
   max-width: var(--v3-measure);
   margin-inline: auto;
@@ -7,14 +14,23 @@
 
 .home-homes-field__towns {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--v3-space-xs);
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.home-homes-field__towns::-webkit-scrollbar {
+  display: none;
 }
 
 .home-homes-field__chip {
+  flex: 0 0 auto;
   min-height: var(--v3-tap);
   min-width: var(--v3-tap);
   padding: 0 var(--v3-space-sm);
+  white-space: nowrap;
   border: 1px solid var(--v3-edge);
   border-radius: var(--v3-radius-control);
   background: transparent;
@@ -55,9 +71,50 @@
   }
 }
 
+/* In document flow. The barrel list caps at 560px + overflow auto; this
+   surface used to keep the cap and set overflow:visible, so twelve photo
+   cards painted over Towns through the brokers (~5,200px). */
 .home-homes-field .v3-field__list {
   border: none;
+  max-height: none;
   overflow: visible;
+}
+
+.home-homes-field__more {
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding: 0 var(--v3-gutter) var(--v3-space-lg);
+}
+
+.home-homes-field__map-still {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: var(--v3-photo-tile-min);
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-homes-field__map-still-img,
+.home-homes-field__map-still-wash {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: var(--v3-photo-tile-min);
+  object-fit: cover;
+  background: var(--v3-wash);
+}
+
+.home-homes-field__map-still-label {
+  position: absolute;
+  inset-inline: var(--v3-space-sm);
+  bottom: var(--v3-space-sm);
+  padding: var(--v3-space-xs) var(--v3-space-sm);
+  background: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
 }
 
 .home-homes-field .v3-field__row--has-photo {

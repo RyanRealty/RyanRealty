@@ -18,11 +18,11 @@
     },
     {
       "name": "KbFeatured",
-      "where": "the Field rows: photographed homes as photo-led cards. Map plots the same set."
+      "where": "the Field rows: 4-6 photographed homes as photo-led cards, then See all {count}. Map plots the same set from 900. Phone map is a still tap-through to /homes-for-sale?view=map."
     },
     {
       "name": "KbListingMap",
-      "where": "PlaceFieldMap inside HomeHomesField: plots the listed (and town-filtered) set"
+      "where": "PlaceFieldMap inside HomeHomesField from 900. Phone is HomeMapStill, not a live Google widget."
     },
     {
       "name": "KbTicker",
@@ -76,7 +76,7 @@
     },
     {
       "name": "HomeHomesField",
-      "section": "Field: photo-led cards, town filters, map of the same set"
+      "section": "Field: 4-6 photo-led cards, town chip swipe, See all, map of the same set"
     },
     {
       "name": "V3Ledger",
@@ -98,7 +98,7 @@
   "purpose": {
     "_": "Phone-first homepage. Search and homes first. Market report is not this page.",
     "job": "Turn someone who typed a money query into a search they can act on. The visitor arrived wanting to look at houses. Search is on the first phone screen. Homes are the next screen.",
-    "primaryAction": "Search city, community, or address. See homes is the secondary door into regional browse.",
+    "primaryAction": "Search city, community, or address. Empty search opens every Central Oregon home. See homes stays as the Stage destination.",
     "audience": "A buyer or looker at the top of the funnel who does not yet know the towns. NOT a seller (they arrive on /sell).",
     "questionsItMustAnswer": [
       "What is for sale here right now, and what does it cost?",
@@ -134,14 +134,17 @@
     "items": [
       "RESOLVED: hero had no search. HomeHeroSearch is on the Stage.",
       "RESOLVED: homes were dense ledger rows. Field rows are photo-led cards.",
-      "RESOLVED: market instrument/report removed. Quiet door to /housing-market."
+      "RESOLVED: market instrument/report removed. Quiet door to /housing-market.",
+      "RESOLVED: featured list overflow:visible kept the 560px cap, so cards painted over Towns through brokers. List is in flow, capped at 6, then See all.",
+      "RESOLVED: phone map was a live Google widget under 12 stacked cards. Phone map is a still tap-through.",
+      "RESOLVED: homepage 40rem two-column ledger override left CITY / AREA GUIDE in an empty first track at 1440. 768 restores when | name | count."
     ]
   },
   "competitiveTarget": "Beat Zillow and Redfin on the first phone screen: a working city, community, and address search over live Central Oregon inventory, then photo-led homes a thumb can tap. Aggregators bury search behind chrome. This page puts search on the hero and keeps every published count on the leftover HUD row.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
     "V3Stage #hero -- flyover, H1, HomeHeroSearch, See homes",
-    "HomeHomesField -- photo-led homes and the map, live regional count",
+    "HomeHomesField -- photo-led homes and the map, live regional count, See all",
     "V3Ledger #towns -- each town's active count and median list price",
     "V3Quiet #market -- one door to /housing-market",
     "V3Ledger #communities -- resorts and master-planned communities",

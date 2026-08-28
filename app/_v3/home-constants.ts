@@ -13,9 +13,9 @@
 export const HERO_VIDEO = '/videos/hero-optimized.mp4'
 export const HERO_POSTER = '/images/hero/hero-old-mill-master-4k.jpg'
 
-/** Field list cap. The KB page showed 9 featured tiles + a 6-item tape from
- *  the same population; the one Field replaces both. */
-export const HOME_FIELD_LIMIT = 12
+/** Featured Field cap. A short photographed set, then See all {count}.
+ *  Twelve full-bleed cards made the right-hand rail taller than the page. */
+export const HOME_FIELD_LIMIT = 6
 
 /** Tile fetch ceiling. The DAL's own note: 5000 covers the full active
  *  inventory (~2-3K rows); 3000 held on the KB page and holds here, so the
