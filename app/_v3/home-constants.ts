@@ -53,9 +53,7 @@ export const HOME_MARKET_TRACE =
  * the whole inventory).
  */
 export function homeFieldNote(shown: number): string {
-  return (
-    `The ${shown} homes listed here are a sample of the active single-family inventory: ` +
-    `the two highest asks, the home nearest each town's live median, then by price. ` +
-    `The map plots this same set.`
-  )
+  // ONE line (Matt 2026-08-27): the old four-line methodology paragraph was a
+  // footnote wearing body type. The mix detail lives in the curation's own doc.
+  return `Each town at its live median, plus the region's two highest asks. The map plots these ${shown}.`
 }

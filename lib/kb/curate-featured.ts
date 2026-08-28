@@ -9,6 +9,7 @@ import type { ListingTile } from '@/lib/data'
  *   2. one mid-market pick per town — the active home closest to that town's
  *      live median, so the typical buyer sees homes they can actually buy,
  *   3. price-desc fill to the limit.
+ * Order (Matt 2026-08-27): town-median picks lead, the two highest asks follow.
  * Dedupe key is street + subdivision so one development can't fill the grid.
  * Every tile is live MLS data (§0); no curation ever fabricates an entry.
  */
@@ -31,13 +32,9 @@ export function curateFeaturedTiles(
 
   const byPriceDesc = [...withPhoto].sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
 
-  // 1 — luxury heroes
-  for (const t of byPriceDesc) {
-    if (out.length >= 2) break
-    if (!seen.has(dedupeKey(t))) take(t)
-  }
-
-  // 2 — mid-market per town (closest to the town's live median)
+  // 1 — the MARKET leads (Matt 2026-08-27): each town's home nearest its live
+  // median. Leading with the two luxury heroes put an $8.75M outlier as the
+  // first home every visitor saw when the region's median is ~$939K.
   for (const town of townMedians) {
     if (out.length >= limit) break
     if (town.medianPrice == null) continue
@@ -49,6 +46,13 @@ export function curateFeaturedTiles(
           Math.abs((b.listPrice ?? 0) - (town.medianPrice as number)),
       )[0]
     if (pick) take(pick)
+  }
+
+  // 2 — then the two highest asks, still in the set, never the opener
+  const luxTarget = Math.min(limit, out.length + 2)
+  for (const t of byPriceDesc) {
+    if (out.length >= luxTarget) break
+    if (!seen.has(dedupeKey(t))) take(t)
   }
 
   // 3 — fill

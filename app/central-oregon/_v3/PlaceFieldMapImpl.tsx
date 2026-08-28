@@ -145,6 +145,17 @@ export function PlaceFieldMapImpl({
         return
       }
       map.fitBounds(bounds, 48)
+      // Frame floor (Matt 2026-08-27): a region-wide pin set in a small box
+      // fit out to half of Oregon — Salem to Roseburg on a phone — with every
+      // pin in one unreadable clump. Central Oregon at 390px is legible from
+      // zoom 9; never present wider than the service area.
+      google.maps.event.addListenerOnce(map, 'idle', () => {
+        const z = map.getZoom()
+        if (z != null && z < 9) {
+          map.setZoom(9)
+          map.setCenter(bounds.getCenter())
+        }
+      })
     },
     [pins, placePin, polygons, polylines, fallbackCenter],
   )
