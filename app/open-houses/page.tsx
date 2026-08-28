@@ -2,9 +2,8 @@
  * /open-houses - this week's open houses, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Homes curated mode.
- * Rhythm: four of six, no two adjacent alike. Order is Breadcrumb, Field
- * (photographed open houses that open the listing), Instrument level 1
- * (count + median under the jobs), Sheet, Quiet, Footer.
+ * Rhythm: Breadcrumb, Field opener (H1 + count above the photographs),
+ * Instrument level 2 (median + buyer ask), Sheet, Quiet, Footer.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (BreadcrumbList + Event nodes), a rendered
@@ -20,7 +19,7 @@
  *
  * ONE PRIMARY PER VIEWPORT, counting visible filled controls. At 390 the
  * chrome CTA sits in the collapsed menu, so the Instrument ask is primary.
- * Label is Value my home (D11). valuationHref carries ?from=.
+ * Buyer pages keep a buyer ask. valuationHref stays off this route.
  *
  * KB-era deletions: KbHero (search + voice), KbOpenHouses 12-tile cap, KbListingMap,
  * KbCommunityAlerts markup (capture contract kept on the Sheet), KbSell, KbFooter,
@@ -35,14 +34,12 @@ import {
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingsBrowsePath } from '@/lib/slug'
-import { valuationHref } from '@/lib/site/valuation-href'
 import { formatPrice } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
-  V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
@@ -54,9 +51,9 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { OpenHouseAlertsSheet } from './_v3/OpenHouseAlertsSheet.client'
+import { OpenHousesBoard } from './_v3/OpenHousesBoard'
 import {
   OH_CITY_SLUGS,
-  OH_FIELD_TRACE,
   OH_TRACE,
   addIsoDays,
   cityLabel,
@@ -113,10 +110,11 @@ export default async function OpenHousesPage({
     city: cityFilter,
   })
   const listingKeys = [...new Set(rows.map((r) => r.listing_key))]
+  const tileLimit = Math.min(Math.max(listingKeys.length, 1), 5000)
   const [tiles, heroes] =
     listingKeys.length > 0
       ? await Promise.all([
-          getListingTiles({ listingKeys: listingKeys.slice(0, 5000), status: 'all', limit: 500 }),
+          getListingTiles({ listingKeys: listingKeys.slice(0, 5000), status: 'all', limit: tileLimit }),
           getHeroPhotosByListingKeys(listingKeys),
         ])
       : [[], new Map<string, string>()]
@@ -130,9 +128,12 @@ export default async function OpenHousesPage({
     baths: Number.isFinite(baths) ? baths : undefined,
   })
 
-  const count = openHouses.length
   const fieldItems = openHouseFieldItems(openHouses)
-  const medianList = medianPositive(openHouses.map((oh) => oh.listPrice))
+  const count = fieldItems.length
+  const shownIds = new Set(fieldItems.map((item) => item.id))
+  const medianList = medianPositive(
+    openHouses.filter((oh) => shownIds.has(oh.id)).map((oh) => oh.listPrice),
+  )
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
   const figures: V3InstrumentFigure[] = []
@@ -184,46 +185,34 @@ export default async function OpenHousesPage({
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Open houses' }]} />
 
-        <V3Field
-          id="calendar"
-          ariaLabel="Open houses on the calendar this week"
+        <OpenHousesBoard
+          heading="Open houses in Central Oregon"
           items={fieldItems}
-          count={
-            fieldItems.length > 0
-              ? {
-                  value: fieldItems.length.toLocaleString('en-US'),
-                  label: fieldItems.length === 1 ? 'home on this list' : 'homes on this list',
-                  source: OH_FIELD_TRACE,
-                }
-              : undefined
-          }
-          footNote={
-            fieldItems.some((item) => item.photoSrc)
-              ? 'Each photograph opens the listing.'
-              : undefined
-          }
+          todayIso={todayIso}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
           emptyMessage="No open house on this pull has both a street and a list price, so this list has nothing to name."
         />
 
         {firstFigure ? (
           <V3Instrument
             id="answer"
-            level={1}
+            level={2}
             eyebrow={v3Text('Central Oregon · this week')}
             headline={v3Text('Open houses in Central Oregon')}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(OH_TRACE)}
             action={{
-              label: v3Text('Value my home'),
-              href: valuationHref('/open-houses'),
+              label: v3Text('See homes for sale'),
+              href: listingsBrowsePath(),
               variant: 'primary',
             }}
           />
         ) : (
           <V3Quiet
             id="answer"
-            heading="Open houses in Central Oregon"
-            headingLevel={1}
+            heading="Nothing on the calendar this week"
+            headingLevel={2}
             items={[
               {
                 kind: 'prose',

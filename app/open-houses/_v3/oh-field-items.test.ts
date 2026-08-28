@@ -35,6 +35,8 @@ describe('openHouseFieldItems when-on-photo', () => {
     const items = openHouseFieldItems([house()])
     expect(items).toHaveLength(1)
     expect(items[0].when).toContain('2pm-4pm')
+    expect(items[0].badge).toBe(items[0].when)
+    expect(items[0].listingKey).toBe('L1')
     expect(items[0].meta).not.toContain('2pm-4pm')
     expect(items[0].photoSrc).toBe('/hero.jpg')
   })

@@ -139,6 +139,7 @@ export type {
 /* -------------------------------------------------------------------------- */
 
 export { V3Field, useV3FieldBinding } from './V3Field'
+export { V3SaveHeart } from './V3SaveHeart.client'
 
 export type {
   V3FieldProps,

@@ -1,10 +1,10 @@
 /**
  * /open-houses/[city] - city-scoped open houses, on the v3 barrel.
  *
- * Same contract as the region page. First screenful is the Field of
- * photographed open houses, then Instrument. generateMetadata title still
- * leads with "Open Houses in". dynamicParams stays true so a real city slug
- * that is not in SITE_CITY_SLUGS still resolves through getCityFromSlug.
+ * Same template as the region page: H1 + honest count above the photographs,
+ * then Instrument level 2. generateMetadata title still leads with
+ * "Open Houses in". dynamicParams stays true so a real city slug that is not
+ * in SITE_CITY_SLUGS still resolves through getCityFromSlug.
  *
  * KB-era deletions: KbHero, KbOpenHouses, KbListingMap, KbCommunityAlerts markup,
  * KbSell, KbFooter, SmoothScrollProvider. Capture contract kept on the Sheet.
@@ -20,14 +20,12 @@ import {
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { homesForSalePath } from '@/lib/slug'
-import { valuationHref } from '@/lib/site/valuation-href'
 import { formatPrice } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
-  V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
@@ -39,9 +37,9 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { OpenHouseAlertsSheet } from '../_v3/OpenHouseAlertsSheet.client'
+import { OpenHousesBoard } from '../_v3/OpenHousesBoard'
 import {
   OH_CITY_SLUGS,
-  OH_FIELD_TRACE,
   OH_TRACE,
   addIsoDays,
   cityLabel,
@@ -117,10 +115,11 @@ export default async function OpenHousesCityPage({
     city: cityName,
   })
   const listingKeys = [...new Set(rows.map((r) => r.listing_key))]
+  const tileLimit = Math.min(Math.max(listingKeys.length, 1), 5000)
   const [tiles, heroes] =
     listingKeys.length > 0
       ? await Promise.all([
-          getListingTiles({ listingKeys: listingKeys.slice(0, 5000), status: 'all', limit: 500 }),
+          getListingTiles({ listingKeys: listingKeys.slice(0, 5000), status: 'all', limit: tileLimit }),
           getHeroPhotosByListingKeys(listingKeys),
         ])
       : [[], new Map<string, string>()]
@@ -134,9 +133,12 @@ export default async function OpenHousesCityPage({
     baths: Number.isFinite(baths) ? baths : undefined,
   })
 
-  const count = openHouses.length
   const fieldItems = openHouseFieldItems(openHouses)
-  const medianList = medianPositive(openHouses.map((oh) => oh.listPrice))
+  const count = fieldItems.length
+  const shownIds = new Set(fieldItems.map((item) => item.id))
+  const medianList = medianPositive(
+    openHouses.filter((oh) => shownIds.has(oh.id)).map((oh) => oh.listPrice),
+  )
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const path = `/open-houses/${citySlug}`
 
@@ -197,46 +199,35 @@ export default async function OpenHousesCityPage({
           ]}
         />
 
-        <V3Field
-          id="calendar"
-          ariaLabel={`Open houses in ${cityName} this week`}
+        <OpenHousesBoard
+          heading={`Open houses in ${cityName}`}
           items={fieldItems}
-          count={
-            fieldItems.length > 0
-              ? {
-                  value: fieldItems.length.toLocaleString('en-US'),
-                  label: fieldItems.length === 1 ? `home in ${cityName}` : `homes in ${cityName}`,
-                  source: OH_FIELD_TRACE,
-                }
-              : undefined
-          }
-          footNote={
-            fieldItems.some((item) => item.photoSrc)
-              ? 'Each photograph opens the listing.'
-              : undefined
-          }
+          citySlug={citySlug}
+          todayIso={todayIso}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
           emptyMessage={`No open house in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
         />
 
         {firstFigure ? (
           <V3Instrument
             id="answer"
-            level={1}
+            level={2}
             eyebrow={v3Text(`${cityName} · this week`)}
             headline={v3Text(`Open houses in ${cityName}`)}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(OH_TRACE)}
             action={{
-              label: v3Text('Value my home'),
-              href: valuationHref(path),
+              label: v3Text('See homes for sale'),
+              href: homesForSalePath(cityName),
               variant: 'primary',
             }}
           />
         ) : (
           <V3Quiet
             id="answer"
-            heading={`Open houses in ${cityName}`}
-            headingLevel={1}
+            heading={`Nothing on the calendar in ${cityName} this week`}
+            headingLevel={2}
             items={[
               {
                 kind: 'prose',

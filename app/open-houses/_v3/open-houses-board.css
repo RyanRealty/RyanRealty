@@ -1,0 +1,66 @@
+/* Open-houses board. Tokens only. Same chip language as the homepage Field. */
+.oh-board {
+  display: block;
+}
+
+.oh-board__head {
+  max-width: var(--v3-measure);
+  margin: var(--v3-space-lg) auto 0;
+  padding: 0 var(--v3-gutter);
+}
+
+.oh-board__count {
+  margin: var(--v3-space-xs) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.oh-board__count-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink);
+}
+
+.oh-board__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+  margin-top: var(--v3-space-sm);
+}
+
+.oh-board__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 1px solid var(--v3-edge);
+  background: transparent;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  text-decoration: none;
+}
+
+.oh-board__chip.is-active {
+  background: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
+  border-color: var(--v3-ink);
+}
+
+.v3 .oh-board__chip:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.oh-board__more {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter) var(--v3-space-lg);
+}
+
+.oh-board .v3.v3-field {
+  padding-top: var(--v3-space-sm);
+}
