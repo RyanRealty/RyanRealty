@@ -200,11 +200,21 @@ export function listingDetailPath(
   const publicId = normalizedMls || normalizedListingKey
   if (!publicId) return listingsBrowsePath()
 
-  const cityRaw = location?.city ?? address?.city ?? null
+  // 'Outside Boundaries' is the boundary classifier's SENTINEL for a home
+  // outside every polygon — it is not a place and never a URL segment. Callers
+  // pass `boundaryCity ?? city`, so when the boundary field carries the
+  // sentinel, fall through to the MLS city instead of publishing
+  // /homes-for-sale/outside-boundaries/... as the canonical.
+  const isBoundarySentinel = (v: string | null | undefined) =>
+    !!v && /^outside[\s-]?boundaries$/i.test(v.trim())
+  const locationCity = isBoundarySentinel(location?.city) ? null : (location?.city ?? null)
+  const cityRaw = locationCity ?? address?.city ?? null
   const citySlug = cityRaw?.trim() ? slugify(cityRaw) : null
   // Drop MLS noise ("N/A", "None", …) so we never emit /homes-for-sale/city/na/...
   const cleanSubdivision = displaySubdivision(location?.subdivision)
-  const cleanNeighborhood = displaySubdivision(location?.neighborhood)
+  const cleanNeighborhood = isBoundarySentinel(location?.neighborhood)
+    ? null
+    : displaySubdivision(location?.neighborhood)
   const neighborhoodSlug = cleanNeighborhood ? slugify(cleanNeighborhood) : null
   const subdivisionSlug = cleanSubdivision ? slugify(cleanSubdivision) : null
   const listingSegment = listingAddressSlugWithMls(

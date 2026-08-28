@@ -87,6 +87,30 @@ describe('slug', () => {
     ).toBe('/homes-for-sale/la-pine/50490-hwy-31-220223831')
   })
 
+  it("never emits the boundary classifier's 'Outside Boundaries' sentinel as a URL segment", () => {
+    // Callers pass `boundaryCity ?? city`; a home outside every polygon carries
+    // the display-cased sentinel there. The canonical must fall back to the MLS
+    // city — /homes-for-sale/outside-boundaries/... went out indexed once.
+    expect(
+      listingDetailPath(
+        'spark-key-palla',
+        {
+          streetNumber: '63435',
+          streetName: 'Palla',
+          city: 'Bend',
+          state: 'OR',
+          postalCode: '97703',
+        },
+        {
+          city: 'Outside Boundaries',
+          neighborhood: 'outside-boundaries',
+          subdivision: 'Lakes At Tanager PUD',
+        },
+        { mlsNumber: '220225078' }
+      )
+    ).toBe('/homes-for-sale/bend/lakes-at-tanager-pud/63435-palla-220225078')
+  })
+
   it('includes neighborhood segment before subdivision when provided', () => {
     expect(
       listingDetailPath(
