@@ -47,11 +47,17 @@ export function ListingActSheet({
   const [smsConsent, setSmsConsent] = useState(false)
   const [sessionId, setSessionId] = useState('')
   const [saved, setSaved] = useState(initialSaved)
+  const [loginForSave, setLoginForSave] = useState(false)
   const answersRef = useRef<Record<string, string>>({})
 
   useEffect(() => {
     setSessionId(readRrSessionId() ?? '')
   }, [])
+
+  useEffect(() => {
+    if (!loginForSave) return
+    redirectToLoginForSave(saveListingKey)
+  }, [loginForSave, saveListingKey])
 
   useResumePendingSave({
     listingKey: saveListingKey,
@@ -78,7 +84,7 @@ export function ListingActSheet({
     if (result.needsAuth) {
       setStatus('asking')
       setStepId('intent')
-      redirectToLoginForSave(saveListingKey)
+      setLoginForSave(true)
       return
     }
     setProblem('Could not save this home. Try again.')
