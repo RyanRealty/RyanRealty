@@ -27,14 +27,14 @@ describe('cityFieldItems', () => {
     const items = cityFieldItems([tile({ listingKey: 'a', photoUrl: null })])
     expect(items).toHaveLength(1)
     expect(items[0]?.photoSrc).toBeUndefined()
-    expect(items[0]?.title).toBe('100 Main St')
+    expect(items[0]?.title).toBe('100 Main St, Bend')
   })
 
   it('prints Moonshadow Court without a leading 0', () => {
     const items = cityFieldItems([
       tile({ listingKey: 'moon', streetNumber: '0', streetName: 'Moonshadow', streetSuffix: 'Court' }),
     ])
-    expect(items[0]?.title).toBe('Moonshadow Court')
+    expect(items[0]?.title).toBe('Moonshadow Court, Bend')
   })
 
   it('drops a home with no list price or no street', () => {

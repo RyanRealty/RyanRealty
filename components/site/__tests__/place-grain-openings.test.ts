@@ -107,10 +107,10 @@ describe('neighborhood pace', () => {
     // Both qualify (price + street). Highest price first; the photo rides when
     // it exists and its absence never drops a counted home.
     expect(items).toHaveLength(2)
-    expect(items[0]?.title).toBe('11 Pine')
+    expect(items[0]?.title).toBe('11 Pine, Bend')
     expect(items[0]?.photoSrc).toBeUndefined()
     expect(items[1]?.photoSrc).toBe('https://img.example/house.jpg')
-    expect(items[1]?.title).toBe('10 Pine')
+    expect(items[1]?.title).toBe('10 Pine, Bend')
   })
 
   it('drops a home with no list price or no street', () => {

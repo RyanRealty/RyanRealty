@@ -7,7 +7,7 @@
 import { v3Text, type V3FieldItem, type V3InstrumentFigure } from '@/components/site/v3'
 import { communityImage } from '@/lib/geo-images'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { listingTileHref } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
@@ -87,10 +87,11 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
     .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
     .flatMap((tile) => {
       if (!tile.listingKey) return []
-      const street = publishStreetLine({
+      const cardAddress = publishCardAddress({
         streetNumber: tile.streetNumber,
         streetName: tile.streetName,
         streetSuffix: tile.streetSuffix,
+        city: tile.city,
       })
       // A fractional ask never prints unlabeled (the Camp Sherman rule).
       const shareKind = publishListingShareKind({
@@ -112,7 +113,7 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
           id: tile.listingKey,
           href: listingTileHref(tile),
           priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price not published',
-          title: street || 'Listing',
+          title: cardAddress || 'Listing',
           photoSrc: tile.photoUrl?.trim() || undefined,
           meta: meta || undefined,
           lat: tile.lat,

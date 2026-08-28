@@ -74,6 +74,20 @@ export function listingMlsAddressFull(listing: ListingStreetBits): string {
     .trim()
 }
 
+/**
+ * Card / row address (Matt 2026-08-27): every card that names a home names its
+ * CITY — "714 Wrangler Court, Sisters" — because cards travel: open houses,
+ * trails, price drops, and search rows all mix cities, and a bare street line
+ * made the reader guess. No ", OR" and no zip on a card; those belong to the
+ * detail page (listingMlsAddressFull).
+ */
+export function publishCardAddress(listing: ListingStreetBits): string {
+  const street = listingMlsStreetLine(listing)
+  const city = listing.city?.trim() ?? ''
+  if (!street) return city
+  return city ? `${street}, ${city}` : street
+}
+
 /** Already-joined MLS line. Strip a leading placeholder 0. */
 export function publishUnparsedStreetLine(raw: string | null | undefined): string | null {
   const value = raw?.trim() ?? ''

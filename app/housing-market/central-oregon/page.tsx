@@ -266,7 +266,10 @@ export default async function CentralOregonRegionPage() {
   const extraLive: V3InstrumentFigure[] = []
   for (const row of publicSegments) {
     if (row.activeCount == null || row.activeCount <= 0) continue
-    const bits = publicSegmentDisplayBits(row)
+    // Mobile audit 2026-08-27 (group-c): trimmed to the first 3 bits (price,
+    // months of supply, verdict) — see app/housing-market/page.tsx for the
+    // full rationale. The rest stays reachable via the tile's href.
+    const bits = publicSegmentDisplayBits(row).slice(0, 3)
     extraLive.push({
       value: v3Text(row.activeCount.toLocaleString('en-US')),
       label: v3Text(

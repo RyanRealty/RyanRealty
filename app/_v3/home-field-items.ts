@@ -15,7 +15,7 @@ import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 
 export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3FieldItem[] {
@@ -39,8 +39,9 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3
       city: tile.city,
       listNumber: tile.listNumber,
     })
+    // City moved from meta to the title (Matt 2026-08-27: a card address
+    // names its city) — publishCardAddress below carries it.
     const meta = [
-      tile.city?.trim() || null,
       tile.beds != null ? `${tile.beds} bd` : null,
       tile.baths != null ? `${tile.baths} ba` : null,
       tile.sqft != null ? `${tile.sqft.toLocaleString('en-US')} sqft` : null,
@@ -58,7 +59,12 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3
         { mlsNumber: tile.listNumber },
       ),
       priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price on request',
-      title: street,
+      title: publishCardAddress({
+        streetNumber: tile.streetNumber,
+        streetName: tile.streetName,
+        streetSuffix: tile.streetSuffix,
+        city: tile.city,
+      }),
       photoSrc: tile.photoUrl,
       ...(meta ? { meta } : {}),
       lat: tile.lat,

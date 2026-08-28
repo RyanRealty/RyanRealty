@@ -15,7 +15,7 @@ import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 
 /**
@@ -76,7 +76,17 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
         { mlsNumber: tile.listNumber },
       ),
       priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price on request',
-      title: street,
+      // Every card names its city (Matt 2026-08-27): cards travel — open
+      // houses, trails, price drops, saved-search alerts — so a bare street
+      // line made the reader guess. Applied on the city Field too, even
+      // though the page is already city-scoped: consistency beats brevity.
+      title:
+        publishCardAddress({
+          streetNumber: tile.streetNumber,
+          streetName: tile.streetName,
+          streetSuffix: tile.streetSuffix,
+          city: tile.city,
+        }) || street,
       ...(photo ? { photoSrc: photo } : {}),
       ...(meta ? { meta } : {}),
       lat: tile.lat,

@@ -72,6 +72,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getListingTiles } from '@/lib/data'
 import { classifyInventoryPropertyType } from '@/lib/inventory-filters'
+import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { displaySubdivision, homesForSalePath, listingDetailPath } from '@/lib/slug'
 import {
   getOutOfAreaCity,
@@ -227,12 +228,23 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   for (const tile of tiles) {
     const price = tile.listPrice
     if (price == null || !Number.isFinite(price)) continue
-    const address = [tile.streetNumber, tile.streetName, tile.streetSuffix]
+    const bareAddress = [tile.streetNumber, tile.streetName, tile.streetSuffix]
       .filter(Boolean)
       .join(' ')
       .trim()
-    if (!address) continue
-    const key = address.toLowerCase()
+    if (!bareAddress) continue
+    // Every card names its city (Matt 2026-08-27): cards travel — open
+    // houses, trails, price drops, saved-search alerts — so a bare street
+    // line made the reader guess. Applied here too, even though the `when`
+    // eyebrow already names the city: consistency beats brevity.
+    const address =
+      publishCardAddress({
+        streetNumber: tile.streetNumber,
+        streetName: tile.streetName,
+        streetSuffix: tile.streetSuffix,
+        city: tile.city,
+      }) || bareAddress
+    const key = bareAddress.toLowerCase()
     if (seenAddress.has(key)) continue
     seenAddress.add(key)
     // §0: the statewide feed is unfiltered by property type (the Instrument
@@ -270,6 +282,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       detail: meta ? v3Text(meta) : undefined,
       value: v3Text(formatPrice(price)),
       id: tile.listingKey,
+      ...(tile.photoUrl?.trim() ? { media: { src: tile.photoUrl.trim() } } : {}),
     })
   }
   const [firstListingRow, ...restListingRows] = listingRows

@@ -84,6 +84,6 @@ describe('publishOwnClosingRows', () => {
         StreetSuffix: 'Court',
       }),
     ])
-    expect(row?.what).toBe('Moonshadow Court')
+    expect(row?.what).toBe('Moonshadow Court, Bend')
   })
 })

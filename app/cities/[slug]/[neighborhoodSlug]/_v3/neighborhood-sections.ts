@@ -24,7 +24,7 @@
 import { v3Text, type V3FieldItem, type V3QuietItem } from '@/components/site/v3'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { listingDetailPath } from '@/lib/slug'
 
@@ -96,7 +96,17 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
         { mlsNumber: t.listNumber },
       ),
       priceLabel: formatPublishedAsk(t.listPrice) ?? 'Price on request',
-      title: street,
+      // Every card names its city (Matt 2026-08-27): cards travel — open
+      // houses, trails, price drops, saved-search alerts — so a bare street
+      // line made the reader guess. Applied here too, even though the page
+      // is already neighborhood-scoped: consistency beats brevity.
+      title:
+        publishCardAddress({
+          streetNumber: t.streetNumber,
+          streetName: t.streetName,
+          streetSuffix: t.streetSuffix,
+          city: t.city,
+        }) || street,
       ...(photo ? { photoSrc: photo } : {}),
       ...(meta ? { meta } : {}),
       lat: t.lat,

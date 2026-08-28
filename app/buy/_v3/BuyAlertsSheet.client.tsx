@@ -30,6 +30,7 @@ const ASK_STEP: V3SheetStep = {
     kind: 'email',
     name: 'email',
     label: 'Email',
+    placeholder: 'you@email.com',
     required: true,
     autoComplete: 'email',
     maxLength: 200,

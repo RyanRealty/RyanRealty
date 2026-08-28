@@ -419,7 +419,14 @@ export default async function AnnualReviewPage() {
       kind: 'prose',
       term: 'What these figures cover',
       body: [
-        "Single-family homes only (MLS PropertyType 'A'). Year-over-year figures compare the trailing 12 months against the same 12-month window one year earlier, never a partial-year or quarter-versus-year comparison. Report-city year-ledger median, sold count, and YoY are leftover Market Truth cells; a leftover miss omits those three rather than filling from cache.",
+        // Mobile audit 2026-08-27 (group-c, §0): dropped the "(MLS PropertyType
+        // 'A')" gloss — CLAUDE.md §7 documents bare PropertyType 'A' as a MIXED
+        // bucket (condos, townhomes, manufactured homes included), not a
+        // single-family filter, so the parenthetical contradicted the site's own
+        // documented ground truth. "Single-family homes only" is the verified
+        // claim; the unverifiable technical aside is cut per §0 rather than shipped.
+        // Also split the pre-existing semicolon into two sentences (brand-voice gate).
+        "Single-family homes only. Year-over-year figures compare the trailing 12 months against the same 12-month window one year earlier, never a partial-year or quarter-versus-year comparison. Report-city year-ledger median, sold count, and YoY are leftover Market Truth cells. A leftover miss omits those three rather than filling from cache.",
         'Active inventory and closed sales are two tiers on two clocks: inventory refreshes every 10 to 15 minutes, closed-sales figures every 6 hours. Each section above prints the refresh timestamp of the query behind it, never a render-time clock.',
       ],
     },

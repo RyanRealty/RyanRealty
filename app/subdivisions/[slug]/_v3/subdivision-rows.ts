@@ -15,7 +15,7 @@
 import type { ListingTile } from '@/lib/data'
 import { v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 
 /** Pins at or above this count are a map. Below it, the plat is a list. */
@@ -57,7 +57,19 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
       { mlsNumber: tile.listNumber },
     ),
     priceLabel: formatPublishedAsk(tile.listPrice) ?? NO_PRICE,
-    title: street || 'Listing',
+    // Every card names its city (Matt 2026-08-27): cards travel — open
+    // houses, trails, price drops, saved-search alerts — so a bare street
+    // line made the reader guess. Applied here too, even though the page is
+    // already plat-scoped: consistency beats brevity.
+    title:
+      publishCardAddress({
+        streetNumber: tile.streetNumber,
+        streetName: tile.streetName,
+        streetSuffix: tile.streetSuffix,
+        city: tile.city,
+      }) ||
+      street ||
+      'Listing',
     meta: metaLine(tile.beds, tile.baths, hasVideo),
     photoSrc: tile.photoUrl?.trim() || undefined,
     lat: tile.lat,

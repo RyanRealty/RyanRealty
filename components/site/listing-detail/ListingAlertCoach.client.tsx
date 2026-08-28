@@ -29,6 +29,10 @@ function alreadyWatchingInThisBrowser(): boolean {
  * - Never auto-open a form or trap focus
  * - Dismiss once per session (sessionStorage)
  * - Hide when the real capture strip is already in view
+ * - Hide while #listing-hero-visual (hero band + MAP chip + photo strip) is
+ *   still on screen — a visitor who has not scrolled past the hero yet gets a
+ *   fixed bottom bar landing right on top of the MAP chip and photo strip
+ *   otherwise (design-audit, mobile 390px, 2026-08-27)
  * - Only render when city is known (same gate as ListingLikeThisAlerts)
  * - On small screens, sit above the listing mobile contact bar (z-stack + lift)
  *   so coach and "Schedule a tour" never become one unreadable blob
@@ -66,9 +70,28 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
     let timer: ReturnType<typeof setTimeout> | null = null
     let observer: IntersectionObserver | null = null
     let targetInView = false
+    let dwellElapsed = false
+
+    // The hero band (MAP chip + photo strip live inside/right below it, see
+    // ListingHero.tsx `#listing-hero-visual`): read its live position on
+    // demand rather than trust a second IntersectionObserver watching a node
+    // owned by a different component — that pairing proved unreliable under
+    // React 18 Strict Mode's double-effect remount in dev (the observer's
+    // first callback never fired before its owning effect instance got
+    // cleaned up). A plain rect check on scroll has no such race.
+    const heroPastViewport = (): boolean => {
+      const heroVisual = document.getElementById('listing-hero-visual')
+      if (!heroVisual) return true
+      const rect = heroVisual.getBoundingClientRect()
+      // Safe once the hero band has scrolled fully above the viewport — its
+      // bottom edge at or above the top (0), not merely above the viewport's
+      // OWN bottom edge (every on-screen element satisfies that trivially).
+      return rect.bottom <= 0
+    }
 
     const showIfAllowed = () => {
-      if (cancelled || targetInView) return
+      if (cancelled || targetInView || !dwellElapsed) return
+      if (!heroPastViewport()) return
       try {
         if (sessionStorage.getItem(STORAGE_KEY) === '1') return
       } catch {
@@ -78,7 +101,21 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
       setVisible(true)
     }
 
-    timer = setTimeout(showIfAllowed, DWELL_MS)
+    const onScrollOrResize = () => {
+      if (!heroPastViewport()) {
+        setVisible(false)
+        return
+      }
+      showIfAllowed()
+    }
+
+    timer = setTimeout(() => {
+      dwellElapsed = true
+      showIfAllowed()
+    }, DWELL_MS)
+
+    window.addEventListener('scroll', onScrollOrResize, { passive: true })
+    window.addEventListener('resize', onScrollOrResize)
 
     const target = document.getElementById('listing-like-alerts')
     if (target && typeof IntersectionObserver !== 'undefined') {
@@ -97,6 +134,8 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
       cancelled = true
       if (timer) clearTimeout(timer)
       observer?.disconnect()
+      window.removeEventListener('scroll', onScrollOrResize)
+      window.removeEventListener('resize', onScrollOrResize)
     }
   }, [city])
 

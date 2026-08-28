@@ -7,7 +7,7 @@
 
 import { formatDate } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { v3Text, type V3LedgerFigureRow } from '@/components/site/v3'
 import type { BrokerSaleTile } from '@/lib/data'
@@ -19,10 +19,11 @@ function inServiceArea(postal: string | null | undefined): boolean {
 
 function addressLine(tile: PriceDropTile): string {
   return (
-    publishStreetLine({
+    publishCardAddress({
       streetNumber: tile.StreetNumber,
       streetName: tile.StreetName,
       streetSuffix: tile.StreetSuffix,
+      city: tile.City,
     }) || 'Address withheld'
   )
 }
@@ -38,10 +39,11 @@ export function brokerageTileToRow(tile: PriceDropTile): V3LedgerFigureRow | nul
   if (!tile.ListingKey || !inServiceArea(tile.PostalCode)) return null
   const price = tile.ClosePrice ?? tile.ListPrice
   if (price == null || !(price > 0)) return null
+  // City now lives in `what` (publishCardAddress), so `detail` carries only
+  // the subdivision -- printing it again here would duplicate the city.
   const what = addressLine(tile)
-  const city = (tile.City ?? '').trim()
   const sub = displaySubdivision(tile.SubdivisionName)
-  const detailParts = [city, sub].filter((part): part is string => Boolean(part && part.trim()))
+  const detailParts = [sub].filter((part): part is string => Boolean(part && part.trim()))
   const photo = (tile.PhotoURL ?? '').trim()
   return {
     href: listingTileHref({

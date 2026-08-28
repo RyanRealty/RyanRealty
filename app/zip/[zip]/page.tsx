@@ -147,6 +147,7 @@ import {
   neighborhoodName,
   normalizeZip,
   numeric,
+  ZIP_FIELD_PREVIEW,
   zipFieldCaption,
   zipFieldItems,
   zipMedianChart,
@@ -470,8 +471,11 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       : `Homes for sale in ${zip}`
 
   // ── THE FIELD ────────────────────────────────────────────────────────────
-  const fieldItems = zipFieldItems(tiles, zip)
-  const fieldCaption = zipFieldCaption(zip, fieldItems.length)
+  const fieldItemsAll = zipFieldItems(tiles, zip)
+  // The phone-usable slice: rows and pins are ONE set (the Field contract),
+  // and that set is the preview, with the caption stating total + cap.
+  const fieldItems = fieldItemsAll.slice(0, ZIP_FIELD_PREVIEW)
+  const fieldCaption = zipFieldCaption(zip, fieldItemsAll.length, fieldItems.length)
   const fieldTrace =
     `live MLS through Oregon Data Share, every active single-family listing in ZIP ${zip} (${area}) ` +
     'that reports a list price. The map and the list are the same set'
@@ -482,8 +486,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // come from different queries (mtHit); when the Instrument falls back to
   // the same tile count, there is nothing to reconcile.
   const populationNote =
-    mtHit && activeCount != null && fieldItems.length > 0
-      ? `This list of ${fieldItems.length.toLocaleString('en-US')} counts every property type. The ${activeCount.toLocaleString('en-US')} single-family figure below is the detached subset the market figures measure.`
+    mtHit && activeCount != null && fieldItemsAll.length > 0
+      ? `The listed set of ${fieldItemsAll.length.toLocaleString('en-US')} counts every property type. The ${activeCount.toLocaleString('en-US')} single-family figure below is the detached subset the market figures measure.`
       : undefined
 
   // ── NEIGHBOURHOODS IN THIS ZIP ───────────────────────────────────────────

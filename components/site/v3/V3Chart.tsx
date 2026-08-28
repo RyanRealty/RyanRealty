@@ -110,6 +110,10 @@ export type V3ChartKind = 'line' | 'bars' | 'mix' | 'range'
 
 /** The categorical slots tokens.css defines. More series than this cannot keep identity. */
 export const V3_CHART_CATEGORY_SLOTS = 5
+/** Mix/segment ink ladder depth — 8 monochrome stops (2026-08-27: the all-type
+ * composition strip has 8 real categories; capping at 3 rendered 6 of them as
+ * one identical wash and the legend could not name a segment). */
+export const V3_CHART_SEGMENT_SLOTS = 8
 
 export type V3ChartProps = {
   caption: V3Text
@@ -391,7 +395,7 @@ export function V3Chart({
                 'v3-chart__key',
                 yoy
                   ? `v3-chart__key--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
-                  : `v3-chart__key--${Math.min(i, 2)}`,
+                  : `v3-chart__key--${Math.min(i, V3_CHART_SEGMENT_SLOTS - 1)}`,
               )}
             >
               <span className="v3-chart__swatch" aria-hidden="true" />
@@ -546,7 +550,7 @@ export function V3Chart({
             {plot.segments.map((s) => (
               <rect
                 key={`${s.index}-${s.tick}`}
-                className={cn('v3-chart__bar', `v3-chart__bar--${Math.min(s.index, 2)}`)}
+                className={cn('v3-chart__bar', `v3-chart__bar--${Math.min(s.index, V3_CHART_SEGMENT_SLOTS - 1)}`)}
                 x={s.x}
                 y={8}
                 width={s.w}

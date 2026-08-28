@@ -46,7 +46,7 @@ import {
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishCardAddress } from '@/lib/listing/publish-street-line'
 
 /** Month ticks for the year overlay, in the order a calendar year runs. */
 const MONTH_TICK = [
@@ -212,10 +212,14 @@ export function numeric(values: Array<number | null | undefined>, floor = 0): nu
 
 /** The address as the feed reports it, or the best name the tile still carries. */
 export function tileTitle(tile: ListingTile, fallback: string): string {
-  const address = publishStreetLine({
+  // Every card names its city (Matt 2026-08-27): cards travel — open houses,
+  // trails, price drops, saved-search alerts — so a bare street line made
+  // the reader guess. publishCardAddress appends ", City" when one resolves.
+  const address = publishCardAddress({
     streetNumber: tile.streetNumber,
     streetName: tile.streetName,
     streetSuffix: tile.streetSuffix,
+    city: tile.city,
   })
   if (address) return address
   return displaySubdivision(tile.subdivisionName) ?? tile.city?.trim() ?? fallback
@@ -279,13 +283,20 @@ export function tileMeta(tile: ListingTile): string | undefined {
 }
 
 /** Caption beside the ZIP Field. The count is the listed set. No MoS at ZIP scope. */
-export function zipFieldCaption(zip: string, count: number): string | null {
-  if (count <= 0) return null
+/** Rows and pins the phone can actually use (2026-08-27 mobile audit: 382
+ * rows and 382 unclustered markers were unreadable at 390px). The caption
+ * states BOTH the real total and the cap, neighborhood-branch style. */
+export const ZIP_FIELD_PREVIEW = 24
+
+export function zipFieldCaption(zip: string, total: number, shown: number): string | null {
+  if (total <= 0) return null
   // "listings", not "homes" (2026-08-27 audit): the set includes
   // fractional-interest rows, where the price buys a share of a dwelling. Each
   // such row is labelled on its own meta line; the caption names the honest
   // population for all of them.
-  return `${count.toLocaleString('en-US')} active single-family ${count === 1 ? 'listing' : 'listings'} in ${zip}`
+  const totalLabel = `${total.toLocaleString('en-US')} active single-family ${total === 1 ? 'listing' : 'listings'} in ${zip}`
+  if (shown >= total) return totalLabel
+  return `${totalLabel} · the ${shown.toLocaleString('en-US')} highest-priced below`
 }
 
 /**

@@ -197,7 +197,10 @@ export function ListingHero({
   })
 
   return (
-    <div className={cn('flex flex-col', className)}>
+    // id: ListingAlertCoach observes this to keep its fixed bottom bar off the
+    // MAP chip + photo strip while either is still on screen (design-audit,
+    // mobile 390px — the coach otherwise lands over both on a fresh page load).
+    <div id="listing-hero-visual" className={cn('flex flex-col', className)}>
       {/* ── FULL-BLEED HERO (62–72vh) ─────────────────────────────── */}
       <div
         className="listing-hero-band"

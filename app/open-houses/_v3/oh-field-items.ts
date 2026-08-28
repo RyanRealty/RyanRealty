@@ -2,6 +2,7 @@ import type { V3FieldItem } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
 import { openHouseWhen } from './oh-when'
 import type { OpenHouseListing } from './oh-listings'
+import { listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 
 export type OpenHouseFieldItem = V3FieldItem & { when?: string }
 
@@ -10,9 +11,14 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHo
   for (const oh of houses) {
     const street = (
       oh.unparsedAddress ||
+      listingMlsStreetLine(oh) ||
       [oh.streetNumber, oh.streetName, oh.streetSuffix].filter(Boolean).join(' ')
     ).trim()
     if (!street) continue
+    // Card title carries the city (Matt 2026-08-27): open house cards mix
+    // towns, and a bare street line made the reader guess which one.
+    const cityName = oh.city?.trim()
+    const title = cityName ? `${street}, ${cityName}` : street
 
     const when = openHouseWhen(oh.eventDate, oh.startTime, oh.endTime)
     const specs = [
@@ -34,7 +40,7 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHo
       id: oh.id,
       href: oh.href,
       priceLabel,
-      title: street,
+      title,
       ...(when ? { when } : {}),
       ...(specs ? { meta: specs } : {}),
       ...(photoSrc ? { photoSrc } : {}),

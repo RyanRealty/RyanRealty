@@ -2,6 +2,7 @@ import type { V3FieldItem } from '@/components/site/v3'
 import type { PriceDrop } from '@/lib/data'
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { listingMlsStreetLine, publishCardAddress } from '@/lib/listing/publish-street-line'
 
 export type PriceDropFieldItem = V3FieldItem & { overlay?: string }
 
@@ -28,10 +29,7 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
   const items: PriceDropFieldItem[] = []
 
   for (const drop of sorted) {
-    const street = [drop.streetNumber, drop.streetName, drop.streetSuffix]
-      .filter(Boolean)
-      .join(' ')
-      .trim()
+    const street = listingMlsStreetLine(drop)
     if (!street) continue
 
     const priceLabel = namedPrice(drop.listPrice)
@@ -72,7 +70,7 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
         { mlsNumber: drop.listNumber },
       ),
       priceLabel,
-      title: street,
+      title: publishCardAddress(drop),
       ...(pct ? { overlay: pct } : {}),
       ...(specs ? { meta: specs } : {}),
       ...(photoSrc ? { photoSrc } : {}),

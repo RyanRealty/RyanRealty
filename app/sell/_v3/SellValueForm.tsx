@@ -247,11 +247,15 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   return (
     <form id={formId} onSubmit={advanceFromAddress} className="scroll-mt-24" noValidate>
       <Label htmlFor={addressFieldId}>Home address</Label>
+      {/* No autoFocus on first render: this form also mounts at the BOTTOM of
+          the homepage, and a focused off-screen input scroll-jacked every
+          mobile visitor to the footer on load (2026-08-27 mobile audit,
+          reproduced 3/3 fresh loads). The name field in the next step keeps
+          its autoFocus — that one fires after a user action. */}
       <AddressAutocomplete
         id={addressFieldId}
         value={address}
         onChange={setAddress}
-        autoFocus
         invalid={error !== null}
         className="mt-2"
       />

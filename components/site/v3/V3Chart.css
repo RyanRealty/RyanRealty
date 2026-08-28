@@ -70,6 +70,14 @@
   border-top-color: var(--v3-ink-muted);
 }
 
+/* Mix-key swatches 3-7 mirror the segment ladder so a reader can match a
+   legend entry to its segment by tone. Solid: the swatch stands for a fill. */
+.v3 .v3-chart__key--3 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 52%, transparent); }
+.v3 .v3-chart__key--4 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 40%, transparent); }
+.v3 .v3-chart__key--5 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 30%, transparent); }
+.v3 .v3-chart__key--6 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 21%, transparent); }
+.v3 .v3-chart__key--7 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 13%, transparent); }
+
 .v3 .v3-chart__frame {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -143,12 +151,22 @@
   fill: var(--v3-ink);
 }
 
-.v3 .v3-chart__bar--1 {
-  fill: var(--v3-ink-muted);
-}
+/* Segment ink ladder — EIGHT monochrome stops (2026-08-27: the composition
+   strip carries 8 real categories; three stops rendered six of them as one
+   identical wash). Every stop derives from the one ink so a template swap
+   moves the whole ladder; the cream seam between segments draws the boundary
+   even where two neighbors sit close in tone. */
+.v3 .v3-chart__bar--1 { fill: color-mix(in srgb, var(--v3-ink) 82%, transparent); }
+.v3 .v3-chart__bar--2 { fill: color-mix(in srgb, var(--v3-ink) 66%, transparent); }
+.v3 .v3-chart__bar--3 { fill: color-mix(in srgb, var(--v3-ink) 52%, transparent); }
+.v3 .v3-chart__bar--4 { fill: color-mix(in srgb, var(--v3-ink) 40%, transparent); }
+.v3 .v3-chart__bar--5 { fill: color-mix(in srgb, var(--v3-ink) 30%, transparent); }
+.v3 .v3-chart__bar--6 { fill: color-mix(in srgb, var(--v3-ink) 21%, transparent); }
+.v3 .v3-chart__bar--7 { fill: color-mix(in srgb, var(--v3-ink) 13%, transparent); }
 
-.v3 .v3-chart__bar--2 {
-  fill: var(--v3-edge);
+.v3 .v3-chart__plot--mix .v3-chart__bar {
+  stroke: var(--v3-cream);
+  stroke-width: 1px;
 }
 
 .v3 .v3-chart__plot--mix {

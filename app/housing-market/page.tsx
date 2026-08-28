@@ -262,7 +262,14 @@ export default async function HousingMarketHubPage() {
   const sfrFollow = buildSfrFollowFigures(hud, mosText)
   for (const row of publicSegments) {
     if (row.activeCount == null || row.activeCount <= 0) continue
-    const bits = publicSegmentDisplayBits(row)
+    // Mobile audit 2026-08-27 (group-c): the full bit list (up to 9 stats)
+    // ran on as one gray run-on paragraph under each tile at 390px — a wall
+    // of text with no hierarchy. The first 3 bits are price, months of
+    // supply, and the buyer's/seller's verdict — the segment's headline
+    // read. The rest (pending, closed, days to contract, sale-to-original,
+    // YoY, price-cut share) stay one tap away behind the tile's existing
+    // href rather than crammed inline; nothing is removed from the site.
+    const bits = publicSegmentDisplayBits(row).slice(0, 3)
     sfrFollow.push({
       value: v3Text(row.activeCount.toLocaleString('en-US')),
       label: v3Text(

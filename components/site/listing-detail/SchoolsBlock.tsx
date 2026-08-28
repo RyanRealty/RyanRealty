@@ -42,10 +42,16 @@ export function SchoolsBlock({ listing, className }: Props) {
         </div>
       </div>
 
+      {/* Flexbox, not grid: an odd card count (3) in a fixed-column grid at
+          narrow widths leaves a trailing empty cell that shows this
+          container's tinted background as a bare tile with nothing in it
+          (mobile 390px, design-audit 2026-08-27). A lone trailing flex item
+          has no sibling to share its row with, so it stretches to fill it
+          instead of leaving a hole. */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          display: 'flex',
+          flexWrap: 'wrap',
           gap: '3px',
           background: 'color-mix(in srgb, var(--v3-navy) 12%, transparent)',
           border: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
@@ -79,6 +85,7 @@ function SchoolCard({
   return (
     <div
       style={{
+        flex: '1 1 180px',
         background: 'var(--v3-cream)',
         padding: '18px 20px',
         display: 'flex',

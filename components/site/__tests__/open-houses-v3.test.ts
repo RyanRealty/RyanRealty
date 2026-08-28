@@ -167,7 +167,7 @@ describe('openHouseFieldItems', () => {
     const items = openHouseFieldItems([house()])
     expect(items).toHaveLength(1)
     expect(items[0].priceLabel).toMatch(/^\$/)
-    expect(items[0].title).toBe('123 Pine St')
+    expect(items[0].title).toBe('123 Pine St, Bend')
     expect(JSON.stringify(items)).not.toContain('\u2014')
     expect(JSON.stringify(items)).not.toContain('\u2013')
   })

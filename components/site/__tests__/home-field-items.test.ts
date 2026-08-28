@@ -59,7 +59,8 @@ describe('homeFieldItems', () => {
     expect(items[0]?.photoSrc).toContain('sparkplatform.com')
     expect(items[0]?.href).toContain('220111111')
     expect(items[0]?.href).toMatch(/^\//)
-    expect(items[0]?.meta).toBe('Bend · 3 bd · 2 ba · 1,800 sqft')
+    // Card titles carry the city; city left the meta line (Matt 2026-08-27).
+    expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
   })
 
   it('labels a fractional-interest ask on the meta line (Camp Sherman rule)', () => {

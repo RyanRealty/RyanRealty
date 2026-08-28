@@ -22,6 +22,24 @@ export type NearbyHomeTile = {
   addressLine: string
   lat: number | null
   lng: number | null
+  /** Live MLS photograph URL, when the source row carries one. */
+  photoUrl?: string | null
+  /**
+   * "City, OR zip" (or "OR zip" when the feed carries no city), built by every
+   * lifestyle-detail DAL function's rowToHome. These rows mix cities — a trail
+   * or golf course near a city line pulls Bend and Sisters inventory into the
+   * same set — so the bare city gets spliced into the row title below.
+   */
+  cityLine?: string
+}
+
+/** Bare city out of "City, OR zip". Empty when the feed carried no city. */
+function cityFromCityLine(cityLine: string | undefined): string {
+  if (!cityLine) return ''
+  const marker = ', OR'
+  const idx = cityLine.indexOf(marker)
+  if (idx <= 0) return ''
+  return cityLine.slice(0, idx).trim()
 }
 
 export const NEARBY_FIELD_ROWS = 12
@@ -35,8 +53,10 @@ export function nearbyFieldItems(
   for (const tile of tiles) {
     if (items.length >= limit) break
     if (tile.price == null || !Number.isFinite(tile.price) || tile.price <= 0) continue
-    const title = tile.addressLine.trim()
-    if (!title) continue
+    const street = tile.addressLine.trim()
+    if (!street) continue
+    const city = cityFromCityLine(tile.cityLine)
+    const title = city ? `${street}, ${city}` : street
     const href = tile.href.trim()
     const id = tile.listingKey.trim()
     if (!href || !id) continue
@@ -49,6 +69,8 @@ export function nearbyFieldItems(
       .filter((part): part is string => part !== null)
       .join(' · ')
 
+    const photoSrc = tile.photoUrl?.trim() || undefined
+
     items.push({
       id,
       href,
@@ -57,6 +79,7 @@ export function nearbyFieldItems(
       ...(meta ? { meta } : {}),
       lat: tile.lat,
       lng: tile.lng,
+      ...(photoSrc ? { photoSrc } : {}),
     })
   }
 

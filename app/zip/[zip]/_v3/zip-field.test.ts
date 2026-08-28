@@ -22,11 +22,16 @@ function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): 
 }
 
 describe('zipFieldCaption', () => {
-  it('names the listed set and omits an empty set', () => {
+  it('names the listed set, states the preview cap, and omits an empty set', () => {
     // 'listings', not 'homes' (2026-08-27): the set can include fractional shares.
-    expect(zipFieldCaption('97702', 408)).toBe('408 active single-family listings in 97702')
-    expect(zipFieldCaption('97702', 1)).toBe('1 active single-family listing in 97702')
-    expect(zipFieldCaption('97702', 0)).toBeNull()
+    // The cap clause appears only when the page shows fewer than the total
+    // (2026-08-27 mobile audit: 382 rows + 382 markers were unusable at 390px).
+    expect(zipFieldCaption('97702', 408, 24)).toBe(
+      '408 active single-family listings in 97702 · the 24 highest-priced below',
+    )
+    expect(zipFieldCaption('97702', 1, 1)).toBe('1 active single-family listing in 97702')
+    expect(zipFieldCaption('97702', 24, 24)).toBe('24 active single-family listings in 97702')
+    expect(zipFieldCaption('97702', 0, 0)).toBeNull()
   })
 })
 
@@ -35,7 +40,8 @@ describe('zipFieldItems', () => {
     const items = zipFieldItems([tile({ listingKey: 'a', photoUrl: null })], '97702')
     expect(items).toHaveLength(1)
     expect(items[0]?.photoSrc).toBeUndefined()
-    expect(items[0]?.title).toBe('100 Main St')
+    // Card titles carry the city (Matt 2026-08-27, publishCardAddress).
+    expect(items[0]?.title).toBe('100 Main St, Bend')
   })
 
   it('drops a home with no list price', () => {
