@@ -38,12 +38,13 @@ checks.push({
 
 const hero = src('components/site/listing-detail/ListingHero.tsx')
 checks.push({
-  label: 'ListingHero uses publishListingHeroVideo + Unmute',
+  label: 'ListingHero Stage is a still: no autoplay video',
   ok:
-    /from ['"]@\/lib\/listing\/publish-listing-hero-video['"]/.test(hero) &&
-    /publishListingHeroVideo\(videos\)/.test(hero) &&
-    /publishListingHeroUnmute\(heroVideo\)/.test(hero) &&
-    hero.includes('canUnmute'),
+    hero.includes('V3Stage') &&
+    !hero.includes('videoSrc') &&
+    !hero.includes('publishListingHeroVideo') &&
+    !hero.includes('autoPlay') &&
+    !/\bautoplay\b/.test(hero),
 })
 
 const failed = checks.filter((c) => !c.ok)

@@ -118,8 +118,12 @@ export type V3StageProps = {
    * 2 when it sits inside a page that already has its h1. Defaults to 2.
    */
   headingLevel?: 1 | 2
-  /** 'tall' when the next section should peek under the fold on 390. 'compact' when the next section (the ask) must fit in the first 390 viewport. */
-  height?: 'standard' | 'tall' | 'compact'
+  /**
+   * 'tall' when the next section should peek under the fold on 390.
+   * 'compact' when the next section (the ask) must fit in the first 390 viewport.
+   * 'frame' is a 16:9 media frame (listing opening). Default Stage stays 62vh.
+   */
+  height?: 'standard' | 'tall' | 'compact' | 'frame'
   /**
    * Optional working control in the copy stack (homepage search). Renders
    * after the headline and before the destination action so the typed query
@@ -207,6 +211,7 @@ export function V3Stage<H extends string, L extends string>({
         `v3-stage--${overlayStrength}`,
         height === 'tall' && 'v3-stage--tall',
         height === 'compact' && 'v3-stage--compact',
+        height === 'frame' && 'v3-stage--frame',
         Boolean(children) && 'v3-stage--with-slot',
         className,
       )}

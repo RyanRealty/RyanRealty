@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import {
-  DisplayHeading,
   MiddleDot,
   Price,
   TabularNumber,
@@ -12,24 +11,14 @@ import { displaySubdivision } from '@/lib/slug'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingDrop, publishListingHistoryPrices, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingDrop, publishListingHistoryPrices } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
-import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /**
- * PriceCtaStrip — price + address + pill row + CTA hierarchy under the hero.
- *
- * Hierarchy (E4 craft):
- *   1. Price (Layer A H1, address in sr-only + visible lines) — honest MLS numbers only
- *   2. Primary: Schedule a tour (navy-filled, full-width on mobile)
- *   3. Secondary: Ask / Save / Share (outlined, 44px hit targets)
- *   4. Tertiary: Get alerts for homes like this → #listing-like-alerts
- *
- * Spec source:
- *   design_system/ryan-realty/ui_kits/listing-detail/index.html §ld-price-block
- *   design_system/ryan-realty/ui_kits/listing-detail/parity.json "PriceCtaStrip"
+ * Status, address, and CTAs under the Stage. The list price lives on the
+ * Stage media once. Tour and ask stay on this page at #listing-act.
  */
 
 type SaveState = 'idle' | 'saving' | 'saved'
@@ -111,11 +100,6 @@ export function PriceCtaStrip({
   })
 
   const isClosed = listing.status === 'Closed'
-  const publishedAsk = publishListingSaleAsk({
-    price: isClosed ? listing.closePrice : listing.listPrice,
-    propertyType: listing.propertyType,
-  })
-  const headlinePrice = publishedAsk?.ask ?? null
   const shareSubject = {
     propertySubType: listing.propertySubType,
     subdivisionName: listing.subdivisionName,
@@ -146,10 +130,6 @@ export function PriceCtaStrip({
         originalListPrice: listing.originalListPrice,
         historyPrices: railPrices,
       })
-  const contactKey = publishListingContactKey({
-    listNumber: listing.listNumber,
-    listingKey: listing.listingKey,
-  })
   const street = publishStreetLine({ streetNumber: listing.streetNumber, streetName: listing.streetName, streetSuffix: listing.streetSuffix }) ?? ''
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
@@ -175,10 +155,8 @@ export function PriceCtaStrip({
         ? `Saving ${propertyName} to your saved homes`
         : `Save ${propertyName} to your saved homes`
 
-  const tourHref =
-    scheduleHref ?? listingContactHref(contactKey, 'tour') ?? `/contact?intent=tour`
-  const askHrefResolved =
-    askHref ?? listingContactHref(contactKey, 'question') ?? `/contact?intent=question`
+  const tourHref = scheduleHref ?? '#listing-act'
+  const askHrefResolved = askHref ?? '#listing-act'
 
   async function handleSave() {
     if (!onSave || saveState === 'saving') return
@@ -228,18 +206,8 @@ export function PriceCtaStrip({
         paddingTop: '1.25rem',
       }}
     >
-      {/* Layer A: one H1. Visible price is the money signal; address names it
-          for screen readers. Do not poetry-rewrite this shell. */}
-      <DisplayHeading
-        as="h1"
-        className="text-4xl leading-none tracking-tight sm:text-5xl"
-        style={{ color: 'var(--navy)' }}
-      >
-        {street ? <span className="sr-only">{[street, cityWithCommunity].filter(Boolean).join(', ')} </span> : null}
-        <Price value={headlinePrice} exact />
-      </DisplayHeading>
       {street ? (
-        <div className="mt-1.5 text-lg font-medium sm:text-xl" style={{ color: 'var(--navy)' }}>
+        <div className="text-lg font-medium sm:text-xl" style={{ color: 'var(--navy)' }}>
           {street}
         </div>
       ) : null}

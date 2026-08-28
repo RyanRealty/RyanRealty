@@ -122,6 +122,7 @@ describe('design directive contracts', () => {
     const src = readSrc('app/listing/[listingKey]/page.tsx')
     const main = src.slice(src.indexOf('const main = ('), src.indexOf('const sidebar ='))
     const order = [
+      'ListingActSheet',
       'PriceCtaStrip',
       'PropertySpecs',
       'DescriptionBlock',
@@ -157,8 +158,16 @@ describe('design directive contracts', () => {
     expect(ld).toMatch(/type:\s*'breadcrumb'/)
     expect(src).toMatch(/<V3SectionTracker[\s/>]/)
     expect(src).toMatch(/<ListingLikeThisAlerts\b/)
+    expect(src).toMatch(/<ListingActSheet\b/)
     expect(src).toMatch(/<PriceCtaStrip\b/)
     expect(src).toMatch(/<LivePricingRead\b/)
+    const hero = readSrc('components/site/listing-detail/ListingHero.tsx')
+    expect(hero).toMatch(/<V3Stage\b/)
+    expect(hero).toMatch(/height="frame"/)
+    expect(hero).not.toMatch(/videoSrc/)
+    const strip = readSrc('components/site/listing-detail/PriceCtaStrip.tsx')
+    expect(strip).toMatch(/#listing-act/)
+    expect(strip).not.toMatch(/\/contact\?/)
     // The header stays layout-owned (app/layout.tsx mounts V3Chrome once).
     expect(src).not.toMatch(/<V3Chrome\b/)
   })

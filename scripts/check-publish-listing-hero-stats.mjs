@@ -41,23 +41,49 @@ checks.push({
 
 const hero = src('components/site/listing-detail/ListingHero.tsx')
 checks.push({
-  label: 'ListingHero publishes exact price + key stats',
+  label: 'ListingHero publishes exact price + key stats on V3Stage',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-hero-stats['"]/.test(hero) &&
     /publishListingHeroPrice\(/.test(hero) &&
     /publishListingHeroKeyStats\(/.test(hero) &&
-    !/function formatPrice\(/.test(hero),
+    hero.includes('V3Stage') &&
+    hero.includes('height="frame"') &&
+    hero.includes('V3Figure') &&
+    !/function formatPrice\(/.test(hero) &&
+    !hero.includes('videoSrc') &&
+    !hero.includes('listing-hero-band') &&
+    !hero.includes('listing-hero-strip'),
 })
 
+const stageCss = src('components/site/v3/V3Stage.css')
 const listingCss = src('components/site/listing-detail/listing-detail.css')
 checks.push({
-  label: 'listing hero is one 16:9 frame, not stacked bands or section-rise gaps',
+  label: '16:9 frame lives on V3Stage, not a listing-invented hero skin',
   ok:
-    listingCss.includes('aspect-ratio: 16 / 9') &&
-    listingCss.includes('max-height: 56.25vw') &&
-    listingCss.includes('flex-wrap: nowrap') &&
+    stageCss.includes('.v3.v3-stage--frame') &&
+    stageCss.includes('aspect-ratio: 16 / 9') &&
+    !listingCss.includes('listing-hero-band') &&
+    !listingCss.includes('listing-hero-strip') &&
+    !listingCss.includes('listing-hero-arrow') &&
     !listingCss.includes('ldSectionRise') &&
     !listingCss.includes('translateY(30px)'),
+})
+
+const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
+const mobile = src('components/site/listing-detail/ListingMobileContactBar.client.tsx')
+const broker = src('components/site/listing-detail/TextMattCTA.tsx')
+const act = src('components/site/listing-detail/ListingActSheet.client.tsx')
+checks.push({
+  label: 'tour and ask stay on one listing Sheet, not /contact',
+  ok:
+    act.includes('id="listing-act"') &&
+    act.includes('V3Sheet') &&
+    strip.includes('#listing-act') &&
+    mobile.includes('#listing-act') &&
+    broker.includes('#listing-act') &&
+    !strip.includes('/contact?') &&
+    !mobile.includes('/contact?') &&
+    !broker.includes('/contact?'),
 })
 
 const page = src('app/listing/[listingKey]/page.tsx')

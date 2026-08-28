@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useCookieNoticeOpen } from './use-listing-overlay-lane'
 
 const STORAGE_KEY = 'rr-listing-alert-coach-dismissed'
 const DWELL_MS = 5000
@@ -44,6 +45,7 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
   const [visible, setVisible] = useState(false)
   /** true when viewport is below lg (mobile broker bar can show). */
   const [liftForMobileBar, setLiftForMobileBar] = useState(true)
+  const cookieOpen = useCookieNoticeOpen()
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -139,7 +141,8 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
     }
   }, [city])
 
-  if (!city || !visible) return null
+  // Phone sticky owns the bottom overlay. Cookie notice owns it while open.
+  if (!city || !visible || cookieOpen || liftForMobileBar) return null
 
   function dismiss() {
     try {

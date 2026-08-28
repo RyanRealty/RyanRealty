@@ -120,7 +120,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
   const exteriorSelected = isLikelyExteriorPhoto(safePhotos[photoIdx])
   const selectedCaption = safePhotos[photoIdx]?.caption?.trim()
   const styleMeta = STYLES.find((s) => s.id === style) ?? STYLES[0]
-  const tourHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
+  const tourHref = '#listing-act'
   const contactHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=restyle`
 
   async function run() {

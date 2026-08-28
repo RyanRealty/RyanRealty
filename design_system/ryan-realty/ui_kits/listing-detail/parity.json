@@ -2,7 +2,7 @@
   "route": "app/listing/[listingKey]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Zillow Showcase + Hilton & Hyland editorial register (per docs/research/top-brokerage-listing-content-audit.md)",
-  "note": "Rolled onto the v3 barrel 2026-08-27 (P9, the B ratchet's last page). Chrome: V3_ROOT_CLASS + .listing-detail on one main, V3Breadcrumb, V3SectionTracker, ONE V3Footer outside main; app/layout.tsx owns the header (V3Chrome). The listing body (hero, price, facts, remarks, Sheet alerts, restyle, map, market, schools, parks, lifestyle, history, money, attribution) is the listing-detail register, restyled in place: the kb.css carriers it used (.mkt market surface, .houseme-rows re-ink, .lst-* featured rail, scroll-margin anchors, mobile/desktop density ramps) were ported into listing-detail.css under .listing-detail, values unchanged, on v3 tokens. Section-rise translateY is omitted so the sticky chrome does not leave a cream gap. Hero is one 16:9 frame. PUBLIC_UI.md section 1: the page primary at 390 is PriceCtaStrip filled Schedule a tour. V3Footer carries the ODS slot and no button. No kb-root, no page kb.css, no Lenis smooth scroll (anchors land via scroll-margin-top like every v3 page).",
+  "note": "Listing grain (PUBLIC_UI.md): V3Stage then one V3Sheet. Chrome: V3_ROOT_CLASS + .listing-detail on one main, V3Breadcrumb on-media, V3SectionTracker, ONE V3Footer outside main; app/layout.tsx owns the header (V3Chrome). Stage is the barrel 16:9 frame with one Amboqia list price on the media. Tour and ask stay on ListingActSheet. Do not invent a listing hero skin. V3Footer carries the ODS slot and no button.",
   "dataChanges": {
     "unchanged": "Every listing figure, filter, window, and unit. getListingDetail, photos, videos, history, open houses, pulse, brokers, reviews, published CMA, related homes. Live pricing read is stamp-only (getListingPricingRead). JSON-LD RealEstateListing + BreadcrumbList still emit from the page MetadataBlock with listingDetailPath, listingShareSummary, gated photos slice 0-5, and ctaBroker as listingAgent. MLS publicRemarks are displayed, never rewritten. Capture still calls submitSearchAlertSignup with city, propertyType A, price band, beds when present, field email, trap company.",
     "similarHomes": "KbFeatured became ListingFeaturedHomes (components/site/listing-detail/ListingFeaturedHomes.client.tsx) - the same asymmetric poster grid, photos, prices, specs, viewport video autoplay, and scoped view-all CTA, byte-identical markup, styled by listing-detail.css instead of kb.css. resolveFeaturedItems still ranks the tiles.",
@@ -31,13 +31,28 @@
     },
     {
       "name": "ListingHero",
-      "section": "One 16:9 hero (photo or autoplay listing video). Auto-plays muted listing video when getListingVideos returns one. Falls back to one photo, not stacked bands.",
+      "section": "V3Stage 16:9 frame. One still, one Amboqia list price and specs on the media, one Tour action to #listing-act. No autoplay. No carousel.",
       "blocking": true,
-      "notes": "Supersedes both PhotoGallery and ListingVideoEmbed for marketing video. Virtual tours still mount ListingVideoEmbed in the main column."
+      "notes": "Virtual tours still mount ListingVideoEmbed in the main column."
+    },
+    {
+      "name": "V3Stage",
+      "section": "Barrel Stage. ListingHero mounts height=frame. Do not invent a second listing hero.",
+      "blocking": true
+    },
+    {
+      "name": "ListingActSheet",
+      "section": "One on-page V3Sheet: tour or ask. Does not send the visitor to /contact.",
+      "blocking": true
+    },
+    {
+      "name": "V3Sheet",
+      "section": "Barrel Sheet for the listing act.",
+      "blocking": true
     },
     {
       "name": "PriceCtaStrip",
-      "section": "Price + address + 4-button CTA row (Schedule a tour, Ask a question, Save, Share). THE PAGE PRIMARY at 390: filled Schedule a tour. Do not add another filled ask in the first viewport.",
+      "section": "Address, status, Save, Share, and jump links to #listing-act and #listing-like-alerts. The list price is on the Stage, not here.",
       "blocking": true
     },
     {
@@ -161,12 +176,8 @@
       "reason": "Embedded inside NeighborhoodMarketContext rather than a standalone primitive."
     },
     {
-      "name": "V3Stage",
-      "reason": "ListingHero already is the owned-media opening. A second Stage would be a fifth pattern and would put a filled overlay ask on top of Schedule a tour."
-    },
-    {
       "name": "V3Instrument",
-      "reason": "The listing answer is the home itself (hero + price strip), not a market instrument. NeighborhoodMarketContext keeps the place stats in the listing-detail stack."
+      "reason": "The listing answer is the home itself (hero + Stage), not a market instrument. NeighborhoodMarketContext keeps the place stats in the listing-detail stack."
     },
     {
       "name": "V3Field",
@@ -212,7 +223,7 @@
     "ListingTracker",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "ListingDetailShell (ListingHero, PriceCtaStrip, facts, DescriptionBlock, ListingLikeThisSheet, restyle, map, market, schools, parks, lifestyle, history, money, ListingAttribution, ListingBrokerCTA)",
+    "ListingDetailShell (ListingHero V3Stage, ListingActSheet, PriceCtaStrip, facts, DescriptionBlock, ListingLikeThisSheet, restyle, map, market, schools, parks, lifestyle, history, money, ListingAttribution, ListingBrokerCTA)",
     "ListingFeaturedHomes (similar homes poster grid)",
     "PlaceParentsSection",
     "BuilderExploreSection (when the builder has other actives)",

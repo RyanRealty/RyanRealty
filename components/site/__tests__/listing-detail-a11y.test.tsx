@@ -111,7 +111,14 @@ describe('listing-detail CTA row accessible names', () => {
     })
     expect(html).not.toMatch(/9,800,000/)
     expect(html).not.toMatch(/1,900,000/)
-    expect(html).toMatch(/7,900,000/)
+    expect(html).not.toMatch(/7,900,000/)
+  })
+
+  it('tour and ask stay on the listing Sheet', () => {
+    const html = render()
+    expect(html).toMatch(/href="#listing-act"/)
+    expect(html).not.toMatch(/\/contact\?/)
+    expect(html).not.toMatch(/\$895,000/)
   })
 
   it('offers a clear path to the listing alert strip', () => {

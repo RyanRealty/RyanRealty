@@ -197,8 +197,9 @@
   width: 100%;
 }
 
-/* Overlay the trail on the photo so sticky chrome sits on the hero, not a
-   cream band. Site chrome (V3Chrome.css) stays untouched. */
+/* Overlay the barrel on-media trail on the Stage so sticky chrome sits on
+   the photo, not a cream band. Do not restyle the strip: V3Breadcrumb.css
+   already paints the navy on-media surface. */
 .listing-detail > .v3.v3-breadcrumb {
   position: absolute;
   top: 0;
@@ -207,161 +208,6 @@
   z-index: 6;
   max-width: none;
   margin: 0;
-  padding-top: 8px;
-  padding-bottom: 12px;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--v3-navy) 58%, transparent),
-    transparent
-  );
-}
-
-.listing-detail > .v3.v3-breadcrumb.v3-breadcrumb--on-media {
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--v3-navy) 58%, transparent),
-    transparent
-  );
-}
-
-.listing-hero-band {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  height: auto;
-  max-height: 56.25vw;
-  min-height: 0;
-  background: var(--v3-navy);
-  overflow: hidden;
-}
-
-.listing-hero-band > button,
-.listing-hero-band > video,
-.listing-hero-band > img,
-.listing-hero-band > a {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.listing-hero-arrow {
-  position: absolute;
-  top: 50%;
-  z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  border: 0;
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  cursor: pointer;
-  transform: translateY(-50%);
-}
-.listing-hero-arrow-prev {
-  left: clamp(12px, 2vw, 20px);
-}
-.listing-hero-arrow-next {
-  right: clamp(12px, 2vw, 20px);
-}
-.listing-hero-count {
-  position: absolute;
-  right: clamp(18px, 3.5vw, 56px);
-  bottom: clamp(72px, 12vw, 112px);
-  z-index: 5;
-  padding: 6px 10px;
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  font-variant-numeric: tabular-nums;
-}
-.listing-hero-strip {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 3px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  background: var(--v3-navy);
-  border-top: 3px solid var(--v3-navy);
-}
-.listing-hero-strip-cell,
-.listing-hero-strip-more {
-  position: relative;
-  flex: 0 0 23%;
-  width: 23%;
-  height: 4.5rem;
-  max-height: 4.5rem;
-  min-height: 0;
-  aspect-ratio: 5 / 4;
-  overflow: hidden;
-  border: 0;
-  padding: 0;
-  background: var(--v3-navy);
-  color: var(--v3-cream);
-  cursor: zoom-in;
-}
-.listing-hero-strip-cell[data-active='true'] {
-  outline: 3px solid var(--v3-cream);
-  outline-offset: -3px;
-}
-.listing-hero-strip [data-strip-i='3'],
-.listing-hero-strip [data-strip-i='4'],
-.listing-hero-strip [data-strip-i='5'] {
-  display: none;
-}
-.listing-hero-strip-more {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.listing-hero-strip-more-lg {
-  display: none;
-}
-.listing-hero-strip-more-sm,
-.listing-hero-strip-more-lg {
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--v3-cream) 78%, transparent);
-}
-@media (min-width: 760px) {
-  .listing-hero-strip {
-    display: grid;
-    grid-template-columns: repeat(var(--strip-cols, 6), minmax(0, 1fr));
-    overflow: hidden;
-  }
-  .listing-hero-strip [data-strip-i] {
-    display: block;
-  }
-  .listing-hero-strip-cell,
-  .listing-hero-strip-more {
-    flex: none;
-    width: auto;
-    height: auto;
-    max-height: none;
-    min-height: 7rem;
-    aspect-ratio: 4 / 3;
-  }
-  .listing-hero-strip-more-lg {
-    display: block;
-  }
-  .listing-hero-strip-more-sm {
-    display: none;
-  }
-  .listing-hero-strip-more[data-desktop-remaining='false'] {
-    display: none;
-  }
 }
 
 .listing-detail-shell {
@@ -505,6 +351,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
   height: var(--v3-tap);
   padding: 0 13px;
   background: var(--navy);

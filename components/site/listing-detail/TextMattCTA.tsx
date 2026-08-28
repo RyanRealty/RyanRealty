@@ -43,14 +43,14 @@ function digits(phone: string): string {
 
 export function TextMattCTA({
   broker,
-  listingKey,
+  listingKey: _listingKey,
   reviews,
   headline,
   body,
   primaryCta,
   className,
 }: Props) {
-  const tourHref = primaryCta?.href ?? `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
+  const tourHref = primaryCta?.href ?? '#listing-act'
   const tourLabel = primaryCta?.label ?? 'Schedule a tour'
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
 
@@ -79,10 +79,10 @@ export function TextMattCTA({
           <Image
             src={broker.headshotPng}
             alt={broker.fullName}
-            width={96}
-            height={120}
+            width={48}
+            height={60}
             className="shrink-0 self-start"
-            style={{ width: 96, height: 120, objectFit: 'contain', objectPosition: 'top' }}
+            style={{ width: 48, height: 60, objectFit: 'contain', objectPosition: 'top' }}
           />
           <div className="min-w-0 flex flex-col gap-1.5">
             <div>

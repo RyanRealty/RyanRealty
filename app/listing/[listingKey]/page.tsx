@@ -36,6 +36,7 @@ import {
   LISTING_UNAVAILABLE_METADATA,
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
+import { ListingActSheet } from '@/components/site/listing-detail/ListingActSheet.client'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 import { OpenHouses } from '@/components/site/listing-detail/OpenHouses'
@@ -86,11 +87,15 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
+  V3Sheet as _V3SheetImport,
+  V3Stage as _V3StageImport,
 } from '@/components/site/v3'
 
 // Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
 void _PhotoGalleryLightboxImport
 void _TextMattCTAImport
+void _V3SheetImport
+void _V3StageImport
 void ListingMobileContactBar
 
 /**
@@ -100,7 +105,8 @@ void ListingMobileContactBar
  * judge the market, schools and parks, history, run the money, then
  * who to call.
  *
- *   hero        ListingHero (photo-grid OR autoplay-video)
+ *   hero        ListingHero (V3Stage 16:9 still, one Amboqia price)
+ *   act         ListingActSheet (one V3Sheet: tour or ask)
  *   main        PriceCtaStrip · OpenHouses · PropertySpecs · DescriptionBlock
  *               · ListingLikeThisAlerts (#listing-like-alerts + coach)
  *               · RoomRestyle · ListingVideoEmbed · ListingLocationMap
@@ -434,16 +440,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
     { label: street || `Listing ${listingKey}` },
   ]
 
-  // Videos ≠ virtual tours (Matt): hero gets reels; tours get their own viewer.
+  // Stage is a still. Virtual tours keep their own viewer below the fold.
   const virtualTours = videos.filter((v) => v.isVirtualTour)
-  const reelVideos = videos.filter((v) => !v.isVirtualTour)
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
     listing.listingKey
   const hero = (
     <ListingHero
       photos={photos}
-      videos={reelVideos}
       addressLine={street}
       price={publishedSaleAsk}
       beds={listing.beds}
@@ -454,12 +458,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
       subdivisionName={listing.subdivisionName}
       city={listing.city}
       listNumber={listing.listNumber}
-      lat={listing.lat} lng={listing.lng}
     />
   )
 
   const main = (
     <>
+      <ListingActSheet listingKey={contactKey} listingSummary={street || undefined} />
       <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} history={history} />
       <PlaceIdentityLine place={placeContext} />
       <LivePricingRead
