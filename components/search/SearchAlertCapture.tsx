@@ -139,7 +139,13 @@ export function SearchAlertCapture({
   const [state, setState] = useState<'idle' | 'done' | 'error'>('idle')
   const [error, setError] = useState('')
   const [dismissed, setDismissed] = useState(false)
-  const [expanded, setExpanded] = useState(true)
+  // Collapsed on phones, expanded on sm+ (2026-08-27 mobile audit: the open
+  // email form crowded the 390px filter area with a second unrelated job).
+  // SSR renders collapsed; the effect expands only where there is room.
+  const [expanded, setExpanded] = useState(false)
+  useEffect(() => {
+    if (window.matchMedia('(min-width: 640px)').matches) setExpanded(true)
+  }, [])
   const [pending, startTransition] = useTransition()
   const isInline = variant === 'inline'
   const rootRef = useRef<HTMLDivElement>(null)

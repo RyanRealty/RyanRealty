@@ -166,7 +166,10 @@ export function publicSegmentItems(
     if (row.activeCount == null || row.activeCount <= 0) continue
     if (!(PUBLIC_PLACE_SEGMENTS as readonly string[]).includes(row.segment)) continue
     const noun = publicSegmentNoun(row.segment, row.activeCount)
-    const bits = publicSegmentDisplayBits(row)
+    // Top three only (price, months of supply, verdict) — the full nine-stat
+    // run was a run-on wall at 390px on every consumer (sell, seller LP, zip,
+    // listing context). Detail lives one tap away on the browse href.
+    const bits = publicSegmentDisplayBits(row).slice(0, 3)
     items.push({
       key: row.segment,
       value: row.activeCount.toLocaleString('en-US'),

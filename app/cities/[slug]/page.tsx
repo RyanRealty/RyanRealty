@@ -597,6 +597,11 @@ export default async function CityDetailPage({ params }: Props) {
             headline={v3Text(marketHeadline)}
             note={verdictSentence ? v3Text(verdictSentence) : undefined}
             figures={[firstMarketFigure, ...restMarketFigures]}
+            /* The HUD answers the market question; the ~26-figure long tail
+               (pace, mix, finance, bed-count shares) folds behind "All N
+               figures" (2026-08-27 mobile audit: the open wall ran 31 deep
+               at 390px). Nothing is cut — the fold is in-section. */
+            foldAfter={5}
             source={v3Text(cityInstrumentSource(cityMarketTrace(cityName, mosLabel != null), mart, cityName))}
             chart={medianChart}
             chartSecondary={placeMartCompositionChart(mart)}

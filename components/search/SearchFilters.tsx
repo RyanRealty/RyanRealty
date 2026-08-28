@@ -561,7 +561,15 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
       {/* Row 2: chips + All filters. 390 keeps the chip set on one
           horizontal row so Price/Beds/Baths stay tappable. */}
       <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
-        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
+        {/* The right-edge fade signals more chips off-screen (2026-08-27
+            mobile audit: the row scrolls, but a hard clip read as cut off). */}
+        <div
+          className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar"
+          style={{
+            WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
+            maskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
+          }}
+        >
         {/* For Sale / Status */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}

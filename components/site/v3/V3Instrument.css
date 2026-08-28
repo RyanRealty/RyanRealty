@@ -90,6 +90,40 @@
 }
 
 /* A lone figure is the headline figure, at lead size, so it takes the row. */
+/* The fold: a native disclosure holding the long-tail figures. Broadside
+   chrome — a tracked small-caps summary on the hairline, no box, no shadow. */
+.v3.v3-instrument .v3-instrument__fold {
+  margin-top: var(--v3-space-md);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3.v3-instrument .v3-instrument__fold-summary {
+  cursor: pointer;
+  padding: var(--v3-space-sm) 0;
+  font-size: var(--v3-size-label);
+  font-weight: 600;
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  list-style: none;
+}
+
+.v3.v3-instrument .v3-instrument__fold-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3.v3-instrument .v3-instrument__fold-summary::after {
+  content: ' +';
+}
+
+.v3.v3-instrument .v3-instrument__fold[open] .v3-instrument__fold-summary::after {
+  content: ' \2212';
+}
+
+.v3.v3-instrument .v3-instrument__fold > .v3-instrument__figures {
+  margin-top: 0;
+}
+
 .v3.v3-instrument .v3-instrument__figures--single {
   grid-template-columns: minmax(0, 1fr);
 }

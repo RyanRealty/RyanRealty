@@ -555,8 +555,11 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
     expect(mapSplit).toMatch(/underFilterBar/)
   })
 
-  it('guest default shows the email field so save-search collects an address', () => {
-    expect(src).toMatch(/const \[expanded, setExpanded\] = useState\(true\)/)
+  it('guest capture expands where there is room: collapsed on phones, email field open on sm+', () => {
+    // 2026-08-27 mobile audit: the always-open email form crowded the 390px
+    // filter area. SSR renders collapsed; a matchMedia effect expands on sm+.
+    expect(src).toMatch(/const \[expanded, setExpanded\] = useState\(false\)/)
+    expect(src).toMatch(/matchMedia\('\(min-width: 640px\)'\)/)
     expect(src).toMatch(/Get listing alerts/)
     expect(src).toMatch(/\{!expanded \?/)
     expect(src).toMatch(/name="company"/)

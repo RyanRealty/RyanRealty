@@ -150,6 +150,14 @@ export type V3InstrumentProps = {
    * a data failure, not a copy choice.
    */
   headline: V3Text
+  /**
+   * Figures beyond this count fold behind a native disclosure ("All figures"),
+   * closed by default. For the long-tail stat walls (2026-08-27 mobile audit:
+   * /cities/bend ran 31 figures deep at 390px) — the lead figures answer the
+   * page's question, the tail stays one tap away without leaving the section.
+   * Omit to render every figure open (the default, unchanged).
+   */
+  foldAfter?: number
   /** The supporting figures, left to right in the order the caller passes them. */
   figures: V3InstrumentFigures
   /**
@@ -227,6 +235,7 @@ const NO_DATE = /^[\s\u002D\u2010-\u2015\u2212]*$/
 
 export function V3Instrument({
   headline,
+  foldAfter,
   figures,
   source,
   updated,
@@ -286,13 +295,8 @@ export function V3Instrument({
 
       {note ? <p className="v3-instrument__note">{note}</p> : null}
 
-      <div
-        className={cn(
-          'v3-instrument__figures',
-          figures.length === 1 && 'v3-instrument__figures--single',
-        )}
-      >
-        {figures.map((figure, i) => {
+      {(() => {
+        const renderFigure = (figure: (typeof figures)[number], i: number) => {
           const key = `${i}-${figure.label}`
           const rendered = (
             <V3Figure value={figure.value} label={figure.label} emphasis={emphasis} />
@@ -311,8 +315,34 @@ export function V3Instrument({
           ) : (
             <Fragment key={key}>{rendered}</Fragment>
           )
-        })}
-      </div>
+        }
+        const foldAt =
+          foldAfter != null && foldAfter > 0 && figures.length > foldAfter + 1 ? foldAfter : null
+        const lead = foldAt != null ? figures.slice(0, foldAt) : figures
+        const tail = foldAt != null ? figures.slice(foldAt) : []
+        return (
+          <>
+            <div
+              className={cn(
+                'v3-instrument__figures',
+                figures.length === 1 && 'v3-instrument__figures--single',
+              )}
+            >
+              {lead.map(renderFigure)}
+            </div>
+            {tail.length > 0 ? (
+              <details className="v3-instrument__fold">
+                <summary className="v3-instrument__fold-summary">
+                  All {figures.length} figures
+                </summary>
+                <div className="v3-instrument__figures">
+                  {tail.map((figure, i) => renderFigure(figure, i + lead.length))}
+                </div>
+              </details>
+            ) : null}
+          </>
+        )
+      })()}
 
       {chart ? (
         <div className="v3-instrument__chart">

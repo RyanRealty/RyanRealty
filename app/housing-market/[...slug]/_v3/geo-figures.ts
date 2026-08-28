@@ -142,7 +142,10 @@ export function buildPublicSegmentFigures(
   const figures: V3InstrumentFigure[] = []
   for (const row of rows) {
     if (row.activeCount == null || row.activeCount <= 0) continue
-    const bits = publicSegmentDisplayBits(row)
+    // Top three only (price, months of supply, verdict) — nine stats in one
+    // gray label was a run-on wall at 390px; the full detail is one tap away
+    // on the tile's own browse link. Mirrors the hub's 2026-08-27 trim.
+    const bits = publicSegmentDisplayBits(row).slice(0, 3)
     figures.push({
       value: v3Text(row.activeCount.toLocaleString('en-US')),
       label: v3Text(

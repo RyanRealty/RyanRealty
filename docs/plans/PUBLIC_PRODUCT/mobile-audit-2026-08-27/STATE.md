@@ -7,21 +7,21 @@ titles on rows site-wide, zip capped at a stated 24-of-total preview, 8-stop
 monochrome composition ladder with cream seams, run-on stat tiles trimmed on
 hub/region, booking fallback phone through CONTACT.
 
-STILL OPEN (the next session's list, findings in group-{a..d}.md):
-1. components/search — top-bar crowding (search + save-search on one row) and
-   filter-chip overflow affordance at 390px.
-2. app/housing-market/[...slug]/_v3/geo-figures.ts (shared with communities) —
-   same run-on tile labels the hub got trimmed of; needs the top-3 treatment.
-3. /cities/bend stat wall — group-b wrote a concrete grouping proposal
-   (lead 5, then pricing/pace, property-mix behind a disclosure); needs a
-   V3Instrument fold capability in the barrel.
-4. Homepage brokers section opens on Matt's full-viewport headshot —
+SECOND HAUL SHIPPED (same day): search guest-capture collapses on phones
+(expands sm+), chip-row right-edge fade affordance, segment tiles trimmed to
+top-3 in BOTH shared builders (geo-figures + publicSegmentItems — covers city
+reports, communities, sell, seller LP), V3Instrument gained `foldAfter` (native
+disclosure, Broadside chrome) and /cities/bend now leads with 5 figures over
+"All 34 figures +", and the blog "For for buyers" heading is fixed in
+blog_posts (one targeted UPDATE).
+
+STILL OPEN:
+1. Homepage brokers section opens on Matt's full-viewport headshot —
    contradicts the brand-first rule; MATT'S CALL, not unilateral.
-5. Compare map 429/world-zoom — verify on a fresh session before treating as
+2. Compare map 429/world-zoom — verify on a fresh session before treating as
    real (likely audit-session Maps quota).
-6. Blog content typo "For for buyers" in Supabase blog_posts
-   (bend-buyers-market-shift-2026) — content edit, not code.
-7. /cities "every city, every door" 42-row link wall — product/SEO tradeoff.
+3. /cities "every city, every door" 42-row link wall — product/SEO tradeoff,
+   Matt's call.
 
 
 Matt's directive: full visual audit of EVERY public page at 390px. Look at rendered
