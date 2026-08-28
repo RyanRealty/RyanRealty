@@ -19,12 +19,10 @@ import { GoogleMap, Marker, Polygon, Polyline } from '@react-google-maps/api'
 import { useRouter } from 'next/navigation'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions, MAP_NAVY } from '@/lib/maps/markers'
-import {
-  MAP_DEFAULT_CENTER,
-  MAP_LABEL_LISTING,
-  getListingMarkerIcon,
-} from '@/lib/map-constants'
+import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { useV3FieldBinding } from '@/components/site/v3'
+import { fieldMapFit } from './field-map-fit'
+import { fieldPinLabelColor, fieldTypeMarkerIcon, fieldTypesFromItems } from './field-map-pin'
 
 const FILL = { width: '100%', height: '100%' } as const
 const SINGLE_POINT_ZOOM = 14
@@ -73,10 +71,10 @@ export type PlaceFieldMapPin = {
   title: string
   lat: number
   lng: number
+  typeKey?: string
 }
 
 export function PlaceFieldMapImpl({
-  pins,
   boundary,
   placeName,
   centerLonLat,
@@ -94,12 +92,32 @@ export function PlaceFieldMapImpl({
 }) {
   const router = useRouter()
   const { ready, error } = useGoogleMapsReady()
-  const { activeId, setActiveId } = useV3FieldBinding()
+  const { activeId, setActiveId, items } = useV3FieldBinding()
   const mapRef = useRef<google.maps.Map | null>(null)
   const [fitted, setFitted] = useState(false)
 
   const polygons = useMemo(() => toPolygons(boundary), [boundary])
   const polylines = useMemo(() => toPolylines(boundary), [boundary])
+  const listingPins = useMemo(
+    () =>
+      items.flatMap((item) =>
+        typeof item.lat === 'number' && typeof item.lng === 'number'
+          ? [
+              {
+                id: item.id,
+                href: item.href,
+                priceLabel: item.priceLabel,
+                title: item.title,
+                lat: item.lat,
+                lng: item.lng,
+                typeKey: item.typeKey,
+              },
+            ]
+          : [],
+      ),
+    [items],
+  )
+  const types = useMemo(() => fieldTypesFromItems(listingPins), [listingPins])
 
   const fallbackCenter = useMemo(() => {
     if (centerLonLat) return { lat: centerLonLat[1], lng: centerLonLat[0] }
@@ -110,54 +128,37 @@ export function PlaceFieldMapImpl({
   const fit = useCallback(
     (map: google.maps.Map) => {
       if (typeof google === 'undefined' || !google.maps?.LatLngBounds) return
-      const bounds = new google.maps.LatLngBounds()
-      let count = 0
-      for (const pin of pins) {
-        bounds.extend({ lat: pin.lat, lng: pin.lng })
-        count += 1
-      }
-      if (placePin) {
-        bounds.extend({ lat: placePin.lat, lng: placePin.lng })
-        count += 1
-      }
-      if (count === 0) {
-        for (const ring of polygons) {
-          for (const point of ring) {
-            bounds.extend(point)
-            count += 1
-          }
-        }
-        for (const line of polylines) {
-          for (const point of line) {
-            bounds.extend(point)
-            count += 1
-          }
-        }
-      }
-      if (count === 0) {
+      const target = fieldMapFit({
+        polygons,
+        pins: listingPins,
+        placePin: placePin ?? null,
+      })
+      if (target.kind === 'empty') {
         map.setCenter(fallbackCenter)
         map.setZoom(SINGLE_POINT_ZOOM)
         return
       }
-      if (count === 1) {
-        map.setCenter(bounds.getCenter())
+      if (target.kind === 'single') {
+        map.setCenter(target.point)
         map.setZoom(SINGLE_POINT_ZOOM)
         return
       }
+      const bounds = new google.maps.LatLngBounds()
+      for (const point of target.points) bounds.extend(point)
       map.fitBounds(bounds, 48)
-      // Frame floor (Matt 2026-08-27): a region-wide pin set in a small box
-      // fit out to half of Oregon — Salem to Roseburg on a phone — with every
-      // pin in one unreadable clump. Central Oregon at 390px is legible from
-      // zoom 9; never present wider than the service area.
-      google.maps.event.addListenerOnce(map, 'idle', () => {
-        const z = map.getZoom()
-        if (z != null && z < 9) {
-          map.setZoom(9)
-          map.setCenter(bounds.getCenter())
-        }
-      })
+      // Pin-only fits can still open at a regional default. A place polygon
+      // already named the viewport; do not pull it wider than the place.
+      if (target.kind === 'pins') {
+        google.maps.event.addListenerOnce(map, 'idle', () => {
+          const z = map.getZoom()
+          if (z != null && z < 9) {
+            map.setZoom(9)
+            map.setCenter(bounds.getCenter())
+          }
+        })
+      }
     },
-    [pins, placePin, polygons, polylines, fallbackCenter],
+    [listingPins, placePin, polygons, fallbackCenter],
   )
 
   const onLoad = useCallback(
@@ -239,13 +240,21 @@ export function PlaceFieldMapImpl({
             zIndex={50}
           />
         ) : null}
-        {pins.map((pin) => (
+        {listingPins.map((pin) => (
           <Marker
             key={pin.id}
             position={{ lat: pin.lat, lng: pin.lng }}
             title={`${pin.title} · ${pin.priceLabel}`}
-            label={{ text: pin.priceLabel, ...MAP_LABEL_LISTING }}
-            icon={getListingMarkerIcon({ hover: activeId === pin.id })}
+            label={
+              activeId === pin.id
+                ? { text: pin.priceLabel, color: fieldPinLabelColor(), fontSize: '9px', fontWeight: 'bold' }
+                : undefined
+            }
+            icon={fieldTypeMarkerIcon({
+              typeKey: pin.typeKey,
+              types,
+              hover: activeId === pin.id,
+            })}
             zIndex={activeId === pin.id ? 100 : 1}
             onMouseOver={() => setActiveId(pin.id)}
             onMouseOut={() => setActiveId(null)}

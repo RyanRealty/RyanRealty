@@ -3,8 +3,8 @@
  * /subdivisions/[slug] — the plat grain, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 (locked 2026-08-11).
- * "Subdivision → Ledger of this plat's homes. Field only when the plat has
- * enough pins to be a map. A short plat is a list." Giant 0 is forbidden: an
+ * "Subdivision → Stage then Field when the plat has enough pins and an owned
+ * photo. No owned asset → Field or Ledger. A short plat is a list." Giant 0 is forbidden: an
  * empty Ledger states the reason. The parent community or city is the back
  * door. Schools sit on the first path. Section order is the parity contract at
  * design_system/ryan-realty/ui_kits/subdivision/parity.json.
@@ -107,7 +107,7 @@ import type { Metadata } from 'next'
 import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './SubdivisionUnavailable'
 import { subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
-import { getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
+import { getCommunityHeroUrlsBySlug, getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
 import { getSubdivisionVideoTours } from '@/lib/data'
 import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
 import {
@@ -128,6 +128,7 @@ import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
+import { communityImage, preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatDate } from '@/lib/format/date'
@@ -143,8 +144,8 @@ import {
   V3Instrument,
   V3Ledger,
   V3PlaceCharacter,
-  V3PlacePropertyTypes,
   V3Quiet,
+  V3Stage,
   V3SectionTracker,
   type V3FieldItem,
   type V3InstrumentFigure,
@@ -255,7 +256,8 @@ const loadSubdivisionCore = cache(async (slug: string) => {
   // THE COUNTED SET. Same payload as the /subdivisions index tiles.
   const inventoryOk = inventory != null
   const countedKeys = inventoryOk ? inventory.listingKeys : []
-  const boundaryListingKeys = inventoryOk ? countedKeys : boundary.pins.map((p) => p.listingKey)
+  const pinKeys = boundary.pins.map((pin) => pin.listingKey).filter((k) => Boolean(k?.trim()))
+  const boundaryListingKeys = [...new Set(pinKeys.length > 0 ? pinKeys : countedKeys)]
 
   let mapTiles: Awaited<ReturnType<typeof getListingTiles>> = []
   if (boundaryListingKeys.length > 0) {
@@ -263,7 +265,6 @@ const loadSubdivisionCore = cache(async (slug: string) => {
       getListingTiles({
         listingKeys: boundaryListingKeys,
         status: 'active',
-        propertyType: 'A',
         limit: 250,
       }),
       [],
@@ -271,10 +272,6 @@ const loadSubdivisionCore = cache(async (slug: string) => {
       inventoryOk ? 'sub:inventory-tiles' : 'sub:map-pins',
     )
     mapTiles = mapTilesRead.ok ? mapTilesRead.value : []
-  }
-  if (inventoryOk) {
-    const allowed = new Set(countedKeys)
-    mapTiles = mapTiles.filter((t) => allowed.has(t.listingKey))
   }
 
   // REFUSAL, not notFound(): under the streamed shell a throw ships a hollow
@@ -369,7 +366,7 @@ export default async function SubdivisionPage({ params }: Props) {
   const hasMap = plotted.length > 0 || Boolean(mapPolygon)
 
   // ── THE REST OF THE READS. Every one of them reaches the screen. ─────────
-  const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments, placeCharacter] =
+  const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments, placeCharacter, communityHeroes] =
     await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -390,6 +387,7 @@ export default async function SubdivisionPage({ params }: Props) {
       // Build years and HOA, measured from this plat's own member listings
       // (PLACE_CONTENT_RULES R1/R2/R3).
       withTimeoutFallback(getPlaceCharacter('subdivision', slug), null, 4500, 'sub:character'),
+      getCommunityHeroUrlsBySlug(),
     ])
 
   // ── THE MARKET BAND READS ONE POPULATION AT A TIME ──────────────────────
@@ -509,6 +507,20 @@ export default async function SubdivisionPage({ params }: Props) {
     homeRows: fieldItems.length,
     pinCount: plotted.length,
   })
+  const stagePoster =
+    homesMode === 'field'
+      ? preferPlaceHeroOrNull(communityHeroes[slug], communityImage(slug))
+      : null
+  const platTrail = [
+    { label: 'Home', href: '/' },
+    { label: 'Communities', href: '/communities' },
+    ...(resortSlug
+      ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
+      : citySlug
+        ? [{ label: cityName, href: `/cities/${citySlug}` }]
+        : []),
+    { label: displayName },
+  ]
   const homeRows = toLedgerRows(fieldItems)
   const [firstHome, ...restHomes] = homeRows
   const parentHref = resortSlug
@@ -524,30 +536,39 @@ export default async function SubdivisionPage({ params }: Props) {
         <MetadataBlock schemas={schemas} />
         <V3SectionTracker />
 
-        <V3Breadcrumb
-          trail={[
-            { label: 'Home', href: '/' },
-            { label: 'Communities', href: '/communities' },
-            ...(resortSlug
-              ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
-              : citySlug
-                ? [{ label: cityName, href: `/cities/${citySlug}` }]
-                : []),
-            { label: displayName },
-          ]}
-        />
+        {stagePoster ? (
+          <V3Breadcrumb tone="on-media" trail={platTrail} />
+        ) : (
+          <V3Breadcrumb trail={platTrail} />
+        )}
 
-        {/* Pattern 2, Field — only when the plat has enough pins to BE a map.
-            A short plat is a list, which is the next branch. */}
+        {/* Pattern 4 then 2: Stage (owned plat photo) then Field when the plat
+            has enough pins. No owned asset -> Quiet H1 then Field. A short plat
+            is a list. */}
         {homesMode === 'field' ? (
           <>
-            <V3Quiet
-              id="overview"
-              heading={`Homes for sale in ${displayName}`}
-              headingLevel={1}
-              eyebrow={eyebrow}
-              items={[{ label: parentLabel, href: parentHref }]}
-            />
+            {stagePoster ? (
+              <V3Stage
+                id="place"
+                headingLevel={1}
+                height="tall"
+                eyebrow={eyebrow}
+                headline={`${displayName} homes for sale`}
+                posterSrc={stagePoster}
+                action={{
+                  label: fieldItems[0]?.title || `See ${displayName} houses`,
+                  href: fieldItems[0]?.href || '#homes',
+                }}
+              />
+            ) : (
+              <V3Quiet
+                id="overview"
+                heading={`Homes for sale in ${displayName}`}
+                headingLevel={1}
+                eyebrow={eyebrow}
+                items={[{ label: parentLabel, href: parentHref }]}
+              />
+            )}
             <V3Field
               id="homes"
               ariaLabel={`Homes for sale in ${displayName}`}
@@ -560,11 +581,6 @@ export default async function SubdivisionPage({ params }: Props) {
                 label: fieldItems.length === 1 ? 'home shown here' : 'homes shown here',
                 source: fieldTrace(platScope),
               }}
-              mapNote={
-                mapPolygon
-                  ? `The outline is the recorded ${displayName} plat boundary.`
-                  : undefined
-              }
             />
           </>
         ) : firstHome ? (
@@ -590,7 +606,7 @@ export default async function SubdivisionPage({ params }: Props) {
             emptyMessage={v3Text(
               homesMode === 'unknown'
                 ? `The inventory query for ${displayName} did not return, so this is not a claim that nothing is for sale.`
-                : `No single-family home is listed in ${displayName} right now.`,
+                : `No home is listed in ${displayName} right now.`,
             )}
             action={{ label: v3Text(parentLabel), href: parentHref, variant: 'ghost' }}
           />
@@ -646,16 +662,6 @@ export default async function SubdivisionPage({ params }: Props) {
 
         {/* Pattern 3, Ledger — recorded instruments, every row a door. */}
         <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />
-
-        {/* Pattern 1 again, as ONE enumeration: a section per other property
-            type the plat holds. The registry withholds price and months of
-            supply below neighbourhood grain, so a plat supplies counts alone,
-            and a type with no counts never reaches the component. */}
-        <V3PlacePropertyTypes
-          placeName={displayName}
-          citySlug={citySlug}
-          rows={mtCounts.extras}
-        />
 
       </main>
 

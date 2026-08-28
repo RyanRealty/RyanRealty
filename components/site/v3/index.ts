@@ -147,6 +147,19 @@ export type {
   V3FieldMapSlot,
 } from './V3Field'
 
+export {
+  fieldPropertyType,
+  fieldPropertyTypeCat,
+  filterFieldItems,
+  presentFieldTypes,
+} from './field-property-type'
+
+export type {
+  FieldPropertyType,
+  FieldPropertyTypeCat,
+  FieldPropertyTypeKey,
+} from './field-property-type'
+
 /* -------------------------------------------------------------------------- */
 /* Pattern 3 — LEDGER: a scannable list where every row is a door              */
 /* -------------------------------------------------------------------------- */

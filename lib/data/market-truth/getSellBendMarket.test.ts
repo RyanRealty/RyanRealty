@@ -142,13 +142,14 @@ describe('getSellBendMarket', () => {
     expect(cma).toMatch(/mt-v1 detached MLS-city/)
   })
 
-  it('city page HUD reads getCityDetachedMarket and map tiles are detached', () => {
+  it('city page HUD reads getCityDetachedMarket and Field tiles are every type', () => {
     const page = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
     expect(page).toMatch(/getCityDetachedMarket/)
-    expect(page).toMatch(/propertySubType: 'Single Family Residence'/)
+    expect(page).toMatch(/getCityListings/)
+    expect(page).not.toMatch(/propertySubType: 'Single Family Residence'/)
     // KB spelled this as a JSX prop; the v3 page passes the same binding as an
     // argument object to cityMarketChartCards. Either spelling, same rule: the
-    // chart cards' subject figure IS the displayed hero count.
+    // chart cards' subject figure IS the displayed leftover HUD count.
     expect(page).toMatch(/displayedActiveCount[=:]\s*\{?hud\.active\}?/)
     expect(page).toMatch(/leftoverHudKpis/)
     expect(page).toMatch(/getCityDetachedInventory/)

@@ -2,7 +2,8 @@
  * /cities/[slug] - the city node, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 City. First screen is
- * the Field of this city's houses. Verdict is a caption, never a number hero.
+ * Stage (owned city photo) then Field of this city's houses. No owned asset ->
+ * Field. Verdict is a caption, never a number hero.
  * Child neighborhoods and master-plans are doors below the fold. Section order
  * is the parity contract: design_system/ryan-realty/ui_kits/city/parity.json.
  *
@@ -35,7 +36,8 @@
  * market?" whenever a verdict exists, with the answer as the section note
  * directly beneath - the same question KbMarketHud carried, now on the barrel.
  * With no verdict there is no question (a question with no answer under it is
- * worse than a label), and the H1 stays the money head term on the Field.
+ * worse than a label), and the H1 is Stage when an owned photo exists, else
+ * the Field heading.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, generateStaticParams over PRIMARY_CITIES with dynamicParams,
@@ -66,6 +68,7 @@ import type { Metadata } from 'next'
 import {
   getGeoSnapshot,
   getCityListings,
+  getBoundaryGeoJSON,
   getBendNeighborhoodLedger,
   getAllCitySnapshots,
   getCityCommunitySnapshots,
@@ -98,7 +101,7 @@ import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
 import { cityResorts, resortActiveSfrCounts, resortLabelToSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { CITY_MARQUEE_COMMUNITIES, CITY_RESORT_LEDGER_IMG, communityVideoUrl } from '@/lib/kb/city-page-config'
-import { preferPlaceHero } from '@/lib/geo-images'
+import { cityHero, preferPlaceHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
 // Row shaping shared with the neighborhood + community place pages - one copy, so a
 // fix cannot land on one of the three and drift on the others.
 import { buildActivityItems, buildArticlePosts, buildOtherCityItems } from '@/lib/kb/place-sections'
@@ -121,8 +124,8 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Ledger,
-  V3PlacePropertyTypes,
   V3Quiet,
+  V3Stage,
   V3SectionTracker,
   type V3ChartCardProps,
   type V3InstrumentFigure,
@@ -213,7 +216,7 @@ export default async function CityDetailPage({ params }: Props) {
     detached,
     detachedInv,
     publicPace,
-    publicSegments,
+    _publicSegments,
     publicMix,
     leftoverMonthly,
     priceHist,
@@ -230,6 +233,7 @@ export default async function CityDetailPage({ params }: Props) {
     regionMartRow,
     indexCities,
     neighborhoodDirectory,
+    cityBoundary,
   ] = await Promise.all([
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city:detachedInv'),
@@ -244,15 +248,12 @@ export default async function CityDetailPage({ params }: Props) {
     ),
     withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
     withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
-    // THE FIELD'S SET - SFR only (C-02): every sibling geo map is the Single
-    // Family Residence sub-type, and the caption beside this map counts THIS
-    // set. An all-types pool put a 1,000-home badge beside a 491 hero on Bend.
+    // THE FIELD'S SET. Every type this city holds. The listed count is the
+    // preview cap, not leftover HUD. Types that exist here become Field chips.
     withTimeoutFallback(
       getCityListings(cityName, {
         status: 'active',
         sort: 'newest',
-        propertyType: 'A',
-        propertySubType: 'Single Family Residence',
         limit: CITY_TILE_FETCH_LIMIT,
       }),
       [],
@@ -285,6 +286,12 @@ export default async function CityDetailPage({ params }: Props) {
     getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
     withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'city:liveHeroes'),
     withTimeoutFallback(getNeighborhoodDirectory(), [], 3000, 'city:nbhDir'),
+    withTimeoutFallback(
+      getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }),
+      null,
+      3000,
+      'city:boundary',
+    ),
   ])
 
   // The approved area-guide clip - a guides-Ledger door on this node (the
@@ -410,10 +417,17 @@ export default async function CityDetailPage({ params }: Props) {
   const fieldCaption = cityFieldCaption({
     cityName,
     count: fieldItems.length,
-    mosLabel,
-    verdictKind: verdict.kind,
-    verdictLabel: verdict.label,
   })
+  const curatedHero = cityHero(slug)
+  const stagePoster = preferPlaceHeroOrNull(
+    indexCities[slug],
+    curatedHero.verified ? curatedHero.src : null,
+  )
+  const cityTrail = [
+    { label: 'Home', href: '/' },
+    { label: 'Cities', href: '/cities' },
+    { label: cityName },
+  ]
 
   /* ── The place ledgers ──────────────────────────────────────────────────── */
 
@@ -588,10 +602,28 @@ export default async function CityDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={citySchemas} />
 
-        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
+        {stagePoster ? (
+          <>
+            <V3Breadcrumb tone="on-media" trail={cityTrail} />
+            <V3Stage
+              id="place"
+              headingLevel={1}
+              height="tall"
+              eyebrow={`${cityName} · Oregon`}
+              headline={`${cityName} homes for sale`}
+              posterSrc={stagePoster}
+              action={{
+                label: fieldItems[0]?.title || `See ${cityName} houses`,
+                href: fieldItems[0]?.href || '#homes',
+              }}
+            />
+          </>
+        ) : (
+          <V3Breadcrumb trail={cityTrail} />
+        )}
 
         {/* Pattern 2, Field. Houses fill the fold; the count is a caption and
-            the H1 is the money head term. */}
+            the H1 is the money head term when Stage is absent. */}
         <CityHomesField
           cityName={cityName}
           headline={v3Text(`${cityName} homes for sale`)}
@@ -599,6 +631,8 @@ export default async function CityDetailPage({ params }: Props) {
           tilesLength={tiles.length}
           caption={fieldCaption}
           source={cityFieldTrace(cityName)}
+          boundary={cityBoundary ?? undefined}
+          showHeading={!stagePoster}
         />
 
         {/* Pattern 1, Instrument. The market question is the section headline,
@@ -671,11 +705,6 @@ export default async function CityDetailPage({ params }: Props) {
             action={{ label: v3Text('Every community'), href: '/communities' }}
           />
         ) : null}
-
-        {/* Pattern 1 again, as ONE enumeration: one section per other property
-            type this city holds. A type with nothing publishable is absent,
-            never an empty section and never a zero. */}
-        <V3PlacePropertyTypes placeName={cityName} citySlug={slug} rows={publicSegments} />
 
         {/* D85: golf and master-planned communities are their OWN section,
             never folded into the neighborhoods list. The value column publishes

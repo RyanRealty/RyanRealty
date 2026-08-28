@@ -167,10 +167,10 @@ place types from reading as one page, and it binds whatever the pattern set hold
 | Grain | Route | Opening | Differentiator |
 |---|---|---|---|
 | Homes | `/`, `/homes-for-sale` | Field | Houses fill the fold. Towns are filters. |
-| City | `/cities/[slug]`, `/zip/[zip]` | Field of this city's houses. Verdict is a caption, never a number hero. | Child neighborhoods and master-plans are doors below the fold. |
-| Neighborhood | `/cities/[slug]/[neighborhoodSlug]` | Instrument (this neighborhood's pace) then Field of its houses. | Daily life (schools, parks) on the first path. Not amenities or membership. |
+| City | `/cities/[slug]`, `/zip/[zip]` | Stage (owned place photo) then Field of this city's houses. No owned asset → Field. Verdict is a caption, never a number hero. | Child neighborhoods and master-plans are doors below the fold. |
+| Neighborhood | `/cities/[slug]/[neighborhoodSlug]` | Stage (owned place photo) then Field of its houses. No owned asset → Instrument then Field. | Daily life (schools, parks) on the first path. Not amenities or membership. |
 | Master-plan | `/communities/[slug]` | Stage (owned place photo) then Field. No owned asset → Instrument of what belonging here is, then Field. | Amenities, membership, STR. Child plats are doors. Not a neighborhood. |
-| Subdivision | `/subdivisions/[slug]` | Ledger of this plat's homes. Field only when the plat has enough pins to be a map. | Parent community or city is the back door. Schools on the first path. A short plat is a list. |
+| Subdivision | `/subdivisions/[slug]` | Stage (owned place photo) then Field when the plat has enough pins. No owned asset → Field or Ledger. A short plat is a list. | Parent community or city is the back door. Schools on the first path. |
 | Listing | the house URL | Stage (this house's media) with price and specs on the media, then one act (Sheet: tour or ask). | Same shop as the place pages. Payment, history, this place, who listed = layer 1. |
 | Market | `/housing-market` and leaves | Instrument | Number and chart. |
 | Sell | `/sell` | Stage then Sheet | Address field is the spine. |

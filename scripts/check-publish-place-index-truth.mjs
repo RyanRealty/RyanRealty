@@ -84,18 +84,17 @@ try {
 const nbh = src('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
 checks.push({
   label: 'neighborhood page mounts no unvetted hero photo',
-  // The v3 page (2026-08-26) has no full-bleed hero at all — PUBLIC_UI.md §3
-  // opens a neighborhood on the Instrument — so the founding defect (a stock
-  // Unsplash palm-tree hero on /cities/bend/century-west) has no surface to
-  // land on. The rule is satisfied either way: a page that reintroduces a hero
-  // image source must gate it through publishNeighborhoodHero again.
+  // PUBLIC_UI.md §3 now opens Stage then Field when an owned photo exists.
+  // Stage is gated through preferPlaceHeroOrNull(live row, communityImage).
+  // The founding defect was a stock Unsplash / parent-city photo on
+  // /cities/bend/century-west. cityHero and publish-place-hero stay banned.
   ok:
-    (/from ['"]@\/lib\/market\/publish-place-hero['"]/.test(nbh) &&
-      /publishNeighborhoodHero\(/.test(nbh)) ||
-    // `c.heroImageUrl` on a ledger row is a community banner thumb, not a
-    // hero; the hero-position sources are the place's own db hero and the
-    // city-photo fallback.
-    (!/neighborhood\.heroImageUrl|cityHero\(/.test(nbh) && !/unsplash/i.test(nbh)),
+    /preferPlaceHeroOrNull\(/.test(nbh) &&
+    /neighborhood\.heroImageUrl/.test(nbh) &&
+    /communityImage\(neighborhoodSlug\)/.test(nbh) &&
+    !/cityHero\(/.test(nbh) &&
+    !/unsplash/i.test(nbh) &&
+    !/from ['"]@\/lib\/market\/publish-place-hero['"]/.test(nbh),
 })
 
 const method = src('lib/market/publish-public-methodology.ts')

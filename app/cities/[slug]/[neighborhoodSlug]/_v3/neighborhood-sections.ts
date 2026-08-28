@@ -21,7 +21,7 @@
  * set and says so when a cap trimmed it.
  */
 
-import { v3Text, type V3FieldItem, type V3QuietItem } from '@/components/site/v3'
+import { fieldPropertyType, v3Text, type V3FieldItem, type V3QuietItem } from '@/components/site/v3'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
@@ -43,6 +43,7 @@ export type FieldTile = {
   streetNumber: string | null | undefined
   streetName: string | null | undefined
   streetSuffix?: string | null | undefined
+  propertyType?: string | null | undefined
   propertySubType?: string | null | undefined
   city: string | null | undefined
   subdivisionName: string | null | undefined
@@ -87,6 +88,10 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
       .filter((part): part is string => Boolean(part))
       .join(' · ')
     const photo = t.photoUrl?.trim()
+    const typed = fieldPropertyType({
+      propertyType: t.propertyType,
+      propertySubType: t.propertySubType,
+    })
     items.push({
       id: key,
       href: listingDetailPath(
@@ -109,6 +114,7 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
         }) || street,
       ...(photo ? { photoSrc: photo } : {}),
       ...(meta ? { meta } : {}),
+      ...(typed ? { typeKey: typed.key, typeLabel: typed.label } : {}),
       lat: t.lat,
       lng: t.lng,
     })
@@ -136,23 +142,22 @@ export function neighborhoodFieldCaption(input: {
 }): string | null {
   if (input.count <= 0) return null
   if (input.totalQualifying > input.count) {
-    return `The ${input.count.toLocaleString('en-US')} highest-priced single-family listings in ${input.placeName}`
+    return `highest-priced homes in ${input.placeName}`
   }
-  return `${input.count.toLocaleString('en-US')} single-family ${input.count === 1 ? 'home' : 'homes'} for sale in ${input.placeName}`
+  return input.count === 1 ? `home in ${input.placeName}` : `homes in ${input.placeName}`
 }
 
 /** Trace over the Field's listed set. The counted membership is named. */
 export function neighborhoodFieldTrace(placeName: string): string {
   return (
-    `${FEED}, active single-family homes inside the recorded ${placeName} boundary ` +
-    `(the same counted set the neighborhoods index uses), each with a list price and a street. ` +
-    `The map plots this same set`
+    `${FEED}, active homes inside the recorded ${placeName} boundary ` +
+    `with a list price and a street. The map plots this same set`
   )
 }
 
 export function nbhFieldEmptyMessage(placeName: string, readOk: boolean): string {
   return readOk
-    ? `No single-family home is listed inside the ${placeName} boundary right now.`
+    ? `No home is listed inside the ${placeName} boundary right now.`
     : 'The boundary inventory read did not answer on this refresh, so this frame is not claiming an inventory.'
 }
 
