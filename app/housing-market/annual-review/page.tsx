@@ -183,7 +183,18 @@ import {
 export const revalidate = 300
 
 /** Report cities with a real, queryable MLS City. Tumalo is named separately below. */
-const GRID_CITIES = REPORT_CITIES.filter((c) => !(c.label in NON_MLS_CITY_EXEMPTIONS))
+// THE GRID IS THE REPORT SET, NOT ONLY THE CORE (2026-08-27 audit: Prineville
+// has a hub row, its own /housing-market/prineville report, and 176 actives —
+// and appeared on this page only as a remainder sentence, against the page's
+// own claim of "every report city"). The outer-county report cities join the
+// core here; a city whose snapshot cannot source a figure still drops to the
+// coverage notes with its reason, exactly as before.
+const GRID_CITIES = [
+  ...REPORT_CITIES.filter((c) => !(c.label in NON_MLS_CITY_EXEMPTIONS)),
+  { slug: 'prineville', label: 'Prineville' },
+  { slug: 'madras', label: 'Madras' },
+  { slug: 'powell-butte', label: 'Powell Butte' },
+]
 const NAMED_EXEMPTIONS = REPORT_CITIES.filter((c) => c.label in NON_MLS_CITY_EXEMPTIONS)
 
 // Metadata — unchanged from the KB page.
@@ -429,7 +440,11 @@ export default async function AnnualReviewPage() {
   if (inventory.missing.length > 0) {
     coverage.push({
       kind: 'prose',
-      term: 'Cities with no live inventory figure',
+      // The facts under this heading STATE a figure for most cities ("Madras
+      // has 74 active..."), so a heading claiming "no live inventory figure"
+      // contradicted its own body (2026-08-27 audit). The hub's wording is the
+      // honest one.
+      term: 'Cities not in the tables above',
       body: `${inventory.missing.map((c) => c.fact).join('. ')}.`,
     })
   }

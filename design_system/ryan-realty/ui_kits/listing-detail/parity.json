@@ -217,5 +217,13 @@
     "PlaceParentsSection",
     "BuilderExploreSection (when the builder has other actives)",
     "V3Footer (outside main)"
-  ]
+  ],
+  "openDefects": {
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "Homeowners insurance $1,639/mo comes from a hardcoded constant (INSURANCE_PER_300K) with no named source, feeding the published PITI total.",
+      "'527.7% above the Bend median' computes off median LIST beside a chart headlining median CLOSE, with no qualifier on which median.",
+      "NeighborhoodMarketContext renders city-grain stats under a contract claiming subdivision/neighborhood grain."
+    ]
+  }
 }

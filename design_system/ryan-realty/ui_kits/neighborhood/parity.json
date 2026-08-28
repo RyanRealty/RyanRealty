@@ -182,5 +182,11 @@
     "V3Quiet (outbound edges)",
     "V3Ledger (other cities)",
     "V3Footer"
-  ]
+  ],
+  "openDefects": {
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "The Field caption states no preview cap ('24 single-family homes for sale') while 25 exist — the sibling boundary branch states its cap and this branch must too."
+    ]
+  }
 }

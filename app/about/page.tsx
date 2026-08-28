@@ -33,7 +33,7 @@ import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { formatDate } from '@/lib/format/date'
-import { formatPrice } from '@/lib/format/money'
+import { formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath, teamPath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { BRAND, BROKERS } from '@/lib/brand/contact'
@@ -106,7 +106,9 @@ export default async function AboutPage() {
     if (stamp) leftoverStamps.push(stamp)
     if (!slug || active == null || median == null) continue
     rowed.add(label)
-    const price = formatPrice(median)
+    // Exact, matching every market surface (the audit found $940,000 here vs
+    // $939,900 on three other routes for the same figure, same day).
+    const price = formatPriceExact(median)
     if (price === '\u2014') continue
     cityRows.push({
       href: `/cities/${slug}`,

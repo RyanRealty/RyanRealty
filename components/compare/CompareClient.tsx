@@ -60,9 +60,34 @@ const rows: RowDef[] = [
   { label: 'Garage', key: 'garageSpaces', format: (v) => fmt(v as number) },
   { label: 'HOA/mo', key: 'hoa', format: (v) => fmtPrice(v as number), best: 'low' },
   { label: 'Taxes/yr', key: 'taxes', format: (v) => fmtPrice(v as number), best: 'low' },
-  { label: 'Days on Market', key: 'dom', format: (v) => fmt(v as number), best: 'low' },
+  {
+    label: 'Days on Market',
+    key: 'dom',
+    // 0 is "listed today", not a figure that reads as missing data (2026-08-27 audit).
+    format: (v) => (v === 0 ? 'Listed today' : fmt(v as number)),
+    best: 'low',
+  },
   { label: 'Status', key: 'status', format: (v) => (v as string) ?? '—' },
-  { label: 'Type', key: 'propertyType', format: (v) => (v as string) ?? '—' },
+  {
+    label: 'Type',
+    key: 'propertyType',
+    // Never the raw MLS letter: 'A' is a mixed bucket (MARKET_TRUTH D1) and a
+    // consumer-facing table printed it verbatim until the 2026-08-27 audit.
+    format: (v) => {
+      const raw = (v as string) ?? ''
+      const MLS_TYPE: Record<string, string> = {
+        A: 'Residential',
+        B: 'Multifamily',
+        C: 'Multifamily',
+        D: 'Manufactured',
+        E: 'Land',
+        F: 'Commercial',
+        G: 'Farm and ranch',
+        H: 'Business',
+      }
+      return MLS_TYPE[raw] ?? (raw || '—')
+    },
+  },
   { label: 'Community', key: 'subdivision', format: (v) => (v as string) ?? '—' },
 ]
 
@@ -80,7 +105,13 @@ function bestIndex(listings: CompareListingData[], key: keyof CompareListingData
   return bestIdx
 }
 
-export default function CompareClient({ listings }: { listings: CompareListingData[] }) {
+export default function CompareClient({
+  listings,
+  unresolvedIds = [],
+}: {
+  listings: CompareListingData[]
+  unresolvedIds?: string[]
+}) {
   const { comparisonItems, removeFromComparison } = useComparison()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -153,6 +184,13 @@ export default function CompareClient({ listings }: { listings: CompareListingDa
         <div>
           <H1 className="text-2xl sm:text-3xl text-primary">Compare Properties</H1>
           <p className="text-muted-foreground mt-1">{listings.length} {listings.length === 1 ? 'property' : 'properties'} selected</p>
+          {unresolvedIds.length > 0 ? (
+            <p className="text-muted-foreground mt-1 text-sm">
+              {unresolvedIds.length === 1
+                ? `One home you added (${unresolvedIds[0]}) is no longer available to compare and was left out.`
+                : `${unresolvedIds.length} homes you added (${unresolvedIds.join(', ')}) are no longer available to compare and were left out.`}
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <Button

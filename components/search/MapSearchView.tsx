@@ -752,7 +752,11 @@ export default function MapSearchView({
           ) : (
             <>
               <span className="srch-figure font-semibold text-foreground">{listCountPhrase}</span>
-              {publishedCounts.viewport ? (
+              {/* The viewport phrase prints ONLY when it differs (2026-08-27
+                  audit: with no filter match the list phrase falls back to the
+                  viewport phrase and this line printed the same string twice —
+                  "1,094+ homes in this map view 1,094+ homes in this map view"). */}
+              {publishedCounts.viewport && publishedCounts.viewport.phrase !== listCountPhrase ? (
                 <span className="ml-2">{publishedCounts.viewport.phrase}</span>
               ) : null}
               {filtersSummary ? (

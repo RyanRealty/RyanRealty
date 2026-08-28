@@ -108,5 +108,13 @@
     "MarketInquirySheet (V3Sheet, broker inquiry)",
     "V3Quiet (outbound edges)",
     "V3Footer"
-  ]
+  ],
+  "openDefects": {
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "The hero leads with calendar-2024 all-type volume and carries NO refresh stamp, while this target promises the answer with live figures and one stamp in the first viewport. The live single-family Instrument sits below. Fix is a reorder plus a stamp on the hero trace.",
+      "'last-full-year' renders 2024 while the page's own SFR series reaches 2025 — the all-type mart has not been rebuilt for 2025. Data work: rebuild analytics_mart_market_annual for 2025, then the hero follows.",
+      "Three asks render (broker form, Value my home, Sell your home) against the target's 'a single low-pressure ask'."
+    ]
+  }
 }

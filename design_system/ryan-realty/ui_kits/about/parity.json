@@ -83,5 +83,11 @@
     "V3Ledger #service-area -- where we work, each city a door",
     "V3Quiet #faq -- working with Ryan Realty",
     "V3Footer"
-  ]
+  ],
+  "openDefects": {
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "The FAQ claims coverage of Tumalo and Prineville while only six cities have ledger rows, with no on-page note of the omission."
+    ]
+  }
 }

@@ -59,5 +59,12 @@
     "SearchAlertCapture -- save this search, mounted with the query surface so the ask travels with the filters",
     "HideAwareSearchMap / MapSearchView -- search-as-you-move; pan/zoom re-queries the visible area",
     "SearchResults -- the list, in lockstep with the markers from ONE viewport fetch"
-  ]
+  ],
+  "openDefects": {
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "The Sort control's value renders empty in SSR (Radix paints the label on hydration) — a crawler sees an empty control.",
+      "Listing rows carry price and $/sqft with no ODS attribution in view; the attribution lives in the footer this app frame deliberately omits."
+    ]
+  }
 }

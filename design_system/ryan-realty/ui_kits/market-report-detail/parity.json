@@ -113,5 +113,11 @@
       "eagle-crest",
       "crooked-river-ranch"
     ]
+  },
+  "openDefects": {
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "Two asks render (the 3-step form and Value my home) against 'a single on-page ask'."
+    ]
   }
 }

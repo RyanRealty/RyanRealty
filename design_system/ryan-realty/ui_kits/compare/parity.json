@@ -49,5 +49,13 @@
     "V3Heading + V3Quiet #compare-empty -- up to four homes",
     "CompareClient -- the side-by-side table",
     "V3Footer"
-  ]
+  ],
+  "openDefects": {
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "The empty state ships twice with two labels for one ask (V3Quiet 'Search homes' + CompareClient 'Browse Homes').",
+      "'best-in-class highlighting' is claimed by the contract and not rendered — implement or strike the claim.",
+      "No source or stamp anywhere the figures are; HOA/Taxes render em-dashes where the listing pages publish values."
+    ]
+  }
 }

@@ -123,9 +123,10 @@
     ]
   },
   "openDefects": {
-    "_": "Open against this page's purpose as of 2026-08-27.",
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
     "items": [
-      "The hero states no inventory figure while the count line sits below it, so the first screen carries no number on a page whose head term is inventory."
+      "The towns and communities ledgers carry a trace but no stamp while sibling sections on the same page carry one.",
+      "RESOLVED AS CLAIM-WRONG 2026-08-27, kept for the record: an earlier defect said the hero should state the inventory number. PUBLIC_UI section 3 is explicit that a Stage is 'never over a number' (type over photography is where figures go to become illegible), and the live count is the FIRST line after the Stage as the Field caption. The page is right; the defect was wrong."
     ]
   },
   "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH (Matt 2026-08-27). They publish inventory; they do not publish a local verdict, and they never show what produced a number. This page publishes both on one crawlable screen: the live Central Oregon active count and per-town medians, AND the buyer-or-seller answer with the trace and the stamp under it. The other Bend brokerages have the local credibility and static pages -- no live figures at all. So the edge is the intersection: the only Central Oregon homepage where the inventory is live, the market answer is stated in words, and both name the query that produced them. No aggregator publishes the trace under the number.",

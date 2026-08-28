@@ -91,7 +91,7 @@
         "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same FAQ_ITEMS array V3Quiet renders"
       }
     ],
-    "note": "One derivation for the FAQ. Visible Quiet answers and FAQPage items are the same array. No Dataset on this route (the KB page never emitted one)."
+    "note": "One derivation for the FAQ. Visible Quiet answers and FAQPage items are the same array. This route emits a Dataset (the Bend market snapshot), stamped from the market run."
   },
   "dataLayer": {
     "getMarketPulse": "lib/data/market/getMarketPulse.ts. market_pulse_live, geo_type='city', geo_slug='bend', property_type='A'. Feeds the Instrument.",
@@ -110,5 +110,11 @@
     "V3Sheet (3% plan)",
     "V3Quiet (FAQ, proof, doors)",
     "V3Footer"
-  ]
+  ],
+  "openDefects": {
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "'Places autocomplete' is claimed and nothing in the served markup supports it; verify post-hydration or strike the claim."
+    ]
+  }
 }

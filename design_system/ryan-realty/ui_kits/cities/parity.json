@@ -93,7 +93,9 @@
     "V3Footer"
   ],
   "openDefects": {
-    "_": "Closed 2026-08-27: the three overlapping city lists are one ledger plus one genuinely-different doors block.",
-    "items": []
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "3 of 5 region figures carry no window on their label (active homes, median list, months of supply) under a trace claiming every figure names one; the city ledger's ~45 figures carry no stamp."
+    ]
   }
 }

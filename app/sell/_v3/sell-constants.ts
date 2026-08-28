@@ -171,4 +171,8 @@ export const BEND_MARKET_TRACE_SCOPE =
   'live MLS through Oregon Data Share, detached single-family homes whose MLS City is Bend, not the city-limits polygon.'
 
 export const TRACK_RECORD_TRACE =
-  'Central Oregon MLS, homes listed by Ryan Realty, StandardStatus Closed, ClosePrice.'
+  // The WINDOW is stated (2026-08-27 audit: "16 homes sold" carried a filter
+  // trace and no window — career? YTD? — leaving the reader to guess). The
+  // read has no date filter: it is every closed Ryan Realty listing since the
+  // brokerage opened in June 2023.
+  'Central Oregon MLS, every home listed by Ryan Realty and closed since the brokerage opened in June 2023. StandardStatus Closed, ClosePrice.'

@@ -88,6 +88,7 @@ export default async function ComparePage({
     .slice(0, 4)
 
   let listings: CompareListingData[] = []
+  let unresolvedIds: string[] = []
 
   if (ids.length > 0) {
     const [byNumberTiles, byKeyTiles] = await Promise.all([
@@ -112,6 +113,14 @@ export default async function ComparePage({
       const hero = photos.find((p) => p.is_hero === true) ?? photos[0]
       if (hero?.photo_url) photoMap.set(t.listingKey, hero.photo_url)
     })
+
+    // A REQUESTED HOME THAT CANNOT BE RESOLVED IS SAID, NOT SWALLOWED
+    // (2026-08-27 audit: ?ids= with three numbers rendered "2 properties
+    // selected" and nothing told the user the third was dropped).
+    const resolvedIds = new Set(
+      deduped.flatMap((t) => [t.listNumber, t.listingKey].filter(Boolean) as string[]),
+    )
+    unresolvedIds = ids.filter((id) => !resolvedIds.has(id))
 
     listings = deduped.map((t) => {
       const streetParts = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
@@ -181,7 +190,7 @@ export default async function ComparePage({
         ) : null}
 
         <section id="compare-table" aria-label="Property comparison">
-          <CompareClient listings={listings} />
+          <CompareClient unresolvedIds={unresolvedIds} listings={listings} />
         </section>
       </main>
 

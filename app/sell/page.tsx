@@ -40,7 +40,7 @@ import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-tr
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { formatPrice, formatPriceCompact } from '@/lib/format/money'
+import { formatPrice, formatPriceExact, formatPriceCompact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath, valuationPath } from '@/lib/slug'
 import { CONTACT } from '@/lib/brand/contact'
@@ -109,7 +109,10 @@ export default async function SellPage() {
   const bendFigures: V3InstrumentFigure[] = []
   if (bend?.medianListPrice != null) {
     bendFigures.push({
-      value: v3Text(formatPrice(bend.medianListPrice)),
+      // formatPriceExact: the SAME median printed $939,900 on /, /cities and
+      // /cities/bend and $940,000 here on the same day (2026-08-27 audit). One
+      // statistic, one spelling, site-wide.
+      value: v3Text(formatPriceExact(bend.medianListPrice)),
       label: v3Text('median list price'),
       href: '/housing-market/bend',
     })

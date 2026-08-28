@@ -126,5 +126,12 @@
     "OutOfAreaReferralSheet (V3Sheet, id=referral)",
     "V3Ledger (id=other-markets, other Oregon cities)",
     "V3Footer"
-  ]
+  ],
+  "openDefects": {
+    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
+    "items": [
+      "'7 active listings' in the Instrument vs 6 rows in the Ledger, difference unstated.",
+      "'0 55th Avenue' renders a price with no specs — a bare parcel presented as a home under 'one row per home'."
+    ]
+  }
 }
