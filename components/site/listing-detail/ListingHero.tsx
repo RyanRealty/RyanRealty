@@ -234,7 +234,7 @@ export function ListingHero({
     try {
       const res = await onSave(listingKey)
       if (res.needsAuth) {
-        redirectToLoginForSave(listingKey)
+        redirectToLoginForSave(listingKey) // hydration-safe: click handler only
         setSaveState('idle')
         return
       }

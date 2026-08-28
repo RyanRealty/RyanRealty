@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /**
- * Listing hero compact price + land acres.
+ * Listing hero exact price + land acres.
  *
  * Founding cases:
- *   195 Roosevelt (220225285) $999,900 printed $1000K
- *     fleet:2ceabe03a3cc759cc09d94d2bd1e442a
+ *   2949 Flagstone $568,900 printed $569K in the hero next to $568,900 in the body
  *   33725 Columbus (220226514) 19.77 acres, no beds — hero omitted lot size
  *     fleet:639e24f1d222997d0f59f2e137981de8
  *   0 Kouns Drive (220220757) 1.35 acres, no beds — hero omitted lot size
@@ -31,22 +30,21 @@ checks.push({
 
 const helper = src('lib/listing/publish-listing-hero-stats.ts')
 checks.push({
-  label: 'publishListingHeroCompactPrice / KeyStats carry founding fingerprints',
+  label: 'publishListingHeroPrice / KeyStats carry founding fingerprints',
   ok:
-    /export function publishListingHeroCompactPrice/.test(helper) &&
+    /export function publishListingHeroPrice/.test(helper) &&
     /export function publishListingHeroKeyStats/.test(helper) &&
-    helper.includes('2ceabe03a3cc759cc09d94d2bd1e442a') &&
-    helper.includes('220225285') &&
+    helper.includes('568,900') &&
     helper.includes('19.77') &&
     helper.includes('1.35'),
 })
 
 const hero = src('components/site/listing-detail/ListingHero.tsx')
 checks.push({
-  label: 'ListingHero publishes compact price + key stats',
+  label: 'ListingHero publishes exact price + key stats',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-hero-stats['"]/.test(hero) &&
-    /publishListingHeroCompactPrice\(/.test(hero) &&
+    /publishListingHeroPrice\(/.test(hero) &&
     /publishListingHeroKeyStats\(/.test(hero) &&
     !/function formatPrice\(/.test(hero),
 })
