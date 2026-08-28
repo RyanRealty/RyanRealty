@@ -125,6 +125,11 @@ export type V3StageProps = {
    */
   height?: 'standard' | 'tall' | 'compact' | 'frame'
   /**
+   * Optional media click. Does not add a second visible Stage action.
+   * Listing uses this to open photos. Homepage does not pass it.
+   */
+  onMediaClick?: () => void
+  /**
    * Optional working control in the copy stack (homepage search). Renders
    * after the headline and before the destination action so the typed query
    * is the first thumb target. The Stage still requires `action`.
@@ -184,6 +189,7 @@ export function V3Stage<H extends string, L extends string>({
   headline,
   posterSrc,
   videoSrc,
+  onMediaClick,
   action,
   overlayStrength = 'standard',
   eyebrow,
@@ -219,7 +225,11 @@ export function V3Stage<H extends string, L extends string>({
     >
       {/* The media carries no information the headline does not, and it has no
           audio and no controls, so it stays out of the accessibility tree. */}
-      <div className="v3-stage-media" aria-hidden="true">
+      <div
+        className="v3-stage-media"
+        aria-hidden="true"
+        onClick={onMediaClick}
+      >
         {/* Plain img, not next/image: the poster must be byte-identical to the
             video's own poster frame and must render for any owned asset path
             without depending on image-host configuration. */}

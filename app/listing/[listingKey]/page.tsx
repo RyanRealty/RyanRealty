@@ -106,7 +106,7 @@ void ListingMobileContactBar
  * who to call.
  *
  *   hero        ListingHero (V3Stage 16:9 still, one Amboqia price)
- *   act         ListingActSheet (one V3Sheet: tour or ask)
+ *   act         ListingActSheet (one V3Sheet: tour, ask, or save)
  *   main        PriceCtaStrip · OpenHouses · PropertySpecs · DescriptionBlock
  *               · ListingLikeThisAlerts (#listing-like-alerts + coach)
  *               · RoomRestyle · ListingVideoEmbed · ListingLocationMap
@@ -203,7 +203,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   })
 }
 
-// Save/unsave a listing from the price strip. Returns needsAuth for a signed-out
+// Save/unsave from the listing Sheet. Returns needsAuth for a signed-out
 // visitor so the client routes them to sign-in (the save -> account capture path).
 async function saveListingFromStrip(key: string): Promise<{ saved: boolean; needsAuth?: boolean }> {
   'use server'
@@ -463,8 +463,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const main = (
     <>
-      <ListingActSheet listingKey={contactKey} listingSummary={street || undefined} />
-      <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} history={history} />
+      <ListingActSheet
+        listingKey={contactKey}
+        saveListingKey={listing.listingKey}
+        listingSummary={street || undefined}
+        onSave={saveListingFromStrip}
+        initialSaved={initialSaved}
+      />
+      <PriceCtaStrip listing={listingWithPhotos} history={history} />
       <PlaceIdentityLine place={placeContext} />
       <LivePricingRead
         read={pricingRead}

@@ -28,12 +28,13 @@ checks.push({
 const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
 const act = src('components/site/listing-detail/ListingActSheet.client.tsx')
 checks.push({
-  label: 'listing tour/ask stay on #listing-act and send the published contact key',
+  label: 'listing tour/ask/save stay on #listing-act and send the published contact key',
   ok:
-    strip.includes('#listing-act') &&
     !strip.includes('listingContactHref') &&
+    !strip.includes('Schedule a tour') &&
     act.includes('id="listing-act"') &&
-    act.includes('listingKey'),
+    act.includes('listingKey') &&
+    act.includes('Save this home'),
 })
 
 const page = src('app/listing/[listingKey]/page.tsx')
@@ -42,7 +43,7 @@ checks.push({
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-contact-key['"]/.test(page) &&
     /publishListingContactKey\(/.test(page) &&
-    /<ListingActSheet listingKey=\{contactKey\}/.test(page) &&
+    /<ListingActSheet[\s\S]*listingKey=\{contactKey\}/.test(page) &&
     /<ListingBrokerCTA[\s\S]*listingKey=\{contactKey\}/.test(page),
 })
 

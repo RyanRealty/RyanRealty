@@ -49,6 +49,11 @@ checks.push({
     hero.includes('V3Stage') &&
     hero.includes('height="frame"') &&
     hero.includes('V3Figure') &&
+    hero.includes("label: 'Tour this home'") &&
+    hero.includes('View all') &&
+    !hero.includes('See all') &&
+    !hero.includes('+49 more') &&
+    !hero.includes('more photos') &&
     !/function formatPrice\(/.test(hero) &&
     !hero.includes('videoSrc') &&
     !hero.includes('listing-hero-band') &&
@@ -74,13 +79,17 @@ const mobile = src('components/site/listing-detail/ListingMobileContactBar.clien
 const broker = src('components/site/listing-detail/TextMattCTA.tsx')
 const act = src('components/site/listing-detail/ListingActSheet.client.tsx')
 checks.push({
-  label: 'tour and ask stay on one listing Sheet, not /contact',
+  label: 'tour, ask, and save stay on one listing Sheet, not /contact',
   ok:
     act.includes('id="listing-act"') &&
     act.includes('V3Sheet') &&
-    strip.includes('#listing-act') &&
-    mobile.includes('#listing-act') &&
-    broker.includes('#listing-act') &&
+    act.includes('Save this home') &&
+    !strip.includes('Schedule a tour') &&
+    !strip.includes('Ask a question') &&
+    !strip.includes('Save this home') &&
+    !mobile.includes('Schedule a tour') &&
+    !broker.includes('Schedule a tour') &&
+    !broker.includes('#listing-act') &&
     !strip.includes('/contact?') &&
     !mobile.includes('/contact?') &&
     !broker.includes('/contact?'),

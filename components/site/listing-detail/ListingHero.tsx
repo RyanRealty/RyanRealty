@@ -13,8 +13,9 @@ import { V3Button, V3Eyebrow, V3Figure, V3Stage } from '@/components/site/v3'
 
 /**
  * Listing opening: one V3Stage (16:9 frame) with this house's still, the
- * exact list price in Amboqia, and specs on the media. One action opens the
- * on-page Sheet. Still frame only. No carousel. No listing-invented hero skin.
+ * exact list price in Amboqia, and specs on the media. One Stage action
+ * opens the on-page Sheet. One gallery label opens the lightbox. Still
+ * frame only. No carousel. No +N more collage.
  */
 
 type Props = {
@@ -73,23 +74,20 @@ export function ListingHero({
         headline={headline}
         posterSrc={poster.url}
         action={{ label: 'Tour this home', href: '#listing-act' }}
+        onMediaClick={total > 1 ? () => setOpenIndex(0) : undefined}
       >
         {heroPrice ? (
           <V3Figure value={heroPrice} label="Price" emphasis="lead" onMedia />
         ) : null}
         {shareKind ? <V3Eyebrow onMedia>{shareKind}</V3Eyebrow> : null}
         {specLine ? <V3Eyebrow onMedia>{specLine}</V3Eyebrow> : null}
-        {total > 1 ? (
-          <V3Button
-            type="button"
-            variant="text"
-            onMedia
-            onClick={() => setOpenIndex(0)}
-          >
-            {`See all ${total} photos`}
-          </V3Button>
-        ) : null}
       </V3Stage>
+
+      {total > 1 ? (
+        <V3Button type="button" variant="text" onClick={() => setOpenIndex(0)}>
+          {`View all ${total}`}
+        </V3Button>
+      ) : null}
 
       <PhotoGalleryLightbox
         photos={photos.map((p) => ({ url: p.url, caption: p.caption }))}

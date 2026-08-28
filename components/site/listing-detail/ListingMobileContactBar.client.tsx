@@ -9,8 +9,8 @@ import { useCookieNoticeOpen } from './use-listing-overlay-lane'
  * replacing the retiring CRM floating widget. Fixed to the bottom of the
  * viewport, hidden on lg+ (the desktop sticky sidebar card carries it there).
  *
- * Stays on the fold from first paint: Call / Text / Tour. Tour stays on
- * this page at #listing-act. Hidden while the cookie notice owns the overlay.
+ * Stays on the fold from first paint: Call / Text. Tour lives on the Stage
+ * and the one Sheet. Hidden while the cookie notice owns the overlay.
  *
  * Lenis runs in native mode here (html.lenis, no transform wrapper — see
  * SmoothScrollProvider), so position:fixed resolves to the viewport without a
@@ -60,9 +60,6 @@ export default function ListingMobileContactBar({
               <ChatIcon />
             </a>
           ) : null}
-          <a href="#listing-act" className="lmc-tour">
-            Schedule a tour
-          </a>
         </div>
       </div>
     </div>

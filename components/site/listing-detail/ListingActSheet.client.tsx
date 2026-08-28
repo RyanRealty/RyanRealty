@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * The one listing act: tour or ask, on this page, as one V3Sheet.
- * Sends through submitContactForm. Does not route to /contact.
+ * The one listing act: tour, ask, or save. Lives in one V3Sheet on this page.
+ * Tour/ask send through submitContactForm. Save uses the listing save action.
+ * Does not route to /contact.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -10,37 +11,85 @@ import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/sit
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { submitContactForm } from '@/app/contact/actions'
+import { redirectToLoginForSave } from '@/lib/pending-save'
+import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 
-type Status = 'asking' | 'sending' | 'sent' | 'failed'
+type Status = 'asking' | 'sending' | 'sent' | 'saving' | 'saved' | 'failed'
+
+type SaveResult = { saved: boolean; needsAuth?: boolean }
 
 const SENDING_STEP: V3SheetStep = {
   id: 'sending',
   label: 'Sending your message.',
 }
 
+const SAVING_STEP: V3SheetStep = {
+  id: 'saving',
+  label: 'Saving this home.',
+}
+
 export function ListingActSheet({
   listingKey,
+  saveListingKey,
   listingSummary,
+  onSave,
+  initialSaved = false,
 }: {
   listingKey: string
+  saveListingKey: string
   listingSummary?: string
+  onSave?: (listingKey: string) => Promise<SaveResult>
+  initialSaved?: boolean
 }) {
   const [status, setStatus] = useState<Status>('asking')
   const [stepId, setStepId] = useState<string>('intent')
   const [problem, setProblem] = useState<string>('')
   const [smsConsent, setSmsConsent] = useState(false)
   const [sessionId, setSessionId] = useState('')
+  const [saved, setSaved] = useState(initialSaved)
   const answersRef = useRef<Record<string, string>>({})
 
   useEffect(() => {
     setSessionId(readRrSessionId() ?? '')
   }, [])
 
+  useResumePendingSave({
+    listingKey: saveListingKey,
+    alreadySaved: saved,
+    onSaved: () => {
+      setSaved(true)
+      setStatus('saved')
+    },
+  })
+
+  const saveThisHome = useCallback(async () => {
+    if (saved) {
+      setStatus('saved')
+      return
+    }
+    if (!onSave) return
+    setStatus('saving')
+    const result = await onSave(saveListingKey)
+    if (result.saved) {
+      setSaved(true)
+      setStatus('saved')
+      return
+    }
+    if (result.needsAuth) {
+      setStatus('asking')
+      setStepId('intent')
+      redirectToLoginForSave(saveListingKey)
+      return
+    }
+    setProblem('Could not save this home. Try again.')
+    setStatus('failed')
+  }, [onSave, saveListingKey, saved])
+
   const askSteps: readonly V3SheetStep[] = useMemo(
     () => [
       {
         id: 'intent',
-        label: 'Tour this home, or ask a question.',
+        label: 'Tour this home, ask a question, or save it.',
         children: listingSummary,
         field: {
           kind: 'choice',
@@ -50,6 +99,7 @@ export function ListingActSheet({
           options: [
             { value: 'tour', label: 'Tour this home' },
             { value: 'question', label: 'Ask a question' },
+            { value: 'save', label: 'Save this home' },
           ],
         },
         advanceLabel: 'Continue',
@@ -155,47 +205,79 @@ export function ListingActSheet({
   const onAdvance = useCallback(
     (event: V3SheetAdvance) => {
       answersRef.current = { ...event.answers }
-      if (event.toStepId !== null) return
+      if (event.fromStepId === 'failed') {
+        if (answersRef.current.intent === 'save') {
+          void saveThisHome()
+          return
+        }
+        setStatus('asking')
+        setStepId('intent')
+        return
+      }
+      if (event.answers.intent === 'save' && event.fromStepId === 'intent') {
+        void saveThisHome()
+        return
+      }
+      if (event.toStepId !== null) {
+        setStepId(event.toStepId)
+        return
+      }
       void send(answersRef.current)
     },
-    [send],
+    [saveThisHome, send],
   )
 
   const sentLabel = listingSummary
     ? `Message received about ${listingSummary}. We respond the same day.`
     : 'Message received. We respond the same day.'
 
+  const savedLabel = listingSummary
+    ? `Saved. ${listingSummary} is on your list.`
+    : 'Saved. This home is on your list.'
+
   const steps: readonly V3SheetStep[] =
     status === 'sent'
       ? [{ id: 'sent', label: sentLabel }]
       : status === 'sending'
         ? [SENDING_STEP]
-        : status === 'failed'
-          ? [...askSteps, { id: 'failed', label: problem, advanceLabel: 'Try again' }]
-          : askSteps
+        : status === 'saving'
+          ? [SAVING_STEP]
+          : status === 'saved'
+            ? [{ id: 'saved', label: savedLabel }]
+            : status === 'failed'
+              ? [...askSteps, { id: 'failed', label: problem, advanceLabel: 'Try again' }]
+              : askSteps
 
   const currentStepId =
     status === 'sent'
       ? 'sent'
       : status === 'sending'
         ? 'sending'
-        : status === 'failed'
-          ? 'failed'
-          : stepId
+        : status === 'saving'
+          ? 'saving'
+          : status === 'saved'
+            ? 'saved'
+            : status === 'failed'
+              ? 'failed'
+              : stepId
 
   return (
     <>
       <V3Sheet
         id="listing-act"
         heading="Talk about this home"
-        eyebrow="Tour or ask"
+        eyebrow="Tour, ask, or save"
         steps={steps}
         trap={{ name: 'company', label: 'Company' }}
         currentStepId={currentStepId}
         defaultAnswers={{ intent: 'tour' }}
         showProgress={status === 'asking'}
         onStepChange={(id) => {
-          if (id !== 'failed' && id !== 'sent' && id !== 'sending') setStatus('asking')
+          if (answersRef.current.intent === 'save') return
+          if (id === 'failed' || id === 'sent' || id === 'sending' || id === 'saving' || id === 'saved') {
+            return
+          }
+          setStatus('asking')
           setStepId(id)
         }}
         onAdvance={onAdvance}

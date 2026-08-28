@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import {
   MiddleDot,
   Price,
@@ -8,8 +7,6 @@ import {
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 import { displaySubdivision } from '@/lib/slug'
-import { redirectToLoginForSave } from '@/lib/pending-save'
-import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingDrop, publishListingHistoryPrices } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
@@ -17,11 +14,9 @@ import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 
 /**
- * Status, address, and CTAs under the Stage. The list price lives on the
- * Stage media once. Tour and ask stay on this page at #listing-act.
+ * Status, address, and share under the Stage. The list price lives on the
+ * Stage media once. Tour, ask, and save live in the one Sheet at #listing-act.
  */
-
-type SaveState = 'idle' | 'saving' | 'saved'
 
 type Props = {
   listing: Pick<
@@ -45,17 +40,8 @@ type Props = {
     | 'originalListPrice'
     | 'priceDropCount'
   >
-  /** Save handler — caller wires to saved_listings table. Returns needsAuth=true
-   *  for a signed-out visitor so the strip can route them to sign-in. */
-  onSave?: (listingKey: string) => Promise<{ saved: boolean; needsAuth?: boolean }>
-  /** Initial saved state, hydrated by the server. */
-  initialSaved?: boolean
   /** Share handler — caller wires to Web Share API or fallback toast. */
   onShare?: (listingKey: string) => void
-  /** Override the default contact-tour href. */
-  scheduleHref?: string
-  /** Override the default ask-question href. */
-  askHref?: string
   /** Prices already on the listing-history rail. Drop withholds without them. */
   historyPrices?: ReadonlyArray<number | null | undefined>
   /** History rows from the listing rail. Mapped to prices when historyPrices is omitted. */
@@ -63,9 +49,6 @@ type Props = {
   className?: string
 }
 
-// KB pill registry. Brutalist navy-on-cream chips: a filled navy chip for
-// the live/active states (the strongest visual weight), a cream chip with a
-// 2px navy edge for everything else. `filled` flips the chip to navy ground.
 const PILL_TONE: Record<string, { filled: boolean }> = {
   Active: { filled: true },
   'Active Under Contract': { filled: false },
@@ -78,26 +61,13 @@ const PILL_TONE: Record<string, { filled: boolean }> = {
 
 export function PriceCtaStrip({
   listing,
-  onSave,
-  initialSaved = false,
   onShare,
-  scheduleHref,
-  askHref,
   historyPrices,
   history,
   className,
 }: Props) {
   const railPrices =
     historyPrices ?? (history !== undefined ? publishListingHistoryPrices(history) : undefined)
-  const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
-
-  // RC7 resume: complete a save this listing was bounced to login for (the hook
-  // owns the idempotent save + re-stash; this is the detail page's real save CTA).
-  useResumePendingSave({
-    listingKey: listing.listingKey,
-    alreadySaved: saveState === 'saved',
-    onSaved: () => setSaveState('saved'),
-  })
 
   const isClosed = listing.status === 'Closed'
   const shareSubject = {
@@ -107,11 +77,6 @@ export function PriceCtaStrip({
     listNumber: listing.listNumber,
   }
   const shareKind = publishListingShareKind(shareSubject)
-  // The alert this strip points at bands on the whole-home price, so the copy
-  // may promise a price band only when one exists. 735 Purcell (a commercial
-  // sublease publishing no price) and MLS 220190868 (a $1 fractional interest)
-  // both read "…lists in this city near this price" over a band built from a
-  // rent rate and a share.
   const alertBandIsPublished =
     publishWholePropertyAmount({
       ...shareSubject,
@@ -134,53 +99,18 @@ export function PriceCtaStrip({
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
     .join(' ')
-  // MLS feeds mask private fields with `********` and stamp absent ones as
-  // "N/A"; displaySubdivision() collapses every such sentinel to null so the
-  // address never renders "Bend, OR 97703 · N/A".
   const cleanSubdivision = displaySubdivision(listing.subdivisionName)
   const cityWithCommunity = cleanSubdivision
     ? [cityLine, cleanSubdivision].filter(Boolean).join(' · ')
     : cityLine
 
-  // Accessible names for the Save + Share controls. The visible labels are bare
-  // verbs ("Save", "Share"), so a screen-reader visitor heard an action with no
-  // object and no state. Name the property and reflect saved vs not, matching
-  // components/listing/SaveListingButton.tsx ("Save to saved homes" /
-  // "Remove from saved homes") with the address added.
   const propertyName = street || 'this home'
-  const saveAriaLabel =
-    saveState === 'saved'
-      ? `Remove ${propertyName} from your saved homes`
-      : saveState === 'saving'
-        ? `Saving ${propertyName} to your saved homes`
-        : `Save ${propertyName} to your saved homes`
-
-  const tourHref = scheduleHref ?? '#listing-act'
-  const askHrefResolved = askHref ?? '#listing-act'
-
-  async function handleSave() {
-    if (!onSave || saveState === 'saving') return
-    setSaveState('saving')
-    try {
-      const res = await onSave(listing.listingKey)
-      if (res.needsAuth) {
-        // Signed-out: stash the intent + send them to sign in (and back), so the
-        // save→account capture path completes itself on return (RC7).
-        redirectToLoginForSave(listing.listingKey) // hydration-safe: click handler only
-        return
-      }
-      setSaveState(res.saved ? 'saved' : 'idle')
-    } catch {
-      setSaveState('idle')
-    }
-  }
 
   function handleShare() {
     if (onShare) {
       onShare(listing.listingKey)
       return
     }
-    // Default: Web Share API with same-origin fallback to copy.
     const url = typeof window !== 'undefined' ? window.location.href : ''
     const title = street || `Listing ${listing.listingKey}`
     const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { share?: Navigator['share'] }) : null
@@ -255,45 +185,18 @@ export function PriceCtaStrip({
         ) : null}
       </div>
 
-      {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
-          Desktop keeps the inline wrap. */}
-      <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-stretch">
-        <a
-          href={tourHref}
-          className="btn alt w-full text-center sm:w-auto"
-          style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+      <div className="mt-5">
+        <button
+          type="button"
+          className="btn"
+          style={OUTLINE_BTN_STYLE}
+          onClick={handleShare}
+          aria-label={`Share ${propertyName}`}
         >
-          Schedule a tour <span className="arr">→</span>
-        </a>
-        <div className="grid grid-cols-3 gap-2.5 sm:contents">
-          <a href={askHrefResolved} className="btn" style={OUTLINE_BTN_STYLE}>
-            Ask a question
-          </a>
-          <button
-            type="button"
-            className="btn"
-            style={OUTLINE_BTN_STYLE}
-            onClick={handleSave}
-            disabled={saveState === 'saving'}
-            aria-pressed={saveState === 'saved'}
-            aria-label={saveAriaLabel}
-          >
-            {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            style={OUTLINE_BTN_STYLE}
-            onClick={handleShare}
-            aria-label={`Share ${propertyName}`}
-          >
-            Share
-          </button>
-        </div>
+          Share
+        </button>
       </div>
 
-      {/* Alert path: full-width outline control (was text link only — too easy to
-          miss vs Tour/Ask/Save). Jumps to B1 #listing-like-alerts capture. */}
       <a
         href="#listing-like-alerts"
         className="btn mt-3 w-full text-center sm:w-auto"
@@ -311,11 +214,6 @@ export function PriceCtaStrip({
   )
 }
 
-// Outlined-on-cream variant of the KB .btn. The base .btn ships a cream
-// ground + cream edge (built for navy surfaces); on this cream strip we flip
-// it to a transparent ground with a 2px navy edge + navy text so the
-// secondary actions read as outlined brutalist chips next to the navy-filled
-// primary (.btn.alt).
 const OUTLINE_BTN_STYLE: React.CSSProperties = {
   background: 'transparent',
   color: 'var(--navy)',
@@ -334,8 +232,6 @@ function Pill({
   kind: keyof typeof PILL_TONE | 'dom' | 'psqft'
   children: React.ReactNode
 }) {
-  // dom + psqft are always quiet cream chips; status chips can flip to a
-  // filled navy ground for the live/active states.
   const filled = kind === 'dom' || kind === 'psqft' ? false : (PILL_TONE[kind]?.filled ?? false)
   const navy = 'var(--navy)'
   const cream = 'var(--cream)'
@@ -361,8 +257,4 @@ function Pill({
   )
 }
 
-// Silence unused import warning — MiddleDot is part of the v2 type
-// surface used inside the subdivision separator (we currently use a
-// plain ' · ' string for the city line; keeping the import for the
-// future when we move to <MiddleDot /> for tabular precision).
 void MiddleDot
