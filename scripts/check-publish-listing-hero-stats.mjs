@@ -87,6 +87,16 @@ checks.push({
 })
 
 const page = src('app/listing/[listingKey]/page.tsx')
+const footerCss = src('components/site/v3/V3Footer.css')
+checks.push({
+  label: 'listing closes on existing cream V3Footer, not a navy fill',
+  ok:
+    page.includes('<V3Footer columns={V3_FOOTER_COLUMNS} />') &&
+    footerCss.includes('background: var(--v3-cream)') &&
+    !/background:\s*var\(--v3-(navy|surface-inverse)\)/.test(footerCss) &&
+    !listingCss.includes('.v3-footer') &&
+    !listingCss.includes('listing-footer'),
+})
 checks.push({
   label: 'listing detail passes lotSizeAcres into the hero',
   ok: /acres=\{listing\.lotSizeAcres\}/.test(page),

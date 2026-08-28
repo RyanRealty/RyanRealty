@@ -665,9 +665,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
         ) : null}
       </main>
-      {/* The tour and ask that KbFooter's listing band carried live on
-          PriceCtaStrip, the broker sidebar, and the mobile bar; V3Footer
-          carries the ODS attribution slot and no button. */}
+      {/* Existing V3Footer: cream ground, navy section rule. Not a navy fill. */}
       <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
