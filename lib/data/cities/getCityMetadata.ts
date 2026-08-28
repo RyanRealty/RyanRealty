@@ -5,8 +5,10 @@
  * (cities.ts server actions, city detail pages) consume via @/lib/data.
  */
 
+import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { createServiceClient } from '@/lib/supabase/service'
+import { slugify } from '@/lib/slug'
 
 export type CityMetadata = {
   name: string
@@ -113,6 +115,35 @@ export async function getAllCommunitiesForAdminUpload(): Promise<Array<{
     hero_video_url: string | null
   }>
 }
+
+/**
+ * Public slug → `communities.hero_image_url` (Imagine / asset_library already
+ * tagged to official slugs). Returns a JSON-safe record because `unstable_cache`
+ * cannot persist a Map. Keyed by stored slug and by slugified name so index
+ * rows (`bend-tetherow`) and registry slugs (`tetherow`) both resolve.
+ */
+export const getCommunityHeroUrlsBySlug = unstable_cache(
+  async (): Promise<Record<string, string>> => {
+    const sb = supabaseAnon()
+    if (!sb) return {}
+    const { data } = await sb.from('communities').select('slug, name, hero_image_url')
+    const out: Record<string, string> = {}
+    for (const row of (data ?? []) as Array<{
+      slug: string | null
+      name: string | null
+      hero_image_url: string | null
+    }>) {
+      const url = row.hero_image_url?.trim()
+      if (!url) continue
+      if (row.slug?.trim()) out[row.slug.trim()] = url
+      const nameSlug = row.name ? slugify(row.name) : ''
+      if (nameSlug) out[nameSlug] = url
+    }
+    return out
+  },
+  ['community-hero-urls-v1'],
+  { revalidate: 1800, tags: ['communities'] },
+)
 
 /** Generic update of a hero-bearing entity row by id (cities | neighborhoods | communities).
  * P0-2 fix: uses service-role client so is_super_admin() RLS policies pass for admin writes.

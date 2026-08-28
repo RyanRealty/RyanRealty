@@ -59,7 +59,4 @@ export function homeFieldNote(shown: number): string {
 }
 
 /** Live place hero when present. Otherwise the page's existing fallback image. */
-export function preferPlaceHero(live: string | null | undefined, fallback: string): string {
-  const url = live?.trim()
-  return url || fallback
-}
+export { preferPlaceHero } from '@/lib/geo-images'

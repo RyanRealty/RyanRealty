@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cityHero, hasCuratedCityHero } from '@/lib/geo-images'
+import { cityHero, hasCuratedCityHero, preferPlaceHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
 
 // Gate for IMG-01: a city must NEVER render another city's hero photo.
 // Data-accuracy rule #1 — a wrong-city photo is a violation, not cosmetics.
@@ -43,6 +43,19 @@ describe('cityHero — no wrong-city heroes (IMG-01)', () => {
     for (const slug of CITY_SLUGS) {
       expect(cityHero(slug).alt.length, `${slug} alt`).toBeGreaterThan(8)
     }
+  })
+
+  it('preferPlaceHero uses the live place row and keeps fallbacks as fallbacks', () => {
+    expect(preferPlaceHero(' https://cdn.example/live.jpg ', cityHero('redmond').src)).toBe(
+      'https://cdn.example/live.jpg',
+    )
+    expect(preferPlaceHero(null, cityHero('redmond').src)).toBe(cityHero('redmond').src)
+    expect(preferPlaceHero('   ', cityHero('redmond').src)).toBe(cityHero('redmond').src)
+    expect(preferPlaceHeroOrNull('https://cdn.example/live.jpg', cityHero('bend').src)).toBe(
+      'https://cdn.example/live.jpg',
+    )
+    expect(preferPlaceHeroOrNull(null, null)).toBeNull()
+    expect(preferPlaceHero('https://cdn.example/redmond.jpg', cityHero('bend').src)).not.toContain(OLD_MILL_ASSET)
   })
 
   it('curated coverage flag is honest', () => {

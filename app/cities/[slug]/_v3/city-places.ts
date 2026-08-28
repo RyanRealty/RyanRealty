@@ -20,6 +20,7 @@
 
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
+import { preferPlaceHero } from '@/lib/geo-images'
 import type { CityPlaceItem } from './city-sections'
 
 type BendPolygon = { slug: string; name?: string; geometry: { type: string; coordinates: unknown } }
@@ -47,8 +48,9 @@ export function bendNeighborhoodPlaces(input: {
   ledgerRows: readonly LedgerRow[]
   mapTiles: readonly PhotoTile[]
   communityImageByName: ReadonlyMap<string, string | null | undefined>
+  neighborhoodHeroBySlug?: ReadonlyMap<string, string | null | undefined>
 }): CityPlaceItem[] {
-  const { isBend, ledgerRows, mapTiles, communityImageByName } = input
+  const { isBend, ledgerRows, mapTiles, communityImageByName, neighborhoodHeroBySlug } = input
   const designated = (bendNeighborhoodPolygons.communities as BendPolygon[]).filter(
     (c) => isBend && c.slug.startsWith('bend-'),
   )
@@ -67,7 +69,10 @@ export function bendNeighborhoodPlaces(input: {
       href,
       activeCount: live?.activeCount ?? (answered ? 0 : null),
       medianPrice: live?.medianListPrice ?? null,
-      img: communityImageByName.get(name.toLowerCase()) ?? photos.get(c.slug) ?? '',
+      img: preferPlaceHero(
+        neighborhoodHeroBySlug?.get(nslug),
+        communityImageByName.get(name.toLowerCase()) ?? photos.get(c.slug) ?? '',
+      ),
     }
   })
 }

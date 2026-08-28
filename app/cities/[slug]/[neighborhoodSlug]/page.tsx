@@ -47,7 +47,7 @@
 import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import type { Metadata } from 'next'
-import { getNeighborhoodBySlug, getCommunitiesInNeighborhood } from '@/app/actions/cities'
+import { getNeighborhoodBySlug, getCommunitiesInNeighborhood, getCitiesForIndex } from '@/app/actions/cities'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import {
   getPublicDetachedMonthly,
@@ -70,7 +70,7 @@ import {
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
-import { communityImage } from '@/lib/geo-images'
+import { communityImage, preferPlaceHero } from '@/lib/geo-images'
 import { buildYearSeries } from '@/lib/kb/year-series'
 // Row-to-prop shaping shared with the city + community place pages - one copy,
 // so a fix cannot land on one of the three and drift on the others.
@@ -234,6 +234,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     nbhOverlays,
     placeDocuments,
     placeCharacter,
+    indexCities,
   ] = await Promise.all([
     withTimeoutFallback(getPriceHistory('neighborhood', boundaryNeighborhoodSlug, 'monthly', 60), [], 4500, 'nbh:priceHistory'),
     // Result variant: a timed-out boundary yields `{ pins: [] }`, which is
@@ -315,6 +316,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       4000,
       'nbh:character',
     ),
+    withTimeoutFallback(getCitiesForIndex(), [], 3000, 'nbh:indexCities'),
   ])
   const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -466,7 +468,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     href: `/subdivisions/${slugify(c.subdivision)}`,
     activeCount: c.activeCount ?? null,
     medianPrice: c.medianPrice ?? null,
-    img: c.heroImageUrl ?? communityImage(c.slug) ?? '',
+    img: preferPlaceHero(c.heroImageUrl, communityImage(c.slug) ?? ''),
   }))
   const [firstSub, ...restSub] = placeFigureRows(subdivisionItems, `${neighborhood.name} subdivision`)
 
@@ -499,7 +501,14 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const [firstPeer, ...restPeer] = placeFigureRows(peerItems, `${cityName} neighborhood`)
 
   // No excludeSlug: a neighborhood page links its own parent city on purpose.
-  const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots)
+  const liveCityHero: Record<string, string> = {}
+  for (const c of indexCities) {
+    const url = c.heroImageUrl?.trim()
+    if (url) liveCityHero[c.slug] = url
+  }
+  const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots, {
+    liveHeroBySlug: liveCityHero,
+  })
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
 
   /* ── Quiet content ─────────────────────────────────────────────────────── */

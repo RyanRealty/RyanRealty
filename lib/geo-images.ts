@@ -297,3 +297,24 @@ export function cityHero(slug: string): CityHero {
 export function hasCuratedCityHero(slug: string): boolean {
   return slug in CITY_HERO
 }
+
+/**
+ * Live place-row hero wins. `communityImage` / `cityHero` / KB / LP / Area Guide
+ * paths are fallbacks only — never invent a URL, and never substitute a
+ * different city's photo.
+ */
+export function preferPlaceHero(live: string | null | undefined, fallback: string): string {
+  const url = live?.trim()
+  return url || fallback
+}
+
+/** Same order as `preferPlaceHero`, but a blank live URL and a blank fallback both yield null. */
+export function preferPlaceHeroOrNull(
+  live: string | null | undefined,
+  fallback: string | null | undefined,
+): string | null {
+  const url = live?.trim()
+  if (url) return url
+  const next = fallback?.trim()
+  return next || null
+}

@@ -46,6 +46,7 @@ export type NeighborhoodDirectoryRow = {
   neighborhoodSlug: string
   cityName: string
   citySlug: string
+  heroImageUrl: string | null
 }
 
 /**
@@ -71,11 +72,12 @@ export const getNeighborhoodDirectory = unstable_cache(
       const cityName = (city?.name ?? '').trim()
       const citySlug = (city?.slug ?? '').trim()
       if (!neighborhoodName || !neighborhoodSlug || !cityName || !citySlug) continue
-      out.push({ neighborhoodName, neighborhoodSlug, cityName, citySlug })
+      const heroImageUrl = r.hero_image_url?.trim() || null
+      out.push({ neighborhoodName, neighborhoodSlug, cityName, citySlug, heroImageUrl })
     }
     return out
   },
-  ['neighborhood-directory-v1'],
+  ['neighborhood-directory-v2-place-hero'],
   // Matches the sibling city-neighborhood slug map in app/actions/listings.ts:
   // same table, same 1h window, same 'neighborhoods' invalidation tag.
   { revalidate: 3600, tags: ['neighborhoods'] }
@@ -88,6 +90,7 @@ export async function getAllNeighborhoodsWithCity(): Promise<
     name: string
     slug: string
     city_id: string
+    hero_image_url: string | null
     cities?: { name: string; slug: string } | { name: string; slug: string }[] | null
   }>
 > {
@@ -95,13 +98,14 @@ export async function getAllNeighborhoodsWithCity(): Promise<
   if (!sb) return []
   const { data } = await sb
     .from('neighborhoods')
-    .select('id, name, slug, city_id, cities(name, slug)')
+    .select('id, name, slug, city_id, hero_image_url, cities(name, slug)')
     .order('name')
   return (data ?? []) as Array<{
     id: string
     name: string
     slug: string
     city_id: string
+    hero_image_url: string | null
     cities?: { name: string; slug: string } | { name: string; slug: string }[] | null
   }>
 }

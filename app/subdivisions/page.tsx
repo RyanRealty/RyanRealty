@@ -28,11 +28,12 @@ import {
   getSurfaceImages,
   pickSurfaceImage,
 } from '@/lib/data'
+import { getCommunitiesForIndex } from '@/app/actions/communities'
 import {
   getRegistryPlatPublicInventory,
   registryChildPlats,
 } from '@/lib/data/geo/plat-public-inventory'
-import { communityImage, cityHero } from '@/lib/geo-images'
+import { communityImage, cityHero, preferPlaceHero } from '@/lib/geo-images'
 import { publishFeaturedPlats } from '@/lib/market/publish-featured-plat-inventory'
 import { formatCount } from '@/lib/format/count'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
@@ -86,10 +87,18 @@ function fmtPrice(n: number | null | undefined): string | null {
 export default async function SubdivisionsPage() {
   const childPlats = registryChildPlats()
 
-  const [inventory, heroPhotoPool] = await Promise.all([
+  const [inventory, heroPhotoPool, communities] = await Promise.all([
     getRegistryPlatPublicInventory(),
     getSurfaceImages('hero'),
+    getCommunitiesForIndex(),
   ])
+  const parentHeroBySlug = new Map<string, string>()
+  for (const c of communities) {
+    const url = c.heroImageUrl?.trim()
+    if (!url) continue
+    parentHeroBySlug.set(c.slug, url)
+    parentHeroBySlug.set(c.entityKey.includes(':') ? c.entityKey.split(':')[1]! : c.slug, url)
+  }
   const inventoryOk = inventory.length > 0
   const invByKey = new Map(inventory.map((row) => [row.key, row]))
   const countByKey = new Map(inventory.map((row) => [row.key, row.activeCount]))
@@ -100,6 +109,7 @@ export default async function SubdivisionsPage() {
 
   const featured = featuredSeeds.map((p) => {
     const inv = invByKey.get(`${p.citySlug}:${p.slug}`) ?? null
+    const live = parentHeroBySlug.get(p.parentSlug)
     const curated = communityImage(p.parentSlug)
     const fallbackHero = cityHero(p.citySlug)
     const pooled = pickSurfaceImage(heroPhotoPool, {
@@ -107,13 +117,15 @@ export default async function SubdivisionsPage() {
       seed: p.slug,
       fallback: curated ?? fallbackHero.src,
     })
+    const photoSrc = preferPlaceHero(live, curated ?? pooled ?? fallbackHero.src)
+    const placeOwned = Boolean(live || curated)
     return {
       ...p,
       href: `/subdivisions/${p.slug}`,
       sentence: `${p.name} is a recorded plat in ${p.parent}, ${p.city}.`,
-      photoSrc: pooled ?? curated ?? fallbackHero.src,
-      photoAlt: curated ? `${p.name}, ${p.city} Oregon` : fallbackHero.alt,
-      photoIsPlat: curated != null,
+      photoSrc,
+      photoAlt: placeOwned ? `${p.name}, ${p.city} Oregon` : fallbackHero.alt,
+      photoIsPlat: placeOwned,
       activeCount: inventoryOk ? (inv?.activeCount ?? 0) : null,
       medianPrice: inventoryOk ? (inv?.medianListPrice ?? null) : null,
     }

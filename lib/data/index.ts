@@ -421,6 +421,7 @@ export {
   getAllCitiesForAdminUpload,
   getAllNeighborhoodsForAdminUpload,
   getAllCommunitiesForAdminUpload,
+  getCommunityHeroUrlsBySlug,
   updateHeroEntityById,
   insertHeroEntityRow,
   getPageImageUrlsForPage,

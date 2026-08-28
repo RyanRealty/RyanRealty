@@ -190,7 +190,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!community) notFound()
   // Same rule as the page body: the registry label is the public name.
   const publicName = getResortCommunityBySlug(slug)?.label ?? community.name
-  return pageMetadata(communityMetadataInput({ slug, name: publicName, city: community.city }))
+  return pageMetadata(
+    communityMetadataInput({
+      slug,
+      name: publicName,
+      city: community.city,
+      heroImageUrl: community.heroImageUrl,
+    }),
+  )
 }
 
 export default async function CommunityDetailPage({ params }: Props) {
@@ -584,7 +591,7 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   /* ── The opening ───────────────────────────────────────────────────────── */
 
-  const posterSrc = stagePoster(slug)
+  const posterSrc = stagePoster(slug, community.heroImageUrl)
   // The approved area-guide clip plays ON the Stage - the one pattern for
   // owned full-bleed media (PUBLIC_UI §3). Muted, looping, motion-respecting
   // inside V3Stage. Null when the community has no approved clip.

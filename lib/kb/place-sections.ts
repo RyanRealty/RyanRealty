@@ -38,7 +38,7 @@
 import { activityEventDisplay } from '@/lib/activity/event-label'
 import { formatDate } from '@/lib/format/date'
 import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
-import { cityHero } from '@/lib/geo-images'
+import { cityHero, preferPlaceHero } from '@/lib/geo-images'
 import { publishStreetLine, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
 import { listingTileHref } from '@/lib/slug'
 import type { KbTickerItem, KbTownItem } from '@/lib/kb/types'
@@ -263,9 +263,9 @@ export function buildArticlePosts(posts: readonly BlogPostRow[]): KbArticlePost[
  */
 export function buildOtherCityItems(
   snapshots: readonly CitySnapshotRow[],
-  opts: { excludeSlug?: string; limit?: number } = {},
+  opts: { excludeSlug?: string; limit?: number; liveHeroBySlug?: Readonly<Record<string, string>> } = {},
 ): KbTownItem[] {
-  const { excludeSlug, limit = 8 } = opts
+  const { excludeSlug, limit = 8, liveHeroBySlug } = opts
   return snapshots
     .map((s) => ({ s, cs: s.geoKey.replace(/\s+/g, '-') }))
     .filter(({ cs }) => cs !== excludeSlug && CENTRAL_OREGON_CITY_SLUGS.has(cs))
@@ -277,7 +277,7 @@ export function buildOtherCityItems(
         href: `/cities/${cs}`,
         activeCount: s.activeSfrCount,
         medianPrice: s.medianListPrice ?? null,
-        img: hero.verified ? hero.src : '',
+        img: preferPlaceHero(liveHeroBySlug?.[cs], hero.verified ? hero.src : ''),
       }
     })
 }

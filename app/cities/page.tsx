@@ -32,7 +32,7 @@ import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
 import { getCityContent } from '@/lib/city-content'
-import { cityHero } from '@/lib/geo-images'
+import { cityHero, preferPlaceHero } from '@/lib/geo-images'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { formatCount } from '@/lib/format/count'
 import { formatDate } from '@/lib/format/date'
@@ -185,10 +185,17 @@ export default async function CitiesPage() {
     const sentence = content?.description
       ? firstSentence(content.description)
       : CITY_SENTENCE_FALLBACK[slug] ?? null
+    const fallbackHero = cityHero(slug)
+    const liveHero = allCities.find((c) => c.slug === slug)?.heroImageUrl
+    const src = preferPlaceHero(liveHero, fallbackHero.src)
     return {
       slug,
       name,
-      hero: cityHero(slug),
+      hero: {
+        ...fallbackHero,
+        src,
+        verified: Boolean(liveHero?.trim()) || fallbackHero.verified,
+      },
       sentence,
       activeCount: leftoverActive,
       medianListPrice: leftoverMedian,

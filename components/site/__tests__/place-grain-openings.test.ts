@@ -165,6 +165,10 @@ describe('master-plan opening', () => {
     expect(owned).toMatch(/tetherow/)
     expect(stagePoster('tetherow')).toBe(owned)
     expect(stagePoster('no-such-community')).toBeNull()
+    expect(stagePoster('tetherow', 'https://cdn.example/live.jpg')).toBe('https://cdn.example/live.jpg')
+    expect(stagePoster('no-such-community', 'https://cdn.example/live.jpg')).toBe(
+      'https://cdn.example/live.jpg',
+    )
   })
 
   it('names the place in the heading and leaves belonging to the figures', () => {

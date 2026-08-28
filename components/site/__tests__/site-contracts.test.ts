@@ -260,11 +260,13 @@ describe('design directive contracts', () => {
     // one level down.
     expect(src).toMatch(/buildOtherCityItems\(/)
     const shared = readSrc('lib/kb/place-sections.ts')
+    expect(shared).toMatch(/preferPlaceHero/)
     expect(shared).toMatch(/cityHero\s*\(/)
     expect(shared).toMatch(/hero\.verified \? hero\.src : ''/)
     const index = readSrc('app/cities/page.tsx')
+    expect(index).toMatch(/preferPlaceHero/)
     expect(index).toMatch(/cityHero\s*\(/)
-    expect(index).toMatch(/hero: cityHero\(slug\)/)
+    expect(index).toMatch(/preferPlaceHero\(liveHero, fallbackHero\.src\)/)
     // the unverified seeded-pool resolvers must stay out of this page
     expect(src).not.toMatch(/getGeoTileImages|getSurfaceImage|pickGeoImage/)
     // never hardcode a landing-page image as city HERO/tile imagery. The curated
