@@ -72,16 +72,16 @@ describe('public mix / feature floors', () => {
     // /housing-market, which owns the full set. It must not read mix only to
     // discard it.
     expect(home).not.toMatch(/getPublicDetachedMix/)
-    expect(cities).toMatch(/getPublicDetachedMix/)
+    expect(cities).not.toMatch(/getPublicDetachedMix/)
     expect(zip).toMatch(/getPublicDetachedMix/)
     expect(comm).toMatch(/getPublicDetachedMix/)
     expect(nbh).toMatch(/getPublicDetachedMix/)
     // v3 homepage (2026-08-27): the mix cells print as Instrument figures
     // through the same shared builder the ZIP and city pages use.
     expect(home).not.toMatch(/buildPublicMixFigures/)
-    // v3 city page (2026-08-26): the mix cells print as Instrument figures
-    // through the same shared builder the ZIP page uses.
-    expect(cities).toMatch(/buildPublicMixFigures/)
+    // v3 city restyle (2026-08-28): mix stays on the market report, not a
+    // numeral dump on the city face. Chart Room is Time/Relate/Rank.
+    expect(cities).not.toMatch(/buildPublicMixFigures/)
   })
 
   it('publishes garage as a true share and other flags as at-least floors', async () => {

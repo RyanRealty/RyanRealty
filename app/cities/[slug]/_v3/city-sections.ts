@@ -34,13 +34,16 @@ import {
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
+import { formatDate } from '@/lib/format/date'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishCardAddress } from '@/lib/listing/publish-street-line'
+import { listingDetailPath } from '@/lib/slug'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import type { KbYearSeries } from '@/lib/kb/year-series'
+import type { ListingTile } from '@/lib/data/types/listing'
 
 /**
  * A place that has its own node: a neighborhood, a golf or master-planned
@@ -359,6 +362,56 @@ export function leftoverMarketFigures(
  */
 export const CITY_PACE_KEYS_ON_THE_HUD = new Set(['pending', 'sto', 'closed'])
 
+/** Buyer-facing HUD cells on the city Instrument. Mix / pace / mart stay off the face. */
+const CITY_BUYER_FIGURE_LABELS = [
+  'detached homes for sale',
+  'median list price',
+  'median to pending · 90 days',
+  'months of supply',
+] as const
+
+export function cityBuyerFigures(
+  hud: LeftoverHudKpis,
+  links: { browse: string; monthsOfSupply: string },
+): V3InstrumentFigure[] {
+  const rank = new Map<string, number>(CITY_BUYER_FIGURE_LABELS.map((label, i) => [label, i]))
+  return leftoverMarketFigures(hud, links)
+    .filter((figure) => rank.has(String(figure.label)))
+    .sort((a, b) => (rank.get(String(a.label)) ?? 99) - (rank.get(String(b.label)) ?? 99))
+    .slice(0, 3)
+}
+
+/** Recently sold rows. Close price is the figure; a missing close is dropped, never list-price. */
+export function soldRows(tiles: readonly ListingTile[]): V3LedgerFigureRow[] {
+  return tiles.flatMap((tile) => {
+    if (tile.closePrice == null || !Number.isFinite(tile.closePrice) || tile.closePrice <= 0) return []
+    const address = publishCardAddress({
+      streetNumber: tile.streetNumber,
+      streetName: tile.streetName,
+      streetSuffix: tile.streetSuffix,
+      city: tile.city,
+    })
+    if (!address) return []
+    const href = listingDetailPath(
+      tile.listingKey,
+      { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
+      { city: tile.city, subdivision: tile.subdivisionName },
+      { mlsNumber: tile.listNumber },
+    )
+    const closed = tile.closeDate ? formatDate(tile.closeDate) : null
+    return [
+      {
+        id: tile.listingKey,
+        href,
+        when: v3Text(closed && closed !== '—' ? `Sold ${closed}` : 'Sold'),
+        what: v3Text(address),
+        value: v3Text(formatPublishedAsk(tile.closePrice) ?? 'Price on request'),
+        ...(tile.photoUrl?.trim() ? { media: { src: tile.photoUrl.trim() } } : {}),
+      },
+    ]
+  })
+}
+
 const MONTH_TICK = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -442,13 +495,8 @@ const FEED = 'live MLS through Oregon Data Share'
  * own window on its label; a cell the metric layer withheld is absent, never
  * estimated (§0). The MoS clauses ride along only when a supply figure prints.
  */
-export function cityMarketTrace(cityName: string, hasMos: boolean): string {
-  return (
-    `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
-    `detached single-family houses inside the ${cityName} city boundary. ` +
-    `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
-    (hasMos ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
-  )
+export function cityMarketTrace(cityName: string, _hasMos?: boolean): string {
+  return `Regional MLS, ${cityName} single-family homes. A figure we cannot verify is left off.`
 }
 
 /** The trace over every place ledger's active-count column. */
@@ -474,7 +522,7 @@ export function cityActivityTrace(cityName: string): string {
 export function marketAbsenceItems(cityName: string, hasRows: boolean): V3QuietItem[] {
   const tail = hasRows ? ' The homes above carry their own live list prices.' : ''
   const body =
-    `The Market Truth metric layer published no figure for ${cityName} on this refresh, ` +
+    `No live market figures for ${cityName} on this refresh, ` +
     `so this page is not printing a median, a supply figure, or a verdict.${tail}`
   return [{ kind: 'prose', term: 'No live market figures right now', body }]
 }
@@ -509,11 +557,12 @@ export function cityFieldCaption(input: {
  */
 export function cityFieldTrace(cityName: string): string {
   return (
-    `${FEED}, the newest active single-family homes ` +
-    `with a ${cityName} address, a list price, and a street. The map plots this same set; ` +
-    `the Instrument below carries the full inventory count under its own trace`
+    `Live MLS, the newest active single-family homes ` +
+    `with a ${cityName} address, a list price, and a street. The map plots this same set`
   )
 }
+
+export const SOLD_TRACE = 'Live MLS, recently closed single-family sales in this city'
 
 export function cityFieldEmptyMessage(cityName: string, tilesReturned: number): string {
   return tilesReturned === 0

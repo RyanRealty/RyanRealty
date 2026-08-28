@@ -1,0 +1,85 @@
+/* City Stage search. Tokens only. 44px targets. One Type control beside go. */
+.city-hero-search {
+  position: relative;
+  width: 100%;
+  max-width: var(--v3-measure-text);
+}
+
+.city-hero-search__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.city-hero-search__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--v3-space-xs);
+  width: 100%;
+}
+
+.city-hero-search__input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 2px solid var(--v3-ink);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-control);
+  box-shadow: var(--v3-media-shadow);
+}
+
+.city-hero-search__input::placeholder {
+  color: var(--v3-ink-muted);
+}
+
+.city-hero-search__type,
+.city-hero-search__go {
+  flex: 0 0 auto;
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 2px solid var(--v3-ink);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  box-shadow: var(--v3-media-shadow);
+}
+
+.city-hero-search__go {
+  padding: 0 var(--v3-space-md);
+}
+
+.city-hero-search__go:hover,
+.city-hero-search__type:hover {
+  background: var(--v3-wash);
+}
+
+.city-hero-search__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + var(--v3-space-2xs));
+  z-index: 4;
+  max-height: 18rem;
+  overflow: auto;
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+}

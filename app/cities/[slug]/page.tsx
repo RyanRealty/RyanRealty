@@ -1,10 +1,11 @@
 /**
  * /cities/[slug] - the city node, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 City. First screen is
- * the Field of this city's houses. Verdict is a caption, never a number hero.
- * Child neighborhoods and master-plans are doors below the fold. Section order
- * is the parity contract: design_system/ryan-realty/ui_kits/city/parity.json.
+ * VISUAL LANGUAGE: locked city PNG + tokens.css. First screen is the Stage:
+ * live hero_image_url, H1 "{City} homes for sale", type-and-go search with
+ * one Type control. Chart Room is V3Chart Time/Relate/Rank mid-page. Buyer
+ * voice on the face. Child neighborhoods and master-plans are doors below
+ * the fold. Section order: design_system/ryan-realty/ui_kits/city/parity.json.
  *
  * LEDGER IS THE PATTERN THIS ROUTE SPENDS ITS FIFTH SLOT ON, under the
  * 2026-08-26 place-family exception (PUBLIC_UI.md §3, Matt). The 2026-08-12
@@ -35,7 +36,7 @@
  * market?" whenever a verdict exists, with the answer as the section note
  * directly beneath - the same question KbMarketHud carried, now on the barrel.
  * With no verdict there is no question (a question with no answer under it is
- * worse than a label), and the H1 stays the money head term on the Field.
+ * worse than a label), and the H1 stays the money head term on the Stage.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, generateStaticParams over PRIMARY_CITIES with dynamicParams,
@@ -55,9 +56,8 @@
  *     Instrument's "detached homes for sale" is the leftover membership count.
  *     Two counts, two labels, each under its own trace.
  *  3. ONE PRIMARY PER VIEWPORT, COUNTING VISIBLE FILLED CONTROLS (PUBLIC_UI.md
- *     §1). The first viewport is the Field; the next tap is a house. The
- *     Instrument ask sits below the fold. Every Ledger action stays a ghost
- *     and V3Footer carries no button.
+ *     §1). The first viewport is the Stage search. Homes sit in the Field
+ *     below. Every Ledger action stays a ghost and V3Footer carries no button.
  */
 
 import { notFound } from 'next/navigation'
@@ -70,25 +70,15 @@ import {
   getAllCitySnapshots,
   getCityCommunitySnapshots,
   getRecentBlogPosts,
-  getPriceHistory,
   getCityDetachedMarket,
   getCityDetachedInventory,
   getAreaGuideVideo,
   getNeighborhoodDirectory,
   getCityHeroUrlsBySlug,
 } from '@/lib/data'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
-import {
-  getPublicDetachedMonthly,
-  leftoverOrCacheMonthly,
-  dropCurrentMonth,
-} from '@/lib/data/market-truth/public-monthly'
-import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
-import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { CITY_TILE_FETCH_LIMIT } from '@/lib/market/publish-city-inventory'
 import { CITY_PLACE_LIST_CAP } from '@/lib/explore/subdivision-page-extras'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
@@ -98,18 +88,17 @@ import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
 import { cityResorts, resortActiveSfrCounts, resortLabelToSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { CITY_MARQUEE_COMMUNITIES, CITY_RESORT_LEDGER_IMG, communityVideoUrl } from '@/lib/kb/city-page-config'
-import { preferPlaceHero } from '@/lib/geo-images'
+import { cityHero, preferPlaceHero } from '@/lib/geo-images'
 // Row shaping shared with the neighborhood + community place pages - one copy, so a
 // fix cannot land on one of the three and drift on the others.
 import { buildActivityItems, buildArticlePosts, buildOtherCityItems } from '@/lib/kb/place-sections'
-import { buildYearSeries } from '@/lib/kb/year-series'
 import { getPlaceLinks } from '@/lib/place-links'
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { marketVerdict } from '@/lib/market/classify'
-import { zonedDateKey, formatDate } from '@/lib/format/date'
+import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
@@ -121,16 +110,14 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Ledger,
-  V3PlacePropertyTypes,
   V3Quiet,
   V3SectionTracker,
-  type V3ChartCardProps,
-  type V3InstrumentFigure,
+  V3Stage,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
-import { coreChartsCard } from '@/components/market/core-charts'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
+import { CityHeroSearch } from './_v3/CityHeroSearch.client'
 import { CityHomesField } from './_v3/CityHomesField'
 import { cityFieldItems } from './_v3/city-field-items'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
@@ -140,31 +127,22 @@ import {
   articleRows,
   cityAboutItems,
   cityActivityTrace,
+  cityBuyerFigures,
   cityExploreItems,
   cityFieldCaption,
   cityFieldTrace,
   cityMarketTrace,
   communityRows,
-  leftoverMarketFigures,
-  CITY_PACE_KEYS_ON_THE_HUD,
-  PLACE_COUNT_TRACE,
   marketAbsenceItems,
   placeFigureRows,
-  placeMedianChart,
+  soldRows,
+  PLACE_COUNT_TRACE,
+  SOLD_TRACE,
   type CityCommunityItem,
   type CityPlaceItem,
 } from './_v3/city-sections'
-import {
-  PLACE_MART_YEAR,
-  cityInstrumentSource,
-  pickPlaceMart,
-  placeMartCompositionChart,
-  placeMartFigures,
-} from './_v3/city-mart'
 import { cityMarketChartCards } from './_v3/city-market-charts'
-import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
-import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
-import { getCoMarketAnnualCity } from '@/lib/data/analytics/getCoMarketAnnualCity'
+import { cityChartRoomCards } from './_v3/city-chart-room'
 import { buildCitySchemas } from './_v3/city-metadata'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
@@ -200,7 +178,6 @@ export default async function CityDetailPage({ params }: Props) {
   // ("la pine") - normalize for those reads. Market Truth reads take the
   // hyphenated route slug. Keep `slug` for URLs.
   const geoSlug = canonicalCityCacheSlug(slug)
-  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
 
   const isBend = slug === 'bend'
   const hasResorts = cityResorts(slug).length > 0
@@ -213,12 +190,8 @@ export default async function CityDetailPage({ params }: Props) {
     detached,
     detachedInv,
     publicPace,
-    publicSegments,
-    publicMix,
-    leftoverMonthly,
-    priceHist,
-    coreCharts,
     tiles,
+    soldTiles,
     bendNeighborhoods,
     communities,
     allCitySnapshots,
@@ -226,24 +199,12 @@ export default async function CityDetailPage({ params }: Props) {
     blogPosts,
     activity,
     resortRead,
-    cityMartRow,
-    regionMartRow,
     indexCities,
     neighborhoodDirectory,
   ] = await Promise.all([
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city:detachedInv'),
     withTimeoutFallback(getPublicDetachedPace({ geoType: 'city', geoSlug: slug }), EMPTY_PUBLIC_PACE, 3000, 'city:publicPace'),
-    withTimeoutFallback(getPublicPlaceSegments({ geoType: 'city', geoSlug: slug }), [], 3000, 'city:publicSegments'),
-    withTimeoutFallback(getPublicDetachedMix({ geoType: 'city', geoSlug: slug }), EMPTY_PUBLIC_MIX, 3000, 'city:publicMix'),
-    withTimeoutFallback(
-      getPublicDetachedMonthly({ geoType: 'city', geoSlug: slug, currentMonthKey }),
-      [],
-      4500,
-      'city:leftoverMonthly',
-    ),
-    withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
-    withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
     // THE FIELD'S SET - SFR only (C-02): every sibling geo map is the Single
     // Family Residence sub-type, and the caption beside this map counts THIS
     // set. An all-types pool put a 1,000-home badge beside a 491 hero on Bend.
@@ -258,6 +219,19 @@ export default async function CityDetailPage({ params }: Props) {
       [],
       4500,
       'city:mapTiles',
+    ),
+    skippableRail(
+      () =>
+        getCityListings(cityName, {
+          status: 'closed',
+          sort: 'close-newest',
+          propertyType: 'A',
+          propertySubType: 'Single Family Residence',
+          limit: 8,
+        }),
+      [],
+      3500,
+      'city:sold',
     ),
     isBend
       ? withTimeoutFallback(getBendNeighborhoodLedger(), [], 5000, 'city:nbhStats')
@@ -281,8 +255,6 @@ export default async function CityDetailPage({ params }: Props) {
     hasResorts
       ? withTimeoutFallbackResult(fetchAllCityActiveSfr(cityName), [], 6000, 'city:resortTiles')
       : Promise.resolve({ value: [] as Awaited<ReturnType<typeof fetchAllCityActiveSfr>>, ok: true }),
-    getCoMarketAnnualCity({ year: PLACE_MART_YEAR, citySlug: slug, typeScope: 'all' }),
-    getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
     withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'city:liveHeroes'),
     withTimeoutFallback(getNeighborhoodDirectory(), [], 3000, 'city:nbhDir'),
   ])
@@ -334,38 +306,10 @@ export default async function CityDetailPage({ params }: Props) {
   const marketFaq = buildMarketFaq(cityName, marketFaqInput)
   const { faqs } = marketFaq
 
-  const mart = pickPlaceMart(cityMartRow, regionMartRow)
-  const figures: V3InstrumentFigure[] = leftoverMarketFigures(hud, {
+  const figures = cityBuyerFigures(hud, {
     browse: homesForSalePath(cityName),
     monthsOfSupply: '/months-of-supply',
   })
-  // The 12-month leftover pace and the detached mix, each item carrying its own
-  // window on its label. The three pace keys the HUD figures above already
-  // print are skipped: one figure under two labels reads as two findings.
-  for (const item of publicPaceItems(publicPace)) {
-    if (CITY_PACE_KEYS_ON_THE_HUD.has(item.key)) continue
-    figures.push({ value: v3Text(item.value), label: v3Text(item.label) })
-  }
-  // ONE FIGURE PER LABEL (2026-08-27 audit). publicPaceItems and
-  // buildPublicMixFigures both read the finance cells, so "cash closes ·
-  // 12 months" rendered TWICE in this run -- same value, two mounts. And the
-  // 2026-08-27 all-property-types financing figures (getFinancingMix) were
-  // REMOVED the same day they shipped: they put a SECOND cash share (33.0%)
-  // and a second conventional share on the page beside the detached ones
-  // (27.5% / 63.5%) under near-identical 12-month labels, and a reader cannot
-  // be asked to guess which population a percent covers. The detached cells
-  // are the market-truth pipeline's; they stay. The all-types mix belongs on
-  // a surface that can give it a full table with its population named, not
-  // two figures in a detached run.
-  {
-    const seen = new Set(figures.map((f) => String(f.label)))
-    for (const figure of buildPublicMixFigures(publicMix)) {
-      if (seen.has(String(figure.label))) continue
-      seen.add(String(figure.label))
-      figures.push(figure)
-    }
-  }
-  figures.push(...placeMartFigures(mart, `/housing-market/history?year=${PLACE_MART_YEAR}`))
   const [firstMarketFigure, ...restMarketFigures] = figures
 
   // THE MARKET QUESTION (Matt 2026-08-26: it stays on all five place grains).
@@ -378,17 +322,6 @@ export default async function CityDetailPage({ params }: Props) {
     ? `${cityName} has ${mosLabel} months of supply, which is a ${verdict.label}.`
     : null
 
-  // Median-close year overlay - leftover months first, cache months otherwise,
-  // in-progress month dropped so a partial month never plots as a decline.
-  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
-  const medianChart = placeMedianChart(
-    buildYearSeries(chartMonths.months, 5),
-    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${cityName}`,
-  )
-
-  // The chart room: the tabbed core trends plus the approved town-comparison
-  // cards, all inside the ONE market section (Matt 2026-07-29) as Instrument
-  // cards. toPublicCoreChartSeries strips table names from every series source.
   const townCards = await cityMarketChartCards({
     citySlug: slug,
     geoSlug,
@@ -397,8 +330,8 @@ export default async function CityDetailPage({ params }: Props) {
     publishedDtp: hud.daysToPending,
     displayedActiveCount: hud.active,
   })
-  const trendsCard = coreChartsCard(coreCharts ? toPublicCoreChartSeries(coreCharts) : null, cityName)
-  const marketCards: V3ChartCardProps[] = [...(trendsCard ? [trendsCard] : []), ...townCards]
+  const marketCards = cityChartRoomCards(townCards)
+  const posterSrc = preferPlaceHero(indexCities[slug], cityHero(slug).src)
 
   /* ── The Field ─────────────────────────────────────────────────────────── */
 
@@ -540,6 +473,7 @@ export default async function CityDetailPage({ params }: Props) {
   const [firstRail, ...restRail] = communityRows(communityItems)
   const [firstGolf, ...restGolf] = placeFigureRows(golfLedgerItems, 'Golf and master-planned')
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
+  const [firstSold, ...restSold] = soldRows(soldTiles)
   // D94 restored 2026-08-27. The feed is CITY-scoped, which is what this page is,
   // so the eyebrow and the door both name the city honestly.
   const openHouses = await readCityOpenHouses(cityName)
@@ -588,53 +522,43 @@ export default async function CityDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={citySchemas} />
 
-        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
+        <V3Breadcrumb
+          tone="on-media"
+          trail={[{ label: 'Home', href: '/' }, { label: cityName }]}
+        />
+        <V3Stage
+          id="hero"
+          headingLevel={1}
+          height="tall"
+          headline={v3Text(`${cityName} homes for sale`)}
+          posterSrc={posterSrc}
+          action={{ label: 'See homes', href: '#homes', variant: 'ghost' }}
+        >
+          <CityHeroSearch cityName={cityName} />
+        </V3Stage>
 
-        {/* Pattern 2, Field. Houses fill the fold; the count is a caption and
-            the H1 is the money head term. */}
         <CityHomesField
           cityName={cityName}
-          headline={v3Text(`${cityName} homes for sale`)}
+          headline={v3Text(`Homes in ${cityName}`)}
           fieldItems={fieldItems}
           tilesLength={tiles.length}
           caption={fieldCaption}
           source={cityFieldTrace(cityName)}
         />
 
-        {/* Pattern 1, Instrument. The market question is the section headline,
-            the verdict sentence is the answer beneath it, the KPI row is the
-            leftover pile, and the chart room rides as cards. */}
-        {firstMarketFigure ? (
-          <V3Instrument
-            id="market"
-            level={2}
-            eyebrow={v3Text(`${cityName} · The market`)}
-            headline={v3Text(marketHeadline)}
-            note={verdictSentence ? v3Text(verdictSentence) : undefined}
-            figures={[firstMarketFigure, ...restMarketFigures]}
-            /* The HUD answers the market question; the ~26-figure long tail
-               (pace, mix, finance, bed-count shares) folds behind "All N
-               figures" (2026-08-27 mobile audit: the open wall ran 31 deep
-               at 390px). Nothing is cut — the fold is in-section. */
-            foldAfter={5}
-            source={v3Text(cityInstrumentSource(cityMarketTrace(cityName, mosLabel != null), mart, cityName))}
-            chart={medianChart}
-            chartSecondary={placeMartCompositionChart(mart)}
-            cards={marketCards}
-            updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
+        {firstSold ? (
+          <V3Ledger
+            id="sold"
+            eyebrow={v3Text(`${cityName} · Sold`)}
+            heading={v3Text('Recently sold')}
+            rows={[firstSold, ...restSold]}
+            source={v3Text(SOLD_TRACE)}
             action={{
-              label: v3Text(`See every ${cityName} home for sale`),
-              href: homesForSalePath(cityName),
-              variant: 'primary',
+              label: v3Text(`Every sold ${cityName} home`),
+              href: `${homesForSalePath(cityName)}?status=Sold`,
             }}
           />
-        ) : (
-          <V3Quiet
-            id="market"
-            heading={`The ${cityName} market`}
-            items={marketAbsenceItems(cityName, Boolean(fieldItems.length))}
-          />
-        )}
+        ) : null}
 
         {/* D83: the DESIGNATED Bend polygons, and only those. */}
         {firstNbh ? (
@@ -672,10 +596,30 @@ export default async function CityDetailPage({ params }: Props) {
           />
         ) : null}
 
-        {/* Pattern 1 again, as ONE enumeration: one section per other property
-            type this city holds. A type with nothing publishable is absent,
-            never an empty section and never a zero. */}
-        <V3PlacePropertyTypes placeName={cityName} citySlug={slug} rows={publicSegments} />
+        {firstMarketFigure ? (
+          <V3Instrument
+            id="market"
+            level={2}
+            eyebrow={v3Text(`${cityName} · Market`)}
+            headline={v3Text(marketHeadline)}
+            note={verdictSentence ? v3Text(verdictSentence) : undefined}
+            figures={[firstMarketFigure, ...restMarketFigures]}
+            source={v3Text(cityMarketTrace(cityName, mosLabel != null))}
+            cards={marketCards.length > 0 ? marketCards : undefined}
+            updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
+            action={{
+              label: v3Text(`See every ${cityName} home for sale`),
+              href: homesForSalePath(cityName),
+              variant: 'primary',
+            }}
+          />
+        ) : (
+          <V3Quiet
+            id="market"
+            heading={`The ${cityName} market`}
+            items={marketAbsenceItems(cityName, Boolean(fieldItems.length))}
+          />
+        )}
 
         {/* D85: golf and master-planned communities are their OWN section,
             never folded into the neighborhoods list. The value column publishes

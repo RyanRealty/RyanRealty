@@ -243,21 +243,13 @@ describe('design directive contracts', () => {
     // through cityHero() — the visually-verified per-city registry — and a
     // city without a verified photo renders the LABELED regional fallback.
     const src = readSrc('app/cities/[slug]/page.tsx')
-    // THE CITY PAGE NO LONGER OWNS A FULL-BLEED HERO, so the three positive
-    // assertions moved to the two files that now hold the behavior (P9, 2026-08-12).
-    // PUBLIC_UI.md's locked Places opening is an Instrument and the same section
-    // forbids a Stage over a number, so there is no hero photo on this route for
-    // cityHero() to source or mediaCaption to caption. What the route DOES have is
-    // place imagery in its ledgers, and that imagery resolves through
-    // buildOtherCityItems, which calls cityHero() and renders NO thumbnail for an
-    // unverified city — the rule this directive exists for, one level down.
-    // THE CITY PAGE NO LONGER OWNS A FULL-BLEED HERO (P9, re-landed 2026-08-26):
-    // PUBLIC_UI.md's locked City opening is the Field of the city's houses, so
-    // there is no hero photo on this route for cityHero() to source. What the
-    // route DOES have is place imagery in its ledgers, and that imagery resolves
-    // through buildOtherCityItems, which calls cityHero() and renders NO
-    // thumbnail for an unverified city — the rule this directive exists for,
-    // one level down.
+    // Restyle 2026-08-28: the city page opens a Stage. Live `hero_image_url`
+    // wins via getCityHeroUrlsBySlug + preferPlaceHero; cityHero() is the
+    // verified fallback, never a wrong-city photo. Ledger thumbnails still
+    // resolve through buildOtherCityItems with the same rule.
+    expect(src).toMatch(/<V3Stage/)
+    expect(src).toMatch(/getCityHeroUrlsBySlug/)
+    expect(src).toMatch(/preferPlaceHero\(indexCities\[slug\], cityHero\(slug\)\.src\)/)
     expect(src).toMatch(/buildOtherCityItems\(/)
     const shared = readSrc('lib/kb/place-sections.ts')
     expect(shared).toMatch(/preferPlaceHero/)

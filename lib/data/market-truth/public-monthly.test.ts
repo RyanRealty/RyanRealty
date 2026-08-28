@@ -64,7 +64,7 @@ describe('leftover monthly chart overlay', () => {
     expect(hub).toMatch(/getPublicDetachedMonthly/)
     expect(region).toMatch(/getPublicDetachedMonthly/)
     expect(home).not.toMatch(/getPublicDetachedMonthly/)
-    expect(cities).toMatch(/getPublicDetachedMonthly/)
+    expect(cities).not.toMatch(/getPublicDetachedMonthly/)
     expect(zip).toMatch(/getPublicDetachedMonthly/)
     expect(annual).toMatch(/getPublicDetachedMonthly/)
     expect(comm).toMatch(/getPublicDetachedMonthly/)

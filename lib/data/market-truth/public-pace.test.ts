@@ -60,9 +60,9 @@ describe('public pace surfaces', () => {
     const zip = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
     const sell = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
     expect(city).toMatch(/getPublicDetachedPace/)
-    // v3 city page (2026-08-26): the pace items print as Instrument figures
-    // through publicPaceItems, the same builder PublicPaceStats renders from.
-    expect(city).toMatch(/publicPaceItems/)
+    // v3 city restyle (2026-08-28): leftoverHudKpis still reads pace. The
+    // long-tail publicPaceItems dump is off the face; Chart Room is Time/Relate/Rank.
+    expect(city).not.toMatch(/publicPaceItems/)
     expect(market).toMatch(/getPublicDetachedPace/)
     expect(hub).toMatch(/getPublicDetachedPace/)
     expect(zip).toMatch(/getPublicDetachedPace/)
