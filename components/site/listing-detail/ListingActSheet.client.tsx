@@ -5,7 +5,7 @@
  * Sends through submitContactForm. Does not route to /contact.
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
@@ -29,7 +29,12 @@ export function ListingActSheet({
   const [stepId, setStepId] = useState<string>('intent')
   const [problem, setProblem] = useState<string>('')
   const [smsConsent, setSmsConsent] = useState(false)
+  const [sessionId, setSessionId] = useState('')
   const answersRef = useRef<Record<string, string>>({})
+
+  useEffect(() => {
+    setSessionId(readRrSessionId() ?? '')
+  }, [])
 
   const askSteps: readonly V3SheetStep[] = useMemo(
     () => [
@@ -117,8 +122,7 @@ export function ListingActSheet({
         formData.set('inquiryType', isTour ? 'Tour request' : 'Listing question')
         formData.set('message', answers.message ?? '')
         if (smsConsent) formData.set('smsConsent', 'yes')
-        const rrSession = readRrSessionId()
-        if (rrSession) formData.set('sessionId', rrSession)
+        if (sessionId) formData.set('sessionId', sessionId)
         if (listingKey) formData.set('listingKey', listingKey)
 
         const result = await submitContactForm(formData)
@@ -145,7 +149,7 @@ export function ListingActSheet({
         setStatus('failed')
       }
     },
-    [listingKey, smsConsent],
+    [listingKey, sessionId, smsConsent],
   )
 
   const onAdvance = useCallback(
