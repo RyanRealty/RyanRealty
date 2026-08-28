@@ -1,102 +1,55 @@
-'use client'
-
 /**
- * Homepage inventory Field. Photo-led cards a thumb can tap, town chips that
- * filter the same set the map plots. The Stage above carries the D11 H1.
- * Methodology captions stay off this surface.
+ * Homepage inventory Field. The Stage above carries the D11 H1 and the
+ * search action, so this section names itself through V3Field's ariaLabel.
+ * Town filters sit in the Field lead, one row. Homes and the map share
+ * one barrel frame. No leftover count caption.
  */
-import { useMemo, useState } from 'react'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { V3Field, type V3FieldMapSlot } from '@/components/site/v3'
-import { cn } from '@/lib/utils'
-import { filterHomeFieldByCity, type HomeFieldItem } from './home-field-items'
+import { V3Button, V3Field, type V3FieldItem, type V3FieldMapSlot } from '@/components/site/v3'
 import './home-homes-field.css'
 
 export function HomeHomesField({
   fieldItems,
   towns,
-  count,
   mapSlot,
   mapNote,
+  listFlow,
+  seeAll,
   emptyMessage,
 }: {
-  fieldItems: HomeFieldItem[]
+  fieldItems: V3FieldItem[]
   towns: readonly { label: string; href: string }[]
-  count?: {
-    value: string
-    label: string
-    source: string
-    updatedAt: string | null
-  }
   mapSlot?: V3FieldMapSlot
   mapNote?: string
+  listFlow?: boolean
+  seeAll?: { href: string; label: string }
   emptyMessage: string
 }) {
-  const [town, setTown] = useState<string | null>(null)
-  const visible = useMemo(() => filterHomeFieldByCity(fieldItems, town), [fieldItems, town])
-  const pins = useMemo(
-    () =>
-      visible.flatMap((item) =>
-        item.lat != null && item.lng != null
-          ? [{ id: item.id, href: item.href, priceLabel: item.priceLabel, title: item.title, lat: item.lat, lng: item.lng }]
-          : [],
-      ),
-    [visible],
-  )
+  const [firstTown, ...restTowns] = towns
+  const townLead = firstTown ? (
+    <nav aria-label="Towns">
+      <V3Button href={firstTown.href} variant="ghost">
+        {firstTown.label}
+      </V3Button>
+      {restTowns.map((town) => (
+        <V3Button key={town.href} href={town.href} variant="ghost">
+          {town.label}
+        </V3Button>
+      ))}
+    </nav>
+  ) : null
 
   return (
-    <div className="home-homes-field" id="homes">
-      <header className="home-homes-field__head">
-        {towns.length > 0 ? (
-          <nav aria-label="Towns" className="home-homes-field__towns">
-            <button
-              type="button"
-              className={cn('home-homes-field__chip', town == null && 'is-active')}
-              aria-pressed={town == null}
-              onClick={() => setTown(null)}
-            >
-              All
-            </button>
-            {towns.map((item) => (
-              <button
-                key={item.href}
-                type="button"
-                className={cn('home-homes-field__chip', town === item.label && 'is-active')}
-                aria-pressed={town === item.label}
-                onClick={() => setTown(item.label)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        ) : null}
-      </header>
-
-      <V3Field
-        id="listed"
-        ariaLabel="Homes for sale across Central Oregon"
-        items={visible}
-        mapSlot={
-          pins.length > 0 ? (
-            <PlaceFieldMap
-              pins={pins}
-              placeName="Central Oregon"
-              posterSrc={visible[0]?.photoSrc}
-            />
-          ) : mapSlot
-        }
-        mapNote={mapNote}
-        count={
-          count
-            ? { value: count.value, label: count.label, source: count.source, updatedAt: count.updatedAt }
-            : undefined
-        }
-        emptyMessage={
-          town
-            ? `No photographed active home in ${town} in this set.`
-            : emptyMessage
-        }
-      />
-    </div>
+    <V3Field
+      id="homes"
+      className="home-homes-field"
+      ariaLabel="Homes for sale across Central Oregon"
+      items={fieldItems}
+      mapSlot={mapSlot}
+      mapNote={mapNote}
+      lead={townLead}
+      listFlow={listFlow}
+      action={seeAll}
+      emptyMessage={emptyMessage}
+    />
   )
 }

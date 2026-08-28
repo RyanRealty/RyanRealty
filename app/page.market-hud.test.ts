@@ -5,14 +5,15 @@ import { describe, expect, it } from 'vitest'
 const SRC = readFileSync(resolve('app/page.tsx'), 'utf8')
 
 /**
- * Homepage is not the market report. leftoverHudKpis still feeds the Field
- * count and the town remainder. The report lives on /housing-market.
+ * v3 spelling (2026-08-27 Broadside rebuild). The KPI row is built by
+ * leftoverMarketFigures(hud, ...): every figure off the ONE leftover pile,
+ * a missing cell omitted, pulse never filling a tile.
  */
-describe('homepage keeps leftover counts and does not host the report', () => {
-  it('reads region leftover pace and leftoverHudKpis for the count', () => {
+describe('homepage market figures stay on the leftover pile', () => {
+  it('reads region leftover pace and hands the hud to leftoverMarketFigures', () => {
     expect(SRC).toMatch(/getPublicDetachedPace\(\{\s*geoType:\s*'region',\s*geoSlug:\s*'central-oregon'\s*\}\)/)
     expect(SRC).toMatch(/leftoverHudKpis/)
-    expect(SRC).toMatch(/value:\s*hud\.active\.toLocaleString\('en-US'\)/)
+    expect(SRC).toMatch(/leftoverMarketFigures\(hud/)
   })
 
   it('does not assign saleToList from cache avg_sale_to_list_ratio', () => {
@@ -21,22 +22,24 @@ describe('homepage keeps leftover counts and does not host the report', () => {
     expect(SRC).not.toMatch(/getMarketStatsCacheRowForGeo/)
   })
 
-  it('remainder uses leftover HUD region count', () => {
-    expect(SRC).toMatch(/regionActive:\s*hud\.active/)
+  it('does not print a leftover regional remainder on the town Ledger', () => {
+    expect(SRC).not.toMatch(/regionActive:\s*hud\.active/)
+    expect(SRC).not.toMatch(/townRemainder/)
+    expect(SRC).not.toMatch(/namePulseCityRemainder/)
   })
 
-  it('does not mount the market instrument or leftover KPI row', () => {
-    expect(SRC).not.toMatch(/leftoverMarketFigures\(hud/)
-    expect(SRC).not.toMatch(/HOME_FIGURE_LABELS/)
-    expect(SRC).not.toMatch(/<V3Instrument/)
-    expect(SRC).not.toMatch(/placeMedianChart\(/)
-    expect(SRC).not.toMatch(/<KbMarketHud/)
+  it('KPI row is leftover only: miss omits, pulse does not fill', () => {
+    expect(SRC).toMatch(/HOME_FIGURE_LABELS/)
+    expect(SRC).toMatch(/leftoverMarketFigures\(hud/)
     expect(SRC).not.toMatch(/closedCount30d\s*\?\?\s*pulse/)
     expect(SRC).not.toMatch(/daysToPending90d\s*\?\?\s*pulse/)
+    expect(SRC).not.toMatch(/new30:\s*pulse/)
+    expect(SRC).not.toMatch(/closed30:\s*publicPace\.closedCount\s*\?\?/)
+    expect(SRC).not.toMatch(/daysToPending:\s*publicPace\.daysToContract/)
   })
 
-  it('keeps one Quiet door to the market report', () => {
-    expect(SRC).toMatch(/id="market"/)
-    expect(SRC).toMatch(/\/housing-market/)
+  it('the one verdict derivation classifies the raw leftover value', () => {
+    expect(SRC).toMatch(/marketVerdict\(mosRaw\)/)
+    expect(SRC).toMatch(/formatMonthsOfSupply\(mosRaw\)/)
   })
 })

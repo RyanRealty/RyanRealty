@@ -3,9 +3,8 @@
  *
  * Same honesty as app/cities/[slug]/_v3/city-field-items.ts: a tile earns a row
  * when it carries a price, an address, and a live MLS photograph (the curated
- * homepage set is photography-first, and the count line above the frame states
- * the region total from its own leftover row, so dropping a photoless tile
- * never moves a published figure). The ask goes through formatPublishedAsk and
+ * homepage set is photography-first, so dropping a photoless tile never
+ * invents a door). The ask goes through formatPublishedAsk and
  * a fractional ask never prints unlabeled: publishListingShareKind rides the
  * meta line (the Camp Sherman quarter-share rule). The meta line also names the
  * town, because this list spans the whole region.

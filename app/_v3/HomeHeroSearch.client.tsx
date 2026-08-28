@@ -15,6 +15,7 @@ import {
   type SuggestItem,
 } from '@/components/search/SearchSuggest'
 import { searchHrefForQuery } from '@/lib/parse-search-query'
+import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import './home-hero-search.css'
 
 export function HomeHeroSearch() {
@@ -44,7 +45,10 @@ export function HomeHeroSearch() {
 
   const onSubmit = useCallback(() => {
     const text = query.trim()
-    if (!text) return
+    if (!text) {
+      go(publishRegionalSearchHref())
+      return
+    }
     const picked = highlight >= 0 ? items[highlight] : undefined
     if (picked) {
       go(picked.href)
@@ -62,9 +66,6 @@ export function HomeHeroSearch() {
         onSubmit()
       }}
     >
-      <label className="home-hero-search__label" htmlFor={listId}>
-        Search homes
-      </label>
       <div className="home-hero-search__row">
         <input
           id={listId}
@@ -72,6 +73,7 @@ export function HomeHeroSearch() {
           type="search"
           name="q"
           autoComplete="off"
+          aria-label="Search city, community, or address"
           placeholder="City, community, or address"
           value={query}
           onChange={(event) => {

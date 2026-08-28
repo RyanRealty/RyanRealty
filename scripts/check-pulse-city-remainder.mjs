@@ -30,11 +30,6 @@ checks.push({
 
 const surfaces = [
   {
-    path: 'app/page.tsx',
-    label: 'homepage fetches leftover city rows and passes leftover regionActive',
-    regionActive: /regionActive:\s*hud\.active/,
-  },
-  {
     path: 'app/housing-market/page.tsx',
     label: 'housing-market hub fetches leftover city rows and passes leftover regionActive',
     regionActive: /regionActive:\s*hud\.active/,
@@ -63,75 +58,27 @@ for (const surface of surfaces) {
 }
 
 /**
- * Homepage hero: the count IS the leftover region HUD row (D19), so the
- * sentence it sits in may not name the town doors.
- *
- * Founding case (fleet, 2026-08-17): the hero read "1,834 homes for sale Bend,
- * Redmond, Sisters, Sunriver, La Pine, and Terrebonne." 1,834 was
- * market_pulse_live geo_type='region'; those six towns summed to 927. Fixed in
- * 30b0a926 by relabelling the lead — with nothing mechanical holding it, because
- * the remainder checks below only cover the town TABLE, and ci:place-hero-grain
- * covers the place pages, not app/page.tsx. The town list is read out of the
- * page's own TOWN_ORDER so a new town door cannot slip past this.
+ * Homepage no longer prints a leftover region inventory total next to the
+ * town Ledger (Matt 2026-08-28). The founding case — a region count sitting
+ * beside six town doors — is gone. Hold the absence so the caption cannot
+ * return, and keep the remainder lock on the housing-market surfaces above.
  */
 {
   const text = src('app/page.tsx')
-  const townOrder = /const TOWN_ORDER = \[([^\]]*)\]/.exec(text)?.[1] ?? ''
-  const towns = [...townOrder.matchAll(/'([^']+)'/g)].map((m) => m[1].replace(/-/g, ' '))
-
-  const heroMatch = /<KbHero\b[\s\S]*?\/>/.exec(text)
-  if (heroMatch) {
-    // KB register: the hero tag carries the count and the lead.
-    const hero = heroMatch[0]
-    const leadMatch = /\blead=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(hero)
-    const lead = (leadMatch?.[1] ?? leadMatch?.[2] ?? '').toLowerCase()
-    const named = towns.filter((town) => lead.includes(town))
-    checks.push({
-      label: 'homepage hero passes the leftover region HUD count',
-      ok: /activeCount:\s*hud\.active/.test(hero),
-    })
-    checks.push({
-      label: 'homepage hero lead names the region, not the town doors',
-      ok:
-        towns.length > 0 &&
-        lead.length > 0 &&
-        named.length === 0 &&
-        /central oregon/.test(lead),
-    })
-    if (named.length > 0) {
-      console.log(`      hero lead names town door(s): ${named.join(', ')}`)
-    }
-  } else {
-    // v3 register (2026-08-27 rebuild): the count line is the Field's `count`
-    // slot. The value expression must be the leftover HUD row, the sentence it
-    // sits in is the HERO_COUNT_LEAD literal, and that literal must name the
-    // region and never a TOWN_ORDER door. Written register-aware so a page on
-    // NEITHER spelling fails loudly instead of passing vacuously.
-    const leadMatch = /const HERO_COUNT_LEAD = '([^']*)'/.exec(text)
-    const lead = (leadMatch?.[1] ?? '').toLowerCase()
-    const named = towns.filter((town) => lead.includes(town))
-    checks.push({
-      label: 'homepage v3 count is the leftover region HUD row (value: hud.active + label: HERO_COUNT_LEAD)',
-      ok:
-        /value:\s*hud\.active\.toLocaleString\('en-US'\)/.test(text) &&
-        /label:\s*HERO_COUNT_LEAD/.test(text),
-    })
-    checks.push({
-      label: 'homepage v3 count sentence names the region, not the town doors',
-      ok:
-        towns.length > 0 &&
-        lead.length > 0 &&
-        named.length === 0 &&
-        /central oregon/.test(lead),
-    })
-    if (named.length > 0) {
-      console.log(`      HERO_COUNT_LEAD names town door(s): ${named.join(', ')}`)
-    }
-  }
+  checks.push({
+    label: 'homepage Field does not print a leftover inventory caption',
+    ok:
+      !/HERO_COUNT_LEAD/.test(text) &&
+      !/homes for sale across Central Oregon\. Live list prices and days on market/.test(text) &&
+      !/\bcount=\{/.test(text),
+  })
+  checks.push({
+    label: 'homepage town Ledger does not print the regional remainder paragraph',
+    ok: !/townRemainder/.test(text) && !/namePulseCityRemainder/.test(text),
+  })
 }
 
 const builders = [
-  'app/page.tsx',
   'app/housing-market/_v3/hub-sections.ts',
   'app/housing-market/central-oregon/_v3/region-sections.ts',
   'app/housing-market/annual-review/_v3/annual-sections.ts',

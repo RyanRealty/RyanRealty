@@ -1,12 +1,12 @@
 {
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
-  "status": "v3-phone-first-2026-08-28",
-  "note": "Homepage on the components/site/v3 barrel. Phone-first: Stage search on the first screen, photo-led Field, towns and featured communities as photo Ledgers, one Quiet door to /housing-market. index.html is the retired KB mockup, kept as history, not the visual target. Do not match locked/home SAMPLE mocks.",
+  "status": "v3-broadside-2026-08-28",
+  "note": "Homepage on the components/site/v3 barrel, Broadside register. Stage (owned Old Mill / Bend flyover, D11 H1, search is the only Stage action) then Field of homes (barrel list + map, town filters one row, listFlow + See all, no leftover count caption). Towns and communities are barrel Ledgers without leftover CITY or remainder copy. Chart Room is the mid-page Instrument. index.html is the retired KB mockup, kept as history, not the visual target.",
   "removedComponents": [
     {
       "name": "KbHero",
-      "where": "V3Stage with the same clip, poster, D11 H1. Search is back on the Stage via HomeHeroSearch (SearchSuggest + searchHrefForQuery). See homes stays as the ghost destination."
+      "where": "V3Stage with the same clip, poster, D11 H1. Search is the only Stage action via HomeHeroSearch (SearchSuggest + searchHrefForQuery)."
     },
     {
       "name": "KbExploreTowns",
@@ -18,11 +18,11 @@
     },
     {
       "name": "KbFeatured",
-      "where": "the Field rows: photographed homes as photo-led cards. Map plots the same set."
+      "where": "the Field rows: photographed homes from the same curated mix, barrel Field language"
     },
     {
       "name": "KbListingMap",
-      "where": "PlaceFieldMap inside HomeHomesField: plots the listed (and town-filtered) set"
+      "where": "the Field mapSlot (PlaceFieldMap): plots exactly the listed set"
     },
     {
       "name": "KbTicker",
@@ -30,7 +30,7 @@
     },
     {
       "name": "KbSell",
-      "where": "Quiet #sell door to /sell. The capture form lives on /sell."
+      "where": "section #sell: SellValueForm, same destination as /sell"
     },
     {
       "name": "KbCommunityAlerts",
@@ -38,7 +38,7 @@
     },
     {
       "name": "KbTestimonials",
-      "where": "Quiet #reviews, three reviews"
+      "where": "Quiet #reviews"
     },
     {
       "name": "KbTeam",
@@ -46,11 +46,7 @@
     },
     {
       "name": "KbMarketHud",
-      "where": "removed from the homepage. Quiet #market is one door to /housing-market. leftoverHudKpis still feeds the Field count and town remainder."
-    },
-    {
-      "name": "V3Instrument",
-      "where": "removed from the homepage. The market report is /housing-market."
+      "where": "the market Instrument: leftoverMarketFigures, verdict, placeMedianChart year overlay, door to /housing-market"
     },
     {
       "name": "KbFooter",
@@ -68,23 +64,27 @@
     },
     {
       "name": "V3Stage",
-      "section": "the Bend flyover hero, D11 H1, search slot, See homes"
+      "section": "the Bend flyover hero, D11 H1, search as the only Stage action"
     },
     {
       "name": "HomeHeroSearch",
-      "section": "city / community / address search on the first phone screen"
+      "section": "city / community / address search on the Stage"
     },
     {
       "name": "HomeHomesField",
-      "section": "Field: photo-led cards, town filters, map of the same set"
+      "section": "Field: town filters, curated homes + map in one frame, listFlow, See all"
+    },
+    {
+      "name": "PlaceFieldMap",
+      "section": "the Google map in the Field frame"
     },
     {
       "name": "V3Ledger",
-      "section": "towns, then communities"
+      "section": "towns (with remainder note), then communities"
     },
     {
-      "name": "V3Quiet",
-      "section": "market door, reviews, sell door"
+      "name": "V3Instrument",
+      "section": "the market question, leftover KPI row, year overlay"
     },
     {
       "name": "HomeAlertSheet",
@@ -96,14 +96,14 @@
     }
   ],
   "purpose": {
-    "_": "Phone-first homepage. Search and homes first. Market report is not this page.",
-    "job": "Turn someone who typed a money query into a search they can act on. The visitor arrived wanting to look at houses. Search is on the first phone screen. Homes are the next screen.",
+    "_": "Locked v3 homepage. Stage then Field. Chart Room mid-page.",
+    "job": "Turn someone who typed a money query into a search they can act on. The visitor arrived wanting to look at houses. Search is the Stage action. Homes are the next screen.",
     "primaryAction": "Search city, community, or address. See homes is the secondary door into regional browse.",
     "audience": "A buyer or looker at the top of the funnel who does not yet know the towns. NOT a seller (they arrive on /sell).",
     "questionsItMustAnswer": [
       "What is for sale here right now, and what does it cost?",
       "Where is here, and what do the towns cost?",
-      "Where is the market report if I want it?",
+      "Is this a good time to buy or sell?",
       "Who are you?"
     ],
     "searchIntent": {
@@ -113,42 +113,42 @@
         "central oregon real estate",
         "homes for sale bend redmond sisters sunriver"
       ],
-      "whyThisPageCanWin": "It publishes live inventory and per-town medians on one crawlable page, and the first screen is a working search.",
-      "whatItOwesSEO": "One H1 carrying the head term. Town names as real links with real figures. JSON-LD that matches the visible figures."
+      "whyThisPageCanWin": "It publishes live inventory, per-town medians and a traced market verdict on one crawlable page, and the first screen is a working search.",
+      "whatItOwesSEO": "One H1 carrying the head term. Town names as real links with real figures. The market answer in text. JSON-LD that matches the visible figures."
     },
     "dataAvailable": [
       "live active listings with photo, price, address, beds/baths/sqft, lat/lng",
       "per-town active count and median list price",
-      "the leftover market row for the regional active count",
+      "the leftover market row for the regional active count and Chart Room figures",
       "resort and master-planned community counts",
       "Google reviews, the three brokers, the approved Bend flyover clip"
     ],
     "notThisPagesJob": [
-      "Being the market report. /housing-market owns the figure set, the chart, and the verdict.",
+      "Being the full market report. /housing-market owns the full figure set; the homepage owes the answer and a door.",
       "Being the about page. /about and /team own the brokerage story.",
       "Hosting a second contact form. Alerts is the on-page ask. Value my home lives on /sell."
     ]
   },
   "openDefects": {
-    "_": "Phone-first redo 2026-08-28.",
+    "_": "Restored to the locked v3 Stage + Field homepage after the 2026-08-28 phone-first restyle.",
     "items": [
-      "RESOLVED: hero had no search. HomeHeroSearch is on the Stage.",
-      "RESOLVED: homes were dense ledger rows. Field rows are photo-led cards.",
-      "RESOLVED: market instrument/report removed. Quiet door to /housing-market."
+      "RESOLVED: phone-first one-off Field cards and Ledger overrides removed. Barrel Field and Ledger again.",
+      "RESOLVED: overlapping rail. V3Field listFlow keeps the list in document flow; See all is the Field action.",
+      "RESOLVED: Chart Room is mid-page V3Instrument, not the first fold."
     ]
   },
-  "competitiveTarget": "Beat Zillow and Redfin on the first phone screen: a working city, community, and address search over live Central Oregon inventory, then photo-led homes a thumb can tap. Aggregators bury search behind chrome. This page puts search on the hero and keeps every published count on the leftover HUD row.",
+  "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH: live Central Oregon inventory on a v3 Field, per-town medians, and the buyer-or-seller answer with its trace. Search is the Stage action over owned Old Mill media.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
     "V3Stage #hero -- flyover, H1, HomeHeroSearch, See homes",
-    "HomeHomesField -- photo-led homes and the map, live regional count",
+    "HomeHomesField -- the houses and the map, live regional count, listFlow, See all",
     "V3Ledger #towns -- each town's active count and median list price",
-    "V3Quiet #market -- one door to /housing-market",
+    "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
     "V3Ledger #communities -- resorts and master-planned communities",
     "HomeAlertSheet -- the ask",
-    "V3Quiet #reviews -- three reviews",
+    "V3Quiet #reviews -- Google reviews",
     "AboutFaces -- the three brokers",
-    "V3Quiet #sell -- door to /sell",
+    "section #sell -- the seller ask",
     "V3Footer"
   ]
 }

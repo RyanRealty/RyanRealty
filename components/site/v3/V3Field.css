@@ -66,6 +66,13 @@
   color: var(--v3-ink);
 }
 
+.v3-field__lead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+  margin: 0 0 var(--v3-space-sm);
+}
+
 .v3-field__source {
   margin-top: var(--v3-space-md);
 }
@@ -76,8 +83,10 @@
 
 .v3-field__frame {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--v3-space-md);
+  width: 100%;
+  min-width: 0;
 }
 
 @media (min-width: 56.25rem) {
@@ -100,6 +109,16 @@
   min-width: 0;
 }
 
+/* Map is the first track. Reordering the list above the map is not this
+   pattern — that is how 390 grew a novel of cards and a leftover map. */
+.v3-field__frame > .v3-field__col:first-of-type {
+  order: 0;
+}
+
+.v3-field__frame > .v3-field__col:last-of-type {
+  order: 1;
+}
+
 /* ---------------------------------------------------------------------------
    Map frame. Holds whatever the caller passed, or the fallback plot.
    --------------------------------------------------------------------------- */
@@ -107,16 +126,28 @@
 .v3-field__map {
   position: relative;
   aspect-ratio: 4 / 3;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  contain: inline-size;
   border: 1px solid var(--v3-edge);
   border-radius: var(--v3-radius-card);
   background: var(--v3-wash);
   overflow: hidden;
 }
 
-/* A real map arrives as one element and should fill the frame it was given. */
-.v3-field__map > :only-child {
+/* A real map fills THIS tile. It must not grow the Field.
+   height: 100% on an in-flow child of an aspect-ratio box does not
+   resolve, so the Maps script reads an unbounded width and paints past
+   the gutter (390: full-bleed card, zoom and attribution clipped).
+   Absolute fill keeps the slot the same width as the list. */
+.v3-field__map:not(.v3-field__map--photos) > :only-child {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* MLS photographs as the inventory surface. Height follows the mosaic, not a
@@ -238,6 +269,9 @@
   position: relative;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .v3-field__map-frame > .v3-field__map-poster,
@@ -483,6 +517,19 @@
   padding: var(--v3-space-md);
   font-size: var(--v3-size-body-sm);
   color: var(--v3-ink-muted);
+}
+
+/* Preview Fields (homepage): the list stays in the page flow so a capped
+   set cannot paint over the next section. Callers cap the items and pass
+   action for See all. City / search Fields keep the 560px scroller. */
+.v3.v3-field--flow .v3-field__list {
+  max-height: none;
+  overflow: visible;
+}
+
+.v3-field__action {
+  display: flex;
+  margin-top: var(--v3-space-lg);
 }
 
 /* The quiet lines: what the map is, and what the set does not show. */

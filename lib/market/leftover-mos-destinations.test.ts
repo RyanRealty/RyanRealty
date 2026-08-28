@@ -31,8 +31,10 @@ describe('D21 leftover MOS destinations and leftover remainder', () => {
     }
   })
 
-  it('homepage remainder uses leftover region HUD, not pulse fill', () => {
-    expect(files.home).toMatch(/regionActive:\s*hud\.active/)
+  it('homepage does not print a leftover regional remainder', () => {
+    expect(files.home).toMatch(/leftoverHudKpis/)
+    expect(files.home).not.toMatch(/regionActive:\s*hud\.active/)
+    expect(files.home).not.toMatch(/namePulseCityRemainder/)
     expect(files.home).not.toMatch(/regionActive:\s*pulse\?\.activeCount/)
   })
 

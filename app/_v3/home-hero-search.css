@@ -1,69 +1,61 @@
-/* Homepage Stage search. Tokens only. 44px targets. */
-.home-hero-search {
+/* Homepage Stage search. Scoped under the Stage so inherited on-media cream
+   ink cannot strip the field. Same paint as the Stage on-media primary:
+   cream face, navy ink, 2px navy edge. Tokens only. 44px targets. */
+.v3.v3-stage .home-hero-search {
   position: relative;
   width: 100%;
   max-width: var(--v3-measure-text);
+  color: var(--v3-ink);
 }
 
-.home-hero-search__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.home-hero-search__row {
+.v3.v3-stage .home-hero-search__row {
   display: flex;
   align-items: stretch;
   gap: var(--v3-space-xs);
   width: 100%;
 }
 
-.home-hero-search__input {
+.v3.v3-stage .home-hero-search__input,
+.v3.v3-stage .home-hero-search__go {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: var(--v3-tap);
+  border: 2px solid var(--v3-ink);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-control);
+  box-shadow: var(--v3-media-shadow);
+}
+
+.v3.v3-stage .home-hero-search__input {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: var(--v3-tap);
   padding: 0 var(--v3-space-sm);
-  border: 2px solid var(--v3-ink);
-  border-radius: var(--v3-radius-control);
-  background: var(--v3-surface);
-  color: var(--v3-ink);
-  font-family: inherit;
-  font-size: var(--v3-size-body);
-  line-height: var(--v3-leading-control);
-  box-shadow: var(--v3-media-shadow);
 }
 
-.home-hero-search__input::placeholder {
+.v3.v3-stage .home-hero-search__input::placeholder {
   color: var(--v3-ink-muted);
+  opacity: 1;
 }
 
-.home-hero-search__go {
+.v3.v3-stage .home-hero-search__go {
   flex: 0 0 auto;
-  min-height: var(--v3-tap);
   min-width: var(--v3-tap);
   padding: 0 var(--v3-space-md);
-  border: 2px solid var(--v3-ink);
-  border-radius: var(--v3-radius-control);
-  background: var(--v3-surface);
-  color: var(--v3-ink);
-  font-family: inherit;
-  font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-medium);
-  line-height: var(--v3-leading-control);
-  box-shadow: var(--v3-media-shadow);
+  background: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
+  border-color: var(--v3-surface);
 }
 
-.home-hero-search__go:hover {
-  background: var(--v3-wash);
+.v3.v3-stage .home-hero-search__go:hover {
+  background: var(--v3-pressed);
 }
 
-.home-hero-search__panel {
+.v3.v3-stage .home-hero-search__panel {
   position: absolute;
   left: 0;
   right: 0;
