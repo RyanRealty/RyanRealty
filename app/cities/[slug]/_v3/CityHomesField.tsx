@@ -1,7 +1,7 @@
 /**
  * City inventory Field. Lives next to the page so the city route stays under
  * the 600-line floor. PUBLIC_UI.md §3: Field of this city's houses. Count is
- * a caption, never a number hero. Map and list are the same set.
+ * a caption, never a number hero. Map, list, and type chips are the same set.
  */
 import { V3Field, V3Heading, type V3FieldItem, type V3Text } from '@/components/site/v3'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
@@ -46,6 +46,7 @@ export function CityHomesField({
       <V3Field
         id="homes"
         ariaLabel={`Homes for sale in ${cityName}`}
+        typeFilter
         items={fieldItems}
         count={
           caption

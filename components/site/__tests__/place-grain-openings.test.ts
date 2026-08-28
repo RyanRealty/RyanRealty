@@ -237,6 +237,7 @@ describe('subdivision ledger', () => {
       photoSrc: 'https://img.example/h.jpg',
       lat: 44.1,
       lng: -121.3,
+      typeKey: 'house',
     }
     const [row] = toLedgerRows([item])
     expect(row?.what).toBe('12 Sunrise Loop')
@@ -263,6 +264,10 @@ describe('place grain Stage then Field', () => {
       expect(src).toMatch(/<V3Stage/)
       expect(src).not.toMatch(/V3PlacePropertyTypes/)
     }
+    const cityField = readFileSync('app/cities/[slug]/_v3/CityHomesField.tsx', 'utf8')
+    expect(cityField).toMatch(/typeFilter/)
+    expect(neighborhood).toMatch(/typeFilter/)
+    expect(subdivision).toMatch(/typeFilter/)
     expect(city).toMatch(/showHeading=\{!stagePoster\}/)
     expect(neighborhood).toMatch(/preferPlaceHeroOrNull\(\s*neighborhood\.heroImageUrl/)
     expect(subdivision).toMatch(/preferPlaceHeroOrNull\(communityHeroes\[slug\]/)

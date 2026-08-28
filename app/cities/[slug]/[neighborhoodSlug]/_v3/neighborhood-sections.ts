@@ -22,6 +22,11 @@
  */
 
 import { v3Text, type V3FieldItem, type V3QuietItem } from '@/components/site/v3'
+import {
+  classifyFieldType,
+  withFieldCats,
+  type FieldTypeKey,
+} from '@/components/site/v3/field-property-type'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
@@ -59,7 +64,7 @@ export type FieldTile = {
  * coordinates, plotted. Highest price first, capped at FIELD_ROW_LIMIT.
  */
 export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
-  const items: V3FieldItem[] = []
+  const items: Array<V3FieldItem & { typeKey: FieldTypeKey }> = []
   const sorted = [...tiles].sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
   for (const t of sorted) {
     if (items.length >= FIELD_ROW_LIMIT) break
@@ -88,6 +93,10 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
       .filter((part): part is string => Boolean(part))
       .join(' · ')
     const photo = t.photoUrl?.trim()
+    const type = classifyFieldType({
+      propertyType: t.propertyType,
+      propertySubType: t.propertySubType,
+    })
     items.push({
       id: key,
       href: listingDetailPath(
@@ -112,9 +121,10 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
       ...(meta ? { meta } : {}),
       lat: t.lat,
       lng: t.lng,
+      typeKey: type.key,
     })
   }
-  return items
+  return withFieldCats(items)
 }
 
 /* -------------------------------------------------------------------------- */

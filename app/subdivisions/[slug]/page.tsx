@@ -160,7 +160,7 @@ import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { buildSubdivisionEdges } from './_v3/subdivision-edges'
 import { platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
 import { resolveRegistryAlias, slugToTitle } from './_v3/subdivision-registry'
-import { platHomesMode, toFieldEntry, toLedgerRows, type FieldEntry } from './_v3/subdivision-rows'
+import { platFieldEntries, platHomesMode, toLedgerRows } from './_v3/subdivision-rows'
 import {
   fieldTrace,
   homesLedgerTrace,
@@ -355,11 +355,7 @@ export default async function SubdivisionPage({ params }: Props) {
   )
 
   // ── FIELD ROWS AND MAP PINS, BUILT ONCE ──────────────────────────────────
-  const plotted: FieldEntry[] = []
-  for (const tile of mapTiles) {
-    const entry = toFieldEntry(tile, videoKeys.has(tile.listingKey))
-    if (entry) plotted.push(entry)
-  }
+  const plotted = platFieldEntries(mapTiles, (key) => videoKeys.has(key))
   const mapPins = fieldMapPins(plotted)
   const fieldItems: V3FieldItem[] = plotted
   const mapPolygon = hasBoundary && boundary.polygon ? boundary.polygon : undefined
@@ -572,6 +568,7 @@ export default async function SubdivisionPage({ params }: Props) {
             <V3Field
               id="homes"
               ariaLabel={`Homes for sale in ${displayName}`}
+              typeFilter
               items={fieldItems}
               mapSlot={
                 <PlaceFieldMap pins={mapPins} boundary={mapPolygon} placeName={displayName} />

@@ -94,6 +94,7 @@ export function fieldMapPins(items: readonly V3FieldItem[]) {
     title: string
     lat: number
     lng: number
+    cat?: 0 | 1 | 2 | 3 | 4
   }> = []
   for (const item of items) {
     if (typeof item.lat !== 'number' || typeof item.lng !== 'number') continue
@@ -104,6 +105,7 @@ export function fieldMapPins(items: readonly V3FieldItem[]) {
       title: item.title,
       lat: item.lat,
       lng: item.lng,
+      ...(item.cat != null ? { cat: item.cat } : {}),
     })
   }
   return pins

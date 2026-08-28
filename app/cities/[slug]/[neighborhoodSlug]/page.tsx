@@ -590,6 +590,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             <V3Field
               id="homes"
               ariaLabel={`Homes for sale in ${neighborhood.name}`}
+              typeFilter
               items={fieldItems}
               count={
                 fieldCaption
@@ -678,6 +679,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             <V3Field
               id="homes"
               ariaLabel={`Homes for sale in ${neighborhood.name}`}
+              typeFilter
               items={fieldItems}
               count={
                 fieldCaption

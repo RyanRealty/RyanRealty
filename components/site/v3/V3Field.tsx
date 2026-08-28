@@ -40,11 +40,16 @@
  *    rounding and currency rules stay in lib/format and the figure a visitor
  *    reads is the figure its source trace covers.
  */
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
+import { V3_ROOT_CLASS, V3Button, V3SourceLine } from './atoms'
+import {
+  filterFieldByTypes,
+  toggleFieldType,
+  typesInField,
+} from './field-property-type'
 import './tokens.css'
 import './V3Field.css'
 
@@ -77,6 +82,16 @@ export type V3FieldItem = {
    * into the listing) instead of the relative plot.
    */
   photoSrc?: string
+  /**
+   * Optional type mark, 0–4. Reads `--v3-cat-N` on the pin so a mixed set
+   * stays navy, just at different alphas. Omit it and the pin is full navy.
+   */
+  cat?: 0 | 1 | 2 | 3 | 4
+  /**
+   * Property-type key for the Field multi-select (`house`, `condo`, …).
+   * Required when `typeFilter` is on. Unknown keys never earn a chip.
+   */
+  typeKey?: string
 }
 
 /**
@@ -134,8 +149,35 @@ export type V3FieldProps = {
    * unlabeled pseudo-map.
    */
   mapNote?: string
+  /**
+   * Optional lead above the frame (homepage town filters). Renders after the
+   * count so chips cannot sit on the caption. Tokens only — the caller supplies
+   * the controls. Place inventory passes `typeFilter` instead of inventing a
+   * second chip skin.
+   */
+  lead?: ReactNode
+  /**
+   * Types that exist in `items` become a multi-select on this Field. Empty
+   * selection is every type. The map slot reads the same filtered set through
+   * the binding. Homepage leaves this off and keeps its own lead chips.
+   */
+  typeFilter?: boolean
   /** One line under the list, for whatever the set does not show. */
   footNote?: string
+  /**
+   * Keep the list in document flow at every width. The barrel default at 900
+   * makes the list its own 560px scroller beside a sticky map. A preview Field
+   * (homepage) caps the set, stays in flow, and points See all at the rest.
+   */
+  listFlow?: boolean
+  /**
+   * The door after a capped set. Same slot Ledger already has: one ghost
+   * control, earned by the rows above it.
+   */
+  action?: {
+    label: string
+    href: string
+  }
   /** Shown when `items` is empty. Say the reason, not just the absence. */
   emptyMessage?: string
   /** Controlled binding. Pass with `onActiveChange` when the map owns the state. */
@@ -274,7 +316,11 @@ export function V3Field({
   children,
   count,
   mapNote,
+  lead,
+  typeFilter = false,
   footNote,
+  listFlow = false,
+  action,
   emptyMessage = 'No listings in this view.',
   activeId,
   onActiveChange,
@@ -282,6 +328,7 @@ export function V3Field({
   className,
 }: V3FieldProps) {
   const [internalActive, setInternalActive] = useState<string | null>(null)
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const isControlled = activeId === undefined ? false : true
   const active = isControlled ? activeId ?? null : internalActive
 
@@ -293,10 +340,25 @@ export function V3Field({
     [isControlled, onActiveChange],
   )
 
-  const binding = useMemo<V3FieldBinding>(
-    () => ({ activeId: active, setActiveId: setActive, items }),
-    [active, setActive, items],
+  const types = useMemo(
+    () => (typeFilter ? typesInField(items) : []),
+    [typeFilter, items],
   )
+  const visible = useMemo(
+    () => (typeFilter ? filterFieldByTypes(items, selectedTypes) : items),
+    [typeFilter, items, selectedTypes],
+  )
+
+  const binding = useMemo<V3FieldBinding>(
+    () => ({ activeId: active, setActiveId: setActive, items: visible }),
+    [active, setActive, visible],
+  )
+
+  useEffect(() => {
+    if (active != null && visible.every((item) => item.id !== active)) {
+      setActive(null)
+    }
+  }, [active, visible, setActive])
 
   const slot = mapSlot ?? children
   const mapContent = typeof slot === 'function' ? slot(binding) : slot
@@ -305,7 +367,7 @@ export function V3Field({
       ? false
       : true
 
-  const photoItems = useMemo(() => items.filter(hasListingPhoto), [items])
+  const photoItems = useMemo(() => visible.filter(hasListingPhoto), [visible])
   const usePhotoSurface =
     hasSlot === false && photoItems.length >= PHOTO_SURFACE_MIN
   const mosaic = usePhotoSurface ? photoItems.slice(0, PHOTO_SURFACE_MAX) : []
@@ -314,8 +376,8 @@ export function V3Field({
     () =>
       hasSlot || usePhotoSurface
         ? { pins: [] as PlottedPin[], missing: 0 }
-        : plotItems(items),
-    [hasSlot, usePhotoSurface, items],
+        : plotItems(visible),
+    [hasSlot, usePhotoSurface, visible],
   )
   // The disclosure is bound to the pins, not to the caller: if this frame drew
   // a pseudo-map, the line that says it is not a map renders with it. No pins
@@ -335,14 +397,50 @@ export function V3Field({
           V3_ROOT_CLASS,
           'v3-field',
           usePhotoSurface && 'v3-field--photos',
+          listFlow && 'v3-field--flow',
           className,
         )}
       >
         {count ? (
           <p className="v3-field__count">
-            <span className="v3-field__count-value">{count.value}</span>
+            <span className="v3-field__count-value">
+              {typeFilter ? visible.length.toLocaleString('en-US') : count.value}
+            </span>
             {` ${count.label}`}
           </p>
+        ) : null}
+
+        {types.length > 1 || lead ? (
+          <div className="v3-field__lead">
+            {types.length > 1 ? (
+              <nav aria-label="Property types">
+                {types.map((type) => {
+                  const on = selectedTypes.includes(type.key)
+                  return (
+                    <button
+                      key={type.key}
+                      type="button"
+                      className={cn('v3-field__chip', on && 'is-on')}
+                      aria-pressed={on}
+                      onClick={() =>
+                        setSelectedTypes((prev) => toggleFieldType(prev, type.key))
+                      }
+                    >
+                      <span
+                        className={cn(
+                          'v3-field__swatch',
+                          `v3-field__swatch--cat-${type.cat}`,
+                        )}
+                        aria-hidden="true"
+                      />
+                      {type.label}
+                    </button>
+                  )
+                })}
+              </nav>
+            ) : null}
+            {lead}
+          </div>
         ) : null}
 
         <div
@@ -414,6 +512,7 @@ export function V3Field({
                       key={item.id}
                       className={cn(
                         'v3-field__pin',
+                        item.cat != null && `v3-field__pin--cat-${item.cat}`,
                         active === item.id && 'is-active',
                       )}
                       style={{ left: `${left}%`, top: `${top}%` }}
@@ -443,13 +542,14 @@ export function V3Field({
           ) : (
             <div className="v3-field__col">
               <ul className="v3-field__list" role="list">
-                {items.map((item) => (
+                {visible.map((item) => (
                   <li key={item.id} className="v3-field__item">
                     <Link
                       href={item.href}
                       className={cn(
                         'v3-field__row',
                         hasListingPhoto(item) && 'v3-field__row--has-photo',
+                        item.cat != null && `v3-field__row--cat-${item.cat}`,
                         active === item.id && 'is-active',
                       )}
                       onMouseEnter={() => setActive(item.id)}
@@ -476,7 +576,7 @@ export function V3Field({
                     </Link>
                   </li>
                 ))}
-                {items.length === 0 ? (
+                {visible.length === 0 ? (
                   <li className="v3-field__empty">{emptyMessage}</li>
                 ) : null}
               </ul>
@@ -491,6 +591,14 @@ export function V3Field({
             updatedAt={count.updatedAt}
             className="v3-field__source"
           />
+        ) : null}
+
+        {action ? (
+          <div className="v3-field__action">
+            <V3Button href={action.href} variant="ghost">
+              {action.label}
+            </V3Button>
+          </div>
         ) : null}
       </section>
     </V3FieldBindingContext.Provider>

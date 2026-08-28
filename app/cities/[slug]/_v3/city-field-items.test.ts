@@ -50,6 +50,15 @@ describe('cityFieldItems', () => {
     expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
   })
 
+  it('stamps a type key and navy cat so the Field can filter and pin', () => {
+    const items = cityFieldItems([
+      tile({ listingKey: 'house', propertySubType: 'Single Family Residence' }),
+      tile({ listingKey: 'condo', propertySubType: 'Condominium', streetNumber: '200' }),
+    ])
+    expect(items.map((item) => item.typeKey)).toEqual(['house', 'condo'])
+    expect(items.map((item) => item.cat)).toEqual([0, 1])
+  })
+
 })
 
 describe('cityFieldCaption', () => {
