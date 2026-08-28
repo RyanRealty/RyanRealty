@@ -2,7 +2,7 @@
  * /open-houses - this week's open houses, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Homes curated mode.
- * Rhythm: Breadcrumb, Field opener (H1 + count above the photographs),
+ * Rhythm: Breadcrumb, Field opener (H1 above the photographs),
  * Instrument level 2 (median + buyer ask), Sheet, Quiet, Footer.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through

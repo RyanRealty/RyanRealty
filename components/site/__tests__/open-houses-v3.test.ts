@@ -175,10 +175,9 @@ describe('openHouseFieldItems', () => {
     expect(JSON.stringify(items)).not.toContain('\u2013')
   })
 
-  it('puts day and time on the photograph badge and carries the listing key', () => {
+  it('puts day and time on the Field door badge', () => {
     const items = openHouseFieldItems([house()])
     expect(items[0].badge).toContain('2pm-4pm')
-    expect(items[0].listingKey).toBe('L1')
   })
 
   it('passes a live listing photograph onto the Field row', () => {
@@ -211,11 +210,16 @@ describe('thisWeekendIso', () => {
 })
 
 describe('open-houses page contract', () => {
-  it('puts the H1 on the board above the Field and keeps a buyer ask', () => {
+  it('puts the H1 on the Field above the photographs and keeps a buyer ask', () => {
     const src = readFileSync(join(process.cwd(), 'app/open-houses/page.tsx'), 'utf8')
+    const board = readFileSync(join(process.cwd(), 'app/open-houses/_v3/OpenHousesBoard.tsx'), 'utf8')
     expect(src.indexOf('<OpenHousesBoard')).toBeLessThan(src.indexOf('<V3Instrument'))
     expect(src).toMatch(/See homes for sale/)
     expect(src).not.toMatch(/Value my home/)
     expect(src).toMatch(/heading="Open houses in Central Oregon"/)
+    expect(board).toMatch(/v3-field-place-name/)
+    expect(board).toMatch(/<V3Field/)
+    expect(board).not.toMatch(/oh-board/)
+    expect(board).not.toMatch(/open-houses-board\.css/)
   })
 })

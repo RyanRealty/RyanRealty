@@ -44,8 +44,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
-import { V3SaveHeart } from './V3SaveHeart.client'
+import { V3_ROOT_CLASS, V3Button, V3SourceLine } from './atoms'
 import './tokens.css'
 import './V3Field.css'
 
@@ -79,14 +78,10 @@ export type V3FieldItem = {
    */
   photoSrc?: string
   /**
-   * Preformatted badge on the photograph (day + hours on an open-house card).
-   * Absent means the card has no event time to name.
+   * Preformatted day + hours on the door (open-house row). Absent means
+   * the row has no event time to name.
    */
   badge?: string
-  /** Canonical listing key, when the row can be saved. */
-  listingKey?: string
-  /** Whether this listing is already in the visitor's saved homes. */
-  saved?: boolean
 }
 
 /**
@@ -154,6 +149,11 @@ export type V3FieldProps = {
    * size so the count on screen matches the photographs.
    */
   photoMax?: number
+  /**
+   * Ghost control under the photographs when the caller is paging the set.
+   * Lives on Field so a page does not invent a second skin to tell the truth.
+   */
+  more?: { label: string; onClick: () => void }
   /** Controlled binding. Pass with `onActiveChange` when the map owns the state. */
   activeId?: string | null
   /** Fires on every change, controlled or not. */
@@ -293,6 +293,7 @@ export function V3Field({
   footNote,
   emptyMessage = 'No listings in this view.',
   photoMax = PHOTO_SURFACE_MAX,
+  more,
   activeId,
   onActiveChange,
   id,
@@ -384,56 +385,46 @@ export function V3Field({
               ) : usePhotoSurface ? (
                 <div className="v3-field__photos">
                   {mosaic.map((item, index) => (
-                    <div
+                    <Link
                       key={item.id}
+                      href={item.href}
                       className={cn(
-                        'v3-field__photo-wrap',
-                        index === 0 && 'v3-field__photo-wrap--lead',
+                        'v3-field__photo',
+                        index === 0 && 'v3-field__photo--lead',
+                        active === item.id && 'is-active',
                       )}
+                      aria-label={
+                        [item.badge, item.priceLabel, item.meta, item.title]
+                          .filter(Boolean)
+                          .join(', ')
+                      }
+                      onMouseEnter={() => setActive(item.id)}
+                      onFocus={() => setActive(item.id)}
+                      onBlur={() => setActive(null)}
                     >
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          'v3-field__photo',
-                          index === 0 && 'v3-field__photo--lead',
-                          active === item.id && 'is-active',
-                        )}
-                        aria-label={
-                          [item.badge, item.priceLabel, item.meta, item.title]
-                            .filter(Boolean)
-                            .join(', ')
-                        }
-                        onMouseEnter={() => setActive(item.id)}
-                        onFocus={() => setActive(item.id)}
-                        onBlur={() => setActive(null)}
-                      >
-                        <img
-                          src={item.photoSrc}
-                          alt=""
-                          width={index === 0 ? 1280 : 640}
-                          height={index === 0 ? 720 : 400}
-                          loading={index < 3 ? 'eager' : 'lazy'}
-                          fetchPriority={index < 3 ? 'high' : 'auto'}
-                        />
-                        {item.badge ? (
-                          <span className="v3-field__badge">{item.badge}</span>
-                        ) : null}
-                        <span
-                          className={cn(
-                            index === 0 ? 'v3-field__lead-cap' : 'v3-field__photo-cap',
-                          )}
-                        >
-                          <span className="v3-field__photo-price">{item.priceLabel}</span>
-                          {item.meta ? (
-                            <span className="v3-field__photo-meta">{item.meta}</span>
-                          ) : null}
-                          <span className="v3-field__photo-title">{item.title}</span>
-                        </span>
-                      </Link>
-                      {item.listingKey ? (
-                        <V3SaveHeart listingKey={item.listingKey} saved={item.saved} />
+                      <img
+                        src={item.photoSrc}
+                        alt=""
+                        width={index === 0 ? 1280 : 640}
+                        height={index === 0 ? 720 : 400}
+                        loading={index < 3 ? 'eager' : 'lazy'}
+                        fetchPriority={index < 3 ? 'high' : 'auto'}
+                      />
+                      {item.badge ? (
+                        <span className="v3-field__badge">{item.badge}</span>
                       ) : null}
-                    </div>
+                      <span
+                        className={cn(
+                          index === 0 ? 'v3-field__lead-cap' : 'v3-field__photo-cap',
+                        )}
+                      >
+                        <span className="v3-field__photo-price">{item.priceLabel}</span>
+                        {item.meta ? (
+                          <span className="v3-field__photo-meta">{item.meta}</span>
+                        ) : null}
+                        <span className="v3-field__photo-title">{item.title}</span>
+                      </span>
+                    </Link>
                   ))}
                 </div>
               ) : (
@@ -564,6 +555,12 @@ export function V3Field({
             </div>
           )}
         </div>
+
+        {more ? (
+          <V3Button variant="ghost" onClick={more.onClick}>
+            {more.label}
+          </V3Button>
+        ) : null}
 
         {count ? (
           <V3SourceLine

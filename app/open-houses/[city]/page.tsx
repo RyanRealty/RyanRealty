@@ -202,7 +202,6 @@ export default async function OpenHousesCityPage({
         <OpenHousesBoard
           heading={`Open houses in ${cityName}`}
           items={fieldItems}
-          citySlug={citySlug}
           todayIso={todayIso}
           dateFrom={dateFrom}
           dateTo={dateTo}
