@@ -407,27 +407,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
     null
   const ctaBroker = listingAgent ?? matt
 
-  // The sticky card shows ONE broker who may not be the person a given review
-  // names, so the social-proof quote must be broker-agnostic. Drop any review
-  // that names a broker (first/last name), keeping the brokerage count + average
-  // intact. "ryan" is excluded from the tokens — it's the brokerage name, not a
-  // person — and "matt" is added for the Matthew short form.
-  const brokerNameTokens = new Set<string>(['matt'])
-  for (const b of brokers) {
-    for (const part of b.fullName.split(/\s+/)) {
-      const t = part.toLowerCase().replace(/[^a-z]/g, '')
-      if (t.length >= 4 && t !== 'ryan') brokerNameTokens.add(t)
-    }
-  }
-  const genericReviews = reviews
-    ? {
-        ...reviews,
-        reviews: reviews.reviews.filter(
-          (r) => ![...brokerNameTokens].some((tok) => new RegExp(`\\b${tok}\\b`).test(r.text.toLowerCase())),
-        ),
-      }
-    : reviews
-
   const street = listingMlsStreetLine(listing)
   const cityHref = listing.citySlug ? `/cities/${listing.citySlug}` : null
   const listingHref = listingDetailPath(
@@ -476,6 +455,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
       city={listing.city}
       listNumber={listing.listNumber}
       lat={listing.lat} lng={listing.lng}
+      listingKey={listing.listingKey}
+      onSave={saveListingFromStrip}
+      initialSaved={initialSaved}
     />
   )
 
@@ -620,7 +602,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       defaultBroker={ctaBroker}
       brokers={brokers}
       listingKey={contactKey}
-      reviews={genericReviews}
+      reviews={reviews}
       lockToDefault={listingAgent != null}
     />
   ) : null

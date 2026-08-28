@@ -10,11 +10,13 @@ import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
 import { Button } from '@/components/ui/button'
 import { buildListingHeroStaticMapUrl } from '@/lib/listing-hero-static-map'
 import {
-  publishListingHeroCompactPrice,
+  publishListingHeroPrice,
   publishListingHeroKeyStats,
 } from '@/lib/listing/publish-listing-hero-stats'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishListingHeroUnmute, publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
+import { redirectToLoginForSave } from '@/lib/pending-save'
+import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
 
@@ -72,6 +74,9 @@ type Props = {
   /** Listing coordinates — enables the bottom-left map thumb + expand toggle. */
   lat?: number | null
   lng?: number | null
+  listingKey?: string
+  onSave?: (listingKey: string) => Promise<{ saved: boolean; needsAuth?: boolean }>
+  initialSaved?: boolean
   className?: string
 }
 
@@ -123,14 +128,28 @@ export function ListingHero({
   listNumber,
   lat = null,
   lng = null,
+  listingKey,
+  onSave,
+  initialSaved = false,
   className,
 }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [isMuted, setIsMuted] = useState(true)
   const [isPaused, setIsPaused] = useState(false)
   const [mapOpen, setMapOpen] = useState(false)
+  const [photoIndex, setPhotoIndex] = useState(0)
+  const [preferPhoto, setPreferPhoto] = useState(false)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>(
+    initialSaved ? 'saved' : 'idle',
+  )
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
+
+  useResumePendingSave({
+    listingKey: listingKey ?? '',
+    alreadySaved: saveState === 'saved',
+    onSaved: () => setSaveState('saved'),
+  })
 
   const hasCoords =
     lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
@@ -187,8 +206,43 @@ export function ListingHero({
     }
   }
 
-  const compactPrice = publishListingHeroCompactPrice(price)
+  const heroPrice = publishListingHeroPrice(price)
   const keyStats = publishListingHeroKeyStats({ beds, baths, sqft, acres })
+  const showVideo = hasVideo && preferPhoto === false
+  const activePhoto = photos[photoIndex] ?? photos[0]
+  const photoOrdinal = total > 0 ? photoIndex + 1 : 0
+
+  function showPhoto(index: number) {
+    if (total === 0) return
+    const next = ((index % total) + total) % total
+    setPhotoIndex(next)
+    setPreferPhoto(true)
+  }
+
+  function stepPhoto(delta: number) {
+    if (hasVideo && preferPhoto === false) {
+      setPreferPhoto(true)
+      setPhotoIndex(delta > 0 ? 0 : Math.max(total - 1, 0))
+      return
+    }
+    showPhoto(photoIndex + delta)
+  }
+
+  async function handleSave() {
+    if (onSave == null || listingKey == null || saveState === 'saving') return
+    setSaveState('saving')
+    try {
+      const res = await onSave(listingKey)
+      if (res.needsAuth) {
+        redirectToLoginForSave(listingKey)
+        setSaveState('idle')
+        return
+      }
+      setSaveState(res.saved ? 'saved' : 'idle')
+    } catch {
+      setSaveState('idle')
+    }
+  }
   const shareKind = publishListingShareKind({
     propertySubType,
     subdivisionName,
@@ -213,7 +267,7 @@ export function ListingHero({
         }}
       >
         {/* Media layer — video or photo, full-bleed object-cover */}
-        {!mapOpen && hasVideo && heroVideo ? (
+        {!mapOpen && showVideo && heroVideo ? (
           <VideoLayer
             video={heroVideo}
             posterUrl={photos[0]?.url}
@@ -222,16 +276,16 @@ export function ListingHero({
             onTap={toggleMute}
           />
         ) : null}
-        {!mapOpen && !hasVideo && photos[0] ? (
+        {!mapOpen && showVideo === false && activePhoto ? (
           <button
             type="button"
-            onClick={() => setOpenIndex(0)}
-            aria-label={`Open photo 1 of ${total}`}
+            onClick={() => setOpenIndex(photoIndex)}
+            aria-label={`Open photo ${photoOrdinal} of ${total}`}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, padding: 0, background: 'none', cursor: 'zoom-in' }}
           >
             <Image
-              src={photos[0].url}
-              alt={photos[0].caption ?? `${altBase} 1 of ${total}`}
+              src={activePhoto.url}
+              alt={activePhoto.caption ?? `${altBase} ${photoOrdinal} of ${total}`}
               fill
               sizes="100vw"
               priority
@@ -312,7 +366,7 @@ export function ListingHero({
               paddingTop: '12px',
             }}
           >
-            {compactPrice ? (
+            {heroPrice ? (
               <span
                 style={{
                   fontFamily: 'var(--font-amboqia-safe, serif)',
@@ -324,7 +378,7 @@ export function ListingHero({
                   overflow: 'visible',
                 }}
               >
-                {compactPrice}
+                {heroPrice}
               </span>
             ) : null}
             {shareKind ? (
@@ -382,10 +436,38 @@ export function ListingHero({
         </div>
         ) : null}
 
+        {!mapOpen && onSave && listingKey ? (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saveState === 'saving'}
+            aria-pressed={saveState === 'saved'}
+            aria-label={saveState === 'saved' ? `Remove ${addressLine || 'this home'} from your saved homes` : `Save ${addressLine || 'this home'} to your saved homes`}
+            className="listing-hero-save"
+          >
+            <HeartIcon filled={saveState === 'saved'} />
+          </button>
+        ) : null}
+
+        {!mapOpen && total > 1 ? (
+          <>
+            <button type="button" className="listing-hero-arrow listing-hero-arrow-prev" onClick={() => stepPhoto(-1)} aria-label="Previous photo">
+              <ChevronIcon dir="prev" />
+            </button>
+            <button type="button" className="listing-hero-arrow listing-hero-arrow-next" onClick={() => stepPhoto(1)} aria-label="Next photo">
+              <ChevronIcon dir="next" />
+            </button>
+            <div className="listing-hero-count" aria-live="polite">
+              {photoOrdinal} / {total}
+            </div>
+          </>
+        ) : null}
+
         {/* Video mute + pause. Parked top-right of the media so UNMUTE never
             sits on the address / price / beds-baths-sqft row (Look 2026-08-13). */}
         {!mapOpen && canUnmute ? (
           <div
+            className="listing-hero-video-controls"
             style={{
               position: 'absolute',
               top: 'clamp(12px,2vw,20px)',
@@ -516,8 +598,13 @@ export function ListingHero({
           photos={photos}
           altBase={altBase}
           total={total}
-          onOpen={setOpenIndex}
+          onOpen={(i) => {
+            setPhotoIndex(i)
+            setPreferPhoto(true)
+            setOpenIndex(i)
+          }}
           hasVideo={hasVideo}
+          activeIndex={photoIndex}
         />
       ) : null}
 
@@ -670,43 +757,39 @@ function PhotoStrip({
   total,
   onOpen,
   hasVideo,
+  activeIndex,
 }: {
   photos: ReadonlyArray<ListingPhoto>
   altBase: string
   total: number
   onOpen: (i: number) => void
   hasVideo: boolean
+  activeIndex: number
 }) {
-  // Show up to 6 thumbnails (or 5 when no video, leaving room for "View all")
+  // Desktop: up to 6 thumbs. Phone: first 3 stay visible via CSS so each
+  // cell is larger than the old 48x34 strip.
   const maxThumb = hasVideo ? 6 : 5
   const visible = photos.slice(0, maxThumb)
-  const remaining = Math.max(0, total - visible.length)
+  const desktopRemaining = Math.max(0, total - visible.length)
+  const mobileRemaining = Math.max(0, total - Math.min(3, visible.length))
+  const showMore = desktopRemaining > 0 || mobileRemaining > 0
 
   return (
     <div
+      className="listing-hero-strip"
       style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${visible.length + (remaining > 0 ? 1 : 0)}, 1fr)`,
-        gap: 3,
-        background: 'var(--v3-navy)',
-        borderTop: '3px solid var(--v3-navy)',
+        ['--strip-cols' as string]: visible.length + (desktopRemaining > 0 ? 1 : 0),
       }}
     >
       {visible.map((p, i) => (
         <button
           key={`${i}-${p.url}`}
           type="button"
+          data-strip-i={i}
+          data-active={i === activeIndex ? 'true' : 'false'}
           onClick={() => onOpen(i)}
           aria-label={`Open photo ${i + 1} of ${total}`}
-          style={{
-            position: 'relative',
-            aspectRatio: '4/3',
-            overflow: 'hidden',
-            border: 0,
-            padding: 0,
-            background: 'var(--v3-navy)',
-            cursor: 'zoom-in',
-          }}
+          className="listing-hero-strip-cell"
         >
           <Image
             src={p.url}
@@ -717,46 +800,24 @@ function PhotoStrip({
             // left the cells as solid navy voids on first paint. Load all visible
             // thumbnails eagerly so the strip renders as photos, never a gap.
             loading="eager"
-            priority={i === 0 && !hasVideo}
+            priority={i === 0 && hasVideo === false}
             className="object-cover transition-transform duration-500 hover:scale-[1.03]"
             style={{ objectFit: 'cover' }}
           />
         </button>
       ))}
 
-      {/* "View all" cell — KB-styled */}
-      {remaining > 0 ? (
+      {showMore ? (
         <button
           type="button"
           onClick={() => onOpen(0)}
           aria-label={`View all ${total} photos`}
-          style={{
-            position: 'relative',
-            aspectRatio: '4/3',
-            background: 'var(--v3-navy)',
-            border: 0,
-            padding: 0,
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            color: 'var(--v3-cream)',
-          }}
+          className="listing-hero-strip-more"
+          data-desktop-remaining={desktopRemaining > 0 ? 'true' : 'false'}
         >
           <ViewAllIcon size={22} />
-          <span
-            style={{
-              fontSize: '0.66rem',
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'color-mix(in srgb, var(--v3-cream) 78%, transparent)',
-            }}
-          >
-            +{remaining} more
-          </span>
+          <span className="listing-hero-strip-more-lg">+{desktopRemaining} more</span>
+          <span className="listing-hero-strip-more-sm">+{mobileRemaining} more</span>
         </button>
       ) : null}
     </div>
@@ -809,6 +870,23 @@ function PauseIcon() {
     <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <rect x="5" y="4" width="5" height="16" />
       <rect x="14" y="4" width="5" height="16" />
+    </svg>
+  )
+}
+
+function HeartIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width={20} height={20} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
+    </svg>
+  )
+}
+
+function ChevronIcon({ dir }: { dir: 'prev' | 'next' }) {
+  const d = dir === 'prev' ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'
+  return (
+    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d={d} />
     </svg>
   )
 }

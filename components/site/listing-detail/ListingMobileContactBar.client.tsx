@@ -40,7 +40,7 @@ export default function ListingMobileContactBar({
   const tourHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
 
   return (
-    <div className="listing-mobile-cta" data-shown={shown ? 'true' : 'false'} aria-hidden={!shown}>
+    <div className="listing-mobile-cta" data-listing-broker={broker.slug} data-shown={shown ? 'true' : 'false'} aria-hidden={!shown}>
       <div className="listing-mobile-cta-inner">
         <Image
           src={broker.headshotPng}

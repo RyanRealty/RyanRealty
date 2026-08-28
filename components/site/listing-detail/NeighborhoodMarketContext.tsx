@@ -9,7 +9,7 @@ import { slugify } from '@/lib/slug'
 import { parseCommunitySlug } from '@/lib/community-slug'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
-import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
+import { toListingPublicCoreChartSeries } from '@/lib/listing/publish-listing-chart-source'
 import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
 import {
   EMPTY_PUBLIC_PACE,
@@ -218,7 +218,7 @@ export async function NeighborhoodMarketContext({
 
         {coreCharts ? (
           <div className="mt-6 mb-2">
-            <MarketCoreCharts data={toPublicCoreChartSeries(coreCharts)} scopeLabel={chartScopeLabel} />
+            <MarketCoreCharts data={toListingPublicCoreChartSeries(coreCharts)} scopeLabel={chartScopeLabel} />
           </div>
         ) : null}
 

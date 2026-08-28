@@ -60,6 +60,7 @@ export function TextMattCTA({
   return (
     <div
       className={className ?? undefined}
+      data-listing-broker={broker.slug}
       style={{
         border: '3px solid var(--navy)',
         background: 'var(--cream)',
