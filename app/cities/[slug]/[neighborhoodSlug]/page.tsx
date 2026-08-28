@@ -3,7 +3,8 @@
  * components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 Neighborhood.
- * Instrument (this neighborhood's pace) then Field of its houses. Daily life
+ * Stage (owned place photo) then Field of its houses. No owned asset ->
+ * Instrument then Field. Daily life
  * (schools, parks) on the first path - not amenities or membership. Section
  * order is the parity contract:
  * design_system/ryan-realty/ui_kits/neighborhood/parity.json.
@@ -71,7 +72,7 @@ import {
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
-import { communityImage, preferPlaceHero } from '@/lib/geo-images'
+import { communityImage, preferPlaceHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { buildYearSeries } from '@/lib/kb/year-series'
 // Row-to-prop shaping shared with the city + community place pages - one copy,
 // so a fix cannot land on one of the three and drift on the others.
@@ -103,10 +104,9 @@ import {
   V3Ledger,
   V3PlaceCharacter,
   V3PlaceDocuments,
-  V3PlacePropertyTypes,
   V3Quiet,
+  V3Stage,
   V3SectionTracker,
-  V3SourceLine,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -228,7 +228,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     peerNeighborhoods,
     inventoryRead,
     publicPace,
-    publicSegments,
+    _publicSegments,
     leftoverCityMonthly,
     leftoverNeighborhoodMonthly,
     publicMix,
@@ -329,20 +329,17 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   const boundaryMapData = boundaryRead.value
   const inventory = inventoryRead
-  // Counted set = SFR + PUBLIC_ACTIVE inside the recorded boundary. Same
-  // payload as /neighborhoods and /cities/bend tiles. Do not fall back to pin
-  // length, pulse.active_count, or listing_tile_mv tags - those are different
-  // populations (Awbrey Butte 52 / 62 / 63, 2026-08-16). A measured empty
-  // (inventory present, 0 keys) must not revive pin-only homes.
+  // Field keys prefer in-boundary pins (A/B/C in the polygon) so the type
+  // chips can name what this place actually holds. Leftover HUD still reads
+  // the SFR inventory set. A pin-only home is listed here, not counted there.
   const inventoryOk = inventory != null
   const countedKeys = inventoryOk ? inventory.listingKeys : []
-  const boundaryListingKeys = inventoryOk
-    ? countedKeys
-    : boundaryMapData.pins.map((p) => p.listingKey)
+  const pinKeys = boundaryMapData.pins.map((p) => p.listingKey).filter((k) => Boolean(k?.trim()))
+  const boundaryListingKeys = [...new Set(pinKeys.length > 0 ? pinKeys : countedKeys)]
   const listingTiles =
     boundaryListingKeys.length > 0
       ? await withTimeoutFallback(
-          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 250 }),
+          getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', limit: 250 }),
           [],
           4500,
           'nbh:tiles',
@@ -456,6 +453,15 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const fieldPins = fieldMapPins(fieldItems)
   const fieldPoster = fieldItems.find((item) => item.photoSrc)?.photoSrc
   const fieldMissing = fieldItems.length - fieldPins.length
+  const stagePoster = preferPlaceHeroOrNull(
+    neighborhood.heroImageUrl,
+    communityImage(neighborhoodSlug),
+  )
+  const nbhTrail = [
+    { label: 'Home', href: '/' },
+    { label: cityName, href: `/cities/${citySlug}` },
+    { label: neighborhood.name },
+  ]
 
   /* ── The ledgers ───────────────────────────────────────────────────────── */
 
@@ -566,68 +572,145 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={neighborhoodSchemas} />
 
-        <V3Breadcrumb
-          trail={[
-            { label: 'Home', href: '/' },
-            { label: cityName, href: `/cities/${citySlug}` },
-            { label: neighborhood.name },
-          ]}
-        />
-
-        {/* Pattern 1, Instrument - this neighborhood's pace, the locked
-            opening. The H1 carries the money head term; the verdict sentence
-            is the note. */}
-        {firstMarketFigure ? (
-          <V3Instrument
-            id="market"
-            level={1}
-            eyebrow={v3Text(`${neighborhood.name} · ${cityName}`)}
-            headline={v3Text(`${neighborhood.name} homes for sale`)}
-            note={verdictSentence ? v3Text(verdictSentence) : undefined}
-            figures={[firstMarketFigure, ...restMarketFigures]}
-            source={v3Text(neighborhoodMarketTrace(neighborhood.name, mosLabel != null))}
-            chart={medianChart}
-            cards={marketCards}
-            updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
-            action={{
-              label: v3Text(`See every ${neighborhood.name} home for sale`),
-              href: browseHref,
-              variant: 'primary',
-            }}
-          />
+        {stagePoster ? (
+          <>
+            <V3Breadcrumb tone="on-media" trail={nbhTrail} />
+            <V3Stage
+              id="place"
+              headingLevel={1}
+              height="tall"
+              eyebrow={`${neighborhood.name} · ${cityName}`}
+              headline={`${neighborhood.name} homes for sale`}
+              posterSrc={stagePoster}
+              action={{
+                label: fieldItems[0]?.title || `See ${neighborhood.name} houses`,
+                href: fieldItems[0]?.href || '#homes',
+              }}
+            />
+            <V3Field
+              id="homes"
+              ariaLabel={`Homes for sale in ${neighborhood.name}`}
+              typeFilter
+              items={fieldItems}
+              count={
+                fieldCaption
+                  ? {
+                      value: fieldItems.length.toLocaleString('en-US'),
+                      label: fieldCaption,
+                      source: neighborhoodFieldTrace(neighborhood.name),
+                    }
+                  : undefined
+              }
+              mapSlot={
+                fieldItems.length > 0 ? (
+                  <PlaceFieldMap
+                    pins={fieldPins}
+                    placeName={neighborhood.name}
+                    posterSrc={fieldPoster}
+                    boundary={boundaryMapData.polygon}
+                  />
+                ) : undefined
+              }
+              footNote={
+                fieldMissing > 0 && fieldPins.length > 0
+                  ? fieldMissing === 1
+                    ? '1 of these carries no coordinates, so it is listed but not plotted.'
+                    : `${fieldMissing.toLocaleString('en-US')} of these carry no coordinates, so they are listed but not plotted.`
+                  : undefined
+              }
+              emptyMessage={nbhFieldEmptyMessage(neighborhood.name, inventoryOk)}
+            />
+            {firstMarketFigure ? (
+              <V3Instrument
+                id="market"
+                level={2}
+                eyebrow={v3Text(`${neighborhood.name} · ${cityName}`)}
+                headline={v3Text(`${neighborhood.name} homes for sale`)}
+                note={verdictSentence ? v3Text(verdictSentence) : undefined}
+                figures={[firstMarketFigure, ...restMarketFigures]}
+                source={v3Text(neighborhoodMarketTrace(neighborhood.name, mosLabel != null))}
+                chart={medianChart}
+                cards={marketCards}
+                updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
+                action={{
+                  label: v3Text(`See every ${neighborhood.name} home for sale`),
+                  href: browseHref,
+                  variant: 'primary',
+                }}
+              />
+            ) : (
+              <V3Quiet
+                id="market"
+                heading={`${neighborhood.name} homes for sale`}
+                headingLevel={2}
+                items={neighborhoodMarketAbsenceItems(neighborhood.name, fieldItems.length > 0)}
+              />
+            )}
+          </>
         ) : (
-          <V3Quiet
-            id="market"
-            heading={`${neighborhood.name} homes for sale`}
-            headingLevel={1}
-            items={neighborhoodMarketAbsenceItems(neighborhood.name, fieldItems.length > 0)}
-          />
+          <>
+            <V3Breadcrumb trail={nbhTrail} />
+            {firstMarketFigure ? (
+              <V3Instrument
+                id="market"
+                level={1}
+                eyebrow={v3Text(`${neighborhood.name} · ${cityName}`)}
+                headline={v3Text(`${neighborhood.name} homes for sale`)}
+                note={verdictSentence ? v3Text(verdictSentence) : undefined}
+                figures={[firstMarketFigure, ...restMarketFigures]}
+                source={v3Text(neighborhoodMarketTrace(neighborhood.name, mosLabel != null))}
+                chart={medianChart}
+                cards={marketCards}
+                updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
+                action={{
+                  label: v3Text(`See every ${neighborhood.name} home for sale`),
+                  href: browseHref,
+                  variant: 'primary',
+                }}
+              />
+            ) : (
+              <V3Quiet
+                id="market"
+                heading={`${neighborhood.name} homes for sale`}
+                headingLevel={1}
+                items={neighborhoodMarketAbsenceItems(neighborhood.name, fieldItems.length > 0)}
+              />
+            )}
+            <V3Field
+              id="homes"
+              ariaLabel={`Homes for sale in ${neighborhood.name}`}
+              typeFilter
+              items={fieldItems}
+              count={
+                fieldCaption
+                  ? {
+                      value: fieldItems.length.toLocaleString('en-US'),
+                      label: fieldCaption,
+                      source: neighborhoodFieldTrace(neighborhood.name),
+                    }
+                  : undefined
+              }
+              mapSlot={
+                fieldItems.length > 0 ? (
+                  <PlaceFieldMap
+                    pins={fieldPins}
+                    placeName={neighborhood.name}
+                    posterSrc={fieldPoster}
+                    boundary={boundaryMapData.polygon}
+                  />
+                ) : undefined
+              }
+              footNote={
+                fieldMissing > 0 && fieldPins.length > 0
+                  ? fieldMissing === 1
+                    ? '1 of these carries no coordinates, so it is listed but not plotted.'
+                    : `${fieldMissing.toLocaleString('en-US')} of these carry no coordinates, so they are listed but not plotted.`
+                  : undefined
+              }
+              emptyMessage={nbhFieldEmptyMessage(neighborhood.name, inventoryOk)}
+            />
+          </>
         )}
-
-        {/* Pattern 2, Field. This neighborhood's houses: list + the real map,
-            one set, count as caption. */}
-        <V3Field
-          id="homes"
-          ariaLabel={`Homes for sale in ${neighborhood.name}`}
-          items={fieldItems}
-          mapSlot={
-            fieldItems.length > 0 ? (
-              <PlaceFieldMap pins={fieldPins} placeName={neighborhood.name} posterSrc={fieldPoster} />
-            ) : undefined
-          }
-          mapNote={fieldCaption ?? undefined}
-          footNote={
-            fieldMissing > 0 && fieldPins.length > 0
-              ? fieldMissing === 1
-                ? '1 of these carries no coordinates, so it is listed but not plotted.'
-                : `${fieldMissing.toLocaleString('en-US')} of these carry no coordinates, so they are listed but not plotted.`
-              : undefined
-          }
-          emptyMessage={nbhFieldEmptyMessage(neighborhood.name, inventoryOk)}
-        />
-        {fieldItems.length > 0 ? (
-          <V3SourceLine source={neighborhoodFieldTrace(neighborhood.name)} />
-        ) : null}
 
         {/* Pattern 3, Ledger - daily life on the first path: schools and
             parks, never amenities or membership (PUBLIC_UI §3). */}
@@ -661,14 +744,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             action={{ label: v3Text(`All ${cityName} homes`), href: `/homes-for-sale/${citySlug}` }}
           />
         ) : null}
-
-        {/* Pattern 1 again, as ONE enumeration: one section per other property
-            type this neighborhood holds. */}
-        <V3PlacePropertyTypes
-          placeName={neighborhood.name}
-          citySlug={citySlug}
-          rows={publicSegments}
-        />
 
         {/* The recorded governing documents (Ledger; renders null when the
             place has none on file). Metric slug - see the read above. */}

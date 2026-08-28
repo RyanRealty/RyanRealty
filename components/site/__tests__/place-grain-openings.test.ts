@@ -56,10 +56,10 @@ describe('neighborhood pace', () => {
   it('caption names the neighborhood and states the cap when it binds', () => {
     expect(
       neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 24, totalQualifying: 62 }),
-    ).toBe('The 24 highest-priced single-family listings in Awbrey Butte')
+    ).toBe('highest-priced homes in Awbrey Butte')
     expect(
       neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 9, totalQualifying: 9 }),
-    ).toBe('9 single-family homes for sale in Awbrey Butte')
+    ).toBe('homes in Awbrey Butte')
     expect(neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 0, totalQualifying: 0 })).toBeNull()
   })
 
@@ -237,6 +237,7 @@ describe('subdivision ledger', () => {
       photoSrc: 'https://img.example/h.jpg',
       lat: 44.1,
       lng: -121.3,
+      typeKey: 'house',
     }
     const [row] = toLedgerRows([item])
     expect(row?.what).toBe('12 Sunrise Loop')
@@ -249,5 +250,26 @@ describe('subdivision ledger', () => {
     expect(trace).toMatch(/Sunrise Village/)
     expect(trace.split('.').length).toBeLessThanOrEqual(3)
     expect(trace).not.toMatch(/methodology|threshold|seller's|buyer's/)
+  })
+})
+
+
+describe('place grain Stage then Field', () => {
+  it('city, neighborhood, and subdivision mount Stage and cut the type-stack', async () => {
+    const { readFileSync } = await import('node:fs')
+    const city = readFileSync('app/cities/[slug]/page.tsx', 'utf8')
+    const neighborhood = readFileSync('app/cities/[slug]/[neighborhoodSlug]/page.tsx', 'utf8')
+    const subdivision = readFileSync('app/subdivisions/[slug]/page.tsx', 'utf8')
+    for (const src of [city, neighborhood, subdivision]) {
+      expect(src).toMatch(/<V3Stage/)
+      expect(src).not.toMatch(/V3PlacePropertyTypes/)
+    }
+    const cityField = readFileSync('app/cities/[slug]/_v3/CityHomesField.tsx', 'utf8')
+    expect(cityField).toMatch(/typeFilter/)
+    expect(neighborhood).toMatch(/typeFilter/)
+    expect(subdivision).toMatch(/typeFilter/)
+    expect(city).toMatch(/showHeading=\{!stagePoster\}/)
+    expect(neighborhood).toMatch(/preferPlaceHeroOrNull\(\s*neighborhood\.heroImageUrl/)
+    expect(subdivision).toMatch(/preferPlaceHeroOrNull\(communityHeroes\[slug\]/)
   })
 })

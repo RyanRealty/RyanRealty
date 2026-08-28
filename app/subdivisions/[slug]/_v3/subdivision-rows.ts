@@ -14,6 +14,11 @@
 
 import type { ListingTile } from '@/lib/data'
 import { v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
+import {
+  classifyFieldType,
+  withFieldCats,
+  type FieldTypeKey,
+} from '@/components/site/v3/field-property-type'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
@@ -22,7 +27,11 @@ import { listingDetailPath } from '@/lib/slug'
 export const FIELD_MAP_MIN = 4
 
 /** A Field item that is known to carry coordinates, so it can also be a pin. */
-export type FieldEntry = V3FieldItem & { lat: number; lng: number }
+export type FieldEntry = V3FieldItem & {
+  lat: number
+  lng: number
+  typeKey: FieldTypeKey
+}
 
 /** What a listing with no published price says instead of printing a zero. */
 const NO_PRICE = 'Price not published'
@@ -40,7 +49,7 @@ function metaLine(
   return bits.length > 0 ? bits.join(' · ') : undefined
 }
 
-/** One active single-family tile as a Field row. Null when it cannot be placed. */
+/** One active tile as a Field row. Null when it cannot be placed. */
 export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry | null {
   if (tile.lat == null || tile.lng == null) return null
   const street = publishStreetLine({
@@ -74,7 +83,23 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
     photoSrc: tile.photoUrl?.trim() || undefined,
     lat: tile.lat,
     lng: tile.lng,
+    typeKey: classifyFieldType({
+      propertyType: tile.propertyType,
+      propertySubType: tile.propertySubType,
+    }).key,
   }
+}
+
+export function platFieldEntries(
+  tiles: readonly ListingTile[],
+  hasVideo: (listingKey: string) => boolean,
+): FieldEntry[] {
+  const plotted: FieldEntry[] = []
+  for (const tile of tiles) {
+    const entry = toFieldEntry(tile, hasVideo(tile.listingKey))
+    if (entry) plotted.push(entry)
+  }
+  return withFieldCats(plotted)
 }
 
 export function toLedgerRows(items: readonly V3FieldItem[]): V3LedgerFigureRow[] {

@@ -11,7 +11,12 @@
  * dual-pane list used, so a row still opens the listing at the same URL.
  */
 
-import type { V3FieldItem } from '@/components/site/v3'
+import { type V3FieldItem } from '@/components/site/v3'
+import {
+  classifyFieldType,
+  withFieldCats,
+  type FieldTypeKey,
+} from '@/components/site/v3/field-property-type'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
@@ -33,7 +38,7 @@ import { listingDetailPath } from '@/lib/slug'
  * different population from the pins.
  */
 export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V3FieldItem[] {
-  const items: V3FieldItem[] = []
+  const items: Array<V3FieldItem & { typeKey: FieldTypeKey }> = []
   const cap = limit ?? Number.POSITIVE_INFINITY
 
   for (const tile of tiles) {
@@ -66,6 +71,10 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
       .join(' · ')
 
     const photo = tile.photoUrl?.trim()
+    const type = classifyFieldType({
+      propertyType: tile.propertyType,
+      propertySubType: tile.propertySubType,
+    })
 
     items.push({
       id: tile.listingKey,
@@ -91,8 +100,9 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
       ...(meta ? { meta } : {}),
       lat: tile.lat,
       lng: tile.lng,
+      typeKey: type.key,
     })
   }
 
-  return items
+  return withFieldCats(items)
 }

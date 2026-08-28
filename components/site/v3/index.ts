@@ -139,6 +139,13 @@ export type {
 /* -------------------------------------------------------------------------- */
 
 export { V3Field, useV3FieldBinding } from './V3Field'
+export {
+  classifyFieldType,
+  filterFieldByTypes,
+  toggleFieldType,
+  typesInField,
+  withFieldCats,
+} from './field-property-type'
 
 export type {
   V3FieldProps,
@@ -146,6 +153,7 @@ export type {
   V3FieldBinding,
   V3FieldMapSlot,
 } from './V3Field'
+export type { FieldCat, FieldTypeChip, FieldTypeKey } from './field-property-type'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 3 — LEDGER: a scannable list where every row is a door              */

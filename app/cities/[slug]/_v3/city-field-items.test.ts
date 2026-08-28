@@ -49,42 +49,25 @@ describe('cityFieldItems', () => {
     expect(items[0]?.photoSrc).toBe('https://img.example/house.jpg')
     expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
   })
+
+  it('stamps a type key and navy cat so the Field can filter and pin', () => {
+    const items = cityFieldItems([
+      tile({ listingKey: 'house', propertySubType: 'Single Family Residence' }),
+      tile({ listingKey: 'condo', propertySubType: 'Condominium', streetNumber: '200' }),
+    ])
+    expect(items.map((item) => item.typeKey)).toEqual(['house', 'condo'])
+    expect(items.map((item) => item.cat)).toEqual([0, 1])
+  })
+
 })
 
 describe('cityFieldCaption', () => {
-  it('names the listed set and the one MoS verdict', () => {
-    expect(
-      cityFieldCaption({
-        cityName: 'Bend',
-        count: 248,
-        mosLabel: '3.6',
-        verdictKind: 'sellers',
-        verdictLabel: "seller's market",
-      }),
-    ).toBe('The 248 newest single-family listings in Bend · 3.6 months of supply · a seller\'s market')
-  })
-
-  it('omits a verdict when MoS is absent', () => {
-    expect(
-      cityFieldCaption({
-        cityName: 'Bend',
-        count: 12,
-        mosLabel: null,
-        verdictKind: 'unknown',
-        verdictLabel: 'unknown',
-      }),
-    ).toBe('The 12 newest single-family listings in Bend')
+  it('names the city on the listed-set count', () => {
+    expect(cityFieldCaption({ cityName: 'Bend', count: 248 })).toBe('homes in Bend')
+    expect(cityFieldCaption({ cityName: 'Redmond', count: 1 })).toBe('home in Redmond')
   })
 
   it('prints nothing for an empty set', () => {
-    expect(
-      cityFieldCaption({
-        cityName: 'Bend',
-        count: 0,
-        mosLabel: '3.6',
-        verdictKind: 'sellers',
-        verdictLabel: "seller's market",
-      }),
-    ).toBeNull()
+    expect(cityFieldCaption({ cityName: 'Bend', count: 0 })).toBeNull()
   })
 })

@@ -60,13 +60,12 @@ describe('subdivision counts-only grain', () => {
   it('plat page overlays membership counts beside MLS-name inventory', () => {
     const page = readFileSync(resolve('app/subdivisions/[slug]/page.tsx'), 'utf8')
     expect(page).toMatch(/getSubdivisionCounts/)
-    // MOVED, NOT DROPPED (2026-08-26). PublicSubdivisionCounts rendered the KB
-    // panel; on the v3 barrel the detached counts are figures on the market
-    // Instrument (subdivisionCountItems) and the extras are the barrel's
-    // property-type enumeration. Same two reads, same two surfaces.
+    // HARD LOCK 2026-08-28: detached counts stay on the market Instrument.
+    // Field type chips own the inventory filter. Type-stack H2s are cut.
     expect(page).toMatch(/subdivisionCountItems/)
-    expect(page).toMatch(/V3PlacePropertyTypes/)
-    expect(page).toMatch(/mtCounts\.extras/)
+    expect(page).toMatch(/<V3Field/)
+    expect(page).not.toMatch(/V3PlacePropertyTypes/)
+    expect(page).not.toMatch(/mtCounts\.extras/)
     expect(page).not.toMatch(/getDetachedMarket/)
   })
 

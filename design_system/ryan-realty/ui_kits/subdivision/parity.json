@@ -2,8 +2,8 @@
   "route": "app/subdivisions/[slug]/page.tsx",
   "mockup": null,
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). This route never had a KB-era mockup, which is why this directory holds a contract and no index.html. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
-  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is a Ledger of this plat's homes. Giant 0 is forbidden. Empty Ledger if none. Parent community or city is the back door. Schools on the first path. Field only when pins are a real map.",
-  "note": "MIGRATED TO THE v3 BARREL 2026-08-26, completing the repair this file has described since 2026-08-14. Opens a Ledger of this plat's homes; a Field only when the plat carries FIELD_MAP_MIN pins or more, because a short plat is a list and a three-pin map is not a map. Giant 0 is forbidden: a timed-out read is an honest empty Ledger with the reason, never a 0 hero. Parent community or city is the ghost action. Schools sit immediately after the homes. Value my home is not the opening ask. FOUR PATTERNS, WHICH IS THE CAP: Field or Ledger (the homes) / Quiet (the assigned schools and every outbound edge) / Instrument (the plat's own market, then once per other property type the plat holds) / Ledger (the sales history, then the recorded documents). THE RHYTHM CONFLICT IS DECLARED, NOT HIDDEN: four sections render only when their data exists, and no ordering of four independent conditionals over four patterns can guarantee no-two-adjacent for every combination. The order is correct when the data is present and degrades to at worst one repeated pair; the alternative is dropping a section the data supports, which section 0 forbids. THE PARENT PULSE IS GONE AND MUST NOT COME BACK: a registry plat has no market_pulse_live row, so the KB page's parent-market band attributed Redmond's pending days to Ridge At Eagle Crest. lib/market/publish-plat-figures.ts and ci:publish-plat-figures replaced it on 2026-08-16, and ci:subdivision-stats-integrity now FAILS on a closedLast30Days figure reappearing in _v3/subdivision-figures.ts. THE CLOSED PRICE IS WITHHELD AT THIS GRAIN (REGISTRY section 4): the yearly Ledger publishes counts only, and it calls publishSubdivisionClosedPrice rather than assuming the withholding, so the day the registry lets a plat publish a price it arrives there.",
+  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is Stage then Field when the plat has enough pins and an owned photo, else a Ledger of this plat's homes. Giant 0 is forbidden. Parent community or city is the back door. Schools on the first path.",
+  "note": "PUBLIC_UI.md \u00a73 Subdivision, Stage then Field 2026-08-28. Opening is an owned plat photo (V3Stage) then Field when the plat has enough pins. No owned asset -> Field or Ledger. A short plat is a list. Giant 0 is forbidden. Type chips on the Field filter the same set the map plots. The V3PlacePropertyTypes Instrument enumeration is cut. Parent community or city is the back door. Schools sit on the first path.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -26,13 +26,18 @@
       "blocking": true
     },
     {
+      "name": "V3Stage",
+      "section": "Pattern 4 when the plat has enough pins AND an owned photo. PUBLIC_UI.md \u00a73: Stage then Field. Never invented. Do not use the parent resort photo. Breadcrumb is on-media when this mounts.",
+      "blocking": true
+    },
+    {
       "name": "V3Field",
-      "section": "Pattern 2, Field — the plat's homes beside the real Google map (PlaceFieldMap in the map slot), with the recorded plat boundary drawn on it, ONLY when the plat carries FIELD_MAP_MIN pins or more. Replaces KbFeatured, KbListingMap and PlaceMapListSplit.",
+      "section": "Pattern 2, Field \u2014 the plat's homes beside PlaceFieldMap, with the recorded plat boundary, ONLY when the plat carries FIELD_MAP_MIN pins or more. The Field chassis is owned by homepage PR 156 \u2014 this route mounts it.",
       "blocking": true
     },
     {
       "name": "V3Ledger",
-      "section": "Pattern 3, Ledger — the homes when the plat is a list rather than a map, and again for the yearly sales history. Every row is a door. An empty Ledger states WHICH of the two things happened: nothing is listed, or nothing answered.",
+      "section": "Pattern 3, Ledger \u2014 the homes when the plat is a list rather than a map, and again for the yearly sales history. Every row is a door. An empty Ledger states WHICH of the two things happened: nothing is listed, or nothing answered.",
       "blocking": true
     },
     {
@@ -42,7 +47,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, Instrument — the plat's own market, reading only the plat: publishPlatFigures over the counted set's median (days-to-pending and 30-day sold WITHHOLD rather than borrow a parent), the Market Truth recorded-plat counts, and the plat's own market_stats_cache ytd row. One clause of trace per population that actually reached the page.",
+      "section": "Pattern 1, Instrument \u2014 the plat's own market, reading only the plat: publishPlatFigures over the counted set's median (days-to-pending and 30-day sold WITHHOLD rather than borrow a parent), the Market Truth recorded-plat counts, and the plat's own market_stats_cache ytd row. One clause of trace per population that actually reached the page.",
       "blocking": true
     },
     {
@@ -57,17 +62,12 @@
     },
     {
       "name": "V3PlaceCharacter",
-      "section": "Pattern 6, Quiet — build years and HOA stated as sentences, because PLACE_CONTENT_RULES R1-R3 forbid publishing them as bare figures.",
+      "section": "Pattern 6, Quiet \u2014 build years and HOA stated as sentences, because PLACE_CONTENT_RULES R1-R3 forbid publishing them as bare figures.",
       "blocking": true
     },
     {
       "name": "SubdivisionDocuments",
-      "section": "Pattern 3, Ledger — the recorded instruments held for this plat, every row a door. A re-export of the barrel's V3PlaceDocuments, shared with the community and neighborhood grains so the R7 honesty caveat has one copy.",
-      "blocking": true
-    },
-    {
-      "name": "V3PlacePropertyTypes",
-      "section": "Pattern 1 as ONE enumeration: a section per other property type the plat holds. The registry withholds price and months of supply below neighbourhood grain, so a plat supplies counts alone, and a type with no counts never reaches the component.",
+      "section": "Pattern 3, Ledger \u2014 the recorded instruments held for this plat, every row a door. A re-export of the barrel's V3PlaceDocuments, shared with the community and neighborhood grains so the R7 honesty caveat has one copy.",
       "blocking": true
     },
     {
@@ -88,28 +88,29 @@
     "Place, with address and containedInPlace only when the page resolved a city, and hasMap only when a polygon or at least one plotted listing exists."
   ],
   "dataLayer": [
-    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) — the plat polygon and its spatial pins.",
-    "getPlatPublicInventory(slug) — THE COUNTED SET: recorded-plat SFR + PUBLIC_ACTIVE. Do not fall back to a capped featured fetch or an unfiltered pin count; those were the 12 / 14 / 26 split on Ridge At Eagle Crest (2026-08-16).",
-    "getListingTiles({ listingKeys, status: 'active', propertyType: 'A', limit: 250 }) — the Field rows and pins, filtered back to the counted set.",
-    "getSubdivisionCounts(slug) — the Market Truth recorded-plat detached counts and, in extras, the property-type enumeration.",
-    "getSubdivisionVideoTours(alias, city, 12) — marks the rows that carry a video tour. Skipped without a registry match, because the unscoped feed answers with out-of-area homes.",
-    "getSubdivisionSalesHistory(slug) — the yearly Ledger.",
-    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) — the plat's own cache row. ci:subdivision-stats-integrity pins the period.",
-    "getSubdivisionSchools(city, alias) — the closing Quiet's school entries. ci:subdivision-stats-integrity pins the call.",
-    "getPlaceDocuments('subdivision', slug) and getPlaceCharacter('subdivision', slug) — the documents Ledger and the character Quiet.",
-    "getIndexableSubdivisions() — the robots policy in generateMetadata AND the plat's city. One cached read serves both: the matching row carries citySlug (the city contributing the most closed sales), so the title names a real city instead of the old 'Central Oregon, Oregon' fallback ~3,200 non-registry plat pages carried. Absent from the set = noindex AND no city claimed (section 0)."
+    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) \u2014 the plat polygon and its spatial pins.",
+    "getPlatPublicInventory(slug) \u2014 THE COUNTED SET: recorded-plat SFR + PUBLIC_ACTIVE. Do not fall back to a capped featured fetch or an unfiltered pin count; those were the 12 / 14 / 26 split on Ridge At Eagle Crest (2026-08-16).",
+    "getListingTiles({ listingKeys, status: 'active', limit: 250 }) \u2014 the Field rows and pins from in-boundary pins when present, else the counted inventory keys. Types present in that set become Field chips.",
+    "getSubdivisionCounts(slug) \u2014 the Market Truth recorded-plat detached counts and, in extras, the property-type enumeration.",
+    "getSubdivisionVideoTours(alias, city, 12) \u2014 marks the rows that carry a video tour. Skipped without a registry match, because the unscoped feed answers with out-of-area homes.",
+    "getSubdivisionSalesHistory(slug) \u2014 the yearly Ledger.",
+    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) \u2014 the plat's own cache row. ci:subdivision-stats-integrity pins the period.",
+    "getSubdivisionSchools(city, alias) \u2014 the closing Quiet's school entries. ci:subdivision-stats-integrity pins the call.",
+    "getPlaceDocuments('subdivision', slug) and getPlaceCharacter('subdivision', slug) \u2014 the documents Ledger and the character Quiet.",
+    "getIndexableSubdivisions() \u2014 the robots policy in generateMetadata AND the plat's city. One cached read serves both: the matching row carries citySlug (the city contributing the most closed sales), so the title names a real city instead of the old 'Central Oregon, Oregon' fallback ~3,200 non-registry plat pages carried. Absent from the set = noindex AND no city claimed (section 0)."
   ],
   "sectionOrder": [
     "MetadataBlock",
     "V3SectionTracker",
-    "V3Breadcrumb",
-    "V3Quiet (overview) + V3Field (homes) when the plat carries FIELD_MAP_MIN pins, else V3Ledger (homes)",
+    "V3Breadcrumb (on-media when Stage mounts)",
+    "V3Stage (owned plat photo, when Field and an owned photo exist)",
+    "V3Field (homes when the plat carries FIELD_MAP_MIN pins)",
+    "V3Ledger (homes when the plat is a list rather than a map)",
     "SubdivisionSchools (Quiet: assigned schools, then every outbound edge)",
     "V3Instrument (the plat's own market, conditional)",
     "SubdivisionSalesHistory (Ledger) with SubdivisionMarketCharts inside it",
     "V3PlaceCharacter (Quiet, conditional)",
     "SubdivisionDocuments (Ledger, conditional)",
-    "V3PlacePropertyTypes (Instrument enumeration, conditional)",
     "V3Footer, outside <main>"
   ],
   "removedComponents": [
@@ -119,7 +120,8 @@
     "VideoTourRail (a plat with in-area video tours flags them on the listing rows themselves, attached to the home each describes instead of a second rail)",
     "PublicSubdivisionCounts (its detached counts are figures on the market Instrument; its extras are the property-type run)",
     "SubdivisionExploreTail, and with it KbExploreTowns and KbSell (every edge it carried is an item in the closing Quiet, built by _v3/subdivision-edges.ts)",
-    "The parent-market band and fetchSubdivMarketExtras (another geography under this plat's heading — 3f34bf65, 2026-08-16)",
-    "SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker (chrome)"
+    "The parent-market band and fetchSubdivMarketExtras (another geography under this plat's heading \u2014 3f34bf65, 2026-08-16)",
+    "SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker (chrome)",
+    "V3PlacePropertyTypes (Instrument enumeration of other property types) \u2014 type-stack H2s are cut. Do not invent a plat chip skin; the Field chassis lives in PR 156."
   ]
 }

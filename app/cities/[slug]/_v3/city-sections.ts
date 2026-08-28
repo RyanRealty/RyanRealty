@@ -480,44 +480,34 @@ export function marketAbsenceItems(cityName: string, hasRows: boolean): V3QuietI
 }
 
 /**
- * Caption beside the Field. The count is the listed set, never a pulse figure
- * from a different filter. Months of supply and the verdict use the same raw
- * value the Instrument classifies. Absent MoS is omitted, never written as zero.
+ * Field count label. The listed set is a preview cap (CITY_PLACE_LIST_CAP):
+ * newest qualifying homes, list and pins one set. The Instrument carries the
+ * leftover inventory figure under its own trace. Grain lock: this string
+ * interpolates the city itself (`in ${input.cityName}`), never a parent.
  */
 export function cityFieldCaption(input: {
   cityName: string
   count: number
-  mosLabel: string | null
-  verdictKind: 'sellers' | 'balanced' | 'buyers' | 'unknown'
-  verdictLabel: string
 }): string | null {
   if (input.count <= 0) return null
-  // The listed set is an EXPLICIT PREVIEW CAP (CITY_PLACE_LIST_CAP, the same
-  // cap the KB dual-pane list carried): the newest qualifying listings, list
-  // and pins one set. The full inventory figure lives in the Instrument under
-  // its own trace, and the Instrument's action is the view-all door.
-  const homes = `The ${input.count.toLocaleString('en-US')} newest single-family listings in ${input.cityName}`
-  if (input.verdictKind === 'unknown' || input.mosLabel == null) return homes
-  return `${homes} · ${input.mosLabel} months of supply · a ${input.verdictLabel}`
+  return input.count === 1 ? `home in ${input.cityName}` : `homes in ${input.cityName}`
 }
 
 /**
- * Trace over the Field's listed set. No borrowed pulse stamp. SFR-only since
- * C-02: every sibling geo map (community, neighborhood, subdivision, ZIP,
- * homepage) pulls the Single Family Residence sub-type, and an all-types pool
- * here put a 1,000-home badge beside a 491 hero on /cities/bend.
+ * Trace over the Field's listed set. No borrowed pulse stamp. The Field plots
+ * every type this city holds. Leftover HUD below stays the detached pile.
  */
 export function cityFieldTrace(cityName: string): string {
   return (
-    `${FEED}, the newest active single-family homes ` +
-    `with a ${cityName} address, a list price, and a street. The map plots this same set; ` +
-    `the Instrument below carries the full inventory count under its own trace`
+    `${FEED}, the newest active homes ` +
+    `with a ${cityName} address, a list price, and a street. The map plots this same set. ` +
+    `The Instrument below carries the detached inventory count under its own trace`
   )
 }
 
 export function cityFieldEmptyMessage(cityName: string, tilesReturned: number): string {
   return tilesReturned === 0
-    ? `No single-family home in ${cityName} is listed in the active feed on this refresh.`
+    ? `No home in ${cityName} is listed in the active feed on this refresh.`
     : `Every active ${cityName} listing this refresh returned was missing a list price or a street address, so none of them is shown as a row.`
 }
 

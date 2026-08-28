@@ -3,31 +3,28 @@
 // state a failure or a wait, and sell nothing.
 
 /**
- * Lifestyle place Field map. One element, filling the frame V3Field gives it,
- * drawing exactly the homes the list beside it renders, plus an optional
- * boundary the caller already decided is trustworthy.
+ * Lifestyle place Field map. Google is the geographic frame. Pins are the
+ * Field language already locked in V3Field.css (`.v3-field__pin` / label).
+ * Fit the place polygon when the caller passed one — do not invent a marker
+ * set, and do not leave an ocean of basemap around the boundary.
  *
- * Polygons fill. LineStrings (trail route linework) stroke only. A place pin
- * marks the venue, trailhead, or clubhouse so it is not mistaken for a listing.
- *
- * NO FORMATTING HAPPENS HERE. The price on a pin label is the same preformatted
- * string the row shows.
+ * NO FORMATTING HAPPENS HERE. The price on a pin label is the same
+ * preformatted string the row shows. Price shows only on the active pin.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { GoogleMap, Marker, Polygon, Polyline } from '@react-google-maps/api'
-import { useRouter } from 'next/navigation'
+import { GoogleMap, Marker, OverlayView, Polygon, Polyline } from '@react-google-maps/api'
+import Link from 'next/link'
+import { cn } from '@/lib/utils'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions, MAP_NAVY } from '@/lib/maps/markers'
-import {
-  MAP_DEFAULT_CENTER,
-  MAP_LABEL_LISTING,
-  getListingMarkerIcon,
-} from '@/lib/map-constants'
+import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { useV3FieldBinding } from '@/components/site/v3'
 
 const FILL = { width: '100%', height: '100%' } as const
 const SINGLE_POINT_ZOOM = 14
+/** Same 10% inset the Field plot uses. */
+const FRAME_INSET_PCT = 10
 
 type Ring = google.maps.LatLngLiteral[]
 
@@ -73,6 +70,8 @@ export type PlaceFieldMapPin = {
   title: string
   lat: number
   lng: number
+  /** Same 0–4 mark the Field row carries. Omitting it keeps the pin full navy. */
+  cat?: 0 | 1 | 2 | 3 | 4
 }
 
 export function PlaceFieldMapImpl({
@@ -92,14 +91,35 @@ export function PlaceFieldMapImpl({
   /** Live listing photograph shown while the map script loads. */
   posterSrc?: string
 }) {
-  const router = useRouter()
   const { ready, error } = useGoogleMapsReady()
-  const { activeId, setActiveId } = useV3FieldBinding()
+  const { activeId, setActiveId, items } = useV3FieldBinding()
   const mapRef = useRef<google.maps.Map | null>(null)
   const [fitted, setFitted] = useState(false)
 
   const polygons = useMemo(() => toPolygons(boundary), [boundary])
   const polylines = useMemo(() => toPolylines(boundary), [boundary])
+
+  const plotted = useMemo(() => {
+    const fromBinding = items.flatMap((item) =>
+      typeof item.lat === 'number' &&
+      Number.isFinite(item.lat) &&
+      typeof item.lng === 'number' &&
+      Number.isFinite(item.lng)
+        ? [
+            {
+              id: item.id,
+              href: item.href,
+              priceLabel: item.priceLabel,
+              title: item.title,
+              lat: item.lat,
+              lng: item.lng,
+              cat: item.cat,
+            },
+          ]
+        : [],
+    )
+    return fromBinding.length > 0 ? fromBinding : pins
+  }, [items, pins])
 
   const fallbackCenter = useMemo(() => {
     if (centerLonLat) return { lat: centerLonLat[1], lng: centerLonLat[0] }
@@ -112,26 +132,26 @@ export function PlaceFieldMapImpl({
       if (typeof google === 'undefined' || !google.maps?.LatLngBounds) return
       const bounds = new google.maps.LatLngBounds()
       let count = 0
-      for (const pin of pins) {
-        bounds.extend({ lat: pin.lat, lng: pin.lng })
-        count += 1
+      for (const ring of polygons) {
+        for (const point of ring) {
+          bounds.extend(point)
+          count += 1
+        }
       }
-      if (placePin) {
-        bounds.extend({ lat: placePin.lat, lng: placePin.lng })
-        count += 1
+      for (const line of polylines) {
+        for (const point of line) {
+          bounds.extend(point)
+          count += 1
+        }
       }
       if (count === 0) {
-        for (const ring of polygons) {
-          for (const point of ring) {
-            bounds.extend(point)
-            count += 1
-          }
+        for (const pin of plotted) {
+          bounds.extend({ lat: pin.lat, lng: pin.lng })
+          count += 1
         }
-        for (const line of polylines) {
-          for (const point of line) {
-            bounds.extend(point)
-            count += 1
-          }
+        if (placePin) {
+          bounds.extend({ lat: placePin.lat, lng: placePin.lng })
+          count += 1
         }
       }
       if (count === 0) {
@@ -144,20 +164,12 @@ export function PlaceFieldMapImpl({
         map.setZoom(SINGLE_POINT_ZOOM)
         return
       }
-      map.fitBounds(bounds, 48)
-      // Frame floor (Matt 2026-08-27): a region-wide pin set in a small box
-      // fit out to half of Oregon — Salem to Roseburg on a phone — with every
-      // pin in one unreadable clump. Central Oregon at 390px is legible from
-      // zoom 9; never present wider than the service area.
-      google.maps.event.addListenerOnce(map, 'idle', () => {
-        const z = map.getZoom()
-        if (z != null && z < 9) {
-          map.setZoom(9)
-          map.setCenter(bounds.getCenter())
-        }
-      })
+      const el = map.getDiv()
+      const padX = Math.max(12, Math.round(el.clientWidth * (FRAME_INSET_PCT / 100)))
+      const padY = Math.max(12, Math.round(el.clientHeight * (FRAME_INSET_PCT / 100)))
+      map.fitBounds(bounds, { top: padY, bottom: padY, left: padX, right: padX })
     },
-    [pins, placePin, polygons, polylines, fallbackCenter],
+    [plotted, placePin, polygons, polylines, fallbackCenter],
   )
 
   const onLoad = useCallback(
@@ -204,6 +216,7 @@ export function PlaceFieldMapImpl({
         zoom={SINGLE_POINT_ZOOM}
         options={getExploreMapOptions({ preferMapId: false })}
         onLoad={onLoad}
+        onClick={() => setActiveId(null)}
         onUnmount={() => {
           mapRef.current = null
         }}
@@ -239,18 +252,31 @@ export function PlaceFieldMapImpl({
             zIndex={50}
           />
         ) : null}
-        {pins.map((pin) => (
-          <Marker
+        {plotted.map((pin) => (
+          <OverlayView
             key={pin.id}
             position={{ lat: pin.lat, lng: pin.lng }}
-            title={`${pin.title} · ${pin.priceLabel}`}
-            label={{ text: pin.priceLabel, ...MAP_LABEL_LISTING }}
-            icon={getListingMarkerIcon({ hover: activeId === pin.id })}
-            zIndex={activeId === pin.id ? 100 : 1}
-            onMouseOver={() => setActiveId(pin.id)}
-            onMouseOut={() => setActiveId(null)}
-            onClick={() => router.push(pin.href)}
-          />
+            mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+          >
+            <Link
+              href={pin.href}
+              className={cn(
+                'v3-field__pin',
+                pin.cat != null && `v3-field__pin--cat-${pin.cat}`,
+                activeId === pin.id && 'is-active',
+              )}
+              style={{ left: 0, top: 0 }}
+              tabIndex={-1}
+              aria-hidden="true"
+              onMouseEnter={() => setActiveId(pin.id)}
+              onClick={(event) => {
+                event.stopPropagation()
+                setActiveId(pin.id)
+              }}
+            >
+              <span className="v3-field__pin-label">{pin.priceLabel}</span>
+            </Link>
+          </OverlayView>
         ))}
       </GoogleMap>
     </div>

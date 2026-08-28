@@ -66,6 +66,52 @@
   color: var(--v3-ink);
 }
 
+.v3-field__lead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+  margin: 0 0 var(--v3-space-sm);
+}
+
+.v3-field__lead nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+}
+
+.v3-field__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-row-min);
+  padding: 0 var(--v3-space-sm);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-sm);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+}
+
+.v3-field__chip.is-on {
+  background: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3-field__swatch {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-ink);
+}
+
+.v3-field__swatch--cat-0 { background: var(--v3-cat-0); }
+.v3-field__swatch--cat-1 { background: var(--v3-cat-1); }
+.v3-field__swatch--cat-2 { background: var(--v3-cat-2); }
+.v3-field__swatch--cat-3 { background: var(--v3-cat-3); }
+.v3-field__swatch--cat-4 { background: var(--v3-cat-4); }
+
 .v3-field__source {
   margin-top: var(--v3-space-md);
 }
@@ -76,8 +122,10 @@
 
 .v3-field__frame {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--v3-space-md);
+  width: 100%;
+  min-width: 0;
 }
 
 @media (min-width: 56.25rem) {
@@ -100,6 +148,16 @@
   min-width: 0;
 }
 
+/* Map is the first track. Reordering the list above the map is not this
+   pattern — that is how 390 grew a novel of cards and a leftover map. */
+.v3-field__frame > .v3-field__col:first-of-type {
+  order: 0;
+}
+
+.v3-field__frame > .v3-field__col:last-of-type {
+  order: 1;
+}
+
 /* ---------------------------------------------------------------------------
    Map frame. Holds whatever the caller passed, or the fallback plot.
    --------------------------------------------------------------------------- */
@@ -107,16 +165,28 @@
 .v3-field__map {
   position: relative;
   aspect-ratio: 4 / 3;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  contain: inline-size;
   border: 1px solid var(--v3-edge);
   border-radius: var(--v3-radius-card);
   background: var(--v3-wash);
   overflow: hidden;
 }
 
-/* A real map arrives as one element and should fill the frame it was given. */
-.v3-field__map > :only-child {
+/* A real map fills THIS tile. It must not grow the Field.
+   height: 100% on an in-flow child of an aspect-ratio box does not
+   resolve, so the Maps script reads an unbounded width and paints past
+   the gutter (390: full-bleed card, zoom and attribution clipped).
+   Absolute fill keeps the slot the same width as the list. */
+.v3-field__map:not(.v3-field__map--photos) > :only-child {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* MLS photographs as the inventory surface. Height follows the mosaic, not a
@@ -238,6 +308,9 @@
   position: relative;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .v3-field__map-frame > .v3-field__map-poster,
@@ -327,6 +400,7 @@
   border-radius: var(--v3-radius-mark);
   background: var(--v3-ink);
   color: var(--v3-ink-on-navy);
+  text-decoration: none;
   font-size: var(--v3-size-source);
   font-weight: var(--v3-weight-num);
   font-variant-numeric: tabular-nums;
@@ -341,6 +415,12 @@
     height var(--v3-dur-state) var(--v3-ease-out),
     transform var(--v3-dur-state) var(--v3-ease-out);
 }
+
+.v3-field__pin--cat-0 { background: var(--v3-cat-0); }
+.v3-field__pin--cat-1 { background: var(--v3-cat-1); }
+.v3-field__pin--cat-2 { background: var(--v3-cat-2); }
+.v3-field__pin--cat-3 { background: var(--v3-cat-3); }
+.v3-field__pin--cat-4 { background: var(--v3-cat-4); }
 
 .v3-field__pin-label {
   display: none;
@@ -462,6 +542,12 @@
   box-shadow: inset 3px 0 0 var(--v3-ink);
 }
 
+.v3-field__row--cat-0.is-active { box-shadow: inset 3px 0 0 var(--v3-cat-0); }
+.v3-field__row--cat-1.is-active { box-shadow: inset 3px 0 0 var(--v3-cat-1); }
+.v3-field__row--cat-2.is-active { box-shadow: inset 3px 0 0 var(--v3-cat-2); }
+.v3-field__row--cat-3.is-active { box-shadow: inset 3px 0 0 var(--v3-cat-3); }
+.v3-field__row--cat-4.is-active { box-shadow: inset 3px 0 0 var(--v3-cat-4); }
+
 .v3-field__price {
   font-weight: var(--v3-weight-num);
   font-variant-numeric: tabular-nums;
@@ -483,6 +569,67 @@
   padding: var(--v3-space-md);
   font-size: var(--v3-size-body-sm);
   color: var(--v3-ink-muted);
+}
+
+/* Preview Fields (homepage): the list stays in the page flow so a capped
+   set cannot paint over the next section. Callers cap the items and pass
+   action for See all. City / search Fields keep the 560px scroller. */
+.v3.v3-field--flow .v3-field__list {
+  max-height: none;
+  overflow: visible;
+}
+
+/* Place inventory on 390: tiles under the map, not a 24-card rail.
+   Homepage preview Fields keep rows (`listFlow`). */
+@media (max-width: 56.249rem) {
+  .v3.v3-field:not(.v3-field--flow) .v3-field__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--v3-space-xs);
+    border: none;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .v3.v3-field:not(.v3-field--flow) .v3-field__item:first-child .v3-field__row,
+  .v3.v3-field:not(.v3-field--flow) .v3-field__item:last-child .v3-field__row {
+    border-radius: var(--v3-radius-sm);
+  }
+
+  .v3.v3-field:not(.v3-field--flow) .v3-field__row {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0;
+    border: 1px solid var(--v3-edge);
+    border-bottom: 1px solid var(--v3-edge);
+    border-radius: var(--v3-radius-sm);
+    overflow: hidden;
+    min-height: 0;
+    align-content: start;
+  }
+
+  .v3.v3-field:not(.v3-field--flow) .v3-field__row--has-photo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .v3.v3-field:not(.v3-field--flow) .v3-field__thumb {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+  }
+
+  .v3.v3-field:not(.v3-field--flow) .v3-field__copy {
+    padding: var(--v3-space-xs);
+  }
+
+  .v3.v3-field:not(.v3-field--flow) .v3-field__row.is-active {
+    box-shadow: inset 0 0 0 2px var(--v3-ink);
+  }
+}
+
+.v3-field__action {
+  display: flex;
+  margin-top: var(--v3-space-lg);
 }
 
 /* The quiet lines: what the map is, and what the set does not show. */
