@@ -10,6 +10,7 @@
  */
 
 import { useState, useTransition } from 'react'
+import { CONTACT } from '@/lib/brand/contact'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,7 +51,7 @@ export default function BookingClient({ days, brokerSlug, timeZone, available }:
   if (!available) {
     return (
       <p className="text-base text-muted-foreground">
-        Online booking is not available right now. Call 541.703.3095 and a broker will find you a time.
+        Online booking is not available right now. Call {CONTACT.phoneFub} and a broker will find you a time.
       </p>
     )
   }
@@ -58,7 +59,7 @@ export default function BookingClient({ days, brokerSlug, timeZone, available }:
   if (days.length === 0) {
     return (
       <p className="text-base text-muted-foreground">
-        There is no open time in the next three weeks. Call 541.703.3095 and we will make room.
+        There is no open time in the next three weeks. Call {CONTACT.phoneFub} and we will make room.
       </p>
     )
   }
