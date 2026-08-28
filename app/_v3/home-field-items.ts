@@ -13,13 +13,28 @@
 
 import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
+
+export type HomeFieldItem = V3FieldItem & {
+  /** MLS city, used by homepage town chips to filter the listed set. */
+  city: string
+}
+
+export function filterHomeFieldByCity(
+  items: readonly HomeFieldItem[],
+  city: string | null,
+): HomeFieldItem[] {
+  if (!city) return [...items]
+  const needle = city.trim().toLowerCase()
+  if (!needle) return [...items]
+  return items.filter((item) => item.city.trim().toLowerCase() === needle)
+}
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 
-export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3FieldItem[] {
-  const items: V3FieldItem[] = []
+export function homeFieldItems(tiles: readonly ListingTile[], limit: number): HomeFieldItem[] {
+  const items: HomeFieldItem[] = []
 
   for (const tile of tiles) {
     if (items.length >= limit) break
@@ -69,6 +84,7 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3
       ...(meta ? { meta } : {}),
       lat: tile.lat,
       lng: tile.lng,
+      city: tile.city?.trim() ?? '',
     })
   }
 

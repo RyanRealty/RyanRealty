@@ -1,0 +1,22 @@
+/* Homepage place lists: larger photos, no methodology captions. */
+#towns .v3-source,
+#communities .v3-source {
+  display: none;
+}
+
+#towns .v3-ledger__thumb,
+#communities .v3-ledger__thumb {
+  width: var(--v3-photo-tile-min);
+  height: calc(var(--v3-photo-tile-min) * 0.75);
+}
+
+#towns .v3-ledger__what--media,
+#communities .v3-ledger__what--media {
+  align-items: flex-start;
+}
+
+#towns .v3-ledger__row,
+#communities .v3-ledger__row {
+  padding-block: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+}

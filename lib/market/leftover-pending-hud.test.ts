@@ -34,10 +34,10 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
   })
 
   it('place HUDs pass leftover pending, not pulse fill', () => {
-    // The v3 spelling for the homepage (2026-08-27): its figures come from the
-    // same shared builder as the place pages. getMarketPulseAllCitySnapshots
-    // stays for the D21 remainder note only — no pulse value reaches a figure.
-    expect(files.home).toMatch(/leftoverMarketFigures\(hud/)
+    // Homepage no longer prints the leftover KPI row. leftoverHudKpis still
+    // feeds the Field count and town remainder. No pulse value reaches a figure.
+    expect(files.home).toMatch(/leftoverHudKpis/)
+    expect(files.home).not.toMatch(/leftoverMarketFigures\(hud/)
     expect(files.home).not.toMatch(/pending:\s*pulse/)
     expect(files.home).not.toMatch(/getRegionPulse/)
     // The v3 spelling for the city page, MOVED not dropped (2026-08-26): the

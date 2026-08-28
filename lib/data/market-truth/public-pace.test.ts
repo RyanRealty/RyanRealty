@@ -96,10 +96,8 @@ describe('public pace surfaces', () => {
     expect(citiesIndex).toMatch(/getPublicDetachedPace/)
     expect(citiesIndex).toMatch(/Pending · now/)
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
-    // The homepage still READS pace -- it feeds leftoverHudKpis, whose
-    // median-to-pending figure survives in the trimmed five -- but it no longer
-    // appends the full pace item run ("the answer, not the report",
-    // 2026-08-27). /housing-market owns the run.
+    // The homepage still READS pace -- it feeds leftoverHudKpis for the Field
+    // count -- but it no longer prints pace items. /housing-market owns the run.
     expect(home).toMatch(/getPublicDetachedPace/)
     expect(home).not.toMatch(/publicPaceItems/)
     expect(searchTail).toMatch(/publicPaceItems/)

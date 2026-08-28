@@ -44,7 +44,7 @@ export const HOME_COMMUNITY_TRACE =
 export const HOME_MARKET_TRACE =
   'regional MLS through Oregon Data Share, read through the Market Truth metric layer: ' +
   'detached single-family houses across the Central Oregon region. ' +
-  'Every figure names its own window; a figure the layer withheld is absent, not estimated.'
+  'Every figure names its own window. A figure the layer withheld is absent, not estimated.'
 
 /**
  * The honest description of the Field's listed subset. The two claims it makes
@@ -56,4 +56,10 @@ export function homeFieldNote(shown: number): string {
   // ONE line (Matt 2026-08-27): the old four-line methodology paragraph was a
   // footnote wearing body type. The mix detail lives in the curation's own doc.
   return `Each town at its live median, plus the region's two highest asks. The map plots these ${shown}.`
+}
+
+/** Live place hero when present. Otherwise the page's existing fallback image. */
+export function preferPlaceHero(live: string | null | undefined, fallback: string): string {
+  const url = live?.trim()
+  return url || fallback
 }
