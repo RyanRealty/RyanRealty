@@ -1,4 +1,28 @@
-# Mobile audit 2026-08-27 — running state (for any agent picking this up)
+# Mobile audit 2026-08-27 — COMPLETE (first haul shipped); open items below
+
+SHIPPED AND VERIFIED ON PRODUCTION (390px, ffda7de5): scroll-jack dead (the
+sell form's autoFocus dragged every phone visitor to the footer), maps paint
+(the pending-placeholder clip), dead band gone, thumbnails + street-and-city
+titles on rows site-wide, zip capped at a stated 24-of-total preview, 8-stop
+monochrome composition ladder with cream seams, run-on stat tiles trimmed on
+hub/region, booking fallback phone through CONTACT.
+
+STILL OPEN (the next session's list, findings in group-{a..d}.md):
+1. components/search — top-bar crowding (search + save-search on one row) and
+   filter-chip overflow affordance at 390px.
+2. app/housing-market/[...slug]/_v3/geo-figures.ts (shared with communities) —
+   same run-on tile labels the hub got trimmed of; needs the top-3 treatment.
+3. /cities/bend stat wall — group-b wrote a concrete grouping proposal
+   (lead 5, then pricing/pace, property-mix behind a disclosure); needs a
+   V3Instrument fold capability in the barrel.
+4. Homepage brokers section opens on Matt's full-viewport headshot —
+   contradicts the brand-first rule; MATT'S CALL, not unilateral.
+5. Compare map 429/world-zoom — verify on a fresh session before treating as
+   real (likely audit-session Maps quota).
+6. Blog content typo "For for buyers" in Supabase blog_posts
+   (bend-buyers-market-shift-2026) — content edit, not code.
+7. /cities "every city, every door" 42-row link wall — product/SEO tradeoff.
+
 
 Matt's directive: full visual audit of EVERY public page at 390px. Look at rendered
 pixels, never grep alone. Every section judged: FIX-NOW / IMPROVE / FINE. The bar:
