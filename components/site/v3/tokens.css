@@ -305,19 +305,24 @@
   /* Threshold-band wash behind a line or across range rows. */
   --v3-chart-band: var(--v3-wash);
 
-  /* Categorical series run — the ONE sanctioned exception to navy-only marks,
-     for year-over-year overlays where up to five lines must keep identity
-     (chart-room lock, Matt-approved forms, 2026-08-19). Validated on cream
-     #faf8f4 with the dataviz palette validator (mode light): all five >= 3:1
-     against the surface, CVD ΔE floor met with the legend's direct labels as
-     relief. Slots 1 and 3 are snapped from the dark-room run (#c98500 ->
-     #b97c00, #9085e9 -> #847ae3) to clear 3:1 on this surface. Data marks
-     only — never decoration, never a CTA, never a background. */
-  --v3-cat-0: #3987e5;
-  --v3-cat-1: #b97c00;
-  --v3-cat-2: #199e70;
-  --v3-cat-3: #847ae3;
-  --v3-cat-4: #d55181;
+  /* Categorical series run — MONOCHROME (Matt 2026-08-27). The 2026-08-19
+     five-hue palette put a brown, a green and a purple on public charts; Matt
+     killed it on sight: the brand palette is navy and cream, full stop, and
+     registers never vary it. Series identity now comes from WEIGHT + DASH,
+     both derived from the one navy so a template swap moves every line:
+       slot 0  navy 100%  solid    (the lead series — usually now)
+       slot 1  navy  72%  dashed
+       slot 2  navy  50%  solid
+       slot 3  navy  72%  dotted
+       slot 4  navy  36%  dashed
+     Dash patterns live on the .v3-chart__line--catN classes in V3Chart.css;
+     every slot differs from every other in ink or pattern, and the legend
+     swatch mirrors both. Data marks only — never decoration, never a CTA. */
+  --v3-cat-0: var(--v3-navy);
+  --v3-cat-1: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+  --v3-cat-2: color-mix(in srgb, var(--v3-navy) 50%, transparent);
+  --v3-cat-3: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+  --v3-cat-4: color-mix(in srgb, var(--v3-navy) 36%, transparent);
 
   /* Exception ink — the design system's --rr-exception on cream
      (design_system/ryan-realty/colors_and_type.css, Matt 2026-08-17). ONE job:

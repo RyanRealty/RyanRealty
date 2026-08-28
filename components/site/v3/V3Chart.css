@@ -212,20 +212,21 @@
 
 /* ---------------------------------------------------------------------------
    YoY overlay. Up to five lines keep one categorical hue each (validated on
-   cream — see tokens.css). The legend carries the year names, so hue is
-   never the only encoding.
+   cream — see tokens.css). Monochrome navy: ink weight and dash pattern are
+   the encoding, and the legend swatch mirrors both.
    --------------------------------------------------------------------------- */
 
 .v3 .v3-chart__line--cat0 { stroke: var(--v3-cat-0); }
-.v3 .v3-chart__line--cat1 { stroke: var(--v3-cat-1); }
+.v3 .v3-chart__line--cat1 { stroke: var(--v3-cat-1); stroke-dasharray: 8 4; }
 .v3 .v3-chart__line--cat2 { stroke: var(--v3-cat-2); }
-.v3 .v3-chart__line--cat3 { stroke: var(--v3-cat-3); }
-.v3 .v3-chart__line--cat4 { stroke: var(--v3-cat-4); }
+.v3 .v3-chart__line--cat3 { stroke: var(--v3-cat-3); stroke-dasharray: 2 4; stroke-linecap: round; }
+.v3 .v3-chart__line--cat4 { stroke: var(--v3-cat-4); stroke-dasharray: 8 4; }
 
+/* Monochrome series (Matt 2026-08-27): dash IS the encoding now, so the yoy
+   override keeps only the weight and leaves each slot's dasharray alone. */
 .v3 .v3-chart--yoy .v3-chart__line,
 .v3 .v3-chart--yoy .v3-chart__mark {
   stroke-width: var(--v3-chart-stroke);
-  stroke-dasharray: none;
 }
 
 .v3 .v3-chart__key--cat0 .v3-chart__swatch,
@@ -238,10 +239,10 @@
 }
 
 .v3 .v3-chart__key--cat0 .v3-chart__swatch { border-top-color: var(--v3-cat-0); }
-.v3 .v3-chart__key--cat1 .v3-chart__swatch { border-top-color: var(--v3-cat-1); }
+.v3 .v3-chart__key--cat1 .v3-chart__swatch { border-top-color: var(--v3-cat-1); border-top-style: dashed; }
 .v3 .v3-chart__key--cat2 .v3-chart__swatch { border-top-color: var(--v3-cat-2); }
-.v3 .v3-chart__key--cat3 .v3-chart__swatch { border-top-color: var(--v3-cat-3); }
-.v3 .v3-chart__key--cat4 .v3-chart__swatch { border-top-color: var(--v3-cat-4); }
+.v3 .v3-chart__key--cat3 .v3-chart__swatch { border-top-color: var(--v3-cat-3); border-top-style: dotted; }
+.v3 .v3-chart__key--cat4 .v3-chart__swatch { border-top-color: var(--v3-cat-4); border-top-style: dashed; }
 
 /* ---------------------------------------------------------------------------
    Range rows: lollipop / dumbbell. HTML rows, percent geometry from

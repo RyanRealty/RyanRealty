@@ -225,6 +225,38 @@ for (const rel of [...tsxFiles('app'), ...tsxFiles('components')].filter(inScope
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * FOREIGN HEX IN THE v3 CSS ITSELF (added 2026-08-27, the brown).
+ * The scans above catch the BRAND colors typed as literals in components; they
+ * never looked at what colors the token layer DEFINES. That is how a five-hue
+ * categorical palette (#b97c00 brown among them) lived in tokens.css for a
+ * week: every consumer used var(--v3-cat-1) like a good citizen, and the value
+ * behind the var was off-brand. Every hex in components/site/v3/*.css must be
+ * one of the sanctioned set: navy, cream, white, black (legibility layers),
+ * the exception terracotta (--rr-exception canon), the warm-stone focus ring,
+ * and the ground paper tone. Everything else is a new color and fails.
+ * ------------------------------------------------------------------------- */
+const V3_CSS_SANCTIONED_HEX = new Set([
+  '102742', 'faf8f4', 'ffffff', 'fff', '000000', '000',
+  'a8452b', // --v3-exception = --rr-exception (colors_and_type.css)
+  'b9ab97', // --v3-focus: the 3px warm-stone focus ring (brand law)
+  'eee9e0', // --v3-ground: the Ledger sunken-panel paper
+])
+for (const rel of readdirSync('components/site/v3').filter((f) => f.endsWith('.css'))) {
+  const cssPath = `components/site/v3/${rel}`
+  const css = readFileSync(cssPath, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+  const foreign = [...css.matchAll(/#([0-9a-fA-F]{3,8})\b/g)]
+    .map((m) => m[1].toLowerCase())
+    .filter((h) => !V3_CSS_SANCTIONED_HEX.has(h))
+  if (foreign.length) {
+    failures.push(
+      `${cssPath}: foreign hex ${[...new Set(foreign)].map((h) => '#' + h).join(', ')} — the v3 ` +
+      `palette is navy, cream, white/black legibility, the exception terracotta, the focus ` +
+      `stone and the ground paper. A new color is a brand change and starts with Matt, not CSS.`
+    )
+  }
+}
+
 for (const [rel, lines] of hexOffenders) {
   failures.push(
     `${rel}: ${lines.length} raw brand color literal(s) (first at line ${lines[0]}). A value ` +
