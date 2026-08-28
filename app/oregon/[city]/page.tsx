@@ -71,6 +71,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getListingTiles } from '@/lib/data'
+import { classifyInventoryPropertyType } from '@/lib/inventory-filters'
 import { displaySubdivision, homesForSalePath, listingDetailPath } from '@/lib/slug'
 import {
   getOutOfAreaCity,
@@ -234,13 +235,24 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
     const key = address.toLowerCase()
     if (seenAddress.has(key)) continue
     seenAddress.add(key)
-    const meta = [
-      tile.beds != null ? `${tile.beds} bd` : null,
-      tile.baths != null ? `${tile.baths} ba` : null,
-      tile.sqft != null ? `${tile.sqft.toLocaleString('en-US')} sqft` : null,
-    ]
-      .filter(Boolean)
-      .join(' · ')
+    // §0: the statewide feed is unfiltered by property type (the Instrument
+    // above states "all property types"), so a bare parcel can reach this
+    // loop. A land listing never carries beds/baths/sqft, and printing no
+    // meta line at all reads as a home whose specs went missing rather than
+    // a lot — "0 55th Avenue" priced with a blank detail line, 2026-08-27
+    // audit. Land states what it is instead.
+    const isLand = classifyInventoryPropertyType(tile.propertyType) === 'land_lot'
+    const meta = isLand
+      ? ['Lot', tile.lotSizeAcres != null && tile.lotSizeAcres > 0 ? `${tile.lotSizeAcres.toFixed(2)} acres` : null]
+          .filter(Boolean)
+          .join(' · ')
+      : [
+          tile.beds != null ? `${tile.beds} bd` : null,
+          tile.baths != null ? `${tile.baths} ba` : null,
+          tile.sqft != null ? `${tile.sqft.toLocaleString('en-US')} sqft` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')
     listingRows.push({
       href: listingDetailPath(
         tile.listingKey,
@@ -261,7 +273,20 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
     })
   }
   const [firstListingRow, ...restListingRows] = listingRows
-  const listingTrace = `live MLS listing feed, active listings in ${city.name}, newest first, one row per home`
+  // "listing," not "home": a bare parcel can reach this set (see the
+  // isLand branch above), and the trace must not claim a population it does
+  // not print.
+  const listingTrace = `live MLS listing feed, active listings in ${city.name}, newest first, one row per listing`
+  // §0: this Ledger and the Instrument's "active listings" figure above are
+  // two different reads of the same live feed — the Instrument is the
+  // pre-aggregated snapshot row, this Ledger is a fresh fetch capped at the
+  // newest 12 and then dropped for a missing price/address or folded for a
+  // shared street address. One sentence connects the two counts whenever
+  // they disagree, using the real numbers both queries returned.
+  const listingsNote =
+    city.activeAllCount > 0 && listingRows.length > 0 && listingRows.length !== city.activeAllCount
+      ? `The snapshot above counts ${city.activeAllCount.toLocaleString('en-US')} active listings. This list shows the ${listingRows.length.toLocaleString('en-US')} with both a price and a street address, one row per address.`
+      : undefined
 
   // ── The other top out-of-area markets, so the referral tier interlinks instead
   // of dead-ending. Same snapshot population as the answer above, a different set
@@ -393,6 +418,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             eyebrow={v3Text(`${city.name} · For sale`)}
             heading={v3Text(`The newest ${city.name} listings`)}
             rows={[firstListingRow, ...restListingRows]}
+            note={listingsNote ? v3Text(listingsNote) : undefined}
             source={v3Text(listingTrace)}
             action={{
               label: v3Text(`See every ${city.name} home for sale`),

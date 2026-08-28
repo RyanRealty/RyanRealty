@@ -103,11 +103,7 @@
     "getPublicDetachedMonthly({ geoType: 'zip' }) with the parent city's own leftover months and getPriceHistory('city', …) as the documented fallback — the median-close year overlay. When the series is the city's, the chart caption says so."
   ],
   "openDefects": {
-    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
-    "items": [
-      "The page's only H1 is the market question in the second section; the head term ('homes for sale in 97702') has no H1 on the opening Field.",
-      "382 (listed set) vs 243 (detached Dataset count) are two populations with two labels but no sentence connecting them.",
-      "Dataset omits dateModified while a visible stamp exists."
-    ]
+    "_": "Closed 2026-08-27.",
+    "items": []
   }
 }

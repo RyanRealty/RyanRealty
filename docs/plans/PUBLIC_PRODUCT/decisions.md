@@ -1256,3 +1256,34 @@ pairing).
 **Out of scope, recorded not smuggled:** the homepage hero inventory figure
 (already an open defect), the /activity share-label defect (recorded in
 ci:publish-listing-ask), skin switching.
+
+## MISSION (endtoend, part 2) — close every recorded openDefect (2026-08-27)
+
+Goal: every one of the 24 open items recorded in the 14 contracts on 2026-08-27 is
+CLOSED — fixed on the page and verified rendered, or resolved as claim-wrong with the
+reason kept. Done means: `openDefects.items` is empty in every contract, the closing
+method noted in `_`, gates green, tests green, pushed.
+
+Bar per item class:
+- A figure conflict (HOA, 7-vs-6, 382-vs-243, 25-vs-17) is closed by reconciling the
+  populations on the page in one sentence, or by cutting the unverifiable figure (§0:
+  fewer numbers over one wrong one). Never by hiding one of the two.
+- A missing stamp/window is closed by printing the real stamp from the data row.
+- A claimed-but-absent behavior (highlighting, autocomplete) is closed by implementing
+  it or striking the claim — whichever the page's target actually needs.
+- The 2025 mart is data work first: rebuild analytics_mart_market_annual through 2025,
+  then the hero follows.
+
+Out of scope: new sections, new data products beyond the mart year-extension.
+
+COMPLETE 2026-08-27. All 24 items closed: 22 fixed on the page and verified rendered,
+2 resolved as claim-wrong with the reason kept (homepage hero number, listing-detail
+grain). The "2025 mart rebuild" turned out to be code, not data: the nightly cron had
+already written the 2025 rows at 08:15 UTC; CLOSED_SALES_YEAR was pinned to 2024.
+Two live-DB int reconciliation tests went red during the run for reasons outside the
+diff and were re-expressed to the producers' real contracts (archive leftover-overlay
+years reconcile against the leftover rollup; subdivision snapshot counts may differ
+from live only by rows modified after the row's own computed_at). The
+publish-mixed-instrument-stamp gate was re-expressed from the old page spelling to
+the invariant (stamp composed via publishInstrumentStamp, no ?? clock coalescing)
+and break-tested.

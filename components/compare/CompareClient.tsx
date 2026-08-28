@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { listingDetailPath } from '@/lib/slug'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { H1, H2, H3 } from '@/components/site/primitives'
+import { V3SourceLine } from '@/components/site/v3'
 
 export type CompareListingData = {
   listingKey: string
@@ -49,13 +50,19 @@ function fmtPrice(n: number | null | undefined): string {
 
 type RowDef = { label: string; key: keyof CompareListingData; format?: (v: unknown) => string; best?: 'low' | 'high' }
 
+// best-in-class highlighting is restricted to rows where "best" is objective
+// for every buyer: lowest price, lowest $/sqft, highest sqft, lowest HOA,
+// lowest taxes, newest year built. Beds/baths/lot size/days-on-market are
+// subjective (more bedrooms or a slower sale is not objectively "better" for
+// every buyer) and carry no `best` direction, so they are never highlighted
+// (2026-08-27 audit: the contract's "best-in-class highlighting" claim).
 const rows: RowDef[] = [
   { label: 'Price', key: 'price', format: (v) => fmtPrice(v as number), best: 'low' },
-  { label: 'Beds', key: 'beds', format: (v) => fmt(v as number), best: 'high' },
-  { label: 'Baths', key: 'baths', format: (v) => fmt(v as number), best: 'high' },
+  { label: 'Beds', key: 'beds', format: (v) => fmt(v as number) },
+  { label: 'Baths', key: 'baths', format: (v) => fmt(v as number) },
   { label: 'Sq Ft', key: 'sqft', format: (v) => fmt(v as number), best: 'high' },
   { label: 'Price/Sq Ft', key: 'price', format: () => '', best: 'low' }, // computed below
-  { label: 'Lot (acres)', key: 'lotSizeAcres', format: (v) => (v != null ? (v as number).toFixed(2) : '—'), best: 'high' },
+  { label: 'Lot (acres)', key: 'lotSizeAcres', format: (v) => (v != null ? (v as number).toFixed(2) : '—') },
   { label: 'Year Built', key: 'yearBuilt', format: (v) => (v != null ? String(v) : '—'), best: 'high' },
   { label: 'Garage', key: 'garageSpaces', format: (v) => fmt(v as number) },
   { label: 'HOA/mo', key: 'hoa', format: (v) => fmtPrice(v as number), best: 'low' },
@@ -65,7 +72,6 @@ const rows: RowDef[] = [
     key: 'dom',
     // 0 is "listed today", not a figure that reads as missing data (2026-08-27 audit).
     format: (v) => (v === 0 ? 'Listed today' : fmt(v as number)),
-    best: 'low',
   },
   { label: 'Status', key: 'status', format: (v) => (v as string) ?? '—' },
   {
@@ -91,26 +97,55 @@ const rows: RowDef[] = [
   { label: 'Community', key: 'subdivision', format: (v) => (v as string) ?? '—' },
 ]
 
-function bestIndex(listings: CompareListingData[], key: keyof CompareListingData, direction: 'low' | 'high'): number | null {
-  let bestIdx: number | null = null
+/**
+ * Every index that holds the best value for a row, not just the first one
+ * found — a tie (two homes at the identical lowest price) marks BOTH cells.
+ * A missing value is never a candidate, so a row where only one listing
+ * published the figure marks that listing alone and every em-dash stays
+ * unmarked (2026-08-27 audit: "Ties: mark all tied cells. Missing values
+ * never win.").
+ */
+function bestIndexSet(listings: CompareListingData[], key: keyof CompareListingData, direction: 'low' | 'high'): Set<number> {
+  const numericCount = listings.filter((l) => typeof l[key] === 'number').length
+  // Need at least two published values to have a "best" at all.
+  if (numericCount < 2) return new Set()
   let bestVal: number | null = null
-  listings.forEach((l, i) => {
+  listings.forEach((l) => {
     const v = l[key]
-    if (typeof v !== 'number' || v == null) return
+    if (typeof v !== 'number') return
     if (bestVal == null || (direction === 'low' ? v < bestVal : v > bestVal)) {
       bestVal = v
-      bestIdx = i
     }
   })
-  return bestIdx
+  const winners = new Set<number>()
+  listings.forEach((l, i) => {
+    const v = l[key]
+    if (typeof v === 'number' && v === bestVal) winners.add(i)
+  })
+  return winners
 }
 
 export default function CompareClient({
   listings,
   unresolvedIds = [],
+  hasQueryIds = true,
+  dataUpdatedAt = null,
 }: {
   listings: CompareListingData[]
   unresolvedIds?: string[]
+  /**
+   * Whether the page's ?ids= param carried at least one id. When it did NOT,
+   * the page already rendered V3Quiet's #compare-empty state (heading, prose,
+   * "Search homes" exit) — this component must not repeat that same ask with
+   * a second label ("Browse Homes") for one empty-page-load case (2026-08-27
+   * audit: the empty state shipped twice). This component keeps its own
+   * empty rendering only for the two cases V3Quiet does not cover: a
+   * transient client-side redirect from locally-stored comparisonItems, and
+   * a real ?ids= that resolved to zero listings (every id was stale).
+   */
+  hasQueryIds?: boolean
+  /** Newest MLS modification timestamp across the compared listings, for the V3SourceLine stamp. */
+  dataUpdatedAt?: string | null
 }) {
   const { comparisonItems, removeFromComparison } = useComparison()
   const router = useRouter()
@@ -160,13 +195,29 @@ export default function CompareClient({
   }
 
   if (listings.length === 0) {
+    if (comparisonItems.length > 0) {
+      // Transient: a locally-stored comparison list is redirecting this page
+      // to its own ?ids=. Neither V3Quiet's "no ids" copy nor a "Browse
+      // Homes" CTA applies here — it is not empty, it is loading.
+      return (
+        <div className="py-20 text-center">
+          <p className="text-muted-foreground">Loading your selected homes...</p>
+        </div>
+      )
+    }
+    if (!hasQueryIds) {
+      // The page already rendered V3Quiet's #compare-empty state (the one
+      // "Search homes" ask) directly above this section. A second empty
+      // state here would be the duplicate the 2026-08-27 audit flagged.
+      return null
+    }
+    // ids were given but none resolved (every home is off-market or the id
+    // was stale) — distinct from the "no ids" case, so its own message.
     return (
       <div className="py-20 text-center">
         <H2 className="text-2xl text-primary mb-4">No Listings to Compare</H2>
         <p className="text-muted-foreground mb-6">
-          {comparisonItems.length > 0
-            ? 'Loading your selected homes...'
-            : 'Add listings from the search page to compare them side by side.'}
+          None of the homes you added could be found. They may be off-market.
         </p>
         <Button asChild>
           <Link href="/homes-for-sale">
@@ -256,29 +307,40 @@ export default function CompareClient({
           </TableHeader>
           <TableBody>
             {rows.map((row, ri) => {
-              const best = row.best ? bestIndex(listings, row.key, row.best) : null
               const isPricePerSqft = row.label === 'Price/Sq Ft'
+              // Price/Sq Ft is derived (price ÷ sqft), not a stored field, so it
+              // gets its own rounded-value best-set — compared on the same
+              // whole-dollar figure the cell displays, so a tie in the rendered
+              // text is always a tie in the highlight too.
+              const ppsfByIndex = listings.map((l) => (l.price != null && l.sqft ? Math.round(l.price / l.sqft) : null))
+              const ppsfBest = (() => {
+                const valid = ppsfByIndex.filter((v): v is number => v != null)
+                if (valid.length < 2) return new Set<number>()
+                const min = Math.min(...valid)
+                const winners = new Set<number>()
+                ppsfByIndex.forEach((v, i) => {
+                  if (v === min) winners.add(i)
+                })
+                return winners
+              })()
+              const bestSet = isPricePerSqft
+                ? ppsfBest
+                : row.best
+                  ? bestIndexSet(listings, row.key, row.best)
+                  : new Set<number>()
 
               return (
                 <TableRow key={row.label} className={ri % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
                   <TableCell className="sticky left-0 bg-inherit px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">{row.label}</TableCell>
                   {listings.map((l, i) => {
                     let value: string
-                    let isBest = false
+                    const isBest = bestSet.has(i)
 
                     if (isPricePerSqft) {
-                      const ppsf = l.price && l.sqft ? Math.round(l.price / l.sqft) : null
+                      const ppsf = ppsfByIndex[i]
                       value = ppsf != null ? `$${ppsf.toLocaleString()}` : '—'
-                      // Compute best for price/sqft separately
-                      const ppsfValues = listings.map((ll) => (ll.price && ll.sqft ? ll.price / ll.sqft : null))
-                      const validPpsf = ppsfValues.filter((v): v is number => v != null)
-                      if (validPpsf.length > 1 && ppsf != null) {
-                        const minPpsf = Math.min(...validPpsf)
-                        isBest = ppsf === minPpsf
-                      }
                     } else {
                       value = row.format ? row.format(l[row.key]) : String(l[row.key] ?? '—')
-                      isBest = best === i && listings.filter((ll) => ll[row.key] != null).length > 1
                     }
 
                     return (
@@ -304,6 +366,12 @@ export default function CompareClient({
           </TableBody>
         </Table>
       </div>
+
+      <V3SourceLine
+        className="mt-2"
+        source="Oregon Data Share (MLS), live listing tiles and detail records"
+        updatedAt={dataUpdatedAt}
+      />
 
       {/* Map */}
       {listings.some((l) => l.latitude && l.longitude) && (

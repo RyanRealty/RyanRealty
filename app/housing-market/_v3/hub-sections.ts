@@ -17,7 +17,6 @@ import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import {
   v3Text,
   type V3ChartProps,
@@ -143,13 +142,17 @@ export type HubLead = {
 }
 
 /**
- * First-screen KPIs: ALL-TYPE volume, ALL-TYPE closes, composition, and the
- * leftover SFR months-of-supply figure so the verdict stays next to its number.
+ * The level-2 closed-year KPIs: ALL-TYPE volume, ALL-TYPE closes, composition.
+ * ONE POPULATION, ONE CLOCK (2026-08-27 hero-reorder fix, parity.json
+ * market-report openDefects item 1): this used to also carry the live
+ * months-of-supply figure, sourced from a different clock than closed.computedAt.
+ * publishInstrumentStamp(hub page.tsx) only prints a stamp when every clock it
+ * is handed agrees, so mixing a live refreshedAt in here is what produced a
+ * stamped Ledger sitting under an unstamped hero (item 2's defect on the sibling
+ * region report). Months of supply now lives on buildSfrFollowFigures, the
+ * live-figures Instrument, where it belongs with its own clock.
  */
-export function buildHubLead(
-  closedYear: CoMarketAnnualRow | null | undefined,
-  mosText: string | null,
-): HubLead {
+export function buildHubLead(closedYear: CoMarketAnnualRow | null | undefined): HubLead {
   const closed = closedMartRow(closedYear)
   const historyPath = closed ? `${HISTORY_PATH}?year=${closed.year}` : HISTORY_PATH
   const figures: V3InstrumentFigure[] = []
@@ -168,13 +171,6 @@ export function buildHubLead(
       }),
     )
   }
-  if (mosText) {
-    figures.push({
-      value: v3Text(mosText),
-      label: v3Text('months of supply, single-family'),
-      href: '/months-of-supply',
-    })
-  }
 
   const parts = closed ? compositionParts(closed.propertyTypeBreakdown) : []
   const leadType = parts[0] ?? null
@@ -184,11 +180,6 @@ export function buildHubLead(
   const sourceBits: string[] = []
   if (closed) sourceBits.push(closedMartSource(closed.year))
   else if (closedYear) sourceBits.push(closedMartMissingBody(closedYear.year))
-  if (mosText) {
-    sourceBits.push(
-      `Months of supply is leftover membership, detached single-family, Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
-    )
-  }
 
   return {
     closed,
@@ -210,12 +201,19 @@ export function buildHubLead(
   }
 }
 
-/** Leftover SFR follow figures after the first screen already printed months of supply. */
+/**
+ * Live SFR figures for the level-1 hero (2026-08-27 hero-reorder fix): median
+ * list price, homes for sale, months of supply, median to pending, in that
+ * order (parity.json market-report requiredComponents, V3Instrument section).
+ * ONE POPULATION, ONE CLOCK: every figure here reads off the same leftover HUD
+ * row the page stamps with `refreshedAt`, so this Instrument's `updated` prop
+ * is never null the way the old mixed hero's was.
+ */
 export function buildSfrFollowFigures(hud: {
   medianList: number | null
   active: number | null
   daysToPending: number | null
-} | null): V3InstrumentFigure[] {
+} | null, mosText: string | null): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
   if (hud?.medianList != null && hud.medianList > 0) {
     figures.push({
@@ -229,6 +227,13 @@ export function buildSfrFollowFigures(hud: {
       value: v3Text(hud.active.toLocaleString('en-US')),
       label: v3Text('homes for sale, single-family'),
       href: listingsBrowsePath(),
+    })
+  }
+  if (mosText) {
+    figures.push({
+      value: v3Text(mosText),
+      label: v3Text('months of supply, single-family'),
+      href: '/months-of-supply',
     })
   }
   if (hud?.daysToPending != null && hud.daysToPending > 0) {

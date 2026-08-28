@@ -343,6 +343,7 @@ export default async function Home() {
             rows={[firstTownRow, ...restTownRows]}
             note={townRemainder ? v3Text(townRemainder) : undefined}
             source={v3Text(PLACE_COUNT_TRACE)}
+            updated={liveStamp(leftoverStamp)}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
           />
         ) : (
@@ -409,6 +410,7 @@ export default async function Home() {
             heading={v3Text('Resorts and planned communities')}
             rows={[firstCommunityRow, ...restCommunityRows]}
             source={v3Text(HOME_COMMUNITY_TRACE)}
+            updated={liveStamp(leftoverStamp)}
             action={{ label: v3Text('Every community'), href: '/communities' }}
           />
         ) : null}

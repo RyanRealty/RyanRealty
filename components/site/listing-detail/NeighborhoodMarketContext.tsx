@@ -234,7 +234,7 @@ export async function NeighborhoodMarketContext({
               <span style={{ color: 'var(--v3-cream)', fontVariantNumeric: 'tabular-nums' }}>
                 <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow}
               </span>{' '}
-              the {geoName} median.{' '}
+              the {geoName} median list price.{' '}
               <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'color-mix(in srgb, var(--v3-cream) 70%, transparent)' }}>
                 See full {geoName} market →
               </TextLink>

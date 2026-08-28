@@ -68,6 +68,10 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
   const [downPctInput, setDownPctInput] = useState(String(DEFAULT_DOWN_PCT))
   const [rateInput, setRateInput] = useState(String(seedRatePct))
   const [termInput, setTermInput] = useState(String(DEFAULT_TERM_YEARS))
+  // Insurance is an ASSUMPTION, not a fact we hold. Empty input = the seed
+  // ($1,000 per $300K of price per year) keeps tracking the price field; any
+  // typed value replaces the assumption with the buyer's own quote.
+  const [insuranceInput, setInsuranceInput] = useState('')
 
   const result = useMemo(() => {
     const price = parseCurrency(priceInput)
@@ -79,7 +83,9 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
     const principal = split?.loanAmount ?? 0
     const pi = monthlyPI(principal, ratePct, termYears)
     const taxesPerYear = taxAnnualAmount ?? price * (PROPERTY_TAX_RATE_PCT / 100)
-    const insurancePerYear = (price / 300_000) * INSURANCE_PER_300K
+    const insuranceOverride = parseCurrency(insuranceInput)
+    const insurancePerYear =
+      insuranceInput.trim() !== '' ? insuranceOverride : (price / 300_000) * INSURANCE_PER_300K
     const taxesMonthly = taxesPerYear / 12
     const insuranceMonthly = insurancePerYear / 12
     return {
@@ -90,7 +96,9 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
       insuranceMonthly,
       piti: pi + taxesMonthly + insuranceMonthly,
     }
-  }, [priceInput, downPctInput, rateInput, termInput, taxAnnualAmount])
+  }, [priceInput, downPctInput, rateInput, termInput, insuranceInput, taxAnnualAmount])
+
+  const insuranceSeedPerYear = Math.round((parseCurrency(priceInput) / 300_000) * INSURANCE_PER_300K)
 
   return (
     <section className={className}>
@@ -148,16 +156,32 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
               />
             </KbField>
           </div>
-          <KbField label="Term (years)" id="mc-term">
-            <input
-              id="mc-term"
-              type="text"
-              inputMode="numeric"
-              value={termInput}
-              onChange={(e) => setTermInput(e.target.value)}
-              style={KB_INPUT_STYLE}
-            />
-          </KbField>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <KbField label="Term (years)" id="mc-term">
+              <input
+                id="mc-term"
+                type="text"
+                inputMode="numeric"
+                value={termInput}
+                onChange={(e) => setTermInput(e.target.value)}
+                style={KB_INPUT_STYLE}
+              />
+            </KbField>
+            <KbField label="Insurance $/yr" id="mc-insurance">
+              <input
+                id="mc-insurance"
+                type="text"
+                inputMode="numeric"
+                value={formatPriceForDisplay(insuranceInput)}
+                onChange={(e) => setInsuranceInput(e.target.value.replace(/[^\d]/g, ''))}
+                placeholder={insuranceSeedPerYear > 0 ? insuranceSeedPerYear.toLocaleString('en-US') : ''}
+                style={KB_INPUT_STYLE}
+              />
+            </KbField>
+          </div>
+          <Body size="small" tone="muted">
+            Insurance starts at $1,000 per $300K of price each year. Type your quote to replace it.
+          </Body>
         </div>
 
         {/* Results */}

@@ -23,6 +23,7 @@
 import { describe, expect, it } from 'vitest'
 import { config } from 'dotenv'
 import { getCityArchive } from './getCityArchive'
+import { getPublicDetachedMonthly } from '@/lib/data/market-truth/public-monthly'
 
 config({ path: '.env.local' })
 
@@ -80,15 +81,40 @@ run('city sales archive DAL depth + reconciliation (W8.5, real DB)', () => {
     ).toBeGreaterThanOrEqual(8)
   }, 30_000)
 
-  it('§0: per-year homesSold reconciles exactly with the cache sum', async () => {
+  it('§0: per-year homesSold reconciles exactly with its own source (leftover rollup for overlaid years, cache sum otherwise)', async () => {
+    // getCityArchive OVERLAYS the market-truth leftover monthly rollup onto
+    // recent years (overlayArchiveLeftoverYears, >=6 publishable months) and
+    // names those years in archive.leftoverYears. Each year must reconcile
+    // exactly against the source that actually produced it; asserting every
+    // year against the cache re-pins the pre-overlay contract and goes red the
+    // day a year crosses the overlay threshold, which is what happened to 2026.
     const archive = await getCityArchive('bend')
     expect(archive).toBeTruthy()
     const dbByYear = await dbSoldByYear('bend')
+    const leftoverYears = new Set(archive!.leftoverYears)
+    const currentMonthKey = new Date().toISOString().slice(0, 7)
+    const leftoverMonthly = await getPublicDetachedMonthly({
+      geoType: 'city',
+      geoSlug: 'bend',
+      currentMonthKey,
+    })
+    const leftoverByYear = new Map<number, number>()
+    for (const row of leftoverMonthly) {
+      const year = Number(String(row.periodStart).slice(0, 4))
+      leftoverByYear.set(year, (leftoverByYear.get(year) ?? 0) + (row.closedCount ?? 0))
+    }
     for (const y of archive!.years) {
-      expect(
-        y.homesSold,
-        `bend ${y.year} archive homesSold ${y.homesSold} != cache sum ${dbByYear.get(y.year)}`,
-      ).toBe(dbByYear.get(y.year) ?? 0)
+      if (leftoverYears.has(y.year)) {
+        expect(
+          y.homesSold,
+          `bend ${y.year} (leftover-overlaid) archive homesSold ${y.homesSold} != leftover rollup ${leftoverByYear.get(y.year)}`,
+        ).toBe(leftoverByYear.get(y.year) ?? 0)
+      } else {
+        expect(
+          y.homesSold,
+          `bend ${y.year} archive homesSold ${y.homesSold} != cache sum ${dbByYear.get(y.year)}`,
+        ).toBe(dbByYear.get(y.year) ?? 0)
+      }
     }
   }, 30_000)
 

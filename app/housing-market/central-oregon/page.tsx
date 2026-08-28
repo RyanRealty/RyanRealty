@@ -64,29 +64,25 @@
  *     actually rendered.
  *  4. ABSENT IS NOT ZERO (CLAUDE.md section 0). A covered city with no live row is
  *     not printed as "0 active" under a live-MLS source line.
- *  5. THIS PAGE CARRIES ITS OWN VISIBLE PRIMARY (PUBLIC_UI.md section 1). The rule
- *     counts VISIBLE filled controls, and the chrome's CTA counts only where the
- *     chrome actually shows it. The header's filled valuation CTA (`.nav-cta`,
- *     components/site/kb/kb.css) is `display:none` until 880px, and its twin sits in
- *     the closed Menu+ overlay below that, so "the header carries the primary at every
- *     scroll position" is FALSE at 390px. That premise was the stated ground for a
- *     ghost ask here until 2026-08-12, and it shipped a first viewport with no ask at
- *     all. The Instrument's action is therefore `primary`, and it is the only filled
- *     control on the page above the inquiry Sheet. The closing Quiet repeats the
- *     valuation door as a text edge, which is never filled, and V3Footer carries no
- *     button. One visible primary in the first viewport at 390 and at 1280.
- *  6. EVERY VALUATION DOOR CARRIES ITS ORIGIN, AND ONE BUILDER MAKES IT. Both doors
- *     come from `valuationHref(PAGE_PATH)` (lib/site/valuation-href.ts), the one way
- *     to build a valuation link on a content surface. It appends
- *     `?from=/housing-market/central-oregon` and keeps the spine's anchor last. The KB
- *     pages assembled that query string inline, one page at a time, and the first v3
- *     wave dropped it on four routes at once for exactly that reason (2026-07-15
- *     conversion audit, PUBLIC_UI.md addendum 2026-08-11). This page previously
- *     built its own string against /sell/valuation, which ia-lock.md schedules for a
- *     301 into the single intake spine at /sell#get-value, and a 301 drops the query
- *     string with it. Carrying the parameter is this page's half of the contract.
- *     Reading it is the spine's half, and the spine's form posts a hardcoded pagePath
- *     today, which is a defect filed against that unit rather than a claim made here.
+ *  5. ONE ASK ON THE PAGE (2026-08-27 single-ask consolidation, parity.json
+ *     market-report-region openDefects item 3, superseding this invariant's prior
+ *     "own visible primary" reasoning below). This page previously rendered three
+ *     asks: the hero's filled "Value my home" primary, the closing Quiet's "Sell
+ *     your home" and "Value my home" edges, and RegionInquirySheet. Per the fix,
+ *     RegionInquirySheet, the on-page inquiry form the reader fills out without
+ *     leaving the page, is the strongest of the three and the only one that
+ *     survives. Neither Instrument carries an action, and the closing Quiet no
+ *     longer repeats a valuation door. The prior ground for a primary here was
+ *     that the sticky header's filled valuation CTA is `display:none` below 880px
+ *     (components/site/kb/kb.css `.nav-cta`), which is still true. The fix to
+ *     that gap is the Sheet, not a second competing ask.
+ *  6. THE VALUATION-HREF-ORIGIN MACHINERY IS GONE WITH THE DOORS IT SERVED. This
+ *     page no longer opens a valuation link anywhere (invariant 5), so
+ *     `valuationHref(PAGE_PATH)` and the `VALUATION_HREF` const this file used to
+ *     define are removed rather than left unused. Should a valuation door return
+ *     to this page, PAGE_PATH (./region-constants.ts) still names the route, and
+ *     valuationHref (lib/site/valuation-href.ts) is still the one builder. See the
+ *     region catch-all's GeoInquirySheet siblings for the live pattern.
  *
  * DATES RENDER IN PACIFIC, a change from the KB page, stated rather than absorbed.
  * The KB guides rail formatted with `timeZone: 'UTC'` and formatDate is pinned to
@@ -114,16 +110,15 @@ import { getPublicDetachedMix, publicMixItems } from '@/lib/data/market-truth/pu
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { publishInstrumentStamp } from '@/lib/market/publish-mixed-instrument-stamp'
 import { PUBLIC_CLOSED_SALES_METHODOLOGY } from '@/lib/market/publish-public-methodology'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
-import { publishInstrumentStamp } from '@/lib/market/publish-mixed-instrument-stamp'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
-import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -144,9 +139,8 @@ import {
   CLOSED_SALES_TO_YEAR,
   HISTORY_PATH,
   MARKET_CONSEQUENCE,
-  PAGE_PATH,
 } from './_v3/region-constants'
-import { buildRegionInstruments, buildRegionLead, withoutMosFigures } from './_v3/region-figures'
+import { buildRegionInstruments, buildRegionLead } from './_v3/region-figures'
 import {
   buildCityLedger,
   buildClosedLedger,
@@ -157,19 +151,6 @@ import { buildRegionMedianChart, dropInProgressMonth } from '../_v3/market-chart
 import '../_v3/tremor-density.css'
 
 export const revalidate = 300
-
-/**
- * The valuation door's href, both places this page opens one (invariant 6).
- *
- * Built by lib/site/valuation-href.ts, which is the ONE builder for a valuation link
- * on a content surface (PUBLIC_UI.md §3). This page used to
- * assemble the string inline as `${valuationPath()}?from=…`, which is the convention
- * that four routes silently dropped in one wave: an inline query string is invisible
- * to whoever rewrites the section next. It also pointed at /sell/valuation, which
- * ia-lock.md schedules for a 301 into the one intake spine at /sell#get-value, and a
- * 301 drops the query string with it.
- */
-const VALUATION_HREF = valuationHref(PAGE_PATH)
 
 // Metadata - unchanged from the KB page.
 export async function generateMetadata(): Promise<Metadata> {
@@ -243,7 +224,13 @@ export default async function CentralOregonRegionPage() {
     dropInProgressMonth(priceHistory, currentMonthKey),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
-  const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
+  // Two market-truth rows feed this section's figures. One stamp only when
+  // both rows carry one clock; a mismatch withholds the stamp rather than
+  // aging the fresher row (publishInstrumentStamp contract).
+  const leftoverStamp = publishInstrumentStamp([
+    regionMt?.headlines?.computedAt,
+    regionMt?.inventory?.computedAt,
+  ])
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
   // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
@@ -274,7 +261,7 @@ export default async function CentralOregonRegionPage() {
   // assembled from the figures that section actually rendered (invariant 3). Split out
   // under ci:file-size-budget's own instruction, alongside the Ledger builders.
   const region = buildRegionInstruments(hud, mosText)
-  const lead = buildRegionLead(closedSeries, mosText)
+  const lead = buildRegionLead(closedSeries)
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
   const extraLive: V3InstrumentFigure[] = []
   for (const row of publicSegments) {
@@ -300,10 +287,11 @@ export default async function CentralOregonRegionPage() {
       label: v3Text(item.label),
     })
   }
-  const [firstLiveFigure, ...restLiveFigures] = [
-    ...withoutMosFigures(region.live.figures),
-    ...extraLive,
-  ]
+  // 2026-08-27 hero-reorder fix (parity.json market-report-region openDefects
+  // item 1): region.live.figures now KEEPS months of supply. This is the
+  // level-1 hero, not the old level-2 "sfr-pulse" section that had to strip it
+  // to avoid a duplicate with the (then-separate) closed-year hero above it.
+  const [firstLiveFigure, ...restLiveFigures] = [...region.live.figures, ...extraLive]
   const liveTrace =
     region.live.trace +
     (extraLive.length > 0
@@ -366,11 +354,9 @@ export default async function CentralOregonRegionPage() {
 
   // The closing edges, built in ./_v3/region-sections.ts: every internal link the KB
   // region page carried through its footer rail, the outbound MLS citation MarketSources
-  // used to render, the page's second valuation door, and any covered city with no live
-  // row. That second door is a text edge, never a filled control, so it repeats the ask
-  // for a reader who scrolled past the Instrument without adding a competing primary to
-  // any viewport, and it is the same VALUATION_HREF so the two cannot drift.
-  const exploreItems = buildExploreItems(VALUATION_HREF, cityLedger.footnotes)
+  // used to render, and any covered city with no live row. No valuation door any more
+  // (2026-08-27 single-ask consolidation): RegionInquirySheet is the page's one ask.
+  const exploreItems = buildExploreItems(cityLedger.footnotes)
 
   // JSON-LD. BreadcrumbList + WebPage + Dataset + FAQPage, all from MetadataBlock.
   // The KB page emitted FAQPage from inside FAQBlock. V3Breadcrumb and V3Quiet carry
@@ -439,7 +425,14 @@ export default async function CentralOregonRegionPage() {
           ]}
         />
 
-        {firstLeadFigure ? (
+        {/* LEVEL 1, THE PAGE'S ANSWER (2026-08-27 hero-reorder fix, parity.json
+            market-report-region openDefects item 1): live single-family figures lead,
+            under ONE clock (refreshedAt), so this section's stamp is never dropped.
+            The ALL-TYPE closed-year figures that used to open this page now follow as
+            id="closed-year" below, right after the cities Ledger, where this section
+            used to sit as id="sfr-pulse". No action (invariant 5, single-ask
+            consolidation): RegionInquirySheet is the page's one ask. */}
+        {firstLiveFigure ? (
           <V3Instrument
             id="market"
             level={1}
@@ -448,22 +441,10 @@ export default async function CentralOregonRegionPage() {
             headline={v3Text(
               `Central Oregon market report${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
-            figures={[firstLeadFigure, ...restLeadFigures]}
-            source={v3Text(lead.source)}
-            updated={(() => {
-              const stamp = publishInstrumentStamp([
-                lead.latest?.computedAt,
-                mosText ? refreshedAt : null,
-              ])
-              return stamp ? v3Text(formatDate(stamp)) : undefined
-            })()}
-            action={{
-              label: v3Text('Value my home'),
-              href: VALUATION_HREF,
-              variant: 'primary',
-            }}
-            chart={lead.chart}
-            chartSecondary={lead.chartSecondary}
+            figures={[firstLiveFigure, ...restLiveFigures]}
+            source={v3Text(liveTrace)}
+            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
+            chart={regionChart}
           />
         ) : (
           <V3Quiet
@@ -473,8 +454,9 @@ export default async function CentralOregonRegionPage() {
             items={[
               {
                 kind: 'prose',
-                term: 'No ALL-TYPE volume on this refresh',
-                body: lead.source,
+                term: 'No live figures right now',
+                body:
+                  'The Central Oregon region row did not return on this refresh, so this page is not printing a median, an inventory count, or a verdict. The city reports below carry their own live rows.',
               },
             ]}
           />
@@ -511,17 +493,33 @@ export default async function CentralOregonRegionPage() {
           />
         )}
 
-        {firstLiveFigure ? (
+        {/* LEVEL 2, THE LAST FULL CALENDAR YEAR OF CLOSED SALES. ONE POPULATION,
+            ONE CLOCK: lead.latest.computedAt only, never mixed with the live
+            refreshedAt above, so this stamp uses the SAME source as the size-of-market
+            Ledger below (parity.json market-report-region openDefects item 2, "one
+            number, two freshness claims"). Conditional, no Quiet fallback: its
+            neighbours, the cities Ledger above and the summary Quiet below, are already
+            unlike each other, the same reasoning the "pace" Instrument below already
+            relies on. No action: the single-ask consolidation keeps RegionInquirySheet
+            as the page's one ask. */}
+        {firstLeadFigure ? (
           <V3Instrument
-            id="sfr-pulse"
+            id="closed-year"
             level={2}
             className="hm-tremor"
-            eyebrow={v3Text('Single-family')}
-            headline={v3Text('Single-family list inventory')}
-            figures={[firstLiveFigure, ...restLiveFigures]}
-            source={v3Text(liveTrace)}
-            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
-            chart={regionChart}
+            eyebrow={v3Text('Closed sales')}
+            headline={v3Text(
+              lead.latest
+                ? `Central Oregon closed sales, ${lead.latest.year}`
+                : 'Central Oregon closed sales',
+            )}
+            figures={[firstLeadFigure, ...restLeadFigures]}
+            source={v3Text(lead.source)}
+            updated={
+              lead.latest?.computedAt ? v3Text(formatDate(lead.latest.computedAt)) : undefined
+            }
+            chart={lead.chart}
+            chartSecondary={lead.chartSecondary}
           />
         ) : null}
 

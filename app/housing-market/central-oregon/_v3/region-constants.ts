@@ -51,9 +51,17 @@ export const CITY_SLUG: Record<string, string> = {
  */
 export const PAGE_PATH = '/housing-market/central-oregon'
 
-/** The closed-sales window this page publishes. Floor is the first year the mart holds. */
+/**
+ * The closed-sales window this page publishes. Floor is the first year the mart
+ * holds. The ceiling is the last full calendar year: (today's year) - 1.
+ * Verified live against analytics_mart_market_annual 2026-08-27: the region/all
+ * 2025 row carries sold_count 5,769, total_volume $4,116,031,220.90, computed_at
+ * 2026-08-27 08:15 UTC. Kept a literal, like ../../_v3/hub-constants.ts's
+ * CLOSED_SALES_YEAR. Bump by hand each January once that year's mart row is
+ * built, never ahead of it.
+ */
 export const CLOSED_SALES_FROM_YEAR = 1998
-export const CLOSED_SALES_TO_YEAR = 2024
+export const CLOSED_SALES_TO_YEAR = 2025
 
 /**
  * The closed-sales explorer. app/housing-market/history/page.tsx clamps `year` to

@@ -438,10 +438,17 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   /* ── The Field ─────────────────────────────────────────────────────────── */
 
   const fieldItems = nbhFieldItems(listingTiles)
+  // The real total this boundary qualifies, not the secondary live-tile fetch:
+  // inventory.pricedCount is the paginated listing_boundary_xref_mv read (SFR,
+  // PUBLIC_ACTIVE, a usable price), the same population this Field previews.
+  // listingTiles.length can undercount it (a status-filter mismatch between
+  // this page's own live tile fetch and the boundary inventory query silently
+  // dropped the preview-cap statement below the true total, 2026-08-27 audit).
+  const fieldQualifyingTotal = inventoryOk ? inventory.pricedCount : listingTiles.length
   const fieldCaption = neighborhoodFieldCaption({
     placeName: neighborhood.name,
     count: fieldItems.length,
-    totalQualifying: listingTiles.length,
+    totalQualifying: fieldQualifyingTotal,
   })
   const fieldPins = fieldMapPins(fieldItems)
   const fieldPoster = fieldItems.find((item) => item.photoSrc)?.photoSrc

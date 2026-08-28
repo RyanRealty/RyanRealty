@@ -216,17 +216,18 @@ export function buildGuideRows(posts: BlogPostCard[]): V3LedgerPlainRow[] {
 /**
  * The closing Quiet's outbound edges: every internal link the KB region page carried
  * through its footer rail, the Oregon Data Share citation MarketSources used to render,
- * the page's second valuation door, and any covered city the cities Ledger could not
- * source, each still linked to its own report with the reason stated from its own data.
+ * and any covered city the cities Ledger could not source, each still linked to its
+ * own report with the reason stated from its own data.
  *
- * @param valuationHrefValue the page's one valuation string, built once by the route
- *   through valuationHref(PAGE_PATH). Passed in rather than rebuilt so the Instrument's
- *   ask and this edge cannot drift apart.
+ * NO VALUATION DOOR (2026-08-27 single-ask consolidation, parity.json
+ * market-report-region openDefects item 3). This page previously rendered three asks
+ * (RegionInquirySheet, the hero's "Value my home" primary, and this edge set's own
+ * "Sell your home" and "Value my home" links). RegionInquirySheet, the on-page
+ * inquiry form, is now the page's one ask. The other three doors are removed rather
+ * than left pointing at the same destination as a form the reader has not left the
+ * page to reach.
  */
-export function buildExploreItems(
-  valuationHrefValue: string,
-  footnotes: readonly CityFootnote[],
-): V3QuietItem[] {
+export function buildExploreItems(footnotes: readonly CityFootnote[]): V3QuietItem[] {
   const items: V3QuietItem[] = [
     { label: 'Central Oregon housing market hub', href: '/housing-market' },
     { label: 'Closed sales explorer', href: HISTORY_PATH },
@@ -236,8 +237,6 @@ export function buildExploreItems(
     { label: 'Browse homes for sale', href: listingsBrowsePath() },
     { label: 'Open houses this week', href: '/open-houses' },
     { label: 'Recent price drops', href: '/price-drops' },
-    { label: 'Sell your home', href: '/sell' },
-    { label: 'Value my home', href: valuationHrefValue },
     { label: 'Buying and selling guides', href: '/blog' },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]

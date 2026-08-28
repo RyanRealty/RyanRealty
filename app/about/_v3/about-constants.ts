@@ -15,7 +15,17 @@ export const ABOUT_MISSION =
 /** Firm license as published on the pre-v3 about page (OREA 201253677). */
 export const FIRM_LICENSE = 'OREA 201253677'
 
-/** Service-area cities that earn a Ledger row, in row order. Presentation, not a geo registry. */
+/**
+ * Service-area cities that earn a Ledger row, in row order. Presentation, not
+ * a geo registry. Prineville added 2026-08-27: market_metric carries live,
+ * publishable active_count + median_list_active rows for geo_slug=prineville
+ * under the same definition_id='mt-v1' segment='detached' the other six rows
+ * read (confirmed by row-level audit query, not an aggregate) — the prior
+ * six-city list was an omission, not a data gap. Tumalo is NOT here: it is a
+ * PERMANENT_ZERO_MLS_CITY_LABELS entry (lib/data/analytics/rebuildAnalyticsMarts.ts),
+ * unincorporated and not a distinct MLS city, so it can never earn a row —
+ * see the FAQ answer below for how that is stated instead of implied.
+ */
 export const ABOUT_CITY_LABELS = [
   'Bend',
   'Redmond',
@@ -23,6 +33,7 @@ export const ABOUT_CITY_LABELS = [
   'Sunriver',
   'La Pine',
   'Terrebonne',
+  'Prineville',
 ] as const
 
 export const ABOUT_CITY_SLUG: Record<(typeof ABOUT_CITY_LABELS)[number], string> = {
@@ -32,6 +43,7 @@ export const ABOUT_CITY_SLUG: Record<(typeof ABOUT_CITY_LABELS)[number], string>
   Sunriver: 'sunriver',
   'La Pine': 'la-pine',
   Terrebonne: 'terrebonne',
+  Prineville: 'prineville',
 }
 
 export const ABOUT_FAQ_ITEMS = [
@@ -52,7 +64,7 @@ export const ABOUT_FAQ_ITEMS = [
   {
     question: 'What areas do you cover?',
     answer:
-      'Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the surrounding resort communities including Tetherow, Pronghorn, Eagle Crest, and Brasada Ranch.',
+      'Bend, Redmond, Sisters, Sunriver, La Pine, Terrebonne, and Prineville, plus the surrounding resort communities including Tetherow, Pronghorn, Eagle Crest, and Brasada Ranch. Tumalo, unincorporated and not a separate MLS city, is served as part of the Bend market.',
   },
   {
     question: 'How do I get a home valuation?',

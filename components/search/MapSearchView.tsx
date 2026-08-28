@@ -337,6 +337,12 @@ export default function MapSearchView({
   useEffect(() => {
     setSortValue(filters.sort?.trim() || 'newest')
   }, [filters.sort])
+  // Radix SelectValue only paints a label once SelectContent has mounted at
+  // least once (a client-only useLayoutEffect) — with no children of its own
+  // it renders truly empty in SSR HTML, which a crawler sees as a blank
+  // control. Pass the label as SelectValue's children so the served markup
+  // always carries the current sort's text, SSR and post-hydration alike.
+  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortValue)?.label ?? 'Newest'
 
   // ── Geo scope (W4.2) ──────────────────────────────────────────────────────
   // The URL can pin the search to a place (city / subdivision / zip). That pin
@@ -772,7 +778,7 @@ export default function MapSearchView({
           <span className="srch-label hidden sm:inline">Sort</span>
           <Select value={sortValue} onValueChange={handleSortChange}>
             <SelectTrigger className="srch-square h-9 w-[10.5rem]" aria-label="Sort results" size="sm">
-              <SelectValue placeholder="Newest" />
+              <SelectValue placeholder="Newest">{sortLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {SORT_OPTIONS.map((o) => (
@@ -924,6 +930,15 @@ export default function MapSearchView({
             </Button>
           </div>
         )}
+        {/* ODS Aug 2024 IDX display rules (G54): every rendered price/$-per-sqft
+            needs source attribution in view. Split/map is an app frame that
+            deliberately omits V3Footer, so it carries no attribution of its
+            own — this line mirrors V3Footer's ODS text verbatim (compact,
+            no broker-license line, since this is not the global chrome). */}
+        <p className="px-4 pb-4 text-xs text-muted-foreground">
+          Listing data comes from Oregon Data Share and Morgan Data Shuttle. Information deemed
+          reliable but not guaranteed.
+        </p>
         </>
       )}
     </div>
@@ -1049,7 +1064,7 @@ export default function MapSearchView({
         </p>
         <Select value={sortValue} onValueChange={handleSortChange}>
           <SelectTrigger className="srch-square h-9 w-[7.5rem] shrink-0" aria-label="Sort results" size="sm">
-            <SelectValue placeholder="Newest" />
+            <SelectValue placeholder="Newest">{sortLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {SORT_OPTIONS.map((o) => (

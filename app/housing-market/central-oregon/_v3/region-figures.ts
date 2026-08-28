@@ -183,13 +183,20 @@ export type RegionLead = {
 }
 
 /**
- * First-screen ALL-TYPE volume + composition, with SFR months of supply so
- * the verdict stays next to its number. Chart is attached by the page.
+ * The level-2 closed-year KPIs: ALL-TYPE volume + composition. Chart is
+ * attached by the page.
+ *
+ * ONE POPULATION, ONE CLOCK (2026-08-27 hero-reorder fix, parity.json
+ * market-report-region openDefects items 1-2): this used to also carry months
+ * of supply, a live figure on a different clock than `latest.computedAt`. The
+ * page's `updated` stamp for this Instrument only agrees when every clock it is
+ * handed matches, which is exactly why the hero used to print
+ * "$3.931B/5,707... no stamp" while the closed-sales Ledger two sections down,
+ * built from the same `latest.computedAt`, printed one. Months of supply now
+ * lives on buildRegionInstruments (the live section), where it belongs with its
+ * own clock.
  */
-export function buildRegionLead(
-  series: readonly CoMarketAnnualRow[],
-  mosText: string | null,
-): RegionLead {
+export function buildRegionLead(series: readonly CoMarketAnnualRow[]): RegionLead {
   const latest = pickLatestMartYear(series)
   const historyPath = latest ? `${HISTORY_PATH}?year=${latest.year}` : HISTORY_PATH
   const figures: V3InstrumentFigure[] = []
@@ -208,21 +215,9 @@ export function buildRegionLead(
       }),
     )
   }
-  if (mosText) {
-    figures.push({
-      value: v3Text(mosText),
-      label: v3Text('months of supply, single-family'),
-      href: '/months-of-supply',
-    })
-  }
   const sourceBits: string[] = []
   if (latest) sourceBits.push(closedMartSource(latest.year))
   else sourceBits.push(closedMartMissingBody(CLOSED_SALES_TO_YEAR))
-  if (mosText) {
-    sourceBits.push(
-      `Months of supply is leftover membership, detached single-family, Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
-    )
-  }
   return {
     latest,
     figures,
@@ -239,8 +234,4 @@ export function buildRegionLead(
         )
       : undefined,
   }
-}
-
-export function withoutMosFigures(figures: readonly V3InstrumentFigure[]): V3InstrumentFigure[] {
-  return figures.filter((figure) => figure.href !== '/months-of-supply')
 }

@@ -62,16 +62,16 @@
     }
   ],
   "removedComponents": [
-    "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
-    "KbAbout — origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
-    "KbExploreTowns — city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
-    "KbTestimonials — eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
-    "KbArticles — getRecentBlogPosts rail. Dropped; the read is gone.",
-    "KbSell — address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
-    "KbTeam — already removed 2026-07-08 as a duplicate of /team.",
-    "FAQBlock — rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
-    "SmoothScrollProvider — Lenis + GSAP. v3 motion is CSS tokens.",
-    "KbFooter — replaced by V3Footer outside <main>.",
+    "KbHero \u2014 brand eyebrow, poetry H1, Central Oregon photo, property search.",
+    "KbAbout \u2014 origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
+    "KbExploreTowns \u2014 city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
+    "KbTestimonials \u2014 eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
+    "KbArticles \u2014 getRecentBlogPosts rail. Dropped; the read is gone.",
+    "KbSell \u2014 address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
+    "KbTeam \u2014 already removed 2026-07-08 as a duplicate of /team.",
+    "FAQBlock \u2014 rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
+    "SmoothScrollProvider \u2014 Lenis + GSAP. v3 motion is CSS tokens.",
+    "KbFooter \u2014 replaced by V3Footer outside <main>.",
     "kb-root and the kb.css import."
   ],
   "sectionOrder": [
@@ -85,9 +85,7 @@
     "V3Footer"
   ],
   "openDefects": {
-    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
-    "items": [
-      "The FAQ claims coverage of Tumalo and Prineville while only six cities have ledger rows, with no on-page note of the omission."
-    ]
+    "_": "Closed 2026-08-27.",
+    "items": []
   }
 }

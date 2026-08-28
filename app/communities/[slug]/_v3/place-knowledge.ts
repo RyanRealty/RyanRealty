@@ -23,7 +23,9 @@
 
 import type { V3QuietItem } from '@/components/site/v3'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
+import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
+import { measuredPlaceHoaInput } from './place-hoa-measured'
 import { slugify } from '@/lib/slug'
 
 /**
@@ -107,22 +109,35 @@ export function buildPlaceKnowledge(input: {
    * door, and the config cannot know a post's status.
    */
   amenityPosts: Readonly<Record<string, { slug: string, title: string }>>
+  /**
+   * Measured build years + HOA from member listings (PLACE_CONTENT_RULES
+   * R1-R3), the same read V3PlaceCharacter renders lower on the page. A
+   * measured HOA median outranks both the master assessment and the registry
+   * estimate here, so this row cannot print a different annual than the
+   * character block measured. (§0, D103 2026-08-27)
+   */
+  character?: PlaceCharacter | null
 }): V3QuietItem[] {
   const { name, content, registry } = input
   const items: V3QuietItem[] = []
 
+  const { measuredAnnual, measuredBasis } = measuredPlaceHoaInput(input.character)
   const hoa = publishPlaceHoa({
+    measuredAnnual,
+    measuredBasis,
     masterAnnual: content?.hoaMasterAnnual,
     estimateAnnual: registry?.hoa_annual_estimate,
   })
   if (hoa) {
     items.push({
       kind: 'prose',
-      term: hoa.kind === 'master' ? 'Master HOA' : 'HOA estimate',
+      term: hoa.kind === 'measured' ? 'HOA (measured)' : hoa.kind === 'master' ? 'Master HOA' : 'HOA estimate',
       body:
-        hoa.kind === 'master'
-          ? `$${hoa.annual.toLocaleString('en-US')} a year. Membership is separate from the home.`
-          : `$${hoa.annual.toLocaleString('en-US')} a year.`,
+        hoa.kind === 'measured'
+          ? `$${hoa.annual.toLocaleString('en-US')} a year, the ${hoa.basis}.`
+          : hoa.kind === 'master'
+            ? `$${hoa.annual.toLocaleString('en-US')} a year. Membership is separate from the home.`
+            : `$${hoa.annual.toLocaleString('en-US')} a year.`,
     })
   }
 

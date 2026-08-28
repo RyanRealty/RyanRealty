@@ -28,6 +28,71 @@ import { type V3QuietItem } from '@/components/site/v3'
 import { homesForSalePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import type { PublishedPlaceHoa } from '@/lib/market/publish-place-hoa'
+
+export type CommunityFaqItem = { question: string; answer: string }
+
+/**
+ * D103 (2026-08-27). Two populations on this page share the word "single-family"
+ * and print two different counts: the Field's listed set (`listedCount`) counts
+ * every property type filed under the community's named subdivisions (the RETS
+ * bucket PropertyType='A' — condos, townhomes and manufactured homes included,
+ * not detached homes only), while the Dataset/FAQ's `detachedCount` is the
+ * measured single-family-only subset the market Instrument's figures use. Both
+ * numbers were true and nothing on the page said they measured different
+ * things. This appends one sentence to the "how many are for sale" FAQ answer —
+ * read by both the visible closing Quiet block and the FAQPage JSON-LD, since
+ * both render the SAME `faqs` array buildMarketFaq returns — naming both counts
+ * from the page's own live variables. Never hardcoded, and a no-op when either
+ * count is absent or they already agree.
+ */
+export function reconcileListedVsDetachedFaq(
+  faqs: readonly CommunityFaqItem[],
+  input: { placeName: string; listedCount: number; detachedCount: number | null },
+): CommunityFaqItem[] {
+  const { listedCount, detachedCount, placeName } = input
+  if (listedCount <= 0 || detachedCount == null || detachedCount <= 0 || listedCount === detachedCount) {
+    return [...faqs]
+  }
+  return faqs.map((item) => {
+    if (!item.question.startsWith('How many single-family homes are for sale')) return item
+    return {
+      ...item,
+      answer:
+        `${item.answer} The ${listedCount.toLocaleString('en-US')} homes listed for ${placeName} on this page ` +
+        `count every property type across its named subdivisions. This answer's ${detachedCount.toLocaleString('en-US')} ` +
+        `is the single-family subset the figures on this page measure.`,
+    }
+  })
+}
+
+/**
+ * D103 (2026-08-27). The FAQ's HOA answer and the character block's measured
+ * HOA median are built by different call sites; when the page-wide resolved
+ * `hoa` is a MEASURED figure, the generic "start around $X" estimate language
+ * market-faq.ts prints is the wrong claim for an actual measurement, and it
+ * carries no basis. This replaces that one answer's text with the measured
+ * figure and its basis, so the visible answer and the FAQPage JSON-LD (both
+ * fed the same `faqs` array) name the same number the character block
+ * measured. A no-op for 'master' and 'estimate' resolutions, whose text
+ * already matches the number market-faq.ts independently computed for the
+ * same reason a page-wide `hoa.annual` is threaded into `hoaMasterAnnual`.
+ */
+export function reconcilePlaceHoaFaq(
+  faqs: readonly CommunityFaqItem[],
+  hoa: PublishedPlaceHoa | null,
+): CommunityFaqItem[] {
+  if (!hoa || hoa.kind !== 'measured' || !hoa.basis) return [...faqs]
+  return faqs.map((item) => {
+    if (!item.question.endsWith('have an HOA?')) return item
+    return {
+      ...item,
+      answer:
+        `Yes. Annual HOA dues run $${hoa.annual.toLocaleString('en-US')}, the ${hoa.basis}. ` +
+        `Exact fees vary by lot, phase, and membership level. Verify current amounts with the HOA before any purchase.`,
+    }
+  })
+}
 
 
 /**

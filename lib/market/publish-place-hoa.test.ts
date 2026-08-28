@@ -36,4 +36,36 @@ describe('publishPlaceHoa', () => {
     expect(placeHoaGlanceLabel('estimate')).toBe('HOA estimate')
     expect(formatPlaceHoaAnnual(1464)).toBe('$1,464/yr')
   })
+
+  // D103 (2026-08-27): the measured tier — a live median from member listings
+  // outranks both a master assessment and a registry estimate, because a
+  // measurement is not a guess.
+  it('prefers a measured median over master and every estimate', () => {
+    expect(
+      publishPlaceHoa({
+        measuredAnnual: 2052,
+        measuredBasis: 'median of the 6 current listings that report dues',
+        masterAnnual: 1464,
+        estimateAnnual: 1464,
+        subEstimates: [2244, 2004],
+      }),
+    ).toEqual({
+      annual: 2052,
+      kind: 'measured',
+      basis: 'median of the 6 current listings that report dues',
+    })
+  })
+
+  it('falls through to master, then estimate, when no measurement clears the floor', () => {
+    expect(
+      publishPlaceHoa({ measuredAnnual: null, measuredBasis: null, masterAnnual: 1464 }),
+    ).toEqual({ annual: 1464, kind: 'master' })
+    expect(
+      publishPlaceHoa({ measuredAnnual: 0, masterAnnual: null, estimateAnnual: 1464 }),
+    ).toEqual({ annual: 1464, kind: 'estimate' })
+  })
+
+  it('labels glance HOA (measured) for the measured kind', () => {
+    expect(placeHoaGlanceLabel('measured')).toBe('HOA (measured)')
+  })
 })

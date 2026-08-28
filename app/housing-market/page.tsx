@@ -35,13 +35,16 @@
  *     carries its own trace inside its Source disclosure.
  *  4. ABSENT IS NOT ZERO (CLAUDE.md section 0). A covered city with no live row is
  *     not printed as "0 active" under a live-MLS source line.
- *  5. ONE PRIMARY PER VIEWPORT (PUBLIC_UI.md section 1). The sticky public header
- *     carries a filled valuation CTA at every scroll position of this page, so the
- *     Instrument's ask is SECONDARY. A solid button here would put two primaries in
- *     one viewport for the whole length of the page, which is the same reason
- *     V3Footer carries no button (components/site/v3/V3Footer.tsx). The two asks are
- *     also two different products in lib/site-nav.ts, VALUATION_FORM being the
- *     instant estimate at /sell#get-value and this one the written valuation.
+ *  5. ONE ASK ON THE PAGE (2026-08-27 single-ask consolidation, parity.json
+ *     market-report openDefects item 3). Neither Instrument carries an action that
+ *     solicits contact information: the two figure sections answer the reader's
+ *     question, and MarketInquirySheet is the only filled control that asks for one.
+ *     The KB-era ghost "Value my home" button on the hero and the "Sell your home"
+ *     edge in the closing Quiet were both removed as redundant asks against that
+ *     one Sheet. This page previously rendered three (broker form, Value my home,
+ *     Sell your home). The sticky public header still carries its own filled
+ *     valuation CTA at every scroll position. V3Footer carries no button
+ *     (components/site/v3/V3Footer.tsx), unchanged.
  *
  * DATES RENDER IN PACIFIC, a change from the KB page, stated rather than absorbed.
  * The KB guides rail formatted with `timeZone: 'UTC'` and formatDate is pinned to
@@ -71,6 +74,7 @@ import { getPublicDetachedMix, publicMixHasRow, publicMixItems } from '@/lib/dat
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { publishInstrumentStamp } from '@/lib/market/publish-mixed-instrument-stamp'
 import {
   getCoMarketAnnual,
   getCoMarketAnnualSeries,
@@ -89,12 +93,10 @@ import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { marketVerdict } from '@/lib/market/classify'
-import { publishInstrumentStamp } from '@/lib/market/publish-mixed-instrument-stamp'
+import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
-import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -217,7 +219,13 @@ export default async function HousingMarketHubPage() {
   // the page contract requires (G52): the structured data survives a slow or missing
   // region row instead of vanishing. A null field produces no question and no
   // variable, never a fabricated one.
-  const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
+  // Two market-truth rows feed this section's figures. One stamp only when
+  // both rows carry one clock; a mismatch withholds the stamp rather than
+  // aging the fresher row (publishInstrumentStamp contract).
+  const leftoverStamp = publishInstrumentStamp([
+    regionMt?.headlines?.computedAt,
+    regionMt?.inventory?.computedAt,
+  ])
   const pulse: MarketFaqInput | null = {
     grain: 'region',
     source: 'market-truth',
@@ -236,14 +244,22 @@ export default async function HousingMarketHubPage() {
   const { datasetVariables, asOfIso, asOfLabel } = marketFaq
   const refreshedAt = leftoverStamp
 
-  // ALL-TYPE closed year from the mart, plus the SFR pulse MoS figure so the
-  // verdict and the number stay on the same first screen. source === 'missing'
-  // is empty, not a printed zero.
-  const lead = buildHubLead(closedYear, mosText)
+  // ALL-TYPE closed year from the mart. source === 'missing' is empty, not a
+  // printed zero. 2026-08-27 hero-reorder fix (parity.json market-report
+  // openDefects): this is now the LEVEL-2 section, not the hero. It no longer
+  // carries months of supply, which is a different clock than closed.computedAt
+  // and is why the hero used to print no stamp at all (publishInstrumentStamp
+  // only agrees when every clock it is handed is identical).
+  const lead = buildHubLead(closedYear)
   const closed = lead.closed
   const historyPath = lead.historyPath
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
-  const sfrFollow = buildSfrFollowFigures(hud)
+
+  // Live single-family figures for the LEVEL-1 hero (the page's answer): median
+  // list price, homes for sale, months of supply, median to pending, then the
+  // extra leftover segments/pace/mix figures. One population, one clock
+  // (refreshedAt), so this section's stamp is never dropped by a clock mismatch.
+  const sfrFollow = buildSfrFollowFigures(hud, mosText)
   for (const row of publicSegments) {
     if (row.activeCount == null || row.activeCount <= 0) continue
     const bits = publicSegmentDisplayBits(row)
@@ -346,7 +362,6 @@ export default async function HousingMarketHubPage() {
     { label: 'Browse homes for sale', href: listingsBrowsePath() },
     { label: 'Open houses this week', href: '/open-houses' },
     { label: 'Recent price drops', href: '/price-drops' },
-    { label: 'Sell your home', href: '/sell' },
     { label: 'Buying and selling guides', href: '/blog' },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
@@ -416,7 +431,17 @@ export default async function HousingMarketHubPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Housing market' }]} />
 
-        {firstLeadFigure ? (
+        {/* LEVEL 1, THE PAGE'S ANSWER (2026-08-27 hero-reorder fix, parity.json
+            market-report openDefects item 1): live single-family figures lead,
+            under ONE clock (refreshedAt), so this section's stamp is never
+            dropped the way the old mixed-clock hero's was (item 2's twin defect
+            on the sibling region report). The ALL-TYPE closed-year figures that
+            used to open this page now follow as id="closed-year" below.
+            No action: the single-ask consolidation (item 3) keeps MarketInquirySheet
+            as the page's one ask and removes the ghost Value My Home button that
+            used to sit here and the Sell Your Home edge that used to sit in the
+            closing Quiet. */}
+        {firstSfrFigure ? (
           <V3Instrument
             id="market"
             level={1}
@@ -425,21 +450,16 @@ export default async function HousingMarketHubPage() {
             headline={v3Text(
               `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
-            figures={[firstLeadFigure, ...restLeadFigures]}
-            source={v3Text(lead.source)}
-            updated={(() => {
-              const stamp = publishInstrumentStamp([
-                closed?.source === 'mart' ? closed.computedAt : null,
-                mosText ? refreshedAt : null,
-              ])
-              return stamp ? v3Text(formatDate(stamp)) : undefined
-            })()}
-            action={{
-              label: v3Text('Value my home'),
-              href: valuationHref('/housing-market'),
-              variant: 'ghost',
-            }}
-            chart={lead.chart}
+            figures={[firstSfrFigure, ...restSfrFigures]}
+            source={v3Text(
+              `${
+                publicSegments.length > 0 || publicPaceHasRow(publicPace) || publicMixHasRow(publicMix)
+                  ? 'Leftover membership. Single-family figures, extra product types, and 12-month pace are the leftover pile. A miss omits. Not ALL-TYPE closed sales'
+                  : 'Leftover membership, single-family houses across the Central Oregon region. Not ALL-TYPE closed sales'
+              }.${mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`,
+            )}
+            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
+            chart={regionChart}
           />
         ) : (
           <V3Quiet
@@ -451,9 +471,7 @@ export default async function HousingMarketHubPage() {
                 kind: 'prose',
                 term: 'No live figures right now',
                 body:
-                  closedYear && closedYear.source === 'missing'
-                    ? `The ALL-TYPE closed-sales mart row for calendar year ${CLOSED_SALES_YEAR} did not return on this refresh. This page is not printing a close count or a dollar volume. The city reports below carry their own live rows.`
-                    : 'The Central Oregon market row did not return on this refresh, so this page is not printing a median, an inventory count, or a verdict. The city reports below carry their own live rows.',
+                  'The Central Oregon market row did not return on this refresh, so this page is not printing a median, an inventory count, or a verdict. The city reports below carry their own live rows.',
               },
             ]}
           />
@@ -483,26 +501,31 @@ export default async function HousingMarketHubPage() {
           />
         )}
 
-        {firstSfrFigure ? (
+        {/* LEVEL 2, THE LAST FULL CALENDAR YEAR OF CLOSED SALES. ONE POPULATION,
+            ONE CLOCK: closed.computedAt only, never mixed with the live
+            refreshedAt above, so this stamp cannot go missing the way the old
+            combined hero's did. Conditional, no Quiet fallback: its neighbours
+            (the cities Ledger above, the guides Ledger below) are already
+            unlike each other, same reasoning the region report's "pace"
+            Instrument already relies on. */}
+        {firstLeadFigure ? (
           <V3Instrument
-            id="sfr-pulse"
+            id="closed-year"
             level={2}
             className="hm-tremor"
-            eyebrow={v3Text('Single-family')}
-            headline={v3Text('Single-family list inventory')}
-            figures={[firstSfrFigure, ...restSfrFigures]}
-            source={v3Text(
-              publicSegments.length > 0 || publicPaceHasRow(publicPace) || publicMixHasRow(publicMix)
-                ? 'Leftover membership. Single-family figures, extra product types, and 12-month pace are the leftover pile. A miss omits. Not ALL-TYPE closed sales'
-                : 'Leftover membership, single-family houses across the Central Oregon region. Not ALL-TYPE closed sales',
-            )}
-            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
+            eyebrow={v3Text('Closed sales')}
+            headline={v3Text(closed ? `Central Oregon closed sales, ${closed.year}` : 'Central Oregon closed sales')}
+            figures={[firstLeadFigure, ...restLeadFigures]}
+            source={v3Text(lead.source)}
+            updated={
+              closed?.source === 'mart' ? v3Text(formatDate(closed.computedAt)) : undefined
+            }
             action={{
               label: v3Text('Closed sales explorer'),
               href: HISTORY_PATH,
               variant: 'ghost',
             }}
-            chart={regionChart}
+            chart={lead.chart}
           />
         ) : null}
 

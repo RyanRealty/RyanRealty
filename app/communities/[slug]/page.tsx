@@ -133,8 +133,15 @@ import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { coreChartsCard } from '@/components/market/core-charts'
 import { CommunityAlertSheet } from './_v3/CommunityAlertSheet.client'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
-import { buildExploreEdges, communityDocumentItems } from './_v3/community-figures'
+import {
+  buildExploreEdges,
+  communityDocumentItems,
+  reconcileListedVsDetachedFaq,
+  reconcilePlaceHoaFaq,
+} from './_v3/community-figures'
 import { buildPlaceKnowledge } from './_v3/place-knowledge'
+import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
+import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import {
   belongingFigures,
   belongingHeadline,
@@ -360,6 +367,21 @@ export default async function CommunityDetailPage({ params }: Props) {
       ? await skippableRail(() => getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'comm:amenityPosts')
       : {}
 
+  /* ── The ONE HOA figure this page prints (§0, D103 2026-08-27) ──────────── */
+  // Resolved ONCE so the glance figure, the belonging knowledge row, and the
+  // FAQ/Dataset cannot disagree: a measured median from member listings
+  // (getPlaceCharacter) outranks the master assessment, which outranks the
+  // registry estimate. The same instance feeds every call site below.
+  const { measuredAnnual: hoaMeasuredAnnual, measuredBasis: hoaMeasuredBasis } =
+    measuredPlaceHoaInput(placeCharacter)
+  const resolvedHoa = publishPlaceHoa({
+    measuredAnnual: hoaMeasuredAnnual,
+    measuredBasis: hoaMeasuredBasis,
+    masterAnnual: richContent?.hoaMasterAnnual,
+    estimateAnnual: registryEntry?.hoa_annual_estimate,
+    subEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate),
+  })
+
   /* ── Boundary reliability + the alias-aware listing set ─────────────────── */
 
   const boundaryReliable = isBoundaryReliable(slug)
@@ -445,7 +467,14 @@ export default async function CommunityDetailPage({ params }: Props) {
     refreshedAt: leftoverStamp,
     soldCount12mo: publicPace.closedCount ?? null,
     subdivisionAliases: childAliases.length > 0 ? childAliases : null,
-    hoaMasterAnnual: richContent?.hoaMasterAnnual ?? null,
+    // buildMarketFaq runs its own publishPlaceHoa(masterAnnual, estimateAnnual,
+    // subEstimates) and master always beats estimate there, so threading the
+    // page's ONE resolved annual (measured > master > estimate) through the
+    // master channel guarantees the FAQ prints the same number resolvedHoa
+    // does, regardless of which tier actually won. reconcilePlaceHoaFaq below
+    // then fixes the ANSWER TEXT for the measured case, which needs its basis
+    // named instead of the generic estimate phrasing. (§0, D103 2026-08-27)
+    hoaMasterAnnual: resolvedHoa?.annual ?? richContent?.hoaMasterAnnual ?? null,
     hoaAnnualEstimate: registryEntry?.hoa_annual_estimate ?? null,
     hoaSubEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate) ?? null,
     schoolDistrictName: schoolDistrictInfo?.district ?? null,
@@ -471,7 +500,25 @@ export default async function CommunityDetailPage({ params }: Props) {
     figures.push({ value: v3Text(item.value), label: v3Text(item.label) })
   }
   for (const figure of buildPublicMixFigures(publicMix)) figures.push(figure)
-  const [firstMarketFigure, ...restMarketFigures] = figures
+  // PUBLIC_UI.md §3 / parity.json V3Instrument (D103, 2026-08-27): "Level 2 is
+  // rolling 365 days of closed sales. Live inventory is the Field caption,
+  // not the hero." leftoverMarketFigures, publicPaceItems, and
+  // buildPublicMixFigures above build the SAME figure set as before; this
+  // reorders it only — every rolling-window / closed-sale figure (the
+  // "12 months" and "90 days" character stats, months of supply, sold count)
+  // opens the Instrument, and every current-snapshot figure (median list
+  // price, "for sale," "now," "30 days") - the Field's own caption - moves to
+  // the end. No figure is dropped or relabeled.
+  const isLiveInventoryFigure = (label: string): boolean =>
+    label === 'median list price' ||
+    label.includes('for sale') ||
+    label.includes('now') ||
+    label.includes('30 days')
+  const orderedMarketFigures = [
+    ...figures.filter((f) => !isLiveInventoryFigure(f.label)),
+    ...figures.filter((f) => isLiveInventoryFigure(f.label)),
+  ]
+  const [firstMarketFigure, ...restMarketFigures] = orderedMarketFigures
 
   // City-fallback for a too-sparse community series; the caption names the
   // scope so a city trend can never read as this community's (§0).
@@ -513,6 +560,23 @@ export default async function CommunityDetailPage({ params }: Props) {
   const fieldItems = communityFieldItems(fieldTiles)
   const fieldCaption = communityFieldCaption({ placeName: publicName, count: fieldItems.length })
   const mapPins = fieldMapPins(fieldItems)
+
+  // D103 (2026-08-27). The Field's listed set (every property type across the
+  // community's named subdivisions) and the Dataset/FAQ's detached count (the
+  // single-family subset the market figures measure) are two populations;
+  // this names both from the page's own live numbers. Same fix for the HOA
+  // answer: it must not print a different annual than resolvedHoa, and it
+  // states the measured basis when that is the winning tier. Both act on the
+  // SAME `faqs` array the visible closing Quiet block and the FAQPage
+  // JSON-LD render, so reader and crawler see the identical reconciled text.
+  const pageFaqs = reconcilePlaceHoaFaq(
+    reconcileListedVsDetachedFaq(faqs, {
+      placeName: publicName,
+      listedCount: fieldItems.length,
+      detachedCount: hud.active,
+    }),
+    resolvedHoa,
+  )
   // The county plat union, when one exists, always draws; an unreliable stored
   // hull never does (invariant 2).
   const mapPolygon = resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null)
@@ -527,7 +591,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const areaGuideVideo = posterSrc
     ? await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuideVideo')
     : null
-  const belongFigures = belongingFigures(richContent)
+  const belongFigures = belongingFigures(richContent, placeCharacter)
   const [firstBelong, ...restBelong] = belongFigures
 
   /* ── The authored knowledge + the outbound edges ───────────────────────── */
@@ -555,6 +619,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       `I have questions about short-term rental rules in ${publicName}.`,
     )}`,
     amenityPosts,
+    character: placeCharacter,
   })
 
   const exploreItems = buildExploreEdges({
@@ -565,7 +630,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     communityMarketHref,
     cityReportHref,
     pagePath: `/communities/${slug}`,
-    faqs,
+    faqs: pageFaqs,
     documentItems: communityDocumentItems(publicName, placeDocuments),
     golfCourses: GOLF_COURSES.filter((c) => c.communitySlug === slug),
     resortItems: resortQuietItems(),
@@ -584,7 +649,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     datasetVariables,
     asOfIso,
     asOfLabel,
-    faqs,
+    faqs: pageFaqs,
   })
 
   const trail = [

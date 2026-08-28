@@ -33,8 +33,11 @@ checks.push({
   label: 'housing-market hub lead stamp gates through publishInstrumentStamp',
   ok:
     /from ['"]@\/lib\/market\/publish-mixed-instrument-stamp['"]/.test(hub) &&
-    /publishInstrumentStamp\(/.test(hub) &&
-    /mosText \? refreshedAt : null/.test(hub),
+    // The live section's stamp is COMPOSED from its two market-truth rows via
+    // the chokepoint (withhold on a clock mismatch) — never by ?? coalescing,
+    // which prints the first clock and ages the other row's figures.
+    /publishInstrumentStamp\(\[/.test(hub) &&
+    !/computedAt \?\? \S*computedAt/.test(hub),
 })
 
 const region = src('app/housing-market/central-oregon/page.tsx')
@@ -42,8 +45,8 @@ checks.push({
   label: 'region report lead stamp gates through publishInstrumentStamp',
   ok:
     /from ['"]@\/lib\/market\/publish-mixed-instrument-stamp['"]/.test(region) &&
-    /publishInstrumentStamp\(/.test(region) &&
-    /mosText \? refreshedAt : null/.test(region),
+    /publishInstrumentStamp\(\[/.test(region) &&
+    !/computedAt \?\? \S*computedAt/.test(region),
 })
 
 const chartCss = src('components/site/v3/V3Chart.css')

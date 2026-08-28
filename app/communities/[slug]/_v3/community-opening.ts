@@ -12,7 +12,9 @@ import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { listingTileHref } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { ListingTile } from '@/lib/data/types/listing'
+import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
+import { measuredPlaceHoaInput } from './place-hoa-measured'
 
 export function stagePoster(slug: string): string | null {
   return communityImage(slug)
@@ -32,13 +34,22 @@ export function belongingHeadline(name: string, _content: ResortCommunityContent
   return `${name} homes for sale`
 }
 
-export function belongingFigures(content: ResortCommunityContent | null): V3InstrumentFigure[] {
+export function belongingFigures(
+  content: ResortCommunityContent | null,
+  character?: PlaceCharacter | null,
+): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
-  const hoa = publishPlaceHoa({ masterAnnual: content?.hoaMasterAnnual })
+  // A measured median (live member listings) outranks the master assessment
+  // here exactly as it does in the closing knowledge row and FAQ, so this
+  // glance figure cannot disagree with either one. (§0, D103 2026-08-27)
+  const { measuredAnnual, measuredBasis } = measuredPlaceHoaInput(character)
+  const hoa = publishPlaceHoa({ measuredAnnual, measuredBasis, masterAnnual: content?.hoaMasterAnnual })
   if (hoa) {
     figures.push({
       value: v3Text(`$${hoa.annual.toLocaleString('en-US')}`),
-      label: v3Text(hoa.kind === 'master' ? 'master HOA a year' : 'HOA estimate a year'),
+      label: v3Text(
+        hoa.kind === 'measured' ? 'measured HOA a year' : hoa.kind === 'master' ? 'master HOA a year' : 'HOA estimate a year',
+      ),
     })
   }
   const tiers = (content?.membershipTiers ?? []).filter((tier) =>

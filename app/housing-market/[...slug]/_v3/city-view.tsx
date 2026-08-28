@@ -93,6 +93,15 @@ export function CityMarketView({
     { label: 'Closed sales explorer', href: '/housing-market/history' },
     { label: 'Months of supply', href: '/months-of-supply' },
   ])
+  // No valuation door (2026-08-27 single-ask consolidation, parity.json
+  // market-report-detail openDefects: "Two asks render, the 3-step form and Value my
+  // home"). sheet (GeoInquirySheet, the on-page inquiry form the reader fills out
+  // without leaving the page) is the strongest of the two and is now the page's one
+  // ask, so both the Instrument's former "Value my home" primary and this Quiet's own
+  // "Value my home" edge are dropped rather than left pointing at the same
+  // destination as a form already on the page. buildExploreItems is shared with
+  // CommunityMarketView, which is out of scope here, so the edge is filtered out
+  // locally instead of removed from the shared builder.
   const exploreItems = buildExploreItems({
     valuationHrefValue,
     citySlug,
@@ -100,7 +109,7 @@ export function CityMarketView({
     communityName: null,
     footnotes: cityLedger.footnotes,
     posts,
-  })
+  }).filter((item) => !('label' in item && item.label === 'Value my home'))
 
   const headline =
     verdict.kind === 'unknown'
@@ -125,6 +134,8 @@ export function CityMarketView({
 
   return (
     <>
+      {/* No action (2026-08-27 single-ask consolidation, parity.json
+          market-report-detail openDefects): sheet below is the page's one ask. */}
       {firstFigure ? (
         <V3Instrument
           id="market"
@@ -134,11 +145,6 @@ export function CityMarketView({
           figures={[firstFigure, ...restFigures] as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]}
           source={v3Text(trace)}
           updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
-          action={{
-            label: v3Text('Value my home'),
-            href: valuationHrefValue,
-            variant: 'primary',
-          }}
           chart={chart}
         />
       ) : (

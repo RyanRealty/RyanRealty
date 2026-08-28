@@ -37,8 +37,18 @@ export const CITY_SLUG: Record<string, string> = {
   'Terrebonne': 'terrebonne',
 }
 
-/** The last full calendar year the closed-sales marts cover. */
-export const CLOSED_SALES_YEAR = 2024
+/**
+ * The last full calendar year the closed-sales marts cover: (today's year) - 1.
+ * Verified live against analytics_mart_market_annual 2026-08-27: the region/all
+ * 2025 row carries sold_count 5,769, total_volume $4,116,031,220.90, computed_at
+ * 2026-08-27 08:15 UTC. A file this small stays a literal rather than a clock
+ * read (this module's own header: "nothing here fetches, formats, or derives"),
+ * so bump this by hand each January once the prior calendar year's mart row is
+ * built. If getCoMarketAnnual({year: CLOSED_SALES_YEAR}) starts returning
+ * source:'missing', the mart has not been rebuilt for the new year yet. Do not
+ * bump this constant ahead of that rebuild.
+ */
+export const CLOSED_SALES_YEAR = 2025
 
 /** The closed-sales explorer. */
 export const HISTORY_PATH = '/housing-market/history'

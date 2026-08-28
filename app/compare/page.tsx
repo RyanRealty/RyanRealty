@@ -26,7 +26,7 @@
  */
 
 import type { Metadata } from 'next'
-import { getListingTiles, getListingDetailPhotos } from '@/lib/data'
+import { getListingTiles, getListingDetailPhotos, getListingDetail } from '@/lib/data'
 import CompareClient, { type CompareListingData } from '@/components/compare/CompareClient'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
@@ -89,6 +89,10 @@ export default async function ComparePage({
 
   let listings: CompareListingData[] = []
   let unresolvedIds: string[] = []
+  // Newest per-listing MLS modification timestamp across the compared homes —
+  // the honest "as of" stamp for the V3SourceLine trace (§0: a real DAL value,
+  // never a render-time Date.now()).
+  let dataUpdatedAt: string | null = null
 
   if (ids.length > 0) {
     const [byNumberTiles, byKeyTiles] = await Promise.all([
@@ -104,14 +108,24 @@ export default async function ComparePage({
       return true
     })
 
-    const photoArrays = await Promise.all(
-      deduped.map((t) => getListingDetailPhotos(t.listingKey).catch(() => [])),
-    )
+    const [photoArrays, detailRows] = await Promise.all([
+      Promise.all(deduped.map((t) => getListingDetailPhotos(t.listingKey).catch(() => []))),
+      // listing_tile_mv (getListingTiles) is a slim projection with no HOA/tax
+      // columns — getListingDetail reads the full `listings` row per key so
+      // the compare table can show the same HOA/taxes the listing detail page
+      // publishes (defect: compare rendered em-dashes the listing page did not).
+      Promise.all(deduped.map((t) => getListingDetail(t.listingKey).catch(() => null))),
+    ])
     const photoMap = new Map<string, string>()
     deduped.forEach((t, idx) => {
       const photos = photoArrays[idx] ?? []
       const hero = photos.find((p) => p.is_hero === true) ?? photos[0]
       if (hero?.photo_url) photoMap.set(t.listingKey, hero.photo_url)
+    })
+    const detailMap = new Map<string, { hoaMonthly: number | null; taxAnnualAmount: number | null }>()
+    deduped.forEach((t, idx) => {
+      const d = detailRows[idx]
+      if (d) detailMap.set(t.listingKey, { hoaMonthly: d.hoaMonthly, taxAnnualAmount: d.taxAnnualAmount })
     })
 
     // A REQUESTED HOME THAT CANNOT BE RESOLVED IS SAID, NOT SWALLOWED
@@ -122,9 +136,17 @@ export default async function ComparePage({
     )
     unresolvedIds = ids.filter((id) => !resolvedIds.has(id))
 
+    const modifiedTimestamps = deduped
+      .map((t) => t.modifiedAt)
+      .filter((v): v is string => !!v && !Number.isNaN(new Date(v).getTime()))
+    dataUpdatedAt = modifiedTimestamps.length
+      ? modifiedTimestamps.reduce((max, v) => (new Date(v) > new Date(max) ? v : max))
+      : null
+
     listings = deduped.map((t) => {
       const streetParts = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
       const addressParts = [streetParts, t.city, 'OR', t.postalCode].filter(Boolean)
+      const detail = detailMap.get(t.listingKey)
       return {
         listingKey: t.listingKey,
         address: addressParts.join(', '),
@@ -139,8 +161,8 @@ export default async function ComparePage({
         lotSizeAcres: t.lotSizeAcres,
         yearBuilt: t.yearBuilt,
         garageSpaces: t.garageSpaces,
-        hoa: null,
-        taxes: null,
+        hoa: detail?.hoaMonthly ?? null,
+        taxes: detail?.taxAnnualAmount ?? null,
         dom: t.dom,
         status: t.status,
         propertyType: t.propertyType,
@@ -190,7 +212,12 @@ export default async function ComparePage({
         ) : null}
 
         <section id="compare-table" aria-label="Property comparison">
-          <CompareClient unresolvedIds={unresolvedIds} listings={listings} />
+          <CompareClient
+            unresolvedIds={unresolvedIds}
+            listings={listings}
+            hasQueryIds={ids.length > 0}
+            dataUpdatedAt={dataUpdatedAt}
+          />
         </section>
       </main>
 

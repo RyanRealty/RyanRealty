@@ -10,27 +10,32 @@ import {
   volumeSentence,
 } from './closed-kpis'
 
+// Fixture matches the live analytics_mart_market_annual region/all row verified
+// 2026-08-27 (CLAUDE.md section 0): sold_count 5,769, total_volume
+// $4,116,031,220.90, median_close $585,000, computed_at 2026-08-27T08:15:22.761Z.
+// 2025 is the derived truth per ../_v3/hub-constants.ts CLOSED_SALES_YEAR and
+// ./region-constants.ts CLOSED_SALES_TO_YEAR, both last full calendar year.
 function mart(partial: Partial<CoMarketAnnualRow>): CoMarketAnnualRow {
   return {
     geoType: 'region',
     geoSlug: 'central-oregon',
-    year: 2024,
+    year: 2025,
     typeScope: 'all',
-    soldCount: 5707,
-    totalVolume: 3_931_000_000,
-    medianClose: 570000,
+    soldCount: 5769,
+    totalVolume: 4_116_031_220.9,
+    medianClose: 585000,
     meanClose: null,
-    propertyTypeBreakdown: { A: 4850, B: 200, D: 600 },
+    propertyTypeBreakdown: { A: 4850, B: 200, D: 719 },
     methodology: 'test',
     source: 'mart',
-    computedAt: '2026-01-01T00:00:00.000Z',
+    computedAt: '2026-08-27T08:15:22.761Z',
     ...partial,
   }
 }
 
 describe('volumeCompact', () => {
-  it('prints the 2024 mart volume as $3.931B, not $3.93B', () => {
-    expect(volumeCompact(3_931_000_000)).toBe('$3.931B')
+  it('prints the 2025 mart volume as $4.116B, not $4.12B', () => {
+    expect(volumeCompact(4_116_031_220.9)).toBe('$4.116B')
   })
 
   it('returns empty for zero or non-finite so callers cannot print a fake zero', () => {
@@ -40,14 +45,14 @@ describe('volumeCompact', () => {
 })
 
 describe('volumeSentence', () => {
-  it('spells the same 2024 figure for FAQ copy', () => {
-    expect(volumeSentence(3_931_000_000)).toBe('$3.931 billion')
+  it('spells the same 2025 figure for FAQ copy', () => {
+    expect(volumeSentence(4_116_031_220.9)).toBe('$4.116 billion')
   })
 })
 
 describe('closedMartRow', () => {
   it('keeps a present mart year and drops missing or zero rows', () => {
-    expect(closedMartRow(mart({}))?.soldCount).toBe(5707)
+    expect(closedMartRow(mart({}))?.soldCount).toBe(5769)
     expect(closedMartRow(mart({ source: 'missing', soldCount: 0, totalVolume: 0 }))).toBeNull()
     expect(closedMartRow(null)).toBeNull()
   })
@@ -64,34 +69,34 @@ describe('compositionParts', () => {
 describe('buildAllTypeFigures and buildCompositionFigures', () => {
   it('labels volume and closes ALL-TYPE and composition with labelPropertyType', () => {
     const allType = buildAllTypeFigures({
-      soldCount: 5707,
-      totalVolume: 3_931_000_000,
-      historyHref: '/housing-market/history?year=2024',
+      soldCount: 5769,
+      totalVolume: 4_116_031_220.9,
+      historyHref: '/housing-market/history?year=2025',
     })
     expect(allType.map((f) => f.label)).toEqual(['ALL-TYPE volume', 'ALL-TYPE closes'])
-    expect(allType[0]?.value).toBe('$3.931B')
-    expect(allType[1]?.value).toBe('5,707')
+    expect(allType[0]?.value).toBe('$4.116B')
+    expect(allType[1]?.value).toBe('5,769')
 
     const composition = buildCompositionFigures({
-      parts: compositionParts({ A: 4850, D: 600 }),
-      historyHref: '/housing-market/history?year=2024',
+      parts: compositionParts({ A: 4850, D: 719 }),
+      historyHref: '/housing-market/history?year=2025',
     })
     expect(composition.map((f) => f.label)).toEqual([
       'All residential closes',
       'Land closes',
     ])
-    expect(composition[0]?.href).toBe('/housing-market/history?year=2024&type=A')
+    expect(composition[0]?.href).toBe('/housing-market/history?year=2025&type=A')
   })
 })
 
 describe('pickLatestMartYear', () => {
   it('returns the newest present mart year', () => {
     const latest = pickLatestMartYear([
-      mart({ year: 2023, soldCount: 5000 }),
-      mart({ year: 2024 }),
-      mart({ year: 2022, source: 'missing', soldCount: 0, totalVolume: 0 }),
+      mart({ year: 2024, soldCount: 5707 }),
+      mart({ year: 2025 }),
+      mart({ year: 2023, source: 'missing', soldCount: 0, totalVolume: 0 }),
     ])
-    expect(latest?.year).toBe(2024)
+    expect(latest?.year).toBe(2025)
     expect(pickLatestMartYear([])).toBeNull()
   })
 })

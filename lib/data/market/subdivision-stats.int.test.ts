@@ -67,7 +67,7 @@ run('subdivision stats producer→consumer (W2.1/W2.4, real DB)', () => {
 
       const { data: rows } = await supabase
         .from('market_stats_cache')
-        .select('sold_count, median_sale_price')
+        .select('sold_count, median_sale_price, computed_at')
         .eq('geo_type', 'subdivision')
         .eq('geo_slug', c.slug)
         .eq('period_type', 'ytd')
@@ -76,9 +76,12 @@ run('subdivision stats producer→consumer (W2.1/W2.4, real DB)', () => {
       expect(rows, `${c.slug} has no ytd subdivision row`).toBeTruthy()
 
       // Independent manual median over the identical canonical SFR filter.
+      // ModificationTimestamp rides along so post-refresh ingest is separable:
+      // the stored row is a SNAPSHOT taken at computed_at, and a close that
+      // ingests after that snapshot is tonight's refresh, not drift.
       const { data: manual, error: mErr } = await supabase
         .from('listings')
-        .select('ClosePrice:"ClosePrice"')
+        .select('ClosePrice:"ClosePrice", ModificationTimestamp:"ModificationTimestamp"')
         .eq('StandardStatus', 'Closed')
         .gte('CloseDate', `${periodStart}T00:00:00Z`)
         .eq('PropertyType', 'A')
@@ -88,17 +91,39 @@ run('subdivision stats producer→consumer (W2.1/W2.4, real DB)', () => {
         .gte('ClosePrice', 1000)
         .not('OnMarketDate', 'is', null)
       expect(mErr, `manual query failed for ${c.slug}`).toBeNull()
-      const prices: number[] = ((manual ?? []) as Array<Record<string, unknown>>)
-        .map((r) => Number((r as { ClosePrice?: number }).ClosePrice))
-        .filter((v: number) => Number.isFinite(v))
-        .sort((a: number, b: number) => a - b)
-      const n = prices.length
-      const manualMedian =
-        n === 0 ? null : n % 2 ? prices[(n - 1) / 2] : (prices[n / 2 - 1] + prices[n / 2]) / 2
+      const allRows = (manual ?? []) as Array<{ ClosePrice?: number; ModificationTimestamp?: string | null }>
+      const computedAt = String((rows as { computed_at?: string }).computed_at ?? '')
+      const toPrices = (list: typeof allRows) =>
+        list
+          .map((r) => Number(r.ClosePrice))
+          .filter((v: number) => Number.isFinite(v))
+          .sort((a: number, b: number) => a - b)
+      const median = (prices: number[]) =>
+        prices.length === 0
+          ? null
+          : prices.length % 2
+            ? prices[(prices.length - 1) / 2]
+            : (prices[prices.length / 2 - 1]! + prices[prices.length / 2]!) / 2
 
-      expect(rows!.sold_count, `${c.slug} sold_count drift`).toBe(n)
+      // Two exact targets, no tolerance band: the live set NOW, or the live
+      // set as of the row's own snapshot (rows last modified after computed_at
+      // excluded). Matching neither is real drift and still fails.
+      const pricesNow = toPrices(allRows)
+      const asOfSnapshot = allRows.filter(
+        (r) => !computedAt || String(r.ModificationTimestamp ?? '') <= computedAt,
+      )
+      const pricesSnapshot = toPrices(asOfSnapshot)
+      const stored = rows!.sold_count
+      const matchesNow = stored === pricesNow.length
+      const matchesSnapshot = stored === pricesSnapshot.length
+      expect(
+        matchesNow || matchesSnapshot,
+        `${c.slug} sold_count drift: stored ${stored}, live-now ${pricesNow.length}, as-of-snapshot(${computedAt}) ${pricesSnapshot.length}`,
+      ).toBe(true)
+      const prices = matchesNow ? pricesNow : pricesSnapshot
+      const n = prices.length
       if (n >= 3) {
-        expect(Number(rows!.median_sale_price), `${c.slug} median drift vs manual`).toBe(manualMedian)
+        expect(Number(rows!.median_sale_price), `${c.slug} median drift vs manual`).toBe(median(prices))
       }
     }
   }, 30_000)

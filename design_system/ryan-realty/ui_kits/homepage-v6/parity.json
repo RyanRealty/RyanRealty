@@ -125,7 +125,6 @@
   "openDefects": {
     "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
     "items": [
-      "The towns and communities ledgers carry a trace but no stamp while sibling sections on the same page carry one.",
       "RESOLVED AS CLAIM-WRONG 2026-08-27, kept for the record: an earlier defect said the hero should state the inventory number. PUBLIC_UI section 3 is explicit that a Stage is 'never over a number' (type over photography is where figures go to become illegible), and the live count is the FIRST line after the Stage as the Field caption. The page is right; the defect was wrong."
     ]
   },

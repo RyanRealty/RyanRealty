@@ -475,6 +475,16 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   const fieldTrace =
     `live MLS through Oregon Data Share, every active single-family listing in ZIP ${zip} (${area}) ` +
     'that reports a list price. The map and the list are the same set'
+  // §0: this list and the Instrument's "detached homes for sale" figure below
+  // are two different populations of the same MLS PropertyType='A' bucket —
+  // this list is every sub type in it, the Instrument figure is the Market
+  // Truth detached-only subset. Only stated when the two counts genuinely
+  // come from different queries (mtHit); when the Instrument falls back to
+  // the same tile count, there is nothing to reconcile.
+  const populationNote =
+    mtHit && activeCount != null && fieldItems.length > 0
+      ? `This list of ${fieldItems.length.toLocaleString('en-US')} counts every property type. The ${activeCount.toLocaleString('en-US')} single-family figure below is the detached subset the market figures measure.`
+      : undefined
 
   // ── NEIGHBOURHOODS IN THIS ZIP ───────────────────────────────────────────
   // Grouped from the same tiles. THE KEY IS THE RAW FEED VALUE AND THE LABEL IS
@@ -601,6 +611,10 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
         ? `${datasetLede} Source: market_metric mt-v1 detached ZIP PostalCode.`
         : `${datasetLede} Derived from the Oregon RMLS feed via Ryan Realty.`,
       url: zipPageUrl,
+      // The same stamp the Instrument prints as "updated {date}" — a crawler
+      // reading this Dataset payload sees the identical freshness the page
+      // itself shows (§0: never omit dateModified next to a visible stamp).
+      dateModified: hudAsOf ?? undefined,
       spatialCoverageName: `ZIP ${zip} · ${area}`,
       variableMeasured: datasetStats,
     },
@@ -620,12 +634,15 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           ]}
         />
 
-        {/* Pattern 2, Field. Houses fill the fold; the count is a caption. */}
+        {/* Pattern 2, Field. Houses fill the fold; the count is a caption and
+            the H1 is the money head term. */}
         <ZipHomesField
           zip={zip}
+          headline={v3Text(`Homes for sale in ${zip}`)}
           fieldItems={fieldItems}
           caption={fieldCaption}
           source={fieldTrace}
+          populationNote={populationNote}
           emptyMessage={
             tilesRead.ok
               ? `No active single-family listing in ${zip} reports a list price right now.`
@@ -638,7 +655,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
         {firstMarketFigure ? (
           <V3Instrument
             id="market-report"
-            level={1}
+            level={2}
             eyebrow={v3Text(`${zip} · ${area} · Oregon`)}
             headline={v3Text(marketHeadline)}
             note={verdictSentence ? v3Text(verdictSentence) : undefined}
@@ -655,7 +672,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           <V3Quiet
             id="market-report"
             heading={`Homes for sale in ${zip}`}
-            headingLevel={1}
+            headingLevel={2}
             items={[
               {
                 kind: 'prose',

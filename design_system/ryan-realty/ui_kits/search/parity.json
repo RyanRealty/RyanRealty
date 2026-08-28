@@ -2,7 +2,7 @@
   "route": "app/search/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/search/index.html",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED site-v2 mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target. Homes opens on Field. Production search (MapSearchView + SearchFilters + SearchResults) IS the Field. Do not wrap it in V3Field: that would duplicate list+map.",
-  "competitiveTarget": "Redfin/Zillow-grade map search. Headline: search-as-you-move (pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch). Plus list↔map hover sync, photo popups on markers, mobile list/map toggle.",
+  "competitiveTarget": "Redfin/Zillow-grade map search. Headline: search-as-you-move (pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch). Plus list\u2194map hover sync, photo popups on markers, mobile list/map toggle.",
   "note": "E-HOMES-SEARCH 2026-08-13. Migrated leftover search chrome onto the v3 barrel. V3Chrome is sticky in flow on app/layout.tsx (recipe still says fixed; ignore that). This page does not remount chrome. Search belongs to the Homes Field, not the header. App-frame height is retargeted in app/search/search-frame.css off the sticky 3.5rem bar (globals.css still subtracts a 64px fixed overlay). Filter dock uses search-filter-dock under that bar. @no-breadcrumb stays: a Home > self trail on the highest-traffic page is waste. Map/split is viewport-fit and shows no footer at render; the V3Footer token stays in source for ci:default-chrome-footer / ci:kb-shared-shell. List view renders V3Footer outside <main>. KB-era deletions: KbFooter, kb.css, kb-root, pt-16 gap that assumed a fixed 64px nav. Capture unchanged: SearchAlertCapture. JSON-LD unchanged on the slug route (SearchPageJsonLd + Dataset MetadataBlock + preset FAQPage now from SeoTail MetadataBlock). Dual objectives and exits unchanged.",
   "requiredComponents": [
     {
@@ -46,7 +46,7 @@
   "layoutContracts": [
     "3-row chrome intent: Row 1 omnibox + Save/Alerts CTAs; Row 2 primary filter chips; Row 3 results count + filter summary + sort",
     "Degraded search honesty: SSR/client timeout or fetch failure must not present as true zero inventory without a retry/degraded affordance",
-    "Count/sort row: dedicated visible stamp in split (N homes · scope/filters · sorted by…). 390 list names the list (N homes). in this map view only when the map is on screen.",
+    "Count/sort row: dedicated visible stamp in split (N homes \u00b7 scope/filters \u00b7 sorted by\u2026). 390 list names the list (N homes). in this map view only when the map is on screen.",
     "390 filters are one All filters control. Chip set is sm+ so pills do not clip.",
     "Search-as-you-move: pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch",
     "Split body: map + results side-by-side on desktop; intentional mobile list/map toggle (not dual conflicting chrome)",
@@ -61,10 +61,7 @@
     "SearchResults -- the list, in lockstep with the markers from ONE viewport fetch"
   ],
   "openDefects": {
-    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
-    "items": [
-      "The Sort control's value renders empty in SSR (Radix paints the label on hydration) — a crawler sees an empty control.",
-      "Listing rows carry price and $/sqft with no ODS attribution in view; the attribution lives in the footer this app frame deliberately omits."
-    ]
+    "_": "Closed 2026-08-27.",
+    "items": []
   }
 }

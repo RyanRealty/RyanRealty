@@ -230,6 +230,18 @@ export default async function CitiesPage() {
   const featuredSlugs = new Set(featured.map((f) => f.slug))
   const others = visibleCities.filter((c) => featuredSlugs.has(c.slug) === false)
 
+  // The ledger's own stamp (~45 rows, featured + the rest): the OLDEST
+  // real refreshedAt among the city snapshot rows the ledger actually shows,
+  // so the stamp never claims fresher than the stalest row it prints.
+  const ledgerSlugs = new Set<string>([...featuredSlugs, ...others.map((c) => c.slug)])
+  const ledgerRowStamps = allSnapshots
+    .filter((s) => ledgerSlugs.has(s.geoKey.replace(/\s+/g, '-')))
+    .map((s) => s.refreshedAt)
+    .filter((s): s is string => Boolean(s))
+  const ledgerStamp = ledgerRowStamps.length > 0
+    ? ledgerRowStamps.reduce((oldest, cur) => (cur < oldest ? cur : oldest))
+    : null
+
   const totalActive: number | null = hud.active
   const regionMedian = hud.medianList
   const regionVerdict = verdictFromMos(hud.monthsSupply)
@@ -286,20 +298,24 @@ export default async function CitiesPage() {
   if (totalActive != null && totalActive > 0) {
     regionFigures.push({
       value: v3Text(formatCount(totalActive)),
-      label: v3Text('Active homes'),
+      // Point-in-time count, not a window — label names it "today" so it
+      // reads honestly next to the 12-month and 6-month figures beside it.
+      label: v3Text('Active homes · today'),
     })
   }
   const regionMedianText = fmtMedian(regionMedian)
   if (regionMedianText) {
-    regionFigures.push({ value: v3Text(regionMedianText), label: v3Text('Median list price') })
+    // Same point-in-time basis as active homes above: today's list prices.
+    regionFigures.push({ value: v3Text(regionMedianText), label: v3Text('Median list price · today') })
   }
   // The stat is the number; the verdict is a sub-line under it (it used to be
   // the verdict alone under "MONTHS OF SUPPLY" — a word where a number was
-  // promised, design-audit P2).
+  // promised, design-audit P2). The window names the formula's own basis
+  // (active_listings / (closed_last_6_months / 6), §0 of CLAUDE.md).
   if (hud.monthsSupply != null) {
     regionFigures.push({
       value: v3Text(`${formatMonthsOfSupply(hud.monthsSupply)} mo`),
-      label: v3Text(`Months of supply${regionVerdict ? ` · ${regionVerdict}` : ''}`),
+      label: v3Text(`Months of supply · 6-month basis${regionVerdict ? ` · ${regionVerdict}` : ''}`),
     })
   }
   if (regionPace.pendingCount != null) {
@@ -438,6 +454,7 @@ export default async function CitiesPage() {
             heading={v3Text('Every city, and what is listed there')}
             rows={[firstFeatured, ...restFeatured, ...(firstOther ? [firstOther, ...restOthers] : [])]}
             source={v3Text(FEATURED_TRACE + '. Remaining cities: ' + OTHERS_TRACE)}
+            updated={ledgerStamp ? v3Text(formatDate(ledgerStamp)) : undefined}
           />
         ) : (
           <V3Ledger

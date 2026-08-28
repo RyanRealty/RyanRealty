@@ -195,11 +195,7 @@
   ],
   "superseded": [],
   "openDefects": {
-    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
-    "items": [
-      "The Dataset and FAQ publish the 17-count (detached membership) while the Field says 25 (alias-matched listed set); nothing on the page reconciles the two populations for a reader or a crawler.",
-      "The FAQ's HOA estimate ($1,464/yr, registry) conflicts with the character block's measured $171/mo median (~$2,052/yr) with neither naming the other.",
-      "The market Instrument opens on live-inventory tiles against this contract's 'live inventory is the Field caption, not the hero'."
-    ]
+    "_": "Closed 2026-08-27.",
+    "items": []
   }
 }

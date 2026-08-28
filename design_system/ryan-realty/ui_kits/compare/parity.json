@@ -1,12 +1,12 @@
 {
   "route": "app/compare/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex — not an SEO surface.",
+  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex \u2014 not an SEO surface.",
   "note": "E-HOMES-SEARCH 2026-08-13. Migrated /compare chrome onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb belowNav=false. V3Footer outside <main>. Page contract carried unchanged: robots noindex,follow, revalidate 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList JSON-LD, KbSectionTracker pageType=compare. Shared /compare?ids= links keep resolving. Dual objectives unchanged. Capture does not live on this route. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, navy header band. AICompare deleted 2026-08-18 (never wired). MetadataBlock and KbSectionTracker stay on non-v3 registers.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD — BreadcrumbList structured data (Home > Compare). No WebPage JSON-LD on a noindex utility route.",
+      "section": "JSON-LD \u2014 BreadcrumbList structured data (Home > Compare). No WebPage JSON-LD on a noindex utility route.",
       "blocking": true
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "name": "CompareClient",
-      "section": "interactive comparison surface — photo row, side-by-side feature table with best-in-class highlighting, Google Maps locations embed, Copy Link + Download PDF actions, empty/loading state",
+      "section": "interactive comparison surface \u2014 photo row, side-by-side feature table with best-in-class highlighting, Google Maps locations embed, Copy Link + Download PDF actions, empty/loading state",
       "blocking": true
     },
     {
@@ -51,11 +51,7 @@
     "V3Footer"
   ],
   "openDefects": {
-    "_": "Audited against the rendered page 2026-08-27; every item is a verified gap, not a hunch.",
-    "items": [
-      "The empty state ships twice with two labels for one ask (V3Quiet 'Search homes' + CompareClient 'Browse Homes').",
-      "'best-in-class highlighting' is claimed by the contract and not rendered — implement or strike the claim.",
-      "No source or stamp anywhere the figures are; HOA/Taxes render em-dashes where the listing pages publish values."
-    ]
+    "_": "Closed 2026-08-27.",
+    "items": []
   }
 }
