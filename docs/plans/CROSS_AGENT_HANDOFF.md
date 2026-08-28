@@ -3,6 +3,27 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
+# PUBLIC SITE ENDTOEND COMPLETE — 2026-08-27 (Claude Code, main)
+
+Every one of the 20 public page contracts (`design_system/ryan-realty/ui_kits/*/parity.json`)
+now audits clean: zero open items in `openDefects`, claim-wrong resolutions kept with
+reasons. Shipped through `22e390c4` (defect closure itself is `66bf4f15`; the audit waves
+are `5ce0570c`, `1d73657c`, `8083df83`, `43d9f305`). Production deploy verified serving the
+fixes on ryan-realty.com. Gates 165/165, 15,376 tests, tsc clean.
+
+Things a follow-on session must not undo:
+- The page-purpose gate binds sectionOrder + competitiveTarget; a page change that breaks
+  its plan fails `ci:page-purpose`. Update the contract WITH the page, never delete items.
+- Hub/region market heroes are LIVE-FIRST with 2025 closed-year figures following; stamps
+  compose through `publishInstrumentStamp` (no `??` clock coalescing — gated).
+- One ask per market page: the inquiry form. Do not re-add Value-my-home/Sell doors to
+  content sections.
+- One HOA figure per community page, measured basis outranking the registry estimate
+  (`lib/market/publish-place-hoa.ts` `measured` tier).
+- `listingDetailPath` guards the 'Outside Boundaries' sentinel for every URL surface.
+- Two live-DB int tests were re-expressed to producer contracts (archive leftover-overlay
+  years; subdivision snapshot-as-of-computed_at) — see `66bf4f15` message before touching.
+
 # CMA/BPO IS CLAIMED — one tree, 2026-08-27 (Claude Code)
 
 **Matt 2026-08-27: "roll up the entire CMA process... a number of sessions touching CMA work
