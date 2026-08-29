@@ -574,8 +574,10 @@ describe('search index H1 is Homes for Sale on the Field face', () => {
   })
 
   it('puts that heading above one SearchFilters field', () => {
+    expect(page.indexOf('Homes for Sale')).toBeLessThan(page.indexOf('search-filter-dock'))
     const dock = page.slice(page.indexOf('search-filter-dock'))
     expect(dock).toMatch(/<SearchFilters /)
+    expect(dock).not.toMatch(/<V3Heading level=\{1\}/)
   })
 
   it('keeps the footer on the Field face', () => {
@@ -598,6 +600,21 @@ describe('search filter dock and required map attribution (PR 163)', () => {
       /\.search-field \.v3\.v3-field--map-toggle\.v3-field--map-open \.v3-field__frame > \.v3-field__col:first-of-type/,
     )
     expect(css).toMatch(/\.search-field \.v3-field__lead \.v3-btn\.v3-field__map-toggle/)
+  })
+
+  it('bounds the 390 Field list so the email ask sits under the Field', () => {
+    const css = readSrc('app/search/search-frame.css')
+    expect(css).toMatch(/\.search-field \.v3\.v3-field--flow \.v3-field__list/)
+    expect(css).toMatch(/max-height:\s*min\(70vh,\s*560px\)/)
+    const page = readSrc('app/search/page.tsx')
+    expect(page.indexOf('<MapSearchView')).toBeLessThan(page.indexOf('<SearchAlertCapture'))
+    const split = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+    expect(split.indexOf('<MapSearchView')).toBeLessThan(split.indexOf('<SearchAlertCapture'))
+  })
+
+  it('keeps the cream dock in flow at 1280 so it cannot cover the Field', () => {
+    const css = readSrc('app/search/search-frame.css')
+    expect(css).toMatch(/@media \(min-width: 56\.25rem\) \{[\s\S]*\.search-filter-dock \{[\s\S]*position:\s*relative/)
   })
 
   it('keeps required Google attribution and only hides the decorative MAP chip', () => {

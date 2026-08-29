@@ -40,7 +40,8 @@
 }
 
 /* Unlayered so these beat V3Field.css. Search lists are long: when Map is
-   on, the map is the surface and tiles peek below. */
+   on, the map is the surface and tiles peek below. Bound the 390 list so
+   the email ask sits under the Field, not after every tile. */
 @media (max-width: 56.249rem) {
   .search-field .v3.v3-field--map-toggle.v3-field--map-open .v3-field__frame > .v3-field__col:first-of-type {
     order: 0;
@@ -48,6 +49,19 @@
 
   .search-field .v3.v3-field--map-toggle.v3-field--map-open .v3-field__frame > .v3-field__col:last-of-type {
     order: 1;
+  }
+
+  .search-field .v3.v3-field--flow .v3-field__list {
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+  }
+}
+
+/* 1280: cream dock stays in flow so it cannot cover the map or list. */
+@media (min-width: 56.25rem) {
+  .search-filter-dock {
+    position: relative;
+    top: auto;
   }
 }
 
