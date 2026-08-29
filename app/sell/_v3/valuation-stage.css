@@ -4,7 +4,8 @@
   display: none;
 }
 
-/* First screen on 390: compact Stage, then the cream sheet under the H1. */
+/* First face: compact Stage, then the cream sheet under the H1 so address
+   and email share the opening viewport at 390 and 1280. */
 @media (max-width: 47.999rem) {
   .v3.v3-stage.valuation-stage-poster {
     min-height: 0;
@@ -16,6 +17,17 @@
 
   .v3.v3-sheet.valuation-value-sheet {
     padding-top: var(--v3-space-md);
+    padding-bottom: var(--v3-space-lg);
+  }
+}
+
+@media (min-width: 48rem) {
+  .v3.v3-stage.valuation-stage-poster .v3-stage-copy {
+    padding-bottom: var(--v3-space-md);
+  }
+
+  .v3.v3-sheet.valuation-value-sheet {
+    padding-top: var(--v3-space-lg);
     padding-bottom: var(--v3-space-lg);
   }
 }
