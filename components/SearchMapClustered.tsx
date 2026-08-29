@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
+import React, { useMemo, useCallback, useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { MapContext, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import {
@@ -147,6 +147,8 @@ type Props = {
   initialBounds?: MapBounds | null
   /** Fit initialBounds only — do not jump to placeQuery or every pin (statewide). */
   lockBounds?: boolean
+  /** After a mobile list→map layout, trigger Maps resize. Does not refit pins. */
+  relayoutKey?: string | number
 }
 
 /**
@@ -486,6 +488,7 @@ export default function SearchMapClustered({
   onMarkerHover,
   initialBounds = null,
   lockBounds = false,
+  relayoutKey,
 }: Props) {
   // Multi-shape mode (Phase 2 draw tools) replaces the legacy single-polygon UI.
   const multiShape = onShapesChange != null
@@ -692,6 +695,26 @@ export default function SearchMapClustered({
     if (!map) return
     map.setOptions(mapOptions)
   }, [mapOptions])
+
+  // Mobile list pane covers the canvas; switching to Map changes the visible
+  // box. Resize after layout so tiles match the camera. Do not fitBounds —
+  // lockBounds / bbox stay the current viewport.
+  useLayoutEffect(() => {
+    if (relayoutKey !== 'map') return
+    const map = mapRef.current
+    if (!map) return
+    const trigger = window.google?.maps?.event?.trigger
+    if (typeof trigger !== 'function') return
+    let cancelled = false
+    const frame = requestAnimationFrame(() => {
+      if (cancelled) return
+      trigger(map, 'resize')
+    })
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
+    }
+  }, [relayoutKey])
 
   const onLoad = useCallback(
     (map: google.maps.Map) => {

@@ -110,12 +110,29 @@ describe('split loading skeleton matches the live rail', () => {
   })
 })
 
-describe('SearchFilters view toggle stays on 390', () => {
-  const src = readSrc('components/search/SearchFilters.tsx')
-
-  it('keeps List Split Map visible, not desktop-only', () => {
+describe('390 Map uses one camera', () => {
+  it('hides the filter-bar List/Split/Map ToggleGroup below lg', () => {
+    const src = readSrc('components/search/SearchFilters.tsx')
     expect(src).toMatch(/aria-label=\{`\$\{v\} view`\}/)
-    expect(src).not.toMatch(/hidden lg:flex/)
+    expect(src).toMatch(/hidden h-11 overflow-hidden rounded-none border border-border\/60 bg-muted\/40 lg:flex/)
+  })
+
+  it('MapSearchView keeps the in-shell List/Map toggle', () => {
+    const src = readSrc('components/search/MapSearchView.tsx')
+    expect(src).toMatch(/mobileView/)
+    expect(src).toMatch(/ToggleGroupItem value="list"/)
+    expect(src).toMatch(/ToggleGroupItem value="map"/)
+    expect(src).toMatch(/className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-2 py-1 lg:hidden"/)
+  })
+
+  it('resizes the Google map after mobile Map layout and keeps lockBounds', () => {
+    const view = readSrc('components/search/MapSearchView.tsx')
+    const map = readSrc('components/SearchMapClustered.tsx')
+    expect(view).toMatch(/relayoutKey=\{mobileView\}/)
+    expect(view).toMatch(/lockBounds/)
+    expect(map).toMatch(/google\.maps\.event\.trigger/)
+    expect(map).toMatch(/trigger\(map, 'resize'\)/)
+    expect(map).toMatch(/lockBounds/)
   })
 })
 
@@ -125,6 +142,9 @@ describe('split row and map chrome stay navy', () => {
     const css = readSrc('components/site/v3/V3ListingRow.css')
     expect(row).toMatch(/sizes=\{splitThumb \? '160px' : '72px'\}/)
     expect(css).toMatch(/box-shadow: inset 0 0 0 2px var\(--v3-navy\)/)
+    expect(css).toMatch(/v3-lrow__addr-tip/)
+    expect(css).not.toMatch(/content: '‹'/)
+    expect(css).not.toMatch(/content: '›'/)
   })
 
   it('drops the rounded map shadow and paints saved hearts from the marker token', () => {

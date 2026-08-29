@@ -948,6 +948,7 @@ export default function MapSearchView({
         boundaryGeojson={boundaryGeojson}
         initialBounds={initialBounds}
         lockBounds
+        relayoutKey={mobileView}
         onBoundsChanged={handleBoundsChanged}
         shapes={drawnShapes}
         onShapesChange={handleShapesChange}

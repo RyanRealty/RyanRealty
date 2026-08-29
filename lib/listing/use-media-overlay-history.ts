@@ -17,7 +17,7 @@ export function useMediaOverlayHistory(
   onClose: () => void,
   hash: MediaOverlayHash,
   photoOneBased?: number | null,
-): { dismiss: () => void } {
+): { dismiss: () => void; closeInPlace: () => void } {
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
   const pushedRef = useRef(false)
@@ -31,15 +31,8 @@ export function useMediaOverlayHistory(
     }
 
     const url = new URL(window.location.href)
-    const dest =
-      hash === 'gallery' && photoOneBased != null && photoOneBased > 0
-        ? galleryUrl(url, photoOneBased)
-        : `${url.pathname}${stripPhoto(url.search)}#tour`
-
-    const alreadyThere =
-      hash === 'gallery'
-        ? url.searchParams.get('photo') === String(photoOneBased)
-        : url.hash === '#tour'
+    const dest = overlayDest(url, hash, photoOneBased)
+    const alreadyThere = overlayMatches(url, hash, photoOneBased)
 
     if (!alreadyThere) {
       if (pushedRef.current || (hash === 'gallery' && url.searchParams.has('photo'))) {
@@ -48,6 +41,15 @@ export function useMediaOverlayHistory(
         history.pushState({ listingMedia: hash }, '', dest)
         pushedRef.current = true
       }
+    } else if (
+      hash === 'gallery' &&
+      (photoOneBased == null || photoOneBased <= 0) &&
+      !pushedRef.current
+    ) {
+      // Floor pane has no ?photo= dest. Still occupy a history entry so Back
+      // closes the gallery; never write #tour.
+      history.pushState({ listingMedia: hash }, '', dest)
+      pushedRef.current = true
     }
 
     const onPop = () => {
@@ -72,11 +74,20 @@ export function useMediaOverlayHistory(
       return
     }
     const url = new URL(window.location.href)
-    history.replaceState(null, '', `${url.pathname}${stripPhoto(url.search)}`)
+    history.replaceState(null, '', listingUrlWithoutPhoto(url))
     onCloseRef.current()
   }, [])
 
-  return { dismiss }
+  /** Close without history.back so a tour overlay can take #tour on this entry. */
+  const closeInPlace = useCallback(() => {
+    pushedRef.current = false
+    fromPopRef.current = false
+    const url = new URL(window.location.href)
+    history.replaceState(null, '', listingUrlWithoutPhoto(url))
+    onCloseRef.current()
+  }, [])
+
+  return { dismiss, closeInPlace }
 }
 
 function stripPhoto(search: string): string {
@@ -86,9 +97,32 @@ function stripPhoto(search: string): string {
   return next ? `?${next}` : ''
 }
 
+/** Listing path + search with `?photo=` removed and no `#tour`. */
+export function listingUrlWithoutPhoto(url: URL): string {
+  return `${url.pathname}${stripPhoto(url.search)}`
+}
+
 function galleryUrl(url: URL, photoOneBased: number): string {
   const params = new URLSearchParams(url.search)
   params.set('photo', String(photoOneBased))
   const qs = params.toString()
   return `${url.pathname}?${qs}`
+}
+
+function overlayDest(url: URL, hash: MediaOverlayHash, photoOneBased?: number | null): string {
+  if (hash === 'gallery') {
+    if (photoOneBased != null && photoOneBased > 0) return galleryUrl(url, photoOneBased)
+    return listingUrlWithoutPhoto(url)
+  }
+  return `${listingUrlWithoutPhoto(url)}#tour`
+}
+
+function overlayMatches(url: URL, hash: MediaOverlayHash, photoOneBased?: number | null): boolean {
+  if (hash === 'gallery') {
+    if (photoOneBased != null && photoOneBased > 0) {
+      return url.searchParams.get('photo') === String(photoOneBased)
+    }
+    return !url.searchParams.has('photo') && url.hash !== '#tour'
+  }
+  return url.hash === '#tour'
 }

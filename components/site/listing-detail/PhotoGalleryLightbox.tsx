@@ -112,7 +112,7 @@ export function PhotoGalleryLightbox({
   }, [openIndex])
 
   const isOpen = openIndex != null && (photos.length > 0 || floorPlans.length > 0)
-  const { dismiss } = useMediaOverlayHistory(
+  const { dismiss, closeInPlace } = useMediaOverlayHistory(
     isOpen,
     onClose,
     'gallery',
@@ -150,7 +150,9 @@ export function PhotoGalleryLightbox({
     }
     if (id === 'video' || id === 'tour') {
       if (onOpenEmbed) {
-        dismiss()
+        // Do not history.back() then immediately push #tour — that race
+        // pops the tour closed. Strip ?photo= in place; tour still uses #tour.
+        closeInPlace()
         onOpenEmbed(id)
       }
     }

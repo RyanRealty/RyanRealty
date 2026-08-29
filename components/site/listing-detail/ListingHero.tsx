@@ -16,9 +16,9 @@ import { publishListingLeadMedia } from '@/lib/listing/publish-listing-lead-medi
 import { publishListingMosaicPills } from '@/lib/listing/publish-listing-mosaic-pills'
 
 /**
- * Listing media mosaic. Media 1 is a video or 3D tour when one exists,
- * else the first still of THIS house. Price and facts live under the media.
- * No map chip on the media.
+ * Listing media mosaic. Media 1 is a VIDEO reel when one exists,
+ * else the first still of THIS house. 3D is a pill, not the lead frame.
+ * Price and facts live under the media. No map chip on the media.
  */
 
 type Props = {
