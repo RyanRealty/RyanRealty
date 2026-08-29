@@ -7,14 +7,15 @@ import { SEARCH_CHROME_PX, shouldPinSearchWorkspace } from '@/components/search/
 
 /**
  * Pin dock + Field under chrome after the H1 leaves, then release once
- * that reserved block has scrolled past. Works at 390 and 1280 so the
- * stuck cream chrome never covers the Field map or list. H1 stays in
- * the page header and does not stick.
+ * the email ask reaches the viewport (latched until the H1 returns).
+ * Works at 390 and 1280 so the stuck cream chrome never covers the
+ * Field map or list. H1 stays in the page header and does not stick.
  */
 export function SearchWorkspace({ children }: { children: ReactNode }) {
   const boxRef = useRef<HTMLDivElement>(null)
   const slotRef = useRef<HTMLDivElement>(null)
   const reservedRef = useRef(0)
+  const releasedRef = useRef(false)
 
   useEffect(() => {
     const box = boxRef.current
@@ -28,7 +29,16 @@ export function SearchWorkspace({ children }: { children: ReactNode }) {
       }
       const reserved = reservedRef.current || box.offsetHeight
       const naturalTop = slot.getBoundingClientRect().top
-      const shouldStick = shouldPinSearchWorkspace(naturalTop, reserved, SEARCH_CHROME_PX)
+      const email = document.getElementById('search-alert-capture')
+      const emailTop = email ? email.getBoundingClientRect().top : Number.POSITIVE_INFINITY
+      if (naturalTop > SEARCH_CHROME_PX) {
+        releasedRef.current = false
+      } else if (emailTop < window.innerHeight) {
+        releasedRef.current = true
+      }
+      const shouldStick =
+        releasedRef.current === false &&
+        shouldPinSearchWorkspace(naturalTop, reserved, SEARCH_CHROME_PX)
       if (shouldStick) {
         box.classList.add('search-workspace--stuck')
         slot.style.height = `${reserved}px`

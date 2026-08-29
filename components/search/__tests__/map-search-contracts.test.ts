@@ -623,6 +623,7 @@ describe('search filter dock and required map attribution (PR 163)', () => {
     expect(css).toMatch(/\.search-workspace \.search-filter-dock \{[\s\S]*position:\s*relative/)
     const wrap = readSrc('components/search/SearchWorkspace.tsx')
     expect(wrap).toMatch(/search-workspace--stuck/)
+    expect(wrap).toMatch(/releasedRef/)
     expect(wrap).toMatch(/shouldPinSearchWorkspace/)
     expect(wrap).not.toMatch(/min-width: 56\.25rem/)
     const page = readSrc('app/search/page.tsx')
