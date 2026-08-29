@@ -8,9 +8,31 @@ import { getSurfaceImage } from '@/lib/data'
 import { preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { slugify } from '@/lib/slug'
 
+/**
+ * Stage is an elevated place still, never a plat outline or a lime
+ * parcel drawing. Lot photos and plan renderings live in the Sheet.
+ */
+export function isListingStagePlatStill(url: string | null | undefined): boolean {
+  const value = url?.trim().toLowerCase() ?? ''
+  if (!value) return false
+  return (
+    /\bplat\b/.test(value) ||
+    /cadastral|parcel-map|lot-lines|lot-line|survey-plat/.test(value) ||
+    /lime[-_ ]?plat|plat[-_ ]?lime/.test(value) ||
+    /aerial[-_ ]?(plat|outline)|plat[-_ ]?outline/.test(value)
+  )
+}
+
+function usableStageStill(url: string | null | undefined): string | null {
+  const trimmed = url?.trim()
+  if (!trimmed) return null
+  if (isListingStagePlatStill(trimmed)) return null
+  return trimmed
+}
+
 function imaginePlaceStill(...urls: Array<string | null | undefined>): string | null {
   for (const url of urls) {
-    const trimmed = url?.trim()
+    const trimmed = usableStageStill(url)
     if (trimmed && trimmed.includes('imagine-place-')) return trimmed
   }
   return null
@@ -20,7 +42,11 @@ function imaginePlaceStill(...urls: Array<string | null | undefined>): string | 
 export function listingStagePosterUrl(
   ...urls: Array<string | null | undefined>
 ): string | null {
-  return imaginePlaceStill(...urls) ?? preferPlaceHeroOrNull(urls[0], urls[1] ?? null)
+  const imagine = imaginePlaceStill(...urls)
+  if (imagine) return imagine
+  const first = usableStageStill(urls[0])
+  const second = usableStageStill(urls[1])
+  return preferPlaceHeroOrNull(first, second)
 }
 
 export async function listingStagePoster(input: {

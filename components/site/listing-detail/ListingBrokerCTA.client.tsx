@@ -19,6 +19,7 @@ import { TextMattCTA } from './TextMattCTA'
 import ListingMobileContactBar from './ListingMobileContactBar.client'
 import type { Broker } from '@/lib/data/types/broker'
 import type { ReviewsSummary } from '@/lib/data/reviews/getReviews'
+import type { ListingFace } from '@/lib/listing/listing-face'
 
 function readAttributedSlug(): string | null {
   try {
@@ -76,6 +77,7 @@ export default function ListingBrokerCTA({
   reviews,
   className,
   lockToDefault = false,
+  face = 'house',
 }: {
   defaultBroker: Broker
   brokers: Broker[]
@@ -86,6 +88,7 @@ export default function ListingBrokerCTA({
   /** True when defaultBroker is the resolved Ryan Realty listing agent for THIS
    *  home — keep them as the contact; never random-reassign over them. */
   lockToDefault?: boolean
+  face?: ListingFace
 }) {
   const [broker, setBroker] = useState<Broker>(defaultBroker)
 
@@ -110,10 +113,10 @@ export default function ListingBrokerCTA({
 
   return (
     <>
-      <TextMattCTA broker={broker} listingKey={listingKey} reviews={reviews} className={className} />
+      <TextMattCTA broker={broker} listingKey={listingKey} reviews={reviews} className={className} face={face} />
       {/* Always-reachable mobile bar (hidden on lg+ via CSS) — replaces the CRM
           floating widget; shows the same attributed broker as the card. */}
-      <ListingMobileContactBar broker={broker} listingKey={listingKey} />
+      <ListingMobileContactBar broker={broker} listingKey={listingKey} face={face} />
     </>
   )
 }

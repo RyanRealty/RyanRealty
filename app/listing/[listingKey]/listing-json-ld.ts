@@ -27,6 +27,7 @@
 import { listingShareSummary } from '@/lib/share-metadata'
 import { listingDetailPath } from '@/lib/slug'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import type { ListingFace } from '@/lib/listing/listing-face'
 
 export type ListingJsonLdInput = {
   listingKey: string
@@ -61,6 +62,7 @@ export type ListingJsonLdInput = {
   }
   photoUrls: readonly string[]
   agent: { fullName: string; email: string | null; phoneDirect: string | null } | null
+  face?: ListingFace
 }
 
 /** Canonical public path — matches generateMetadata, the sitemap, and the canonical link. */
@@ -97,16 +99,20 @@ export function listingCanonicalPath(listing: ListingJsonLdInput['listing']): st
 }
 
 export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
-  const { listing, street, listingKey, wholePropertyPrice, photoUrls, agent } = input
+  const { listing, street, listingKey, wholePropertyPrice, photoUrls, agent, face = 'house' } = input
   const canonicalPath = listingCanonicalPath(listing)
   const livingArea = listing.sqft ?? listing.totalLivingAreaSqFt
+  const isLand = face === 'land'
 
   return [
     {
       type: 'breadcrumb',
       items: [
         { name: 'Home', url: '/' },
-        { name: 'Homes for sale', url: '/homes-for-sale' },
+        {
+          name: isLand ? 'Land for sale' : 'Homes for sale',
+          url: isLand ? '/homes-for-sale?propertyType=Land' : '/homes-for-sale',
+        },
         ...(listing.city && listing.citySlug
           ? [{ name: listing.city, url: `/cities/${listing.citySlug}` }]
           : []),
@@ -121,9 +127,9 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
       description:
         listingShareSummary({
           price: wholePropertyPrice,
-          beds: listing.beds,
-          baths: listing.baths,
-          sqft: livingArea,
+          beds: isLand ? null : listing.beds,
+          baths: isLand ? null : listing.baths,
+          sqft: isLand ? null : livingArea,
           address: street || undefined,
           city: street ? undefined : (listing.city ?? undefined),
         }) || undefined,
@@ -139,9 +145,9 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
         listing.lat != null && listing.lng != null
           ? { lat: listing.lat, lng: listing.lng }
           : undefined,
-      beds: listing.beds ?? undefined,
-      baths: listing.baths ?? undefined,
-      livingAreaSqft: livingArea ?? undefined,
+      beds: isLand ? undefined : (listing.beds ?? undefined),
+      baths: isLand ? undefined : (listing.baths ?? undefined),
+      livingAreaSqft: isLand ? undefined : (livingArea ?? undefined),
       lotSizeSqft: listing.lotSizeSqft ?? undefined,
       yearBuilt: listing.yearBuilt ?? undefined,
       listPrice: wholePropertyPrice ?? undefined,

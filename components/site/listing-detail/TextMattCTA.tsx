@@ -7,6 +7,7 @@ import {
 } from '@/components/site/primitives'
 import type { Broker } from '@/lib/data/types/broker'
 import type { ReviewsSummary } from '@/lib/data/reviews/getReviews'
+import type { ListingFace } from '@/lib/listing/listing-face'
 
 /**
  * Listing-detail broker contact card — the ONE sticky sidebar CTA. Shows the
@@ -35,6 +36,7 @@ type Props = {
   body?: string
   primaryCta?: { href: string; label: string }
   className?: string
+  face?: ListingFace
 }
 
 function digits(phone: string): string {
@@ -49,9 +51,11 @@ export function TextMattCTA({
   body,
   primaryCta,
   className,
+  face = 'house',
 }: Props) {
+  const isLand = face === 'land'
   const tourHref = primaryCta?.href ?? `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
-  const tourLabel = primaryCta?.label ?? 'Schedule a tour'
+  const tourLabel = primaryCta?.label ?? (isLand ? 'Schedule' : 'Schedule a tour')
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
 
   const quote = reviews?.reviews?.[0] ?? null
@@ -69,7 +73,7 @@ export function TextMattCTA({
     >
       <Stack gap="default">
         <Eyebrow>Talk to a broker</Eyebrow>
-        <H3>{headline ?? 'Questions about this home?'}</H3>
+        <H3>{headline ?? (isLand ? 'Questions about this lot?' : 'Questions about this home?')}</H3>
         <Body size="small" tone="muted" className="leading-relaxed">
           {body ?? 'Tour requests usually get a same-day reply.'}
         </Body>

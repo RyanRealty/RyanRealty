@@ -872,6 +872,17 @@
   font-size: 0.8rem;
   font-weight: 600;
 }
+.listing-detail .listing-sheet-gallery-caption {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: 0.35rem 0.4rem;
+  font-family: var(--v3-font-sans);
+  font-size: 0.62rem;
+  line-height: 1.2;
+  color: var(--cream);
+  background: color-mix(in srgb, var(--v3-navy) 78%, transparent);
+}
 .listing-detail .listing-sheet-job {
   display: grid;
   gap: 1.25rem;

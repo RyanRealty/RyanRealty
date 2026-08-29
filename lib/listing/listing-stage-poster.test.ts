@@ -27,4 +27,19 @@ describe('listingStagePosterUrl', () => {
     expect(listingStagePosterUrl(null, null)).toBeNull()
     expect(listingStagePosterUrl('  ', '')).toBeNull()
   })
+
+  it('refuses a plat outline or lime plat on Stage', () => {
+    expect(
+      listingStagePosterUrl(
+        'https://cdn.example/awbrey-butte-plat-outline.png',
+        'https://cdn.example/lime-plat-parcel.png',
+      ),
+    ).toBeNull()
+    expect(
+      listingStagePosterUrl(
+        'https://cdn.example/aerial-plat-outline.jpg',
+        'https://cdn.example/photos/grok-imagine/imagine-place-awbrey-butte.png',
+      ),
+    ).toBe('https://cdn.example/photos/grok-imagine/imagine-place-awbrey-butte.png')
+  })
 })

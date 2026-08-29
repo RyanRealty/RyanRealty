@@ -11,12 +11,17 @@ import '@/components/site/v3/V3Sheet.css'
 export function ListingSheet({
   children,
   className,
+  face = 'house',
 }: {
   children: ReactNode
   className?: string
+  face?: 'house' | 'land'
 }) {
   return (
-    <section className={cn(V3_ROOT_CLASS, 'v3-sheet', 'v3-sheet--page', className)} aria-label="This home">
+    <section
+      className={cn(V3_ROOT_CLASS, 'v3-sheet', 'v3-sheet--page', className)}
+      aria-label={face === 'land' ? 'This lot' : 'This home'}
+    >
       {children}
     </section>
   )

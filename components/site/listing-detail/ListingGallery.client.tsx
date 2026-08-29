@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { V3Button, V3Stage } from '@/components/site/v3'
 import type { ListingPhoto } from '@/lib/data/types/listing'
+import { publishListingPhotoCaption } from '@/lib/listing/listing-photo-caption'
 import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
 
 type GalleryContextValue = {
@@ -27,29 +28,45 @@ export function ListingGalleryProvider({
   photos,
   addressLine,
   children,
+  face = 'house',
 }: {
   photos: ReadonlyArray<ListingPhoto>
   addressLine?: string
   children: ReactNode
+  face?: 'house' | 'land'
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
-  const total = photos.length
-  const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
+  const labeled = useMemo(
+    () =>
+      photos.map((photo) => ({
+        ...photo,
+        caption: publishListingPhotoCaption(photo.caption) ?? photo.caption ?? null,
+      })),
+    [photos],
+  )
+  const total = labeled.length
+  const altBase = addressLine
+    ? face === 'land'
+      ? `Photo of the lot at ${addressLine}`
+      : `Photo of ${addressLine}`
+    : face === 'land'
+      ? 'Lot photo'
+      : 'Listing photo'
   const value = useMemo<GalleryContextValue>(
     () => ({
-      photos,
+      photos: labeled,
       total,
       altBase,
       open: (index: number) => setOpenIndex(index),
     }),
-    [photos, total, altBase],
+    [labeled, total, altBase],
   )
 
   return (
     <GalleryContext.Provider value={value}>
       {children}
       <PhotoGalleryLightbox
-        photos={photos.map((p) => ({ url: p.url, caption: p.caption }))}
+        photos={labeled.map((p) => ({ url: p.url, caption: p.caption }))}
         openIndex={openIndex}
         total={total}
         altBase={altBase}
@@ -67,12 +84,14 @@ export function ListingGalleryProvider({
 export function ListingHero({
   posterSrc,
   addressLine,
+  face = 'house',
 }: {
   posterSrc: string
   addressLine: string
+  face?: 'house' | 'land'
 }) {
   const { total, open } = useGallery()
-  const headline = addressLine.trim() || 'This home'
+  const headline = addressLine.trim() || (face === 'land' ? 'This lot' : 'This home')
   const photosLabel = `${total} ${total === 1 ? 'photo' : 'photos'}`
 
   return (
@@ -128,6 +147,9 @@ export function ListingPhotoStrip() {
               sizes="(min-width: 1200px) 16vw, (min-width: 760px) 20vw, 33vw"
               className="object-cover"
             />
+            {photo.caption ? (
+              <span className="listing-sheet-gallery-caption">{photo.caption}</span>
+            ) : null}
           </button>
         ))}
         {remaining > 0 ? (

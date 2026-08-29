@@ -1,6 +1,7 @@
 import { V3Field } from '@/components/site/v3'
 import { formatPriceExact } from '@/lib/format/money'
 import { cn } from '@/lib/utils'
+import type { ListingFace } from '@/lib/listing/listing-face'
 import { ListingSectionHead } from './ListingSectionHead'
 
 /**
@@ -18,6 +19,7 @@ type Props = {
   href?: string | null
   price?: number | null
   heading?: string | false
+  face?: ListingFace
 }
 
 export function ListingLocationMap({
@@ -30,11 +32,12 @@ export function ListingLocationMap({
   href,
   price,
   heading = 'See location',
+  face = 'house',
 }: Props) {
   if (lat == null || lng == null) return null
 
   const dest = href?.trim() || '#listing-location'
-  const title = addressLine?.trim() || 'This home'
+  const title = addressLine?.trim() || (face === 'land' ? 'This lot' : 'This home')
   const priceLabel = price != null ? formatPriceExact(price) : 'Ask for price'
 
   return (
