@@ -33,7 +33,6 @@ const AllFiltersSheet = dynamic(() => import('@/components/search/AllFiltersShee
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -453,13 +452,20 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
 
   return (
     <div className="flex flex-col gap-0">
-      {/* Row 1: omnibox + voice + save + get alerts. Sort lives on the count
-          row (sibling). View toggle stays desktop-only and quieter at the end. */}
-      <div className="flex items-center gap-2 px-4 py-2 sm:gap-3 sm:px-6 sm:py-3">
-        {/* Location + Save share one 390 row so the first house address
-            reaches the fold. Voice is sm+ only. */}
-        <div className="relative min-w-0 flex-1 sm:max-w-md">
-          <div className="srch-panel flex min-w-0 items-center gap-2 px-3.5 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
+      {/* One filter row: For sale · Price · Beds · Baths · Home type ·
+          All filters · Save search, then List | Split | Map. Location stays
+          a compact field in this same row so the page does not stack a
+          second search box. Guest listing-alert capture stays on list/grid. */}
+      <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
+        <div
+          className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar"
+          style={{
+            WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
+            maskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
+          }}
+        >
+        <div className="relative w-40 shrink-0 sm:w-56">
+          <div className="srch-panel flex min-h-11 min-w-0 items-center gap-2 px-3 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
               ref={locationInputRef}
@@ -493,7 +499,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
                 if (picked) handleSuggestPick(picked)
                 else applyNaturalQuery(locationQuery)
               }}
-              className="h-auto flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               aria-label="Search by address, city, community, zip, or broker"
               role="combobox"
               aria-expanded={locationOpen && suggestItems.length > 0}
@@ -504,9 +510,6 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             />
           </div>
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
-          {/* ONE shared suggestions panel (SearchSuggest) — renders EVERY
-              backend category, addresses included (the "3480" class the old
-              inline dropdown silently dropped). */}
           {locationOpen && (
             <SearchSuggestPanel
               items={suggestItems}
@@ -519,57 +522,6 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             />
           )}
         </div>
-
-        {/* Voice search — speaks the same registry the screen panel renders */}
-        <VoiceSearchButton onTranscript={applyNaturalQuery} className="hidden shrink-0 sm:inline-flex" />
-
-        {/* Save search — captures every live URL param, registry filters included.
-            Guest listing-alert capture lives in SearchAlertCapture (collapsed
-            "Get listing alerts"). Do not add a second navy Get-alerts chip. */}
-        <SaveSearchButton user={signedIn} />
-
-        {/* View toggle (split / list / map) — desktop only, quiet chrome.
-            MapSearchView owns the mobile List/Map switcher (design-audit P2). */}
-        <ToggleGroup
-          type="single"
-          value={view}
-          onValueChange={(v) => {
-            if (v === 'split' || v === 'list' || v === 'map') {
-              setFilter('view', v)
-              setView(v)
-            }
-          }}
-          variant="outline"
-          size="sm"
-          className="ml-auto hidden h-8 overflow-hidden rounded-none border border-border/60 bg-muted/40 lg:flex"
-        >
-          {(['split', 'list', 'map'] as const).map((v) => (
-            <ToggleGroupItem
-              key={v}
-              value={v}
-              className="srch-chip h-8 rounded-none border-0 px-2.5 text-muted-foreground data-[state=on]:text-foreground"
-              aria-label={`${v} view`}
-            >
-              {v}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
-
-      <Separator />
-
-      {/* Row 2: chips + All filters. 390 keeps the chip set on one
-          horizontal row so Price/Beds/Baths stay tappable. */}
-      <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
-        {/* The right-edge fade signals more chips off-screen (2026-08-27
-            mobile audit: the row scrolls, but a hard clip read as cut off). */}
-        <div
-          className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar"
-          style={{
-            WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
-            maskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
-          }}
-        >
         {/* For Sale / Status */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
@@ -802,6 +754,33 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />
           {moreFilterCount > 0 ? `All filters (${moreFilterCount})` : 'All filters'}
         </Button>
+        <VoiceSearchButton onTranscript={applyNaturalQuery} className="hidden shrink-0 sm:inline-flex" />
+        <SaveSearchButton user={signedIn} />
+        <ToggleGroup
+          type="single"
+          value={view}
+          onValueChange={(v) => {
+            if (v === 'split' || v === 'list' || v === 'map') {
+              setFilter('view', v)
+              setView(v)
+            }
+          }}
+          variant="outline"
+          size="sm"
+          className="ml-auto hidden h-11 overflow-hidden rounded-none border border-border/60 bg-muted/40 lg:flex"
+        >
+          {(['list', 'split', 'map'] as const).map((v) => (
+            <ToggleGroupItem
+              key={v}
+              value={v}
+              className="srch-chip h-11 rounded-none border-0 px-2.5 text-muted-foreground data-[state=on]:text-foreground"
+              aria-label={`${v} view`}
+            >
+              {v === 'list' ? 'List' : v === 'split' ? 'Split' : 'Map'}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+        </div>
       </div>
 
       {/* Row 3: active filter chips. Row 2's trigger buttons already show the

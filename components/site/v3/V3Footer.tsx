@@ -261,7 +261,7 @@ export function V3Footer({
         <div className="v3-footer__columns">
           {sitemap.map((column) => (
             <nav className="v3-footer__column" aria-label={column.heading} key={column.heading}>
-              <h2 className="v3-footer__column-title">{column.heading}</h2>
+              <p className="v3-footer__column-title">{column.heading}</p>
               <ul className="v3-footer__column-list">
                 {column.links.map((link) => (
                   <li key={`${column.heading}-${link.href}`}>

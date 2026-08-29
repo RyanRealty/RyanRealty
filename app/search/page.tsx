@@ -416,15 +416,15 @@ export default async function SearchPage({
         <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
           {h1Text}
         </h1>
-        <SentenceSearch />
+        <div className={isAppFrame ? 'hidden' : undefined}>
+          <SentenceSearch />
+        </div>
         <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
-      {/* Guest listing-alert capture for all views.
-          List: sticky strip in document flow.
-          Map/split: compact non-sticky inline under filters (shrink-0) — sticky
-          on the app-frame previously overlapped the filter chip row. Guests also
-          keep SaveSearchButton in SearchFilters (navy mid-browse control). */}
-      <div className="hidden sm:block">
+      {/* Guest listing-alert capture stays on list/grid. Split/map hide the
+          stacked email strip so the one filter row is the chrome. JSX stays
+          so the source contract still sees the capture. */}
+      <div className={isAppFrame ? 'hidden' : 'hidden sm:block'}>
       <SearchAlertCapture
         signedIn={!!session?.user}
         defaultCity={effectiveFilters.city ?? ''}

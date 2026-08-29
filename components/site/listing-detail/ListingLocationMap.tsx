@@ -78,7 +78,7 @@ export function ListingLocationMap({
 
   return (
     <>
-    <section className={cn('section', className)}>
+    <section className={cn('section listing-map', className)}>
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">Location</div>
@@ -90,11 +90,11 @@ export function ListingLocationMap({
         className="relative w-full self-stretch"
         style={{
           aspectRatio: '21 / 9',
-          minHeight: 280,
+          minHeight: 'var(--v3-map-min)',
           marginTop: 'clamp(22px,3vw,36px)',
         }}
       >
-        <div className="absolute inset-0" style={{ minHeight: 280 }}>
+        <div className="absolute inset-0" style={{ minHeight: 'var(--v3-map-min)' }}>
           <ListingLocationMapClient
             lat={lat}
             lng={lng}

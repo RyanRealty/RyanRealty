@@ -348,8 +348,9 @@ export async function renderMapSplitView(props: {
             poly={sp.poly}
           />
         </div>
-        {/* underFilterBar slot: guest alert sits under the filter bar (was a
-            MapSearchView owns the list/map shell). */}
+        {/* underFilterBar slot kept in source for the guest-alert contract.
+            Split/map hide the stacked email strip. */}
+        <div className="hidden">
         <Suspense fallback={null}>
           <SearchAlertCapture
             signedIn={!!session?.user}
@@ -359,6 +360,7 @@ export async function renderMapSplitView(props: {
             variant="inline"
           />
         </Suspense>
+        </div>
         <MapSearchView
           initialListings={viewport.listings}
           initialTotalCount={viewport.totalCount}

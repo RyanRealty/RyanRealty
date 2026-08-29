@@ -890,7 +890,7 @@ export default function MapSearchView({
                 <V3ListingRow
                   showPricePerSqft
                   priority={cardIndex < 4}
-                  className={cn(isSelected && 'is-active', !isSelected && isHovered && 'is-hot')}
+                  className={cn('v3-lrow--split', isSelected && 'is-active', !isSelected && isHovered && 'is-hot')}
                   listing={{
                     listingKey: key,
                     href,
@@ -1093,7 +1093,7 @@ export default function MapSearchView({
             'z-10 min-h-0 flex-col bg-card',
             'absolute inset-0',
             mobileView === 'list' ? 'flex' : 'hidden',
-            'lg:static lg:order-1 lg:z-auto lg:flex lg:h-auto lg:max-h-none lg:w-[420px] lg:min-w-[360px] lg:max-w-[480px] lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto'
+            'map-search-list lg:static lg:order-1 lg:z-auto lg:flex lg:h-auto lg:max-h-none lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto'
           )}
         >
           {listPanel}

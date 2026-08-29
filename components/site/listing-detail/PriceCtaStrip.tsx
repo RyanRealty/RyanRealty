@@ -12,7 +12,9 @@ import { displaySubdivision } from '@/lib/slug'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingDrop, publishListingHistoryPrices, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingPriceChangeLine } from '@/lib/listing/publish-listing-price-change-line'
+import type { PublishedListingHistoryEvent } from '@/lib/listing/publish-listing-history'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
@@ -55,6 +57,10 @@ type Props = {
     | 'subdivisionName'
     | 'originalListPrice'
     | 'priceDropCount'
+    | 'beds'
+    | 'baths'
+    | 'sqft'
+    | 'totalLivingAreaSqFt'
   >
   /** Save handler — caller wires to saved_listings table. Returns needsAuth=true
    *  for a signed-out visitor so the strip can route them to sign-in. */
@@ -69,8 +75,17 @@ type Props = {
   askHref?: string
   /** Prices already on the listing-history rail. Drop withholds without them. */
   historyPrices?: ReadonlyArray<number | null | undefined>
-  /** History rows from the listing rail. Mapped to prices when historyPrices is omitted. */
-  history?: ReadonlyArray<{ price?: number | null } | null | undefined> | null
+  /** History rows from the listing rail. Price-change copy reads these only. */
+  history?: ReadonlyArray<
+    | ({
+        event?: string | null
+        event_date?: string | null
+        price?: number | null
+        price_change?: number | null
+      } & Partial<PublishedListingHistoryEvent>)
+    | null
+    | undefined
+  > | null
   className?: string
 }
 
@@ -94,12 +109,10 @@ export function PriceCtaStrip({
   onShare,
   scheduleHref,
   askHref,
-  historyPrices,
+  historyPrices: _historyPrices,
   history,
   className,
 }: Props) {
-  const railPrices =
-    historyPrices ?? (history !== undefined ? publishListingHistoryPrices(history) : undefined)
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
 
   // RC7 resume: complete a save this listing was bounced to login for (the hook
@@ -139,13 +152,28 @@ export function PriceCtaStrip({
     propertyType: listing.propertyType,
     pricePerSqft: listing.pricePerSqft,
   })
-  const publishedDrop = isClosed
+  const priceChangeLine = isClosed
     ? null
-    : publishListingDrop({
-        listPrice: listing.listPrice,
-        originalListPrice: listing.originalListPrice,
-        historyPrices: railPrices,
-      })
+    : publishListingPriceChangeLine(
+        (history ?? [])
+          .filter((row): row is PublishedListingHistoryEvent =>
+            Boolean(row && row.event && row.event_date),
+          )
+          .map((row) => ({
+            event: row.event,
+            event_date: row.event_date,
+            price: row.price,
+            price_change: row.price_change,
+          })),
+      )
+  const livingSqft = listing.sqft ?? listing.totalLivingAreaSqFt ?? null
+  const factsLine = [
+    listing.beds != null ? `${listing.beds} bd` : null,
+    listing.baths != null ? `${listing.baths} ba` : null,
+    livingSqft != null ? `${Math.round(livingSqft).toLocaleString('en-US')} sqft` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   const contactKey = publishListingContactKey({
     listNumber: listing.listNumber,
     listingKey: listing.listingKey,
@@ -228,19 +256,19 @@ export function PriceCtaStrip({
         paddingTop: '1.25rem',
       }}
     >
-      {/* Layer A: one H1. Visible price is the money signal; address names it
-          for screen readers. Do not poetry-rewrite this shell. */}
       <DisplayHeading
         as="h1"
         className="text-4xl leading-none tracking-tight sm:text-5xl"
         style={{ color: 'var(--navy)' }}
       >
-        {street ? <span className="sr-only">{[street, cityWithCommunity].filter(Boolean).join(', ')} </span> : null}
-        <Price value={headlinePrice} exact />
+        {street || `Listing ${listing.listNumber ?? listing.listingKey}`}
       </DisplayHeading>
-      {street ? (
+      <div className="listing-ask mt-2" style={{ color: 'var(--navy)' }}>
+        <Price value={headlinePrice} exact />
+      </div>
+      {factsLine ? (
         <div className="mt-1.5 text-lg font-medium sm:text-xl" style={{ color: 'var(--navy)' }}>
-          {street}
+          {factsLine}
         </div>
       ) : null}
       {cityWithCommunity ? (
@@ -249,17 +277,9 @@ export function PriceCtaStrip({
         </div>
       ) : null}
 
-      {publishedDrop ? (
+      {priceChangeLine ? (
         <div className="mt-2 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
-          Down <Price value={publishedDrop.drop} exact /> from original list price{' '}
-          <span style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
-            <Price value={publishedDrop.original} exact className="line-through" />
-          </span>
-          {listing.priceDropCount && listing.priceDropCount > 1 ? (
-            <> after {listing.priceDropCount} price changes.</>
-          ) : (
-            <>.</>
-          )}
+          {priceChangeLine.text}
         </div>
       ) : null}
 

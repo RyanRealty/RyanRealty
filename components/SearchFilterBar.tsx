@@ -270,35 +270,27 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
   const dropdownSurface = 'srch-pop'
 
   return (
-    <div ref={barRef} className="flex w-full min-w-0 flex-col gap-3">
-      {props.locationLabel != null && props.locationLabel !== '' && (
-        <div className="flex min-w-0 items-center gap-2">
+    <div ref={barRef} className="flex w-full min-w-0 flex-col gap-2">
+      <div className="flex min-w-0 items-center gap-2 overflow-x-auto no-scrollbar px-1 py-1">
+        {props.locationLabel != null && props.locationLabel !== '' && (
           <Link
             href={props.locationHref ?? pathname}
-            className="srch-panel inline-flex min-w-0 max-w-full items-center gap-2 px-3 py-2 text-sm font-medium text-foreground sm:max-w-md sm:px-4 sm:py-2.5"
+            className="srch-panel inline-flex h-11 min-w-11 max-w-40 shrink-0 items-center gap-2 px-3 text-sm font-medium text-foreground sm:max-w-56"
             aria-label={`Search area: ${props.locationLabel}. Click to change.`}
           >
             <HugeiconsIcon icon={Location01Icon} className="size-4 shrink-0 text-primary" aria-hidden />
             <span className="truncate">{props.locationLabel}</span>
           </Link>
-        </div>
-      )}
-
-      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        {/* Voice search — outside the scroll container so the confirm chips
-            are not clipped by overflow-x-auto */}
-        <div className="relative shrink-0 self-start sm:self-auto">
+        )}
+        <div className="relative shrink-0">
           <VoiceSearchButton onTranscript={handleVoiceTranscript} />
           <ParsedSearchNotice
             chips={parsedChips}
-            className="absolute left-0 top-full z-50 mt-1 w-72 max-w-[80vw]"
+            className="absolute left-0 top-full z-50 mt-1 w-72 max-w-xs"
           />
         </div>
         <div
-          className={cn(
-            'flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5',
-            '[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
-          )}
+          className="flex min-w-0 flex-1 flex-nowrap items-center gap-2"
         >
       {/* For Sale (status) */}
       <div className="relative shrink-0">
@@ -578,7 +570,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           aria-expanded={moreSheetOpen}
           aria-haspopup="dialog"
         >
-          {registryActive.length > 0 ? `More (${registryActive.length})` : 'More'}
+          {registryActive.length > 0 ? `All filters (${registryActive.length})` : 'All filters'}
           <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
       </div>

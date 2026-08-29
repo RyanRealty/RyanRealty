@@ -114,6 +114,23 @@ describe('listing-detail CTA row accessible names', () => {
     expect(html).toMatch(/7,900,000/)
   })
 
+  it('prints an honest price-change line from history and never invents a drop', () => {
+    const html = render({
+      history: [
+        { event: 'listed', event_date: '2026-08-22', price: 298000, price_change: null },
+      ],
+    })
+    expect(html).toMatch(/Listed Aug 22 at \$298,000/)
+    expect(html).not.toMatch(/Down /)
+  })
+
+  it('uses the street as the H1 and keeps one exact ask', () => {
+    const html = render()
+    expect(html).toMatch(/<h1[^>]*>1265 Saginaw Ave<\/h1>/)
+    expect(html).toMatch(/\$895,000/)
+    expect(html).not.toMatch(/\$895K/)
+  })
+
   it('offers a clear path to the listing alert strip', () => {
     const html = render()
     expect(html).toMatch(/href="#listing-like-alerts"/)

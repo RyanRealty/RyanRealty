@@ -185,6 +185,29 @@
   }
 }
 
+/* Split-view modifier: 160×120 photo, Geist address, Amboqia full-dollar ask.
+   Layout only — the ask still comes from formatPublishedSaleAsk. */
+.v3.v3-lrow.v3-lrow--split,
+.v3 .v3-lrow.v3-lrow--split {
+  grid-template-columns: var(--v3-card-photo-w) minmax(0, 1fr) auto;
+  min-height: calc(var(--v3-card-photo-h) + 2 * var(--v3-row-pad-block));
+}
+
+.v3-lrow.v3-lrow--split .v3-lrow__media {
+  width: var(--v3-card-photo-w);
+  height: var(--v3-card-photo-h);
+}
+
+.v3-lrow.v3-lrow--split .v3-lrow__addr {
+  font-family: var(--v3-font-body);
+}
+
+.v3-lrow.v3-lrow--split .v3-lrow__price {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-medium);
+}
+
 @container (max-width: 30rem) {
   .v3.v3-lrow,
   .v3 .v3-lrow {

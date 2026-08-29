@@ -226,6 +226,22 @@
   /* Minimum touch target, thumb reachable at 390 (Apple HIG / Material). */
   --v3-tap: 44px;
 
+  /* Chrome + listing/split first-slice sizes (Redfin-slot layout, 2026-08-29).
+     Chrome bar is 64px with a 2px navy rule. Mosaic/carousel/card/map sizes
+     are layout only — they do not invent a second stats path. */
+  --v3-chrome-h: 4rem;
+  --v3-chrome-rule: 2px solid var(--v3-navy);
+  --v3-mosaic-h: 28.125rem;
+  --v3-carousel-h: 18.75rem;
+  --v3-hero-gap: 1rem;
+  --v3-split-list-share: 40%;
+  --v3-split-map-share: 60%;
+  --v3-split-list-min: 25rem;
+  --v3-card-photo-w: 10rem;
+  --v3-card-photo-h: 7.5rem;
+  --v3-sticky-bar-h: 3.5rem;
+  --v3-map-min: 22.5rem;
+
   /* Row density. Broadside rows keep the 44px thumb floor; the Ledger
      register runs 32px rows (the row is a full-width target, so the WCAG
      2.5.8 24px floor still clears with room). */

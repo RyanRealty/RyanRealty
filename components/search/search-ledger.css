@@ -78,3 +78,11 @@
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
+
+/* Split list rail: 40% / min 400px. Desktop only — mobile list is full-bleed. */
+@media (min-width: 64rem) {
+  .map-search-list {
+    width: var(--v3-split-list-share);
+    min-width: var(--v3-split-list-min);
+  }
+}

@@ -33,11 +33,11 @@
       "name": "ListingHero",
       "section": "ld-photo-grid full-bleed hero (photo grid or autoplay listing video). Auto-plays muted listing video when getListingVideos returns one. Falls back to photo grid otherwise.",
       "blocking": true,
-      "notes": "Supersedes both PhotoGallery and ListingVideoEmbed for marketing video. Virtual tours still mount ListingVideoEmbed in the main column."
+      "notes": "Media mosaic. Media 1 is a reel or 3D tour via publishListingLeadMedia, else the first still of this house. Price and facts live under the media. Virtual tours still mount ListingVideoEmbed in the main column."
     },
     {
       "name": "PriceCtaStrip",
-      "section": "Price + address + 4-button CTA row (Schedule a tour, Ask a question, Save, Share). THE PAGE PRIMARY at 390: filled Schedule a tour. Do not add another filled ask in the first viewport.",
+      "section": "H1 is the street. One exact-dollar ask. Facts, city + true place, status, days, and an honest price-change line from listing history. Save / Share / alerts stay. THE PAGE PRIMARY at 390: filled Schedule a tour.",
       "blocking": true
     },
     {
@@ -68,6 +68,21 @@
     {
       "name": "SchoolsBlock",
       "section": "Schools.",
+      "blocking": true
+    },
+    {
+      "name": "ParksNearbyBlock",
+      "section": "Parks near this house. Same parks read as before — layout only.",
+      "blocking": true
+    },
+    {
+      "name": "ListingTourCard",
+      "section": "Sticky tour / ask / call / text card. No second price.",
+      "blocking": true
+    },
+    {
+      "name": "ListingRelatedGuides",
+      "section": "City guides from getRecentBlogPosts — the same blog source city pages use.",
       "blocking": true
     },
     {
@@ -155,6 +170,10 @@
     {
       "name": "OpenHouses",
       "reason": "Embedded when present, not a separate top-level required section."
+    },
+    {
+      "name": "RoomRestyle",
+      "reason": "Imagine-this-room overlay stripped from the listing page. Keep history, parks, blogs, place, and schools."
     },
     {
       "name": "PriceVsNeighborhoodPill",

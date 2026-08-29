@@ -8,6 +8,7 @@ import {
   getReviews,
   resolveListingAgent,
   getCalculatorDefaults,
+  getRecentBlogPosts,
 } from '@/lib/data'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
@@ -37,6 +38,8 @@ import {
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
+import { ListingTourCard } from '@/components/site/listing-detail/ListingTourCard'
+import { ListingRelatedGuides } from '@/components/site/listing-detail/ListingRelatedGuides'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 import { OpenHouses } from '@/components/site/listing-detail/OpenHouses'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
@@ -47,7 +50,6 @@ import { ParksNearbyBlock } from '@/components/site/listing-detail/ParksNearbyBl
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
 import { getPlaceDocumentsForListing } from '@/lib/data/places/getPlaceDocumentsForListing'
 import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
-import { RoomRestyle } from '@/components/site/listing-detail/RoomRestyle.client'
 import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
@@ -55,7 +57,7 @@ import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentit
 import { ListingFeaturedHomes } from '@/components/site/listing-detail/ListingFeaturedHomes.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { leftoverListingGrains, resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
-import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
+import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
@@ -103,11 +105,11 @@ void ListingMobileContactBar
  *   hero        ListingHero (photo-grid OR autoplay-video)
  *   main        PriceCtaStrip · OpenHouses · PropertySpecs · DescriptionBlock
  *               · ListingLikeThisAlerts (#listing-like-alerts + coach)
- *               · RoomRestyle · ListingVideoEmbed · ListingLocationMap
+ *               · ListingVideoEmbed · ListingLocationMap
  *               · NeighborhoodMarketContext · SchoolsBlock · ParksNearbyBlock
- *               · PropertyHistory · MortgageCalculator · RentalAnalysis
- *               · ListingAttribution (ODS §5-3)
- *   sidebar     ListingBrokerCTA (TextMattCTA + ListingMobileContactBar)
+ *               · ListingRelatedGuides · PropertyHistory · MortgageCalculator
+ *               · RentalAnalysis · ListingAttribution (ODS §5-3)
+ *   sidebar     ListingTourCard + ListingBrokerCTA (TextMattCTA + ListingMobileContactBar)
  *   full-width  ListingFeaturedHomes - homes for sale in this area
  *
  * Two sections were retired here 2026-07-30: VacationRentalPotential (no
@@ -277,7 +279,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const leftoverGrains = leftoverListingGrains(listing, marketGeo)
 
-  const [relatedHomes, history, photos, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults] =
+  const [relatedHomes, history, photos, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults, relatedGuides] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -354,6 +356,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
       withTimeoutFallback(getListingPricingRead(listing.listingKey), null, 3000, 'listing:pricingRead'),
       // Payment rate from the ingested 30-yr series; null keeps the component default.
       withTimeoutFallback(getCalculatorDefaults(), null, 3000, 'listing:calcDefaults'),
+      withTimeoutFallback(
+        getRecentBlogPosts({ cityName: listing.city ?? undefined, limit: 3 }),
+        [],
+        3000,
+        'listing:guides',
+      ),
     ])
 
   let leftoverHud: ReturnType<typeof leftoverHudKpis> | null = null
@@ -455,27 +463,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
     { label: street || `Listing ${listingKey}` },
   ]
 
-  // Videos ≠ virtual tours (Matt): hero gets reels; tours get their own viewer.
+  // Media 1 is a reel or 3D tour when one exists (publishListingLeadMedia).
+  // Tours also keep their own viewer below the mosaic.
   const virtualTours = videos.filter((v) => v.isVirtualTour)
-  const reelVideos = videos.filter((v) => !v.isVirtualTour)
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
     listing.listingKey
+  const tourHref = listingContactHref(contactKey, 'tour') ?? '/contact?intent=tour'
+  const askHref = listingContactHref(contactKey, 'question') ?? '/contact?intent=question'
+  const brokerPhone = ctaBroker?.phoneDirect ?? ctaBroker?.phoneFub ?? null
   const hero = (
     <ListingHero
       photos={photos}
-      videos={reelVideos}
+      videos={videos}
       addressLine={street}
-      price={publishedSaleAsk}
-      beds={listing.beds}
-      baths={listing.baths}
-      sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
-      acres={listing.lotSizeAcres}
-      propertySubType={listing.propertySubType}
-      subdivisionName={listing.subdivisionName}
-      city={listing.city}
-      listNumber={listing.listNumber}
-      lat={listing.lat} lng={listing.lng}
     />
   )
 
@@ -519,22 +520,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
       {/* B1 alerts early (after facts + story) so high-intent visitors see the
           form without scrolling past the full main stack + featured homes.
-          id="listing-like-alerts" is the jump target for PriceCtaStrip,
-          RoomRestyle next-step, and ListingAlertCoach. Single mount only. */}
+          id="listing-like-alerts" is the jump target for PriceCtaStrip
+          and ListingAlertCoach. Single mount only. */}
       <ListingLikeThisAlerts
         city={listing.city}
         listPrice={wholePropertyPrice}
         beds={listing.beds}
       />
-      {photos.some((p) => p.url) ? (
-        <RoomRestyle
-          photos={photos.map((p) => ({ url: p.url, caption: p.caption ?? null }))}
-          listingKey={contactKey}
-          city={listing.city}
-          listPrice={wholePropertyPrice}
-          beds={listing.beds}
-        />
-      ) : null}
       {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       <ListingLocationMap
         lat={listing.lat}
@@ -569,6 +561,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ) : null}
       <SchoolsBlock listing={listingWithPhotos} />
       <ParksNearbyBlock listing={listingWithPhotos} />
+      <ListingRelatedGuides posts={relatedGuides} city={listing.city} />
       <LifestyleNearSection
         lat={listing.lat}
         lng={listing.lng}
@@ -612,18 +605,25 @@ export default async function ListingDetailPage({ params }: PageProps) {
     </>
   )
 
-  const sidebar = ctaBroker ? (
-    // ONE consolidated sticky card: the contact broker (the resolved Ryan Realty
-    // listing agent when known, else the assigned/principal broker) with full
-    // contact info + lg-only review social proof, plus the mobile sticky bar.
-    <ListingBrokerCTA
-      defaultBroker={ctaBroker}
-      brokers={brokers}
-      listingKey={contactKey}
-      reviews={genericReviews}
-      lockToDefault={listingAgent != null}
-    />
-  ) : null
+  const sidebar = (
+    <>
+      <ListingTourCard
+        tourHref={tourHref}
+        askHref={askHref}
+        tel={brokerPhone}
+        sms={brokerPhone}
+      />
+      {ctaBroker ? (
+        <ListingBrokerCTA
+          defaultBroker={ctaBroker}
+          brokers={brokers}
+          listingKey={contactKey}
+          reviews={genericReviews}
+          lockToDefault={listingAgent != null}
+        />
+      ) : null}
+    </>
+  )
 
   const listingJsonLdSchemas = buildListingJsonLd({
     listingKey,

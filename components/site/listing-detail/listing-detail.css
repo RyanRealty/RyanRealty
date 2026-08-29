@@ -62,7 +62,7 @@
    #listing-like-alerts-style jumps park the target heading under the mast
    without this. scroll-margin only acts on anchor/scrollIntoView landings. */
 .listing-detail [id] {
-  scroll-margin-top: 76px;
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-sm));
 }
 
 .listing-detail .mono-num {
@@ -195,31 +195,131 @@
   width: 100%;
 }
 
+.listing-mosaic {
+  position: relative;
+  width: 100%;
+  background: var(--v3-navy);
+}
+
+.listing-mosaic__grid {
+  display: none;
+}
+
+.listing-mosaic__carousel {
+  display: flex;
+  height: var(--v3-carousel-h);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.listing-mosaic__carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.listing-mosaic__slide {
+  position: relative;
+  flex: 0 0 100%;
+  height: var(--v3-carousel-h);
+  scroll-snap-align: start;
+  border: 0;
+  padding: 0;
+  background: var(--v3-navy);
+  cursor: zoom-in;
+}
+
+.listing-mosaic__slide img,
+.listing-mosaic__slide video,
+.listing-mosaic__slide iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
+}
+
+.listing-mosaic__badge {
+  position: absolute;
+  right: var(--v3-space-sm);
+  bottom: var(--v3-space-sm);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 0;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+@media (min-width: 64rem) {
+  .listing-mosaic__carousel {
+    display: none;
+  }
+
+  .listing-mosaic__grid {
+    display: grid;
+    grid-template-columns: 66fr 34fr;
+    gap: 2px;
+    height: var(--v3-mosaic-h);
+  }
+
+  .listing-mosaic__lead,
+  .listing-mosaic__thumb {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    border: 0;
+    padding: 0;
+    background: var(--v3-navy);
+    cursor: zoom-in;
+  }
+
+  .listing-mosaic__thumbs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+    min-height: 0;
+  }
+
+  .listing-mosaic__lead img,
+  .listing-mosaic__lead video,
+  .listing-mosaic__lead iframe,
+  .listing-mosaic__thumb img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 0;
+  }
+}
+
 .listing-detail-shell {
   width: 100%;
   max-width: 1500px;
   margin: 0 auto;
-  padding: 0 18px 3rem;
-}
-@media (min-width: 760px) {
-  .listing-detail-shell {
-    padding: 0 40px 3.5rem;
-  }
-}
-@media (min-width: 1200px) {
-  .listing-detail-shell {
-    padding: 0 56px 4rem;
-  }
+  padding: var(--v3-hero-gap) var(--v3-gutter) var(--v3-space-2xl);
 }
 
 .listing-detail-grid {
   display: grid;
-  gap: 2rem;
+  gap: var(--v3-space-lg);
 }
-@media (min-width: 1024px) {
+
+@media (min-width: 64rem) {
   .listing-detail-grid.has-sidebar {
-    grid-template-columns: 1.6fr 360px;
-    gap: 2.5rem;
+    grid-template-columns: 62fr 38fr;
+    gap: var(--v3-space-xl);
   }
 }
 
@@ -227,25 +327,68 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-}
-@media (min-width: 1024px) {
-  .listing-detail-main {
-    gap: 2.5rem;
-  }
+  gap: var(--v3-space-lg);
 }
 
 .listing-detail-aside {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  display: none;
 }
-@media (min-width: 1024px) {
+
+@media (min-width: 64rem) {
   .listing-detail-aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--v3-space-md);
     position: sticky;
-    top: 6rem;
+    top: calc(var(--v3-chrome-h) + var(--v3-hero-gap));
     align-self: start;
   }
+}
+
+.listing-tour-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  padding: var(--v3-space-md);
+  border: var(--v3-rule-section);
+  background: var(--v3-cream);
+}
+
+.listing-tour-card a,
+.listing-tour-card button {
+  min-height: var(--v3-tap);
+}
+
+.listing-map {
+  min-height: var(--v3-map-min);
+}
+
+.listing-ask {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-1);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  letter-spacing: var(--v3-track-display);
+}
+
+.listing-guides {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+}
+
+.listing-guides h2 {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+}
+
+.listing-guides a {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
 }
 
 /* Mobile broker bar. Was .kb-root .listing-mobile-cta. Conversion-critical. */
@@ -255,18 +398,11 @@
   right: 0;
   bottom: 0;
   z-index: 80;
+  height: calc(var(--v3-sticky-bar-h) + env(safe-area-inset-bottom, 0px));
   background: var(--cream);
-  border-top: 2px solid var(--navy);
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
-  /* No elevation. The 2px navy top rule is what separates this bar from the
-     page (PUBLIC_UI section 6: rule weight IS the hierarchy, and neither
-     register casts an elevation shadow). Removed 2026-08-27. */
-  transform: translateY(110%);
-  transition: transform 0.28s ease;
-  will-change: transform;
-}
-.listing-detail .listing-mobile-cta[data-shown='true'] {
-  transform: translateY(0);
+  border-top: var(--v3-chrome-rule);
+  padding: 0 var(--v3-space-sm) env(safe-area-inset-bottom, 0px);
+  transform: none;
 }
 @media (min-width: 1024px) {
   .listing-detail .listing-mobile-cta {
@@ -281,7 +417,7 @@
 .listing-detail .listing-mobile-cta-inner {
   display: flex;
   align-items: center;
-  gap: 9px;
+  height: var(--v3-sticky-bar-h);
   max-width: 640px;
   margin: 0 auto;
 }
@@ -311,16 +447,26 @@
 .listing-detail .listing-mobile-cta-actions {
   display: flex;
   align-items: center;
-  gap: 7px;
-  flex: 0 0 auto;
+  gap: var(--v3-space-xs);
+  flex: 1 1 auto;
 }
-.listing-detail .listing-mobile-cta-actions .lmc-icon {
+.listing-detail .listing-mobile-cta-actions .lmc-icon,
+.listing-detail .listing-mobile-cta-actions .lmc-tour {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 2px solid var(--navy);
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.listing-detail .listing-mobile-cta-actions .lmc-icon {
+  border: var(--v3-chrome-rule);
   color: var(--navy);
   background: transparent;
 }
@@ -328,17 +474,9 @@
   background: var(--navy-12);
 }
 .listing-detail .listing-mobile-cta-actions .lmc-tour {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  padding: 0 13px;
   background: var(--navy);
   color: var(--cream);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
+  flex: 1 1 auto;
 }
 .listing-detail .listing-mobile-cta-actions .lmc-tour:active {
   opacity: 0.9;

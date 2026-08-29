@@ -124,20 +124,20 @@ export function PhotoGalleryLightbox({
           aria-label="Photo gallery"
           className="max-w-none sm:max-w-none w-screen h-dvh bg-transparent border-0 p-0 shadow-none rounded-none ring-0 flex flex-col items-stretch justify-between gap-0 translate-x-0 translate-y-0 top-0 left-0"
         >
-          {/* Header: counter + close */}
+          {/* Header: labeled Back (44px) top-left, then counter */}
           <div className="flex shrink-0 items-center justify-between px-4 pt-4 sm:px-6">
-            <div className="text-xs uppercase tracking-[0.08em] text-white/75 tabular-nums">
-              {openIndex! + 1} of {count}
-            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="rounded-lg bg-white/10 text-white/90 hover:bg-white/15 hover:text-white"
-              aria-label="Close gallery"
+              className="min-h-11 min-w-11 bg-background/10 text-primary-foreground hover:bg-background/15 hover:text-primary-foreground"
+              aria-label="Back"
             >
-              Close
+              Back
             </Button>
+            <div className="text-xs uppercase tracking-[0.08em] text-primary-foreground/75 tabular-nums">
+              {openIndex! + 1} of {count}
+            </div>
           </div>
 
           {/* Main photo area */}
