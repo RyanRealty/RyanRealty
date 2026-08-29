@@ -1,12 +1,12 @@
 {
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, a concrete origin, live city inventory, and direct-broker doors. Zero marketing-speak except the locked D11 mission sentence.",
-  "note": "Look 2026-08-14: About = faces. Order is Breadcrumb, AboutFaces (live broker cutouts, compact H1, name door, Call and Text on the face row), Quiet (origin facts only), Instrument (founded / firm license / principal broker, no seller ask), Ledger (service-area cities from market_pulse_live), Quiet (locked D11 mission below the fold, then FAQ and edges), Footer. PUBLIC_UI.md opens About on Quiet + Sheet. Faces are Stage's job (owned media) without V3Stage's full-bleed frame, which would box the transparent PNGs. The family's Sheet lives on /contact and /team/[slug]. A new on-page form here would be a new capture contract. Seller lives on Sell. The next tap is the name or the number. D11: the mission sentence is the one virtue-word exception, exact words, We, and it does not ship on the first screen. City rows skip a missing median rather than printing zero under a live-MLS source line. Dates render in Pacific through formatDate. KB-era deletions this migration made: KbHero (including property search), KbAbout, KbExploreTowns, KbTestimonials, KbArticles, KbSell, KbTeam (already removed from this page 2026-07-08), FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
+  "competitiveTarget": "Beat generic national-brokerage profile pages by putting all three live broker faces on the first 390 screen with 44px Call/Text, telling the origin once (fire service, Red Erickson, no hand-off, video + 3D), and keeping OREA licenses as a quiet line. About is who we are. Inventory lives on /housing-market.",
+  "note": "Look 2026-08-29: About = faces first, then origin. Order is Breadcrumb, AboutFaces trio (H1 About Ryan Realty, all three /images/brokers/*.png cutouts on 390, names, 44px Call/Text, cookie tap reserved), Quiet #about (How it started), Quiet #record (Verified record as a license line, no Amboqia numerals), Quiet #faq (same-broker, towns, valuation — no boutique sentence, no origin retell, no license retell), Footer. One sentence of towns plus a /housing-market door. City inventory ledger is gone. PUBLIC_UI.md opens About on Quiet + Sheet. Faces are Stage's job without V3Stage's full-bleed frame. The family's Sheet lives on /contact and /team/[slug]. Seller lives on Sell.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "AboutPage + aboutOrganization + BreadcrumbList + FAQPage JSON-LD. V3Quiet and V3Instrument carry no structured data of their own.",
+      "section": "AboutPage + aboutOrganization + BreadcrumbList + FAQPage JSON-LD. V3Quiet carries no structured data of its own.",
       "blocking": true
     },
     {
@@ -16,27 +16,17 @@
     },
     {
       "name": "AboutFaces",
-      "section": "First viewport. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts. The first face fills the 390 fold. Name is the door to /team/[slug]. Call and text sit on that row from the live broker phone. No card, no wash, no rectangular box. Compact H1 lives here. No eyebrow, no mission graf.",
+      "section": "First viewport. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts. Trio on 390: H1 plus all three faces (smaller crops), names, 44px Call/Text. Cookie chip space reserved. Name is the door to /team/[slug]. No card, no wash, no rectangular box. Compact H1 lives here.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, twice. After the faces, below the fold: origin facts (Matt, fire service, Red Erickson, June 2023), doors to /team /reviews /contact. Closing: the locked D11 mission sentence (exact words, We), the same FAQ array the FAQPage JSON-LD uses, plus outbound edges and any city that had no publishable median.",
-      "blocking": true
-    },
-    {
-      "name": "V3Instrument",
-      "section": "Pattern 1, once. Founded date, firm license OREA 201253677, principal broker license linking /team/matthew-ryan. Source line names Oregon Real Estate Agency. No seller ask on this Instrument. Seller lives on Sell. The valuation door stays a Quiet link in the closing FAQ.",
-      "blocking": true
-    },
-    {
-      "name": "V3Ledger",
-      "section": "Pattern 3, once. One figure row per service-area city that returned a live market_pulse_live row carrying a median list price. Value column is formatPrice of that median. Trace names live MLS through Oregon Data Share, single-family, city rows from market_pulse_live. Stamp is formatDate of the newest updated_at. Empty branch uses emptyMessage.",
+      "section": "Pattern 6, three times. How it started (fire service, Red Erickson, no hand-off, video + 3D, one sentence of towns, housing-market door). Verified record as a quiet license line. FAQ: same-broker, towns, valuation. No boutique community sentence.",
       "blocking": true
     },
     {
       "name": "V3Footer",
-      "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main> so the footer maps to role=contentinfo.",
+      "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main> so the footer maps to role=contentinfo. Column titles are not H2. Links stay --v3-tap.",
       "blocking": true
     }
   ],
@@ -59,33 +49,43 @@
     {
       "name": "V3Field",
       "reason": "Pattern 2 is live inventory as a spatial surface. It opens Homes. Using it here would compete with /homes-for-sale."
+    },
+    {
+      "name": "V3Instrument",
+      "reason": "Verified record is a quiet license line. Giant Amboqia numerals compete with market and do not belong on About."
+    },
+    {
+      "name": "V3Ledger",
+      "reason": "City inventory ledger is off About. One sentence of towns plus a door to /housing-market."
     }
   ],
   "removedComponents": [
-    "KbHero \u2014 brand eyebrow, poetry H1, Central Oregon photo, property search.",
-    "KbAbout \u2014 origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
-    "KbExploreTowns \u2014 city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
-    "KbTestimonials \u2014 eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
-    "KbArticles \u2014 getRecentBlogPosts rail. Dropped; the read is gone.",
-    "KbSell \u2014 address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
-    "KbTeam \u2014 already removed 2026-07-08 as a duplicate of /team.",
-    "FAQBlock \u2014 rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
-    "SmoothScrollProvider \u2014 Lenis + GSAP. v3 motion is CSS tokens.",
-    "KbFooter \u2014 replaced by V3Footer outside <main>.",
-    "kb-root and the kb.css import."
+    "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
+    "KbAbout — origin story and facts, rebuilt as the opening V3Quiet.",
+    "KbExploreTowns — city ledger, cut from About 2026-08-29. Towns are one sentence. Inventory lives on /housing-market.",
+    "V3Instrument #record — replaced by a quiet license line.",
+    "V3Ledger #service-area — city inventory ledger cut.",
+    "KbTestimonials — eight Google reviews. Canonical set lives on /reviews. Door in How it started.",
+    "KbArticles — getRecentBlogPosts rail. Dropped; the read is gone.",
+    "KbSell — address prefill to /sell/valuation. Replaced by valuationHref('/about') in the FAQ Quiet.",
+    "KbTeam — already removed 2026-07-08 as a duplicate of /team.",
+    "FAQBlock — rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
+    "SmoothScrollProvider — Lenis + GSAP. v3 motion is CSS tokens.",
+    "KbFooter — replaced by V3Footer outside <main>.",
+    "kb-root and the kb.css import.",
+    "D11 boutique mission sentence — dropped 2026-08-29."
   ],
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "AboutFaces -- the three brokers, transparent PNGs, each a door to /team/[slug]",
-    "V3Quiet #about -- how it started, the concrete origin, zero marketing-speak",
-    "V3Instrument #record -- the verified record, with live city inventory behind it",
-    "V3Ledger #service-area -- where we work, each city a door",
+    "AboutFaces -- the three brokers on the first 390 screen, each a door to /team/[slug]",
+    "V3Quiet #about -- how it started, the concrete origin, one sentence of towns",
+    "V3Quiet #record -- verified record as a quiet license line",
     "V3Quiet #faq -- working with Ryan Realty",
     "V3Footer"
   ],
   "openDefects": {
-    "_": "Closed 2026-08-27.",
+    "_": "Closed 2026-08-27. Restyle 2026-08-29 cut the city ledger and the boutique sentence.",
     "items": []
   }
 }
