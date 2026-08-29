@@ -3,8 +3,7 @@
  *
  * Split out so the route file stays under the ci:file-size-budget floor.
  * Nothing here fetches, formats, or derives. TOWN_ORDER and TOWN_IMG stay in
- * app/page.tsx itself: ci:pulse-city-remainder reads them out of that file to
- * prove the count sentence never names a town door.
+ * app/page.tsx itself.
  */
 
 /** The hero media. The Bend flyover the KB hero played, over the canonical
@@ -13,9 +12,13 @@
 export const HERO_VIDEO = '/videos/hero-optimized.mp4'
 export const HERO_POSTER = '/images/hero/hero-old-mill-master-4k.jpg'
 
-/** Field list cap. The KB page showed 9 featured tiles + a 6-item tape from
- *  the same population; the one Field replaces both. */
-export const HOME_FIELD_LIMIT = 12
+/** Preview Field: map + a short set in one frame. Twelve full rows on 390
+ *  dumped the map under a novel of cards. See all opens the rest. */
+export const HOME_FIELD_LIMIT = 4
+
+/** Mixed-type pool the type toggle filters. Larger than the visible cap so
+ *  a House / Land pick still has rows, without dumping 13 cards on 390. */
+export const HOME_FIELD_POOL = 24
 
 /** Tile fetch ceiling. The DAL's own note: 5000 covers the full active
  *  inventory (~2-3K rows); 3000 held on the KB page and holds here, so the
@@ -47,15 +50,11 @@ export const HOME_MARKET_TRACE =
   'Every figure names its own window. A figure the layer withheld is absent, not estimated.'
 
 /**
- * The honest description of the Field's listed subset. The two claims it makes
- * (highest asks, nearest each town's median) are curateFeaturedTiles' own
- * documented mix, computed over the full active feed (HOME_TILE_FETCH covers
- * the whole inventory).
+ * The honest description of the Field's listed subset. The map and the list
+ * are the same visible set.
  */
 export function homeFieldNote(shown: number): string {
-  // ONE line (Matt 2026-08-27): the old four-line methodology paragraph was a
-  // footnote wearing body type. The mix detail lives in the curation's own doc.
-  return `Each town at its live median, plus the region's two highest asks. The map plots these ${shown}.`
+  return `The map plots these ${shown}.`
 }
 
 /** Live place hero when present. Otherwise the page's existing fallback image. */

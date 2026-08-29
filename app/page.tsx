@@ -1,30 +1,34 @@
 import type { Metadata } from 'next'
 
-import { getListingTiles, getDetachedOverlays, getBrokers } from '@/lib/data'
+import { getListingTiles, getDetachedOverlays, getBrokers, getBoundaryGeoJSON } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
-import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
-import {
-  formatPulseCityRemainderPublic,
-  namePulseCityRemainder,
-  pulseCityHrefSlug,
-} from '@/lib/market/pulse-city-remainder'
-import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
+import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
+import { buildYearSeries } from '@/lib/kb/year-series'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
+import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
+import { homesForSalePath } from '@/lib/slug'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import {
   placeFigureRows,
   communityRows,
+  marketAbsenceItems,
+  leftoverMarketFigures,
+  placeMedianChart,
   PLACE_COUNT_TRACE,
   type CityPlaceItem,
   type CityCommunityItem,
 } from '@/app/cities/[slug]/_v3/city-sections'
+import { zonedDateKey } from '@/lib/format/date'
 import {
   V3_ROOT_CLASS,
   v3Text,
   V3Stage,
+  V3Instrument,
   V3Ledger,
   V3Quiet,
   V3Footer,
@@ -34,39 +38,35 @@ import {
 } from '@/components/site/v3'
 import { HomeHomesField } from './_v3/HomeHomesField'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
-import { homeFieldItems } from './_v3/home-field-items'
+import { homeFieldPool } from './_v3/home-field-items'
 import { liveStamp } from './_v3/live-format'
 import {
   HERO_VIDEO,
   HERO_POSTER,
-  HOME_FIELD_LIMIT,
+  HOME_FIELD_POOL,
   HOME_TILE_FETCH,
-  HOME_COUNT_TRACE,
   HOME_COMMUNITY_TRACE,
+  HOME_MARKET_TRACE,
   preferPlaceHero,
 } from './_v3/home-constants'
+import { unionBoundaryGeometry } from '@/app/central-oregon/_v3/union-boundary'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
+import { SellValueForm } from '@/app/sell/_v3/SellValueForm'
 import { HomeAlertSheet } from './_v3/HomeAlertSheet.client'
 import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
-import './_v3/home-page.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
-// D11 seo-shell lock: this exact town list stays in source. The live hero
-// count is leftover region inventory, so the count sentence names that grain.
+// D11 seo-shell lock: this exact town list stays in source (metadata).
 const D11_HOMEPAGE_LEAD =
   'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
-// D19 + ci:seo-shell: the count is the leftover region HUD row, and the
-// sentence it sits in names the regional grain, never a town door from
-// TOWN_ORDER below. ci:pulse-city-remainder reads both out of this file.
-const HERO_COUNT_LEAD = 'homes for sale across Central Oregon. Live list prices and days on market.'
 
 /**
- * Homepage. Search on the first phone screen. Photo-led homes next.
- * Market report lives on /housing-market. Every figure is live from the DAL.
+ * Homepage. Stage (owned Old Mill / Bend flyover, one line, search action)
+ * then Field of homes on the v3 barrel. Chart Room is mid-page.
  */
 export const revalidate = 60
 
@@ -109,16 +109,29 @@ const COMM_FEATURED = [
 ]
 
 export default async function Home() {
-  const [cities, communities, tiles, cityPulse, publicPace, regionOverlays, brokers] = await Promise.all([
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
+  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
-    getListingTiles({ status: 'active', propertySubType: 'Single Family Residence', limit: HOME_TILE_FETCH }).catch(() => []),
-    getMarketPulseAllCitySnapshots().catch(() => []),
+    getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
+    getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_PACE),
+    getPublicDetachedMonthly({
+      geoType: 'region',
+      geoSlug: 'central-oregon',
+      currentMonthKey,
+    }).catch(() => []),
     getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]).catch(() => new Map()),
     getBrokers().catch(() => []),
+    Promise.all(
+      TOWN_ORDER.map((slug) =>
+        getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }).catch(() => null),
+      ),
+    ),
   ])
+  const regionBoundary = unionBoundaryGeometry(townBoundaries)
   const regionMt = regionOverlays.get('region:central-oregon')
+  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
   const hud = leftoverHudKpis({
     grain: 'region',
     headlines: regionMt?.headlines ?? null,
@@ -144,24 +157,15 @@ export default async function Home() {
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
-  const testimonialItems: V3QuietItem[] = TESTIMONIALS.slice(0, 3).map((t) => ({
+  const testimonialItems: V3QuietItem[] = TESTIMONIALS.slice(0, 8).map((t) => ({
     kind: 'prose' as const,
     term: t.author,
     body: t.quote,
   }))
 
-  const townRemainder = formatPulseCityRemainderPublic(
-    namePulseCityRemainder({
-      regionActive: hud.active,
-      displayedLabels: townItems.map((t) => t.name),
-      allCities: cityPulse.map((row) => ({
-        label: row.geo_label,
-        active: row.active_count,
-        slug: pulseCityHrefSlug(row.geo_slug || row.geo_label),
-      })),
-    }),
-  ).join(' ')
-  const [firstTownRow, ...restTownRows] = placeFigureRows(townItems, 'City')
+  const [firstTownRow, ...restTownRows] = placeFigureRows(townItems, 'City').map(
+    ({ when: _kind, ...row }) => row,
+  )
 
   const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
   const titleCaseName = (s: string) => s.replace(/\b[a-z]/g, (ch) => ch.toUpperCase())
@@ -181,17 +185,45 @@ export default async function Home() {
   })
   const [firstCommunityRow, ...restCommunityRows] = communityRows(communityItems)
 
-  const curated = curateFeaturedTiles(
-    tiles,
-    townItems.map((t) => ({ name: t.name, medianPrice: t.medianPrice })),
-    HOME_FIELD_LIMIT,
+  const fieldItems = homeFieldPool(tiles, HOME_FIELD_POOL)
+
+  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
+  const verdict = marketVerdict(mosRaw)
+  const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
+  const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
+  const marketHeadline = hasVerdict
+    ? `Is Central Oregon a buyer's or seller's market?`
+    : 'The Central Oregon market'
+  const verdictSentence = hasVerdict
+    ? `Central Oregon has ${mosLabel} months of supply, which is a ${verdict.label}.`
+    : null
+  const HOME_FIGURE_LABELS = new Set([
+    'median list price',
+    'detached homes for sale',
+    'months of supply',
+    'median to pending · 90 days',
+    'sale to original list · 12 months',
+  ])
+  const figures = leftoverMarketFigures(hud, {
+    browse: publishRegionalSearchHref(),
+    monthsOfSupply: '/months-of-supply',
+  }).filter((f) => HOME_FIGURE_LABELS.has(String(f.label)))
+  const [firstMarketFigure, ...restMarketFigures] = figures
+  const medianChart = placeMedianChart(
+    buildYearSeries(chartMonths.months, 5),
+    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, Central Oregon`,
   )
-  const fieldItems = homeFieldItems(curated, HOME_FIELD_LIMIT)
+  const marketSource = `${HOME_MARKET_TRACE}${mosLabel != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`
 
   const footerFine = townItems
     .filter((t) => t.activeCount != null && t.medianPrice != null)
     .map((t) => `${t.name} ${(t.activeCount as number).toLocaleString('en-US')} / ${formatPriceExact(t.medianPrice as number)}`)
     .join(' · ')
+
+  const seeAllLabel =
+    hud.active != null
+      ? `See all ${hud.active.toLocaleString('en-US')} homes`
+      : 'See all homes'
 
   return (
     <>
@@ -205,34 +237,25 @@ export default async function Home() {
           headline={v3Text('Homes for Sale in Central Oregon')}
           posterSrc={HERO_POSTER}
           videoSrc={HERO_VIDEO}
-          action={{ label: 'See homes', href: publishRegionalSearchHref(), variant: 'ghost' }}
         >
           <HomeHeroSearch />
         </V3Stage>
 
         <HomeHomesField
           fieldItems={fieldItems}
-          towns={townItems.map((t) => ({ label: t.name, href: t.href }))}
-          count={
-            hud.active != null
-              ? {
-                  value: hud.active.toLocaleString('en-US'),
-                  label: HERO_COUNT_LEAD,
-                  source: HOME_COUNT_TRACE,
-                  updatedAt: leftoverStamp,
-                }
-              : undefined
-          }
-          emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
+          towns={townItems.map((t) => ({ label: t.name, href: homesForSalePath(t.name) }))}
+          boundary={regionBoundary ?? undefined}
+          listFlow
+          seeAll={{ href: publishRegionalSearchHref(), label: seeAllLabel }}
+          emptyMessage="No photographed active home with a list price and a street address returned on this refresh."
         />
 
         {firstTownRow ? (
           <V3Ledger
             id="towns"
             eyebrow={v3Text('Central Oregon · By town')}
-            heading={v3Text('Towns')}
+            heading={v3Text('Where the homes are, and what they cost')}
             rows={[firstTownRow, ...restTownRows]}
-            note={townRemainder ? v3Text(townRemainder) : undefined}
             source={v3Text(PLACE_COUNT_TRACE)}
             updated={liveStamp(leftoverStamp)}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
@@ -241,18 +264,33 @@ export default async function Home() {
           <V3Ledger
             id="towns"
             eyebrow={v3Text('Central Oregon · By town')}
-            heading={v3Text('Towns')}
+            heading={v3Text('Where the homes are, and what they cost')}
             rows={[]}
             emptyMessage={v3Text('No town returned a live market row on this refresh.')}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
           />
         )}
 
-        <V3Quiet
-          id="market"
-          heading="The Central Oregon market"
-          items={[{ label: 'See the Central Oregon housing market', href: '/housing-market' }]}
-        />
+        {firstMarketFigure ? (
+          <V3Instrument
+            id="market"
+            level={2}
+            eyebrow={v3Text('Central Oregon · The market')}
+            headline={v3Text(marketHeadline)}
+            note={verdictSentence ? v3Text(verdictSentence) : undefined}
+            figures={[firstMarketFigure, ...restMarketFigures]}
+            source={v3Text(marketSource)}
+            chart={medianChart}
+            updated={liveStamp(leftoverStamp)}
+            action={{ label: v3Text('Full market report'), href: '/housing-market', variant: 'ghost' }}
+          />
+        ) : (
+          <V3Quiet
+            id="market"
+            heading="The Central Oregon market"
+            items={marketAbsenceItems('Central Oregon', fieldItems.length > 0)}
+          />
+        )}
 
         {firstCommunityRow ? (
           <V3Ledger
@@ -280,11 +318,9 @@ export default async function Home() {
           <AboutFaces people={faces} heading="The brokers" headingLevel={2} />
         ) : null}
 
-        <V3Quiet
-          id="sell"
-          heading="Selling a home"
-          items={[{ label: 'Value my home', href: '/sell' }]}
-        />
+        <section id="sell" className={V3_ROOT_CLASS}>
+          <SellValueForm pagePath="/" formId="home-get-value" />
+        </section>
       </main>
 
       <V3Footer

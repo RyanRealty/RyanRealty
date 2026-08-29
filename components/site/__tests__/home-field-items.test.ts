@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { filterHomeFieldByCity, homeFieldItems } from '@/app/_v3/home-field-items'
+import { filterHomeFieldByCity, homeFieldItems, homeFieldPool } from '@/app/_v3/home-field-items'
 
 function tile(over: Partial<ListingTile> = {}): ListingTile {
   return {
@@ -62,6 +62,7 @@ describe('homeFieldItems', () => {
     // Card titles carry the city; city left the meta line (Matt 2026-08-27).
     expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
     expect(items[0]?.city).toBe('Bend')
+    expect(items[0]?.typeKey).toBe('house')
   })
 
   it('filters the listed set by MLS city', () => {
@@ -91,5 +92,17 @@ describe('homeFieldItems', () => {
     expect(items).toHaveLength(1)
     // publishListingShareKind's own label for the feed sub-type, on the meta line.
     expect(items[0]?.meta ?? '').toMatch(/tenancy in common|share/i)
+  })
+
+  it('round-robins types so a house-heavy feed cannot hide lots', () => {
+    const tiles = [
+      tile({ listingKey: 'H1', listNumber: '1', propertySubType: 'Single Family Residence' }),
+      tile({ listingKey: 'H2', listNumber: '2', streetName: 'Pine', propertySubType: 'Single Family Residence' }),
+      tile({ listingKey: 'L1', listNumber: '3', streetName: 'Lot', propertySubType: 'Residential Lots' }),
+      tile({ listingKey: 'C1', listNumber: '4', streetName: 'Condo', propertySubType: 'Condominium' }),
+    ]
+    const mixed = homeFieldPool(tiles, 3)
+    expect(mixed.map((row) => row.typeKey)).toEqual(['house', 'condo', 'land'])
+    expect(mixed.map((row) => row.cat)).toEqual([0, 1, 2])
   })
 })

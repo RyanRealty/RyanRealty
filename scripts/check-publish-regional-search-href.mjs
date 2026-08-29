@@ -39,16 +39,16 @@ checks.push({
 // See homes door.
 
 const home = src('app/page.tsx')
-// The homepage market Instrument is gone. The one regional inventory door is
-// the Stage See homes action. leftoverMarketFigures' browse link used to be
-// the second pin; requiring it kept a report on `/` just to satisfy this gate.
+// Regional doors are HomeHeroSearch (empty submit), leftoverMarketFigures'
+// browse link, and the Field See all. All go through publishRegionalSearchHref.
 checks.push({
   label: 'homepage does not hardcode the Bend-injecting /homes-for-sale door on regional CTAs',
   ok:
     !/cta=\{\{\s*href:\s*['"]\/homes-for-sale['"]/.test(home) &&
     !/href:\s*['"]\/homes-for-sale['"]/.test(home) &&
     (/viewAllHref=\{publishRegionalSearchHref\(\)\}/.test(home) ||
-      /href:\s*publishRegionalSearchHref\(\)/.test(home)),
+      (/href:\s*publishRegionalSearchHref\(\)/.test(home) &&
+        /browse:\s*publishRegionalSearchHref\(\)/.test(home))),
 })
 
 // KbFooter and KbFeatured left with the KB register (2026-08-27). Both arms

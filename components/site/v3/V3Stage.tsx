@@ -107,8 +107,12 @@ export type V3StageProps = {
   posterSrc: string
   /** Owned video. Optional. Autoplays muted, looping, inline, motion allowing. */
   videoSrc?: string
-  /** The one action, earned by the line above it. One primary per viewport. */
-  action: V3StageAction
+  /**
+   * The one destination action. Optional when `children` is that action
+   * (homepage search). Do not pass both a destination button and a search
+   * slot — one action per viewport.
+   */
+  action?: V3StageAction
   /** Scrim depth. Defaults to the ramp the prototype proved. */
   overlayStrength?: V3StageOverlay
   /** The context line above the headline. One line, never a sentence. */
@@ -121,9 +125,8 @@ export type V3StageProps = {
   /** 'tall' when the next section should peek under the fold on 390. 'compact' when the next section (the ask) must fit in the first 390 viewport. */
   height?: 'standard' | 'tall' | 'compact'
   /**
-   * Optional working control in the copy stack (homepage search). Renders
-   * after the headline and before the destination action so the typed query
-   * is the first thumb target. The Stage still requires `action`.
+   * Optional working control in the copy stack (homepage search). When this
+   * is the Stage action, omit `action` so a second button does not ship.
    */
   children?: ReactNode
   id?: string
@@ -160,7 +163,7 @@ function isBlank(value: string): boolean {
  * is loud where it can still be fixed, and stays out of the way in production,
  * where crashing a visitor's page is worse than the fault it is reporting.
  */
-function assertNamed(headline: string, label: string): void {
+function assertNamed(headline: string, label?: string): void {
   if (process.env.NODE_ENV === 'production') return
 
   if (isBlank(headline)) {
@@ -169,7 +172,7 @@ function assertNamed(headline: string, label: string): void {
     )
   }
 
-  if (isBlank(label)) {
+  if (label != null && isBlank(label)) {
     throw new Error(
       'V3Stage: `action.label` is blank. It is the action\'s accessible name, so a blank one ships a link no screen reader, voice control, or search-in-page can name. Pass the label the visitor reads.',
     )
@@ -190,13 +193,13 @@ export function V3Stage<H extends string, L extends string>({
   className,
 }: V3StageProps & {
   headline: H & V3Named<H>
-  action: V3StageAction & { label: L & V3Named<L> }
+  action?: V3StageAction & { label: L & V3Named<L> }
 }) {
   const headingId = useId()
   const motionAllowed = useMotionAllowed()
   const showVideo = Boolean(videoSrc) && motionAllowed
 
-  assertNamed(headline, action.label)
+  assertNamed(headline, action?.label)
 
   return (
     <section
@@ -254,12 +257,11 @@ export function V3Stage<H extends string, L extends string>({
           {headline}
         </V3Heading>
         {children}
-        {/* onMedia is not decoration here: it is what makes the control
-            identifiable on footage at all (see the on-media primary in
-            ./V3Stage.css). A Stage action is always on media by definition. */}
-        <V3Button href={action.href} variant={action.variant ?? 'primary'} onMedia>
-          {action.label}
-        </V3Button>
+        {action ? (
+          <V3Button href={action.href} variant={action.variant ?? 'primary'} onMedia>
+            {action.label}
+          </V3Button>
+        ) : null}
       </div>
     </section>
   )

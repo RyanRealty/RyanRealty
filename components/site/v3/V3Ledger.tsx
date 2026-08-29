@@ -79,8 +79,10 @@ type V3LedgerRowBase = {
    * The temporal or contextual line: "closed Jun 12", "34 days on market", "saved
    * Aug 3". Rendered small and uppercase above the name on 390, in its own column
    * from 768 up. Dates arrive already formatted through lib/format/date.
+   * Omit it when there is no context line — a leftover kind label ("CITY")
+   * is not a when.
    */
-  when: V3Text
+  when?: V3Text
   /** The row's name, and the loudest part of its link text. */
   what: V3Text
   /** The second line under the name: beds and baths, a subdivision, a status. */
@@ -323,12 +325,12 @@ export function V3Ledger(props: V3LedgerProps) {
             <li key={row.id ?? row.href} className="v3-ledger__item">
               <Link
                 href={row.href}
-                className="v3-ledger__row"
+                className={cn('v3-ledger__row', !row.when && 'v3-ledger__row--no-when')}
                 aria-label={row.ariaLabel}
                 target={row.newTab ? '_blank' : undefined}
                 rel={row.newTab ? 'noopener noreferrer' : undefined}
               >
-                <span className="v3-ledger__when">{row.when}</span>
+                {row.when ? <span className="v3-ledger__when">{row.when}</span> : null}
                 <span
                   className={cn('v3-ledger__what', row.media && 'v3-ledger__what--media')}
                 >

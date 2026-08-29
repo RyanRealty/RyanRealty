@@ -51,7 +51,7 @@
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Stage #top -- the opening",
     "V3Breadcrumb",
-    "HomeHomesField -- the live inventory: the curated SFR set, the leftover region count, towns as ghost filters, the map plotting the listed set (added 2026-08-27, closing this contract's own openDefect)",
+    "HomeHomesField -- the live inventory: the same Field as the homepage (PlaceFieldMap inside the frame), towns as doors (added 2026-08-27, closing this contract's own openDefect)",
     "V3Ledger #buyer-guides -- first-time, relocation, investment",
     "V3Quiet #how-it-works -- how a purchase works here",
     "BuyAlertsSheet -- the listing-alerts ask",

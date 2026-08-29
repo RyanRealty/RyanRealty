@@ -129,6 +129,7 @@ export type V3ButtonProps = {
   ariaLabel?: string
   ariaExpanded?: boolean
   ariaControls?: string
+  ariaPressed?: boolean
   ariaCurrent?: 'page' | 'step' | 'location' | true
   prefetch?: boolean
   target?: '_blank'
@@ -157,6 +158,7 @@ export function V3Button({
   ariaLabel,
   ariaExpanded,
   ariaControls,
+  ariaPressed,
   ariaCurrent,
   prefetch,
   target,
@@ -196,6 +198,7 @@ export function V3Button({
       aria-label={ariaLabel}
       aria-expanded={ariaExpanded}
       aria-controls={ariaControls}
+      aria-pressed={ariaPressed}
     >
       {children}
     </button>

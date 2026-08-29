@@ -44,7 +44,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
+import { V3_ROOT_CLASS, V3Button, V3SourceLine } from './atoms'
 import './tokens.css'
 import './V3Field.css'
 
@@ -77,6 +77,15 @@ export type V3FieldItem = {
    * into the listing) instead of the relative plot.
    */
   photoSrc?: string
+  /**
+   * Optional type mark, 0–4. Reads `--v3-cat-N` on the pin so a mixed set
+   * stays navy, just at different alphas. Omit it and the pin is full navy.
+   */
+  cat?: 0 | 1 | 2 | 3 | 4
+  /** Stable type id when the lead chips filter this set. */
+  typeKey?: string
+  /** Buyer-facing type label for a lead chip. */
+  typeLabel?: string
 }
 
 /**
@@ -134,8 +143,28 @@ export type V3FieldProps = {
    * unlabeled pseudo-map.
    */
   mapNote?: string
+  /**
+   * Optional lead above the frame. Type chips that exist in the set, and
+   * town doors, live here as V3Buttons. Tokens only — the caller supplies
+   * the controls. Renders after the count so chips cannot sit on a caption.
+   */
+  lead?: ReactNode
   /** One line under the list, for whatever the set does not show. */
   footNote?: string
+  /**
+   * Keep the list in document flow at every width. The barrel default at 900
+   * makes the list its own 560px scroller beside a sticky map. A preview Field
+   * (homepage) caps the set, stays in flow, and points See all at the rest.
+   */
+  listFlow?: boolean
+  /**
+   * The door after a capped set. Same slot Ledger already has: one ghost
+   * control, earned by the rows above it.
+   */
+  action?: {
+    label: string
+    href: string
+  }
   /** Shown when `items` is empty. Say the reason, not just the absence. */
   emptyMessage?: string
   /** Controlled binding. Pass with `onActiveChange` when the map owns the state. */
@@ -274,7 +303,10 @@ export function V3Field({
   children,
   count,
   mapNote,
+  lead,
   footNote,
+  listFlow = false,
+  action,
   emptyMessage = 'No listings in this view.',
   activeId,
   onActiveChange,
@@ -335,6 +367,7 @@ export function V3Field({
           V3_ROOT_CLASS,
           'v3-field',
           usePhotoSurface && 'v3-field--photos',
+          listFlow && 'v3-field--flow',
           className,
         )}
       >
@@ -344,6 +377,8 @@ export function V3Field({
             {` ${count.label}`}
           </p>
         ) : null}
+
+        {lead ? <div className="v3-field__lead">{lead}</div> : null}
 
         <div
           className={cn(
@@ -414,6 +449,7 @@ export function V3Field({
                       key={item.id}
                       className={cn(
                         'v3-field__pin',
+                        item.cat != null && `v3-field__pin--cat-${item.cat}`,
                         active === item.id && 'is-active',
                       )}
                       style={{ left: `${left}%`, top: `${top}%` }}
@@ -450,6 +486,7 @@ export function V3Field({
                       className={cn(
                         'v3-field__row',
                         hasListingPhoto(item) && 'v3-field__row--has-photo',
+                        item.cat != null && `v3-field__row--cat-${item.cat}`,
                         active === item.id && 'is-active',
                       )}
                       onMouseEnter={() => setActive(item.id)}
@@ -491,6 +528,14 @@ export function V3Field({
             updatedAt={count.updatedAt}
             className="v3-field__source"
           />
+        ) : null}
+
+        {action ? (
+          <div className="v3-field__action">
+            <V3Button href={action.href} variant="ghost">
+              {action.label}
+            </V3Button>
+          </div>
         ) : null}
       </section>
     </V3FieldBindingContext.Provider>

@@ -80,8 +80,8 @@ const REQUIRED = [
         msg: 'D11 homepage town list must appear as an exact literal in app/page.tsx',
       },
       {
-        re: /across Central Oregon\. Live list prices and days on market\./,
-        msg: 'Homepage hero lead must name the regional grain of the live count',
+        re: /<HomeHeroSearch/,
+        msg: 'Homepage Stage action is search (HomeHeroSearch), not a leftover count sentence',
       },
       { re: /title:\s*['"]Homes for Sale/i, msg: 'metadata title must lead with "Homes for Sale"' },
     ],
@@ -425,6 +425,22 @@ if (existsSync(HERO)) {
   }
 } else {
   const homeSrc = readFileSync(join(ROOT, 'app/page.tsx'), 'utf8')
+  if (/HERO_COUNT_LEAD/.test(homeSrc) || /homes for sale across Central Oregon\. Live list prices and days on market/.test(homeSrc)) {
+    violations.push({
+      file: 'app/page.tsx',
+      kind: 'required',
+      id: 'no-leftover-count',
+      msg: 'Homepage Field must not print the leftover inventory caption (1,746 homes for sale across Central Oregon. Live list prices and days on market.)',
+    })
+  }
+  if (/action=\{\{\s*label:\s*['"]See homes['"]/.test(homeSrc)) {
+    violations.push({
+      file: 'app/page.tsx',
+      kind: 'required',
+      id: 'no-see-homes',
+      msg: 'Homepage Stage has one action (search). Do not also ship See homes.',
+    })
+  }
   if (!/headline=\{v3Text\('Homes for Sale in Central Oregon'\)\}/.test(homeSrc)) {
     violations.push({
       file: 'app/page.tsx',
