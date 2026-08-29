@@ -1,7 +1,7 @@
 # Current — 2026-08-29 (Cursor) — listing template PR 160, 390 facts 100cqi
 
 **Surface:** branch `cursor/listing-template-c741` (PR 160). Do not merge. Do not deploy production.
-**Done:** Added to the in-flight overflow fix (do not restart): page sheet is `container-type: inline-size` / `listing-sheet`. At max-width 759px, facts `dl` and Field plot are `100cqi` so they size to the 354 sheet box, not a 734px 2-col desktop grid. Ask stays stacked on screen. Cookie/sticky untouched (PASS).
+**Done:** Added to the in-flight overflow fix (do not restart): page sheet is `container-type: inline-size` / `listing-sheet`. At max-width 759px, facts `dl` and Field plot are `100cqi`. Local 390 SHA `09b3952cd`: sheet 354/354, facts 314 (Baths/DOM/Status at x 203-352, not 413+), plot 312, pin x 189, Ask x 38-352 stacked. Cookie 676-778 over sticky 778-844, overlap false. Cookie/sticky sources untouched.
 **Next:** Release refreshes one listing preview from this SHA. Walk that host, not `dcvdwu9wo` / `9eiw3io6c`. Proof `/homes-for-sale/redmond/4496-zenith-220226279`.
 **Do not:** invent a skin, merge, deploy production, touch cookie/sticky.
 
