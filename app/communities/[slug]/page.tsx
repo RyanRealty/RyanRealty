@@ -72,7 +72,6 @@ import {
   getBlogPostsBySlugs,
   getPriceHistory,
   getDetachedOverlays,
-  getAreaGuideVideo,
   cityDetachedSlug,
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
@@ -149,6 +148,7 @@ import {
   communityFieldCaption,
   communityFieldItems,
   communityFieldTrace,
+  communityLibraryHero,
   stagePoster,
   type CommunityFieldBranch,
 } from './_v3/community-opening'
@@ -591,13 +591,10 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   /* ── The opening ───────────────────────────────────────────────────────── */
 
-  const posterSrc = stagePoster(slug, community.heroImageUrl)
-  // The approved area-guide clip plays ON the Stage - the one pattern for
-  // owned full-bleed media (PUBLIC_UI §3). Muted, looping, motion-respecting
-  // inside V3Stage. Null when the community has no approved clip.
-  const areaGuideVideo = posterSrc
-    ? await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuideVideo')
-    : null
+  const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
+  const posterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
+  // Library / live still is the first fold. Area-guide clips stay off Stage.
+  // They are click-to-play cuts, never a silent Stage loop (getAreaGuideVideo).
   const belongFigures = belongingFigures(richContent, placeCharacter)
   const [firstBelong, ...restBelong] = belongFigures
 
@@ -689,7 +686,6 @@ export default async function CommunityDetailPage({ params }: Props) {
             cityName={cityName}
             headline={belongingHeadline(publicName, richContent)}
             posterSrc={posterSrc}
-            videoSrc={areaGuideVideo?.url ?? undefined}
             action={{
               label: fieldItems[0]?.title || `See ${publicName} houses`,
               href: fieldItems[0]?.href || '#homes',

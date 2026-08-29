@@ -138,7 +138,7 @@ export const getCityHeroUrlsBySlug = unstable_cache(
     }
     return out
   },
-  ['city-hero-urls-v1'],
+  ['city-hero-urls-v2'],
   { revalidate: 1800, tags: ['cities'] },
 )
 
@@ -161,7 +161,7 @@ export const getCommunityHeroUrlsBySlug = unstable_cache(
     }
     return out
   },
-  ['community-hero-urls-v1'],
+  ['community-hero-urls-v2'],
   { revalidate: 1800, tags: ['communities'] },
 )
 
