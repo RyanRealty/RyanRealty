@@ -43,9 +43,15 @@ type Props = {
    * pathname fallback below.
    */
   pathContext?: SavedSearchPathContext
+  /**
+   * Guest path. `inline` prints an email field next to Save (the old HUD).
+   * `scroll` is one button that jumps to `#search-alert-capture` so the Field
+   * face keeps a single email ask under the results.
+   */
+  guestCapture?: 'inline' | 'scroll'
 }
 
-export default function SaveSearchButton({ user, pathContext }: Props) {
+export default function SaveSearchButton({ user, pathContext, guestCapture = 'inline' }: Props) {
   const pathFilters = pathContext ? buildSavedSearchPathFilters(pathContext) : undefined
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -199,6 +205,23 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
   }
 
   const triggerLabel = status === 'done' ? 'Search saved' : 'Save this search'
+
+  if (!user && guestCapture === 'scroll') {
+    return (
+      <Button
+        type="button"
+        className="min-h-11 shrink-0"
+        onClick={() => {
+          document.getElementById('search-alert-capture')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          })
+        }}
+      >
+        Save this search
+      </Button>
+    )
+  }
 
   if (!user) {
     if (status === 'done') {

@@ -523,7 +523,7 @@ export default function SearchFilters({ initialFilters, signedIn = false, pathCo
           )}
         </div>
 
-        <SaveSearchButton user={signedIn} pathContext={pathContext} />
+        <SaveSearchButton user={signedIn} pathContext={pathContext} guestCapture="scroll" />
       </div>
 
       <Separator />

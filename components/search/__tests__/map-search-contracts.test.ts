@@ -467,7 +467,7 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
   it('keeps the signed-in save-search button on the Field face', () => {
     expect(slug).toMatch(/pathContext=\{\{ \.\.\.resolved, city, citySlug: slug\[0\] \}\}/)
     const filters = readSrc('components/search/SearchFilters.tsx')
-    expect(filters).toMatch(/<SaveSearchButton user=\{signedIn\} pathContext=\{pathContext\}/)
+    expect(filters).toMatch(/<SaveSearchButton user=\{signedIn\} pathContext=\{pathContext\} guestCapture="scroll"/)
   })
 
   it('SaveSearchButton stays mid-browse for guests and signed-in (B2)', () => {
@@ -580,7 +580,7 @@ describe('search index H1 is Homes for Sale on the Field face', () => {
 describe('SearchFilters does not duplicate the collapsed alert ask (E-SEARCH-CHIP)', () => {
   it('keeps Save this search and drops the navy Get alerts chip', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
-    expect(filters).toMatch(/<SaveSearchButton user=\{signedIn\} pathContext=\{pathContext\}/)
+    expect(filters).toMatch(/<SaveSearchButton user=\{signedIn\} pathContext=\{pathContext\} guestCapture="scroll"/)
     expect(filters).not.toMatch(/>\s*Get alerts\s*</)
     expect(filters).not.toMatch(/focusSearchAlertCapture/)
   })
