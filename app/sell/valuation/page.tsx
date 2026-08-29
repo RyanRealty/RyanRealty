@@ -1,6 +1,6 @@
 /**
  * /sell/valuation — written CMA intake. Stage then one cream sheet:
- * address field, then what goes into the number.
+ * address and email on the first face, then what goes into the number.
  *
  * Capture contract unchanged: ValuationValueForm posts submitValuationRequest.
  */

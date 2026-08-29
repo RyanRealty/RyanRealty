@@ -20,6 +20,7 @@ export const VALUATION_HTML_ANTI_TELLS = [
     id: 'buyer-seller-market-h2',
     re: /Is [^\n<]{0,120}buyer(?:'|’|&rsquo;|&#39;|&#x27;|&apos;)s or seller(?:'|’|&rsquo;|&#39;|&#x27;|&apos;)s market\?/,
   },
+  { id: 'deferred-email-helper', re: /Next we ask for your email/ },
 ]
 
 export function valuationHtmlGate(html) {

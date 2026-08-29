@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * /sell/valuation capture. Address typeahead is the spine. A matched
- * confirm is required. Next step is email. Posts submitValuationRequest.
+ * /sell/valuation capture. Address typeahead and email share the first face.
+ * A matched confirm is required. Posts submitValuationRequest.
  */
 import { useState } from 'react'
 import { submitValuationRequest } from '@/app/home-valuation/actions'
@@ -11,13 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
-import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { CONTACT } from '@/lib/brand/contact'
 
-type Step = 'address' | 'contact'
-
 export function ValuationValueForm() {
-  const [step, setStep] = useState<Step>('address')
   const [address, setAddress] = useState('')
   const [matchedAddress, setMatchedAddress] = useState('')
   const [state, setState] = useState<{
@@ -39,7 +35,7 @@ export function ValuationValueForm() {
     }
   }
 
-  function advanceFromAddress(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const v = address.trim()
     if (v.length < 5) {
@@ -50,16 +46,16 @@ export function ValuationValueForm() {
       setState({ error: 'Pick a matched address from the list to confirm it.' })
       return
     }
-    setState({})
-    setStep('contact')
-  }
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email')?.toString()?.trim() ?? ''
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setState({ error: 'Email is required' })
+      return
+    }
     setLoading(true)
     setState({})
-    const formData = new FormData(e.currentTarget)
-    formData.set('address', address.trim())
+    formData.set('address', v)
+    formData.set('email', email)
     const result = await submitValuationRequest(formData)
     setLoading(false)
     setState(result)
@@ -92,57 +88,8 @@ export function ValuationValueForm() {
     )
   }
 
-  if (step === 'contact') {
-    return (
-      <form onSubmit={handleSubmit} id="home_valuation" noValidate>
-        <Button
-          type="button"
-          variant="link"
-          className="h-auto justify-start p-0"
-          onClick={() => {
-            setState({})
-            setStep('address')
-          }}
-        >
-          Edit address
-        </Button>
-        <p className="valuation-match" data-address-match="confirmed">
-          Matched: {address}
-        </p>
-        <div>
-          <Label htmlFor="val-name">Name</Label>
-          <Input id="val-name" name="name" type="text" autoComplete="name" />
-        </div>
-        <div>
-          <Label htmlFor="val-email">Email</Label>
-          <Input
-            id="val-email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="val-phone">Phone</Label>
-          <Input id="val-phone" name="phone" type="tel" autoComplete="tel" inputMode="tel" />
-        </div>
-        {state.error ? (
-          <p className="valuation-error" role="alert">
-            {state.error}
-          </p>
-        ) : null}
-        <SmsConsentDisclosure />
-        <Button type="submit" disabled={loading} className="w-full">
-          {loading ? 'Sending' : 'Get my home’s value'}
-        </Button>
-      </form>
-    )
-  }
-
   return (
-    <form onSubmit={advanceFromAddress} className="valuation-address" id="home_valuation" noValidate>
+    <form onSubmit={handleSubmit} className="valuation-address" id="home_valuation" noValidate>
       <Label htmlFor="val-address">Property address</Label>
       <AddressAutocomplete
         id="val-address"
@@ -168,14 +115,24 @@ export function ValuationValueForm() {
           Pick an address from the list to confirm it.
         </p>
       )}
-      <p className="valuation-note">Next we ask for your email.</p>
+      <div>
+        <Label htmlFor="val-email">Email</Label>
+        <Input
+          id="val-email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          required
+        />
+      </div>
       {state.error ? (
         <p className="valuation-error" role="alert">
           {state.error}
         </p>
       ) : null}
-      <Button type="submit" className="w-full">
-        Get my home’s value
+      <Button type="submit" disabled={loading} className="w-full">
+        {loading ? 'Sending' : 'Get my home’s value'}
       </Button>
     </form>
   )

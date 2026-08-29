@@ -10,6 +10,7 @@ const FACE_TELLS = [
   /methodology v3/i,
   /city_quarter_sale_to_ask/,
   /Is [^\n<]{0,120}buyer(?:'|’|&rsquo;|&#39;|&#x27;|&apos;)s or seller(?:'|’|&rsquo;|&#39;|&#x27;|&apos;)s market\?/,
+  /Next we ask for your email/,
 ]
 
 describe('valuationHtmlGate', () => {
@@ -18,7 +19,8 @@ describe('valuationHtmlGate', () => {
       <h1>Home valuation in Central Oregon</h1>
       <h2>Get your home's value</h2>
       <label>Property address</label>
-      <p>Next we ask for your email.</p>
+      <label>Email</label>
+      <input type="email" />
       <p data-address-match="pending">Pick an address from the list to confirm it.</p>
       <button>Get my home’s value</button>
       <h2>What goes into the number</h2>
@@ -35,6 +37,7 @@ describe('valuationHtmlGate', () => {
       methodology v3
       city_quarter_sale_to_ask
       Is Bend a buyer&#x27;s or seller&#x27;s market?
+      Next we ask for your email.
     `
     const result = valuationHtmlGate(html)
     expect(result.ok).toBe(false)
@@ -46,6 +49,7 @@ describe('valuationHtmlGate', () => {
       'methodology-v3',
       'city-quarter-sale-to-ask',
       'buyer-seller-market-h2',
+      'deferred-email-helper',
     ])
   })
 
@@ -64,6 +68,10 @@ describe('valuationHtmlGate', () => {
     expect(page).toContain('What goes into the number')
     expect(form).toContain('AddressAutocomplete')
     expect(form).toContain('data-address-match')
-    expect(form).toContain('Next we ask for your email.')
+    expect(form).toContain('htmlFor="val-email"')
+    expect(form).toContain('type="email"')
+    expect(form).toContain('>Email<')
+    expect(form).not.toContain('Next we ask for your email.')
+    expect(form).not.toContain("setStep('contact')")
   })
 })

@@ -20,7 +20,7 @@
   }
 }
 
-/* Address field + submit at 44px, cream face. */
+/* Address + email + submit at 44px, cream face. */
 .v3.v3-sheet.valuation-value-sheet [data-slot='input'],
 .v3.v3-sheet.valuation-value-sheet input:not([type='radio']):not([type='checkbox']) {
   height: var(--v3-tap);
