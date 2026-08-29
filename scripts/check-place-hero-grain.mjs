@@ -54,13 +54,12 @@ const pages = [
     path: 'app/communities/[slug]/page.tsx',
     label: 'community page opening count names the community, not the city',
     forbid: /in \$\{cityName\}\. Live inventory/,
-    // The v3 Field replaced KbHero here (2026-08-26). The count beside the
-    // frame is communityFieldCaption's, and that builder interpolates the
-    // community's public name itself.
+    // Split + leftover face. H1 is belongingHeadline ("Tetherow homes for sale").
+    // Face count is publishPlaceFace grain community (leftover 16, not alias 25).
     v3: {
-      module: 'app/communities/[slug]/_v3/community-opening.ts',
-      builder: 'communityFieldCaption',
-      names: 'in ${input.placeName}',
+      module: 'lib/market/publish-place-face.ts',
+      builder: 'publishPlaceFace',
+      names: "input.grain !== 'city'",
     },
   },
   {

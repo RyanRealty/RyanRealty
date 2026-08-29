@@ -445,12 +445,13 @@ describe('design directive contracts', () => {
 
   // The community page also lost its activity feed and its blog rail to the same
   // cap; both are back, on the same city-scoped honesty.
-  it('the community page carries the activity feed and the guides rail again', () => {
+  it('the community page carries the activity feed and amenity blogs only', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/id="activity"/)
-    expect(src).toMatch(/id="guides"/)
     expect(src).toMatch(/buildActivityItems\(/)
-    expect(src).toMatch(/buildArticlePosts\(/)
+    expect(src).toMatch(/getBlogPostsBySlugs/)
+    expect(src).not.toMatch(/getRecentBlogPosts/)
+    expect(src).not.toMatch(/id="guides"/)
     expect(src).toMatch(/Live · \$\{cityName\}/)
   })
   it('D91 — market structured data cannot vanish (MARKET_TRUTH D26)', () => {
@@ -666,10 +667,11 @@ describe('design directive contracts', () => {
     expect(figures).toMatch(/resortItems/)
   })
 
-  it('community Stage first fold is the owned still, not the area-guide loop', () => {
+  it('community first fold is Split + leftover face, not Stage or an area-guide loop', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
-    expect(src).toMatch(/<CommunityStage/)
-    expect(src).toMatch(/posterSrc=\{posterSrc\}/)
+    expect(src).toMatch(/<PlaceSplitView/)
+    expect(src).toMatch(/publishPlaceFace\(\{\s*grain: 'community',\s*hud\s*\}\)/)
+    expect(src).not.toMatch(/<CommunityStage/)
     expect(src).not.toMatch(/videoSrc=/)
     expect(src).not.toMatch(/getAreaGuideVideo\(/)
   })

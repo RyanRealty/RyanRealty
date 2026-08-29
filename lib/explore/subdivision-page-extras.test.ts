@@ -93,18 +93,17 @@ describe('place list wiring', () => {
   // whose Field caption states its own cap (cityFieldCaption /
   // neighborhoodFieldCaption), asserted by ci:place-hero-grain's v3 arms.
 
-  it('keeps the city page on an explicit preview cap', () => {
+  it('keeps the city page on Split with a leftover face', () => {
     const src = readFileSync('app/cities/[slug]/page.tsx', 'utf8')
-    expect(src).toContain('CITY_PLACE_LIST_CAP')
+    expect(src).toMatch(/<PlaceSplitView/)
+    expect(src).toMatch(/publishPlaceFace/)
   })
 
-  it('sends the community counted-set door to the on-page list', () => {
-    // v3 spelling (2026-08-26): the Stage's fallback action and the opening
-    // Instrument door both land on the on-page Field (#homes), which lists the
-    // counted set.
+  it('sends the community counted-set door to the on-page Split', () => {
     const src = readFileSync('app/communities/[slug]/page.tsx', 'utf8')
-    expect(src).toContain("href: fieldItems[0]?.href || '#homes'")
     expect(src).toContain("href: '#homes'")
+    expect(src).toMatch(/id="homes"/)
+    expect(src).toMatch(/<PlaceSplitView/)
   })
 })
 
