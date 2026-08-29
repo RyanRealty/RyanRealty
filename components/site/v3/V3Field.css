@@ -86,12 +86,31 @@
    of chips on 390. Price range sits next to the chips. */
 .v3-field__lead nav {
   display: flex;
+  flex: none;
   flex-wrap: nowrap;
   gap: var(--v3-space-xs);
   width: auto;
   overflow-x: auto;
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* 390 + Map toggle: chips stay on screen. Range and Map sit on the next
+   row so the type nav cannot shrink to nothing beside Min/Max. */
+@media (max-width: 56.249rem) {
+  .v3.v3-field--map-toggle .v3-field__lead {
+    flex-wrap: wrap;
+  }
+
+  .v3.v3-field--map-toggle .v3-field__lead nav {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .v3.v3-field--map-toggle .v3-field__range select {
+    min-width: 6rem;
+  }
 }
 
 .v3-field__lead nav::-webkit-scrollbar {
@@ -685,6 +704,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--v3-space-3xs);
+}
+
+/* Google leftover chrome. Custom 44px zoom is the only map control. */
+.v3-field__map .gm-fullscreen-control,
+.v3-field__map .gm-svpc,
+.v3-field__map .gm-style-mtc,
+.v3-field__map .gm-bundled-control {
+  display: none;
 }
 
 .v3-field__zoom-btn {
