@@ -23,7 +23,7 @@ describe('homepageHtmlGate', () => {
       leftover membership
       methodology v3
       city_quarter_sale_to_ask
-      Is Central Oregon a buyer's or seller's market?
+      Is Central Oregon a buyer&#x27;s or seller&#x27;s market?
     `
     const result = homepageHtmlGate(html)
     expect(result.ok).toBe(false)

@@ -17,7 +17,7 @@ export const HOME_HTML_ANTI_TELLS = [
   { id: 'city-quarter-sale-to-ask', re: /city_quarter_sale_to_ask/ },
   {
     id: 'buyer-seller-market-h2',
-    re: /Is [^\n<]{0,120}buyer(?:'|’|&rsquo;|&#39;)s or seller(?:'|’|&rsquo;|&#39;)s market\?/,
+    re: /Is [^\n<]{0,120}buyer(?:'|’|&rsquo;|&#39;|&#x27;|&apos;)s or seller(?:'|’|&rsquo;|&#39;|&#x27;|&apos;)s market\?/,
   },
 ]
 
