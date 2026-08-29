@@ -17,7 +17,7 @@ import { GoogleMap, Marker, OverlayView, Polygon, Polyline } from '@react-google
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
-import { getExploreMapOptions, MAP_NAVY } from '@/lib/maps/markers'
+import { getExploreMapOptions, MAP_NAVY, MAP_SEARCH_STYLES } from '@/lib/maps/markers'
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { useV3FieldBinding } from '@/components/site/v3'
 
@@ -211,6 +211,10 @@ export function PlaceFieldMapImpl({
           fullscreenControl: false,
           streetViewControl: false,
           clickableIcons: false,
+          styles: [
+            ...MAP_SEARCH_STYLES,
+            { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+          ],
         }}
         onLoad={onLoad}
         onClick={() => setActiveId(null)}

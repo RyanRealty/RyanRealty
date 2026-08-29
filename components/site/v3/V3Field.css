@@ -99,17 +99,30 @@
    row so the type nav cannot shrink to nothing beside Min/Max. */
 @media (max-width: 56.249rem) {
   .v3.v3-field--map-toggle .v3-field__lead {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    overflow: visible;
   }
 
   .v3.v3-field--map-toggle .v3-field__lead nav {
-    flex: 1 1 100%;
+    grid-column: 1 / -1;
+    flex: none;
     min-width: 0;
     max-width: 100%;
   }
 
+  .v3.v3-field--map-toggle .v3-field__range {
+    grid-column: 1;
+    min-width: 0;
+  }
+
   .v3.v3-field--map-toggle .v3-field__range select {
-    min-width: 6rem;
+    min-width: 5.5rem;
+  }
+
+  .v3.v3-field--map-toggle .v3-field__map-toggle {
+    grid-column: 2;
   }
 }
 
