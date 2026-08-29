@@ -168,7 +168,7 @@ export const SELL_REVIEW_AUTHORS = [
 ] as const
 
 export const BEND_MARKET_TRACE_SCOPE =
-  'live MLS through Oregon Data Share, detached single-family homes whose MLS City is Bend, not the city-limits polygon.'
+  'regional MLS through Oregon Data Share, detached single-family homes whose MLS City is Bend, not the city-limits polygon. Every figure names its own window. A figure that cannot publish is absent, not estimated.'
 
 export const TRACK_RECORD_TRACE =
   // The WINDOW is stated (2026-08-27 audit: "16 homes sold" carried a filter

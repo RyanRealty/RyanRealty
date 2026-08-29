@@ -67,6 +67,8 @@ describe('public pace surfaces', () => {
     expect(hub).toMatch(/getPublicDetachedPace/)
     expect(zip).toMatch(/getPublicDetachedPace/)
     expect(sell).toMatch(/getPublicDetachedPace/)
+    // /sell still READS pace for leftoverHudKpis. It does not print the pace run.
+    expect(sell).not.toMatch(/publicPaceItems/)
     const listing = readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8')
     const listingMarket = readFileSync(
       resolve('components/site/listing-detail/NeighborhoodMarketContext.tsx'),

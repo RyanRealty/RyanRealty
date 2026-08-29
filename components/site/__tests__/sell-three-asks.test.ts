@@ -29,6 +29,19 @@ describe('/sell three asks became one', () => {
     expect(css).toContain('.v3-btn')
   })
 
+  it('reserves cookie-bar space under Selling questions at 390 only', () => {
+    const mediaAt = css.indexOf('@media (max-width: 47.999rem)')
+    const reserveAt = css.indexOf('#selling-questions')
+    expect(page).toContain('id="selling-questions"')
+    expect(mediaAt).toBeGreaterThanOrEqual(0)
+    expect(reserveAt).toBeGreaterThan(mediaAt)
+    expect(css.lastIndexOf('#selling-questions')).toBeGreaterThan(mediaAt)
+    expect(css.slice(reserveAt, css.indexOf('}', reserveAt + 40) + 1)).toContain('padding-bottom')
+    expect(css.slice(reserveAt)).toContain('var(--v3-tap)')
+    expect(css.slice(reserveAt)).toContain('safe-area-inset-bottom')
+    expect(css).not.toMatch(/data-cookie-notice/)
+  })
+
   it('address step is label + empty field + Value my home', () => {
     expect(form).toContain('Home address')
     expect(form).toContain('Value my home')
