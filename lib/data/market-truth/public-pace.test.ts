@@ -111,9 +111,9 @@ describe('public pace surfaces', () => {
     // figures through publicPaceItems.
     expect(community).toMatch(/publicPaceItems/)
     expect(neighborhood).toMatch(/getPublicDetachedPace/)
-    // v3 neighborhood page (2026-08-26): the pace items print as Instrument
-    // figures through publicPaceItems, the builder PublicPaceStats renders from.
-    expect(neighborhood).toMatch(/publicPaceItems/)
+    // Neighborhood face is count + median list. Pace still feeds FAQ JSON-LD
+    // via leftoverHudKpis; publicPaceItems do not print on this grain.
+    expect(neighborhood).not.toMatch(/publicPaceItems/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })
 })

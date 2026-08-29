@@ -7,7 +7,9 @@ import { getResortCommunityContent } from '@/lib/resort-community-content'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import {
   nbhFieldItems,
+  neighborhoodAboutItems,
   neighborhoodFieldCaption,
+  neighborhoodHeadline,
   neighborhoodMarketTrace,
 } from '@/app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections'
 import { dailyLifeRows } from '@/app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-daily-life'
@@ -84,6 +86,20 @@ describe('neighborhood pace', () => {
     expect(neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 0, totalQualifying: 0 })).toBeNull()
   })
 
+  it('headline is the neighborhood then homes for sale', () => {
+    expect(neighborhoodHeadline('Awbrey Butte')).toBe('Awbrey Butte homes for sale')
+  })
+
+  it('about is one paragraph', () => {
+    expect(
+      neighborhoodAboutItems({
+        curatedProse: ['First.', 'Second.'],
+        description: 'Fallback.',
+        cityName: 'Bend',
+      }),
+    ).toEqual([{ kind: 'prose', body: 'First.' }])
+  })
+
   it('recites the MoS clauses only beside a published supply figure', () => {
     const withMos = neighborhoodMarketTrace('Awbrey Butte', true)
     const withoutMos = neighborhoodMarketTrace('Awbrey Butte', false)
@@ -157,17 +173,17 @@ describe('neighborhood pace', () => {
 })
 
 describe('neighborhood daily life', () => {
-  it('opens Awbrey Butte on schools and parks, not golf membership', async () => {
+  it('opens Awbrey Butte on High Lakes, Cascade, and Summit, not golf or /parks stubs', async () => {
     const content = await getResortCommunityContent('bend-awbrey-butte')
     const rows = dailyLifeRows(content, 'Bend')
     const names = rows.map((row) => String(row.what))
     expect(names).toContain('High Lakes Elem')
     expect(names).toContain('Cascade Middle')
     expect(names).toContain('Summit High')
-    expect(names).toContain('Sylvan Park')
-    expect(names).toContain('Summit Park')
+    expect(names).not.toContain('Sylvan Park')
+    expect(names).not.toContain('Summit Park')
     expect(names.some((name) => /golf|membership/i.test(name))).toBe(false)
-    expect(rows.find((row) => String(row.what) === 'Sylvan Park')?.href).toBe('/parks')
+    expect(rows.every((row) => row.href !== '/parks')).toBe(true)
     expect(rows.find((row) => String(row.what) === 'High Lakes Elem')?.href).toBe('/schools/high-lakes-elem')
   })
 })

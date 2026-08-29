@@ -75,7 +75,7 @@ describe('public mix / feature floors', () => {
     expect(cities).toMatch(/getPublicDetachedMix/)
     expect(zip).toMatch(/getPublicDetachedMix/)
     expect(comm).toMatch(/getPublicDetachedMix/)
-    expect(nbh).toMatch(/getPublicDetachedMix/)
+    expect(nbh).not.toMatch(/getPublicDetachedMix/)
     // v3 homepage (2026-08-27): the mix cells print as Instrument figures
     // through the same shared builder the ZIP and city pages use.
     expect(home).not.toMatch(/buildPublicMixFigures/)

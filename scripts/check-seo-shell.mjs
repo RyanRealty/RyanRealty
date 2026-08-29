@@ -129,8 +129,8 @@ const REQUIRED = [
     // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
     checks: [
       {
-        re: /titleBottom\s*=\s*["']Homes for Sale["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?`\$\{[^`{}]*\}\s+homes for sale\b/,
-        msg: 'neighborhood H1 must carry the head term: KB titleBottom="Homes for Sale", or a v3 headline template literal reading `${place} homes for sale`',
+        re: /titleBottom\s*=\s*["']Homes for Sale["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?`\$\{[^`{}]*\}\s+homes for sale\b|neighborhoodHeadline\(\s*neighborhood\.name\s*\)/,
+        msg: 'neighborhood H1 must carry the head term: KB titleBottom="Homes for Sale", a v3 headline template `${place} homes for sale`, or neighborhoodHeadline(neighborhood.name)',
       },
     ],
   },

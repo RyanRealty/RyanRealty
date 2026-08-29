@@ -21,12 +21,57 @@
  * set and says so when a cap trimmed it.
  */
 
-import { v3Text, type V3FieldItem, type V3QuietItem } from '@/components/site/v3'
+import type { ListingTileRow } from '@/app/actions/listings'
+import { v3Text, type V3FieldItem, type V3InstrumentFigure, type V3QuietItem } from '@/components/site/v3'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
+import type { PlaceFaceStat } from '@/lib/market/publish-place-face'
+import type { ListingTile } from '@/lib/data/types/listing'
 import { listingDetailPath } from '@/lib/slug'
+
+/** H1. The counted set is this neighborhood, never the city. */
+export function neighborhoodHeadline(placeName: string): string {
+  return `${placeName} homes for sale`
+}
+
+/** Polygon inventory tiles as Split rows. Face count does not read this length. */
+export function neighborhoodSplitListings(tiles: readonly ListingTile[]): ListingTileRow[] {
+  return tiles.map((tile) => ({
+    ListingKey: tile.listingKey,
+    ListNumber: tile.listNumber,
+    ListPrice: tile.listPrice,
+    BedroomsTotal: tile.beds,
+    BathroomsTotal: tile.baths,
+    StreetNumber: tile.streetNumber,
+    StreetName: tile.streetName,
+    StreetSuffix: tile.streetSuffix ?? null,
+    City: tile.city,
+    State: 'OR',
+    PostalCode: tile.postalCode,
+    SubdivisionName: tile.subdivisionName,
+    TotalLivingAreaSqFt: tile.sqft,
+    PhotoURL: tile.photoUrl,
+    Latitude: tile.lat,
+    Longitude: tile.lng,
+    ModificationTimestamp: tile.modifiedAt,
+    PropertyType: tile.propertyType,
+    PropertySubType: tile.propertySubType,
+    StandardStatus: tile.status,
+    OnMarketDate: tile.onMarketDate,
+    ClosePrice: tile.closePrice,
+    CloseDate: tile.closeDate,
+  }))
+}
+
+/** Face cells as Instrument figures when leftover monthly charts sit below. */
+export function neighborhoodFaceFigures(stats: readonly PlaceFaceStat[]): V3InstrumentFigure[] {
+  return stats.map((stat) => ({
+    value: v3Text(stat.value),
+    label: v3Text(stat.label),
+  }))
+}
 
 /** The Field lists at most this many rows — the same preview discipline the
  *  KB dual-pane list carried. The caption states the trim when it binds. */
@@ -184,29 +229,18 @@ export function neighborhoodMarketAbsenceItems(placeName: string, hasRows: boole
 /* -------------------------------------------------------------------------- */
 
 /**
- * The About block: curated prose where it exists
- * (data/resort-community-{citySlug}-{neighborhoodSlug}.json), else the
- * neighborhoods-table description — the same either/or the KB page ran. NO
- * FIGURES: a number belongs in the Instrument with its source line, which is
- * V3Quiet's own contract. Empty input returns nothing and the block does not
- * render, never generated filler.
+ * One paragraph. Curated prose where it exists, else the neighborhoods-table
+ * description. No figures, no extra City term.
  */
 export function neighborhoodAboutItems(input: {
   curatedProse: readonly string[] | null | undefined
   description: string | null | undefined
   cityName: string
 }): V3QuietItem[] {
-  const items: V3QuietItem[] = []
-  const prose =
-    input.curatedProse && input.curatedProse.length > 0
-      ? input.curatedProse
-      : [input.description?.trim() ?? ''].filter(Boolean)
-  for (const p of prose) {
-    const body = p.trim()
-    if (body) items.push({ kind: 'prose', body })
-  }
-  if (items.length > 0) items.push({ kind: 'prose', term: 'City', body: input.cityName })
-  return items
+  const first =
+    input.curatedProse?.find((p) => p.trim())?.trim() || input.description?.trim() || ''
+  if (!first) return []
+  return [{ kind: 'prose', body: first }]
 }
 
 /**

@@ -1,17 +1,19 @@
 /**
- * Daily-life doors for the neighborhood grain: schools and parks on the first
- * path. Amenities and membership stay off this list (PUBLIC_UI.md §3).
+ * Daily-life doors for the neighborhood grain: schools (and parks only when
+ * the park has its own page). Amenities and membership stay off this list.
  *
- * A door is offered only when the destination exists. Park names that are not
- * in the Central Oregon park registry still name the park and open /parks
- * rather than inventing a slug.
+ * A park that can only open /parks is not a named park — omit it rather than
+ * invent a slug. Do not invent an elementary that the authored file does not
+ * name.
  */
 
 import { v3Text, type V3LedgerPlainRow } from '@/components/site/v3'
-import { findSchoolByName, getDistrictForCity } from '@/data/co-schools'
+import { findSchoolByName } from '@/data/co-schools'
+import { CO_PARKS } from '@/data/co-parks'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 
-const FEEDER_SCHOOLS = ['Cascade Middle', 'Summit High'] as const
+/** Named in authored school descriptions (High Lakes → Cascade → Summit). */
+const AUTHORED_SECONDARY = ['Cascade Middle', 'Summit High'] as const
 
 function resolveSchool(name: string) {
   return (
@@ -21,9 +23,15 @@ function resolveSchool(name: string) {
   )
 }
 
+function resolvePark(name: string) {
+  const needle = name.trim().toLowerCase()
+  if (!needle) return undefined
+  return CO_PARKS.find((park) => park.name.trim().toLowerCase() === needle)
+}
+
 export function dailyLifeRows(
   content: ResortCommunityContent | null,
-  cityName: string,
+  _cityName: string,
 ): V3LedgerPlainRow[] {
   const rows: V3LedgerPlainRow[] = []
   const seen = new Set<string>()
@@ -52,7 +60,7 @@ export function dailyLifeRows(
         })
       }
       const description = amenity.description ?? ''
-      for (const extra of FEEDER_SCHOOLS) {
+      for (const extra of AUTHORED_SECONDARY) {
         if (!description.includes(extra)) continue
         const found = findSchoolByName(extra)
         if (!found) continue
@@ -66,24 +74,16 @@ export function dailyLifeRows(
     }
 
     if (category === 'Parks') {
+      const park = resolvePark(name)
+      if (!park) continue
       push({
-        href: '/parks',
+        href: `/parks/${park.slug}`,
         when: v3Text('Park'),
-        what: v3Text(name),
+        what: v3Text(park.name),
         detail: amenity.access?.trim() ? v3Text(amenity.access.trim()) : undefined,
-        id: `park-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+        id: `park-${park.slug}`,
       })
     }
-  }
-
-  const district = getDistrictForCity(cityName)
-  if (district) {
-    push({
-      href: `/schools/${district.districtSlug}`,
-      when: v3Text('District'),
-      what: v3Text(district.district),
-      id: `district-${district.districtSlug}`,
-    })
   }
 
   return rows
