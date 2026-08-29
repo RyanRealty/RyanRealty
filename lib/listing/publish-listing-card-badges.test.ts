@@ -24,6 +24,7 @@ describe('publishListingCardBadges', () => {
     })
     expect(badges.map((b) => b.kind)).toEqual(['open', 'new', 'drop'])
     expect(badges[0]?.label).toBe('Open Sat 10am')
+    expect(badges.find((b) => b.kind === 'drop')?.label).toBe('Price reduced')
   })
 
   it('status beats marketing badges', () => {
@@ -34,5 +35,14 @@ describe('publishListingCardBadges', () => {
     })
     expect(badges[0]).toEqual({ kind: 'pending', label: 'Pending' })
     expect(badges.some((b) => b.kind === 'open')).toBe(true)
+  })
+
+  it('prints Redfin Price reduced copy with the dollar drop when we have it', () => {
+    const badges = publishListingCardBadges({
+      nowMs,
+      priceDropCount: 1,
+      priceDropAmount: 25000,
+    })
+    expect(badges).toEqual([{ kind: 'drop', label: 'Price reduced $25K' }])
   })
 })

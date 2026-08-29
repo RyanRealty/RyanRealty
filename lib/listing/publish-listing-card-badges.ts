@@ -6,6 +6,7 @@
  * Miss omits. Open is an upcoming public open house, not a standing builder spec.
  */
 import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
+import { formatPriceCompact } from '@/lib/format/money'
 
 export type ListingCardBadgeKind = 'hot' | 'new' | 'drop' | 'open' | 'sold' | 'pending' | 'video'
 
@@ -46,7 +47,10 @@ export function publishListingCardBadges(input: {
   standardStatus?: string | null
   onMarketDate?: string | null
   priceDropCount?: number | null
+  /** Original minus current ask, when both are published. */
+  priceDropAmount?: number | null
   hasVirtualTour?: boolean | null
+  hasTourUrl?: boolean | null
   openHouseLabel?: string | null
 }): ListingCardBadge[] {
   const badges: ListingCardBadge[] = []
@@ -65,11 +69,18 @@ export function publishListingCardBadges(input: {
   }
 
   if (input.priceDropCount != null && input.priceDropCount > 0) {
-    badges.push({ kind: 'drop', label: 'Reduced' })
+    const drop = input.priceDropAmount
+    badges.push({
+      kind: 'drop',
+      label:
+        drop != null && drop > 0
+          ? `Price reduced ${formatPriceCompact(drop)}`
+          : 'Price reduced',
+    })
   }
 
-  if (input.hasVirtualTour === true) {
-    badges.push({ kind: 'video', label: '3D tour' })
+  if (input.hasVirtualTour === true || input.hasTourUrl === true) {
+    badges.push({ kind: 'video', label: '3D Tour' })
   }
   // Coming Soon is in the MLS feed and MUST NOT print on public cards
   // (lib/listing-status-public.ts). Hot Home is a Redfin product score, not ours.

@@ -75,6 +75,7 @@ export type V3ListingRowData = {
   city: string | null
   listNumber: string | null
   tourUrl?: string | null
+  hasTour?: boolean
   badge?: { kind: V3ListingRowBadge; label: string }
   /** Redfin-style pills. When set, this is the whole set; `badge` is ignored. */
   badges?: Array<{ kind: V3ListingRowBadge; label: string }>
@@ -150,7 +151,7 @@ export function V3ListingRow({
   const splitThumb = typeof className === 'string' && className.includes('v3-lrow--split')
   const tags = listing.badges ?? (listing.badge ? [listing.badge] : [])
   const photoTags = tags.filter((tag) => tag.kind !== 'video')
-  const hasTour = Boolean(listing.tourUrl)
+  const hasTour = Boolean(listing.tourUrl) || listing.hasTour === true
 
   const photo = (
     <>

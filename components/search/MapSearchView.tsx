@@ -915,12 +915,17 @@ export default function MapSearchView({
                     city: l.City ?? null,
                     listNumber: l.ListNumber ?? null,
                     tourUrl: l.tourUrl ?? null,
+                    hasTour: l.has_virtual_tour === true || Boolean(l.tourUrl),
                     badges,
                     badge: badges[0],
                   }}
                   onOpenTour={
                     l.tourUrl || l.has_virtual_tour
-                      ? () => setTour(publishTourEmbedFromUrl(l.tourUrl, l.PhotoURL))
+                      ? () => {
+                          const embed = publishTourEmbedFromUrl(l.tourUrl, l.PhotoURL)
+                          if (embed) setTour(embed)
+                          else window.location.assign(`${href}#tour`)
+                        }
                       : undefined
                   }
                 />
