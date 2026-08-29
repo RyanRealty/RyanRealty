@@ -29,16 +29,36 @@ export function isListingVirtualTour(input: {
   return false
 }
 
+function isPlayable(video: VideoEmbed): boolean {
+  return video.embedType === 'iframe' || video.embedType === 'video-tag'
+}
+
 export function publishListingHeroVideo(
   videos: ReadonlyArray<VideoEmbed>,
 ): VideoEmbed | null {
   return (
     videos.find((v) => {
-      if (v.embedType !== 'iframe' && v.embedType !== 'video-tag') return false
+      if (!isPlayable(v)) return false
       return !isListingVirtualTour({
         url: v.url,
         hint: v.source,
         isVirtualTour: v.isVirtualTour,
+      })
+    }) ?? null
+  )
+}
+
+/** Matterport / Zillow 3D. Distinct from the marketing reel. */
+export function publishListingVirtualTour(
+  videos: ReadonlyArray<VideoEmbed>,
+): VideoEmbed | null {
+  return (
+    videos.find((video) => {
+      if (!isPlayable(video)) return false
+      return isListingVirtualTour({
+        url: video.url,
+        hint: video.source,
+        isVirtualTour: video.isVirtualTour,
       })
     }) ?? null
   )

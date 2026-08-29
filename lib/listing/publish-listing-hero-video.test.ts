@@ -3,6 +3,7 @@ import {
   isListingVirtualTour,
   publishListingHeroUnmute,
   publishListingHeroVideo,
+  publishListingVirtualTour,
 } from './publish-listing-hero-video'
 import type { VideoEmbed } from '@/lib/data/types/video'
 
@@ -30,6 +31,7 @@ describe('publishListingHeroVideo', () => {
   it('native mp4 is the unmute hero', () => {
     expect(publishListingHeroVideo([rockwayTour, reel])).toEqual(reel)
     expect(publishListingHeroUnmute(reel)).toBe(true)
+    expect(publishListingVirtualTour([rockwayTour, reel])).toEqual(rockwayTour)
   })
 
   it('iframe marketing video can be the hero but cannot unmute', () => {

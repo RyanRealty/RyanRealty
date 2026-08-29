@@ -64,6 +64,24 @@ describe('publishListingGalleryTabs', () => {
     })
     expect(tabs.map((t) => t.id)).toEqual(['photos', 'floor', 'tour', 'video'])
   })
+
+  it('locks Photos / Floor plan / 3D / Video / Street view / Redesign order', () => {
+    const tabs = publishListingGalleryTabs({
+      photoCount: 8,
+      videos: [reel, tour],
+      floorPlanCount: 1,
+      hasStreetView: true,
+      hasRedesign: true,
+    })
+    expect(tabs.map((t) => t.label)).toEqual([
+      'Photos',
+      'Floor plan',
+      '3D',
+      'Video',
+      'Street view',
+      'Redesign',
+    ])
+  })
 })
 
 describe('publishListingGalleryMobilePills', () => {

@@ -7,7 +7,11 @@ import type { ListingPhoto } from '@/lib/data/types/listing'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
 import { ListingTourOverlay } from './ListingTourOverlay'
-import { publishListingHeroUnmute, publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
+import {
+  publishListingHeroUnmute,
+  publishListingHeroVideo,
+  publishListingVirtualTour,
+} from '@/lib/listing/publish-listing-hero-video'
 import { publishListingLeadMedia } from '@/lib/listing/publish-listing-lead-media'
 import { publishListingMosaicPills } from '@/lib/listing/publish-listing-mosaic-pills'
 
@@ -61,14 +65,16 @@ function getAutoplayEmbedUrl(video: VideoEmbed): string {
 export function ListingHero({ photos, floorPlans = [], videos, addressLine, className }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [galleryPane, setGalleryPane] = useState<'photos' | 'floor'>('photos')
-  const [tourOpen, setTourOpen] = useState(false)
+  const [embed, setEmbed] = useState<VideoEmbed | null>(null)
   const [isMuted, setIsMuted] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
+  const reel = publishListingHeroVideo(videos)
+  const virtualTour = publishListingVirtualTour(videos)
   const lead = publishListingLeadMedia(videos)
   const heroVideo = lead?.video ?? null
   const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0
-  const canUnmute = publishListingHeroUnmute(publishListingHeroVideo(videos))
+  const canUnmute = publishListingHeroUnmute(reel)
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
   const mosaicPills = publishListingMosaicPills({
     photoCount: total,
@@ -96,9 +102,10 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
     setOpenIndex(Math.max(0, Math.min(photoIndex, pool.length - 1)))
   }
 
-  function openTour() {
-    if (!heroVideo) return
-    setTourOpen(true)
+  function openEmbed(kind: 'video' | 'tour') {
+    const target = kind === 'video' ? reel : virtualTour
+    if (!target) return
+    setEmbed(target)
   }
 
   function openLead() {
@@ -107,7 +114,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
       return
     }
     if (heroVideo) {
-      openTour()
+      openEmbed(lead?.kind === 'tour' ? 'tour' : 'video')
       return
     }
     openGallery(0)
@@ -250,8 +257,8 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
               type="button"
               className="listing-mosaic__badge"
               onClick={() => {
-                if (pill.action === 'tour') {
-                  openTour()
+                if (pill.action === 'video' || pill.action === 'tour') {
+                  openEmbed(pill.action)
                   return
                 }
                 openGallery(0, pill.action === 'floor' ? 'floor' : 'photos')
@@ -275,13 +282,13 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
         altBase={altBase}
         onClose={() => setOpenIndex(null)}
         onChange={(i) => setOpenIndex(i)}
-        onOpenTour={heroVideo ? openTour : undefined}
+        onOpenEmbed={reel || virtualTour ? openEmbed : undefined}
       />
       <ListingTourOverlay
-        open={tourOpen}
-        video={heroVideo}
+        open={embed != null}
+        video={embed}
         title={`Listing tour for ${altBase}`}
-        onClose={() => setTourOpen(false)}
+        onClose={() => setEmbed(null)}
       />
     </div>
   )

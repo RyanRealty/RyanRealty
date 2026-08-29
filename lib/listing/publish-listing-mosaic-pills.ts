@@ -5,24 +5,14 @@
  */
 
 import type { VideoEmbed } from '@/lib/data/types/video'
-import { isListingVirtualTour, publishListingHeroVideo } from './publish-listing-hero-video'
+import { publishListingHeroVideo, publishListingVirtualTour } from './publish-listing-hero-video'
 
 export type ListingMosaicPillId = 'photos' | 'video' | 'tour' | 'floor'
 
 export type ListingMosaicPill = {
   id: ListingMosaicPillId
   label: string
-  action: 'gallery' | 'tour' | 'floor'
-}
-
-function listingTour(videos: ReadonlyArray<VideoEmbed>): VideoEmbed | undefined {
-  return videos.find((row) =>
-    isListingVirtualTour({
-      url: row.url,
-      hint: row.source,
-      isVirtualTour: row.isVirtualTour,
-    }),
-  )
+  action: 'gallery' | 'video' | 'tour' | 'floor'
 }
 
 export function publishListingMosaicPills(input: {
@@ -32,8 +22,8 @@ export function publishListingMosaicPills(input: {
 }): ListingMosaicPill[] {
   const pills: ListingMosaicPill[] = []
   const video = publishListingHeroVideo(input.videos)
-  const tour = listingTour(input.videos)
-  if (video) pills.push({ id: 'video', label: 'Video', action: 'tour' })
+  const tour = publishListingVirtualTour(input.videos)
+  if (video) pills.push({ id: 'video', label: 'Video', action: 'video' })
   if (tour) pills.push({ id: 'tour', label: '3D', action: 'tour' })
   if ((input.floorPlanCount ?? 0) > 0) {
     pills.push({ id: 'floor', label: 'Floor plan', action: 'floor' })
@@ -48,26 +38,39 @@ export function publishListingMosaicPills(input: {
   return pills
 }
 
-export type ListingGalleryTabId = 'photos' | 'floor' | 'tour' | 'video'
+export type ListingGalleryTabId =
+  | 'photos'
+  | 'floor'
+  | 'tour'
+  | 'video'
+  | 'street'
+  | 'redesign'
 
 export type ListingGalleryTab = {
   id: ListingGalleryTabId
   label: string
 }
 
-/** Desktop tab row. Only those this listing has. */
+/**
+ * Desktop tab row, Motion God order:
+ * Photos / Floor plan / 3D / Video / Street view / Redesign.
+ * Only tabs this listing actually has. Street view and Redesign stay off
+ * until those media exist.
+ */
 export function publishListingGalleryTabs(input: {
   photoCount: number
   videos: ReadonlyArray<VideoEmbed>
   floorPlanCount?: number
+  hasStreetView?: boolean
+  hasRedesign?: boolean
 }): ListingGalleryTab[] {
   const tabs: ListingGalleryTab[] = []
   if (input.photoCount > 0) tabs.push({ id: 'photos', label: 'Photos' })
   if ((input.floorPlanCount ?? 0) > 0) tabs.push({ id: 'floor', label: 'Floor plan' })
-  const tour = listingTour(input.videos)
-  const video = publishListingHeroVideo(input.videos)
-  if (tour) tabs.push({ id: 'tour', label: '3D' })
-  if (video) tabs.push({ id: 'video', label: 'Video' })
+  if (publishListingVirtualTour(input.videos)) tabs.push({ id: 'tour', label: '3D' })
+  if (publishListingHeroVideo(input.videos)) tabs.push({ id: 'video', label: 'Video' })
+  if (input.hasStreetView) tabs.push({ id: 'street', label: 'Street view' })
+  if (input.hasRedesign) tabs.push({ id: 'redesign', label: 'Redesign' })
   return tabs
 }
 
@@ -86,9 +89,8 @@ export function publishListingGalleryMobilePills(input: {
 }): ListingGalleryMobilePill[] {
   const pills: ListingGalleryMobilePill[] = []
   if (input.photoCount > 0) pills.push({ id: 'all', label: 'All' })
-  const video = publishListingHeroVideo(input.videos)
-  if (video) pills.push({ id: 'video', label: 'Video Tour' })
+  if (publishListingHeroVideo(input.videos)) pills.push({ id: 'video', label: 'Video Tour' })
   if ((input.floorPlanCount ?? 0) > 0) pills.push({ id: 'floor', label: 'Floor plans' })
-  if (listingTour(input.videos)) pills.push({ id: 'tour', label: '3D' })
+  if (publishListingVirtualTour(input.videos)) pills.push({ id: 'tour', label: '3D' })
   return pills
 }

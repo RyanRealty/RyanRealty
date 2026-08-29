@@ -14,15 +14,11 @@
  */
 
 import type { VideoEmbed } from '@/lib/data/types/video'
-import { isListingVirtualTour, publishListingHeroVideo } from './publish-listing-hero-video'
+import { publishListingHeroVideo, publishListingVirtualTour } from './publish-listing-hero-video'
 
 export type ListingLeadMedia =
   | { kind: 'video'; video: VideoEmbed }
   | { kind: 'tour'; video: VideoEmbed }
-
-function isPlayable(video: VideoEmbed): boolean {
-  return video.embedType === 'iframe' || video.embedType === 'video-tag'
-}
 
 export function publishListingLeadMedia(
   videos: ReadonlyArray<VideoEmbed>,
@@ -30,14 +26,7 @@ export function publishListingLeadMedia(
   const reel = publishListingHeroVideo(videos)
   if (reel) return { kind: 'video', video: reel }
 
-  const tour = videos.find((video) => {
-    if (!isPlayable(video)) return false
-    return isListingVirtualTour({
-      url: video.url,
-      hint: video.source,
-      isVirtualTour: video.isVirtualTour,
-    })
-  })
+  const tour = publishListingVirtualTour(videos)
   if (tour) return { kind: 'tour', video: tour }
   return null
 }

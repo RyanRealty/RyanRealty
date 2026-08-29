@@ -36,7 +36,7 @@ type Props = {
   altBase?: string
   onClose: () => void
   onChange: (nextIndex: number) => void
-  onOpenTour?: () => void
+  onOpenEmbed?: (kind: 'video' | 'tour') => void
 }
 
 export function PhotoGalleryLightbox({
@@ -50,7 +50,7 @@ export function PhotoGalleryLightbox({
   altBase = 'Photo',
   onClose,
   onChange,
-  onOpenTour,
+  onOpenEmbed,
 }: Props) {
   const stills = pane === 'floor' ? floorPlans : photos
   const count = total ?? stills.length
@@ -149,9 +149,9 @@ export function PhotoGalleryLightbox({
       return
     }
     if (id === 'video' || id === 'tour') {
-      if (onOpenTour) {
+      if (onOpenEmbed) {
         dismiss()
-        onOpenTour()
+        onOpenEmbed(id)
       }
     }
   }
@@ -166,22 +166,24 @@ export function PhotoGalleryLightbox({
           className="listing-gallery"
         >
           <div className="listing-gallery__bar">
-            <button
-              type="button"
-              onClick={dismiss}
-              className="listing-gallery__back"
-              aria-label="Back"
-            >
-              ← Back
-            </button>
-            <button
-              type="button"
-              onClick={dismiss}
-              className="listing-gallery__close"
-              aria-label="Close"
-            >
-              ×
-            </button>
+            <div className="listing-gallery__exit">
+              <button
+                type="button"
+                onClick={dismiss}
+                className="listing-gallery__back"
+                aria-label="Back"
+              >
+                ← Back
+              </button>
+              <button
+                type="button"
+                onClick={dismiss}
+                className="listing-gallery__close"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
             {tabs.length > 1 ? (
               <div className="listing-gallery__tabs" role="tablist" aria-label="Listing media">
                 {tabs.map((tab) => (
