@@ -57,9 +57,21 @@
   }
 }
 
-/* 1280: cream dock stays in flow so it cannot cover the map or list. */
+/* 1280: dock + Field stick as one cream unit under chrome. The map and
+   list stay below the filters instead of sliding under them. 390 keeps
+   the shorter filter dock sticky on its own. */
+.search-workspace {
+  background: var(--v3-surface);
+}
+
 @media (min-width: 56.25rem) {
-  .search-filter-dock {
+  .search-workspace {
+    position: sticky;
+    top: 3.5rem;
+    z-index: 10;
+  }
+
+  .search-workspace .search-filter-dock {
     position: relative;
     top: auto;
   }

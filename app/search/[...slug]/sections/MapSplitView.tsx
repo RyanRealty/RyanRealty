@@ -300,6 +300,7 @@ export async function renderMapSplitView(props: {
         <V3Heading level={1} size="field">Homes for Sale</V3Heading>
         {displayName ? <p className="v3-field__note mt-2">{displayName}</p> : null}
       </header>
+      <div className="search-workspace">
       <div className="search-filter-dock mx-auto w-full max-w-6xl px-4 sm:px-6">
         <SearchFilters
           initialFilters={filters}
@@ -322,6 +323,7 @@ export async function renderMapSplitView(props: {
         nowMs={Date.now()}
         initialDegraded={viewportDegraded}
       />
+      </div>
       <SearchAlertCapture
         signedIn={!!session?.user}
         defaultCity={city ?? ''}

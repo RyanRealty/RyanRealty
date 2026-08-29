@@ -613,9 +613,17 @@ describe('search filter dock and required map attribution (PR 163)', () => {
     expect(split.indexOf('<MapSearchView')).toBeLessThan(split.indexOf('<SearchAlertCapture'))
   })
 
-  it('keeps the cream dock in flow at 1280 so it cannot cover the Field', () => {
+  it('sticks dock plus Field as one cream unit at 1280 so the map stays clear', () => {
     const css = readSrc('app/search/search-frame.css')
-    expect(css).toMatch(/@media \(min-width: 56\.25rem\) \{[\s\S]*\.search-filter-dock \{[\s\S]*position:\s*relative/)
+    expect(css).toMatch(/\.search-workspace \{[\s\S]*background:\s*var\(--v3-surface\)/)
+    expect(css).toMatch(/@media \(min-width: 56\.25rem\) \{[\s\S]*\.search-workspace \{[\s\S]*position:\s*sticky/)
+    expect(css).toMatch(/\.search-workspace \.search-filter-dock \{[\s\S]*position:\s*relative/)
+    const page = readSrc('app/search/page.tsx')
+    expect(page).toMatch(/search-workspace/)
+    expect(page.indexOf('search-workspace')).toBeLessThan(page.indexOf('search-filter-dock'))
+    expect(page.indexOf('search-workspace')).toBeLessThan(page.indexOf('<MapSearchView'))
+    const split = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+    expect(split).toMatch(/search-workspace/)
   })
 
   it('keeps required Google attribution and only hides the decorative MAP chip', () => {
