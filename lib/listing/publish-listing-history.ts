@@ -165,6 +165,9 @@ export function publishListingHistory(input: {
 
   for (const row of input.listingHistory ?? []) {
     if (!row.event?.trim()) continue
+    const event = normalizeEvent(row.event)
+    const isPriceEvent = event === 'pricechange' || event === 'pricedrop' || event === 'priceincrease'
+    if (isPriceEvent && row.price_change === 0) continue
     push({
       event: row.event,
       event_date: row.event_date ?? '',
@@ -206,6 +209,7 @@ export function publishListingHistory(input: {
     const newPrice = asPositivePrice(row.new_price)
     const oldPrice = asPositivePrice(row.old_price)
     if (!date || newPrice == null) continue
+    if (oldPrice != null && newPrice === oldPrice) continue
     push({
       event: 'pricechange',
       event_date: date,

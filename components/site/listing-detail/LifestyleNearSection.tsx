@@ -67,15 +67,16 @@ export async function LifestyleNearSection({
         <ul className="place-list place-list--rows">
           {items.map((item, i) => {
             const thumb = thumbs[i]
+            const isParkOrTrail = item.kind === 'park' || item.kind === 'trail'
             return (
               <li key={`${item.kind}-${item.href}`}>
                 <Link href={item.href} className="place-list__row">
-                  {thumb ? <PlaceListThumb lat={thumb.lat} lng={thumb.lng} geometry={thumb.geometry} /> : null}
+                  {isParkOrTrail ? (
+                    <PlaceListThumb lat={thumb?.lat} lng={thumb?.lng} geometry={thumb?.geometry} />
+                  ) : null}
                   <span className="place-list__copy">
-                    <span className="place-list__name">
-                      <span className="place-list__kind">{item.kind}</span>
-                      {item.name}
-                    </span>
+                    <span className="place-list__kind">{item.kind}</span>
+                    <span className="place-list__name">{item.name}</span>
                     {item.meta ? <span className="place-list__meta">{item.meta}</span> : null}
                   </span>
                   <span className="place-list__dist tabular-nums">

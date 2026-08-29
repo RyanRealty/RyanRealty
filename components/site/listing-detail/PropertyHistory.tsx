@@ -114,13 +114,17 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
           // The oldest row has no prior price, so it shows just its price, no "0 down".
           const delta = ev.price != null && prevPrice != null ? ev.price - prevPrice : null
           const norm = normalizeEvent(ev.event)
+          const isPriceEvent =
+            norm === 'pricechange' || norm === 'pricedrop' || norm === 'priceincrease'
+          const storedDelta = ev.price_change != null && ev.price_change !== 0 ? ev.price_change : null
+          if (isPriceEvent && (delta == null || delta === 0) && storedDelta == null) return null
           // A generic/unknown event that's here because it moved the price reads as a
           // price event, not the raw "FieldChange".
           let label = eventLabel(ev.event)
           if (!EVENT_LABEL[norm]) {
             if (delta && delta < 0) label = 'Price drop'
             else if (delta && delta > 0) label = 'Price increase'
-            else if (ev.price != null) label = 'Price change'
+            else if (ev.price != null && (delta == null || delta === 0)) return null
           }
           const dropAmount = delta && delta < 0 ? Math.abs(delta) : null
           const increaseAmount = delta && delta > 0 ? delta : null

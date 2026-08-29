@@ -185,8 +185,8 @@ export function publishPlaceListThumb(input: {
 }
 
 export function placeListThumbDataUri(input: {
-  lat: number
-  lng: number
+  lat?: number | null
+  lng?: number | null
   geometry?: unknown
 }): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(publishPlaceListThumb(input).svg)}`

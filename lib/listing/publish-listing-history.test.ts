@@ -101,4 +101,19 @@ describe('publishListingHistory', () => {
     expect(publishListingHistoryDeltaLabel(3_000_000, 'down')).toBe('$3.0M down')
     expect(publishListingHistoryDeltaLabel(200_000, 'up')).toBe('$200K up')
   })
+
+  it('does not emit PRICE CHANGE when the amount is unchanged', () => {
+    const rows = publishListingHistory({
+      listingHistory: [
+        { event: 'listed', event_date: '2026-07-31', price: 889000 },
+        { event: 'pricechange', event_date: '2026-08-24', price: 889000, price_change: 0 },
+      ],
+      priceHistory: [
+        { old_price: 889000, new_price: 889000, changed_at: '2026-08-24T17:00:00.000Z' },
+      ],
+    })
+    expect(rows.map((r) => r.event)).toEqual(['listed'])
+    expect(rows[0]).toMatchObject({ event: 'listed', event_date: '2026-07-31', price: 889000 })
+    expect(rows.some((row) => /price/i.test(row.event))).toBe(false)
+  })
 })

@@ -145,8 +145,12 @@ describe('design directive contracts', () => {
     const life = readSrc('components/site/listing-detail/LifestyleNearSection.tsx')
     expect(parks).toMatch(/<PlaceListThumb/)
     expect(parks).toMatch(/getParkBoundaryGeoJSON/)
-    expect(life).toMatch(/<PlaceListThumb/)
+    expect(life).toMatch(/isParkOrTrail \? \(/)
+    expect(life).toMatch(/<PlaceListThumb lat=\{thumb\?\.lat\}/)
     expect(life).toMatch(/getTrailLineGeoJSON/)
+    expect(life).toMatch(/<span className="place-list__kind">\{item\.kind\}<\/span>/)
+    expect(life).toMatch(/<span className="place-list__name">\{item\.name\}<\/span>/)
+    expect(life).not.toMatch(/place-list__kind">\{item\.kind\}<\/span>\s*\{item\.name\}/)
   })
 
   it('listing-detail chrome: one main, JSON-LD and capture stay', () => {
