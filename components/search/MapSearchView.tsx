@@ -19,6 +19,7 @@ import { fireSearchEvent } from '@/components/search/search-events.client'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { publishSearchCountPair } from '@/lib/search/publish-search-count'
 import { GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope } from '@/components/search/geo-scope'
+import { nextSearchUrlWithBbox } from '@/lib/search/publish-map-bbox'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
@@ -581,6 +582,12 @@ export default function MapSearchView({
         // during render, so SSR/client HTML cannot diverge.
         firstBoundsReportRef.current || Date.now() < initialSettleUntilRef.current // hydration-safe
       firstBoundsReportRef.current = false
+      const cameraUrl = nextSearchUrlWithBbox(
+        pathname ?? '/homes-for-sale',
+        urlSearchParams?.toString() ?? '',
+        bounds,
+      )
+      if (cameraUrl) router.replace(cameraUrl, { scroll: false })
       if (isInitialSettle === false) dropGeoScope()
       if (!searchAsMove) return
       // Perf (SEARCH_UX_WAVE3 P2): SSR already seeded list + markers for the city
@@ -594,7 +601,7 @@ export default function MapSearchView({
         runViewportSearch(bounds, drawnShapes, { limit: 250 })
       }, 350)
     },
-    [searchAsMove, drawnShapes, runViewportSearch, dropGeoScope]
+    [searchAsMove, drawnShapes, runViewportSearch, dropGeoScope, pathname, router, urlSearchParams]
   )
 
   /** Reflect the drawn shape set into the URL so reload/share reproduce it.
@@ -952,6 +959,8 @@ export default function MapSearchView({
         likedListingKeys={likedListingKeys}
         placeQuery={placeQuery}
         boundaryGeojson={boundaryGeojson}
+        initialBounds={initialBounds}
+        lockBounds
         onBoundsChanged={handleBoundsChanged}
         shapes={drawnShapes}
         onShapesChange={handleShapesChange}
@@ -1037,7 +1046,7 @@ export default function MapSearchView({
   )
 
   return (
-    <div className="map-search-shell flex w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
+    <div className="map-search-shell flex min-h-0 flex-1 w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
       {/* Mobile segmented toggle — list-first default; Map hides the sheet. */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-2 py-1 lg:hidden">
         <ToggleGroup

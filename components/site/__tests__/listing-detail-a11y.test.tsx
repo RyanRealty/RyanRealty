@@ -164,3 +164,34 @@ describe('F4 ListingAlertCoach source contract', () => {
     expect(alerts).toMatch(/ListingAlertCoach/)
   })
 })
+
+describe('gallery and tour occupy history so Back stays on the listing', () => {
+  const { readFileSync } = require('node:fs') as typeof import('node:fs')
+  const { join } = require('node:path') as typeof import('node:path')
+  const root = join(__dirname, '../../..')
+  const gallery = readFileSync(
+    join(root, 'components/site/listing-detail/PhotoGalleryLightbox.tsx'),
+    'utf8',
+  )
+  const tour = readFileSync(
+    join(root, 'components/site/listing-detail/ListingTourOverlay.tsx'),
+    'utf8',
+  )
+  const hook = readFileSync(join(root, 'lib/listing/use-media-overlay-history.ts'), 'utf8')
+
+  it('pushes a hash entry instead of router.push', () => {
+    expect(hook).toMatch(/history\.pushState/)
+    expect(hook).toMatch(/listingMedia/)
+    expect(hook).not.toMatch(/useRouter/)
+    expect(gallery).toMatch(/useMediaOverlayHistory\(isOpen, onClose, 'gallery'\)/)
+    expect(tour).toMatch(/useMediaOverlayHistory\(isOpen, onClose, 'tour'\)/)
+  })
+
+  it('labels the control Back at 44px', () => {
+    expect(gallery).toMatch(/aria-label="Back"/)
+    expect(gallery).toMatch(/min-h-11/)
+    expect(tour).toMatch(/aria-label="Back"/)
+    expect(tour).toMatch(/min-h-11/)
+    expect(gallery).not.toMatch(/Close gallery/)
+  })
+})

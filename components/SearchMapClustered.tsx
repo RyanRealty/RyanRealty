@@ -142,6 +142,10 @@ type Props = {
   hoveredKey?: string | null
   /** List to map hover sync: fired when the user hovers/unhovers a marker (null on mouseout). */
   onMarkerHover?: (listingKey: string | null) => void
+  /** Camera to restore (Split → Map). west/south/east/north. */
+  initialBounds?: MapBounds | null
+  /** Fit initialBounds only — do not jump to placeQuery or every pin (statewide). */
+  lockBounds?: boolean
 }
 
 /**
@@ -477,6 +481,8 @@ export default function SearchMapClustered({
   onShapesChange,
   hoveredKey = null,
   onMarkerHover,
+  initialBounds = null,
+  lockBounds = false,
 }: Props) {
   // Multi-shape mode (Phase 2 draw tools) replaces the legacy single-polygon UI.
   const multiShape = onShapesChange != null
@@ -713,6 +719,19 @@ export default function SearchMapClustered({
         }
       }
 
+      // Preferred frame: restore the last camera (URL bbox / SSR seed) so Map
+      // mode does not fit every pin and jump to statewide Oregon.
+      if (lockBounds && initialBounds) {
+        const locked = new google.maps.LatLngBounds(
+          { lat: initialBounds.south, lng: initialBounds.west },
+          { lat: initialBounds.north, lng: initialBounds.east },
+        )
+        if (!locked.isEmpty()) {
+          map.fitBounds(locked)
+          return
+        }
+      }
+
       // Preferred frame: the actual city/neighborhood/community boundary polygon,
       // so the map opens fit to that area's true extent (the "not zoomed in
       // enough" complaint) instead of a fixed zoom or the listing bbox. Clamp to a
@@ -768,7 +787,7 @@ export default function SearchMapClustered({
       // If neither case applies the idle listener above will still fire once
       // the map renders its initial center/zoom position.
     },
-    [validListings.length, bounds, placeQuery, onBoundsChanged, reportBounds, boundaryPaths]
+    [validListings.length, bounds, placeQuery, onBoundsChanged, reportBounds, boundaryPaths, lockBounds, initialBounds]
   )
 
   // NOTE: The idle listener for bounds reporting is attached directly in onLoad

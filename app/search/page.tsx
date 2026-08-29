@@ -17,6 +17,7 @@ import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
 import { getBoundaryGeoJSON } from '@/lib/data'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
+import { bboxFromSearchParam } from '@/lib/search/publish-map-bbox'
 import { buildShapeSetForSearch, decodeMapPolygon, decodeMapShapes, type DrawnShape } from '@/lib/map-polygon'
 import { stripGeoScope } from '@/components/search/geo-scope'
 import { slugify } from '@/lib/slug'
@@ -256,7 +257,8 @@ export default async function SearchPage({
         ])
       : [[], [] as string[]]
 
-  const initialBounds = bboxFromGeometry(cityBoundaryGeo) ?? BEND_DEFAULT_BOUNDS
+  const initialBounds =
+    bboxFromSearchParam(sp.bbox) ?? bboxFromGeometry(cityBoundaryGeo) ?? BEND_DEFAULT_BOUNDS
   // ?shapes= — the user's drawn multi-shape set (polygons + radius circles,
   // include/exclude), with legacy ?poly= as the read-forever fallback. Either
   // spelling supersedes the URL's place pin exactly as a live draw does
@@ -437,6 +439,7 @@ export default async function SearchPage({
             {/* HideAwareSearchMap subtracts the signed-in user's hidden homes
                 before the pins render (W7.2) — a home hidden on the list/split
                 view does not reappear as a map-only pin. */}
+            <div className="map-search-canvas">
             <HideAwareSearchMap
               listings={mapListingsWithCoords}
               savedListingKeys={savedKeys}
@@ -444,7 +447,10 @@ export default async function SearchPage({
               placeQuery={placeQuery}
               className="h-full w-full"
               degraded={mapDegraded}
+              initialBounds={initialBounds}
+              lockBounds
             />
+            </div>
           </div>
         )}
         {(view === 'split' || view === 'list') && (

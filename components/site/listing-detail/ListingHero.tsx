@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import type { ListingPhoto } from '@/lib/data/types/listing'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
+import { ListingTourOverlay } from './ListingTourOverlay'
 import { publishListingHeroUnmute, publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
 import { publishListingLeadMedia } from '@/lib/listing/publish-listing-lead-media'
 
@@ -57,6 +58,7 @@ function getAutoplayEmbedUrl(video: VideoEmbed): string {
 
 export function ListingHero({ photos, videos, addressLine, className }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [tourOpen, setTourOpen] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
@@ -82,6 +84,23 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
     setOpenIndex(Math.max(0, Math.min(photoIndex, total - 1)))
   }
 
+  function openTour() {
+    if (!heroVideo) return
+    setTourOpen(true)
+  }
+
+  function openLead() {
+    if (heroVideo && canUnmute) {
+      toggleMute()
+      return
+    }
+    if (heroVideo) {
+      openTour()
+      return
+    }
+    openGallery(0)
+  }
+
   function toggleMute() {
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted
@@ -99,7 +118,7 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
               posterUrl={photos[0]?.url}
               altBase={altBase}
               videoRef={videoRef}
-              onTap={canUnmute ? toggleMute : () => openGallery(0)}
+              onTap={openLead}
             />
           </div>
         ) : photos[0] ? (
@@ -142,17 +161,28 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
       </div>
 
       <div className="listing-mosaic__grid">
+        {heroVideo?.embedType === 'iframe' ? (
+          <div className="listing-mosaic__lead">
+            <VideoLayer
+              video={heroVideo}
+              posterUrl={photos[0]?.url}
+              altBase={altBase}
+              videoRef={videoRef}
+              onTap={openLead}
+            />
+          </div>
+        ) : (
         <button
           type="button"
           className="listing-mosaic__lead"
-          onClick={() => (heroVideo && canUnmute ? toggleMute() : openGallery(0))}
+          onClick={openLead}
           aria-label={
             heroVideo
               ? canUnmute
                 ? isMuted
                   ? 'Unmute video'
                   : 'Mute video'
-                : 'Open gallery'
+                : 'Open tour'
               : `Open photo 1 of ${total}`
           }
         >
@@ -162,7 +192,7 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
               posterUrl={photos[0]?.url}
               altBase={altBase}
               videoRef={videoRef}
-              onTap={canUnmute ? toggleMute : () => openGallery(0)}
+              onTap={openLead}
             />
           ) : photos[0] ? (
             <Image
@@ -175,6 +205,7 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
             />
           ) : null}
         </button>
+        )}
         <div className="listing-mosaic__thumbs">
           {thumbs.map((photo, i) => {
             const photoIndex = heroVideo ? i : i + 1
@@ -203,7 +234,7 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
         <button
           type="button"
           className="listing-mosaic__badge"
-          onClick={() => openGallery(0)}
+          onClick={() => (heroVideo ? openTour() : openGallery(0))}
           aria-label={badgeLabel}
         >
           {badgeLabel}
@@ -217,6 +248,12 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
         altBase={altBase}
         onClose={() => setOpenIndex(null)}
         onChange={(i) => setOpenIndex(i)}
+      />
+      <ListingTourOverlay
+        open={tourOpen}
+        video={heroVideo}
+        title={`Listing tour for ${altBase}`}
+        onClose={() => setTourOpen(false)}
       />
     </div>
   )
@@ -236,7 +273,7 @@ function VideoLayer({
   onTap: () => void
 }) {
   if (video.embedType === 'iframe') {
-    return <IframeHeroLayer video={video} posterUrl={posterUrl} altBase={altBase} />
+    return <IframeHeroLayer video={video} posterUrl={posterUrl} altBase={altBase} onOpen={onTap} />
   }
   return (
     <video
@@ -277,10 +314,12 @@ function IframeHeroLayer({
   video,
   posterUrl,
   altBase,
+  onOpen,
 }: {
   video: VideoEmbed
   posterUrl?: string
   altBase: string
+  onOpen: () => void
 }) {
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
@@ -307,9 +346,17 @@ function IframeHeroLayer({
           allow={['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture', 'fullscreen'].join('; ')}
           allowFullScreen
           onError={() => setFailed(true)}
-          style={{ opacity: ready ? 1 : 0 }}
+          style={{ opacity: ready ? 1 : 0, pointerEvents: 'none' }}
         />
       )}
+      <button
+        type="button"
+        className="listing-mosaic__open-tour"
+        onClick={onOpen}
+        aria-label="Open tour"
+      >
+        Open tour
+      </button>
     </>
   )
 }

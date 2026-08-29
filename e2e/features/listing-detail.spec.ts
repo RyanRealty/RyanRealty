@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test'
  *   - "Schedule a tour" CTA is visible (PriceCtaStrip + TextMattCTA)
  *
  * Selectors from:
- *   - PhotoGalleryLightbox.tsx: aria-label="Photo gallery", "Close gallery",
+ *   - PhotoGalleryLightbox.tsx: aria-label="Photo gallery", "Back",
  *     "Previous photo", "Next photo"
  *   - PriceCtaStrip.tsx: "Schedule a tour" link/button text
  *   - MortgageCalculator.tsx: input for home price / interest rate, formatCurrency output

@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import SearchMapClustered from '@/components/LazySearchMapClustered'
-import type { ListingForMap } from '@/components/SearchMapClustered'
+import type { ListingForMap, MapBounds } from '@/components/SearchMapClustered'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { Button } from '@/components/ui/button'
 import { Eyebrow, H3, Body } from '@/components/site/primitives'
+import { nextSearchUrlWithBbox } from '@/lib/search/publish-map-bbox'
 
 /**
  * The /search?view=map (map-only) pin layer, made hidden-aware. The split view
@@ -27,6 +29,8 @@ export default function HideAwareSearchMap({
   placeQuery,
   className,
   degraded = false,
+  initialBounds,
+  lockBounds = false,
 }: {
   listings: ListingForMap[]
   savedListingKeys: string[]
@@ -35,8 +39,13 @@ export default function HideAwareSearchMap({
   className?: string
   /** Timeout/error on the map-only fetch. Empty pins are not "0 homes". */
   degraded?: boolean
+  initialBounds?: MapBounds | null
+  lockBounds?: boolean
 }) {
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     let cancelled = false
@@ -47,6 +56,19 @@ export default function HideAwareSearchMap({
   }, [])
 
   const visible = useMemo(() => excludeHiddenListings(listings, hiddenKeys), [listings, hiddenKeys])
+
+  const persistBbox = useCallback(
+    (bounds: MapBounds) => {
+      const next = nextSearchUrlWithBbox(
+        pathname ?? '/homes-for-sale',
+        searchParams?.toString() ?? '',
+        bounds,
+      )
+      if (!next) return
+      router.replace(next, { scroll: false })
+    },
+    [pathname, router, searchParams],
+  )
 
   if (degraded) {
     return (
@@ -79,6 +101,9 @@ export default function HideAwareSearchMap({
       likedListingKeys={likedListingKeys}
       placeQuery={placeQuery}
       className={className}
+      initialBounds={initialBounds}
+      lockBounds={lockBounds}
+      onBoundsChanged={persistBbox}
     />
   )
 }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
 
 /**
  * PhotoGalleryLightbox — site-wide fullscreen photo lightbox primitive.
@@ -107,6 +108,7 @@ export function PhotoGalleryLightbox({
   }, [openIndex])
 
   const isOpen = openIndex != null && photos.length > 0
+  const { dismiss } = useMediaOverlayHistory(isOpen, onClose, 'gallery')
 
   if (!isOpen) return null
 
@@ -114,7 +116,7 @@ export function PhotoGalleryLightbox({
   const altText = current.caption ?? `${altBase} ${openIndex! + 1} of ${count}`
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) dismiss() }}>
       <DialogPortal>
         <DialogOverlay className="bg-black/95 backdrop-blur-none" />
         {/* Full-screen gallery content — overrides DialogContent defaults for a
@@ -129,7 +131,7 @@ export function PhotoGalleryLightbox({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onClose}
+              onClick={dismiss}
               className="min-h-11 min-w-11 bg-background/10 text-primary-foreground hover:bg-background/15 hover:text-primary-foreground"
               aria-label="Back"
             >

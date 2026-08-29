@@ -780,7 +780,6 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-        </div>
       </div>
 
       {/* Row 3: active filter chips. Row 2's trigger buttons already show the

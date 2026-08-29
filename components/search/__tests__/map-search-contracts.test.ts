@@ -285,6 +285,20 @@ describe('the /search map-only pin layer subtracts hidden homes (W7.2, 2026-07-2
     // The page must not import the raw pin layer directly anymore.
     expect(page).not.toMatch(/import\s+\w+\s+from '@\/components\/(Lazy)?SearchMapClustered'/)
   })
+
+  it('map mode restores the URL bbox and locks the camera instead of fitting Oregon', () => {
+    expect(page).toMatch(/bboxFromSearchParam\(sp\.bbox\)/)
+    expect(page).toMatch(/initialBounds=\{initialBounds\}/)
+    expect(page).toMatch(/lockBounds/)
+    expect(wrap).toMatch(/lockBounds=\{lockBounds\}/)
+    expect(wrap).toMatch(/initialBounds=\{initialBounds\}/)
+    expect(wrap).toMatch(/nextSearchUrlWithBbox/)
+    const clustered = readSrc('components/SearchMapClustered.tsx')
+    expect(clustered).toMatch(/if \(lockBounds && initialBounds\)/)
+    const view = readSrc('components/search/MapSearchView.tsx')
+    expect(view).toMatch(/nextSearchUrlWithBbox/)
+    expect(view).toMatch(/lockBounds/)
+  })
 })
 
 describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {

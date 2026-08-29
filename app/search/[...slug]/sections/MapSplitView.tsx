@@ -8,6 +8,7 @@ import { getViewportSearch, type SearchFilters } from '@/app/actions/search'
 import { subdivisionEntityKey, getSubdivisionDisplayName } from '../../../../lib/slug'
 import { entityKeyToSlug } from '../../../../lib/community-slug'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
+import { bboxFromSearchParam } from '@/lib/search/publish-map-bbox'
 import {
   buildShapeSetForSearch,
   decodeMapPolygon,
@@ -138,6 +139,7 @@ export async function renderMapSplitView(props: {
     : null
 
   const initialBounds =
+    bboxFromSearchParam((sp as Record<string, string | undefined>).bbox) ??
     bboxFromGeometry(
       mapBoundaryGeojson as { type?: string; coordinates?: unknown } | null
     ) ?? BEND_DEFAULT_BOUNDS
