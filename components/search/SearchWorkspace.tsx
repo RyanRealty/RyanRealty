@@ -3,15 +3,18 @@
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { SEARCH_CHROME_PX, shouldPinSearchWorkspace } from '@/components/search/search-workspace-pin'
 
 /**
- * 1280: pin dock + Field under chrome after the H1 leaves, then release
- * when the email ask reaches the unit so the map never slides under the
- * filters. 390 keeps CSS sticky on the dock alone.
+ * Pin dock + Field under chrome after the H1 leaves, then release once
+ * that reserved block has scrolled past. Works at 390 and 1280 so the
+ * stuck cream chrome never covers the Field map or list. H1 stays in
+ * the page header and does not stick.
  */
 export function SearchWorkspace({ children }: { children: ReactNode }) {
   const boxRef = useRef<HTMLDivElement>(null)
   const slotRef = useRef<HTMLDivElement>(null)
+  const reservedRef = useRef(0)
 
   useEffect(() => {
     const box = boxRef.current
@@ -19,21 +22,16 @@ export function SearchWorkspace({ children }: { children: ReactNode }) {
     if (!box || !slot) return
 
     const sync = () => {
-      const wide = window.matchMedia('(min-width: 56.25rem)').matches
-      if (wide === false) {
-        box.classList.remove('search-workspace--stuck')
-        slot.style.height = '0px'
-        return
+      const stuck = box.classList.contains('search-workspace--stuck')
+      if (stuck === false) {
+        reservedRef.current = box.offsetHeight
       }
-      const chrome = 56
-      const email = document.getElementById('search-alert-capture')
-      const height = box.offsetHeight
+      const reserved = reservedRef.current || box.offsetHeight
       const naturalTop = slot.getBoundingClientRect().top
-      const emailTop = email ? email.getBoundingClientRect().top : Number.POSITIVE_INFINITY
-      const shouldStick = naturalTop <= chrome && emailTop > window.innerHeight
+      const shouldStick = shouldPinSearchWorkspace(naturalTop, reserved, SEARCH_CHROME_PX)
       if (shouldStick) {
         box.classList.add('search-workspace--stuck')
-        slot.style.height = `${height}px`
+        slot.style.height = `${reserved}px`
       } else {
         box.classList.remove('search-workspace--stuck')
         slot.style.height = '0px'

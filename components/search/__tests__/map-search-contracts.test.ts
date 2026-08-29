@@ -613,14 +613,18 @@ describe('search filter dock and required map attribution (PR 163)', () => {
     expect(split.indexOf('<MapSearchView')).toBeLessThan(split.indexOf('<SearchAlertCapture'))
   })
 
-  it('sticks dock plus Field as one cream unit at 1280 so the map stays clear', () => {
+  it('sticks dock plus Field as one cream unit at 390 and 1280 so the map and list stay clear', () => {
     const css = readSrc('app/search/search-frame.css')
+    expect(css).toMatch(/\.search-filter-dock \{[\s\S]*position:\s*relative/)
+    expect(css).not.toMatch(/\.search-filter-dock \{[\s\S]*position:\s*sticky/)
     expect(css).toMatch(/\.search-workspace \{[\s\S]*background:\s*var\(--v3-surface\)/)
     expect(css).toMatch(/\.search-workspace--stuck \{[\s\S]*position:\s*fixed/)
+    expect(css).toMatch(/\.search-workspace--stuck \{[\s\S]*background:\s*var\(--v3-surface\)/)
     expect(css).toMatch(/\.search-workspace \.search-filter-dock \{[\s\S]*position:\s*relative/)
     const wrap = readSrc('components/search/SearchWorkspace.tsx')
     expect(wrap).toMatch(/search-workspace--stuck/)
-    expect(wrap).toMatch(/search-alert-capture/)
+    expect(wrap).toMatch(/shouldPinSearchWorkspace/)
+    expect(wrap).not.toMatch(/min-width: 56\.25rem/)
     const page = readSrc('app/search/page.tsx')
     expect(page).toMatch(/<SearchWorkspace>/)
     expect(page.indexOf('<SearchWorkspace>')).toBeLessThan(page.indexOf('search-filter-dock'))

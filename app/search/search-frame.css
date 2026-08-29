@@ -14,8 +14,8 @@
   }
 
   .search-filter-dock {
-    position: sticky;
-    top: 3.5rem;
+    position: relative;
+    top: auto;
     z-index: 20;
     background: var(--v3-surface);
     border-bottom: 1px solid var(--v3-edge);
@@ -57,11 +57,21 @@
   }
 }
 
-/* 1280: SearchWorkspace pins this unit under chrome after the H1
-   leaves. Cream so the map cannot show through. 390 keeps the shorter
-   filter dock sticky on its own. */
+/* SearchWorkspace pins dock + Field under chrome after the H1 leaves
+   (390 and 1280). Cream so tiles and map cannot show through. The dock
+   itself is in flow; the wrapper is the stuck unit so Field content
+   stays below the filters instead of sliding under them. */
 .search-workspace {
   background: var(--v3-surface);
+}
+
+.search-workspace .search-filter-dock {
+  position: relative;
+  top: auto;
+}
+
+.search-workspace .search-field .v3.v3-field {
+  padding-top: var(--v3-space-md);
 }
 
 .search-workspace-slot {
@@ -78,23 +88,44 @@
   flex-direction: column;
   max-height: calc(100dvh - 3.5rem);
   overflow: hidden;
+  isolation: isolate;
   background: var(--v3-surface);
 }
 
 .search-workspace--stuck .search-filter-dock {
   flex: none;
+  background: var(--v3-surface);
 }
 
 .search-workspace--stuck .search-field {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-@media (min-width: 56.25rem) {
-  .search-workspace .search-filter-dock {
-    position: relative;
-    top: auto;
-  }
+.search-workspace--stuck .search-field .v3.v3-field {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.search-workspace--stuck .search-field .v3-field__frame {
+  flex: 1;
+  min-height: 0;
+}
+
+.search-workspace--stuck .search-field .v3.v3-field--flow .v3-field__list {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.search-workspace--stuck .search-field .v3.v3-field--flow .v3-field__map:not(.v3-field__map--photos) {
+  height: 100%;
+  min-height: 0;
 }
 
 /* .v3 .v3-btn and .v3-field__lead .v3-btn outrank the barrel hide. */
