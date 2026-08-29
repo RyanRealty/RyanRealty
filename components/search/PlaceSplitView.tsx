@@ -12,6 +12,37 @@ import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import './search-ledger.css'
 
+function boundsFromListings(rows: ListingTileRow[]): MapBounds | null {
+  let west = Infinity
+  let south = Infinity
+  let east = -Infinity
+  let north = -Infinity
+  let n = 0
+  for (const row of rows) {
+    const lat = row.Latitude
+    const lng = row.Longitude
+    if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) continue
+    n += 1
+    if (lng < west) west = lng
+    if (lng > east) east = lng
+    if (lat < south) south = lat
+    if (lat > north) north = lat
+  }
+  if (n === 0) return null
+  if (west >= east || south >= north) {
+    const pad = 0.02
+    return { west: west - pad, south: south - pad, east: west + pad, north: south + pad }
+  }
+  const padLng = Math.max((east - west) * 0.15, 0.01)
+  const padLat = Math.max((north - south) * 0.15, 0.01)
+  return {
+    west: west - padLng,
+    south: south - padLat,
+    east: east + padLng,
+    north: north + padLat,
+  }
+}
+
 /**
  * Flagship Split, scoped to a place page. Seed the ring as initialShapes
  * (SSR). Never write ?shapes= onto the place URL. Search this area after pan
@@ -35,8 +66,9 @@ export async function PlaceSplitView(props: {
   const seed =
     props.seedRing === false ? null : publishPlaceSplitSeed(props.boundaryGeojson ?? null)
   const initialShapes = seed?.shapes ?? null
-  const initialBounds = props.bounds ?? seed?.bounds ?? BEND_DEFAULT_BOUNDS
   const hasInclude = Boolean(initialShapes?.some((s) => !s.exclude))
+  const seedBounds = props.bounds ?? seed?.bounds ?? null
+  const fetchBounds = seedBounds ?? BEND_DEFAULT_BOUNDS
 
   const viewportFilters: SearchFilters = {
     city: props.city || undefined,
@@ -56,8 +88,8 @@ export async function PlaceSplitView(props: {
     const settled = await withTimeoutFallbackResult(
       getViewportSearch(
         hasInclude ? stripGeoScope(viewportFilters) : viewportFilters,
-        initialBounds,
-        buildShapeSetForSearch(initialShapes, initialBounds),
+        fetchBounds,
+        buildShapeSetForSearch(initialShapes, fetchBounds),
       ),
       empty,
       4000,
@@ -68,6 +100,8 @@ export async function PlaceSplitView(props: {
     capped = settled.value.capped
     degraded = !settled.ok
   }
+
+  const initialBounds = seedBounds ?? boundsFromListings(listings ?? []) ?? BEND_DEFAULT_BOUNDS
 
   const [session, savedKeys, likedKeys] = await Promise.all([
     getSession(),
