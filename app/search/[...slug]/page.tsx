@@ -8,11 +8,8 @@ import {
 } from '../../actions/listings'
 import { getSession } from '../../actions/auth'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
-import { getCityBoundary } from '../../actions/cities'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
-import { cityEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, subdivisionEntityKey } from '../../../lib/slug'
-import { entityKeyToSlug } from '../../../lib/community-slug'
-import { getCommunityBySlug } from '../../actions/communities'
+import { cityEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath } from '../../../lib/slug'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -25,7 +22,7 @@ import {
   getSamePresetCityLinks,
   isSortOnlyPreset,
 } from '@/lib/site/preset-faq'
-import { getDerivedPopularSearches } from '@/lib/data'
+import { getCityBoundaryGeoJSON, getCommunityDetailByName, getDerivedPopularSearches } from '@/lib/data'
 import SearchFilterBar from '../../../components/SearchFilterBar'
 import ShareButton from '../../../components/ShareButton'
 import {
@@ -239,13 +236,13 @@ export default async function SearchPage({
     city
       ? decodedSubdivision
         ? withTimeout(
-            getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))).then(
-              (community) => community?.boundaryGeojson ?? null,
+            getCommunityDetailByName(decodedSubdivision).then(
+              (community) => community?.boundary_geojson ?? null,
             ),
             null,
             2000,
           )
-        : withTimeout(getCityBoundary(city), null, 2000)
+        : withTimeout(getCityBoundaryGeoJSON(city), null, 2000)
       : Promise.resolve(null),
   ])
   // Fail loud: a timed-out or hard-errored listings fetch must NOT render — and
