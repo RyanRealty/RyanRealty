@@ -113,22 +113,29 @@ checks.push({
     !teamPage.includes('.slice(0, 9)'),
 })
 
-const searchCards = src('components/search/SearchResults.tsx')
+/**
+ * Search inventory now builds titles in one mapper (search-field-items.ts)
+ * and V3Field prints them. The wrappers no longer join street parts. Same
+ * follow-the-builder rule as the plat map arm below.
+ */
+const searchFieldFiles = [
+  src('app/search/_v3/search-field-items.ts'),
+  src('components/search/SearchResults.tsx'),
+  src('components/search/MapSearchView.tsx'),
+]
 checks.push({
-  label: 'search result cards withhold placeholder 0 via publishStreetLine',
+  label: 'search Field titles withhold placeholder 0 via publishStreetLine',
   ok:
-    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(searchCards) &&
-    /publishStreetLine\(/.test(searchCards) &&
-    !searchCards.includes('[listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join'),
-})
-
-const mapCards = src('components/search/MapSearchView.tsx')
-checks.push({
-  label: 'map-search cards withhold placeholder 0 via publishStreetLine',
-  ok:
-    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(mapCards) &&
-    /publishStreetLine\(/.test(mapCards) &&
-    !mapCards.includes('[l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join'),
+    searchFieldFiles.some(
+      (text) =>
+        /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(text) &&
+        /publish(StreetLine|CardAddress)\(/.test(text),
+    ) &&
+    searchFieldFiles.every(
+      (text) =>
+        !text.includes('[listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join') &&
+        !text.includes('[l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join'),
+    ),
 })
 
 /**
