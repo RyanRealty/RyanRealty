@@ -95,6 +95,9 @@ export type ListingTileRow = {
   has_virtual_tour?: boolean | null
   price_drop_count?: number | null
   tourUrl?: string | null
+  photoUrls?: string[]
+  originalListPrice?: number | null
+  price_drop_amount?: number | null
 }
 
 /** Details from Spark/Supabase: Videos = playable/embed only; VirtualTours = 3D/tour links (not played in hero). */
@@ -1698,7 +1701,32 @@ export async function getViewportListings(
     // the exact total even when it exceeds the render cap.
     capped = false
   }
-  return { listings: rows.slice(0, cap), totalCount, capped }
+  const sliced = rows.slice(0, cap)
+  try {
+    const { attachListingCardExtras } = await import('@/lib/data')
+    const extras = await attachListingCardExtras(
+      sliced.map((row) => String(row.ListingKey ?? '')).filter(Boolean),
+    )
+    for (const row of sliced) {
+      const extra = extras.get(String(row.ListingKey ?? ''))
+      if (!extra) continue
+      row.tourUrl = extra.tourUrl ?? row.tourUrl
+      row.ListOfficeName = extra.listOfficeName
+      row.photoUrls = extra.photoUrls.length > 0 ? extra.photoUrls : undefined
+      row.originalListPrice = extra.originalListPrice
+      if (
+        extra.originalListPrice != null &&
+        row.ListPrice != null &&
+        extra.originalListPrice > row.ListPrice
+      ) {
+        row.price_drop_amount = extra.originalListPrice - row.ListPrice
+        if (!(row.price_drop_count && row.price_drop_count > 0)) row.price_drop_count = 1
+      }
+    }
+  } catch {
+    // Card extras miss omits — hero photo + leftover tile fields still print.
+  }
+  return { listings: sliced, totalCount, capped }
 }
 
 /**

@@ -97,12 +97,14 @@ describe('MapSearchView orchestrator', () => {
   })
 
   it('split cards overlay Redfin badges and open the on-site 3D viewer', () => {
-    const row = readSrc('components/site/v3/V3ListingRow.tsx')
+    const media = readSrc('components/site/v3/SplitCardMedia.tsx')
     const map = readSrc('components/search/MapSearchView.tsx')
-    expect(row).toMatch(/v3-lrow__photo-tags/)
-    expect(row).toMatch(/v3-lrow__tour/)
+    expect(media).toMatch(/v3-lrow__photo-tags/)
+    expect(media).toMatch(/v3-lrow__tour/)
+    expect(media).toMatch(/v3-lrow__nav/)
     expect(map).toMatch(/ListingTourOverlay/)
-    expect(map).toMatch(/publishTourEmbedFromUrl/)
+    expect(map).toMatch(/SplitListingCard/)
+    expect(map).toMatch(/attachListingCardExtras|photoUrls/)
   })
 
   it('place Split does not seed a drawable exclude area', () => {

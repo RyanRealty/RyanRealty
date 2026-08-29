@@ -225,6 +225,45 @@
   max-width: calc(100% - 0.5rem);
 }
 
+.v3-lrow__nav {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--v3-navy) 80%, transparent);
+  color: var(--v3-cream);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.v3-lrow:hover .v3-lrow__nav,
+.v3-lrow:focus-within .v3-lrow__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.v3-lrow__nav--prev { left: var(--v3-space-2xs); }
+.v3-lrow__nav--next { right: var(--v3-space-2xs); }
+.v3-lrow__dots {
+  position: absolute;
+  right: var(--v3-space-2xs);
+  bottom: var(--v3-space-2xs);
+  z-index: 2;
+  padding: 0 var(--v3-space-2xs);
+  background: color-mix(in srgb, var(--v3-navy) 70%, transparent);
+  color: var(--v3-cream);
+  font-size: var(--v3-size-eyebrow);
+}
+.v3-lrow__office {
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink-muted);
+}
 .v3-lrow__tour {
   position: absolute;
   left: var(--v3-space-2xs);

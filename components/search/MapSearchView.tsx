@@ -35,7 +35,9 @@ import {
 } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import AreaPicker from '@/components/search/AreaPicker'
-import { V3ListingRow, type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
+import { type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
+import { SplitListingCard } from '@/components/search/SplitListingCard'
+import { isListingVirtualTour } from '@/lib/listing/publish-listing-hero-video'
 import { publishListingCardBadges } from '@/lib/listing/publish-listing-card-badges'
 import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-video'
 import { ListingTourOverlay } from '@/components/site/listing-detail/ListingTourOverlay'
@@ -145,7 +147,9 @@ function cardBadges(
     standardStatus: l.StandardStatus,
     onMarketDate: l.OnMarketDate,
     priceDropCount: l.price_drop_count ?? null,
+    priceDropAmount: l.price_drop_amount ?? null,
     hasVirtualTour: l.has_virtual_tour === true || Boolean(l.tourUrl),
+    hasTourUrl: Boolean(l.tourUrl),
     openHouseLabel: key ? openHouseLabels[key] ?? null : null,
   })
 }
@@ -890,35 +894,37 @@ export default function MapSearchView({
                   onVisibilityChange={onHiddenChange}
                   className="left-auto right-1 top-1 size-7"
                 />
-                <V3ListingRow
-                  showPricePerSqft
+                <SplitListingCard
+                  href={href}
+                  photoUrls={
+                    l.photoUrls && l.photoUrls.length > 0
+                      ? l.photoUrls
+                      : l.PhotoURL
+                        ? [l.PhotoURL]
+                        : []
+                  }
+                  price={l.ListPrice}
+                  addressLine={addressLine}
+                  cityLine={cardCity(l)}
+                  beds={l.BedroomsTotal}
+                  baths={l.BathroomsTotal}
+                  sqft={rowSqft(l)}
+                  pricePerSqft={cardPricePerSqft(l)}
+                  propertyType={l.PropertyType ?? null}
+                  propertySubType={l.PropertySubType ?? null}
+                  subdivisionName={l.SubdivisionName ?? null}
+                  city={l.City ?? null}
+                  listNumber={l.ListNumber ?? null}
+                  listOfficeName={l.ListOfficeName}
+                  badges={badges}
+                  hasTour={l.has_virtual_tour === true || Boolean(l.tourUrl)}
+                  tourLabel={
+                    l.tourUrl && !isListingVirtualTour({ url: l.tourUrl, isVirtualTour: true })
+                      ? 'Video tour'
+                      : '3D Walkthrough'
+                  }
                   priority={cardIndex < 4}
-                  className={cn('v3-lrow--split', isSelected && 'is-active', !isSelected && isHovered && 'is-hot')}
-                  listing={{
-                    listingKey: key,
-                    href,
-                    photoUrl: l.PhotoURL,
-                    price: l.ListPrice,
-                    addressLine,
-                    cityLine: cardCity(l),
-                    beds: l.BedroomsTotal,
-                    baths: l.BathroomsTotal,
-                    sqft: rowSqft(l),
-                    pricePerSqft: cardPricePerSqft(l),
-                    // The card publishes the ask and the $/sq ft, and needs to
-                    // know what kind of listing it is drawing to do it: on a
-                    // commercial lease the price is rent, and on a fractional
-                    // share it buys part of the home.
-                    propertyType: l.PropertyType ?? null,
-                    propertySubType: l.PropertySubType ?? null,
-                    subdivisionName: l.SubdivisionName ?? null,
-                    city: l.City ?? null,
-                    listNumber: l.ListNumber ?? null,
-                    tourUrl: l.tourUrl ?? null,
-                    hasTour: l.has_virtual_tour === true || Boolean(l.tourUrl),
-                    badges,
-                    badge: badges[0],
-                  }}
+                  className={cn(isSelected && 'is-active', !isSelected && isHovered && 'is-hot')}
                   onOpenTour={
                     l.tourUrl || l.has_virtual_tour
                       ? () => {
