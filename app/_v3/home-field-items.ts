@@ -35,6 +35,7 @@ export type HomeFieldTypeKey = (typeof TYPE_ORDER)[number]
 
 export type HomeFieldItem = V3FieldItem & {
   city: string
+  listPrice: number
   typeKey: HomeFieldTypeKey
   typeLabel: string
   cat: 0 | 1 | 2 | 3 | 4
@@ -152,6 +153,7 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): Ho
         { mlsNumber: tile.listNumber },
       ),
       priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price on request',
+      listPrice: tile.listPrice,
       title: publishCardAddress({
         streetNumber: tile.streetNumber,
         streetName: tile.streetName,

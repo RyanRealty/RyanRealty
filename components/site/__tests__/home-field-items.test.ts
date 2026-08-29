@@ -63,6 +63,7 @@ describe('homeFieldItems', () => {
     expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
     expect(items[0]?.city).toBe('Bend')
     expect(items[0]?.typeKey).toBe('house')
+    expect(items[0]?.listPrice).toBe(625000)
   })
 
   it('filters the listed set by MLS city', () => {

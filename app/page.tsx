@@ -191,7 +191,7 @@ export default async function Home() {
   const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
   const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
   const marketHeadline = hasVerdict
-    ? `Is Central Oregon a buyer's or seller's market?`
+    ? 'How tight the market is'
     : 'The Central Oregon market'
   const verdictSentence = hasVerdict
     ? `Central Oregon has ${mosLabel} months of supply, which is a ${verdict.label}.`
@@ -279,6 +279,7 @@ export default async function Home() {
             figures={[firstMarketFigure, ...restMarketFigures]}
             source={v3Text(marketSource)}
             chart={medianChart}
+            chartFirst
             updated={liveStamp(leftoverStamp)}
             action={{ label: v3Text('Full market report'), href: '/housing-market', variant: 'ghost' }}
           />

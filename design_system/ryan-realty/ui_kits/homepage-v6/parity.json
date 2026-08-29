@@ -80,7 +80,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "the market question, leftover KPI row, year overlay"
+      "section": "How tight the market is: sentence, then one chart, then figures"
     },
     {
       "name": "HomeAlertSheet",
@@ -139,7 +139,7 @@
     "V3Stage #hero -- flyover, H1, HomeHeroSearch",
     "HomeHomesField -- the houses and the map in one frame, type chips, listFlow, See all",
     "V3Ledger #towns -- each town's active count and median list price",
-    "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
+    "V3Instrument #market -- how tight the market is, sentence then chart then figures, and a door to the full report",
     "V3Ledger #communities -- resorts and master-planned communities",
     "HomeAlertSheet -- the ask",
     "V3Quiet #reviews -- Google reviews",

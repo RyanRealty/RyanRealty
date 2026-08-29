@@ -68,22 +68,62 @@
 
 .v3-field__lead {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex-wrap: nowrap;
-  gap: var(--v3-space-xs);
+  align-items: center;
+  gap: var(--v3-space-sm);
   margin: 0 0 var(--v3-space-sm);
-}
-
-/* One chip row. Overflow scrolls sideways; wrap must not grow five rows
-   of chips on 390. */
-.v3-field__lead nav {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: var(--v3-space-xs);
-  width: 100%;
   overflow-x: auto;
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.v3-field__lead::-webkit-scrollbar {
+  display: none;
+}
+
+/* One chip row. Overflow scrolls sideways; wrap must not grow five rows
+   of chips on 390. Price range sits next to the chips. */
+.v3-field__lead nav {
+  display: flex;
+  flex: none;
+  flex-wrap: nowrap;
+  gap: var(--v3-space-xs);
+  width: auto;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 390 + Map toggle: chips stay on screen. Range and Map sit on the next
+   row so the type nav cannot shrink to nothing beside Min/Max. */
+@media (max-width: 56.249rem) {
+  .v3.v3-field--map-toggle .v3-field__lead {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    overflow: visible;
+  }
+
+  .v3.v3-field--map-toggle .v3-field__lead nav {
+    grid-column: 1 / -1;
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .v3.v3-field--map-toggle .v3-field__range {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  .v3.v3-field--map-toggle .v3-field__range select {
+    min-width: 5.5rem;
+  }
+
+  .v3.v3-field--map-toggle .v3-field__map-toggle {
+    grid-column: 2;
+  }
 }
 
 .v3-field__lead nav::-webkit-scrollbar {
@@ -116,6 +156,46 @@
 .v3-field__mark--cat-2 { background: var(--v3-cat-2); }
 .v3-field__mark--cat-3 { background: var(--v3-cat-3); }
 .v3-field__mark--cat-4 { background: var(--v3-cat-4); }
+
+.v3-field__range {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--v3-space-xs);
+}
+
+.v3-field__range-label {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-field__range select {
+  min-width: 7.5rem;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface-raised);
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.v3-field__map-toggle {
+  flex: none;
+}
+
+@media (min-width: 56.25rem) {
+  .v3-field__map-toggle {
+    display: none;
+  }
+}
 
 .v3-field__source {
   margin-top: var(--v3-space-md);
@@ -153,8 +233,7 @@
   min-width: 0;
 }
 
-/* Map is the first track. Reordering the list above the map is not this
-   pattern — that is how 390 grew a novel of cards and a leftover map. */
+/* Map is the first track by default. Homepage list-first flips this on 390. */
 .v3-field__frame > .v3-field__col:first-of-type {
   order: 0;
 }
@@ -269,8 +348,10 @@
 }
 
 .v3-field__photo-price {
+  font-family: var(--v3-font-display);
   font-size: var(--v3-size-body);
-  font-weight: var(--v3-weight-num);
+  font-weight: var(--v3-weight-body);
+  letter-spacing: var(--v3-track-display);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
   color: var(--v3-ink-on-media);
@@ -554,7 +635,9 @@
 .v3-field__row--cat-4.is-active { box-shadow: inset 3px 0 0 var(--v3-cat-4); }
 
 .v3-field__price {
-  font-weight: var(--v3-weight-num);
+  font-family: var(--v3-font-display);
+  font-weight: var(--v3-weight-body);
+  letter-spacing: var(--v3-track-display);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
@@ -609,6 +692,56 @@
 .v3-field__action {
   display: flex;
   margin-top: var(--v3-space-lg);
+}
+
+/* 390: list first. Map sits behind the Map toggle. Wide keeps map left. */
+@media (max-width: 56.249rem) {
+  .v3.v3-field--list-first .v3-field__frame > .v3-field__col:first-of-type {
+    order: 1;
+  }
+
+  .v3.v3-field--list-first .v3-field__frame > .v3-field__col:last-of-type {
+    order: 0;
+  }
+
+  .v3.v3-field--map-toggle:not(.v3-field--map-open) .v3-field__frame > .v3-field__col:first-of-type {
+    display: none;
+  }
+}
+
+.v3-field__zoom {
+  position: absolute;
+  top: var(--v3-space-sm);
+  right: var(--v3-space-sm);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+}
+
+/* Google leftover chrome. Custom 44px zoom is the only map control. */
+.v3-field__map .gm-fullscreen-control,
+.v3-field__map .gm-svpc,
+.v3-field__map .gm-style-mtc,
+.v3-field__map .gm-bundled-control {
+  display: none;
+}
+
+.v3-field__zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: 1;
+  cursor: pointer;
 }
 
 /* The quiet lines: what the map is, and what the set does not show. */

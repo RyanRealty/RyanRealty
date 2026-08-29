@@ -172,6 +172,16 @@
   border-top: var(--v3-rule-hairline);
 }
 
+/* Homepage Chart Room: the sentence is the lead, then the series, then the
+   figures. The first hairline after the note belongs to the chart. */
+.v3.v3-instrument.v3-instrument--chart-first .v3-instrument__note {
+  margin-bottom: var(--v3-space-lg);
+}
+
+.v3.v3-instrument.v3-instrument--chart-first .v3-instrument__chart {
+  margin-top: 0;
+}
+
 .v3.v3-instrument .v3-instrument__source {
   margin-top: var(--v3-space-lg);
 }
