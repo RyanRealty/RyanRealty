@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { neighborhoodHtmlGate } from './neighborhood-html-gate.mjs'
 
 const FACE_TELLS = [
+  /Market Truth/i,
   /Market Truth leftover/i,
+  /Market Truth metric layer/i,
   /leftover\s*:\s*true/i,
   /leftover membership/i,
   /methodology v3/i,
@@ -36,12 +38,23 @@ describe('neighborhoodHtmlGate', () => {
     expect(result.ok).toBe(false)
     expect(result.fails).toEqual([
       'leftover',
+      'market-truth',
       'market-truth-leftover',
       'leftover-true',
       'leftover-membership',
       'methodology-v3',
       'buyer-seller-market-h2',
     ])
+  })
+
+  it('fails Market Truth metric layer even without the leftover word', () => {
+    const html =
+      'Source: regional MLS through the Market Truth metric layer, Awbrey Butte townhomes. ' +
+      'Source: regional MLS through the Market Truth metric layer, Awbrey Butte lots.'
+    const result = neighborhoodHtmlGate(html)
+    expect(result.ok).toBe(false)
+    expect(result.fails).toContain('market-truth')
+    expect(result.fails).toContain('market-truth-metric-layer')
   })
 
   it('keeps leftover labels off the neighborhood face strings', () => {
@@ -58,7 +71,8 @@ describe('neighborhoodHtmlGate', () => {
       resolve('app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-opening.ts'),
       'utf8',
     )
-    for (const src of [field, face, opening]) {
+    const types = readFileSync(resolve('components/site/v3/V3PlacePropertyTypes.tsx'), 'utf8')
+    for (const src of [field, face, opening, types]) {
       for (const tell of FACE_TELLS) {
         expect(src).not.toMatch(tell)
       }
@@ -66,6 +80,8 @@ describe('neighborhoodHtmlGate', () => {
     expect(neighborhoodHtmlGate(field)).toEqual({ ok: true, fails: [] })
     expect(neighborhoodHtmlGate(face)).toEqual({ ok: true, fails: [] })
     expect(neighborhoodHtmlGate(opening)).toEqual({ ok: true, fails: [] })
+    expect(neighborhoodHtmlGate(types)).toEqual({ ok: true, fails: [] })
+    expect(types).toContain('Oregon Data Share')
     expect(page).toContain('${neighborhood.name} homes for sale')
     expect(page).toContain('How tight the market is')
     expect(page).toContain('<V3Stage')

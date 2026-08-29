@@ -49,7 +49,7 @@ describe('neighborhood face', () => {
   it('keeps leftover wording off traces', () => {
     const trace = neighborhoodFaceMarketTrace('Awbrey Butte', true)
     expect(trace).not.toMatch(/leftover/i)
-    expect(trace).not.toMatch(/Market Truth leftover/i)
+    expect(trace).not.toMatch(/Market Truth/i)
     const absence = neighborhoodFaceAbsenceItems('Awbrey Butte', true)
     expect(JSON.stringify(absence)).not.toMatch(/leftover/i)
   })

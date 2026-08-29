@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * /cities/[slug]/[neighborhoodSlug] HTML craft gate. Fail if the public face
- * still carries leftover labels, Market Truth leftover, leftover membership,
+ * still carries leftover labels, Market Truth, leftover membership,
  * or a buyer/seller market H2.
  *
  * Usage:
@@ -11,7 +11,9 @@
 
 export const NEIGHBORHOOD_HTML_ANTI_TELLS = [
   { id: 'leftover', re: /\bleftover\b/i },
+  { id: 'market-truth', re: /Market Truth/i },
   { id: 'market-truth-leftover', re: /Market Truth leftover/i },
+  { id: 'market-truth-metric-layer', re: /Market Truth metric layer/i },
   { id: 'leftover-true', re: /leftover\s*:\s*true/i },
   { id: 'leftover-json', re: /"leftover"\s*:\s*true/ },
   { id: 'leftover-membership', re: /leftover membership/i },

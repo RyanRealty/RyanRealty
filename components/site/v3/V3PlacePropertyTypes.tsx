@@ -151,8 +151,8 @@ function factLine(row: PlaceSegmentInput): V3InstrumentFigure[] {
  */
 function trace(placeName: string, nounPlural: string): V3Text {
   return v3Text(
-    `regional MLS through the Market Truth metric layer, ${placeName} ${nounPlural}. ` +
-      'Every figure names its own window; a figure the layer withheld is absent, not estimated.',
+    `regional MLS through Oregon Data Share, ${placeName} ${nounPlural}. ` +
+      'Every figure names its own window. A figure the feed withheld is absent, not estimated.',
   )
 }
 
