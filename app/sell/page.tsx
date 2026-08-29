@@ -1,50 +1,31 @@
 /**
- * /sell - the Sell destination, on the components/site/v3 barrel.
+ * /sell - Sell: value and list. Stage then the cream value field.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Sell
- * destinations open Stage then Sheet. Four of the six patterns, no two adjacent
- * alike. Order, deletions, and per-section reasoning live in
- * design_system/ryan-realty/ui_kits/sell/parity.json.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Sell opens Stage then
+ * Sheet. The address field is the only job on the first screen. Market is one
+ * sentence, one chart, and a few live figures. Extra product types live on
+ * /housing-market.
  *
- * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
- * pageMetadata (title "Sell Your Home in Central Oregon"), MetadataBlock
- * JSON-LD (BreadcrumbList + FAQPage), V3SectionTracker pageType="sell",
- * revalidate 300, route /sell, and the capture contract. SellValueForm
- * posts through submitSellerLPForm with pagePath="/sell" and formId get-value.
- * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
- *
- * D11: visible CTA copy is "Value my home" once, on the address-field submit.
- * Title/meta keep search-demand language. Stage is poster + H1 + quiet 3%
- * eyebrow. The primitive still requires an action prop. The page hides it.
- *
- * One derivation for months of supply: marketVerdict reads the RAW value,
- * formatMonthsOfSupply prints it, and the Instrument source line carries
- * MOS_METHODOLOGY_CLAUSE + MOS_THRESHOLD_CLAUSE. Rounding before classifying
- * is what this ordering prevents.
- *
- * One filled primary in the first 390 viewport: the capture Sheet submit.
- * Chrome Value my home is off /sell (the field is the ask) and on /sell/* leaves.
- * Stage ghost is gone.
- * Stage is compact so the H1 clears chrome and the address step shares
- * the first viewport.
+ * Capture contract unchanged: SellValueForm posts submitSellerLPForm with
+ * pagePath="/sell" and formId get-value.
  */
 
 import type { Metadata } from 'next'
+import { getBrokerageTrackRecord, getPriceHistory, getSellBendMarket, getSurfaceImage } from '@/lib/data'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import {
-  getBrokerageTrackRecord,
-  getSellBendMarket,
-  getSurfaceImage,
-} from '@/lib/data'
-import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
-import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
+  getPublicDetachedMonthly,
+  leftoverOrCacheMonthly,
+  dropCurrentMonth,
+} from '@/lib/data/market-truth/public-monthly'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { formatPrice, formatPriceExact, formatPriceCompact } from '@/lib/format/money'
-import { formatDate } from '@/lib/format/date'
-import { listingsBrowsePath, valuationPath } from '@/lib/slug'
+import { formatPrice, formatPriceCompact } from '@/lib/format/money'
+import { zonedDateKey } from '@/lib/format/date'
+import { valuationPath } from '@/lib/slug'
 import { CONTACT } from '@/lib/brand/contact'
 import { TESTIMONIALS } from '@/lib/testimonials'
+import { buildYearSeries } from '@/lib/kb/year-series'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -56,15 +37,22 @@ import {
   V3Sheet,
   V3Stage,
   V3SectionTracker,
-  type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { liveStamp } from '@/app/_v3/live-format'
 import { SellCapture } from './_v3/SellCapture'
 import { SellValueForm } from './_v3/SellValueForm'
+import {
+  sellBendChart,
+  sellBendFigures,
+  sellBendHeadline,
+  sellBendHud,
+  sellBendSentence,
+  sellBendTrace,
+} from './_v3/sell-market'
 import './_v3/sell-stage.css'
 import {
-  BEND_MARKET_TRACE_SCOPE,
   FAQ_ITEMS,
   FORM_ANCHOR,
   PLAN_STEPS,
@@ -94,7 +82,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SellPage() {
-  const [bend, heroSrc, trackRecord, publicPace, publicSegments] = await Promise.all([
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
+  const [bend, heroSrc, trackRecord, publicPace, leftoverMonthly, priceHist] = await Promise.all([
     getSellBendMarket(),
     getSurfaceImage('hero', {
       geoTags: ['central-oregon'],
@@ -102,62 +91,24 @@ export default async function SellPage() {
       fallback: SELL_POSTER,
     }),
     getBrokerageTrackRecord(),
-    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
-    getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
+    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }).catch(() => EMPTY_PUBLIC_PACE),
+    getPublicDetachedMonthly({
+      geoType: 'city',
+      geoSlug: 'bend',
+      currentMonthKey,
+    }).catch(() => []),
+    getPriceHistory('city', 'bend', 'monthly', 60).catch(() => []),
   ])
 
-  const bendFigures: V3InstrumentFigure[] = []
-  if (bend?.medianListPrice != null) {
-    bendFigures.push({
-      // formatPriceExact: the SAME median printed $939,900 on /, /cities and
-      // /cities/bend and $940,000 here on the same day (2026-08-27 audit). One
-      // statistic, one spelling, site-wide.
-      value: v3Text(formatPriceExact(bend.medianListPrice)),
-      label: v3Text('median list price'),
-      href: '/housing-market/bend',
-    })
-  }
-  if (bend != null) {
-    bendFigures.push({
-      value: v3Text(bend.activeCount.toLocaleString('en-US')),
-      label: v3Text('homes for sale'),
-      href: listingsBrowsePath(),
-    })
-  }
-  if (bend != null) {
-    bendFigures.push({
-      value: v3Text(bend.mosLabel),
-      label: v3Text('months of supply'),
-      href: '/months-of-supply',
-    })
-  }
-  for (const item of publicSegmentItems(publicSegments, 'bend')) {
-    bendFigures.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-      href: item.href,
-    })
-  }
-  for (const item of publicPaceItems(publicPace)) {
-    bendFigures.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
-  const [firstBendFigure, ...restBendFigures] = bendFigures
-
-  const leftoverTrace =
-    publicPaceItems(publicPace).length > 0
-      ? ' Leftover pace stats are 12-month Market Truth cells except pending and inventory age, which are point-in-time.'
-      : ''
-  const extraTrace =
-    publicSegmentItems(publicSegments, 'bend').length > 0
-      ? ' Extra product types are Market Truth, sample-gated.'
-      : ''
-  const bendTrace =
-    bend != null
-      ? `${BEND_MARKET_TRACE_SCOPE} ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}${leftoverTrace}${extraTrace}`
-      : BEND_MARKET_TRACE_SCOPE
+  const hud = sellBendHud(bend, publicPace)
+  const figures = sellBendFigures(hud)
+  const [firstBendFigure, ...restBendFigures] = figures
+  const hasVerdict = Boolean(bend && hud.monthsSupply != null && hud.monthsSupply > 0)
+  const verdictSentence = sellBendSentence(bend?.mosLabel ?? null, bend?.verdictLabel ?? null)
+  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
+  const medianChart = sellBendChart(buildYearSeries(chartMonths.months, 5))
+  const bendTrace = sellBendTrace(hasVerdict)
+  const leftoverStamp = bend?.computedAt ?? null
 
   const reviews = TESTIMONIALS.filter((t) =>
     (SELL_REVIEW_AUTHORS as readonly string[]).includes(t.author),
@@ -192,7 +143,6 @@ export default async function SellPage() {
     { label: 'Written valuation page', href: valuationPath() },
     { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
     { label: 'The 3% listing plan', href: '#listing-plan' },
-    { label: 'Browse homes for sale', href: listingsBrowsePath() },
   )
 
   const schemas: SchemaInput[] = [
@@ -220,7 +170,7 @@ export default async function SellPage() {
       type: 'dataset',
       name: 'Bend housing market snapshot',
       description:
-        'Detached single-family homes whose MLS City is Bend. Active count, months of supply, and market verdict from Market Truth. Not the city-limits polygon.',
+        'Detached single-family homes whose MLS City is Bend. Active count, months of supply, and market verdict from the regional MLS through Oregon Data Share. Not the city-limits polygon.',
       url: ROUTE_PATH,
       dateModified: bend.computedAt,
       spatialCoverageName: 'Bend, Oregon',
@@ -236,7 +186,7 @@ export default async function SellPage() {
 
   return (
     <>
-      <main className={V3_ROOT_CLASS}>
+      <main className={`${V3_ROOT_CLASS} sell-page`}>
         <MetadataBlock schemas={schemas} />
         <V3SectionTracker />
 
@@ -255,29 +205,32 @@ export default async function SellPage() {
           action={{ label: 'Value my home', href: FORM_ANCHOR, variant: 'ghost' }}
         />
 
-        <SellCapture eyebrow="Free. No listing agreement.">
+        <SellCapture className="sell-value-sheet" eyebrow="Free. No listing agreement.">
           <SellValueForm pagePath={ROUTE_PATH} />
         </SellCapture>
 
-        {bend && firstBendFigure ? (
+        {firstBendFigure ? (
           <V3Instrument
             id="bend-market"
             level={2}
             eyebrow={v3Text('Bend, Oregon')}
-            headline={v3Text(`Bend housing market: a ${bend.verdictLabel}`)}
+            headline={sellBendHeadline(hasVerdict)}
+            note={verdictSentence ? v3Text(verdictSentence) : undefined}
             figures={[firstBendFigure, ...restBendFigures]}
             source={v3Text(bendTrace)}
-            updated={v3Text(formatDate(bend.computedAt))}
+            chart={medianChart}
+            chartFirst
+            updated={liveStamp(leftoverStamp)}
             action={{
-              label: v3Text('Value my home'),
-              href: FORM_ANCHOR,
+              label: v3Text('See condos, lots, farms, and businesses'),
+              href: '/housing-market',
               variant: 'ghost',
             }}
           />
         ) : (
           <V3Quiet
             id="bend-market"
-            heading="Bend supply"
+            heading="How tight Bend is"
             items={[
               {
                 kind: 'prose',
@@ -285,6 +238,7 @@ export default async function SellPage() {
               },
               { label: 'Value my home', href: FORM_ANCHOR },
               { label: 'Months of supply, defined', href: '/months-of-supply' },
+              { label: 'See condos, lots, farms, and businesses', href: '/housing-market' },
             ]}
           />
         )}

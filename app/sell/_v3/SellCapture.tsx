@@ -8,6 +8,7 @@
  * payload, field names, or Places autocomplete.
  */
 import type { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
 import '@/components/site/v3/V3Sheet.css'
 
@@ -19,16 +20,25 @@ type Props = {
   heading?: string
   /** Used when the child form owns the visible heading. /sell address step has none. */
   ariaLabel?: string
+  className?: string
   children: ReactNode
 }
 
-export function SellCapture({ id, headingId, eyebrow, heading, ariaLabel, children }: Props) {
+export function SellCapture({
+  id,
+  headingId,
+  eyebrow,
+  heading,
+  ariaLabel,
+  className,
+  children,
+}: Props) {
   const named = heading && headingId
     ? { 'aria-labelledby': headingId }
     : { 'aria-label': ariaLabel ?? heading ?? eyebrow }
 
   return (
-    <section id={id} className={`${V3_ROOT_CLASS} v3-sheet`} {...named}>
+    <section id={id} className={cn(V3_ROOT_CLASS, 'v3-sheet', className)} {...named}>
       <header className="v3-sheet-head">
         <V3Eyebrow>{eyebrow}</V3Eyebrow>
         {heading && headingId ? (

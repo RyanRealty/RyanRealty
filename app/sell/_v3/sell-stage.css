@@ -5,3 +5,41 @@
 .v3.v3-stage.sell-stage-poster .v3-stage-copy .v3-btn {
   display: none;
 }
+
+/* First screen on 390: compact Stage, then the cream value field under the H1. */
+@media (max-width: 47.999rem) {
+  .v3.v3-stage.sell-stage-poster {
+    min-height: 0;
+  }
+
+  .v3.v3-stage.sell-stage-poster .v3-stage-copy {
+    padding-bottom: var(--v3-space-md);
+  }
+
+  .v3.v3-sheet.sell-value-sheet {
+    padding-top: var(--v3-space-md);
+    padding-bottom: var(--v3-space-lg);
+  }
+}
+
+/* Address field + Value my home at 44px, cream face. */
+.v3.v3-sheet.sell-value-sheet [data-slot='input'],
+.v3.v3-sheet.sell-value-sheet input:not([type='radio']):not([type='checkbox']) {
+  height: var(--v3-tap);
+  min-height: var(--v3-tap);
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-navy);
+  border-radius: var(--v3-radius-control);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+}
+
+.v3.v3-sheet.sell-value-sheet button[type='submit'] {
+  min-height: var(--v3-tap);
+}
+
+/* Cookie bar is 44px actions. Pad the page so the bar does not cover FAQ. */
+.v3.sell-page {
+  padding-bottom: calc(var(--v3-tap) * 3 + var(--v3-space-xl));
+}

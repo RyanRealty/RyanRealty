@@ -406,7 +406,9 @@ describe('public place pages', () => {
     const buyer = readFileSync(resolve('app/lp/buyer-listing-alerts/page.tsx'), 'utf8')
     expect(jsonFeed).toMatch(/getPublicPlaceSegments/)
     expect(jsonRoute).toMatch(/extraSegments/)
-    expect(sell).toMatch(/getPublicPlaceSegments/)
+    // /sell pushes condos, lots, farms, and businesses to /housing-market.
+    // It still reads detached pace for a few HUD figures, not the extra-type run.
+    expect(sell).not.toMatch(/getPublicPlaceSegments/)
     expect(listing).not.toMatch(/getPublicPlaceSegments/)
     expect(listing).not.toMatch(/PublicProductTypes/)
     expect(sellerLp).toMatch(/getPublicPlaceSegments/)

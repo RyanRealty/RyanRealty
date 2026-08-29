@@ -27,7 +27,8 @@ const commitRef = (process.env.VERCEL_GIT_COMMIT_REF || '').trim()
 if (
   commitRef === 'cursor/listing-land-face-d3ec' ||
   commitRef === 'cursor/homepage-restyle-e216' ||
-  commitRef === 'cursor/search-field-restyle-f6ee'
+  commitRef === 'cursor/search-field-restyle-f6ee' ||
+  commitRef === 'cursor/sell-restyle-8b1d'
 ) {
   console.log(`[vercel-ignore-build] BUILD — allowlisted preview branch (${commitRef})`)
   process.exit(1)
