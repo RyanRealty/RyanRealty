@@ -592,6 +592,14 @@ describe('search filter dock and required map attribution (PR 163)', () => {
     expect(css).not.toMatch(/\.search-filter-dock \{[\s\S]*bg-card\/95/)
   })
 
+  it('shows the map above tiles when the 390 Map toggle is on, and hides the toggle at 1280', () => {
+    const css = readSrc('app/search/search-frame.css')
+    expect(css).toMatch(
+      /\.search-field \.v3\.v3-field--map-toggle\.v3-field--map-open \.v3-field__frame > \.v3-field__col:first-of-type/,
+    )
+    expect(css).toMatch(/\.search-field \.v3-field__lead \.v3-btn\.v3-field__map-toggle/)
+  })
+
   it('keeps required Google attribution and only hides the decorative MAP chip', () => {
     const css = readSrc('components/site/v3/V3Field.css')
     expect(css).toMatch(/\.v3-field__map \.gm-style-mtc/)
