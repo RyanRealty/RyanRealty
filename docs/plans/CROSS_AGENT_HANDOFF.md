@@ -1,7 +1,7 @@
 # Current — 2026-08-29 (Cursor) — listing template PR 160, 390 sheet overflow
 
 **Surface:** branch `cursor/listing-template-c741` (PR 160). Do not merge. Do not deploy production.
-**Done:** Walker 390 FAIL — facts/CTAs/Field plot were ~734px in a 354px sheet (grid min-width:auto + Field disclosure max-content). Sheet children now `min-width:0`; Field is `width:100%`; facts 2-col; mobile CTAs stack; cookie bar still uses `--listing-sticky-height`.
+**Done:** Walker 390 FAIL: facts/CTAs/Field plot were ~734px in a 354px sheet (grid min-width:auto + Field disclosure max-content). Sheet children now `min-width:0`; Field is `width:100%`; facts 2-col; mobile CTAs stack; cookie bar still uses `--listing-sticky-height`.
 **Next:** Walker walk of the new preview (not `9eiw3io6c`). Proof listing `/homes-for-sale/redmond/4496-zenith-220226279`.
 **Skills read:** walkthrough-artifacts, frontend-design, tdd.
 **Do not:** invent a skin, ship Unsplash, enable all previews, dismiss cookies to "prove" CTAs.
