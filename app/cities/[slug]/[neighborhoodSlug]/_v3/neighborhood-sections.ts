@@ -136,9 +136,9 @@ export function neighborhoodFieldCaption(input: {
 }): string | null {
   if (input.count <= 0) return null
   if (input.totalQualifying > input.count) {
-    return `The ${input.count.toLocaleString('en-US')} highest-priced single-family listings in ${input.placeName}`
+    return `The ${input.count.toLocaleString('en-US')} highest-priced listings in ${input.placeName}`
   }
-  return `${input.count.toLocaleString('en-US')} single-family ${input.count === 1 ? 'home' : 'homes'} for sale in ${input.placeName}`
+  return `${input.count.toLocaleString('en-US')} ${input.count === 1 ? 'home' : 'homes'} for sale in ${input.placeName}`
 }
 
 /** Trace over the Field's listed set. The counted membership is named. */
@@ -146,7 +146,7 @@ export function neighborhoodFieldTrace(placeName: string): string {
   return (
     `${FEED}, active single-family homes inside the recorded ${placeName} boundary ` +
     `(the same counted set the neighborhoods index uses), each with a list price and a street. ` +
-    `The map plots this same set`
+    `The map plots this same set.`
   )
 }
 
@@ -163,18 +163,18 @@ export function nbhFieldEmptyMessage(placeName: string, readOk: boolean): string
  */
 export function neighborhoodMarketTrace(placeName: string, hasMos: boolean): string {
   return (
-    `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
-    `detached single-family houses assigned to ${placeName} by the recorded boundary polygon. ` +
-    `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
+    `regional MLS through Oregon Data Share. ` +
+    `Detached single-family houses assigned to ${placeName} by the recorded boundary polygon. ` +
+    `Every figure names its own window. A figure the feed withheld is absent, not estimated.` +
     (hasMos ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
   )
 }
 
 /** The stated absence for the no-figures render. No count of its own. */
 export function neighborhoodMarketAbsenceItems(placeName: string, hasRows: boolean): V3QuietItem[] {
-  const tail = hasRows ? ' The homes below carry their own live list prices.' : ''
+  const tail = hasRows ? ' The homes above carry their own live list prices.' : ''
   const body =
-    `The Market Truth metric layer published no figure for ${placeName} on this refresh, ` +
+    `Oregon Data Share published no figure for ${placeName} on this refresh, ` +
     `so this page is not printing a median, a supply figure, or a verdict.${tail}`
   return [{ kind: 'prose', term: 'No live market figures right now', body }]
 }

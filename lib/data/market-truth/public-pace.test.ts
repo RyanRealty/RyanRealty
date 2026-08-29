@@ -116,9 +116,9 @@ describe('public pace surfaces', () => {
     // figures through publicPaceItems.
     expect(community).toMatch(/publicPaceItems/)
     expect(neighborhood).toMatch(/getPublicDetachedPace/)
-    // v3 neighborhood page (2026-08-26): the pace items print as Instrument
-    // figures through publicPaceItems, the builder PublicPaceStats renders from.
-    expect(neighborhood).toMatch(/publicPaceItems/)
+    // Neighborhood restyle (2026-08-29): pace still feeds leftoverHudKpis.
+    // The pace run does not print. Same as the city face.
+    expect(neighborhood).not.toMatch(/publicPaceItems/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })
 })

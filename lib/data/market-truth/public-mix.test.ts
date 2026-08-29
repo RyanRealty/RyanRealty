@@ -77,9 +77,12 @@ describe('public mix / feature floors', () => {
     expect(cities).not.toMatch(/getPublicDetachedMix/)
     expect(zip).toMatch(/getPublicDetachedMix/)
     expect(comm).toMatch(/getPublicDetachedMix/)
-    expect(nbh).toMatch(/getPublicDetachedMix/)
+    // Neighborhood restyle (2026-08-29): mix stays on the report. The
+    // neighborhood face prints a few figures and a door, same as the city.
+    expect(nbh).not.toMatch(/getPublicDetachedMix/)
     expect(home).not.toMatch(/buildPublicMixFigures/)
     expect(cities).not.toMatch(/buildPublicMixFigures/)
+    expect(nbh).not.toMatch(/buildPublicMixFigures/)
   })
 
   it('publishes garage as a true share and other flags as at-least floors', async () => {

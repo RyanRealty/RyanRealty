@@ -3,9 +3,9 @@ import { communityImage } from '@/lib/geo-images'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
+import { neighborhoodFaceFieldCaption } from '@/app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-face'
 import {
   nbhFieldItems,
-  neighborhoodFieldCaption,
   neighborhoodMarketTrace,
 } from '@/app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections'
 import { dailyLifeRows } from '@/app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-daily-life'
@@ -54,13 +54,31 @@ describe('neighborhood pace', () => {
   // and the trace's clause discipline.
 
   it('caption names the neighborhood and states the cap when it binds', () => {
+    const unknown = { mosLabel: null, verdictKind: 'unknown' as const, verdictLabel: '' }
     expect(
-      neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 24, totalQualifying: 62 }),
-    ).toBe('The 24 highest-priced single-family listings in Awbrey Butte')
+      neighborhoodFaceFieldCaption({
+        placeName: 'Awbrey Butte',
+        count: 24,
+        totalQualifying: 62,
+        ...unknown,
+      }),
+    ).toBe('The 24 highest-priced listings in Awbrey Butte')
     expect(
-      neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 9, totalQualifying: 9 }),
-    ).toBe('9 single-family homes for sale in Awbrey Butte')
-    expect(neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 0, totalQualifying: 0 })).toBeNull()
+      neighborhoodFaceFieldCaption({
+        placeName: 'Awbrey Butte',
+        count: 9,
+        totalQualifying: 9,
+        ...unknown,
+      }),
+    ).toBe('9 homes for sale in Awbrey Butte')
+    expect(
+      neighborhoodFaceFieldCaption({
+        placeName: 'Awbrey Butte',
+        count: 0,
+        totalQualifying: 0,
+        ...unknown,
+      }),
+    ).toBeNull()
   })
 
   it('recites the MoS clauses only beside a published supply figure', () => {

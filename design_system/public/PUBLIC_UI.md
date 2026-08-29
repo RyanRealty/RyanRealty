@@ -81,19 +81,20 @@ from existence." The failure mode it was aiming at is real and is now gated prop
 absolute it stated was not, and is gone.
 
 1. **Instrument** — the answer, big. One verdict/number/range in Amboqia with its
-   supporting figures and source line beneath. Opens Market. Opens Neighborhood. Fallback
-   open for Master-plan when no owned Stage asset exists. Never the city hero (the city's
+   supporting figures and source line beneath. Opens Market. Mid-page on City and
+   Neighborhood after Stage and Field. Fallback open for Master-plan when no owned
+   Stage asset exists. Never the city or neighborhood hero (the place still and the
    houses are). *The pattern that makes data the spectacle.*
 2. **Field** — live inventory as a spatial surface: map + list in one frame, hover/tap
-   bound both ways, counts honest to the viewport. Opens Homes. Sits under City Stage
-   when an owned still exists, otherwise opens City. Embeds in Neighborhood and
-   Master-plan. A short plat is a Ledger, not a fake Field.
+   bound both ways, counts honest to the viewport. Opens Homes. Sits under City and
+   Neighborhood Stage when an owned still exists, otherwise opens those grains. Embeds
+   in Master-plan. A short plat is a Ledger, not a fake Field.
 3. **Ledger** — a scannable list of real rows (homes, places, sales, reports) with tabular
    numbers and one action per row. Every row is a door.
 4. **Stage** — full-bleed media (owned video/photo) carrying one line of type and one
    action; the only pattern allowed to be primarily emotional, and only where an owned
-   asset exists. Never over a number. Opens Listing. Opens City and Master-plan when
-   an owned place still exists.
+   asset exists. Never over a number. Opens Listing. Opens City, Neighborhood, and
+   Master-plan when an owned place still exists.
 5. **Sheet** — the working surface for a step: form, filter set, comparison, plan detail.
    Progressive: one question visible at a time on 390.
 6. **Quiet** — hairline-separated supporting content (FAQ, proof, definitions, legal,
@@ -169,7 +170,7 @@ place types from reading as one page, and it binds whatever the pattern set hold
 |---|---|---|---|
 | Homes | `/`, `/homes-for-sale` | Field | Houses fill the fold. Towns are filters. |
 | City | `/cities/[slug]`, `/zip/[zip]` | Stage (owned library place still) then Field of this city's houses. No owned still → Field only. Verdict is a caption, never a number hero. | Child neighborhoods and master-plans are doors below the fold. |
-| Neighborhood | `/cities/[slug]/[neighborhoodSlug]` | Instrument (this neighborhood's pace) then Field of its houses. | Daily life (schools, parks) on the first path. Not amenities or membership. |
+| Neighborhood | `/cities/[slug]/[neighborhoodSlug]` | Stage (owned Imagine or library still) then Field of this neighborhood's houses. No owned still → Field only. Verdict is a caption, never a 30-tile hero. | Daily life (schools, parks) only when the library has rows. Not amenities or membership. |
 | Master-plan | `/communities/[slug]` | Stage (owned place photo) then Field. No owned asset → Instrument of what belonging here is, then Field. | Amenities, membership, STR. Child plats are doors. Not a neighborhood. |
 | Subdivision | `/subdivisions/[slug]` | Ledger of this plat's homes. Field only when the plat has enough pins to be a map. | Parent community or city is the back door. Schools on the first path. A short plat is a list. |
 | Listing | the house URL | Stage (this house's media) with price and specs on the media, then one act (Sheet: tour or ask). | Same shop as the place pages. Payment, history, this place, who listed = layer 1. |
@@ -321,3 +322,7 @@ Why each rule is the way it is, so a dead one is not reintroduced as a new idea.
 - **2026-08-28** — Place Stage prefers the registered Imagine still
   (`imagine-place-*`) over a leftover live crop. Area-guide video stays off
   Stage. Official city slugs pin `hero_image_url` to the matching file.
+- **2026-08-29** — Neighborhood first fold is existing `V3Stage` when a
+  place-owned Imagine or library still exists, then one Field of its houses.
+  The 30-tile Instrument stack and the buyer/seller H2 are retired. Latest
+  market activity sits under the Stage. Chart Room is mid-page.

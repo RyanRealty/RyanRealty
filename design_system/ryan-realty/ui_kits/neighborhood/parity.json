@@ -1,12 +1,12 @@
 {
   "route": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat Zillow, Redfin, and every Bend brokerage at the neighborhood grain. First screen is this neighborhood's pace (months of supply, then days to pending), then a Field of its houses on the fold, then daily life (schools, parks). Inventory is a Field caption, never the hero. The 62 / $1,385,000 / 28.6 stamp opening is retired.",
-  "note": "PUBLIC_UI.md §3 Neighborhood, re-landed 2026-08-26 on the barrel. Opening is the Instrument (this neighborhood's pace) then the Field of its houses; daily life (schools, parks) on the first path, never amenities or membership. Order is Breadcrumb, Instrument level 1 (H1 head term; verdict sentence as note; leftover-HUD KPI row + pace + mix figures; median-close year overlay with an honest city-scope caption on fallback; the district chart room as cards), Field (list + the real Google map, one set, count as caption with the stated preview cap), Ledger (daily life), Quiet (about), Ledger (subdivisions in the boundary), Instrument enumeration (V3PlacePropertyTypes), Ledger (recorded documents, V3PlaceDocuments), Quiet (V3PlaceCharacter), Ledger (live activity, D93), Sheet (alert capture), Ledger (guides), Quiet (FAQ), Ledger (peer neighborhoods), Quiet (outbound edges), Ledger (other cities), Footer. FIVE OF SIX PATTERNS — Instrument, Field, Ledger, Quiet, Sheet — under the 2026-08-26 place-family exception (PUBLIC_UI.md §3, Matt): THE FIFTH SLOT IS SPENT ON LEDGER (daily life, subdivisions, documents, the D93 feed, guides, peers, the exit — deleting them deleted directives). A sixth pattern stays a lock break. No two adjacent share a pattern when every section renders; THE DEGRADED-STATE CONFLICTS ARE DECLARED, NOT HIDDEN (the plat page's discipline): most sections are conditional on their own read and no ordering of this many independent conditionals guarantees no-two-adjacent in every combination — e.g. an empty daily-life set with authored about-prose puts nothing between the Field and the about Quiet (legal), but an empty about with daily life AND subdivisions present puts two Ledgers together. The order is right when the data is present. TWO SLUGS, TWO POPULATIONS (the metricNeighborhoodSlug convention): market_pulse_live has NO neighborhood rows; every market figure is Market Truth leftover membership keyed by resolveNeighborhoodMetricSlug, while GIS/inventory/map/character key the prefixed boundary slug, and documents key the METRIC slug (bend-mountain-view, not mountain-view). THE MARKET SECTION IS THE LEFTOVER HUD: leftoverHudKpis grain 'neighborhood' is the one pile (the pulse and stats-cache closed figures under-count at this grain by 6x-16x, lib/market/geo-grain-trust.ts), the hero count is hud.active, buildMarketFaq runs unconditionally with source 'market-truth', and MoS is classified raw. THE MARKET QUESTION STAYS (Matt 2026-08-26, all five place grains): the opening Instrument is the H1 and carries the money head term, so the question renders as the FAQ section's heading whenever the verdict answers it — the same h2-question form KbMarketHud carried. No verdict, no question.",
+  "competitiveTarget": "Beat Zillow, Redfin, and every Bend brokerage at the neighborhood grain. First screen is this neighborhood's Stage (Imagine or geo-strict library still of the place, never a street grid) then a Field of its houses on the fold. Inventory is a Field caption with the one supply sentence, never a 30-tile hero. Daily life (schools, parks) only when the library has rows.",
+  "note": "PUBLIC_UI.md §3 Neighborhood, amended 2026-08-29 to match the city restyle: first screen is existing V3Stage when a place-owned Imagine or library still exists, then one Field of this neighborhood's houses. No owned still → Field only, and the Field owns the H1. The H1 is `${neighborhoodName} homes for sale` on Stage when Stage mounts. The 30-tile Instrument stack is retired. Order is Breadcrumb (on-media when Stage mounts), V3Stage, NeighborhoodHomesField (map plus list, one set, count plus verdict as caption), NeighborhoodAlertsSheet (one email ask after homes), Ledger (Latest market activity, under the Stage, not 14,000px down), Instrument level 2 mid-page (tightness headline, one supply sentence, a few face figures, one V3Chart), Quiet (about, three paragraphs then Read more), Ledger (daily life when library rows exist), Ledger (open houses: this neighborhood's keys, or heading Open houses across Bend), Ledger (subdivisions), V3PlacePropertyTypes, V3PlaceDocuments, V3PlaceCharacter, Ledger (guides), Quiet (FAQ heading is always Questions about {Neighborhood}, never the buyer/seller H2), Ledger (peers), Quiet (outbound edges), Ledger (other cities), Footer. SIX PATTERNS when a still exists — Stage, Field, Instrument, Ledger, Quiet, Sheet. No two adjacent share a pattern when every section renders; THE DEGRADED-STATE CONFLICTS ARE DECLARED, NOT HIDDEN. TWO SLUGS, TWO POPULATIONS (the metricNeighborhoodSlug convention): GIS, inventory, the map, and getPlaceCharacter key the prefixed boundary slug; documents and market figures key the METRIC slug. leftoverHudKpis grain 'neighborhood' is the one pile; pulse and cache never fill a tile; buildMarketFaq runs with source 'market-truth'; MoS is classified raw. Public titles and source lines do not print leftover, Market Truth leftover, leftover:true, leftover membership, or methodology v3.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "BreadcrumbList + Neighborhood Place + Dataset + FAQPage JSON-LD. All four are emitted here: V3Breadcrumb and V3Quiet carry no structured data of their own, on purpose, so one derivation feeds the visible copy and the markup. FAQPage moved here from FAQBlock's includeJsonLd; the payload's meaning is unchanged. Place.hasMap ships when PlaceFieldMap is in the Field slot (pins or a recorded polygon).",
+      "section": "BreadcrumbList + Neighborhood Place + Dataset + FAQPage JSON-LD. All four are emitted here: V3Breadcrumb and V3Quiet carry no structured data of their own, on purpose, so one derivation feeds the visible copy and the markup. Place.hasMap ships when NeighborhoodHomesField plots at least one pin.",
       "blocking": true
     },
     {
@@ -16,37 +16,42 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome, and the up-rung of the place ladder: Home > {City} > {Neighborhood}, current page never a link. Surface tone, because this page opens on a pace Instrument and not on a dark Stage.",
+      "section": "Chrome, and the up-rung of the place ladder: Home > {City} > {Neighborhood}, current page never a link. tone=on-media when V3Stage opens on an owned still. Surface tone when there is no still and the Field opens the page.",
+      "blocking": true
+    },
+    {
+      "name": "V3Stage",
+      "section": "Pattern 4, the opening when a place-owned still exists. Existing barrel Stage only: tokens.css + V3Stage.css, Imagine or geo-strict library photo as posterSrc, H1 is the money head term, action is the first house or #homes. No Unsplash, no Google map pixels, no street crop, no plat outline. No new hero system.",
       "blocking": true
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, twice. LEVEL 1 is this neighborhood's PACE: months of supply is the head when it ships, then days to pending. Inventory and median list price are not heroes. The MoS threshold paragraph is cut; the pace figure carries the verdict. The ask is a house or Save, never Value my home. When no pace figure ships, a Quiet says so. LEVEL 2 is the last rolling 12 months of closed sales off the market_stats_cache row.",
+      "section": "Pattern 1, once, level 2, MID-PAGE after Stage, Field, the email ask, and Latest market activity. Headline is 'How tight the market is' (or 'The {Neighborhood} market' when no verdict). Note is the one supply sentence. Figures are the few face cells (median list, detached homes for sale, months of supply, median to pending, sale to original list). One V3Chart (median close by month). Chart Room is not the first fold. The 30-tile stack is retired.",
       "blocking": true
     },
     {
-      "name": "V3Field",
-      "section": "Pattern 2, once. Photographed homes inside the recorded boundary, PropertyType A, highest price first, capped at 24. photoSrc is required so the fold shows house pixels. No PlaceFieldMap: the Field is the mosaic of houses, not a stamp map twin. The count caption is the honest in-boundary inventory when the read succeeded. Empty names which of four facts is true instead of rendering zero under a live-MLS trace.",
+      "name": "NeighborhoodHomesField",
+      "section": "The route-local Field wrapper: H1 only when Stage did not take it + V3Field with PlaceFieldMap in the map slot + the listed-set source line. V3Field and PlaceFieldMap are imported by THIS component, not the route file, so this entry is the one the import gate binds on. Pattern 2: this neighborhood's houses as map plus list in one frame, under Stage when a still exists. 390 is list-first with a Map toggle (same as the city/home pass). Caption is the listed-set count plus the MoS verdict when the one derivation has one. Pins use --v3-cat. hasMap ships when at least one pin plots.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, twice, never adjacent. ABOUT carries the verified depth from data/resort-community-{citySlug}-{neighborhoodSlug}.json: the curated prose, the drive times, and up to eight amenities with their descriptions and access notes, falling back to the neighborhoods-table description when no config exists, which is the same either/or the KB pair KbResortOverview + KbAbout ran. CLOSING carries the market Q&A as question-and-answer prose from the same buildMarketFaq array the FAQPage JSON-LD uses, then every outbound edge: the full-inventory door, the parent city both as an overview and as a market report, months of supply when that figure shipped, each subdivision inside this neighborhood, each peer neighborhood, the city index, open houses, price drops, the recent guides, the sell path, the saved-searches sign-in the KB alert block carried, and the Oregon Data Share citation MarketSources used to render. ITS NAME COVERS BOTH HALVES: eyebrow 'Questions and next steps', heading 'Questions about {Neighborhood}, and where to go next'. It was named 'Common questions', which described the first four rows and misdescribed the roughly thirty link rows after them, including the accessible name announced for the landmark. It stays ONE section because the four-pattern cap and the no-two-adjacent rule leave exactly two Quiet slots on this node, one either side of the Sheet, and ABOUT holds the other. See barrelGaps.",
+      "section": "Pattern 6. ABOUT is `{Neighborhood}, in plain words`: curated prose else the neighborhoods-table description, three paragraphs open then Read more (foldAfter=3). FAQ heading is always `Questions about {Neighborhood}` — the buyer/seller H2 is retired. Explore Quiet holds the outbound edges.",
       "blocking": true
     },
     {
       "name": "NeighborhoodAlertsSheet",
-      "section": "Pattern 5, once, in app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodAlertsSheet.client.tsx. The page's second ask, and the one the inventory above it earned. Wraps V3Sheet and calls the same server action the KB block called, submitSearchAlertSignup, with the same field name (email) and the same filters (city plus propertyType 'A', no subdivision key). The city scope is deliberate and carried across: neighborhood names are not 1:1 with MLS subdivision tags, so a neighborhood filter would be an invented narrowing. The three success side effects run in the same order: the guest-watch residual, the confirmation, and the alert_create measurement event. THE HONEYPOT IS INTACT: V3Sheet's trap prop renders the hidden `company` input on every step, aria-hidden and out of the tab order, off-screen by CSS rather than display:none, and its typed value is what the action receives. An earlier revision sent the empty-string literal instead, which kept the payload shape and made the action's first defence unable to fire from this surface. THE STANDING DISCLOSURE IS INTACT TOO: 'One email per new listing. Unsubscribe any time.' sits beside the field, the two sentences the KB block always rendered and the first version of this sheet dropped, leaving a licensed broker's public capture form collecting an address with no stated frequency and no stated way out. This surface's row in check-alert-capture-disclosure.mjs's frozen ledger was deleted in the same change. The copy also no longer promises 'a single-family home': the filter it sends is propertyType 'A', the bucket that carries townhouses and condominiums, so the promise says home.",
+      "section": "Pattern 5, once, in app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodAlertsSheet.client.tsx. The page's one on-page ask, after homes. Wraps V3Sheet and calls submitSearchAlertSignup with the same field name (email) and the same filters (city plus propertyType 'A', no subdivision key). The city scope is deliberate: neighborhood names are not 1:1 with MLS subdivision tags. Honeypot and standing disclosure stay intact.",
       "blocking": true
     },
     {
       "name": "V3Footer",
-      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row. Carries no button, and NOT because the header covers the ask: it does not below 880px, which is why the opening Instrument's action is the page's primary. The footer stays button-free because a second filled control in the closing viewport would put two primaries in one viewport, and the ask the reader arrived for is thirty rows above it. Rendered OUTSIDE main, because HTML-AAM maps footer to role=contentinfo only when it is not nested in sectioning content.",
+      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row. Footer titles are not H2. Cream background, 44px taps. Rendered OUTSIDE main.",
       "blocking": true
     },
     {
       "name": "V3Ledger",
-      "section": "Pattern 3, twice when both exist, never adjacent. Daily life (schools and parks) sits on the first path after the Field. Latest market activity (D93) keeps its scoped feed. A third Ledger for subdivision and peer counts stays deferred.",
+      "section": "Pattern 3. Latest market activity sits under the Stage, not below the fold stack. Daily life (schools and parks) renders only when the library has school-* or park rows. Open houses use this neighborhood's listing keys, or the heading Open houses across Bend. Subdivisions, guides, peers, and other cities stay Ledgers.",
       "blocking": true
     },
     {
@@ -63,11 +68,6 @@
       "name": "V3PlaceCharacter",
       "section": "Pattern 6: build years + HOA measured from member listings (boundary slug). Renders null when nothing is publishable.",
       "blocking": true
-    },
-    {
-      "name": "PlaceFieldMap",
-      "section": "The real Google map in the Field's map slot. Pins come from fieldMapPins(fieldItems), the same set the list renders. The boundary polygon overlay the KB dual-pane drew is a declared deletion below.",
-      "blocking": true
     }
   ],
   "layoutComponents": [
@@ -79,16 +79,8 @@
   ],
   "deferredComponents": [
     {
-      "name": "PlaceFieldMap",
-      "reason": "REPAIRED 2026-08-14. Neighborhood fold is a Field of house photographs, not a map. Place.hasMap stays off until a later pass puts the map below the fold without eating the houses."
-    },
-    {
-      "name": "V3Ledger, for the subdivision set and the peer-neighborhood set",
-      "reason": "V3Ledger itself is NOT deferred — daily life and Latest market activity both render. What is deferred is a THIRD Ledger for subdivision and peer-neighborhood counts."
-    },
-    {
-      "name": "V3Stage",
-      "reason": "Pattern 4 needs an owned video or photo and is never allowed over a number. This node opens on pace, then houses."
+      "name": "PlaceFieldMap on the route file",
+      "reason": "Lives inside NeighborhoodHomesField, same as CityHomesField on the city node. The route file does not import it."
     }
   ],
   "removedComponents": [
@@ -166,21 +158,23 @@
     "V3SectionTracker",
     "MetadataBlock",
     "V3Breadcrumb",
-    "V3Instrument (level 1, H1 head term + the neighborhood's pace off the leftover pile) or V3Quiet (stated absence)",
-    "V3Field (list + PlaceFieldMap, one set, caption states the preview cap)",
-    "V3Ledger (daily life: schools + parks)",
-    "V3Quiet (about, curated prose else the neighborhoods-table description)",
-    "V3Ledger (subdivisions inside the boundary)",
+    "V3Stage (owned Imagine or library still + H1) when a place-owned poster exists",
+    "NeighborhoodHomesField (H1 only when Stage is absent + map plus list, caption is the listed-set count plus verdict)",
+    "NeighborhoodAlertsSheet (V3Sheet, city-scoped listing alert, after homes)",
+    "V3Ledger #activity (Latest market activity, under the Stage)",
+    "V3Instrument #market (level 2, tightness headline + one sentence + few figures + one chart) or V3Quiet (stated absence)",
+    "V3Quiet #about (in plain words, three paragraphs then Read more)",
+    "V3Ledger #daily-life (schools and parks, library rows only)",
+    "V3Ledger #open-houses (this neighborhood, or Open houses across Bend)",
+    "V3Ledger #subdivisions (plats inside the boundary)",
     "V3PlacePropertyTypes (Instrument enumeration)",
     "V3PlaceDocuments (Ledger, recorded documents)",
     "V3PlaceCharacter (Quiet, build years + HOA)",
-    "V3Ledger (Latest market activity, D93, honest scope eyebrow)",
-    "NeighborhoodAlertsSheet (V3Sheet, city-scoped capture, honeypot intact)",
-    "V3Ledger (guides)",
-    "V3Quiet (FAQ; heading is the market question when the verdict answers it)",
-    "V3Ledger (peer neighborhoods)",
-    "V3Quiet (outbound edges)",
-    "V3Ledger (other cities)",
+    "V3Ledger #guides",
+    "V3Quiet #faq (Questions about {Neighborhood}, never the buyer/seller H2)",
+    "V3Ledger #peer-neighborhoods",
+    "V3Quiet #explore (outbound edges)",
+    "V3Ledger #nearby (other cities)",
     "V3Footer"
   ],
   "openDefects": {

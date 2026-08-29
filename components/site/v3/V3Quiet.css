@@ -159,3 +159,26 @@
   line-height: var(--v3-leading-note);
   color: var(--v3-ink-muted);
 }
+
+.v3-quiet__more {
+  margin: 0;
+}
+
+.v3-quiet__more-summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  cursor: pointer;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-quiet__more-summary:hover,
+.v3-quiet__more-summary:focus-visible {
+  color: var(--v3-ink);
+}

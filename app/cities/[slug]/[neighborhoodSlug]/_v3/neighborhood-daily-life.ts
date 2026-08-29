@@ -77,7 +77,7 @@ export function dailyLifeRows(
   }
 
   const district = getDistrictForCity(cityName)
-  if (district) {
+  if (district && rows.some((row) => String(row.id ?? '').startsWith('school-'))) {
     push({
       href: `/schools/${district.districtSlug}`,
       when: v3Text('District'),

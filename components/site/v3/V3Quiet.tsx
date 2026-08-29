@@ -138,6 +138,11 @@ export type V3QuietProps = {
    * region's name.
    */
   eyebrow?: string
+  /**
+   * Keep the first N items open. The rest sit behind a Read more disclosure
+   * so a long About stays three paragraphs on first paint.
+   */
+  foldAfter?: number
   id?: string
   className?: string
 } & V3QuietNaming
@@ -205,6 +210,50 @@ function toRenderable(items: readonly V3QuietItem[]): RenderableItem[] {
  * caused, per PUBLIC_UI.md section 5. Under reduced motion the token collapses
  * to 0 and the duration collapses with it, so nothing moves at all.
  */
+function QuietItem({ item, index }: { item: RenderableItem; index: number }) {
+  return item.kind === 'link' ? (
+    <li
+      key={item.id ?? `link-${index}`}
+      id={item.id}
+      className="v3-quiet__item v3-quiet__item--link"
+    >
+      <Link href={item.href} className="v3-quiet__link">
+        <span className="v3-quiet__label">{item.label}</span>
+        <span aria-hidden="true" className="v3-quiet__mark">
+          →
+        </span>
+      </Link>
+    </li>
+  ) : (
+    <li
+      key={item.id ?? `prose-${index}`}
+      id={item.id}
+      className="v3-quiet__item v3-quiet__item--prose"
+    >
+      {item.term ? (
+        <dl className="v3-quiet__pair">
+          <dt className="v3-quiet__term">{item.term}</dt>
+          <dd className="v3-quiet__body">
+            {item.body.map((line, lineIndex) => (
+              <p className="v3-quiet__para" key={lineIndex}>
+                {line}
+              </p>
+            ))}
+          </dd>
+        </dl>
+      ) : (
+        <div className="v3-quiet__body">
+          {item.body.map((line, lineIndex) => (
+            <p className="v3-quiet__para" key={lineIndex}>
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
+    </li>
+  )
+}
+
 export function V3Quiet({
   items,
   heading,
@@ -212,6 +261,7 @@ export function V3Quiet({
   ariaLabel,
   note,
   eyebrow,
+  foldAfter,
   id,
   className,
 }: V3QuietProps) {
@@ -220,6 +270,12 @@ export function V3Quiet({
   const trailingNote = text(note)
   const contextLine = text(eyebrow)
   const name = title ?? text(ariaLabel)
+  const foldAt =
+    typeof foldAfter === 'number' && foldAfter > 0 && rendered.length > foldAfter
+      ? foldAfter
+      : rendered.length
+  const openItems = rendered.slice(0, foldAt)
+  const foldedItems = rendered.slice(foldAt)
 
   if (process.env.NODE_ENV !== 'production') {
     const dropped = items.length - rendered.length
@@ -266,52 +322,23 @@ export function V3Quiet({
         </div>
       ) : null}
 
-      {rendered.length > 0 ? (
+      {openItems.length > 0 ? (
         <ul className="v3-quiet__list">
-          {rendered.map((item, index) =>
-            item.kind === 'link' ? (
-              <li
-                key={item.id ?? `link-${index}`}
-                id={item.id}
-                className="v3-quiet__item v3-quiet__item--link"
-              >
-                <Link href={item.href} className="v3-quiet__link">
-                  <span className="v3-quiet__label">{item.label}</span>
-                  <span aria-hidden="true" className="v3-quiet__mark">
-                    →
-                  </span>
-                </Link>
-              </li>
-            ) : (
-              <li
-                key={item.id ?? `prose-${index}`}
-                id={item.id}
-                className="v3-quiet__item v3-quiet__item--prose"
-              >
-                {item.term ? (
-                  <dl className="v3-quiet__pair">
-                    <dt className="v3-quiet__term">{item.term}</dt>
-                    <dd className="v3-quiet__body">
-                      {item.body.map((line, lineIndex) => (
-                        <p className="v3-quiet__para" key={lineIndex}>
-                          {line}
-                        </p>
-                      ))}
-                    </dd>
-                  </dl>
-                ) : (
-                  <div className="v3-quiet__body">
-                    {item.body.map((line, lineIndex) => (
-                      <p className="v3-quiet__para" key={lineIndex}>
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </li>
-            ),
-          )}
+          {openItems.map((item, index) => (
+            <QuietItem item={item} index={index} key={item.id ?? `open-${index}`} />
+          ))}
         </ul>
+      ) : null}
+
+      {foldedItems.length > 0 ? (
+        <details className="v3-quiet__more">
+          <summary className="v3-quiet__more-summary">Read more</summary>
+          <ul className="v3-quiet__list">
+            {foldedItems.map((item, index) => (
+              <QuietItem item={item} index={foldAt + index} key={item.id ?? `fold-${index}`} />
+            ))}
+          </ul>
+        </details>
       ) : null}
 
       {trailingNote ? <p className="v3-quiet__note">{trailingNote}</p> : null}
